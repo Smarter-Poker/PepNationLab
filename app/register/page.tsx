@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 
@@ -20,8 +20,9 @@ const DISCLAIMER_CHECKBOXES = [
   },
 ];
 
-export default function RegisterPage() {
+function RegisterPageInner() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [step, setStep] = useState<'disclaimer' | 'form'>('disclaimer');
   const [checked, setChecked] = useState<Record<string, boolean>>({});
   const [formData, setFormData] = useState({
@@ -30,7 +31,7 @@ export default function RegisterPage() {
     password: '',
     confirmPassword: '',
     phone: '',
-    referralCode: '',
+    referralCode: searchParams.get('ref') ?? '',
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -50,18 +51,18 @@ export default function RegisterPage() {
     setError('');
 
     if (formData.password !== formData.confirmPassword) {
-      setError('Passwords do not match.');
+      setError('Passwords Do Not Match.');
       return;
     }
     if (formData.password.length < 8) {
-      setError('Password must be at least 8 characters.');
+      setError('Password Must Be At Least 8 Characters.');
       return;
     }
 
     setLoading(true);
     const supabase = createClient();
 
-    const { error: authError } = await supabase.auth.signUp({
+    const { data: authData, error: authError } = await supabase.auth.signUp({
       email: formData.email,
       password: formData.password,
       options: {
@@ -78,12 +79,32 @@ export default function RegisterPage() {
       return;
     }
 
-    // Log disclaimer acceptance
+    const newUserId = authData.user?.id;
+
+    // Log disclaimer acceptance with user linkage
     await supabase.from('disclaimer_acceptances').insert({
+      user_id: newUserId ?? null,
       disclaimer_version: 'v1.0',
       layer: 'registration',
       user_agent: navigator.userAgent,
     });
+
+    // Wire referral code → referring_agent_id
+    if (formData.referralCode.trim() && newUserId) {
+      const { data: agentProfile } = await supabase
+        .from('agent_profiles')
+        .select('id')
+        .eq('slug', formData.referralCode.trim().toLowerCase())
+        .eq('is_active', true)
+        .single();
+
+      if (agentProfile) {
+        await supabase
+          .from('profiles')
+          .update({ referring_agent_id: agentProfile.id })
+          .eq('id', newUserId);
+      }
+    }
 
     router.push('/dashboard?welcome=1');
     router.refresh();
@@ -266,5 +287,19 @@ export default function RegisterPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+// Suspense wrapper required by Next.js for useSearchParams() in App Router
+export default function RegisterPage() {
+  return (
+    <Suspense fallback={
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--black)' }}>
+        <div style={{ width: 40, height: 40, borderRadius: '50%', border: '2px solid var(--teal)', borderTopColor: 'transparent', animation: 'spin 0.8s linear infinite' }} />
+        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      </div>
+    }>
+      <RegisterPageInner />
+    </Suspense>
   );
 }

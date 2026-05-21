@@ -41,7 +41,7 @@ export default function Navbar() {
           <Link href="/become-agent" style={{ color: 'var(--silver)', fontSize: '0.9rem', fontWeight: 500, transition: 'color 0.2s' }}
                 onMouseOver={e => (e.currentTarget.style.color = 'var(--teal)')}
                 onMouseOut={e => (e.currentTarget.style.color = 'var(--silver)')}>
-            Become an Agent
+            Become An Agent
           </Link>
           <div style={{ width: 1, height: 20, background: 'var(--surface-3)' }} />
           <Link href="/login" className="btn btn-ghost btn-sm">Sign In</Link>
@@ -77,8 +77,8 @@ export default function Navbar() {
           padding: 'var(--space-4)',
           display: 'flex', flexDirection: 'column', gap: 'var(--space-2)'
         }}>
-          {['Products', 'About', 'Become an Agent'].map(item => (
-            <Link key={item} href={`/${item.toLowerCase().replace(' ', '-')}`}
+          {['Products', 'About', 'Become An Agent'].map(item => (
+            <Link key={item} href={`/${item.toLowerCase().replace(/ /g, '-')}`}
                   style={{ padding: 'var(--space-3)', color: 'var(--silver)', borderRadius: 'var(--radius-md)' }}>
               {item}
             </Link>

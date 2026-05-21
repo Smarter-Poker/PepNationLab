@@ -46,7 +46,7 @@ export default async function DashboardPage({
           </span>
           <form action="/api/auth/signout" method="POST">
             <button type="submit" style={{ fontSize: '0.8rem', color: 'var(--grey-400)', background: 'none', border: 'none', cursor: 'pointer' }}>
-              Sign out
+              Sign Out
             </button>
           </form>
         </div>
@@ -91,23 +91,37 @@ export default async function DashboardPage({
             {
               label: 'Account Type',
               value: profile?.account_type ? profile.account_type.replace('_', ' ') : 'Standard',
-              icon: '👤',
+              icon: (
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--teal)" strokeWidth="1.5">
+                  <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/>
+                  <circle cx="12" cy="7" r="4"/>
+                </svg>
+              ),
             },
             {
               label: role.includes('agent') ? 'Credit Limit' : 'Prepaid Balance',
               value: role.includes('agent')
                 ? `$${(profile?.credit_limit ?? 0).toFixed(2)}`
                 : `$${(profile?.prepaid_balance ?? 0).toFixed(2)}`,
-              icon: '💳',
+              icon: (
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--teal)" strokeWidth="1.5">
+                  <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/>
+                  <line x1="1" y1="10" x2="23" y2="10"/>
+                </svg>
+              ),
             },
             {
               label: 'Tier',
               value: profile?.tier ? `Tier ${profile.tier.replace('tier_', '')}` : 'N/A',
-              icon: '⭐',
+              icon: (
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--teal)" strokeWidth="1.5">
+                  <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+                </svg>
+              ),
             },
           ].map(({ label, value, icon }) => (
             <div key={label} className="card-metal" style={{ padding: 'var(--space-5)' }}>
-              <div style={{ fontSize: '1.4rem', marginBottom: 'var(--space-2)' }}>{icon}</div>
+              <div style={{ marginBottom: 'var(--space-2)', color: 'var(--teal)' }}>{icon}</div>
               <div style={{ fontSize: '1.3rem', fontWeight: 700, fontFamily: 'var(--font-brand)', color: 'var(--teal)', marginBottom: 4 }}>{value}</div>
               <div style={{ fontSize: '0.8rem', color: 'var(--grey-400)' }}>{label}</div>
             </div>
