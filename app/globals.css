@@ -413,13 +413,19 @@ a:hover { color: var(--teal-dark); }
 /* ============================================
    WARNING / DISCLAIMER SYSTEM (RED)
    ============================================ */
-.disclaimer-box {
+.disclaimer-box,
+.disclaimer-warning {
   background: var(--red-bg);
   border: 1px solid rgba(229, 62, 62, 0.4);
   border-radius: var(--radius-lg);
   padding: var(--space-6);
   position: relative;
   overflow: hidden;
+}
+
+/* Form spacing */
+.form-group + .form-group {
+  margin-top: var(--space-5);
 }
 
 .disclaimer-box::before {

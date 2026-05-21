@@ -82,7 +82,7 @@ ALTER TABLE agent_profiles
 -- PRICING TIERS (Admin configurable)
 -- ============================================
 CREATE TABLE pricing_tiers (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   tier_name tier_name UNIQUE NOT NULL,
   display_name TEXT NOT NULL,
   multiplier NUMERIC(4,2) NOT NULL DEFAULT 6.0,
@@ -100,7 +100,7 @@ INSERT INTO pricing_tiers (tier_name, display_name, multiplier, description) VAL
 -- PRODUCTS (Master catalog)
 -- ============================================
 CREATE TABLE products (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   name TEXT NOT NULL,
   slug TEXT UNIQUE NOT NULL,
   description TEXT,
@@ -129,7 +129,7 @@ $$ LANGUAGE plpgsql;
 -- PRODUCT TIER OVERRIDES
 -- ============================================
 CREATE TABLE product_tier_overrides (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   product_id UUID NOT NULL REFERENCES products(id) ON DELETE CASCADE,
   tier_name tier_name NOT NULL,
   custom_multiplier NUMERIC(4,2) NOT NULL,
@@ -140,7 +140,7 @@ CREATE TABLE product_tier_overrides (
 -- AGENT PRODUCTS (Agent's storefront catalog)
 -- ============================================
 CREATE TABLE agent_products (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   agent_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
   product_id UUID REFERENCES products(id) ON DELETE SET NULL, -- NULL = custom product
   custom_name TEXT,
@@ -164,7 +164,7 @@ CREATE TRIGGER check_banned_product
 -- SHIPPING RATES
 -- ============================================
 CREATE TABLE shipping_rates (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   name TEXT NOT NULL,
   min_weight_oz NUMERIC(6,2) NOT NULL DEFAULT 0,
   max_weight_oz NUMERIC(6,2) NOT NULL,
@@ -184,7 +184,7 @@ INSERT INTO shipping_rates (name, min_weight_oz, max_weight_oz, rate) VALUES
 -- ORDERS
 -- ============================================
 CREATE TABLE orders (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   buyer_id UUID NOT NULL REFERENCES profiles(id),
   agent_id UUID REFERENCES profiles(id), -- NULL = direct PNL order
   status order_status NOT NULL DEFAULT 'pending_customer_payment',
@@ -202,7 +202,7 @@ CREATE TABLE orders (
 );
 
 CREATE TABLE order_items (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   order_id UUID NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
   agent_product_id UUID REFERENCES agent_products(id),
   product_id UUID REFERENCES products(id),
@@ -217,7 +217,7 @@ CREATE TABLE order_items (
 -- WEEKLY STATEMENTS
 -- ============================================
 CREATE TABLE weekly_statements (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   agent_id UUID NOT NULL REFERENCES profiles(id),
   week_start DATE NOT NULL,
   week_end DATE NOT NULL,
@@ -234,7 +234,7 @@ CREATE TABLE weekly_statements (
 );
 
 CREATE TABLE statement_orders (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   statement_id UUID NOT NULL REFERENCES weekly_statements(id),
   order_id UUID NOT NULL REFERENCES orders(id),
   UNIQUE(statement_id, order_id)
@@ -244,7 +244,7 @@ CREATE TABLE statement_orders (
 -- COUPONS
 -- ============================================
 CREATE TABLE coupons (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   agent_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
   code TEXT NOT NULL,
   discount_type discount_type NOT NULL,
@@ -262,7 +262,7 @@ CREATE TABLE coupons (
 -- MESSAGES
 -- ============================================
 CREATE TABLE messages (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   sender_id UUID NOT NULL REFERENCES profiles(id),
   recipient_id UUID NOT NULL REFERENCES profiles(id),
   agent_context_id UUID REFERENCES profiles(id),
@@ -276,7 +276,7 @@ CREATE TABLE messages (
 -- DISCLAIMER AUDIT LOG
 -- ============================================
 CREATE TABLE disclaimer_acceptances (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID REFERENCES profiles(id),
   session_id TEXT,
   disclaimer_version TEXT NOT NULL DEFAULT 'v1.0',
