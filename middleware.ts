@@ -5,15 +5,18 @@ import { NextResponse, type NextRequest } from 'next/server';
 const PROTECTED_ROUTES = ['/dashboard', '/admin', '/checkout'];
 // Routes that redirect to dashboard if already authed
 const AUTH_ROUTES = ['/login', '/register'];
-// Admin-only routes
-const ADMIN_ROUTES = ['/admin'];
 
 export async function middleware(request: NextRequest) {
+  // Pass through if Supabase env vars not configured yet (early deploy)
+  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+    return NextResponse.next({ request });
+  }
+
   let supabaseResponse = NextResponse.next({ request });
 
   const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    process.env.NEXT_PUBLIC_SUPABASE_URL,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
     {
       cookies: {
         getAll() {
