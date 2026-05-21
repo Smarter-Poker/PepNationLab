@@ -48,7 +48,7 @@ export default function DisclaimerGate({ onAccept }: DisclaimerGateProps) {
         {/* Main disclaimer text */}
         <div className="disclaimer-box" style={{ marginBottom: 'var(--space-6)' }}>
           <p className="disclaimer-text" style={{ marginBottom: 'var(--space-4)' }}>
-            <strong style={{ color: 'var(--white)' }}>STOP. Read carefully before entering Pep Nation Lab.</strong>
+            <strong style={{ color: 'var(--white)' }}>Stop. Read Carefully Before Entering Pep Nation Lab.</strong>
           </p>
           <p className="disclaimer-text" style={{ marginBottom: 'var(--space-4)' }}>
             By entering this site and purchasing products, you expressly acknowledge and warrant:
@@ -95,13 +95,13 @@ export default function DisclaimerGate({ onAccept }: DisclaimerGateProps) {
             letterSpacing: '0.08em',
             fontWeight: 600
           }}>
-            You must check all three boxes to proceed:
+            You Must Check All Three Boxes To Proceed:
           </p>
 
           {[
-            { key: 'c1' as const, text: 'I confirm I am at least 21 years of age and a qualified researcher or institutional purchaser.' },
-            { key: 'c2' as const, text: 'I confirm that all products I purchase are for in vitro laboratory research purposes ONLY and will NOT be used for human or animal consumption or injection.' },
-            { key: 'c3' as const, text: 'I confirm I have read and agree to the Pep Nation Lab Research-Only Terms of Service and assume full legal responsibility for my purchases.' },
+            { key: 'c1' as const, text: 'I Confirm I Am At Least 21 Years Of Age And A Qualified Researcher Or Institutional Purchaser.' },
+            { key: 'c2' as const, text: 'I Confirm That All Products I Purchase Are For In Vitro Laboratory Research Purposes Only And Will Not Be Used For Human Or Animal Consumption Or Injection.' },
+            { key: 'c3' as const, text: 'I Confirm I Have Read And Agree To The Pep Nation Lab Research-Only Terms Of Service And Assume Full Legal Responsibility For My Purchases.' },
           ].map(({ key, text }) => (
             <label key={key} className="form-checkbox" onClick={() => toggle(key)}>
               <div style={{
@@ -144,7 +144,7 @@ export default function DisclaimerGate({ onAccept }: DisclaimerGateProps) {
               letterSpacing: '0.05em'
             }}
           >
-            I Understand and Agree — Enter Site
+            I Understand And Agree — Enter Site
           </button>
           <button
             className="btn btn-ghost w-full"

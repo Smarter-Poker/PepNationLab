@@ -257,7 +257,7 @@ export default async function AgentStorefrontPage({ params }: Props) {
           ) : (
             <div style={{ textAlign: 'center', padding: 'var(--space-12) 0' }}>
               <p style={{ color: 'var(--grey-400)', marginBottom: 'var(--space-6)' }}>
-                Products are coming soon. Create an account to be notified.
+                Products Are Coming Soon. Create An Account To Be Notified.
               </p>
               <Link href={`/register?ref=${agentSlug}`} className="btn btn-primary">
                 Create Account
@@ -275,9 +275,9 @@ export default async function AgentStorefrontPage({ params }: Props) {
         marginTop: 'var(--space-12)'
       }}>
         <p style={{ fontSize: '0.75rem', color: 'var(--grey-600)' }}>
-          Powered by{' '}
+          Powered By{' '}
           <Link href="/" style={{ color: 'var(--teal)' }}>Pep Nation Lab</Link>
-          {' '}— Research Use Only. Not for human consumption.
+          {' '}— Research Use Only. Not For Human Consumption.
         </p>
       </footer>
     </div>

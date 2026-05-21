@@ -1,0 +1,689 @@
+'use client';
+
+import React, { useState } from 'react';
+import { useCart } from '@/components/CartContext';
+import Link from 'next/link';
+
+interface Profile {
+  full_name: string | null;
+  role: string;
+  tier: string | null;
+  referring_agent_id: string | null;
+}
+
+interface CheckoutFormProps {
+  userProfile: Profile;
+  userEmail: string;
+  tierMultipliers: Record<string, number>;
+}
+
+export default function CheckoutForm({ userProfile, userEmail, tierMultipliers }: CheckoutFormProps) {
+  const { cart, cartSubtotal, clearCart } = useCart();
+  const [step, setStep] = useState(1);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [orderSuccess, setOrderSuccess] = useState<string | null>(null);
+
+  // Form State
+  const [fullName, setFullName] = useState(userProfile.full_name ?? '');
+  const [street, setStreet] = useState('');
+  const [suite, setSuite] = useState('');
+  const [city, setCity] = useState('');
+  const [state, setState] = useState('');
+  const [zip, setZip] = useState('');
+  const [phone, setPhone] = useState('');
+
+  const [fulfillmentMethod, setFulfillmentMethod] = useState<'ship' | 'agent_pickup'>('ship');
+  const [paymentMethod, setPaymentMethod] = useState<'zelle' | 'cashapp' | 'venmo' | 'apple_pay'>('zelle');
+
+  // Disclaimers checkboxes
+  const [disclaimer1, setDisclaimer1] = useState(false);
+  const [disclaimer2, setDisclaimer2] = useState(false);
+  const [disclaimer3, setDisclaimer3] = useState(false);
+
+  // Compute standard weight and shipping fee on client for preview
+  const totalWeightOz = cart.reduce((acc, item) => acc + (item.weightOz ?? 0.5) * item.quantity, 0);
+
+  const calculateShippingCost = () => {
+    if (fulfillmentMethod === 'agent_pickup') return 0;
+    if (totalWeightOz <= 1.0) return 8.00;
+    if (totalWeightOz <= 4.0) return 12.00;
+    if (totalWeightOz <= 8.0) return 16.00;
+    if (totalWeightOz <= 16.0) return 20.00;
+    return 28.00;
+  };
+
+  const shippingCost = calculateShippingCost();
+  const grandTotal = cartSubtotal + shippingCost;
+
+  const handleNextStep = () => {
+    setError(null);
+    if (step === 1) {
+      if (fulfillmentMethod === 'ship') {
+        if (!fullName.trim() || !street.trim() || !city.trim() || !state.trim() || !zip.trim()) {
+          setError('All Shipping Fields Are Required For Delivery.');
+          return;
+        }
+      }
+    }
+    setStep(prev => prev + 1);
+  };
+
+  const handlePrevStep = () => {
+    setError(null);
+    setStep(prev => prev - 1);
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+
+    if (!disclaimer1 || !disclaimer2 || !disclaimer3) {
+      setError('You Must Acknowledge All Lab Research Terms Prior To Placing Order.');
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const response = await fetch('/api/orders', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          items: cart.map(item => ({ id: item.id, quantity: item.quantity })),
+          shippingAddress: fulfillmentMethod === 'ship' ? {
+            fullName,
+            street,
+            suite,
+            city,
+            state,
+            zip,
+            phone
+          } : null,
+          fulfillmentMethod,
+          paymentMethod
+        })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error ?? 'Failed To Process Order.');
+      }
+
+      setOrderSuccess(data.orderId);
+      clearCart();
+    } catch (err: any) {
+      setError(err.message ?? 'An Error Occurred While Processing Order.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Get payment handles text
+  const getPaymentDetails = () => {
+    switch (paymentMethod) {
+      case 'zelle':
+        return {
+          label: 'Zelle Payment Details',
+          handle: 'payments@pepnationlab.com',
+          instructions: 'Send Total Amount To Our Official Zelle Account: payments@pepnationlab.com. Please Include Your Order ID In Memo.'
+        };
+      case 'cashapp':
+        return {
+          label: 'Cash App Details',
+          handle: '$PepNationLab',
+          instructions: 'Send Total Amount To Our Official Cash App Handle: $PepNationLab. Please Reference Your Order ID In Memo.'
+        };
+      case 'venmo':
+        return {
+          label: 'Venmo Payment Details',
+          handle: '@PepNationLab',
+          instructions: 'Send Total Amount To Our Official Venmo Handle: @PepNationLab. Please Reference Your Order ID In Memo.'
+        };
+      case 'apple_pay':
+        return {
+          label: 'Apple Pay Details',
+          handle: 'payments@pepnationlab.com',
+          instructions: 'Send Total Amount via Apple Pay Cash To: payments@pepnationlab.com. Please Reference Your Order ID.'
+        };
+    }
+  };
+
+  if (cart.length === 0 && !orderSuccess) {
+    return (
+      <div className="container-sm section" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '60vh' }}>
+        <div className="card-metal" style={{ width: '100%', maxWidth: 500, textAlign: 'center', padding: 'var(--space-8)' }}>
+          <div style={{ color: 'var(--teal)', fontSize: '3rem', marginBottom: 'var(--space-4)' }}>🛒</div>
+          <h2 style={{ fontSize: '1.5rem', marginBottom: 'var(--space-2)' }}>Your Shopping Cart Is Empty</h2>
+          <p style={{ color: 'var(--silver)', marginBottom: 'var(--space-6)' }}>Add Research Compounds From The Catalog To Proceed.</p>
+          <Link href="/products" className="btn btn-primary">
+            Browse Catalog
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  if (orderSuccess) {
+    const payment = getPaymentDetails();
+    return (
+      <div className="container-sm section" style={{ display: 'flex', justifyContent: 'center', padding: 'var(--space-10) var(--space-4)' }}>
+        <div className="card-metal" style={{ width: '100%', maxWidth: 640, padding: 'var(--space-8)', border: '2px solid var(--teal)', boxShadow: '0 0 30px rgba(0, 196, 188, 0.2)' }}>
+          {/* Success Header */}
+          <div style={{ textAlign: 'center', marginBottom: 'var(--space-6)' }}>
+            <div style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: 72,
+              height: 72,
+              borderRadius: '50%',
+              background: 'rgba(0, 196, 188, 0.1)',
+              border: '2px solid var(--teal)',
+              color: 'var(--teal)',
+              fontSize: '2.5rem',
+              fontWeight: 'bold',
+              marginBottom: 'var(--space-4)',
+              boxShadow: 'var(--shadow-teal-sm)'
+            }}>
+              ✓
+            </div>
+            <h1 style={{ fontSize: '2rem', color: 'var(--teal)', marginBottom: 'var(--space-2)' }}>Order Placed Successfully</h1>
+            <p style={{ color: 'var(--silver)', fontSize: '0.95rem' }}>Your Research Order Has Been Registered And Is Awaiting Offline Payment.</p>
+          </div>
+
+          {/* Details Box */}
+          <div style={{ background: 'var(--surface-2)', border: '1px solid rgba(255, 255, 255, 0.05)', borderRadius: 'var(--radius-lg)', padding: 'var(--space-5)', marginBottom: 'var(--space-6)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid rgba(255, 255, 255, 0.05)', paddingBottom: 'var(--space-3)', marginBottom: 'var(--space-3)' }}>
+              <span style={{ color: 'var(--grey-400)', fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Order Identifier</span>
+              <strong style={{ color: 'var(--white)', fontFamily: 'var(--font-brand)', fontSize: '0.95rem' }}>{orderSuccess}</strong>
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid rgba(255, 255, 255, 0.05)', paddingBottom: 'var(--space-3)', marginBottom: 'var(--space-3)' }}>
+              <span style={{ color: 'var(--grey-400)', fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Payment Method</span>
+              <strong style={{ color: 'var(--white)', fontSize: '0.95rem', textTransform: 'capitalize' }}>{paymentMethod === 'cashapp' ? 'Cash App' : paymentMethod === 'apple_pay' ? 'Apple Pay' : paymentMethod}</strong>
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1.1rem' }}>
+              <span style={{ color: 'var(--grey-400)', fontWeight: 600 }}>Amount Due</span>
+              <strong style={{ color: 'var(--teal)', fontFamily: 'var(--font-brand)' }}>${grandTotal.toFixed(2)}</strong>
+            </div>
+          </div>
+
+          {/* Instructions Box */}
+          <div style={{ background: 'rgba(0, 196, 188, 0.04)', border: '1px dashed var(--teal)', borderRadius: 'var(--radius-lg)', padding: 'var(--space-5)', marginBottom: 'var(--space-8)' }}>
+            <h3 style={{ fontSize: '1rem', color: 'var(--teal)', marginBottom: 'var(--space-3)', textTransform: 'uppercase', letterSpacing: '0.05em', fontFamily: 'var(--font-brand)', display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span>⚡</span> {payment.label}
+            </h3>
+            <div style={{ fontSize: '1.25rem', fontFamily: 'var(--font-brand)', color: 'var(--white)', letterSpacing: '0.05em', background: 'var(--surface-3)', padding: 'var(--space-3)', borderRadius: 'var(--radius-sm)', border: '1px solid rgba(255, 255, 255, 0.1)', textAlign: 'center', marginBottom: 'var(--space-3)' }}>
+              {payment.handle}
+            </div>
+            <p style={{ color: 'var(--silver-light)', fontSize: '0.88rem', margin: 0, lineHeight: 1.6 }}>
+              {payment.instructions}
+            </p>
+          </div>
+
+          {/* Warning disclaimer */}
+          <div style={{ borderLeft: '3px solid var(--red)', background: 'var(--red-bg)', padding: 'var(--space-4)', borderRadius: '0 var(--radius-md) var(--radius-md) 0', marginBottom: 'var(--space-6)' }}>
+            <h4 style={{ color: 'var(--red)', fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 4, fontFamily: 'var(--font-brand)' }}>Strict Legal Reminder</h4>
+            <p style={{ color: 'var(--silver-light)', fontSize: '0.78rem', margin: 0, lineHeight: 1.5 }}>
+              All Products Purchased Are Restrictively Designated For Laboratory Experimentation And Chemical Analysis Only. Any Therapeutic Use Or Human Consumption Is Stringently Prohibited.
+            </p>
+          </div>
+
+          {/* Action Button */}
+          <div style={{ textAlign: 'center' }}>
+            <Link href="/products" className="btn btn-primary" style={{ minWidth: 200 }}>
+              Return To Catalog
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="container section" style={{ maxWidth: 1000 }}>
+      {/* Page Header */}
+      <div style={{ marginBottom: 'var(--space-8)', textAlign: 'center' }}>
+        <h1 style={{ fontSize: '2.2rem', color: 'var(--white)', marginBottom: 'var(--space-2)' }}>Secure Order Checkout</h1>
+        <p style={{ color: 'var(--silver)' }}>Complete Your Compliance Steps To Register Your Research Request.</p>
+      </div>
+
+      {/* Stepper progress */}
+      <div style={{ display: 'flex', justifyContent: 'center', gap: 'var(--space-2)', marginBottom: 'var(--space-8)' }}>
+        {[
+          { num: 1, label: 'Fulfillment' },
+          { num: 2, label: 'Billing' },
+          { num: 3, label: 'Compliance' }
+        ].map((s) => (
+          <div key={s.num} style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+            <div style={{
+              width: 32,
+              height: 32,
+              borderRadius: '50%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontWeight: 'bold',
+              fontFamily: 'var(--font-brand)',
+              fontSize: '0.88rem',
+              background: step === s.num ? 'var(--teal)' : step > s.num ? 'rgba(0, 196, 188, 0.15)' : 'var(--surface-3)',
+              color: step === s.num ? 'var(--black)' : step > s.num ? 'var(--teal)' : 'var(--silver-dark)',
+              border: step >= s.num ? '1px solid var(--teal)' : '1px solid rgba(255, 255, 255, 0.05)',
+              boxShadow: step === s.num ? 'var(--shadow-teal-sm)' : 'none',
+              transition: 'all 0.3s ease'
+            }}>
+              {s.num}
+            </div>
+            <span style={{
+              fontSize: '0.85rem',
+              fontWeight: 600,
+              fontFamily: 'var(--font-brand)',
+              color: step === s.num ? 'var(--teal)' : step > s.num ? 'var(--white)' : 'var(--silver-dark)',
+              letterSpacing: '0.05em',
+              textTransform: 'uppercase'
+            }}>
+              {s.label}
+            </span>
+            {s.num < 3 && (
+              <div style={{ width: 40, height: 1, background: step > s.num ? 'var(--teal)' : 'rgba(255, 255, 255, 0.1)', margin: '0 8px' }} />
+            )}
+          </div>
+        ))}
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: 'var(--space-8)' }}>
+        {/* Main Form Area */}
+        <div className="card-metal" style={{ padding: 'var(--space-6)' }}>
+          {error && (
+            <div style={{ borderLeft: '3px solid var(--red)', background: 'var(--red-bg)', padding: 'var(--space-4)', borderRadius: '0 var(--radius-md) var(--radius-md) 0', marginBottom: 'var(--space-6)', display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
+              <span style={{ color: 'var(--red)', fontWeight: 'bold' }}>⚠️</span>
+              <p style={{ color: 'var(--red)', fontSize: '0.85rem', margin: 0, fontWeight: 500 }}>{error}</p>
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit}>
+            {/* STEP 1: Fulfillment & Address */}
+            {step === 1 && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
+                <div>
+                  <h3 style={{ color: 'var(--teal)', fontSize: '1.2rem', marginBottom: 'var(--space-4)', borderBottom: '1px solid rgba(255, 255, 255, 0.05)', paddingBottom: 'var(--space-2)' }}>
+                    Fulfillment Method
+                  </h3>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-4)' }}>
+                    <label style={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: 4,
+                      padding: 'var(--space-4)',
+                      borderRadius: 'var(--radius-lg)',
+                      background: fulfillmentMethod === 'ship' ? 'rgba(0, 196, 188, 0.06)' : 'var(--surface-2)',
+                      border: fulfillmentMethod === 'ship' ? '2px solid var(--teal)' : '1px solid rgba(255, 255, 255, 0.05)',
+                      cursor: 'pointer',
+                      boxShadow: fulfillmentMethod === 'ship' ? 'var(--shadow-teal-sm)' : 'none',
+                      transition: 'all 0.25s ease'
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <input
+                          type="radio"
+                          name="fulfillmentMethod"
+                          checked={fulfillmentMethod === 'ship'}
+                          onChange={() => setFulfillmentMethod('ship')}
+                          style={{ accentColor: 'var(--teal)' }}
+                        />
+                        <strong style={{ color: 'var(--white)', fontSize: '0.95rem' }}>Ship Delivery</strong>
+                      </div>
+                      <span style={{ fontSize: '0.78rem', color: 'var(--grey-400)', paddingLeft: 22 }}>
+                        Shipped Securely By USPS/UPS With Dynamic Weight Shipping Fees.
+                      </span>
+                    </label>
+
+                    <label style={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: 4,
+                      padding: 'var(--space-4)',
+                      borderRadius: 'var(--radius-lg)',
+                      background: fulfillmentMethod === 'agent_pickup' ? 'rgba(0, 196, 188, 0.06)' : 'var(--surface-2)',
+                      border: fulfillmentMethod === 'agent_pickup' ? '2px solid var(--teal)' : '1px solid rgba(255, 255, 255, 0.05)',
+                      cursor: 'pointer',
+                      boxShadow: fulfillmentMethod === 'agent_pickup' ? 'var(--shadow-teal-sm)' : 'none',
+                      transition: 'all 0.25s ease'
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <input
+                          type="radio"
+                          name="fulfillmentMethod"
+                          checked={fulfillmentMethod === 'agent_pickup'}
+                          onChange={() => setFulfillmentMethod('agent_pickup')}
+                          style={{ accentColor: 'var(--teal)' }}
+                        />
+                        <strong style={{ color: 'var(--white)', fontSize: '0.95rem' }}>Agent Pickup</strong>
+                      </div>
+                      <span style={{ fontSize: '0.78rem', color: 'var(--grey-400)', paddingLeft: 22 }}>
+                        Zero Cost Hand-Off. Must Coordinate Directly With Referring Representative.
+                      </span>
+                    </label>
+                  </div>
+                </div>
+
+                {fulfillmentMethod === 'ship' && (
+                  <div>
+                    <h3 style={{ color: 'var(--teal)', fontSize: '1.2rem', marginBottom: 'var(--space-4)', borderBottom: '1px solid rgba(255, 255, 255, 0.05)', paddingBottom: 'var(--space-2)' }}>
+                      Shipping Delivery Address
+                    </h3>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
+                      <div className="form-group">
+                        <label className="form-label">Full Name</label>
+                        <input
+                          type="text"
+                          className="form-input"
+                          placeholder="First And Last Name"
+                          value={fullName}
+                          onChange={(e) => setFullName(e.target.value)}
+                        />
+                      </div>
+
+                      <div className="grid-2">
+                        <div className="form-group">
+                          <label className="form-label">Street Address</label>
+                          <input
+                            type="text"
+                            className="form-input"
+                            placeholder="123 Lab Street"
+                            value={street}
+                            onChange={(e) => setStreet(e.target.value)}
+                          />
+                        </div>
+                        <div className="form-group">
+                          <label className="form-label">Suite Or Apartment</label>
+                          <input
+                            type="text"
+                            className="form-input"
+                            placeholder="Suite 404 (Optional)"
+                            value={suite}
+                            onChange={(e) => setSuite(e.target.value)}
+                          />
+                        </div>
+                      </div>
+
+                      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', gap: 'var(--space-4)' }}>
+                        <div className="form-group">
+                          <label className="form-label">City</label>
+                          <input
+                            type="text"
+                            className="form-input"
+                            placeholder="Science City"
+                            value={city}
+                            onChange={(e) => setCity(e.target.value)}
+                          />
+                        </div>
+                        <div className="form-group">
+                          <label className="form-label">State</label>
+                          <input
+                            type="text"
+                            className="form-input"
+                            placeholder="CA"
+                            maxLength={2}
+                            value={state}
+                            onChange={(e) => setState(e.target.value.toUpperCase())}
+                          />
+                        </div>
+                        <div className="form-group">
+                          <label className="form-label">Zip Code</label>
+                          <input
+                            type="text"
+                            className="form-input"
+                            placeholder="90210"
+                            value={zip}
+                            onChange={(e) => setZip(e.target.value)}
+                          />
+                        </div>
+                      </div>
+
+                      <div className="form-group">
+                        <label className="form-label">Phone Number</label>
+                        <input
+                          type="text"
+                          className="form-input"
+                          placeholder="123-456-7890 (For Shipping Updates)"
+                          value={phone}
+                          onChange={(e) => setPhone(e.target.value)}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {fulfillmentMethod === 'agent_pickup' && (
+                  <div style={{ background: 'rgba(0, 196, 188, 0.03)', border: '1px solid rgba(0, 196, 188, 0.2)', borderRadius: 'var(--radius-lg)', padding: 'var(--space-5)' }}>
+                    <h4 style={{ color: 'var(--teal)', fontSize: '0.95rem', marginBottom: 'var(--space-2)', fontFamily: 'var(--font-brand)' }}>Agent Hand-Off Confirmation</h4>
+                    <p style={{ fontSize: '0.85rem', color: 'var(--silver-light)', margin: 0, lineHeight: 1.6 }}>
+                      You Have Opted For Manual In-Person Pickup. No Package Shipping Fee Will Be Charged.
+                      Please Arrange Coordinates With Your Local Partner Following Order Placement.
+                    </p>
+                  </div>
+                )}
+
+                <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 'var(--space-4)' }}>
+                  <button type="button" onClick={handleNextStep} className="btn btn-primary" style={{ minWidth: 150 }}>
+                    Continue To Payment
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* STEP 2: Payment Details */}
+            {step === 2 && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
+                <div>
+                  <h3 style={{ color: 'var(--teal)', fontSize: '1.2rem', marginBottom: 'var(--space-4)', borderBottom: '1px solid rgba(255, 255, 255, 0.05)', paddingBottom: 'var(--space-2)' }}>
+                    Billing Offline Payment Method
+                  </h3>
+                  <p style={{ color: 'var(--silver-light)', fontSize: '0.85rem', marginBottom: 'var(--space-4)', lineHeight: 1.5 }}>
+                    Select Your Preferred Offline Channel To Finalize Cash Settlement. Our Staff Will Release Your Lab Experimentation Order Instantly Upon Verifying Receipt.
+                  </p>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-4)' }}>
+                    {[
+                      { id: 'zelle', name: 'Zelle Payment', desc: 'Instant Direct Transfer. Fastest Processing.' },
+                      { id: 'cashapp', name: 'Cash App', desc: 'Secure Mobile Check. Handled Manually.' },
+                      { id: 'venmo', name: 'Venmo Payment', desc: 'Social Transfer. Manual Clearance.' },
+                      { id: 'apple_pay', name: 'Apple Pay', desc: 'Secure Contactless Flow. Fast Settlement.' }
+                    ].map((p) => (
+                      <label key={p.id} style={{
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: 4,
+                        padding: 'var(--space-4)',
+                        borderRadius: 'var(--radius-lg)',
+                        background: paymentMethod === p.id ? 'rgba(0, 196, 188, 0.06)' : 'var(--surface-2)',
+                        border: paymentMethod === p.id ? '2px solid var(--teal)' : '1px solid rgba(255, 255, 255, 0.05)',
+                        cursor: 'pointer',
+                        boxShadow: paymentMethod === p.id ? 'var(--shadow-teal-sm)' : 'none',
+                        transition: 'all 0.25s ease'
+                      }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                          <input
+                            type="radio"
+                            name="paymentMethod"
+                            checked={paymentMethod === p.id}
+                            onChange={() => setPaymentMethod(p.id as any)}
+                            style={{ accentColor: 'var(--teal)' }}
+                          />
+                          <strong style={{ color: 'var(--white)', fontSize: '0.95rem' }}>{p.name}</strong>
+                        </div>
+                        <span style={{ fontSize: '0.78rem', color: 'var(--grey-400)', paddingLeft: 22 }}>
+                          {p.desc}
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
+                <div style={{ background: 'rgba(255, 255, 255, 0.02)', border: '1px solid rgba(255, 255, 255, 0.05)', borderRadius: 'var(--radius-lg)', padding: 'var(--space-5)' }}>
+                  <h4 style={{ color: 'var(--silver-light)', fontSize: '0.88rem', marginBottom: 'var(--space-2)' }}>Payment Process Notice</h4>
+                  <p style={{ fontSize: '0.78rem', color: 'var(--grey-400)', margin: 0, lineHeight: 1.5 }}>
+                    Your Checkout Complete Order ID Will Be Displayed Following Submission. Simply Complete Payment Settlement via The Listed Handle And Input Your Order ID In The Payment Reference.
+                  </p>
+                </div>
+
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 'var(--space-4)' }}>
+                  <button type="button" onClick={handlePrevStep} className="btn btn-secondary" style={{ minWidth: 150 }}>
+                    Back
+                  </button>
+                  <button type="button" onClick={handleNextStep} className="btn btn-primary" style={{ minWidth: 150 }}>
+                    Continue To Terms
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* STEP 3: Disclaimers & Submit */}
+            {step === 3 && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
+                <div>
+                  <h3 style={{ color: 'var(--red)', fontSize: '1.2rem', marginBottom: 'var(--space-4)', borderBottom: '1px solid rgba(229, 62, 62, 0.2)', paddingBottom: 'var(--space-2)', fontFamily: 'var(--font-brand)' }}>
+                    Compliance Research Agreement
+                  </h3>
+                  <p style={{ color: 'var(--silver-light)', fontSize: '0.85rem', marginBottom: 'var(--space-6)', lineHeight: 1.6 }}>
+                    Please Review And Attest To All Compliance Agreements Below. Your Strict Lab Affirmations Are Stored In Audited Database Ledgers For Mandatory Safety Protocols.
+                  </p>
+
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-5)' }}>
+                    <label className="form-checkbox" style={{ padding: 'var(--space-3)', background: 'var(--surface-2)', border: '1px solid rgba(255, 255, 255, 0.05)', borderRadius: 'var(--radius-md)' }}>
+                      <input
+                        type="checkbox"
+                        checked={disclaimer1}
+                        onChange={(e) => setDisclaimer1(e.target.checked)}
+                      />
+                      <span style={{ fontSize: '0.82rem', color: 'var(--silver-light)', lineHeight: 1.5 }}>
+                        I Acknowledge That All Products Ordered Are Intended For Lab Research Use Only.
+                      </span>
+                    </label>
+
+                    <label className="form-checkbox" style={{ padding: 'var(--space-3)', background: 'var(--surface-2)', border: '1px solid rgba(255, 255, 255, 0.05)', borderRadius: 'var(--radius-md)' }}>
+                      <input
+                        type="checkbox"
+                        checked={disclaimer2}
+                        onChange={(e) => setDisclaimer2(e.target.checked)}
+                      />
+                      <span style={{ fontSize: '0.82rem', color: 'var(--silver-light)', lineHeight: 1.5 }}>
+                        I Understand That These Compounds Are Not Approved For Human Ingestion Or Consumption.
+                      </span>
+                    </label>
+
+                    <label className="form-checkbox" style={{ padding: 'var(--space-3)', background: 'var(--surface-2)', border: '1px solid rgba(255, 255, 255, 0.05)', borderRadius: 'var(--radius-md)' }}>
+                      <input
+                        type="checkbox"
+                        checked={disclaimer3}
+                        onChange={(e) => setDisclaimer3(e.target.checked)}
+                      />
+                      <span style={{ fontSize: '0.82rem', color: 'var(--silver-light)', lineHeight: 1.5 }}>
+                        I Certify That The Research Facility Meets All Necessary Safety And Compliance Standards.
+                      </span>
+                    </label>
+                  </div>
+                </div>
+
+                <div style={{ borderLeft: '3px solid var(--red)', background: 'var(--red-bg)', padding: 'var(--space-4)', borderRadius: '0 var(--radius-md) var(--radius-md) 0' }}>
+                  <h4 style={{ color: 'var(--red)', fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 4, fontFamily: 'var(--font-brand)' }}>Binding Attestation</h4>
+                  <p style={{ color: 'var(--silver-light)', fontSize: '0.78rem', margin: 0, lineHeight: 1.5 }}>
+                    Acceptance Of These Agreements Digitally Validates Your Institutional Consent. False Audits May Result In Restrictive Ban Of Profile Access To All Catalog Inventory.
+                  </p>
+                </div>
+
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 'var(--space-4)' }}>
+                  <button type="button" onClick={handlePrevStep} className="btn btn-secondary" style={{ minWidth: 150 }} disabled={loading}>
+                    Back
+                  </button>
+                  <button type="submit" className="btn btn-primary" style={{ minWidth: 180, display: 'flex', alignItems: 'center', justifyContent: 'center' }} disabled={loading}>
+                    {loading ? (
+                      <span style={{ display: 'inline-block', width: 16, height: 16, border: '2px solid var(--black)', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
+                    ) : (
+                      'Place Research Order'
+                    )}
+                  </button>
+                </div>
+              </div>
+            )}
+          </form>
+        </div>
+
+        {/* Sidebar Summary Area */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
+          {/* Order Summary */}
+          <div className="card-metal" style={{ padding: 'var(--space-5)' }}>
+            <h3 style={{ fontSize: '0.95rem', color: 'var(--white)', marginBottom: 'var(--space-4)', borderBottom: '1px solid rgba(255, 255, 255, 0.05)', paddingBottom: 'var(--space-2)', letterSpacing: '0.05em', textTransform: 'uppercase' }}>
+              Order Inventory
+            </h3>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)', maxHeight: 220, overflowY: 'auto', paddingRight: 4, marginBottom: 'var(--space-4)' }}>
+              {cart.map(item => (
+                <div key={item.id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem' }}>
+                  <div style={{ flexGrow: 1, paddingRight: 'var(--space-3)' }}>
+                    <span style={{ color: 'var(--white)', fontWeight: 500 }}>{item.name}</span>
+                    <div style={{ color: 'var(--grey-400)', fontSize: '0.72rem' }}>Qty: {item.quantity}</div>
+                  </div>
+                  <strong style={{ color: 'var(--silver-light)', whiteSpace: 'nowrap' }}>
+                    ${(item.costPrice * item.quantity).toFixed(2)}
+                  </strong>
+                </div>
+              ))}
+            </div>
+
+            <div style={{ borderTop: '1px solid rgba(255, 255, 255, 0.05)', paddingTop: 'var(--space-3)', display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem' }}>
+                <span style={{ color: 'var(--grey-400)' }}>Items Subtotal</span>
+                <strong style={{ color: 'var(--white)' }}>${cartSubtotal.toFixed(2)}</strong>
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem' }}>
+                <span style={{ color: 'var(--grey-400)' }}>Weight Shipping</span>
+                {fulfillmentMethod === 'ship' ? (
+                  <strong style={{ color: 'var(--white)' }}>${shippingCost.toFixed(2)}</strong>
+                ) : (
+                  <strong style={{ color: 'var(--teal)' }}>Free Pickup</strong>
+                )}
+              </div>
+
+              {fulfillmentMethod === 'ship' && (
+                <div style={{ fontSize: '0.7rem', color: 'var(--grey-400)', textAlign: 'right', marginTop: -4 }}>
+                  Total Weight: {totalWeightOz.toFixed(1)} Oz
+                </div>
+              )}
+
+              <div style={{ borderTop: '1px solid rgba(255, 255, 255, 0.05)', paddingTop: 'var(--space-3)', display: 'flex', justifyContent: 'space-between', fontSize: '1.05rem', marginTop: 'var(--space-1)' }}>
+                <span style={{ color: 'var(--white)', fontWeight: 600 }}>Total Due</span>
+                <strong style={{ color: 'var(--teal)', fontFamily: 'var(--font-brand)' }}>
+                  ${grandTotal.toFixed(2)}
+                </strong>
+              </div>
+            </div>
+          </div>
+
+          {/* Secure Card Shield */}
+          <div style={{ background: 'var(--surface-2)', border: '1px solid rgba(255, 255, 255, 0.03)', borderRadius: 'var(--radius-lg)', padding: 'var(--space-4)', display: 'flex', alignItems: 'flex-start', gap: 'var(--space-3)' }}>
+            <span style={{ fontSize: '1.25rem', color: 'var(--teal)' }}>🛡️</span>
+            <div>
+              <h4 style={{ fontSize: '0.78rem', color: 'var(--white)', marginBottom: 2, fontFamily: 'var(--font-brand)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Encrypted Ledger Transact</h4>
+              <p style={{ fontSize: '0.7rem', color: 'var(--grey-400)', margin: 0, lineHeight: 1.4 }}>
+                All Catalog Registrations Are Processed With Cryptographic Integrity In Compliance With Private Bio-Science Regulations.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <style>{`
+        @keyframes spin {
+          to { transform: rotate(360deg); }
+        }
+      `}</style>
+    </div>
+  );
+}

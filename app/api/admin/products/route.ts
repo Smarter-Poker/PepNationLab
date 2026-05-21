@@ -1,11 +1,37 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
 
+export async function GET(req: NextRequest) {
+  const supabase = await createServiceClient();
+  const { searchParams } = new URL(req.url);
+  const id = searchParams.get('id');
+
+  if (!id) {
+    return NextResponse.json({ error: 'Product ID Required' }, { status: 400 });
+  }
+
+  const { data, error } = await supabase
+    .from('products')
+    .select('*')
+    .eq('id', id)
+    .single();
+
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 404 });
+  }
+
+  return NextResponse.json(data);
+}
+
 export async function POST(req: NextRequest) {
   const supabase = await createServiceClient();
   const body = await req.json();
 
-  const { name, sku, category, description, base_cost, unit_size, unit_measure, in_stock, is_active } = body;
+  const {
+    name, sku, category, description, base_cost,
+    unit_size, unit_measure, is_active,
+    inventory_count, low_stock_threshold, backorder_days,
+  } = body;
 
   if (!name || !base_cost) {
     return NextResponse.json({ error: 'Name And Base Cost Are Required' }, { status: 400 });
@@ -24,7 +50,10 @@ export async function POST(req: NextRequest) {
       base_cost,
       unit_size: unit_size || null,
       unit_measure: unit_measure || 'mg',
-      in_stock: in_stock ?? true,
+      // in_stock is managed by DB trigger (sync_product_stock_status) — derived from inventory_count
+      inventory_count: inventory_count ?? 0,
+      low_stock_threshold: low_stock_threshold ?? 5,
+      backorder_days: backorder_days ?? 14,
       is_active: is_active ?? true,
     })
     .select('id')

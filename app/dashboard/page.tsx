@@ -12,10 +12,10 @@ export default async function DashboardPage({
 
   if (!user) redirect('/login');
 
-  // Get profile
+  // Get profile — includes disclaimer acceptance status
   const { data: profile } = await supabase
     .from('profiles')
-    .select('full_name, role, tier, prepaid_balance, credit_limit, account_type')
+    .select('full_name, role, tier, prepaid_balance, credit_limit, account_type, disclaimer_v1_accepted')
     .eq('id', user.id)
     .single();
 
@@ -152,7 +152,10 @@ export default async function DashboardPage({
             <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
                 <span style={{ color: 'var(--grey-400)' }}>Disclaimer</span>
-                <span className="badge badge-teal" style={{ fontSize: '0.65rem' }}>✓ Accepted</span>
+                {profile?.disclaimer_v1_accepted
+                  ? <span className="badge badge-teal" style={{ fontSize: '0.65rem' }}>✓ Accepted</span>
+                  : <span className="badge badge-red" style={{ fontSize: '0.65rem' }}>Pending</span>
+                }
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
                 <span style={{ color: 'var(--grey-400)' }}>Account Role</span>
@@ -175,7 +178,7 @@ export default async function DashboardPage({
                 <p style={{ fontSize: '0.78rem', color: 'var(--grey-400)', margin: 0 }}>
                   Want better pricing?{' '}
                   <Link href="/become-agent" style={{ color: 'var(--teal)' }}>
-                    Apply to become an agent →
+                   Apply To Become An Agent →
                   </Link>
                 </p>
               </div>

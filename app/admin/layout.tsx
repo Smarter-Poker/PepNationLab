@@ -83,9 +83,17 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           <div style={{ fontSize: '0.82rem', color: 'var(--silver)', marginBottom: 'var(--space-3)' }}>
             {profile?.full_name ?? user.email}
           </div>
-          <Link href="/dashboard" style={{ fontSize: '0.78rem', color: 'var(--teal)' }}>
+          <Link href="/dashboard" style={{ fontSize: '0.78rem', color: 'var(--teal)', display: 'block', marginBottom: 'var(--space-2)' }}>
             ← Back To Dashboard
           </Link>
+          <form action="/api/auth/signout" method="POST">
+            <button type="submit" style={{
+              fontSize: '0.75rem', color: 'var(--grey-400)',
+              background: 'none', border: 'none', cursor: 'pointer', padding: 0
+            }}>
+              Sign Out
+            </button>
+          </form>
         </div>
       </aside>
 

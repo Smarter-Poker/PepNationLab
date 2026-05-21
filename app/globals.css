@@ -679,12 +679,14 @@ a:hover { color: var(--teal-dark); }
    TITLE CASE — HARD PLATFORM RULE
    First letter of every word MUST be capitalized
    across all PepNationLab user-facing elements.
-   CSS layer as backup; source text must also be
-   written in Title Case.
+
+   ⚠ WARNING: Do NOT apply text-transform:capitalize to h1-h6.
+   CSS capitalize lowercases then re-capitalizes, which corrupts
+   compound names: BPC-157 → "Bpc-157", TB-500 → "Tb-500".
+   Headings MUST be written correctly in source code.
    ============================================ */
 
-h1, h2, h3, h4, h5, h6 { text-transform: capitalize; }
-
+/* Safe elements — no scientific content */
 .btn              { text-transform: capitalize; }
 .badge            { text-transform: uppercase; letter-spacing: 0.06em; }
 .form-label       { text-transform: capitalize; letter-spacing: 0.03em; }

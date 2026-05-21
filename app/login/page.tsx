@@ -1,12 +1,13 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 
-export default function LoginPage() {
+function LoginPageInner() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -26,7 +27,9 @@ export default function LoginPage() {
       return;
     }
 
-    router.push('/dashboard');
+    // Honor the redirect param set by middleware when bouncing protected routes
+    const redirectTo = searchParams.get('redirect') ?? '/dashboard';
+    router.push(redirectTo);
     router.refresh();
   }
 
@@ -106,7 +109,7 @@ export default function LoginPage() {
               />
             </div>
 
-            <div style={{ textAlign: 'right', marginBottom: 'var(--space-6)', marginTop: '-var(--space-2)' }}>
+            <div style={{ textAlign: 'right', marginBottom: 'var(--space-6)', marginTop: 'var(--space-2)' }}>
               <Link href="/forgot-password" style={{ fontSize: '0.8rem', color: 'var(--teal)' }}>
                 Forgot Password?
               </Link>
@@ -149,5 +152,19 @@ export default function LoginPage() {
         </p>
       </div>
     </div>
+  );
+}
+
+// Suspense wrapper required for useSearchParams() in Next.js App Router
+export default function LoginPage() {
+  return (
+    <Suspense fallback={
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--black)' }}>
+        <div style={{ width: 40, height: 40, borderRadius: '50%', border: '2px solid var(--teal)', borderTopColor: 'transparent', animation: 'spin 0.8s linear infinite' }} />
+        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      </div>
+    }>
+      <LoginPageInner />
+    </Suspense>
   );
 }

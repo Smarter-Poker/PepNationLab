@@ -1,7 +1,7 @@
-import { createClient } from '@/lib/supabase/server';
+import { createServiceClient } from '@/lib/supabase/server';
 
 export default async function AdminDashboard() {
-  const supabase = await createClient();
+  const supabase = await createServiceClient();
 
   // Parallel stats queries
   const [

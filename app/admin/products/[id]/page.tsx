@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 
 const CATEGORIES = [
@@ -13,15 +13,20 @@ const CATEGORIES = [
   'Other',
 ];
 
-export default function NewProductPage() {
+export default function EditProductPage() {
   const router = useRouter();
-  const [loading, setLoading] = useState(false);
+  const params = useParams();
+  const id = params.id as string;
+
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [multipliers, setMultipliers] = useState<Record<string, number>>({
     tier_1: 5.0,
     tier_2: 6.0,
     tier_3: 7.0,
   });
+
   const [form, setForm] = useState({
     name: '',
     sku: '',
@@ -36,8 +41,11 @@ export default function NewProductPage() {
     is_active: true,
   });
 
-  // Fetch real multipliers from DB on mount
+  // Fetch real multipliers and product details on mount
   useEffect(() => {
+    if (!id) return;
+
+    // 1. Fetch Multipliers
     fetch('/api/admin/pricing-tiers')
       .then(r => r.json())
       .then(data => {
@@ -49,8 +57,38 @@ export default function NewProductPage() {
           setMultipliers(m);
         }
       })
-      .catch(() => {/* keep defaults on error */});
-  }, []);
+      .catch(() => {/* Keep Defaults On Error */});
+
+    // 2. Fetch Product Info
+    fetch(`/api/admin/products?id=${id}`)
+      .then(async r => {
+        if (!r.ok) {
+          const data = await r.json();
+          throw new Error(data.error ?? 'Failed To Fetch Product Details');
+        }
+        return r.json();
+      })
+      .then(product => {
+        setForm({
+          name: product.name || '',
+          sku: product.sku || '',
+          category: product.category || 'Peptides',
+          description: product.description || '',
+          base_cost: product.base_cost !== undefined ? String(product.base_cost) : '',
+          unit_size: product.unit_size !== undefined ? String(product.unit_size) : '',
+          unit_measure: product.unit_measure || 'mg',
+          inventory_count: product.inventory_count !== undefined ? String(product.inventory_count) : '0',
+          low_stock_threshold: product.low_stock_threshold !== undefined ? String(product.low_stock_threshold) : '5',
+          backorder_days: product.backorder_days !== undefined ? String(product.backorder_days) : '14',
+          is_active: product.is_active ?? true,
+        });
+        setLoading(false);
+      })
+      .catch(err => {
+        setError(err.message ?? 'An Error Occurred While Loading Product Details');
+        setLoading(false);
+      });
+  }, [id]);
 
   function set(field: string, val: string | boolean) {
     setForm(prev => ({ ...prev, [field]: val }));
@@ -59,29 +97,46 @@ export default function NewProductPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError('');
-    setLoading(true);
+    setSaving(true);
 
     const res = await fetch('/api/admin/products', {
-      method: 'POST',
+      method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        ...form,
+        id,
+        name: form.name,
+        sku: form.sku || null,
+        category: form.category,
+        description: form.description || null,
         base_cost: parseFloat(form.base_cost),
+        unit_size: form.unit_size || null,
+        unit_measure: form.unit_measure,
         inventory_count: parseInt(form.inventory_count, 10) || 0,
         low_stock_threshold: parseInt(form.low_stock_threshold, 10) || 5,
         backorder_days: parseInt(form.backorder_days, 10) || 14,
+        is_active: form.is_active,
       }),
     });
 
     const data = await res.json();
     if (!res.ok) {
       setError(data.error ?? 'Failed To Save Product');
-      setLoading(false);
+      setSaving(false);
       return;
     }
 
     router.push('/admin/products');
     router.refresh();
+  }
+
+  if (loading) {
+    return (
+      <div style={{ padding: 'var(--space-12)', textAlign: 'center' }}>
+        <p style={{ color: 'var(--teal)', fontSize: '1.1rem', fontWeight: 600 }}>
+          Loading Product Details...
+        </p>
+      </div>
+    );
   }
 
   const baseCost = parseFloat(form.base_cost);
@@ -95,7 +150,7 @@ export default function NewProductPage() {
           ← Products
         </Link>
         <h1 style={{ fontSize: '1.4rem' }}>
-          Add New <span style={{ color: 'var(--teal)' }}>Product</span>
+          Edit <span style={{ color: 'var(--teal)' }}>Product</span>
         </h1>
       </div>
 
@@ -136,7 +191,7 @@ export default function NewProductPage() {
 
           <div className="form-group">
             <label className="form-label" htmlFor="description">Description</label>
-            <textarea id="description" className="form-input" placeholder="Research compound description..."
+            <textarea id="description" className="form-input" placeholder="Research Compound Description..."
               value={form.description} onChange={e => set('description', e.target.value)}
               rows={4} style={{ resize: 'vertical' }} />
           </div>
@@ -309,9 +364,9 @@ export default function NewProductPage() {
 
         {/* ── Submit ── */}
         <div style={{ display: 'flex', gap: 'var(--space-4)' }}>
-          <button type="submit" className="btn btn-primary" disabled={loading}
-            style={{ opacity: loading ? 0.7 : 1 }}>
-            {loading ? 'Saving Product...' : 'Save Product'}
+          <button type="submit" className="btn btn-primary" disabled={saving}
+            style={{ opacity: saving ? 0.7 : 1 }}>
+            {saving ? 'Saving Product...' : 'Save Product'}
           </button>
           <Link href="/admin/products" className="btn btn-secondary">
             Cancel
