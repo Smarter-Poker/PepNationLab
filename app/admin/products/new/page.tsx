@@ -116,12 +116,12 @@ export default function NewProductPage() {
           <div className="grid-2" style={{ gap: 'var(--space-4)', marginBottom: 'var(--space-4)' }}>
             <div className="form-group">
               <label className="form-label" htmlFor="name">Product Name</label>
-              <input id="name" type="text" className="form-input" placeholder="e.g. BPC-157"
+              <input id="name" type="text" className="form-input" placeholder="E.g. BPC-157"
                 value={form.name} onChange={e => set('name', e.target.value)} required />
             </div>
             <div className="form-group">
               <label className="form-label" htmlFor="sku">SKU</label>
-              <input id="sku" type="text" className="form-input" placeholder="e.g. BPC-157-5MG"
+              <input id="sku" type="text" className="form-input" placeholder="E.g. BPC-157-5MG"
                 value={form.sku} onChange={e => set('sku', e.target.value)} />
             </div>
           </div>
@@ -136,7 +136,7 @@ export default function NewProductPage() {
 
           <div className="form-group">
             <label className="form-label" htmlFor="description">Description</label>
-            <textarea id="description" className="form-input" placeholder="Research compound description..."
+            <textarea id="description" className="form-input" placeholder="Research Compound Description..."
               value={form.description} onChange={e => set('description', e.target.value)}
               rows={4} style={{ resize: 'vertical' }} />
           </div>
@@ -173,7 +173,7 @@ export default function NewProductPage() {
             <div className="grid-2" style={{ gap: 'var(--space-3)', alignSelf: 'start' }}>
               <div className="form-group">
                 <label className="form-label" htmlFor="unit_size">Unit Size</label>
-                <input id="unit_size" type="text" className="form-input" placeholder="e.g. 5"
+                <input id="unit_size" type="text" className="form-input" placeholder="E.g. 5"
                   value={form.unit_size} onChange={e => set('unit_size', e.target.value)} />
               </div>
               <div className="form-group">

@@ -29,6 +29,19 @@ interface Profile {
   agent_profiles: AgentProfile[] | AgentProfile | null;
 }
 
+const ROLE_LABELS: Record<string, string> = {
+  researcher: 'Researcher',
+  agent: 'Agent',
+  super_agent: 'Super Agent',
+  admin: 'Admin',
+};
+
+const TIER_LABELS: Record<string, string> = {
+  tier_1: 'Tier 1',
+  tier_2: 'Tier 2',
+  tier_3: 'Tier 3',
+};
+
 export default function ResearchersAdminPage() {
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [loading, setLoading] = useState(true);
@@ -326,7 +339,7 @@ export default function ResearchersAdminPage() {
                         color: profile.role === 'admin' ? 'var(--red)' : profile.role === 'super_agent' ? '#D69E2E' : 'var(--teal)',
                         borderColor: profile.role === 'admin' ? 'var(--red)' : profile.role === 'super_agent' ? '#D69E2E' : 'var(--teal)',
                       }}>
-                        {profile.role.replace('_', ' ')}
+                        {ROLE_LABELS[profile.role] ?? profile.role}
                       </span>
                       {ap?.slug && (
                         <span style={{ fontSize: '0.78rem', color: 'var(--grey-400)' }}>
@@ -353,7 +366,7 @@ export default function ResearchersAdminPage() {
                       <div>
                         <div style={{ fontSize: '0.72rem', color: 'var(--grey-500)', textTransform: 'uppercase' }}>Pricing Tier</div>
                         <div style={{ fontSize: '0.84rem', fontWeight: 600, color: 'var(--silver)', textTransform: 'capitalize' }}>
-                          {profile.tier ? profile.tier.replace('_', ' ') : 'None'}
+                          {profile.tier ? (TIER_LABELS[profile.tier] ?? profile.tier) : 'None'}
                         </div>
                       </div>
                       <div>
@@ -485,7 +498,7 @@ export default function ResearchersAdminPage() {
                       <input
                         type="number"
                         className="form-input"
-                        placeholder="e.g. 5000"
+                        placeholder="E.g. 5000"
                         value={formCreditLimit}
                         onChange={e => setFormCreditLimit(e.target.value)}
                         required
@@ -506,7 +519,7 @@ export default function ResearchersAdminPage() {
                     <input
                       type="text"
                       className="form-input"
-                      placeholder="e.g. Pep Nation Orlando"
+                      placeholder="E.g. Pep Nation Orlando"
                       value={formDisplayName}
                       onChange={e => setFormDisplayName(e.target.value)}
                       required
@@ -521,7 +534,7 @@ export default function ResearchersAdminPage() {
                       <input
                         type="text"
                         className="form-input"
-                        placeholder="e.g. orlando-peps"
+                        placeholder="E.g. orlando-peps"
                         value={formSlug}
                         onChange={e => setFormSlug(e.target.value.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9\-]/g, ''))}
                         required
@@ -535,7 +548,7 @@ export default function ResearchersAdminPage() {
                     <input
                       type="text"
                       className="form-input"
-                      placeholder="e.g. Elite Research Peptides Delivered Direct"
+                      placeholder="E.g. Elite Research Peptides Delivered Direct"
                       value={formTagline}
                       onChange={e => setFormTagline(e.target.value)}
                     />
@@ -547,7 +560,7 @@ export default function ResearchersAdminPage() {
                     <textarea
                       className="form-input"
                       rows={3}
-                      placeholder="Write a brief description of the agent storefront..."
+                      placeholder="Write A Brief Description Of The Agent Storefront..."
                       value={formBio}
                       onChange={e => setFormBio(e.target.value)}
                       style={{ resize: 'vertical' }}

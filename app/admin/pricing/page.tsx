@@ -223,7 +223,7 @@ export default function PricingTiersPage() {
                 Tiers Can Have Product-Specific Multiplier Overrides Assigned Within The Products Manager.
               </li>
               <li>
-                Changes Apply Globally to All Stores Instantly Upon Saving Multipliers.
+                Changes Apply Globally To All Stores Instantly Upon Saving Multipliers.
               </li>
             </ul>
           </div>

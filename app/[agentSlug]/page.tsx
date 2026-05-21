@@ -98,7 +98,7 @@ export default async function AgentStorefrontPage({ params }: Props) {
               {displayName}
             </div>
             <div style={{ fontSize: '0.7rem', color: 'var(--grey-400)' }}>
-              Powered by <span style={{ color: 'var(--teal)' }}>Pep Nation Lab</span>
+              Powered By <span style={{ color: 'var(--teal)' }}>Pep Nation Lab</span>
             </div>
           </div>
         </div>
@@ -150,7 +150,7 @@ export default async function AgentStorefrontPage({ params }: Props) {
               <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
               <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
             </svg>
-            <strong style={{ color: 'var(--red)' }}>Research Use Only</strong> — Not for human consumption
+            <strong style={{ color: 'var(--red)' }}>Research Use Only</strong> — Not For Human Consumption
           </div>
         </div>
       </section>

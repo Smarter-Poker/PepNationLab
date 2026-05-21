@@ -56,12 +56,12 @@ export default function HowItWorksSection() {
         <div style={{ textAlign: 'center', marginBottom: 'var(--space-12)' }}>
           <span className="badge badge-silver" style={{ marginBottom: 'var(--space-4)' }}>How It Works</span>
           <h2>
-            Built for{' '}
+            Built For{' '}
             <span style={{ color: 'var(--teal)' }}>Serious Researchers</span>
           </h2>
           <p style={{ maxWidth: 480, margin: 'var(--space-4) auto 0', fontSize: '0.95rem' }}>
-            From account creation to compound delivery — a streamlined platform 
-            designed around the needs of professional research labs.
+            From Account Creation To Compound Delivery — A Streamlined Platform 
+            Designed Around The Needs Of Professional Research Labs.
           </p>
         </div>
 
@@ -128,7 +128,7 @@ export default function HowItWorksSection() {
           background: 'linear-gradient(135deg, rgba(0,196,188,0.05) 0%, rgba(15,25,35,0.95) 100%)'
         }}>
           <h3 style={{ marginBottom: 'var(--space-4)' }}>
-            Ready to Run Your Own{' '}
+            Ready To Run Your Own{' '}
             <span style={{ color: 'var(--teal)' }}>Research Business?</span>
           </h3>
           <p style={{ maxWidth: 600, margin: '0 auto var(--space-6)', fontSize: '0.95rem' }}>

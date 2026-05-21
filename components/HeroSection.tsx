@@ -50,7 +50,7 @@ export default function HeroSection() {
           }}>
             Premium Research{' '}
             <span style={{ color: 'var(--teal)' }}>Peptides</span>{' '}
-            for the Scientific Community
+            For The Scientific Community
           </h1>
 
           {/* Subheadline */}
@@ -60,9 +60,9 @@ export default function HeroSection() {
             marginBottom: 'var(--space-8)',
             color: 'var(--silver-light)'
           }}>
-            Pep Nation Lab connects qualified researchers with pharmaceutical-grade 
-            research compounds. Wholesale pricing, agent network, and seamless 
-            fulfillment for labs across the country.
+            Pep Nation Lab Connects Qualified Researchers With Pharmaceutical-Grade 
+            Research Compounds. Wholesale Pricing, Agent Network, And Seamless 
+            Fulfillment For Labs Across The Country.
           </p>
 
           {/* Warning notice */}

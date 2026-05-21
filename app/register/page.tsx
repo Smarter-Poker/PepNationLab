@@ -253,20 +253,20 @@ function RegisterPageInner() {
 
             <div className="form-group">
               <label className="form-label" htmlFor="reg-password">Password</label>
-              <input id="reg-password" name="password" type="password" className="form-input" placeholder="Minimum 8 characters" value={formData.password} onChange={handleField} required />
+              <input id="reg-password" name="password" type="password" className="form-input" placeholder="Minimum 8 Characters" value={formData.password} onChange={handleField} required />
             </div>
 
             <div className="form-group">
               <label className="form-label" htmlFor="confirmPassword">Confirm Password</label>
-              <input id="confirmPassword" name="confirmPassword" type="password" className="form-input" placeholder="Repeat password" value={formData.confirmPassword} onChange={handleField} required />
+              <input id="confirmPassword" name="confirmPassword" type="password" className="form-input" placeholder="Repeat Password" value={formData.confirmPassword} onChange={handleField} required />
             </div>
 
             <div className="form-group">
               <label className="form-label" htmlFor="referralCode">
                 Agent Referral Code{' '}
-                <span style={{ fontSize: '0.75rem', color: 'var(--grey-400)', fontWeight: 400 }}>(optional)</span>
+                <span style={{ fontSize: '0.75rem', color: 'var(--grey-400)', fontWeight: 400 }}>(Optional)</span>
               </label>
-              <input id="referralCode" name="referralCode" type="text" className="form-input" placeholder="e.g. marcela" value={formData.referralCode} onChange={handleField} />
+              <input id="referralCode" name="referralCode" type="text" className="form-input" placeholder="E.g. marcela" value={formData.referralCode} onChange={handleField} />
             </div>
 
             <button

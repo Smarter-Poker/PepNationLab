@@ -40,6 +40,17 @@ export default async function AdminDashboard() {
     cancelled:                'var(--grey-400)',
   };
 
+  const STATUS_LABELS: Record<string, string> = {
+    pending_customer_payment: 'Pending Customer Payment',
+    agent_approval_pending:   'Agent Approval Pending',
+    approved_ship:            'Approved Ship',
+    approved_pickup:          'Approved Pickup',
+    in_fulfillment:           'In Fulfillment',
+    shipped:                  'Shipped',
+    delivered:                'Delivered',
+    cancelled:                'Cancelled',
+  };
+
   return (
     <div style={{ padding: 'var(--space-8)' }}>
       {/* Header */}
@@ -98,19 +109,18 @@ export default async function AdminDashboard() {
                         {profile?.full_name ?? 'Unknown'}
                       </div>
                       <div style={{ fontSize: '0.75rem', color: 'var(--grey-400)' }}>
-                        {order.payment_method} • ${Number(order.total).toFixed(2)}
+                        {order.payment_method.toUpperCase()} • ${Number(order.total).toFixed(2)}
                       </div>
                     </div>
                     <div style={{
                       fontSize: '0.7rem',
                       fontWeight: 700,
                       color: STATUS_COLORS[order.status] ?? 'var(--grey-400)',
-                      textTransform: 'capitalize',
                       background: `${STATUS_COLORS[order.status] ?? 'var(--grey-400)'}15`,
                       padding: '2px var(--space-2)',
                       borderRadius: 'var(--radius-sm)',
                     }}>
-                      {order.status}
+                      {STATUS_LABELS[order.status] ?? order.status}
                     </div>
                   </div>
                 );

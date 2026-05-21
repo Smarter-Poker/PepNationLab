@@ -32,7 +32,7 @@ export default function FooterSection() {
               PEP NATION LAB
             </div>
             <p style={{ fontSize: '0.82rem', color: 'var(--grey-400)', lineHeight: 1.7, marginBottom: 'var(--space-4)' }}>
-              Wholesale research peptide distribution for qualified scientists and research institutions.
+              Wholesale Research Peptide Distribution For Qualified Scientists And Research Institutions.
             </p>
             <div className="badge badge-red" style={{ fontSize: '0.65rem' }}>
               Research Use Only
@@ -51,7 +51,7 @@ export default function FooterSection() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
               {[
                 { label: 'Products', href: '/products' },
-                { label: 'Become an Agent', href: '/become-agent' },
+                { label: 'Become An Agent', href: '/become-agent' },
                 { label: 'Agent Dashboard', href: '/dashboard' },
                 { label: 'Create Account', href: '/register' },
               ].map(({ label, href }) => (
@@ -76,7 +76,7 @@ export default function FooterSection() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
               {[
                 { label: 'Research-Only Disclaimer', href: '/disclaimer' },
-                { label: 'Terms of Service', href: '/terms' },
+                { label: 'Terms Of Service', href: '/terms' },
                 { label: 'Privacy Policy', href: '/privacy' },
                 { label: 'Compliance', href: '/compliance' },
               ].map(({ label, href }) => (
@@ -113,7 +113,7 @@ export default function FooterSection() {
                 research@pepnationlab.com
               </a>
               <p style={{ fontSize: '0.82rem', color: 'var(--grey-600)', lineHeight: 1.5 }}>
-                Qualified researchers only. All inquiries are verified before account approval.
+                Qualified Researchers Only. All Inquiries Are Verified Before Account Approval.
               </p>
             </div>
           </div>
@@ -151,7 +151,7 @@ export default function FooterSection() {
             © {new Date().getFullYear()} Pep Nation Lab LLC. All Rights Reserved.
           </p>
           <p style={{ fontSize: '0.78rem', color: 'var(--grey-600)', margin: 0 }}>
-            pepnationlab.com | For qualified researchers only
+            PepNationLab.com | For Qualified Researchers Only
           </p>
         </div>
       </div>

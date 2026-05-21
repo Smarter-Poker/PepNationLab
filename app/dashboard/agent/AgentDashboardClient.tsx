@@ -466,9 +466,9 @@ export default function AgentDashboardClient({
               <div style={{ background: 'var(--surface-2)', border: '1px solid rgba(255, 255, 255, 0.05)', borderRadius: 'var(--radius-lg)', padding: 'var(--space-6)' }}>
                 <h4 style={{ color: 'var(--teal)', fontSize: '0.9rem', marginBottom: 'var(--space-2)', fontFamily: 'var(--font-brand)' }}>Agent Operations Blueprint</h4>
                 <ol style={{ fontSize: '0.8rem', color: 'var(--silver-light)', paddingLeft: 20, margin: 0, display: 'flex', flexDirection: 'column', gap: 8, lineHeight: 1.6 }}>
-                  <li>Your referred customers browse and purchase compound inventory directly at your white-label URL.</li>
-                  <li>Following checkout submission, clients complete offline payments via Zelle/Cash App using your handles.</li>
-                  <li>When you verify bank receipt, transition the order status to <strong>Approved</strong> in the Orders tab to release fulfillment.</li>
+                  <li>Your Referred Customers Browse And Purchase Compound Inventory Directly At Your White-Label URL.</li>
+                  <li>Following Checkout Submission, Clients Complete Offline Payments Via Zelle/Cash App Using Your Handles.</li>
+                  <li>When You Verify Bank Receipt, Transition The Order Status To Approved In The Orders Tab To Release Fulfillment.</li>
                 </ol>
               </div>
             </div>
@@ -540,7 +540,7 @@ export default function AgentDashboardClient({
               <div style={{ textAlign: 'center', padding: 'var(--space-10) 0', opacity: 0.6 }}>
                 <span style={{ fontSize: '2.5rem', display: 'block', marginBottom: 'var(--space-3)' }}>🔬</span>
                 <h4 style={{ color: 'var(--silver)' }}>No Referred Researchers Yet</h4>
-                <p style={{ fontSize: '0.78rem', color: 'var(--grey-400)', margin: 0 }}>Your Custom Storefront Referrals Will Populated Instantly Upon Registration.</p>
+                <p style={{ fontSize: '0.78rem', color: 'var(--grey-400)', margin: 0 }}>Your Custom Storefront Referrals Will Populate Instantly Upon Registration.</p>
               </div>
             )}
           </div>
@@ -612,8 +612,8 @@ export default function AgentDashboardClient({
                           order.status === 'cancelled' ? 'badge-red' :
                           order.status.startsWith('approved_') || order.status === 'delivered' || order.status === 'shipped' ? 'badge-teal' :
                           'badge-silver'
-                        }`} style={{ fontSize: '0.7rem', textTransform: 'capitalize' }}>
-                          {order.status.replace(/_/g, ' ')}
+                        }`} style={{ fontSize: '0.7rem' }}>
+                          {order.status.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}
                         </span>
 
                         {canApprove && (

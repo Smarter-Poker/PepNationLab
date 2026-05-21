@@ -2,6 +2,18 @@ import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import Link from 'next/link';
 
+const ROLE_LABELS: Record<string, string> = {
+  researcher: 'Researcher',
+  agent: 'Agent',
+  super_agent: 'Super Agent',
+  admin: 'Admin',
+};
+
+const ACCOUNT_LABELS: Record<string, string> = {
+  prepaid: 'Prepaid',
+  credit: 'Credit',
+};
+
 export default async function DashboardPage({
   searchParams,
 }: {
@@ -41,8 +53,8 @@ export default async function DashboardPage({
         </Link>
         <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)' }}>
           <span style={{ fontSize: '0.85rem', color: 'var(--silver)' }}>{name}</span>
-          <span className={`badge ${role === 'admin' ? 'badge-red' : role.includes('agent') ? 'badge-teal' : 'badge-silver'}`} style={{ fontSize: '0.7rem', textTransform: 'capitalize' }}>
-            {role.replace('_', ' ')}
+          <span className={`badge ${role === 'admin' ? 'badge-red' : role.includes('agent') ? 'badge-teal' : 'badge-silver'}`} style={{ fontSize: '0.7rem' }}>
+            {ROLE_LABELS[role] ?? role}
           </span>
           <form action="/api/auth/signout" method="POST">
             <button type="submit" style={{ fontSize: '0.8rem', color: 'var(--grey-400)', background: 'none', border: 'none', cursor: 'pointer' }}>
@@ -69,8 +81,8 @@ export default async function DashboardPage({
               <path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>
             </svg>
             <div>
-              <strong style={{ color: 'var(--teal)' }}>Welcome to Pep Nation Lab!</strong>
-              <p style={{ fontSize: '0.82rem', color: 'var(--grey-400)', margin: 0 }}>Your researcher account is active. Browse our catalog and place your first order.</p>
+              <strong style={{ color: 'var(--teal)' }}>Welcome To Pep Nation Lab!</strong>
+              <p style={{ fontSize: '0.82rem', color: 'var(--grey-400)', margin: 0 }}>Your Researcher Account Is Active. Browse Our Catalog And Place Your First Order.</p>
             </div>
           </div>
         )}
@@ -78,7 +90,7 @@ export default async function DashboardPage({
         {/* Page title */}
         <div style={{ marginBottom: 'var(--space-8)' }}>
           <h1 style={{ fontSize: '1.6rem', marginBottom: 'var(--space-2)' }}>
-            Welcome back, <span style={{ color: 'var(--teal)' }}>{name}</span>
+            Welcome Back, <span style={{ color: 'var(--teal)' }}>{name}</span>
           </h1>
           <p style={{ color: 'var(--grey-400)', fontSize: '0.9rem' }}>
             Researcher Dashboard — Research Use Only
@@ -90,7 +102,7 @@ export default async function DashboardPage({
           {[
             {
               label: 'Account Type',
-              value: profile?.account_type ? profile.account_type.replace('_', ' ') : 'Standard',
+              value: profile?.account_type ? (ACCOUNT_LABELS[profile.account_type] ?? profile.account_type) : 'Standard',
               icon: (
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--teal)" strokeWidth="1.5">
                   <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/>
@@ -159,7 +171,7 @@ export default async function DashboardPage({
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
                 <span style={{ color: 'var(--grey-400)' }}>Account Role</span>
-                <span style={{ color: 'var(--silver)', textTransform: 'capitalize' }}>{role.replace('_', ' ')}</span>
+                <span style={{ color: 'var(--silver)' }}>{ROLE_LABELS[role] ?? role}</span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
                 <span style={{ color: 'var(--grey-400)' }}>Email</span>
@@ -176,7 +188,7 @@ export default async function DashboardPage({
                 border: '1px solid rgba(0,196,188,0.15)'
               }}>
                 <p style={{ fontSize: '0.78rem', color: 'var(--grey-400)', margin: 0 }}>
-                  Want better pricing?{' '}
+                  Want Better Pricing?{' '}
                   <Link href="/become-agent" style={{ color: 'var(--teal)' }}>
                    Apply To Become An Agent →
                   </Link>
