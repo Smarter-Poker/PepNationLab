@@ -675,3 +675,27 @@ a:hover { color: var(--teal-dark); }
   animation: shimmer 1.5s infinite;
   border-radius: var(--radius-md);
 }
+/* ============================================
+   TITLE CASE — HARD PLATFORM RULE
+   First letter of every word MUST be capitalized
+   across all PepNationLab user-facing elements.
+   CSS layer as backup; source text must also be
+   written in Title Case.
+   ============================================ */
+
+h1, h2, h3, h4, h5, h6 { text-transform: capitalize; }
+
+.btn              { text-transform: capitalize; }
+.badge            { text-transform: uppercase; letter-spacing: 0.06em; }
+.form-label       { text-transform: capitalize; letter-spacing: 0.03em; }
+.nav-logo         { text-transform: uppercase; }
+.sidebar-nav-item { text-transform: capitalize; }
+
+/* Nav links and standalone UI text */
+nav a,
+nav span,
+nav button { text-transform: capitalize; }
+
+/* Error messages, alerts */
+.disclaimer-warning p,
+.disclaimer-box p { /* preserve sentence case for legal text */ }

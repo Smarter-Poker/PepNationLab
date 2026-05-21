@@ -68,7 +68,7 @@ export default function LoginPage() {
         <div className="card-metal" style={{ padding: 'var(--space-8)' }}>
           <h2 style={{ marginBottom: 'var(--space-2)', fontSize: '1.4rem' }}>Sign In</h2>
           <p style={{ marginBottom: 'var(--space-6)', fontSize: '0.85rem', color: 'var(--grey-400)' }}>
-            Access your researcher account
+            Access Your Researcher Account
           </p>
 
           {error && (
@@ -108,7 +108,7 @@ export default function LoginPage() {
 
             <div style={{ textAlign: 'right', marginBottom: 'var(--space-6)', marginTop: '-var(--space-2)' }}>
               <Link href="/forgot-password" style={{ fontSize: '0.8rem', color: 'var(--teal)' }}>
-                Forgot password?
+                Forgot Password?
               </Link>
             </div>
 
@@ -119,7 +119,7 @@ export default function LoginPage() {
               disabled={loading}
               style={{ width: '100%', justifyContent: 'center', opacity: loading ? 0.7 : 1 }}
             >
-              {loading ? 'Signing in...' : 'Sign In'}
+              {loading ? 'Signing In...' : 'Sign In'}
             </button>
           </form>
 
@@ -130,7 +130,7 @@ export default function LoginPage() {
             textAlign: 'center'
           }}>
             <p style={{ fontSize: '0.85rem', color: 'var(--grey-400)' }}>
-              Don&apos;t have an account?{' '}
+              Don&apos;t Have An Account?{' '}
               <Link href="/register" style={{ color: 'var(--teal)', fontWeight: 600 }}>
                 Create Researcher Account
               </Link>
@@ -145,7 +145,7 @@ export default function LoginPage() {
           fontSize: '0.75rem',
           color: 'var(--grey-600)'
         }}>
-          For qualified researchers only. Research use only.
+          For Qualified Researchers Only. Research Use Only.
         </p>
       </div>
     </div>

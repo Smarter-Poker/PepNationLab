@@ -79,8 +79,8 @@ export default function HeroSection() {
               <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
             </svg>
             <p style={{ fontSize: '0.8rem', color: 'var(--silver)', margin: 0 }}>
-              All products are <strong style={{ color: 'var(--red)' }}>strictly for in vitro research use only</strong> — 
-              not for human or animal consumption. Qualified researchers only.
+              All Products Are <strong style={{ color: 'var(--red)' }}>Strictly For In Vitro Research Use Only</strong> — 
+              Not For Human Or Animal Consumption. Qualified Researchers Only.
             </p>
           </div>
 

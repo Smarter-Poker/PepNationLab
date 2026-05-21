@@ -11,7 +11,7 @@ const STEPS = [
     ),
     step: '01',
     title: 'Create Your Researcher Account',
-    description: 'Sign up and verify your researcher credentials. Accept the research-only terms and gain access to our full catalog with wholesale pricing.',
+    description: 'Sign Up And Verify Your Researcher Credentials. Accept The Research-Only Terms And Gain Access To Our Full Catalog With Wholesale Pricing.',
   },
   {
     icon: (
@@ -21,8 +21,8 @@ const STEPS = [
       </svg>
     ),
     step: '02',
-    title: 'Browse the Research Catalog',
-    description: 'Access 50+ research compounds with transparent wholesale pricing. Filter by category, potency, and availability.',
+    title: 'Browse The Research Catalog',
+    description: 'Access 50+ Research Compounds With Transparent Wholesale Pricing. Filter By Category, Potency, And Availability.',
   },
   {
     icon: (
@@ -33,7 +33,7 @@ const STEPS = [
     ),
     step: '03',
     title: 'Place Your Order',
-    description: 'Select compounds, quantities, and pay via Zelle, Venmo, Cash App, or Apple Pay. Orders are confirmed upon payment receipt.',
+    description: 'Select Compounds, Quantities, And Pay Via Zelle, Venmo, Cash App, Or Apple Pay. Orders Are Confirmed Upon Payment Receipt.',
   },
   {
     icon: (
@@ -43,8 +43,8 @@ const STEPS = [
       </svg>
     ),
     step: '04',
-    title: 'Become an Agent',
-    description: 'High-volume researchers can apply to become agents — operate your own branded storefront, set your pricing, and build your research network.',
+    title: 'Become An Agent',
+    description: 'High-Volume Researchers Can Apply To Become Agents — Operate Your Own Branded Storefront, Set Your Pricing, And Build Your Research Network.',
   },
 ];
 
@@ -132,16 +132,16 @@ export default function HowItWorksSection() {
             <span style={{ color: 'var(--teal)' }}>Research Business?</span>
           </h3>
           <p style={{ maxWidth: 600, margin: '0 auto var(--space-6)', fontSize: '0.95rem' }}>
-            Qualified researchers can become Agents — get your own branded storefront at 
+            Qualified Researchers Can Become Agents — Get Your Own Branded Storefront At 
             <strong style={{ color: 'var(--teal)' }}> PepNationLab.com/YourName</strong>, 
-            set your own pricing, build your own customer base, and access wholesale Tier pricing.
+            Set Your Own Pricing, Build Your Own Customer Base, And Access Wholesale Tier Pricing.
           </p>
           <div style={{ display: 'flex', gap: 'var(--space-4)', justifyContent: 'center', flexWrap: 'wrap' }}>
             <a href="/become-agent" className="btn btn-primary btn-lg">
-              Learn About Becoming an Agent
+              Learn About Becoming An Agent
             </a>
             <a href="/register" className="btn btn-secondary btn-lg">
-              Start as a Researcher
+              Start As A Researcher
             </a>
           </div>
         </div>

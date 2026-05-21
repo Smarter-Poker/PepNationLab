@@ -119,7 +119,7 @@ export default function RegisterPage() {
               </div>
               <div>
                 <h2 style={{ fontSize: '1.2rem', marginBottom: 2 }}>Research Use Only Acknowledgment</h2>
-                <p style={{ fontSize: '0.8rem', color: 'var(--grey-400)' }}>You must accept all terms to create an account</p>
+                <p style={{ fontSize: '0.8rem', color: 'var(--grey-400)' }}>You Must Accept All Terms To Create An Account</p>
               </div>
             </div>
 
@@ -171,12 +171,12 @@ export default function RegisterPage() {
                 cursor: allChecked ? 'pointer' : 'not-allowed',
               }}
             >
-              I Agree — Continue to Registration
+              I Agree — Continue To Registration
             </button>
 
             <p style={{ textAlign: 'center', marginTop: 'var(--space-4)', fontSize: '0.8rem', color: 'var(--grey-400)' }}>
-              Already have an account?{' '}
-              <Link href="/login" style={{ color: 'var(--teal)' }}>Sign in</Link>
+              Already Have An Account?{' '}
+              <Link href="/login" style={{ color: 'var(--teal)' }}>Sign In</Link>
             </p>
           </div>
         </div>
@@ -260,8 +260,8 @@ export default function RegisterPage() {
           </form>
 
           <p style={{ textAlign: 'center', marginTop: 'var(--space-6)', fontSize: '0.8rem', color: 'var(--grey-400)' }}>
-            Already have an account?{' '}
-            <Link href="/login" style={{ color: 'var(--teal)' }}>Sign in</Link>
+            Already Have An Account?{' '}
+            <Link href="/login" style={{ color: 'var(--teal)' }}>Sign In</Link>
           </p>
         </div>
       </div>

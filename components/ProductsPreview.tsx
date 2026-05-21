@@ -23,8 +23,8 @@ export default function ProductsPreview() {
             <span style={{ color: 'var(--teal)' }}>Compounds</span>
           </h2>
           <p style={{ maxWidth: 500, margin: '0 auto', fontSize: '0.95rem' }}>
-            All compounds are research-grade, for qualified researchers only. 
-            Create an account to access full catalog and pricing.
+            All Compounds Are Research-Grade, For Qualified Researchers Only. 
+            Create An Account To Access Full Catalog And Pricing.
           </p>
         </div>
 
@@ -90,7 +90,7 @@ export default function ProductsPreview() {
                       <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
                       <path d="M7 11V7a5 5 0 0110 0v4"/>
                     </svg>
-                    Sign in to view pricing
+                    Sign In To View Pricing
                   </p>
                 </div>
               </div>
@@ -101,10 +101,10 @@ export default function ProductsPreview() {
         {/* CTA */}
         <div style={{ textAlign: 'center', marginTop: 'var(--space-10)' }}>
           <Link href="/register" className="btn btn-primary btn-lg">
-            Create Account to View All Products & Pricing
+            Create Account To View All Products & Pricing
           </Link>
           <p style={{ marginTop: 'var(--space-4)', fontSize: '0.8rem', color: 'var(--grey-400)' }}>
-            50+ research compounds available • Wholesale pricing for qualified researchers
+            50+ Research Compounds Available • Wholesale Pricing For Qualified Researchers
           </p>
         </div>
       </div>
