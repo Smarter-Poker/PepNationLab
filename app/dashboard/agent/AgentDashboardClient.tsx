@@ -279,7 +279,22 @@ export default function AgentDashboardClient({
       <div className="container-sm section" style={{ display: 'flex', justifyContent: 'center' }}>
         <div className="card-metal" style={{ width: '100%', maxWidth: 550, padding: 'var(--space-8)' }}>
           <div style={{ textAlign: 'center', marginBottom: 'var(--space-6)' }}>
-            <span style={{ fontSize: '3rem', display: 'block', marginBottom: 'var(--space-3)' }}>🚀</span>
+            <svg
+              width="48"
+              height="48"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="var(--teal)"
+              strokeWidth="1.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              style={{ display: 'block', margin: '0 auto var(--space-3)' }}
+            >
+              <path d="M4.5 16.5c-1.5 1.26-2 3.42-2 3.42s2.16-.5 3.42-2c1.24-1.47 3.58-2.9 3.58-2.9l-2.1-2.1s-1.43 2.34-2.9 3.58z" />
+              <path d="M12 15l9 3-3-9-6-6-3 3 3 9z" />
+              <path d="M9 15l2-2" />
+              <path d="M14 10a2 2 0 1 0-4 0 2 2 0 0 0 4 0z" />
+            </svg>
             <h1 style={{ fontSize: '1.8rem', color: 'var(--teal)', marginBottom: 'var(--space-2)' }}>Launch Storefront</h1>
             <p style={{ color: 'var(--silver-light)', fontSize: '0.9rem' }}>
               Create Your Exclusive White-Label Web Storefront To Refer Researchers And Track Dynamic Orders.
@@ -538,7 +553,20 @@ export default function AgentDashboardClient({
               </div>
             ) : (
               <div style={{ textAlign: 'center', padding: 'var(--space-10) 0', opacity: 0.6 }}>
-                <span style={{ fontSize: '2.5rem', display: 'block', marginBottom: 'var(--space-3)' }}>🔬</span>
+                <svg
+                  width="40"
+                  height="40"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="var(--teal)"
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  style={{ display: 'block', margin: '0 auto var(--space-3)' }}
+                >
+                  <path d="M6 3h12" />
+                  <path d="M9 3v6l-5 9a2 2 0 0 0 1.7 3h12.6a2 2 0 0 0 1.7-3l-5-9V3" />
+                </svg>
                 <h4 style={{ color: 'var(--silver)' }}>No Referred Researchers Yet</h4>
                 <p style={{ fontSize: '0.78rem', color: 'var(--grey-400)', margin: 0 }}>Your Custom Storefront Referrals Will Populate Instantly Upon Registration.</p>
               </div>
@@ -644,7 +672,20 @@ export default function AgentDashboardClient({
               </div>
             ) : (
               <div style={{ textAlign: 'center', padding: 'var(--space-10) 0', opacity: 0.6 }}>
-                <span style={{ fontSize: '2.5rem', display: 'block', marginBottom: 'var(--space-3)' }}>📋</span>
+                <svg
+                  width="40"
+                  height="40"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="var(--teal)"
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  style={{ display: 'block', margin: '0 auto var(--space-3)' }}
+                >
+                  <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" />
+                  <rect x="8" y="2" width="8" height="4" rx="1" ry="1" />
+                </svg>
                 <h4 style={{ color: 'var(--silver)' }}>No Referred Orders Found</h4>
                 <p style={{ fontSize: '0.78rem', color: 'var(--grey-400)', margin: 0 }}>Client Transaction Registrations Will Sync Dynamically To This Dashboard Panel.</p>
               </div>

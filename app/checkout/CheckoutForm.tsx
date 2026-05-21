@@ -156,7 +156,21 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers }
     return (
       <div className="container-sm section" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '60vh' }}>
         <div className="card-metal" style={{ width: '100%', maxWidth: 500, textAlign: 'center', padding: 'var(--space-8)' }}>
-          <div style={{ color: 'var(--teal)', fontSize: '3rem', marginBottom: 'var(--space-4)' }}>🛒</div>
+          <svg
+            width="48"
+            height="48"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="var(--teal)"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            style={{ marginBottom: 'var(--space-4)', display: 'inline-block' }}
+          >
+            <circle cx="9" cy="21" r="1" />
+            <circle cx="20" cy="21" r="1" />
+            <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
+          </svg>
           <h2 style={{ fontSize: '1.5rem', marginBottom: 'var(--space-2)' }}>Your Shopping Cart Is Empty</h2>
           <p style={{ color: 'var(--silver)', marginBottom: 'var(--space-6)' }}>Add Research Compounds From The Catalog To Proceed.</p>
           <Link href="/products" className="btn btn-primary">
@@ -216,7 +230,20 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers }
           {/* Instructions Box */}
           <div style={{ background: 'rgba(0, 196, 188, 0.04)', border: '1px dashed var(--teal)', borderRadius: 'var(--radius-lg)', padding: 'var(--space-5)', marginBottom: 'var(--space-8)' }}>
             <h3 style={{ fontSize: '1rem', color: 'var(--teal)', marginBottom: 'var(--space-3)', textTransform: 'uppercase', letterSpacing: '0.05em', fontFamily: 'var(--font-brand)', display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span>⚡</span> {payment.label}
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="var(--teal)"
+                stroke="var(--teal)"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                style={{ display: 'inline-block' }}
+              >
+                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+              </svg>{' '}
+              {payment.label}
             </h3>
             <div style={{ fontSize: '1.25rem', fontFamily: 'var(--font-brand)', color: 'var(--white)', letterSpacing: '0.05em', background: 'var(--surface-3)', padding: 'var(--space-3)', borderRadius: 'var(--radius-sm)', border: '1px solid rgba(255, 255, 255, 0.1)', textAlign: 'center', marginBottom: 'var(--space-3)' }}>
               {payment.handle}
@@ -301,7 +328,21 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers }
         <div className="card-metal" style={{ padding: 'var(--space-6)' }}>
           {error && (
             <div style={{ borderLeft: '3px solid var(--red)', background: 'var(--red-bg)', padding: 'var(--space-4)', borderRadius: '0 var(--radius-md) var(--radius-md) 0', marginBottom: 'var(--space-6)', display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
-              <span style={{ color: 'var(--red)', fontWeight: 'bold' }}>⚠️</span>
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="var(--red)"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                style={{ flexShrink: 0 }}
+              >
+                <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+                <line x1="12" y1="9" x2="12" y2="13" />
+                <line x1="12" y1="17" x2="12.01" y2="17" />
+              </svg>
               <p style={{ color: 'var(--red)', fontSize: '0.85rem', margin: 0, fontWeight: 500 }}>{error}</p>
             </div>
           )}
@@ -668,7 +709,19 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers }
 
           {/* Secure Card Shield */}
           <div style={{ background: 'var(--surface-2)', border: '1px solid rgba(255, 255, 255, 0.03)', borderRadius: 'var(--radius-lg)', padding: 'var(--space-4)', display: 'flex', alignItems: 'flex-start', gap: 'var(--space-3)' }}>
-            <span style={{ fontSize: '1.25rem', color: 'var(--teal)' }}>🛡️</span>
+            <svg
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="var(--teal)"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              style={{ marginTop: '2px', flexShrink: 0 }}
+            >
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+            </svg>
             <div>
               <h4 style={{ fontSize: '0.78rem', color: 'var(--white)', marginBottom: 2, fontFamily: 'var(--font-brand)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Encrypted Ledger Transact</h4>
               <p style={{ fontSize: '0.7rem', color: 'var(--grey-400)', margin: 0, lineHeight: 1.4 }}>

@@ -35,8 +35,21 @@ export default function HeroSection() {
         <div style={{ maxWidth: 720 }}>
           {/* Tag */}
           <div style={{ marginBottom: 'var(--space-6)', display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
-            <span className="badge badge-teal" style={{ fontSize: '0.7rem' }}>
-              🔬 Research Use Only
+            <span className="badge badge-teal" style={{ fontSize: '0.7rem', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+              <svg
+                width="10"
+                height="10"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M6 3h12" />
+                <path d="M9 3v6l-5 9a2 2 0 0 0 1.7 3h12.6a2 2 0 0 0 1.7-3l-5-9V3" />
+              </svg>
+              Research Use Only
             </span>
             <span className="badge badge-silver" style={{ fontSize: '0.7rem' }}>
               Wholesale Distribution

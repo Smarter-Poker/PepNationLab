@@ -121,8 +121,21 @@ export default async function AgentStorefrontPage({ params }: Props) {
         background: `radial-gradient(ellipse at 50% 0%, ${primaryColor}10 0%, transparent 70%)`
       }}>
         <div className="container" style={{ maxWidth: 640 }}>
-          <div className="badge badge-teal" style={{ marginBottom: 'var(--space-4)', fontSize: '0.7rem' }}>
-            🔬 Research Compounds
+          <div className="badge badge-teal" style={{ marginBottom: 'var(--space-4)', fontSize: '0.7rem', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+            <svg
+              width="10"
+              height="10"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M6 3h12" />
+              <path d="M9 3v6l-5 9a2 2 0 0 0 1.7 3h12.6a2 2 0 0 0 1.7-3l-5-9V3" />
+            </svg>
+            Research Compounds
           </div>
           <h1 style={{ marginBottom: 'var(--space-4)', color: 'var(--white)' }}>
             {displayName}&apos;s{' '}
