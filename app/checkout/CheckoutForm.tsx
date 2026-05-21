@@ -41,6 +41,12 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers }
   const [disclaimer2, setDisclaimer2] = useState(false);
   const [disclaimer3, setDisclaimer3] = useState(false);
 
+  // Coupon state
+  const [couponInput, setCouponInput] = useState('');
+  const [appliedCoupon, setAppliedCoupon] = useState<{ code: string; discount: number } | null>(null);
+  const [couponError, setCouponError] = useState('');
+  const [couponLoading, setCouponLoading] = useState(false);
+
   // Compute standard weight and shipping fee on client for preview
   const totalWeightOz = cart.reduce((acc, item) => acc + (item.weightOz ?? 0.5) * item.quantity, 0);
 
@@ -54,7 +60,8 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers }
   };
 
   const shippingCost = calculateShippingCost();
-  const grandTotal = cartSubtotal + shippingCost;
+  const discount = appliedCoupon?.discount ?? 0;
+  const grandTotal = Math.max(0, cartSubtotal - discount) + shippingCost;
 
   const handleNextStep = () => {
     setError(null);
@@ -72,6 +79,41 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers }
   const handlePrevStep = () => {
     setError(null);
     setStep(prev => prev - 1);
+  };
+
+  const applyCoupon = async () => {
+    setCouponError('');
+    const code = couponInput.trim();
+    if (!code) {
+      setCouponError('Enter A Coupon Code.');
+      return;
+    }
+    setCouponLoading(true);
+    try {
+      const res = await fetch('/api/coupons/validate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code, subtotal: cartSubtotal }),
+      });
+      const data = await res.json();
+      if (data.valid) {
+        setAppliedCoupon({ code: data.code, discount: Number(data.discount) || 0 });
+        setCouponError('');
+      } else {
+        setAppliedCoupon(null);
+        setCouponError(data.error ?? 'That Coupon Is Not Valid.');
+      }
+    } catch {
+      setCouponError('Could Not Verify Coupon. Please Try Again.');
+    } finally {
+      setCouponLoading(false);
+    }
+  };
+
+  const removeCoupon = () => {
+    setAppliedCoupon(null);
+    setCouponInput('');
+    setCouponError('');
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -103,7 +145,8 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers }
             phone
           } : null,
           fulfillmentMethod,
-          paymentMethod
+          paymentMethod,
+          couponCode: appliedCoupon?.code ?? null
         })
       });
 
@@ -198,12 +241,12 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers }
               background: 'rgba(0, 196, 188, 0.1)',
               border: '2px solid var(--teal)',
               color: 'var(--teal)',
-              fontSize: '2.5rem',
-              fontWeight: 'bold',
               marginBottom: 'var(--space-4)',
               boxShadow: 'var(--shadow-teal-sm)'
             }}>
-              ✓
+              <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="20 6 9 17 4 12" />
+              </svg>
             </div>
             <h1 style={{ fontSize: '2rem', color: 'var(--teal)', marginBottom: 'var(--space-2)' }}>Order Placed Successfully</h1>
             <p style={{ color: 'var(--silver)', fontSize: '0.95rem' }}>Your Research Order Has Been Registered And Is Awaiting Offline Payment.</p>
@@ -677,11 +720,59 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers }
               ))}
             </div>
 
+            {/* Coupon */}
+            <div style={{ borderTop: '1px solid rgba(255, 255, 255, 0.05)', paddingTop: 'var(--space-3)', marginBottom: 'var(--space-3)' }}>
+              {appliedCoupon ? (
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(104,211,145,0.08)', border: '1px solid rgba(104,211,145,0.3)', borderRadius: 'var(--radius-md)', padding: 'var(--space-2) var(--space-3)' }}>
+                  <span style={{ fontSize: '0.78rem', color: '#68D391', fontWeight: 600 }}>
+                    Coupon {appliedCoupon.code} Applied
+                  </span>
+                  <button
+                    type="button"
+                    onClick={removeCoupon}
+                    style={{ background: 'none', border: 'none', color: 'var(--grey-400)', fontSize: '0.74rem', cursor: 'pointer', textDecoration: 'underline' }}
+                  >
+                    Remove
+                  </button>
+                </div>
+              ) : (
+                <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
+                  <input
+                    type="text"
+                    className="form-input"
+                    placeholder="Coupon Code"
+                    value={couponInput}
+                    onChange={(e) => setCouponInput(e.target.value)}
+                    style={{ margin: 0, flexGrow: 1, fontSize: '0.8rem' }}
+                  />
+                  <button
+                    type="button"
+                    onClick={applyCoupon}
+                    disabled={couponLoading}
+                    className="btn btn-secondary"
+                    style={{ fontSize: '0.78rem', padding: '0 var(--space-4)' }}
+                  >
+                    {couponLoading ? 'Checking' : 'Apply'}
+                  </button>
+                </div>
+              )}
+              {couponError && (
+                <p style={{ fontSize: '0.72rem', color: 'var(--red)', margin: 'var(--space-2) 0 0' }}>{couponError}</p>
+              )}
+            </div>
+
             <div style={{ borderTop: '1px solid rgba(255, 255, 255, 0.05)', paddingTop: 'var(--space-3)', display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem' }}>
                 <span style={{ color: 'var(--grey-400)' }}>Items Subtotal</span>
                 <strong style={{ color: 'var(--white)' }}>${cartSubtotal.toFixed(2)}</strong>
               </div>
+
+              {appliedCoupon && (
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem' }}>
+                  <span style={{ color: '#68D391' }}>Coupon Discount</span>
+                  <strong style={{ color: '#68D391' }}>-${discount.toFixed(2)}</strong>
+                </div>
+              )}
 
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem' }}>
                 <span style={{ color: 'var(--grey-400)' }}>Weight Shipping</span>
