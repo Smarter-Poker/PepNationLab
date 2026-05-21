@@ -49,7 +49,11 @@ export default async function AgentStorefrontPage({ params }: Props) {
       products (
         name,
         description,
-        category
+        category,
+        inventory_count,
+        in_stock,
+        backorder_days,
+        low_stock_threshold
       )
     `)
     .eq('agent_id', agent.id)
@@ -161,9 +165,21 @@ export default async function AgentStorefrontPage({ params }: Props) {
               </h2>
               <div className="grid-3">
                 {products.map((item) => {
-                  const productRow = (item.products as unknown) as { name: string; description: string } | null;
+                  const productRow = (item.products as unknown) as {
+                    name: string;
+                    description: string;
+                    inventory_count: number;
+                    in_stock: boolean;
+                    backorder_days: number;
+                    low_stock_threshold: number;
+                  } | null;
                   const name = item.custom_name ?? productRow?.name ?? 'Research Compound';
                   const desc = item.custom_description ?? productRow?.description ?? '';
+                  const inStock = productRow?.in_stock ?? true;
+                  const inventoryCount = productRow?.inventory_count ?? 0;
+                  const backorderDays = productRow?.backorder_days ?? 14;
+                  const lowThreshold = productRow?.low_stock_threshold ?? 5;
+                  const isLowStock = inStock && inventoryCount <= lowThreshold && inventoryCount > 0;
                   return (
                     <div key={item.id} className="product-card">
                       {/* Product image placeholder */}
@@ -186,6 +202,40 @@ export default async function AgentStorefrontPage({ params }: Props) {
                       </div>
                       <div className="product-card-body">
                         <h4 style={{ marginBottom: 'var(--space-2)', fontFamily: 'var(--font-brand)' }}>{name}</h4>
+
+                        {/* Shipping Status Badge */}
+                        <div style={{ marginBottom: 'var(--space-3)', display: 'flex', gap: 'var(--space-2)', flexWrap: 'wrap' }}>
+                          <div style={{
+                            display: 'inline-flex', alignItems: 'center', gap: 6,
+                            fontSize: '0.72rem', fontWeight: 700,
+                            padding: '3px 10px',
+                            borderRadius: 'var(--radius-full)',
+                            background: inStock ? 'rgba(0,196,188,0.1)' : 'rgba(246,173,85,0.1)',
+                            border: `1px solid ${inStock ? 'rgba(0,196,188,0.3)' : 'rgba(246,173,85,0.3)'}`,
+                            color: inStock ? 'var(--teal)' : '#F6AD55',
+                          }}>
+                            <span style={{
+                              width: 6, height: 6, borderRadius: '50%',
+                              background: inStock ? 'var(--teal)' : '#F6AD55',
+                              display: 'inline-block',
+                              boxShadow: `0 0 4px ${inStock ? 'var(--teal)' : '#F6AD55'}`,
+                            }} />
+                            {inStock ? 'Ships Now' : `Ships In ${backorderDays} Days`}
+                          </div>
+                          {isLowStock && (
+                            <div style={{
+                              fontSize: '0.7rem', fontWeight: 700,
+                              padding: '3px 10px',
+                              borderRadius: 'var(--radius-full)',
+                              background: 'rgba(229,62,62,0.08)',
+                              border: '1px solid rgba(229,62,62,0.25)',
+                              color: 'var(--red)',
+                            }}>
+                              Low Stock
+                            </div>
+                          )}
+                        </div>
+
                         {desc && <p style={{ fontSize: '0.82rem', color: 'var(--grey-400)', marginBottom: 'var(--space-4)', lineHeight: 1.5 }}>{desc}</p>}
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                           <span style={{ fontSize: '1.1rem', fontWeight: 700, color: primaryColor, fontFamily: 'var(--font-brand)' }}>
@@ -195,7 +245,7 @@ export default async function AgentStorefrontPage({ params }: Props) {
                             href={`/${agentSlug}/register`}
                             style={{ fontSize: '0.8rem', color: 'var(--teal)', fontWeight: 600 }}
                           >
-                            Sign in to order →
+                            Sign In To Order →
                           </Link>
                         </div>
                       </div>
