@@ -1,19 +1,43 @@
 # PepNationLab — Agent & AI Rules
 
-## 🔤 MANDATORY: Title Case Capitalization — ALL Pages
+## MANDATORY: No Emojis Anywhere — Zero Exceptions
+
+**This is a hard platform rule with zero exceptions.**
+
+Emojis are NEVER allowed and are strictly PROHIBITED anywhere inside this project.
+
+### Scope (everything — no exceptions):
+- All source code: `.tsx`, `.jsx`, `.ts`, `.js`, `.css` files
+- All user-facing text: pages, components, buttons, labels, badges, headings, nav links, error messages, placeholders, tooltips, toasts
+- All comments in code
+- All documentation: `.md` files, including this file, `README.md`, and `AGENTS.md`
+- All commit messages
+- All SQL migrations and database content
+- All config files
+
+### What To Use Instead:
+- For icons in the UI: use `lucide-react` components or premium inline SVG icons
+- For status or emphasis markers in docs: use plain words ("Correct:", "Wrong:", "Note:", "Warning:")
+- Never paste a Unicode emoji or emoji-style pictograph as a substitute
+
+If any emoji is found anywhere in the project, it must be removed immediately.
+
+---
+
+## MANDATORY: Title Case Capitalization — ALL Pages
 
 **This is a hard platform rule with zero exceptions.**
 
 Every word on every user-facing page, component, button, label, badge, heading, nav link, error message, placeholder, and tooltip MUST start with a capital letter.
 
 ### What This Means:
-- ✅ "Create Researcher Account"
-- ✅ "Research Use Only"
-- ✅ "Sign In To Your Account"
-- ✅ "Browse The Catalog"
-- ❌ "create researcher account"
-- ❌ "research use only"
-- ❌ "sign in to your account"
+- Correct: "Create Researcher Account"
+- Correct: "Research Use Only"
+- Correct: "Sign In To Your Account"
+- Correct: "Browse The Catalog"
+- Wrong: "create researcher account"
+- Wrong: "research use only"
+- Wrong: "sign in to your account"
 
 ### Scope:
 - All `.tsx` / `.jsx` component text strings
@@ -38,7 +62,7 @@ CSS `text-transform: capitalize` is applied globally in `globals.css` as a CSS-l
 
 ---
 
-## 🚫 Zero Cross-Contamination With Smarter.Poker
+## Zero Cross-Contamination With Smarter.Poker
 
 PepNationLab is a 100% isolated platform. Never:
 - Import from or reference Smarter-Poker-World-Hub paths
@@ -52,7 +76,7 @@ PepNationLab Vercel: `smarter-poker/pepnationlab`
 
 ---
 
-## ⚠️ Research-Only Compliance — 4-Layer Disclaimer
+## Research-Only Compliance — 4-Layer Disclaimer
 
 The 4-layer disclaimer gate is mandatory and must never be removed:
 1. **Site Entry** — DisclaimerGate overlay
@@ -64,7 +88,7 @@ Never remove, bypass, or weaken these gates.
 
 ---
 
-## 💰 Pricing Architecture
+## Pricing Architecture
 
 Three agent tiers — multipliers are set in `pricing_tiers` table:
 - Tier 1: 5× base cost (best pricing)
@@ -75,7 +99,7 @@ All multipliers are admin-configurable via dashboard. Never hardcode prices.
 
 ---
 
-## 💳 Payment Rules
+## Payment Rules
 
 No credit card processing on this platform. All payments via:
 - Zelle
