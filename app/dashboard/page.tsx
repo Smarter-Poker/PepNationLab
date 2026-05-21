@@ -48,7 +48,9 @@ export default async function DashboardPage({
         justifyContent: 'space-between',
         padding: '0 var(--space-6)'
       }}>
-        <Link href="/" style={{ fontFamily: 'var(--font-brand)', fontSize: '0.9rem', fontWeight: 800, letterSpacing: '0.12em', color: 'var(--teal)' }}>
+        <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', fontFamily: 'var(--font-brand)', fontSize: '0.9rem', fontWeight: 800, letterSpacing: '0.12em', color: 'var(--teal)' }}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/logo-mark.svg" alt="Pep Nation Lab" style={{ height: 30, width: 30, display: 'block' }} />
           PEP NATION LAB
         </Link>
         <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)' }}>
@@ -151,6 +153,9 @@ export default async function DashboardPage({
               <Link href="/orders" className="btn btn-secondary btn-sm" style={{ justifyContent: 'flex-start' }}>
                 View My Orders
               </Link>
+              <Link href="/messages" className="btn btn-secondary btn-sm" style={{ justifyContent: 'flex-start' }}>
+                Messages
+              </Link>
               {role.includes('agent') && (
                 <Link href="/dashboard/agent" className="btn btn-secondary btn-sm" style={{ justifyContent: 'flex-start' }}>
                   Agent Dashboard
@@ -165,7 +170,7 @@ export default async function DashboardPage({
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
                 <span style={{ color: 'var(--grey-400)' }}>Disclaimer</span>
                 {profile?.disclaimer_v1_accepted
-                  ? <span className="badge badge-teal" style={{ fontSize: '0.65rem' }}>✓ Accepted</span>
+                  ? <span className="badge badge-teal" style={{ fontSize: '0.65rem' }}>Accepted</span>
                   : <span className="badge badge-red" style={{ fontSize: '0.65rem' }}>Pending</span>
                 }
               </div>
@@ -190,7 +195,7 @@ export default async function DashboardPage({
                 <p style={{ fontSize: '0.78rem', color: 'var(--grey-400)', margin: 0 }}>
                   Want Better Pricing?{' '}
                   <Link href="/become-agent" style={{ color: 'var(--teal)' }}>
-                   Apply To Become An Agent →
+                    Apply To Become An Agent
                   </Link>
                 </p>
               </div>
