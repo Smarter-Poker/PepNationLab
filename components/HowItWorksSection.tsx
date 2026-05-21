@@ -1,5 +1,7 @@
 'use client';
 
+import Link from 'next/link';
+
 const STEPS = [
   {
     icon: (
@@ -137,12 +139,12 @@ export default function HowItWorksSection() {
             Set Your Own Pricing, Build Your Own Customer Base, And Access Wholesale Tier Pricing.
           </p>
           <div style={{ display: 'flex', gap: 'var(--space-4)', justifyContent: 'center', flexWrap: 'wrap' }}>
-            <a href="/become-agent" className="btn btn-primary btn-lg">
+            <Link href="/become-agent" className="btn btn-primary btn-lg">
               Learn About Becoming An Agent
-            </a>
-            <a href="/register" className="btn btn-secondary btn-lg">
+            </Link>
+            <Link href="/register" className="btn btn-secondary btn-lg">
               Start As A Researcher
-            </a>
+            </Link>
           </div>
         </div>
       </div>
