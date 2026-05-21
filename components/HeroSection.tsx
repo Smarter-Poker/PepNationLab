@@ -1,0 +1,134 @@
+'use client';
+
+import Link from 'next/link';
+
+export default function HeroSection() {
+  return (
+    <section className="hero-bg section" style={{ 
+      minHeight: 'calc(100vh - 64px)',
+      display: 'flex', alignItems: 'center',
+      position: 'relative', overflow: 'hidden'
+    }}>
+      {/* Background orbit animation */}
+      <div style={{
+        position: 'absolute',
+        top: '50%', right: '-10%',
+        transform: 'translateY(-50%)',
+        width: 600, height: 600,
+        borderRadius: '50%',
+        border: '1px solid rgba(0,196,188,0.08)',
+        pointerEvents: 'none'
+      }}>
+        <div style={{
+          position: 'absolute', inset: 40,
+          borderRadius: '50%',
+          border: '1px solid rgba(0,196,188,0.05)'
+        }} />
+        <div style={{
+          position: 'absolute', inset: 100,
+          borderRadius: '50%',
+          border: '1px solid rgba(0,196,188,0.03)'
+        }} />
+      </div>
+
+      <div className="container">
+        <div style={{ maxWidth: 720 }}>
+          {/* Tag */}
+          <div style={{ marginBottom: 'var(--space-6)', display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
+            <span className="badge badge-teal" style={{ fontSize: '0.7rem' }}>
+              🔬 Research Use Only
+            </span>
+            <span className="badge badge-silver" style={{ fontSize: '0.7rem' }}>
+              Wholesale Distribution
+            </span>
+          </div>
+
+          {/* Headline */}
+          <h1 className="glow-teal animate-fade-up" style={{ 
+            marginBottom: 'var(--space-6)',
+            color: 'var(--white)'
+          }}>
+            Premium Research{' '}
+            <span style={{ color: 'var(--teal)' }}>Peptides</span>{' '}
+            for the Scientific Community
+          </h1>
+
+          {/* Subheadline */}
+          <p className="animate-fade-up delay-100" style={{ 
+            fontSize: '1.1rem', 
+            maxWidth: 580, 
+            marginBottom: 'var(--space-8)',
+            color: 'var(--silver-light)'
+          }}>
+            Pep Nation Lab connects qualified researchers with pharmaceutical-grade 
+            research compounds. Wholesale pricing, agent network, and seamless 
+            fulfillment for labs across the country.
+          </p>
+
+          {/* Warning notice */}
+          <div style={{
+            background: 'rgba(229,62,62,0.06)',
+            border: '1px solid rgba(229,62,62,0.2)',
+            borderRadius: 'var(--radius-md)',
+            padding: 'var(--space-3) var(--space-4)',
+            marginBottom: 'var(--space-8)',
+            display: 'flex', alignItems: 'center', gap: 'var(--space-3)'
+          }}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--red)" strokeWidth="2" style={{ flexShrink: 0 }}>
+              <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+              <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+            </svg>
+            <p style={{ fontSize: '0.8rem', color: 'var(--silver)', margin: 0 }}>
+              All products are <strong style={{ color: 'var(--red)' }}>strictly for in vitro research use only</strong> — 
+              not for human or animal consumption. Qualified researchers only.
+            </p>
+          </div>
+
+          {/* CTAs */}
+          <div className="animate-fade-up delay-200" style={{ display: 'flex', gap: 'var(--space-4)', flexWrap: 'wrap' }}>
+            <Link href="/register" className="btn btn-primary btn-xl">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2"/>
+                <circle cx="9" cy="7" r="4"/>
+                <line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/>
+              </svg>
+              Create Researcher Account
+            </Link>
+            <Link href="/products" className="btn btn-secondary btn-xl">
+              View Product Catalog
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M5 12h14M12 5l7 7-7 7"/>
+              </svg>
+            </Link>
+          </div>
+
+          {/* Stats row */}
+          <div className="animate-fade-up delay-300" style={{ 
+            display: 'flex', gap: 'var(--space-8)', marginTop: 'var(--space-12)',
+            paddingTop: 'var(--space-8)',
+            borderTop: '1px solid rgba(255,255,255,0.06)'
+          }}>
+            {[
+              { num: '50+', label: 'Research Compounds' },
+              { num: '3', label: 'Agent Tier Levels' },
+              { num: '100%', label: 'Wholesale Pricing' },
+            ].map(({ num, label }) => (
+              <div key={label}>
+                <div style={{ 
+                  fontFamily: 'var(--font-brand)', 
+                  fontSize: '1.75rem', 
+                  fontWeight: 800,
+                  color: 'var(--teal)',
+                  textShadow: '0 0 20px rgba(0,196,188,0.4)'
+                }}>{num}</div>
+                <div style={{ fontSize: '0.8rem', color: 'var(--grey-400)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  {label}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
