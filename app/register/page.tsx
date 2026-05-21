@@ -89,7 +89,7 @@ function RegisterPageInner() {
       user_agent: navigator.userAgent,
     });
 
-    // Wire referral code → referring_agent_id
+    // Wire referral code -> referring_agent_id
     if (formData.referralCode.trim() && newUserId) {
       const { data: agentProfile } = await supabase
         .from('agent_profiles')
@@ -124,8 +124,9 @@ function RegisterPageInner() {
 
         <div style={{ width: '100%', maxWidth: 540, position: 'relative' }}>
           <div style={{ textAlign: 'center', marginBottom: 'var(--space-8)' }}>
-            <Link href="/" style={{ fontFamily: 'var(--font-brand)', fontSize: '1.1rem', fontWeight: 800, letterSpacing: '0.12em', color: 'var(--teal)', textShadow: '0 0 20px rgba(0,196,188,0.4)' }}>
-              PEP NATION LAB
+            <Link href="/" style={{ display: 'inline-block' }} aria-label="Pep Nation Lab Home">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/logo.svg" alt="Pep Nation Lab" style={{ height: 100, width: 'auto', display: 'inline-block' }} />
             </Link>
           </div>
 
@@ -218,15 +219,16 @@ function RegisterPageInner() {
 
       <div style={{ width: '100%', maxWidth: 480, position: 'relative' }}>
         <div style={{ textAlign: 'center', marginBottom: 'var(--space-8)' }}>
-          <Link href="/" style={{ fontFamily: 'var(--font-brand)', fontSize: '1.1rem', fontWeight: 800, letterSpacing: '0.12em', color: 'var(--teal)', textShadow: '0 0 20px rgba(0,196,188,0.4)' }}>
-            PEP NATION LAB
+          <Link href="/" style={{ display: 'inline-block' }} aria-label="Pep Nation Lab Home">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/logo.svg" alt="Pep Nation Lab" style={{ height: 100, width: 'auto', display: 'inline-block' }} />
           </Link>
           <p style={{ marginTop: 'var(--space-2)', fontSize: '0.85rem', color: 'var(--grey-400)' }}>Create Researcher Account</p>
         </div>
 
         <div className="card-metal" style={{ padding: 'var(--space-8)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', marginBottom: 'var(--space-6)' }}>
-            <div className="badge badge-teal" style={{ fontSize: '0.7rem' }}>✓ Disclaimer Accepted</div>
+            <div className="badge badge-teal" style={{ fontSize: '0.7rem' }}>Disclaimer Accepted</div>
           </div>
 
           {error && (

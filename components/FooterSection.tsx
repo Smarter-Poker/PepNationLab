@@ -20,16 +20,19 @@ export default function FooterSection() {
         }}>
           {/* Brand column */}
           <div style={{ gridColumn: 'span 1' }}>
-            <div style={{ 
-              fontFamily: 'var(--font-brand)', 
-              fontSize: '1rem', 
-              fontWeight: 800,
-              color: 'var(--teal)', 
-              letterSpacing: '0.1em',
-              marginBottom: 'var(--space-4)',
-              textShadow: '0 0 20px rgba(0,196,188,0.4)'
-            }}>
-              PEP NATION LAB
+            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', marginBottom: 'var(--space-4)' }}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/logo-mark.svg" alt="Pep Nation Lab" style={{ height: 40, width: 40, display: 'block' }} />
+              <div style={{
+                fontFamily: 'var(--font-brand)',
+                fontSize: '1rem',
+                fontWeight: 800,
+                color: 'var(--teal)',
+                letterSpacing: '0.1em',
+                textShadow: '0 0 20px rgba(0,196,188,0.4)'
+              }}>
+                PEP NATION LAB
+              </div>
             </div>
             <p style={{ fontSize: '0.82rem', color: 'var(--grey-400)', lineHeight: 1.7, marginBottom: 'var(--space-4)' }}>
               Wholesale Research Peptide Distribution For Qualified Scientists And Research Institutions.
@@ -128,7 +131,12 @@ export default function FooterSection() {
           marginBottom: 'var(--space-8)'
         }}>
           <p style={{ fontSize: '0.75rem', color: 'var(--grey-400)', lineHeight: 1.7, textAlign: 'center' }}>
-            <strong style={{ color: 'var(--red)' }}>⚠ Research Use Only Disclaimer:</strong>{' '}
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--red)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: 4 }}>
+              <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+              <line x1="12" y1="9" x2="12" y2="13" />
+              <line x1="12" y1="17" x2="12.01" y2="17" />
+            </svg>
+            <strong style={{ color: 'var(--red)' }}>Research Use Only Disclaimer:</strong>{' '}
             All products sold on PepNationLab.com are strictly for <em>in vitro</em> laboratory research and analytical purposes only. 
             They are NOT intended for human or animal consumption, ingestion, or injection. 
             These products have not been evaluated or approved by the FDA. 
