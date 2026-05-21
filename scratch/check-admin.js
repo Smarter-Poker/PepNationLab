@@ -50,7 +50,7 @@ async function run() {
 
   const user = users.find(u => u.email === email);
   if (!user) {
-    console.log(`❌ User ${email} does not exist in auth.users! Let's create it.`);
+    console.log(`[X] User ${email} does not exist in auth.users! Creating it now.`);
     
     // Create the user
     const { data: newUser, error: createError } = await supabase.auth.admin.createUser({
@@ -65,12 +65,12 @@ async function run() {
       return;
     }
 
-    console.log('✅ User created in auth.users successfully:', newUser.user.id);
+    console.log('[OK]User created in auth.users successfully:', newUser.user.id);
     
     // Now let's check or update the profile role
     await updateProfile(newUser.user.id);
   } else {
-    console.log('✅ User exists in auth.users with ID:', user.id);
+    console.log('[OK]User exists in auth.users with ID:', user.id);
     await updateProfile(user.id);
   }
 }
@@ -104,7 +104,7 @@ async function updateProfile(userId) {
   if (error) {
     console.error('Error updating profile to admin:', error);
   } else {
-    console.log('✅ Profile updated/inserted successfully with admin role:', data);
+    console.log('[OK]Profile updated/inserted successfully with admin role:', data);
   }
 }
 

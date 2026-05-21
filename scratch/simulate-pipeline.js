@@ -238,15 +238,15 @@ async function simulate() {
   console.log(` -> Current Stock: ${updatedProduct.inventory_count} Units`);
   
   if (updatedProduct.inventory_count === expectedStock) {
-    console.log(' -> ✅ SUCCESS: DB trigger synced inventory count correctly!');
+    console.log(' -> [PASS] DB trigger synced inventory count correctly!');
   } else {
-    console.error(' -> ❌ FAILURE: Inventory count mismatch!');
+    console.error(' -> [FAIL] Inventory count mismatch!');
   }
 
   console.log('\n=== END-TO-END PIPELINE SIMULATION COMPLETED WITH 100% SUCCESS ===');
 }
 
 simulate().catch(e => {
-  console.error('\n❌ PIPELINE SIMULATION FAILED:', e);
+  console.error('\n[FAIL] PIPELINE SIMULATION FAILED:', e);
   process.exit(1);
 });
