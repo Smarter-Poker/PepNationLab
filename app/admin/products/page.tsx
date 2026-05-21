@@ -11,11 +11,11 @@ export default async function AdminProductsPage() {
 
   const { data: tiers } = await supabase
     .from('pricing_tiers')
-    .select('tier, multiplier')
-    .order('tier');
+    .select('tier_name, multiplier')
+    .order('tier_name');
 
   const multipliers: Record<string, number> = {};
-  tiers?.forEach(t => { multipliers[t.tier] = t.multiplier; });
+  tiers?.forEach(t => { multipliers[t.tier_name] = t.multiplier; });
 
   const tierPrice = (cost: number, tier: string) =>
     `$${(cost * (multipliers[tier] ?? 1)).toFixed(2)}`;

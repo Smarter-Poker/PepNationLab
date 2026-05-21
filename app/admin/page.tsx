@@ -14,10 +14,10 @@ export default async function AdminDashboard() {
     supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'researcher'),
     supabase.from('profiles').select('*', { count: 'exact', head: true }).in('role', ['agent', 'super_agent']),
     supabase.from('products').select('*', { count: 'exact', head: true }).eq('is_active', true),
-    supabase.from('orders').select('*', { count: 'exact', head: true }).eq('status', 'pending'),
+    supabase.from('orders').select('*', { count: 'exact', head: true }).eq('status', 'pending_customer_payment'),
     supabase
       .from('orders')
-      .select('id, status, total_amount, payment_method, created_at, profiles(full_name)')
+      .select('id, status, total, payment_method, created_at, profiles(full_name)')
       .order('created_at', { ascending: false })
       .limit(5),
   ]);
@@ -30,11 +30,14 @@ export default async function AdminDashboard() {
   ];
 
   const STATUS_COLORS: Record<string, string> = {
-    pending: 'var(--red)',
-    confirmed: '#F6AD55',
-    shipped: 'var(--teal)',
-    delivered: '#68D391',
-    cancelled: 'var(--grey-400)',
+    pending_customer_payment: 'var(--red)',
+    agent_approval_pending:   '#F6AD55',
+    approved_ship:            '#F6AD55',
+    approved_pickup:          '#F6AD55',
+    in_fulfillment:           'var(--teal)',
+    shipped:                  'var(--teal)',
+    delivered:                '#68D391',
+    cancelled:                'var(--grey-400)',
   };
 
   return (
@@ -95,7 +98,7 @@ export default async function AdminDashboard() {
                         {profile?.full_name ?? 'Unknown'}
                       </div>
                       <div style={{ fontSize: '0.75rem', color: 'var(--grey-400)' }}>
-                        {order.payment_method} • ${Number(order.total_amount).toFixed(2)}
+                        {order.payment_method} • ${Number(order.total).toFixed(2)}
                       </div>
                     </div>
                     <div style={{
