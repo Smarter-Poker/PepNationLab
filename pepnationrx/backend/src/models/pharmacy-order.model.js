@@ -46,6 +46,17 @@ async function findByExternalOrderId(externalOrderId) {
   );
 }
 
+// All pharmacy orders for a patient, newest first. Backs the patient
+// dashboard's shipment history.
+async function findByUserId(userId) {
+  const result = await query(
+    'SELECT ' + COLUMNS + ' FROM pharmacy_orders WHERE user_id = $1 ' +
+      'ORDER BY created_at DESC',
+    [userId]
+  );
+  return result.rows;
+}
+
 // Record the pharmacy's order id once the order has been accepted, and move
 // the order into the submitted state.
 async function attachExternalOrderId(id, externalOrderId) {
@@ -86,6 +97,7 @@ module.exports = {
   create: create,
   findById: findById,
   findByExternalOrderId: findByExternalOrderId,
+  findByUserId: findByUserId,
   attachExternalOrderId: attachExternalOrderId,
   applyTrackingUpdate: applyTrackingUpdate,
 };
