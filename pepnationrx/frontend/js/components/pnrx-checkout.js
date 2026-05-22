@@ -150,7 +150,7 @@ export class PnrxCheckout extends PnrxComponent {
       const message =
         err instanceof ApiError
           ? err.message
-          : 'Checkout could not be completed. Please try again.';
+          : 'Checkout Could Not Be Completed. Please Try Again.';
       this.setState({ submitting: false, error: message });
       this.emit('checkout:error', { message: message });
     }

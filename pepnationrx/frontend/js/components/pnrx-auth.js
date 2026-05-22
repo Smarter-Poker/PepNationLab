@@ -100,7 +100,7 @@ export class PnrxAuth extends PnrxComponent {
       const message =
         err instanceof ApiError
           ? err.message
-          : 'We could not complete your request. Please try again.';
+          : 'We Could Not Complete Your Request. Please Try Again.';
       this.setState({ submitting: false, error: message });
     }
   }
