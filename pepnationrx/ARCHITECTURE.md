@@ -275,7 +275,39 @@ Triad backend (`backend/`):
 Every integration is optional in configuration so the API still boots before
 credentials exist; each service checks `isConfigured()` before a live call.
 
+## X. Phase 5 Deliverables (complete)
+
+The patient and affiliate dashboards, end to end.
+
+Backend (`backend/`):
+
+1. Models: `subscription`, `transaction`, `affiliate`, `affiliate-referral`,
+   `affiliate-payout`; `pharmacy-order` gains a `findByUserId` reader.
+2. `GET /api/patient/dashboard` - the authenticated patient's profile,
+   subscriptions, prescriptions, shipments, billing, and summary statistics.
+3. `GET /api/affiliate/dashboard` and `GET /api/affiliate/referral-link` -
+   the affiliate's organization profile, referral funnel, attributed monthly
+   recurring revenue, estimated earnings, and payout ledger.
+
+Frontend (`frontend/`):
+
+4. `js/services/api.js` - the API client: a fetch wrapper that attaches the
+   JWT access token and normalizes errors into a typed `ApiError`.
+5. `js/components/pnrx-patient-dashboard.js` - the `<pnrx-patient-dashboard>`
+   custom element, with loading, error, and ready states.
+6. `js/components/pnrx-affiliate-dashboard.js` - the
+   `<pnrx-affiliate-dashboard>` custom element, including a copyable referral
+   link.
+7. `css/components/dashboard.css` - shared futuristic-metal styling for both
+   dashboards.
+8. `patient-dashboard-demo.html` and `affiliate-dashboard-demo.html` -
+   standalone demo pages.
+
+Each controller keys all data on the authenticated user, so a patient sees
+only their own dashboard and an affiliate only their own. Dashboard reads of
+clinical data are recorded in `audit_log`. Verified with an 11-point backend
+test and a 22-point frontend test.
+
 ## Next Phases
 
-- Phase 5: Patient and affiliate dashboards.
 - Phase 6: Jobs, audit hardening, and certification review.
