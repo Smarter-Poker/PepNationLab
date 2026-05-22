@@ -20,6 +20,35 @@ const COLUMNS =
 // Subscription statuses that count as live revenue.
 const ACTIVE_STATUSES = ['trialing', 'active', 'past_due'];
 
+// Create a subscription. Checkout creates the row in 'pending_clinical_review':
+// a recurring protocol is not live revenue until a licensed provider has
+// reviewed the patient's intake. mrr_cents is the per-month price; affiliateId
+// and treatmentPlanId are optional. status defaults to 'pending_clinical_review'
+// and may be overridden only with another subscription_status enum value.
+async function create(data) {
+  return queryOne(
+    'INSERT INTO subscriptions ' +
+      '(user_id, protocol_category, plan_name, status, mrr_cents, currency, ' +
+      ' refill_count, refills_remaining, next_billing_date, affiliate_id, ' +
+      ' treatment_plan_id) ' +
+      'VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) ' +
+      'RETURNING ' + COLUMNS,
+    [
+      data.userId,
+      data.protocolCategory,
+      data.planName,
+      data.status || 'pending_clinical_review',
+      data.mrrCents,
+      data.currency || 'USD',
+      Number.isInteger(data.refillCount) ? data.refillCount : 0,
+      Number.isInteger(data.refillsRemaining) ? data.refillsRemaining : 0,
+      data.nextBillingDate || null,
+      data.affiliateId || null,
+      data.treatmentPlanId || null,
+    ]
+  );
+}
+
 // Find a subscription by primary key.
 async function findById(id) {
   return queryOne('SELECT ' + COLUMNS + ' FROM subscriptions WHERE id = $1', [id]);
@@ -98,6 +127,7 @@ async function markPastDue(id) {
 
 module.exports = {
   ACTIVE_STATUSES: ACTIVE_STATUSES,
+  create: create,
   findById: findById,
   findByUserId: findByUserId,
   findByAffiliateId: findByAffiliateId,

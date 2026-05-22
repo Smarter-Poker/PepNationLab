@@ -14,6 +14,34 @@ const COLUMNS =
   'gross_amount_cents, consult_fee_cents, management_fee_cents, currency, ' +
   'status, processed_at, created_at, updated_at';
 
+// Create a transaction. Checkout records the tri-party split before the Stripe
+// charge settles, so the row starts in 'requires_payment'. merchant_of_record
+// is the medical practice account (NOT NULL); providerAccountId and
+// platformAccountId are the consult-fee and management-fee destinations and may
+// be empty until the connected accounts are provisioned.
+async function create(data) {
+  return queryOne(
+    'INSERT INTO transactions ' +
+      '(user_id, subscription_id, merchant_of_record, provider_account_id, ' +
+      ' platform_account_id, gross_amount_cents, consult_fee_cents, ' +
+      ' management_fee_cents, currency, status) ' +
+      'VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) ' +
+      'RETURNING ' + COLUMNS,
+    [
+      data.userId,
+      data.subscriptionId || null,
+      data.merchantOfRecord,
+      data.providerAccountId || null,
+      data.platformAccountId || null,
+      data.grossAmountCents,
+      Number.isInteger(data.consultFeeCents) ? data.consultFeeCents : 0,
+      Number.isInteger(data.managementFeeCents) ? data.managementFeeCents : 0,
+      data.currency || 'USD',
+      data.status || 'requires_payment',
+    ]
+  );
+}
+
 // Find a transaction by primary key.
 async function findById(id) {
   return queryOne('SELECT ' + COLUMNS + ' FROM transactions WHERE id = $1', [id]);
@@ -42,6 +70,7 @@ async function lifetimeGrossCentsForUser(userId) {
 }
 
 module.exports = {
+  create: create,
   findById: findById,
   findByUserId: findByUserId,
   lifetimeGrossCentsForUser: lifetimeGrossCentsForUser,

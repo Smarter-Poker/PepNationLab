@@ -105,6 +105,8 @@ const config = {
       secretKey: optional('STRIPE_SECRET_KEY', ''),
       webhookSecret: optional('STRIPE_WEBHOOK_SECRET', ''),
       platformAccountId: optional('STRIPE_PLATFORM_ACCOUNT_ID', ''),
+      medicalPracticeAccountId: optional('STRIPE_MEDICAL_PRACTICE_ACCOUNT_ID', ''),
+      providerAccountId: optional('STRIPE_PROVIDER_ACCOUNT_ID', ''),
     },
   },
 };
