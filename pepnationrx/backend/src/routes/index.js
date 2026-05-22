@@ -14,6 +14,7 @@ const intakeRoutes = require('./intake.routes');
 const checkoutRoutes = require('./checkout.routes');
 const patientRoutes = require('./patient.routes');
 const affiliateRoutes = require('./affiliate.routes');
+const adminRoutes = require('./admin.routes');
 const medicalNetworkWebhook = require('../webhooks/medical-network.webhook');
 const pharmacyWebhook = require('../webhooks/pharmacy.webhook');
 const stripeWebhook = require('../webhooks/stripe.webhook');
@@ -32,6 +33,7 @@ router.use('/intake', intakeRoutes);
 router.use('/checkout', checkoutRoutes);
 router.use('/patient', patientRoutes);
 router.use('/affiliate', affiliateRoutes);
+router.use('/admin', adminRoutes);
 
 // Triad webhook receivers. Each verifies a per-source signature internally.
 router.use('/webhooks/medical-network', medicalNetworkWebhook);
