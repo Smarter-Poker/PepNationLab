@@ -308,6 +308,48 @@ only their own dashboard and an affiliate only their own. Dashboard reads of
 clinical data are recorded in `audit_log`. Verified with an 11-point backend
 test and a 22-point frontend test.
 
-## Next Phases
+## XI. Phase 6 Deliverables (complete)
 
-- Phase 6: Jobs, audit hardening, and certification review.
+Scheduled jobs, audit hardening, and the certification review.
+
+Jobs (`backend/src/jobs/`):
+
+1. `refill-reminders.job.js` - marks overdue check-ins missed and schedules a
+   monthly check-in for every active subscription that lacks one. Idempotent.
+2. `billing-sweep.job.js` - counts renewals due within the grace window and
+   flags subscriptions whose renewal is overdue beyond it as past_due.
+   Payment confirmation itself arrives via the Stripe webhook.
+3. `payout-run.job.js` - settles affiliate revenue share for a calendar month,
+   creating a pending `affiliate_payouts` row per affiliate; idempotent
+   through `existsForPeriod`.
+4. `index.js` - the CLI job runner. A scheduler invokes
+   `node src/jobs/index.js <job-name>`; the runner verifies the database,
+   runs the job, drains the pool, and exits non-zero on failure.
+
+Supporting models: `monthly-checkin` (new); `subscription`, `affiliate`, and
+`affiliate-payout` gain the writers and finders the jobs need.
+
+Audit hardening:
+
+5. `middleware/audit.middleware.js` - a declarative PHI-access audit
+   middleware. Mounted on a route, it writes one `audit_log` entry per
+   successful access on the response `finish` event. Each job also writes a
+   run record to `audit_log`.
+
+Certification review:
+
+6. `docs/certification-readiness.md` - an engineering self-assessment mapping
+   the build to the LegitScript Healthcare Merchant Certification requirements
+   and the HIPAA Privacy and Security Rules, with the outstanding items and
+   the production launch gate.
+
+Verified with a 26-point backend test covering the job runner, the three
+jobs, the audit middleware factory, period math, and every new model reader
+and writer.
+
+## Project Status
+
+The architected build (Phases 1 through 6) is complete. Production launch is
+gated on the items in `docs/certification-readiness.md`: LegitScript
+certification, a HIPAA Security Risk Assessment, signed Business Associate
+Agreements, legal and compliance counsel review, and a penetration test.
