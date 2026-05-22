@@ -32,17 +32,22 @@ function signRefreshToken(payload) {
 }
 
 // Verify an access token. Throws a jsonwebtoken error on failure; callers
-// translate that into a 401.
+// translate that into a 401. The algorithm allowlist is pinned to HS256 so a
+// token presenting a different "alg" header (an algorithm-confusion attack)
+// is rejected outright rather than verified against the wrong scheme.
 function verifyAccessToken(token) {
   return jwt.verify(token, config.jwt.accessSecret, {
     issuer: config.jwt.issuer,
+    algorithms: ['HS256'],
   });
 }
 
-// Verify a refresh token signature and expiry.
+// Verify a refresh token signature and expiry. The algorithm is pinned for
+// the same reason as the access token above.
 function verifyRefreshToken(token) {
   return jwt.verify(token, config.jwt.refreshSecret, {
     issuer: config.jwt.issuer,
+    algorithms: ['HS256'],
   });
 }
 

@@ -15,7 +15,7 @@ const express = require('express');
 
 const config = require('../config/env');
 const logger = require('../utils/logger');
-const { verifySignature } = require('./verify-signature');
+const { verifyStripeSignature } = require('./verify-signature');
 const webhookEventModel = require('../models/webhook-event.model');
 const audit = require('../services/audit.service');
 const stripeSubscription = require('../services/stripe/subscription');
@@ -34,9 +34,10 @@ const HANDLED_TYPES = [
 ];
 
 router.post('/', async function (req, res) {
-  // 1. Verify the signature over the exact received bytes.
+  // 1. Verify the signature over the exact received bytes. Stripe's header is
+  // a timestamped, multi-scheme value, so it needs the Stripe-specific check.
   const signature = req.get('stripe-signature');
-  const verdict = verifySignature(req.rawBody, signature, SECRET);
+  const verdict = verifyStripeSignature(req.rawBody, signature, SECRET);
   if (verdict === 'invalid') {
     return res.status(401).json({
       error: { code: 'invalid_signature', message: 'Webhook signature verification failed.' },

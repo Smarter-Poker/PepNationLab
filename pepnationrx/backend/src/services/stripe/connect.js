@@ -37,6 +37,11 @@ function computeSplit(input) {
   if (!Number.isInteger(gross) || gross < 0) {
     throw new AppError(422, 'invalid_split', 'Gross amount must be a non-negative integer.');
   }
+  // Fees must be whole cents: Stripe rejects fractional amounts, and the
+  // transactions table stores integer cents.
+  if (!Number.isInteger(consultFee) || !Number.isInteger(managementFee)) {
+    throw new AppError(422, 'invalid_split', 'Fee amounts must be whole cents.');
+  }
   if (consultFee < 0 || managementFee < 0) {
     throw new AppError(422, 'invalid_split', 'Fee amounts must not be negative.');
   }
