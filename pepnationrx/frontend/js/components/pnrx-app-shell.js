@@ -33,7 +33,11 @@ import './pnrx-triage-form.js';
 import './pnrx-checkout.js';
 import './pnrx-patient-dashboard.js';
 import './pnrx-affiliate-dashboard.js';
+import './pnrx-admin-dashboard.js';
 import './pnrx-auth.js';
+
+// Roles permitted to reach the admin dashboard.
+const STAFF_ROLES = ['admin', 'support'];
 
 export class PnrxAppShell extends HTMLElement {
   constructor() {
@@ -121,6 +125,20 @@ export class PnrxAppShell extends HTMLElement {
         }
         return document.createElement('pnrx-affiliate-dashboard');
       },
+      '/admin': function () {
+        const user = getUser();
+        if (!isAuthenticated()) {
+          self.router.navigate('/login');
+          return self.requireSignInNotice();
+        }
+        if (!user || STAFF_ROLES.indexOf(user.role) === -1) {
+          const div = document.createElement('div');
+          div.className = 'pnrx-shell__notice';
+          div.textContent = 'This Area Is Restricted To Staff Accounts.';
+          return div;
+        }
+        return document.createElement('pnrx-admin-dashboard');
+      },
       '/login': function () {
         const el = document.createElement('pnrx-auth');
         el.setAttribute('mode', 'login');
@@ -192,6 +210,11 @@ export class PnrxAppShell extends HTMLElement {
       const label =
         user && user.first_name ? 'Hello, ' + user.first_name : 'My Dashboard';
       links.push('<a class="pnrx-shell__link" href="#/dashboard">' + label + '</a>');
+      if (user && STAFF_ROLES.indexOf(user.role) !== -1) {
+        links.push(
+          '<a class="pnrx-shell__link" href="#/admin">Admin Console</a>'
+        );
+      }
       links.push(
         '<button type="button" class="pnrx-shell__signout" ' +
           'data-action="signout">Sign Out</button>'
