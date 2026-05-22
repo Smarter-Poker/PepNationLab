@@ -9,6 +9,7 @@
 // ============================================================================
 
 const express = require('express');
+const { query } = require('../db/query');
 const authRoutes = require('./auth.routes');
 const intakeRoutes = require('./intake.routes');
 const checkoutRoutes = require('./checkout.routes');
@@ -25,6 +26,18 @@ const router = express.Router();
 // stays green even during a brief database blip.
 router.get('/health', (req, res) => {
   res.status(200).json({ status: 'ok', service: 'pepnationrx-api' });
+});
+
+// Readiness probe: confirms the database is reachable before the instance is
+// routed traffic. Returns 503 when the database cannot be queried, so an
+// orchestrator holds traffic back until the dependency is healthy.
+router.get('/health/ready', async (req, res) => {
+  try {
+    await query('SELECT 1');
+    res.status(200).json({ status: 'ready', service: 'pepnationrx-api' });
+  } catch (err) {
+    res.status(503).json({ status: 'unavailable', service: 'pepnationrx-api' });
+  }
 });
 
 // Feature routers.

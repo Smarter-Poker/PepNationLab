@@ -16,6 +16,7 @@
 import { createRouter } from '../core/router.js';
 import { isAuthenticated, getUser, subscribe } from '../store/session.js';
 import { restoreSession, logout } from '../services/auth.service.js';
+import { showToast } from '../utils/toast.js';
 
 // The mandatory MSO billing-agent disclosure. Kept identical to the backend
 // constants module and ARCHITECTURE.md Section V.
@@ -189,11 +190,22 @@ export class PnrxAppShell extends HTMLElement {
     // A completed checkout returns the patient to their dashboard.
     this.addEventListener('checkout:complete', function () {
       self.pendingSelection = null;
+      showToast(
+        'Order Received. A Provider Will Review Your Intake Shortly.',
+        'success'
+      );
       self.router.navigate('/dashboard');
+    });
+
+    // A checkout error surfaces as a toast in addition to the inline message.
+    this.addEventListener('checkout:error', function (event) {
+      const detail = event.detail || {};
+      showToast(detail.message || 'Checkout could not be completed.', 'error');
     });
 
     // A successful sign-in or registration opens the patient dashboard.
     this.addEventListener('auth:success', function () {
+      showToast('You Are Signed In.', 'success');
       self.router.navigate('/dashboard');
     });
   }

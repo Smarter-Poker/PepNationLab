@@ -14,37 +14,7 @@
 
 import { PnrxComponent, escapeHtml } from '../core/component.js';
 import { fetchAdminDashboard, fetchAuditLog } from '../services/admin.service.js';
-
-// Format an integer cent amount as a US dollar string.
-function money(cents) {
-  const value = Number(cents) || 0;
-  return '$' + (value / 100).toFixed(2);
-}
-
-// Convert a snake_case enum value into a Title Case label.
-function humanize(value) {
-  if (!value) return '';
-  return String(value)
-    .split('_')
-    .map(function (word) {
-      return word.charAt(0).toUpperCase() + word.slice(1);
-    })
-    .join(' ');
-}
-
-// Format an ISO timestamp as a short readable date and time.
-function formatStamp(value) {
-  if (!value) return 'Not Available';
-  const parsed = new Date(value);
-  if (Number.isNaN(parsed.getTime())) return 'Not Available';
-  return parsed.toLocaleString('en-US', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-    hour: 'numeric',
-    minute: '2-digit',
-  });
-}
+import { money, formatStamp, humanize } from '../utils/format.js';
 
 export class PnrxAdminDashboard extends PnrxComponent {
   constructor() {
