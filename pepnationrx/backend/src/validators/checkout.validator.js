@@ -33,11 +33,14 @@ const consentType = z.enum([
   'privacy_policy',
 ]);
 
-// One acknowledgement the patient made on the checkout screen.
+// One acknowledgement the patient made on the checkout screen. `accepted` is
+// pinned to the literal true: a consent the patient declined must not be
+// submitted at all, so an accepted:false row can never reach the consents
+// table and contaminate the legal record.
 const consentAcknowledgement = z.object({
   consentType: consentType,
   documentVersion: z.string().trim().min(1).max(64),
-  accepted: z.boolean(),
+  accepted: z.literal(true),
 });
 
 // A new shipping address supplied inline at checkout. Mutually exclusive with

@@ -29,8 +29,9 @@ router.post('/login', authLimiter, validate(loginSchema), authController.login);
 // Rotate the refresh token and issue a fresh access token.
 router.post('/refresh', authLimiter, validate(refreshSchema), authController.refresh);
 
-// Revoke the current refresh token.
-router.post('/logout', validate(refreshSchema), authController.logout);
+// Revoke the current refresh token. Rate-limited like the other credential
+// endpoints so the token table cannot be probed in a tight loop.
+router.post('/logout', authLimiter, validate(refreshSchema), authController.logout);
 
 // Return the authenticated user's profile.
 router.get('/me', authenticate, authController.me);

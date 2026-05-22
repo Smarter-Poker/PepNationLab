@@ -86,14 +86,20 @@ async function run(options) {
       continue;
     }
 
-    await affiliatePayoutModel.create({
+    const payout = await affiliatePayoutModel.create({
       affiliateId: affiliate.id,
       periodStart: period.periodStart,
       periodEnd: period.periodEnd,
       amountCents: amountCents,
     });
-    summary.payoutsCreated += 1;
-    summary.totalCents += amountCents;
+    // A null return means the period-unique constraint rejected a duplicate:
+    // a concurrent run already settled this affiliate. Count it as skipped.
+    if (payout) {
+      summary.payoutsCreated += 1;
+      summary.totalCents += amountCents;
+    } else {
+      summary.skipped += 1;
+    }
   }
 
   await audit.record({

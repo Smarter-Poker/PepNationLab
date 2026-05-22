@@ -53,11 +53,17 @@ async function existsForPeriod(affiliateId, periodStart, periodEnd) {
 
 // Insert a payout in the 'pending' state. period_start / period_end are ISO
 // date strings (YYYY-MM-DD); amount_cents is a non-negative integer.
+//
+// The ON CONFLICT clause relies on the affiliate_payouts_period_unique
+// constraint (migration 0002): if a payout for this affiliate and period
+// already exists, the insert is a no-op and this returns null. Callers must
+// treat a null return as "already settled", not as an error.
 async function create(data) {
   return queryOne(
     'INSERT INTO affiliate_payouts ' +
       '(affiliate_id, period_start, period_end, amount_cents, currency, status) ' +
       "VALUES ($1, $2, $3, $4, $5, 'pending') " +
+      'ON CONFLICT (affiliate_id, period_start, period_end) DO NOTHING ' +
       'RETURNING ' + COLUMNS,
     [
       data.affiliateId,

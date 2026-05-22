@@ -123,6 +123,16 @@ if (isProduction) {
   if (config.jwt.accessSecret.length < 32) {
     errors.push('JWT_ACCESS_SECRET must be at least 32 characters in production.');
   }
+  // The refresh token is long-lived, so a weak refresh secret is at least as
+  // dangerous as a weak access secret; hold it to the same length floor.
+  if (config.jwt.refreshSecret.length < 32) {
+    errors.push('JWT_REFRESH_SECRET must be at least 32 characters in production.');
+  }
+  // Patient data must never cross the network unencrypted. Require TLS to the
+  // database in production, either via PGSSL or an sslmode in DATABASE_URL.
+  if (!config.database.ssl && !/ssl/i.test(config.database.url)) {
+    errors.push('Database TLS is required in production: set PGSSL=true or an sslmode in DATABASE_URL.');
+  }
 }
 
 if (errors.length > 0) {

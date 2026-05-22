@@ -32,9 +32,17 @@ app.use(helmet());
 app.use(
   cors({
     origin: function originCheck(origin, callback) {
-      // Non-browser clients (no Origin header) are allowed through.
-      if (!origin || config.corsOrigins.length === 0) {
+      // Non-browser clients (no Origin header, e.g. server-to-server) pass.
+      if (!origin) {
         return callback(null, true);
+      }
+      // With no allowlist configured, permit any browser origin in
+      // development for convenience, but fail closed in production so a
+      // missing CORS_ORIGINS env var cannot silently open the API.
+      if (config.corsOrigins.length === 0) {
+        return config.isProduction
+          ? callback(new Error('Origin not permitted by CORS policy.'))
+          : callback(null, true);
       }
       if (config.corsOrigins.includes(origin)) {
         return callback(null, true);
@@ -90,8 +98,11 @@ async function start() {
 // Drain in-flight requests and close the pool before exiting.
 async function shutdown(signal) {
   logger.info('Shutdown signal received', { signal: signal });
+  // Stop accepting new connections and let in-flight requests finish before
+  // the pool is drained, so no live query loses its connection mid-flight.
   if (server) {
-    server.close(() => logger.info('HTTP server closed'));
+    await new Promise((resolve) => server.close(resolve));
+    logger.info('HTTP server closed');
   }
   try {
     await closePool();
