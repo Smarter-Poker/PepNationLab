@@ -3,14 +3,15 @@
 // ============================================================================
 // Route table aggregator.
 // Mounts every feature router under /api. Phase 2 shipped authentication;
-// Phase 4 added the clinical intake endpoint and the three Triad webhook
-// receivers; Phase 5 adds the patient and affiliate dashboards. Later phases
-// add checkout and admin routers here.
+// Phase 4 adds the clinical intake endpoint and the three Triad webhook
+// receivers. Later phases add subscription, prescription, checkout, patient,
+// affiliate, and admin routers here.
 // ============================================================================
 
 const express = require('express');
 const authRoutes = require('./auth.routes');
 const intakeRoutes = require('./intake.routes');
+const checkoutRoutes = require('./checkout.routes');
 const patientRoutes = require('./patient.routes');
 const affiliateRoutes = require('./affiliate.routes');
 const medicalNetworkWebhook = require('../webhooks/medical-network.webhook');
@@ -28,6 +29,7 @@ router.get('/health', (req, res) => {
 // Feature routers.
 router.use('/auth', authRoutes);
 router.use('/intake', intakeRoutes);
+router.use('/checkout', checkoutRoutes);
 router.use('/patient', patientRoutes);
 router.use('/affiliate', affiliateRoutes);
 
