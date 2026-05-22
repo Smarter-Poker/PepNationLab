@@ -159,7 +159,8 @@ Core tables: `users`, `medical_profiles`, `subscriptions`, `prescriptions`,
 `affiliates`. Supporting tables: `addresses`, `providers`, `pharmacies`,
 `intake_submissions`, `pharmacy_orders`, `transactions`, `affiliate_referrals`,
 `affiliate_payouts`, `monthly_checkins`, `consents`, `webhook_events`,
-`refresh_tokens`, `audit_log`.
+`refresh_tokens`, `audit_log`. Migration 0001 adds the catalog tables
+`treatment_categories`, `treatments`, and `treatment_plans`.
 
 ## V. Compliance Disclosure
 
@@ -234,8 +235,47 @@ visible question list is recomputed from the current answers, so the path
 through the form adapts as the patient responds. Verified with a 37-point
 headless engine test and a 7-point render test.
 
+## IX. Phase 4 Deliverables (complete)
+
+The treatment catalog and the Triad service integrations.
+
+Catalog:
+
+1. `database/migrations/0001_treatment_catalog.sql` - the `treatment_categories`,
+   `treatments`, and `treatment_plans` tables, plus a `treatment_plan_id` link
+   on `subscriptions`.
+2. `frontend/js/data/treatment-catalog.js` - twelve categories and the full
+   product catalog: every listed peptide plus the hims/hers lines (weight,
+   sexual health, testosterone, womens hormone, birth control, hair, skin,
+   mental health, sleep, longevity, labs), with multi-month plan pricing.
+3. `frontend/js/components/pnrx-catalog.js` and `css/components/catalog.css` -
+   the `<pnrx-catalog>` storefront: a shallow hub, category, and treatment
+   browse that emits a `catalog:select` event into the triage flow.
+4. `docs/competitive-analysis-hims-hers.md` - the hims/hers research that
+   informed the catalog taxonomy and pricing model.
+
+Triad backend (`backend/`):
+
+5. Models: `webhook-event`, `provider`, `intake-submission`, `prescription`,
+   `pharmacy-order`.
+6. `services/medical-network/` - `client.js` (Wheel / SteadyMD HTTP client),
+   `intake-mapper.js` (pure intake-to-network mapping and state-based sync
+   visit rules), `prescription-sync.js` (applies signed prescriptions).
+7. `services/pharmacy/` - `client.js` (503A pharmacy B2B client),
+   `order-router.js` (routes approved prescriptions), `tracking-sync.js`
+   (applies cold-chain tracking updates).
+8. `services/stripe/` - `connect.js` (tri-party split routing), `subscription.js`
+   (recurring billing), `payout.js` (affiliate revenue-share transfers).
+9. `webhooks/` - `verify-signature.js` (HMAC verification) and the three
+   signed, idempotent receivers (`medical-network`, `pharmacy`, `stripe`).
+10. `POST /api/intake` and `GET /api/intake/:id` - the clinical intake
+    endpoint that stores the encrypted answer set and forwards it to the
+    medical network.
+
+Every integration is optional in configuration so the API still boots before
+credentials exist; each service checks `isConfigured()` before a live call.
+
 ## Next Phases
 
-- Phase 4: Triad service integrations (medical network, pharmacy, Stripe Connect).
 - Phase 5: Patient and affiliate dashboards.
-- Phase 6: Webhook receivers, jobs, audit hardening, certification review.
+- Phase 6: Jobs, audit hardening, and certification review.
