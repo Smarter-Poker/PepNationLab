@@ -252,6 +252,13 @@ export class PnrxTriageForm extends PnrxComponent {
 
   submit() {
     const protocol = getProtocol(this.state.protocolId);
+    // Defensive: submit is only reachable from the review screen, but if the
+    // protocol id is ever missing, return to the protocol picker rather than
+    // dereferencing a null protocol.
+    if (!protocol) {
+      this.setState({ screen: 'protocol', protocolId: null });
+      return;
+    }
     const result = this.evaluateTriage();
     // A disqualified result should never reach submit, but guard anyway.
     if (result.disqualified) {

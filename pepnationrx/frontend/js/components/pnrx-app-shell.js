@@ -16,6 +16,7 @@
 import { createRouter } from '../core/router.js';
 import { isAuthenticated, getUser, subscribe } from '../store/session.js';
 import { restoreSession, logout } from '../services/auth.service.js';
+import { submitIntake } from '../services/intake.service.js';
 import { showToast } from '../utils/toast.js';
 
 // The mandatory MSO billing-agent disclosure. Kept identical to the backend
@@ -182,9 +183,30 @@ export class PnrxAppShell extends HTMLElement {
       self.router.navigate('/intake');
     });
 
-    // A completed intake advances to checkout when a plan was selected.
-    this.addEventListener('triage:submit', function () {
-      self.router.navigate(self.pendingSelection ? '/checkout' : '/dashboard');
+    // A completed intake is persisted to the backend so a provider can review
+    // it, then advances to checkout when a plan was selected. The intake is
+    // saved only for a signed-in patient; an anonymous visitor is routed
+    // onward and will create an account before checkout. A save failure is
+    // surfaced but does not block navigation.
+    this.addEventListener('triage:submit', function (event) {
+      const detail = event.detail || {};
+      const proceed = function () {
+        self.router.navigate(self.pendingSelection ? '/checkout' : '/dashboard');
+      };
+      if (!isAuthenticated()) {
+        proceed();
+        return;
+      }
+      submitIntake(detail)
+        .then(function (result) {
+          if (self.pendingSelection && result && result.submission) {
+            self.pendingSelection.intakeSubmissionId = result.submission.id;
+          }
+        })
+        .catch(function () {
+          showToast('Your Intake Could Not Be Saved. Please Try Again.', 'error');
+        })
+        .finally(proceed);
     });
 
     // A completed checkout returns the patient to their dashboard.
@@ -200,7 +222,7 @@ export class PnrxAppShell extends HTMLElement {
     // A checkout error surfaces as a toast in addition to the inline message.
     this.addEventListener('checkout:error', function (event) {
       const detail = event.detail || {};
-      showToast(detail.message || 'Checkout could not be completed.', 'error');
+      showToast(detail.message || 'Checkout Could Not Be Completed.', 'error');
     });
 
     // A successful sign-in or registration opens the patient dashboard.
