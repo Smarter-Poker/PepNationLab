@@ -57,10 +57,53 @@ async function activeMrrCentsForAffiliate(affiliateId) {
   return row ? Number(row.total) : 0;
 }
 
+// All subscriptions currently in an active billing state. Used by the
+// refill-reminders job to decide which patients need a check-in scheduled.
+async function findActive() {
+  const result = await query(
+    'SELECT ' + COLUMNS + ' FROM subscriptions WHERE status = ANY($1) ' +
+      'ORDER BY created_at',
+    [ACTIVE_STATUSES]
+  );
+  return result.rows;
+}
+
+// Subscriptions whose next billing date has arrived. Used by the billing
+// sweep. asOfDate is an ISO date string (YYYY-MM-DD).
+async function findDueForBilling(asOfDate) {
+  const result = await query(
+    'SELECT ' + COLUMNS + ' FROM subscriptions ' +
+      "WHERE status = 'active' AND next_billing_date IS NOT NULL " +
+      'AND next_billing_date <= $1 ORDER BY next_billing_date',
+    [asOfDate]
+  );
+  return result.rows;
+}
+
+// Move a subscription's next billing date forward after a successful renewal.
+async function advanceBillingDate(id, nextBillingDate) {
+  await query('UPDATE subscriptions SET next_billing_date = $2 WHERE id = $1', [
+    id,
+    nextBillingDate,
+  ]);
+}
+
+// Flag a subscription past due after a failed renewal charge.
+async function markPastDue(id) {
+  await query(
+    "UPDATE subscriptions SET status = 'past_due' WHERE id = $1 AND status = 'active'",
+    [id]
+  );
+}
+
 module.exports = {
   ACTIVE_STATUSES: ACTIVE_STATUSES,
   findById: findById,
   findByUserId: findByUserId,
   findByAffiliateId: findByAffiliateId,
   activeMrrCentsForAffiliate: activeMrrCentsForAffiliate,
+  findActive: findActive,
+  findDueForBilling: findDueForBilling,
+  advanceBillingDate: advanceBillingDate,
+  markPastDue: markPastDue,
 };

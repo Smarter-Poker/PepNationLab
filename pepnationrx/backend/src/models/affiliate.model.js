@@ -9,7 +9,7 @@
 // dashboard.
 // ============================================================================
 
-const { queryOne } = require('../db/query');
+const { query, queryOne } = require('../db/query');
 
 const COLUMNS =
   'id, user_id, affiliate_code, organization_name, organization_type, ' +
@@ -35,8 +35,18 @@ async function findByCode(affiliateCode) {
   );
 }
 
+// Every active affiliate. Used by the payout-run job to settle revenue share.
+async function findAllActive() {
+  const result = await query(
+    'SELECT ' + COLUMNS + ' FROM affiliates WHERE is_active = TRUE ' +
+      'ORDER BY created_at'
+  );
+  return result.rows;
+}
+
 module.exports = {
   findById: findById,
   findByUserId: findByUserId,
   findByCode: findByCode,
+  findAllActive: findAllActive,
 };

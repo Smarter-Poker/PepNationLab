@@ -40,7 +40,38 @@ async function totalsForAffiliate(affiliateId) {
   };
 }
 
+// True when a payout already covers an affiliate's exact settlement period.
+// The payout-run job uses this to avoid issuing a period's payout twice.
+async function existsForPeriod(affiliateId, periodStart, periodEnd) {
+  const row = await queryOne(
+    'SELECT 1 AS present FROM affiliate_payouts ' +
+      'WHERE affiliate_id = $1 AND period_start = $2 AND period_end = $3 LIMIT 1',
+    [affiliateId, periodStart, periodEnd]
+  );
+  return row !== null;
+}
+
+// Insert a payout in the 'pending' state. period_start / period_end are ISO
+// date strings (YYYY-MM-DD); amount_cents is a non-negative integer.
+async function create(data) {
+  return queryOne(
+    'INSERT INTO affiliate_payouts ' +
+      '(affiliate_id, period_start, period_end, amount_cents, currency, status) ' +
+      "VALUES ($1, $2, $3, $4, $5, 'pending') " +
+      'RETURNING ' + COLUMNS,
+    [
+      data.affiliateId,
+      data.periodStart,
+      data.periodEnd,
+      data.amountCents,
+      data.currency || 'USD',
+    ]
+  );
+}
+
 module.exports = {
   findByAffiliateId: findByAffiliateId,
   totalsForAffiliate: totalsForAffiliate,
+  existsForPeriod: existsForPeriod,
+  create: create,
 };
