@@ -46,6 +46,16 @@ const AUDIT_ACTIONS = Object.freeze({
   TOKEN_REUSE_DETECTED: 'auth.token.reuse_detected',
 });
 
+// Tri-party fee split applied at checkout. The medical practice is the
+// Merchant of Record and keeps the gross amount minus these two fees; the
+// provider receives the consult fee; PepNationRX receives the management fee.
+//   consultFeeCents      flat per-charge clinical consult fee
+//   managementFeePct     platform management fee, as a percent of the gross
+const FEE_SPLIT = Object.freeze({
+  consultFeeCents: 3900,
+  managementFeePct: 20,
+});
+
 // The mandatory MSO billing-agent disclosure. Kept identical to the text
 // in ARCHITECTURE.md Section V, the frontend shell footer, and the checkout
 // consent.
@@ -63,5 +73,6 @@ module.exports = Object.freeze({
   LOGIN_BLOCKED_STATUS: LOGIN_BLOCKED_STATUS,
   CONSENT_TYPES: CONSENT_TYPES,
   AUDIT_ACTIONS: AUDIT_ACTIONS,
+  FEE_SPLIT: FEE_SPLIT,
   MSO_DISCLOSURE: MSO_DISCLOSURE,
 });
