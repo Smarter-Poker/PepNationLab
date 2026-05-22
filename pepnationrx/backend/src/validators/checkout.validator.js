@@ -57,7 +57,10 @@ const shippingAddress = z.object({
 const checkoutSchema = z
   .object({
     protocolCategory: protocolCategory,
-    planName: z.string().trim().min(1).max(120),
+    // The catalog slug being purchased. Required: the controller resolves the
+    // plan, its name, and the authoritative per-month price from the catalog
+    // by this slug and the cadence. The client never supplies the price.
+    treatmentSlug: z.string().trim().min(1).max(64),
     // Supported plan cadences, in months. Mirrors the catalog cadence set.
     cadenceMonths: z.union([
       z.literal(1),
@@ -65,10 +68,7 @@ const checkoutSchema = z
       z.literal(6),
       z.literal(12),
     ]),
-    // The per-month price in cents. Stored as the subscription's mrr_cents.
-    pricePerMonthCents: z.number().int().positive().max(10000000),
     // Optional references that link the checkout to the rest of the record.
-    treatmentSlug: z.string().trim().min(1).max(64).optional(),
     intakeSubmissionId: z.string().uuid().optional(),
     affiliateCode: z.string().trim().min(1).max(64).optional(),
     // Shipping address: an existing id, or a new address, or neither.

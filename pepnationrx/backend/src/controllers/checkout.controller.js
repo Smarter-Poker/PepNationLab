@@ -19,6 +19,7 @@ const audit = require('../services/audit.service');
 const consentModel = require('../models/consent.model');
 const addressModel = require('../models/address.model');
 const affiliateModel = require('../models/affiliate.model');
+const treatmentModel = require('../models/treatment.model');
 const subscriptionModel = require('../models/subscription.model');
 const transactionModel = require('../models/transaction.model');
 
@@ -90,6 +91,22 @@ async function place(req, res, next) {
 
     assertRequiredConsents(input.consents);
 
+    // Resolve the authoritative plan and price from the catalog. The client
+    // sends only the treatment slug and cadence; the per-month price is never
+    // trusted from the request.
+    const plan = await treatmentModel.findActivePlan(
+      input.treatmentSlug,
+      input.cadenceMonths
+    );
+    if (!plan) {
+      throw errors.unprocessable('That treatment plan is not available.');
+    }
+    if (plan.availability !== 'available') {
+      throw errors.unprocessable(
+        'That treatment is not currently available for purchase.'
+      );
+    }
+
     // Persist every consent acknowledgement the patient submitted.
     const consentRows = [];
     for (let i = 0; i < input.consents.length; i += 1) {
@@ -118,9 +135,9 @@ async function place(req, res, next) {
     }
 
     // Compute the tri-party split. The gross is the full plan price (the
-    // per-month price times the cadence); the consult fee is flat per charge
-    // and the management fee is a percent of the gross.
-    const grossAmountCents = input.pricePerMonthCents * input.cadenceMonths;
+    // catalog per-month price times the cadence); the consult fee is flat per
+    // charge and the management fee is a percent of the gross.
+    const grossAmountCents = plan.price_cents * input.cadenceMonths;
     const consultFeeCents = constants.FEE_SPLIT.consultFeeCents;
     const managementFeeCents = Math.round(
       (grossAmountCents * constants.FEE_SPLIT.managementFeePct) / 100
@@ -136,10 +153,11 @@ async function place(req, res, next) {
     const subscription = await subscriptionModel.create({
       userId: req.user.id,
       protocolCategory: input.protocolCategory,
-      planName: input.planName,
-      mrrCents: input.pricePerMonthCents,
+      planName: plan.plan_name,
+      mrrCents: plan.price_cents,
       currency: 'USD',
       affiliateId: affiliateId,
+      treatmentPlanId: plan.plan_id,
     });
 
     // Record the pending tri-party transaction. The medical practice is the
@@ -181,7 +199,7 @@ async function place(req, res, next) {
         managementFeeCents: split.managementFeeCents,
         medicalRevenueCents: split.medicalRevenueCents,
         cadenceMonths: input.cadenceMonths,
-        pricePerMonthCents: input.pricePerMonthCents,
+        pricePerMonthCents: plan.price_cents,
         currency: 'USD',
       },
     });
