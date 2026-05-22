@@ -45,8 +45,17 @@ app.use(
   })
 );
 
-// Body and cookie parsing. The JSON ceiling blocks oversized payloads.
-app.use(express.json({ limit: '100kb' }));
+// Body and cookie parsing. The JSON ceiling blocks oversized payloads. The
+// verify hook keeps the raw request buffer on req.rawBody so webhook handlers
+// can check an HMAC signature over the exact bytes that were received.
+app.use(
+  express.json({
+    limit: '100kb',
+    verify: function captureRawBody(req, res, buf) {
+      req.rawBody = buf;
+    },
+  })
+);
 app.use(cookieParser());
 
 // Per-IP rate limiting across the whole API.

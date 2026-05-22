@@ -86,6 +86,27 @@ const config = {
     max: asInt('RATE_LIMIT_MAX', 100),
     authMax: asInt('AUTH_RATE_LIMIT_MAX', 10),
   },
+
+  // The Triad: medical network, 503A pharmacy, Stripe Connect. All optional so
+  // the API still boots in development before integration credentials exist;
+  // each service checks isConfigured() before making a live call.
+  integrations: {
+    medicalNetwork: {
+      baseUrl: optional('MEDICAL_NETWORK_BASE_URL', ''),
+      apiKey: optional('MEDICAL_NETWORK_API_KEY', ''),
+      webhookSecret: optional('MEDICAL_NETWORK_WEBHOOK_SECRET', ''),
+    },
+    pharmacy: {
+      baseUrl: optional('PHARMACY_BASE_URL', ''),
+      apiKey: optional('PHARMACY_API_KEY', ''),
+      webhookSecret: optional('PHARMACY_WEBHOOK_SECRET', ''),
+    },
+    stripe: {
+      secretKey: optional('STRIPE_SECRET_KEY', ''),
+      webhookSecret: optional('STRIPE_WEBHOOK_SECRET', ''),
+      platformAccountId: optional('STRIPE_PLATFORM_ACCOUNT_ID', ''),
+    },
+  },
 };
 
 if (config.jwt.accessSecret && config.jwt.accessSecret === config.jwt.refreshSecret) {
