@@ -70,7 +70,9 @@ async function submit(req, res, next) {
             userId: req.user.id,
             dateOfBirth: user ? user.date_of_birth : null,
             sexAtBirth: user ? user.sex_at_birth : null,
-            state: null,
+            // The patient's state of residence drives the medical network's
+            // sync vs async visit routing; it is captured at registration.
+            state: user ? user.state : null,
           },
           answers: input.answers,
         });

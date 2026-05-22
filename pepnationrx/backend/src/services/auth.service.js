@@ -33,8 +33,10 @@ function toPublicUser(row) {
 }
 
 // Sign an access token and a refresh token, persist the refresh hash, and
-// return the pair plus the access lifetime in seconds.
-async function issueTokenPair(user, requestMeta) {
+// return the pair plus the access lifetime in seconds. An optional `client`
+// runs the refresh-token insert inside an open transaction; rotation passes
+// one so the revoke and the insert are atomic.
+async function issueTokenPair(user, requestMeta, client) {
   const claims = { sub: user.id, role: user.role };
   const accessToken = jwtUtil.signAccessToken(claims);
   const refreshToken = jwtUtil.signRefreshToken(claims);
@@ -43,13 +45,16 @@ async function issueTokenPair(user, requestMeta) {
     Date.now() + config.jwt.refreshTtlDays * 24 * 60 * 60 * 1000
   ).toISOString();
 
-  await refreshTokenModel.create({
-    userId: user.id,
-    tokenHash: hashToken(refreshToken),
-    ipAddress: requestMeta.ipAddress,
-    userAgent: requestMeta.userAgent,
-    expiresAt: expiresAt,
-  });
+  await refreshTokenModel.create(
+    {
+      userId: user.id,
+      tokenHash: hashToken(refreshToken),
+      ipAddress: requestMeta.ipAddress,
+      userAgent: requestMeta.userAgent,
+      expiresAt: expiresAt,
+    },
+    client
+  );
 
   return {
     accessToken: accessToken,
@@ -75,6 +80,7 @@ async function register(input, requestMeta) {
     lastName: input.lastName,
     dateOfBirth: input.dateOfBirth,
     sexAtBirth: input.sexAtBirth,
+    state: input.state,
   });
 
   const tokens = await issueTokenPair(user, requestMeta);
@@ -190,10 +196,12 @@ async function refresh(refreshToken, requestMeta) {
     throw errors.forbidden('This account is not permitted to refresh a session.');
   }
 
-  // Revoke the old token and issue the new pair atomically.
-  const tokens = await withTransaction(async () => {
-    await refreshTokenModel.revokeById(stored.id);
-    return issueTokenPair(user, requestMeta);
+  // Revoke the old token and issue the new pair atomically: both writes run
+  // on the transaction's client, so a crash between them rolls the revoke back
+  // rather than stranding the user with no usable refresh token.
+  const tokens = await withTransaction(async (client) => {
+    await refreshTokenModel.revokeById(stored.id, client);
+    return issueTokenPair(user, requestMeta, client);
   });
 
   await audit.record({

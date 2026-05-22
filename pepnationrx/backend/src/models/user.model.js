@@ -12,7 +12,7 @@ const { query, queryOne } = require('../db/query');
 // Columns safe to return to a caller. password_hash is deliberately excluded.
 const PUBLIC_COLUMNS =
   'id, email, phone, role, account_status, first_name, last_name, ' +
-  'date_of_birth, sex_at_birth, stripe_customer_id, mfa_enabled, ' +
+  'date_of_birth, sex_at_birth, state, stripe_customer_id, mfa_enabled, ' +
   'email_verified_at, last_login_at, created_at, updated_at';
 
 // Look up a user by id, returning public columns only.
@@ -34,13 +34,14 @@ async function findByEmailWithSecret(email) {
   );
 }
 
-// Insert a new user. The caller supplies an already-hashed password.
+// Insert a new user. The caller supplies an already-hashed password. state is
+// a two-letter US state code, stored uppercased, or null.
 async function create(data) {
   return queryOne(
     'INSERT INTO users ' +
       '(email, phone, password_hash, role, first_name, last_name, ' +
-      ' date_of_birth, sex_at_birth) ' +
-      'VALUES ($1, $2, $3, $4, $5, $6, $7, $8) ' +
+      ' date_of_birth, sex_at_birth, state) ' +
+      'VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) ' +
       'RETURNING ' + PUBLIC_COLUMNS,
     [
       data.email,
@@ -51,6 +52,7 @@ async function create(data) {
       data.lastName || null,
       data.dateOfBirth || null,
       data.sexAtBirth || null,
+      data.state ? String(data.state).toUpperCase() : null,
     ]
   );
 }

@@ -42,6 +42,15 @@ const registerSchema = z.object({
   phone: z.string().trim().min(7).max(20).optional(),
   dateOfBirth: dateOfBirthSchema,
   sexAtBirth: z.enum(['male', 'female', 'intersex']).optional(),
+  // Two-letter US state of residence. Optional at the API layer so older
+  // clients still register; the sign-up form collects it so a telehealth
+  // encounter can be routed to the correct visit modality.
+  state: z
+    .string()
+    .trim()
+    .toUpperCase()
+    .regex(/^[A-Z]{2}$/, 'State must be a two-letter code.')
+    .optional(),
 });
 
 const loginSchema = z.object({

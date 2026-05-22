@@ -11,9 +11,13 @@ const { pool } = require('./pool');
 const logger = require('../utils/logger');
 
 // Run a single parameterized query and return the full pg result object.
-async function query(text, params) {
+// When `client` is supplied (a connection checked out by withTransaction) the
+// query runs on that connection, so it participates in the open transaction;
+// otherwise it runs on the shared pool.
+async function query(text, params, client) {
+  const runner = client || pool;
   const start = Date.now();
-  const result = await pool.query(text, params);
+  const result = await runner.query(text, params);
   const durationMs = Date.now() - start;
   if (durationMs > 500) {
     logger.warn('Slow query', { durationMs: durationMs, rows: result.rowCount });
@@ -22,14 +26,14 @@ async function query(text, params) {
 }
 
 // Return the first row, or null when the query matched nothing.
-async function queryOne(text, params) {
-  const result = await query(text, params);
+async function queryOne(text, params, client) {
+  const result = await query(text, params, client);
   return result.rows.length > 0 ? result.rows[0] : null;
 }
 
 // Return the array of rows directly.
-async function queryRows(text, params) {
-  const result = await query(text, params);
+async function queryRows(text, params, client) {
+  const result = await query(text, params, client);
   return result.rows;
 }
 

@@ -10,7 +10,9 @@
 const { query, queryOne } = require('../db/query');
 
 // Persist a new refresh token hash. expiresAt is an ISO timestamp string.
-async function create(data) {
+// An optional `client` runs the insert inside an open transaction so token
+// rotation (revoke old + insert new) commits or rolls back as one unit.
+async function create(data, client) {
   return queryOne(
     'INSERT INTO refresh_tokens ' +
       '(user_id, token_hash, ip_address, user_agent, expires_at) ' +
@@ -22,7 +24,8 @@ async function create(data) {
       data.ipAddress || null,
       data.userAgent || null,
       data.expiresAt,
-    ]
+    ],
+    client
   );
 }
 
@@ -37,12 +40,14 @@ async function findByHash(tokenHash) {
   );
 }
 
-// Revoke a single token row by id (idempotent).
-async function revokeById(id) {
+// Revoke a single token row by id (idempotent). An optional `client` runs the
+// update inside an open transaction alongside the replacement token insert.
+async function revokeById(id, client) {
   await query(
     'UPDATE refresh_tokens SET revoked_at = now() ' +
       'WHERE id = $1 AND revoked_at IS NULL',
-    [id]
+    [id],
+    client
   );
 }
 
