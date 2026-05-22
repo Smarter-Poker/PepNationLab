@@ -4,7 +4,9 @@
 // Unit tests for validators/checkout.validator.js.
 // ----------------------------------------------------------------------------
 // Confirms the checkout schema accepts a well-formed order and rejects the
-// malformed shapes the controller must never see. Run with: npm test
+// malformed shapes the controller must never see. The schema is the first
+// line of the server-authoritative pricing fix: it requires a treatmentSlug
+// and refuses any client-supplied price field. Run with: npm test
 // ============================================================================
 
 const test = require('node:test');
@@ -16,9 +18,8 @@ const { checkoutSchema } = require('../../src/validators/checkout.validator');
 function validOrder() {
   return {
     protocolCategory: 'peptide_therapy',
-    planName: '3-Month Plan',
+    treatmentSlug: 'bpc-157',
     cadenceMonths: 3,
-    pricePerMonthCents: 19900,
     shippingAddress: {
       line1: '1 Test Street',
       city: 'Austin',
@@ -40,48 +41,61 @@ function validOrder() {
   };
 }
 
-test('a well-formed checkout body parses', function () {
+test('checkout_schema_well_formed_body_is_accepted', function () {
   const result = checkoutSchema.safeParse(validOrder());
   assert.equal(result.success, true);
 });
 
-test('an unknown protocol category is rejected', function () {
+test('checkout_schema_unknown_protocol_category_is_rejected', function () {
   const order = validOrder();
   order.protocolCategory = 'not_a_category';
   assert.equal(checkoutSchema.safeParse(order).success, false);
 });
 
-test('a non-standard plan cadence is rejected', function () {
+test('checkout_schema_non_standard_cadence_is_rejected', function () {
   const order = validOrder();
   order.cadenceMonths = 4;
   assert.equal(checkoutSchema.safeParse(order).success, false);
 });
 
-test('a zero or negative price is rejected', function () {
+test('checkout_schema_missing_treatment_slug_is_rejected', function () {
   const order = validOrder();
-  order.pricePerMonthCents = 0;
+  delete order.treatmentSlug;
   assert.equal(checkoutSchema.safeParse(order).success, false);
 });
 
-test('an empty consents array is rejected', function () {
+test('checkout_schema_client_supplied_price_is_rejected', function () {
+  // The price is server-authoritative: a client price field must not be
+  // accepted, even with an otherwise valid body. (Regression: a patient
+  // could previously set their own pricePerMonthCents.)
+  const withPrice = validOrder();
+  withPrice.pricePerMonthCents = 1;
+  assert.equal(checkoutSchema.safeParse(withPrice).success, false);
+
+  const withPlanName = validOrder();
+  withPlanName.planName = 'Smuggled Plan';
+  assert.equal(checkoutSchema.safeParse(withPlanName).success, false);
+});
+
+test('checkout_schema_empty_consents_array_is_rejected', function () {
   const order = validOrder();
   order.consents = [];
   assert.equal(checkoutSchema.safeParse(order).success, false);
 });
 
-test('supplying both an address id and an inline address is rejected', function () {
+test('checkout_schema_both_address_forms_is_rejected', function () {
   const order = validOrder();
   order.shippingAddressId = '11111111-1111-1111-1111-111111111111';
   assert.equal(checkoutSchema.safeParse(order).success, false);
 });
 
-test('unknown top-level keys are rejected by the strict schema', function () {
+test('checkout_schema_unknown_top_level_key_is_rejected', function () {
   const order = validOrder();
   order.injectedField = 'unexpected';
   assert.equal(checkoutSchema.safeParse(order).success, false);
 });
 
-test('a two-letter state is required on an inline address', function () {
+test('checkout_schema_non_two_letter_state_is_rejected', function () {
   const order = validOrder();
   order.shippingAddress.state = 'Texas';
   assert.equal(checkoutSchema.safeParse(order).success, false);

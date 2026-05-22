@@ -21,6 +21,9 @@ services:
       # Files in this directory run, in name order, on first initialization.
       - ./database/schema.sql:/docker-entrypoint-initdb.d/00-schema.sql:ro
       - ./database/migrations/0001_treatment_catalog.sql:/docker-entrypoint-initdb.d/01-treatment-catalog.sql:ro
+      - ./database/migrations/0002_payout_idempotency.sql:/docker-entrypoint-initdb.d/02-payout-idempotency.sql:ro
+      - ./database/migrations/0003_catalog_seed.sql:/docker-entrypoint-initdb.d/03-catalog-seed.sql:ro
+      - ./database/migrations/0004_user_state.sql:/docker-entrypoint-initdb.d/04-user-state.sql:ro
     ports:
       - "5432:5432"
     healthcheck:

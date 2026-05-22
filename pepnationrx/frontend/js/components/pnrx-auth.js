@@ -34,6 +34,7 @@ export class PnrxAuth extends PnrxComponent {
       password: '',
       firstName: '',
       lastName: '',
+      usState: '', // two-letter US state of residence
       acks: [false, false, false],
       submitting: false,
       error: null,
@@ -72,7 +73,13 @@ export class PnrxAuth extends PnrxComponent {
     const credentialsReady =
       s.email.trim() !== '' && s.password.trim() !== '' && !s.submitting;
     if (s.mode === 'register') {
-      return credentialsReady && this.allAcksChecked();
+      // Registration also requires the two-letter state of residence so the
+      // patient's telehealth encounter can be routed correctly.
+      return (
+        credentialsReady &&
+        s.usState.trim().length === 2 &&
+        this.allAcksChecked()
+      );
     }
     return credentialsReady;
   }
@@ -90,6 +97,7 @@ export class PnrxAuth extends PnrxComponent {
         const payload = { email: s.email.trim(), password: s.password };
         if (s.firstName.trim()) payload.firstName = s.firstName.trim();
         if (s.lastName.trim()) payload.lastName = s.lastName.trim();
+        payload.state = s.usState.trim().toUpperCase();
         result = await register(payload);
       } else {
         result = await login({ email: s.email.trim(), password: s.password });
@@ -181,6 +189,9 @@ export class PnrxAuth extends PnrxComponent {
       this.renderField('pnrx-email', 'Email Address', 'email', 'email', s.email) +
       this.renderField('pnrx-password', 'Password', 'password', 'password', s.password) +
       '<p class="pnrx-auth__hint">Use At Least 10 Characters.</p>' +
+      this.renderField('pnrx-state', 'State Of Residence', 'text', 'usState', s.usState) +
+      '<p class="pnrx-auth__hint">Enter Your Two-Letter State Code, For ' +
+      'Example TX.</p>' +
       '<div class="pnrx-auth__acks">' +
       '<h3 class="pnrx-auth__acks-title">Required Acknowledgements</h3>' +
       acks +

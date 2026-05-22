@@ -19,16 +19,16 @@ export const CHECKOUT_CONSENT_VERSION = '2026-05-checkout-v1';
 
 // Place a treatment plan order. `order` carries the plan selection, the
 // shipping address (an id or an inline address), the accepted consents, and an
-// optional affiliate code. Resolves with the checkout result envelope.
+// optional affiliate code. The price is NOT sent: the backend resolves the
+// authoritative per-month price from the catalog by treatmentSlug and cadence.
+// Resolves with the checkout result envelope.
 export function placeCheckout(order) {
   const body = {
     protocolCategory: order.protocolCategory,
-    planName: order.planName,
+    treatmentSlug: order.treatmentSlug,
     cadenceMonths: order.cadenceMonths,
-    pricePerMonthCents: order.pricePerMonthCents,
     consents: order.consents,
   };
-  if (order.treatmentSlug) body.treatmentSlug = order.treatmentSlug;
   if (order.intakeSubmissionId) body.intakeSubmissionId = order.intakeSubmissionId;
   if (order.affiliateCode) body.affiliateCode = order.affiliateCode;
   if (order.shippingAddressId) {
