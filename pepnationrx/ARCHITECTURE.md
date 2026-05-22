@@ -209,9 +209,33 @@ Backend foundation and the JWT authentication surface, under `backend/`:
 Refresh tokens are signed JWTs stored server-side as SHA-256 hashes, which
 enables single-use rotation, revocation, and reuse detection.
 
+## VIII. Phase 3 Deliverables (complete)
+
+The clinical triage form Web Component, under `frontend/`:
+
+1. `js/core/component.js` - `PnrxComponent`, the dependency-free base class
+   for custom elements (state, render lifecycle, scoped query and event
+   helpers, HTML escaping).
+2. `js/data/triage-protocols.js` - the protocol catalog (all seven
+   `protocol_category` values) and the branching question schema, including
+   per-answer risk, flag, and disqualification rules.
+3. `js/components/pnrx-triage-form.js` - the `<pnrx-triage-form>` custom
+   element: a multi-step branching questionnaire that walks the schema,
+   derives a `clinical_risk_level`, accumulates triage flags, halts on any
+   disqualifying answer, and emits a `triage:submit` event whose payload maps
+   onto the `intake_submissions` table.
+4. `css/components/triage-form.css` - futuristic-metal styling built entirely
+   from the `css/variables.css` design tokens.
+5. `triage-demo.html` - a standalone page that mounts the component and shows
+   the submission payload.
+
+Branching is data-driven: each question may carry a `when` predicate, and the
+visible question list is recomputed from the current answers, so the path
+through the form adapts as the patient responds. Verified with a 37-point
+headless engine test and a 7-point render test.
+
 ## Next Phases
 
-- Phase 3: Clinical triage form Web Component with branching logic.
 - Phase 4: Triad service integrations (medical network, pharmacy, Stripe Connect).
 - Phase 5: Patient and affiliate dashboards.
 - Phase 6: Webhook receivers, jobs, audit hardening, certification review.
