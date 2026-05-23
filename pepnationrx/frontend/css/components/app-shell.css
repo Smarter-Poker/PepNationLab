@@ -37,12 +37,16 @@ pnrx-app-shell {
 }
 
 .pnrx-shell__brand {
-  font-size: var(--text-lg);
-  font-weight: var(--weight-bold);
-  letter-spacing: var(--tracking-wide);
-  color: var(--color-accent);
+  display: inline-flex;
+  align-items: center;
   text-decoration: none;
-  text-shadow: var(--glow-text-teal);
+}
+
+.pnrx-shell__logo {
+  display: block;
+  height: 52px;
+  width: auto;
+  border-radius: var(--radius-sm);
 }
 
 .pnrx-shell__nav {

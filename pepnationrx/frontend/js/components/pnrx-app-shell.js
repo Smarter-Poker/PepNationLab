@@ -55,7 +55,11 @@ export class PnrxAppShell extends HTMLElement {
     this.innerHTML =
       '<div class="pnrx-shell">' +
       '<header class="pnrx-shell__header">' +
-      '<a class="pnrx-shell__brand" href="#/catalog">PepNationRX</a>' +
+      '<a class="pnrx-shell__brand" href="#/catalog" aria-label="PepNationRX">' +
+      '<img class="pnrx-shell__logo" ' +
+      'src="assets/images/pepnationrx-logo.jpg" ' +
+      'alt="PepNationRX" />' +
+      '</a>' +
       '<nav class="pnrx-shell__nav" id="pnrx-shell-nav"></nav>' +
       '</header>' +
       '<main class="pnrx-shell__outlet" id="pnrx-shell-outlet"></main>' +
