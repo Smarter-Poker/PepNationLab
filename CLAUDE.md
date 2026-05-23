@@ -74,6 +74,13 @@ PepNationLab Supabase ref: `ydsaqnnuwyvtyxgvrnys`
 PepNationLab GitHub: `github.com/Smarter-Poker/PepNationLab`
 PepNationLab Vercel: `smarter-poker/pepnationlab`
 
+PepNationRX (the telehealth backend in the `pepnationrx/` subdirectory) runs on
+separate infrastructure. Its live Supabase database is project
+`cupnhfdwveouenutnveg` (project name: pepnationrx), hosted alongside a Hetzner
+application server behind nginx. Never run PepNationRX migrations against
+`ydsaqnnuwyvtyxgvrnys` — that ref is the PepNationLab storefront database, not
+the telehealth backend.
+
 ---
 
 ## Research-Only Compliance — 4-Layer Disclaimer
