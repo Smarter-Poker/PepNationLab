@@ -102,29 +102,50 @@ async function applySignedPrescription(payload) {
   // The prescription insert and the intake-status advance must be atomic, so
   // both run on the transaction's client - a failure after the insert rolls
   // the prescription back rather than orphaning it against a stale intake.
-  const prescription = await withTransaction(async function (client) {
-    const created = await prescriptionModel.create(
-      {
-        userId: submission.user_id,
-        intakeSubmissionId: submission.id,
-        providerId: provider.id,
-        drugCompound: rx.drugCompound,
-        strength: rx.strength,
-        dosageProtocol: rx.dosageProtocol,
-        sigDirections: rx.sigDirections,
-        quantity: rx.quantity,
-        daysSupply: rx.daysSupply,
-        refillsAuthorized: rx.refillsAuthorized || 0,
-        status: 'approved',
-        writtenDate: rx.writtenDate,
-        expirationDate: rx.expirationDate,
-        signedPayloadRef: rx.signedPayloadRef,
-      },
-      client
-    );
-    await intakeModel.updateStatus(submission.id, 'approved', client);
-    return created;
-  });
+  let prescription;
+  try {
+    prescription = await withTransaction(async function (client) {
+      const created = await prescriptionModel.create(
+        {
+          userId: submission.user_id,
+          intakeSubmissionId: submission.id,
+          providerId: provider.id,
+          drugCompound: rx.drugCompound,
+          strength: rx.strength,
+          dosageProtocol: rx.dosageProtocol,
+          sigDirections: rx.sigDirections,
+          quantity: rx.quantity,
+          daysSupply: rx.daysSupply,
+          refillsAuthorized: rx.refillsAuthorized || 0,
+          status: 'approved',
+          writtenDate: rx.writtenDate,
+          expirationDate: rx.expirationDate,
+          signedPayloadRef: rx.signedPayloadRef,
+        },
+        client
+      );
+      await intakeModel.updateStatus(submission.id, 'approved', client);
+      return created;
+    });
+  } catch (err) {
+    // A second signed-prescription event for this submission, processed
+    // concurrently, can slip past the findByIntakeSubmissionId check above and
+    // trip the prescriptions_one_per_intake unique index (SQLSTATE 23505).
+    // Resolve to the prescription the winning event created rather than
+    // failing: the end state - one prescription, intake approved - already
+    // holds, and routeToPharmacy is idempotent.
+    if (err && err.code === '23505') {
+      const winner = await prescriptionModel.findByIntakeSubmissionId(submission.id);
+      if (winner) {
+        logger.info('Concurrent signed-prescription race; using the winning prescription', {
+          intakeSubmissionId: submission.id,
+        });
+        await routeToPharmacy(winner);
+        return winner;
+      }
+    }
+    throw err;
+  }
 
   await audit.record({
     actorUserId: submission.user_id,
