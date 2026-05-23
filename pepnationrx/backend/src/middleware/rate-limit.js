@@ -16,6 +16,13 @@ function limitHandler(req, res, next) {
   next(new AppError(429, 'too_many_requests', 'Too many requests. Please slow down.'));
 }
 
+// Liveness and readiness probes must never be throttled. A monitor or load
+// balancer polling them from a single IP could otherwise exhaust the per-IP
+// budget and start receiving 429s, which an orchestrator misreads as the
+// service being down - pulling a healthy instance out of rotation. These
+// paths are exempted from the general limiter via `skip`.
+const HEALTH_PATHS = ['/api/health', '/api/health/ready'];
+
 // General API limiter.
 const generalLimiter = rateLimit({
   windowMs: config.rateLimit.windowMs,
@@ -23,10 +30,14 @@ const generalLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   handler: limitHandler,
+  skip: (req) => HEALTH_PATHS.includes(req.path),
 });
 
-// Stricter limiter for login, register, and refresh endpoints.
-const authLimiter = rateLimit({
+// Strict limiter for the credential endpoints (register, login): the prime
+// credential-stuffing targets. This is its own rate-limit instance - a
+// separate per-IP bucket - so it can neither exhaust nor be exhausted by the
+// refresh endpoint.
+const credentialLimiter = rateLimit({
   windowMs: config.rateLimit.windowMs,
   max: config.rateLimit.authMax,
   standardHeaders: true,
@@ -34,7 +45,21 @@ const authLimiter = rateLimit({
   handler: limitHandler,
 });
 
+// Limiter for token refresh and logout. A normal single-page app refreshes
+// its access token routinely, often from several tabs at once, so this bucket
+// is far more generous than the credential limiter while still bounding
+// abuse. It is a separate instance, so a burst of refreshes never locks a
+// user out of logging in.
+const refreshLimiter = rateLimit({
+  windowMs: config.rateLimit.windowMs,
+  max: config.rateLimit.max,
+  standardHeaders: true,
+  legacyHeaders: false,
+  handler: limitHandler,
+});
+
 module.exports = {
   generalLimiter: generalLimiter,
-  authLimiter: authLimiter,
+  credentialLimiter: credentialLimiter,
+  refreshLimiter: refreshLimiter,
 };
