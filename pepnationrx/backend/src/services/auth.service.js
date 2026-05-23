@@ -20,9 +20,14 @@ const userModel = require('../models/user.model');
 const refreshTokenModel = require('../models/refresh-token.model');
 const audit = require('./audit.service');
 
-// A fixed bcrypt hash compared against when an email is not found, so a
-// missing account and a wrong password take indistinguishable time.
-const DUMMY_HASH = '$2b$12$0000000000000000000000000000000000000000000000000000a';
+// A real bcrypt hash compared against when an email is not found, so a missing
+// account and a wrong password take indistinguishable time. It is generated at
+// load from a throwaway value: a hand-written hash literal risks being
+// malformed, which makes bcrypt.compare throw and breaks the timing guarantee.
+const DUMMY_HASH = bcrypt.hashSync(
+  'pepnationrx-timing-equalizer',
+  config.security.bcryptRounds
+);
 
 // Strip the secret column before a user object leaves the service.
 function toPublicUser(row) {
@@ -71,19 +76,41 @@ async function register(input, requestMeta) {
 
   const passwordHash = await bcrypt.hash(input.password, config.security.bcryptRounds);
 
-  const user = await userModel.create({
-    email: input.email,
-    phone: input.phone,
-    passwordHash: passwordHash,
-    role: 'patient',
-    firstName: input.firstName,
-    lastName: input.lastName,
-    dateOfBirth: input.dateOfBirth,
-    sexAtBirth: input.sexAtBirth,
-    state: input.state,
-  });
-
-  const tokens = await issueTokenPair(user, requestMeta);
+  // Create the account and issue its first session on one transaction: a
+  // failure issuing tokens rolls the user insert back rather than leaving an
+  // orphaned account that can never be registered again.
+  let user;
+  let tokens;
+  try {
+    const session = await withTransaction(async (client) => {
+      const created = await userModel.create(
+        {
+          email: input.email,
+          phone: input.phone,
+          passwordHash: passwordHash,
+          role: 'patient',
+          firstName: input.firstName,
+          lastName: input.lastName,
+          dateOfBirth: input.dateOfBirth,
+          sexAtBirth: input.sexAtBirth,
+          state: input.state,
+        },
+        client
+      );
+      const issued = await issueTokenPair(created, requestMeta, client);
+      return { user: created, tokens: issued };
+    });
+    user = session.user;
+    tokens = session.tokens;
+  } catch (err) {
+    // A concurrent registration can slip past the emailExists check above and
+    // trip the users_email unique constraint (SQLSTATE 23505). Surface that as
+    // a 409 conflict rather than letting it fall through as a generic 500.
+    if (err && err.code === '23505') {
+      throw errors.conflict('An account with this email already exists.');
+    }
+    throw err;
+  }
 
   await audit.record({
     actorUserId: user.id,
@@ -152,9 +179,15 @@ async function login(input, requestMeta) {
   return { user: toPublicUser(row), tokens: tokens };
 }
 
-// Rotate a refresh token: verify it, revoke it, and issue a fresh pair.
-// A presented-but-already-revoked token indicates theft; the whole token
-// family is revoked and the event audited.
+// A refresh token revoked within this window, presented again, is treated as
+// a benign double-submit (a retry, or two tabs refreshing at once) rather than
+// theft: the duplicate request is rejected without revoking the session the
+// legitimate rotation just issued.
+const ROTATION_GRACE_MS = 10 * 1000;
+
+// Rotate a refresh token: verify it, revoke it, and issue a fresh pair. A
+// token revoked outside the grace window, presented again, indicates theft:
+// the whole token family is revoked and the event audited.
 async function refresh(refreshToken, requestMeta) {
   let claims;
   try {
@@ -171,7 +204,15 @@ async function refresh(refreshToken, requestMeta) {
   }
 
   if (stored.revoked_at) {
-    // Reuse of a revoked token: treat the family as compromised.
+    const revokedAgeMs = Date.now() - new Date(stored.revoked_at).getTime();
+    if (revokedAgeMs <= ROTATION_GRACE_MS) {
+      // A token revoked moments ago, presented again, is almost always a
+      // benign double-submit; reject this one request without tearing down
+      // the user's other sessions.
+      throw errors.unauthorized('Refresh token already used. Please retry.');
+    }
+    // A long-revoked token resurfacing is a genuine reuse/theft signal: treat
+    // the whole token family as compromised.
     await refreshTokenModel.revokeAllForUser(stored.user_id);
     await audit.record({
       actorUserId: stored.user_id,
@@ -196,13 +237,26 @@ async function refresh(refreshToken, requestMeta) {
     throw errors.forbidden('This account is not permitted to refresh a session.');
   }
 
-  // Revoke the old token and issue the new pair atomically: both writes run
-  // on the transaction's client, so a crash between them rolls the revoke back
-  // rather than stranding the user with no usable refresh token.
-  const tokens = await withTransaction(async (client) => {
-    await refreshTokenModel.revokeById(stored.id, client);
-    return issueTokenPair(user, requestMeta, client);
+  // Revoke the old token and issue the new pair on one transaction. revokeById
+  // only updates a still-live row, so a 0 row count means a concurrent request
+  // already rotated this exact token - a simultaneous double-submit, handled
+  // below as a benign retry rather than as theft.
+  const rotation = await withTransaction(async (client) => {
+    const revokedCount = await refreshTokenModel.revokeById(stored.id, client);
+    if (revokedCount === 0) {
+      return { reuse: true };
+    }
+    const issued = await issueTokenPair(user, requestMeta, client);
+    return { tokens: issued };
   });
+
+  if (rotation.reuse) {
+    // A concurrent request rotated this token during this one's transaction:
+    // a simultaneous double-submit, not theft. Reject only this request - the
+    // concurrent rotation succeeded and the user's session is intact.
+    throw errors.unauthorized('Refresh token already used. Please retry.');
+  }
+  const tokens = rotation.tokens;
 
   await audit.record({
     actorUserId: user.id,
