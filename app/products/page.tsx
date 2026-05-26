@@ -1,8 +1,6 @@
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import ProductsList from './ProductsList';
-import Link from 'next/link';
-import { useCart } from '@/components/CartContext';
 
 export const dynamic = 'force-dynamic';
 

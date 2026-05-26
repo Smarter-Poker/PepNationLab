@@ -75,13 +75,13 @@ PepNationLab GitHub: `github.com/Smarter-Poker/PepNationLab`
 PepNationLab Vercel: `smarter-poker/pepnationlab`
 
 PepNationRX (the telehealth platform) has its own standalone repo at
-`github.com/Smarter-Software/pepnationrx`. Its live Supabase database is project
+`github.com/Smarter-Software-PIQ/pepnationrx`. Its live Supabase database is project
 `cupnhfdwveouenutnveg` (project name: pepnationrx). Never run PepNationRX
 migrations against `ydsaqnnuwyvtyxgvrnys` — that ref is the PepNationLab
 storefront database, not the telehealth backend.
 
 The `pepnationrx/` subdirectory in this repo is a local working copy only.
-Push PepNationRX changes to `Smarter-Software/pepnationrx`, NOT to this repo.
+Push PepNationRX changes to `Smarter-Software-PIQ/pepnationrx`, NOT to this repo.
 
 ---
 
@@ -92,7 +92,7 @@ every Antigravity agent MUST read and follow `pepnationrx/DEPLOYMENT-WORKFLOW.md
 
 PepNationRX is a SPLIT deployment, not a single host:
 - Frontend (`pepnationrx/frontend/`) is published by VERCEL -- it auto-deploys on
-  every push to `main` of `Smarter-Software/pepnationrx`.
+  every push to `main` of `Smarter-Software-PIQ/pepnationrx`.
 - Backend API (`pepnationrx/backend/`) runs on the HETZNER server `5.161.252.33`
   and is deployed by SSH.
 - Database is Supabase project `cupnhfdwveouenutnveg`.

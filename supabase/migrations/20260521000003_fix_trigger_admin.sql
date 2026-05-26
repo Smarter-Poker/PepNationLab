@@ -1,6 +1,6 @@
 -- ============================================
 -- PEP NATION LAB — Fix Trigger + Create Admin
--- Run this in Supabase Dashboard → SQL Editor
+-- Run this in Supabase Dashboard ->SQL Editor
 -- Project: pepnationlab-prod (ydsaqnnuwyvtyxgvrnys)
 -- ============================================
 
@@ -33,7 +33,7 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 -- Auth UI or the script below.
 
 -- After running STEP 1, go to:
--- Supabase Dashboard → Authentication → Users → "Add user"
+-- Supabase Dashboard ->Authentication ->Users ->"Add user"
 -- Email: daniel@bekavactrading.com
 -- Password: 215SlalomCt!
 -- Check "Auto Confirm User"

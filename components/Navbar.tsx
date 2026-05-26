@@ -8,8 +8,8 @@ import { createClient } from '@/lib/supabase/client';
 export default function Navbar() {
   const { cartCount, setIsCartOpen } = useCart();
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [user, setUser] = useState<any>(null);
-  const [profile, setProfile] = useState<any>(null);
+  const [user, setUser] = useState<{ email?: string } | null>(null);
+  const [profile, setProfile] = useState<{ full_name?: string | null; role?: string; tier?: string | null } | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -72,17 +72,12 @@ export default function Navbar() {
       <div className="container flex-between w-full">
         {/* Logo */}
         <Link href="/" className="nav-logo" style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
-          <div style={{
-            width: 32, height: 32, borderRadius: '50%',
-            background: 'radial-gradient(circle at 40% 40%, var(--teal) 0%, var(--teal-dark) 60%, #005550 100%)',
-            border: '1.5px solid var(--teal)',
-            boxShadow: '0 0 10px rgba(0,196,188,0.4)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: '0.7rem', fontWeight: 900, color: 'var(--black)',
-            fontFamily: 'var(--font-brand)'
-          }}>
-            PNL
-          </div>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/logo-mark.svg"
+            alt="Pep Nation Lab"
+            style={{ height: 38, width: 38, display: 'block' }}
+          />
           <span style={{ letterSpacing: '0.1em' }}>PEP NATION LAB</span>
         </Link>
 

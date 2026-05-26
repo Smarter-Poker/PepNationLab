@@ -92,7 +92,9 @@ export default function ProductsList({
         zIndex: 50
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-6)' }}>
-          <Link href="/dashboard" style={{ fontFamily: 'var(--font-brand)', fontSize: '0.9rem', fontWeight: 800, letterSpacing: '0.12em', color: 'var(--teal)' }}>
+          <Link href="/dashboard" style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', fontFamily: 'var(--font-brand)', fontSize: '0.9rem', fontWeight: 800, letterSpacing: '0.12em', color: 'var(--teal)' }}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/logo-mark.svg" alt="Pep Nation Lab" style={{ height: 30, width: 30, display: 'block' }} />
             PEP NATION LAB
           </Link>
           <div style={{ display: 'flex', gap: 'var(--space-4)' }} className="desktop-links">

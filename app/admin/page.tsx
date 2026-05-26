@@ -22,11 +22,29 @@ export default async function AdminDashboard() {
       .limit(5),
   ]);
 
+  const statIcon = {
+    width: 22, height: 22, viewBox: '0 0 24 24', fill: 'none',
+    stroke: 'currentColor', strokeWidth: 1.8,
+    strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const,
+  };
+
   const STATS = [
-    { label: 'Researchers', value: totalResearchers ?? 0, color: 'var(--teal)', icon: '◎' },
-    { label: 'Active Agents', value: totalAgents ?? 0, color: 'var(--teal)', icon: '◈' },
-    { label: 'Active Products', value: totalProducts ?? 0, color: 'var(--silver)', icon: '⬡' },
-    { label: 'Pending Orders', value: pendingOrders ?? 0, color: pendingOrders ? 'var(--red)' : 'var(--grey-400)', icon: '◉' },
+    {
+      label: 'Researchers', value: totalResearchers ?? 0, color: 'var(--teal)',
+      icon: <svg {...statIcon}><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /></svg>,
+    },
+    {
+      label: 'Active Agents', value: totalAgents ?? 0, color: 'var(--teal)',
+      icon: <svg {...statIcon}><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /></svg>,
+    },
+    {
+      label: 'Active Products', value: totalProducts ?? 0, color: 'var(--silver)',
+      icon: <svg {...statIcon}><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" /><polyline points="3.27 6.96 12 12.01 20.73 6.96" /></svg>,
+    },
+    {
+      label: 'Pending Orders', value: pendingOrders ?? 0, color: pendingOrders ? 'var(--red)' : 'var(--grey-400)',
+      icon: <svg {...statIcon}><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z" /><line x1="3" y1="6" x2="21" y2="6" /><path d="M16 10a4 4 0 0 1-8 0" /></svg>,
+    },
   ];
 
   const STATUS_COLORS: Record<string, string> = {
@@ -87,7 +105,7 @@ export default async function AdminDashboard() {
         <div className="card-metal" style={{ padding: 'var(--space-6)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-5)' }}>
             <h3 style={{ fontSize: '1rem' }}>Recent Orders</h3>
-            <a href="/admin/orders" style={{ fontSize: '0.8rem', color: 'var(--teal)' }}>View All →</a>
+            <a href="/admin/orders" style={{ fontSize: '0.8rem', color: 'var(--teal)' }}>View All</a>
           </div>
 
           {recentOrders && recentOrders.length > 0 ? (
