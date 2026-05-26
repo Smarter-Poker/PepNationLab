@@ -146,12 +146,8 @@ export default function EditProductPage() {
   return (
     <div style={{ padding: 'var(--space-8)', maxWidth: 760 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)', marginBottom: 'var(--space-8)' }}>
-        <Link href="/admin/products" style={{ fontSize: '0.85rem', color: 'var(--grey-400)', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <line x1="19" y1="12" x2="5" y2="12" />
-            <polyline points="12 19 5 12 12 5" />
-          </svg>
-          Products
+        <Link href="/admin/products" style={{ fontSize: '0.85rem', color: 'var(--grey-400)' }}>
+          ← Products
         </Link>
         <h1 style={{ fontSize: '1.4rem' }}>
           Edit <span style={{ color: 'var(--teal)' }}>Product</span>

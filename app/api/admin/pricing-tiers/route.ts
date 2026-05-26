@@ -1,11 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
-import { requireAdmin } from '@/lib/admin-auth';
 
 export async function GET() {
-  const gate = await requireAdmin();
-  if (!gate.ok) return gate.response;
-
   const supabase = await createServiceClient();
 
   const { data, error } = await supabase
@@ -21,9 +17,6 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
-  const gate = await requireAdmin();
-  if (!gate.ok) return gate.response;
-
   const supabase = await createServiceClient();
   const body = await req.json().catch(() => ({}));
 

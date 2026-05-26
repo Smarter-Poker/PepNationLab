@@ -2,7 +2,7 @@ import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 
 // Routes that require auth
-const PROTECTED_ROUTES = ['/dashboard', '/admin', '/checkout', '/orders', '/messages'];
+const PROTECTED_ROUTES = ['/dashboard', '/admin', '/checkout'];
 // Routes that redirect to dashboard if already authed
 const AUTH_ROUTES = ['/login', '/register'];
 
@@ -38,7 +38,23 @@ export async function middleware(request: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser();
   const pathname = request.nextUrl.pathname;
 
-  // If protected route and no user -> redirect to login
+  // Check if this is an agent slug route (e.g., /marcela)
+  const isAgentRoute = !pathname.startsWith('/api') &&
+    !pathname.startsWith('/_next') &&
+    !pathname.startsWith('/dashboard') &&
+    !pathname.startsWith('/admin') &&
+    !pathname.startsWith('/login') &&
+    !pathname.startsWith('/register') &&
+    !pathname.startsWith('/products') &&
+    !pathname.startsWith('/about') &&
+    !pathname.startsWith('/disclaimer') &&
+    !pathname.startsWith('/terms') &&
+    !pathname.startsWith('/privacy') &&
+    !pathname.startsWith('/become-agent') &&
+    pathname !== '/' &&
+    pathname.split('/').length === 2;
+
+  // If protected route and no user → redirect to login
   const isProtected = PROTECTED_ROUTES.some(r => pathname.startsWith(r));
   if (isProtected && !user) {
     const url = request.nextUrl.clone();
@@ -47,7 +63,7 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  // If auth route and user exists -> redirect to dashboard
+  // If auth route and user exists → redirect to dashboard
   const isAuthRoute = AUTH_ROUTES.some(r => pathname.startsWith(r));
   if (isAuthRoute && user) {
     const url = request.nextUrl.clone();

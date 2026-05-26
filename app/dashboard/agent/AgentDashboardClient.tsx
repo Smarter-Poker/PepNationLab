@@ -1,11 +1,9 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import QRCode from 'qrcode';
 import Link from 'next/link';
-import AgentCoupons from '@/components/AgentCoupons';
-import AgentMessages from '@/components/AgentMessages';
 
 interface Profile {
   id: string;
@@ -33,6 +31,14 @@ interface Researcher {
   email: string;
   full_name: string | null;
   created_at: string;
+}
+
+interface OrderItem {
+  id: string;
+  product_name: string;
+  quantity: number;
+  unit_retail_price: number;
+  unit_cost_price: number;
 }
 
 interface Order {
@@ -65,13 +71,14 @@ export default function AgentDashboardClient({
 }: AgentDashboardClientProps) {
   const supabase = createClient();
 
-  const [activeTab, setActiveTab] = useState<'Overview' | 'Researchers' | 'Orders' | 'Coupons' | 'Messages' | 'Storefront Config'>('Overview');
+  const [activeTab, setActiveTab] = useState<'Overview' | 'Researchers' | 'Orders' | 'Storefront Config'>('Overview');
   const [agentProfile, setAgentProfile] = useState<AgentProfile | null>(initialAgentProfile);
-  const [researchers] = useState<Researcher[]>(initialResearchers);
+  const [researchers, setResearchers] = useState<Researcher[]>(initialResearchers);
   const [orders, setOrders] = useState<Order[]>(initialOrders);
 
   // QR Code State
   const [qrCodeUrl, setQrCodeUrl] = useState<string>('');
+  const qrCanvasRef = useRef<HTMLCanvasElement>(null);
 
   // Storefront Config Form State
   const [displayName, setDisplayName] = useState(agentProfile?.display_name ?? '');
@@ -316,7 +323,7 @@ export default function AgentDashboardClient({
             <div className="form-group">
               <label className="form-label">Storefront URL Slug</label>
               <div style={{ display: 'flex', alignItems: 'center', background: 'var(--surface-3)', borderRadius: 'var(--radius-md)', border: '1px solid rgba(255,255,255,0.1)', paddingLeft: 'var(--space-3)' }}>
-                <span style={{ fontSize: '0.85rem', color: 'var(--grey-400)', userSelect: 'none' }}>pepnationlab.com/</span>
+                <span style={{ fontSize: '0.85rem', color: 'var(--grey-400)', userSelect: 'none' }}>pepnation.com/</span>
                 <input
                   type="text"
                   className="form-input"
@@ -365,12 +372,8 @@ export default function AgentDashboardClient({
         padding: '0 var(--space-6)'
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)' }}>
-          <Link href="/dashboard" style={{ color: 'var(--grey-400)', fontSize: '0.85rem', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <line x1="19" y1="12" x2="5" y2="12" />
-              <polyline points="12 19 5 12 12 5" />
-            </svg>
-            Back To Hub
+          <Link href="/dashboard" style={{ color: 'var(--grey-400)', fontSize: '0.85rem', fontWeight: 600 }}>
+            ← Back To Hub
           </Link>
           <div style={{ width: 1, height: 16, background: 'rgba(255,255,255,0.1)' }} />
           <span style={{ fontFamily: 'var(--font-brand)', fontSize: '0.9rem', fontWeight: 800, letterSpacing: '0.12em', color: 'var(--teal)' }}>
@@ -400,7 +403,7 @@ export default function AgentDashboardClient({
 
         {/* Tab Controls */}
         <div style={{ display: 'flex', borderBottom: '1px solid rgba(255,255,255,0.08)', gap: 'var(--space-4)', marginBottom: 'var(--space-8)' }}>
-          {(['Overview', 'Researchers', 'Orders', 'Coupons', 'Messages', 'Storefront Config'] as const).map((tab) => (
+          {(['Overview', 'Researchers', 'Orders', 'Storefront Config'] as const).map((tab) => (
             <button
               key={tab}
               onClick={() => { setActiveTab(tab); setError(null); setSuccess(null); }}
@@ -466,7 +469,7 @@ export default function AgentDashboardClient({
                     {storefrontUrl}
                   </div>
                   <button onClick={copyStorefrontLink} className="btn btn-secondary" style={{ fontSize: '0.82rem' }}>
-                    {copiedStorefront ? 'Link Copied' : 'Copy Link'}
+                    {copiedStorefront ? 'Copied ✓' : 'Copy Link'}
                   </button>
                   <a href={storefrontUrl} target="_blank" rel="noopener noreferrer" className="btn btn-primary" style={{ fontSize: '0.82rem' }}>
                     Visit Store
@@ -690,15 +693,7 @@ export default function AgentDashboardClient({
           </div>
         )}
 
-        {/* TAB: Discount Coupons */}
-        {activeTab === 'Coupons' && <AgentCoupons agentId={userProfile.id} />}
-
-        {/* TAB: Researcher Messages */}
-        {activeTab === 'Messages' && (
-          <AgentMessages agentId={userProfile.id} researchers={researchers} />
-        )}
-
-        {/* TAB 5: Storefront Configuration */}
+        {/* TAB 4: Storefront Configuration */}
         {activeTab === 'Storefront Config' && (
           <div className="card-metal" style={{ padding: 'var(--space-6)' }}>
             <h3 style={{ fontSize: '1.1rem', color: 'var(--white)', marginBottom: 'var(--space-4)', fontFamily: 'var(--font-brand)', letterSpacing: '0.05em', textTransform: 'uppercase' }}>
@@ -724,7 +719,7 @@ export default function AgentDashboardClient({
                 <div className="form-group">
                   <label className="form-label">Storefront URL Slug</label>
                   <div style={{ display: 'flex', alignItems: 'center', background: 'var(--surface-3)', borderRadius: 'var(--radius-md)', border: '1px solid rgba(255,255,255,0.1)', paddingLeft: 'var(--space-3)' }}>
-                    <span style={{ fontSize: '0.85rem', color: 'var(--grey-400)', userSelect: 'none' }}>pepnationlab.com/</span>
+                    <span style={{ fontSize: '0.85rem', color: 'var(--grey-400)', userSelect: 'none' }}>pepnation.com/</span>
                     <input
                       type="text"
                       className="form-input"

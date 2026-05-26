@@ -258,7 +258,7 @@ export default async function AgentStorefrontPage({ params }: Props) {
                             href={`/register?ref=${agentSlug}`}
                             style={{ fontSize: '0.8rem', color: 'var(--teal)', fontWeight: 600 }}
                           >
-                            Sign In To Order
+                            Sign In To Order →
                           </Link>
                         </div>
                       </div>

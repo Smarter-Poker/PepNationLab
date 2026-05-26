@@ -680,9 +680,9 @@ a:hover { color: var(--teal-dark); }
    First letter of every word MUST be capitalized
    across all PepNationLab user-facing elements.
 
-   WARNING: Do NOT apply text-transform:capitalize to h1-h6.
+   ⚠ WARNING: Do NOT apply text-transform:capitalize to h1-h6.
    CSS capitalize lowercases then re-capitalizes, which corrupts
-   compound names: BPC-157 becomes "Bpc-157", TB-500 becomes "Tb-500".
+   compound names: BPC-157 → "Bpc-157", TB-500 → "Tb-500".
    Headings MUST be written correctly in source code.
    ============================================ */
 

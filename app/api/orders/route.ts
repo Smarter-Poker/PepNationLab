@@ -1,7 +1,5 @@
 import { NextResponse } from 'next/server';
 import { createClient, createServiceClient } from '@/lib/supabase/server';
-import { sendEmail, orderConfirmationEmail } from '@/lib/email';
-import { validateCoupon } from '@/lib/coupons';
 
 export async function POST(request: Request) {
   try {
@@ -11,11 +9,11 @@ export async function POST(request: Request) {
     // Authenticate the user session
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized. Please Sign In.' }, { status: 401 });
+      return NextResponse.json({ error: 'Unauthorized.' }, { status: 412 });
     }
 
     const body = await request.json();
-    const { items, shippingAddress, fulfillmentMethod, paymentMethod, couponCode } = body;
+    const { items, shippingAddress, fulfillmentMethod, paymentMethod } = body;
 
     // Basic validation
     if (!items || !Array.isArray(items) || items.length === 0) {
@@ -118,26 +116,6 @@ export async function POST(request: Request) {
       });
     }
 
-    // Validate and apply a coupon code, if one was supplied. Order
-    // creation re-validates so a stale or invalid code is rejected here.
-    let discountAmount = 0;
-    let appliedCouponCode: string | null = null;
-    if (couponCode && String(couponCode).trim()) {
-      const couponResult = await validateCoupon(serviceSupabase, {
-        code: String(couponCode),
-        agentId: profile.referring_agent_id ?? null,
-        subtotal,
-      });
-      if (!couponResult.valid) {
-        return NextResponse.json(
-          { error: couponResult.error ?? 'Coupon Is Not Valid.' },
-          { status: 400 }
-        );
-      }
-      discountAmount = couponResult.discount ?? 0;
-      appliedCouponCode = couponResult.code ?? null;
-    }
-
     // Calculate shipping costs based on weights
     let shippingCost = 0;
     if (fulfillmentMethod === 'ship') {
@@ -155,7 +133,7 @@ export async function POST(request: Request) {
       }
     }
 
-    const total = Math.max(0, subtotal - discountAmount) + shippingCost;
+    const total = subtotal + shippingCost;
 
     // Create checkout order record in orders
     const { data: order, error: orderError } = await serviceSupabase
@@ -169,8 +147,6 @@ export async function POST(request: Request) {
         shipping_address: shippingAddress ?? null,
         shipping_cost: shippingCost,
         subtotal: subtotal,
-        discount_amount: discountAmount,
-        coupon_code: appliedCouponCode,
         total: total
       })
       .select('id')
@@ -202,26 +178,6 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Failed To Save Checkout Order Line Items.' }, { status: 500 });
     }
 
-    // Increment coupon usage now that the order is committed.
-    if (appliedCouponCode && profile.referring_agent_id) {
-      try {
-        const { data: couponRow } = await serviceSupabase
-          .from('coupons')
-          .select('id, uses_count')
-          .eq('agent_id', profile.referring_agent_id)
-          .eq('code', appliedCouponCode)
-          .maybeSingle();
-        if (couponRow) {
-          await serviceSupabase
-            .from('coupons')
-            .update({ uses_count: (Number(couponRow.uses_count) || 0) + 1 })
-            .eq('id', couponRow.id);
-        }
-      } catch (couponError) {
-        console.error('Coupon Usage Increment Failed:', couponError);
-      }
-    }
-
     // Log disclaimer acceptance for final checkout compliance logs
     await serviceSupabase.from('disclaimer_acceptances').insert({
       user_id: user.id,
@@ -230,29 +186,6 @@ export async function POST(request: Request) {
       user_agent: request.headers.get('user-agent') || 'Unknown',
       ip_address: request.headers.get('x-forwarded-for') || '127.0.0.1'
     });
-
-    // Send order confirmation email. Failure must not break the order,
-    // which is already committed at this point.
-    if (user.email) {
-      try {
-        const tpl = orderConfirmationEmail({
-          orderId: order.id,
-          items: computedItems.map(i => ({
-            product_name: i.product_name,
-            quantity: i.quantity,
-            unit_cost_price: i.unit_cost_price,
-          })),
-          subtotal,
-          discount: discountAmount,
-          shippingCost,
-          total,
-          paymentMethod,
-        });
-        await sendEmail({ to: user.email, subject: tpl.subject, html: tpl.html });
-      } catch (emailError) {
-        console.error('Order Confirmation Email Failed:', emailError);
-      }
-    }
 
     return NextResponse.json({ success: true, orderId: order.id });
 

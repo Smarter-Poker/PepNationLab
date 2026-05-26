@@ -1,12 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
-import { requireAdmin } from '@/lib/admin-auth';
 
 // GET: List all profiles with optional roles and search query
 export async function GET(req: NextRequest) {
-  const gate = await requireAdmin();
-  if (!gate.ok) return gate.response;
-
   const supabase = await createServiceClient();
   const searchParams = req.nextUrl.searchParams;
   const role = searchParams.get('role');
@@ -38,9 +34,6 @@ export async function GET(req: NextRequest) {
 
 // POST: Upgrade a researcher or update an existing agent's details
 export async function POST(req: NextRequest) {
-  const gate = await requireAdmin();
-  if (!gate.ok) return gate.response;
-
   const supabase = await createServiceClient();
   const body = await req.json().catch(() => ({}));
 

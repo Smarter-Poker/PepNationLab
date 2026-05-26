@@ -159,7 +159,7 @@ export default function PricingTiersPage() {
                     <div style={{ fontSize: '0.78rem', color: 'var(--grey-400)' }}>
                       Example Preview: Base Cost{' '}
                       <span style={{ color: 'var(--silver)', fontWeight: 600 }}>${Number(sampleBaseCost).toFixed(2)}</span>
-                      {' '}= Dynamic Price{' '}
+                      {' '}→ Dynamic Price{' '}
                       <span style={{ color: 'var(--teal)', fontWeight: 700 }}>
                         ${(Number(sampleBaseCost) * tier.multiplier).toFixed(2)}
                       </span>

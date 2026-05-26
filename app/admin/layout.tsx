@@ -2,48 +2,12 @@ import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import Link from 'next/link';
 
-const ICON_PROPS = {
-  width: 16,
-  height: 16,
-  viewBox: '0 0 24 24',
-  fill: 'none',
-  stroke: 'currentColor',
-  strokeWidth: 2,
-  strokeLinecap: 'round' as const,
-  strokeLinejoin: 'round' as const,
-};
-
 const NAV = [
-  {
-    href: '/admin',
-    label: 'Dashboard',
-    icon: <svg {...ICON_PROPS}><rect x="3" y="3" width="7" height="9" /><rect x="14" y="3" width="7" height="5" /><rect x="14" y="12" width="7" height="9" /><rect x="3" y="16" width="7" height="5" /></svg>,
-  },
-  {
-    href: '/admin/products',
-    label: 'Products',
-    icon: <svg {...ICON_PROPS}><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" /><polyline points="3.27 6.96 12 12.01 20.73 6.96" /><line x1="12" y1="22.08" x2="12" y2="12" /></svg>,
-  },
-  {
-    href: '/admin/researchers',
-    label: 'Researchers',
-    icon: <svg {...ICON_PROPS}><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /></svg>,
-  },
-  {
-    href: '/admin/pricing',
-    label: 'Pricing Tiers',
-    icon: <svg {...ICON_PROPS}><line x1="12" y1="1" x2="12" y2="23" /><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" /></svg>,
-  },
-  {
-    href: '/admin/orders',
-    label: 'Orders',
-    icon: <svg {...ICON_PROPS}><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z" /><line x1="3" y1="6" x2="21" y2="6" /><path d="M16 10a4 4 0 0 1-8 0" /></svg>,
-  },
-  {
-    href: '/admin/statements',
-    label: 'Statements',
-    icon: <svg {...ICON_PROPS}><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /><line x1="16" y1="13" x2="8" y2="13" /><line x1="16" y1="17" x2="8" y2="17" /></svg>,
-  },
+  { href: '/admin', label: 'Dashboard', icon: '◈' },
+  { href: '/admin/products', label: 'Products', icon: '⬡' },
+  { href: '/admin/researchers', label: 'Researchers', icon: '◎' },
+  { href: '/admin/pricing', label: 'Pricing Tiers', icon: '◈' },
+  { href: '/admin/orders', label: 'Orders', icon: '◉' },
 ];
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -78,19 +42,15 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           padding: 'var(--space-6)',
           borderBottom: '1px solid rgba(255,255,255,0.06)'
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/logo-mark.svg" alt="Pep Nation Lab" style={{ height: 30, width: 30, display: 'block' }} />
-            <div style={{
-              fontFamily: 'var(--font-brand)',
-              fontSize: '0.85rem',
-              fontWeight: 800,
-              letterSpacing: '0.1em',
-              color: 'var(--teal)',
-              textShadow: '0 0 12px rgba(0,196,188,0.3)'
-            }}>
-              PEP NATION LAB
-            </div>
+          <div style={{
+            fontFamily: 'var(--font-brand)',
+            fontSize: '0.85rem',
+            fontWeight: 800,
+            letterSpacing: '0.1em',
+            color: 'var(--teal)',
+            textShadow: '0 0 12px rgba(0,196,188,0.3)'
+          }}>
+            PEP NATION LAB
           </div>
           <div style={{ fontSize: '0.72rem', color: 'var(--grey-400)', marginTop: 4 }}>
             Admin Control Panel
@@ -123,12 +83,8 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           <div style={{ fontSize: '0.82rem', color: 'var(--silver)', marginBottom: 'var(--space-3)' }}>
             {profile?.full_name ?? user.email}
           </div>
-          <Link href="/dashboard" style={{ fontSize: '0.78rem', color: 'var(--teal)', display: 'inline-flex', alignItems: 'center', gap: 6, marginBottom: 'var(--space-2)' }}>
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <line x1="19" y1="12" x2="5" y2="12" />
-              <polyline points="12 19 5 12 12 5" />
-            </svg>
-            Back To Dashboard
+          <Link href="/dashboard" style={{ fontSize: '0.78rem', color: 'var(--teal)', display: 'block', marginBottom: 'var(--space-2)' }}>
+            ← Back To Dashboard
           </Link>
           <form action="/api/auth/signout" method="POST">
             <button type="submit" style={{

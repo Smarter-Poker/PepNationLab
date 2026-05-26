@@ -74,12 +74,34 @@ PepNationLab Supabase ref: `ydsaqnnuwyvtyxgvrnys`
 PepNationLab GitHub: `github.com/Smarter-Poker/PepNationLab`
 PepNationLab Vercel: `smarter-poker/pepnationlab`
 
-PepNationRX (the telehealth backend in the `pepnationrx/` subdirectory) runs on
-separate infrastructure. Its live Supabase database is project
-`cupnhfdwveouenutnveg` (project name: pepnationrx), hosted alongside a Hetzner
-application server behind nginx. Never run PepNationRX migrations against
-`ydsaqnnuwyvtyxgvrnys` — that ref is the PepNationLab storefront database, not
-the telehealth backend.
+PepNationRX (the telehealth platform) has its own standalone repo at
+`github.com/Smarter-Software/pepnationrx`. Its live Supabase database is project
+`cupnhfdwveouenutnveg` (project name: pepnationrx). Never run PepNationRX
+migrations against `ydsaqnnuwyvtyxgvrnys` — that ref is the PepNationLab
+storefront database, not the telehealth backend.
+
+The `pepnationrx/` subdirectory in this repo is a local working copy only.
+Push PepNationRX changes to `Smarter-Software/pepnationrx`, NOT to this repo.
+
+---
+
+## MANDATORY: PepNationRX Deployment Workflow
+
+**Before pushing or publishing ANY PepNationRX change, every Claude session and
+every Antigravity agent MUST read and follow `pepnationrx/DEPLOYMENT-WORKFLOW.md`.**
+
+PepNationRX is a SPLIT deployment, not a single host:
+- Frontend (`pepnationrx/frontend/`) is published by VERCEL -- it auto-deploys on
+  every push to `main` of `Smarter-Software/pepnationrx`.
+- Backend API (`pepnationrx/backend/`) runs on the HETZNER server `5.161.252.33`
+  and is deployed by SSH.
+- Database is Supabase project `cupnhfdwveouenutnveg`.
+
+Do NOT scp the frontend to Hetzner -- the public domain is served by Vercel.
+Always verify a publish by hitting `https://pepnationrx.com`, never localhost or
+the Hetzner IP. The full workflow and pre-publish checklist are in
+`pepnationrx/DEPLOYMENT-WORKFLOW.md` -- that file is authoritative and overrides
+any older note or assumption.
 
 ---
 

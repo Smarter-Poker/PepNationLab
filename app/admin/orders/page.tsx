@@ -26,8 +26,6 @@ interface Order {
   shipping_address: any;
   shipping_cost: number;
   subtotal: number;
-  discount_amount: number | null;
-  coupon_code: string | null;
   total: number;
   tracking_number: string | null;
   agent_approved_at: string | null;
@@ -325,13 +323,9 @@ export default function AdminOrdersPage() {
                 </div>
                 <button
                   onClick={() => setSelectedOrder(null)}
-                  style={{ background: 'none', border: 'none', color: 'var(--grey-400)', cursor: 'pointer', display: 'flex' }}
-                  aria-label="Close Order Details"
+                  style={{ background: 'none', border: 'none', color: 'var(--grey-400)', cursor: 'pointer', fontSize: '1rem' }}
                 >
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                    <line x1="18" y1="6" x2="6" y2="18" />
-                    <line x1="6" y1="6" x2="18" y2="18" />
-                  </svg>
+                  ✕
                 </button>
               </div>
 
@@ -380,9 +374,8 @@ export default function AdminOrdersPage() {
                 <div style={{ marginBottom: 'var(--space-5)' }}>
                   <h4 style={{ fontSize: '0.82rem', color: 'var(--silver)', marginBottom: 'var(--space-2)' }}>Shipping Address</h4>
                   <div style={{ fontSize: '0.8rem', color: 'var(--grey-400)', display: 'flex', flexDirection: 'column', gap: 2 }}>
-                    {selectedOrder.shipping_address.fullName && <div>{selectedOrder.shipping_address.fullName}</div>}
                     <div>{selectedOrder.shipping_address.street}</div>
-                    {selectedOrder.shipping_address.suite && <div>{selectedOrder.shipping_address.suite}</div>}
+                    {selectedOrder.shipping_address.apartment && <div>{selectedOrder.shipping_address.apartment}</div>}
                     <div>
                       {selectedOrder.shipping_address.city}, {selectedOrder.shipping_address.state} {selectedOrder.shipping_address.zip}
                     </div>
@@ -415,12 +408,6 @@ export default function AdminOrdersPage() {
                         <span>Subtotal</span>
                         <span>${Number(selectedOrder.subtotal).toFixed(2)}</span>
                       </div>
-                      {Number(selectedOrder.discount_amount) > 0 && (
-                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem', color: '#68D391' }}>
-                          <span>Coupon Discount{selectedOrder.coupon_code ? ` (${selectedOrder.coupon_code})` : ''}</span>
-                          <span>-${Number(selectedOrder.discount_amount).toFixed(2)}</span>
-                        </div>
-                      )}
                       <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem', color: 'var(--grey-400)' }}>
                         <span>Shipping Cost</span>
                         <span>${Number(selectedOrder.shipping_cost).toFixed(2)}</span>
