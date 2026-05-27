@@ -15,6 +15,7 @@ interface AgentProfile {
 interface Profile {
   id: string;
   email: string;
+  username: string | null;   // username-based login identity
   full_name: string | null;
   phone: string | null;
   role: 'researcher' | 'agent' | 'super_agent' | 'admin';
@@ -107,10 +108,12 @@ export default function ResearchersAdminPage() {
     const nextActive = !profile.is_active;
     setProfiles(prev => prev.map(p => p.id === profile.id ? { ...p, is_active: nextActive } : p));
     try {
+      // Use action:'toggle_active' so the API only updates is_active,
+      // without requiring slug/display_name (which would break for agents).
       const res = await fetch('/api/admin/researchers', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: profile.id, role: profile.role, is_active: nextActive }),
+        body: JSON.stringify({ id: profile.id, action: 'toggle_active', is_active: nextActive }),
       });
       if (!res.ok) {
         setProfiles(prev => prev.map(p => p.id === profile.id ? { ...p, is_active: profile.is_active } : p));
@@ -296,7 +299,7 @@ export default function ResearchersAdminPage() {
   const filteredProfiles = profiles.filter(p => {
     const matchesSearch =
       (p.full_name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-      p.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (p.username || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
       (p.phone || '').toLowerCase().includes(searchQuery.toLowerCase());
     if (!matchesSearch) return false;
     if (activeTab === 'researchers') return p.role === 'researcher';
@@ -367,7 +370,7 @@ export default function ResearchersAdminPage() {
           <input
             type="text"
             className="form-input"
-            placeholder="Search Name, Email, Or Phone..."
+            placeholder="Search Name, Username, Or Phone..."
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
             style={{ paddingLeft: 'var(--space-8)' }}
@@ -431,7 +434,8 @@ export default function ResearchersAdminPage() {
                       {ap?.slug && <span style={{ fontSize: '0.78rem', color: 'var(--grey-400)' }}>(@{ap.slug})</span>}
                     </div>
                     <div style={{ fontSize: '0.8rem', color: 'var(--grey-400)', marginTop: 2 }}>
-                      {profile.email} {profile.phone && `• ${profile.phone}`}
+                      {profile.username ? `@${profile.username}` : profile.email.split('@')[0]}
+                      {profile.phone && ` • ${profile.phone}`}
                     </div>
                     <div style={{ fontSize: '0.74rem', color: 'var(--grey-500)', marginTop: 4 }}>
                       Joined {new Date(profile.created_at).toLocaleDateString()} • Disclaimer:{' '}

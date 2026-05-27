@@ -31,6 +31,7 @@ interface AgentProfile {
 interface Researcher {
   id: string;
   email: string;
+  username: string | null;
   full_name: string | null;
   created_at: string;
 }
@@ -124,6 +125,7 @@ export default function AgentDashboardClient({
         setResearcherList(prev => [...prev, {
           id: json.userId,
           email: `${json.username}@pepnationlab.com`,
+          username: json.username,
           full_name: json.full_name,
           created_at: new Date().toISOString(),
         }]);
@@ -640,7 +642,9 @@ export default function AgentDashboardClient({
                       {researcherList.map((res) => (
                         <tr key={res.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.03)', color: 'var(--silver-light)' }}>
                           <td style={{ padding: 'var(--space-3) 0', fontWeight: 500 }}>{res.full_name || 'Anonymous Researcher'}</td>
-                          <td style={{ padding: 'var(--space-3) 0', fontFamily: 'var(--font-brand)', fontSize: '0.78rem', color: 'var(--teal)' }}>{res.email.split('@')[0]}</td>
+                          <td style={{ padding: 'var(--space-3) 0', fontFamily: 'var(--font-brand)', fontSize: '0.78rem', color: 'var(--teal)' }}>
+                            @{res.username ?? res.email.split('@')[0]}
+                          </td>
                           <td style={{ padding: 'var(--space-3) 0' }}>{new Date(res.created_at).toLocaleDateString()}</td>
                           <td style={{ padding: 'var(--space-3) 0' }}>
                             <span className="badge badge-teal" style={{ fontSize: '0.65rem' }}>Active</span>

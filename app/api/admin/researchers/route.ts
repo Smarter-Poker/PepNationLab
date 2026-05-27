@@ -15,6 +15,7 @@ export async function GET(req: NextRequest) {
   let dbQuery = supabase
     .from('profiles')
     .select('*, agent_profiles(*)');
+    // username is fetched via * — it was added in migration 008
 
   if (role) {
     dbQuery = dbQuery.eq('role', role);
@@ -62,6 +63,37 @@ export async function POST(req: NextRequest) {
 
   if (!id) {
     return NextResponse.json({ error: 'Missing User ID' }, { status: 400 });
+  }
+
+  // ── Toggle Active (lightweight — does NOT require slug/display_name) ────────
+  if (action === 'toggle_active') {
+    if (is_active === undefined) {
+      return NextResponse.json({ error: 'Missing is_active Value' }, { status: 400 });
+    }
+    const { error: toggleError } = await supabase
+      .from('profiles')
+      .update({ is_active, updated_at: new Date().toISOString() })
+      .eq('id', id);
+
+    if (toggleError) {
+      return NextResponse.json({ error: `Toggle Failed: ${toggleError.message}` }, { status: 500 });
+    }
+
+    // If deactivating an agent, also deactivate their storefront
+    if (!is_active) {
+      await supabase
+        .from('agent_profiles')
+        .update({ is_active: false })
+        .eq('id', id);
+    } else {
+      // Re-activating: re-enable their storefront if it exists
+      await supabase
+        .from('agent_profiles')
+        .update({ is_active: true })
+        .eq('id', id);
+    }
+
+    return NextResponse.json({ success: true });
   }
 
   // ── Balance Adjustment (separate quick action) ──────────────────────────────

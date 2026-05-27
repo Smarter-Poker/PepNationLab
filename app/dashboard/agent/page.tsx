@@ -40,13 +40,14 @@ export default async function AgentDashboardPage() {
   // 5. Fetch referred researchers
   const { data: researchersData } = await supabase
     .from('profiles')
-    .select('id, email, full_name, role, created_at')
+    .select('id, email, username, full_name, role, created_at')
     .eq('referring_agent_id', user.id)
     .order('created_at', { ascending: false });
 
   const researchers = (researchersData || []).map(r => ({
     id: r.id,
     email: r.email,
+    username: r.username,
     full_name: r.full_name,
     created_at: r.created_at
   }));

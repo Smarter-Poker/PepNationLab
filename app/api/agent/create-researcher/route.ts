@@ -1,18 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createServiceClient } from '@/lib/supabase/server';
-import { requireAdmin } from '@/lib/admin-auth';
+import { createClient, createServiceClient } from '@/lib/supabase/server';
 
 // POST /api/agent/create-researcher
 // Called by agents to create researcher accounts linked to them.
 // This is agent-gated — NOT admin-only.
 export async function POST(req: NextRequest) {
-  const supabase = await createServiceClient();
-
-  // Verify the caller is an active agent or super_agent
-  const { data: { user }, error: authErr } = await supabase.auth.getUser();
+  // IMPORTANT: Must use createClient() (anon key + cookies) to read the
+  // caller's session. createServiceClient() uses the service role key and
+  // ignores user session cookies, causing getUser() to always return null.
+  const userSupabase = await createClient();
+  const { data: { user }, error: authErr } = await userSupabase.auth.getUser();
   if (authErr || !user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
+
+  // Use service client for all DB operations (bypasses RLS)
+  const supabase = await createServiceClient();
 
   const { data: agentProfile, error: profileErr } = await supabase
     .from('profiles')
@@ -75,16 +78,17 @@ export async function POST(req: NextRequest) {
   const newUserId = authData.user.id;
 
   // Upsert the profile as researcher, linked to this agent
+  // IMPORTANT: username must be set so the researcher can log in via /api/auth/resolve
   const { error: profileError } = await supabase
     .from('profiles')
     .upsert({
       id: newUserId,
       email: internalEmail,
-      username: usernameClean,
+      username: usernameClean,        // ← Required for username-based login
       full_name,
       role: 'researcher',
-      referring_agent_id: user.id,  // Links researcher to the creating agent
-      disclaimer_v1_accepted: false, // Researcher must accept on first login
+      referring_agent_id: user.id,    // Links researcher to the creating agent
+      disclaimer_v1_accepted: false,  // Researcher must accept on first login
       is_active: true,
       updated_at: new Date().toISOString(),
     });
@@ -104,3 +108,4 @@ export async function POST(req: NextRequest) {
     full_name,
   });
 }
+
