@@ -7,7 +7,6 @@ import Link from 'next/link';
 import AgentCoupons from '@/components/AgentCoupons';
 import AgentMessages from '@/components/AgentMessages';
 import AgentStoreProducts from '@/components/AgentStoreProducts';
-import AgentAnalytics from '@/components/AgentAnalytics';
 
 interface Profile {
   id: string;
@@ -15,7 +14,6 @@ interface Profile {
   full_name: string | null;
   role: string;
   tier: string | null;
-  prepaid_balance?: number;
 }
 
 interface AgentProfile {
@@ -57,24 +55,22 @@ interface Order {
 interface AgentDashboardClientProps {
   userProfile: Profile;
   initialAgentProfile: AgentProfile | null;
+  initialResearchers: Researcher[];
   initialOrders: Order[];
-  initialStatements: any[];
 }
 
 export default function AgentDashboardClient({
   userProfile,
   initialAgentProfile,
   initialResearchers,
-  initialOrders,
-  initialStatements
+  initialOrders
 }: AgentDashboardClientProps) {
   const supabase = createClient();
 
-  const [activeTab, setActiveTab] = useState<'Overview' | 'Analytics' | 'Researchers' | 'Orders' | 'Store Products' | 'Coupons' | 'Messages' | 'Storefront Config'>('Overview');
+  const [activeTab, setActiveTab] = useState<'Overview' | 'Researchers' | 'Orders' | 'Store Products' | 'Coupons' | 'Messages' | 'Storefront Config'>('Overview');
   const [agentProfile, setAgentProfile] = useState<AgentProfile | null>(initialAgentProfile);
   const [researchers] = useState<Researcher[]>(initialResearchers);
   const [orders, setOrders] = useState<Order[]>(initialOrders);
-  const [statements] = useState<any[]>(initialStatements);
 
   // QR Code State
   const [qrCodeUrl, setQrCodeUrl] = useState<string>('');
@@ -451,7 +447,7 @@ export default function AgentDashboardClient({
 
         {/* Tab Controls */}
         <div style={{ display: 'flex', borderBottom: '1px solid rgba(255,255,255,0.08)', gap: 'var(--space-4)', marginBottom: 'var(--space-8)' }}>
-          {(['Overview', 'Analytics', 'Researchers', 'Orders', 'Store Products', 'Coupons', 'Messages', 'Storefront Config'] as const).map((tab) => (
+          {(['Overview', 'Researchers', 'Orders', 'Store Products', 'Coupons', 'Messages', 'Storefront Config'] as const).map((tab) => (
             <button
               key={tab}
               onClick={() => { setActiveTab(tab); setError(null); setSuccess(null); }}
@@ -477,10 +473,8 @@ export default function AgentDashboardClient({
 
         {/* TAB 1: Overview */}
         {activeTab === 'Overview' && (
-          <div className="space-y-6">
-            <AgentAnalytics statements={statements} balance={userProfile.prepaid_balance || 0} />
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-8)' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: 'var(--space-8)' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-8)' }}>
               {/* Stats Cards */}
               <div className="grid-3">
                 <div className="card-metal" style={{ padding: 'var(--space-5)' }}>
@@ -567,10 +561,6 @@ export default function AgentDashboardClient({
         )}
 
         {/* TAB 2: Referred Researchers */}
-        {activeTab === 'Analytics' && (
-          <AgentAnalytics statements={statements} balance={userProfile.prepaid_balance || 0} />
-        )}
-
         {activeTab === 'Researchers' && (
           <div>
             {/* Create Researcher Modal */}
