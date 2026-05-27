@@ -1,8 +1,8 @@
-import { createClient } from '@/lib/supabase/server';
+import { createServiceClient } from '@/lib/supabase/server';
 import Link from 'next/link';
 
 export default async function AdminProductsPage() {
-  const supabase = await createClient();
+  const supabase = await createServiceClient();
 
   const { data: products } = await supabase
     .from('products')

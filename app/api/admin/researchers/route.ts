@@ -22,7 +22,7 @@ export async function GET(req: NextRequest) {
   }
 
   if (query) {
-    dbQuery = dbQuery.or(`full_name.ilike.%${query}%,email.ilike.%${query}%,phone.ilike.%${query}%`);
+    dbQuery = dbQuery.or(`full_name.ilike.%${query}%,username.ilike.%${query}%,phone.ilike.%${query}%`);
   }
 
   // Sort by created_at desc

@@ -288,7 +288,7 @@ export default function AdminStatementsPage() {
                 <option value="">Select An Agent</option>
                 {agents.map((a) => (
                   <option key={a.id} value={a.id}>
-                    {a.full_name || a.email}
+                    {a.full_name || `Agent ${a.id.slice(0, 8)}`}
                   </option>
                 ))}
               </select>

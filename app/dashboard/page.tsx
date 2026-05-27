@@ -53,8 +53,6 @@ export default async function DashboardPage({
         padding: '0 var(--space-6)'
       }}>
         <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', fontFamily: 'var(--font-brand)', fontSize: '0.9rem', fontWeight: 800, letterSpacing: '0.12em', color: 'var(--teal)' }}>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/logo-mark.svg" alt="Pep Nation Lab" style={{ height: 30, width: 30, display: 'block' }} />
           PEP NATION LAB
         </Link>
         <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)' }}>
@@ -183,8 +181,10 @@ export default async function DashboardPage({
                 <span style={{ color: 'var(--silver)' }}>{ROLE_LABELS[role] ?? role}</span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
-                <span style={{ color: 'var(--grey-400)' }}>Email</span>
-                <span style={{ color: 'var(--silver)', fontSize: '0.8rem' }}>{user.email}</span>
+                <span style={{ color: 'var(--grey-400)' }}>Username</span>
+                <span style={{ color: 'var(--silver)', fontSize: '0.8rem' }}>
+                  {user.email?.split('@')[0]}
+                </span>
               </div>
             </div>
 
@@ -197,10 +197,7 @@ export default async function DashboardPage({
                 border: '1px solid rgba(0,196,188,0.15)'
               }}>
                 <p style={{ fontSize: '0.78rem', color: 'var(--grey-400)', margin: 0 }}>
-                  Want Better Pricing?{' '}
-                  <Link href="/become-agent" style={{ color: 'var(--teal)' }}>
-                    Apply To Become An Agent
-                  </Link>
+                  Want Better Pricing? Contact Your Administrator To Inquire About Agent Access.
                 </p>
               </div>
             )}

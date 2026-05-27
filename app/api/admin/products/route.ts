@@ -80,10 +80,31 @@ export async function PATCH(req: NextRequest) {
 
   const supabase = await createServiceClient();
   const body = await req.json();
-  const { id, ...updates } = body;
+  const { id, ...raw } = body;
 
   if (!id) {
     return NextResponse.json({ error: 'Product ID Required' }, { status: 400 });
+  }
+
+  // Whitelist only the fields admins are permitted to update.
+  // Prevents callers from patching is_banned, slug, or other protected columns.
+  const ALLOWED_FIELDS = [
+    'name', 'sku', 'category', 'description', 'image_url',
+    'base_cost', 'unit_size', 'unit_measure',
+    'inventory_count', 'low_stock_threshold', 'backorder_days',
+    'is_active',
+  ] as const;
+
+  const updates: Record<string, unknown> = { updated_at: new Date().toISOString() };
+  for (const field of ALLOWED_FIELDS) {
+    if (field in raw) {
+      updates[field] = raw[field];
+    }
+  }
+
+  if (Object.keys(updates).length === 1) {
+    // Only updated_at — nothing actually changed
+    return NextResponse.json({ success: true });
   }
 
   const { error } = await supabase
@@ -97,3 +118,4 @@ export async function PATCH(req: NextRequest) {
 
   return NextResponse.json({ success: true });
 }
+
