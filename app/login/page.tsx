@@ -7,7 +7,7 @@ import { createClient } from '@/lib/supabase/client';
 function LoginPageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [email, setEmail] = useState('');
+  const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -19,10 +19,35 @@ function LoginPageInner() {
     setError('');
 
     const supabase = createClient();
-    const { error: authError } = await supabase.auth.signInWithPassword({ email, password });
+    const raw = identifier.trim();
+    let authEmail: string;
+
+    if (raw.includes('@')) {
+      // Admin logging in with their real email — use as-is
+      authEmail = raw;
+    } else {
+      // Everyone else — resolve username → email via server
+      const res = await fetch('/api/auth/resolve', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: raw }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.email) {
+        setError('Invalid Username Or Password');
+        setLoading(false);
+        return;
+      }
+      authEmail = data.email;
+    }
+
+    const { error: authError } = await supabase.auth.signInWithPassword({
+      email: authEmail,
+      password,
+    });
 
     if (authError) {
-      setError(authError.message);
+      setError('Invalid Username Or Password');
       setLoading(false);
       return;
     }
@@ -103,11 +128,10 @@ function LoginPageInner() {
       )}
 
       <div style={{ width: '100%', maxWidth: 420, position: 'relative' }}>
-        {/* Card */}
         <div className="card-metal" style={{ padding: 'var(--space-8)' }}>
           <h2 style={{ marginBottom: 'var(--space-2)', fontSize: '1.4rem' }}>Sign In</h2>
           <p style={{ marginBottom: 'var(--space-6)', fontSize: '0.85rem', color: 'var(--grey-400)' }}>
-            Access Your Researcher Account
+            Access Your Account
           </p>
 
           {error && (
@@ -118,16 +142,18 @@ function LoginPageInner() {
 
           <form onSubmit={handleLogin}>
             <div className="form-group">
-              <label className="form-label" htmlFor="email">Email Address</label>
+              <label className="form-label" htmlFor="identifier">Username</label>
               <input
-                id="email"
-                type="email"
+                id="identifier"
+                type="text"
                 className="form-input"
-                placeholder="Researcher@Lab.com"
-                value={email}
-                onChange={e => setEmail(e.target.value)}
+                placeholder="Enter Your Username"
+                value={identifier}
+                onChange={e => setIdentifier(e.target.value)}
                 required
-                autoComplete="email"
+                autoComplete="username"
+                autoCapitalize="none"
+                spellCheck={false}
               />
             </div>
 
@@ -149,14 +175,7 @@ function LoginPageInner() {
               <button
                 type="button"
                 onClick={() => setShowForgotPopup(true)}
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  padding: 0,
-                  cursor: 'pointer',
-                  fontSize: '0.8rem',
-                  color: 'var(--teal)',
-                }}
+                style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontSize: '0.8rem', color: 'var(--teal)' }}
               >
                 Forgot Password?
               </button>
@@ -185,13 +204,7 @@ function LoginPageInner() {
           </div>
         </div>
 
-        {/* Research-Only Reminder */}
-        <p style={{
-          marginTop: 'var(--space-4)',
-          textAlign: 'center',
-          fontSize: '0.75rem',
-          color: 'var(--grey-600)'
-        }}>
+        <p style={{ marginTop: 'var(--space-4)', textAlign: 'center', fontSize: '0.75rem', color: 'var(--grey-600)' }}>
           For Qualified Researchers Only. Research Use Only.
         </p>
       </div>
@@ -199,7 +212,6 @@ function LoginPageInner() {
   );
 }
 
-// Suspense wrapper required for useSearchParams() in Next.js App Router
 export default function LoginPage() {
   return (
     <Suspense fallback={

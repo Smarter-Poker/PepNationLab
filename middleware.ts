@@ -54,10 +54,17 @@ export async function middleware(request: NextRequest) {
   // Allow public routes through (login, forgot-password)
   const isPublicRoute = PUBLIC_ROUTES.some(r => pathname.startsWith(r));
   if (isPublicRoute) {
-    // If user is already logged in on a public route, send them to dashboard
+    // If user is already logged in on a public route, send them to the right place
     if (user) {
       const url = request.nextUrl.clone();
-      url.pathname = '/dashboard';
+      // Check role via the profile — admins go to /admin, everyone else to /dashboard
+      // We use a lightweight DB read with the anon key (RLS allows user to read own profile)
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', user.id)
+        .single();
+      url.pathname = profile?.role === 'admin' ? '/admin' : '/dashboard';
       return NextResponse.redirect(url);
     }
     return supabaseResponse;

@@ -31,9 +31,13 @@ export default async function DashboardPage({
     .eq('id', user.id)
     .single();
 
+  const role = profile?.role ?? 'researcher';
+
+  // Admins always go to the admin panel — never the researcher dashboard
+  if (role === 'admin') redirect('/admin');
+
   const params = await searchParams;
   const isWelcome = params?.welcome === '1';
-  const role = profile?.role ?? 'researcher';
   const name = profile?.full_name ?? user.email?.split('@')[0] ?? 'Researcher';
 
   return (

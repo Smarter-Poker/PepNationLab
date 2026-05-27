@@ -36,7 +36,7 @@ export async function GET(req: NextRequest) {
   return NextResponse.json({ data });
 }
 
-// POST: Upgrade a researcher or update an existing agent's details
+// POST: Upgrade a researcher, update an agent's details, or adjust prepaid balance
 export async function POST(req: NextRequest) {
   const gate = await requireAdmin();
   if (!gate.ok) return gate.response;
@@ -46,6 +46,7 @@ export async function POST(req: NextRequest) {
 
   const {
     id,
+    action,
     role,
     tier,
     account_type,
@@ -55,12 +56,47 @@ export async function POST(req: NextRequest) {
     display_name,
     tagline,
     bio,
+    // Balance adjustment fields
+    balance_delta,
   } = body;
 
   if (!id) {
     return NextResponse.json({ error: 'Missing User ID' }, { status: 400 });
   }
 
+  // ── Balance Adjustment (separate quick action) ──────────────────────────────
+  if (action === 'adjust_balance') {
+    const delta = Number(balance_delta);
+    if (isNaN(delta)) {
+      return NextResponse.json({ error: 'Invalid Balance Amount' }, { status: 400 });
+    }
+
+    // Fetch current balance first to prevent going negative beyond bounds
+    const { data: currentProfile, error: fetchError } = await supabase
+      .from('profiles')
+      .select('prepaid_balance')
+      .eq('id', id)
+      .single();
+
+    if (fetchError) {
+      return NextResponse.json({ error: `Failed To Fetch Profile: ${fetchError.message}` }, { status: 500 });
+    }
+
+    const newBalance = Math.max(0, Number(currentProfile?.prepaid_balance ?? 0) + delta);
+
+    const { error: balanceError } = await supabase
+      .from('profiles')
+      .update({ prepaid_balance: newBalance, updated_at: new Date().toISOString() })
+      .eq('id', id);
+
+    if (balanceError) {
+      return NextResponse.json({ error: `Balance Update Failed: ${balanceError.message}` }, { status: 500 });
+    }
+
+    return NextResponse.json({ success: true, new_balance: newBalance });
+  }
+
+  // ── Profile / Agent Update ───────────────────────────────────────────────────
   // 1. Update the base profile
   const profileUpdates: any = {
     role,
@@ -144,3 +180,4 @@ export async function POST(req: NextRequest) {
 
   return NextResponse.json({ success: true });
 }
+
