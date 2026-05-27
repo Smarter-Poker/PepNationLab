@@ -2,7 +2,6 @@
 
 import { useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 
 function LoginPageInner() {
@@ -12,6 +11,7 @@ function LoginPageInner() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [showForgotPopup, setShowForgotPopup] = useState(false);
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
@@ -27,7 +27,6 @@ function LoginPageInner() {
       return;
     }
 
-    // Honor the redirect param set by middleware when bouncing protected routes
     const redirectTo = searchParams.get('redirect') ?? '/dashboard';
     router.push(redirectTo);
     router.refresh();
@@ -42,25 +41,68 @@ function LoginPageInner() {
       background: 'var(--black)',
       padding: 'var(--space-6)'
     }}>
-      {/* Background glow */}
+      {/* Background Glow */}
       <div style={{
         position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
         background: 'radial-gradient(ellipse at 50% 0%, rgba(0,196,188,0.06) 0%, transparent 60%)',
         pointerEvents: 'none'
       }} />
 
-      <div style={{ width: '100%', maxWidth: 420, position: 'relative' }}>
-        {/* Logo / Brand */}
-        <div style={{ textAlign: 'center', marginBottom: 'var(--space-8)' }}>
-          <Link href="/" style={{ display: 'inline-block' }} aria-label="Pep Nation Lab Home">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/logo.svg" alt="Pep Nation Lab" style={{ height: 108, width: 'auto', display: 'inline-block' }} />
-          </Link>
-          <p style={{ marginTop: 'var(--space-2)', fontSize: '0.85rem', color: 'var(--grey-400)' }}>
-            Researcher Portal
-          </p>
+      {/* Forgot Password Popup */}
+      {showForgotPopup && (
+        <div
+          onClick={() => setShowForgotPopup(false)}
+          style={{
+            position: 'fixed', inset: 0,
+            background: 'rgba(0,0,0,0.7)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            zIndex: 1000,
+            padding: 'var(--space-6)',
+            backdropFilter: 'blur(4px)',
+          }}
+        >
+          <div
+            onClick={e => e.stopPropagation()}
+            style={{
+              background: 'var(--grey-900)',
+              border: '1px solid rgba(0,196,188,0.25)',
+              borderRadius: 16,
+              padding: 'var(--space-8)',
+              maxWidth: 380,
+              width: '100%',
+              textAlign: 'center',
+              boxShadow: '0 0 60px rgba(0,196,188,0.1)',
+            }}
+          >
+            <div style={{
+              width: 48, height: 48,
+              borderRadius: '50%',
+              background: 'rgba(0,196,188,0.12)',
+              border: '1px solid rgba(0,196,188,0.3)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              margin: '0 auto var(--space-4)',
+              fontSize: '1.4rem',
+            }}>
+              🔑
+            </div>
+            <h3 style={{ fontSize: '1.1rem', marginBottom: 'var(--space-3)', color: 'var(--white)' }}>
+              Password Reset
+            </h3>
+            <p style={{ fontSize: '0.9rem', color: 'var(--grey-300)', lineHeight: 1.6 }}>
+              Contact Your Research Agent If You Forgot Your Password Or Need It Reset
+            </p>
+            <button
+              onClick={() => setShowForgotPopup(false)}
+              className="btn btn-primary"
+              style={{ marginTop: 'var(--space-6)', width: '100%', justifyContent: 'center' }}
+            >
+              Got It
+            </button>
+          </div>
         </div>
+      )}
 
+      <div style={{ width: '100%', maxWidth: 420, position: 'relative' }}>
         {/* Card */}
         <div className="card-metal" style={{ padding: 'var(--space-8)' }}>
           <h2 style={{ marginBottom: 'var(--space-2)', fontSize: '1.4rem' }}>Sign In</h2>
@@ -81,7 +123,7 @@ function LoginPageInner() {
                 id="email"
                 type="email"
                 className="form-input"
-                placeholder="researcher@lab.com"
+                placeholder="Researcher@Lab.com"
                 value={email}
                 onChange={e => setEmail(e.target.value)}
                 required
@@ -104,9 +146,20 @@ function LoginPageInner() {
             </div>
 
             <div style={{ textAlign: 'right', marginBottom: 'var(--space-6)', marginTop: 'var(--space-2)' }}>
-              <Link href="/forgot-password" style={{ fontSize: '0.8rem', color: 'var(--teal)' }}>
+              <button
+                type="button"
+                onClick={() => setShowForgotPopup(true)}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  padding: 0,
+                  cursor: 'pointer',
+                  fontSize: '0.8rem',
+                  color: 'var(--teal)',
+                }}
+              >
                 Forgot Password?
-              </Link>
+              </button>
             </div>
 
             <button
@@ -127,12 +180,12 @@ function LoginPageInner() {
             textAlign: 'center'
           }}>
             <p style={{ fontSize: '0.8rem', color: 'var(--grey-600)' }}>
-              Access is by invitation only. Contact your administrator for access.
+              Access Is By Invitation Only. Contact Your Administrator For Access.
             </p>
           </div>
         </div>
 
-        {/* Research-only reminder */}
+        {/* Research-Only Reminder */}
         <p style={{
           marginTop: 'var(--space-4)',
           textAlign: 'center',
