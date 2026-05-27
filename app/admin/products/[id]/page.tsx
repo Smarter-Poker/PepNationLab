@@ -76,7 +76,7 @@ export default function EditProductPage() {
           category: product.category || 'Peptides',
           description: product.description || '',
           image_url: product.image_url || '',
-          base_cost: product.base_cost !== undefined ? String(product.base_cost) : '',,
+          base_cost: product.base_cost !== undefined ? String(product.base_cost) : '',
           unit_size: product.unit_size !== undefined ? String(product.unit_size) : '',
           unit_measure: product.unit_measure || 'mg',
           inventory_count: product.inventory_count !== undefined ? String(product.inventory_count) : '0',
