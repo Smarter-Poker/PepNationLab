@@ -7,6 +7,8 @@ import Link from 'next/link';
 import AgentCoupons from '@/components/AgentCoupons';
 import AgentMessages from '@/components/AgentMessages';
 import AgentStoreProducts from '@/components/AgentStoreProducts';
+import AgentSales from '@/components/AgentSales';
+import AgentSubAgents from '@/components/AgentSubAgents';
 
 interface Profile {
   id: string;
@@ -14,6 +16,7 @@ interface Profile {
   full_name: string | null;
   role: string;
   tier: string | null;
+  is_super_agent?: boolean;
 }
 
 interface AgentProfile {
@@ -67,7 +70,7 @@ export default function AgentDashboardClient({
 }: AgentDashboardClientProps) {
   const supabase = createClient();
 
-  const [activeTab, setActiveTab] = useState<'Overview' | 'Researchers' | 'Orders' | 'Store Products' | 'Coupons' | 'Messages' | 'Storefront Config'>('Overview');
+  const [activeTab, setActiveTab] = useState<'Overview' | 'Sales & Carts' | 'Researchers' | 'My Sub-Agents' | 'Orders' | 'Store Products' | 'Coupons' | 'Messages' | 'Storefront Config'>('Overview');
   const [agentProfile, setAgentProfile] = useState<AgentProfile | null>(initialAgentProfile);
   const [researchers] = useState<Researcher[]>(initialResearchers);
   const [orders, setOrders] = useState<Order[]>(initialOrders);
@@ -447,7 +450,7 @@ export default function AgentDashboardClient({
 
         {/* Tab Controls */}
         <div style={{ display: 'flex', borderBottom: '1px solid rgba(255,255,255,0.08)', gap: 'var(--space-4)', marginBottom: 'var(--space-8)' }}>
-          {(['Overview', 'Researchers', 'Orders', 'Store Products', 'Coupons', 'Messages', 'Storefront Config'] as const).map((tab) => (
+          {(['Overview', 'Sales & Carts', 'Researchers', ...(userProfile.is_super_agent ? ['My Sub-Agents'] : []), 'Orders', 'Store Products', 'Coupons', 'Messages', 'Storefront Config'] as const).map((tab) => (
             <button
               key={tab}
               onClick={() => { setActiveTab(tab); setError(null); setSuccess(null); }}
@@ -470,6 +473,20 @@ export default function AgentDashboardClient({
             </button>
           ))}
         </div>
+
+        {/* Sales & Live Carts Tab */}
+        {activeTab === 'Sales & Carts' && (
+          <div style={{ animation: 'fadeIn 0.3s ease-out' }}>
+            <AgentSales />
+          </div>
+        )}
+
+        {/* My Sub-Agents Tab */}
+        {activeTab === 'My Sub-Agents' && (
+          <div style={{ animation: 'fadeIn 0.3s ease-out' }}>
+            <AgentSubAgents agentId={userProfile.id} />
+          </div>
+        )}
 
         {/* TAB 1: Overview */}
         {activeTab === 'Overview' && (
@@ -637,6 +654,9 @@ export default function AgentDashboardClient({
                         <th style={{ padding: 'var(--space-3) 0', fontWeight: 600 }}>Username</th>
                         <th style={{ padding: 'var(--space-3) 0', fontWeight: 600 }}>Created</th>
                         <th style={{ padding: 'var(--space-3) 0', fontWeight: 600 }}>Status</th>
+                        {userProfile.is_super_agent && (
+                          <th style={{ padding: 'var(--space-3) 0', fontWeight: 600, textAlign: 'right' }}>Actions</th>
+                        )}
                       </tr>
                     </thead>
                     <tbody>
@@ -650,6 +670,35 @@ export default function AgentDashboardClient({
                           <td style={{ padding: 'var(--space-3) 0' }}>
                             <span className="badge badge-teal" style={{ fontSize: '0.65rem' }}>Active</span>
                           </td>
+                          {userProfile.is_super_agent && (
+                            <td style={{ padding: 'var(--space-3) 0', textAlign: 'right' }}>
+                              <button 
+                                className="btn btn-secondary btn-sm"
+                                style={{ padding: '4px 8px', fontSize: '0.75rem' }}
+                                onClick={async () => {
+                                  if (!confirm('Promote this researcher to a Sub-Agent? They will be able to set prices for their own downline.')) return;
+                                  try {
+                                    const resApi = await fetch('/api/agent/promote-subagent', {
+                                      method: 'POST',
+                                      headers: { 'Content-Type': 'application/json' },
+                                      body: JSON.stringify({ researcherId: res.id })
+                                    });
+                                    if (!resApi.ok) {
+                                      const errData = await resApi.json();
+                                      throw new Error(errData.error || 'Failed to promote');
+                                    }
+                                    alert('Researcher successfully promoted to Sub-Agent!');
+                                    // Remove from this list since they are now a sub-agent
+                                    setResearcherList(prev => prev.filter(r => r.id !== res.id));
+                                  } catch (err: any) {
+                                    alert(err.message);
+                                  }
+                                }}
+                              >
+                                Promote to Sub-Agent
+                              </button>
+                            </td>
+                          )}
                         </tr>
                       ))}
                     </tbody>

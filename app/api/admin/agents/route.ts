@@ -4,6 +4,26 @@ import { requireAdmin } from '@/lib/admin-auth';
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://pepnationlab.com';
 
+// GET: List all agents with their profiles and storefront data
+export async function GET(req: NextRequest) {
+  const gate = await requireAdmin();
+  if (!gate.ok) return gate.response;
+
+  const supabase = await createServiceClient();
+
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('*, agent_profiles(slug, is_active)')
+    .eq('role', 'agent')
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+
+  return NextResponse.json({ data });
+}
+
 // POST: Create a brand-new agent directly (no registration required)
 export async function POST(req: NextRequest) {
   const gate = await requireAdmin();

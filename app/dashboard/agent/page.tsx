@@ -16,7 +16,7 @@ export default async function AgentDashboardPage() {
   // 2. Fetch user profile
   const { data: profile } = await supabase
     .from('profiles')
-    .select('id, email, full_name, role, tier')
+    .select('id, email, full_name, role, tier, is_super_agent')
     .eq('id', user.id)
     .single();
 

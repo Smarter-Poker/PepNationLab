@@ -49,6 +49,13 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (loaded) {
       localStorage.setItem('pnl_cart', JSON.stringify(cart));
+      
+      // Background sync to database for Live Carts feature
+      fetch('/api/cart/sync', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ cart })
+      }).catch(err => console.error('Cart Sync Failed:', err));
     }
   }, [cart, loaded]);
 

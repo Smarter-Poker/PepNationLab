@@ -5,15 +5,12 @@ import { requireAdmin } from '@/lib/admin-auth';
 /**
  * Weekly agent billing statements.
  *
- * BILLING MODEL (documented assumption):
- * An agent owes Pep Nation Lab the wholesale cost of goods for every order
- * placed through them in a week, priced at the AGENT's own pricing tier
- * (base_cost x agent tier multiplier, with per-product overrides applied),
- * plus the shipping cost Pep Nation Lab fronted. Cancelled orders are
- * excluded. total_owed = total_cogs + total_shipping.
- *
- * This is intentionally isolated in computeStatement() so the formula can
- * be adjusted in one place if the settlement model changes.
+ * BILLING MODEL (Phase 8):
+ * Super Agents are billed for their direct orders + sub-agent orders.
+ * Sub-Agents are NEVER billed by Admin (they settle directly with their Super Agent).
+ * Agents are billed for their direct orders.
+ * We rely strictly on unit_cost_price and unit_super_agent_cost from order_items
+ * as historical snapshots, rather than recalculating from base_cost.
  */
 
 function addDays(dateStr: string, days: number): string {
@@ -41,39 +38,42 @@ async function computeStatement(
   const rangeStart = `${weekStart}T00:00:00Z`;
   const rangeEndExclusive = `${addDays(weekStart, 7)}T00:00:00Z`;
 
-  // Agent pricing tier
+  // Check Agent profile
   const { data: agent, error: agentError } = await supabase
     .from('profiles')
-    .select('tier')
+    .select('tier, is_super_agent, parent_agent_id')
     .eq('id', agentId)
     .single();
+
   if (agentError || !agent) {
     return { ok: false, error: 'Agent Profile Not Found.' };
   }
-  const agentTier = agent.tier ?? 'tier_3';
 
-  // Tier multipliers and per-product overrides for this agent's tier
-  const { data: tiers } = await supabase.from('pricing_tiers').select('tier_name, multiplier');
-  const tierMultiplier =
-    Number(tiers?.find((t) => t.tier_name === agentTier)?.multiplier) || 7.0;
+  if (agent.parent_agent_id) {
+    return { ok: false, error: 'Sub-Agents do not generate Admin statements. Their Super Agent is billed.' };
+  }
 
-  const { data: overrides } = await supabase
-    .from('product_tier_overrides')
-    .select('product_id, custom_multiplier')
-    .eq('tier_name', agentTier);
-  const overrideMap: Record<string, number> = {};
-  overrides?.forEach((o) => {
-    overrideMap[o.product_id] = Number(o.custom_multiplier);
-  });
+  let billableAgentIds = [agentId];
 
-  // Billable orders placed through this agent within the week
+  if (agent.is_super_agent) {
+    const { data: subAgents } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('parent_agent_id', agentId);
+    if (subAgents) {
+      billableAgentIds = [...billableAgentIds, ...subAgents.map(sa => sa.id)];
+    }
+  }
+
+  // Billable orders placed through this agent (and sub-agents) within the week
   const { data: orders, error: ordersError } = await supabase
     .from('orders')
-    .select('id, shipping_cost, order_items(quantity, product_id, products(base_cost))')
-    .eq('agent_id', agentId)
+    .select('id, agent_id, shipping_cost, order_items(quantity, unit_cost_price, unit_super_agent_cost)')
+    .in('agent_id', billableAgentIds)
     .neq('status', 'cancelled')
     .gte('created_at', rangeStart)
     .lt('created_at', rangeEndExclusive);
+
   if (ordersError) {
     return { ok: false, error: ordersError.message };
   }
@@ -88,15 +88,20 @@ async function computeStatement(
 
     const items = (order.order_items as unknown) as Array<{
       quantity: number;
-      product_id: string | null;
-      products: { base_cost: number } | null;
+      unit_cost_price: number | null;
+      unit_super_agent_cost: number | null;
     }>;
 
     for (const item of items ?? []) {
-      const baseCost = Number(item.products?.base_cost) || 0;
-      const multiplier =
-        (item.product_id ? overrideMap[item.product_id] : undefined) ?? tierMultiplier;
-      totalCogs += baseCost * multiplier * (Number(item.quantity) || 0);
+      const qty = Number(item.quantity) || 0;
+      
+      if (order.agent_id === agentId) {
+        // Direct order. Agent/Super Agent owes their direct cost.
+        totalCogs += (Number(item.unit_cost_price) || 0) * qty;
+      } else {
+        // Sub-Agent order. Super Agent owes their Super Agent cost.
+        totalCogs += (Number(item.unit_super_agent_cost) || 0) * qty;
+      }
     }
   }
 
@@ -244,70 +249,30 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: saved.error }, { status: 500 });
     }
 
-
-
     return NextResponse.json({ success: true, statementId: saved.statementId });
   }
 
   if (action === 'mark_paid') {
-    const { statementId, paymentMethod, paymentReference } = body;
+    const { statementId, paymentNotes } = body;
     if (!statementId) {
-      return NextResponse.json({ error: 'Statement ID Is Required.' }, { status: 400 });
+      return NextResponse.json({ error: 'Statement ID Required.' }, { status: 400 });
     }
 
-    // Check if statement is already paid to prevent Infinite Money Glitch
-    const { data: checkStmt } = await supabase
-      .from('weekly_statements')
-      .select('status')
-      .eq('id', statementId)
-      .maybeSingle();
-
-    if (checkStmt?.status === 'paid') {
-      return NextResponse.json({ error: 'This statement is already paid. Cannot apply credit twice.' }, { status: 400 });
-    }
-
-    const { data: updated, error } = await supabase
+    const { error: updateError } = await supabase
       .from('weekly_statements')
       .update({
         status: 'paid',
+        payment_notes: paymentNotes || null,
         paid_at: new Date().toISOString(),
-        payment_method: paymentMethod || null,
-        payment_reference: paymentReference || null,
       })
-      .eq('id', statementId)
-      .select('week_start, week_end, total_owed, agent_id')
-      .single();
+      .eq('id', statementId);
 
-    if (error || !updated) {
-      return NextResponse.json(
-        { error: error?.message ?? 'Failed To Update Statement.' },
-        { status: 500 }
-      );
+    if (updateError) {
+      return NextResponse.json({ error: updateError.message }, { status: 500 });
     }
-
-    // Retrieve current balance for ledger insertion
-    const { data: profile } = await supabase.from('profiles').select('prepaid_balance').eq('id', updated.agent_id).single();
-    const balanceBefore = Number(profile?.prepaid_balance) || 0;
-    const paymentAmount = Number(updated.total_owed) || 0;
-    const balanceAfter = balanceBefore + paymentAmount;
-
-    // Log the payment to the ledger
-    await supabase.from('balance_transactions').insert({
-      agent_id: updated.agent_id,
-      type: 'statement_payment',
-      amount: paymentAmount,
-      balance_before: balanceBefore,
-      balance_after: balanceAfter,
-      description: `Payment for Statement: ${updated.week_start}`,
-      reference_id: statementId,
-      reference_type: 'statement'
-    });
-
-    // Update profile balance
-    await supabase.from('profiles').update({ prepaid_balance: balanceAfter }).eq('id', updated.agent_id);
 
     return NextResponse.json({ success: true });
   }
 
-  return NextResponse.json({ error: 'Unknown Action.' }, { status: 400 });
+  return NextResponse.json({ error: 'Invalid Action' }, { status: 400 });
 }

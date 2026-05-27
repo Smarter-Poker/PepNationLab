@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { createClient } from '@/lib/supabase/client';
 
 const CATEGORIES = [
   'Peptides',
@@ -36,6 +37,8 @@ export default function NewProductPage() {
     backorder_days: '14',
     is_active: true,
   });
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Fetch real multipliers from DB on mount
   useEffect(() => {
@@ -62,11 +65,42 @@ export default function NewProductPage() {
     setError('');
     setLoading(true);
 
+    const supabase = createClient();
+    let finalImageUrl = form.image_url;
+
+    // Handle Image Upload if a file was selected
+    if (fileInputRef.current?.files?.[0]) {
+      setUploadingImage(true);
+      const file = fileInputRef.current.files[0];
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Math.random().toString(36).substring(2, 15)}_${Date.now()}.${fileExt}`;
+      const filePath = `${fileName}`;
+
+      const { error: uploadError, data } = await supabase.storage
+        .from('product-images')
+        .upload(filePath, file);
+
+      if (uploadError) {
+        setError(`Image Upload Failed: ${uploadError.message}`);
+        setLoading(false);
+        setUploadingImage(false);
+        return;
+      }
+
+      const { data: publicUrlData } = supabase.storage
+        .from('product-images')
+        .getPublicUrl(filePath);
+
+      finalImageUrl = publicUrlData.publicUrl;
+      setUploadingImage(false);
+    }
+
     const res = await fetch('/api/admin/products', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         ...form,
+        image_url: finalImageUrl,
         base_cost: parseFloat(form.base_cost),
         inventory_count: parseInt(form.inventory_count, 10) || 0,
         low_stock_threshold: parseInt(form.low_stock_threshold, 10) || 5,
@@ -148,12 +182,23 @@ export default function NewProductPage() {
 
           <div className="form-group">
             <label className="form-label" htmlFor="image_url">
-              Product Image URL{' '}
+              Product Image
               <span style={{ fontSize: '0.72rem', color: 'var(--grey-400)', fontWeight: 400 }}>Optional</span>
             </label>
-            <input id="image_url" type="url" className="form-input"
-              placeholder="https://example.com/product-image.jpg"
-              value={form.image_url} onChange={e => set('image_url', e.target.value)} />
+            <input 
+              id="image_url" 
+              type="file" 
+              accept="image/*"
+              ref={fileInputRef}
+              className="form-input"
+              style={{ padding: '8px' }}
+              onChange={(e) => {
+                if (e.target.files?.[0]) {
+                  const url = URL.createObjectURL(e.target.files[0]);
+                  set('image_url', url);
+                }
+              }}
+            />
             {form.image_url && (
               <div style={{ marginTop: 'var(--space-3)', borderRadius: 'var(--radius-md)', overflow: 'hidden', border: 'var(--border-subtle)', width: 120, height: 120, background: 'var(--surface-2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -161,6 +206,7 @@ export default function NewProductPage() {
                   onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
               </div>
             )}
+            {uploadingImage && <div style={{ fontSize: '0.8rem', color: 'var(--teal)', marginTop: 8 }}>Uploading Image...</div>}
           </div>
         </div>
 
