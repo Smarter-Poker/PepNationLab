@@ -157,9 +157,11 @@ export default async function AdminDashboard() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
             {[
               { href: '/admin/products/new', label: 'Add New Product', desc: 'Add A Research Compound To The Catalog', color: 'var(--teal)' },
-              { href: '/admin/researchers', label: 'Manage Researchers', desc: 'Upgrade Researchers To Agents', color: 'var(--silver)' },
+              { href: '/admin/researchers', label: 'Create New Agent', desc: 'Set Up A New Agent With Pricing Tier & Storefront', color: 'var(--teal)' },
+              { href: '/admin/sales', label: 'Sales & Revenue', desc: 'View Revenue By Agent, Transaction Ledgers', color: 'var(--silver)' },
+              { href: '/admin/orders', label: 'Process Orders', desc: 'Mark Payments Received, Approve For Shipment', color: pendingOrders ? 'var(--red)' : 'var(--silver)' },
               { href: '/admin/pricing', label: 'Edit Tier Pricing', desc: 'Adjust Multipliers For All 3 Tiers', color: 'var(--silver)' },
-              { href: '/admin/orders', label: 'Process Orders', desc: 'Mark Payments Received, Update Status', color: pendingOrders ? 'var(--red)' : 'var(--silver)' },
+              { href: '/admin/statements', label: 'Agent Statements', desc: 'Generate And Mark Weekly Billing Statements', color: 'var(--silver)' },
             ].map(({ href, label, desc, color }) => (
               <a
                 key={href}

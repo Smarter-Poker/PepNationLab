@@ -71,10 +71,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Invalid Balance Amount' }, { status: 400 });
     }
 
-    // Fetch current balance first to prevent going negative beyond bounds
+    // Fetch current balance first
     const { data: currentProfile, error: fetchError } = await supabase
       .from('profiles')
-      .select('prepaid_balance')
+      .select('prepaid_balance, full_name')
       .eq('id', id)
       .single();
 
@@ -82,7 +82,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: `Failed To Fetch Profile: ${fetchError.message}` }, { status: 500 });
     }
 
-    const newBalance = Math.max(0, Number(currentProfile?.prepaid_balance ?? 0) + delta);
+    const balanceBefore = Number(currentProfile?.prepaid_balance ?? 0);
+    const newBalance = Math.max(0, balanceBefore + delta);
 
     const { error: balanceError } = await supabase
       .from('profiles')
@@ -92,6 +93,20 @@ export async function POST(req: NextRequest) {
     if (balanceError) {
       return NextResponse.json({ error: `Balance Update Failed: ${balanceError.message}` }, { status: 500 });
     }
+
+    // Write full audit trail entry to balance_transactions
+    const txType = delta >= 0 ? 'credit' : 'debit';
+    await supabase.from('balance_transactions').insert({
+      agent_id: id,
+      type: txType,
+      amount: Math.abs(delta),
+      balance_before: balanceBefore,
+      balance_after: newBalance,
+      description: delta >= 0
+        ? `Admin Balance Credit: +$${Math.abs(delta).toFixed(2)}`
+        : `Admin Balance Deduction: -$${Math.abs(delta).toFixed(2)}`,
+      reference_type: 'admin_adjustment',
+    });
 
     return NextResponse.json({ success: true, new_balance: newBalance });
   }

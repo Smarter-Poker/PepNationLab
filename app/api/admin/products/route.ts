@@ -35,7 +35,7 @@ export async function POST(req: NextRequest) {
   const body = await req.json();
 
   const {
-    name, sku, category, description, base_cost,
+    name, sku, category, description, image_url, base_cost,
     unit_size, unit_measure, is_active,
     inventory_count, low_stock_threshold, backorder_days,
   } = body;
@@ -54,6 +54,7 @@ export async function POST(req: NextRequest) {
       sku: sku || null,
       category: category || 'Peptides',
       description: description || null,
+      image_url: image_url || null,
       base_cost,
       unit_size: unit_size || null,
       unit_measure: unit_measure || 'mg',
