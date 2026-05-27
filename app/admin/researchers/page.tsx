@@ -632,7 +632,7 @@ export default function ResearchersAdminPage() {
               {modalMode === 'upgrade' ? 'Upgrade User To Agent' : 'Configure Agent Profile'}
             </h2>
             <p style={{ fontSize: '0.8rem', color: 'var(--grey-400)', marginBottom: 'var(--space-6)' }}>
-              {selectedProfile.full_name} ({selectedProfile.email})
+              {selectedProfile.full_name}{selectedProfile.username ? ` (@${selectedProfile.username})` : ''}
             </p>
             {modalError && (
               <div className="disclaimer-warning" style={{ marginBottom: 'var(--space-4)', padding: 'var(--space-3)' }}>
@@ -718,7 +718,7 @@ export default function ResearchersAdminPage() {
           <div className="card-metal" style={{ width: '100%', maxWidth: 400, padding: 'var(--space-6)' }}>
             <h2 style={{ fontSize: '1.2rem', marginBottom: 'var(--space-2)' }}>Adjust Prepaid Balance</h2>
             <p style={{ fontSize: '0.8rem', color: 'var(--grey-400)', marginBottom: 'var(--space-4)' }}>
-              {selectedProfile.full_name} ({selectedProfile.email})
+              {selectedProfile.full_name}{selectedProfile.username ? ` (@${selectedProfile.username})` : ''}
             </p>
             <div style={{ padding: 'var(--space-3) var(--space-4)', background: 'rgba(0,196,188,0.06)', border: '1px solid rgba(0,196,188,0.2)', borderRadius: 'var(--radius-md)', marginBottom: 'var(--space-5)' }}>
               <div style={{ fontSize: '0.72rem', color: 'var(--grey-400)', textTransform: 'uppercase', marginBottom: 4 }}>Current Balance</div>

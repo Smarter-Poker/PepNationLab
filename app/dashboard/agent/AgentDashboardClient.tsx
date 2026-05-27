@@ -706,7 +706,7 @@ export default function AgentDashboardClient({
                             {order.buyer_name || 'Anonymous Scientist'}
                           </div>
                           <div style={{ fontSize: '0.78rem', color: 'var(--grey-400)', fontFamily: 'var(--font-brand)' }}>
-                            {order.buyer_email}
+                            {order.buyer_email ? `@${order.buyer_email.split('@')[0]}` : ''}
                           </div>
                         </div>
 
