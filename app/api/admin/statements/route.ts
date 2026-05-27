@@ -219,6 +219,21 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Check if statement already exists to prevent Double-Billing
+    const { data: existingStmt } = await supabase
+      .from('weekly_statements')
+      .select('id')
+      .eq('agent_id', agentId)
+      .eq('week_start', weekStart)
+      .maybeSingle();
+
+    if (existingStmt) {
+      return NextResponse.json(
+        { error: 'A statement for this week has already been generated. To prevent double-billing, you cannot regenerate it.' },
+        { status: 400 }
+      );
+    }
+
     const computed = await computeStatement(supabase, agentId, weekStart);
     if (!computed.ok) {
       return NextResponse.json({ error: computed.error }, { status: 400 });
@@ -238,6 +253,17 @@ export async function POST(req: NextRequest) {
     const { statementId, paymentMethod, paymentReference } = body;
     if (!statementId) {
       return NextResponse.json({ error: 'Statement ID Is Required.' }, { status: 400 });
+    }
+
+    // Check if statement is already paid to prevent Infinite Money Glitch
+    const { data: checkStmt } = await supabase
+      .from('weekly_statements')
+      .select('status')
+      .eq('id', statementId)
+      .maybeSingle();
+
+    if (checkStmt?.status === 'paid') {
+      return NextResponse.json({ error: 'This statement is already paid. Cannot apply credit twice.' }, { status: 400 });
     }
 
     const { data: updated, error } = await supabase
