@@ -26,18 +26,23 @@ const NAV = [
   },
   {
     href: '/admin/researchers',
-    label: 'Researchers',
+    label: 'Agents & Researchers',
     icon: <svg {...ICON_PROPS}><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /></svg>,
   },
   {
-    href: '/admin/pricing',
-    label: 'Pricing Tiers',
-    icon: <svg {...ICON_PROPS}><line x1="12" y1="1" x2="12" y2="23" /><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" /></svg>,
+    href: '/admin/sales',
+    label: 'Sales & Revenue',
+    icon: <svg {...ICON_PROPS}><polyline points="22 7 13.5 15.5 8.5 10.5 2 17" /><polyline points="16 7 22 7 22 13" /></svg>,
   },
   {
     href: '/admin/orders',
     label: 'Orders',
     icon: <svg {...ICON_PROPS}><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z" /><line x1="3" y1="6" x2="21" y2="6" /><path d="M16 10a4 4 0 0 1-8 0" /></svg>,
+  },
+  {
+    href: '/admin/pricing',
+    label: 'Pricing Tiers',
+    icon: <svg {...ICON_PROPS}><line x1="12" y1="1" x2="12" y2="23" /><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" /></svg>,
   },
   {
     href: '/admin/statements',
@@ -73,24 +78,20 @@ export default async function AdminLayout({ children }: { children: React.ReactN
         top: 0, left: 0, bottom: 0,
         zIndex: 50,
       }}>
-        {/* Brand */}
+        {/* Brand — text only, no logo */}
         <div style={{
           padding: 'var(--space-6)',
           borderBottom: '1px solid rgba(255,255,255,0.06)'
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/logo-mark.svg" alt="Pep Nation Lab" style={{ height: 30, width: 30, display: 'block' }} />
-            <div style={{
-              fontFamily: 'var(--font-brand)',
-              fontSize: '0.85rem',
-              fontWeight: 800,
-              letterSpacing: '0.1em',
-              color: 'var(--teal)',
-              textShadow: '0 0 12px rgba(0,196,188,0.3)'
-            }}>
-              PEP NATION LAB
-            </div>
+          <div style={{
+            fontFamily: 'var(--font-brand)',
+            fontSize: '0.92rem',
+            fontWeight: 800,
+            letterSpacing: '0.12em',
+            color: 'var(--teal)',
+            textShadow: '0 0 12px rgba(0,196,188,0.3)'
+          }}>
+            PEP NATION LAB
           </div>
           <div style={{ fontSize: '0.72rem', color: 'var(--grey-400)', marginTop: 4 }}>
             Admin Control Panel

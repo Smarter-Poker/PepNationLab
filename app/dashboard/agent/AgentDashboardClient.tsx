@@ -95,6 +95,50 @@ export default function AgentDashboardClient({
   const [success, setSuccess] = useState<string | null>(null);
   const [copiedStorefront, setCopiedStorefront] = useState(false);
 
+  // Create Researcher Modal State
+  const [showCreateResearcher, setShowCreateResearcher] = useState(false);
+  const [crFullName, setCrFullName] = useState('');
+  const [crUsername, setCrUsername] = useState('');
+  const [crPassword, setCrPassword] = useState('');
+  const [crLoading, setCrLoading] = useState(false);
+  const [crError, setCrError] = useState('');
+  const [crSuccess, setCrSuccess] = useState('');
+  const [researcherList, setResearcherList] = useState<Researcher[]>(initialResearchers);
+
+  async function handleCreateResearcher(e: React.FormEvent) {
+    e.preventDefault();
+    setCrLoading(true);
+    setCrError('');
+    setCrSuccess('');
+    try {
+      const res = await fetch('/api/agent/create-researcher', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ full_name: crFullName, username: crUsername, password: crPassword }),
+      });
+      const json = await res.json();
+      if (!res.ok) {
+        setCrError(json.error || 'Failed To Create Researcher Account');
+      } else {
+        setCrSuccess(`Researcher Account Created — Username: ${json.username}`);
+        setResearcherList(prev => [...prev, {
+          id: json.userId,
+          email: `${json.username}@pepnationlab.com`,
+          full_name: json.full_name,
+          created_at: new Date().toISOString(),
+        }]);
+        setCrFullName('');
+        setCrUsername('');
+        setCrPassword('');
+        setTimeout(() => { setShowCreateResearcher(false); setCrSuccess(''); }, 2000);
+      }
+    } catch (err: any) {
+      setCrError(err.message || 'Network Error');
+    } finally {
+      setCrLoading(false);
+    }
+  }
+
   const originUrl = typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000';
   const storefrontUrl = agentProfile ? `${originUrl}/${agentProfile.slug}` : '';
 
@@ -515,59 +559,104 @@ export default function AgentDashboardClient({
 
         {/* TAB 2: Referred Researchers */}
         {activeTab === 'Researchers' && (
-          <div className="card-metal" style={{ padding: 'var(--space-6)' }}>
-            <h3 style={{ fontSize: '1.1rem', color: 'var(--white)', marginBottom: 'var(--space-4)', fontFamily: 'var(--font-brand)', letterSpacing: '0.05em', textTransform: 'uppercase' }}>
-              My Referred Researchers
-            </h3>
-            <p style={{ color: 'var(--grey-400)', fontSize: '0.85rem', marginBottom: 'var(--space-6)' }}>
-              A Living Ledger Of All Scientists And Lab Experimenters Registered Under Your Referral Code.
-            </p>
+          <div>
+            {/* Create Researcher Modal */}
+            {showCreateResearcher && (
+              <div onClick={() => setShowCreateResearcher(false)} style={{
+                position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                zIndex: 1000, padding: 'var(--space-6)', backdropFilter: 'blur(4px)',
+              }}>
+                <div onClick={e => e.stopPropagation()} style={{
+                  background: 'var(--grey-900)', border: '1px solid rgba(0,196,188,0.25)',
+                  borderRadius: 16, padding: 'var(--space-7)', maxWidth: 420, width: '100%',
+                  boxShadow: '0 0 60px rgba(0,196,188,0.1)',
+                }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-5)' }}>
+                    <div>
+                      <h3 style={{ fontSize: '1.1rem', marginBottom: 4 }}>Create Researcher Account</h3>
+                      <p style={{ fontSize: '0.78rem', color: 'var(--grey-400)' }}>Account Will Be Linked To Your Agency</p>
+                    </div>
+                    <button onClick={() => setShowCreateResearcher(false)}
+                      style={{ background: 'none', border: 'none', color: 'var(--grey-400)', cursor: 'pointer' }}>
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+                    </button>
+                  </div>
 
-            {researchers.length > 0 ? (
-              <div style={{ overflowX: 'auto' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
-                  <thead>
-                    <tr style={{ textAlign: 'left', borderBottom: '1px solid rgba(255,255,255,0.08)', color: 'var(--grey-400)' }}>
-                      <th style={{ padding: 'var(--space-3) 0', fontWeight: 600 }}>Full Name</th>
-                      <th style={{ padding: 'var(--space-3) 0', fontWeight: 600 }}>Email Address</th>
-                      <th style={{ padding: 'var(--space-3) 0', fontWeight: 600 }}>Registration Date</th>
-                      <th style={{ padding: 'var(--space-3) 0', fontWeight: 600 }}>Status</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {researchers.map((res) => (
-                      <tr key={res.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.03)', color: 'var(--silver-light)' }}>
-                        <td style={{ padding: 'var(--space-3) 0', fontWeight: 500 }}>{res.full_name || 'Anonymous Researcher'}</td>
-                        <td style={{ padding: 'var(--space-3) 0', fontFamily: 'var(--font-brand)', fontSize: '0.78rem' }}>{res.email}</td>
-                        <td style={{ padding: 'var(--space-3) 0' }}>{new Date(res.created_at).toLocaleDateString()}</td>
-                        <td style={{ padding: 'var(--space-3) 0' }}>
-                          <span className="badge badge-teal" style={{ fontSize: '0.65rem' }}>Active</span>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            ) : (
-              <div style={{ textAlign: 'center', padding: 'var(--space-10) 0', opacity: 0.6 }}>
-                <svg
-                  width="40"
-                  height="40"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="var(--teal)"
-                  strokeWidth="1.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  style={{ display: 'block', margin: '0 auto var(--space-3)' }}
-                >
-                  <path d="M6 3h12" />
-                  <path d="M9 3v6l-5 9a2 2 0 0 0 1.7 3h12.6a2 2 0 0 0 1.7-3l-5-9V3" />
-                </svg>
-                <h4 style={{ color: 'var(--silver)' }}>No Referred Researchers Yet</h4>
-                <p style={{ fontSize: '0.78rem', color: 'var(--grey-400)', margin: 0 }}>Your Custom Storefront Referrals Will Populate Instantly Upon Registration.</p>
+                  {crError && <div style={{ background: 'rgba(229,62,62,0.1)', border: '1px solid rgba(229,62,62,0.3)', borderRadius: 8, padding: 'var(--space-3)', marginBottom: 'var(--space-4)', fontSize: '0.82rem', color: 'var(--red)' }}>{crError}</div>}
+                  {crSuccess && <div style={{ background: 'rgba(0,196,188,0.1)', border: '1px solid rgba(0,196,188,0.3)', borderRadius: 8, padding: 'var(--space-3)', marginBottom: 'var(--space-4)', fontSize: '0.82rem', color: 'var(--teal)' }}>{crSuccess}</div>}
+
+                  <form onSubmit={handleCreateResearcher} style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
+                    <div className="form-group">
+                      <label className="form-label">Full Name</label>
+                      <input type="text" className="form-input" placeholder="E.g. Dr. Jane Smith"
+                        value={crFullName} onChange={e => setCrFullName(e.target.value)} required />
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label">Username</label>
+                      <input type="text" className="form-input" placeholder="E.g. jsmith"
+                        value={crUsername} onChange={e => setCrUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))}
+                        required autoCapitalize="none" spellCheck={false} />
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label">Temporary Password</label>
+                      <input type="text" className="form-input" placeholder="Min 8 Characters"
+                        value={crPassword} onChange={e => setCrPassword(e.target.value)} required />
+                      <p style={{ fontSize: '0.72rem', color: 'var(--grey-500)', marginTop: 4 }}>You Set This — Tell Them Directly. No Automatic Emails.</p>
+                    </div>
+                    <button type="submit" className="btn btn-primary" disabled={crLoading}
+                      style={{ width: '100%', justifyContent: 'center', opacity: crLoading ? 0.7 : 1 }}>
+                      {crLoading ? 'Creating Account...' : 'Create Researcher Account'}
+                    </button>
+                  </form>
+                </div>
               </div>
             )}
+
+            <div className="card-metal" style={{ padding: 'var(--space-6)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 'var(--space-5)' }}>
+                <div>
+                  <h3 style={{ fontSize: '1.1rem', color: 'var(--white)', fontFamily: 'var(--font-brand)', letterSpacing: '0.05em', textTransform: 'uppercase' }}>My Researchers</h3>
+                  <p style={{ color: 'var(--grey-400)', fontSize: '0.82rem', marginTop: 4 }}>All Researcher Accounts You Have Created</p>
+                </div>
+                <button onClick={() => { setShowCreateResearcher(true); setCrError(''); setCrSuccess(''); }}
+                  className="btn btn-primary" style={{ fontSize: '0.82rem' }}>
+                  + Create Researcher Account
+                </button>
+              </div>
+
+              {researcherList.length > 0 ? (
+                <div style={{ overflowX: 'auto' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
+                    <thead>
+                      <tr style={{ textAlign: 'left', borderBottom: '1px solid rgba(255,255,255,0.08)', color: 'var(--grey-400)' }}>
+                        <th style={{ padding: 'var(--space-3) 0', fontWeight: 600 }}>Full Name</th>
+                        <th style={{ padding: 'var(--space-3) 0', fontWeight: 600 }}>Username</th>
+                        <th style={{ padding: 'var(--space-3) 0', fontWeight: 600 }}>Created</th>
+                        <th style={{ padding: 'var(--space-3) 0', fontWeight: 600 }}>Status</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {researcherList.map((res) => (
+                        <tr key={res.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.03)', color: 'var(--silver-light)' }}>
+                          <td style={{ padding: 'var(--space-3) 0', fontWeight: 500 }}>{res.full_name || 'Anonymous Researcher'}</td>
+                          <td style={{ padding: 'var(--space-3) 0', fontFamily: 'var(--font-brand)', fontSize: '0.78rem', color: 'var(--teal)' }}>{res.email.split('@')[0]}</td>
+                          <td style={{ padding: 'var(--space-3) 0' }}>{new Date(res.created_at).toLocaleDateString()}</td>
+                          <td style={{ padding: 'var(--space-3) 0' }}>
+                            <span className="badge badge-teal" style={{ fontSize: '0.65rem' }}>Active</span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <div style={{ textAlign: 'center', padding: 'var(--space-10) 0', opacity: 0.6 }}>
+                  <h4 style={{ color: 'var(--silver)' }}>No Researchers Yet</h4>
+                  <p style={{ fontSize: '0.78rem', color: 'var(--grey-400)', margin: 0 }}>Click "Create Researcher Account" To Add Your First Researcher.</p>
+                </div>
+              )}
+            </div>
           </div>
         )}
 

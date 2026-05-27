@@ -27,6 +27,7 @@ export default function NewProductPage() {
     sku: '',
     category: 'Peptides',
     description: '',
+    image_url: '',
     base_cost: '',
     unit_size: '',
     unit_measure: 'mg',
@@ -143,6 +144,23 @@ export default function NewProductPage() {
             <textarea id="description" className="form-input" placeholder="Research Compound Description..."
               value={form.description} onChange={e => set('description', e.target.value)}
               rows={4} style={{ resize: 'vertical' }} />
+          </div>
+
+          <div className="form-group">
+            <label className="form-label" htmlFor="image_url">
+              Product Image URL{' '}
+              <span style={{ fontSize: '0.72rem', color: 'var(--grey-400)', fontWeight: 400 }}>Optional</span>
+            </label>
+            <input id="image_url" type="url" className="form-input"
+              placeholder="https://example.com/product-image.jpg"
+              value={form.image_url} onChange={e => set('image_url', e.target.value)} />
+            {form.image_url && (
+              <div style={{ marginTop: 'var(--space-3)', borderRadius: 'var(--radius-md)', overflow: 'hidden', border: 'var(--border-subtle)', width: 120, height: 120, background: 'var(--surface-2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={form.image_url} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                  onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+              </div>
+            )}
           </div>
         </div>
 

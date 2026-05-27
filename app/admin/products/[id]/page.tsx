@@ -32,6 +32,7 @@ export default function EditProductPage() {
     sku: '',
     category: 'Peptides',
     description: '',
+    image_url: '',
     base_cost: '',
     unit_size: '',
     unit_measure: 'mg',
@@ -74,7 +75,8 @@ export default function EditProductPage() {
           sku: product.sku || '',
           category: product.category || 'Peptides',
           description: product.description || '',
-          base_cost: product.base_cost !== undefined ? String(product.base_cost) : '',
+          image_url: product.image_url || '',
+          base_cost: product.base_cost !== undefined ? String(product.base_cost) : '',,
           unit_size: product.unit_size !== undefined ? String(product.unit_size) : '',
           unit_measure: product.unit_measure || 'mg',
           inventory_count: product.inventory_count !== undefined ? String(product.inventory_count) : '0',
@@ -108,6 +110,7 @@ export default function EditProductPage() {
         sku: form.sku || null,
         category: form.category,
         description: form.description || null,
+        image_url: form.image_url || null,
         base_cost: parseFloat(form.base_cost),
         unit_size: form.unit_size || null,
         unit_measure: form.unit_measure,
@@ -198,6 +201,23 @@ export default function EditProductPage() {
             <textarea id="description" className="form-input" placeholder="Research Compound Description..."
               value={form.description} onChange={e => set('description', e.target.value)}
               rows={4} style={{ resize: 'vertical' }} />
+          </div>
+
+          <div className="form-group">
+            <label className="form-label" htmlFor="image_url">
+              Product Image URL{' '}
+              <span style={{ fontSize: '0.72rem', color: 'var(--grey-400)', fontWeight: 400 }}>Optional</span>
+            </label>
+            <input id="image_url" type="url" className="form-input"
+              placeholder="https://example.com/product-image.jpg"
+              value={form.image_url} onChange={e => set('image_url', e.target.value)} />
+            {form.image_url && (
+              <div style={{ marginTop: 'var(--space-3)', borderRadius: 'var(--radius-md)', overflow: 'hidden', border: 'var(--border-subtle)', width: 120, height: 120, background: 'var(--surface-2)' }}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={form.image_url} alt="Product Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                  onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+              </div>
+            )}
           </div>
         </div>
 
