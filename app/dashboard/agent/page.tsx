@@ -103,7 +103,8 @@ export default async function AgentDashboardPage() {
         email: profile.email,
         full_name: profile.full_name,
         role: profile.role,
-        tier: profile.tier
+        tier: profile.tier,
+        is_super_agent: profile.is_super_agent
       }}
       initialAgentProfile={agentProfile}
       initialResearchers={researchers}

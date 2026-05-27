@@ -142,6 +142,15 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: invoiceError.message }, { status: 500 });
     }
 
+    // Auto-send internal message to sub-agent
+    await supabase.from('internal_messages').insert({
+      sender_id: superAgentId,
+      receiver_id: sub_agent_id,
+      subject: `Invoice for Week ${week_start}`,
+      body: `Your invoice for the week of ${week_start} has been generated.\nTotal Owed: $${totalOwed.toFixed(2)}\n\nPlease review your dashboard to make payment.`,
+      type: 'invoice'
+    });
+
     return NextResponse.json({ success: true, invoiceId: invoice.id });
   } catch (error) {
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });

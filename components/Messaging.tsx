@@ -6,8 +6,11 @@ import { createClient } from '@/lib/supabase/client';
 interface Message {
   id: string;
   sender_id: string;
-  recipient_id: string;
+  receiver_id: string;
   body: string;
+  subject: string;
+  attachment_url: string | null;
+  type: string;
   created_at: string;
 }
 
@@ -29,6 +32,8 @@ export default function Messaging({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [body, setBody] = useState('');
+  const [attachmentUrl, setAttachmentUrl] = useState<string | null>(null);
+  const [uploadingFile, setUploadingFile] = useState(false);
   const [sending, setSending] = useState(false);
 
   const loadMessages = useCallback(async () => {
@@ -36,10 +41,10 @@ export default function Messaging({
     setError('');
     const supabase = createClient();
     const { data, error: loadError } = await supabase
-      .from('messages')
-      .select('id, sender_id, recipient_id, body, created_at')
+      .from('internal_messages')
+      .select('id, sender_id, receiver_id, body, subject, attachment_url, type, created_at')
       .or(
-        `and(sender_id.eq.${selfId},recipient_id.eq.${counterpartId}),and(sender_id.eq.${counterpartId},recipient_id.eq.${selfId})`
+        `and(sender_id.eq.${selfId},receiver_id.eq.${counterpartId}),and(sender_id.eq.${counterpartId},receiver_id.eq.${selfId})`
       )
       .order('created_at', { ascending: true });
 
@@ -58,14 +63,17 @@ export default function Messaging({
   async function handleSend(e: React.FormEvent) {
     e.preventDefault();
     const text = body.trim();
-    if (!text) return;
+    if (!text && !attachmentUrl) return;
 
     setSending(true);
     const supabase = createClient();
-    const { error: sendError } = await supabase.from('messages').insert({
+    const { error: sendError } = await supabase.from('internal_messages').insert({
       sender_id: selfId,
-      recipient_id: counterpartId,
+      receiver_id: counterpartId,
+      subject: 'Direct Message',
       body: text,
+      type: 'direct_message',
+      attachment_url: attachmentUrl
     });
     setSending(false);
 
@@ -74,6 +82,7 @@ export default function Messaging({
       return;
     }
     setBody('');
+    setAttachmentUrl(null);
     await loadMessages();
   }
 
@@ -123,9 +132,22 @@ export default function Messaging({
                   padding: 'var(--space-3) var(--space-4)',
                 }}
               >
-                <p style={{ fontSize: '0.85rem', color: 'var(--silver)', margin: 0, lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>
+                <div style={{ fontSize: '0.85rem', color: 'var(--silver)', margin: 0, lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>
+                  {m.type === 'invoice' && (
+                    <div style={{ marginBottom: 'var(--space-2)', fontWeight: 'bold', color: 'var(--teal)' }}>[INVOICE] {m.subject}</div>
+                  )}
+                  {m.type === 'notification' && (
+                    <div style={{ marginBottom: 'var(--space-2)', fontWeight: 'bold', color: 'var(--blue)' }}>[NOTIFICATION] {m.subject}</div>
+                  )}
                   {m.body}
-                </p>
+                </div>
+                {m.attachment_url && (
+                  <div style={{ marginTop: 'var(--space-2)' }}>
+                    <a href={m.attachment_url} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--teal)', fontSize: '0.8rem', textDecoration: 'underline' }}>
+                      📎 View Attachment
+                    </a>
+                  </div>
+                )}
                 <div style={{ fontSize: '0.66rem', color: 'var(--grey-500)', marginTop: 4, textAlign: 'right' }}>
                   {new Date(m.created_at).toLocaleString()}
                 </div>
@@ -138,19 +160,58 @@ export default function Messaging({
       {/* Composer */}
       <form
         onSubmit={handleSend}
-        style={{ display: 'flex', gap: 'var(--space-2)', padding: 'var(--space-4)', borderTop: '1px solid rgba(255,255,255,0.06)' }}
+        style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)', padding: 'var(--space-4)', borderTop: '1px solid rgba(255,255,255,0.06)' }}
       >
-        <input
-          type="text"
-          className="form-input"
-          placeholder="Write A Message..."
-          value={body}
-          onChange={(e) => setBody(e.target.value)}
-          style={{ margin: 0, flexGrow: 1 }}
-        />
-        <button type="submit" className="btn btn-primary" disabled={sending || !body.trim()}>
-          {sending ? 'Sending' : 'Send'}
-        </button>
+        {attachmentUrl && (
+          <div style={{ fontSize: '0.8rem', color: 'var(--teal)', display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+            📎 Attachment Attached
+            <button type="button" onClick={() => setAttachmentUrl(null)} style={{ background: 'transparent', border: 'none', color: 'var(--red)', cursor: 'pointer', fontSize: '0.8rem' }}>
+              Remove
+            </button>
+          </div>
+        )}
+        <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
+          <label className="btn btn-secondary" style={{ padding: '0 var(--space-3)', cursor: 'pointer', opacity: uploadingFile ? 0.5 : 1 }}>
+            {uploadingFile ? '...' : '📎'}
+            <input 
+              type="file" 
+              style={{ display: 'none' }}
+              disabled={uploadingFile || sending}
+              onChange={async (e) => {
+                const file = e.target.files?.[0];
+                if (!file) return;
+                setUploadingFile(true);
+                setError('');
+                try {
+                  const supabase = createClient();
+                  const fileExt = file.name.split('.').pop();
+                  const fileName = `${selfId}-${Math.random().toString(36).substring(2)}.${fileExt}`;
+                  const { error: uploadError } = await supabase.storage
+                    .from('message-attachments')
+                    .upload(fileName, file);
+                  if (uploadError) throw uploadError;
+                  const { data } = supabase.storage.from('message-attachments').getPublicUrl(fileName);
+                  setAttachmentUrl(data.publicUrl);
+                } catch (err: any) {
+                  setError(err.message || 'Failed to upload attachment');
+                } finally {
+                  setUploadingFile(false);
+                }
+              }}
+            />
+          </label>
+          <input
+            type="text"
+            className="form-input"
+            placeholder="Write A Message..."
+            value={body}
+            onChange={(e) => setBody(e.target.value)}
+            style={{ margin: 0, flexGrow: 1 }}
+          />
+          <button type="submit" className="btn btn-primary" disabled={sending || uploadingFile || (!body.trim() && !attachmentUrl)}>
+            {sending ? 'Sending' : 'Send'}
+          </button>
+        </div>
       </form>
 
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>

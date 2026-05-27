@@ -84,3 +84,37 @@ export async function requireOrdersAccess(): Promise<
 
   return { ok: true, userId: user.id, role: profile.role };
 }
+
+/**
+ * Guards API routes that can be accessed by Agents (or Admins).
+ */
+export async function requireAgent(): Promise<
+  | { ok: true; user: { id: string } }
+  | { ok: false; response: NextResponse }
+> {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) {
+    return {
+      ok: false,
+      response: NextResponse.json({ error: 'Unauthorized' }, { status: 401 }),
+    };
+  }
+
+  const service = await createServiceClient();
+  const { data: profile } = await service
+    .from('profiles')
+    .select('role')
+    .eq('id', user.id)
+    .single();
+
+  if (profile?.role !== 'agent' && profile?.role !== 'admin') {
+    return {
+      ok: false,
+      response: NextResponse.json({ error: 'Forbidden. Agent Access Required.' }, { status: 403 }),
+    };
+  }
+
+  return { ok: true, user: { id: user.id } };
+}

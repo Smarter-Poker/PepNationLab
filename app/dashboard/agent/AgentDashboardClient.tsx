@@ -9,6 +9,7 @@ import AgentMessages from '@/components/AgentMessages';
 import AgentStoreProducts from '@/components/AgentStoreProducts';
 import AgentSales from '@/components/AgentSales';
 import AgentSubAgents from '@/components/AgentSubAgents';
+import AgentInventory from '@/components/AgentInventory';
 
 interface Profile {
   id: string;
@@ -70,7 +71,7 @@ export default function AgentDashboardClient({
 }: AgentDashboardClientProps) {
   const supabase = createClient();
 
-  const [activeTab, setActiveTab] = useState<'Overview' | 'Sales & Carts' | 'Researchers' | 'My Sub-Agents' | 'Orders' | 'Store Products' | 'Coupons' | 'Messages' | 'Storefront Config'>('Overview');
+  const [activeTab, setActiveTab] = useState<'Overview' | 'Sales & Carts' | 'Researchers' | 'My Sub-Agents' | 'Orders' | 'Store Products' | 'Inventory' | 'Coupons' | 'Messages' | 'Storefront Config'>('Overview');
   const [agentProfile, setAgentProfile] = useState<AgentProfile | null>(initialAgentProfile);
   const [researchers] = useState<Researcher[]>(initialResearchers);
   const [orders, setOrders] = useState<Order[]>(initialOrders);
@@ -81,6 +82,7 @@ export default function AgentDashboardClient({
   // Storefront Config Form State
   const [displayName, setDisplayName] = useState(agentProfile?.display_name ?? '');
   const [slug, setSlug] = useState(agentProfile?.slug ?? '');
+  const [logoUrl, setLogoUrl] = useState(agentProfile?.logo_url ?? '');
   const [tagline, setTagline] = useState(agentProfile?.tagline ?? '');
   const [bio, setBio] = useState(agentProfile?.bio ?? '');
   const [primaryColor, setPrimaryColor] = useState(agentProfile?.primary_color ?? '#00C4BC');
@@ -247,6 +249,7 @@ export default function AgentDashboardClient({
         .from('agent_profiles')
         .update({
           slug: cleanSlug,
+          logo_url: logoUrl || null,
           display_name: displayName.trim(),
           tagline: tagline.trim() || null,
           bio: bio.trim() || null,
@@ -281,22 +284,19 @@ export default function AgentDashboardClient({
     setSuccess(null);
 
     try {
-      const updates: Record<string, any> = { status: newStatus };
-      if (newStatus.startsWith('approved_')) {
-        updates.agent_approved_at = new Date().toISOString();
-      }
+      const res = await fetch('/api/agent/orders/approve', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderId, newStatus })
+      });
 
-      const { error: updateError } = await supabase
-        .from('orders')
-        .update(updates)
-        .eq('id', orderId);
-
-      if (updateError) {
-        throw new Error(updateError.message ?? 'Failed To Transition Order.');
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.error || 'Failed To Transition Order.');
       }
 
       // Update local state
-      setOrders(prev => prev.map(o => o.id === orderId ? { ...o, ...updates } : o));
+      setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: newStatus } : o));
       setSuccess(`Order Status Shifted To ${newStatus.replace(/_/g, ' ').toUpperCase()}`);
     } catch (err: any) {
       setError(err.message ?? 'An Error Occurred Updating Order Status.');
@@ -449,11 +449,11 @@ export default function AgentDashboardClient({
         )}
 
         {/* Tab Controls */}
-        <div style={{ display: 'flex', borderBottom: '1px solid rgba(255,255,255,0.08)', gap: 'var(--space-4)', marginBottom: 'var(--space-8)' }}>
-          {(['Overview', 'Sales & Carts', 'Researchers', ...(userProfile.is_super_agent ? ['My Sub-Agents'] : []), 'Orders', 'Store Products', 'Coupons', 'Messages', 'Storefront Config'] as const).map((tab) => (
+        <div style={{ display: 'flex', gap: 'var(--space-2)', borderBottom: '1px solid rgba(255,255,255,0.05)', overflowX: 'auto', paddingBottom: 1 }}>
+          {(['Overview', 'Sales & Carts', 'Researchers', ...(userProfile.is_super_agent ? ['My Sub-Agents'] : []), 'Orders', 'Store Products', 'Inventory', 'Coupons', 'Messages', 'Storefront Config'] as const).map((tab) => (
             <button
               key={tab}
-              onClick={() => { setActiveTab(tab); setError(null); setSuccess(null); }}
+              onClick={() => { setActiveTab(tab as any); setError(null); setSuccess(null); }}
               style={{
                 background: 'none',
                 border: 'none',
@@ -488,7 +488,21 @@ export default function AgentDashboardClient({
           </div>
         )}
 
-        {/* TAB 1: Overview */}
+        {/* Store Products Tab */}
+        {activeTab === 'Store Products' && (
+          <div style={{ animation: 'fadeIn 0.3s ease-out' }}>
+            <AgentStoreProducts agentId={userProfile.id} />
+          </div>
+        )}
+
+        {/* TAB X: Inventory Configuration */}
+        {activeTab === 'Inventory' && (
+          <div style={{ animation: 'fadeIn 0.3s ease-out' }}>
+            <AgentInventory agentId={userProfile.id} />
+          </div>
+        )}
+
+        {/* TAB: Overview */}
         {activeTab === 'Overview' && (
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: 'var(--space-8)' }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-8)' }}>
@@ -841,10 +855,7 @@ export default function AgentDashboardClient({
           <AgentMessages agentId={userProfile.id} researchers={researchers} />
         )}
 
-        {/* TAB: Store Products */}
-        {activeTab === 'Store Products' && <AgentStoreProducts agentId={userProfile.id} />}
-
-        {/* TAB 5: Storefront Configuration */}
+        {/* TAB: Storefront Configuration */}
         {activeTab === 'Storefront Config' && (
           <div className="card-metal" style={{ padding: 'var(--space-6)' }}>
             <h3 style={{ fontSize: '1.1rem', color: 'var(--white)', marginBottom: 'var(--space-4)', fontFamily: 'var(--font-brand)', letterSpacing: '0.05em', textTransform: 'uppercase' }}>
@@ -856,6 +867,42 @@ export default function AgentDashboardClient({
 
             <form onSubmit={handleUpdateProfile} style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-5)' }}>
               <div className="grid-2">
+                <div className="form-group" style={{ gridColumn: '1 / -1' }}>
+                  <label className="form-label">Storefront Logo</label>
+                  {logoUrl && (
+                    <div style={{ marginBottom: 'var(--space-3)' }}>
+                      <img src={logoUrl} alt="Storefront Logo" style={{ height: '60px', objectFit: 'contain' }} />
+                    </div>
+                  )}
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      setLoading(true);
+                      setError(null);
+                      try {
+                        const fileExt = file.name.split('.').pop();
+                        const fileName = `${userProfile.id}-${Math.random().toString(36).substring(2)}.${fileExt}`;
+                        const { error: uploadError } = await supabase.storage
+                          .from('storefront-assets')
+                          .upload(fileName, file);
+                        if (uploadError) throw uploadError;
+                        const { data } = supabase.storage.from('storefront-assets').getPublicUrl(fileName);
+                        setLogoUrl(data.publicUrl);
+                        setSuccess('Logo Uploaded! Click Save Configuration to apply.');
+                      } catch (err: any) {
+                        setError(err.message || 'Failed To Upload Logo');
+                      } finally {
+                        setLoading(false);
+                      }
+                    }}
+                    className="form-input"
+                  />
+                  <p style={{ fontSize: '0.8rem', color: 'var(--grey-400)', marginTop: 'var(--space-2)' }}>Upload a custom logo to replace the default Pep Nation Lab branding on your storefront.</p>
+                </div>
+
                 <div className="form-group">
                   <label className="form-label">Display Storefront Name</label>
                   <input

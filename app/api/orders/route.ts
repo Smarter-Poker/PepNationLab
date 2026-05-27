@@ -293,12 +293,12 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Failed To Save Checkout Order Line Items.' }, { status: 500 });
     }
 
-    if (appliedCouponCode && profile.referring_agent_id) {
+    if (appliedCouponCode && agentProfile?.id) {
       try {
         const { data: couponRow } = await serviceSupabase
           .from('coupons')
           .select('id, uses_count')
-          .eq('agent_id', profile.referring_agent_id)
+          .eq('agent_id', agentProfile.id)
           .eq('code', appliedCouponCode)
           .maybeSingle();
         if (couponRow) {

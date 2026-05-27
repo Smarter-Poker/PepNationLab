@@ -2,6 +2,8 @@
 
 import React, { useState, useEffect } from 'react';
 
+export default function AgentSubAgents({ agentId }: { agentId?: string }) {
+
   const [subAgents, setSubAgents] = useState<any[]>([]);
   const [invoices, setInvoices] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);

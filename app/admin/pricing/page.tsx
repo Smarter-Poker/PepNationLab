@@ -1,6 +1,6 @@
 'use client';
-
 import { useState, useEffect } from 'react';
+import ProductTierOverrides from '@/components/ProductTierOverrides';
 
 interface PricingTier {
   tier_name: 'tier_1' | 'tier_2' | 'tier_3';
@@ -229,6 +229,9 @@ export default function PricingTiersPage() {
           </div>
         </div>
       </div>
+      
+      {/* Product-Specific Overrides Section */}
+      <ProductTierOverrides />
 
       {/* Edit Modal */}
       {editingTier && (

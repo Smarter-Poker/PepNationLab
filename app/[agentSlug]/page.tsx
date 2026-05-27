@@ -37,11 +37,11 @@ export default async function AgentStorefrontPage({ params }: Props) {
     notFound();
   }
 
-  // Get agent's visible products
   const { data: products } = await supabase
     .from('agent_products')
     .select(`
       id,
+      product_id,
       custom_name,
       custom_description,
       custom_image_url,
@@ -51,15 +51,19 @@ export default async function AgentStorefrontPage({ params }: Props) {
         description,
         image_url,
         category,
-        inventory_count,
-        in_stock,
-        backorder_days,
-        low_stock_threshold
+        backorder_days
       )
     `)
     .eq('agent_id', agent.id)
     .eq('is_visible', true)
     .order('sort_order');
+
+  const { data: inventory } = await supabase
+    .from('agent_inventory')
+    .select('product_id, stock_count')
+    .eq('agent_id', agent.id);
+
+  const inventoryMap = new Map(inventory?.map(i => [i.product_id, i.stock_count]) || []);
 
   const primaryColor = agent.primary_color ?? '#00C4BC';
   const displayName = agent.display_name;
@@ -183,19 +187,16 @@ export default async function AgentStorefrontPage({ params }: Props) {
                     name: string;
                     description: string;
                     image_url: string | null;
-                    inventory_count: number;
-                    in_stock: boolean;
                     backorder_days: number;
-                    low_stock_threshold: number;
                   } | null;
                   const name = item.custom_name ?? productRow?.name ?? 'Research Compound';
                   const desc = item.custom_description ?? productRow?.description ?? '';
                   const imageUrl = item.custom_image_url ?? productRow?.image_url ?? null;
-                  const inStock = productRow?.in_stock ?? true;
-                  const inventoryCount = productRow?.inventory_count ?? 0;
+                  
+                  const inventoryCount = inventoryMap.get(item.product_id) || 0;
+                  const inStock = inventoryCount > 0;
                   const backorderDays = productRow?.backorder_days ?? 14;
-                  const lowThreshold = productRow?.low_stock_threshold ?? 5;
-                  const isLowStock = inStock && inventoryCount <= lowThreshold && inventoryCount > 0;
+                  const isLowStock = inStock && inventoryCount <= 5;
                   return (
                     <div key={item.id} className="product-card">
                       {/* Product image */}
