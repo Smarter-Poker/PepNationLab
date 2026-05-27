@@ -126,11 +126,8 @@ function LoginPageInner() {
             borderTop: '1px solid rgba(255,255,255,0.06)',
             textAlign: 'center'
           }}>
-            <p style={{ fontSize: '0.85rem', color: 'var(--grey-400)' }}>
-              Don&apos;t Have An Account?{' '}
-              <Link href="/register" style={{ color: 'var(--teal)', fontWeight: 600 }}>
-                Create Researcher Account
-              </Link>
+            <p style={{ fontSize: '0.8rem', color: 'var(--grey-600)' }}>
+              Access is by invitation only. Contact your administrator for access.
             </p>
           </div>
         </div>

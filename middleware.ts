@@ -1,15 +1,29 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 
-// Routes that require auth
-const PROTECTED_ROUTES = ['/dashboard', '/admin', '/checkout', '/orders', '/messages'];
-// Routes that redirect to dashboard if already authed
-const AUTH_ROUTES = ['/login', '/register'];
+// ─── SITE LOCKDOWN ──────────────────────────────────────────────────────────
+// The site is locked. Only authenticated users may access any page.
+// New account registration is disabled — /register always redirects to /login.
+// The only public route is /login itself (plus static assets handled by matcher).
+// ────────────────────────────────────────────────────────────────────────────
+
+// Routes that are always public (no auth required)
+const PUBLIC_ROUTES = ['/login', '/forgot-password'];
 
 export async function middleware(request: NextRequest) {
   // Pass through if Supabase env vars not configured yet (early deploy)
   if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
     return NextResponse.next({ request });
+  }
+
+  const pathname = request.nextUrl.pathname;
+
+  // Registration is permanently disabled — redirect to login
+  if (pathname.startsWith('/register')) {
+    const url = request.nextUrl.clone();
+    url.pathname = '/login';
+    url.searchParams.delete('redirect');
+    return NextResponse.redirect(url);
   }
 
   let supabaseResponse = NextResponse.next({ request });
@@ -36,22 +50,25 @@ export async function middleware(request: NextRequest) {
   );
 
   const { data: { user } } = await supabase.auth.getUser();
-  const pathname = request.nextUrl.pathname;
 
-  // If protected route and no user -> redirect to login
-  const isProtected = PROTECTED_ROUTES.some(r => pathname.startsWith(r));
-  if (isProtected && !user) {
-    const url = request.nextUrl.clone();
-    url.pathname = '/login';
-    url.searchParams.set('redirect', pathname);
-    return NextResponse.redirect(url);
+  // Allow public routes through (login, forgot-password)
+  const isPublicRoute = PUBLIC_ROUTES.some(r => pathname.startsWith(r));
+  if (isPublicRoute) {
+    // If user is already logged in on a public route, send them to dashboard
+    if (user) {
+      const url = request.nextUrl.clone();
+      url.pathname = '/dashboard';
+      return NextResponse.redirect(url);
+    }
+    return supabaseResponse;
   }
 
-  // If auth route and user exists -> redirect to dashboard
-  const isAuthRoute = AUTH_ROUTES.some(r => pathname.startsWith(r));
-  if (isAuthRoute && user) {
+  // Every other route requires authentication
+  if (!user) {
     const url = request.nextUrl.clone();
-    url.pathname = '/dashboard';
+    url.pathname = '/login';
+    // Preserve the intended destination so we can redirect after login
+    url.searchParams.set('redirect', pathname);
     return NextResponse.redirect(url);
   }
 

@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { CartProvider } from "@/components/CartContext";
-import SiteDisclaimerGate from "@/components/SiteDisclaimerGate";
 
 export const metadata: Metadata = {
   title: "Pep Nation Lab | Premium Research Peptides",
@@ -21,8 +20,8 @@ export const metadata: Metadata = {
     images: ["/logo.svg"],
   },
   robots: {
-    index: true,
-    follow: true,
+    index: false,
+    follow: false,
   },
 };
 
@@ -35,12 +34,11 @@ export default function RootLayout({
     <html lang="en">
       <body>
         <CartProvider>
-          <SiteDisclaimerGate>
-            {children}
-          </SiteDisclaimerGate>
+          {children}
         </CartProvider>
       </body>
     </html>
   );
 }
+
 

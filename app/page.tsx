@@ -1,21 +1,7 @@
-import Navbar from '@/components/Navbar';
-import HeroSection from '@/components/HeroSection';
-import ProductsPreview from '@/components/ProductsPreview';
-import HowItWorksSection from '@/components/HowItWorksSection';
-import FooterSection from '@/components/FooterSection';
+import { redirect } from 'next/navigation';
 
-// Layer 1 (Site Entry disclaimer) is handled globally by SiteDisclaimerGate
-// in app/layout.tsx, so it covers every route — not just this homepage.
+// The site is locked — the home route immediately sends visitors to the login page.
+// Authenticated users will be redirected from /login → /dashboard by the middleware.
 export default function HomePage() {
-  return (
-    <>
-      <Navbar />
-      <main className="page-top-padding">
-        <HeroSection />
-        <ProductsPreview />
-        <HowItWorksSection />
-        <FooterSection />
-      </main>
-    </>
-  );
+  redirect('/login');
 }
