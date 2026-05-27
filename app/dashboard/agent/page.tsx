@@ -16,7 +16,7 @@ export default async function AgentDashboardPage() {
   // 2. Fetch user profile
   const { data: profile } = await supabase
     .from('profiles')
-    .select('id, email, full_name, role, tier')
+    .select('id, email, full_name, role, tier, prepaid_balance')
     .eq('id', user.id)
     .single();
 
@@ -96,6 +96,15 @@ export default async function AgentDashboardPage() {
     };
   });
 
+  // 7. Fetch Weekly Statements
+  const { data: statementsData } = await supabase
+    .from('weekly_statements')
+    .select('*')
+    .eq('agent_id', user.id)
+    .order('week_start', { ascending: false });
+
+  const statements = statementsData || [];
+
   return (
     <AgentDashboardClient
       userProfile={{
@@ -103,11 +112,13 @@ export default async function AgentDashboardPage() {
         email: profile.email,
         full_name: profile.full_name,
         role: profile.role,
-        tier: profile.tier
+        tier: profile.tier,
+        prepaid_balance: profile.prepaid_balance
       }}
       initialAgentProfile={agentProfile}
       initialResearchers={researchers}
       initialOrders={orders}
+      initialStatements={statements}
     />
   );
 }

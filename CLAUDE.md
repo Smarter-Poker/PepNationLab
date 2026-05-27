@@ -62,26 +62,20 @@ CSS `text-transform: capitalize` is applied globally in `globals.css` as a CSS-l
 
 ---
 
-## Zero Cross-Contamination With Smarter.Poker
+## PepNationLab & PepNationRX Shared Architecture
 
-PepNationLab is a 100% isolated platform. Never:
-- Import from or reference Smarter-Poker-World-Hub paths
-- Use Smarter.Poker Supabase credentials (`kuklfnapbkmacvwxktbh`)
-- Use Smarter.Poker Vercel project names or env vars
-- Add PepNationLab code to the Smarter-Poker-World-Hub repo
+**CRITICAL UPDATE**: PepNationLab and PepNationRX **SHARE THE EXACT SAME SUPABASE PROJECT** (`ydsaqnnuwyvtyxgvrnys`).
 
-PepNationLab Supabase ref: `ydsaqnnuwyvtyxgvrnys`
+Because both platforms share the exact same database:
+1. **Profiles Table**: The `profiles` table acts as the global user directory for BOTH platforms.
+2. **Roles Enum**: Roles must support both Lab users (admin, agent, super_agent, researcher, shipping) AND RX users (doctor, patient, pharmacy, rx_admin).
+3. **RLS Policies**: Row Level Security must explicitly account for users crossing between the two domains.
+
 PepNationLab GitHub: `github.com/Smarter-Poker/PepNationLab`
 PepNationLab Vercel: `smarter-poker/pepnationlab`
 
-PepNationRX (the telehealth platform) has its own standalone repo at
-`github.com/Smarter-Software-PIQ/pepnationrx`. Its live Supabase database is project
-`cupnhfdwveouenutnveg` (project name: pepnationrx). Never run PepNationRX
-migrations against `ydsaqnnuwyvtyxgvrnys` — that ref is the PepNationLab
-storefront database, not the telehealth backend.
-
-The `pepnationrx/` subdirectory in this repo is a local working copy only.
-Push PepNationRX changes to `Smarter-Software-PIQ/pepnationrx`, NOT to this repo.
+PepNationRX (the telehealth platform) has its own standalone repo at `github.com/Smarter-Software-PIQ/pepnationrx`.
+The `pepnationrx/` subdirectory in this repo is a local working copy only. Push PepNationRX frontend/backend code changes to `Smarter-Software-PIQ/pepnationrx`, NOT to this repo. However, all Supabase SQL migrations must be carefully coordinated since the database is shared!
 
 ---
 

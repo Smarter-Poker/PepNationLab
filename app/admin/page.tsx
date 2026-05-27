@@ -1,5 +1,6 @@
 import { createServiceClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
+import AdminAnalytics from '@/components/AdminAnalytics';
 
 export default async function AdminDashboard() {
   const supabase = await createServiceClient();
@@ -18,6 +19,8 @@ export default async function AdminDashboard() {
     { count: totalProducts },
     { count: pendingOrders },
     { data: recentOrders },
+    { data: globalStatements },
+    { data: agentProfiles }
   ] = await Promise.all([
     supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'researcher'),
     supabase.from('profiles').select('*', { count: 'exact', head: true }).in('role', ['agent', 'super_agent']),
@@ -28,6 +31,8 @@ export default async function AdminDashboard() {
       .select('id, status, total, payment_method, created_at, profiles(full_name)')
       .order('created_at', { ascending: false })
       .limit(5),
+    supabase.from('weekly_statements').select('week_start, total_owed, status'),
+    supabase.from('profiles').select('id, email, full_name, prepaid_balance').in('role', ['agent', 'super_agent'])
   ]);
 
   const statIcon = {
@@ -108,7 +113,9 @@ export default async function AdminDashboard() {
         ))}
       </div>
 
-      <div className="grid-2">
+      <AdminAnalytics statements={globalStatements || []} agents={agentProfiles || []} />
+
+      <div className="grid-2 mt-8">
         {/* Recent Orders */}
         <div className="card-metal" style={{ padding: 'var(--space-6)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-5)' }}>
