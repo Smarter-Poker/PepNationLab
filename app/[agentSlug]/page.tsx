@@ -105,11 +105,11 @@ export default async function AgentStorefrontPage({ params }: Props) {
         <div style={{ display: 'flex', gap: 'var(--space-3)' }}>
           <Link href={`/login?ref=${agentSlug}`} className="btn btn-secondary btn-sm">Sign In</Link>
           <Link
-            href={`/register?ref=${agentSlug}`}
+            href={`/login?ref=${agentSlug}`}
             className="btn btn-sm"
             style={{ background: primaryColor, color: 'var(--black)', fontWeight: 700, border: 'none' }}
           >
-            Create Account
+            Sign In To Order
           </Link>
         </div>
       </nav>
@@ -255,7 +255,7 @@ export default async function AgentStorefrontPage({ params }: Props) {
                             ${item.retail_price.toFixed(2)}
                           </span>
                           <Link
-                            href={`/register?ref=${agentSlug}`}
+                            href={`/login?ref=${agentSlug}`}
                             style={{ fontSize: '0.8rem', color: 'var(--teal)', fontWeight: 600 }}
                           >
                             Sign In To Order
@@ -272,8 +272,8 @@ export default async function AgentStorefrontPage({ params }: Props) {
               <p style={{ color: 'var(--grey-400)', marginBottom: 'var(--space-6)' }}>
                 Products Are Coming Soon. Create An Account To Be Notified.
               </p>
-              <Link href={`/register?ref=${agentSlug}`} className="btn btn-primary">
-                Create Account
+              <Link href={`/login?ref=${agentSlug}`} className="btn btn-primary">
+                Sign In To Order
               </Link>
             </div>
           )}

@@ -8,7 +8,23 @@ import { NextResponse, type NextRequest } from 'next/server';
 // ────────────────────────────────────────────────────────────────────────────
 
 // Routes that are always public (no auth required)
-const PUBLIC_ROUTES = ['/login', '/forgot-password'];
+const PUBLIC_ROUTES = ['/login', '/forgot-password', '/become-agent', '/about', '/terms', '/privacy', '/compliance'];
+
+// Dynamic route check — agent storefronts are public
+// e.g. /midway, /orlando-peps, etc. (but NOT /admin, /dashboard, /api, etc.)
+function isPublicDynamicRoute(pathname: string): boolean {
+  // Exclude known protected prefixes
+  const protectedPrefixes = [
+    '/admin', '/dashboard', '/api', '/orders', '/products',
+    '/checkout', '/messages', '/register', '/login', '/forgot-password',
+    '/become-agent', '/about', '/terms', '/privacy', '/compliance',
+    '/disclaimer',
+  ];
+  if (protectedPrefixes.some(p => pathname.startsWith(p))) return false;
+  // A single-segment slug path (e.g. /midway) is a public storefront
+  const segments = pathname.split('/').filter(Boolean);
+  return segments.length === 1;
+}
 
 export async function middleware(request: NextRequest) {
   // Pass through if Supabase env vars not configured yet (early deploy)
@@ -51,8 +67,8 @@ export async function middleware(request: NextRequest) {
 
   const { data: { user } } = await supabase.auth.getUser();
 
-  // Allow public routes through (login, forgot-password)
-  const isPublicRoute = PUBLIC_ROUTES.some(r => pathname.startsWith(r));
+  // Allow public routes through (login, forgot-password, become-agent, agent storefronts)
+  const isPublicRoute = PUBLIC_ROUTES.some(r => pathname.startsWith(r)) || isPublicDynamicRoute(pathname);
   if (isPublicRoute) {
     // If user is already logged in on a public route, send them to the right place
     if (user) {

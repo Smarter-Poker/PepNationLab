@@ -362,7 +362,7 @@ export default function AdminOrdersPage() {
                 <h4 style={{ fontSize: '0.82rem', color: 'var(--silver)', marginBottom: 'var(--space-2)' }}>Buyer Information</h4>
                 <div style={{ fontSize: '0.8rem', color: 'var(--grey-400)', display: 'flex', flexDirection: 'column', gap: 4 }}>
                   <div>Name: {selectedOrder.profiles?.full_name || 'Anonymous'}</div>
-                  <div>Email: {selectedOrder.profiles?.email}</div>
+                  <div>Username: @{selectedOrder.profiles?.email?.split('@')[0] ?? '—'}</div>
                   {selectedOrder.profiles?.phone && <div>Phone: {selectedOrder.profiles?.phone}</div>}
                 </div>
               </div>

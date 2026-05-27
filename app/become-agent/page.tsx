@@ -69,8 +69,8 @@ export default function BecomeAgentPage() {
             Qualified Researchers Can Become Pep Nation Lab Agents — Operate A Branded Storefront,
             Access Wholesale Tier Pricing, And Build Your Own Research-Supply Network.
           </p>
-          <Link href="/register" className="btn btn-primary btn-lg">
-            Get Started As A Researcher
+          <Link href="/login" className="btn btn-primary btn-lg">
+            Sign In To Your Account
           </Link>
         </div>
       </section>
@@ -201,8 +201,8 @@ export default function BecomeAgentPage() {
             Nation Lab Team And Our Staff Will Review Your Application.
           </p>
           <div style={{ display: 'flex', gap: 'var(--space-4)', justifyContent: 'center', flexWrap: 'wrap' }}>
-            <Link href="/register" className="btn btn-primary btn-lg">
-              Create Researcher Account
+            <Link href="/login" className="btn btn-primary btn-lg">
+              Sign In To Access Your Account
             </Link>
             <a href="mailto:research@pepnationlab.com?subject=Agent%20Application" className="btn btn-secondary btn-lg">
               Contact Us To Apply
