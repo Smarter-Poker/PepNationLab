@@ -109,7 +109,7 @@ export async function requireAgent(): Promise<
     .eq('id', user.id)
     .single();
 
-  if (profile?.role !== 'agent' && profile?.role !== 'admin') {
+  if (profile?.role !== 'agent' && profile?.role !== 'super_agent' && profile?.role !== 'admin') {
     return {
       ok: false,
       response: NextResponse.json({ error: 'Forbidden. Agent Access Required.' }, { status: 403 }),

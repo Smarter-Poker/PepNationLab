@@ -23,7 +23,7 @@ export async function POST(req: NextRequest) {
     // 1. Fetch the order and verify the caller is the agent_id OR the caller is a Super Agent and order belongs to a Sub-Agent
     const { data: order, error: orderError } = await supabase
       .from('orders')
-      .select('*, order_items(quantity, unit_cost_price, unit_super_agent_cost), profiles!orders_agent_id_fkey(parent_agent_id)')
+      .select('*, order_items(product_id, product_name, quantity, unit_cost_price, unit_super_agent_cost), profiles!orders_agent_id_fkey(parent_agent_id)')
       .eq('id', orderId)
       .single();
 
@@ -111,7 +111,30 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // 4. Update the Order Status
+    // 4. Pre-flight Inventory Check (Agents MUST have enough inventory to approve an order)
+    if (order.agent_id) {
+      for (const item of items) {
+        if (!item.product_id) continue;
+        const qtyRequired = Number(item.quantity) || 0;
+        if (qtyRequired <= 0) continue;
+
+        const { data: invData } = await supabase
+          .from('agent_inventory')
+          .select('stock_count')
+          .eq('agent_id', order.agent_id)
+          .eq('product_id', item.product_id)
+          .single();
+
+        const currentStock = Number(invData?.stock_count) || 0;
+        if (currentStock < qtyRequired) {
+          return NextResponse.json({ 
+            error: `Insufficient Inventory for "${item.product_name}". You need ${qtyRequired} units, but only have ${currentStock} in stock. Please purchase more bulk inventory before approving this order.` 
+          }, { status: 400 });
+        }
+      }
+    }
+
+    // 5. Update the Order Status
     const { error: updateError } = await supabase
       .from('orders')
       .update({
