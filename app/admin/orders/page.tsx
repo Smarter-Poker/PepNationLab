@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { createClient } from '@/lib/supabase/client';
 
 interface BuyerProfile {
   full_name: string | null;
@@ -83,9 +84,22 @@ export default function AdminOrdersPage() {
   const [approvalNotes, setApprovalNotes] = useState('');
   const [processing, setProcessing] = useState(false);
 
+  // User Auth
+  const [userRole, setUserRole] = useState<string>('admin');
+
   useEffect(() => {
     fetchOrders();
+    checkRole();
   }, []);
+
+  async function checkRole() {
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      const { data } = await supabase.from('profiles').select('role').eq('id', user.id).single();
+      if (data) setUserRole(data.role);
+    }
+  }
 
   useEffect(() => {
     if (selectedOrder) {
@@ -444,7 +458,7 @@ export default function AdminOrdersPage() {
                   </div>
                 ) : (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
-                    {selectedOrder.status === 'pending_customer_payment' && (
+                    {selectedOrder.status === 'pending_customer_payment' && userRole !== 'shipping' && (
                       <button
                         onClick={() => handleStatusTransition(selectedOrder.fulfillment_method === 'agent_pickup' ? 'approved_pickup' : 'approved_ship')}
                         className="btn btn-primary"
@@ -454,7 +468,7 @@ export default function AdminOrdersPage() {
                       </button>
                     )}
 
-                    {selectedOrder.status === 'agent_approval_pending' && (
+                    {selectedOrder.status === 'agent_approval_pending' && userRole !== 'shipping' && (
                       <>
                         <div className="form-group" style={{ marginBottom: 'var(--space-2)' }}>
                           <label className="form-label">Internal Approval Notes</label>
@@ -538,7 +552,7 @@ export default function AdminOrdersPage() {
                     )}
 
                     {/* Cancellation (available for any status except cancelled/delivered) */}
-                    {selectedOrder.status !== 'cancelled' && selectedOrder.status !== 'delivered' && (
+                    {selectedOrder.status !== 'cancelled' && selectedOrder.status !== 'delivered' && userRole !== 'shipping' && (
                       <button
                         onClick={() => {
                           if (confirm('Are You Sure You Want To Cancel This Order? This Action Cannot Be Undone.')) {

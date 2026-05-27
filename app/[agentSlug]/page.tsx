@@ -49,6 +49,7 @@ export default async function AgentStorefrontPage({ params }: Props) {
       products (
         name,
         description,
+        image_url,
         category,
         inventory_count,
         in_stock,
@@ -181,6 +182,7 @@ export default async function AgentStorefrontPage({ params }: Props) {
                   const productRow = (item.products as unknown) as {
                     name: string;
                     description: string;
+                    image_url: string | null;
                     inventory_count: number;
                     in_stock: boolean;
                     backorder_days: number;
@@ -188,6 +190,7 @@ export default async function AgentStorefrontPage({ params }: Props) {
                   } | null;
                   const name = item.custom_name ?? productRow?.name ?? 'Research Compound';
                   const desc = item.custom_description ?? productRow?.description ?? '';
+                  const imageUrl = item.custom_image_url ?? productRow?.image_url ?? null;
                   const inStock = productRow?.in_stock ?? true;
                   const inventoryCount = productRow?.inventory_count ?? 0;
                   const backorderDays = productRow?.backorder_days ?? 14;
@@ -195,23 +198,28 @@ export default async function AgentStorefrontPage({ params }: Props) {
                   const isLowStock = inStock && inventoryCount <= lowThreshold && inventoryCount > 0;
                   return (
                     <div key={item.id} className="product-card">
-                      {/* Product image placeholder */}
+                      {/* Product image */}
                       <div style={{
                         height: 140,
                         background: `radial-gradient(circle at 30% 40%, ${primaryColor}15 0%, var(--surface-2) 70%)`,
-                        display: 'flex', alignItems: 'center', justifyContent: 'center'
+                        display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden'
                       }}>
-                        <svg width="48" height="48" viewBox="0 0 60 60" fill="none" opacity={0.3}>
-                          <circle cx="30" cy="30" r="8" fill="none" stroke={primaryColor} strokeWidth="1.5"/>
-                          <circle cx="15" cy="15" r="5" fill="none" stroke={primaryColor} strokeWidth="1.5"/>
-                          <circle cx="45" cy="15" r="5" fill="none" stroke="var(--silver)" strokeWidth="1.5"/>
-                          <circle cx="15" cy="45" r="5" fill="none" stroke="var(--silver)" strokeWidth="1.5"/>
-                          <circle cx="45" cy="45" r="5" fill="none" stroke={primaryColor} strokeWidth="1.5"/>
-                          <line x1="22" y1="22" x2="30" y2="30" stroke={primaryColor} strokeWidth="1"/>
-                          <line x1="38" y1="22" x2="30" y2="30" stroke="var(--silver)" strokeWidth="1"/>
-                          <line x1="22" y1="38" x2="30" y2="30" stroke="var(--silver)" strokeWidth="1"/>
-                          <line x1="38" y1="38" x2="30" y2="30" stroke={primaryColor} strokeWidth="1"/>
-                        </svg>
+                        {imageUrl ? (
+                          /* eslint-disable-next-line @next/next/no-img-element */
+                          <img src={imageUrl} alt={name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                        ) : (
+                          <svg width="48" height="48" viewBox="0 0 60 60" fill="none" opacity={0.3}>
+                            <circle cx="30" cy="30" r="8" fill="none" stroke={primaryColor} strokeWidth="1.5"/>
+                            <circle cx="15" cy="15" r="5" fill="none" stroke={primaryColor} strokeWidth="1.5"/>
+                            <circle cx="45" cy="15" r="5" fill="none" stroke="var(--silver)" strokeWidth="1.5"/>
+                            <circle cx="15" cy="45" r="5" fill="none" stroke="var(--silver)" strokeWidth="1.5"/>
+                            <circle cx="45" cy="45" r="5" fill="none" stroke={primaryColor} strokeWidth="1.5"/>
+                            <line x1="22" y1="22" x2="30" y2="30" stroke={primaryColor} strokeWidth="1"/>
+                            <line x1="38" y1="22" x2="30" y2="30" stroke="var(--silver)" strokeWidth="1"/>
+                            <line x1="22" y1="38" x2="30" y2="30" stroke="var(--silver)" strokeWidth="1"/>
+                            <line x1="38" y1="38" x2="30" y2="30" stroke={primaryColor} strokeWidth="1"/>
+                          </svg>
+                        )}
                       </div>
                       <div className="product-card-body">
                         <h4 style={{ marginBottom: 'var(--space-2)', fontFamily: 'var(--font-brand)' }}>{name}</h4>

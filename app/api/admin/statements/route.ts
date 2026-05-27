@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
 import { requireAdmin } from '@/lib/admin-auth';
-import { sendEmail, weeklyStatementEmail } from '@/lib/email';
 
 /**
  * Weekly agent billing statements.
@@ -155,6 +154,26 @@ async function persistStatement(
     );
   }
 
+  // Retrieve current balance for ledger insertion
+  const { data: profile } = await supabase.from('profiles').select('prepaid_balance').eq('id', agentId).single();
+  const balanceBefore = Number(profile?.prepaid_balance) || 0;
+  const balanceAfter = balanceBefore - computed.totalOwed;
+
+  // Log the charge to the ledger
+  await supabase.from('balance_transactions').insert({
+    agent_id: agentId,
+    type: 'order_charge',
+    amount: computed.totalOwed,
+    balance_before: balanceBefore,
+    balance_after: balanceAfter,
+    description: `Weekly Statement: ${weekStart}`,
+    reference_id: statement.id,
+    reference_type: 'statement'
+  });
+
+  // Update profile balance
+  await supabase.from('profiles').update({ prepaid_balance: balanceAfter }).eq('id', agentId);
+
   return { ok: true, statementId: statement.id };
 }
 
@@ -210,25 +229,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: saved.error }, { status: 500 });
     }
 
-    // Notify the agent (non-blocking)
-    try {
-      const { data: agent } = await supabase
-        .from('profiles')
-        .select('email')
-        .eq('id', agentId)
-        .single();
-      if (agent?.email) {
-        const tpl = weeklyStatementEmail({
-          weekStart,
-          weekEnd: computed.data.weekEnd,
-          totalOwed: computed.data.totalOwed,
-          paid: false,
-        });
-        await sendEmail({ to: agent.email, subject: tpl.subject, html: tpl.html });
-      }
-    } catch (emailError) {
-      console.error('Statement Email Failed:', emailError);
-    }
+
 
     return NextResponse.json({ success: true, statementId: saved.statementId });
   }
@@ -258,25 +259,26 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Receipt email to the agent (non-blocking)
-    try {
-      const { data: agent } = await supabase
-        .from('profiles')
-        .select('email')
-        .eq('id', updated.agent_id)
-        .single();
-      if (agent?.email) {
-        const tpl = weeklyStatementEmail({
-          weekStart: String(updated.week_start),
-          weekEnd: String(updated.week_end),
-          totalOwed: Number(updated.total_owed),
-          paid: true,
-        });
-        await sendEmail({ to: agent.email, subject: tpl.subject, html: tpl.html });
-      }
-    } catch (emailError) {
-      console.error('Statement Paid Email Failed:', emailError);
-    }
+    // Retrieve current balance for ledger insertion
+    const { data: profile } = await supabase.from('profiles').select('prepaid_balance').eq('id', updated.agent_id).single();
+    const balanceBefore = Number(profile?.prepaid_balance) || 0;
+    const paymentAmount = Number(updated.total_owed) || 0;
+    const balanceAfter = balanceBefore + paymentAmount;
+
+    // Log the payment to the ledger
+    await supabase.from('balance_transactions').insert({
+      agent_id: updated.agent_id,
+      type: 'statement_payment',
+      amount: paymentAmount,
+      balance_before: balanceBefore,
+      balance_after: balanceAfter,
+      description: `Payment for Statement: ${updated.week_start}`,
+      reference_id: statementId,
+      reference_type: 'statement'
+    });
+
+    // Update profile balance
+    await supabase.from('profiles').update({ prepaid_balance: balanceAfter }).eq('id', updated.agent_id);
 
     return NextResponse.json({ success: true });
   }

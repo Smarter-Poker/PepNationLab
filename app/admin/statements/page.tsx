@@ -190,7 +190,7 @@ export default function AdminStatementsPage() {
                     <div style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: 'var(--space-3)' }}>
                       <div>
                         <div style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--silver)' }}>
-                          {s.profiles?.full_name || s.profiles?.email || 'Agent'}
+                          {s.profiles?.full_name || (s.profiles?.email ? `@${s.profiles.email.split('@')[0]}` : 'Agent')}
                         </div>
                         <div style={{ fontSize: '0.78rem', color: 'var(--grey-400)', marginTop: 2 }}>
                           Week Of {s.week_start} To {s.week_end}
@@ -335,7 +335,7 @@ export default function AdminStatementsPage() {
           <div className="card-metal" style={{ width: '100%', maxWidth: 420, padding: 'var(--space-6)' }}>
             <h2 style={{ fontSize: '1.2rem', marginBottom: 'var(--space-2)' }}>Mark Statement Paid</h2>
             <p style={{ fontSize: '0.8rem', color: 'var(--grey-400)', marginBottom: 'var(--space-6)' }}>
-              {payingStatement.profiles?.full_name || payingStatement.profiles?.email} / Week Of{' '}
+              {payingStatement.profiles?.full_name || (payingStatement.profiles?.email ? `@${payingStatement.profiles.email.split('@')[0]}` : 'Agent')} / Week Of{' '}
               {payingStatement.week_start} / Total ${Number(payingStatement.total_owed).toFixed(2)}
             </p>
 

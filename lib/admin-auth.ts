@@ -50,3 +50,37 @@ export async function requireAdmin(): Promise<
 
   return { ok: true, userId: user.id };
 }
+
+/**
+ * Guards API routes that can be accessed by both Admins AND the Shipping role.
+ */
+export async function requireOrdersAccess(): Promise<
+  | { ok: true; userId: string; role: string }
+  | { ok: false; response: NextResponse }
+> {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) {
+    return {
+      ok: false,
+      response: NextResponse.json({ error: 'Unauthorized' }, { status: 401 }),
+    };
+  }
+
+  const service = await createServiceClient();
+  const { data: profile } = await service
+    .from('profiles')
+    .select('role')
+    .eq('id', user.id)
+    .single();
+
+  if (profile?.role !== 'admin' && profile?.role !== 'shipping') {
+    return {
+      ok: false,
+      response: NextResponse.json({ error: 'Forbidden' }, { status: 403 }),
+    };
+  }
+
+  return { ok: true, userId: user.id, role: profile.role };
+}

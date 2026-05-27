@@ -40,6 +40,11 @@ const NAV = [
     icon: <svg {...ICON_PROPS}><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z" /><line x1="3" y1="6" x2="21" y2="6" /><path d="M16 10a4 4 0 0 1-8 0" /></svg>,
   },
   {
+    href: '/admin/transactions',
+    label: 'Ledger & Transactions',
+    icon: <svg {...ICON_PROPS}><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" /></svg>,
+  },
+  {
     href: '/admin/pricing',
     label: 'Pricing Tiers',
     icon: <svg {...ICON_PROPS}><line x1="12" y1="1" x2="12" y2="23" /><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" /></svg>,
@@ -62,7 +67,9 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     .eq('id', user.id)
     .single();
 
-  if (profile?.role !== 'admin') redirect('/dashboard');
+  if (profile?.role !== 'admin' && profile?.role !== 'shipping') {
+    redirect('/dashboard');
+  }
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--black)', display: 'flex' }}>
@@ -100,17 +107,21 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 
         {/* Nav */}
         <nav style={{ padding: 'var(--space-4) 0', flex: 1 }}>
-          {NAV.map(({ href, label, icon }) => (
-            <Link
-              key={href}
-              href={href}
-              className="sidebar-nav-item"
-              style={{ padding: 'var(--space-3) var(--space-5)' }}
-            >
-              <span style={{ fontSize: '0.9rem', color: 'var(--teal)' }}>{icon}</span>
-              {label}
-            </Link>
-          ))}
+          {NAV.map(({ href, label, icon }) => {
+            if (profile?.role === 'shipping' && href !== '/admin/orders') return null;
+            
+            return (
+              <Link
+                key={href}
+                href={href}
+                className="sidebar-nav-item"
+                style={{ padding: 'var(--space-3) var(--space-5)' }}
+              >
+                <span style={{ fontSize: '0.9rem', color: 'var(--teal)' }}>{icon}</span>
+                {label}
+              </Link>
+            );
+          })}
         </nav>
 
         {/* Bottom */}
@@ -122,7 +133,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
             Signed In As
           </div>
           <div style={{ fontSize: '0.82rem', color: 'var(--silver)', marginBottom: 'var(--space-3)' }}>
-            {profile?.full_name ?? user.email}
+            {profile?.full_name ?? (user.email ? `@${user.email.split('@')[0]}` : 'Admin')}
           </div>
           <Link href="/dashboard" style={{ fontSize: '0.78rem', color: 'var(--teal)', display: 'inline-flex', alignItems: 'center', gap: 6, marginBottom: 'var(--space-2)' }}>
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

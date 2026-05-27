@@ -6,6 +6,7 @@ import QRCode from 'qrcode';
 import Link from 'next/link';
 import AgentCoupons from '@/components/AgentCoupons';
 import AgentMessages from '@/components/AgentMessages';
+import AgentStoreProducts from '@/components/AgentStoreProducts';
 
 interface Profile {
   id: string;
@@ -66,7 +67,7 @@ export default function AgentDashboardClient({
 }: AgentDashboardClientProps) {
   const supabase = createClient();
 
-  const [activeTab, setActiveTab] = useState<'Overview' | 'Researchers' | 'Orders' | 'Coupons' | 'Messages' | 'Storefront Config'>('Overview');
+  const [activeTab, setActiveTab] = useState<'Overview' | 'Researchers' | 'Orders' | 'Store Products' | 'Coupons' | 'Messages' | 'Storefront Config'>('Overview');
   const [agentProfile, setAgentProfile] = useState<AgentProfile | null>(initialAgentProfile);
   const [researchers] = useState<Researcher[]>(initialResearchers);
   const [orders, setOrders] = useState<Order[]>(initialOrders);
@@ -446,7 +447,7 @@ export default function AgentDashboardClient({
 
         {/* Tab Controls */}
         <div style={{ display: 'flex', borderBottom: '1px solid rgba(255,255,255,0.08)', gap: 'var(--space-4)', marginBottom: 'var(--space-8)' }}>
-          {(['Overview', 'Researchers', 'Orders', 'Coupons', 'Messages', 'Storefront Config'] as const).map((tab) => (
+          {(['Overview', 'Researchers', 'Orders', 'Store Products', 'Coupons', 'Messages', 'Storefront Config'] as const).map((tab) => (
             <button
               key={tab}
               onClick={() => { setActiveTab(tab); setError(null); setSuccess(null); }}
@@ -790,6 +791,9 @@ export default function AgentDashboardClient({
         {activeTab === 'Messages' && (
           <AgentMessages agentId={userProfile.id} researchers={researchers} />
         )}
+
+        {/* TAB: Store Products */}
+        {activeTab === 'Store Products' && <AgentStoreProducts agentId={userProfile.id} />}
 
         {/* TAB 5: Storefront Configuration */}
         {activeTab === 'Storefront Config' && (

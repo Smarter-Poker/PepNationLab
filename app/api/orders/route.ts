@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
 import { createClient, createServiceClient } from '@/lib/supabase/server';
-import { sendEmail, orderConfirmationEmail } from '@/lib/email';
 import { validateCoupon } from '@/lib/coupons';
 
 export async function POST(request: Request) {
@@ -45,7 +44,7 @@ export async function POST(request: Request) {
     const productIds = items.map((item: any) => item.id);
     const { data: dbProducts, error: dbProductsError } = await serviceSupabase
       .from('products')
-      .select('id, name, base_cost, weight_oz, is_active, is_banned, sku')
+      .select('id, name, base_cost, weight_oz, is_active, is_banned, sku, inventory_count')
       .in('id', productIds);
 
     if (dbProductsError || !dbProducts || dbProducts.length === 0) {
@@ -56,6 +55,20 @@ export async function POST(request: Request) {
     const bannedProduct = dbProducts.find(p => p.is_banned || !p.is_active);
     if (bannedProduct) {
       return NextResponse.json({ error: `Product "${bannedProduct.name}" Is Unavailable For Sale.` }, { status: 400 });
+    }
+
+    // Strict Inventory Check: Ensure all items are in stock
+    for (const cartItem of items) {
+      const dbProduct = dbProducts.find(p => p.id === cartItem.id);
+      if (dbProduct) {
+        const qty = Number(cartItem.quantity) || 1;
+        if (Number(dbProduct.inventory_count) < qty) {
+          return NextResponse.json(
+            { error: `Insufficient inventory for "${dbProduct.name}". Only ${dbProduct.inventory_count} remaining.` },
+            { status: 400 }
+          );
+        }
+      }
     }
 
     // Fetch pricing tier multipliers
@@ -230,29 +243,6 @@ export async function POST(request: Request) {
       user_agent: request.headers.get('user-agent') || 'Unknown',
       ip_address: request.headers.get('x-forwarded-for') || '127.0.0.1'
     });
-
-    // Send order confirmation email. Failure must not break the order,
-    // which is already committed at this point.
-    if (user.email) {
-      try {
-        const tpl = orderConfirmationEmail({
-          orderId: order.id,
-          items: computedItems.map(i => ({
-            product_name: i.product_name,
-            quantity: i.quantity,
-            unit_cost_price: i.unit_cost_price,
-          })),
-          subtotal,
-          discount: discountAmount,
-          shippingCost,
-          total,
-          paymentMethod,
-        });
-        await sendEmail({ to: user.email, subject: tpl.subject, html: tpl.html });
-      } catch (emailError) {
-        console.error('Order Confirmation Email Failed:', emailError);
-      }
-    }
 
     return NextResponse.json({ success: true, orderId: order.id });
 

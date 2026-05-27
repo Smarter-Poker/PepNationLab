@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
-import { requireAdmin } from '@/lib/admin-auth';
+import { requireOrdersAccess } from '@/lib/admin-auth';
 
 export async function GET(req: NextRequest) {
-  const gate = await requireAdmin();
+  const gate = await requireOrdersAccess();
   if (!gate.ok) return gate.response;
 
   const supabase = await createServiceClient();

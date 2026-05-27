@@ -1,11 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
-import { requireAdmin } from '@/lib/admin-auth';
-import { sendEmail, paymentReceivedEmail } from '@/lib/email';
+import { requireOrdersAccess } from '@/lib/admin-auth';
 
 // GET: List all orders with buyer profile join
 export async function GET(req: NextRequest) {
-  const gate = await requireAdmin();
+  const gate = await requireOrdersAccess();
   if (!gate.ok) return gate.response;
 
   const supabase = await createServiceClient();
@@ -50,7 +49,7 @@ export async function GET(req: NextRequest) {
 
 // POST: Process / Update an order state
 export async function POST(req: NextRequest) {
-  const gate = await requireAdmin();
+  const gate = await requireOrdersAccess();
   if (!gate.ok) return gate.response;
 
   const supabase = await createServiceClient();
@@ -65,6 +64,15 @@ export async function POST(req: NextRequest) {
 
   if (!id || !status) {
     return NextResponse.json({ error: 'Missing Order ID Or New Status' }, { status: 400 });
+  }
+
+  // Security: Shipping role can ONLY move orders from in_fulfillment -> shipped -> delivered
+  // and they can update tracking_number. They CANNOT approve payments or cancel orders.
+  if (gate.role === 'shipping') {
+    const allowedStatuses = ['shipped', 'delivered', 'in_fulfillment'];
+    if (!allowedStatuses.includes(status)) {
+      return NextResponse.json({ error: 'Forbidden: Shipping Role Cannot Approve Payments Or Cancel Orders.' }, { status: 403 });
+    }
   }
 
   const updates: any = {
@@ -92,29 +100,6 @@ export async function POST(req: NextRequest) {
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
-  }
-
-  // When payment is confirmed (order approved), email the buyer.
-  // Email failure must not break the status update.
-  if (status === 'approved_ship' || status === 'approved_pickup') {
-    try {
-      const { data: orderRow } = await supabase
-        .from('orders')
-        .select('total, profiles!orders_buyer_id_fkey(email)')
-        .eq('id', id)
-        .single();
-
-      const buyer = (orderRow?.profiles as unknown) as { email?: string } | null;
-      if (buyer?.email) {
-        const tpl = paymentReceivedEmail({
-          orderId: id,
-          total: Number(orderRow?.total ?? 0),
-        });
-        await sendEmail({ to: buyer.email, subject: tpl.subject, html: tpl.html });
-      }
-    } catch (emailError) {
-      console.error('Payment Received Email Failed:', emailError);
-    }
   }
 
   return NextResponse.json({ success: true });
