@@ -368,6 +368,169 @@ export default function AgentStorefrontConfig({
           </div>
         </form>
       </div>
+
+      {/* ── Pricing & Discounts Configuration ── */}
+      <PricingConfig agentId={agentId} />
+    </div>
+  );
+}
+
+/* ─── Pricing Config Sub-Component ─── */
+function PricingConfig({ agentId }: { agentId: string }) {
+  const supabase = createClient();
+  const [loaded, setLoaded] = React.useState(false);
+  const [saving, setSaving] = React.useState(false);
+
+  // Dynamic pricing (small-order surcharges)
+  const [enableDynamic, setEnableDynamic] = React.useState(true);
+  const [minOrderQty, setMinOrderQty] = React.useState(1);
+  const [dynamicTiers, setDynamicTiers] = React.useState([
+    { min_qty: 1, max_qty: 2, surcharge_percent: 20 },
+    { min_qty: 3, max_qty: 5, surcharge_percent: 15 },
+    { min_qty: 6, max_qty: 9, surcharge_percent: 10 },
+    { min_qty: 10, max_qty: 999999, surcharge_percent: 0 },
+  ]);
+
+  // Bulk volume discounts
+  const [enableBulk, setEnableBulk] = React.useState(false);
+  const [bulkTiers, setBulkTiers] = React.useState([
+    { min_qty: 100, discount_percent: 5 },
+    { min_qty: 300, discount_percent: 10 },
+    { min_qty: 500, discount_percent: 15 },
+  ]);
+
+  React.useEffect(() => {
+    (async () => {
+      const { data } = await supabase
+        .from('agent_profiles')
+        .select('enable_dynamic_pricing, dynamic_pricing_tiers, min_order_qty, enable_bulk_discounts, bulk_discount_tiers')
+        .eq('id', agentId)
+        .single();
+      if (data) {
+        if (data.enable_dynamic_pricing != null) setEnableDynamic(data.enable_dynamic_pricing);
+        if (data.dynamic_pricing_tiers) setDynamicTiers(data.dynamic_pricing_tiers as any);
+        if (data.min_order_qty != null) setMinOrderQty(data.min_order_qty);
+        if (data.enable_bulk_discounts != null) setEnableBulk(data.enable_bulk_discounts);
+        if (data.bulk_discount_tiers) setBulkTiers(data.bulk_discount_tiers as any);
+      }
+      setLoaded(true);
+    })();
+  }, [agentId]);
+
+  async function handleSave() {
+    setSaving(true);
+    const { error } = await supabase
+      .from('agent_profiles')
+      .update({
+        enable_dynamic_pricing: enableDynamic,
+        dynamic_pricing_tiers: dynamicTiers,
+        min_order_qty: minOrderQty,
+        enable_bulk_discounts: enableBulk,
+        bulk_discount_tiers: bulkTiers,
+      })
+      .eq('id', agentId);
+    setSaving(false);
+    if (error) toast.error('Failed To Save Pricing Config');
+    else toast.success('Pricing Configuration Saved');
+  }
+
+  if (!loaded) return <div style={{ padding: 'var(--space-6)', textAlign: 'center', color: 'var(--grey-400)' }}>Loading Pricing Config...</div>;
+
+  const toggleStyle = (on: boolean): React.CSSProperties => ({
+    width: 44, height: 24, borderRadius: 12, background: on ? 'var(--teal)' : 'var(--surface-3)',
+    border: '1px solid rgba(255,255,255,0.1)', position: 'relative', cursor: 'pointer', transition: 'background 0.2s',
+  });
+  const toggleDot = (on: boolean): React.CSSProperties => ({
+    position: 'absolute', top: 2, left: on ? 22 : 2, width: 18, height: 18, borderRadius: '50%',
+    background: 'var(--black)', transition: 'left 0.2s',
+  });
+
+  return (
+    <div className="card-metal" style={{ padding: 'var(--space-8)', marginTop: 'var(--space-6)' }}>
+      <h3 style={{ fontSize: '1.2rem', marginBottom: 'var(--space-2)' }}>Pricing & Discounts</h3>
+      <p style={{ color: 'var(--grey-400)', fontSize: '0.9rem', marginBottom: 'var(--space-6)' }}>
+        Configure quantity-based pricing and bulk volume discounts for your storefront.
+      </p>
+
+      {/* Dynamic Pricing Section */}
+      <div style={{ marginBottom: 'var(--space-6)' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-4)' }}>
+          <div>
+            <h4 style={{ color: 'var(--teal)', fontSize: '1rem', marginBottom: 2 }}>Dynamic Pricing</h4>
+            <p style={{ fontSize: '0.78rem', color: 'var(--grey-400)', margin: 0 }}>Small-order surcharges for orders under 10 vials</p>
+          </div>
+          <button type="button" onClick={() => setEnableDynamic(!enableDynamic)} style={toggleStyle(enableDynamic)}>
+            <span style={toggleDot(enableDynamic)} />
+          </button>
+        </div>
+
+        {enableDynamic && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', marginBottom: 'var(--space-2)' }}>
+              <span style={{ fontSize: '0.82rem', color: 'var(--grey-400)' }}>Minimum Order Qty:</span>
+              <input type="number" min={1} className="form-input" style={{ width: 70, padding: '4px 8px', height: 32 }}
+                value={minOrderQty} onChange={e => setMinOrderQty(Number(e.target.value) || 1)} />
+            </div>
+            {dynamicTiers.map((tier, i) => (
+              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', fontSize: '0.85rem' }}>
+                <span style={{ color: 'var(--grey-400)', minWidth: 60 }}>{tier.min_qty}-{tier.max_qty === 999999 ? '∞' : tier.max_qty} vials</span>
+                <span style={{ color: 'var(--grey-400)' }}>+</span>
+                <input type="number" min={0} max={100} className="form-input" style={{ width: 60, padding: '4px 8px', height: 32 }}
+                  value={tier.surcharge_percent} onChange={e => {
+                    const next = [...dynamicTiers]; next[i] = { ...next[i], surcharge_percent: Number(e.target.value) || 0 }; setDynamicTiers(next);
+                  }} />
+                <span style={{ color: 'var(--grey-400)' }}>% surcharge</span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <hr style={{ border: 'none', borderTop: '1px solid rgba(255,255,255,0.05)', margin: 'var(--space-4) 0' }} />
+
+      {/* Bulk Discounts Section */}
+      <div style={{ marginBottom: 'var(--space-6)' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-4)' }}>
+          <div>
+            <h4 style={{ color: 'var(--teal)', fontSize: '1rem', marginBottom: 2 }}>Bulk Volume Discounts</h4>
+            <p style={{ fontSize: '0.78rem', color: 'var(--grey-400)', margin: 0 }}>Offer discounts for large quantity orders (100+ vials)</p>
+          </div>
+          <button type="button" onClick={() => setEnableBulk(!enableBulk)} style={toggleStyle(enableBulk)}>
+            <span style={toggleDot(enableBulk)} />
+          </button>
+        </div>
+
+        {enableBulk && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
+            {bulkTiers.map((tier, i) => (
+              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', fontSize: '0.85rem' }}>
+                <input type="number" min={1} className="form-input" style={{ width: 80, padding: '4px 8px', height: 32 }}
+                  value={tier.min_qty} onChange={e => {
+                    const next = [...bulkTiers]; next[i] = { ...next[i], min_qty: Number(e.target.value) || 1 }; setBulkTiers(next);
+                  }} />
+                <span style={{ color: 'var(--grey-400)' }}>+ vials =</span>
+                <input type="number" min={0} max={100} className="form-input" style={{ width: 60, padding: '4px 8px', height: 32 }}
+                  value={tier.discount_percent} onChange={e => {
+                    const next = [...bulkTiers]; next[i] = { ...next[i], discount_percent: Number(e.target.value) || 0 }; setBulkTiers(next);
+                  }} />
+                <span style={{ color: 'var(--grey-400)' }}>% off</span>
+                <button type="button" onClick={() => setBulkTiers(prev => prev.filter((_, j) => j !== i))}
+                  style={{ background: 'none', border: 'none', color: 'var(--red)', cursor: 'pointer', fontSize: '0.8rem' }}>Remove</button>
+              </div>
+            ))}
+            <button type="button" onClick={() => setBulkTiers(prev => [...prev, { min_qty: 100, discount_percent: 5 }])}
+              className="btn btn-secondary btn-sm" style={{ alignSelf: 'flex-start', fontSize: '0.78rem' }}>
+              + Add Tier
+            </button>
+          </div>
+        )}
+      </div>
+
+      <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+        <button type="button" onClick={handleSave} className="btn btn-primary" disabled={saving}>
+          {saving ? 'Saving...' : 'Save Pricing Config'}
+        </button>
+      </div>
     </div>
   );
 }

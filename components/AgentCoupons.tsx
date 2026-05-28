@@ -10,6 +10,7 @@ interface Coupon {
   discount_value: number;
   min_order_amount: number | null;
   max_uses: number | null;
+  max_uses_per_user: number | null;
   uses_count: number;
   expires_at: string | null;
   is_active: boolean;
@@ -27,6 +28,7 @@ export default function AgentCoupons({ agentId }: { agentId: string }) {
   const [discountValue, setDiscountValue] = useState('');
   const [minOrder, setMinOrder] = useState('');
   const [maxUses, setMaxUses] = useState('');
+  const [maxUsesPerUser, setMaxUsesPerUser] = useState('');
   const [expiresAt, setExpiresAt] = useState('');
   const [creating, setCreating] = useState(false);
   const [formError, setFormError] = useState('');
@@ -81,6 +83,7 @@ export default function AgentCoupons({ agentId }: { agentId: string }) {
       discount_value: value,
       min_order_amount: minOrder.trim() ? Number(minOrder) : null,
       max_uses: maxUses.trim() ? Number(maxUses) : null,
+      max_uses_per_user: maxUsesPerUser.trim() ? Number(maxUsesPerUser) : null,
       expires_at: expiresAt ? new Date(`${expiresAt}T23:59:59`).toISOString() : null,
       is_active: true,
     });
@@ -99,6 +102,7 @@ export default function AgentCoupons({ agentId }: { agentId: string }) {
     setDiscountValue('');
     setMinOrder('');
     setMaxUses('');
+    setMaxUsesPerUser('');
     setExpiresAt('');
     await loadCoupons();
   }
@@ -118,6 +122,17 @@ export default function AgentCoupons({ agentId }: { agentId: string }) {
         prev.map((c) => (c.id === coupon.id ? { ...c, is_active: coupon.is_active } : c))
       );
       alert(updateError.message);
+    }
+  }
+
+  async function deleteCoupon(couponId: string) {
+    if (!confirm('Are you sure you want to permanently delete this coupon?')) return;
+    const supabase = createClient();
+    setCoupons(prev => prev.filter(c => c.id !== couponId));
+    const { error: delError } = await supabase.from('coupons').delete().eq('id', couponId);
+    if (delError) {
+      alert('Failed to delete coupon: ' + delError.message);
+      await loadCoupons();
     }
   }
 
@@ -220,6 +235,17 @@ export default function AgentCoupons({ agentId }: { agentId: string }) {
               onChange={(e) => setMaxUses(e.target.value)}
             />
           </div>
+          <div className="form-group">
+            <label className="form-label">Max Uses Per User</label>
+            <input
+              type="number"
+              className="form-input"
+              min="1"
+              placeholder="Optional"
+              value={maxUsesPerUser}
+              onChange={(e) => setMaxUsesPerUser(e.target.value)}
+            />
+          </div>
         </div>
 
         <div className="form-group">
@@ -297,14 +323,27 @@ export default function AgentCoupons({ agentId }: { agentId: string }) {
                       : ''}
                   </div>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => toggleActive(c)}
-                  className="btn btn-secondary"
-                  style={{ fontSize: '0.76rem', padding: 'var(--space-2) var(--space-4)' }}
-                >
-                  {c.is_active ? 'Deactivate' : 'Activate'}
-                </button>
+                <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
+                  <button
+                    type="button"
+                    onClick={() => toggleActive(c)}
+                    className="btn btn-secondary"
+                    style={{ fontSize: '0.76rem', padding: 'var(--space-2) var(--space-4)' }}
+                  >
+                    {c.is_active ? 'Deactivate' : 'Activate'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => deleteCoupon(c.id)}
+                    style={{
+                      fontSize: '0.76rem', padding: 'var(--space-2) var(--space-3)',
+                      background: 'rgba(229,62,62,0.1)', border: '1px solid rgba(229,62,62,0.3)',
+                      borderRadius: 'var(--radius-md)', color: 'var(--red)', cursor: 'pointer'
+                    }}
+                  >
+                    Delete
+                  </button>
+                </div>
               </div>
             );
           })}
