@@ -111,36 +111,36 @@ export default function AgentOverview({
           />
         ))}
 
-        {/* Dynamic storefront URL — inside the dark input frame, doubled size */}
+        {/* Dynamic storefront URL — centered inside the dark input frame */}
         <span
           className="dash-url"
           style={{
-            bottom: '9%',
-            left: '5.5%',
-            width: '44%',
+            bottom: '6%',
+            left: '6%',
+            width: '50%',
             height: '5%',
-            fontSize: 'clamp(0.7rem, 2.2vw, 1.1rem)',
+            fontSize: 'clamp(0.65rem, 2vw, 1.05rem)',
           }}
         >
           {storefrontUrl}
         </span>
 
-        {/* Invisible clickable zone over "Copy Link" button */}
+        {/* Invisible clickable zone over "Copy Link" — moved up and right */}
         <button
           className="dash-btn-zone"
           onClick={copyStorefrontLink}
           aria-label={copiedStorefront ? 'Link Copied' : 'Copy Link'}
-          style={{ bottom: '5%', right: '26%', width: '14%', height: '5.5%' }}
+          style={{ bottom: '7%', right: '20%', width: '14%', height: '5.5%' }}
         />
 
-        {/* Invisible clickable zone over "Visit Store" button */}
+        {/* Invisible clickable zone over "Visit Store" — moved up */}
         <a
           href={storefrontUrl}
           target="_blank"
           rel="noopener noreferrer"
           className="dash-btn-zone"
           aria-label="Visit Store"
-          style={{ bottom: '5%', right: '7%', width: '14%', height: '5.5%' }}
+          style={{ bottom: '7%', right: '5%', width: '13%', height: '5.5%' }}
         />
       </div>
     </>
