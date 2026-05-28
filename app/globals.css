@@ -670,7 +670,6 @@ a:hover { color: var(--teal-dark); }
 }
 
 .dashboard-main {
-  margin-left: 260px;
   padding-top: 64px;
   min-height: 100vh;
   background: var(--black);
@@ -678,7 +677,6 @@ a:hover { color: var(--teal-dark); }
 
 @media (max-width: 1024px) {
   .sidebar { transform: translateX(-100%); }
-  .dashboard-main { margin-left: 0; }
 }
 
 /* ============================================
