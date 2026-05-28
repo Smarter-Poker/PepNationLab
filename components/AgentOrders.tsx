@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { toast } from 'sonner';
+import AgentManualOrder from './AgentManualOrder';
 
 interface Order {
   id: string;
@@ -27,6 +28,7 @@ export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
   const [loadingOrderId, setLoadingOrderId] = useState<string | null>(null);
   const [buyingLabelId, setBuyingLabelId] = useState<string | null>(null);
   const [trackingNumbers, setTrackingNumbers] = useState<Record<string, string>>({});
+  const [showManualOrder, setShowManualOrder] = useState(false);
 
   const handleUpdateOrderStatus = async (orderId: string, newStatus: string) => {
     setLoadingOrderId(orderId);
@@ -85,11 +87,26 @@ export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
       <h3 style={{ fontSize: '1.1rem', color: 'var(--white)', marginBottom: 'var(--space-4)', fontFamily: 'var(--font-brand)', letterSpacing: '0.05em', textTransform: 'uppercase' }}>
         Referred Order Ledger
       </h3>
-      <p style={{ color: 'var(--grey-400)', fontSize: '0.85rem', marginBottom: 'var(--space-6)' }}>
-        Manage Orders Registered By Your Clients. Coordinate Cash Settlements Offline And Release For System Fulfillment.
-      </p>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 'var(--space-6)' }}>
+        <p style={{ color: 'var(--grey-400)', fontSize: '0.85rem', maxWidth: 600 }}>
+          Manage Orders Registered By Your Clients. Coordinate Cash Settlements Offline And Release For System Fulfillment.
+        </p>
+        <button 
+          className="btn btn-primary btn-sm"
+          onClick={() => setShowManualOrder(!showManualOrder)}
+        >
+          {showManualOrder ? 'View Order Ledger' : 'Create Manual Order'}
+        </button>
+      </div>
 
-      {orders.length > 0 ? (
+      {showManualOrder ? (
+        <AgentManualOrder onOrderCreated={(newOrder) => {
+          setShowManualOrder(false);
+          if (newOrder) {
+            setOrders([newOrder, ...orders]);
+          }
+        }} />
+      ) : orders.length > 0 ? (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
           {orders.map((order) => {
             const isPendingPayment = order.status === 'pending_customer_payment';

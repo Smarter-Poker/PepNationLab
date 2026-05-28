@@ -11,11 +11,11 @@ export async function GET(req: NextRequest) {
   const { data, error } = await supabase
     .from('agent_products')
     .select(`
-      id, agent_id, product_id, custom_name, custom_description, custom_image_url, retail_price, is_visible,
-      products (name, description, image_url, category, in_stock, inventory_count)
+      id, agent_id, product_id, custom_name, custom_description, custom_image_url, retail_price, is_visible, sort_order,
+      products (name, description, image_url, category, in_stock, inventory_count, unit_size, unit_measure)
     `)
     .eq('agent_id', gate.user.id)
-    .order('created_at', { ascending: false });
+    .order('sort_order', { ascending: true });
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });

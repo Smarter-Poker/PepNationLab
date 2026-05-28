@@ -1,6 +1,7 @@
 import React from 'react';
 import Link from 'next/link';
 import AgentAnalytics from '@/components/AgentAnalytics';
+import QRCodeGenerator from '@/components/QRCodeGenerator';
 
 interface AgentOverviewProps {
   activeResearchersCount: number;
@@ -9,7 +10,6 @@ interface AgentOverviewProps {
   storefrontUrl: string;
   copyStorefrontLink: () => void;
   copiedStorefront: boolean;
-  qrCodeUrl: string;
   agentProfile: any;
   orders: any[];
 }
@@ -21,7 +21,6 @@ export default function AgentOverview({
   storefrontUrl,
   copyStorefrontLink,
   copiedStorefront,
-  qrCodeUrl,
   agentProfile,
   orders
 }: AgentOverviewProps) {
@@ -74,7 +73,7 @@ export default function AgentOverview({
             White-Label Storefront
           </h3>
           <p style={{ color: 'var(--silver-light)', fontSize: '0.85rem', marginBottom: 'var(--space-4)', lineHeight: 1.5 }}>
-            Share Your Exclusive Link Directly With Your Private Clients. Any Accounts Registered via This Address Are Tied Permanently To Your Referrals.
+            Share Your Exclusive Link Directly With Your Private Clients. Any Accounts Registered Via This Address Are Tied Permanently To Your Referrals.
           </p>
 
           <div style={{ display: 'flex', gap: 'var(--space-3)' }}>
@@ -101,29 +100,22 @@ export default function AgentOverview({
         </div>
       </div>
 
-      {/* QR Code Side Card */}
+      {/* QR Code Side Card — Generated Locally */}
       <div>
         <div className="card-metal animate-glow" style={{ textAlign: 'center', padding: 'var(--space-6)', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
           <h3 style={{ fontSize: '0.9rem', color: 'var(--white)', marginBottom: 'var(--space-4)', fontFamily: 'var(--font-brand)', letterSpacing: '0.05em', textTransform: 'uppercase' }}>
             Storefront QR Code
           </h3>
-          {qrCodeUrl ? (
-            <div style={{ background: 'var(--white)', padding: 12, borderRadius: 'var(--radius-lg)', display: 'inline-block', boxShadow: '0 0 20px rgba(0,196,188,0.15)', marginBottom: 'var(--space-4)' }}>
-              <img src={qrCodeUrl} alt="Storefront QR Code" style={{ display: 'block', width: 200, height: 200 }} />
-            </div>
+          {storefrontUrl ? (
+            <QRCodeGenerator url={storefrontUrl} size={200} fgColor="#00C4BC" bgColor="#FFFFFF" />
           ) : (
             <div style={{ width: 224, height: 224, background: 'var(--surface-3)', borderRadius: 'var(--radius-lg)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 'var(--space-4)' }}>
-              <span style={{ color: 'var(--grey-400)', fontSize: '0.8rem' }}>Generating QR...</span>
+              <span style={{ color: 'var(--grey-400)', fontSize: '0.8rem' }}>Set Up Your Store First</span>
             </div>
           )}
-          <p style={{ fontSize: '0.78rem', color: 'var(--grey-400)', marginBottom: 'var(--space-4)', lineHeight: 1.4 }}>
-            Scan Or Download To Print On Marketing Literature. Automatically Routes Users To Storefront.
+          <p style={{ fontSize: '0.78rem', color: 'var(--grey-400)', marginTop: 'var(--space-4)', lineHeight: 1.4 }}>
+            Scan Or Download To Print On Marketing Literature. Automatically Routes Users To Your Storefront Login.
           </p>
-          {qrCodeUrl && (
-            <a href={qrCodeUrl} download={`${agentProfile.slug}-qr-code.png`} className="btn btn-secondary btn-sm" style={{ width: '100%' }}>
-              Download QR Code PNG
-            </a>
-          )}
         </div>
         </div>
       </div>

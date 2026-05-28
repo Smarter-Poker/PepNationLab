@@ -328,7 +328,7 @@ export default function ProductsList({
                           background: product.in_stock ? 'var(--teal)' : '#F6AD55',
                           boxShadow: `0 0 4px ${product.in_stock ? 'var(--teal)' : '#F6AD55'}`
                         }} />
-                        {product.in_stock ? 'In Stock — Ships Now' : `Ships From China (10-15 Days)`}
+                        {product.in_stock ? 'In Stock — Ships Now' : `Out of Stock / Backordered`}
                       </span>
 
                       {isLowStock && (

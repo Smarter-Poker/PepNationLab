@@ -127,7 +127,7 @@ export async function POST(req: NextRequest) {
     const labelUrl = transaction.labelUrl;
 
     // 5. Update Order with Tracking Number & Label URL
-    await supabase
+    const { error: updateError } = await supabase
       .from('orders')
       .update({
         tracking_number: trackingNumber,
@@ -137,6 +137,11 @@ export async function POST(req: NextRequest) {
         updated_at: new Date().toISOString()
       })
       .eq('id', orderId);
+
+    if (updateError) {
+      console.error("Order Update Error:", updateError);
+      return NextResponse.json({ error: 'Failed to save tracking information to order' }, { status: 500 });
+    }
 
     return NextResponse.json({ 
       success: true, 

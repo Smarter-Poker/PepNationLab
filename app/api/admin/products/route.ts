@@ -53,7 +53,7 @@ export async function POST(req: NextRequest) {
       name,
       slug,
       sku: sku || null,
-      category: category || 'Peptides',
+      category: category || 'Other',
       description: description || null,
       image_url: image_url || null,
       base_cost,

@@ -47,7 +47,9 @@ export default async function AgentStorefrontPage({ params }: Props) {
         description,
         image_url,
         category,
-        backorder_days
+        backorder_days,
+        unit_size,
+        unit_measure
       )
     `)
     .eq('agent_id', agent.id)

@@ -14,6 +14,7 @@ import AgentOverview from '@/components/AgentOverview';
 import AgentStorefrontConfig from '@/components/AgentStorefrontConfig';
 import AgentOrders from '@/components/AgentOrders';
 import AgentLedger from '@/components/AgentLedger';
+import AgentBundles from '@/components/AgentBundles';
 
 interface Profile {
   id: string;
@@ -78,13 +79,11 @@ export default function AgentDashboardClient({
 }: AgentDashboardClientProps) {
   const supabase = createClient();
 
-  const [activeTab, setActiveTab] = useState<'Overview' | 'Sales & Carts' | 'Researchers' | 'My Sub-Agents' | 'Orders' | 'Store Products' | 'Inventory' | 'Ledger & Accounting' | 'Coupons' | 'Messages' | 'Storefront Config'>('Overview');
+  const [activeTab, setActiveTab] = useState<'Overview' | 'Sales & Carts' | 'Researchers' | 'My Sub-Agents' | 'Orders' | 'Store Products' | 'Research Bundles' | 'Inventory' | 'Ledger & Accounting' | 'Coupons' | 'Messages' | 'Storefront Config'>('Overview');
   const [agentProfile, setAgentProfile] = useState<AgentProfile | null>(initialAgentProfile);
-  const [researchers] = useState<Researcher[]>(initialResearchers);
   const [orders, setOrders] = useState<Order[]>(initialOrders);
 
-  // QR Code State
-  const [qrCodeUrl, setQrCodeUrl] = useState<string>('');
+
 
   // Storefront Config Form State
   const [displayName, setDisplayName] = useState(agentProfile?.display_name ?? '');
@@ -161,12 +160,7 @@ export default function AgentDashboardClient({
   const originUrl = typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000';
   const storefrontUrl = agentProfile ? `${originUrl}/${agentProfile.slug}` : '';
 
-  // Generate QR Code once the storefront URL is loaded
-  useEffect(() => {
-    if (storefrontUrl) {
-      setQrCodeUrl(`https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(storefrontUrl)}&color=00c4bc&bgcolor=ffffff`);
-    }
-  }, [storefrontUrl]);
+
 
   // Handle Initial Storefront Setup Creation
   const handleCreateProfile = async (e: React.FormEvent) => {
@@ -200,10 +194,10 @@ export default function AgentDashboardClient({
           display_name: setupDisplayName.trim(),
           tagline: setupTagline.trim() || null,
           payment_handles: {
-            zelle: 'payments@pepnationlab.com',
-            cashapp: '$PepNationLab',
-            venmo: '@PepNationLab',
-            apple_pay: 'payments@pepnationlab.com'
+            zelle: '',
+            cashapp: '',
+            venmo: '',
+            apple_pay: ''
           }
         })
         .select()
@@ -342,6 +336,7 @@ export default function AgentDashboardClient({
     ...(userProfile.is_super_agent ? [{ id: 'My Sub-Agents', label: 'My Sub-Agents', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /></svg> }] : []),
     { id: 'Coupons', label: 'Coupons', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z" /><line x1="7" y1="7" x2="7.01" y2="7" /></svg> },
     { id: 'Store Products', label: 'Store Products', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /><line x1="16" y1="13" x2="8" y2="13" /><line x1="16" y1="17" x2="8" y2="17" /></svg> },
+    { id: 'Research Bundles', label: 'Bundles', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" /><polyline points="3.27 6.96 12 12.01 20.73 6.96" /><line x1="12" y1="22.08" x2="12" y2="12" /></svg> },
     { id: 'Messages', label: 'Messages', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" /><polyline points="22,6 12,13 2,6" /></svg> },
     { id: 'Storefront Config', label: 'Storefront Configure', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" /></svg> },
   ];
@@ -480,6 +475,13 @@ export default function AgentDashboardClient({
           </div>
         )}
 
+        {/* Research Bundles Tab */}
+        {activeTab === 'Research Bundles' && (
+          <div style={{ animation: 'fadeIn 0.3s ease-out' }}>
+            <AgentBundles agentId={userProfile.id} />
+          </div>
+        )}
+
         {/* TAB X: Inventory Configuration */}
         {activeTab === 'Inventory' && (
           <div style={{ animation: 'fadeIn 0.3s ease-out' }}>
@@ -508,7 +510,7 @@ export default function AgentDashboardClient({
                 setTimeout(() => setCopiedStorefront(false), 2000);
               }}
               copiedStorefront={copiedStorefront}
-              qrCodeUrl={qrCodeUrl}
+
               agentProfile={agentProfile}
               orders={orders}
             />

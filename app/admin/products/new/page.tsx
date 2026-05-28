@@ -6,10 +6,15 @@ import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 
 const CATEGORIES = [
-  'Peptides',
+  'Weight Loss & Metabolism',
+  'Muscle Growth & Performance',
+  'Healing & Recovery',
+  'Skin, Hair & Cosmetics',
+  'Anti-Aging & Longevity',
+  'Sexual Health & Hormones',
+  'Immunity & Wellness',
   'Research Chemicals',
   'Nootropics',
-  'Growth Factors',
   'Amino Acids',
   'Other',
 ];
@@ -26,7 +31,7 @@ export default function NewProductPage() {
   const [form, setForm] = useState({
     name: '',
     sku: '',
-    category: 'Peptides',
+    category: 'Weight Loss & Metabolism',
     description: '',
     image_url: '',
     base_cost: '',
@@ -350,7 +355,7 @@ export default function NewProductPage() {
               <div style={{ fontSize: '0.88rem', fontWeight: 700, color: invCount > 0 ? 'var(--teal)' : '#F6AD55' }}>
                 {invCount > 0
                   ? `In Stock — Ships Now (${form.inventory_count} Units)`
-                  : `Ships From China (10-15 Days) — Out Of Stock`}
+                  : `Out of Stock / Backordered`}
               </div>
               <div style={{ fontSize: '0.75rem', color: 'var(--grey-400)', marginTop: 2 }}>
                 This Status Shows Live On All Agent Storefronts
@@ -385,7 +390,7 @@ export default function NewProductPage() {
           </div>
 
           <div style={{ marginTop: 'var(--space-3)', fontSize: '0.78rem', color: 'var(--grey-400)' }}>
-            Setting Units In Stock To 0 Automatically Switches All Agent Storefronts To "Ships From China (10-15 Days)".
+            Setting Units In Stock To 0 Automatically Switches All Agent Storefronts To "Out of Stock / Backordered".
             When Restocked, Storefronts Instantly Update To "In Stock — Ships Now."
           </div>
         </div>

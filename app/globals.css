@@ -1,10 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700;800&display=swap');
-
-@font-face {
-  font-family: 'OrbitronNumbersFixed';
-  src: local('Inter');
-  unicode-range: U+0030-0039;
-}
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
 
 /* ============================================
    PEPNATIONLAB — DESIGN SYSTEM
@@ -44,7 +38,7 @@
   --red-bg:         rgba(229, 62, 62, 0.08);
 
   /* Typography */
-  --font-brand:     'OrbitronNumbersFixed', 'Orbitron', sans-serif;
+  --font-brand:     'Inter', sans-serif;
   --font-body:      'Inter', sans-serif;
 
   /* Spacing */
@@ -119,6 +113,12 @@ body {
   overflow-x: hidden;
   font-feature-settings: normal !important;
   font-variant-numeric: normal !important;
+  text-transform: capitalize;
+}
+
+/* Exclude inputs to prevent corrupting data entry like emails or passwords */
+input, textarea {
+  text-transform: none;
 }
 
 /* ============================================
@@ -733,7 +733,7 @@ nav button { text-transform: capitalize; }
 
 /* Error messages, alerts */
 .disclaimer-warning p,
-.disclaimer-box p { /* preserve sentence case for legal text */ }
+.disclaimer-box p { text-transform: none; }
 
 .message-card-hover:hover { background: rgba(0, 196, 188, 0.05) !important; border-color: rgba(0, 196, 188, 0.3) !important; transform: translateY(-2px); }
 
@@ -799,4 +799,11 @@ nav button { text-transform: capitalize; }
 
 .data-table tbody tr:hover {
   background: rgba(0, 196, 188, 0.03);
+}
+
+.store-image-hover {
+  transition: transform 0.4s ease;
+}
+.message-card-hover:hover .store-image-hover {
+  transform: scale(1.05);
 }

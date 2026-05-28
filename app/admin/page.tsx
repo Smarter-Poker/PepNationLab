@@ -1,8 +1,6 @@
 import { createServiceClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import AdminAnalytics from '@/components/AdminAnalytics';
-import AdminCartRemindersTrigger from '@/components/AdminCartRemindersTrigger';
-
 export default async function AdminDashboard() {
   const supabase = await createServiceClient();
 
@@ -19,13 +17,13 @@ export default async function AdminDashboard() {
   const [
     { count: totalResearchers },
     { count: totalAgents },
-    { count: totalProducts },
+    { data: allActiveProducts },
     { count: pendingOrders },
     { data: recentOrders },
   ] = await Promise.all([
     supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'researcher'),
     supabase.from('profiles').select('*', { count: 'exact', head: true }).in('role', ['agent', 'super_agent']),
-    supabase.from('products').select('*', { count: 'exact', head: true }).eq('is_active', true),
+    supabase.from('products').select('name').eq('is_active', true),
     supabase.from('orders').select('*', { count: 'exact', head: true }).eq('status', 'pending_customer_payment'),
     supabase
       .from('orders')
@@ -33,6 +31,9 @@ export default async function AdminDashboard() {
       .order('created_at', { ascending: false })
       .limit(5),
   ]);
+
+  // Count unique product names (not rows/SKUs)
+  const totalProducts = allActiveProducts ? new Set(allActiveProducts.map((p: { name: string }) => p.name)).size : 0;
 
   const statIcon = {
     width: 22, height: 22, viewBox: '0 0 24 24', fill: 'none',
@@ -84,24 +85,21 @@ export default async function AdminDashboard() {
   return (
     <div style={{ padding: 'var(--space-8)' }}>
       {/* Header */}
-      <div style={{ marginBottom: 'var(--space-8)' }}>
-        <h1 style={{ fontSize: '1.6rem', marginBottom: 'var(--space-2)' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-8)', flexWrap: 'wrap', gap: 'var(--space-3)' }}>
+        <h1 style={{ fontSize: '1.6rem', margin: 0 }}>
           Admin <span style={{ color: 'var(--teal)' }}>Dashboard</span>
         </h1>
-        <p style={{ fontSize: '0.85rem', color: 'var(--grey-400)' }}>
-          Pep Nation Lab — Control Center
+        <p style={{ fontSize: '0.85rem', color: 'var(--grey-400)', margin: 0, fontFamily: 'var(--font-brand)', letterSpacing: '0.5px' }}>
+          Pep Nation Lab Control Center
         </p>
       </div>
-
-      <AdminCartRemindersTrigger />
-
       {/* Stats */}
       <div className="grid-4" style={{ marginBottom: 'var(--space-8)' }}>
         {STATS.map(({ label, value, color, icon }) => (
           <div key={label} className="card-metal" style={{ padding: 'var(--space-5)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
               <div>
-                <div style={{ fontSize: '2rem', fontWeight: 800, fontFamily: 'var(--font-brand)', color, lineHeight: 1 }}>
+                <div style={{ fontSize: '2rem', fontWeight: 800, fontFamily: "'Inter', 'Helvetica Neue', Arial, sans-serif", color, lineHeight: 1, fontVariantNumeric: 'slashed-zero', fontFeatureSettings: '"zero" off' }}>
                   {value}
                 </div>
                 <div style={{ fontSize: '0.8rem', color: 'var(--grey-400)', marginTop: 'var(--space-2)' }}>
@@ -174,6 +172,7 @@ export default async function AdminDashboard() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
             {[
               { href: '/admin/products/new', label: 'Add New Product', desc: 'Add A Research Compound To The Catalog', color: 'var(--teal)' },
+              { href: '/admin/store-preview', label: 'Store Catalog Preview', desc: 'View The Live Master Catalog', color: 'var(--teal)' },
               { href: '/admin/researchers', label: 'Create New Agent', desc: 'Set Up A New Agent With Pricing Tier & Storefront', color: 'var(--teal)' },
               { href: '/admin/sales', label: 'Sales & Revenue', desc: 'View Revenue By Agent, Transaction Ledgers', color: 'var(--silver)' },
               { href: '/admin/orders', label: 'Process Orders', desc: 'Mark Payments Received, Approve For Shipment', color: pendingOrders ? 'var(--red)' : 'var(--silver)' },
