@@ -114,6 +114,7 @@ body {
   font-feature-settings: normal !important;
   font-variant-numeric: normal !important;
   text-transform: capitalize;
+  max-width: 100vw;
 }
 
 /* Exclude inputs to prevent corrupting data entry like emails or passwords */

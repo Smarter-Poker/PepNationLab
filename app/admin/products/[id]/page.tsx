@@ -202,7 +202,7 @@ export default function EditProductPage() {
           Products
         </Link>
         <h1 style={{ fontSize: '1.4rem' }}>
-          Edit <span style={{ color: 'var(--teal)' }}>Product</span>
+          Edit Product
         </h1>
       </div>
 

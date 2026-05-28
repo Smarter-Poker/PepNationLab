@@ -183,7 +183,7 @@ export default function AdminStatementsPage() {
       <div style={{ marginBottom: 'var(--space-8)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div>
           <h1 style={{ fontSize: '1.6rem', marginBottom: 'var(--space-2)' }}>
-            Weekly <span style={{ color: 'var(--teal)' }}>Statements</span>
+            Weekly Statements
           </h1>
           <p style={{ fontSize: '0.85rem', color: 'var(--grey-400)' }}>
             Generate Agent Billing Statements And Track Settlement. Outstanding Balance:{' '}

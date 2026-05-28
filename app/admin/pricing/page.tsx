@@ -105,7 +105,7 @@ export default function PricingTiersPage() {
       {/* Header */}
       <div style={{ marginBottom: 'var(--space-8)' }}>
         <h1 style={{ fontSize: '1.6rem', marginBottom: 'var(--space-2)' }}>
-          Pricing <span style={{ color: 'var(--teal)' }}>Multiplier Tiers</span>
+          Pricing Multiplier Tiers
         </h1>
         <p style={{ fontSize: '0.85rem', color: 'var(--grey-400)' }}>
           Configure Pricing Multipliers For All 3 Tiers. Changes Apply Instantly To Storefront Products.

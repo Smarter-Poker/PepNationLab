@@ -99,10 +99,12 @@ export default async function AdminLayout({ children }: { children: React.ReactN
         top: 0, left: 0, bottom: 0,
         zIndex: 50,
       }}>
-        {/* Brand — text only, no logo */}
-        <div style={{
+        {/* Brand — clickable home link */}
+        <Link href="/admin" style={{
           padding: 'var(--space-6)',
-          borderBottom: '1px solid rgba(255,255,255,0.06)'
+          borderBottom: '1px solid rgba(255,255,255,0.06)',
+          textDecoration: 'none',
+          display: 'block',
         }}>
           <div style={{
             fontFamily: 'var(--font-brand)',
@@ -117,7 +119,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           <div style={{ fontSize: '0.72rem', color: 'var(--grey-400)', marginTop: 4 }}>
             Admin Control Panel
           </div>
-        </div>
+        </Link>
 
         {/* Nav */}
         <nav style={{ padding: 'var(--space-4) 0', flex: 1 }}>
@@ -167,8 +169,8 @@ export default async function AdminLayout({ children }: { children: React.ReactN
         </div>
       </aside>
 
-      {/* Main content */}
-      <main style={{ marginLeft: 240, flex: 1, minHeight: '100vh' }}>
+      {/* Main content — constrained to viewport */}
+      <main style={{ marginLeft: 240, flex: 1, minHeight: '100vh', maxWidth: 'calc(100vw - 240px)', overflowX: 'auto' }}>
         {children}
       </main>
     </div>

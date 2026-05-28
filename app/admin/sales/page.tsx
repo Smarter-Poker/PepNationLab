@@ -90,7 +90,7 @@ export default function AdminSalesPage() {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-8)' }}>
         <div>
           <h1 style={{ fontSize: '1.6rem', marginBottom: 'var(--space-2)' }}>
-            Sales <span style={{ color: 'var(--teal)' }}>Overview</span>
+            Sales Overview
           </h1>
           <p style={{ fontSize: '0.85rem', color: 'var(--grey-400)' }}>
             Revenue By Agent, Order Totals, And Transaction History

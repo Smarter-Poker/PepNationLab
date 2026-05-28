@@ -1,5 +1,5 @@
 import React from 'react';
-import { createClient } from '@/lib/supabase/server';
+import { createServiceClient } from '@/lib/supabase/server';
 import AgentStorefrontGrid from '@/components/AgentStorefrontGrid';
 import { requireAdmin } from '@/lib/admin-auth';
 import { redirect } from 'next/navigation';
@@ -10,7 +10,7 @@ export default async function AdminStorePreviewPage() {
   const gate = await requireAdmin();
   if (!gate.ok) redirect('/login');
 
-  const supabase = await createClient();
+  const supabase = await createServiceClient();
 
   // Fetch all products with inventory
   const { data: productsData, error } = await supabase

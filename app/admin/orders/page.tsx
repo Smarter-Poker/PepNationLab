@@ -205,7 +205,7 @@ export default function AdminOrdersPage() {
       {/* Header */}
       <div style={{ marginBottom: 'var(--space-8)' }}>
         <h1 style={{ fontSize: '1.6rem', marginBottom: 'var(--space-2)' }}>
-          Order <span style={{ color: 'var(--teal)' }}>Fulfillment</span> Center
+          Order Fulfillment Center
         </h1>
         <p style={{ fontSize: '0.85rem', color: 'var(--grey-400)' }}>
           Process Payments, Approve Logistics, Input Shipping Tracking, And Manage Fulfillment States

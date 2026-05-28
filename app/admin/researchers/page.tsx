@@ -320,7 +320,7 @@ export default function ResearchersAdminPage() {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-8)' }}>
         <div>
           <h1 style={{ fontSize: '1.6rem', marginBottom: 'var(--space-2)' }}>
-            Researchers & <span style={{ color: 'var(--teal)' }}>Agents</span>
+            Researchers & Agents
           </h1>
           <p style={{ fontSize: '0.85rem', color: 'var(--grey-400)' }}>
             Manage Research Accounts, Role Upgrades, Pricing Tiers, And Prepaid Balances

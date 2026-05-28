@@ -40,7 +40,7 @@ export default async function AdminProductsPage() {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 'var(--space-8)' }}>
         <div>
           <h1 style={{ fontSize: '1.6rem', marginBottom: 'var(--space-2)' }}>
-            Product <span style={{ color: 'var(--teal)' }}>Catalog</span>
+            Product Catalog
           </h1>
           <p style={{ fontSize: '0.85rem', color: 'var(--grey-400)' }}>
             {products?.length ?? 0} Products • Manage Research Compound Listings

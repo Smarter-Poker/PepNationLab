@@ -43,3 +43,4 @@ next-env.d.ts
 
 # pepnationrx deploy key (Hetzner root SSH; persistent across sandbox resets)
 .pnrx-deploy-key
+CLAUDE.md

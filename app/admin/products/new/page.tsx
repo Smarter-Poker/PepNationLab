@@ -143,7 +143,7 @@ export default function NewProductPage() {
           Products
         </Link>
         <h1 style={{ fontSize: '1.4rem' }}>
-          Add New <span style={{ color: 'var(--teal)' }}>Product</span>
+          Add New Product
         </h1>
       </div>
 
