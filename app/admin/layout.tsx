@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import Link from 'next/link';
+import AdminMessageBell from '@/components/AdminMessageBell';
 
 const ICON_PROPS = {
   width: 16,
@@ -63,6 +64,11 @@ const NAV = [
     href: '/admin/statements',
     label: 'Statements',
     icon: <svg {...ICON_PROPS}><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /><line x1="16" y1="13" x2="8" y2="13" /><line x1="16" y1="17" x2="8" y2="17" /></svg>,
+  },
+  {
+    href: '/admin/messages',
+    label: 'Messages',
+    icon: <svg {...ICON_PROPS}><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" /><polyline points="22,6 12,13 2,6" /></svg>,
   },
 ];
 
@@ -148,8 +154,9 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           <div style={{ fontSize: '0.78rem', color: 'var(--grey-400)', marginBottom: 'var(--space-2)' }}>
             Signed In As
           </div>
-          <div style={{ fontSize: '0.82rem', color: 'var(--silver)', marginBottom: 'var(--space-3)' }}>
-            {profile?.full_name ?? (user.email ? `@${user.email.split('@')[0]}` : 'Admin')}
+          <div style={{ fontSize: '0.82rem', color: 'var(--silver)', marginBottom: 'var(--space-3)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <span>{profile?.full_name ?? (user.email ? `@${user.email.split('@')[0]}` : 'Admin')}</span>
+            <AdminMessageBell />
           </div>
           <Link href="/dashboard" style={{ fontSize: '0.78rem', color: 'var(--teal)', display: 'inline-flex', alignItems: 'center', gap: 6, marginBottom: 'var(--space-2)' }}>
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

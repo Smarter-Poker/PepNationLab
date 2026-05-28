@@ -16,6 +16,7 @@ import AgentStorefrontConfig from '@/components/AgentStorefrontConfig';
 import AgentOrders from '@/components/AgentOrders';
 import AgentLedger from '@/components/AgentLedger';
 import AgentBundles from '@/components/AgentBundles';
+import MessageBell from '@/components/MessageBell';
 
 interface Profile {
   id: string;
@@ -485,7 +486,8 @@ export default function AgentDashboardClient({
             AGENT STOREFRONT
           </span>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
+          <MessageBell onViewAll={() => { setActiveTab('Messages'); setIsMobileMenuOpen(false); }} />
           <span className="hide-on-mobile" style={{ fontSize: '0.85rem', color: 'var(--silver)' }}>{agentProfile.display_name}</span>
         </div>
       </nav>
