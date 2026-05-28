@@ -51,6 +51,11 @@ const NAV = [
     icon: <svg {...ICON_PROPS}><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z" /><line x1="3" y1="6" x2="21" y2="6" /><path d="M16 10a4 4 0 0 1-8 0" /></svg>,
   },
   {
+    href: '/admin/restock',
+    label: 'Wholesale Restock',
+    icon: <svg {...ICON_PROPS}><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" /><path d="M7.5 4.21l9 5.16" /></svg>,
+  },
+  {
     href: '/admin/transactions',
     label: 'Transaction History',
     icon: <svg {...ICON_PROPS}><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" /></svg>,
@@ -59,6 +64,11 @@ const NAV = [
     href: '/admin/pricing',
     label: 'Pricing Tiers',
     icon: <svg {...ICON_PROPS}><line x1="12" y1="1" x2="12" y2="23" /><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" /></svg>,
+  },
+  {
+    href: '/admin/coupons',
+    label: 'Coupons',
+    icon: <svg {...ICON_PROPS}><path d="M20 12V8H6a2 2 0 0 1-2-2 2 2 0 0 1 2-2h12v4" /><path d="M4 6v12a2 2 0 0 0 2 2h14v-4" /><path d="M18 12a2 2 0 0 0-2 2c0 1.1.9 2 2 2h4v-4h-4z" /></svg>,
   },
   {
     href: '/admin/statements',
