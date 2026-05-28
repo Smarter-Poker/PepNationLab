@@ -369,7 +369,7 @@ export default function ResearchersAdminPage() {
                 padding: 'var(--space-2) var(--space-4)',
                 fontSize: '0.82rem',
                 fontWeight: 600,
-                color: activeTab === tab.id ? 'var(--black)' : 'var(--grey-400)',
+                color: activeTab === tab.id ? '#fff' : 'var(--grey-400)',
                 background: activeTab === tab.id ? 'var(--teal)' : 'transparent',
                 border: 'none',
                 borderRadius: 'var(--radius-sm)',
@@ -430,7 +430,7 @@ export default function ResearchersAdminPage() {
                     width: 44, height: 44, borderRadius: '50%',
                     background: profile.role === 'admin' ? 'var(--red)' : profile.role === 'super_agent' ? '#D69E2E' : 'var(--teal)',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    fontWeight: 700, color: 'var(--black)', fontSize: '1rem',
+                    fontWeight: 700, color: '#fff', fontSize: '1rem',
                   }}>
                     {profile.full_name ? profile.full_name[0].toUpperCase() : '?'}
                   </div>

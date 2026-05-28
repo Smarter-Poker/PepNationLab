@@ -160,7 +160,7 @@ export default function ProductsList({
             {cartCount > 0 && (
               <span style={{
                 background: 'var(--teal)',
-                color: 'var(--black)',
+                color: '#fff',
                 fontSize: '0.72rem',
                 fontWeight: 800,
                 borderRadius: '50%',

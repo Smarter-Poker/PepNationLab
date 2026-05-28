@@ -107,7 +107,7 @@ export default function AdminSalesPage() {
             <button key={tab.id} onClick={() => setRange(tab.id)}
               style={{
                 padding: '6px 14px', fontSize: '0.8rem', fontWeight: 600,
-                color: range === tab.id ? 'var(--black)' : 'var(--grey-400)',
+                color: range === tab.id ? '#fff' : 'var(--grey-400)',
                 background: range === tab.id ? 'var(--teal)' : 'transparent',
                 border: 'none', borderRadius: 'var(--radius-sm)', cursor: 'pointer',
               }}>
@@ -199,7 +199,7 @@ export default function AdminSalesPage() {
                       }}>
                       <td style={{ padding: 'var(--space-3) var(--space-4)' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
-                          <div style={{ width: 34, height: 34, borderRadius: '50%', background: 'var(--teal)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, color: 'var(--black)', fontSize: '0.85rem', flexShrink: 0 }}>
+                          <div style={{ width: 34, height: 34, borderRadius: '50%', background: 'var(--teal)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, color: '#fff', fontSize: '0.85rem', flexShrink: 0 }}>
                             {(agent.full_name || '?')[0].toUpperCase()}
                           </div>
                           <div>

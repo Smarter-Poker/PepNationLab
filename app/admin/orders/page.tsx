@@ -255,7 +255,7 @@ export default function AdminOrdersPage() {
                     padding: '6px 12px',
                     fontSize: '0.78rem',
                     fontWeight: 600,
-                    color: statusFilter === filter.id ? 'var(--black)' : 'var(--grey-400)',
+                    color: statusFilter === filter.id ? '#fff' : 'var(--grey-400)',
                     background: statusFilter === filter.id ? 'var(--teal)' : 'var(--black-2)',
                     border: statusFilter === filter.id ? 'none' : 'var(--border-subtle)',
                     borderRadius: 'var(--radius-sm)',
@@ -546,7 +546,7 @@ export default function AdminOrdersPage() {
                       <button
                         onClick={() => handleStatusTransition('delivered')}
                         className="btn btn-primary"
-                        style={{ width: '100%', justifyContent: 'center', background: '#68D391', borderColor: '#68D391', color: 'var(--black)' }}
+                        style={{ width: '100%', justifyContent: 'center', background: '#68D391', borderColor: '#68D391', color: '#fff' }}
                       >
                         Mark Order Delivered
                       </button>

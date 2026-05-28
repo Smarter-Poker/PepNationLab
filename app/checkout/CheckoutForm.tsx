@@ -371,7 +371,7 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers }
               fontFamily: 'var(--font-brand)',
               fontSize: '0.88rem',
               background: step === s.num ? 'var(--teal)' : step > s.num ? 'rgba(0, 196, 188, 0.15)' : 'var(--surface-3)',
-              color: step === s.num ? 'var(--black)' : step > s.num ? 'var(--teal)' : 'var(--silver-dark)',
+              color: step === s.num ? '#fff' : step > s.num ? 'var(--teal)' : 'var(--silver-dark)',
               border: step >= s.num ? '1px solid var(--teal)' : '1px solid rgba(255, 255, 255, 0.05)',
               boxShadow: step === s.num ? 'var(--shadow-teal-sm)' : 'none',
               transition: 'all 0.3s ease'
@@ -723,7 +723,7 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers }
                   </button>
                   <button type="submit" className="btn btn-primary" style={{ minWidth: 180, display: 'flex', alignItems: 'center', justifyContent: 'center' }} disabled={loading}>
                     {loading ? (
-                      <span style={{ display: 'inline-block', width: 16, height: 16, border: '2px solid var(--black)', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
+                      <span style={{ display: 'inline-block', width: 16, height: 16, border: '2px solid #fff', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
                     ) : (
                       'Place Research Order'
                     )}

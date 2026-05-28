@@ -149,7 +149,7 @@ export default function BecomeAgentPage() {
                     height: 34,
                     borderRadius: '50%',
                     background: 'var(--teal)',
-                    color: 'var(--black)',
+                    color: '#fff',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',

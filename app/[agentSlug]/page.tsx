@@ -183,7 +183,7 @@ export default async function AgentStorefrontPage({ params }: Props) {
           <Link
             href="/checkout"
             className="btn btn-sm"
-            style={{ background: primaryColor, color: 'var(--black)', fontWeight: 700, border: 'none' }}
+            style={{ background: primaryColor, color: '#fff', fontWeight: 700, border: 'none' }}
           >
             Checkout
           </Link>
