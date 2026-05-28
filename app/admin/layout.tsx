@@ -175,6 +175,13 @@ export default async function AdminLayout({ children }: { children: React.ReactN
             </svg>
             Back To Dashboard
           </Link>
+          <Link href="/account/security" style={{ fontSize: '0.78rem', color: 'var(--silver)', display: 'inline-flex', alignItems: 'center', gap: 6, marginBottom: 'var(--space-2)' }}>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+              <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+            </svg>
+            Account Security
+          </Link>
           <form action="/api/auth/signout" method="POST">
             <button type="submit" style={{
               fontSize: '0.75rem', color: 'var(--grey-400)',

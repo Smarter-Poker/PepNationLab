@@ -3,6 +3,7 @@ import { createClient, createServiceClient } from '@/lib/supabase/server';
 import { z } from 'zod';
 import { applyBulkPrice } from '@/lib/pricing';
 import { assertSameOrigin } from '@/lib/csrf';
+import { rateLimit } from '@/lib/rate-limit';
 
 const CheckoutSchema = z.object({
   items: z.array(z.object({
@@ -36,6 +37,21 @@ export async function POST(request: NextRequest) {
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
       return NextResponse.json({ error: 'Unauthorized. Please Sign In.' }, { status: 401 });
+    }
+
+    // Per-user rate limit: 10 orders / minute. Keyed on user.id so the
+    // limiter survives IP changes mid-session (mobile networks, VPNs).
+    const limited = await rateLimit({
+      key: 'orders_create',
+      limit: 10,
+      windowSeconds: 60,
+      identifier: user.id,
+    });
+    if (!limited.allowed) {
+      return NextResponse.json(
+        { error: 'Too Many Requests. Please Wait And Try Again.' },
+        { status: 429 }
+      );
     }
 
     const rawBody = await request.json();
