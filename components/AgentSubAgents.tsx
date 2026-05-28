@@ -28,6 +28,10 @@ export default function AgentSubAgents({ agentId }: { agentId?: string }) {
   const [resetPwValue, setResetPwValue] = useState('');
   const [resetPwSaving, setResetPwSaving] = useState(false);
 
+  // Revoke Sub-Agent State
+  const [revokeTarget, setRevokeTarget] = useState<{ id: string; name: string } | null>(null);
+  const [revoking, setRevoking] = useState(false);
+
   const fetchData = async () => {
     try {
       setLoading(true);
@@ -117,6 +121,27 @@ export default function AgentSubAgents({ agentId }: { agentId?: string }) {
       toast.success('Invoice marked as paid!');
     } catch (err: any) {
       toast.error(err.message || 'Failed to mark invoice as paid');
+    }
+  };
+
+  const handleRevoke = async () => {
+    if (!revokeTarget) return;
+    setRevoking(true);
+    try {
+      const res = await fetch('/api/agent/revoke-subagent', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ subAgentId: revokeTarget.id }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || 'Failed To Revoke Sub-Agent');
+      setRevokeTarget(null);
+      await fetchData();
+      toast.success('Sub-Agent Revoked');
+    } catch (err: any) {
+      toast.error(err.message || 'Failed To Revoke Sub-Agent');
+    } finally {
+      setRevoking(false);
     }
   };
 
@@ -228,12 +253,20 @@ export default function AgentSubAgents({ agentId }: { agentId?: string }) {
                         );
                       })()}
                     </td>
-                    <td style={{ textAlign: 'right', display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+                    <td style={{ textAlign: 'right', display: 'flex', gap: '8px', justifyContent: 'flex-end', flexWrap: 'wrap' }}>
                       <button
                         className="btn btn-secondary btn-sm"
                         onClick={() => handleGenerateInvoice(agent.id)}
                       >
                         Generate Weekly Invoice
+                      </button>
+                      <button
+                        type="button"
+                        className="btn btn-secondary btn-sm"
+                        style={{ border: '1px solid var(--red)', color: 'var(--red)' }}
+                        onClick={() => setRevokeTarget({ id: agent.id, name: agent.full_name || agent.username || 'Sub-Agent' })}
+                      >
+                        Revoke
                       </button>
                     </td>
                   </tr>
@@ -463,6 +496,47 @@ export default function AgentSubAgents({ agentId }: { agentId?: string }) {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Revoke Sub-Agent Confirm Modal */}
+      {revokeTarget && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+          background: 'rgba(0,0,0,0.8)', zIndex: 1100,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          padding: 'var(--space-4)',
+        }}>
+          <div className="card-metal" style={{ width: '100%', maxWidth: 440, padding: 'var(--space-6)' }}>
+            <h3 style={{ marginTop: 0, marginBottom: 'var(--space-3)', color: 'var(--white)' }}>
+              Revoke Agent Privileges For {revokeTarget.name}?
+            </h3>
+            <p style={{ fontSize: '0.88rem', color: 'var(--silver)', marginBottom: 'var(--space-3)' }}>
+              This Will Demote The Sub-Agent To A Researcher Account. They Will Lose Storefront Access And Pricing Tier But Will Remain In Your Downline For Sales Attribution.
+            </p>
+            <p style={{ fontSize: '0.82rem', color: 'var(--grey-400)', marginBottom: 'var(--space-5)' }}>
+              This Action Is Logged. You Can Re-Promote Them Later.
+            </p>
+            <div style={{ display: 'flex', gap: 'var(--space-3)', justifyContent: 'flex-end' }}>
+              <button
+                type="button"
+                className="btn btn-ghost btn-sm"
+                onClick={() => setRevokeTarget(null)}
+                disabled={revoking}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="btn btn-secondary btn-sm"
+                style={{ border: '1px solid var(--red)', color: 'var(--red)' }}
+                onClick={handleRevoke}
+                disabled={revoking}
+              >
+                {revoking ? 'Revoking...' : 'Confirm Revoke'}
+              </button>
+            </div>
           </div>
         </div>
       )}
