@@ -51,19 +51,15 @@ export async function POST(req: NextRequest) {
 
   const isResearcher = account_role === 'researcher';
 
-  // Validate required fields (slug/display_name not required for researchers)
   if (!full_name || !username || !password) {
     return NextResponse.json({ error: 'Missing Required Fields' }, { status: 400 });
   }
-
   if (!isResearcher && (!tier || !account_type || !slug || !display_name)) {
     return NextResponse.json({ error: 'Missing Required Agent Fields (Tier, Billing, Slug, Display Name)' }, { status: 400 });
   }
-
   if (isResearcher && !parent_agent_id) {
     return NextResponse.json({ error: 'Researcher Accounts Must Be Assigned To An Agent' }, { status: 400 });
   }
-
   if (password.length < 8) {
     return NextResponse.json({ error: 'Password Must Be At Least 8 Characters' }, { status: 400 });
   }
@@ -73,7 +69,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Invalid Username' }, { status: 400 });
   }
 
-  // Internal email used for Supabase auth only — users never see this
   const internalEmail = `${usernameClean}@pepnationlab.com`;
 
   if (!isResearcher) {
@@ -83,31 +78,18 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  // Check username uniqueness
-  const { data: existingUsername } = await supabase
-    .from('profiles')
-    .select('id')
-    .eq('username', usernameClean)
-    .maybeSingle();
-
+  const { data: existingUsername } = await supabase.from('profiles').select('id').eq('username', usernameClean).maybeSingle();
   if (existingUsername) {
     return NextResponse.json({ error: 'This Username Is Already Taken' }, { status: 400 });
   }
 
-  // Check slug uniqueness (only for agents)
   if (!isResearcher && slug) {
-    const { data: existingSlug } = await supabase
-      .from('agent_profiles')
-      .select('id')
-      .eq('slug', slug)
-      .maybeSingle();
-
+    const { data: existingSlug } = await supabase.from('agent_profiles').select('id').eq('slug', slug).maybeSingle();
     if (existingSlug) {
       return NextResponse.json({ error: 'This Storefront Slug Is Already Taken' }, { status: 400 });
     }
   }
 
-  // 1. Create the Supabase Auth user using the admin API (service role key)
   const { data: authData, error: authError } = await supabase.auth.admin.createUser({
     email: internalEmail,
     password,
@@ -115,15 +97,10 @@ export async function POST(req: NextRequest) {
   });
 
   if (authError || !authData.user) {
-    return NextResponse.json(
-      { error: `Failed To Create Auth User: ${authError?.message ?? 'Unknown Error'}` },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: `Failed To Create Auth User: ${authError?.message ?? 'Unknown Error'}` }, { status: 500 });
   }
 
   const userId = authData.user.id;
-
-  // 2. Upsert the profile
   const profileRole = account_role === 'super_agent' ? 'agent' : account_role;
   const profileData: Record<string, any> = {
     id: userId,
@@ -148,22 +125,14 @@ export async function POST(req: NextRequest) {
     profileData.is_super_agent = account_role === 'super_agent';
   }
 
-  const { error: profileError } = await supabase
-    .from('profiles')
-    .upsert(profileData);
-
+  const { error: profileError } = await supabase.from('profiles').upsert(profileData);
   if (profileError) {
     await supabase.auth.admin.deleteUser(userId);
-    return NextResponse.json(
-      { error: `Profile Creation Failed: ${profileError.message}` },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: `Profile Creation Failed: ${profileError.message}` }, { status: 500 });
   }
 
-  // 3. Create the agent_profiles storefront record (agents only, not researchers)
   if (!isResearcher) {
     const storefrontUrl = `${APP_URL}/${slug}`;
-    // In-process QR generation — no external dependency on api.qrserver.com.
     let qrCodeData: string | null = null;
     try {
       qrCodeData = await generateQrDataUrl(storefrontUrl);
@@ -172,24 +141,19 @@ export async function POST(req: NextRequest) {
       qrCodeData = null;
     }
 
-    const { error: agentError } = await supabase
-      .from('agent_profiles')
-      .insert({
-        id: userId,
-        slug,
-        display_name,
-        tagline: tagline || null,
-        bio: bio || null,
-        qr_code_data: qrCodeData,
-        is_active: true,
-      });
+    const { error: agentError } = await supabase.from('agent_profiles').insert({
+      id: userId,
+      slug,
+      display_name,
+      tagline: tagline || null,
+      bio: bio || null,
+      qr_code_data: qrCodeData,
+      is_active: true,
+    });
 
     if (agentError) {
       await supabase.auth.admin.deleteUser(userId);
-      return NextResponse.json(
-        { error: `Storefront Creation Failed: ${agentError.message}` },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: `Storefront Creation Failed: ${agentError.message}` }, { status: 500 });
     }
   }
 

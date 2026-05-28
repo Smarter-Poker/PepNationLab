@@ -53,7 +53,7 @@ export async function POST(req: NextRequest) {
         .filter(ap => ap.product_id)
         .map(async ap => {
           const agentCost = await computeAgentCost(supabase, ap.product_id as string, tier);
-          const retailPrice = Math.ceil(agentCost * (1 + marginPercent / 100));
+          const retailPrice = parseFloat((agentCost * (1 + marginPercent / 100)).toFixed(2));
           return { id: ap.id, retail_price: retailPrice };
         })
     );
