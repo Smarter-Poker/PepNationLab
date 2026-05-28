@@ -262,7 +262,7 @@ export default function AgentBundles({ agentId }: { agentId: string }) {
                         border: isSelected ? 'none' : '1px solid rgba(255,255,255,0.15)',
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
                       }}>
-                        {isSelected && <Check size={12} color="var(--black)" strokeWidth={3} aria-hidden="true" />}
+                        {isSelected && <Check size={12} color="var(--white)" strokeWidth={3} aria-hidden="true" />}
                       </div>
                       <img src={p.products.image_url || '/images/peptide_clear.png'} alt="" style={{ width: 28, height: 28, borderRadius: 4, objectFit: 'cover' }} />
                       <span style={{ fontSize: '0.82rem', color: 'var(--white)', flex: 1 }}>{displayName}</span>

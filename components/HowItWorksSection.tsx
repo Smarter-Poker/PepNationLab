@@ -99,7 +99,7 @@ export default function HowItWorksSection() {
                   <div style={{
                     position: 'absolute', top: -8, right: -8,
                     width: 22, height: 22, borderRadius: '50%',
-                    background: 'var(--teal)', color: 'var(--black)',
+                    background: 'var(--teal)', color: 'var(--white)',
                     fontSize: '0.65rem', fontWeight: 800,
                     fontFamily: 'var(--font-brand)',
                     display: 'flex', alignItems: 'center', justifyContent: 'center'

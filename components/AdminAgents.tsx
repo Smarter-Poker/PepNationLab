@@ -605,32 +605,6 @@ export default function AdminAgents() {
                   style={{ width: '100%' }}
                 />
               </div>
-
-              {/* Tagline */}
-              <div className="form-group" style={{ marginBottom: 'var(--space-4)' }}>
-                <label className="form-label" style={{ display: 'block', marginBottom: 'var(--space-1)' }}>Tagline</label>
-                <input
-                  type="text"
-                  className="form-input"
-                  value={createForm.tagline}
-                  onChange={e => handleCreateFormChange('tagline', e.target.value)}
-                  placeholder="Optional tagline"
-                  style={{ width: '100%' }}
-                />
-              </div>
-
-              {/* Bio */}
-              <div className="form-group" style={{ marginBottom: 'var(--space-6)' }}>
-                <label className="form-label" style={{ display: 'block', marginBottom: 'var(--space-1)' }}>Bio</label>
-                <textarea
-                  className="form-input"
-                  value={createForm.bio}
-                  onChange={e => handleCreateFormChange('bio', e.target.value)}
-                  placeholder="Optional agent bio"
-                  rows={3}
-                  style={{ width: '100%', resize: 'vertical' }}
-                />
-              </div>
               </>
               )}
 

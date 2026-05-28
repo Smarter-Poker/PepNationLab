@@ -18,7 +18,7 @@ export function normalizeCouponCode(code: string): string {
 
 export async function validateCoupon(
   supabase: ServiceClient,
-  opts: { code: string; agentId: string | null; subtotal: number }
+  opts: { code: string; agentId: string | null; subtotal: number; userId?: string | null }
 ): Promise<CouponValidation> {
   const code = normalizeCouponCode(opts.code);
   if (!code) return { valid: false, error: 'Enter A Coupon Code.' };
@@ -26,7 +26,7 @@ export async function validateCoupon(
 
   const { data: coupon, error } = await supabase
     .from('coupons')
-    .select('id, code, agent_id, discount_type, discount_value, min_order_amount, max_uses, uses_count, expires_at, is_active')
+    .select('id, code, agent_id, discount_type, discount_value, min_order_amount, max_uses, max_uses_per_user, uses_count, expires_at, is_active')
     .eq('agent_id', opts.agentId)
     .eq('code', code)
     .maybeSingle();
@@ -54,6 +54,18 @@ export async function validateCoupon(
       valid: false,
       error: `A Minimum Order Of $${Number(coupon.min_order_amount).toFixed(2)} Is Required For This Coupon.`,
     };
+  }
+
+  // Check per-user usage limit
+  if (coupon.max_uses_per_user != null && opts.userId) {
+    const { count } = await supabase
+      .from('orders')
+      .select('id', { count: 'exact', head: true })
+      .eq('coupon_id', coupon.id)
+      .eq('user_id', opts.userId);
+    if (count != null && count >= Number(coupon.max_uses_per_user)) {
+      return { valid: false, error: 'You Have Already Used This Coupon The Maximum Number Of Times.' };
+    }
   }
 
   const discountValue = Number(coupon.discount_value);

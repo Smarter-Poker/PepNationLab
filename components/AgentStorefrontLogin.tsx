@@ -215,7 +215,7 @@ export default function AgentStorefrontLogin({
               style={{
                 marginTop: 'var(--space-2)',
                 background: `linear-gradient(135deg, ${primaryColor}, ${primaryColor}90)`,
-                color: 'var(--black)',
+                color: 'var(--white)',
                 boxShadow: `0 4px 16px ${primaryColor}40`
               }}
             >
@@ -273,7 +273,7 @@ export default function AgentStorefrontLogin({
               style={{
                 marginTop: 'var(--space-2)',
                 background: `linear-gradient(135deg, ${primaryColor}, ${primaryColor}90)`,
-                color: 'var(--black)',
+                color: 'var(--white)',
                 boxShadow: `0 4px 16px ${primaryColor}40`
               }}
             >

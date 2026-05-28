@@ -181,9 +181,13 @@ export async function POST(request: Request) {
     if (agentProfile) {
       const { data: acr } = await serviceSupabase
         .from('agent_products')
-        .select('product_id, retail_price')
+        .select('product_id, retail_price, is_on_sale, sale_price')
         .eq('agent_id', agentProfile.id);
-      acr?.forEach(a => { agentCustomRetail[a.product_id] = Number(a.retail_price); });
+      acr?.forEach(a => {
+        // Use sale_price if the product is currently on sale
+        const price = a.is_on_sale && a.sale_price != null ? Number(a.sale_price) : Number(a.retail_price);
+        agentCustomRetail[a.product_id] = price;
+      });
     }
 
     // 5. Fetch Super Agent Baseline Costs (if Sub-Agent)

@@ -229,7 +229,7 @@ export default function AgentStoreProducts({ agentId }: { agentId: string }) {
                   padding: '6px 14px', border: 'none', borderRadius: 'var(--radius-sm)', cursor: 'pointer',
                   fontSize: '0.78rem', fontWeight: 600, transition: 'all 0.2s',
                   background: filter === key ? 'var(--teal)' : 'transparent',
-                  color: filter === key ? 'var(--black)' : 'var(--grey-400)',
+                  color: filter === key ? 'var(--white)' : 'var(--grey-400)',
                 }}
               >
                 {label}

@@ -285,7 +285,7 @@ a:hover { color: var(--teal-dark); }
 /* Primary */
 .btn-primary {
   background: linear-gradient(135deg, var(--teal) 0%, var(--teal-dark) 100%);
-  color: var(--black);
+  color: var(--white);
   font-weight: 700;
   box-shadow: 0 4px 16px rgba(0, 196, 188, 0.3);
 }

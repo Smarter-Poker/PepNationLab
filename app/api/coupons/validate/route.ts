@@ -33,6 +33,7 @@ export async function POST(request: Request) {
     code,
     agentId: profile?.referring_agent_id ?? null,
     subtotal,
+    userId: user.id,
   });
 
   return NextResponse.json(result);
