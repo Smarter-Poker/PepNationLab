@@ -55,8 +55,14 @@ export async function POST(req: NextRequest) {
     const agentId = gate.user.id;
     const { productId, stockCount } = await req.json();
 
-    if (!productId || typeof stockCount !== 'number') {
+    if (!productId || typeof stockCount !== 'number' || Number.isNaN(stockCount)) {
       return NextResponse.json({ error: 'Product ID and stockCount required' }, { status: 400 });
+    }
+
+    // Reject negative inventory — the agent cannot have less than zero stock,
+    // and negative values would corrupt downstream pricing/availability logic.
+    if (stockCount < 0) {
+      return NextResponse.json({ error: 'Stock Count Cannot Be Negative' }, { status: 400 });
     }
 
     // Upsert the inventory count

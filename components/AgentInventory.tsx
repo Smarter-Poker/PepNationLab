@@ -1,6 +1,9 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { toast } from 'sonner';
+import { AlertTriangle } from 'lucide-react';
+import { createClient } from '@/lib/supabase/client';
 
 interface AgentInventoryItem {
   id: string;
@@ -100,6 +103,25 @@ export default function AgentInventory({ agentId }: { agentId: string }) {
 
   async function handleOneClickRestock() {
     if (suggestedCart.length === 0) return;
+
+    // Guard: require warehouse_address on agent_profiles before restocking.
+    const supabase = createClient();
+    const { data: profile, error: profileErr } = await supabase
+      .from('agent_profiles')
+      .select('warehouse_address')
+      .eq('user_id', agentId)
+      .maybeSingle();
+    if (profileErr) {
+      toast.error('Failed To Verify Warehouse Address');
+      return;
+    }
+    const wh = (profile?.warehouse_address || {}) as Record<string, any>;
+    const missing = !wh?.street1 || !wh?.city || !wh?.state || !wh?.zip;
+    if (missing) {
+      toast.error('Set Your Warehouse Address In Storefront Config Before Restocking');
+      return;
+    }
+
     setRestockStatus('Processing Wholesale Restock...');
     try {
       const res = await fetch('/api/agent/restock', {
@@ -110,10 +132,10 @@ export default function AgentInventory({ agentId }: { agentId: string }) {
           fulfillmentMethod: 'ship',
           paymentMethod: 'zelle',
           shippingAddress: {
-            street: 'Agent Warehouse Address',
-            city: 'Auto City',
-            state: 'TX',
-            zipCode: '12345',
+            street: wh.street1,
+            city: wh.city,
+            state: wh.state,
+            zipCode: wh.zip,
             country: 'US'
           }
         })
@@ -146,7 +168,7 @@ export default function AgentInventory({ agentId }: { agentId: string }) {
       {alerts.length > 0 && (
         <div className="card-metal" style={{ borderLeft: '4px solid var(--orange)', padding: 'var(--space-6)' }}>
           <h3 style={{ fontSize: '1.2rem', color: 'var(--orange)', marginBottom: 'var(--space-3)', display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span style={{ fontSize: '1.4rem' }}>⚠️</span> Low Stock Smart Alerts
+            <AlertTriangle size={20} aria-hidden="true" /> Low Stock Smart Alerts
           </h3>
           <p style={{ fontSize: '0.85rem', color: 'var(--grey-300)', marginBottom: 'var(--space-4)' }}>
             Based on your 30-day run rate and our 10-15 day shipping transit time from China, you are at risk of stocking out of the following items:

@@ -17,23 +17,25 @@ export default async function AdminDashboard() {
   const [
     { count: totalResearchers },
     { count: totalAgents },
-    { data: allActiveProducts },
+    { count: activeProductsCount },
     { count: pendingOrders },
     { data: recentOrders },
   ] = await Promise.all([
     supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'researcher'),
     supabase.from('profiles').select('*', { count: 'exact', head: true }).in('role', ['agent', 'super_agent']),
-    supabase.from('products').select('name').eq('is_active', true),
+    // Active product count uses exact count + head:true — no payload, just the number.
+    supabase.from('products').select('id', { count: 'exact', head: true }).eq('is_active', true),
     supabase.from('orders').select('*', { count: 'exact', head: true }).eq('status', 'pending_customer_payment'),
+    // Explicit FK hints disambiguate the join — there are TWO profile FKs on
+    // orders (orders_buyer_id_fkey and orders_agent_id_fkey).
     supabase
       .from('orders')
-      .select('id, status, total, payment_method, created_at, profiles(full_name)')
+      .select('id, status, total, payment_method, created_at, profiles!orders_buyer_id_fkey(full_name)')
       .order('created_at', { ascending: false })
       .limit(5),
   ]);
 
-  // Count unique product names (not rows/SKUs)
-  const totalProducts = allActiveProducts ? new Set(allActiveProducts.map((p: { name: string }) => p.name)).size : 0;
+  const totalProducts = activeProductsCount ?? 0;
 
   const statIcon = {
     width: 22, height: 22, viewBox: '0 0 24 24', fill: 'none',

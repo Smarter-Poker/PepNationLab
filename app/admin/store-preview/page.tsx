@@ -32,19 +32,17 @@ export default async function AdminStorePreviewPage() {
     `)
     .order('name');
 
-  // Default tier-3 retail multiplier + per-product overrides so the preview
-  // shows what a researcher would actually pay, not the admin's wholesale
-  // base_cost.
+  // Use tier-1 pricing for admin preview (best wholesale rate)
   const { data: tiers } = await supabase
     .from('pricing_tiers')
     .select('tier_name, multiplier');
   const defaultMultiplier =
-    Number(tiers?.find(t => t.tier_name === 'tier_3')?.multiplier ?? 7);
+    Number(tiers?.find(t => t.tier_name === 'tier_1')?.multiplier ?? 1.3);
 
   const { data: overrideRows } = await supabase
     .from('product_tier_overrides')
     .select('product_id, custom_multiplier')
-    .eq('tier_name', 'tier_3');
+    .eq('tier_name', 'tier_1');
   const overrides = new Map<string, number>();
   overrideRows?.forEach(o => {
     overrides.set(o.product_id, Number(o.custom_multiplier));

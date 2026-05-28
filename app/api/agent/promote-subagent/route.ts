@@ -43,13 +43,16 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'User is already an Agent, Super Agent, or Admin' }, { status: 400 });
     }
 
-    // Promote to Sub-Agent
+    // Promote to Sub-Agent. We intentionally do NOT clear referring_agent_id
+    // — the original referral linkage is preserved for attribution, and any
+    // researchers whose referring_agent_id already points at this user keep
+    // their relationship intact. parent_agent_id is the only field that
+    // distinguishes a sub-agent from a top-level agent.
     const { error: updateError } = await supabase
       .from('profiles')
       .update({
         role: 'agent',
         parent_agent_id: superAgentId,
-        referring_agent_id: null // They are now an agent, they don't have a referring agent in the same way
       })
       .eq('id', researcherId);
 

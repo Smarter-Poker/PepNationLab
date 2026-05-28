@@ -7,6 +7,7 @@ interface AgentOption {
   full_name: string | null;
   email: string;
   role: string;
+  account_type?: 'credit' | 'prepaid' | null;
 }
 
 interface Statement {
@@ -77,7 +78,15 @@ export default function AdminStatementsPage() {
 
       if (agRes.ok) {
         const all: AgentOption[] = agJson.data || [];
-        setAgents(all.filter((p) => p.role === 'agent' || p.role === 'super_agent'));
+        // Statements only exist for credit-billed agents. Prepaid agents are
+        // debited atomically at order approval and have no weekly invoice.
+        setAgents(
+          all.filter(
+            (p) =>
+              (p.role === 'agent' || p.role === 'super_agent') &&
+              p.account_type === 'credit'
+          )
+        );
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An Error Occurred While Loading Data');

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { Paperclip } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 
 interface Message {
@@ -143,8 +144,8 @@ export default function Messaging({
                 </div>
                 {m.attachment_url && (
                   <div style={{ marginTop: 'var(--space-2)' }}>
-                    <a href={m.attachment_url} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--teal)', fontSize: '0.8rem', textDecoration: 'underline' }}>
-                      📎 View Attachment
+                    <a href={m.attachment_url} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--teal)', fontSize: '0.8rem', textDecoration: 'underline', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                      <Paperclip size={14} aria-hidden="true" /> View Attachment
                     </a>
                   </div>
                 )}
@@ -164,7 +165,7 @@ export default function Messaging({
       >
         {attachmentUrl && (
           <div style={{ fontSize: '0.8rem', color: 'var(--teal)', display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
-            📎 Attachment Attached
+            <Paperclip size={14} aria-hidden="true" /> Attachment Attached
             <button type="button" onClick={() => setAttachmentUrl(null)} style={{ background: 'transparent', border: 'none', color: 'var(--red)', cursor: 'pointer', fontSize: '0.8rem' }}>
               Remove
             </button>
@@ -172,7 +173,7 @@ export default function Messaging({
         )}
         <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
           <label className="btn btn-secondary" style={{ padding: '0 var(--space-3)', cursor: 'pointer', opacity: uploadingFile ? 0.5 : 1 }}>
-            {uploadingFile ? '...' : '📎'}
+            {uploadingFile ? '...' : <Paperclip size={16} aria-hidden="true" />}
             <input 
               type="file" 
               style={{ display: 'none' }}

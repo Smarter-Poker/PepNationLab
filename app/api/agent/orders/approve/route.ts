@@ -130,30 +130,63 @@ export async function POST(req: NextRequest) {
         }, { status: 402 });
       }
     } else if (primaryProfile.account_type === 'credit') {
-      // Calculate current outstanding unbilled amount to see if they exceed credit limit
-      // 1. Unpaid statements
+      // Calculate current outstanding to see if approving this order would
+      // breach the credit limit. Two buckets count toward outstanding:
+      //   1. Unpaid weekly statements (already billed, not yet settled).
+      //   2. Approved-but-unbilled orders for this agent (orders that have
+      //      been approved this cycle but have not yet been rolled into a
+      //      weekly statement). Without this, an agent could approve a
+      //      week's worth of orders that collectively exceed their limit
+      //      before the Sunday-night statement run catches them.
       const { data: statements } = await supabase
         .from('weekly_statements')
         .select('total_owed')
         .eq('agent_id', primaryBilledAgentId)
         .eq('status', 'pending_payment');
-        
-      let currentUnbilled = 0;
-      statements?.forEach(s => currentUnbilled += Number(s.total_owed));
 
-      // 2. Unbilled orders (orders since last statement)
-      // For simplicity, we just check unpaid statements.
-      // If we want exact, we would also query recent orders.
-      // Let's do a simple exact check: we fetch all orders that don't have a statement yet?
-      // Actually, just checking unpaid statements is often sufficient for a soft credit limit check,
-      // but let's just do the sum of unpaid statements for now.
+      let currentUnbilled = 0;
+      statements?.forEach((s) => (currentUnbilled += Number(s.total_owed) || 0));
+
+      // Sum approved-but-unbilled orders (no statement_orders link yet) for
+      // this billed agent. We treat shipping + COGS as the in-flight amount.
+      const { data: approvedOrders } = await supabase
+        .from('orders')
+        .select('id, shipping_cost, statement_orders(statement_id), order_items(quantity, unit_cost_price, unit_super_agent_cost), agent_id')
+        .eq('agent_id', primaryBilledAgentId)
+        .in('status', [
+          'approved_ship',
+          'approved_pickup',
+          'in_fulfillment',
+          'shipped',
+          'delivered',
+        ]);
+
+      let inFlight = 0;
+      for (const o of approvedOrders ?? []) {
+        const links = (o.statement_orders as unknown) as Array<{ statement_id: string | null }> | null;
+        if (Array.isArray(links) && links.some((l) => l?.statement_id)) continue;
+        const ship = Number((o as { shipping_cost?: unknown }).shipping_cost) || 0;
+        const items = ((o as { order_items?: unknown }).order_items ?? []) as Array<{
+          quantity: number;
+          unit_cost_price: number | null;
+          unit_super_agent_cost: number | null;
+        }>;
+        let orderCogs = 0;
+        for (const it of items) {
+          const qty = Number(it.quantity) || 0;
+          const cost = Number(it.unit_cost_price);
+          orderCogs += (Number.isFinite(cost) && cost > 0 ? cost : 0) * qty;
+        }
+        inFlight += orderCogs + ship;
+      }
 
       const creditLimit = Number(primaryProfile.credit_limit) || 0;
+      const projected = currentUnbilled + inFlight + totalOwed;
 
-      if ((currentUnbilled + totalOwed) > creditLimit) {
-        return NextResponse.json({ 
-          error: `Credit Limit Exceeded. Approving this order would push outstanding balance to $${(currentUnbilled + totalOwed).toFixed(2)} (Limit: $${creditLimit.toFixed(2)}). Please pay your pending weekly statements.`
-        }, { status: 402 });
+      if (projected > creditLimit) {
+        return NextResponse.json({
+          error: `Credit Limit Exceeded. Approving this order would push outstanding balance to $${projected.toFixed(2)} (Limit: $${creditLimit.toFixed(2)}). Please pay your pending weekly statements.`,
+        }, { status: 403 });
       }
     }
 

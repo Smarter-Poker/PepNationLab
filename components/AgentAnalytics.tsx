@@ -3,45 +3,107 @@
 import React, { useState, useEffect } from 'react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
+interface SalesRecord {
+  id: string;
+  status?: string;
+  created_at?: string;
+  total?: number | string;
+  shipping_cost?: number | string;
+  discount_amount?: number | string;
+  profit?: number | string;
+  items?: Array<{
+    quantity?: number | string;
+    unit_retail_price?: number | string;
+    unit_cost_price?: number | string;
+  }>;
+}
+
 export default function AgentAnalytics({ agentId, orders }: { agentId: string, orders: any[] }) {
   const [salesData, setSalesData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Generate real agent sales data for the last 14 days
-    const generateData = () => {
-      const data = [];
+    let cancelled = false;
+
+    async function load() {
+      // Pull real per-order profit from the sales API so the chart matches
+      // the ledger (profit = retail − cost − shipping). Falls back to a
+      // local compute if the API call fails so the chart still renders.
+      let salesRecords: SalesRecord[] = [];
+      try {
+        const res = await fetch('/api/agent/sales');
+        if (res.ok) {
+          const json = await res.json();
+          salesRecords = (json?.data?.sales as SalesRecord[]) ?? [];
+        }
+      } catch {
+        salesRecords = [];
+      }
+
+      const computeOrderProfit = (rec: SalesRecord): number => {
+        const supplied = Number(rec.profit);
+        if (Number.isFinite(supplied)) return supplied;
+        let retail = 0;
+        let cost = 0;
+        for (const it of rec.items ?? []) {
+          const qty = Number(it.quantity) || 0;
+          retail += (Number(it.unit_retail_price) || 0) * qty;
+          cost += (Number(it.unit_cost_price) || 0) * qty;
+        }
+        const discount = Number(rec.discount_amount) || 0;
+        const ship = Number(rec.shipping_cost) || 0;
+        return retail - discount - cost - ship;
+      };
+
+      const recordsByDate = new Map<string, SalesRecord[]>();
+      for (const rec of salesRecords) {
+        if (rec.status === 'cancelled') continue;
+        if (!rec.created_at) continue;
+        const day = new Date(rec.created_at);
+        if (Number.isNaN(day.valueOf())) continue;
+        day.setHours(0, 0, 0, 0);
+        const key = day.toISOString().split('T')[0];
+        const bucket = recordsByDate.get(key);
+        if (bucket) bucket.push(rec);
+        else recordsByDate.set(key, [rec]);
+      }
+
+      const data: Array<{ date: string; sales: number; profit: number }> = [];
       const today = new Date();
       today.setHours(0, 0, 0, 0);
 
       for (let i = 13; i >= 0; i--) {
         const d = new Date(today);
         d.setDate(d.getDate() - i);
-        const nextDay = new Date(d);
-        nextDay.setDate(nextDay.getDate() + 1);
+        const key = d.toISOString().split('T')[0];
 
-        // Find all orders created on this day
-        const dayOrders = orders.filter(o => {
-          const orderDate = new Date(o.created_at);
-          return orderDate >= d && orderDate < nextDay;
-        });
+        const dayRecords = recordsByDate.get(key) ?? [];
+        const dayTotal = dayRecords.reduce(
+          (sum, r) => sum + (Number(r.total) || 0),
+          0
+        );
+        const dayProfit = dayRecords.reduce(
+          (sum, r) => sum + computeOrderProfit(r),
+          0
+        );
 
-        // Sum the totals
-        const dayTotal = dayOrders.reduce((sum, o) => sum + (o.total || 0), 0);
-        
         data.push({
-          date: d.toISOString().split('T')[0].substring(5),
-          sales: dayTotal,
-          commission: dayTotal * 0.15 // Example 15% commission, adjust as needed
+          date: key.substring(5),
+          sales: Math.round(dayTotal * 100) / 100,
+          profit: Math.round(dayProfit * 100) / 100,
         });
       }
-      return data;
-    };
 
-    if (orders) {
-      setSalesData(generateData());
-      setLoading(false);
+      if (!cancelled) {
+        setSalesData(data);
+        setLoading(false);
+      }
     }
+
+    load();
+    return () => {
+      cancelled = true;
+    };
   }, [agentId, orders]);
 
   if (loading) {

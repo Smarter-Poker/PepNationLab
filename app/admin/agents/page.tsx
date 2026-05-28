@@ -21,7 +21,7 @@ export default async function AdminAgentsPage() {
     .single();
 
   if (profile?.role !== 'admin') {
-    redirect('/');
+    redirect('/dashboard');
   }
 
   return <AdminAgents />;

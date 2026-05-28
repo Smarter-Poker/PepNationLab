@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { Key } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 
 export default function ForgotPasswordPage() {
@@ -115,9 +116,9 @@ export default function ForgotPasswordPage() {
                 border: '1px solid rgba(0,196,188,0.3)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 margin: '0 auto var(--space-4)',
-                fontSize: '1.4rem',
+                color: 'var(--teal)',
               }}>
-                🔑
+                <Key size={22} aria-hidden="true" />
               </div>
               <h2 style={{ fontSize: '1.2rem', marginBottom: 'var(--space-2)', textAlign: 'center' }}>Password Reset</h2>
               <p style={{ fontSize: '0.9rem', color: 'var(--grey-300)', lineHeight: 1.6, textAlign: 'center', marginBottom: 'var(--space-6)' }}>

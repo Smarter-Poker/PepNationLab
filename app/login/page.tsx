@@ -2,6 +2,7 @@
 
 import { useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { Key } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 
 function LoginPageInner() {
@@ -106,9 +107,9 @@ function LoginPageInner() {
               border: '1px solid rgba(0,196,188,0.3)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               margin: '0 auto var(--space-4)',
-              fontSize: '1.4rem',
+              color: 'var(--teal)',
             }}>
-              🔑
+              <Key size={22} aria-hidden="true" />
             </div>
             <h3 style={{ fontSize: '1.1rem', marginBottom: 'var(--space-3)', color: 'var(--white)' }}>
               Password Reset

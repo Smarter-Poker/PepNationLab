@@ -86,18 +86,36 @@ export async function POST(req: NextRequest) {
   }
 
   if (action === 'mark_paid') {
-    const { statementId, paymentNotes } = body;
+    const { statementId, paymentMethod, paymentReference, paymentNotes } = body as {
+      statementId?: string;
+      paymentMethod?: string;
+      paymentReference?: string;
+      paymentNotes?: string;
+    };
     if (!statementId) {
       return NextResponse.json({ error: 'Statement ID Required.' }, { status: 400 });
     }
 
+    // Persist the canonical columns (payment_method, payment_reference) and
+    // keep admin_notes available for free-form annotations. The legacy
+    // `paymentNotes` key is folded into admin_notes if supplied.
+    const updates: Record<string, unknown> = {
+      status: 'paid',
+      paid_at: new Date().toISOString(),
+    };
+    if (typeof paymentMethod === 'string' && paymentMethod.trim()) {
+      updates.payment_method = paymentMethod.trim();
+    }
+    if (typeof paymentReference === 'string' && paymentReference.trim()) {
+      updates.payment_reference = paymentReference.trim();
+    }
+    if (typeof paymentNotes === 'string' && paymentNotes.trim()) {
+      updates.admin_notes = paymentNotes.trim();
+    }
+
     const { error: updateError } = await supabase
       .from('weekly_statements')
-      .update({
-        status: 'paid',
-        payment_notes: paymentNotes || null,
-        paid_at: new Date().toISOString(),
-      })
+      .update(updates)
       .eq('id', statementId);
 
     if (updateError) {

@@ -280,12 +280,13 @@ export default function AgentDashboardClient({
     setTimeout(() => setCopiedStorefront(false), 2000);
   };
 
-  // Compute stats
+  // Compute stats. Order count excludes cancelled to stay consistent with
+  // the revenue total below — otherwise the dashboard would proudly count
+  // cancelled orders while excluding their revenue, which reads as a bug.
   const activeResearchersCount = researcherList.length;
-  const activeOrdersCount = orders.length;
-  const totalRevenue = orders
-    .filter(o => o.status !== 'cancelled')
-    .reduce((acc, o) => acc + Number(o.total), 0);
+  const nonCancelledOrders = orders.filter((o) => o.status !== 'cancelled');
+  const activeOrdersCount = nonCancelledOrders.length;
+  const totalRevenue = nonCancelledOrders.reduce((acc, o) => acc + Number(o.total), 0);
 
   // If agent has no profile setup yet, show launch storefront screen
   if (!agentProfile) {

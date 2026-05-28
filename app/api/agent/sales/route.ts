@@ -43,7 +43,11 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: ordersError.message }, { status: 500 });
     }
 
-    // Calculate profit for each order
+    // Calculate profit for each order. The agent's true margin is:
+    //   profit = retail (customer paid, net of coupon) - cost (what agent
+    //            pays the platform) - shipping (also billed to the agent)
+    // Shipping is included because the platform bills the agent for it on
+    // the weekly statement, even though the customer paid retail shipping.
     const sales = orders.map((o: any) => {
       let totalRetail = 0;
       let totalCost = 0;
@@ -53,12 +57,11 @@ export async function GET(req: NextRequest) {
         totalCost += Number(item.unit_cost_price) * Number(item.quantity);
       }
 
-      // If the order had a coupon discount applied, subtract it from the retail price
-      // because the agent passed the savings to the customer. Profit is what's left.
       const discount = Number(o.discount_amount) || 0;
+      const shippingCost = Number(o.shipping_cost) || 0;
       totalRetail -= discount;
 
-      const profit = Math.max(0, totalRetail - totalCost);
+      const profit = totalRetail - totalCost - shippingCost;
 
       return {
         id: o.id,
@@ -69,7 +72,7 @@ export async function GET(req: NextRequest) {
         discount_amount: o.discount_amount,
         shipping_cost: o.shipping_cost,
         total: o.total,
-        profit: profit,
+        profit,
         items: o.order_items
       };
     });

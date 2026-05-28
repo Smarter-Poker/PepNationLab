@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { Check, Package } from 'lucide-react';
 
 interface ProductOption {
   id: string;
@@ -183,12 +184,12 @@ export default function AgentBundles({ agentId }: { agentId: string }) {
 
           {error && (
             <div style={{ background: 'var(--red-bg)', borderLeft: '3px solid var(--red)', padding: 'var(--space-3)', marginBottom: 'var(--space-4)', borderRadius: '0 4px 4px 0' }}>
-              <p style={{ color: 'var(--red)', fontSize: '0.8rem', margin: 0, textTransform: 'none' }}>{error}</p>
+              <p style={{ color: 'var(--red)', fontSize: '0.8rem', margin: 0 }}>{error}</p>
             </div>
           )}
           {success && (
             <div style={{ background: 'rgba(0,196,188,0.06)', borderLeft: '3px solid var(--teal)', padding: 'var(--space-3)', marginBottom: 'var(--space-4)', borderRadius: '0 4px 4px 0' }}>
-              <p style={{ color: 'var(--teal)', fontSize: '0.8rem', margin: 0, textTransform: 'none' }}>{success}</p>
+              <p style={{ color: 'var(--teal)', fontSize: '0.8rem', margin: 0 }}>{success}</p>
             </div>
           )}
 
@@ -261,7 +262,7 @@ export default function AgentBundles({ agentId }: { agentId: string }) {
                         border: isSelected ? 'none' : '1px solid rgba(255,255,255,0.15)',
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
                       }}>
-                        {isSelected && <span style={{ color: 'var(--black)', fontSize: '0.7rem', fontWeight: 800 }}>✓</span>}
+                        {isSelected && <Check size={12} color="var(--black)" strokeWidth={3} aria-hidden="true" />}
                       </div>
                       <img src={p.products.image_url || '/images/peptide_clear.png'} alt="" style={{ width: 28, height: 28, borderRadius: 4, objectFit: 'cover' }} />
                       <span style={{ fontSize: '0.82rem', color: 'var(--white)', flex: 1 }}>{displayName}</span>
@@ -306,7 +307,7 @@ export default function AgentBundles({ agentId }: { agentId: string }) {
       {/* Existing Bundles */}
       {bundles.length === 0 && !showCreate ? (
         <div className="card-metal" style={{ padding: 'var(--space-8)', textAlign: 'center' }}>
-          <div style={{ fontSize: '2rem', marginBottom: 'var(--space-3)' }}>📦</div>
+          <div style={{ marginBottom: 'var(--space-3)', color: 'var(--grey-500)', display: 'flex', justifyContent: 'center' }}><Package size={32} aria-hidden="true" /></div>
           <p style={{ color: 'var(--grey-400)', fontSize: '0.9rem', marginBottom: 'var(--space-4)' }}>
             No Research Bundles Created Yet
           </p>

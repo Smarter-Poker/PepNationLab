@@ -84,6 +84,20 @@ function fuzzyMatch(query: string, text: string): boolean {
   return qi === q.length;
 }
 
+// Always round up to whole dollars — no cents ever
+function roundUp(price: number): number {
+  return Math.ceil(price);
+}
+
+// Split product names like "GLOW (TB10+BPC10+GHK50)" into main + subtitle
+function splitProductName(name: string): { main: string; subtitle: string | null } {
+  const match = name.match(/^([^(]+?)\s*\((.+)\)\s*$/);
+  if (match) {
+    return { main: match[1].trim(), subtitle: `(${match[2].trim()})` };
+  }
+  return { main: name, subtitle: null };
+}
+
 // Pick the best default variant: prefer 10mg, else closest above, else first
 function pickDefaultVariant(variants: ProductItem[]): string {
   // Try to find exactly 10
@@ -300,17 +314,30 @@ export default function AgentStorefrontGrid({ products, inventoryMap, primaryCol
 
               {/* Product Details */}
               <div style={{ padding: 'var(--space-5)', flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
-                <h4 style={{
-                  marginBottom: 'var(--space-2)', fontFamily: 'var(--font-brand)',
-                  fontSize: '1.15rem', color: 'var(--white)', letterSpacing: '0.02em', lineHeight: 1.2
-                }}>
-                  {group.name}
-                </h4>
+                {(() => {
+                  const { main, subtitle } = splitProductName(group.name);
+                  return (
+                    <div style={{ textAlign: 'center', marginBottom: 'var(--space-2)' }}>
+                      <h4 style={{
+                        fontFamily: 'var(--font-brand)',
+                        fontSize: '1.15rem', color: 'var(--white)', letterSpacing: '0.02em', lineHeight: 1.2,
+                        marginBottom: subtitle ? 2 : 0
+                      }}>
+                        {main}
+                      </h4>
+                      {subtitle && (
+                        <span style={{ fontSize: '0.78rem', color: 'var(--grey-400)', fontWeight: 500 }}>
+                          {subtitle}
+                        </span>
+                      )}
+                    </div>
+                  );
+                })()}
 
                 {group.desc && (
                   <p style={{
                     fontSize: '0.82rem', color: 'var(--grey-400)', marginBottom: 'var(--space-4)',
-                    lineHeight: 1.5, flexGrow: 1,
+                    lineHeight: 1.5, flexGrow: 1, textAlign: 'center',
                     display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical',
                     overflow: 'hidden', textOverflow: 'ellipsis'
                   }}>
@@ -331,7 +358,7 @@ export default function AgentStorefrontGrid({ products, inventoryMap, primaryCol
                         const size = v.products?.unit_size ? `${v.products.unit_size}${v.products.unit_measure || ''}` : 'Standard';
                         return (
                           <option key={v.id} value={v.id}>
-                            {size}  ${Number(v.retail_price).toFixed(2)}
+                            {size}  ${roundUp(v.retail_price)}
                           </option>
                         );
                       })}
@@ -345,7 +372,7 @@ export default function AgentStorefrontGrid({ products, inventoryMap, primaryCol
                   marginTop: 'auto', borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: 'var(--space-4)'
                 }}>
                   <span style={{ fontSize: '1.3rem', fontWeight: 800, color: primaryColor, fontFamily: 'var(--font-brand)', textShadow: `0 0 10px ${primaryColor}40` }}>
-                    ${Number(activeVariant.retail_price).toFixed(2)}
+                    ${roundUp(activeVariant.retail_price)}
                   </span>
 
                   <button
@@ -434,7 +461,7 @@ export default function AgentStorefrontGrid({ products, inventoryMap, primaryCol
                             {name} {size && `(${size})`}
                           </div>
                           <div style={{ fontSize: '0.75rem', color: 'var(--grey-400)' }}>
-                            ${Number(item.retail_price).toFixed(2)} × {qty}
+                            ${roundUp(item.retail_price)} × {qty}
                           </div>
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
@@ -538,9 +565,23 @@ export default function AgentStorefrontGrid({ products, inventoryMap, primaryCol
               {/* Modal Body */}
               <div style={{ padding: 'var(--space-6) var(--space-8) var(--space-8)' }}>
                 <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 'var(--space-4)', marginBottom: 'var(--space-2)' }}>
-                  <h2 style={{ fontFamily: 'var(--font-brand)', fontSize: '1.8rem', color: 'var(--white)', lineHeight: 1.2 }}>
-                    {detailProduct.name}
-                  </h2>
+                  <div>
+                    {(() => {
+                      const { main, subtitle } = splitProductName(detailProduct.name);
+                      return (
+                        <>
+                          <h2 style={{ fontFamily: 'var(--font-brand)', fontSize: '1.8rem', color: 'var(--white)', lineHeight: 1.2 }}>
+                            {main}
+                          </h2>
+                          {subtitle && (
+                            <span style={{ fontSize: '0.9rem', color: 'var(--grey-400)', fontWeight: 500 }}>
+                              {subtitle}
+                            </span>
+                          )}
+                        </>
+                      );
+                    })()}
+                  </div>
                   <span style={{
                     fontSize: '0.7rem', padding: '4px 12px', borderRadius: 'var(--radius-full)',
                     background: `${primaryColor}20`, color: primaryColor, fontWeight: 700,
@@ -577,7 +618,7 @@ export default function AgentStorefrontGrid({ products, inventoryMap, primaryCol
                             <tr key={v.id} style={{ borderTop: '1px solid rgba(255,255,255,0.04)', background: i % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.02)' }}>
                               <td style={{ padding: '12px 16px', color: 'var(--white)', fontWeight: 600 }}>{size}</td>
                               <td style={{ padding: '12px 16px', textAlign: 'right', color: primaryColor, fontWeight: 800, fontFamily: 'var(--font-brand)', fontSize: '1.05rem' }}>
-                                ${Number(v.retail_price).toFixed(2)}
+                                ${roundUp(v.retail_price)}
                               </td>
                               <td style={{ padding: '8px 16px', textAlign: 'center' }}>
                                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
