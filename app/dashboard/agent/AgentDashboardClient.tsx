@@ -108,6 +108,9 @@ export default function AgentDashboardClient({
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [copiedStorefront, setCopiedStorefront] = useState(false);
+  
+  // Mobile Menu State
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   // Create Researcher Modal State
   const [showCreateResearcher, setShowCreateResearcher] = useState(false);
@@ -160,22 +163,7 @@ export default function AgentDashboardClient({
   // Generate QR Code once the storefront URL is loaded
   useEffect(() => {
     if (storefrontUrl) {
-      QRCode.toDataURL(
-        storefrontUrl,
-        {
-          width: 250,
-          margin: 2,
-          color: {
-            dark: '#050A0F',
-            light: '#FFFFFF',
-          },
-        },
-        (err, url) => {
-          if (!err && url) {
-            setQrCodeUrl(url);
-          }
-        }
-      );
+      setQrCodeUrl(`https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(storefrontUrl)}&color=00c4bc&bgcolor=ffffff`);
     }
   }, [storefrontUrl]);
 
@@ -335,19 +323,33 @@ export default function AgentDashboardClient({
     );
   }
 
+  const MENU_ITEMS = [
+    { id: 'Overview', label: 'Overview', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="9" /><rect x="14" y="3" width="7" height="5" /><rect x="14" y="12" width="7" height="9" /><rect x="3" y="16" width="7" height="5" /></svg> },
+    { id: 'Orders', label: 'Orders & Fulfillment', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z" /><line x1="3" y1="6" x2="21" y2="6" /><path d="M16 10a4 4 0 0 1-8 0" /></svg> },
+    { id: 'Inventory', label: 'Inventory Management', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" /><polyline points="3.27 6.96 12 12.01 20.73 6.96" /><line x1="12" y1="22.08" x2="12" y2="12" /></svg> },
+    { id: 'Ledger & Accounting', label: 'Ledger & Accounting', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" /></svg> },
+    { id: 'Sales & Carts', label: 'Sales & Charts', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17" /><polyline points="16 7 22 7 22 13" /></svg> },
+    { id: 'Researchers', label: 'Researchers', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /></svg> },
+    ...(userProfile.is_super_agent ? [{ id: 'My Sub-Agents', label: 'My Sub-Agents', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /></svg> }] : []),
+    { id: 'Coupons', label: 'Coupons', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z" /><line x1="7" y1="7" x2="7.01" y2="7" /></svg> },
+    { id: 'Store Products', label: 'Store Products', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /><line x1="16" y1="13" x2="8" y2="13" /><line x1="16" y1="17" x2="8" y2="17" /></svg> },
+    { id: 'Messages', label: 'Messages', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" /><polyline points="22,6 12,13 2,6" /></svg> },
+    { id: 'Storefront Config', label: 'Storefront Configure', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" /></svg> },
+  ];
+
   return (
     <div style={{ minHeight: '100vh', background: 'var(--black)' }}>
-      {/* Top Navbar */}
-      <nav style={{
-        height: 64,
-        background: 'var(--black-2)',
-        borderBottom: 'var(--border-silver)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        padding: '0 var(--space-6)'
-      }}>
+      {/* Mobile Top Navbar */}
+      <nav className="nav" style={{ justifyContent: 'space-between', padding: '0 var(--space-4)', display: 'flex' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)' }}>
+          <button 
+            className="btn btn-ghost btn-sm" 
+            style={{ display: 'none' }} // Visible on mobile via CSS if needed, but we'll just handle it inline below for quick fix
+            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+          >
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="3" y1="12" x2="21" y2="12" /><line x1="3" y1="6" x2="21" y2="6" /><line x1="3" y1="18" x2="21" y2="18" /></svg>
+          </button>
+          
           <Link href="/dashboard" style={{ color: 'var(--grey-400)', fontSize: '0.85rem', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 6 }}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <line x1="19" y1="12" x2="5" y2="12" />
@@ -357,55 +359,78 @@ export default function AgentDashboardClient({
           </Link>
           <div style={{ width: 1, height: 16, background: 'rgba(255,255,255,0.1)' }} />
           <span style={{ fontFamily: 'var(--font-brand)', fontSize: '0.9rem', fontWeight: 800, letterSpacing: '0.12em', color: 'var(--teal)' }}>
-            AGENT STOREFRONT PANEL
+            AGENT STOREFRONT
           </span>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)' }}>
           <span style={{ fontSize: '0.85rem', color: 'var(--silver)' }}>{agentProfile.display_name}</span>
-          <span className="badge badge-teal" style={{ fontSize: '0.7rem' }}>
-            Tier {userProfile.tier ? userProfile.tier.replace('tier_', '') : '3'}
-          </span>
+          {/* Hamburger for mobile */}
+          <button className="btn btn-ghost btn-sm" style={{ padding: '4px' }} onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="3" y1="12" x2="21" y2="12" /><line x1="3" y1="6" x2="21" y2="6" /><line x1="3" y1="18" x2="21" y2="18" /></svg>
+          </button>
         </div>
       </nav>
 
-      <div className="container" style={{ paddingTop: 'var(--space-8)', paddingBottom: 'var(--space-12)' }}>
-        {/* Status Alerts */}
-        {error && (
-          <div style={{ borderLeft: '3px solid var(--red)', background: 'var(--red-bg)', padding: 'var(--space-4)', borderRadius: '0 var(--radius-md) var(--radius-md) 0', marginBottom: 'var(--space-6)' }}>
-            <p style={{ color: 'var(--red)', fontSize: '0.85rem', margin: 0, fontWeight: 500 }}>{error}</p>
-          </div>
-        )}
-        {success && (
-          <div style={{ borderLeft: '3px solid var(--teal)', background: 'rgba(0,196,188,0.06)', padding: 'var(--space-4)', borderRadius: '0 var(--radius-md) var(--radius-md) 0', marginBottom: 'var(--space-6)' }}>
-            <p style={{ color: 'var(--teal)', fontSize: '0.85rem', margin: 0, fontWeight: 500 }}>{success}</p>
-          </div>
-        )}
-
-        {/* Tab Controls */}
-        <div style={{ display: 'flex', gap: 'var(--space-2)', borderBottom: '1px solid rgba(255,255,255,0.05)', overflowX: 'auto', paddingBottom: 1 }}>
-          {(['Overview', 'Sales & Carts', 'Researchers', ...(userProfile.is_super_agent ? ['My Sub-Agents'] : []), 'Orders', 'Store Products', 'Inventory', 'Ledger & Accounting', 'Coupons', 'Messages', 'Storefront Config'] as const).map((tab) => (
+      {/* Sidebar */}
+      <div className="sidebar" style={{ 
+        transform: isMobileMenuOpen ? 'translateX(0)' : 'translateX(-100%)',
+        transition: 'transform 0.3s ease',
+        zIndex: 50,
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'space-between'
+      }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          {MENU_ITEMS.map((item) => (
             <button
-              key={tab}
-              onClick={() => { setActiveTab(tab as any); setError(null); setSuccess(null); }}
-              style={{
-                background: 'none',
-                border: 'none',
-                padding: 'var(--space-3) var(--space-4)',
-                fontFamily: 'var(--font-brand)',
-                fontSize: '0.85rem',
-                fontWeight: 600,
-                color: activeTab === tab ? 'var(--teal)' : 'var(--grey-400)',
-                borderBottom: activeTab === tab ? '2px solid var(--teal)' : '2px solid transparent',
-                cursor: 'pointer',
-                transition: 'all 0.25s ease',
-                letterSpacing: '0.05em',
-                textTransform: 'uppercase'
-              }}
+              key={item.id}
+              onClick={() => { setActiveTab(item.id as any); setIsMobileMenuOpen(false); setError(null); setSuccess(null); }}
+              className={`sidebar-nav-item ${activeTab === item.id ? 'active' : ''}`}
+              style={{ background: 'transparent', width: '100%', textAlign: 'left', border: 'none', borderLeft: activeTab === item.id ? '3px solid var(--teal)' : '3px solid transparent' }}
             >
-              {tab}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', width: '100%' }}>
+                {item.icon}
+                <span style={{ fontSize: '0.85rem', fontFamily: 'var(--font-brand)', letterSpacing: '0.05em' }}>{item.label}</span>
+              </div>
             </button>
           ))}
         </div>
+
+        <div style={{ padding: 'var(--space-4)' }}>
+          <form action="/api/auth/signout" method="post">
+            <button type="submit" className="sidebar-nav-item" style={{ width: '100%', background: 'transparent', border: 'none', color: 'var(--red)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                  <polyline points="16 17 21 12 16 7" />
+                  <line x1="21" y1="12" x2="9" y2="12" />
+                </svg>
+                <span style={{ fontSize: '0.85rem', fontFamily: 'var(--font-brand)', letterSpacing: '0.05em' }}>Sign Out</span>
+              </div>
+            </button>
+          </form>
+        </div>
+      </div>
+
+      <style dangerouslySetInnerHTML={{__html: `
+        @media (min-width: 1024px) {
+          .sidebar { transform: translateX(0) !important; }
+        }
+      `}} />
+
+      <div className="dashboard-main" style={{ minHeight: '100vh' }}>
+        <div className="container" style={{ paddingTop: 'var(--space-8)', paddingBottom: 'var(--space-12)' }}>
+          {/* Status Alerts */}
+          {error && (
+            <div style={{ borderLeft: '3px solid var(--red)', background: 'var(--red-bg)', padding: 'var(--space-4)', borderRadius: '0 var(--radius-md) var(--radius-md) 0', marginBottom: 'var(--space-6)' }}>
+              <p style={{ color: 'var(--red)', fontSize: '0.85rem', margin: 0, fontWeight: 500 }}>{error}</p>
+            </div>
+          )}
+          {success && (
+            <div style={{ borderLeft: '3px solid var(--teal)', background: 'rgba(0,196,188,0.06)', padding: 'var(--space-4)', borderRadius: '0 var(--radius-md) var(--radius-md) 0', marginBottom: 'var(--space-6)' }}>
+              <p style={{ color: 'var(--teal)', fontSize: '0.85rem', margin: 0, fontWeight: 500 }}>{success}</p>
+            </div>
+          )}
 
         {/* Sales & Live Carts Tab */}
         {activeTab === 'Sales & Carts' && (
@@ -450,10 +475,15 @@ export default function AgentDashboardClient({
               activeOrdersCount={activeOrdersCount}
               totalRevenue={totalRevenue}
               storefrontUrl={storefrontUrl}
-              copyStorefrontLink={copyStorefrontLink}
+              copyStorefrontLink={() => {
+                navigator.clipboard.writeText(storefrontUrl);
+                setCopiedStorefront(true);
+                setTimeout(() => setCopiedStorefront(false), 2000);
+              }}
               copiedStorefront={copiedStorefront}
               qrCodeUrl={qrCodeUrl}
               agentProfile={agentProfile}
+              orders={orders}
             />
           </div>
         )}
@@ -632,6 +662,7 @@ export default function AgentDashboardClient({
             />
           </div>
         )}
+      </div>
       </div>
     </div>
   );

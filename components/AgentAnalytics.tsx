@@ -3,34 +3,46 @@
 import React, { useState, useEffect } from 'react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
-export default function AgentAnalytics({ agentId }: { agentId: string }) {
+export default function AgentAnalytics({ agentId, orders }: { agentId: string, orders: any[] }) {
   const [salesData, setSalesData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Generate mock agent sales data for demonstration. 
-    // In production, this would query orders where agent_id = agentId or downline sales.
+    // Generate real agent sales data for the last 14 days
     const generateData = () => {
       const data = [];
-      let baseline = 50;
-      for (let i = 14; i >= 0; i--) {
-        const d = new Date();
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      for (let i = 13; i >= 0; i--) {
+        const d = new Date(today);
         d.setDate(d.getDate() - i);
-        baseline += Math.floor(Math.random() * 30) - 10;
-        if (baseline < 10) baseline = 10;
+        const nextDay = new Date(d);
+        nextDay.setDate(nextDay.getDate() + 1);
+
+        // Find all orders created on this day
+        const dayOrders = orders.filter(o => {
+          const orderDate = new Date(o.created_at);
+          return orderDate >= d && orderDate < nextDay;
+        });
+
+        // Sum the totals
+        const dayTotal = dayOrders.reduce((sum, o) => sum + (o.total || 0), 0);
         
         data.push({
           date: d.toISOString().split('T')[0].substring(5),
-          sales: baseline,
-          commission: Math.floor(baseline * 0.15)
+          sales: dayTotal,
+          commission: dayTotal * 0.15 // Example 15% commission, adjust as needed
         });
       }
       return data;
     };
 
-    setSalesData(generateData());
-    setLoading(false);
-  }, [agentId]);
+    if (orders) {
+      setSalesData(generateData());
+      setLoading(false);
+    }
+  }, [agentId, orders]);
 
   if (loading) {
     return <div className="skeleton" style={{ height: 250, width: '100%', borderRadius: 16 }} />;

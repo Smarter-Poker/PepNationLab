@@ -11,6 +11,7 @@ interface AgentOverviewProps {
   copiedStorefront: boolean;
   qrCodeUrl: string;
   agentProfile: any;
+  orders: any[];
 }
 
 export default function AgentOverview({
@@ -21,7 +22,8 @@ export default function AgentOverview({
   copyStorefrontLink,
   copiedStorefront,
   qrCodeUrl,
-  agentProfile
+  agentProfile,
+  orders
 }: AgentOverviewProps) {
   return (
     <div style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: 'var(--space-8)' }}>
@@ -51,7 +53,7 @@ export default function AgentOverview({
         </div>
 
         {/* Sales Chart */}
-        <AgentAnalytics agentId={agentProfile.id} />
+        <AgentAnalytics agentId={agentProfile.id} orders={orders} />
 
         {/* URL and quick links card */}
         <div className="card-metal" style={{ padding: 'var(--space-6)' }}>

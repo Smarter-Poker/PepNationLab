@@ -59,6 +59,23 @@ export default async function AgentStorefrontPage({ params }: Props) {
     .eq('is_visible', true)
     .order('sort_order');
 
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) {
+    // Note: We MUST use dynamic import or just render the client component directly.
+    // The component is already marked 'use client'
+    const AgentStorefrontLogin = (await import('@/components/AgentStorefrontLogin')).default;
+    return (
+      <AgentStorefrontLogin 
+        agentSlug={agentSlug} 
+        displayName={agent.display_name} 
+        primaryColor={agent.primary_color ?? '#00C4BC'} 
+        logoUrl={agent.logo_url} 
+        tagline={agent.tagline} 
+      />
+    );
+  }
+
   const { data: inventory } = await supabase
     .from('agent_inventory')
     .select('product_id, stock_count')
