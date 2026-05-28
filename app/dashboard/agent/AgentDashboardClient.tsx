@@ -319,6 +319,14 @@ export default function AgentDashboardClient({
               {loading ? 'Activating Profile...' : 'Activate Storefront Catalog'}
             </button>
           </form>
+
+          <div style={{ marginTop: 'var(--space-6)', textAlign: 'center' }}>
+            <form action="/api/auth/signout" method="post">
+              <button type="submit" className="btn btn-ghost btn-sm" style={{ color: 'var(--grey-400)' }}>
+                Sign Out
+              </button>
+            </form>
+          </div>
         </div>
       </div>
     );
