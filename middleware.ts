@@ -8,7 +8,18 @@ import { NextResponse, type NextRequest } from 'next/server';
 // ────────────────────────────────────────────────────────────────────────────
 
 // Routes that are always public (no auth required)
-const PUBLIC_ROUTES = ['/login', '/forgot-password', '/become-agent', '/about', '/terms', '/privacy', '/compliance', '/api/auth/resolve', '/api/auth/signout', '/api/auth/register'];
+const PUBLIC_ROUTES = [
+  '/login',
+  '/forgot-password',
+  '/become-agent',
+  '/about',
+  '/terms',
+  '/privacy',
+  '/compliance',
+  '/disclaimer',
+  '/api/auth/resolve',
+  '/api/auth/signout',
+];
 
 // Dynamic route check — agent storefronts are public
 // e.g. /midway, /orlando-peps, etc. (but NOT /admin, /dashboard, /api, etc.)
@@ -53,12 +64,12 @@ export default async function proxy(request: NextRequest) {
           return request.cookies.getAll();
         },
         setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value }) =>
-            request.cookies.set(name, value)
+          cookiesToSet.forEach(({ name, value, options }) =>
+            request.cookies.set({ name, value, ...options })
           );
           supabaseResponse = NextResponse.next({ request });
           cookiesToSet.forEach(({ name, value, options }) =>
-            supabaseResponse.cookies.set(name, value, options)
+            supabaseResponse.cookies.set({ name, value, ...options })
           );
         },
       },
@@ -77,9 +88,16 @@ export default async function proxy(request: NextRequest) {
       // We use a lightweight DB read with the anon key (RLS allows user to read own profile)
       const { data: profile } = await supabase
         .from('profiles')
-        .select('role')
+        .select('role, is_active')
         .eq('id', user.id)
         .single();
+      if (profile?.is_active === false) {
+        await supabase.auth.signOut();
+        const loginUrl = request.nextUrl.clone();
+        loginUrl.pathname = '/login';
+        loginUrl.searchParams.set('error', 'account_disabled');
+        return NextResponse.redirect(loginUrl);
+      }
       url.pathname = profile?.role === 'admin' ? '/admin' : '/dashboard';
       return NextResponse.redirect(url);
     }
@@ -92,6 +110,25 @@ export default async function proxy(request: NextRequest) {
     url.pathname = '/login';
     // Preserve the intended destination so we can redirect after login
     url.searchParams.set('redirect', pathname);
+    return NextResponse.redirect(url);
+  }
+
+  // Verify the account is still active. Disabled accounts are signed out immediately.
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('is_active')
+    .eq('id', user.id)
+    .single();
+
+  if (profile?.is_active === false) {
+    await supabase.auth.signOut();
+    if (pathname.startsWith('/api')) {
+      return NextResponse.json({ error: 'Account Disabled' }, { status: 401 });
+    }
+    const url = request.nextUrl.clone();
+    url.pathname = '/login';
+    url.search = '';
+    url.searchParams.set('error', 'account_disabled');
     return NextResponse.redirect(url);
   }
 

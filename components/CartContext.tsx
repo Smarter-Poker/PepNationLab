@@ -30,10 +30,20 @@ interface CartContextType {
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
+const DISCLAIMER_VERSION = process.env.NEXT_PUBLIC_DISCLAIMER_VERSION || 'v1.0';
+const ADD_TO_CART_ACK_KEY = `pnl_addtocart_${DISCLAIMER_VERSION}`;
+
+interface PendingAddition {
+  product: Omit<CartItem, 'quantity'>;
+  quantity: number;
+}
+
 export function CartProvider({ children }: { children: React.ReactNode }) {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [loaded, setLoaded] = useState(false);
+  const [addToCartAcknowledged, setAddToCartAcknowledged] = useState(false);
+  const [pendingAddition, setPendingAddition] = useState<PendingAddition | null>(null);
 
   // Load from local storage
   useEffect(() => {
@@ -42,6 +52,9 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       if (stored) {
         setCart(JSON.parse(stored));
       }
+      setAddToCartAcknowledged(
+        localStorage.getItem(ADD_TO_CART_ACK_KEY) === 'true'
+      );
     } catch (e) {
       console.error('Failed To Load Cart From Local Storage:', e);
     }
@@ -52,7 +65,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (loaded) {
       localStorage.setItem('pnl_cart', JSON.stringify(cart));
-      
+
       // Background sync to database for Live Carts feature
       fetch('/api/cart/sync', {
         method: 'POST',
@@ -62,7 +75,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     }
   }, [cart, loaded]);
 
-  const addToCart = (product: Omit<CartItem, 'quantity'>, quantity = 1) => {
+  const commitAddition = (product: Omit<CartItem, 'quantity'>, quantity: number) => {
     setCart(prev => {
       const existing = prev.find(item => item.id === product.id);
       if (existing) {
@@ -75,6 +88,41 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       return [...prev, { ...product, quantity }];
     });
     setIsCartOpen(true);
+  };
+
+  const addToCart = (product: Omit<CartItem, 'quantity'>, quantity = 1) => {
+    if (!addToCartAcknowledged) {
+      // Defer the addition until the user passes the Layer 3 (add_to_cart)
+      // acknowledgment. We do NOT mutate the cart yet.
+      setPendingAddition({ product, quantity });
+      return;
+    }
+    commitAddition(product, quantity);
+  };
+
+  const acceptAddToCart = () => {
+    try {
+      localStorage.setItem(ADD_TO_CART_ACK_KEY, 'true');
+    } catch (e) {
+      console.error('Failed To Persist Add To Cart Acknowledgment:', e);
+    }
+    setAddToCartAcknowledged(true);
+
+    // Best-effort compliance log; failure must not block the shopper.
+    fetch('/api/disclaimer-log', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ layer: 'add_to_cart' }),
+    }).catch(() => { /* logging is non-blocking */ });
+
+    if (pendingAddition) {
+      commitAddition(pendingAddition.product, pendingAddition.quantity);
+      setPendingAddition(null);
+    }
+  };
+
+  const cancelAddToCart = () => {
+    setPendingAddition(null);
   };
 
   const removeFromCart = (productId: string) => {
@@ -97,8 +145,8 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
   const cartCount = cart.reduce((acc, item) => acc + item.quantity, 0);
   const cartSubtotal = cart.reduce((acc, item) => {
-    const activePrice = (item.bulkCostPrice && item.bulkThreshold && item.quantity >= item.bulkThreshold) 
-      ? item.bulkCostPrice 
+    const activePrice = (item.bulkCostPrice && item.bulkThreshold && item.quantity >= item.bulkThreshold)
+      ? item.bulkCostPrice
       : item.costPrice;
     return acc + activePrice * item.quantity;
   }, 0);
@@ -119,9 +167,102 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     >
       {children}
       <AnimatePresence>
+        {pendingAddition && (
+          <AddToCartAcknowledgment
+            productName={pendingAddition.product.name}
+            onAccept={acceptAddToCart}
+            onCancel={cancelAddToCart}
+          />
+        )}
+      </AnimatePresence>
+      <AnimatePresence>
         {isCartOpen && <CartDrawer />}
       </AnimatePresence>
     </CartContext.Provider>
+  );
+}
+
+function AddToCartAcknowledgment({
+  productName,
+  onAccept,
+  onCancel,
+}: {
+  productName: string;
+  onAccept: () => void;
+  onCancel: () => void;
+}) {
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      style={{
+        position: 'fixed',
+        inset: 0,
+        zIndex: 200,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        background: 'rgba(5, 10, 15, 0.85)',
+        backdropFilter: 'blur(8px)',
+        padding: 'var(--space-4)',
+      }}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="add-to-cart-ack-title"
+    >
+      <motion.div
+        initial={{ y: 20, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        exit={{ y: 20, opacity: 0 }}
+        className="card-glass"
+        style={{
+          maxWidth: 520,
+          width: '100%',
+          padding: 'var(--space-6)',
+          borderRadius: 'var(--radius-lg)',
+          border: '1px solid rgba(0, 196, 188, 0.4)',
+          boxShadow: '0 20px 50px rgba(0, 0, 0, 0.5), 0 0 30px rgba(0, 196, 188, 0.2)',
+        }}
+      >
+        <h2
+          id="add-to-cart-ack-title"
+          style={{
+            fontFamily: 'var(--font-brand)',
+            color: 'var(--teal)',
+            margin: '0 0 var(--space-4) 0',
+            fontSize: '1.25rem',
+            letterSpacing: '0.04em',
+          }}
+        >
+          Research Use Only Acknowledgment
+        </h2>
+        <p style={{ color: 'var(--silver)', margin: '0 0 var(--space-3) 0', fontSize: '0.95rem', lineHeight: 1.55 }}>
+          You Are About To Add &quot;{productName}&quot; To Your Cart. All Compounds Sold On This Platform Are Strictly For Laboratory And Research Use.
+        </p>
+        <p style={{ color: 'var(--silver)', margin: '0 0 var(--space-5) 0', fontSize: '0.95rem', lineHeight: 1.55 }}>
+          These Materials Are Not For Human Consumption, Diagnostic Use, Therapeutic Use, Or Veterinary Use. By Continuing, You Confirm You Are A Qualified Researcher Acting Within Your Jurisdiction.
+        </p>
+        <div style={{ display: 'flex', gap: 'var(--space-3)', justifyContent: 'flex-end', flexWrap: 'wrap' }}>
+          <button
+            type="button"
+            onClick={onCancel}
+            className="btn btn-secondary"
+            style={{ minWidth: 120, justifyContent: 'center' }}
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            onClick={onAccept}
+            className="btn btn-primary"
+            style={{ minWidth: 220, justifyContent: 'center' }}
+          >
+            I Acknowledge And Add To Cart
+          </button>
+        </div>
+      </motion.div>
+    </motion.div>
   );
 }
 

@@ -296,6 +296,34 @@ export async function POST(request: Request) {
 
     const total = Math.max(0, subtotal - discountAmount) + shippingCost;
 
+    // Record the Layer 4 (checkout) disclaimer audit row BEFORE the order
+    // insert. If the audit fails we refuse to place the order — research-only
+    // compliance requires the four-layer trail to be intact for every sale.
+    const disclaimerVersion = process.env.NEXT_PUBLIC_DISCLAIMER_VERSION || 'v1.0';
+    const checkoutIp =
+      request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
+      request.headers.get('x-real-ip') ||
+      null;
+    const checkoutUserAgent = request.headers.get('user-agent') || null;
+
+    const { error: disclaimerError } = await serviceSupabase
+      .from('disclaimer_acceptances')
+      .insert({
+        user_id: user.id,
+        disclaimer_version: disclaimerVersion,
+        layer: 'checkout',
+        user_agent: checkoutUserAgent,
+        ip_address: checkoutIp,
+      });
+
+    if (disclaimerError) {
+      console.error('Checkout Disclaimer Audit Insert Failed:', disclaimerError);
+      return NextResponse.json(
+        { error: 'Disclaimer audit failed; order not placed.' },
+        { status: 500 }
+      );
+    }
+
     // Create checkout order
     const { data: order, error: orderError } = await serviceSupabase
       .from('orders')
@@ -361,13 +389,8 @@ export async function POST(request: Request) {
       }
     }
 
-    await serviceSupabase.from('disclaimer_acceptances').insert({
-      user_id: user.id,
-      disclaimer_version: process.env.NEXT_PUBLIC_DISCLAIMER_VERSION ?? 'v1.0',
-      layer: 'checkout',
-      user_agent: request.headers.get('user-agent') || 'Unknown',
-      ip_address: request.headers.get('x-forwarded-for') || '127.0.0.1'
-    });
+    // Checkout disclaimer audit row was recorded above, prior to the order
+    // insert, so a successful order implies a complete four-layer trail.
 
     return NextResponse.json({ success: true, orderId: order.id });
 

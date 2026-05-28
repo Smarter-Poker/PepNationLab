@@ -20,16 +20,19 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ email: username });
   }
 
-  const { data, error } = await supabase
+  const { data } = await supabase
     .from('profiles')
     .select('email')
     .eq('username', username)
     .eq('is_active', true)
-    .single();
+    .maybeSingle();
 
-  if (error || !data?.email) {
-    // Return a generic error — don't reveal whether the username exists
-    return NextResponse.json({ error: 'Invalid Username Or Password' }, { status: 404 });
+  if (!data?.email) {
+    // Do NOT reveal whether the username exists. Return a synthetic email so
+    // the downstream password check fails uniformly with the same shape as a
+    // wrong-password attempt on a real account.
+    const safeUsername = username.toLowerCase().replace(/[^a-z0-9_.-]/g, '');
+    return NextResponse.json({ email: `${safeUsername}@nodom.invalid` });
   }
 
   return NextResponse.json({ email: data.email });

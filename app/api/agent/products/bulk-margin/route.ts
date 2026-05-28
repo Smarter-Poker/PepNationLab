@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
 import { requireAgent } from '@/lib/admin-auth';
+import { computeAgentCost, type AgentTier } from '@/lib/pricing';
 
 export async function POST(req: NextRequest) {
   try {
@@ -11,44 +12,56 @@ export async function POST(req: NextRequest) {
     const agentId = gate.user.id;
     const { marginPercent } = await req.json();
 
-    if (marginPercent === undefined || typeof marginPercent !== 'number' || marginPercent < 0) {
-      return NextResponse.json({ error: 'Invalid margin percentage' }, { status: 400 });
+    if (
+      marginPercent === undefined ||
+      typeof marginPercent !== 'number' ||
+      !Number.isFinite(marginPercent) ||
+      marginPercent <= 0
+    ) {
+      return NextResponse.json(
+        { error: 'Margin Percentage Must Be Greater Than Zero.' },
+        { status: 400 }
+      );
     }
 
-    // Fetch all products for this agent to calculate new prices
+    // Resolve the agent's tier so we can compute their wholesale cost per SKU.
+    const { data: agentProfile, error: profileError } = await supabase
+      .from('profiles')
+      .select('tier')
+      .eq('id', agentId)
+      .single();
+
+    if (profileError || !agentProfile) {
+      return NextResponse.json({ error: 'Agent Profile Not Found.' }, { status: 404 });
+    }
+
+    const tier = (agentProfile.tier as AgentTier | null) ?? 'tier_3';
+
     const { data: agentProducts, error: fetchError } = await supabase
       .from('agent_products')
-      .select(`
-        id,
-        products ( base_cost )
-      `)
+      .select('id, product_id')
       .eq('agent_id', agentId);
 
     if (fetchError || !agentProducts) {
-      return NextResponse.json({ error: 'Failed to fetch products' }, { status: 500 });
+      return NextResponse.json({ error: 'Failed To Fetch Products.' }, { status: 500 });
     }
 
-    // Prepare updates
-    const updates = agentProducts.map(ap => {
-      // Assuming base_cost is the agent's wholesale cost 
-      // If there's a tier multiplier, it should ideally be factored in, but for now we apply the margin on top of the base_cost as a quick implementation.
-      // Wait! The wholesale cost is usually base_cost + tier markup. 
-      // Since we don't have the agent tier markup logic fully abstracted here, 
-      // let's just let the user know this is base margin, or we can fetch the tier.
-      
-      const baseCost = Number((ap.products as any)?.base_cost || 0);
-      const retailPrice = baseCost * (1 + (marginPercent / 100));
+    // Compute each agent's wholesale cost (base_cost * tier multiplier or
+    // per-product override) and apply the requested margin on top.
+    const updates = await Promise.all(
+      agentProducts
+        .filter(ap => ap.product_id)
+        .map(async ap => {
+          const agentCost = await computeAgentCost(supabase, ap.product_id as string, tier);
+          const retailPrice = Number(
+            (agentCost * (1 + marginPercent / 100)).toFixed(2)
+          );
+          return { id: ap.id, retail_price: retailPrice };
+        })
+    );
 
-      return {
-        id: ap.id,
-        retail_price: Number(retailPrice.toFixed(2))
-      };
-    });
-
-    // Supabase JS doesn't have bulk update without iterating or using a stored procedure in this context easily.
-    // So we'll iterate with Promise.all
     const results = await Promise.all(
-      updates.map(update => 
+      updates.map(update =>
         supabase
           .from('agent_products')
           .update({ retail_price: update.retail_price })
@@ -58,10 +71,10 @@ export async function POST(req: NextRequest) {
 
     const hasError = results.some(res => res.error);
     if (hasError) {
-      return NextResponse.json({ error: 'Failed to update some products' }, { status: 500 });
+      return NextResponse.json({ error: 'Failed To Update Some Products.' }, { status: 500 });
     }
 
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ success: true, updated: updates.length });
   } catch (error) {
     console.error('Bulk Margin API Error:', error);
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
