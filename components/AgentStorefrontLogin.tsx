@@ -9,6 +9,7 @@ interface Props {
   primaryColor: string;
   logoUrl?: string | null;
   tagline?: string | null;
+  errorMessage?: string | null;
 }
 
 export default function AgentStorefrontLogin({
@@ -16,14 +17,15 @@ export default function AgentStorefrontLogin({
   displayName,
   primaryColor,
   logoUrl,
-  tagline
+  tagline,
+  errorMessage
 }: Props) {
   const [mode, setMode] = useState<'login' | 'register'>('login');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(errorMessage || null);
   const [success, setSuccess] = useState<string | null>(null);
 
   async function handleLogin(e: React.FormEvent) {

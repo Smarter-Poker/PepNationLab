@@ -11,8 +11,7 @@ export async function GET(req: NextRequest) {
 
   const { data, error } = await supabase
     .from('product_tier_overrides')
-    .select('id, product_id, tier_name, custom_multiplier, products(name)')
-    .order('created_at', { ascending: false });
+    .select('id, product_id, tier_name, custom_multiplier, products(name)');
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
@@ -51,8 +50,7 @@ export async function POST(req: NextRequest) {
       {
         product_id,
         tier_name,
-        custom_multiplier,
-        updated_at: new Date().toISOString()
+        custom_multiplier
       },
       { onConflict: 'product_id,tier_name' }
     );

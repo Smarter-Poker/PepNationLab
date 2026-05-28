@@ -24,7 +24,7 @@ export async function GET(req: NextRequest) {
   return NextResponse.json({ data });
 }
 
-// POST: Create a brand-new agent directly (no registration required)
+// POST: Create a brand-new agent or researcher directly (no registration required)
 export async function POST(req: NextRequest) {
   const gate = await requireAdmin();
   if (!gate.ok) return gate.response;
@@ -44,11 +44,23 @@ export async function POST(req: NextRequest) {
     display_name,
     tagline,
     bio,
+    account_role = 'agent',
+    parent_agent_id,
   } = body;
 
-  // Validate required fields
-  if (!full_name || !username || !password || !tier || !account_type || !slug || !display_name) {
+  const isResearcher = account_role === 'researcher';
+
+  // Validate required fields (slug/display_name not required for researchers)
+  if (!full_name || !username || !password) {
     return NextResponse.json({ error: 'Missing Required Fields' }, { status: 400 });
+  }
+
+  if (!isResearcher && (!tier || !account_type || !slug || !display_name)) {
+    return NextResponse.json({ error: 'Missing Required Agent Fields (Tier, Billing, Slug, Display Name)' }, { status: 400 });
+  }
+
+  if (isResearcher && !parent_agent_id) {
+    return NextResponse.json({ error: 'Researcher Accounts Must Be Assigned To An Agent' }, { status: 400 });
   }
 
   if (password.length < 8) {
@@ -63,9 +75,11 @@ export async function POST(req: NextRequest) {
   // Internal email used for Supabase auth only — users never see this
   const internalEmail = `${usernameClean}@pepnationlab.com`;
 
-  const slugRegex = /^[a-z0-9\-]+$/;
-  if (!slugRegex.test(slug)) {
-    return NextResponse.json({ error: 'Slug Must Contain Lowercase Letters, Numbers, And Hyphens Only' }, { status: 400 });
+  if (!isResearcher) {
+    const slugRegex = /^[a-z0-9\-]+$/;
+    if (!slugRegex.test(slug)) {
+      return NextResponse.json({ error: 'Slug Must Contain Lowercase Letters, Numbers, And Hyphens Only' }, { status: 400 });
+    }
   }
 
   // Check username uniqueness
@@ -79,15 +93,17 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'This Username Is Already Taken' }, { status: 400 });
   }
 
-  // Check slug uniqueness
-  const { data: existingSlug } = await supabase
-    .from('agent_profiles')
-    .select('id')
-    .eq('slug', slug)
-    .maybeSingle();
+  // Check slug uniqueness (only for agents)
+  if (!isResearcher && slug) {
+    const { data: existingSlug } = await supabase
+      .from('agent_profiles')
+      .select('id')
+      .eq('slug', slug)
+      .maybeSingle();
 
-  if (existingSlug) {
-    return NextResponse.json({ error: 'This Storefront Slug Is Already Taken' }, { status: 400 });
+    if (existingSlug) {
+      return NextResponse.json({ error: 'This Storefront Slug Is Already Taken' }, { status: 400 });
+    }
   }
 
   // 1. Create the Supabase Auth user using the admin API (service role key)
@@ -106,29 +122,35 @@ export async function POST(req: NextRequest) {
 
   const userId = authData.user.id;
 
-  // 2. Upsert the profile (the trigger may have already created a shell row)
-  const profileData = {
+  // 2. Upsert the profile
+  const profileRole = account_role === 'super_agent' ? 'agent' : account_role;
+  const profileData: Record<string, any> = {
     id: userId,
     email: internalEmail,
     username: usernameClean,
     full_name,
-    role: 'agent',
-    tier,
-    account_type,
-    credit_limit: account_type === 'credit' ? (Number(credit_limit) || null) : null,
-    prepaid_balance: account_type === 'prepaid' ? (Number(prepaid_balance) || 0) : 0,
+    role: profileRole,
     disclaimer_v1_accepted: true,
     disclaimer_accepted_at: new Date().toISOString(),
     is_active: true,
     updated_at: new Date().toISOString(),
   };
 
+  if (isResearcher) {
+    profileData.parent_agent_id = parent_agent_id;
+  } else {
+    profileData.tier = tier;
+    profileData.account_type = account_type;
+    profileData.credit_limit = account_type === 'credit' ? (Number(credit_limit) || null) : null;
+    profileData.prepaid_balance = account_type === 'prepaid' ? (Number(prepaid_balance) || 0) : 0;
+    profileData.is_super_agent = account_role === 'super_agent';
+  }
+
   const { error: profileError } = await supabase
     .from('profiles')
     .upsert(profileData);
 
   if (profileError) {
-    // Clean up the auth user if profile creation fails
     await supabase.auth.admin.deleteUser(userId);
     return NextResponse.json(
       { error: `Profile Creation Failed: ${profileError.message}` },
@@ -136,29 +158,32 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // 3. Create the agent_profiles storefront record
-  const storefrontUrl = `${APP_URL}/${slug}`;
-  const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&color=00c4bc&bgcolor=0a1018&data=${encodeURIComponent(storefrontUrl)}`;
+  // 3. Create the agent_profiles storefront record (agents only, not researchers)
+  if (!isResearcher) {
+    const storefrontUrl = `${APP_URL}/${slug}`;
+    const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&color=00c4bc&bgcolor=0a1018&data=${encodeURIComponent(storefrontUrl)}`;
 
-  const { error: agentError } = await supabase
-    .from('agent_profiles')
-    .insert({
-      id: userId,
-      slug,
-      display_name,
-      tagline: tagline || null,
-      bio: bio || null,
-      qr_code_url: qrCodeUrl,
-      is_active: true,
-    });
+    const { error: agentError } = await supabase
+      .from('agent_profiles')
+      .insert({
+        id: userId,
+        slug,
+        display_name,
+        tagline: tagline || null,
+        bio: bio || null,
+        qr_code_url: qrCodeUrl,
+        is_active: true,
+      });
 
-  if (agentError) {
-    await supabase.auth.admin.deleteUser(userId);
-    return NextResponse.json(
-      { error: `Storefront Creation Failed: ${agentError.message}` },
-      { status: 500 }
-    );
+    if (agentError) {
+      await supabase.auth.admin.deleteUser(userId);
+      return NextResponse.json(
+        { error: `Storefront Creation Failed: ${agentError.message}` },
+        { status: 500 }
+      );
+    }
   }
 
-  return NextResponse.json({ success: true, userId, username: usernameClean });
+  const roleLabel = isResearcher ? 'Researcher' : account_role === 'super_agent' ? 'Super Agent' : 'Agent';
+  return NextResponse.json({ success: true, userId, username: usernameClean, role: roleLabel });
 }

@@ -73,6 +73,31 @@ export default async function AgentStorefrontPage({ params }: Props) {
     );
   }
 
+  // Check if logged-in researcher belongs to THIS agent
+  const { data: userProfile } = await supabase
+    .from('profiles')
+    .select('role, parent_agent_id')
+    .eq('id', user.id)
+    .single();
+
+  // If researcher, verify they belong to this agent — strict isolation
+  if (userProfile?.role === 'researcher') {
+    if (userProfile.parent_agent_id !== agent.id) {
+      // This researcher doesn't belong to this agent's store — show login wall
+      const AgentStorefrontLogin = (await import('@/components/AgentStorefrontLogin')).default;
+      return (
+        <AgentStorefrontLogin 
+          agentSlug={agentSlug} 
+          displayName={agent.display_name} 
+          primaryColor={agent.primary_color ?? '#00C4BC'} 
+          logoUrl={agent.logo_url} 
+          tagline={agent.tagline}
+          errorMessage="This Account Belongs To A Different Agent. Please Create An Account Or Sign In With Credentials For This Store."
+        />
+      );
+    }
+  }
+
   const { data: inventory } = await supabase
     .from('agent_inventory')
     .select('product_id, stock_count')

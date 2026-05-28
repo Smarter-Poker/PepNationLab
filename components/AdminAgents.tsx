@@ -29,6 +29,8 @@ export default function AdminAgents() {
     display_name: '',
     tagline: '',
     bio: '',
+    account_role: 'agent',
+    parent_agent_id: '',
   });
   const [isCreating, setIsCreating] = useState(false);
 
@@ -136,7 +138,7 @@ export default function AdminAgents() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to create agent');
-      toast.success(`Agent "${createForm.full_name}" created successfully!`);
+      toast.success(`${createForm.account_role === 'researcher' ? 'Researcher' : 'Agent'} "${createForm.full_name}" created successfully!`);
       setShowCreateModal(false);
       setCreateForm({
         full_name: '',
@@ -150,6 +152,8 @@ export default function AdminAgents() {
         display_name: '',
         tagline: '',
         bio: '',
+        account_role: 'agent',
+        parent_agent_id: '',
       });
       setUsernameStatus('idle');
       setSlugStatus('idle');
@@ -445,6 +449,40 @@ export default function AdminAgents() {
                 />
               </div>
 
+              {/* Account Role */}
+              <div className="form-group" style={{ marginBottom: 'var(--space-4)' }}>
+                <label className="form-label" style={{ display: 'block', marginBottom: 'var(--space-1)' }}>Account Type</label>
+                <select
+                  className="form-input"
+                  value={createForm.account_role}
+                  onChange={e => handleCreateFormChange('account_role', e.target.value)}
+                  style={{ width: '100%' }}
+                >
+                  <option value="agent">Agent</option>
+                  <option value="super_agent">Super Agent</option>
+                  <option value="researcher">Researcher</option>
+                </select>
+              </div>
+
+              {/* Parent Agent (for researchers only) */}
+              {createForm.account_role === 'researcher' && (
+                <div className="form-group" style={{ marginBottom: 'var(--space-4)' }}>
+                  <label className="form-label" style={{ display: 'block', marginBottom: 'var(--space-1)' }}>Assign To Agent</label>
+                  <select
+                    className="form-input"
+                    value={createForm.parent_agent_id}
+                    onChange={e => handleCreateFormChange('parent_agent_id', e.target.value)}
+                    required
+                    style={{ width: '100%' }}
+                  >
+                    <option value="">Select An Agent...</option>
+                    {agents.map(a => (
+                      <option key={a.id} value={a.id}>{a.full_name}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
               {/* Username */}
               <div className="form-group" style={{ marginBottom: 'var(--space-4)' }}>
                 <label className="form-label" style={{ display: 'block', marginBottom: 'var(--space-1)' }}>Username</label>
@@ -475,7 +513,8 @@ export default function AdminAgents() {
                 />
               </div>
 
-              {/* Tier & Billing Mode — side by side */}
+              {/* Tier & Billing Mode — side by side (agents only) */}
+              {createForm.account_role !== 'researcher' && (
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-4)', marginBottom: 'var(--space-4)' }}>
                 <div className="form-group">
                   <label className="form-label" style={{ display: 'block', marginBottom: 'var(--space-1)' }}>Tier</label>
@@ -503,8 +542,11 @@ export default function AdminAgents() {
                   </select>
                 </div>
               </div>
+              )}
 
-              {/* Conditional: Balance or Credit Limit */}
+              {/* Conditional: Balance or Credit Limit (agents only) */}
+              {createForm.account_role !== 'researcher' && (
+              <>
               {createForm.account_type === 'prepaid' ? (
                 <div className="form-group" style={{ marginBottom: 'var(--space-4)' }}>
                   <label className="form-label" style={{ display: 'block', marginBottom: 'var(--space-1)' }}>Starting Balance ($)</label>
@@ -587,6 +629,8 @@ export default function AdminAgents() {
                   style={{ width: '100%', resize: 'vertical' }}
                 />
               </div>
+              </>
+              )}
 
               {/* Actions */}
               <div style={{ display: 'flex', gap: 'var(--space-3)', justifyContent: 'flex-end' }}>
@@ -605,9 +649,9 @@ export default function AdminAgents() {
                 <button
                   type="submit"
                   className="btn btn-primary"
-                  disabled={isCreating || usernameStatus === 'taken' || slugStatus === 'taken'}
+                  disabled={isCreating || usernameStatus === 'taken' || (createForm.account_role !== 'researcher' && slugStatus === 'taken')}
                 >
-                  {isCreating ? 'Creating...' : 'Create Agent'}
+                  {isCreating ? 'Creating...' : createForm.account_role === 'researcher' ? 'Create Researcher' : 'Create Agent'}
                 </button>
               </div>
             </form>

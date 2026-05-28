@@ -12,7 +12,8 @@ export default async function AdminStorePreviewPage() {
 
   const supabase = await createServiceClient();
 
-  // Fetch all products with inventory
+  // Fetch all products — inventory_count and in_stock live directly on the products table
+  // (migration 20260521000002_product_inventory added them as columns, not a separate table)
   const { data: productsData, error } = await supabase
     .from('products')
     .select(`
@@ -25,14 +26,25 @@ export default async function AdminStorePreviewPage() {
       unit_size,
       unit_measure,
       backorder_days,
-      inventory ( count )
+      inventory_count,
+      in_stock,
+      low_stock_threshold
     `)
     .order('name');
 
   if (error || !productsData) {
+    console.error('[store-preview] Supabase query error:', error?.message, error?.details, error?.hint);
     return (
       <div style={{ padding: 'var(--space-8)' }}>
         <h2 style={{ color: 'var(--red)' }}>Error loading catalog</h2>
+        <p style={{ color: 'var(--silver)', marginTop: 'var(--space-2)', fontSize: '0.85rem', fontFamily: 'monospace' }}>
+          {error?.message || 'No data returned from query'}
+        </p>
+        {error?.hint && (
+          <p style={{ color: 'var(--grey-400)', marginTop: 'var(--space-1)', fontSize: '0.8rem', fontFamily: 'monospace' }}>
+            Hint: {error.hint}
+          </p>
+        )}
       </div>
     );
   }
@@ -41,8 +53,7 @@ export default async function AdminStorePreviewPage() {
   const inventoryMap: Record<string, number> = {};
 
   const productItems = productsData.map(p => {
-    const inv = Array.isArray(p.inventory) ? p.inventory[0] : p.inventory;
-    const count = inv?.count || 0;
+    const count = p.inventory_count ?? 0;
     inventoryMap[p.id] = count;
 
     return {
@@ -60,7 +71,7 @@ export default async function AdminStorePreviewPage() {
         image_url: p.image_url,
         category: p.category || 'Other',
         backorder_days: p.backorder_days || 10,
-        in_stock: count > 0,
+        in_stock: p.in_stock ?? count > 0,
         inventory_count: count,
         unit_size: p.unit_size,
         unit_measure: p.unit_measure
