@@ -61,8 +61,8 @@ export async function validateCoupon(
     const { count } = await supabase
       .from('orders')
       .select('id', { count: 'exact', head: true })
-      .eq('coupon_id', coupon.id)
-      .eq('user_id', opts.userId);
+      .eq('coupon_code', coupon.code)
+      .eq('buyer_id', opts.userId);
     if (count != null && count >= Number(coupon.max_uses_per_user)) {
       return { valid: false, error: 'You Have Already Used This Coupon The Maximum Number Of Times.' };
     }
