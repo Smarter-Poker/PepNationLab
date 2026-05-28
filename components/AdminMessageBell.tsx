@@ -9,5 +9,5 @@ import MessageBell from './MessageBell';
  */
 export default function AdminMessageBell() {
   const router = useRouter();
-  return <MessageBell onViewAll={() => router.push('/admin/messages')} />;
+  return <MessageBell onViewAll={() => router.push('/admin/messages')} dropUp />;
 }

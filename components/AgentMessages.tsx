@@ -25,7 +25,7 @@ export default function AgentMessages({
   researchers,
 }: {
   agentId: string;
-  researchers: { id: string; full_name: string | null; email: string }[];
+  researchers: { id: string; full_name: string | null; email: string; username?: string | null }[];
 }) {
   const [selected, setSelected] = useState<Contact | null>(null);
   const [contacts, setContacts] = useState<Contact[]>([]);
@@ -39,8 +39,10 @@ export default function AgentMessages({
 
       // Start with direct researchers
       const directResearchers: Contact[] = researchers.map(r => ({
-        ...r,
-        username: null,
+        id: r.id,
+        full_name: r.full_name,
+        email: r.email,
+        username: r.username ?? null,
         role: 'researcher',
         group: 'researcher' as const,
       }));

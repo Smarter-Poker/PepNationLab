@@ -144,7 +144,7 @@ export default function Messaging({
                     <div style={{ marginBottom: 'var(--space-2)', fontWeight: 'bold', color: 'var(--teal)' }}>[INVOICE] {m.subject}</div>
                   )}
                   {m.type === 'notification' && (
-                    <div style={{ marginBottom: 'var(--space-2)', fontWeight: 'bold', color: 'var(--blue)' }}>[NOTIFICATION] {m.subject}</div>
+                    <div style={{ marginBottom: 'var(--space-2)', fontWeight: 'bold', color: '#63B3ED' }}>[NOTIFICATION] {m.subject}</div>
                   )}
                   {m.body}
                 </div>

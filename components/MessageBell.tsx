@@ -17,7 +17,7 @@ interface InboxMessage {
  * A bell icon with unread badge + dropdown for the header.
  * - `onViewAll`: callback when "View All Messages" is clicked (e.g. navigate or switch tab)
  */
-export default function MessageBell({ onViewAll }: { onViewAll: () => void }) {
+export default function MessageBell({ onViewAll, dropUp }: { onViewAll: () => void; dropUp?: boolean }) {
   const [unreadCount, setUnreadCount] = useState(0);
   const [messages, setMessages] = useState<InboxMessage[]>([]);
   const [open, setOpen] = useState(false);
@@ -125,7 +125,10 @@ export default function MessageBell({ onViewAll }: { onViewAll: () => void }) {
       {/* Dropdown */}
       {open && (
         <div style={{
-          position: 'absolute', top: 'calc(100% + 8px)', right: 0,
+          position: 'absolute',
+          ...(dropUp
+            ? { bottom: 'calc(100% + 8px)', right: 0 }
+            : { top: 'calc(100% + 8px)', right: 0 }),
           width: 360, maxHeight: 440,
           background: 'var(--grey-900)', border: '1px solid rgba(0,196,188,0.2)',
           borderRadius: 12, boxShadow: '0 12px 40px rgba(0,0,0,0.6)',
