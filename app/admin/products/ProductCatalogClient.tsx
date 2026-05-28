@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from 'react';
 import Link from 'next/link';
+import BulkImportModal from './BulkImportModal';
 
 /* ── types ── */
 export interface RawProduct {
@@ -103,6 +104,7 @@ export default function ProductCatalogClient({
   const [search, setSearch] = useState('');
   const [sort, setSort] = useState<SortKey>('name-asc');
   const [categoryFilter, setCategoryFilter] = useState('all');
+  const [showBulkModal, setShowBulkModal] = useState(false);
 
   const grouped = useMemo(() => groupByName(products), [products]);
 
@@ -229,6 +231,16 @@ export default function ProductCatalogClient({
             <option key={c} value={c}>{c}</option>
           ))}
         </select>
+
+        {/* Bulk Import */}
+        <button
+          type="button"
+          onClick={() => setShowBulkModal(true)}
+          className="btn btn-secondary btn-sm"
+          style={{ flex: '0 0 auto' }}
+        >
+          Bulk Import CSV
+        </button>
       </div>
 
       {/* ── Results count ── */}
