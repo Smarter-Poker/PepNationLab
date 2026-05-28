@@ -18,19 +18,18 @@ export default function AgentOverview({
   copiedStorefront,
   onNavigate
 }: AgentOverviewProps) {
-  // 6 nav card clickable zones (percentage positions on the 1024x866 image)
   const cardZones = [
-    { id: 'storefront', top: '1%', left: '1%', width: '47%', height: '18%',
+    { id: 'storefront', top: '2.5%', left: '2%', width: '46.5%', height: '17.5%',
       action: () => window.open(storefrontUrl, '_blank', 'noopener,noreferrer') },
-    { id: 'researchers', top: '1%', left: '52%', width: '47%', height: '18%',
+    { id: 'researchers', top: '2.5%', left: '51.5%', width: '46.5%', height: '17.5%',
       action: () => onNavigate?.('Researchers') },
-    { id: 'inventory', top: '22%', left: '1%', width: '47%', height: '18%',
+    { id: 'inventory', top: '23%', left: '2%', width: '46.5%', height: '17.5%',
       action: () => onNavigate?.('Inventory') },
-    { id: 'products', top: '22%', left: '52%', width: '47%', height: '18%',
+    { id: 'products', top: '23%', left: '51.5%', width: '46.5%', height: '17.5%',
       action: () => onNavigate?.('Store Products') },
-    { id: 'sales', top: '43%', left: '1%', width: '47%', height: '18%',
+    { id: 'sales', top: '43.5%', left: '2%', width: '46.5%', height: '17.5%',
       action: () => onNavigate?.('Sales & Carts') },
-    { id: 'orders', top: '43%', left: '52%', width: '47%', height: '18%',
+    { id: 'orders', top: '43.5%', left: '51.5%', width: '46.5%', height: '17.5%',
       action: () => onNavigate?.('Orders') },
   ];
 
@@ -40,7 +39,6 @@ export default function AgentOverview({
         .dash-hero {
           position: relative;
           width: 100%;
-          max-width: 900px;
           margin: 0 auto;
         }
         .dash-hero-img {
@@ -53,32 +51,30 @@ export default function AgentOverview({
         .dash-zone {
           position: absolute;
           cursor: pointer;
-          border-radius: 8px;
+          border-radius: 6px;
           transition: background 0.2s ease, box-shadow 0.2s ease;
           z-index: 2;
         }
         .dash-zone:hover {
           background: rgba(0, 196, 188, 0.07);
-          box-shadow: 0 0 24px rgba(0, 196, 188, 0.12);
+          box-shadow: 0 0 20px rgba(0, 196, 188, 0.1);
         }
         .dash-zone:active {
           background: rgba(0, 196, 188, 0.14);
         }
-        /* URL text inside the dark input area of the bottom card */
         .dash-url {
           position: absolute;
           z-index: 3;
-          font-family: var(--font-brand, monospace);
-          font-size: 0.75rem;
-          color: var(--teal, #00C4BC);
+          color: #00C4BC;
           white-space: nowrap;
           overflow: hidden;
           text-overflow: ellipsis;
           pointer-events: none;
           display: flex;
           align-items: center;
+          font-weight: 600;
+          letter-spacing: 0.02em;
         }
-        /* Invisible clickable zone over the image's Copy Link button */
         .dash-btn-zone {
           position: absolute;
           cursor: pointer;
@@ -86,27 +82,18 @@ export default function AgentOverview({
           background: transparent;
           border: none;
           padding: 0;
+          display: block;
         }
         .dash-btn-zone:hover {
-          background: rgba(255,255,255,0.04);
+          background: rgba(0, 196, 188, 0.06);
           border-radius: 4px;
-        }
-        @media (max-width: 600px) {
-          .dash-url {
-            font-size: 0.6rem;
-          }
-        }
-        @media (max-width: 400px) {
-          .dash-url {
-            font-size: 0.5rem;
-          }
         }
       `}} />
 
       <div className="dash-hero">
         <img
           src="/images/agent-dashboard-nav.jpg"
-          alt="Agent Dashboard Navigation"
+          alt="Agent Dashboard"
           className="dash-hero-img"
           draggable={false}
         />
@@ -125,45 +112,36 @@ export default function AgentOverview({
           />
         ))}
 
-        {/* Dynamic storefront URL text — positioned inside the dark input box */}
+        {/* Dynamic storefront URL — sized with vw units so it scales with the image */}
         <span
           className="dash-url"
           style={{
-            bottom: '5.8%',
-            left: '5%',
-            width: '46%',
+            bottom: '5.5%',
+            left: '5.5%',
+            width: '43%',
             height: '5%',
+            fontSize: 'clamp(0.45rem, 1.4vw, 0.85rem)',
           }}
         >
           {storefrontUrl}
         </span>
 
-        {/* Invisible clickable zone over "Copy Link" button in the image */}
+        {/* Invisible clickable zone over image's "Copy Link" button */}
         <button
           className="dash-btn-zone"
           onClick={copyStorefrontLink}
           aria-label={copiedStorefront ? 'Link Copied' : 'Copy Link'}
-          style={{
-            bottom: '4.2%',
-            right: '17%',
-            width: '14%',
-            height: '6%',
-          }}
+          style={{ bottom: '3.8%', right: '17.5%', width: '13%', height: '5.8%' }}
         />
 
-        {/* Invisible clickable zone over "Visit Store" button in the image */}
+        {/* Invisible clickable zone over image's "Visit Store" button */}
         <a
           href={storefrontUrl}
           target="_blank"
           rel="noopener noreferrer"
           className="dash-btn-zone"
           aria-label="Visit Store"
-          style={{
-            bottom: '4.2%',
-            right: '1.5%',
-            width: '14%',
-            height: '6%',
-          }}
+          style={{ bottom: '3.8%', right: '2.5%', width: '13%', height: '5.8%' }}
         />
       </div>
     </>

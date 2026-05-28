@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { toast } from 'sonner';
 import Pagination from '@/components/Pagination';
 
@@ -46,12 +47,22 @@ const TIER_LABELS: Record<string, string> = {
   tier_3: 'Tier 3',
 };
 
-export default function ResearchersAdminPage() {
+function ResearchersAdminPageInner() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [profiles, setProfiles] = useState<Profile[]>([]);
+  const [unpaidAgentIds, setUnpaidAgentIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [searchQuery, setSearchQuery] = useState('');
-  const [activeTab, setActiveTab] = useState<'researchers' | 'agents' | 'admins'>('researchers');
+  const [searchQuery, setSearchQuery] = useState(searchParams.get('q') ?? '');
+  const [activeTab, setActiveTab] = useState<'researchers' | 'agents' | 'admins'>(
+    (searchParams.get('tab') as 'researchers' | 'agents' | 'admins') ?? 'researchers'
+  );
+  const [roleFilter, setRoleFilter] = useState<string>(searchParams.get('role') ?? 'all');
+  const [activeFilter, setActiveFilter] = useState<string>(searchParams.get('active') ?? 'all');
+  const [tierFilter, setTierFilter] = useState<string>(searchParams.get('tier') ?? 'all');
+  const [accountTypeFilter, setAccountTypeFilter] = useState<string>(searchParams.get('accountType') ?? 'all');
+  const [outstandingOnly, setOutstandingOnly] = useState<boolean>(searchParams.get('outstanding') === '1');
   const [page, setPage] = useState(1);
 
   // Modal State
@@ -89,7 +100,22 @@ export default function ResearchersAdminPage() {
 
   useEffect(() => {
     fetchProfiles();
+    fetchUnpaidAgents();
   }, []);
+
+  async function fetchUnpaidAgents() {
+    try {
+      const res = await fetch('/api/admin/statements?status=pending_payment');
+      const json = await res.json();
+      if (res.ok && Array.isArray(json.data)) {
+        const ids = new Set<string>();
+        for (const s of json.data) if (s.agent_id) ids.add(s.agent_id);
+        setUnpaidAgentIds(ids);
+      }
+    } catch {
+      // best-effort — Outstanding filter falls back to empty set
+    }
+  }
 
   async function fetchProfiles() {
     setLoading(true);
@@ -301,17 +327,42 @@ export default function ResearchersAdminPage() {
     }
   }
 
-  const filteredProfiles = profiles.filter(p => {
-    const matchesSearch =
-      (p.full_name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (p.username || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (p.phone || '').toLowerCase().includes(searchQuery.toLowerCase());
-    if (!matchesSearch) return false;
-    if (activeTab === 'researchers') return p.role === 'researcher';
-    if (activeTab === 'agents') return p.role === 'agent' || p.role === 'super_agent';
-    if (activeTab === 'admins') return p.role === 'admin';
-    return true;
-  });
+  // Persist filter state to URL params so refresh + share-URL works.
+  useEffect(() => {
+    const params = new URLSearchParams();
+    if (searchQuery) params.set('q', searchQuery);
+    if (activeTab !== 'researchers') params.set('tab', activeTab);
+    if (roleFilter !== 'all') params.set('role', roleFilter);
+    if (activeFilter !== 'all') params.set('active', activeFilter);
+    if (tierFilter !== 'all') params.set('tier', tierFilter);
+    if (accountTypeFilter !== 'all') params.set('accountType', accountTypeFilter);
+    if (outstandingOnly) params.set('outstanding', '1');
+    const qs = params.toString();
+    router.replace(qs ? `/admin/researchers?${qs}` : '/admin/researchers', { scroll: false });
+  }, [searchQuery, activeTab, roleFilter, activeFilter, tierFilter, accountTypeFilter, outstandingOnly, router]);
+
+  const filteredProfiles = useMemo(() => {
+    const q = searchQuery.toLowerCase();
+    return profiles.filter(p => {
+      const matchesSearch =
+        !q ||
+        (p.full_name || '').toLowerCase().includes(q) ||
+        (p.username || '').toLowerCase().includes(q) ||
+        (p.phone || '').toLowerCase().includes(q) ||
+        (p.email || '').toLowerCase().includes(q);
+      if (!matchesSearch) return false;
+      if (activeTab === 'researchers' && p.role !== 'researcher') return false;
+      if (activeTab === 'agents' && p.role !== 'agent' && p.role !== 'super_agent') return false;
+      if (activeTab === 'admins' && p.role !== 'admin') return false;
+      if (roleFilter !== 'all' && p.role !== roleFilter) return false;
+      if (activeFilter === 'active' && !p.is_active) return false;
+      if (activeFilter === 'deactivated' && p.is_active) return false;
+      if (tierFilter !== 'all' && p.tier !== tierFilter) return false;
+      if (accountTypeFilter !== 'all' && p.account_type !== accountTypeFilter) return false;
+      if (outstandingOnly && !unpaidAgentIds.has(p.id)) return false;
+      return true;
+    });
+  }, [profiles, searchQuery, activeTab, roleFilter, activeFilter, tierFilter, accountTypeFilter, outstandingOnly, unpaidAgentIds]);
 
   // Pagination
   const totalPages = Math.max(1, Math.ceil(filteredProfiles.length / PAGE_SIZE));
@@ -321,7 +372,16 @@ export default function ResearchersAdminPage() {
   // Reset to page 1 when filter or search changes
   useEffect(() => {
     setPage(1);
-  }, [searchQuery, activeTab]);
+  }, [searchQuery, activeTab, roleFilter, activeFilter, tierFilter, accountTypeFilter, outstandingOnly]);
+
+  function resetResearcherFilters() {
+    setSearchQuery('');
+    setRoleFilter('all');
+    setActiveFilter('all');
+    setTierFilter('all');
+    setAccountTypeFilter('all');
+    setOutstandingOnly(false);
+  }
 
   const resolvedAgentProfile = selectedProfile
     ? (Array.isArray(selectedProfile.agent_profiles) ? selectedProfile.agent_profiles[0] : selectedProfile.agent_profiles)
@@ -385,7 +445,7 @@ export default function ResearchersAdminPage() {
           <input
             type="text"
             className="form-input"
-            placeholder="Search Name, Username, Or Phone..."
+            placeholder="Search Name, Username, Email, Or Phone..."
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
             style={{ paddingLeft: 'var(--space-8)' }}
@@ -395,6 +455,89 @@ export default function ResearchersAdminPage() {
             <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
           </svg>
         </div>
+      </div>
+
+      {/* Advanced Filters */}
+      <div
+        style={{
+          display: 'flex',
+          flexWrap: 'wrap',
+          gap: 'var(--space-3)',
+          marginBottom: 'var(--space-6)',
+          padding: 'var(--space-4)',
+          background: 'var(--surface-1)',
+          border: 'var(--border-subtle)',
+          borderRadius: 'var(--radius-md)',
+          alignItems: 'flex-end',
+        }}
+      >
+        <div style={{ flex: '1 1 160px', minWidth: 140 }}>
+          <label className="form-label" style={{ fontSize: '0.7rem' }}>Role</label>
+          <select className="form-input" value={roleFilter} onChange={e => setRoleFilter(e.target.value)}>
+            <option value="all">All Roles</option>
+            <option value="researcher">Researcher</option>
+            <option value="agent">Agent</option>
+            <option value="super_agent">Super Agent</option>
+            <option value="admin">Admin</option>
+            <option value="shipping">Shipping</option>
+          </select>
+        </div>
+        <div style={{ flex: '1 1 140px', minWidth: 130 }}>
+          <label className="form-label" style={{ fontSize: '0.7rem' }}>Activation</label>
+          <select className="form-input" value={activeFilter} onChange={e => setActiveFilter(e.target.value)}>
+            <option value="all">All</option>
+            <option value="active">Active</option>
+            <option value="deactivated">Deactivated</option>
+          </select>
+        </div>
+        <div style={{ flex: '1 1 140px', minWidth: 130 }}>
+          <label className="form-label" style={{ fontSize: '0.7rem' }}>Tier (Agents)</label>
+          <select className="form-input" value={tierFilter} onChange={e => setTierFilter(e.target.value)}>
+            <option value="all">All Tiers</option>
+            <option value="tier_1">Tier 1</option>
+            <option value="tier_2">Tier 2</option>
+            <option value="tier_3">Tier 3</option>
+          </select>
+        </div>
+        <div style={{ flex: '1 1 140px', minWidth: 130 }}>
+          <label className="form-label" style={{ fontSize: '0.7rem' }}>Account Type</label>
+          <select className="form-input" value={accountTypeFilter} onChange={e => setAccountTypeFilter(e.target.value)}>
+            <option value="all">All Types</option>
+            <option value="credit">Credit</option>
+            <option value="prepaid">Prepaid</option>
+          </select>
+        </div>
+        <label
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+            fontSize: '0.78rem',
+            color: 'var(--silver)',
+            cursor: 'pointer',
+            padding: 'var(--space-2) var(--space-3)',
+            background: 'var(--surface-2)',
+            border: 'var(--border-subtle)',
+            borderRadius: 'var(--radius-sm)',
+            whiteSpace: 'nowrap',
+          }}
+        >
+          <input
+            type="checkbox"
+            checked={outstandingOnly}
+            onChange={e => setOutstandingOnly(e.target.checked)}
+            style={{ accentColor: 'var(--teal)' }}
+          />
+          Outstanding Statement Only
+        </label>
+        <button
+          type="button"
+          onClick={resetResearcherFilters}
+          className="btn btn-secondary btn-sm"
+          style={{ fontSize: '0.78rem' }}
+        >
+          Reset
+        </button>
       </div>
 
       {/* Profile List */}
@@ -823,5 +966,17 @@ export default function ResearchersAdminPage() {
 
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>
+  );
+}
+
+export default function ResearchersAdminPage() {
+  return (
+    <Suspense fallback={
+      <div style={{ padding: 'var(--space-8)' }}>
+        <p style={{ fontSize: '0.85rem', color: 'var(--grey-400)' }}>Loading Profiles...</p>
+      </div>
+    }>
+      <ResearchersAdminPageInner />
+    </Suspense>
   );
 }

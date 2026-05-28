@@ -1,7 +1,8 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, Suspense } from 'react';
 import Link from 'next/link';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Pagination from '@/components/Pagination';
 import { exportCSV, downloadCSV } from '@/lib/export';
 
@@ -38,15 +39,70 @@ const TYPE_META: Record<string, { label: string; badge: string }> = {
   adjustment:        { label: 'Adjustment',        badge: 'badge-silver' },
 };
 
-export default function AdminTransactionsPage() {
+function AdminTransactionsPageInner() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [page, setPage] = useState(1);
+  const [typeFilter, setTypeFilter] = useState<string>(searchParams.get('type') ?? 'all');
+  const [agentFilter, setAgentFilter] = useState<string>(searchParams.get('agent') ?? 'all');
+  const [dateFrom, setDateFrom] = useState<string>(searchParams.get('from') ?? '');
+  const [dateTo, setDateTo] = useState<string>(searchParams.get('to') ?? '');
+
+  // Persist filter state to URL.
+  useEffect(() => {
+    const params = new URLSearchParams();
+    if (typeFilter !== 'all') params.set('type', typeFilter);
+    if (agentFilter !== 'all') params.set('agent', agentFilter);
+    if (dateFrom) params.set('from', dateFrom);
+    if (dateTo) params.set('to', dateTo);
+    const qs = params.toString();
+    router.replace(qs ? `/admin/transactions?${qs}` : '/admin/transactions', { scroll: false });
+  }, [typeFilter, agentFilter, dateFrom, dateTo, router]);
+
+  // Build agent dropdown from observed transactions.
+  const agentOptions = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const tx of transactions) {
+      if (!tx.agent_id || map.has(tx.agent_id)) continue;
+      const label = tx.profiles?.full_name || (tx.profiles?.email ? `@${tx.profiles.email.split('@')[0]}` : tx.agent_id.slice(0, 8));
+      map.set(tx.agent_id, label);
+    }
+    return Array.from(map.entries())
+      .map(([id, label]) => ({ id, label }))
+      .sort((a, b) => a.label.localeCompare(b.label));
+  }, [transactions]);
+
+  // Filter the in-memory ledger.
+  const filteredTransactions = useMemo(() => {
+    const fromMs = dateFrom ? new Date(dateFrom).getTime() : null;
+    const toMs = dateTo ? new Date(dateTo).getTime() + 86399999 : null;
+    return transactions.filter(tx => {
+      if (typeFilter !== 'all' && tx.type !== typeFilter) return false;
+      if (agentFilter !== 'all' && tx.agent_id !== agentFilter) return false;
+      const createdMs = new Date(tx.created_at).getTime();
+      if (fromMs !== null && createdMs < fromMs) return false;
+      if (toMs !== null && createdMs > toMs) return false;
+      return true;
+    });
+  }, [transactions, typeFilter, agentFilter, dateFrom, dateTo]);
+
+  function resetTxFilters() {
+    setTypeFilter('all');
+    setAgentFilter('all');
+    setDateFrom('');
+    setDateTo('');
+  }
 
   useEffect(() => {
     fetchTransactions();
   }, []);
+
+  useEffect(() => {
+    setPage(1);
+  }, [typeFilter, agentFilter, dateFrom, dateTo]);
 
   const fetchTransactions = async () => {
     try {
@@ -67,9 +123,9 @@ export default function AdminTransactionsPage() {
     return `@${email.split('@')[0]}`;
   };
 
-  const totalPages = Math.max(1, Math.ceil(transactions.length / PAGE_SIZE));
+  const totalPages = Math.max(1, Math.ceil(filteredTransactions.length / PAGE_SIZE));
   const safePage = Math.min(page, totalPages);
-  const paginatedTransactions = transactions.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
+  const paginatedTransactions = filteredTransactions.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
 
   return (
     <div style={{ padding: 'var(--space-8)' }}>
@@ -86,9 +142,9 @@ export default function AdminTransactionsPage() {
           <button
             type="button"
             className="btn btn-secondary btn-sm"
-            disabled={transactions.length === 0}
+            disabled={filteredTransactions.length === 0}
             onClick={() => {
-              const rows = transactions.map((tx) => {
+              const rows = filteredTransactions.map((tx) => {
                 const meta = TYPE_META[tx.type];
                 return {
                   created_at: new Date(tx.created_at).toISOString(),
@@ -124,6 +180,59 @@ export default function AdminTransactionsPage() {
         </div>
       )}
 
+      {/* Filters */}
+      <div
+        style={{
+          display: 'flex',
+          flexWrap: 'wrap',
+          gap: 'var(--space-3)',
+          marginBottom: 'var(--space-6)',
+          padding: 'var(--space-4)',
+          background: 'var(--surface-1)',
+          border: 'var(--border-subtle)',
+          borderRadius: 'var(--radius-md)',
+          alignItems: 'flex-end',
+        }}
+      >
+        <div style={{ flex: '1 1 160px', minWidth: 140 }}>
+          <label className="form-label" style={{ fontSize: '0.7rem' }}>Type</label>
+          <select className="form-input" value={typeFilter} onChange={e => setTypeFilter(e.target.value)}>
+            <option value="all">All Types</option>
+            <option value="credit">Credit</option>
+            <option value="debit">Debit</option>
+            <option value="order_charge">Order Charge</option>
+            <option value="statement_payment">Statement Payment</option>
+            <option value="initial_deposit">Initial Deposit</option>
+            <option value="adjustment">Adjustment</option>
+          </select>
+        </div>
+        <div style={{ flex: '1 1 200px', minWidth: 160 }}>
+          <label className="form-label" style={{ fontSize: '0.7rem' }}>Agent</label>
+          <select className="form-input" value={agentFilter} onChange={e => setAgentFilter(e.target.value)}>
+            <option value="all">All Agents</option>
+            {agentOptions.map(a => (
+              <option key={a.id} value={a.id}>{a.label}</option>
+            ))}
+          </select>
+        </div>
+        <div style={{ flex: '1 1 140px', minWidth: 120 }}>
+          <label className="form-label" style={{ fontSize: '0.7rem' }}>From Date</label>
+          <input type="date" className="form-input" value={dateFrom} onChange={e => setDateFrom(e.target.value)} />
+        </div>
+        <div style={{ flex: '1 1 140px', minWidth: 120 }}>
+          <label className="form-label" style={{ fontSize: '0.7rem' }}>To Date</label>
+          <input type="date" className="form-input" value={dateTo} onChange={e => setDateTo(e.target.value)} />
+        </div>
+        <button
+          type="button"
+          onClick={resetTxFilters}
+          className="btn btn-secondary btn-sm"
+          style={{ fontSize: '0.78rem' }}
+        >
+          Reset
+        </button>
+      </div>
+
       <div className="card-metal" style={{ overflow: 'hidden' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
           <thead>
@@ -143,10 +252,10 @@ export default function AdminTransactionsPage() {
                   Syncing Ledger Data...
                 </td>
               </tr>
-            ) : transactions.length === 0 ? (
+            ) : filteredTransactions.length === 0 ? (
               <tr>
                 <td colSpan={6} style={{ padding: 'var(--space-8)', textAlign: 'center', color: 'var(--grey-400)' }}>
-                  No Financial Transactions Recorded.
+                  No Transactions Match The Current Filters.
                 </td>
               </tr>
             ) : (
@@ -193,5 +302,17 @@ export default function AdminTransactionsPage() {
       </div>
       <Pagination page={safePage} totalPages={totalPages} onPageChange={setPage} />
     </div>
+  );
+}
+
+export default function AdminTransactionsPage() {
+  return (
+    <Suspense fallback={
+      <div style={{ padding: 'var(--space-8)' }}>
+        <p style={{ fontSize: '0.85rem', color: 'var(--grey-400)' }}>Loading Ledger...</p>
+      </div>
+    }>
+      <AdminTransactionsPageInner />
+    </Suspense>
   );
 }

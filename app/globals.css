@@ -205,6 +205,11 @@ a:hover { color: var(--teal-dark); }
   padding: var(--space-6);
 }
 
+.admin-kpi-card:hover {
+  border-color: var(--teal) !important;
+  transform: translateY(-2px);
+}
+
 .card-metal {
   background: linear-gradient(145deg, rgba(22, 34, 48, 0.7) 0%, rgba(15, 25, 35, 0.7) 50%, rgba(29, 45, 62, 0.7) 100%);
   backdrop-filter: blur(12px);

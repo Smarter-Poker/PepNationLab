@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { toast } from 'sonner';
 import { createClient } from '@/lib/supabase/client';
 import Pagination from '@/components/Pagination';
@@ -39,6 +40,9 @@ interface Order {
   agent_approved_at: string | null;
   agent_approval_notes: string | null;
   created_at: string;
+  is_wholesale_restock: boolean | null;
+  buyer_name: string | null;
+  buyer_email: string | null;
   profiles: BuyerProfile | null;
 }
 
@@ -80,12 +84,17 @@ type BulkAction =
   | 'cancel'
   | 'generate_labels';
 
-export default function AdminOrdersPage() {
+function AdminOrdersPageInner() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [searchQuery, setSearchQuery] = useState(searchParams.get('q') ?? '');
+  const [statusFilter, setStatusFilter] = useState<string>(searchParams.get('status') ?? 'all');
+  const [dateFrom, setDateFrom] = useState<string>(searchParams.get('from') ?? '');
+  const [dateTo, setDateTo] = useState<string>(searchParams.get('to') ?? '');
+  const [wholesaleOnly, setWholesaleOnly] = useState<boolean>(searchParams.get('wholesale') === '1');
   const [page, setPage] = useState(1);
 
   // Selected Order details
@@ -269,21 +278,41 @@ export default function AdminOrdersPage() {
     }
   }
 
+  // Persist filter state to URL params so refresh + share-URL works.
+  useEffect(() => {
+    const params = new URLSearchParams();
+    if (searchQuery) params.set('q', searchQuery);
+    if (statusFilter && statusFilter !== 'all') params.set('status', statusFilter);
+    if (dateFrom) params.set('from', dateFrom);
+    if (dateTo) params.set('to', dateTo);
+    if (wholesaleOnly) params.set('wholesale', '1');
+    const qs = params.toString();
+    const url = qs ? `/admin/orders?${qs}` : '/admin/orders';
+    router.replace(url, { scroll: false });
+  }, [searchQuery, statusFilter, dateFrom, dateTo, wholesaleOnly, router]);
+
   // Filters & Search
-  const filteredOrders = orders.filter(order => {
-    const matchesStatus = statusFilter === 'all' || order.status === statusFilter;
-    if (!matchesStatus) return false;
-
-    if (searchQuery) {
-      const q = searchQuery.toLowerCase();
-      const name = (order.profiles?.full_name || '').toLowerCase();
-      const email = (order.profiles?.email || '').toLowerCase();
-      const orderId = order.id.toLowerCase();
-      return name.includes(q) || email.includes(q) || orderId.includes(q);
-    }
-
-    return true;
-  });
+  const filteredOrders = useMemo(() => {
+    const fromMs = dateFrom ? new Date(dateFrom).getTime() : null;
+    // end-of-day for "to" so YYYY-MM-DD matches the whole day
+    const toMs = dateTo ? new Date(dateTo).getTime() + 86399999 : null;
+    return orders.filter(order => {
+      if (statusFilter !== 'all' && order.status !== statusFilter) return false;
+      if (wholesaleOnly && !order.is_wholesale_restock) return false;
+      const createdMs = new Date(order.created_at).getTime();
+      if (fromMs !== null && createdMs < fromMs) return false;
+      if (toMs !== null && createdMs > toMs) return false;
+      if (searchQuery) {
+        const q = searchQuery.toLowerCase();
+        const name = (order.profiles?.full_name || order.buyer_name || '').toLowerCase();
+        const email = (order.profiles?.email || order.buyer_email || '').toLowerCase();
+        const orderId = order.id.toLowerCase();
+        const tracking = (order.tracking_number || '').toLowerCase();
+        if (!(name.includes(q) || email.includes(q) || orderId.includes(q) || tracking.includes(q))) return false;
+      }
+      return true;
+    });
+  }, [orders, statusFilter, wholesaleOnly, dateFrom, dateTo, searchQuery]);
 
   // Pagination: slice filtered set to the current page window
   const totalPages = Math.max(1, Math.ceil(filteredOrders.length / PAGE_SIZE));
@@ -293,7 +322,15 @@ export default function AdminOrdersPage() {
   // Reset to page 1 when filter or search changes
   useEffect(() => {
     setPage(1);
-  }, [searchQuery, statusFilter]);
+  }, [searchQuery, statusFilter, dateFrom, dateTo, wholesaleOnly]);
+
+  function resetFilters() {
+    setSearchQuery('');
+    setStatusFilter('all');
+    setDateFrom('');
+    setDateTo('');
+    setWholesaleOnly(false);
+  }
 
   return (
     <div style={{ padding: 'var(--space-8)' }}>
@@ -351,52 +388,101 @@ export default function AdminOrdersPage() {
         {/* Left Side: Order List, Filter & Search */}
         <div>
           {/* Controls */}
-          <div style={{
-            display: 'flex',
-            flexWrap: 'wrap',
-            gap: 'var(--space-4)',
-            marginBottom: 'var(--space-6)',
-            alignItems: 'center',
-            justifyContent: 'space-between'
-          }}>
-            {/* Status Filter Tabs */}
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-              {[
-                { id: 'all', label: 'All Orders' },
-                { id: 'pending_customer_payment', label: 'Pending Payment' },
-                { id: 'agent_approval_pending', label: 'Pending Approval' },
-                { id: 'in_fulfillment', label: 'In Fulfillment' },
-                { id: 'shipped', label: 'Shipped' },
-              ].map(filter => (
-                <button
-                  key={filter.id}
-                  onClick={() => setStatusFilter(filter.id)}
-                  style={{
-                    padding: '6px 12px',
-                    fontSize: '0.78rem',
-                    fontWeight: 600,
-                    color: statusFilter === filter.id ? '#fff' : 'var(--grey-400)',
-                    background: statusFilter === filter.id ? 'var(--teal)' : 'var(--black-2)',
-                    border: statusFilter === filter.id ? 'none' : 'var(--border-subtle)',
-                    borderRadius: 'var(--radius-sm)',
-                    cursor: 'pointer',
-                  }}
-                >
-                  {filter.label}
-                </button>
-              ))}
-            </div>
-
-            {/* Search */}
-            <div style={{ width: '100%', maxWidth: 260 }}>
+          <div
+            style={{
+              display: 'flex',
+              flexWrap: 'wrap',
+              gap: 'var(--space-3)',
+              marginBottom: 'var(--space-6)',
+              alignItems: 'flex-end',
+              padding: 'var(--space-4)',
+              background: 'var(--surface-1)',
+              border: 'var(--border-subtle)',
+              borderRadius: 'var(--radius-md)',
+            }}
+          >
+            <div style={{ flex: '2 1 240px', minWidth: 180 }}>
+              <label className="form-label" style={{ fontSize: '0.7rem' }}>Search</label>
               <input
                 type="text"
                 className="form-input"
-                placeholder="Search Buyer Or Order ID..."
+                placeholder="Buyer Name, Email, Order ID, Tracking..."
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
               />
             </div>
+
+            <div style={{ flex: '1 1 160px', minWidth: 140 }}>
+              <label className="form-label" style={{ fontSize: '0.7rem' }}>Status</label>
+              <select
+                className="form-input"
+                value={statusFilter}
+                onChange={e => setStatusFilter(e.target.value)}
+              >
+                <option value="all">All Statuses</option>
+                <option value="pending_customer_payment">Pending Customer Payment</option>
+                <option value="agent_approval_pending">Agent Approval Pending</option>
+                <option value="approved_ship">Approved Ship</option>
+                <option value="approved_pickup">Approved Pickup</option>
+                <option value="in_fulfillment">In Fulfillment</option>
+                <option value="shipped">Shipped</option>
+                <option value="delivered">Delivered</option>
+                <option value="cancelled">Cancelled</option>
+              </select>
+            </div>
+
+            <div style={{ flex: '1 1 130px', minWidth: 120 }}>
+              <label className="form-label" style={{ fontSize: '0.7rem' }}>From Date</label>
+              <input
+                type="date"
+                className="form-input"
+                value={dateFrom}
+                onChange={e => setDateFrom(e.target.value)}
+              />
+            </div>
+
+            <div style={{ flex: '1 1 130px', minWidth: 120 }}>
+              <label className="form-label" style={{ fontSize: '0.7rem' }}>To Date</label>
+              <input
+                type="date"
+                className="form-input"
+                value={dateTo}
+                onChange={e => setDateTo(e.target.value)}
+              />
+            </div>
+
+            <label
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8,
+                fontSize: '0.78rem',
+                color: 'var(--silver)',
+                cursor: 'pointer',
+                padding: 'var(--space-2) var(--space-3)',
+                background: 'var(--surface-2)',
+                border: 'var(--border-subtle)',
+                borderRadius: 'var(--radius-sm)',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              <input
+                type="checkbox"
+                checked={wholesaleOnly}
+                onChange={e => setWholesaleOnly(e.target.checked)}
+                style={{ accentColor: 'var(--teal)' }}
+              />
+              Wholesale Only
+            </label>
+
+            <button
+              type="button"
+              onClick={resetFilters}
+              className="btn btn-secondary btn-sm"
+              style={{ fontSize: '0.78rem' }}
+            >
+              Reset
+            </button>
           </div>
 
           {/* Sticky Bulk Action Bar (visible when selection is non-empty) */}
@@ -870,5 +956,17 @@ export default function AdminOrdersPage() {
         }
       `}</style>
     </div>
+  );
+}
+
+export default function AdminOrdersPage() {
+  return (
+    <Suspense fallback={
+      <div style={{ padding: 'var(--space-8)' }}>
+        <p style={{ fontSize: '0.85rem', color: 'var(--grey-400)' }}>Loading Orders...</p>
+      </div>
+    }>
+      <AdminOrdersPageInner />
+    </Suspense>
   );
 }

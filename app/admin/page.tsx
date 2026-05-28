@@ -1,6 +1,32 @@
 import { createServiceClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
+import Link from 'next/link';
 import AdminAnalytics from '@/components/AdminAnalytics';
+import AdminOverviewSparkline from '@/components/AdminOverviewSparkline';
+import { fetchAdminMetrics, computeGmvDelta, timeAgo } from '@/lib/admin-metrics';
+
+const ICON_PROPS = {
+  width: 22,
+  height: 22,
+  viewBox: '0 0 24 24',
+  fill: 'none',
+  stroke: 'currentColor',
+  strokeWidth: 1.8,
+  strokeLinecap: 'round' as const,
+  strokeLinejoin: 'round' as const,
+};
+
+function formatCurrency(n: number): string {
+  return `$${n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+}
+
+function formatAuditAction(action: string): string {
+  return action
+    .split('_')
+    .map((w) => (w.length === 0 ? '' : w[0].toUpperCase() + w.slice(1)))
+    .join(' ');
+}
+
 export default async function AdminDashboard() {
   const supabase = await createServiceClient();
 
@@ -13,196 +39,294 @@ export default async function AdminDashboard() {
     return redirect('/dashboard');
   }
 
-  // Parallel stats queries
-  const [
-    { count: totalResearchers },
-    { count: totalAgents },
-    { count: activeProductsCount },
-    { count: pendingOrders },
-    { data: recentOrders },
-  ] = await Promise.all([
-    supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'researcher'),
-    supabase.from('profiles').select('*', { count: 'exact', head: true }).in('role', ['agent', 'super_agent']),
-    // Active product count uses exact count + head:true — no payload, just the number.
-    supabase.from('products').select('id', { count: 'exact', head: true }).eq('is_active', true),
-    supabase.from('orders').select('*', { count: 'exact', head: true }).eq('status', 'pending_customer_payment'),
-    // Explicit FK hints disambiguate the join — there are TWO profile FKs on
-    // orders (orders_buyer_id_fkey and orders_agent_id_fkey).
-    supabase
-      .from('orders')
-      .select('id, status, total, payment_method, created_at, profiles!orders_buyer_id_fkey(full_name)')
-      .order('created_at', { ascending: false })
-      .limit(5),
-  ]);
+  const metrics = await fetchAdminMetrics(user.id);
+  const delta = computeGmvDelta(metrics.gmvLast7, metrics.gmvPrior7);
 
-  const totalProducts = activeProductsCount ?? 0;
-
-  const statIcon = {
-    width: 22, height: 22, viewBox: '0 0 24 24', fill: 'none',
-    stroke: 'currentColor', strokeWidth: 1.8,
-    strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const,
-  };
-
-  const STATS = [
+  const KPIS: Array<{
+    label: string;
+    value: string;
+    sub?: string;
+    href: string;
+    color: string;
+    icon: React.ReactNode;
+    trend?: { direction: 'up' | 'down' | 'flat'; pct: number };
+  }> = [
     {
-      label: 'Researchers', value: totalResearchers ?? 0, color: 'var(--teal)',
-      icon: <svg {...statIcon}><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /></svg>,
+      label: "Today's GMV",
+      value: formatCurrency(metrics.gmvToday),
+      sub: `Last 7 Days: ${formatCurrency(metrics.gmvLast7)}`,
+      href: '/admin/sales',
+      color: 'var(--teal)',
+      icon: <svg {...ICON_PROPS}><line x1="12" y1="1" x2="12" y2="23" /><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" /></svg>,
+      trend: { direction: delta.direction, pct: delta.pct },
     },
     {
-      label: 'Active Agents', value: totalAgents ?? 0, color: 'var(--teal)',
-      icon: <svg {...statIcon}><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /></svg>,
+      label: 'Pending Admin Approval',
+      value: String(metrics.pendingAdminApproval),
+      sub: 'Awaiting Payment Confirmation',
+      href: '/admin/orders?status=pending_customer_payment',
+      color: metrics.pendingAdminApproval > 0 ? 'var(--red)' : 'var(--grey-400)',
+      icon: <svg {...ICON_PROPS}><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg>,
     },
     {
-      label: 'Active Products', value: totalProducts ?? 0, color: 'var(--silver)',
-      icon: <svg {...statIcon}><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" /><polyline points="3.27 6.96 12 12.01 20.73 6.96" /></svg>,
+      label: 'Pending Agent Approval',
+      value: String(metrics.pendingAgentApproval),
+      sub: 'Awaiting Agent Decision',
+      href: '/admin/orders?status=agent_approval_pending',
+      color: metrics.pendingAgentApproval > 0 ? '#F6AD55' : 'var(--grey-400)',
+      icon: <svg {...ICON_PROPS}><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" /></svg>,
     },
     {
-      label: 'Pending Orders', value: pendingOrders ?? 0, color: pendingOrders ? 'var(--red)' : 'var(--grey-400)',
-      icon: <svg {...statIcon}><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z" /><line x1="3" y1="6" x2="21" y2="6" /><path d="M16 10a4 4 0 0 1-8 0" /></svg>,
+      label: 'Ready To Ship',
+      value: String(metrics.readyToShip),
+      sub: 'Approved, Awaiting Label',
+      href: '/admin/orders?status=approved_ship',
+      color: metrics.readyToShip > 0 ? '#F6AD55' : 'var(--grey-400)',
+      icon: <svg {...ICON_PROPS}><rect x="1" y="3" width="15" height="13" /><polygon points="16 8 20 8 23 11 23 16 16 16 16 8" /><circle cx="5.5" cy="18.5" r="2.5" /><circle cx="18.5" cy="18.5" r="2.5" /></svg>,
+    },
+    {
+      label: 'Awaiting Tracking',
+      value: String(metrics.awaitingTracking),
+      sub: 'In Fulfillment',
+      href: '/admin/orders?status=in_fulfillment',
+      color: metrics.awaitingTracking > 0 ? 'var(--teal)' : 'var(--grey-400)',
+      icon: <svg {...ICON_PROPS}><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" /><polyline points="22 4 12 14.01 9 11.01" /></svg>,
+    },
+    {
+      label: 'Low Stock Alerts',
+      value: String(metrics.lowStockCount),
+      sub: 'At Or Below Threshold',
+      href: '/admin/products',
+      color: metrics.lowStockCount > 0 ? 'var(--red)' : 'var(--grey-400)',
+      icon: <svg {...ICON_PROPS}><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" /><line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" /></svg>,
+    },
+    {
+      label: 'Master Out Of Stock',
+      value: String(metrics.outOfStockCount),
+      sub: 'Active Products At Zero',
+      href: '/admin/products',
+      color: metrics.outOfStockCount > 0 ? 'var(--red)' : 'var(--grey-400)',
+      icon: <svg {...ICON_PROPS}><circle cx="12" cy="12" r="10" /><line x1="4.93" y1="4.93" x2="19.07" y2="19.07" /></svg>,
+    },
+    {
+      label: 'Unpaid Statements',
+      value: String(metrics.unpaidStatementsCount),
+      sub: `Outstanding: ${formatCurrency(metrics.unpaidStatementsTotal)}`,
+      href: '/admin/statements',
+      color: metrics.unpaidStatementsCount > 0 ? 'var(--red)' : 'var(--grey-400)',
+      icon: <svg {...ICON_PROPS}><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /><line x1="16" y1="13" x2="8" y2="13" /><line x1="16" y1="17" x2="8" y2="17" /></svg>,
+    },
+    {
+      label: 'Unread Admin Messages',
+      value: String(metrics.unreadAdminMessages),
+      sub: 'In Your Inbox',
+      href: '/admin/messages',
+      color: metrics.unreadAdminMessages > 0 ? 'var(--teal)' : 'var(--grey-400)',
+      icon: <svg {...ICON_PROPS}><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg>,
+    },
+    {
+      label: 'New Researchers (24h)',
+      value: String(metrics.newResearchers24h),
+      sub: 'Past 24 Hours',
+      href: '/admin/researchers',
+      color: 'var(--teal)',
+      icon: <svg {...ICON_PROPS}><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="8.5" cy="7" r="4" /><line x1="20" y1="8" x2="20" y2="14" /><line x1="23" y1="11" x2="17" y2="11" /></svg>,
+    },
+    {
+      label: 'Active Agents',
+      value: String(metrics.activeAgents),
+      sub: 'Currently Selling',
+      href: '/admin/agents',
+      color: 'var(--silver)',
+      icon: <svg {...ICON_PROPS}><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /></svg>,
+    },
+    {
+      label: 'GMV Trend',
+      value: delta.direction === 'flat' ? '—' : `${delta.direction === 'up' ? '+' : '-'}${delta.pct.toFixed(1)}%`,
+      sub: 'Last 7 Vs Prior 7',
+      href: '/admin/sales',
+      color: delta.direction === 'up' ? '#68D391' : delta.direction === 'down' ? 'var(--red)' : 'var(--grey-400)',
+      icon: <svg {...ICON_PROPS}><polyline points="23 6 13.5 15.5 8.5 10.5 1 18" /><polyline points="17 6 23 6 23 12" /></svg>,
     },
   ];
 
-  const STATUS_COLORS: Record<string, string> = {
-    pending_customer_payment: 'var(--red)',
-    agent_approval_pending:   '#F6AD55',
-    approved_ship:            '#F6AD55',
-    approved_pickup:          '#F6AD55',
-    in_fulfillment:           'var(--teal)',
-    shipped:                  'var(--teal)',
-    delivered:                '#68D391',
-    cancelled:                'var(--grey-400)',
-  };
-
-  const STATUS_LABELS: Record<string, string> = {
-    pending_customer_payment: 'Pending Customer Payment',
-    agent_approval_pending:   'Agent Approval Pending',
-    approved_ship:            'Approved Ship',
-    approved_pickup:          'Approved Pickup',
-    in_fulfillment:           'In Fulfillment',
-    shipped:                  'Shipped',
-    delivered:                'Delivered',
-    cancelled:                'Cancelled',
-  };
-
   return (
     <div style={{ padding: 'var(--space-8)' }}>
-      {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-8)', flexWrap: 'wrap', gap: 'var(--space-3)' }}>
-        <h1 style={{ fontSize: '1.6rem', margin: 0 }}>
-          Admin Dashboard
-        </h1>
+        <h1 style={{ fontSize: '1.6rem', margin: 0 }}>Admin Dashboard</h1>
         <p style={{ fontSize: '0.85rem', color: 'var(--grey-400)', margin: 0, fontFamily: 'var(--font-brand)', letterSpacing: '0.5px' }}>
           Pep Nation Lab Control Center
         </p>
       </div>
-      {/* Stats */}
+
       <div className="grid-4" style={{ marginBottom: 'var(--space-8)' }}>
-        {STATS.map(({ label, value, color, icon }) => (
-          <div key={label} className="card-metal" style={{ padding: 'var(--space-5)' }}>
+        {KPIS.map(({ label, value, sub, href, color, icon, trend }) => (
+          <Link
+            key={label}
+            href={href}
+            className="card-glass admin-kpi-card"
+            style={{
+              padding: 'var(--space-5)',
+              display: 'block',
+              textDecoration: 'none',
+              transition: 'transform 0.18s, border-color 0.18s',
+            }}
+          >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-              <div>
-                <div style={{ fontSize: '2rem', fontWeight: 800, fontFamily: "'Inter', 'Helvetica Neue', Arial, sans-serif", color, lineHeight: 1, fontFeatureSettings: '"zero" 0' }}>
+              <div style={{ minWidth: 0, flex: 1 }}>
+                <div style={{ fontSize: '1.7rem', fontWeight: 800, color, lineHeight: 1.1, fontFamily: "'Inter', 'Helvetica Neue', Arial, sans-serif", overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   {value}
                 </div>
-                <div style={{ fontSize: '0.8rem', color: 'var(--grey-400)', marginTop: 'var(--space-2)' }}>
+                <div style={{ fontSize: '0.78rem', color: 'var(--silver)', marginTop: 'var(--space-2)', fontWeight: 600 }}>
                   {label}
                 </div>
+                {sub && (
+                  <div style={{ fontSize: '0.72rem', color: 'var(--grey-400)', marginTop: 4 }}>
+                    {sub}
+                  </div>
+                )}
+                {trend && trend.direction !== 'flat' && (
+                  <div style={{ marginTop: 6, fontSize: '0.72rem', color: trend.direction === 'up' ? '#68D391' : 'var(--red)', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 4 }}>
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                      {trend.direction === 'up'
+                        ? <polyline points="23 6 13.5 15.5 8.5 10.5 1 18" />
+                        : <polyline points="23 18 13.5 8.5 8.5 13.5 1 6" />
+                      }
+                    </svg>
+                    <span>{trend.pct.toFixed(1)}%</span>
+                  </div>
+                )}
               </div>
-              <span style={{ fontSize: '1.4rem', color, opacity: 0.6 }}>{icon}</span>
+              <span style={{ color, opacity: 0.6, flexShrink: 0, marginLeft: 8 }}>{icon}</span>
             </div>
-          </div>
+          </Link>
         ))}
       </div>
 
-      {/* Visual Analytics */}
-      <AdminAnalytics />
-
-      <div className="grid-2">
-        {/* Recent Orders */}
+      <div className="grid-2" style={{ marginBottom: 'var(--space-8)' }}>
         <div className="card-metal" style={{ padding: 'var(--space-6)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-5)' }}>
-            <h3 style={{ fontSize: '1rem' }}>Recent Orders</h3>
-            <a href="/admin/orders" style={{ fontSize: '0.8rem', color: 'var(--teal)' }}>View All</a>
+            <h3 style={{ fontSize: '1rem', margin: 0 }}>Sales Last 30 Days</h3>
+            <Link href="/admin/sales" style={{ fontSize: '0.8rem', color: 'var(--teal)', textDecoration: 'none' }}>View Sales</Link>
           </div>
+          <AdminOverviewSparkline data={metrics.sparkline} />
+        </div>
 
-          {recentOrders && recentOrders.length > 0 ? (
+        <div className="card-metal" style={{ padding: 'var(--space-6)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-5)' }}>
+            <h3 style={{ fontSize: '1rem', margin: 0 }}>Low Stock Items</h3>
+            <Link href="/admin/products" style={{ fontSize: '0.8rem', color: 'var(--teal)', textDecoration: 'none' }}>Manage Products</Link>
+          </div>
+          {metrics.lowStockList.length === 0 ? (
+            <p style={{ fontSize: '0.85rem', color: 'var(--grey-400)', textAlign: 'center', padding: 'var(--space-6) 0' }}>
+              No Items At Or Below Low Stock Threshold
+            </p>
+          ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
-              {recentOrders.map((order) => {
-                const profile = (order.profiles as unknown) as { full_name: string } | null;
-                return (
-                  <div key={order.id} style={{
+              {metrics.lowStockList.map((p) => (
+                <div
+                  key={p.id}
+                  style={{
                     display: 'flex',
                     justifyContent: 'space-between',
                     alignItems: 'center',
                     padding: 'var(--space-3)',
                     background: 'var(--surface-1)',
                     borderRadius: 'var(--radius-md)',
-                    border: 'var(--border-subtle)'
-                  }}>
-                    <div>
-                      <div style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--silver)' }}>
-                        {profile?.full_name ?? 'Unknown'}
+                    border: 'var(--border-subtle)',
+                  }}
+                >
+                  <div>
+                    <div style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--silver)' }}>{p.name}</div>
+                    <div style={{ fontSize: '0.72rem', color: 'var(--grey-400)' }}>Threshold: {p.low_stock_threshold}</div>
+                  </div>
+                  <div style={{ fontSize: '0.85rem', fontWeight: 700, color: p.inventory_count === 0 ? 'var(--red)' : '#F6AD55' }}>
+                    {p.inventory_count} Left
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div className="grid-2" style={{ marginBottom: 'var(--space-8)' }}>
+        <div className="card-metal" style={{ padding: 'var(--space-6)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-5)' }}>
+            <h3 style={{ fontSize: '1rem', margin: 0 }}>Top SKUs (30 Days)</h3>
+            <Link href="/admin/sales" style={{ fontSize: '0.8rem', color: 'var(--teal)', textDecoration: 'none' }}>Full Sales</Link>
+          </div>
+          {metrics.topSkus.length === 0 ? (
+            <p style={{ fontSize: '0.85rem', color: 'var(--grey-400)', textAlign: 'center', padding: 'var(--space-6) 0' }}>
+              No Sales In The Last 30 Days
+            </p>
+          ) : (
+            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <thead>
+                <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+                  <th style={{ padding: 'var(--space-2) var(--space-3)', textAlign: 'left', fontSize: '0.7rem', color: 'var(--grey-400)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Product</th>
+                  <th style={{ padding: 'var(--space-2) var(--space-3)', textAlign: 'right', fontSize: '0.7rem', color: 'var(--grey-400)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Qty</th>
+                  <th style={{ padding: 'var(--space-2) var(--space-3)', textAlign: 'right', fontSize: '0.7rem', color: 'var(--grey-400)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Revenue</th>
+                </tr>
+              </thead>
+              <tbody>
+                {metrics.topSkus.map((sku) => (
+                  <tr key={sku.name} style={{ borderBottom: '1px solid rgba(255,255,255,0.03)' }}>
+                    <td style={{ padding: 'var(--space-2) var(--space-3)', fontSize: '0.82rem', color: 'var(--silver)' }}>{sku.name}</td>
+                    <td style={{ padding: 'var(--space-2) var(--space-3)', fontSize: '0.82rem', color: 'var(--white)', textAlign: 'right', fontWeight: 600 }}>{sku.quantity}</td>
+                    <td style={{ padding: 'var(--space-2) var(--space-3)', fontSize: '0.82rem', color: 'var(--teal)', textAlign: 'right', fontWeight: 600 }}>{formatCurrency(sku.revenue)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+
+        <div className="card-metal" style={{ padding: 'var(--space-6)' }}>
+          <h3 style={{ fontSize: '1rem', marginBottom: 'var(--space-5)' }}>Recent Admin Activity</h3>
+          {metrics.auditLog.length === 0 ? (
+            <p style={{ fontSize: '0.85rem', color: 'var(--grey-400)', textAlign: 'center', padding: 'var(--space-6) 0' }}>
+              No Recorded Admin Activity
+            </p>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)', maxHeight: 380, overflowY: 'auto' }}>
+              {metrics.auditLog.map((entry) => {
+                const actor = entry.actor_name || entry.actor_email || 'System';
+                return (
+                  <div
+                    key={entry.id}
+                    style={{
+                      display: 'flex',
+                      gap: 'var(--space-3)',
+                      padding: 'var(--space-3)',
+                      background: 'var(--surface-1)',
+                      borderRadius: 'var(--radius-md)',
+                      border: 'var(--border-subtle)',
+                    }}
+                  >
+                    <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--teal)', marginTop: 8, flexShrink: 0 }} />
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: '0.82rem', color: 'var(--silver)' }}>
+                        <span style={{ fontWeight: 700, color: 'var(--white)' }}>{actor}</span>
+                        {' '}
+                        <span style={{ color: 'var(--grey-400)' }}>{formatAuditAction(entry.action)}</span>
+                        {entry.entity_type && (
+                          <> <span style={{ color: 'var(--grey-400)' }}>On</span> <span style={{ color: 'var(--silver)' }}>{formatAuditAction(entry.entity_type)}</span></>
+                        )}
                       </div>
-                      <div style={{ fontSize: '0.75rem', color: 'var(--grey-400)' }}>
-                        {order.payment_method?.toUpperCase() ?? 'N/A'} • ${Number(order.total).toFixed(2)}
+                      <div style={{ fontSize: '0.7rem', color: 'var(--grey-400)', marginTop: 2 }}>
+                        {timeAgo(entry.created_at)}
                       </div>
-                    </div>
-                    <div style={{
-                      fontSize: '0.7rem',
-                      fontWeight: 700,
-                      color: STATUS_COLORS[order.status] ?? 'var(--grey-400)',
-                      background: `${STATUS_COLORS[order.status] ?? 'var(--grey-400)'}15`,
-                      padding: '2px var(--space-2)',
-                      borderRadius: 'var(--radius-sm)',
-                    }}>
-                      {STATUS_LABELS[order.status] ?? order.status}
                     </div>
                   </div>
                 );
               })}
             </div>
-          ) : (
-            <p style={{ fontSize: '0.85rem', color: 'var(--grey-400)', textAlign: 'center', padding: 'var(--space-6) 0' }}>
-              No Orders Yet
-            </p>
           )}
         </div>
-
-        {/* Quick Actions */}
-        <div className="card-metal" style={{ padding: 'var(--space-6)' }}>
-          <h3 style={{ fontSize: '1rem', marginBottom: 'var(--space-5)' }}>Quick Actions</h3>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
-            {[
-              { href: '/admin/products/new', label: 'Add New Product', desc: 'Add A Research Compound To The Catalog', color: 'var(--teal)' },
-              { href: '/admin/store-preview', label: 'Store Catalog Preview', desc: 'View The Live Master Catalog', color: 'var(--teal)' },
-              { href: '/admin/researchers', label: 'Create New Agent', desc: 'Set Up A New Agent With Pricing Tier & Storefront', color: 'var(--teal)' },
-              { href: '/admin/sales', label: 'Sales & Revenue', desc: 'View Revenue By Agent, Transaction Ledgers', color: 'var(--silver)' },
-              { href: '/admin/orders', label: 'Process Orders', desc: 'Mark Payments Received, Approve For Shipment', color: pendingOrders ? 'var(--red)' : 'var(--silver)' },
-              { href: '/admin/pricing', label: 'Edit Tier Pricing', desc: 'Adjust Multipliers For All 3 Tiers', color: 'var(--silver)' },
-              { href: '/admin/statements', label: 'Agent Statements', desc: 'Generate And Mark Weekly Billing Statements', color: 'var(--silver)' },
-            ].map(({ href, label, desc, color }) => (
-              <a
-                key={href}
-                href={href}
-                style={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: 4,
-                  padding: 'var(--space-4)',
-                  background: 'var(--surface-1)',
-                  borderRadius: 'var(--radius-md)',
-                  border: 'var(--border-subtle)',
-                  textDecoration: 'none',
-                  transition: 'border-color 0.2s',
-                }}
-              >
-                <span style={{ fontSize: '0.88rem', fontWeight: 600, color }}>{label}</span>
-                <span style={{ fontSize: '0.76rem', color: 'var(--grey-400)' }}>{desc}</span>
-              </a>
-            ))}
-          </div>
-        </div>
       </div>
+
+      <AdminAnalytics />
     </div>
   );
 }
