@@ -10,6 +10,11 @@ import AgentStoreProducts from '@/components/AgentStoreProducts';
 import AgentSales from '@/components/AgentSales';
 import AgentSubAgents from '@/components/AgentSubAgents';
 import AgentInventory from '@/components/AgentInventory';
+import AgentInbox from '@/components/AgentInbox';
+import AgentOverview from '@/components/AgentOverview';
+import AgentStorefrontConfig from '@/components/AgentStorefrontConfig';
+import AgentOrders from '@/components/AgentOrders';
+import AgentLedger from '@/components/AgentLedger';
 
 interface Profile {
   id: string;
@@ -31,6 +36,7 @@ interface AgentProfile {
   bio: string | null;
   qr_code_url: string | null;
   payment_handles: Record<string, any> | null;
+  shippo_api_key: string | null;
 }
 
 interface Researcher {
@@ -71,7 +77,7 @@ export default function AgentDashboardClient({
 }: AgentDashboardClientProps) {
   const supabase = createClient();
 
-  const [activeTab, setActiveTab] = useState<'Overview' | 'Sales & Carts' | 'Researchers' | 'My Sub-Agents' | 'Orders' | 'Store Products' | 'Inventory' | 'Coupons' | 'Messages' | 'Storefront Config'>('Overview');
+  const [activeTab, setActiveTab] = useState<'Overview' | 'Sales & Carts' | 'Researchers' | 'My Sub-Agents' | 'Orders' | 'Store Products' | 'Inventory' | 'Ledger & Accounting' | 'Coupons' | 'Messages' | 'Storefront Config'>('Overview');
   const [agentProfile, setAgentProfile] = useState<AgentProfile | null>(initialAgentProfile);
   const [researchers] = useState<Researcher[]>(initialResearchers);
   const [orders, setOrders] = useState<Order[]>(initialOrders);
@@ -90,6 +96,7 @@ export default function AgentDashboardClient({
   const [cashappHandle, setCashappHandle] = useState(agentProfile?.payment_handles?.cashapp ?? '');
   const [venmoHandle, setVenmoHandle] = useState(agentProfile?.payment_handles?.venmo ?? '');
   const [applePayHandle, setApplePayHandle] = useState(agentProfile?.payment_handles?.apple_pay ?? '');
+  const [shippoApiKey, setShippoApiKey] = useState(agentProfile?.shippo_api_key ?? '');
 
   // Setup Form State (If no profile exists yet)
   const [setupDisplayName, setSetupDisplayName] = useState('');
@@ -226,80 +233,6 @@ export default function AgentDashboardClient({
       setError(err.message ?? 'An Error Occurred During Setup.');
     } finally {
       setLoading(false);
-    }
-  };
-
-  // Handle Updates to Storefront Configurations
-  const handleUpdateProfile = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(null);
-    setSuccess(null);
-
-    // Validate slug
-    const cleanSlug = slug.trim().toLowerCase();
-    if (!/^[a-z0-9\-]+$/.test(cleanSlug)) {
-      setError('Storefront URL Slug Must Only Contain Lowercase Letters, Numbers, And Hyphens.');
-      return;
-    }
-
-    setLoading(true);
-
-    try {
-      const { data, error: updateError } = await supabase
-        .from('agent_profiles')
-        .update({
-          slug: cleanSlug,
-          logo_url: logoUrl || null,
-          display_name: displayName.trim(),
-          tagline: tagline.trim() || null,
-          bio: bio.trim() || null,
-          primary_color: primaryColor,
-          payment_handles: {
-            zelle: zelleHandle.trim() || null,
-            cashapp: cashappHandle.trim() || null,
-            venmo: venmoHandle.trim() || null,
-            apple_pay: applePayHandle.trim() || null
-          }
-        })
-        .eq('id', userProfile.id)
-        .select()
-        .single();
-
-      if (updateError) {
-        throw new Error(updateError.message ?? 'Failed To Save Configurations.');
-      }
-
-      setAgentProfile(data);
-      setSuccess('Storefront Configuration Settings Successfully Saved!');
-    } catch (err: any) {
-      setError(err.message ?? 'An Error Occurred Saving Configurations.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Handle Order Status Transition / Approvals
-  const handleUpdateOrderStatus = async (orderId: string, newStatus: string) => {
-    setError(null);
-    setSuccess(null);
-
-    try {
-      const res = await fetch('/api/agent/orders/approve', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ orderId, newStatus })
-      });
-
-      if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.error || 'Failed To Transition Order.');
-      }
-
-      // Update local state
-      setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: newStatus } : o));
-      setSuccess(`Order Status Shifted To ${newStatus.replace(/_/g, ' ').toUpperCase()}`);
-    } catch (err: any) {
-      setError(err.message ?? 'An Error Occurred Updating Order Status.');
     }
   };
 
@@ -450,7 +383,7 @@ export default function AgentDashboardClient({
 
         {/* Tab Controls */}
         <div style={{ display: 'flex', gap: 'var(--space-2)', borderBottom: '1px solid rgba(255,255,255,0.05)', overflowX: 'auto', paddingBottom: 1 }}>
-          {(['Overview', 'Sales & Carts', 'Researchers', ...(userProfile.is_super_agent ? ['My Sub-Agents'] : []), 'Orders', 'Store Products', 'Inventory', 'Coupons', 'Messages', 'Storefront Config'] as const).map((tab) => (
+          {(['Overview', 'Sales & Carts', 'Researchers', ...(userProfile.is_super_agent ? ['My Sub-Agents'] : []), 'Orders', 'Store Products', 'Inventory', 'Ledger & Accounting', 'Coupons', 'Messages', 'Storefront Config'] as const).map((tab) => (
             <button
               key={tab}
               onClick={() => { setActiveTab(tab as any); setError(null); setSuccess(null); }}
@@ -502,92 +435,26 @@ export default function AgentDashboardClient({
           </div>
         )}
 
+        {/* TAB: Ledger & Accounting */}
+        {activeTab === 'Ledger & Accounting' && (
+          <div style={{ animation: 'fadeIn 0.3s ease-out' }}>
+            <AgentLedger agentId={userProfile.id} />
+          </div>
+        )}
+
         {/* TAB: Overview */}
         {activeTab === 'Overview' && (
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: 'var(--space-8)' }}>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-8)' }}>
-              {/* Stats Cards */}
-              <div className="grid-3">
-                <div className="card-metal" style={{ padding: 'var(--space-5)' }}>
-                  <div style={{ fontSize: '1.6rem', fontWeight: 800, fontFamily: 'var(--font-brand)', color: 'var(--teal)', marginBottom: 4 }}>
-                    {activeResearchersCount}
-                  </div>
-                  <div style={{ fontSize: '0.8rem', color: 'var(--grey-400)', fontWeight: 600 }}>Referred Researchers</div>
-                </div>
-
-                <div className="card-metal" style={{ padding: 'var(--space-5)' }}>
-                  <div style={{ fontSize: '1.6rem', fontWeight: 800, fontFamily: 'var(--font-brand)', color: 'var(--teal)', marginBottom: 4 }}>
-                    {activeOrdersCount}
-                  </div>
-                  <div style={{ fontSize: '0.8rem', color: 'var(--grey-400)', fontWeight: 600 }}>Total Order Ledger</div>
-                </div>
-
-                <div className="card-metal" style={{ padding: 'var(--space-5)' }}>
-                  <div style={{ fontSize: '1.6rem', fontWeight: 800, fontFamily: 'var(--font-brand)', color: 'var(--teal)', marginBottom: 4 }}>
-                    ${totalRevenue.toFixed(2)}
-                  </div>
-                  <div style={{ fontSize: '0.8rem', color: 'var(--grey-400)', fontWeight: 600 }}>Total Referred Revenue</div>
-                </div>
-              </div>
-
-              {/* URL and quick links card */}
-              <div className="card-metal" style={{ padding: 'var(--space-6)' }}>
-                <h3 style={{ fontSize: '1rem', color: 'var(--white)', marginBottom: 'var(--space-4)', fontFamily: 'var(--font-brand)', letterSpacing: '0.05em', textTransform: 'uppercase' }}>
-                  White-Label Storefront
-                </h3>
-                <p style={{ color: 'var(--silver-light)', fontSize: '0.85rem', marginBottom: 'var(--space-4)', lineHeight: 1.5 }}>
-                  Share Your Exclusive Link Directly With Your Private Clients. Any Accounts Registered via This Address Are Tied Permanently To Your Referrals.
-                </p>
-
-                <div style={{ display: 'flex', gap: 'var(--space-3)' }}>
-                  <div style={{ flexGrow: 1, background: 'var(--surface-2)', border: '1px solid rgba(255, 255, 255, 0.08)', borderRadius: 'var(--radius-md)', padding: '10px var(--space-4)', fontSize: '0.88rem', color: 'var(--teal)', fontFamily: 'var(--font-brand)', display: 'flex', alignItems: 'center', overflow: 'hidden' }}>
-                    {storefrontUrl}
-                  </div>
-                  <button onClick={copyStorefrontLink} className="btn btn-secondary" style={{ fontSize: '0.82rem' }}>
-                    {copiedStorefront ? 'Link Copied' : 'Copy Link'}
-                  </button>
-                  <a href={storefrontUrl} target="_blank" rel="noopener noreferrer" className="btn btn-primary" style={{ fontSize: '0.82rem' }}>
-                    Visit Store
-                  </a>
-                </div>
-              </div>
-
-              {/* Quick instructions */}
-              <div style={{ background: 'var(--surface-2)', border: '1px solid rgba(255, 255, 255, 0.05)', borderRadius: 'var(--radius-lg)', padding: 'var(--space-6)' }}>
-                <h4 style={{ color: 'var(--teal)', fontSize: '0.9rem', marginBottom: 'var(--space-2)', fontFamily: 'var(--font-brand)' }}>Agent Operations Blueprint</h4>
-                <ol style={{ fontSize: '0.8rem', color: 'var(--silver-light)', paddingLeft: 20, margin: 0, display: 'flex', flexDirection: 'column', gap: 8, lineHeight: 1.6 }}>
-                  <li>Your Referred Customers Browse And Purchase Compound Inventory Directly At Your White-Label URL.</li>
-                  <li>Following Checkout Submission, Clients Complete Offline Payments Via Zelle/Cash App Using Your Handles.</li>
-                  <li>When You Verify Bank Receipt, Transition The Order Status To Approved In The Orders Tab To Release Fulfillment.</li>
-                </ol>
-              </div>
-            </div>
-
-            {/* QR Code Side Card */}
-            <div>
-              <div className="card-metal animate-glow" style={{ textAlign: 'center', padding: 'var(--space-6)', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                <h3 style={{ fontSize: '0.9rem', color: 'var(--white)', marginBottom: 'var(--space-4)', fontFamily: 'var(--font-brand)', letterSpacing: '0.05em', textTransform: 'uppercase' }}>
-                  Storefront QR Code
-                </h3>
-                {qrCodeUrl ? (
-                  <div style={{ background: 'var(--white)', padding: 12, borderRadius: 'var(--radius-lg)', display: 'inline-block', boxShadow: '0 0 20px rgba(0,196,188,0.15)', marginBottom: 'var(--space-4)' }}>
-                    <img src={qrCodeUrl} alt="Storefront QR Code" style={{ display: 'block', width: 200, height: 200 }} />
-                  </div>
-                ) : (
-                  <div style={{ width: 224, height: 224, background: 'var(--surface-3)', borderRadius: 'var(--radius-lg)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 'var(--space-4)' }}>
-                    <span style={{ color: 'var(--grey-400)', fontSize: '0.8rem' }}>Generating QR...</span>
-                  </div>
-                )}
-                <p style={{ fontSize: '0.78rem', color: 'var(--grey-400)', marginBottom: 'var(--space-4)', lineHeight: 1.4 }}>
-                  Scan Or Download To Print On Marketing Literature. Automatically Routes Users To Storefront.
-                </p>
-                {qrCodeUrl && (
-                  <a href={qrCodeUrl} download={`${agentProfile.slug}-qr-code.png`} className="btn btn-secondary btn-sm" style={{ width: '100%' }}>
-                    Download QR Code PNG
-                  </a>
-                )}
-              </div>
-            </div>
+          <div style={{ animation: 'fadeIn 0.3s ease-out' }}>
+            <AgentOverview 
+              activeResearchersCount={activeResearchersCount}
+              activeOrdersCount={activeOrdersCount}
+              totalRevenue={totalRevenue}
+              storefrontUrl={storefrontUrl}
+              copyStorefrontLink={copyStorefrontLink}
+              copiedStorefront={copiedStorefront}
+              qrCodeUrl={qrCodeUrl}
+              agentProfile={agentProfile}
+            />
           </div>
         )}
 
@@ -730,120 +597,8 @@ export default function AgentDashboardClient({
 
         {/* TAB 3: Referred Orders */}
         {activeTab === 'Orders' && (
-          <div className="card-metal" style={{ padding: 'var(--space-6)' }}>
-            <h3 style={{ fontSize: '1.1rem', color: 'var(--white)', marginBottom: 'var(--space-4)', fontFamily: 'var(--font-brand)', letterSpacing: '0.05em', textTransform: 'uppercase' }}>
-              Referred Order Ledger
-            </h3>
-            <p style={{ color: 'var(--grey-400)', fontSize: '0.85rem', marginBottom: 'var(--space-6)' }}>
-              Manage Orders Registered By Your Clients. Coordinate Cash Settlements Offline And Release For System Fulfillment.
-            </p>
-
-            {orders.length > 0 ? (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
-                {orders.map((order) => {
-                  const isPendingPayment = order.status === 'pending_customer_payment';
-                  const isPendingApproval = order.status === 'agent_approval_pending';
-                  const canApprove = isPendingPayment || isPendingApproval;
-
-                  return (
-                    <div key={order.id} style={{
-                      background: 'var(--surface-2)',
-                      border: '1px solid rgba(255,255,255,0.05)',
-                      borderRadius: 'var(--radius-lg)',
-                      padding: 'var(--space-5)',
-                      display: 'grid',
-                      gridTemplateColumns: '1fr auto',
-                      alignItems: 'center',
-                      gap: 'var(--space-4)'
-                    }}>
-                      <div>
-                        {/* Order Header */}
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', marginBottom: 'var(--space-2)' }}>
-                          <span style={{ fontSize: '0.72rem', color: 'var(--grey-400)', fontFamily: 'var(--font-brand)' }}>ID: {order.id}</span>
-                          <span style={{ width: 4, height: 4, borderRadius: '50%', background: 'rgba(255,255,255,0.2)' }} />
-                          <span style={{ fontSize: '0.78rem', color: 'var(--silver)' }}>{new Date(order.created_at).toLocaleDateString()}</span>
-                        </div>
-
-                        {/* Order Meta details */}
-                        <div style={{ marginBottom: 'var(--space-3)' }}>
-                          <div style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--white)' }}>
-                            {order.buyer_name || 'Anonymous Scientist'}
-                          </div>
-                          <div style={{ fontSize: '0.78rem', color: 'var(--grey-400)', fontFamily: 'var(--font-brand)' }}>
-                            {order.buyer_email ? `@${order.buyer_email.split('@')[0]}` : ''}
-                          </div>
-                        </div>
-
-                        {/* Payment & Shipping Meta info */}
-                        <div style={{ display: 'flex', gap: 'var(--space-4)', flexWrap: 'wrap' }}>
-                          <div style={{ fontSize: '0.8rem', color: 'var(--silver-light)' }}>
-                            <span style={{ color: 'var(--grey-400)' }}>Total:</span> <strong style={{ color: 'var(--teal)' }}>${Number(order.total).toFixed(2)}</strong>
-                          </div>
-                          <div style={{ fontSize: '0.8rem', color: 'var(--silver-light)', textTransform: 'capitalize' }}>
-                            <span style={{ color: 'var(--grey-400)' }}>Method:</span> {order.fulfillment_method === 'agent_pickup' ? 'Agent Pickup' : 'Delivery'}
-                          </div>
-                          <div style={{ fontSize: '0.8rem', color: 'var(--silver-light)', textTransform: 'uppercase' }}>
-                            <span style={{ color: 'var(--grey-400)' }}>Payment:</span> {order.payment_method === 'cashapp' ? 'Cash App' : order.payment_method === 'apple_pay' ? 'Apple Pay' : order.payment_method}
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Right Action buttons and badge */}
-                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 'var(--space-3)' }}>
-                        <span className={`badge ${
-                          order.status === 'cancelled' ? 'badge-red' :
-                          order.status.startsWith('approved_') || order.status === 'delivered' || order.status === 'shipped' ? 'badge-teal' :
-                          'badge-silver'
-                        }`} style={{ fontSize: '0.7rem' }}>
-                          {order.status.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}
-                        </span>
-
-                        {canApprove && (
-                          <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
-                            <button
-                              onClick={() => handleUpdateOrderStatus(order.id, 'cancelled')}
-                              className="btn btn-secondary btn-sm"
-                              style={{ border: '1px solid var(--red)', color: 'var(--red)', fontSize: '0.75rem' }}
-                            >
-                              Cancel Order
-                            </button>
-                            <button
-                              onClick={() => handleUpdateOrderStatus(
-                                order.id,
-                                order.fulfillment_method === 'agent_pickup' ? 'approved_pickup' : 'approved_ship'
-                              )}
-                              className="btn btn-primary btn-sm"
-                              style={{ fontSize: '0.75rem' }}
-                            >
-                              Approve Offline Payment
-                            </button>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            ) : (
-              <div style={{ textAlign: 'center', padding: 'var(--space-10) 0', opacity: 0.6 }}>
-                <svg
-                  width="40"
-                  height="40"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="var(--teal)"
-                  strokeWidth="1.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  style={{ display: 'block', margin: '0 auto var(--space-3)' }}
-                >
-                  <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" />
-                  <rect x="8" y="2" width="8" height="4" rx="1" ry="1" />
-                </svg>
-                <h4 style={{ color: 'var(--silver)' }}>No Referred Orders Found</h4>
-                <p style={{ fontSize: '0.78rem', color: 'var(--grey-400)', margin: 0 }}>Client Transaction Registrations Will Sync Dynamically To This Dashboard Panel.</p>
-              </div>
-            )}
+          <div style={{ animation: 'fadeIn 0.3s ease-out' }}>
+            <AgentOrders orders={orders} setOrders={setOrders} />
           </div>
         )}
 
@@ -852,183 +607,29 @@ export default function AgentDashboardClient({
 
         {/* TAB: Researcher Messages */}
         {activeTab === 'Messages' && (
-          <AgentMessages agentId={userProfile.id} researchers={researchers} />
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-8)' }}>
+            <AgentInbox agentId={userProfile.id} />
+            <AgentMessages agentId={userProfile.id} researchers={researchers} />
+          </div>
         )}
 
         {/* TAB: Storefront Configuration */}
         {activeTab === 'Storefront Config' && (
-          <div className="card-metal" style={{ padding: 'var(--space-6)' }}>
-            <h3 style={{ fontSize: '1.1rem', color: 'var(--white)', marginBottom: 'var(--space-4)', fontFamily: 'var(--font-brand)', letterSpacing: '0.05em', textTransform: 'uppercase' }}>
-              Configure Storefront Settings
-            </h3>
-            <p style={{ color: 'var(--grey-400)', fontSize: '0.85rem', marginBottom: 'var(--space-6)' }}>
-              Tailor Your White-Label Visual Identity, Bio Details, And Private Mobile Cash Accounts.
-            </p>
-
-            <form onSubmit={handleUpdateProfile} style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-5)' }}>
-              <div className="grid-2">
-                <div className="form-group" style={{ gridColumn: '1 / -1' }}>
-                  <label className="form-label">Storefront Logo</label>
-                  {logoUrl && (
-                    <div style={{ marginBottom: 'var(--space-3)' }}>
-                      <img src={logoUrl} alt="Storefront Logo" style={{ height: '60px', objectFit: 'contain' }} />
-                    </div>
-                  )}
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={async (e) => {
-                      const file = e.target.files?.[0];
-                      if (!file) return;
-                      setLoading(true);
-                      setError(null);
-                      try {
-                        const fileExt = file.name.split('.').pop();
-                        const fileName = `${userProfile.id}-${Math.random().toString(36).substring(2)}.${fileExt}`;
-                        const { error: uploadError } = await supabase.storage
-                          .from('storefront-assets')
-                          .upload(fileName, file);
-                        if (uploadError) throw uploadError;
-                        const { data } = supabase.storage.from('storefront-assets').getPublicUrl(fileName);
-                        setLogoUrl(data.publicUrl);
-                        setSuccess('Logo Uploaded! Click Save Configuration to apply.');
-                      } catch (err: any) {
-                        setError(err.message || 'Failed To Upload Logo');
-                      } finally {
-                        setLoading(false);
-                      }
-                    }}
-                    className="form-input"
-                  />
-                  <p style={{ fontSize: '0.8rem', color: 'var(--grey-400)', marginTop: 'var(--space-2)' }}>Upload a custom logo to replace the default Pep Nation Lab branding on your storefront.</p>
-                </div>
-
-                <div className="form-group">
-                  <label className="form-label">Display Storefront Name</label>
-                  <input
-                    type="text"
-                    className="form-input"
-                    value={displayName}
-                    onChange={(e) => setDisplayName(e.target.value)}
-                    required
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label className="form-label">Storefront URL Slug</label>
-                  <div style={{ display: 'flex', alignItems: 'center', background: 'var(--surface-3)', borderRadius: 'var(--radius-md)', border: '1px solid rgba(255,255,255,0.1)', paddingLeft: 'var(--space-3)' }}>
-                    <span style={{ fontSize: '0.85rem', color: 'var(--grey-400)', userSelect: 'none' }}>pepnationlab.com/</span>
-                    <input
-                      type="text"
-                      className="form-input"
-                      value={slug}
-                      onChange={(e) => setSlug(e.target.value)}
-                      style={{ background: 'transparent', border: 'none', boxShadow: 'none' }}
-                      required
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <div className="form-group">
-                <label className="form-label">Marketing Tagline</label>
-                <input
-                  type="text"
-                  className="form-input"
-                  placeholder="E.g. The Apex Level In Scientific Experimentation Compounds."
-                  value={tagline}
-                  onChange={(e) => setTagline(e.target.value)}
-                />
-              </div>
-
-              <div className="form-group">
-                <label className="form-label">Biography Details</label>
-                <textarea
-                  className="form-input"
-                  placeholder="Provide Additional Laboratory Context Or Institutional Accreditations..."
-                  value={bio}
-                  onChange={(e) => setBio(e.target.value)}
-                  style={{ minHeight: 100, resize: 'vertical' }}
-                />
-              </div>
-
-              <div className="grid-2">
-                <div className="form-group">
-                  <label className="form-label">Brand Color Highlight</label>
-                  <div style={{ display: 'flex', gap: 'var(--space-3)' }}>
-                    <input
-                      type="color"
-                      value={primaryColor}
-                      onChange={(e) => setPrimaryColor(e.target.value)}
-                      style={{ width: 44, height: 44, padding: 0, border: 'none', background: 'none', cursor: 'pointer', borderRadius: 'var(--radius-sm)' }}
-                    />
-                    <input
-                      type="text"
-                      className="form-input"
-                      value={primaryColor}
-                      onChange={(e) => setPrimaryColor(e.target.value)}
-                      style={{ fontFamily: 'var(--font-brand)' }}
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <h4 style={{ color: 'var(--teal)', fontSize: '0.9rem', marginTop: 'var(--space-4)', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: 'var(--space-2)', fontFamily: 'var(--font-brand)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                Private Mobile Payment Handles
-              </h4>
-
-              <div className="grid-2">
-                <div className="form-group">
-                  <label className="form-label">Zelle Transfer Account</label>
-                  <input
-                    type="text"
-                    className="form-input"
-                    placeholder="E.g. payments@myshop.com"
-                    value={zelleHandle}
-                    onChange={(e) => setZelleHandle(e.target.value)}
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label className="form-label">Cash App Handle</label>
-                  <input
-                    type="text"
-                    className="form-input"
-                    placeholder="E.g. $MyStorefront"
-                    value={cashappHandle}
-                    onChange={(e) => setCashappHandle(e.target.value)}
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label className="form-label">Venmo Handle</label>
-                  <input
-                    type="text"
-                    className="form-input"
-                    placeholder="E.g. @MyStorefront"
-                    value={venmoHandle}
-                    onChange={(e) => setVenmoHandle(e.target.value)}
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label className="form-label">Apple Pay Receiver</label>
-                  <input
-                    type="text"
-                    className="form-input"
-                    placeholder="E.g. billing@myshop.com"
-                    value={applePayHandle}
-                    onChange={(e) => setApplePayHandle(e.target.value)}
-                  />
-                </div>
-              </div>
-
-              <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 'var(--space-4)' }}>
-                <button type="submit" className="btn btn-primary" style={{ minWidth: 200 }} disabled={loading}>
-                  {loading ? 'Saving Settings...' : 'Save Configuration'}
-                </button>
-              </div>
-            </form>
+          <div style={{ animation: 'fadeIn 0.3s ease-out' }}>
+            <AgentStorefrontConfig 
+              displayName={displayName} setDisplayName={setDisplayName}
+              slug={slug} setSlug={setSlug}
+              logoUrl={logoUrl} setLogoUrl={setLogoUrl}
+              tagline={tagline} setTagline={setTagline}
+              bio={bio} setBio={setBio}
+              primaryColor={primaryColor} setPrimaryColor={setPrimaryColor}
+              zelleHandle={zelleHandle} setZelleHandle={setZelleHandle}
+              cashappHandle={cashappHandle} setCashappHandle={setCashappHandle}
+              venmoHandle={venmoHandle} setVenmoHandle={setVenmoHandle}
+              applePayHandle={applePayHandle} setApplePayHandle={setApplePayHandle}
+              shippoApiKey={shippoApiKey} setShippoApiKey={setShippoApiKey}
+              agentId={userProfile.id}
+            />
           </div>
         )}
       </div>

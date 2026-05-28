@@ -39,8 +39,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Researcher not found or does not belong to you' }, { status: 404 });
     }
 
-    if (researcherProfile.role === 'agent' || researcherProfile.role === 'admin') {
-      return NextResponse.json({ error: 'User is already an Agent or Admin' }, { status: 400 });
+    if (researcherProfile.role === 'agent' || researcherProfile.role === 'super_agent' || researcherProfile.role === 'admin') {
+      return NextResponse.json({ error: 'User is already an Agent, Super Agent, or Admin' }, { status: 400 });
     }
 
     // Promote to Sub-Agent

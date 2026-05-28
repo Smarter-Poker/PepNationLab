@@ -29,7 +29,7 @@ interface ComputeResult {
   orderIds: string[];
 }
 
-async function computeStatement(
+export async function computeStatement(
   supabase: ServiceClient,
   agentId: string,
   weekStart: string
@@ -121,7 +121,7 @@ async function computeStatement(
   };
 }
 
-async function persistStatement(
+export async function persistStatement(
   supabase: ServiceClient,
   agentId: string,
   weekStart: string,

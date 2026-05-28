@@ -20,6 +20,8 @@ interface Product {
   inventory_count: number;
   low_stock_threshold: number;
   backorder_days: number;
+  admin_bulk_price: any;
+  admin_bulk_threshold: any;
 }
 
 interface ProductsListProps {
@@ -27,11 +29,13 @@ interface ProductsListProps {
     full_name: string | null;
     role: string;
     tier: string | null;
+    parent_agent_id?: string | null;
   };
   products: Product[];
   userTier: string;
   tierMultipliers: Record<string, number>;
   overrideMultipliers: Record<string, number>;
+  superAgentPricing: Record<string, any>;
   userEmail: string;
 }
 
@@ -41,6 +45,7 @@ export default function ProductsList({
   userTier,
   tierMultipliers,
   overrideMultipliers,
+  superAgentPricing,
   userEmail,
 }: ProductsListProps) {
   const { addToCart, cartCount, setIsCartOpen } = useCart();
@@ -52,17 +57,36 @@ export default function ProductsList({
 
   // Helper to calculate price for a product
   const getProductPrices = (product: Product) => {
+    let costPrice = 0;
+    let bulkCostPrice: number | null = null;
+    let bulkThreshold = 100;
+
     const cost = Number(product.base_cost);
-    
-    // Multiplier for logged in user tier
-    const multiplier = overrideMultipliers[product.id] ?? tierMultipliers[userTier] ?? 7.0;
-    const costPrice = cost * multiplier;
+
+    // If the user has a parent_agent_id, they get super_agent_pricing
+    if (userProfile.parent_agent_id && superAgentPricing[product.id]) {
+      const saPricing = superAgentPricing[product.id];
+      costPrice = Number(saPricing.baseline_cost);
+      if (saPricing.bulk_baseline_cost !== null) {
+        bulkCostPrice = Number(saPricing.bulk_baseline_cost);
+        bulkThreshold = saPricing.bulk_threshold ?? 100;
+      }
+    } else {
+      // Direct Admin pricing
+      const multiplier = overrideMultipliers[product.id] ?? tierMultipliers[userTier] ?? 7.0;
+      costPrice = cost * multiplier;
+      
+      if (product.admin_bulk_price !== null && product.admin_bulk_price !== undefined) {
+        bulkCostPrice = Number(product.admin_bulk_price);
+        bulkThreshold = product.admin_bulk_threshold ?? 100;
+      }
+    }
 
     // Retail price (Tier 3)
     const retailMultiplier = tierMultipliers['tier_3'] ?? 7.0;
     const retailPrice = cost * retailMultiplier;
 
-    return { costPrice, retailPrice };
+    return { costPrice, retailPrice, bulkCostPrice, bulkThreshold };
   };
 
   // Filter products by search and category selection
@@ -257,7 +281,7 @@ export default function ProductsList({
         {filteredProducts.length > 0 ? (
           <div className="grid-3">
             {filteredProducts.map(product => {
-              const { costPrice, retailPrice } = getProductPrices(product);
+              const { costPrice, retailPrice, bulkCostPrice, bulkThreshold } = getProductPrices(product);
               const isLowStock = product.in_stock && product.inventory_count <= product.low_stock_threshold && product.inventory_count > 0;
               
               // Formatting compound name gracefully
@@ -304,7 +328,7 @@ export default function ProductsList({
                           background: product.in_stock ? 'var(--teal)' : '#F6AD55',
                           boxShadow: `0 0 4px ${product.in_stock ? 'var(--teal)' : '#F6AD55'}`
                         }} />
-                        {product.in_stock ? 'Ships Now' : `Ships In ${product.backorder_days} Days`}
+                        {product.in_stock ? 'In Stock — Ships Now' : `Ships From China (10-15 Days)`}
                       </span>
 
                       {isLowStock && (
@@ -345,6 +369,11 @@ export default function ProductsList({
                             Retail: ${retailPrice.toFixed(2)}
                           </div>
                         )}
+                        {bulkCostPrice !== null && (
+                          <div style={{ fontSize: '0.72rem', color: 'var(--teal)', marginTop: 2, fontWeight: 600 }}>
+                            Buy {bulkThreshold}+ for ${bulkCostPrice.toFixed(2)}/ea
+                          </div>
+                        )}
                       </div>
 
                       <button
@@ -354,6 +383,8 @@ export default function ProductsList({
                           sku: product.sku ?? '',
                           retailPrice: retailPrice,
                           costPrice: costPrice,
+                          bulkCostPrice: bulkCostPrice,
+                          bulkThreshold: bulkThreshold,
                           weightOz: Number(product.weight_oz) || 0.5
                         })}
                         className="btn btn-primary btn-sm"

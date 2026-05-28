@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import Link from 'next/link';
+import { motion, AnimatePresence } from 'framer-motion';
 
 export interface CartItem {
   id: string; // Product ID
@@ -10,6 +11,8 @@ export interface CartItem {
   quantity: number;
   retailPrice: number; // Retail price (Tier 3)
   costPrice: number;   // Price paid by current user (based on tier)
+  bulkCostPrice?: number | null; // Price paid if threshold is met
+  bulkThreshold?: number; // Quantity needed to trigger bulk discount
   weightOz: number;
 }
 
@@ -93,7 +96,12 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   };
 
   const cartCount = cart.reduce((acc, item) => acc + item.quantity, 0);
-  const cartSubtotal = cart.reduce((acc, item) => acc + item.costPrice * item.quantity, 0);
+  const cartSubtotal = cart.reduce((acc, item) => {
+    const activePrice = (item.bulkCostPrice && item.bulkThreshold && item.quantity >= item.bulkThreshold) 
+      ? item.bulkCostPrice 
+      : item.costPrice;
+    return acc + activePrice * item.quantity;
+  }, 0);
 
   return (
     <CartContext.Provider
@@ -110,7 +118,9 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       }}
     >
       {children}
-      {isCartOpen && <CartDrawer />}
+      <AnimatePresence>
+        {isCartOpen && <CartDrawer />}
+      </AnimatePresence>
     </CartContext.Provider>
   );
 }
@@ -127,18 +137,23 @@ function CartDrawer() {
   const { cart, removeFromCart, updateQuantity, clearCart, cartSubtotal, setIsCartOpen } = useCart();
 
   return (
-    <div style={{
-      position: 'fixed',
-      top: 0,
-      right: 0,
-      bottom: 0,
-      left: 0,
-      zIndex: 100,
-      display: 'flex',
-      justifyContent: 'flex-end',
-      background: 'rgba(5, 10, 15, 0.75)',
-      backdropFilter: 'blur(4px)',
-    }}>
+    <motion.div 
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      style={{
+        position: 'fixed',
+        top: 0,
+        right: 0,
+        bottom: 0,
+        left: 0,
+        zIndex: 100,
+        display: 'flex',
+        justifyContent: 'flex-end',
+        background: 'rgba(5, 10, 15, 0.75)',
+        backdropFilter: 'blur(6px)',
+      }}
+    >
       {/* Backdrop close area */}
       <div 
         onClick={() => setIsCartOpen(false)} 
@@ -146,19 +161,25 @@ function CartDrawer() {
       />
 
       {/* Drawer Body */}
-      <div className="card-metal" style={{
-        width: '100%',
-        maxWidth: 420,
-        height: '100%',
-        borderRadius: 0,
-        borderLeft: 'var(--border-teal)',
-        display: 'flex',
-        flexDirection: 'column',
-        padding: 'var(--space-6)',
-        boxShadow: '-10px 0 30px rgba(0, 196, 188, 0.15)',
-        position: 'relative',
-        animation: 'slideIn 0.3s ease-out',
-      }}>
+      <motion.div 
+        initial={{ x: '100%' }}
+        animate={{ x: 0 }}
+        exit={{ x: '100%' }}
+        transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+        className="card-metal" 
+        style={{
+          width: '100%',
+          maxWidth: 420,
+          height: '100%',
+          borderRadius: 0,
+          borderLeft: 'var(--border-teal)',
+          display: 'flex',
+          flexDirection: 'column',
+          padding: 'var(--space-6)',
+          boxShadow: '-10px 0 30px rgba(0, 196, 188, 0.15)',
+          position: 'relative',
+        }}
+      >
         {/* Header */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-6)', borderBottom: '1px solid rgba(255, 255, 255, 0.06)', paddingBottom: 'var(--space-4)' }}>
           <h3 style={{ fontSize: '1.1rem', fontFamily: 'var(--font-brand)', color: 'var(--teal)', margin: 0, letterSpacing: '0.05em' }}>
@@ -218,8 +239,15 @@ function CartDrawer() {
                       </button>
                     </div>
 
-                    <div style={{ fontSize: '0.9rem', color: 'var(--white)', fontWeight: 600, fontFamily: 'var(--font-brand)' }}>
-                      ${(item.costPrice * item.quantity).toFixed(2)}
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
+                      <div style={{ fontSize: '0.9rem', color: 'var(--white)', fontWeight: 600, fontFamily: 'var(--font-brand)' }}>
+                        ${((item.bulkCostPrice && item.bulkThreshold && item.quantity >= item.bulkThreshold ? item.bulkCostPrice : item.costPrice) * item.quantity).toFixed(2)}
+                      </div>
+                      {item.bulkCostPrice && item.bulkThreshold && item.quantity >= item.bulkThreshold && (
+                        <div style={{ fontSize: '0.65rem', color: 'var(--teal)' }}>
+                          Bulk Discount Applied! (${item.bulkCostPrice.toFixed(2)}/ea)
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -279,14 +307,7 @@ function CartDrawer() {
             </div>
           </div>
         )}
-
-        <style>{`
-          @keyframes slideIn {
-            from { transform: translateX(100%); }
-            to { transform: translateX(0); }
-          }
-        `}</style>
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
   );
 }

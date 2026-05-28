@@ -36,6 +36,8 @@ export default function NewProductPage() {
     low_stock_threshold: '5',
     backorder_days: '14',
     is_active: true,
+    admin_bulk_price: '',
+    admin_bulk_threshold: '100',
   });
   const [uploadingImage, setUploadingImage] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -105,6 +107,8 @@ export default function NewProductPage() {
         inventory_count: parseInt(form.inventory_count, 10) || 0,
         low_stock_threshold: parseInt(form.low_stock_threshold, 10) || 5,
         backorder_days: parseInt(form.backorder_days, 10) || 14,
+        admin_bulk_price: form.admin_bulk_price ? parseFloat(form.admin_bulk_price) : null,
+        admin_bulk_threshold: parseInt(form.admin_bulk_threshold, 10) || 100,
       }),
     });
 
@@ -256,6 +260,35 @@ export default function NewProductPage() {
             </div>
           </div>
 
+          {/* Bulk Pricing */}
+          <div style={{ marginTop: 'var(--space-6)', padding: 'var(--space-4)', background: 'var(--surface-3)', borderRadius: 'var(--radius-md)', border: '1px dashed rgba(0, 196, 188, 0.3)' }}>
+            <h4 style={{ fontSize: '0.85rem', color: 'var(--teal)', marginBottom: 'var(--space-3)' }}>
+              Bulk Wholesale Pricing
+            </h4>
+            <div className="grid-2" style={{ gap: 'var(--space-4)' }}>
+              <div className="form-group">
+                <label className="form-label" htmlFor="admin_bulk_threshold">Threshold (Vials)</label>
+                <input id="admin_bulk_threshold" type="number" min="1" className="form-input" placeholder="e.g. 100"
+                  value={form.admin_bulk_threshold} onChange={e => set('admin_bulk_threshold', e.target.value)} />
+              </div>
+              <div className="form-group">
+                <label className="form-label" htmlFor="admin_bulk_price">Bulk Unit Cost ($)</label>
+                <div style={{ position: 'relative' }}>
+                  <span style={{
+                    position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)',
+                    color: 'var(--teal)', fontFamily: 'var(--font-brand)', fontWeight: 700, fontSize: '0.9rem'
+                  }}>$</span>
+                  <input id="admin_bulk_price" type="number" step="0.01" min="0" className="form-input" placeholder="Optional"
+                    value={form.admin_bulk_price} onChange={e => set('admin_bulk_price', e.target.value)}
+                    style={{ paddingLeft: 28 }} />
+                </div>
+              </div>
+            </div>
+            <p style={{ fontSize: '0.72rem', color: 'var(--grey-400)', marginTop: 'var(--space-2)', marginBottom: 0 }}>
+              If set, Agents purchasing at or above the threshold quantity will receive this flat unit cost regardless of their tier.
+            </p>
+          </div>
+
           {/* Live tier price preview — reads REAL multipliers from DB */}
           {validCost && (
             <div style={{
@@ -316,8 +349,8 @@ export default function NewProductPage() {
             <div>
               <div style={{ fontSize: '0.88rem', fontWeight: 700, color: invCount > 0 ? 'var(--teal)' : '#F6AD55' }}>
                 {invCount > 0
-                  ? `Ships Now — ${form.inventory_count} Units In Stock`
-                  : `Ships In ${form.backorder_days || 14} Days — Out Of Stock`}
+                  ? `In Stock — Ships Now (${form.inventory_count} Units)`
+                  : `Ships From China (10-15 Days) — Out Of Stock`}
               </div>
               <div style={{ fontSize: '0.75rem', color: 'var(--grey-400)', marginTop: 2 }}>
                 This Status Shows Live On All Agent Storefronts
@@ -352,8 +385,8 @@ export default function NewProductPage() {
           </div>
 
           <div style={{ marginTop: 'var(--space-3)', fontSize: '0.78rem', color: 'var(--grey-400)' }}>
-            Setting Units In Stock To 0 Automatically Switches All Agent Storefronts To "Ships In {form.backorder_days || 14} Days".
-            When Restocked, Storefronts Instantly Update To "Ships Now."
+            Setting Units In Stock To 0 Automatically Switches All Agent Storefronts To "Ships From China (10-15 Days)".
+            When Restocked, Storefronts Instantly Update To "In Stock — Ships Now."
           </div>
         </div>
 

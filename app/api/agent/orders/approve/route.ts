@@ -10,7 +10,7 @@ export async function POST(req: NextRequest) {
     const supabase = await createServiceClient();
     const callerId = gate.user.id;
     const body = await req.json();
-    const { orderId, newStatus } = body;
+    const { orderId, newStatus, tracking_number } = body;
 
     if (!orderId || !newStatus) {
       return NextResponse.json({ error: 'Order ID and Status required' }, { status: 400 });
@@ -135,13 +135,18 @@ export async function POST(req: NextRequest) {
     }
 
     // 5. Update the Order Status
+    const updatePayload: any = {
+      status: newStatus,
+      agent_approved_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
+    if (tracking_number && typeof tracking_number === 'string') {
+      updatePayload.tracking_number = tracking_number;
+    }
+
     const { error: updateError } = await supabase
       .from('orders')
-      .update({
-        status: newStatus,
-        agent_approved_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      })
+      .update(updatePayload)
       .eq('id', orderId);
 
     if (updateError) {

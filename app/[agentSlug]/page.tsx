@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import Link from 'next/link';
+import AgentStorefrontGrid from '@/components/AgentStorefrontGrid';
 
 interface Props {
   params: Promise<{ agentSlug: string }>;
@@ -176,116 +177,15 @@ export default async function AgentStorefrontPage({ params }: Props) {
       {/* Products */}
       <section className="section" style={{ paddingTop: 'var(--space-8)' }}>
         <div className="container">
-          {products && products.length > 0 ? (
-            <>
-              <h2 style={{ marginBottom: 'var(--space-8)', fontSize: '1.3rem' }}>
-                Available Research Compounds
-              </h2>
-              <div className="grid-3">
-                {products.map((item) => {
-                  const productRow = (item.products as unknown) as {
-                    name: string;
-                    description: string;
-                    image_url: string | null;
-                    backorder_days: number;
-                  } | null;
-                  const name = item.custom_name ?? productRow?.name ?? 'Research Compound';
-                  const desc = item.custom_description ?? productRow?.description ?? '';
-                  const imageUrl = item.custom_image_url ?? productRow?.image_url ?? null;
-                  
-                  const inventoryCount = inventoryMap.get(item.product_id) || 0;
-                  const inStock = inventoryCount > 0;
-                  const backorderDays = productRow?.backorder_days ?? 14;
-                  const isLowStock = inStock && inventoryCount <= 5;
-                  return (
-                    <div key={item.id} className="product-card">
-                      {/* Product image */}
-                      <div style={{
-                        height: 140,
-                        background: `radial-gradient(circle at 30% 40%, ${primaryColor}15 0%, var(--surface-2) 70%)`,
-                        display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden'
-                      }}>
-                        {imageUrl ? (
-                          /* eslint-disable-next-line @next/next/no-img-element */
-                          <img src={imageUrl} alt={name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
-                        ) : (
-                          <svg width="48" height="48" viewBox="0 0 60 60" fill="none" opacity={0.3}>
-                            <circle cx="30" cy="30" r="8" fill="none" stroke={primaryColor} strokeWidth="1.5"/>
-                            <circle cx="15" cy="15" r="5" fill="none" stroke={primaryColor} strokeWidth="1.5"/>
-                            <circle cx="45" cy="15" r="5" fill="none" stroke="var(--silver)" strokeWidth="1.5"/>
-                            <circle cx="15" cy="45" r="5" fill="none" stroke="var(--silver)" strokeWidth="1.5"/>
-                            <circle cx="45" cy="45" r="5" fill="none" stroke={primaryColor} strokeWidth="1.5"/>
-                            <line x1="22" y1="22" x2="30" y2="30" stroke={primaryColor} strokeWidth="1"/>
-                            <line x1="38" y1="22" x2="30" y2="30" stroke="var(--silver)" strokeWidth="1"/>
-                            <line x1="22" y1="38" x2="30" y2="30" stroke="var(--silver)" strokeWidth="1"/>
-                            <line x1="38" y1="38" x2="30" y2="30" stroke={primaryColor} strokeWidth="1"/>
-                          </svg>
-                        )}
-                      </div>
-                      <div className="product-card-body">
-                        <h4 style={{ marginBottom: 'var(--space-2)', fontFamily: 'var(--font-brand)' }}>{name}</h4>
-
-                        {/* Shipping Status Badge */}
-                        <div style={{ marginBottom: 'var(--space-3)', display: 'flex', gap: 'var(--space-2)', flexWrap: 'wrap' }}>
-                          <div style={{
-                            display: 'inline-flex', alignItems: 'center', gap: 6,
-                            fontSize: '0.72rem', fontWeight: 700,
-                            padding: '3px 10px',
-                            borderRadius: 'var(--radius-full)',
-                            background: inStock ? 'rgba(0,196,188,0.1)' : 'rgba(246,173,85,0.1)',
-                            border: `1px solid ${inStock ? 'rgba(0,196,188,0.3)' : 'rgba(246,173,85,0.3)'}`,
-                            color: inStock ? 'var(--teal)' : '#F6AD55',
-                          }}>
-                            <span style={{
-                              width: 6, height: 6, borderRadius: '50%',
-                              background: inStock ? 'var(--teal)' : '#F6AD55',
-                              display: 'inline-block',
-                              boxShadow: `0 0 4px ${inStock ? 'var(--teal)' : '#F6AD55'}`,
-                            }} />
-                            {inStock ? 'Ships Now' : `Ships In ${backorderDays} Days`}
-                          </div>
-                          {isLowStock && (
-                            <div style={{
-                              fontSize: '0.7rem', fontWeight: 700,
-                              padding: '3px 10px',
-                              borderRadius: 'var(--radius-full)',
-                              background: 'rgba(229,62,62,0.08)',
-                              border: '1px solid rgba(229,62,62,0.25)',
-                              color: 'var(--red)',
-                            }}>
-                              Low Stock
-                            </div>
-                          )}
-                        </div>
-
-                        {desc && <p style={{ fontSize: '0.82rem', color: 'var(--grey-400)', marginBottom: 'var(--space-4)', lineHeight: 1.5 }}>{desc}</p>}
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                          <span style={{ fontSize: '1.1rem', fontWeight: 700, color: primaryColor, fontFamily: 'var(--font-brand)' }}>
-                            ${item.retail_price.toFixed(2)}
-                          </span>
-                          <Link
-                            href={`/login?ref=${agentSlug}`}
-                            style={{ fontSize: '0.8rem', color: 'var(--teal)', fontWeight: 600 }}
-                          >
-                            Sign In To Order
-                          </Link>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </>
-          ) : (
-            <div style={{ textAlign: 'center', padding: 'var(--space-12) 0' }}>
-              <p style={{ color: 'var(--grey-400)', marginBottom: 'var(--space-6)' }}>
-                Products Are Coming Soon. Create An Account To Be Notified.
-              </p>
-              <Link href={`/login?ref=${agentSlug}`} className="btn btn-primary">
-                Sign In To Order
-              </Link>
-            </div>
-          )}
+          <h2 style={{ marginBottom: 'var(--space-8)', fontSize: '1.4rem', fontFamily: 'var(--font-brand)', color: 'var(--white)' }}>
+            Available Research Compounds
+          </h2>
+          <AgentStorefrontGrid 
+            products={products as any} 
+            inventoryMap={Object.fromEntries(inventoryMap)} 
+            primaryColor={primaryColor} 
+            agentSlug={agentSlug} 
+          />
         </div>
       </section>
 

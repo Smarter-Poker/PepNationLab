@@ -23,7 +23,9 @@ export async function POST(req: NextRequest) {
       name: item.name,
       quantity: item.quantity,
       costPrice: item.costPrice,
-      retailPrice: item.retailPrice
+      retailPrice: item.retailPrice,
+      bulkCostPrice: item.bulkCostPrice,
+      bulkThreshold: item.bulkThreshold
     }));
 
     const { error } = await supabase

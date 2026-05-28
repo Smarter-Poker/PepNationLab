@@ -33,8 +33,9 @@ export default async function DashboardPage({
 
   const role = profile?.role ?? 'researcher';
 
-  // Admins always go to the admin panel — never the researcher dashboard
+  // Admins go to admin panel, Shipping goes to shipping portal
   if (role === 'admin') redirect('/admin');
+  if (role === 'shipping') redirect('/shipping');
 
   const params = await searchParams;
   const isWelcome = params?.welcome === '1';

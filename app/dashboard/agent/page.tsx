@@ -33,7 +33,7 @@ export default async function AgentDashboardPage() {
   // 4. Fetch agent storefront profile
   const { data: agentProfile } = await supabase
     .from('agent_profiles')
-    .select('id, slug, display_name, tagline, logo_url, primary_color, secondary_color, bio, qr_code_url, payment_handles')
+    .select('id, slug, display_name, tagline, logo_url, primary_color, secondary_color, bio, qr_code_url, payment_handles, shippo_api_key')
     .eq('id', user.id)
     .maybeSingle();
 
@@ -66,6 +66,8 @@ export default async function AgentDashboardPage() {
       subtotal,
       total,
       created_at,
+      tracking_number,
+      label_url,
       profiles!buyer_id(full_name, email)
     `)
     .eq('agent_id', user.id)
@@ -92,7 +94,9 @@ export default async function AgentDashboardPage() {
       total: Number(order.total || 0),
       created_at: order.created_at,
       buyer_name: buyer_name || 'Anonymous Researcher',
-      buyer_email: buyer_email || ''
+      buyer_email: buyer_email || '',
+      tracking_number: order.tracking_number,
+      label_url: order.label_url
     };
   });
 

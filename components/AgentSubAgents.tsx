@@ -1,6 +1,8 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { toast } from 'sonner';
 
 export default function AgentSubAgents({ agentId }: { agentId?: string }) {
 
@@ -73,32 +75,55 @@ export default function AgentSubAgents({ agentId }: { agentId?: string }) {
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || 'Failed to generate invoice');
       fetchData();
-      alert('Invoice generated successfully!');
+      toast.success('Weekly Invoice generated successfully!');
     } catch (err: any) {
-      alert(err.message);
+      toast.error(err.message || 'Failed to generate invoice');
     }
   };
 
-  const handleSavePricing = async (productId: string, baselineCost: string) => {
+  const handleMarkPaid = async (invoiceId: string) => {
+    try {
+      const res = await fetch('/api/agent/super-agent/invoices/pay', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ invoice_id: invoiceId })
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || 'Failed to mark paid');
+      fetchData();
+      toast.success('Invoice marked as paid!');
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to mark invoice as paid');
+    }
+  };
+
+  const handleSavePricing = async (productId: string, baselineCost: string, bulkCostStr: string, bulkThreshStr: string) => {
     try {
       setPricingError(null);
       setPricingSuccess(null);
       const cost = parseFloat(baselineCost);
       if (isNaN(cost) || cost < 0) throw new Error('Invalid cost value');
+      
+      const bulkCost = bulkCostStr ? parseFloat(bulkCostStr) : null;
+      const bulkThreshold = bulkThreshStr ? parseInt(bulkThreshStr, 10) : 100;
 
       const res = await fetch('/api/agent/super-agent/pricing', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ product_id: productId, baseline_cost: cost })
+        body: JSON.stringify({ 
+          product_id: productId, 
+          baseline_cost: cost,
+          bulk_baseline_cost: bulkCost,
+          bulk_threshold: bulkThreshold
+        })
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || 'Failed to save pricing');
       
-      setPricingSuccess('Pricing updated successfully');
+      toast.success('Baseline Pricing updated successfully!');
       fetchPricing(); // Refresh
-      setTimeout(() => setPricingSuccess(null), 3000);
     } catch (err: any) {
-      setPricingError(err.message);
+      toast.error(err.message || 'Failed to save pricing');
     }
   };
 
@@ -212,6 +237,15 @@ export default function AgentSubAgents({ agentId }: { agentId?: string }) {
                       <span className={`badge ${inv.status === 'paid' ? 'badge-teal' : 'badge-gold'}`}>
                         {inv.status}
                       </span>
+                      {inv.status !== 'paid' && (
+                        <button 
+                          onClick={() => handleMarkPaid(inv.id)} 
+                          className="btn btn-primary btn-sm" 
+                          style={{ marginLeft: 12, padding: '2px 8px', fontSize: '0.75rem' }}
+                        >
+                          Mark Paid
+                        </button>
+                      )}
                     </td>
                   </tr>
                 ))}
@@ -222,30 +256,39 @@ export default function AgentSubAgents({ agentId }: { agentId?: string }) {
       </section>
 
       {/* Pricing Modal */}
-      {showPricingModal && (
-        <div onClick={() => setShowPricingModal(false)} style={{
-          position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          zIndex: 1000, padding: 'var(--space-6)', backdropFilter: 'blur(4px)'
-        }}>
-          <div onClick={e => e.stopPropagation()} style={{
-            background: 'var(--grey-900)', border: '1px solid rgba(0,196,188,0.25)',
-            borderRadius: 16, padding: 'var(--space-7)', maxWidth: 800, width: '100%',
-            maxHeight: '90vh', overflowY: 'auto',
-            boxShadow: '0 0 60px rgba(0,196,188,0.1)'
-          }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-5)' }}>
-              <div>
-                <h3 style={{ fontSize: '1.3rem', fontFamily: 'var(--font-brand)', color: 'var(--white)' }}>Baseline Pricing Rules</h3>
-                <p style={{ fontSize: '0.85rem', color: 'var(--grey-400)', marginTop: 4 }}>
-                  Set the fixed wholesale cost that your Sub-Agents will pay you for each product.
-                </p>
+      <AnimatePresence>
+        {showPricingModal && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setShowPricingModal(false)} 
+            style={{
+              position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              zIndex: 1000, padding: 'var(--space-6)', backdropFilter: 'blur(8px)'
+            }}
+          >
+            <motion.div 
+              initial={{ scale: 0.95, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.95, opacity: 0, y: 20 }}
+              onClick={e => e.stopPropagation()} 
+              className="card-metal"
+              style={{
+                padding: 'var(--space-7)', maxWidth: 850, width: '100%',
+                maxHeight: '90vh', overflowY: 'auto',
+              }}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-5)' }}>
+                <div>
+                  <h3 style={{ fontSize: '1.3rem', fontFamily: 'var(--font-brand)', color: 'var(--white)', letterSpacing: '0.05em', textTransform: 'uppercase' }}>Baseline Pricing Rules</h3>
+                  <p style={{ fontSize: '0.85rem', color: 'var(--grey-400)', marginTop: 4 }}>
+                    Set the fixed wholesale cost that your Sub-Agents will pay you for each product. 
+                  </p>
+                </div>
+                <button onClick={() => setShowPricingModal(false)} className="btn btn-secondary">Close</button>
               </div>
-              <button onClick={() => setShowPricingModal(false)} className="btn btn-secondary">Close</button>
-            </div>
-
-            {pricingError && <div style={{ background: 'rgba(229,62,62,0.1)', border: '1px solid rgba(229,62,62,0.3)', borderRadius: 8, padding: 'var(--space-3)', marginBottom: 'var(--space-4)', fontSize: '0.85rem', color: 'var(--red)' }}>{pricingError}</div>}
-            {pricingSuccess && <div style={{ background: 'rgba(0,196,188,0.1)', border: '1px solid rgba(0,196,188,0.3)', borderRadius: 8, padding: 'var(--space-3)', marginBottom: 'var(--space-4)', fontSize: '0.85rem', color: 'var(--teal)' }}>{pricingSuccess}</div>}
 
             {loadingPricing ? (
               <div style={{ textAlign: 'center', padding: 'var(--space-8)' }}>Loading products...</div>
@@ -256,6 +299,8 @@ export default function AgentSubAgents({ agentId }: { agentId?: string }) {
                     <th>Product</th>
                     <th>Your Cost (Admin)</th>
                     <th>Sub-Agent Cost (Baseline)</th>
+                    <th>Bulk Threshold (Qty)</th>
+                    <th>Bulk Sub-Agent Cost</th>
                     <th style={{ textAlign: 'right' }}>Save</th>
                   </tr>
                 </thead>
@@ -277,12 +322,37 @@ export default function AgentSubAgents({ agentId }: { agentId?: string }) {
                             id={`cost-${prod.id}`}
                           />
                         </td>
+                        <td>
+                          <input 
+                            type="number" 
+                            className="form-input" 
+                            style={{ width: 80, padding: '6px' }}
+                            defaultValue={prod.bulk_threshold ?? 100}
+                            placeholder="100"
+                            min="1"
+                            id={`bulk-thresh-${prod.id}`}
+                          />
+                        </td>
+                        <td>
+                          <input 
+                            type="number" 
+                            className="form-input" 
+                            style={{ width: 100, padding: '6px' }}
+                            defaultValue={prod.bulk_baseline_cost || ''}
+                            placeholder="Optional"
+                            step="0.01"
+                            min="0"
+                            id={`bulk-cost-${prod.id}`}
+                          />
+                        </td>
                         <td style={{ textAlign: 'right' }}>
                           <button 
                             className="btn btn-primary btn-sm"
                             onClick={() => {
                               const val = (document.getElementById(`cost-${prod.id}`) as HTMLInputElement).value;
-                              if (val) handleSavePricing(prod.id, val);
+                              const bulkCost = (document.getElementById(`bulk-cost-${prod.id}`) as HTMLInputElement).value;
+                              const bulkThresh = (document.getElementById(`bulk-thresh-${prod.id}`) as HTMLInputElement).value;
+                              if (val) handleSavePricing(prod.id, val, bulkCost, bulkThresh);
                             }}
                           >
                             Save
@@ -294,9 +364,10 @@ export default function AgentSubAgents({ agentId }: { agentId?: string }) {
                 </tbody>
               </table>
             )}
-          </div>
-        </div>
-      )}
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

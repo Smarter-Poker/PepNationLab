@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 interface AgentSales {
   agent_id: string;
@@ -135,6 +136,27 @@ export default function AdminSalesPage() {
               </div>
             ))}
           </div>
+
+          {/* Agent Revenue Chart */}
+          {data.agents.length > 0 && (
+            <div className="card-metal" style={{ padding: 'var(--space-6)', height: 320, marginBottom: 'var(--space-8)' }}>
+              <h3 style={{ fontSize: '1.1rem', fontFamily: 'var(--font-brand)', color: 'var(--white)', marginBottom: 'var(--space-4)' }}>Revenue By Agent</h3>
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={data.agents}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
+                  <XAxis dataKey="full_name" stroke="var(--grey-500)" fontSize={12} tickLine={false} axisLine={false} />
+                  <YAxis stroke="var(--grey-500)" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(val) => `$${val}`} />
+                  <Tooltip 
+                    contentStyle={{ backgroundColor: 'var(--space-950)', border: '1px solid var(--grey-800)', borderRadius: 8 }}
+                    itemStyle={{ color: 'var(--silver)' }}
+                    formatter={(value: any) => [`$${Number(value).toFixed(2)}`, 'Revenue']}
+                    labelStyle={{ color: 'var(--grey-400)', marginBottom: 4 }}
+                  />
+                  <Bar dataKey="total_revenue" fill="var(--teal)" radius={[4, 4, 0, 0]} maxBarSize={60} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          )}
 
           <div style={{ display: 'grid', gridTemplateColumns: selectedAgent ? '1fr 420px' : '1fr', gap: 'var(--space-6)', alignItems: 'start' }}>
             {/* Agent Table */}

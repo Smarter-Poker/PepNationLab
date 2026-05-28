@@ -15,7 +15,7 @@ export default async function ProductsPage() {
   // Get researcher profile details
   const { data: profile } = await supabase
     .from('profiles')
-    .select('full_name, role, tier')
+    .select('full_name, role, tier, parent_agent_id')
     .eq('id', user.id)
     .single();
 
@@ -27,7 +27,7 @@ export default async function ProductsPage() {
   // Get active, non-banned products
   const { data: products } = await supabase
     .from('products')
-    .select('id, name, slug, description, category, base_cost, image_url, weight_oz, sku, unit_size, unit_measure, in_stock, inventory_count, low_stock_threshold, backorder_days')
+    .select('id, name, slug, description, category, base_cost, image_url, weight_oz, sku, unit_size, unit_measure, in_stock, inventory_count, low_stock_threshold, backorder_days, admin_bulk_price, admin_bulk_threshold')
     .eq('is_active', true)
     .eq('is_banned', false)
     .order('name');
@@ -57,6 +57,19 @@ export default async function ProductsPage() {
     overrideMultipliers[o.product_id] = Number(o.custom_multiplier);
   });
 
+  // Get super agent pricing if the user is a sub-agent
+  const superAgentPricing: Record<string, any> = {};
+  if (profile.parent_agent_id) {
+    const { data: sap } = await supabase
+      .from('super_agent_pricing')
+      .select('product_id, baseline_cost, bulk_baseline_cost, bulk_threshold')
+      .eq('super_agent_id', profile.parent_agent_id);
+    
+    sap?.forEach(s => {
+      superAgentPricing[s.product_id] = s;
+    });
+  }
+
   return (
     <ProductsList
       userProfile={profile}
@@ -64,6 +77,7 @@ export default async function ProductsPage() {
       userTier={userTier}
       tierMultipliers={tierMultipliers}
       overrideMultipliers={overrideMultipliers}
+      superAgentPricing={superAgentPricing}
       userEmail={user.email ?? ''}
     />
   );

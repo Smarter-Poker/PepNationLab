@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { CartProvider } from "@/components/CartContext";
+import { Toaster } from "sonner";
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://pepnationlab.com"),
   title: "Pep Nation Lab | Premium Research Peptides",
   description: "Pep Nation Lab — Wholesale research peptide distribution for qualified researchers and institutions. All products for in vitro research use only.",
   keywords: "research peptides, peptide wholesale, laboratory research compounds",
@@ -36,6 +38,7 @@ export default function RootLayout({
         <CartProvider>
           {children}
         </CartProvider>
+        <Toaster theme="dark" position="bottom-right" richColors />
       </body>
     </html>
   );

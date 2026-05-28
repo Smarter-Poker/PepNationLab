@@ -1,6 +1,24 @@
 import { NextResponse } from 'next/server';
 import { createClient, createServiceClient } from '@/lib/supabase/server';
 import { validateCoupon } from '@/lib/coupons';
+import { z } from 'zod';
+
+const CheckoutSchema = z.object({
+  items: z.array(z.object({
+    id: z.string().uuid(),
+    quantity: z.number().int().min(1)
+  })).min(1, 'Cart cannot be empty.'),
+  fulfillmentMethod: z.enum(['ship', 'agent_pickup']),
+  paymentMethod: z.enum(['zelle', 'cashapp', 'venmo', 'apple_pay']),
+  shippingAddress: z.object({
+    street: z.string().min(1),
+    city: z.string().min(1),
+    state: z.string().min(2),
+    zipCode: z.string().min(5),
+    country: z.string().min(2),
+  }).optional().nullable(),
+  couponCode: z.string().optional().nullable(),
+});
 
 export async function POST(request: Request) {
   try {
@@ -13,15 +31,15 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Unauthorized. Please Sign In.' }, { status: 401 });
     }
 
-    const body = await request.json();
-    const { items, shippingAddress, fulfillmentMethod, paymentMethod, couponCode } = body;
+    const rawBody = await request.json();
+    const validation = CheckoutSchema.safeParse(rawBody);
 
-    if (!items || !Array.isArray(items) || items.length === 0) {
-      return NextResponse.json({ error: 'Invalid Cart Items.' }, { status: 400 });
+    if (!validation.success) {
+      return NextResponse.json({ error: 'Invalid checkout data.', details: validation.error.issues }, { status: 400 });
     }
-    if (!paymentMethod) {
-      return NextResponse.json({ error: 'Payment Method Is Required.' }, { status: 400 });
-    }
+
+    const { items, shippingAddress, fulfillmentMethod, paymentMethod, couponCode } = validation.data;
+
     if (fulfillmentMethod === 'ship' && !shippingAddress) {
       return NextResponse.json({ error: 'Shipping Address Is Required For Deliveries.' }, { status: 400 });
     }
@@ -37,15 +55,46 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Researcher Profile Not Found.' }, { status: 404 });
     }
 
+    // --- DETERMINE AGENT OF RECORD ---
+    let agentProfile = null;
+    let superAgentProfile = null;
+    let isAgentSelfBuy = false;
+    
+    if (profile.role === 'agent' || profile.role === 'super_agent' || profile.role === 'admin') {
+      agentProfile = profile;
+      isAgentSelfBuy = true;
+      if (profile.parent_agent_id) {
+        const { data: sap } = await serviceSupabase.from('profiles').select('id, tier').eq('id', profile.parent_agent_id).single();
+        superAgentProfile = sap;
+      }
+    } else if (profile.referring_agent_id) {
+      const { data: ap } = await serviceSupabase.from('profiles').select('id, tier, parent_agent_id').eq('id', profile.referring_agent_id).single();
+      agentProfile = ap;
+      if (ap?.parent_agent_id) {
+        const { data: sap } = await serviceSupabase.from('profiles').select('id, tier').eq('id', ap.parent_agent_id).single();
+        superAgentProfile = sap;
+      }
+    }
+
     // Retrieve active product definitions matching requested cart item IDs
-    const productIds = items.map((item: any) => item.id);
     const { data: dbProducts, error: dbProductsError } = await serviceSupabase
       .from('products')
-      .select('id, name, base_cost, weight_oz, is_active, is_banned, sku, inventory_count')
-      .in('id', productIds);
+      .select('id, name, base_cost, weight_oz, is_active, is_banned, sku, inventory_count, admin_bulk_price, admin_bulk_threshold')
+      .in('id', items.map(i => i.id));
 
     if (dbProductsError || !dbProducts || dbProducts.length === 0) {
       return NextResponse.json({ error: 'Failed To Retrieve Product Data.' }, { status: 400 });
+    }
+
+    // Fetch Agent Inventory if a researcher is buying
+    let agentStockMap: Record<string, number> = {};
+    if (agentProfile && !isAgentSelfBuy) {
+      const { data: localStock } = await serviceSupabase
+        .from('agent_inventory')
+        .select('product_id, stock_count')
+        .eq('agent_id', agentProfile.id)
+        .in('product_id', items.map(i => i.id));
+      localStock?.forEach(s => { agentStockMap[s.product_id] = Number(s.stock_count); });
     }
 
     // Check for banned or deactivated products and inventory limits
@@ -58,9 +107,15 @@ export async function POST(request: Request) {
       }
 
       const qty = Number(cartItem.quantity) || 1;
-      if (Number(dbProduct.inventory_count) < qty) {
+      let availableStock = Number(dbProduct.inventory_count);
+      
+      if (agentProfile && !isAgentSelfBuy) {
+         availableStock = agentStockMap[cartItem.id] || 0;
+      }
+
+      if (availableStock < qty) {
         return NextResponse.json(
-          { error: `Insufficient inventory for "${dbProduct.name}". Only ${dbProduct.inventory_count} remaining.` },
+          { error: `Insufficient inventory for "${dbProduct.name}". Only ${availableStock} remaining.` },
           { status: 400 }
         );
       }
@@ -73,43 +128,7 @@ export async function POST(request: Request) {
     const tierMultipliers: Record<string, number> = {};
     tiers?.forEach(t => { tierMultipliers[t.tier_name] = Number(t.multiplier); });
 
-    // 2. Fetch Agent Profile & Super Agent Profile (if applicable)
-    let agentProfile = null;
-    let superAgentProfile = null;
-    let isAgentSelfBuy = false;
-    
-    // Determine the Agent of Record for this order
-    if (profile.role === 'agent' || profile.role === 'admin') {
-      // The buyer IS an agent. They get their own wholesale pricing.
-      agentProfile = profile;
-      isAgentSelfBuy = true;
-      
-      if (profile.parent_agent_id) {
-        const { data: sap } = await serviceSupabase
-          .from('profiles')
-          .select('id, tier')
-          .eq('id', profile.parent_agent_id)
-          .single();
-        superAgentProfile = sap;
-      }
-    } else if (profile.referring_agent_id) {
-      // The buyer is a researcher referred by an agent.
-      const { data: ap } = await serviceSupabase
-        .from('profiles')
-        .select('id, tier, parent_agent_id')
-        .eq('id', profile.referring_agent_id)
-        .single();
-      agentProfile = ap;
-
-      if (ap?.parent_agent_id) {
-        const { data: sap } = await serviceSupabase
-          .from('profiles')
-          .select('id, tier')
-          .eq('id', ap.parent_agent_id)
-          .single();
-        superAgentProfile = sap;
-      }
-    }
+    // 2. Agent profiles already resolved above.
 
     // 3. Fetch Override Rule Sets
     const getOverrides = async (tier: string) => {
@@ -138,13 +157,19 @@ export async function POST(request: Request) {
     }
 
     // 5. Fetch Super Agent Baseline Costs (if Sub-Agent)
-    let superAgentBaselines: Record<string, number> = {};
+    let superAgentBaselines: Record<string, { baseline_cost: number, bulk_baseline_cost: number | null, bulk_threshold: number }> = {};
     if (superAgentProfile) {
       const { data: sab } = await serviceSupabase
         .from('super_agent_pricing')
-        .select('product_id, baseline_cost')
+        .select('product_id, baseline_cost, bulk_baseline_cost, bulk_threshold')
         .eq('super_agent_id', superAgentProfile.id);
-      sab?.forEach(b => { superAgentBaselines[b.product_id] = Number(b.baseline_cost); });
+      sab?.forEach(b => { 
+        superAgentBaselines[b.product_id] = {
+          baseline_cost: Number(b.baseline_cost),
+          bulk_baseline_cost: b.bulk_baseline_cost !== null ? Number(b.bulk_baseline_cost) : null,
+          bulk_threshold: b.bulk_threshold ?? 100
+        };
+      });
     }
 
     // 6. Compute Costs per Item
@@ -171,6 +196,8 @@ export async function POST(request: Request) {
         retailPrice = baseCost * retailMultiplier;
       }
 
+      const itemQty = Number(cartItem.quantity) || 1;
+
       // Calculate Agent Cost (What the agent of record owes Admin or Super Agent)
       let costPrice = retailPrice; // Default to retail if no agent
       let superAgentCost = null;
@@ -178,16 +205,37 @@ export async function POST(request: Request) {
       if (agentProfile) {
         if (superAgentProfile) {
           // This is a Sub-Agent. 
-          // Sub-Agent Cost = Super Agent Baseline (fallback to Super Agent's cost if no baseline set)
+          // Super Agent Cost (What Super Agent owes Admin):
           const saMultiplier = superAgentOverrides[dbProduct.id] ?? tierMultipliers[superAgentProfile.tier || 'tier_3'] ?? 7.0;
           superAgentCost = baseCost * saMultiplier;
+
+          // Apply Admin Bulk Pricing to Super Agent if applicable
+          if (dbProduct.admin_bulk_price !== null && itemQty >= (dbProduct.admin_bulk_threshold ?? 100)) {
+            superAgentCost = Number(dbProduct.admin_bulk_price);
+          }
           
-          costPrice = superAgentBaselines[dbProduct.id] ?? superAgentCost;
+          // Cost Price (What Sub-Agent owes Super Agent):
+          const saConfig = superAgentBaselines[dbProduct.id];
+          if (saConfig) {
+             if (saConfig.bulk_baseline_cost !== null && itemQty >= saConfig.bulk_threshold) {
+                 costPrice = saConfig.bulk_baseline_cost;
+             } else {
+                 costPrice = saConfig.baseline_cost;
+             }
+          } else {
+             costPrice = superAgentCost;
+          }
+
         } else {
-          // Standard Agent.
+          // Standard Agent (or Super Agent buying directly).
           // Agent Cost = Admin Base Cost * Agent Tier Multiplier
           const agentMultiplier = agentOverrides[dbProduct.id] ?? tierMultipliers[agentTier] ?? 7.0;
           costPrice = baseCost * agentMultiplier;
+
+          // Apply Admin Bulk Pricing to Agent if applicable
+          if (dbProduct.admin_bulk_price !== null && itemQty >= (dbProduct.admin_bulk_threshold ?? 100)) {
+            costPrice = Number(dbProduct.admin_bulk_price);
+          }
         }
       }
       
@@ -195,8 +243,6 @@ export async function POST(request: Request) {
       if (isAgentSelfBuy) {
         retailPrice = costPrice;
       }
-
-      const itemQty = Number(cartItem.quantity) || 1;
 
       subtotal += retailPrice * itemQty;
       totalWeightOz += (Number(dbProduct.weight_oz) || 0.5) * itemQty;
@@ -253,7 +299,8 @@ export async function POST(request: Request) {
       .from('orders')
       .insert({
         buyer_id: user.id,
-        agent_id: agentProfile ? agentProfile.id : null,
+        agent_id: agentProfile && !isAgentSelfBuy ? agentProfile.id : null,
+        is_wholesale_restock: isAgentSelfBuy,
         status: 'pending_customer_payment',
         fulfillment_method: fulfillmentMethod,
         payment_method: paymentMethod,

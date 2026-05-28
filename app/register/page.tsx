@@ -27,10 +27,9 @@ function RegisterPageInner() {
   const [checked, setChecked] = useState<Record<string, boolean>>({});
   const [formData, setFormData] = useState({
     fullName: '',
-    email: '',
+    username: '',
     password: '',
     confirmPassword: '',
-    phone: '',
     referralCode: searchParams.get('ref') ?? '',
   });
   const [loading, setLoading] = useState(false);
@@ -58,17 +57,25 @@ function RegisterPageInner() {
       setError('Password Must Be At Least 8 Characters.');
       return;
     }
+    
+    if (!formData.username || !/^[a-zA-Z0-9_]+$/.test(formData.username)) {
+      setError('Username must contain only letters, numbers, and underscores.');
+      return;
+    }
 
     setLoading(true);
     const supabase = createClient();
+    
+    // Generate internal dummy email strictly for auth provider mapping
+    const fakeEmail = `${formData.username.toLowerCase()}@pepnationlab.com`;
 
     const { data: authData, error: authError } = await supabase.auth.signUp({
-      email: formData.email,
+      email: fakeEmail,
       password: formData.password,
       options: {
         data: {
           full_name: formData.fullName,
-          phone: formData.phone,
+          username: formData.username.toLowerCase()
         },
       },
     });
@@ -244,13 +251,8 @@ function RegisterPageInner() {
             </div>
 
             <div className="form-group">
-              <label className="form-label" htmlFor="reg-email">Email Address</label>
-              <input id="reg-email" name="email" type="email" className="form-input" placeholder="researcher@lab.com" value={formData.email} onChange={handleField} required />
-            </div>
-
-            <div className="form-group">
-              <label className="form-label" htmlFor="phone">Phone Number</label>
-              <input id="phone" name="phone" type="tel" className="form-input" placeholder="+1 (555) 000-0000" value={formData.phone} onChange={handleField} />
+              <label className="form-label" htmlFor="reg-username">Username</label>
+              <input id="reg-username" name="username" type="text" className="form-input" placeholder="researcher_123" value={formData.username} onChange={handleField} required autoComplete="off" autoCapitalize="none" />
             </div>
 
             <div className="form-group">

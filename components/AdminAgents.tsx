@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { toast } from 'sonner';
 
 export default function AdminAgents() {
   const [agents, setAgents] = useState<any[]>([]);
@@ -113,9 +114,10 @@ export default function AdminAgents() {
                           });
                           const json = await res.json();
                           if (!res.ok) throw new Error(json.error);
+                          toast.success(agent.is_super_agent ? 'Super Agent status revoked' : 'Promoted to Super Agent');
                           fetchAgents(); // refresh
                         } catch (err: any) {
-                          alert(err.message);
+                          toast.error(err.message || 'Failed to update super agent status');
                         }
                       }}
                       className="btn btn-secondary btn-sm"

@@ -1,5 +1,7 @@
 import { createServiceClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
+import AdminAnalytics from '@/components/AdminAnalytics';
+import AdminCartRemindersTrigger from '@/components/AdminCartRemindersTrigger';
 
 export default async function AdminDashboard() {
   const supabase = await createServiceClient();
@@ -8,7 +10,7 @@ export default async function AdminDashboard() {
   const { data: profile } = await supabase.from('profiles').select('role').eq('id', user?.id).single();
   
   if (profile?.role === 'shipping') {
-    return redirect('/admin/orders');
+    return redirect('/shipping');
   }
 
   // Parallel stats queries
@@ -89,6 +91,8 @@ export default async function AdminDashboard() {
         </p>
       </div>
 
+      <AdminCartRemindersTrigger />
+
       {/* Stats */}
       <div className="grid-4" style={{ marginBottom: 'var(--space-8)' }}>
         {STATS.map(({ label, value, color, icon }) => (
@@ -107,6 +111,9 @@ export default async function AdminDashboard() {
           </div>
         ))}
       </div>
+
+      {/* Visual Analytics */}
+      <AdminAnalytics />
 
       <div className="grid-2">
         {/* Recent Orders */}

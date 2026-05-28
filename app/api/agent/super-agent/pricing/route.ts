@@ -12,7 +12,7 @@ export async function GET(req: NextRequest) {
 
     const { data: pricing, error: pricingError } = await supabase
       .from('super_agent_pricing')
-      .select('product_id, baseline_cost')
+      .select('product_id, baseline_cost, bulk_baseline_cost, bulk_threshold')
       .eq('super_agent_id', superAgentId);
 
     if (pricingError) {
@@ -49,18 +49,21 @@ export async function GET(req: NextRequest) {
     overrides?.forEach(o => { overrideMap[o.product_id] = Number(o.custom_multiplier); });
 
     // Merge pricing with products, calculating EXACT super agent cost
-    const pricingMap = new Map(pricing?.map(p => [p.product_id, p.baseline_cost]) || []);
+    const pricingMap = new Map(pricing?.map(p => [p.product_id, p]) || []);
     
     const mergedData = products?.map(prod => {
       const base = Number(prod.base_cost);
       const mult = overrideMap[prod.id] ?? tierMultipliers[tier] ?? 7.0;
       const exactCost = base * mult;
       
+      const priceRow = pricingMap.get(prod.id);
       return {
         id: prod.id,
         name: prod.name,
         admin_cost: exactCost,
-        baseline_cost: pricingMap.has(prod.id) ? pricingMap.get(prod.id) : null,
+        baseline_cost: priceRow?.baseline_cost ?? null,
+        bulk_baseline_cost: priceRow?.bulk_baseline_cost ?? null,
+        bulk_threshold: priceRow?.bulk_threshold ?? 100,
       };
     });
 
@@ -79,7 +82,7 @@ export async function POST(req: NextRequest) {
     const superAgentId = gate.user.id;
 
     const body = await req.json();
-    const { product_id, baseline_cost } = body;
+    const { product_id, baseline_cost, bulk_baseline_cost, bulk_threshold } = body;
 
     if (!product_id || typeof baseline_cost !== 'number') {
       return NextResponse.json({ error: 'product_id and baseline_cost are required' }, { status: 400 });
@@ -103,6 +106,8 @@ export async function POST(req: NextRequest) {
           super_agent_id: superAgentId,
           product_id,
           baseline_cost,
+          bulk_baseline_cost: typeof bulk_baseline_cost === 'number' ? bulk_baseline_cost : null,
+          bulk_threshold: typeof bulk_threshold === 'number' ? bulk_threshold : 100,
           updated_at: new Date().toISOString()
         },
         { onConflict: 'super_agent_id,product_id' }

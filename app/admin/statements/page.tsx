@@ -145,6 +145,34 @@ export default function AdminStatementsPage() {
     }
   }
 
+  const handleDownloadCSV = () => {
+    if (statements.length === 0) return;
+    
+    const headers = ['Agent', 'Week Start', 'Week End', 'Cost of Goods', 'Shipping', 'Total Owed', 'Status'];
+    const rows = statements.map(s => {
+      const agentName = s.profiles?.full_name || s.profiles?.email || 'Agent';
+      return [
+        `"${agentName}"`,
+        s.week_start,
+        s.week_end,
+        Number(s.total_cogs).toFixed(2),
+        Number(s.total_shipping).toFixed(2),
+        Number(s.total_owed).toFixed(2),
+        s.status
+      ];
+    });
+    
+    const csvContent = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `admin_statements_export_${new Date().toISOString().slice(0, 10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   const outstanding = statements
     .filter((s) => s.status !== 'paid')
     .reduce((acc, s) => acc + Number(s.total_owed), 0);
@@ -152,16 +180,23 @@ export default function AdminStatementsPage() {
   return (
     <div style={{ padding: 'var(--space-8)' }}>
       {/* Header */}
-      <div style={{ marginBottom: 'var(--space-8)' }}>
-        <h1 style={{ fontSize: '1.6rem', marginBottom: 'var(--space-2)' }}>
-          Weekly <span style={{ color: 'var(--teal)' }}>Statements</span>
-        </h1>
-        <p style={{ fontSize: '0.85rem', color: 'var(--grey-400)' }}>
-          Generate Agent Billing Statements And Track Settlement. Outstanding Balance:{' '}
-          <span style={{ color: outstanding > 0 ? 'var(--red)' : 'var(--teal)', fontWeight: 700 }}>
-            ${outstanding.toFixed(2)}
-          </span>
-        </p>
+      <div style={{ marginBottom: 'var(--space-8)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div>
+          <h1 style={{ fontSize: '1.6rem', marginBottom: 'var(--space-2)' }}>
+            Weekly <span style={{ color: 'var(--teal)' }}>Statements</span>
+          </h1>
+          <p style={{ fontSize: '0.85rem', color: 'var(--grey-400)' }}>
+            Generate Agent Billing Statements And Track Settlement. Outstanding Balance:{' '}
+            <span style={{ color: outstanding > 0 ? 'var(--red)' : 'var(--teal)', fontWeight: 700 }}>
+              ${outstanding.toFixed(2)}
+            </span>
+          </p>
+        </div>
+        {statements.length > 0 && (
+          <button onClick={handleDownloadCSV} className="btn btn-secondary">
+            Download CSV Export
+          </button>
+        )}
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 320px', gap: 'var(--space-8)', alignItems: 'start' }}>

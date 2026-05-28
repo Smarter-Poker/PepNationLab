@@ -38,6 +38,7 @@ export async function POST(req: NextRequest) {
     name, sku, category, description, image_url, base_cost,
     unit_size, unit_measure, is_active,
     inventory_count, low_stock_threshold, backorder_days,
+    admin_bulk_price, admin_bulk_threshold,
   } = body;
 
   if (!name || !base_cost) {
@@ -63,6 +64,8 @@ export async function POST(req: NextRequest) {
       low_stock_threshold: low_stock_threshold ?? 5,
       backorder_days: backorder_days ?? 14,
       is_active: is_active ?? true,
+      admin_bulk_price: admin_bulk_price ?? null,
+      admin_bulk_threshold: admin_bulk_threshold ?? 100,
     })
     .select('id')
     .single();
@@ -92,7 +95,7 @@ export async function PATCH(req: NextRequest) {
     'name', 'sku', 'category', 'description', 'image_url',
     'base_cost', 'unit_size', 'unit_measure',
     'inventory_count', 'low_stock_threshold', 'backorder_days',
-    'is_active',
+    'is_active', 'admin_bulk_price', 'admin_bulk_threshold'
   ] as const;
 
   const updates: Record<string, unknown> = { updated_at: new Date().toISOString() };

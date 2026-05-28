@@ -108,46 +108,27 @@ export default function ForgotPasswordPage() {
             </div>
           ) : (
             <>
-              <h2 style={{ fontSize: '1.2rem', marginBottom: 'var(--space-2)' }}>Forgot Your Password?</h2>
-              <p style={{ fontSize: '0.83rem', color: 'var(--grey-400)', marginBottom: 'var(--space-6)', lineHeight: 1.6 }}>
-                Enter The Email Address On Your Account And We Will Send You A Link To Reset Your
-                Password.
+              <div style={{
+                width: 48, height: 48,
+                borderRadius: '50%',
+                background: 'rgba(0,196,188,0.12)',
+                border: '1px solid rgba(0,196,188,0.3)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                margin: '0 auto var(--space-4)',
+                fontSize: '1.4rem',
+              }}>
+                🔑
+              </div>
+              <h2 style={{ fontSize: '1.2rem', marginBottom: 'var(--space-2)', textAlign: 'center' }}>Password Reset</h2>
+              <p style={{ fontSize: '0.9rem', color: 'var(--grey-300)', lineHeight: 1.6, textAlign: 'center', marginBottom: 'var(--space-6)' }}>
+                Please contact your Research Agent directly if you forgot your password or need it reset.
               </p>
 
-              {error && (
-                <div className="disclaimer-warning" style={{ marginBottom: 'var(--space-4)', padding: 'var(--space-3) var(--space-4)' }}>
-                  <p style={{ fontSize: '0.85rem', color: 'var(--red)', margin: 0 }}>{error}</p>
-                </div>
-              )}
-
-              <form onSubmit={handleSubmit}>
-                <div className="form-group">
-                  <label className="form-label" htmlFor="reset-email">Email Address</label>
-                  <input
-                    id="reset-email"
-                    type="email"
-                    className="form-input"
-                    placeholder="researcher@lab.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                  />
-                </div>
-
-                <button
-                  type="submit"
-                  className="btn btn-primary"
-                  disabled={loading}
-                  style={{ width: '100%', justifyContent: 'center', marginTop: 'var(--space-2)', opacity: loading ? 0.7 : 1 }}
-                >
-                  {loading ? 'Sending Reset Link...' : 'Send Reset Link'}
-                </button>
-              </form>
-
-              <p style={{ textAlign: 'center', marginTop: 'var(--space-6)', fontSize: '0.8rem', color: 'var(--grey-400)' }}>
-                Remembered It?{' '}
-                <Link href="/login" style={{ color: 'var(--teal)' }}>Sign In</Link>
-              </p>
+              <div style={{ display: 'flex', justifyContent: 'center' }}>
+                <Link href="/login" className="btn btn-primary" style={{ width: '100%', justifyContent: 'center' }}>
+                  Return To Sign In
+                </Link>
+              </div>
             </>
           )}
         </div>

@@ -26,7 +26,7 @@ function isPublicDynamicRoute(pathname: string): boolean {
   return segments.length === 1;
 }
 
-export async function middleware(request: NextRequest) {
+export default async function proxy(request: NextRequest) {
   // Pass through if Supabase env vars not configured yet (early deploy)
   if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
     return NextResponse.next({ request });
