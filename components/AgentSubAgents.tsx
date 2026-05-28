@@ -4,6 +4,21 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import { pickOne } from '@/lib/relations';
+import {
+  exportCSV,
+  downloadCSV,
+  printableHTML,
+  downloadPrintablePDF,
+} from '@/lib/export';
+
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
 
 export default function AgentSubAgents({ agentId }: { agentId?: string }) {
 
@@ -177,6 +192,124 @@ export default function AgentSubAgents({ agentId }: { agentId?: string }) {
 
   const formatCurrency = (val: number) => `$${(Number(val) || 0).toFixed(2)}`;
 
+  /** Load a single invoice + its line items, then trigger PDF or CSV download. */
+  async function downloadInvoice(invoiceId: string, format: 'pdf' | 'csv') {
+    try {
+      const res = await fetch(`/api/agent/super-agent/invoices/${invoiceId}`);
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || 'Failed To Load Invoice');
+
+      const { invoice, lineItems } = json as {
+        invoice: {
+          id: string;
+          week_start: string;
+          week_end: string;
+          total_cogs: number | string;
+          total_owed: number | string;
+          status: string;
+          super_agent?: { full_name: string | null; email: string | null } | null;
+          sub_agent?: { full_name: string | null; email: string | null } | null;
+        };
+        lineItems: Array<{ product: string; qty: number; unitCost: number; lineTotal: number }>;
+      };
+
+      const superName = invoice.super_agent?.full_name || invoice.super_agent?.email || 'Super Agent';
+      const subName = invoice.sub_agent?.full_name || invoice.sub_agent?.email || 'Sub-Agent';
+      const total = Number(invoice.total_owed || 0).toFixed(2);
+      const datePrinted = new Date().toLocaleDateString();
+      const fileStub = `invoice_${subName.replace(/[^a-z0-9]+/gi, '_')}_${invoice.week_start}`;
+
+      if (format === 'csv') {
+        const csv = exportCSV(
+          lineItems.map((it) => ({
+            product: it.product,
+            qty: it.qty,
+            unit_cost: it.unitCost.toFixed(2),
+            line_total: it.lineTotal.toFixed(2),
+          })),
+          [
+            { key: 'product', label: 'Product' },
+            { key: 'qty', label: 'Quantity' },
+            { key: 'unit_cost', label: 'Unit Cost' },
+            { key: 'line_total', label: 'Line Total' },
+          ]
+        );
+        downloadCSV(`${fileStub}.csv`, csv);
+        return;
+      }
+
+      const rowsHtml = `
+        <table>
+          <thead>
+            <tr>
+              <th>Product</th>
+              <th class="num">Quantity</th>
+              <th class="num">Unit Cost</th>
+              <th class="num">Line Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${lineItems.length === 0
+              ? '<tr><td colspan="4" style="text-align:center;color:#a0aec0;">No Line Items For This Week</td></tr>'
+              : lineItems.map((it) => `
+                <tr>
+                  <td>${escapeHtml(it.product)}</td>
+                  <td class="num">${it.qty}</td>
+                  <td class="num">$${it.unitCost.toFixed(2)}</td>
+                  <td class="num">$${it.lineTotal.toFixed(2)}</td>
+                </tr>
+              `).join('')}
+          </tbody>
+        </table>`;
+
+      const headerHtml = `
+        <div class="brand">
+          <div>
+            <h1>Pep Nation Lab</h1>
+            <h2>Sub-Agent Weekly Invoice</h2>
+          </div>
+          <div class="meta">
+            <div><strong>Invoice ID:</strong> ${invoice.id.slice(0, 8)}</div>
+            <div><strong>Week:</strong> ${invoice.week_start} To ${invoice.week_end}</div>
+            <div><strong>Status:</strong> ${invoice.status}</div>
+            <div><strong>Printed:</strong> ${datePrinted}</div>
+          </div>
+        </div>
+        <div style="display:flex;justify-content:space-between;margin-bottom:24px;font-size:11px;">
+          <div>
+            <div style="font-size:9px;color:#718096;text-transform:uppercase;letter-spacing:0.05em;">From</div>
+            <strong>${escapeHtml(superName)}</strong>
+          </div>
+          <div>
+            <div style="font-size:9px;color:#718096;text-transform:uppercase;letter-spacing:0.05em;">Billed To</div>
+            <strong>${escapeHtml(subName)}</strong>
+          </div>
+        </div>`;
+
+      const footerHtml = `
+        <div class="footer" style="display:flex;justify-content:flex-end;">
+          <div style="text-align:right;">
+            <div style="font-size:10px;color:#718096;text-transform:uppercase;letter-spacing:0.05em;">Total Owed</div>
+            <div class="total">$${total}</div>
+          </div>
+        </div>
+        <p class="disclaimer">
+          This Invoice Reflects Non-Cancelled Orders Placed By The Sub-Agent During The
+          Listed Week. Pay Through The Pep Nation Lab Platform. Research Use Only.
+        </p>`;
+
+      const html = printableHTML({
+        title: `Invoice ${invoice.week_start} ${subName}`,
+        headerHtml,
+        rowsHtml,
+        footerHtml,
+      });
+      downloadPrintablePDF(html, `${fileStub}.html`);
+    } catch (err: any) {
+      toast.error(err.message || 'Failed To Download Invoice');
+    }
+  }
+
   if (loading) return <div style={{ color: 'var(--silver)' }}>Loading Sub-Agents...</div>;
   if (error) return <div style={{ color: 'var(--red)' }}>Error: {error}</div>;
 
@@ -304,18 +437,37 @@ export default function AgentSubAgents({ agentId }: { agentId?: string }) {
                     <td>{new Date(inv.week_start).toLocaleDateString()}</td>
                     <td style={{ color: 'var(--teal)', fontWeight: 'bold' }}>{formatCurrency(inv.total_owed)}</td>
                     <td>
-                      <span className={`badge ${inv.status === 'paid' ? 'badge-teal' : 'badge-gold'}`}>
-                        {inv.status}
-                      </span>
-                      {inv.status !== 'paid' && (
-                        <button 
-                          onClick={() => handleMarkPaid(inv.id)} 
-                          className="btn btn-primary btn-sm" 
-                          style={{ marginLeft: 12, padding: '2px 8px', fontSize: '0.75rem' }}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                        <span className={`badge ${inv.status === 'paid' ? 'badge-teal' : 'badge-gold'}`}>
+                          {inv.status}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => downloadInvoice(inv.id, 'pdf')}
+                          className="btn btn-secondary btn-sm"
+                          style={{ padding: '2px 8px', fontSize: '0.75rem' }}
                         >
-                          Mark Paid
+                          Download PDF
                         </button>
-                      )}
+                        <button
+                          type="button"
+                          onClick={() => downloadInvoice(inv.id, 'csv')}
+                          className="btn btn-secondary btn-sm"
+                          style={{ padding: '2px 8px', fontSize: '0.75rem' }}
+                        >
+                          Download CSV
+                        </button>
+                        {inv.status !== 'paid' && (
+                          <button
+                            type="button"
+                            onClick={() => handleMarkPaid(inv.id)}
+                            className="btn btn-primary btn-sm"
+                            style={{ padding: '2px 8px', fontSize: '0.75rem' }}
+                          >
+                            Mark Paid
+                          </button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))}
