@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import Pagination from '@/components/Pagination';
+import { exportCSV, downloadCSV } from '@/lib/export';
 
 const PAGE_SIZE = 25;
 
@@ -92,7 +93,7 @@ export default function AdminSalesPage() {
   return (
     <div style={{ padding: 'var(--space-8)' }}>
       {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-8)' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-8)', flexWrap: 'wrap', gap: 'var(--space-4)' }}>
         <div>
           <h1 style={{ fontSize: '1.6rem', marginBottom: 'var(--space-2)' }}>
             Sales Overview
@@ -101,19 +102,49 @@ export default function AdminSalesPage() {
             Revenue By Agent, Order Totals, And Transaction History
           </p>
         </div>
-        {/* Range Filter */}
-        <div style={{ display: 'flex', gap: 6, background: 'var(--black-2)', padding: 4, borderRadius: 'var(--radius-md)', border: 'var(--border-subtle)' }}>
-          {RANGE_TABS.map(tab => (
-            <button key={tab.id} onClick={() => setRange(tab.id)}
-              style={{
-                padding: '6px 14px', fontSize: '0.8rem', fontWeight: 600,
-                color: range === tab.id ? '#fff' : 'var(--grey-400)',
-                background: range === tab.id ? 'var(--teal)' : 'transparent',
-                border: 'none', borderRadius: 'var(--radius-sm)', cursor: 'pointer',
-              }}>
-              {tab.label}
-            </button>
-          ))}
+        <div style={{ display: 'flex', gap: 'var(--space-3)', alignItems: 'center', flexWrap: 'wrap' }}>
+          {/* Export */}
+          <button
+            type="button"
+            className="btn btn-secondary btn-sm"
+            disabled={!data || data.agents.length === 0}
+            onClick={() => {
+              if (!data) return;
+              const rows = data.agents.map((a) => ({
+                full_name: a.full_name || '',
+                email: a.email || '',
+                tier: a.tier || '',
+                order_count: a.order_count,
+                pending_count: a.pending_count,
+                total_revenue: Number(a.total_revenue).toFixed(2),
+              }));
+              const csv = exportCSV(rows, [
+                { key: 'full_name', label: 'Agent' },
+                { key: 'email', label: 'Email' },
+                { key: 'tier', label: 'Tier' },
+                { key: 'order_count', label: 'Orders' },
+                { key: 'pending_count', label: 'Pending' },
+                { key: 'total_revenue', label: 'Revenue' },
+              ]);
+              downloadCSV(`admin_sales_${range}_${new Date().toISOString().slice(0, 10)}.csv`, csv);
+            }}
+          >
+            Export CSV
+          </button>
+          {/* Range Filter */}
+          <div style={{ display: 'flex', gap: 6, background: 'var(--black-2)', padding: 4, borderRadius: 'var(--radius-md)', border: 'var(--border-subtle)' }}>
+            {RANGE_TABS.map(tab => (
+              <button key={tab.id} onClick={() => setRange(tab.id)}
+                style={{
+                  padding: '6px 14px', fontSize: '0.8rem', fontWeight: 600,
+                  color: range === tab.id ? '#fff' : 'var(--grey-400)',
+                  background: range === tab.id ? 'var(--teal)' : 'transparent',
+                  border: 'none', borderRadius: 'var(--radius-sm)', cursor: 'pointer',
+                }}>
+                {tab.label}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
