@@ -144,7 +144,7 @@ export default async function AdminDashboard() {
                         {profile?.full_name ?? 'Unknown'}
                       </div>
                       <div style={{ fontSize: '0.75rem', color: 'var(--grey-400)' }}>
-                        {order.payment_method.toUpperCase()} • ${Number(order.total).toFixed(2)}
+                        {order.payment_method?.toUpperCase() ?? 'N/A'} • ${Number(order.total).toFixed(2)}
                       </div>
                     </div>
                     <div style={{

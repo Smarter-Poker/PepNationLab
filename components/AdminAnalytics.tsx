@@ -77,7 +77,7 @@ export default function AdminAnalytics() {
               <XAxis dataKey="date" stroke="var(--grey-400)" fontSize={12} tickLine={false} axisLine={false} />
               <YAxis stroke="var(--grey-400)" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(val) => `$${val}`} />
               <Tooltip 
-                contentStyle={{ background: 'var(--black-2)', border: '1px solid var(--border-teal)', borderRadius: 8 }}
+                contentStyle={{ background: 'var(--black-2)', border: 'var(--border-teal)', borderRadius: 8 }}
                 itemStyle={{ color: 'var(--teal)' }}
               />
               <Line type="monotone" dataKey="revenue" stroke="var(--teal)" strokeWidth={3} dot={{ fill: 'var(--black)', stroke: 'var(--teal)', strokeWidth: 2, r: 4 }} activeDot={{ r: 6 }} />

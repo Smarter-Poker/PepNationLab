@@ -147,7 +147,7 @@ export default function AdminSalesPage() {
                   <XAxis dataKey="full_name" stroke="var(--grey-500)" fontSize={12} tickLine={false} axisLine={false} />
                   <YAxis stroke="var(--grey-500)" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(val) => `$${val}`} />
                   <Tooltip 
-                    contentStyle={{ backgroundColor: 'var(--space-950)', border: '1px solid var(--grey-800)', borderRadius: 8 }}
+                    contentStyle={{ backgroundColor: 'var(--grey-900)', border: '1px solid var(--grey-800)', borderRadius: 8 }}
                     itemStyle={{ color: 'var(--silver)' }}
                     formatter={(value: any) => [`$${Number(value).toFixed(2)}`, 'Revenue']}
                     labelStyle={{ color: 'var(--grey-400)', marginBottom: 4 }}

@@ -117,8 +117,8 @@ export default function ShippingDashboard() {
                       <td>
                         {order.shipping_address ? (
                           <div style={{ fontSize: '0.8rem', color: 'var(--silver)', lineHeight: 1.4 }}>
-                            {order.shipping_address.name}<br />
-                            {order.shipping_address.street1} {order.shipping_address.street2}<br />
+                            {order.shipping_address.fullName}<br />
+                            {order.shipping_address.street}{order.shipping_address.suite ? `, ${order.shipping_address.suite}` : ''}<br />
                             {order.shipping_address.city}, {order.shipping_address.state} {order.shipping_address.zip}
                           </div>
                         ) : (

@@ -85,7 +85,7 @@ export default function AdminOrdersPage() {
   const [processing, setProcessing] = useState(false);
 
   // User Auth
-  const [userRole, setUserRole] = useState<string>('admin');
+  const [userRole, setUserRole] = useState<string>('');
 
   useEffect(() => {
     fetchOrders();
@@ -306,7 +306,7 @@ export default function AdminOrdersPage() {
                       </span>
                     </div>
                     <div style={{ fontSize: '0.76rem', color: 'var(--grey-400)', marginTop: 4 }}>
-                      {new Date(order.created_at).toLocaleDateString()} • {order.payment_method.toUpperCase()} • ${Number(order.total).toFixed(2)}
+                      {new Date(order.created_at).toLocaleDateString()} • {order.payment_method?.toUpperCase() ?? 'N/A'} • ${Number(order.total).toFixed(2)}
                     </div>
                   </div>
 

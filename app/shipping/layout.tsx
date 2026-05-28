@@ -4,9 +4,9 @@ import React from 'react';
 
 export default async function ShippingLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient();
-  const { data: { session } } = await supabase.auth.getSession();
+  const { data: { user } } = await supabase.auth.getUser();
 
-  if (!session) {
+  if (!user) {
     redirect('/login');
   }
 
@@ -14,7 +14,7 @@ export default async function ShippingLayout({ children }: { children: React.Rea
   const { data: profile } = await supabase
     .from('profiles')
     .select('role')
-    .eq('id', session.user.id)
+    .eq('id', user.id)
     .single();
 
   if (!profile || (profile.role !== 'shipping' && profile.role !== 'admin')) {
