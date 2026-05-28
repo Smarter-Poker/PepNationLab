@@ -45,12 +45,26 @@ export default function AdminAnalytics() {
 
       setRevenueData(revData);
 
-      // Top products mock based on actual products
-      const { data: products } = await supabase.from('products').select('name').limit(5);
-      const topP = (products || []).map((p, i) => ({
-        name: p.name.split(' ')[0] + '...',
-        sales: Math.floor(Math.random() * 50) + 10 - i * 5
-      })).sort((a, b) => b.sales - a.sales);
+      // Top products based on actual order_items
+      const { data: orderItems } = await supabase
+        .from('order_items')
+        .select('product_name, quantity, orders!inner(created_at, status)')
+        .gte('orders.created_at', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString())
+        .neq('orders.status', 'cancelled');
+
+      const productSales = new Map<string, number>();
+      orderItems?.forEach((item: any) => {
+        if (!item.product_name) return;
+        productSales.set(item.product_name, (productSales.get(item.product_name) || 0) + (Number(item.quantity) || 0));
+      });
+
+      const topP = Array.from(productSales.entries())
+        .map(([name, sales]) => ({
+          name: name.split(' ')[0], // short name
+          sales
+        }))
+        .sort((a, b) => b.sales - a.sales)
+        .slice(0, 5);
 
       setTopProducts(topP);
       setLoading(false);

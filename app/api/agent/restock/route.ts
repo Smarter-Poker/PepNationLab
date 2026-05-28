@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient, createServiceClient } from '@/lib/supabase/server';
+import { requireAgent } from '@/lib/admin-auth';
 import { z } from 'zod';
 
 const CheckoutSchema = z.object({
@@ -23,11 +24,9 @@ export async function POST(request: Request) {
     const supabase = await createClient();
     const serviceSupabase = await createServiceClient();
 
-    // Authenticate the user session
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized. Please Sign In.' }, { status: 401 });
-    }
+    const gate = await requireAgent();
+    if (!gate.ok) return gate.response;
+    const user = gate.user;
 
     const rawBody = await request.json();
     const validation = CheckoutSchema.safeParse(rawBody);

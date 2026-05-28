@@ -126,13 +126,13 @@ export default async function AgentStorefrontPage({ params }: Props) {
           </div>
         </div>
         <div style={{ display: 'flex', gap: 'var(--space-3)' }}>
-          <Link href={`/login?ref=${agentSlug}`} className="btn btn-secondary btn-sm">Sign In</Link>
+          <Link href="/dashboard" className="btn btn-secondary btn-sm">My Dashboard</Link>
           <Link
-            href={`/login?ref=${agentSlug}`}
+            href="/checkout"
             className="btn btn-sm"
             style={{ background: primaryColor, color: 'var(--black)', fontWeight: 700, border: 'none' }}
           >
-            Sign In To Order
+            Checkout
           </Link>
         </div>
       </nav>

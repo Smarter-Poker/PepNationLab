@@ -242,7 +242,8 @@ export default function AgentInventory({ agentId }: { agentId: string }) {
                       <input 
                         type="number"
                         value={item.stock_count}
-                        onChange={(e) => updateStock(item.id, parseInt(e.target.value) || 0)}
+                        onChange={(e) => setInventory(prev => prev.map(i => i.id === item.id ? { ...i, stock_count: parseInt(e.target.value) || 0 } : i))}
+                        onBlur={(e) => updateStock(item.id, parseInt(e.target.value) || 0)}
                         disabled={savingId === item.id}
                         style={{ 
                           width: 60, 

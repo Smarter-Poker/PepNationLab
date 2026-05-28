@@ -153,16 +153,21 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Failed to update order status' }, { status: 500 });
     }
 
-    // 5. Deduct Prepaid Balance immediately via Ledger if prepaid
+    // 5. Deduct Prepaid Balance atomically via RPC if prepaid
     if (primaryProfile.account_type === 'prepaid') {
       const oldBalance = Number(primaryProfile.prepaid_balance) || 0;
-      const newBalance = oldBalance - totalOwed;
+      
+      const { data: deductSuccess, error: deductError } = await supabase
+        .rpc('deduct_prepaid_balance', { 
+          agent_id: primaryBilledAgentId, 
+          amount: totalOwed 
+        });
 
-      // Update the profile balance
-      await supabase
-        .from('profiles')
-        .update({ prepaid_balance: newBalance })
-        .eq('id', primaryBilledAgentId);
+      if (deductError || !deductSuccess) {
+        return NextResponse.json({ error: 'Failed to deduct balance. Please try again.' }, { status: 500 });
+      }
+
+      const newBalance = oldBalance - totalOwed;
 
       // Insert ledger entry
       await supabase

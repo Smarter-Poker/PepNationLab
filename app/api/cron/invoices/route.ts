@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
-import { computeStatement, persistStatement } from '@/app/api/admin/statements/route';
+import { computeStatement, persistStatement } from '@/lib/statements';
 
 function addDays(dateStr: string, days: number): string {
   const d = new Date(`${dateStr}T00:00:00Z`);

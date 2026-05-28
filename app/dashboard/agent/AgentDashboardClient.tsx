@@ -344,8 +344,8 @@ export default function AgentDashboardClient({
       <nav className="nav" style={{ justifyContent: 'space-between', padding: '0 var(--space-4)', display: 'flex' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)' }}>
           <button 
-            className="btn btn-ghost btn-sm" 
-            style={{ display: 'none' }} // Visible on mobile via CSS if needed, but we'll just handle it inline below for quick fix
+            className="btn btn-ghost btn-sm hamburger-btn" 
+            style={{ padding: '4px' }} 
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
           >
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="3" y1="12" x2="21" y2="12" /><line x1="3" y1="6" x2="21" y2="6" /><line x1="3" y1="18" x2="21" y2="18" /></svg>
@@ -356,7 +356,7 @@ export default function AgentDashboardClient({
               <line x1="19" y1="12" x2="5" y2="12" />
               <polyline points="12 19 5 12 12 5" />
             </svg>
-            Back To Hub
+            <span className="hide-on-mobile">Back To Hub</span>
           </Link>
           <div style={{ width: 1, height: 16, background: 'rgba(255,255,255,0.1)' }} />
           <span style={{ fontFamily: 'var(--font-brand)', fontSize: '0.9rem', fontWeight: 800, letterSpacing: '0.12em', color: 'var(--teal)' }}>
@@ -364,11 +364,12 @@ export default function AgentDashboardClient({
           </span>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)' }}>
-          <span style={{ fontSize: '0.85rem', color: 'var(--silver)' }}>{agentProfile.display_name}</span>
-          {/* Hamburger for mobile */}
-          <button className="btn btn-ghost btn-sm" style={{ padding: '4px' }} onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="3" y1="12" x2="21" y2="12" /><line x1="3" y1="6" x2="21" y2="6" /><line x1="3" y1="18" x2="21" y2="18" /></svg>
-          </button>
+          <span className="hide-on-mobile" style={{ fontSize: '0.85rem', color: 'var(--silver)' }}>{agentProfile.display_name}</span>
+          <form action="/api/auth/signout" method="post" style={{ margin: 0 }}>
+            <button type="submit" className="btn btn-secondary btn-sm" style={{ padding: '6px 12px', fontSize: '0.75rem' }}>
+              Sign Out
+            </button>
+          </form>
         </div>
       </nav>
 
@@ -416,6 +417,10 @@ export default function AgentDashboardClient({
       <style dangerouslySetInnerHTML={{__html: `
         @media (min-width: 1024px) {
           .sidebar { transform: translateX(0) !important; }
+          .hamburger-btn { display: none !important; }
+        }
+        @media (max-width: 768px) {
+          .hide-on-mobile { display: none !important; }
         }
       `}} />
 
