@@ -19,6 +19,18 @@ const PUBLIC_ROUTES = [
   '/disclaimer',
   '/api/auth/resolve',
   '/api/auth/signout',
+  // Liveness probe — must be reachable for monitoring.
+  '/api/health',
+  // Layer 1 (site_entry) disclaimer log is hit by anonymous visitors before login.
+  // The route's own handler rejects anything other than site_entry from an
+  // unauthenticated caller, so this is safe.
+  '/api/disclaimer-log',
+  // Storefront-scoped researcher signup (rate-limited inside the route).
+  '/api/storefront/register',
+  // Vercel cron entrypoints — authenticated via CRON_SECRET inside the route
+  // using a constant-time compare, NOT via the session middleware.
+  '/api/cron/invoices',
+  '/api/cron/reminders',
 ];
 
 // Dynamic route check — agent storefronts are public
@@ -49,94 +61,106 @@ export default async function proxy(request: NextRequest) {
   if (pathname.startsWith('/register')) {
     const url = request.nextUrl.clone();
     url.pathname = '/login';
-    url.searchParams.delete('redirect');
+    url.search = '';
     return NextResponse.redirect(url);
   }
 
-  let supabaseResponse = NextResponse.next({ request });
+  // Allow public routes through immediately
+  if (PUBLIC_ROUTES.some(route => pathname === route || pathname.startsWith(route + '/'))) {
+    return NextResponse.next({ request });
+  }
+
+  // Allow public agent storefronts through
+  if (isPublicDynamicRoute(pathname)) {
+    return NextResponse.next({ request });
+  }
+
+  // Allow Next internals
+  if (
+    pathname.startsWith('/_next') ||
+    pathname.startsWith('/favicon') ||
+    pathname === '/robots.txt' ||
+    pathname === '/sitemap.xml' ||
+    pathname.match(/\.(png|jpg|jpeg|svg|webp|ico|gif|css|js|woff|woff2|map)$/)
+  ) {
+    return NextResponse.next({ request });
+  }
+
+  // ─── Authenticated paths ──────────────────────────────────────────────────
+  let response = NextResponse.next({ request });
 
   const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
         getAll() {
           return request.cookies.getAll();
         },
         setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value, options }) =>
-            request.cookies.set({ name, value, ...options })
-          );
-          supabaseResponse = NextResponse.next({ request });
-          cookiesToSet.forEach(({ name, value, options }) =>
-            supabaseResponse.cookies.set({ name, value, ...options })
-          );
+          cookiesToSet.forEach(({ name, value, options }) => {
+            request.cookies.set({ name, value, ...options });
+          });
+          response = NextResponse.next({ request });
+          cookiesToSet.forEach(({ name, value, options }) => {
+            response.cookies.set({ name, value, ...options });
+          });
         },
       },
-    }
+    },
   );
 
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
-  // Allow public routes through (login, forgot-password, become-agent, agent storefronts)
-  const isPublicRoute = PUBLIC_ROUTES.some(r => pathname.startsWith(r)) || isPublicDynamicRoute(pathname);
-  if (isPublicRoute) {
-    // If user is already logged in on the /login page, send them to the right place
-    if (user && pathname === '/login') {
-      const url = request.nextUrl.clone();
-      // Check role via the profile — admins go to /admin, everyone else to /dashboard
-      // We use a lightweight DB read with the anon key (RLS allows user to read own profile)
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('role, is_active')
-        .eq('id', user.id)
-        .single();
-      if (profile?.is_active === false) {
-        await supabase.auth.signOut();
-        const loginUrl = request.nextUrl.clone();
-        loginUrl.pathname = '/login';
-        loginUrl.searchParams.set('error', 'account_disabled');
-        return NextResponse.redirect(loginUrl);
-      }
-      url.pathname = profile?.role === 'admin' ? '/admin' : '/dashboard';
-      return NextResponse.redirect(url);
-    }
-    return supabaseResponse;
-  }
-
-  // Every other route requires authentication
   if (!user) {
+    if (pathname.startsWith('/api/')) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
     const url = request.nextUrl.clone();
     url.pathname = '/login';
-    // Preserve the intended destination so we can redirect after login
     url.searchParams.set('redirect', pathname);
     return NextResponse.redirect(url);
   }
 
-  // Verify the account is still active. Disabled accounts are signed out immediately.
+  // Check the user's is_active flag — deactivated accounts get signed out.
   const { data: profile } = await supabase
     .from('profiles')
-    .select('is_active')
+    .select('is_active, role')
     .eq('id', user.id)
-    .single();
+    .maybeSingle();
 
-  if (profile?.is_active === false) {
+  if (profile && profile.is_active === false) {
     await supabase.auth.signOut();
-    if (pathname.startsWith('/api')) {
-      return NextResponse.json({ error: 'Account Disabled' }, { status: 401 });
+    if (pathname.startsWith('/api/')) {
+      return NextResponse.json({ error: 'Account disabled' }, { status: 401 });
     }
     const url = request.nextUrl.clone();
     url.pathname = '/login';
-    url.search = '';
     url.searchParams.set('error', 'account_disabled');
     return NextResponse.redirect(url);
   }
 
-  return supabaseResponse;
+  // Already-logged-in users land on /login → bounce to their dashboard
+  if (pathname === '/login') {
+    const url = request.nextUrl.clone();
+    url.pathname = profile?.role === 'admin' ? '/admin' : '/dashboard';
+    return NextResponse.redirect(url);
+  }
+
+  return response;
 }
 
 export const config = {
   matcher: [
-    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+    /*
+     * Match all request paths except for the ones starting with:
+     * - _next/static (static files)
+     * - _next/image (image optimization files)
+     * - favicon.ico (favicon file)
+     * - public files (images, fonts, etc.)
+     */
+    '/((?!_next/static|_next/image|favicon.ico|logo.*|.*\\.(?:png|jpg|jpeg|gif|webp|svg|ico|woff|woff2|css|js|map)$).*)',
   ],
 };
