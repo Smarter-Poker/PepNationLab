@@ -36,8 +36,13 @@ type SortKey =
   | 'price-desc';
 
 /* ── helpers ── */
-function groupByName(products: RawProduct[]): GroupedProduct[] {
-  const map = new Map<string, GroupedProduct>();
+interface GroupedProductInternal extends GroupedProduct {
+  /** Representative product id used to look up per-product tier overrides. */
+  representativeId: string;
+}
+
+function groupByName(products: RawProduct[]): GroupedProductInternal[] {
+  const map = new Map<string, GroupedProductInternal>();
 
   for (const p of products) {
     const key = p.name.trim().toLowerCase();
@@ -48,6 +53,7 @@ function groupByName(products: RawProduct[]): GroupedProduct[] {
       // keep the lowest base cost as the representative price
       if (Number(p.base_cost) < existing.baseCost) {
         existing.baseCost = Number(p.base_cost);
+        existing.representativeId = p.id;
       }
       // if any variant is active, treat the group as active
       if (p.is_active) existing.isActive = true;
@@ -60,6 +66,7 @@ function groupByName(products: RawProduct[]): GroupedProduct[] {
         isActive: p.is_active,
         variantCount: 1,
         variantIds: [p.id],
+        representativeId: p.id,
       });
     }
   }
@@ -86,9 +93,12 @@ function fuzzyMatch(text: string, query: string): boolean {
 export default function ProductCatalogClient({
   products,
   multipliers,
+  overrides = {},
 }: {
   products: RawProduct[];
   multipliers: Record<string, number>;
+  /** Optional per-product tier overrides keyed by `${product_id}:${tier_name}`. */
+  overrides?: Record<string, number>;
 }) {
   const [search, setSearch] = useState('');
   const [sort, setSort] = useState<SortKey>('name-asc');
@@ -139,8 +149,11 @@ export default function ProductCatalogClient({
     return list;
   }, [grouped, categoryFilter, search, sort]);
 
-  const tierPrice = (cost: number, tier: string) =>
-    `$${(cost * (multipliers[tier] ?? 1)).toFixed(2)}`;
+  const tierPrice = (productId: string, cost: number, tier: string) => {
+    const overrideKey = `${productId}:${tier}`;
+    const multiplier = overrides[overrideKey] ?? multipliers[tier] ?? 1;
+    return `$${(cost * multiplier).toFixed(2)}`;
+  };
 
   /* ── styles ── */
   const controlBarStyle: React.CSSProperties = {
@@ -277,15 +290,15 @@ export default function ProductCatalogClient({
                   ${p.baseCost.toFixed(2)}
                 </td>
 
-                {/* Tier prices */}
+                {/* Tier prices — per-product overrides take precedence */}
                 <td style={{ padding: 'var(--space-4)', fontSize: '0.88rem', fontFamily: 'var(--font-brand)', color: 'var(--teal)' }}>
-                  {tierPrice(p.baseCost, 'tier_1')}
+                  {tierPrice(p.representativeId, p.baseCost, 'tier_1')}
                 </td>
                 <td style={{ padding: 'var(--space-4)', fontSize: '0.88rem', fontFamily: 'var(--font-brand)', color: 'var(--silver)' }}>
-                  {tierPrice(p.baseCost, 'tier_2')}
+                  {tierPrice(p.representativeId, p.baseCost, 'tier_2')}
                 </td>
                 <td style={{ padding: 'var(--space-4)', fontSize: '0.88rem', fontFamily: 'var(--font-brand)', color: 'var(--grey-400)' }}>
-                  {tierPrice(p.baseCost, 'tier_3')}
+                  {tierPrice(p.representativeId, p.baseCost, 'tier_3')}
                 </td>
 
                 {/* Status */}

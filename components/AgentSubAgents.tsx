@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
+import { pickOne } from '@/lib/relations';
 
 export default function AgentSubAgents({ agentId }: { agentId?: string }) {
 
@@ -174,13 +175,16 @@ export default function AgentSubAgents({ agentId }: { agentId?: string }) {
                       </span>
                     </td>
                     <td>
-                      {agent.agent_profiles?.[0]?.slug ? (
-                        <a href={`/${agent.agent_profiles[0].slug}`} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--teal)', textDecoration: 'none' }}>
-                          /{agent.agent_profiles[0].slug}
-                        </a>
-                      ) : (
-                        <span style={{ color: 'var(--grey-400)', fontSize: '0.8rem' }}>No storefront</span>
-                      )}
+                      {(() => {
+                        const ap = pickOne<{ slug: string | null }>(agent.agent_profiles);
+                        return ap?.slug ? (
+                          <a href={`/${ap.slug}`} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--teal)', textDecoration: 'none' }}>
+                            /{ap.slug}
+                          </a>
+                        ) : (
+                          <span style={{ color: 'var(--grey-400)', fontSize: '0.8rem' }}>No Storefront</span>
+                        );
+                      })()}
                     </td>
                     <td style={{ textAlign: 'right', display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
                       <button 

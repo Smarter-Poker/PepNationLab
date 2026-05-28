@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
 import { requireAgent } from '@/lib/admin-auth';
+import { pickOne } from '@/lib/relations';
 import { Shippo } from 'shippo';
 
 export async function POST(req: NextRequest) {
@@ -27,7 +28,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Order not found' }, { status: 404 });
     }
 
-    if (order.agent_id !== agentId && order.profiles?.parent_agent_id !== agentId) {
+    const orderAgentProfile = pickOne<{ parent_agent_id: string | null }>(order.profiles);
+    if (order.agent_id !== agentId && orderAgentProfile?.parent_agent_id !== agentId) {
       return NextResponse.json({ error: 'Unauthorized to ship this order' }, { status: 403 });
     }
 

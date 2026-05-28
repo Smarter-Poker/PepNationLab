@@ -52,17 +52,58 @@ export async function POST(req: NextRequest) {
 
     // 3. Balance Enforcement Logic (Only for Approval)
     // We must deduct from the primary billed agent (either the Agent themselves, or the Super Agent if Sub-Agent)
-    const primaryBilledAgentId = order.profiles?.parent_agent_id || order.agent_id;
-    
-    // Calculate total COGS + Shipping
+    const primaryBilledAgentId = orderAgentParentId || order.agent_id;
+    const isSubAgentOrder = !!orderAgentParentId && primaryBilledAgentId !== order.agent_id;
+
+    // Calculate total COGS + Shipping. We branch explicitly to avoid the
+    // historical bug where a missing unit_super_agent_cost silently fell
+    // back to $0 for super-agent direct orders.
     let totalCogs = 0;
     const items = (order.order_items as any[]) || [];
+
+    let billedAgentTier: AgentTier = 'tier_3';
+    if (!isSubAgentOrder) {
+      const { data: billedProfile } = await supabase
+        .from('profiles')
+        .select('tier')
+        .eq('id', primaryBilledAgentId)
+        .maybeSingle();
+      billedAgentTier = (billedProfile?.tier as AgentTier | null) ?? 'tier_3';
+    }
+
     for (const item of items) {
       const qty = Number(item.quantity) || 0;
-      if (order.agent_id === primaryBilledAgentId) {
-        totalCogs += (Number(item.unit_cost_price) || 0) * qty;
+      if (qty <= 0) continue;
+
+      if (isSubAgentOrder) {
+        // Super agent is being billed for a sub-agent's order. The sub-agent
+        // pays unit_super_agent_cost.
+        const stored = Number(item.unit_super_agent_cost);
+        if (Number.isFinite(stored) && stored > 0) {
+          totalCogs += stored * qty;
+        } else if (item.product_id) {
+          // Fallback: recompute from the super-agent's tier rather than 0.
+          const recomputed = await computeAgentCost(
+            supabase,
+            item.product_id,
+            billedAgentTier
+          );
+          totalCogs += recomputed * qty;
+        }
       } else {
-        totalCogs += (Number(item.unit_super_agent_cost) || 0) * qty;
+        // Direct agent or super-agent order. Use unit_cost_price; if missing,
+        // recompute from the agent's tier (never silently fall back to 0).
+        const stored = Number(item.unit_cost_price);
+        if (Number.isFinite(stored) && stored > 0) {
+          totalCogs += stored * qty;
+        } else if (item.product_id) {
+          const recomputed = await computeAgentCost(
+            supabase,
+            item.product_id,
+            billedAgentTier
+          );
+          totalCogs += recomputed * qty;
+        }
       }
     }
     

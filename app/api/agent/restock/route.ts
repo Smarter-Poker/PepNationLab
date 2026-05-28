@@ -201,13 +201,15 @@ export async function POST(request: Request) {
 
     const total = subtotal + shippingCost;
 
-    // Create checkout order with is_wholesale_restock = true
+    // Attribute the restock order to the agent making it so admin ledger /
+    // statement queries that key off agent_id can identify and exclude these
+    // rows via is_wholesale_restock instead of treating them as orphaned.
     const { data: order, error: orderError } = await serviceSupabase
       .from('orders')
       .insert({
         buyer_id: user.id,
-        agent_id: null, // Critical: this is null because it's a global order, but is_wholesale_restock handles the agent_inventory addition.
-        is_wholesale_restock: true, // FLAG that tells trigger to replenish agent_inventory
+        agent_id: user.id,
+        is_wholesale_restock: true,
         status: 'pending_customer_payment',
         fulfillment_method: fulfillmentMethod,
         payment_method: paymentMethod,

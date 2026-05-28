@@ -33,6 +33,21 @@ export default async function AdminProductsPage() {
   const multipliers: Record<string, number> = {};
   tiers?.forEach(t => { multipliers[t.tier_name] = t.multiplier; });
 
+  // Per-product overrides — keyed by `${product_id}:${tier_name}`. The client
+  // component prefers the override when present and falls back to the global
+  // multiplier otherwise.
+  const productIds = (products ?? []).map(p => p.id);
+  const overrides: Record<string, number> = {};
+  if (productIds.length > 0) {
+    const { data: overrideRows } = await supabase
+      .from('product_tier_overrides')
+      .select('product_id, tier_name, custom_multiplier')
+      .in('product_id', productIds);
+    overrideRows?.forEach(o => {
+      overrides[`${o.product_id}:${o.tier_name}`] = Number(o.custom_multiplier);
+    });
+  }
+
   return (
     <div style={{ padding: 'var(--space-8)' }}>
       {/* Header */}
@@ -54,6 +69,7 @@ export default async function AdminProductsPage() {
       <ProductCatalogClient
         products={(products ?? []) as RawProduct[]}
         multipliers={multipliers}
+        overrides={overrides}
       />
     </div>
   );

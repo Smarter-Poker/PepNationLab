@@ -32,6 +32,24 @@ export default async function AdminStorePreviewPage() {
     `)
     .order('name');
 
+  // Default tier-3 retail multiplier + per-product overrides so the preview
+  // shows what a researcher would actually pay, not the admin's wholesale
+  // base_cost.
+  const { data: tiers } = await supabase
+    .from('pricing_tiers')
+    .select('tier_name, multiplier');
+  const defaultMultiplier =
+    Number(tiers?.find(t => t.tier_name === 'tier_3')?.multiplier ?? 7);
+
+  const { data: overrideRows } = await supabase
+    .from('product_tier_overrides')
+    .select('product_id, custom_multiplier')
+    .eq('tier_name', 'tier_3');
+  const overrides = new Map<string, number>();
+  overrideRows?.forEach(o => {
+    overrides.set(o.product_id, Number(o.custom_multiplier));
+  });
+
   if (error || !productsData) {
     console.error('[store-preview] Supabase query error:', error?.message, error?.details, error?.hint);
     return (
@@ -55,6 +73,8 @@ export default async function AdminStorePreviewPage() {
   const productItems = productsData.map(p => {
     const count = p.inventory_count ?? 0;
     inventoryMap[p.id] = count;
+    const multiplier = overrides.get(p.id) ?? defaultMultiplier;
+    const retail = Math.round(Number(p.base_cost || 0) * multiplier * 100) / 100;
 
     return {
       id: `preview-${p.id}`,
@@ -63,7 +83,7 @@ export default async function AdminStorePreviewPage() {
       custom_name: p.name,
       custom_description: p.description,
       custom_image_url: p.image_url,
-      retail_price: Number(p.base_cost || 0),
+      retail_price: retail,
       is_visible: true,
       products: {
         name: p.name,

@@ -55,11 +55,16 @@ export async function computeStatement(
     }
   }
 
+  // Wholesale restock orders are agent self-buys for inventory replenishment
+  // (agent_id == buyer_id, is_wholesale_restock = true). They are billed at
+  // checkout, NOT through the weekly statement, so they must be excluded
+  // from the COGS roll-up here.
   const { data: orders, error: ordersError } = await supabase
     .from('orders')
     .select('id, agent_id, shipping_cost, order_items(quantity, unit_cost_price, unit_super_agent_cost)')
     .in('agent_id', billableAgentIds)
     .neq('status', 'cancelled')
+    .eq('is_wholesale_restock', false)
     .gte('created_at', rangeStart)
     .lt('created_at', rangeEndExclusive);
 
