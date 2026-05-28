@@ -82,7 +82,7 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  const { data: existingUsername } = await supabase.from('profiles').select('id').eq('username', usernameClean).maybeSingle();
+  const { data: existingUsername } = await supabase.from('profiles').select('id').ilike('username', usernameClean).maybeSingle();
   if (existingUsername) {
     return NextResponse.json({ error: 'This Username Is Already Taken' }, { status: 400 });
   }

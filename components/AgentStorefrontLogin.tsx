@@ -195,6 +195,9 @@ export default function AgentStorefrontLogin({
                 onChange={e => setUsername(e.target.value)}
                 required
                 autoFocus
+                autoCapitalize="none"
+                autoCorrect="off"
+                spellCheck={false}
               />
             </div>
             <div className="form-group">
@@ -252,6 +255,9 @@ export default function AgentStorefrontLogin({
                 value={username}
                 onChange={e => setUsername(e.target.value)}
                 required
+                autoCapitalize="none"
+                autoCorrect="off"
+                spellCheck={false}
               />
             </div>
             <div className="form-group">

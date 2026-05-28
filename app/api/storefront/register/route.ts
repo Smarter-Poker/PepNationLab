@@ -76,7 +76,7 @@ export async function POST(req: NextRequest) {
   const { data: existingUser } = await supabase
     .from('profiles')
     .select('id')
-    .eq('username', usernameClean)
+    .ilike('username', usernameClean)
     .maybeSingle();
 
   if (existingUser) {

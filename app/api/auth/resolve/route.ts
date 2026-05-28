@@ -38,7 +38,7 @@ export async function POST(req: NextRequest) {
   const { data } = await supabase
     .from('profiles')
     .select('email')
-    .eq('username', username)
+    .ilike('username', username)
     .eq('is_active', true)
     .maybeSingle();
 

@@ -77,7 +77,7 @@ export default function AdminAgents() {
         const { data } = await supabase
           .from('profiles')
           .select('id')
-          .eq('username', clean)
+          .ilike('username', clean)
           .maybeSingle();
         setUsernameStatus(data ? 'taken' : 'available');
       } catch {
@@ -572,7 +572,7 @@ export default function AdminAgents() {
                   placeholder="e.g. john_smith"
                   required
                   autoComplete="off"
-                  style={{ width: '100%', textTransform: 'capitalize' }}
+                  style={{ width: '100%' }}
                 />
                 <AvailabilityIndicator status={usernameStatus} />
               </div>
