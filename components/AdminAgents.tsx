@@ -15,6 +15,11 @@ export default function AdminAgents() {
   const [editPhone, setEditPhone] = useState('');
   const [isSaving, setIsSaving] = useState(false);
 
+  // Modal State — Edit Password
+  const [passwordAgent, setPasswordAgent] = useState<any | null>(null);
+  const [newPassword, setNewPassword] = useState('');
+  const [passwordSaving, setPasswordSaving] = useState(false);
+
   // Modal State — Create Agent
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [createForm, setCreateForm] = useState({
@@ -248,6 +253,7 @@ export default function AdminAgents() {
             <tr>
               <th>Agent ID</th>
               <th>Name</th>
+              <th>Credentials</th>
               <th>Contact Info</th>
               <th>Tier</th>
               <th>Type</th>
@@ -261,7 +267,7 @@ export default function AdminAgents() {
           <tbody>
             {agents.length === 0 ? (
               <tr>
-                <td colSpan={10} style={{ textAlign: 'center', opacity: 0.5 }}>No agents found.</td>
+                <td colSpan={11} style={{ textAlign: 'center', opacity: 0.5 }}>No agents found.</td>
               </tr>
             ) : (
               agents.map(agent => {
@@ -270,6 +276,17 @@ export default function AdminAgents() {
                   <tr key={agent.id}>
                     <td style={{ fontSize: '0.8rem', color: 'var(--silver)' }}>{agent.id.split('-')[0]}</td>
                     <td style={{ fontWeight: 'bold' }}>{agent.full_name}</td>
+                    <td>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                        <span style={{ fontFamily: 'monospace', fontSize: '0.82rem', color: 'var(--teal)' }}>{agent.username || '—'}</span>
+                        <button
+                          onClick={() => { setPasswordAgent(agent); setNewPassword(''); }}
+                          style={{ fontSize: '0.7rem', color: 'var(--grey-400)', background: 'none', border: 'none', cursor: 'pointer', padding: 0, textDecoration: 'underline', textAlign: 'left' }}
+                        >
+                          Edit Password
+                        </button>
+                      </div>
+                    </td>
                     <td>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: 4, alignItems: 'flex-start' }}>
                         {isDefaultEmail ? (
@@ -406,6 +423,67 @@ export default function AdminAgents() {
                 </button>
                 <button type="submit" className="btn btn-primary" disabled={isSaving}>
                   {isSaving ? 'Saving...' : 'Save Changes'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Password Modal */}
+      {passwordAgent && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+          background: 'rgba(0,0,0,0.8)', zIndex: 1000,
+          display: 'flex', alignItems: 'center', justifyContent: 'center'
+        }}>
+          <div className="card-metal" style={{ width: '100%', maxWidth: 400, padding: 'var(--space-6)' }}>
+            <h3 style={{ marginTop: 0, marginBottom: 'var(--space-4)', color: 'var(--white)' }}>Edit Password</h3>
+            <p style={{ fontSize: '0.85rem', color: 'var(--silver)', marginBottom: 'var(--space-2)' }}>
+              Agent: <strong style={{ color: 'var(--white)' }}>{passwordAgent.full_name}</strong>
+            </p>
+            <p style={{ fontSize: '0.85rem', color: 'var(--silver)', marginBottom: 'var(--space-4)' }}>
+              Username: <strong style={{ color: 'var(--teal)', fontFamily: 'monospace' }}>{passwordAgent.username}</strong>
+            </p>
+            <form onSubmit={async (e) => {
+              e.preventDefault();
+              if (!passwordAgent || !newPassword) return;
+              setPasswordSaving(true);
+              try {
+                const res = await fetch('/api/admin/agents/update-password', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ userId: passwordAgent.id, newPassword }),
+                });
+                const json = await res.json();
+                if (!res.ok) throw new Error(json.error);
+                toast.success('Password Updated Successfully');
+                setPasswordAgent(null);
+                setNewPassword('');
+              } catch (err: any) {
+                toast.error(err.message || 'Failed To Update Password');
+              } finally {
+                setPasswordSaving(false);
+              }
+            }}>
+              <div className="form-group" style={{ marginBottom: 'var(--space-6)' }}>
+                <label className="form-label">New Password</label>
+                <input
+                  type="text"
+                  className="form-input"
+                  value={newPassword}
+                  onChange={e => setNewPassword(e.target.value)}
+                  placeholder="Minimum 8 Characters"
+                  required
+                  minLength={8}
+                  autoComplete="off"
+                  style={{ width: '100%' }}
+                />
+              </div>
+              <div style={{ display: 'flex', gap: 'var(--space-3)', justifyContent: 'flex-end' }}>
+                <button type="button" className="btn btn-ghost btn-sm" onClick={() => { setPasswordAgent(null); setNewPassword(''); }} disabled={passwordSaving}>Cancel</button>
+                <button type="submit" className="btn btn-primary btn-sm" disabled={passwordSaving || newPassword.length < 8}>
+                  {passwordSaving ? 'Saving...' : 'Update Password'}
                 </button>
               </div>
             </form>

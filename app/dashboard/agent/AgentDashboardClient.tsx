@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import { toast } from 'sonner';
 import Link from 'next/link';
 import AgentCoupons from '@/components/AgentCoupons';
 import AgentMessages from '@/components/AgentMessages';
@@ -84,7 +85,7 @@ export default function AgentDashboardClient({
 }: AgentDashboardClientProps) {
   const supabase = createClient();
 
-  const [activeTab, setActiveTab] = useState<'Overview' | 'Sales & Carts' | 'Researchers' | 'My Sub-Agents' | 'Orders' | 'Store Products' | 'Research Bundles' | 'Inventory' | 'Ledger & Accounting' | 'Coupons' | 'Messages' | 'Storefront Config'>('Overview');
+  const [activeTab, setActiveTab] = useState<'Overview' | 'Sales & Carts' | 'Researchers' | 'My Sub-Agents' | 'Orders' | 'Store Products' | 'Research Bundles' | 'Inventory' | 'Ledger & Accounting' | 'Coupons' | 'Messages' | 'Storefront Config' | 'Settings'>('Overview');
   const [agentProfile, setAgentProfile] = useState<AgentProfile | null>(initialAgentProfile);
   const [orders, setOrders] = useState<Order[]>(initialOrders);
 
@@ -140,6 +141,11 @@ export default function AgentDashboardClient({
   const [crError, setCrError] = useState('');
   const [crSuccess, setCrSuccess] = useState('');
   const [researcherList, setResearcherList] = useState<Researcher[]>(initialResearchers);
+
+  // Reset Password Modal State (for researchers & sub-agents)
+  const [resetPwUser, setResetPwUser] = useState<{ id: string; name: string; username: string } | null>(null);
+  const [resetPwValue, setResetPwValue] = useState('');
+  const [resetPwSaving, setResetPwSaving] = useState(false);
 
   async function handleCreateResearcher(e: React.FormEvent) {
     e.preventDefault();
@@ -451,6 +457,7 @@ export default function AgentDashboardClient({
     { id: 'Research Bundles', label: 'Bundles', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" /><polyline points="3.27 6.96 12 12.01 20.73 6.96" /><line x1="12" y1="22.08" x2="12" y2="12" /></svg> },
     { id: 'Messages', label: 'Messages', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" /><polyline points="22,6 12,13 2,6" /></svg> },
     { id: 'Storefront Config', label: 'Storefront Configure', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" /></svg> },
+    { id: 'Settings', label: 'Account Settings', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /></svg> },
   ];
 
   return (
@@ -480,11 +487,6 @@ export default function AgentDashboardClient({
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)' }}>
           <span className="hide-on-mobile" style={{ fontSize: '0.85rem', color: 'var(--silver)' }}>{agentProfile.display_name}</span>
-          <form action="/api/auth/signout" method="post" style={{ margin: 0 }}>
-            <button type="submit" className="btn btn-secondary btn-sm" style={{ padding: '6px 12px', fontSize: '0.75rem' }}>
-              Sign Out
-            </button>
-          </form>
         </div>
       </nav>
 
@@ -703,7 +705,7 @@ export default function AgentDashboardClient({
                     <thead>
                       <tr style={{ textAlign: 'left', borderBottom: '1px solid rgba(255,255,255,0.08)', color: 'var(--grey-400)' }}>
                         <th style={{ padding: 'var(--space-3) 0', fontWeight: 600 }}>Full Name</th>
-                        <th style={{ padding: 'var(--space-3) 0', fontWeight: 600 }}>Username</th>
+                        <th style={{ padding: 'var(--space-3) 0', fontWeight: 600 }}>Credentials</th>
                         <th style={{ padding: 'var(--space-3) 0', fontWeight: 600 }}>Created</th>
                         <th style={{ padding: 'var(--space-3) 0', fontWeight: 600 }}>Status</th>
                         {userProfile.is_super_agent && (
@@ -715,8 +717,16 @@ export default function AgentDashboardClient({
                       {researcherList.map((res) => (
                         <tr key={res.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.03)', color: 'var(--silver-light)' }}>
                           <td style={{ padding: 'var(--space-3) 0', fontWeight: 500 }}>{res.full_name || 'Anonymous Researcher'}</td>
-                          <td style={{ padding: 'var(--space-3) 0', fontFamily: 'var(--font-brand)', fontSize: '0.78rem', color: 'var(--teal)' }}>
-                            @{res.username ?? res.email.split('@')[0]}
+                          <td style={{ padding: 'var(--space-3) 0' }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                              <span style={{ fontFamily: 'monospace', fontSize: '0.82rem', color: 'var(--teal)' }}>@{res.username ?? res.email.split('@')[0]}</span>
+                              <button
+                                onClick={() => setResetPwUser({ id: res.id, name: res.full_name || 'Researcher', username: res.username ?? res.email.split('@')[0] })}
+                                style={{ fontSize: '0.7rem', color: 'var(--grey-400)', background: 'none', border: 'none', cursor: 'pointer', padding: 0, textDecoration: 'underline', textAlign: 'left' }}
+                              >
+                                Edit Password
+                              </button>
+                            </div>
                           </td>
                           <td style={{ padding: 'var(--space-3) 0' }}>{new Date(res.created_at).toLocaleDateString()}</td>
                           <td style={{ padding: 'var(--space-3) 0' }}>
@@ -807,8 +817,161 @@ export default function AgentDashboardClient({
             />
           </div>
         )}
+
+        {/* TAB: Account Settings */}
+        {activeTab === 'Settings' && (
+          <div style={{ animation: 'fadeIn 0.3s ease-out', maxWidth: 600 }}>
+            <h2 style={{ fontFamily: 'var(--font-brand)', marginBottom: 'var(--space-6)', fontSize: '1.3rem' }}>Account Settings</h2>
+
+            {/* Account Info */}
+            <div className="card-metal" style={{ padding: 'var(--space-6)', marginBottom: 'var(--space-6)' }}>
+              <h4 style={{ marginBottom: 'var(--space-4)', color: 'var(--teal)' }}>Account Information</h4>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
+                <div>
+                  <span style={{ fontSize: '0.78rem', color: 'var(--grey-400)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Username</span>
+                  <p style={{ fontFamily: 'monospace', color: 'var(--teal)', fontSize: '1rem', margin: '4px 0 0' }}>{userProfile.email?.split('@')[0] || '\u2014'}</p>
+                </div>
+                <div>
+                  <span style={{ fontSize: '0.78rem', color: 'var(--grey-400)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Storefront URL</span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', marginTop: 4 }}>
+                    <p style={{ fontFamily: 'monospace', color: 'var(--white)', fontSize: '0.9rem', margin: 0 }}>{storefrontUrl}</p>
+                    <button
+                      onClick={() => { navigator.clipboard.writeText(storefrontUrl); toast.success('Copied!'); }}
+                      className="btn btn-ghost btn-sm"
+                      style={{ padding: '2px 8px', fontSize: '0.7rem' }}
+                    >Copy</button>
+                  </div>
+                </div>
+                <div>
+                  <span style={{ fontSize: '0.78rem', color: 'var(--grey-400)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Tier</span>
+                  <p style={{ color: 'var(--white)', fontSize: '0.9rem', margin: '4px 0 0' }}>{userProfile.tier?.replace('_', ' ').toUpperCase() || 'TIER 3'}</p>
+                </div>
+                <div>
+                  <span style={{ fontSize: '0.78rem', color: 'var(--grey-400)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Name</span>
+                  <p style={{ color: 'var(--white)', fontSize: '0.9rem', margin: '4px 0 0' }}>{userProfile.full_name || '\u2014'}</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Change Password */}
+            <div className="card-metal" style={{ padding: 'var(--space-6)' }}>
+              <h4 style={{ marginBottom: 'var(--space-4)', color: 'var(--teal)' }}>Change Password</h4>
+              <SettingsPasswordForm />
+            </div>
+          </div>
+        )}
+
       </div>
       </div>
+
+      {/* Reset Password Modal (for researchers & sub-agents) */}
+      {resetPwUser && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+          background: 'rgba(0,0,0,0.8)', zIndex: 1000,
+          display: 'flex', alignItems: 'center', justifyContent: 'center'
+        }}>
+          <div className="card-metal" style={{ width: '100%', maxWidth: 400, padding: 'var(--space-6)' }}>
+            <h3 style={{ marginTop: 0, marginBottom: 'var(--space-4)', color: 'var(--white)' }}>Reset Password</h3>
+            <p style={{ fontSize: '0.85rem', color: 'var(--silver)', marginBottom: 'var(--space-2)' }}>
+              User: <strong style={{ color: 'var(--white)' }}>{resetPwUser.name}</strong>
+            </p>
+            <p style={{ fontSize: '0.85rem', color: 'var(--silver)', marginBottom: 'var(--space-4)' }}>
+              Username: <strong style={{ color: 'var(--teal)', fontFamily: 'monospace' }}>{resetPwUser.username}</strong>
+            </p>
+            <form onSubmit={async (e) => {
+              e.preventDefault();
+              if (!resetPwUser || !resetPwValue) return;
+              setResetPwSaving(true);
+              try {
+                const res = await fetch('/api/agent/update-password', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ userId: resetPwUser.id, newPassword: resetPwValue }),
+                });
+                const json = await res.json();
+                if (!res.ok) throw new Error(json.error);
+                toast.success('Password Updated Successfully');
+                setResetPwUser(null);
+                setResetPwValue('');
+              } catch (err: any) {
+                toast.error(err.message || 'Failed To Update Password');
+              } finally {
+                setResetPwSaving(false);
+              }
+            }}>
+              <div className="form-group" style={{ marginBottom: 'var(--space-6)' }}>
+                <label className="form-label">New Password</label>
+                <input
+                  type="text"
+                  className="form-input"
+                  value={resetPwValue}
+                  onChange={e => setResetPwValue(e.target.value)}
+                  placeholder="Minimum 8 Characters"
+                  required
+                  minLength={8}
+                  autoComplete="off"
+                  style={{ width: '100%' }}
+                />
+              </div>
+              <div style={{ display: 'flex', gap: 'var(--space-3)', justifyContent: 'flex-end' }}>
+                <button type="button" className="btn btn-ghost btn-sm" onClick={() => { setResetPwUser(null); setResetPwValue(''); }} disabled={resetPwSaving}>Cancel</button>
+                <button type="submit" className="btn btn-primary btn-sm" disabled={resetPwSaving || resetPwValue.length < 8}>
+                  {resetPwSaving ? 'Saving...' : 'Update Password'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
     </div>
+  );
+}
+
+function SettingsPasswordForm() {
+  const supabase = createClient();
+  const [newPw, setNewPw] = useState('');
+  const [confirmPw, setConfirmPw] = useState('');
+  const [pwLoading, setPwLoading] = useState(false);
+  const [pwError, setPwError] = useState('');
+  const [pwSuccess, setPwSuccess] = useState('');
+
+  const handleChangePw = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setPwError('');
+    setPwSuccess('');
+    if (newPw !== confirmPw) { setPwError('Passwords Do Not Match'); return; }
+    if (newPw.length < 8) { setPwError('Password Must Be At Least 8 Characters'); return; }
+    setPwLoading(true);
+    try {
+      const { error } = await supabase.auth.updateUser({ password: newPw });
+      if (error) throw error;
+      setPwSuccess('Password Updated Successfully!');
+      setNewPw(''); setConfirmPw('');
+      setTimeout(() => setPwSuccess(''), 3000);
+    } catch (err: any) {
+      setPwError(err.message || 'Failed To Update Password');
+    } finally {
+      setPwLoading(false);
+    }
+  };
+
+  return (
+    <form onSubmit={handleChangePw}>
+      <div className="form-group" style={{ marginBottom: 'var(--space-4)' }}>
+        <label className="form-label">New Password</label>
+        <input type="password" className="form-input" value={newPw} onChange={e => setNewPw(e.target.value)} placeholder="Minimum 8 Characters" required minLength={8} autoComplete="new-password" />
+      </div>
+      <div className="form-group" style={{ marginBottom: 'var(--space-4)' }}>
+        <label className="form-label">Confirm New Password</label>
+        <input type="password" className="form-input" value={confirmPw} onChange={e => setConfirmPw(e.target.value)} placeholder="Re-Enter New Password" required minLength={8} autoComplete="new-password" />
+      </div>
+      {pwError && <p style={{ color: 'var(--red)', fontSize: '0.85rem', marginBottom: 'var(--space-3)' }}>{pwError}</p>}
+      {pwSuccess && <p style={{ color: 'var(--teal)', fontSize: '0.85rem', marginBottom: 'var(--space-3)' }}>{pwSuccess}</p>}
+      <button type="submit" className="btn btn-primary" disabled={pwLoading || newPw.length < 8 || newPw !== confirmPw}>
+        {pwLoading ? 'Updating...' : 'Update Password'}
+      </button>
+    </form>
   );
 }

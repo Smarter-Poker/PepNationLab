@@ -23,6 +23,11 @@ export default function AgentSubAgents({ agentId }: { agentId?: string }) {
   const [bulkCostInputs, setBulkCostInputs] = useState<Record<string, string>>({});
   const [bulkThreshInputs, setBulkThreshInputs] = useState<Record<string, string>>({});
 
+  // Password Reset State
+  const [resetPwUser, setResetPwUser] = useState<{ id: string; name: string; username: string } | null>(null);
+  const [resetPwValue, setResetPwValue] = useState('');
+  const [resetPwSaving, setResetPwSaving] = useState(false);
+
   const fetchData = async () => {
     try {
       setLoading(true);
@@ -179,7 +184,7 @@ export default function AgentSubAgents({ agentId }: { agentId?: string }) {
             <thead>
               <tr>
                 <th>Agent Name</th>
-                <th>Username/Email</th>
+                <th>Credentials</th>
                 <th>Status</th>
                 <th>Storefront</th>
                 <th style={{ textAlign: 'right' }}>Actions</th>
@@ -194,7 +199,17 @@ export default function AgentSubAgents({ agentId }: { agentId?: string }) {
                 subAgents.map(agent => (
                   <tr key={agent.id}>
                     <td style={{ fontWeight: 'bold' }}>{agent.full_name || 'Anonymous'}</td>
-                    <td>{agent.username || agent.email}</td>
+                    <td>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                        <span style={{ fontFamily: 'monospace', fontSize: '0.82rem', color: 'var(--teal)' }}>{agent.username || agent.email}</span>
+                        <button
+                          onClick={() => setResetPwUser({ id: agent.id, name: agent.full_name || 'Sub-Agent', username: agent.username || agent.email })}
+                          style={{ fontSize: '0.7rem', color: 'var(--grey-400)', background: 'none', border: 'none', cursor: 'pointer', padding: 0, textDecoration: 'underline', textAlign: 'left' }}
+                        >
+                          Edit Password
+                        </button>
+                      </div>
+                    </td>
                     <td>
                       <span style={{ color: agent.is_active ? 'var(--green)' : 'var(--red)', fontSize: '0.8rem' }}>
                         {agent.is_active ? 'Active' : 'Inactive'}
@@ -390,6 +405,67 @@ export default function AgentSubAgents({ agentId }: { agentId?: string }) {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Reset Password Modal */}
+      {resetPwUser && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+          background: 'rgba(0,0,0,0.8)', zIndex: 1100,
+          display: 'flex', alignItems: 'center', justifyContent: 'center'
+        }}>
+          <div className="card-metal" style={{ width: '100%', maxWidth: 400, padding: 'var(--space-6)' }}>
+            <h3 style={{ marginTop: 0, marginBottom: 'var(--space-4)', color: 'var(--white)' }}>Reset Sub-Agent Password</h3>
+            <p style={{ fontSize: '0.85rem', color: 'var(--silver)', marginBottom: 'var(--space-2)' }}>
+              Agent: <strong style={{ color: 'var(--white)' }}>{resetPwUser.name}</strong>
+            </p>
+            <p style={{ fontSize: '0.85rem', color: 'var(--silver)', marginBottom: 'var(--space-4)' }}>
+              Username: <strong style={{ color: 'var(--teal)', fontFamily: 'monospace' }}>{resetPwUser.username}</strong>
+            </p>
+            <form onSubmit={async (e) => {
+              e.preventDefault();
+              if (!resetPwUser || !resetPwValue) return;
+              setResetPwSaving(true);
+              try {
+                const res = await fetch('/api/agent/update-password', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ userId: resetPwUser.id, newPassword: resetPwValue }),
+                });
+                const json = await res.json();
+                if (!res.ok) throw new Error(json.error);
+                toast.success('Password Updated Successfully');
+                setResetPwUser(null);
+                setResetPwValue('');
+              } catch (err: any) {
+                toast.error(err.message || 'Failed To Update Password');
+              } finally {
+                setResetPwSaving(false);
+              }
+            }}>
+              <div className="form-group" style={{ marginBottom: 'var(--space-6)' }}>
+                <label className="form-label">New Password</label>
+                <input
+                  type="text"
+                  className="form-input"
+                  value={resetPwValue}
+                  onChange={e => setResetPwValue(e.target.value)}
+                  placeholder="Minimum 8 Characters"
+                  required
+                  minLength={8}
+                  autoComplete="off"
+                  style={{ width: '100%' }}
+                />
+              </div>
+              <div style={{ display: 'flex', gap: 'var(--space-3)', justifyContent: 'flex-end' }}>
+                <button type="button" className="btn btn-ghost btn-sm" onClick={() => { setResetPwUser(null); setResetPwValue(''); }} disabled={resetPwSaving}>Cancel</button>
+                <button type="submit" className="btn btn-primary btn-sm" disabled={resetPwSaving || resetPwValue.length < 8}>
+                  {resetPwSaving ? 'Saving...' : 'Update Password'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
