@@ -146,21 +146,7 @@ export default function AgentStorefrontLogin({
         boxShadow: `0 0 30px ${primaryColor}20`
       }}>
         <div style={{ textAlign: 'center', marginBottom: 'var(--space-6)' }}>
-          {logoUrl ? (
-            <img src={logoUrl} alt={displayName} style={{ height: 60, borderRadius: 8, marginBottom: 'var(--space-4)' }} />
-          ) : (
-            <div style={{
-              width: 64, height: 64, borderRadius: 12, margin: '0 auto var(--space-4)',
-              background: `linear-gradient(135deg, ${primaryColor}40, var(--surface-2))`,
-              border: `1px solid ${primaryColor}50`,
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontFamily: 'var(--font-brand)', fontWeight: 800, fontSize: '1.5rem',
-              color: primaryColor
-            }}>
-              {displayName[0].toUpperCase()}
-            </div>
-          )}
-          <h2 style={{ color: 'var(--white)', fontSize: '1.2rem', marginBottom: 'var(--space-2)' }}>
+          <h2 style={{ color: 'var(--white)', fontSize: '1.4rem', fontFamily: 'var(--font-brand)', marginBottom: 'var(--space-1)' }}>
             {displayName}
           </h2>
           {tagline && (
@@ -168,51 +154,7 @@ export default function AgentStorefrontLogin({
           )}
         </div>
 
-        {/* Mode Toggle Tabs */}
-        <div style={{
-          display: 'flex',
-          marginBottom: 'var(--space-5)',
-          background: 'var(--surface-2)',
-          borderRadius: 'var(--radius-md)',
-          padding: 3,
-        }}>
-          <button
-            type="button"
-            onClick={() => { setMode('login'); setError(null); setSuccess(null); }}
-            style={{
-              flex: 1,
-              padding: '8px 0',
-              border: 'none',
-              borderRadius: 'var(--radius-sm)',
-              cursor: 'pointer',
-              fontSize: '0.85rem',
-              fontWeight: 600,
-              background: mode === 'login' ? primaryColor : 'transparent',
-              color: mode === 'login' ? 'var(--black)' : 'var(--grey-400)',
-              transition: 'all 0.2s',
-            }}
-          >
-            Sign In
-          </button>
-          <button
-            type="button"
-            onClick={() => { setMode('register'); setError(null); setSuccess(null); }}
-            style={{
-              flex: 1,
-              padding: '8px 0',
-              border: 'none',
-              borderRadius: 'var(--radius-sm)',
-              cursor: 'pointer',
-              fontSize: '0.85rem',
-              fontWeight: 600,
-              background: mode === 'register' ? primaryColor : 'transparent',
-              color: mode === 'register' ? 'var(--black)' : 'var(--grey-400)',
-              transition: 'all 0.2s',
-            }}
-          >
-            Create Account
-          </button>
-        </div>
+
 
         {error && (
           <div style={{ background: 'var(--red-bg)', borderLeft: '3px solid var(--red)', padding: 'var(--space-3)', marginBottom: 'var(--space-4)', borderRadius: '0 4px 4px 0' }}>
@@ -229,7 +171,7 @@ export default function AgentStorefrontLogin({
         {mode === 'login' && (
           <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
             <div className="form-group">
-              <label className="form-label" style={{ color: primaryColor }}>Username Or Email</label>
+              <label className="form-label" style={{ color: primaryColor }}>Username</label>
               <input
                 type="text"
                 className="form-input"
@@ -262,8 +204,12 @@ export default function AgentStorefrontLogin({
                 boxShadow: `0 4px 16px ${primaryColor}40`
               }}
             >
-              {loading ? 'Authenticating...' : 'Enter Storefront'}
+              {loading ? 'Signing In...' : 'Sign In'}
             </button>
+            <p style={{ textAlign: 'center', marginTop: 'var(--space-4)', fontSize: '0.8rem', color: 'var(--grey-400)' }}>
+              New Researcher?{' '}
+              <button type="button" onClick={() => { setMode('register'); setError(null); }} style={{ background: 'none', border: 'none', color: primaryColor, cursor: 'pointer', fontWeight: 600, fontSize: '0.8rem', textDecoration: 'underline' }}>Create Account</button>
+            </p>
           </form>
         )}
 
@@ -318,14 +264,14 @@ export default function AgentStorefrontLogin({
             >
               {loading ? 'Creating Account...' : 'Create Account & Enter'}
             </button>
+            <p style={{ textAlign: 'center', marginTop: 'var(--space-4)', fontSize: '0.8rem', color: 'var(--grey-400)' }}>
+              Already Have An Account?{' '}
+              <button type="button" onClick={() => { setMode('login'); setError(null); }} style={{ background: 'none', border: 'none', color: primaryColor, cursor: 'pointer', fontWeight: 600, fontSize: '0.8rem', textDecoration: 'underline' }}>Sign In</button>
+            </p>
           </form>
         )}
 
-        <div style={{ textAlign: 'center', marginTop: 'var(--space-6)', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: 'var(--space-4)' }}>
-          <p style={{ fontSize: '0.75rem', color: 'var(--grey-400)' }}>
-            Powered By PepNationLab White-Label Infrastructure
-          </p>
-        </div>
+
       </div>
     </div>
   );

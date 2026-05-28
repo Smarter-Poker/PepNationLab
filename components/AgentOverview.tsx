@@ -107,7 +107,13 @@ export default function AgentOverview({
             Storefront QR Code
           </h3>
           {storefrontUrl ? (
-            <QRCodeGenerator url={storefrontUrl} size={200} fgColor="#00C4BC" bgColor="#FFFFFF" />
+            <QRCodeGenerator
+              url={storefrontUrl}
+              size={200}
+              fgColor={agentProfile?.primary_color || '#00C4BC'}
+              bgColor="#FFFFFF"
+              qrCodeData={agentProfile?.qr_code_data ?? null}
+            />
           ) : (
             <div style={{ width: 224, height: 224, background: 'var(--surface-3)', borderRadius: 'var(--radius-lg)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 'var(--space-4)' }}>
               <span style={{ color: 'var(--grey-400)', fontSize: '0.8rem' }}>Set Up Your Store First</span>
