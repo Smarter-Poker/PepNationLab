@@ -4,5 +4,8 @@ import { createClient } from '@/lib/supabase/server';
 export async function POST(request: NextRequest) {
   const supabase = await createClient();
   await supabase.auth.signOut();
-  return NextResponse.redirect(new URL('/login', request.url));
+  const url = request.nextUrl.clone();
+  url.pathname = '/login';
+  url.search = '';
+  return NextResponse.redirect(url);
 }

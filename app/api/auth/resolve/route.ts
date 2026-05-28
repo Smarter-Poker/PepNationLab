@@ -15,6 +15,11 @@ export async function POST(req: NextRequest) {
 
   const supabase = await createServiceClient();
 
+  // Fallback: If it's an email format, allow them to log in directly via email
+  if (username.includes('@')) {
+    return NextResponse.json({ email: username });
+  }
+
   const { data, error } = await supabase
     .from('profiles')
     .select('email')

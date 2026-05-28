@@ -33,9 +33,10 @@ export default async function DashboardPage({
 
   const role = profile?.role ?? 'researcher';
 
-  // Admins go to admin panel, Shipping goes to shipping portal
+  // Admins go to admin panel, Shipping goes to shipping portal, Agents go to agent dashboard
   if (role === 'admin') redirect('/admin');
   if (role === 'shipping') redirect('/shipping');
+  if (role === 'agent' || role === 'super_agent') redirect('/dashboard/agent');
 
   const params = await searchParams;
   const isWelcome = params?.welcome === '1';
