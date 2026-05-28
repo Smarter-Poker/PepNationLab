@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
 import { requireAgent } from '@/lib/admin-auth';
+import { computeSubAgentBaselineCost } from '@/lib/pricing';
 
 function addDays(dateStr: string, days: number): string {
   const d = new Date(`${dateStr}T00:00:00Z`);
@@ -52,24 +53,29 @@ export async function POST(req: NextRequest) {
     const superAgentId = gate.user.id;
 
     const body = await req.json();
-    const { sub_agent_id, week_start } = body;
+    const { sub_agent_id, week_start, force } = body as {
+      sub_agent_id?: string;
+      week_start?: string;
+      force?: boolean;
+    };
 
     if (!sub_agent_id || !week_start) {
       return NextResponse.json({ error: 'sub_agent_id and week_start are required' }, { status: 400 });
     }
 
-    // Verify caller is a Super Agent
-    const { data: superAgentProfile } = await supabase
+    // Verify caller is a Super Agent (or admin) — required to bypass paid invoices.
+    const { data: callerProfile } = await supabase
       .from('profiles')
-      .select('is_super_agent')
+      .select('is_super_agent, role')
       .eq('id', superAgentId)
       .single();
 
-    if (!superAgentProfile?.is_super_agent) {
+    const callerIsAdmin = callerProfile?.role === 'admin';
+    if (!callerProfile?.is_super_agent && !callerIsAdmin) {
       return NextResponse.json({ error: 'Only Super Agents can generate invoices' }, { status: 403 });
     }
 
-    // Check if the Sub-Agent actually belongs to this Super Agent
+    // Check if the Sub-Agent actually belongs to this Super Agent.
     const { data: subAgent } = await supabase
       .from('profiles')
       .select('id')
@@ -81,16 +87,38 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Sub-Agent not found or does not belong to you' }, { status: 404 });
     }
 
+    // Never regenerate a paid invoice unless the requester is admin AND
+    // explicitly opts in with force=true. A paid invoice is settled history;
+    // overwriting it would silently revert the sub-agent's balance.
+    const { data: existingInvoice } = await supabase
+      .from('sub_agent_invoices')
+      .select('id, status')
+      .eq('sub_agent_id', sub_agent_id)
+      .eq('week_start', week_start)
+      .maybeSingle();
+
+    if (existingInvoice?.status === 'paid') {
+      if (!(force === true && callerIsAdmin)) {
+        return NextResponse.json({
+          skipped: true,
+          reason: 'paid',
+          invoiceId: existingInvoice.id,
+        });
+      }
+    }
+
     const rangeStart = `${week_start}T00:00:00Z`;
     const weekEnd = addDays(week_start, 6);
     const rangeEndExclusive = `${addDays(week_start, 7)}T00:00:00Z`;
 
-    // Fetch Sub-Agent orders for the week
+    // Fetch Sub-Agent orders for the week. Restock orders are sub-agent
+    // self-buys that are billed at checkout, not via weekly invoice.
     const { data: orders, error: ordersError } = await supabase
       .from('orders')
-      .select('id, shipping_cost, order_items(quantity, unit_cost_price)')
+      .select('id, shipping_cost, order_items(product_id, quantity, unit_super_agent_cost, unit_cost_price)')
       .eq('agent_id', sub_agent_id)
       .neq('status', 'cancelled')
+      .eq('is_wholesale_restock', false)
       .gte('created_at', rangeStart)
       .lt('created_at', rangeEndExclusive);
 
@@ -99,27 +127,41 @@ export async function POST(req: NextRequest) {
     }
 
     let totalCogs = 0;
-    let totalShipping = 0;
 
     for (const order of orders ?? []) {
-      // Typically the Super Agent does NOT charge the Sub-Agent shipping again if Admin already charged the Super Agent,
-      // but to mirror Admin behaviour, we can include shipping or just bill COGS.
-      // Let's assume Sub-Agent pays their own COGS and Super Agent passes shipping down.
-      totalShipping += Number(order.shipping_cost) || 0;
-
       const items = (order.order_items as unknown) as Array<{
+        product_id: string | null;
         quantity: number;
+        unit_super_agent_cost: number | null;
         unit_cost_price: number | null;
       }>;
 
       for (const item of items ?? []) {
-        totalCogs += (Number(item.unit_cost_price) || 0) * (Number(item.quantity) || 0);
+        const qty = Number(item.quantity) || 0;
+        if (qty <= 0) continue;
+
+        // Always price at the super-agent's wholesale cost: prefer the
+        // historical snapshot from the order; fall back to the live
+        // super_agent_pricing baseline. Never reuse unit_cost_price — that
+        // is the sub-agent's resale cost, not what the super-agent is owed.
+        const stored = Number(item.unit_super_agent_cost);
+        if (Number.isFinite(stored) && stored > 0) {
+          totalCogs += stored * qty;
+        } else if (item.product_id) {
+          const recomputed = await computeSubAgentBaselineCost(
+            supabase,
+            item.product_id,
+            superAgentId
+          );
+          totalCogs += recomputed * qty;
+        }
       }
     }
 
-    const totalOwed = totalCogs + totalShipping;
+    // Sub-agents already collected shipping at retail from the customer.
+    // The super-agent does NOT bill shipping a second time here.
+    const totalOwed = Math.round(totalCogs * 100) / 100;
 
-    // Create invoice
     const { data: invoice, error: invoiceError } = await supabase
       .from('sub_agent_invoices')
       .upsert(
@@ -128,7 +170,7 @@ export async function POST(req: NextRequest) {
           sub_agent_id,
           week_start,
           week_end: weekEnd,
-          total_cogs: totalCogs,
+          total_cogs: totalOwed,
           total_owed: totalOwed,
           status: 'open',
           updated_at: new Date().toISOString()
@@ -146,7 +188,7 @@ export async function POST(req: NextRequest) {
     await supabase.from('internal_messages').insert({
       sender_id: superAgentId,
       receiver_id: sub_agent_id,
-      subject: `Invoice for Week ${week_start}`,
+      subject: `Invoice For Week ${week_start}`,
       body: `Your invoice for the week of ${week_start} has been generated.\nTotal Owed: $${totalOwed.toFixed(2)}\n\nPlease review your dashboard to make payment.`,
       type: 'invoice'
     });

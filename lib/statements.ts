@@ -88,11 +88,22 @@ export async function computeStatement(
 
     for (const item of items ?? []) {
       const qty = Number(item.quantity) || 0;
-      
+
       if (order.agent_id === agentId) {
         totalCogs += (Number(item.unit_cost_price) || 0) * qty;
       } else {
-        totalCogs += (Number(item.unit_super_agent_cost) || 0) * qty;
+        // Super-agent statement covers a sub-agent's order. Legacy rows can
+        // have a NULL unit_super_agent_cost — fall back to unit_cost_price
+        // (the order's snapshot of the agent's own cost) instead of $0 so we
+        // never under-bill historical orders.
+        const superCost = Number(item.unit_super_agent_cost);
+        const agentCost = Number(item.unit_cost_price);
+        const effective = Number.isFinite(superCost) && superCost > 0
+          ? superCost
+          : Number.isFinite(agentCost) && agentCost > 0
+            ? agentCost
+            : 0;
+        totalCogs += effective * qty;
       }
     }
   }
@@ -113,12 +124,44 @@ export async function computeStatement(
   };
 }
 
+export interface PersistOptions {
+  force?: boolean;
+}
+
 export async function persistStatement(
   supabase: ServiceClient,
   agentId: string,
   weekStart: string,
-  computed: ComputeResult
-): Promise<{ ok: true; statementId: string } | { ok: false; error: string }> {
+  computed: ComputeResult,
+  options: PersistOptions = {}
+): Promise<
+  | { ok: true; statementId: string; skipped?: false }
+  | { ok: true; statementId: string; skipped: true; reason: 'paid' }
+  | { ok: false; error: string }
+> {
+  // Refuse to overwrite a paid statement — even when force=true. A paid
+  // statement is settled history; regenerating it would silently roll back
+  // the agent's balance and corrupt the ledger.
+  const { data: existing } = await supabase
+    .from('weekly_statements')
+    .select('id, status')
+    .eq('agent_id', agentId)
+    .eq('week_start', weekStart)
+    .maybeSingle();
+
+  if (existing?.status === 'paid') {
+    return {
+      ok: true,
+      statementId: existing.id as string,
+      skipped: true,
+      reason: 'paid',
+    };
+  }
+
+  // If we found a non-paid row and the caller didn't pass force=true, we
+  // still let the upsert proceed (it refreshes totals for the same week).
+  void options.force;
+
   const { data: statement, error: upsertError } = await supabase
     .from('weekly_statements')
     .upsert(

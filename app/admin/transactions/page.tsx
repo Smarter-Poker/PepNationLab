@@ -7,9 +7,11 @@ interface Transaction {
   id: string;
   agent_id: string;
   type: string;
-  amount: number;
-  balance_before: number;
-  balance_after: number;
+  // Postgres numeric serializes as string over PostgREST — keep loose typing
+  // and coerce with Number(...) at render time.
+  amount: number | string;
+  balance_before: number | string;
+  balance_after: number | string;
   description: string;
   reference_id: string | null;
   reference_type: string | null;
@@ -19,6 +21,18 @@ interface Transaction {
     email: string;
   };
 }
+
+// Allowed values of `balance_transactions.type` (DB CHECK constraint):
+// 'credit' | 'debit' | 'order_charge' | 'statement_payment'
+// | 'initial_deposit' | 'adjustment'
+const TYPE_META: Record<string, { label: string; badge: string }> = {
+  credit:            { label: 'Credit',            badge: 'badge-teal' },
+  debit:             { label: 'Debit',             badge: 'badge-red' },
+  order_charge:      { label: 'Order Charge',      badge: 'badge-red' },
+  statement_payment: { label: 'Statement Payment', badge: 'badge-teal' },
+  initial_deposit:   { label: 'Initial Deposit',   badge: 'badge-teal' },
+  adjustment:        { label: 'Adjustment',        badge: 'badge-silver' },
+};
 
 export default function AdminTransactionsPage() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -96,30 +110,43 @@ export default function AdminTransactionsPage() {
                 </td>
               </tr>
             ) : (
-              transactions.map((tx) => (
-                <tr key={tx.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
-                  <td style={{ padding: 'var(--space-4)', color: 'var(--silver-light)', fontSize: '0.85rem' }}>
-                    {new Date(tx.created_at).toLocaleString()}
-                  </td>
-                  <td style={{ padding: 'var(--space-4)', fontSize: '0.9rem', color: 'var(--white)' }}>
-                    {getUsername(tx.profiles?.email, tx.profiles?.full_name)}
-                  </td>
-                  <td style={{ padding: 'var(--space-4)' }}>
-                    <span className={`badge ${tx.type === 'deposit' ? 'badge-teal' : tx.type === 'withdrawal' || tx.type === 'wholesale_deduction' ? 'badge-red' : 'badge-silver'}`} style={{ fontSize: '0.7rem' }}>
-                      {tx.type.replace('_', ' ').toUpperCase()}
-                    </span>
-                  </td>
-                  <td style={{ padding: 'var(--space-4)', color: 'var(--silver)', fontSize: '0.85rem' }}>
-                    {tx.description}
-                  </td>
-                  <td style={{ padding: 'var(--space-4)', color: tx.type === 'deposit' ? 'var(--teal)' : 'var(--red)', fontSize: '0.95rem', fontWeight: 600, textAlign: 'right', fontFamily: 'var(--font-brand)' }}>
-                    {tx.type === 'deposit' ? '+' : '-'}${tx.amount.toFixed(2)}
-                  </td>
-                  <td style={{ padding: 'var(--space-4)', color: 'var(--white)', fontSize: '0.9rem', fontWeight: 500, textAlign: 'right' }}>
-                    ${tx.balance_after.toFixed(2)}
-                  </td>
-                </tr>
-              ))
+              transactions.map((tx) => {
+                const meta = TYPE_META[tx.type] ?? {
+                  label: tx.type.replace(/_/g, ' '),
+                  badge: 'badge-silver',
+                };
+                const rawAmount = Number(tx.amount);
+                const balanceAfter = Number(tx.balance_after);
+                const safeAmount = Number.isFinite(rawAmount) ? rawAmount : 0;
+                const safeBalance = Number.isFinite(balanceAfter) ? balanceAfter : 0;
+                const isPositive = safeAmount >= 0;
+                const sign = isPositive ? '+' : '-';
+                const amountColor = isPositive ? 'var(--teal)' : 'var(--red)';
+                return (
+                  <tr key={tx.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+                    <td style={{ padding: 'var(--space-4)', color: 'var(--silver-light)', fontSize: '0.85rem' }}>
+                      {new Date(tx.created_at).toLocaleString()}
+                    </td>
+                    <td style={{ padding: 'var(--space-4)', fontSize: '0.9rem', color: 'var(--white)' }}>
+                      {getUsername(tx.profiles?.email, tx.profiles?.full_name)}
+                    </td>
+                    <td style={{ padding: 'var(--space-4)' }}>
+                      <span className={`badge ${meta.badge}`} style={{ fontSize: '0.7rem' }}>
+                        {meta.label}
+                      </span>
+                    </td>
+                    <td style={{ padding: 'var(--space-4)', color: 'var(--silver)', fontSize: '0.85rem' }}>
+                      {tx.description}
+                    </td>
+                    <td style={{ padding: 'var(--space-4)', color: amountColor, fontSize: '0.95rem', fontWeight: 600, textAlign: 'right', fontFamily: 'var(--font-brand)' }}>
+                      {sign}${Math.abs(safeAmount).toFixed(2)}
+                    </td>
+                    <td style={{ padding: 'var(--space-4)', color: 'var(--white)', fontSize: '0.9rem', fontWeight: 500, textAlign: 'right' }}>
+                      ${safeBalance.toFixed(2)}
+                    </td>
+                  </tr>
+                );
+              })
             )}
           </tbody>
         </table>

@@ -56,7 +56,7 @@ export default function AgentStorefrontLogin({
       }
 
       const supabase = createClient();
-      const { error: authError } = await supabase.auth.signInWithPassword({
+      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
         email: authEmail,
         password,
       });
@@ -65,8 +65,23 @@ export default function AgentStorefrontLogin({
         throw new Error('Invalid Username Or Password');
       }
 
-      // Success — refresh the server component so the storefront catalog
-      // renders for the now-authenticated session.
+      // CRITICAL: Verify user belongs to THIS agent's downline
+      const userId = authData?.user?.id;
+      if (userId) {
+        const verifyRes = await fetch('/api/auth/verify-agent-access', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId, agentSlug }),
+        });
+        const verifyData = await verifyRes.json();
+        if (!verifyData.allowed) {
+          // Sign them out immediately — they don't belong here
+          await supabase.auth.signOut();
+          throw new Error(verifyData.reason || 'This Account Does Not Belong To This Store.');
+        }
+      }
+
+      // Access verified — refresh the server component
       router.refresh();
     } catch (err: any) {
       setError(err.message || 'Network Error');

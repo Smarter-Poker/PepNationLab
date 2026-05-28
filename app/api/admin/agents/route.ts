@@ -15,7 +15,7 @@ export async function GET(req: NextRequest) {
   const { data, error } = await supabase
     .from('profiles')
     .select('*, agent_profiles(slug, is_active)')
-    .eq('role', 'agent')
+    .in('role', ['agent', 'super_agent'])
     .order('created_at', { ascending: false });
 
   if (error) {

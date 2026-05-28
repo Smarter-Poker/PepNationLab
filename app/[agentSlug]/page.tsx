@@ -96,29 +96,35 @@ export default async function AgentStorefrontPage({ params }: Props) {
     );
   }
 
-  // Check if logged-in researcher belongs to THIS agent
+  // Check if logged-in user belongs to THIS agent — CRITICAL SECURITY GATE
   const { data: userProfile } = await supabase
     .from('profiles')
-    .select('role, parent_agent_id')
+    .select('role, referring_agent_id, parent_agent_id, id')
     .eq('id', user.id)
     .single();
 
-  // If researcher, verify they belong to this agent — strict isolation
-  if (userProfile?.role === 'researcher') {
-    if (userProfile.parent_agent_id !== agent.id) {
-      // This researcher doesn't belong to this agent's store — show login wall
-      const AgentStorefrontLogin = (await import('@/components/AgentStorefrontLogin')).default;
-      return (
-        <AgentStorefrontLogin 
-          agentSlug={agentSlug} 
-          displayName={agent.display_name} 
-          primaryColor={agent.primary_color ?? '#00C4BC'} 
-          logoUrl={agent.logo_url} 
-          tagline={agent.tagline}
-          errorMessage="This Account Belongs To A Different Agent. Please Create An Account Or Sign In With Credentials For This Store."
-        />
-      );
-    }
+  // Determine if user has access to this specific storefront
+  const isAdmin = userProfile?.role === 'admin';
+  const isStorefrontOwner = userProfile?.id === agent.id;
+  const isSubAgent = userProfile?.role === 'agent' && userProfile?.parent_agent_id === agent.id;
+  const isDownlineResearcher = userProfile?.role === 'researcher' && userProfile?.referring_agent_id === agent.id;
+
+  const hasAccess = isAdmin || isStorefrontOwner || isSubAgent || isDownlineResearcher;
+
+  if (!hasAccess) {
+    // Sign the user out of this session so they can't keep refreshing
+    await supabase.auth.signOut();
+    const AgentStorefrontLogin = (await import('@/components/AgentStorefrontLogin')).default;
+    return (
+      <AgentStorefrontLogin 
+        agentSlug={agentSlug} 
+        displayName={agent.display_name} 
+        primaryColor={agent.primary_color ?? '#00C4BC'} 
+        logoUrl={agent.logo_url} 
+        tagline={agent.tagline}
+        errorMessage="This Account Does Not Belong To This Store. Please Sign In With The Credentials Your Agent Gave You, Or Create A New Account."
+      />
+    );
   }
 
   const { data: inventory } = await supabase

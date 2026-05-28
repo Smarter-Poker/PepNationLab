@@ -10,8 +10,20 @@ export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const id = searchParams.get('id');
 
+  // List mode: no `id` supplied — return the catalog summary used by the
+  // tier-override editor and admin dashboards. Preserves the historical
+  // detail-by-id behavior below when `id` IS present.
   if (!id) {
-    return NextResponse.json({ error: 'Product ID Required' }, { status: 400 });
+    const { data, error } = await supabase
+      .from('products')
+      .select('id, name, slug, category, base_cost, is_active, is_banned')
+      .order('name', { ascending: true });
+
+    if (error) {
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+
+    return NextResponse.json({ data });
   }
 
   const { data, error } = await supabase

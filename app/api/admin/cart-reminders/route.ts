@@ -17,7 +17,7 @@ export async function POST(req: Request) {
       .from('profiles')
       .select('id, full_name, referring_agent_id, cart_state, cart_updated_at')
       .not('cart_state', 'is', null)
-      .not('cart_state', 'eq', '[]')
+      .neq('cart_state', '[]')
       .lt('cart_updated_at', twentyFourHoursAgo.toISOString());
 
     if (fetchError) {

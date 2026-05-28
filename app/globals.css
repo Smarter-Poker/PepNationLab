@@ -820,3 +820,248 @@ nav button { text-transform: capitalize; }
 .message-card-hover:hover .store-image-hover {
   transform: scale(1.05);
 }
+
+/* ============================================
+   MOBILE-FIRST RESPONSIVE (Facebook-Style)
+   Full-width cards, touch-friendly, no scroll
+   ============================================ */
+
+/* Force all pages to fit viewport — never wider than screen */
+html {
+  overflow-x: hidden;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  overflow-x: hidden;
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+
+/* All images/media must fit within their container */
+img, video, svg, iframe {
+  max-width: 100%;
+  height: auto;
+}
+
+/* ---- TABLET (≤1024px) ---- */
+@media (max-width: 1024px) {
+  .grid-3 { grid-template-columns: repeat(2, 1fr); }
+  .grid-4 { grid-template-columns: repeat(2, 1fr); }
+}
+
+/* ---- MOBILE (≤768px) — Facebook-style ---- */
+@media (max-width: 768px) {
+  /* Root spacing tightened */
+  :root {
+    --space-6: 16px;
+    --space-8: 20px;
+    --space-10: 24px;
+    --space-12: 32px;
+    --space-16: 40px;
+  }
+
+  /* Full-width everything */
+  body {
+    font-size: 15px;
+  }
+
+  .container {
+    padding: 0 var(--space-3) !important;
+    max-width: 100% !important;
+  }
+
+  /* All grids → single column */
+  .grid-2, .grid-3, .grid-4 {
+    grid-template-columns: 1fr !important;
+    gap: var(--space-4) !important;
+  }
+
+  /* Cards go full-width, less padding */
+  .card, .card-glass, .card-metal {
+    border-radius: var(--radius-md);
+    padding: var(--space-4);
+  }
+
+  /* Touch-friendly buttons — min 44px tap target */
+  .btn, button, [role="button"], a.btn {
+    min-height: 44px;
+    padding-left: var(--space-4);
+    padding-right: var(--space-4);
+    font-size: 0.9rem;
+  }
+
+  /* Form inputs — taller for thumb */
+  .form-input, .form-select, select, input[type="text"],
+  input[type="password"], input[type="email"], textarea {
+    min-height: 44px;
+    font-size: 16px !important; /* Prevent iOS zoom */
+    padding: var(--space-3);
+  }
+
+  /* Navigation — compact */
+  nav {
+    padding: 0 var(--space-3) !important;
+    height: 52px !important;
+  }
+
+  nav .btn, nav a.btn {
+    padding: 6px 10px !important;
+    font-size: 0.75rem !important;
+    min-height: 32px !important;
+  }
+
+  /* Sections — tighter vertical spacing */
+  .section {
+    padding: var(--space-6) 0 !important;
+  }
+
+  section {
+    padding-left: 0;
+    padding-right: 0;
+  }
+
+  /* Hero section on storefronts — compact */
+  section h1 {
+    font-size: 1.4rem !important;
+    line-height: 1.3;
+  }
+
+  section h2 {
+    font-size: 1.1rem !important;
+  }
+
+  /* Tables scroll horizontally */
+  table {
+    display: block;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    white-space: nowrap;
+  }
+
+  table thead, table tbody, table tr {
+    display: table;
+    width: 100%;
+    table-layout: fixed;
+  }
+
+  /* Sidebar — full overlay on mobile */
+  .sidebar {
+    position: fixed !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    z-index: 100;
+    transform: translateX(-100%);
+    transition: transform 0.3s ease;
+  }
+
+  .sidebar.open {
+    transform: translateX(0);
+  }
+
+  /* Badge sizing for mobile */
+  .badge {
+    font-size: 0.65rem;
+    padding: 3px 8px;
+  }
+
+  /* Admin dashboard cards */
+  .stat-card, .metric-card {
+    padding: var(--space-3) !important;
+  }
+
+  /* Hide text on very small buttons, show icons only */
+  .btn-icon-text .btn-text {
+    display: none;
+  }
+
+  /* Modal dialogs — full width on mobile */
+  [style*="position: fixed"][style*="z-index: 1000"] > div {
+    max-width: 100% !important;
+    max-height: 100% !important;
+    border-radius: 0 !important;
+    margin: 0 !important;
+  }
+
+  /* Product card images — shorter on mobile */
+  .message-card-hover div[style*="height: 220"] {
+    height: 180px !important;
+  }
+
+  /* Storefront login — full width */
+  .card-metal[style*="max-width: 420"] {
+    max-width: 100% !important;
+    border-radius: var(--radius-md) !important;
+    padding: var(--space-5) !important;
+  }
+}
+
+/* ---- SMALL MOBILE (≤480px) ---- */
+@media (max-width: 480px) {
+  body {
+    font-size: 14px;
+  }
+
+  h1 { font-size: 1.3rem !important; }
+  h2 { font-size: 1.1rem !important; }
+  h3 { font-size: 1rem !important; }
+  h4 { font-size: 0.9rem !important; }
+
+  /* Even tighter padding */
+  .container {
+    padding: 0 var(--space-2) !important;
+  }
+
+  .card, .card-glass, .card-metal {
+    padding: var(--space-3);
+    border-radius: var(--radius-sm);
+  }
+
+  /* Stack flex rows on tiny screens */
+  .flex-between {
+    flex-wrap: wrap;
+    gap: var(--space-2);
+  }
+
+  /* Full-width buttons on small mobile */
+  .btn-primary, .btn-secondary {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+/* ---- SAFE AREA for notched phones ---- */
+@supports (padding: env(safe-area-inset-bottom)) {
+  body {
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}
+
+/* Prevent text selection on UI elements (app-like feel) */
+nav, .btn, button, .badge, .sidebar-nav-item {
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* Smooth scrolling everywhere */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Active states for touch — immediate feedback */
+@media (hover: none) {
+  .btn:active, button:active {
+    transform: scale(0.97) !important;
+    opacity: 0.9;
+  }
+
+  .card:hover, .card-glass:hover, .card-metal:hover {
+    transform: none;
+  }
+
+  .message-card-hover:hover {
+    transform: none !important;
+  }
+}

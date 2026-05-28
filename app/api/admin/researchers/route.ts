@@ -10,7 +10,7 @@ export async function GET(req: NextRequest) {
   const supabase = await createServiceClient();
   const searchParams = req.nextUrl.searchParams;
   const role = searchParams.get('role');
-  const query = searchParams.get('query');
+  const rawQuery = searchParams.get('query');
 
   let dbQuery = supabase
     .from('profiles')
@@ -21,8 +21,21 @@ export async function GET(req: NextRequest) {
     dbQuery = dbQuery.eq('role', role);
   }
 
-  if (query) {
-    dbQuery = dbQuery.or(`full_name.ilike.%${query}%,username.ilike.%${query}%,phone.ilike.%${query}%`);
+  if (rawQuery) {
+    // Sanitize: PostgREST's .or() parses commas and parentheses as syntax.
+    // Strip any characters that could break out of the value or be used to
+    // smuggle additional filters. Cap the length so an attacker can't blow
+    // up the query string.
+    const sanitized = rawQuery
+      .replace(/[%,():"'\\]/g, '')
+      .trim()
+      .slice(0, 60);
+
+    if (sanitized) {
+      dbQuery = dbQuery.or(
+        `full_name.ilike.%${sanitized}%,username.ilike.%${sanitized}%,phone.ilike.%${sanitized}%`
+      );
+    }
   }
 
   // Sort by created_at desc
