@@ -493,6 +493,7 @@ export default function AdminAgents() {
                   onChange={e => handleCreateFormChange('username', e.target.value)}
                   placeholder="e.g. john_smith"
                   required
+                  autoComplete="off"
                   style={{ width: '100%', textTransform: 'capitalize' }}
                 />
                 <AvailabilityIndicator status={usernameStatus} />
@@ -509,6 +510,7 @@ export default function AdminAgents() {
                   placeholder="Minimum 8 characters"
                   required
                   minLength={8}
+                  autoComplete="new-password"
                   style={{ width: '100%' }}
                 />
               </div>
@@ -516,7 +518,7 @@ export default function AdminAgents() {
               {/* Tier & Billing Mode — side by side (agents only) */}
               {createForm.account_role !== 'researcher' && (
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-4)', marginBottom: 'var(--space-4)' }}>
-                <div className="form-group">
+                <div className="form-group" style={{ marginBottom: 0 }}>
                   <label className="form-label" style={{ display: 'block', marginBottom: 'var(--space-1)' }}>Tier</label>
                   <select
                     className="form-input"
@@ -529,7 +531,7 @@ export default function AdminAgents() {
                     <option value="tier_3">Tier 3</option>
                   </select>
                 </div>
-                <div className="form-group">
+                <div className="form-group" style={{ marginBottom: 0 }}>
                   <label className="form-label" style={{ display: 'block', marginBottom: 'var(--space-1)' }}>Billing Mode</label>
                   <select
                     className="form-input"

@@ -2,7 +2,7 @@
 
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { motion, Variants, AnimatePresence } from 'framer-motion';
-import { Star, X, Package } from 'lucide-react';
+import { Star, X } from 'lucide-react';
 
 interface ProductItem {
   id: string;
@@ -578,7 +578,7 @@ export default function AgentStorefrontGrid({ products, inventoryMap, primaryCol
                           <span style={{ color: 'var(--white)', fontWeight: 700, fontSize: '0.8rem', minWidth: 16, textAlign: 'center' }}>{qty}</span>
                           <button onClick={() => addToCart(variantId)} style={{
                             width: 22, height: 22, borderRadius: '50%', border: 'none',
-                            background: primaryColor, color: 'var(--black)', cursor: 'pointer', fontSize: '0.85rem',
+                            background: primaryColor, color: 'var(--white)', cursor: 'pointer', fontSize: '0.85rem',
                             display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800
                           }}>+</button>
                         </div>
@@ -591,7 +591,7 @@ export default function AgentStorefrontGrid({ products, inventoryMap, primaryCol
                     href={`/checkout?agent=${agentSlug}&cart=${encodeURIComponent(JSON.stringify(cartItems))}`}
                     style={{
                       display: 'block', textAlign: 'center', padding: '10px',
-                      background: primaryColor, color: 'var(--black)', borderRadius: 'var(--radius-md)',
+                      background: primaryColor, color: 'var(--white)', borderRadius: 'var(--radius-md)',
                       fontWeight: 800, fontSize: '0.85rem', textDecoration: 'none'
                     }}
                   >
@@ -792,7 +792,7 @@ export default function AgentStorefrontGrid({ products, inventoryMap, primaryCol
                             }}>{qty}</span>
                             <button onClick={() => addToCart(activeV.id)} style={{
                               width: 36, height: 36, borderRadius: 'var(--radius-md)',
-                              border: 'none', background: primaryColor, color: 'var(--black)',
+                              border: 'none', background: primaryColor, color: 'var(--white)',
                               cursor: 'pointer', fontSize: '1.1rem', fontWeight: 800,
                               display: 'flex', alignItems: 'center', justifyContent: 'center'
                             }}>+</button>
@@ -851,11 +851,6 @@ export default function AgentStorefrontGrid({ products, inventoryMap, primaryCol
                   );
                 })()}
 
-                {detailProduct.variants[0]?.products?.backorder_days > 0 && (
-                  <p style={{ fontSize: '0.8rem', color: 'var(--grey-400)', marginBottom: 'var(--space-4)', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                    <Package size={14} aria-hidden="true" /> Estimated Shipping: {detailProduct.variants[0].products.backorder_days} Business Days
-                  </p>
-                )}
 
                 <div style={{ display: 'flex', gap: 'var(--space-3)', justifyContent: 'flex-end', flexWrap: 'wrap' }}>
                   <button
@@ -872,7 +867,7 @@ export default function AgentStorefrontGrid({ products, inventoryMap, primaryCol
                     <a
                       href={`/checkout?agent=${agentSlug}&cart=${encodeURIComponent(JSON.stringify(cartItems))}`}
                       style={{
-                        padding: '10px 20px', background: primaryColor, color: 'var(--black)',
+                        padding: '10px 20px', background: primaryColor, color: 'var(--white)',
                         borderRadius: 'var(--radius-md)', fontWeight: 800, fontSize: '0.85rem',
                         textDecoration: 'none'
                       }}
