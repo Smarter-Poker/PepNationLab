@@ -13,7 +13,7 @@
     "test-pipeline": "node scratch/simulate-pipeline.js"
   },
   "dependencies": {
-    "@sentry/nextjs": "^8.45.0",
+    "@sentry/nextjs": "^10.0.0",
     "@supabase/ssr": "^0.10.3",
     "@supabase/supabase-js": "^2.106.1",
     "framer-motion": "^12.40.0",
