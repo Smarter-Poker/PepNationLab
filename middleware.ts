@@ -8,7 +8,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 // ────────────────────────────────────────────────────────────────────────────
 
 // Routes that are always public (no auth required)
-const PUBLIC_ROUTES = ['/login', '/forgot-password', '/become-agent', '/about', '/terms', '/privacy', '/compliance'];
+const PUBLIC_ROUTES = ['/login', '/forgot-password', '/become-agent', '/about', '/terms', '/privacy', '/compliance', '/api/auth/resolve'];
 
 // Dynamic route check — agent storefronts are public
 // e.g. /midway, /orlando-peps, etc. (but NOT /admin, /dashboard, /api, etc.)
