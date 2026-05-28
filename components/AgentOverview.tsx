@@ -19,17 +19,17 @@ export default function AgentOverview({
   onNavigate
 }: AgentOverviewProps) {
   const cardZones = [
-    { id: 'storefront', top: '2.5%', left: '2%', width: '46.5%', height: '17.5%',
+    { id: 'storefront', top: '2%', left: '1.5%', width: '47%', height: '18%',
       action: () => window.open(storefrontUrl, '_blank', 'noopener,noreferrer') },
-    { id: 'researchers', top: '2.5%', left: '51.5%', width: '46.5%', height: '17.5%',
+    { id: 'researchers', top: '2%', left: '51.5%', width: '47%', height: '18%',
       action: () => onNavigate?.('Researchers') },
-    { id: 'inventory', top: '23%', left: '2%', width: '46.5%', height: '17.5%',
+    { id: 'inventory', top: '23%', left: '1.5%', width: '47%', height: '18%',
       action: () => onNavigate?.('Inventory') },
-    { id: 'products', top: '23%', left: '51.5%', width: '46.5%', height: '17.5%',
+    { id: 'products', top: '23%', left: '51.5%', width: '47%', height: '18%',
       action: () => onNavigate?.('Store Products') },
-    { id: 'sales', top: '43.5%', left: '2%', width: '46.5%', height: '17.5%',
+    { id: 'sales', top: '44%', left: '1.5%', width: '47%', height: '18%',
       action: () => onNavigate?.('Sales & Carts') },
-    { id: 'orders', top: '43.5%', left: '51.5%', width: '46.5%', height: '17.5%',
+    { id: 'orders', top: '44%', left: '51.5%', width: '47%', height: '18%',
       action: () => onNavigate?.('Orders') },
   ];
 
@@ -52,15 +52,14 @@ export default function AgentOverview({
           position: absolute;
           cursor: pointer;
           border-radius: 6px;
-          transition: background 0.2s ease, box-shadow 0.2s ease;
+          transition: background 0.15s ease;
           z-index: 2;
         }
         .dash-zone:hover {
-          background: rgba(0, 196, 188, 0.07);
-          box-shadow: 0 0 20px rgba(0, 196, 188, 0.1);
+          background: rgba(0, 196, 188, 0.06);
         }
         .dash-zone:active {
-          background: rgba(0, 196, 188, 0.14);
+          background: rgba(0, 196, 188, 0.12);
         }
         .dash-url {
           position: absolute;
@@ -85,7 +84,7 @@ export default function AgentOverview({
           display: block;
         }
         .dash-btn-zone:hover {
-          background: rgba(0, 196, 188, 0.06);
+          background: rgba(255,255,255,0.04);
           border-radius: 4px;
         }
       `}} />
@@ -112,36 +111,36 @@ export default function AgentOverview({
           />
         ))}
 
-        {/* Dynamic storefront URL — sized with vw units so it scales with the image */}
+        {/* Dynamic storefront URL — inside the dark input frame, doubled size */}
         <span
           className="dash-url"
           style={{
-            bottom: '5.5%',
+            bottom: '9%',
             left: '5.5%',
-            width: '43%',
+            width: '44%',
             height: '5%',
-            fontSize: 'clamp(0.45rem, 1.4vw, 0.85rem)',
+            fontSize: 'clamp(0.7rem, 2.2vw, 1.1rem)',
           }}
         >
           {storefrontUrl}
         </span>
 
-        {/* Invisible clickable zone over image's "Copy Link" button */}
+        {/* Invisible clickable zone over "Copy Link" button */}
         <button
           className="dash-btn-zone"
           onClick={copyStorefrontLink}
           aria-label={copiedStorefront ? 'Link Copied' : 'Copy Link'}
-          style={{ bottom: '3.8%', right: '17.5%', width: '13%', height: '5.8%' }}
+          style={{ bottom: '5%', right: '26%', width: '14%', height: '5.5%' }}
         />
 
-        {/* Invisible clickable zone over image's "Visit Store" button */}
+        {/* Invisible clickable zone over "Visit Store" button */}
         <a
           href={storefrontUrl}
           target="_blank"
           rel="noopener noreferrer"
           className="dash-btn-zone"
           aria-label="Visit Store"
-          style={{ bottom: '3.8%', right: '2.5%', width: '13%', height: '5.8%' }}
+          style={{ bottom: '5%', right: '7%', width: '14%', height: '5.5%' }}
         />
       </div>
     </>
