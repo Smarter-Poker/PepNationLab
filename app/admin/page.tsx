@@ -99,7 +99,7 @@ export default async function AdminDashboard() {
           <div key={label} className="card-metal" style={{ padding: 'var(--space-5)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
               <div>
-                <div style={{ fontSize: '2rem', fontWeight: 800, fontFamily: "'Inter', 'Helvetica Neue', Arial, sans-serif", color, lineHeight: 1, fontVariantNumeric: 'slashed-zero', fontFeatureSettings: '"zero" off' }}>
+                <div style={{ fontSize: '2rem', fontWeight: 800, fontFamily: "'Inter', 'Helvetica Neue', Arial, sans-serif", color, lineHeight: 1, fontFeatureSettings: '"zero" 0' }}>
                   {value}
                 </div>
                 <div style={{ fontSize: '0.8rem', color: 'var(--grey-400)', marginTop: 'var(--space-2)' }}>
