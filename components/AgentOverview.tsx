@@ -26,8 +26,21 @@ export default function AgentOverview({
   orders
 }: AgentOverviewProps) {
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: 'var(--space-8)' }}>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-8)' }}>
+    <>
+      <style dangerouslySetInnerHTML={{__html: `
+        .overview-layout {
+          display: grid;
+          grid-template-columns: 1fr 340px;
+          gap: var(--space-8);
+        }
+        @media (max-width: 1024px) {
+          .overview-layout {
+            grid-template-columns: 1fr;
+          }
+        }
+      `}} />
+      <div className="overview-layout">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-8)' }}>
         {/* Stats Cards */}
         <div className="grid-3">
           <div className="card-metal" style={{ padding: 'var(--space-5)' }}>
@@ -112,7 +125,8 @@ export default function AgentOverview({
             </a>
           )}
         </div>
+        </div>
       </div>
-    </div>
+    </>
   );
 }
