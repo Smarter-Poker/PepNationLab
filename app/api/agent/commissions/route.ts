@@ -9,7 +9,6 @@ export async function GET(req: NextRequest) {
 
   const service = await createServiceClient();
 
-  // Get commissions
   const { data: commissions, error } = await service
     .from('agent_commissions')
     .select('*, orders:order_id(total, status, created_at, profiles!orders_buyer_id_fkey(full_name))')
@@ -19,7 +18,6 @@ export async function GET(req: NextRequest) {
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-  // Calculate earnings
   const now = new Date();
   const thisMonthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
   const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1).toISOString();
@@ -31,7 +29,6 @@ export async function GET(req: NextRequest) {
   const pending = (commissions ?? []).filter(c => c.status === 'pending' || c.status === 'approved').reduce((s, c) => s + Number(c.commission_amount), 0);
   const paid = (commissions ?? []).filter(c => c.status === 'paid').reduce((s, c) => s + Number(c.commission_amount), 0);
 
-  // Get payouts
   const { data: payouts } = await service
     .from('payout_records')
     .select('*')
@@ -39,7 +36,6 @@ export async function GET(req: NextRequest) {
     .order('created_at', { ascending: false })
     .limit(20);
 
-  // Get commission rate
   const { data: profile } = await service.from('profiles').select('commission_rate').eq('id', user.id).single();
 
   return NextResponse.json({

@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient, createServiceClient } from '@/lib/supabase/server';
 
-/** GET: Researcher's own orders | POST: Re-order (create new order from existing) */
-export async function GET(req: NextRequest) {
+/** GET: Researcher's own orders */
+export async function GET(_req: NextRequest) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });

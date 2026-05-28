@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient, createServiceClient } from '@/lib/supabase/server';
+import { assertSameOrigin } from '@/lib/csrf';
 
 /** GET: List favorites | POST: Add favorite | DELETE: Remove favorite */
-export async function GET(req: NextRequest) {
+export async function GET(_req: NextRequest) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -10,7 +11,7 @@ export async function GET(req: NextRequest) {
   const service = await createServiceClient();
   const { data, error } = await service
     .from('researcher_favorites')
-    .select('product_id, created_at, products:product_id(id, name, base_price, image_url, category, is_active)')
+    .select('product_id, created_at, products:product_id(id, name, base_cost, image_url, category, is_active)')
     .eq('user_id', user.id)
     .order('created_at', { ascending: false });
 
@@ -19,6 +20,8 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
+  const csrf = assertSameOrigin(req);
+  if (csrf) return csrf;
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -38,6 +41,8 @@ export async function POST(req: NextRequest) {
 }
 
 export async function DELETE(req: NextRequest) {
+  const csrf = assertSameOrigin(req);
+  if (csrf) return csrf;
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });

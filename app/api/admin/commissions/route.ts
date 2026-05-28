@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient, createServiceClient } from '@/lib/supabase/server';
+import { assertSameOrigin } from '@/lib/csrf';
 
 /** GET: List commissions | POST: Approve/Pay/Create payout */
 export async function GET(req: NextRequest) {
@@ -26,7 +27,6 @@ export async function GET(req: NextRequest) {
   const { data, error } = await query.limit(200);
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-  // Aggregate stats
   const pending = (data ?? []).filter(c => c.status === 'pending');
   const approved = (data ?? []).filter(c => c.status === 'approved');
   const paid = (data ?? []).filter(c => c.status === 'paid');
@@ -41,7 +41,6 @@ export async function GET(req: NextRequest) {
     totalAll: (data ?? []).reduce((s, c) => s + Number(c.commission_amount), 0),
   };
 
-  // Agent summary
   const agentMap: Record<string, { name: string; pending: number; paid: number; total: number }> = {};
   for (const c of data ?? []) {
     const name = (c as any).profiles?.full_name || (c as any).profiles?.email || 'Agent';
@@ -52,13 +51,15 @@ export async function GET(req: NextRequest) {
   }
   const agentSummary = Object.entries(agentMap).map(([id, v]) => ({ agentId: id, ...v })).sort((a, b) => b.total - a.total);
 
-  // Payout records
   const { data: payouts } = await service.from('payout_records').select('*, profiles:agent_id(full_name, email)').order('created_at', { ascending: false }).limit(50);
 
   return NextResponse.json({ commissions: data, stats, agentSummary, payouts: payouts ?? [] });
 }
 
 export async function POST(req: NextRequest) {
+  const csrf = assertSameOrigin(req);
+  if (csrf) return csrf;
+
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -70,7 +71,6 @@ export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => ({}));
   const { action } = body;
 
-  // Bulk approve pending commissions
   if (action === 'approve') {
     const { commissionIds } = body;
     if (!commissionIds?.length) return NextResponse.json({ error: 'No IDs' }, { status: 400 });
@@ -82,12 +82,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ success: true, approved: commissionIds.length });
   }
 
-  // Create payout (marks approved commissions as paid)
   if (action === 'payout') {
     const { agentId, paymentMethod, referenceNumber, notes } = body;
     if (!agentId) return NextResponse.json({ error: 'Missing agentId' }, { status: 400 });
 
-    // Get all approved commissions for this agent
     const { data: approvedComms } = await service.from('agent_commissions')
       .select('id, commission_amount')
       .eq('agent_id', agentId)
@@ -97,7 +95,6 @@ export async function POST(req: NextRequest) {
 
     const totalAmount = approvedComms.reduce((s, c) => s + Number(c.commission_amount), 0);
 
-    // Create payout record
     const { data: payout, error: payoutError } = await service.from('payout_records').insert({
       agent_id: agentId,
       amount: totalAmount,
@@ -106,34 +103,51 @@ export async function POST(req: NextRequest) {
       notes: notes || null,
       status: 'completed',
       completed_at: new Date().toISOString(),
+      created_by: user.id,
     }).select().single();
 
     if (payoutError) return NextResponse.json({ error: payoutError.message }, { status: 500 });
 
-    // Mark commissions as paid
     const commIds = approvedComms.map(c => c.id);
     await service.from('agent_commissions')
       .update({ status: 'paid', paid_at: new Date().toISOString(), payout_id: payout.id })
       .in('id', commIds);
 
-    // Notify agent
     await service.from('internal_messages').insert({
       sender_id: user.id,
       receiver_id: agentId,
-      subject: `💰 Commission Payout — $${totalAmount.toFixed(2)}`,
+      subject: `Commission Payout: $${totalAmount.toFixed(2)}`,
       body: `Your commission payout of $${totalAmount.toFixed(2)} has been processed via ${paymentMethod || 'transfer'}${referenceNumber ? ` (Ref: ${referenceNumber})` : ''}.`,
       type: 'notification',
+    });
+
+    await service.from('admin_audit_log').insert({
+      actor_id: user.id,
+      action: 'commission_payout',
+      entity_type: 'payout_record',
+      entity_id: payout.id,
+      changes: { agent_id: agentId, total_amount: totalAmount, commission_count: commIds.length },
     });
 
     return NextResponse.json({ success: true, payout, commissionsMarkedPaid: commIds.length });
   }
 
-  // Update commission rate for an agent
   if (action === 'updateRate') {
     const { agentId, rate } = body;
     if (!agentId || rate === undefined) return NextResponse.json({ error: 'Missing fields' }, { status: 400 });
-    const { error } = await service.from('profiles').update({ commission_rate: Number(rate) }).eq('id', agentId);
+    const numRate = Number(rate);
+    if (!Number.isFinite(numRate) || numRate < 0 || numRate > 100) {
+      return NextResponse.json({ error: 'Rate Must Be Between 0 And 100' }, { status: 400 });
+    }
+    const { error } = await service.from('profiles').update({ commission_rate: numRate }).eq('id', agentId);
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    await service.from('admin_audit_log').insert({
+      actor_id: user.id,
+      action: 'commission_rate_update',
+      entity_type: 'profile',
+      entity_id: agentId,
+      changes: { new_rate: numRate },
+    });
     return NextResponse.json({ success: true });
   }
 
