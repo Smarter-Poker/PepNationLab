@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import AgentManualOrder from './AgentManualOrder';
 import { carrierInfo } from '@/lib/carrier';
+import AgentPaymentProofs from './AgentPaymentProofs';
 
 interface Order {
   id: string;
@@ -836,6 +837,20 @@ export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
                     Open Shipping Label
                   </a>
                 )}
+
+                <div
+                  style={{
+                    fontSize: '0.7rem',
+                    color: 'var(--grey-400)',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.06em',
+                    marginTop: 'var(--space-4)',
+                    marginBottom: 6,
+                  }}
+                >
+                  Payment Proofs
+                </div>
+                <AgentPaymentProofs orderId={detailOrder.id} />
               </div>
 
               <div
