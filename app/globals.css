@@ -77,6 +77,15 @@
   --transition-fast:  150ms ease;
   --transition-base:  250ms ease;
   --transition-slow:  400ms ease;
+
+  /* Extended Grey Scale (used across agent dashboard) */
+  --grey-300:       #B0BCC8;
+  --grey-500:       #657584;
+  --grey-900:       #1A2A38;
+
+  /* Status Colors */
+  --green:          #48BB78;
+  --orange:         #F6AD55;
 }
 
 /* ============================================
@@ -667,7 +676,7 @@ a:hover { color: var(--teal-dark); }
 }
 
 @media (max-width: 1024px) {
-  .sidebar { display: none; }
+  .sidebar { transform: translateX(-100%); }
   .dashboard-main { margin-left: 0; }
 }
 
@@ -722,3 +731,67 @@ nav button { text-transform: capitalize; }
 .disclaimer-box p { /* preserve sentence case for legal text */ }
 
 .message-card-hover:hover { background: rgba(0, 196, 188, 0.05) !important; border-color: rgba(0, 196, 188, 0.3) !important; transform: translateY(-2px); }
+
+/* ============================================
+   MISSING UTILITY CLASSES
+   (referenced by components, previously undefined)
+   ============================================ */
+
+/* Fade-in animation (used by agent dashboard tab transitions) */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* Subtle glow pulse (used for QR code card) */
+.animate-glow {
+  animation: pulse-glow 3s ease-in-out infinite alternate;
+}
+@keyframes pulse-glow {
+  0%   { box-shadow: 0 0 8px rgba(0, 196, 188, 0.1); }
+  100% { box-shadow: 0 0 20px rgba(0, 196, 188, 0.25); }
+}
+
+/* Gold badge (used for unpaid invoices) */
+.badge-gold {
+  background: rgba(246, 173, 85, 0.1);
+  color: var(--orange);
+  border: 1px solid rgba(246, 173, 85, 0.3);
+}
+
+/* Responsive table wrapper */
+.table-responsive {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Data table (used across agent dashboard tables) */
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+
+.data-table th,
+.data-table td {
+  padding: var(--space-3) var(--space-4);
+  text-align: left;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  white-space: nowrap;
+}
+
+.data-table th {
+  color: var(--grey-400);
+  font-weight: 600;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.data-table td {
+  color: var(--silver);
+}
+
+.data-table tbody tr:hover {
+  background: rgba(0, 196, 188, 0.03);
+}

@@ -97,7 +97,7 @@ export default function AgentLedger({ agentId }: { agentId: string }) {
               <XAxis dataKey="date" stroke="var(--grey-500)" fontSize={12} tickLine={false} axisLine={false} />
               <YAxis stroke="var(--grey-500)" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(val) => `$${val}`} />
               <Tooltip 
-                contentStyle={{ backgroundColor: 'var(--space-950)', border: '1px solid var(--grey-800)', borderRadius: 8 }}
+                contentStyle={{ backgroundColor: 'var(--grey-900)', border: '1px solid var(--grey-800)', borderRadius: 8 }}
                 itemStyle={{ color: 'var(--silver)' }}
               />
               <Line type="monotone" dataKey="Profit" stroke="var(--teal)" strokeWidth={3} dot={{ r: 4, fill: 'var(--teal)' }} activeDot={{ r: 6 }} />
@@ -138,7 +138,7 @@ export default function AgentLedger({ agentId }: { agentId: string }) {
                   <tr key={tx.id}>
                     <td>{new Date(tx.date).toLocaleDateString()}</td>
                     <td style={{ fontWeight: 'bold' }}>{tx.customer}</td>
-                    <td><span className="badge badge-teal">{tx.status.replace('_', ' ')}</span></td>
+                    <td><span className="badge badge-teal">{tx.status.replaceAll('_', ' ')}</span></td>
                     <td style={{ textAlign: 'right', color: 'var(--white)' }}>{formatCurrency(tx.collected)}</td>
                     <td style={{ textAlign: 'right', color: 'var(--red)' }}>{formatCurrency(tx.owed)}</td>
                     <td style={{ textAlign: 'right', color: 'var(--teal)', fontWeight: 'bold' }}>{formatCurrency(tx.profit)}</td>

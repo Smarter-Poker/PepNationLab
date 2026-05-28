@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import QRCode from 'qrcode';
 import Link from 'next/link';
 import AgentCoupons from '@/components/AgentCoupons';
 import AgentMessages from '@/components/AgentMessages';
@@ -60,6 +59,8 @@ interface Order {
   created_at: string;
   buyer_name: string;
   buyer_email: string;
+  tracking_number?: string | null;
+  label_url?: string | null;
 }
 
 interface AgentDashboardClientProps {
@@ -231,7 +232,7 @@ export default function AgentDashboardClient({
   };
 
   // Compute stats
-  const activeResearchersCount = researchers.length;
+  const activeResearchersCount = researcherList.length;
   const activeOrdersCount = orders.length;
   const totalRevenue = orders
     .filter(o => o.status !== 'cancelled')
@@ -639,7 +640,7 @@ export default function AgentDashboardClient({
         {activeTab === 'Messages' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-8)' }}>
             <AgentInbox agentId={userProfile.id} />
-            <AgentMessages agentId={userProfile.id} researchers={researchers} />
+            <AgentMessages agentId={userProfile.id} researchers={researcherList} />
           </div>
         )}
 

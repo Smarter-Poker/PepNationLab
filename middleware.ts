@@ -8,7 +8,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 // ────────────────────────────────────────────────────────────────────────────
 
 // Routes that are always public (no auth required)
-const PUBLIC_ROUTES = ['/login', '/forgot-password', '/become-agent', '/about', '/terms', '/privacy', '/compliance', '/api/auth/resolve'];
+const PUBLIC_ROUTES = ['/login', '/forgot-password', '/become-agent', '/about', '/terms', '/privacy', '/compliance', '/api/auth/resolve', '/api/auth/signout'];
 
 // Dynamic route check — agent storefronts are public
 // e.g. /midway, /orlando-peps, etc. (but NOT /admin, /dashboard, /api, etc.)
@@ -18,7 +18,7 @@ function isPublicDynamicRoute(pathname: string): boolean {
     '/admin', '/dashboard', '/api', '/orders', '/products',
     '/checkout', '/messages', '/register', '/login', '/forgot-password',
     '/become-agent', '/about', '/terms', '/privacy', '/compliance',
-    '/disclaimer',
+    '/disclaimer', '/shipping',
   ];
   if (protectedPrefixes.some(p => pathname.startsWith(p))) return false;
   // A single-segment slug path (e.g. /midway) is a public storefront
@@ -70,8 +70,8 @@ export default async function proxy(request: NextRequest) {
   // Allow public routes through (login, forgot-password, become-agent, agent storefronts)
   const isPublicRoute = PUBLIC_ROUTES.some(r => pathname.startsWith(r)) || isPublicDynamicRoute(pathname);
   if (isPublicRoute) {
-    // If user is already logged in on a public route, send them to the right place
-    if (user) {
+    // If user is already logged in on the /login page, send them to the right place
+    if (user && pathname === '/login') {
       const url = request.nextUrl.clone();
       // Check role via the profile — admins go to /admin, everyone else to /dashboard
       // We use a lightweight DB read with the anon key (RLS allows user to read own profile)

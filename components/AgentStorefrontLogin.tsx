@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { createClient } from '@/lib/supabase/client';
 
 interface Props {
   agentSlug: string;
@@ -22,7 +22,6 @@ export default function AgentStorefrontLogin({
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const router = useRouter();
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
@@ -30,19 +29,36 @@ export default function AgentStorefrontLogin({
     setError(null);
 
     try {
-      const res = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, password })
-      });
+      const raw = username.trim();
+      let authEmail: string;
 
-      const data = await res.json();
-      
-      if (!res.ok) {
-        throw new Error(data.error || 'Authentication Failed');
+      if (raw.includes('@')) {
+        authEmail = raw;
+      } else {
+        // Resolve username to email via server
+        const res = await fetch('/api/auth/resolve', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username: raw }),
+        });
+        const data = await res.json();
+        if (!res.ok || !data.email) {
+          throw new Error('Invalid Username Or Password');
+        }
+        authEmail = data.email;
       }
 
-      // Success, refresh the page to load the catalog
+      const supabase = createClient();
+      const { error: authError } = await supabase.auth.signInWithPassword({
+        email: authEmail,
+        password,
+      });
+
+      if (authError) {
+        throw new Error('Invalid Username Or Password');
+      }
+
+      // Success — reload to show the storefront catalog
       window.location.reload();
     } catch (err: any) {
       setError(err.message || 'Network Error');
