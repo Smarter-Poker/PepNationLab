@@ -23,7 +23,7 @@ export async function GET() {
   // Use service client to bypass RLS since we have manually verified the user's role
   const serviceClient = await createServiceClient();
 
-  // Fetch orders that need shipping (approved_ship, in_fulfillment)
+  // Fetch orders that need shipping + recently shipped
   const { data: orders, error } = await serviceClient
     .from('orders')
     .select(`
@@ -31,14 +31,17 @@ export async function GET() {
       buyer_id,
       agent_id,
       status,
+      total,
       fulfillment_method,
       shipping_address,
       tracking_number,
       created_at,
-      buyer:profiles!orders_buyer_id_fkey(email, full_name),
-      agent:profiles!orders_agent_id_fkey(email, full_name)
+      updated_at,
+      buyer:profiles!orders_buyer_id_fkey(email, full_name, phone),
+      agent:profiles!orders_agent_id_fkey(email, full_name),
+      items:order_items(id, product_name, quantity, unit_retail_price)
     `)
-    .in('status', ['approved_ship', 'in_fulfillment'])
+    .in('status', ['approved_ship', 'in_fulfillment', 'shipped'])
     .eq('fulfillment_method', 'ship')
     .order('created_at', { ascending: true });
 
