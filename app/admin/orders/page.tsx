@@ -71,6 +71,14 @@ const STATUS_COLORS: Record<string, string> = {
   cancelled:                'var(--grey-400)',
 };
 
+type BulkAction =
+  | 'approve_ship'
+  | 'approve_pickup'
+  | 'mark_shipped'
+  | 'mark_delivered'
+  | 'cancel'
+  | 'generate_labels';
+
 export default function AdminOrdersPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
@@ -88,6 +96,10 @@ export default function AdminOrdersPage() {
   const [trackingNumber, setTrackingNumber] = useState('');
   const [approvalNotes, setApprovalNotes] = useState('');
   const [processing, setProcessing] = useState(false);
+
+  // Bulk selection
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkRunning, setBulkRunning] = useState(false);
 
   // User Auth
   const [userRole, setUserRole] = useState<string>('');
@@ -189,6 +201,73 @@ export default function AdminOrdersPage() {
     }
   }
 
+  function toggleId(id: string) {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  async function handleBulkAction(action: BulkAction) {
+    if (selectedIds.size === 0 || bulkRunning) return;
+    const ids = Array.from(selectedIds);
+    const labelMap: Record<BulkAction, string> = {
+      approve_ship: 'Approving (Ship)',
+      approve_pickup: 'Approving (Pickup)',
+      mark_shipped: 'Marking Shipped',
+      mark_delivered: 'Marking Delivered',
+      cancel: 'Cancelling',
+      generate_labels: 'Generating Labels',
+    };
+    if (action === 'cancel' && !confirm(`Cancel ${ids.length} Order(s)? This Cannot Be Undone.`)) return;
+
+    setBulkRunning(true);
+    const progressToast = toast.loading(`${labelMap[action]} ${ids.length} Order(s)...`);
+    try {
+      const res = await fetch('/api/admin/orders/bulk', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids, action }),
+      });
+      const json = await res.json();
+      if (!res.ok) {
+        toast.error(json.error || 'Bulk Action Failed', { id: progressToast });
+        return;
+      }
+      const succeeded = json.succeeded ?? 0;
+      const failedCount = (json.failed ?? []).length;
+      if (failedCount === 0) {
+        toast.success(`${labelMap[action]}: ${succeeded} Of ${ids.length} Succeeded.`, { id: progressToast });
+      } else {
+        toast.warning(`${labelMap[action]}: ${succeeded} Succeeded, ${failedCount} Failed.`, { id: progressToast });
+        // Show first 5 failures for quick triage.
+        for (const f of (json.failed as Array<{ id: string; reason: string }>).slice(0, 5)) {
+          toast.error(`${f.id.slice(0, 8)}: ${f.reason}`);
+        }
+      }
+
+      if (action === 'generate_labels' && Array.isArray(json.labels)) {
+        // Open each label PDF in a new tab with a small gap between opens so
+        // browsers don't treat the burst as a popup attack.
+        for (let i = 0; i < json.labels.length; i++) {
+          const url = json.labels[i].label_url;
+          setTimeout(() => {
+            window.open(url, '_blank', 'noopener,noreferrer');
+          }, i * 250);
+        }
+      }
+
+      setSelectedIds(new Set());
+      await fetchOrders();
+    } catch (err: any) {
+      toast.error(err.message || 'Bulk Action Failed', { id: progressToast });
+    } finally {
+      setBulkRunning(false);
+    }
+  }
+
   // Filters & Search
   const filteredOrders = orders.filter(order => {
     const matchesStatus = statusFilter === 'all' || order.status === statusFilter;
@@ -279,6 +358,101 @@ export default function AdminOrdersPage() {
             </div>
           </div>
 
+          {/* Sticky Bulk Action Bar (visible when selection is non-empty) */}
+          {selectedIds.size > 0 && (
+            <div
+              style={{
+                position: 'sticky',
+                top: 0,
+                zIndex: 5,
+                marginBottom: 'var(--space-4)',
+                padding: 'var(--space-3) var(--space-4)',
+                background: 'var(--surface-2)',
+                border: '1px solid var(--teal)',
+                borderRadius: 'var(--radius-md)',
+                display: 'flex',
+                flexWrap: 'wrap',
+                alignItems: 'center',
+                gap: 'var(--space-3)',
+                boxShadow: 'var(--shadow-teal-sm)',
+              }}
+            >
+              <span style={{ fontSize: '0.85rem', color: 'var(--white)', fontWeight: 600 }}>
+                {selectedIds.size} Selected
+              </span>
+              <button
+                type="button"
+                onClick={() => handleBulkAction('approve_ship')}
+                disabled={bulkRunning}
+                className="btn btn-secondary btn-sm"
+                style={{ fontSize: '0.78rem' }}
+              >
+                Approve (Ship)
+              </button>
+              <button
+                type="button"
+                onClick={() => handleBulkAction('approve_pickup')}
+                disabled={bulkRunning}
+                className="btn btn-secondary btn-sm"
+                style={{ fontSize: '0.78rem' }}
+              >
+                Approve (Pickup)
+              </button>
+              <button
+                type="button"
+                onClick={() => handleBulkAction('mark_shipped')}
+                disabled={bulkRunning}
+                className="btn btn-secondary btn-sm"
+                style={{ fontSize: '0.78rem' }}
+              >
+                Mark Shipped
+              </button>
+              <button
+                type="button"
+                onClick={() => handleBulkAction('mark_delivered')}
+                disabled={bulkRunning}
+                className="btn btn-secondary btn-sm"
+                style={{ fontSize: '0.78rem' }}
+              >
+                Mark Delivered
+              </button>
+              <button
+                type="button"
+                onClick={() => handleBulkAction('generate_labels')}
+                disabled={bulkRunning}
+                className="btn btn-primary btn-sm"
+                style={{ fontSize: '0.78rem' }}
+              >
+                Generate Labels
+              </button>
+              <button
+                type="button"
+                onClick={() => handleBulkAction('cancel')}
+                disabled={bulkRunning}
+                className="btn btn-secondary btn-sm"
+                style={{ fontSize: '0.78rem', borderColor: 'var(--red)', color: 'var(--red)' }}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => setSelectedIds(new Set())}
+                disabled={bulkRunning}
+                style={{
+                  marginLeft: 'auto',
+                  background: 'none',
+                  border: 'none',
+                  color: 'var(--grey-400)',
+                  cursor: 'pointer',
+                  fontSize: '0.78rem',
+                  textDecoration: 'underline',
+                }}
+              >
+                Clear Selection
+              </button>
+            </div>
+          )}
+
           {/* Table list */}
           {loading ? (
             <div style={{ display: 'flex', justifyContent: 'center', padding: 'var(--space-12)' }}>
@@ -294,21 +468,77 @@ export default function AdminOrdersPage() {
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
+              {/* Master "Select All On Page" */}
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 'var(--space-2)',
+                  padding: '4px var(--space-2)',
+                  fontSize: '0.78rem',
+                  color: 'var(--grey-400)',
+                }}
+              >
+                <input
+                  type="checkbox"
+                  checked={
+                    paginatedOrders.length > 0
+                    && paginatedOrders.every((o) => selectedIds.has(o.id))
+                  }
+                  onChange={(e) => {
+                    setSelectedIds((prev) => {
+                      const next = new Set(prev);
+                      if (e.target.checked) {
+                        for (const o of paginatedOrders) next.add(o.id);
+                      } else {
+                        for (const o of paginatedOrders) next.delete(o.id);
+                      }
+                      return next;
+                    });
+                  }}
+                  aria-label="Select All On Page"
+                />
+                <span>Select All On Page</span>
+              </div>
               {paginatedOrders.map(order => (
-                <button
+                <div
                   key={order.id}
-                  onClick={() => setSelectedOrder(order)}
                   className="card-metal"
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 'var(--space-3)',
+                    padding: 'var(--space-4)',
+                    width: '100%',
+                    cursor: 'pointer',
+                    background: selectedOrder?.id === order.id ? 'rgba(0,196,188,0.04)' : 'var(--surface-1)',
+                    borderColor: selectedOrder?.id === order.id ? 'var(--teal)' : 'rgba(255,255,255,0.06)',
+                  }}
+                >
+                  <input
+                    type="checkbox"
+                    checked={selectedIds.has(order.id)}
+                    onChange={(e) => {
+                      e.stopPropagation();
+                      toggleId(order.id);
+                    }}
+                    onClick={(e) => e.stopPropagation()}
+                    aria-label={`Select Order ${order.id.slice(0, 8)}`}
+                    style={{ accentColor: 'var(--teal)', flexShrink: 0 }}
+                  />
+                <button
+                  onClick={() => setSelectedOrder(order)}
                   style={{
                     display: 'flex',
                     justifyContent: 'space-between',
                     alignItems: 'center',
-                    padding: 'var(--space-4)',
                     width: '100%',
                     textAlign: 'left',
+                    background: 'transparent',
+                    border: 'none',
+                    color: 'inherit',
+                    padding: 0,
                     cursor: 'pointer',
-                    background: selectedOrder?.id === order.id ? 'rgba(0,196,188,0.04)' : 'var(--surface-1)',
-                    borderColor: selectedOrder?.id === order.id ? 'var(--teal)' : 'rgba(255,255,255,0.06)',
                   }}
                 >
                   <div>

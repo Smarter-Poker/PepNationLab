@@ -1,8 +1,10 @@
 'use client';
 
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useCart } from '@/components/CartContext';
 import Link from 'next/link';
+import { US_STATES } from '@/lib/us-states';
+import PaymentProofUpload from '@/components/PaymentProofUpload';
 
 interface Profile {
   full_name: string | null;
@@ -15,6 +17,19 @@ interface CheckoutFormProps {
   userProfile: Profile;
   userEmail: string;
   tierMultipliers: Record<string, number>;
+}
+
+interface SavedAddress {
+  id: string;
+  label: string | null;
+  full_name: string;
+  street1: string;
+  street2: string | null;
+  city: string;
+  state: string;
+  zip: string;
+  country: string;
+  is_default: boolean;
 }
 
 export default function CheckoutForm({ userProfile, userEmail, tierMultipliers }: CheckoutFormProps) {
@@ -51,6 +66,68 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers }
 
   const [fulfillmentMethod, setFulfillmentMethod] = useState<'ship' | 'agent_pickup'>('ship');
   const [paymentMethod, setPaymentMethod] = useState<'zelle' | 'cashapp' | 'venmo' | 'apple_pay'>('zelle');
+
+  // Saved addresses
+  const [savedAddresses, setSavedAddresses] = useState<SavedAddress[]>([]);
+  const [selectedAddressId, setSelectedAddressId] = useState<string>('new');
+  const [saveAddress, setSaveAddress] = useState<boolean>(true);
+  const [savedAddressesLoading, setSavedAddressesLoading] = useState<boolean>(true);
+
+  // Fetch saved addresses on mount + autofill default on first load.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch('/api/researcher/addresses');
+        const json = await res.json();
+        if (cancelled || !res.ok) return;
+        const list: SavedAddress[] = json.data || [];
+        setSavedAddresses(list);
+        const def = list.find((a) => a.is_default) || list[0];
+        if (def) {
+          setSelectedAddressId(def.id);
+          setFullName(def.full_name);
+          setStreet(def.street1);
+          setSuite(def.street2 || '');
+          setCity(def.city);
+          setState(def.state);
+          setZip(def.zip);
+          setSaveAddress(false);
+        }
+      } catch {
+        // Non-blocking — checkout still works without saved addresses.
+      } finally {
+        if (!cancelled) setSavedAddressesLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  function pickSavedAddress(id: string) {
+    setSelectedAddressId(id);
+    if (id === 'new') {
+      setFullName(userProfile.full_name ?? '');
+      setStreet('');
+      setSuite('');
+      setCity('');
+      setState('');
+      setZip('');
+      setSaveAddress(true);
+      return;
+    }
+    const a = savedAddresses.find((x) => x.id === id);
+    if (!a) return;
+    setFullName(a.full_name);
+    setStreet(a.street1);
+    setSuite(a.street2 || '');
+    setCity(a.city);
+    setState(a.state);
+    setZip(a.zip);
+    setSaveAddress(false);
+  }
 
   // Disclaimers checkboxes
   const [disclaimer1, setDisclaimer1] = useState(false);
@@ -149,6 +226,38 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers }
     setLoading(true);
 
     try {
+      // Persist the new address first if the user opted in. Non-blocking on
+      // failure — checkout should still proceed even if the address save fails.
+      if (
+        fulfillmentMethod === 'ship'
+        && selectedAddressId === 'new'
+        && saveAddress
+        && fullName.trim()
+        && street.trim()
+        && city.trim()
+        && state.trim()
+        && zip.trim()
+      ) {
+        try {
+          await fetch('/api/researcher/addresses', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              full_name: fullName.trim(),
+              street1: street.trim(),
+              street2: suite.trim() || null,
+              city: city.trim(),
+              state: state.trim().toUpperCase(),
+              zip: zip.trim(),
+              country: 'US',
+              is_default: savedAddresses.length === 0,
+            }),
+          });
+        } catch {
+          // Swallow — we'll still attempt the order.
+        }
+      }
+
       const response = await fetch('/api/orders', {
         method: 'POST',
         headers: {
@@ -325,6 +434,9 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers }
             </p>
           </div>
 
+          {/* Payment Proof Upload */}
+          <PaymentProofUpload orderId={orderSuccess} />
+
           {/* Warning disclaimer */}
           <div style={{ borderLeft: '3px solid var(--red)', background: 'var(--red-bg)', padding: 'var(--space-4)', borderRadius: '0 var(--radius-md) var(--radius-md) 0', marginBottom: 'var(--space-6)' }}>
             <h4 style={{ color: 'var(--red)', fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 4, fontFamily: 'var(--font-brand)' }}>Strict Legal Reminder</h4>
@@ -496,6 +608,71 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers }
                     <h3 style={{ color: 'var(--teal)', fontSize: '1.2rem', marginBottom: 'var(--space-4)', borderBottom: '1px solid rgba(255, 255, 255, 0.05)', paddingBottom: 'var(--space-2)' }}>
                       Shipping Delivery Address
                     </h3>
+
+                    {!savedAddressesLoading && savedAddresses.length > 0 && (
+                      <div style={{ marginBottom: 'var(--space-5)' }}>
+                        <label className="form-label" style={{ marginBottom: 'var(--space-2)' }}>Saved Addresses</label>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
+                          {savedAddresses.map((a) => (
+                            <label
+                              key={a.id}
+                              style={{
+                                display: 'flex',
+                                alignItems: 'flex-start',
+                                gap: 'var(--space-3)',
+                                padding: 'var(--space-3)',
+                                borderRadius: 'var(--radius-md)',
+                                background: selectedAddressId === a.id ? 'rgba(0, 196, 188, 0.06)' : 'var(--surface-2)',
+                                border: selectedAddressId === a.id ? '2px solid var(--teal)' : '1px solid rgba(255, 255, 255, 0.05)',
+                                cursor: 'pointer',
+                              }}
+                            >
+                              <input
+                                type="radio"
+                                name="savedAddress"
+                                checked={selectedAddressId === a.id}
+                                onChange={() => pickSavedAddress(a.id)}
+                                style={{ accentColor: 'var(--teal)', marginTop: 4 }}
+                              />
+                              <div style={{ flex: 1, minWidth: 0 }}>
+                                <div style={{ fontSize: '0.88rem', color: 'var(--white)', fontWeight: 600 }}>
+                                  {a.label || a.full_name}
+                                  {a.is_default && (
+                                    <span style={{ marginLeft: 8, fontSize: '0.7rem', color: 'var(--teal)', fontWeight: 700 }}>Default</span>
+                                  )}
+                                </div>
+                                <div style={{ fontSize: '0.78rem', color: 'var(--grey-400)', marginTop: 2 }}>
+                                  {a.street1}{a.street2 ? `, ${a.street2}` : ''}, {a.city}, {a.state} {a.zip}
+                                </div>
+                              </div>
+                            </label>
+                          ))}
+
+                          <label
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: 'var(--space-3)',
+                              padding: 'var(--space-3)',
+                              borderRadius: 'var(--radius-md)',
+                              background: selectedAddressId === 'new' ? 'rgba(0, 196, 188, 0.06)' : 'var(--surface-2)',
+                              border: selectedAddressId === 'new' ? '2px solid var(--teal)' : '1px solid rgba(255, 255, 255, 0.05)',
+                              cursor: 'pointer',
+                            }}
+                          >
+                            <input
+                              type="radio"
+                              name="savedAddress"
+                              checked={selectedAddressId === 'new'}
+                              onChange={() => pickSavedAddress('new')}
+                              style={{ accentColor: 'var(--teal)' }}
+                            />
+                            <span style={{ fontSize: '0.88rem', color: 'var(--white)', fontWeight: 600 }}>Use A New Address</span>
+                          </label>
+                        </div>
+                      </div>
+                    )}
+
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
                       <div className="form-group">
                         <label className="form-label">Full Name</label>
@@ -544,14 +721,18 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers }
                         </div>
                         <div className="form-group">
                           <label className="form-label">State</label>
-                          <input
-                            type="text"
+                          <select
                             className="form-input"
-                            placeholder="CA"
-                            maxLength={2}
                             value={state}
-                            onChange={(e) => setState(e.target.value.toUpperCase())}
-                          />
+                            onChange={(e) => setState(e.target.value)}
+                          >
+                            <option value="">Select State</option>
+                            {US_STATES.map((s) => (
+                              <option key={s.code} value={s.code}>
+                                {s.code} - {s.name}
+                              </option>
+                            ))}
+                          </select>
                         </div>
                         <div className="form-group">
                           <label className="form-label">Zip Code</label>
@@ -575,6 +756,30 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers }
                           onChange={(e) => setPhone(e.target.value)}
                         />
                       </div>
+
+                      {selectedAddressId === 'new' && (
+                        <label
+                          className="form-checkbox"
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 'var(--space-2)',
+                            padding: 'var(--space-3)',
+                            background: 'var(--surface-2)',
+                            border: '1px solid rgba(255, 255, 255, 0.05)',
+                            borderRadius: 'var(--radius-md)',
+                          }}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={saveAddress}
+                            onChange={(e) => setSaveAddress(e.target.checked)}
+                          />
+                          <span style={{ fontSize: '0.84rem', color: 'var(--silver-light)' }}>
+                            Save This Address To My Account For Future Orders.
+                          </span>
+                        </label>
+                      )}
                     </div>
                   </div>
                 )}

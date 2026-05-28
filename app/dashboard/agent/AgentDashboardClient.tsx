@@ -87,7 +87,7 @@ export default function AgentDashboardClient({
 }: AgentDashboardClientProps) {
   const supabase = createClient();
 
-  const [activeTab, setActiveTab] = useState<'Overview' | 'Sales & Carts' | 'Researchers' | 'My Sub-Agents' | 'Orders' | 'Store Products' | 'Research Bundles' | 'Inventory' | 'Ledger & Accounting' | 'Coupons' | 'Messages' | 'Storefront Config' | 'Settings'>('Overview');
+  const [activeTab, setActiveTab] = useState<'Overview' | 'Sales & Carts' | 'Researchers' | 'My Sub-Agents' | 'Orders' | 'Store Products' | 'Research Bundles' | 'Inventory' | 'Accounting' | 'Coupons' | 'Messages' | 'Storefront Config' | 'Settings'>('Overview');
   const [agentProfile, setAgentProfile] = useState<AgentProfile | null>(initialAgentProfile);
   const [orders, setOrders] = useState<Order[]>(initialOrders);
 
@@ -450,7 +450,7 @@ export default function AgentDashboardClient({
     { id: 'Overview', label: 'Overview', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="9" /><rect x="14" y="3" width="7" height="5" /><rect x="14" y="12" width="7" height="9" /><rect x="3" y="16" width="7" height="5" /></svg> },
     { id: 'Orders', label: 'Orders & Fulfillment', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z" /><line x1="3" y1="6" x2="21" y2="6" /><path d="M16 10a4 4 0 0 1-8 0" /></svg> },
     { id: 'Inventory', label: 'Inventory Management', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" /><polyline points="3.27 6.96 12 12.01 20.73 6.96" /><line x1="12" y1="22.08" x2="12" y2="12" /></svg> },
-    { id: 'Ledger & Accounting', label: 'Ledger & Accounting', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" /></svg> },
+    { id: 'Accounting', label: 'Accounting', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" /></svg> },
     { id: 'Sales & Carts', label: 'Sales & Charts', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17" /><polyline points="16 7 22 7 22 13" /></svg> },
     { id: 'Researchers', label: 'Researchers', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /></svg> },
     ...(userProfile.is_super_agent ? [{ id: 'My Sub-Agents', label: 'My Sub-Agents', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /></svg> }] : []),
@@ -488,7 +488,9 @@ export default function AgentDashboardClient({
           </span>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
-          <MessageBell onViewAll={() => { setActiveTab('Messages'); setIsMobileMenuOpen(false); }} />
+          <div style={{ width: 24, height: 24, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <MessageBell onViewAll={() => { setActiveTab('Messages'); setIsMobileMenuOpen(false); }} />
+          </div>
           <span className="hide-on-mobile" style={{ fontSize: '0.85rem', color: 'var(--silver)' }}>{agentProfile.display_name}</span>
         </div>
       </nav>
@@ -536,6 +538,17 @@ export default function AgentDashboardClient({
         </div>
 
         <div style={{ padding: 'var(--space-4)' }}>
+          <button 
+            className="sidebar-nav-item" 
+            onClick={() => { setActiveTab('Storefront Config' as any); setIsMobileMenuOpen(false); }}
+            style={{ width: '100%', background: 'transparent', border: 'none', textAlign: 'left' }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" /><rect x="3" y="14" width="7" height="7" /><rect x="14" y="14" width="3" height="3" /><rect x="19" y="14" width="2" height="2" /><rect x="14" y="19" width="2" height="2" /><rect x="19" y="19" width="2" height="2" />
+              </svg>
+              <span style={{ fontSize: '0.85rem', fontFamily: 'var(--font-brand)', letterSpacing: '0.05em' }}>QR Code</span>
+            </div>
+          </button>
           <Link href="/account/security" className="sidebar-nav-item" style={{ display: 'block', textDecoration: 'none' }} onClick={() => setIsMobileMenuOpen(false)}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -615,8 +628,8 @@ export default function AgentDashboardClient({
           </div>
         )}
 
-        {/* TAB: Ledger & Accounting */}
-        {activeTab === 'Ledger & Accounting' && (
+        {/* TAB: Accounting */}
+        {activeTab === 'Accounting' && (
           <div style={{ animation: 'fadeIn 0.3s ease-out' }}>
             <AgentLedger agentId={userProfile.id} />
           </div>
@@ -636,7 +649,7 @@ export default function AgentDashboardClient({
                 setTimeout(() => setCopiedStorefront(false), 2000);
               }}
               copiedStorefront={copiedStorefront}
-
+              onNavigate={(tab) => { setActiveTab(tab as any); setIsMobileMenuOpen(false); }}
               agentProfile={agentProfile}
               orders={orders}
             />
@@ -854,10 +867,7 @@ export default function AgentDashboardClient({
                     >Copy</button>
                   </div>
                 </div>
-                <div>
-                  <span style={{ fontSize: '0.78rem', color: 'var(--grey-400)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Tier</span>
-                  <p style={{ color: 'var(--white)', fontSize: '0.9rem', margin: '4px 0 0' }}>{userProfile.tier?.replace('_', ' ').toUpperCase() || 'TIER 3'}</p>
-                </div>
+
                 <div>
                   <span style={{ fontSize: '0.78rem', color: 'var(--grey-400)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Name</span>
                   <p style={{ color: 'var(--white)', fontSize: '0.9rem', margin: '4px 0 0' }}>{userProfile.full_name || '\u2014'}</p>

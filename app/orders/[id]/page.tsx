@@ -3,6 +3,7 @@ import { redirect, notFound } from 'next/navigation';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/server';
 import PageShell from '@/components/PageShell';
+import PaymentProofUpload from '@/components/PaymentProofUpload';
 
 export const dynamic = 'force-dynamic';
 
@@ -260,6 +261,12 @@ export default async function OrderDetailPage(
               </p>
             </div>
           )}
+
+          {/* Payment Proof Upload (buyer only — RLS enforces) */}
+          <PaymentProofUpload
+            orderId={order.id}
+            uploadDisabled={order.status === 'cancelled' || order.status === 'delivered'}
+          />
 
           {/* Tracking */}
           {(order.tracking_number || order.label_url) && (
