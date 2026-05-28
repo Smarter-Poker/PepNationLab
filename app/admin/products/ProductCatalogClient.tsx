@@ -344,6 +344,10 @@ export default function ProductCatalogClient({
           </tbody>
         </table>
       </div>
+
+      {showBulkModal && (
+        <BulkImportModal onClose={() => setShowBulkModal(false)} />
+      )}
     </>
   );
 }
