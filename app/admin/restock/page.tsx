@@ -2,6 +2,7 @@
 
 import { Fragment, useEffect, useState } from 'react';
 import Pagination from '@/components/Pagination';
+import { exportCSV, downloadCSV } from '@/lib/export';
 
 const PAGE_SIZE = 25;
 
@@ -80,11 +81,46 @@ export default function AdminRestockPage() {
 
   return (
     <div style={{ padding: 'var(--space-8)' }}>
-      <div style={{ marginBottom: 'var(--space-8)' }}>
-        <h1 style={{ fontSize: '1.6rem', marginBottom: 'var(--space-2)' }}>Wholesale Restock</h1>
-        <p style={{ fontSize: '0.85rem', color: 'var(--grey-400)' }}>
-          Recent Wholesale Restock Orders Submitted By Agents. Click A Row To Reveal Line Items.
-        </p>
+      <div style={{ marginBottom: 'var(--space-8)', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 'var(--space-4)' }}>
+        <div>
+          <h1 style={{ fontSize: '1.6rem', marginBottom: 'var(--space-2)' }}>Wholesale Restock</h1>
+          <p style={{ fontSize: '0.85rem', color: 'var(--grey-400)' }}>
+            Recent Wholesale Restock Orders Submitted By Agents. Click A Row To Reveal Line Items.
+          </p>
+        </div>
+        <button
+          type="button"
+          className="btn btn-secondary btn-sm"
+          disabled={orders.length === 0}
+          onClick={() => {
+            const rows = orders.map((o) => {
+              const agent = resolveAgent(o);
+              return {
+                id: o.id,
+                created_at: new Date(o.created_at).toISOString(),
+                agent: agent?.full_name || (agent?.username ? `@${agent.username}` : ''),
+                status: STATUS_LABELS[o.status] ?? o.status,
+                line_items: (o.order_items ?? []).map((it) => `${it.quantity}x ${it.product_name}`).join('; '),
+                subtotal: Number(o.subtotal ?? 0).toFixed(2),
+                shipping_cost: Number(o.shipping_cost ?? 0).toFixed(2),
+                total: Number(o.total ?? 0).toFixed(2),
+              };
+            });
+            const csv = exportCSV(rows, [
+              { key: 'id', label: 'Order ID' },
+              { key: 'created_at', label: 'Date' },
+              { key: 'agent', label: 'Agent' },
+              { key: 'status', label: 'Status' },
+              { key: 'line_items', label: 'Line Items' },
+              { key: 'subtotal', label: 'Subtotal' },
+              { key: 'shipping_cost', label: 'Shipping' },
+              { key: 'total', label: 'Total' },
+            ]);
+            downloadCSV(`admin_restock_${new Date().toISOString().slice(0, 10)}.csv`, csv);
+          }}
+        >
+          Export CSV
+        </button>
       </div>
 
       {loading ? (
