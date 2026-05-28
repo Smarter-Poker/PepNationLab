@@ -54,13 +54,13 @@ export async function POST(req: NextRequest) {
   const service = await createServiceClient();
 
   const body = await req.json().catch(() => ({}));
-  const { receiverId, subject, body: msgBody, type, attachmentUrl } = body;
+  const { receiverId, subject, body: msgBody, type, attachmentUrl, invoiceAmount, dueDate, lineItems, replyToId } = body;
 
   if (!receiverId || !subject || !msgBody) {
     return NextResponse.json({ error: 'Missing Required Fields' }, { status: 400 });
   }
 
-  const validTypes = ['direct_message', 'notification', 'invoice'];
+  const validTypes = ['direct_message', 'notification', 'invoice', 'broadcast', 'credit_memo', 'payment_reminder'];
   if (type && !validTypes.includes(type)) {
     return NextResponse.json({ error: 'Invalid Message Type' }, { status: 400 });
   }
@@ -120,20 +120,58 @@ export async function POST(req: NextRequest) {
     }
   }
 
+  // Build insert row
+  const insertRow: Record<string, any> = {
+    sender_id: user.id,
+    receiver_id: receiverId,
+    subject,
+    body: msgBody,
+    type: type || 'direct_message',
+    attachment_url: attachmentUrl || null,
+    reply_to_id: replyToId || null,
+  };
+
+  // Invoice-specific fields
+  if (type === 'invoice') {
+    insertRow.invoice_status = 'pending';
+    insertRow.invoice_amount = invoiceAmount ? Number(invoiceAmount) : null;
+    insertRow.due_date = dueDate || null;
+    insertRow.line_items = lineItems || null;
+  }
+
+  // Credit memo: negative amount
+  if (type === 'credit_memo') {
+    insertRow.invoice_status = 'paid';
+    insertRow.invoice_amount = invoiceAmount ? -Math.abs(Number(invoiceAmount)) : null;
+  }
+
   const { data, error } = await service
     .from('internal_messages')
-    .insert({
-      sender_id: user.id,
-      receiver_id: receiverId,
-      subject,
-      body: msgBody,
-      type: type || 'direct_message',
-      attachment_url: attachmentUrl || null,
-    })
+    .insert(insertRow)
     .select()
     .single();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+  // Auto-responder: check if receiver has it enabled
+  try {
+    const { data: receiverProfile } = await service
+      .from('profiles')
+      .select('auto_responder_enabled, auto_responder_message')
+      .eq('id', receiverId)
+      .single();
+
+    if (receiverProfile?.auto_responder_enabled && receiverProfile?.auto_responder_message) {
+      await service.from('internal_messages').insert({
+        sender_id: receiverId,
+        receiver_id: user.id,
+        subject: 'Auto-Reply',
+        body: receiverProfile.auto_responder_message,
+        type: 'notification',
+      });
+    }
+  } catch { /* auto-responder is best-effort */ }
+
   return NextResponse.json({ success: true, message: data });
 }
 
