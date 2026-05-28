@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { createClient } from '@/lib/supabase/client';
 import Pagination from '@/components/Pagination';
+import { exportCSV, downloadCSV } from '@/lib/export';
 
 const PAGE_SIZE = 25;
 
@@ -297,13 +298,53 @@ export default function AdminOrdersPage() {
   return (
     <div style={{ padding: 'var(--space-8)' }}>
       {/* Header */}
-      <div style={{ marginBottom: 'var(--space-8)' }}>
-        <h1 style={{ fontSize: '1.6rem', marginBottom: 'var(--space-2)' }}>
-          Order Fulfillment Center
-        </h1>
-        <p style={{ fontSize: '0.85rem', color: 'var(--grey-400)' }}>
-          Process Payments, Approve Logistics, Input Shipping Tracking, And Manage Fulfillment States
-        </p>
+      <div style={{ marginBottom: 'var(--space-8)', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 'var(--space-4)' }}>
+        <div>
+          <h1 style={{ fontSize: '1.6rem', marginBottom: 'var(--space-2)' }}>
+            Order Fulfillment Center
+          </h1>
+          <p style={{ fontSize: '0.85rem', color: 'var(--grey-400)' }}>
+            Process Payments, Approve Logistics, Input Shipping Tracking, And Manage Fulfillment States
+          </p>
+        </div>
+        <button
+          type="button"
+          className="btn btn-secondary btn-sm"
+          disabled={filteredOrders.length === 0}
+          onClick={() => {
+            const rows = filteredOrders.map((o) => ({
+              id: o.id,
+              created_at: new Date(o.created_at).toISOString(),
+              buyer: o.profiles?.full_name || o.profiles?.email || '',
+              status: STATUS_LABELS[o.status] ?? o.status,
+              fulfillment: o.fulfillment_method || '',
+              payment_method: o.payment_method || '',
+              subtotal: Number(o.subtotal ?? 0).toFixed(2),
+              shipping_cost: Number(o.shipping_cost ?? 0).toFixed(2),
+              discount: Number(o.discount_amount ?? 0).toFixed(2),
+              coupon: o.coupon_code || '',
+              total: Number(o.total ?? 0).toFixed(2),
+              tracking_number: o.tracking_number || '',
+            }));
+            const csv = exportCSV(rows, [
+              { key: 'id', label: 'Order ID' },
+              { key: 'created_at', label: 'Date' },
+              { key: 'buyer', label: 'Buyer' },
+              { key: 'status', label: 'Status' },
+              { key: 'fulfillment', label: 'Fulfillment' },
+              { key: 'payment_method', label: 'Payment Method' },
+              { key: 'subtotal', label: 'Subtotal' },
+              { key: 'shipping_cost', label: 'Shipping' },
+              { key: 'discount', label: 'Discount' },
+              { key: 'coupon', label: 'Coupon' },
+              { key: 'total', label: 'Total' },
+              { key: 'tracking_number', label: 'Tracking' },
+            ]);
+            downloadCSV(`admin_orders_${new Date().toISOString().slice(0, 10)}.csv`, csv);
+          }}
+        >
+          Export CSV
+        </button>
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 420px', gap: 'var(--space-8)', alignItems: 'start' }}>
