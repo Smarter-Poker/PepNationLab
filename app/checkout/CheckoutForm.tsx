@@ -294,7 +294,7 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers }
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1.1rem' }}>
               <span style={{ color: 'var(--grey-400)', fontWeight: 600 }}>Amount Due</span>
               <strong style={{ color: 'var(--teal)', fontFamily: 'var(--font-brand)' }}>
-                ${Math.ceil(serverTotal ?? grandTotal)}
+                ${(serverTotal ?? grandTotal).toFixed(2)}
               </strong>
             </div>
           </div>
@@ -750,7 +750,7 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers }
                     <div style={{ color: 'var(--grey-400)', fontSize: '0.72rem' }}>Qty: {item.quantity}</div>
                   </div>
                   <strong style={{ color: 'var(--silver-light)', whiteSpace: 'nowrap' }}>
-                    ${Math.ceil(item.costPrice * item.quantity)}
+                    ${(item.costPrice * item.quantity).toFixed(2)}
                   </strong>
                 </div>
               ))}
@@ -800,20 +800,20 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers }
             <div style={{ borderTop: '1px solid rgba(255, 255, 255, 0.05)', paddingTop: 'var(--space-3)', display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem' }}>
                 <span style={{ color: 'var(--grey-400)' }}>Items Subtotal</span>
-                <strong style={{ color: 'var(--white)' }}>${Math.ceil(cartSubtotal)}</strong>
+                <strong style={{ color: 'var(--white)' }}>${cartSubtotal.toFixed(2)}</strong>
               </div>
 
               {appliedCoupon && (
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem' }}>
                   <span style={{ color: '#68D391' }}>Coupon Discount</span>
-                  <strong style={{ color: '#68D391' }}>-${Math.ceil(discount)}</strong>
+                  <strong style={{ color: '#68D391' }}>-${discount.toFixed(2)}</strong>
                 </div>
               )}
 
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem' }}>
                 <span style={{ color: 'var(--grey-400)' }}>Weight Shipping</span>
                 {fulfillmentMethod === 'ship' ? (
-                  <strong style={{ color: 'var(--white)' }}>${Math.ceil(shippingCost)}</strong>
+                  <strong style={{ color: 'var(--white)' }}>${shippingCost.toFixed(2)}</strong>
                 ) : (
                   <strong style={{ color: 'var(--teal)' }}>Free Pickup</strong>
                 )}
@@ -828,7 +828,7 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers }
               <div style={{ borderTop: '1px solid rgba(255, 255, 255, 0.05)', paddingTop: 'var(--space-3)', display: 'flex', justifyContent: 'space-between', fontSize: '1.05rem', marginTop: 'var(--space-1)' }}>
                 <span style={{ color: 'var(--white)', fontWeight: 600 }}>Total Due</span>
                 <strong style={{ color: 'var(--teal)', fontFamily: 'var(--font-brand)' }}>
-                  ${Math.ceil(grandTotal)}
+                  ${grandTotal.toFixed(2)}
                 </strong>
               </div>
             </div>

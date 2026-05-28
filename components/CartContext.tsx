@@ -493,11 +493,11 @@ function CartDrawer() {
 
                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
                       <div style={{ fontSize: '0.9rem', color: 'var(--white)', fontWeight: 600, fontFamily: 'var(--font-brand)' }}>
-                        ${Math.ceil((item.bulkCostPrice && item.bulkThreshold && item.quantity >= item.bulkThreshold ? item.bulkCostPrice : item.costPrice) * item.quantity)}
+                        ${((item.bulkCostPrice && item.bulkThreshold && item.quantity >= item.bulkThreshold ? item.bulkCostPrice : item.costPrice) * item.quantity).toFixed(2)}
                       </div>
                       {item.bulkCostPrice && item.bulkThreshold && item.quantity >= item.bulkThreshold && (
                         <div style={{ fontSize: '0.65rem', color: 'var(--teal)' }}>
-                          Bulk Discount Applied! (${Math.ceil(item.bulkCostPrice)}/ea)
+                          Bulk Discount Applied! (${item.bulkCostPrice.toFixed(2)}/ea)
                         </div>
                       )}
                     </div>
@@ -536,7 +536,7 @@ function CartDrawer() {
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 'var(--space-4)', fontSize: '0.95rem' }}>
               <span style={{ color: 'var(--grey-400)' }}>Item Subtotal</span>
               <strong style={{ color: 'var(--teal)', fontFamily: 'var(--font-brand)', fontSize: '1.1rem' }}>
-                ${Math.ceil(cartSubtotal)}
+                ${cartSubtotal.toFixed(2)}
               </strong>
             </div>
 

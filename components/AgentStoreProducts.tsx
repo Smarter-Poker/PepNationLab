@@ -22,6 +22,8 @@ interface AgentProduct {
   custom_image_url: string | null;
   retail_price: number;
   is_visible: boolean;
+  is_on_sale: boolean;
+  sale_price: number | null;
   sort_order: number;
   products: ProductInfo;
 }
@@ -119,6 +121,8 @@ export default function AgentStoreProducts({ agentId }: { agentId: string }) {
       custom_image_url: p.custom_image_url ?? '',
       retail_price: p.retail_price,
       is_visible: p.is_visible,
+      is_on_sale: p.is_on_sale,
+      sale_price: p.sale_price,
     });
   }
 
@@ -323,9 +327,26 @@ export default function AgentStoreProducts({ agentId }: { agentId: string }) {
                             </div>
                           </div>
                           <div className="form-group" style={{ marginBottom: 0 }}>
-                            <label className="form-label" style={{ fontSize: '0.75rem' }}>Custom Description</label>
-                            <textarea className="form-input" rows={2} placeholder={p.products.description || 'No Description'} value={editForm.custom_description || ''} onChange={e => setEditForm({ ...editForm, custom_description: e.target.value })} />
-                          </div>
+                              <label className="form-label" style={{ fontSize: '0.75rem' }}>Custom Description</label>
+                              <textarea className="form-input" rows={2} placeholder={p.products.description || 'No Description'} value={editForm.custom_description || ''} onChange={e => setEditForm({ ...editForm, custom_description: e.target.value })} />
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)', flexWrap: 'wrap' }}>
+                              <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: '0.82rem', color: 'var(--grey-300)' }}>
+                                <input
+                                  type="checkbox"
+                                  checked={(editForm as any).is_on_sale || false}
+                                  onChange={e => setEditForm({ ...editForm, is_on_sale: e.target.checked } as any)}
+                                  style={{ accentColor: 'var(--teal)', width: 16, height: 16 }}
+                                />
+                                Mark On Sale
+                              </label>
+                              {(editForm as any).is_on_sale && (
+                                <div className="form-group" style={{ marginBottom: 0, flex: 1, minWidth: 120 }}>
+                                  <label className="form-label" style={{ fontSize: '0.75rem' }}>Sale Price ($)</label>
+                                  <input type="number" step="0.01" className="form-input" placeholder="Sale price" value={(editForm as any).sale_price || ''} onChange={e => setEditForm({ ...editForm, sale_price: Number(e.target.value) || null } as any)} />
+                                </div>
+                              )}
+                            </div>
                           <div style={{ display: 'flex', gap: 'var(--space-3)' }}>
                             <button type="submit" disabled={saving} className="btn btn-primary btn-sm">{saving ? 'Saving...' : 'Save'}</button>
                             <button type="button" onClick={() => setEditingId(null)} className="btn btn-secondary btn-sm">Cancel</button>
@@ -362,7 +383,14 @@ export default function AgentStoreProducts({ agentId }: { agentId: string }) {
                               <span style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--white)' }}>{displayName}</span>
                               {sizeLabel && <span style={{ fontSize: '0.7rem', color: 'var(--grey-400)', background: 'var(--surface-3)', padding: '1px 6px', borderRadius: 4 }}>{sizeLabel}</span>}
                             </div>
-                            <span style={{ fontSize: '0.82rem', color: 'var(--teal)', fontWeight: 700 }}>${Number(p.retail_price).toFixed(2)}</span>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                              <span style={{ fontSize: '0.82rem', color: 'var(--teal)', fontWeight: 700 }}>${Number(p.retail_price).toFixed(2)}</span>
+                              {p.is_on_sale && p.sale_price && (
+                                <span style={{ fontSize: '0.72rem', color: '#F56565', fontWeight: 700, background: 'rgba(245,101,101,0.1)', padding: '1px 6px', borderRadius: 4 }}>
+                                  Sale ${Number(p.sale_price).toFixed(2)}
+                                </span>
+                              )}
+                            </div>
                           </div>
 
                           {/* Toggle Switch */}

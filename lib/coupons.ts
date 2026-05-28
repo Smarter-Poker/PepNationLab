@@ -31,13 +31,29 @@ export async function validateCoupon(
     .eq('code', code)
     .maybeSingle();
 
-  if (error) return { valid: false, error: 'Could Not Verify Coupon.' };
-  if (!coupon) return { valid: false, error: 'That Coupon Code Is Not Valid.' };
-  if (!coupon.is_active) return { valid: false, error: 'That Coupon Is No Longer Active.' };
-  if (coupon.expires_at && new Date(coupon.expires_at).getTime() < Date.now()) return { valid: false, error: 'That Coupon Has Expired.' };
-  if (coupon.max_uses != null && Number(coupon.uses_count) >= Number(coupon.max_uses)) return { valid: false, error: 'That Coupon Has Reached Its Usage Limit.' };
-  if (coupon.min_order_amount != null && opts.subtotal < Number(coupon.min_order_amount)) {
-    return { valid: false, error: `A Minimum Order Of $${Math.ceil(Number(coupon.min_order_amount))} Is Required For This Coupon.` };
+  if (error) {
+    return { valid: false, error: 'Could Not Verify Coupon.' };
+  }
+  if (!coupon) {
+    return { valid: false, error: 'That Coupon Code Is Not Valid.' };
+  }
+  if (!coupon.is_active) {
+    return { valid: false, error: 'That Coupon Is No Longer Active.' };
+  }
+  if (coupon.expires_at && new Date(coupon.expires_at).getTime() < Date.now()) {
+    return { valid: false, error: 'That Coupon Has Expired.' };
+  }
+  if (coupon.max_uses != null && Number(coupon.uses_count) >= Number(coupon.max_uses)) {
+    return { valid: false, error: 'That Coupon Has Reached Its Usage Limit.' };
+  }
+  if (
+    coupon.min_order_amount != null &&
+    opts.subtotal < Number(coupon.min_order_amount)
+  ) {
+    return {
+      valid: false,
+      error: `A Minimum Order Of $${Number(coupon.min_order_amount).toFixed(2)} Is Required For This Coupon.`,
+    };
   }
 
   const discountValue = Number(coupon.discount_value);

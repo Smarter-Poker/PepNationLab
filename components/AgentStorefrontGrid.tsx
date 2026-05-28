@@ -94,9 +94,9 @@ function fuzzyMatch(query: string, text: string): boolean {
   return qi === q.length;
 }
 
-// Always round up to whole dollars — no cents ever
-function roundUp(price: number): number {
-  return Math.ceil(price);
+// Format price with two decimal places
+function formatPrice(price: number): string {
+  return price.toFixed(2);
 }
 
 // Split product names like "GLOW (TB10+BPC10+GHK50)" into main + subtitle
@@ -186,7 +186,9 @@ export default function AgentStorefrontGrid({ products, inventoryMap, primaryCol
 
   const filteredProducts = useMemo(() => {
     let result = grouped;
-    if (filterCategory !== 'all') result = result.filter(g => g.category === filterCategory);
+    if (filterCategory === 'on_sale') {
+      result = result.filter(g => g.variants.some(v => (v as any).is_on_sale));
+    } else if (filterCategory !== 'all') result = result.filter(g => g.category === filterCategory);
     if (searchQuery.trim()) {
       result = result.filter(g =>
         fuzzyMatch(searchQuery, g.name) || fuzzyMatch(searchQuery, g.category) || fuzzyMatch(searchQuery, g.desc)
@@ -245,6 +247,7 @@ export default function AgentStorefrontGrid({ products, inventoryMap, primaryCol
           style={{ padding: '10px 14px', background: 'rgba(0,0,0,0.4)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 'var(--radius-md)', color: 'var(--white)', fontSize: '0.85rem', cursor: 'pointer', minWidth: 160 }}>
           <option value="all">All Categories</option>
           {categories.map(c => <option key={c} value={c}>{c}</option>)}
+          <option value="on_sale">🔥 On Sale</option>
         </select>
         <select value={sortBy} onChange={e => setSortBy(e.target.value as typeof sortBy)}
           style={{ padding: '10px 14px', background: 'rgba(0,0,0,0.4)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 'var(--radius-md)', color: 'var(--white)', fontSize: '0.85rem', cursor: 'pointer', minWidth: 150 }}>
@@ -346,7 +349,7 @@ export default function AgentStorefrontGrid({ products, inventoryMap, primaryCol
                       fontFamily: 'var(--font-brand)',
                       textShadow: `0 0 10px ${primaryColor}40`,
                     }}>
-                      ${roundUp(bundle.price)}
+                      ${formatPrice(bundle.price)}
                     </span>
                     <span style={{
                       fontSize: '0.72rem',
@@ -423,6 +426,19 @@ export default function AgentStorefrontGrid({ products, inventoryMap, primaryCol
                     <Star size={10} fill="currentColor" aria-hidden="true" style={{ marginRight: 4, verticalAlign: 'middle' }} />Popular
                   </div>
                 )}
+
+                {/* On Sale badge — red, right side */}
+                {group.variants.some(v => (v as any).is_on_sale) && (
+                  <div style={{
+                    position: 'absolute', top: 12, right: 12,
+                    fontSize: '0.65rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em',
+                    padding: '4px 10px', borderRadius: 'var(--radius-full)',
+                    background: 'rgba(245,101,101,0.15)', border: '1px solid rgba(245,101,101,0.4)',
+                    color: '#F56565', backdropFilter: 'blur(4px)'
+                  }}>
+                    Sale
+                  </div>
+                )}
               </div>
 
               {/* Product Details */}
@@ -447,68 +463,39 @@ export default function AgentStorefrontGrid({ products, inventoryMap, primaryCol
                   );
                 })()}
 
-                {group.desc && (
-                  <p style={{
-                    fontSize: '0.82rem', color: 'var(--grey-400)', marginBottom: 'var(--space-4)',
-                    lineHeight: 1.5, flexGrow: 1, textAlign: 'center',
-                    display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical',
-                    overflow: 'hidden', textOverflow: 'ellipsis'
-                  }}>
-                    {group.desc}
-                  </p>
-                )}
-
-                {/* Variant Selector — no em dash */}
-                {group.variants.length > 1 && (
-                  <div style={{ marginBottom: 'var(--space-3)' }} onClick={e => e.stopPropagation()}>
-                    <select
-                      className="form-input"
-                      style={{ background: 'rgba(0,0,0,0.5)', borderColor: 'rgba(255,255,255,0.1)', fontSize: '0.85rem' }}
-                      value={activeVariant.id}
-                      onChange={(e) => setSelectedVariants(prev => ({ ...prev, [group.name]: e.target.value }))}
-                    >
-                      {group.variants.map(v => {
-                        const size = v.products?.unit_size ? `${v.products.unit_size}${v.products.unit_measure || ''}` : 'Standard';
-                        return (
-                          <option key={v.id} value={v.id}>
-                            {size}  ${roundUp(v.retail_price)}
-                          </option>
-                        );
-                      })}
-                    </select>
-                  </div>
-                )}
-
-                {/* Price & Action Row — vertically centered */}
+                {/* Summary Line — click card to open detail + add to cart */}
                 <div style={{
-                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                  marginTop: 'auto', borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: 'var(--space-4)'
+                  marginTop: 'auto', borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: 'var(--space-4)',
+                  textAlign: 'center'
                 }}>
-                  <span style={{ fontSize: '1.3rem', fontWeight: 800, color: primaryColor, fontFamily: 'var(--font-brand)', textShadow: `0 0 10px ${primaryColor}40` }}>
-                    ${roundUp(activeVariant.retail_price)}
-                  </span>
-
-                  <button
-                    onClick={(e) => { e.stopPropagation(); addToCart(activeVariant.id); }}
-                    style={{
-                      fontSize: '0.75rem', color: 'var(--black)', background: primaryColor,
-                      padding: '6px 14px', borderRadius: 'var(--radius-md)', fontWeight: 800,
-                      border: 'none', cursor: 'pointer',
-                      boxShadow: `0 2px 8px ${primaryColor}40`,
-                      transition: 'transform 0.2s ease, box-shadow 0.2s ease',
-                      whiteSpace: 'nowrap', lineHeight: 1.3
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.transform = 'translateY(-1px)';
-                      e.currentTarget.style.boxShadow = `0 4px 12px ${primaryColor}60`;
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.transform = 'none';
-                      e.currentTarget.style.boxShadow = `0 2px 8px ${primaryColor}40`;
-                    }}
-                  >
-                    Add To Cart
-                  </button>
+                  {(() => {
+                    const defaultV = group.variants.find(v => v.id === group.defaultVariantId) || group.variants[0];
+                    const size = defaultV.products?.unit_size || '10';
+                    const measure = defaultV.products?.unit_measure || 'mg';
+                    const priceForTen = defaultV.retail_price * 10;
+                    const isOnSale = (defaultV as any).is_on_sale && (defaultV as any).sale_price;
+                    const displayPrice = isOnSale ? (defaultV as any).sale_price * 10 : priceForTen;
+                    return (
+                      <>
+                        <div style={{ fontSize: '0.85rem', color: 'var(--grey-300)', marginBottom: 4 }}>
+                          10 vials of {size}{measure}
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+                          {isOnSale && (
+                            <span style={{ fontSize: '1rem', color: 'var(--grey-500)', textDecoration: 'line-through', fontWeight: 600 }}>
+                              ${priceForTen.toFixed(2)}
+                            </span>
+                          )}
+                          <span style={{
+                            fontSize: '1.3rem', fontWeight: 800, color: isOnSale ? '#F56565' : primaryColor,
+                            fontFamily: 'var(--font-brand)', textShadow: `0 0 10px ${isOnSale ? 'rgba(245,101,101,0.4)' : primaryColor + '40'}`
+                          }}>
+                            ${displayPrice.toFixed(2)}
+                          </span>
+                        </div>
+                      </>
+                    );
+                  })()}
                 </div>
               </div>
             </motion.div>
@@ -574,7 +561,7 @@ export default function AgentStorefrontGrid({ products, inventoryMap, primaryCol
                             {name} {size && `(${size})`}
                           </div>
                           <div style={{ fontSize: '0.75rem', color: 'var(--grey-400)' }}>
-                            ${roundUp(item.retail_price)} × {qty}
+                            ${formatPrice(item.retail_price)} × {qty}
                           </div>
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
@@ -696,87 +683,173 @@ export default function AgentStorefrontGrid({ products, inventoryMap, primaryCol
                       );
                     })()}
                   </div>
-                  <span style={{
-                    fontSize: '0.7rem', padding: '4px 12px', borderRadius: 'var(--radius-full)',
-                    background: `${primaryColor}20`, color: primaryColor, fontWeight: 700,
-                    textTransform: 'uppercase', letterSpacing: '0.05em', whiteSpace: 'nowrap',
-                    border: `1px solid ${primaryColor}40`
-                  }}>
-                    {detailProduct.category}
-                  </span>
+                  <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
+                    {detailProduct.variants.some(v => (v as any).is_on_sale) && (
+                      <span style={{
+                        fontSize: '0.7rem', padding: '4px 12px', borderRadius: 'var(--radius-full)',
+                        background: 'rgba(245,101,101,0.15)', color: '#F56565', fontWeight: 700,
+                        textTransform: 'uppercase', letterSpacing: '0.05em', whiteSpace: 'nowrap',
+                        border: '1px solid rgba(245,101,101,0.4)'
+                      }}>
+                        Sale
+                      </span>
+                    )}
+                    <span style={{
+                      fontSize: '0.7rem', padding: '4px 12px', borderRadius: 'var(--radius-full)',
+                      background: `${primaryColor}20`, color: primaryColor, fontWeight: 700,
+                      textTransform: 'uppercase', letterSpacing: '0.05em', whiteSpace: 'nowrap',
+                      border: `1px solid ${primaryColor}40`
+                    }}>
+                      {detailProduct.category}
+                    </span>
+                  </div>
                 </div>
 
                 <p style={{ fontSize: '0.95rem', color: 'var(--grey-300)', lineHeight: 1.7, marginBottom: 'var(--space-6)' }}>
                   {detailProduct.desc || 'Research compound available for academic and laboratory use.'}
                 </p>
 
-                {/* All Sizes & Pricing Table */}
-                <div style={{ marginBottom: 'var(--space-6)' }}>
-                  <h3 style={{ fontSize: '1rem', fontFamily: 'var(--font-brand)', color: 'var(--white)', marginBottom: 'var(--space-3)', letterSpacing: '0.03em' }}>
-                    Available Sizes & Pricing
-                  </h3>
-                  <div style={{ border: '1px solid rgba(255,255,255,0.08)', borderRadius: 'var(--radius-md)', overflow: 'hidden' }}>
-                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem' }}>
-                      <thead>
-                        <tr style={{ background: 'rgba(255,255,255,0.04)' }}>
-                          <th style={{ padding: '10px 16px', textAlign: 'left', color: 'var(--silver)', fontWeight: 600, fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Size</th>
-                          <th style={{ padding: '10px 16px', textAlign: 'right', color: 'var(--silver)', fontWeight: 600, fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Price</th>
-                          <th style={{ padding: '10px 16px', textAlign: 'center', color: 'var(--silver)', fontWeight: 600, fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', width: 120 }}>Action</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {detailProduct.variants.map((v, i) => {
-                          const size = v.products?.unit_size ? `${v.products.unit_size}${v.products.unit_measure || ''}` : 'Standard';
-                          const qty = cartItems[v.id] || 0;
+                {/* Size & Quantity Selector */}
+                {(() => {
+                  const selectedVId = selectedVariants[detailProduct.name] || detailProduct.defaultVariantId;
+                  const activeV = detailProduct.variants.find(v => v.id === selectedVId) || detailProduct.variants[0];
+                  const qty = cartItems[activeV.id] || 0;
+                  const basePrice = (activeV as any).is_on_sale && (activeV as any).sale_price
+                    ? (activeV as any).sale_price
+                    : activeV.retail_price;
+
+                  // Dynamic pricing tiers
+                  const tiers = [
+                    { min: 1, max: 2, pct: 20 },
+                    { min: 3, max: 5, pct: 15 },
+                    { min: 6, max: 9, pct: 10 },
+                    { min: 10, max: Infinity, pct: 0 },
+                  ];
+
+                  const getUnitPrice = (q: number) => {
+                    const t = tiers.find(t => q >= t.min && q <= t.max);
+                    return t ? parseFloat((basePrice * (1 + t.pct / 100)).toFixed(2)) : basePrice;
+                  };
+
+                  const displayQty = qty || 10; // Show pricing for 10 if nothing in cart
+                  const unitPrice = getUnitPrice(displayQty);
+                  const lineTotal = unitPrice * displayQty;
+
+                  return (
+                    <div style={{ marginBottom: 'var(--space-6)' }}>
+                      {/* Size Selector */}
+                      {detailProduct.variants.length > 1 && (
+                        <div style={{ marginBottom: 'var(--space-4)' }}>
+                          <label style={{ fontSize: '0.8rem', color: 'var(--silver)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block', marginBottom: 6 }}>
+                            Size
+                          </label>
+                          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                            {detailProduct.variants.map(v => {
+                              const size = v.products?.unit_size ? `${v.products.unit_size}${v.products.unit_measure || ''}` : 'Standard';
+                              const isSelected = v.id === activeV.id;
+                              return (
+                                <button
+                                  key={v.id}
+                                  onClick={() => setSelectedVariants(prev => ({ ...prev, [detailProduct.name]: v.id }))}
+                                  style={{
+                                    padding: '8px 16px', borderRadius: 'var(--radius-md)',
+                                    border: isSelected ? `2px solid ${primaryColor}` : '1px solid rgba(255,255,255,0.15)',
+                                    background: isSelected ? `${primaryColor}15` : 'transparent',
+                                    color: isSelected ? primaryColor : 'var(--grey-300)',
+                                    fontWeight: isSelected ? 700 : 500, fontSize: '0.85rem',
+                                    cursor: 'pointer', transition: 'all 0.15s ease'
+                                  }}
+                                >
+                                  {size}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Quantity Selector + Price */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-6)', flexWrap: 'wrap' }}>
+                        <div>
+                          <label style={{ fontSize: '0.8rem', color: 'var(--silver)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block', marginBottom: 6 }}>
+                            Quantity (Vials)
+                          </label>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                            <button onClick={() => setCartItems(prev => {
+                              const next = { ...prev };
+                              if ((next[activeV.id] || 0) <= 1) delete next[activeV.id];
+                              else next[activeV.id]--;
+                              return next;
+                            })} style={{
+                              width: 36, height: 36, borderRadius: 'var(--radius-md)',
+                              border: '1px solid rgba(255,255,255,0.2)', background: 'transparent',
+                              color: 'var(--white)', cursor: 'pointer', fontSize: '1.1rem',
+                              display: 'flex', alignItems: 'center', justifyContent: 'center'
+                            }}>−</button>
+                            <span style={{
+                              minWidth: 44, textAlign: 'center', fontSize: '1.2rem', fontWeight: 800,
+                              color: 'var(--white)', fontFamily: 'var(--font-brand)'
+                            }}>{qty}</span>
+                            <button onClick={() => addToCart(activeV.id)} style={{
+                              width: 36, height: 36, borderRadius: 'var(--radius-md)',
+                              border: 'none', background: primaryColor, color: 'var(--black)',
+                              cursor: 'pointer', fontSize: '1.1rem', fontWeight: 800,
+                              display: 'flex', alignItems: 'center', justifyContent: 'center'
+                            }}>+</button>
+                          </div>
+                        </div>
+
+                        {qty > 0 && (
+                          <div style={{ flex: 1, textAlign: 'right' }}>
+                            <div style={{ fontSize: '0.78rem', color: 'var(--grey-400)', marginBottom: 2 }}>
+                              ${unitPrice.toFixed(2)}/vial × {qty}
+                            </div>
+                            <div style={{
+                              fontSize: '1.5rem', fontWeight: 800, color: primaryColor,
+                              fontFamily: 'var(--font-brand)', textShadow: `0 0 10px ${primaryColor}40`
+                            }}>
+                              ${lineTotal.toFixed(2)}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Dynamic Pricing Tiers Table */}
+                      <div style={{
+                        marginTop: 'var(--space-5)', border: '1px solid rgba(255,255,255,0.08)',
+                        borderRadius: 'var(--radius-md)', overflow: 'hidden'
+                      }}>
+                        <div style={{ padding: '8px 16px', background: 'rgba(255,255,255,0.04)', fontSize: '0.75rem', fontWeight: 600, color: 'var(--silver)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                          Quantity Pricing
+                        </div>
+                        {tiers.map((t, i) => {
+                          const tierPrice = parseFloat((basePrice * (1 + t.pct / 100)).toFixed(2));
+                          const isActive = qty > 0 && qty >= t.min && qty <= t.max;
                           return (
-                            <tr key={v.id} style={{ borderTop: '1px solid rgba(255,255,255,0.04)', background: i % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.02)' }}>
-                              <td style={{ padding: '12px 16px', color: 'var(--white)', fontWeight: 600 }}>{size}</td>
-                              <td style={{ padding: '12px 16px', textAlign: 'right', color: primaryColor, fontWeight: 800, fontFamily: 'var(--font-brand)', fontSize: '1.05rem' }}>
-                                ${roundUp(v.retail_price)}
-                              </td>
-                              <td style={{ padding: '8px 16px', textAlign: 'center' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
-                                  {qty > 0 && (
-                                    <>
-                                      <button onClick={() => setCartItems(prev => {
-                                        const next = { ...prev };
-                                        if (next[v.id] <= 1) delete next[v.id];
-                                        else next[v.id]--;
-                                        return next;
-                                      })} style={{
-                                        width: 28, height: 28, borderRadius: '50%', border: '1px solid rgba(255,255,255,0.2)',
-                                        background: 'transparent', color: 'var(--white)', cursor: 'pointer', fontSize: '1rem',
-                                        display: 'flex', alignItems: 'center', justifyContent: 'center'
-                                      }}>−</button>
-                                      <span style={{ color: 'var(--white)', fontWeight: 700, minWidth: 20, textAlign: 'center' }}>{qty}</span>
-                                    </>
-                                  )}
-                                  <button onClick={() => addToCart(v.id)} style={{
-                                    width: 28, height: 28, borderRadius: '50%', border: 'none',
-                                    background: primaryColor, color: 'var(--black)', cursor: 'pointer', fontSize: '1rem',
-                                    display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800
-                                  }}>+</button>
-                                </div>
-                              </td>
-                            </tr>
+                            <div key={i} style={{
+                              display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                              padding: '10px 16px',
+                              borderTop: '1px solid rgba(255,255,255,0.04)',
+                              background: isActive ? `${primaryColor}10` : 'transparent'
+                            }}>
+                              <span style={{ fontSize: '0.85rem', color: isActive ? 'var(--white)' : 'var(--grey-400)', fontWeight: isActive ? 600 : 400 }}>
+                                {t.max === Infinity ? `${t.min}+ vials` : `${t.min}-${t.max} vials`}
+                                {t.pct > 0 && <span style={{ color: '#F6AD55', marginLeft: 8, fontSize: '0.75rem' }}>+{t.pct}%</span>}
+                                {t.pct === 0 && <span style={{ color: 'var(--teal)', marginLeft: 8, fontSize: '0.75rem' }}>Best Price</span>}
+                              </span>
+                              <span style={{
+                                fontSize: '0.95rem', fontWeight: 700, fontFamily: 'var(--font-brand)',
+                                color: isActive ? primaryColor : 'var(--grey-300)'
+                              }}>
+                                ${tierPrice.toFixed(2)}/ea
+                              </span>
+                            </div>
                           );
                         })}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-
-                {detailProduct.variants.length > 1 && (
-                  <div style={{
-                    padding: 'var(--space-4)', borderRadius: 'var(--radius-md)',
-                    background: `${primaryColor}08`, border: `1px solid ${primaryColor}20`,
-                    marginBottom: 'var(--space-6)'
-                  }}>
-                    <p style={{ fontSize: '0.85rem', color: 'var(--grey-300)', lineHeight: 1.5 }}>
-                      <strong style={{ color: primaryColor }}>Bulk Savings:</strong> Larger sizes offer better value per mg. The {detailProduct.variants[detailProduct.variants.length - 1].products?.unit_size}{detailProduct.variants[0].products?.unit_measure || 'mg'} size provides the best per-unit pricing.
-                    </p>
-                  </div>
-                )}
+                      </div>
+                    </div>
+                  );
+                })()}
 
                 {detailProduct.variants[0]?.products?.backorder_days > 0 && (
                   <p style={{ fontSize: '0.8rem', color: 'var(--grey-400)', marginBottom: 'var(--space-4)', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
@@ -784,7 +857,7 @@ export default function AgentStorefrontGrid({ products, inventoryMap, primaryCol
                   </p>
                 )}
 
-                <div style={{ display: 'flex', gap: 'var(--space-3)', justifyContent: 'flex-end' }}>
+                <div style={{ display: 'flex', gap: 'var(--space-3)', justifyContent: 'flex-end', flexWrap: 'wrap' }}>
                   <button
                     onClick={() => setDetailProduct(null)}
                     style={{

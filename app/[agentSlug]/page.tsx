@@ -65,6 +65,8 @@ export default async function AgentStorefrontPage({ params }: Props) {
       custom_description,
       custom_image_url,
       retail_price,
+      is_on_sale,
+      sale_price,
       products (
         name,
         description,

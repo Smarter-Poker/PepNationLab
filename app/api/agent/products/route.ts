@@ -11,7 +11,7 @@ export async function GET(req: NextRequest) {
   const { data, error } = await supabase
     .from('agent_products')
     .select(`
-      id, agent_id, product_id, custom_name, custom_description, custom_image_url, retail_price, is_visible, sort_order,
+      id, agent_id, product_id, custom_name, custom_description, custom_image_url, retail_price, is_visible, is_on_sale, sale_price, sort_order,
       products (name, description, image_url, category, in_stock, inventory_count, unit_size, unit_measure)
     `)
     .eq('agent_id', gate.user.id)
@@ -28,7 +28,7 @@ export async function PATCH(req: NextRequest) {
   if (!gate.ok) return gate.response;
 
   const body = await req.json().catch(() => ({}));
-  const { id, custom_name, custom_description, custom_image_url, retail_price, is_visible } = body;
+  const { id, custom_name, custom_description, custom_image_url, retail_price, is_visible, is_on_sale, sale_price } = body;
 
   if (!id) {
     return NextResponse.json({ error: 'Missing agent_product id' }, { status: 400 });
@@ -58,6 +58,8 @@ export async function PATCH(req: NextRequest) {
       custom_image_url: custom_image_url || null,
       retail_price: newRetailPrice,
       is_visible: is_visible ?? true,
+      is_on_sale: is_on_sale ?? false,
+      sale_price: sale_price ?? null,
       updated_at: new Date().toISOString()
     })
     .eq('id', id);
