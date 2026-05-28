@@ -11,7 +11,8 @@ export async function POST(req: NextRequest) {
 
     const supabase = await createServiceClient();
     const agentId = gate.user.id;
-    const { orderId } = await req.json();
+    const body = await req.json().catch(() => ({}));
+    const { orderId, preferredServiceLevel } = body || {};
 
     if (!orderId) {
       return NextResponse.json({ error: 'Order ID required' }, { status: 400 });
@@ -35,7 +36,7 @@ export async function POST(req: NextRequest) {
 
     const { data: agentProfile, error: profileError } = await supabase
       .from('agent_profiles')
-      .select('display_name, shippo_api_key')
+      .select('display_name, shippo_api_key, warehouse_address')
       .eq('id', agentId)
       .single();
 
@@ -44,9 +45,18 @@ export async function POST(req: NextRequest) {
     }
 
     if (!agentProfile.shippo_api_key) {
-      return NextResponse.json({ 
-        error: 'Shippo API Key missing. Please add your Shippo API Token in the Storefront Config tab to generate shipping labels.' 
+      return NextResponse.json({
+        error: 'Shippo API Key Missing. Please Add Your Shippo API Token In The Storefront Config Tab To Generate Shipping Labels.'
       }, { status: 400 });
+    }
+
+    // Warehouse address required — no fallbacks allowed (audit 2.2).
+    const wh = (agentProfile.warehouse_address || {}) as Record<string, any>;
+    if (!wh.street1 || !wh.city || !wh.state || !wh.zip) {
+      return NextResponse.json(
+        { error: 'Warehouse Address Not Configured. Please Set It In Storefront Config.' },
+        { status: 422 }
+      );
     }
 
     // 2. Initialize Shippo
@@ -54,22 +64,57 @@ export async function POST(req: NextRequest) {
 
     // Ensure valid shipping address fields
     const addr = order.shipping_address || {};
-    const street = addr.street || addr.street1 || '123 Main St';
-    const city = addr.city || 'Austin';
-    const state = addr.state || 'TX';
-    const zip = addr.zipCode || addr.zip || '78701';
+    const street = addr.street || addr.street1 || '';
+    const city = addr.city || '';
+    const state = addr.state || '';
+    const zip = addr.zipCode || addr.zip || '';
     const country = addr.country || 'US';
+
+    if (!street || !city || !state || !zip) {
+      return NextResponse.json(
+        { error: 'Customer Shipping Address Is Incomplete.' },
+        { status: 422 }
+      );
+    }
+
+    // Compute parcel weight from order line items.
+    const { data: items } = await supabase
+      .from('order_items')
+      .select('quantity, product_id, products(weight_oz)')
+      .eq('order_id', orderId);
+
+    let totalWeightOz = 0;
+    let totalQty = 0;
+    for (const it of (items || []) as any[]) {
+      const qty = Number(it.quantity) || 0;
+      const prod = Array.isArray(it.products) ? it.products[0] : it.products;
+      const w = Number(prod?.weight_oz) || 0.5;
+      totalWeightOz += qty * w;
+      totalQty += qty;
+    }
+    // Floor parcel weight at 1 oz so Shippo always accepts it.
+    const parcelWeight = Math.max(1, Math.ceil(totalWeightOz)).toString();
+
+    // Parcel preset based on item count.
+    let parcelDims: { length: string; width: string; height: string };
+    if (totalQty <= 3) {
+      parcelDims = { length: '6', width: '4', height: '4' };
+    } else if (totalQty <= 10) {
+      parcelDims = { length: '9', width: '6', height: '3' };
+    } else {
+      parcelDims = { length: '12', width: '9', height: '4' };
+    }
 
     // 3. Create Shipment
     const shipmentRequest: any = {
       addressFrom: {
-        name: agentProfile.display_name || 'Agent Warehouse',
-        street1: '123 Agent Logistics Way', // Fallback origin address
-        city: 'Austin',
-        state: 'TX',
-        zip: '78701',
+        name: wh.name || agentProfile.display_name || 'Agent Warehouse',
+        street1: wh.street1,
+        street2: wh.street2 || undefined,
+        city: wh.city,
+        state: wh.state,
+        zip: wh.zip,
         country: 'US',
-        phone: '5555555555',
         email: 'noreply@pepnationlab.com'
       },
       addressTo: {
@@ -82,11 +127,11 @@ export async function POST(req: NextRequest) {
         email: order.buyer_email || 'noreply@pepnationlab.com'
       },
       parcels: [{
-        length: '6',
-        width: '4',
-        height: '4',
+        length: parcelDims.length,
+        width: parcelDims.width,
+        height: parcelDims.height,
         distanceUnit: 'in',
-        weight: '4',
+        weight: parcelWeight,
         massUnit: 'oz'
       }],
       async: false
@@ -104,8 +149,18 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'No shipping rates returned from Shippo. Verify the customer address.' }, { status: 400 });
     }
 
-    // Pick the first available rate (Usually USPS Ground Advantage is cheapest/first)
-    const rate = shipment.rates[0];
+    // Pick the cheapest rate. If a preferred service level was sent, filter
+    // first and fall back to cheapest if no match.
+    const ratesSorted = [...shipment.rates].sort(
+      (a: any, b: any) => parseFloat(a.amount) - parseFloat(b.amount)
+    );
+    let rate: any = ratesSorted[0];
+    if (preferredServiceLevel) {
+      const preferred = ratesSorted.find(
+        (r: any) => r?.servicelevel?.token === preferredServiceLevel
+      );
+      if (preferred) rate = preferred;
+    }
 
     // 4. Purchase Label (Transaction)
     let transaction;

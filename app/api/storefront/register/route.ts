@@ -1,0 +1,175 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { createServiceClient } from '@/lib/supabase/server';
+
+/**
+ * POST /api/storefront/register
+ *
+ * Public, self-service researcher registration on an agent's branded
+ * storefront. Resolves the agent by `agent_profiles.slug` (case-insensitive)
+ * and ties the new researcher's `referring_agent_id` to that agent.
+ *
+ * Body: { slug, username, email?, password, fullName }
+ *
+ * Rate limited to 5 requests / IP / hour via an in-memory ring buffer.
+ * Per-instance only — fine for the current single-region Vercel deployment;
+ * future improvement: swap to Upstash Redis for cluster-wide limits.
+ */
+
+const WINDOW_MS = 60 * 60 * 1000; // 1 hour
+const MAX_PER_WINDOW = 5;
+const rateLimitBuckets: Map<string, number[]> = (global as any).__storefrontRegisterRL
+  ?? ((global as any).__storefrontRegisterRL = new Map());
+
+function getClientIp(req: NextRequest): string {
+  const fwd = req.headers.get('x-forwarded-for');
+  if (fwd) return fwd.split(',')[0].trim();
+  const real = req.headers.get('x-real-ip');
+  if (real) return real;
+  return 'unknown';
+}
+
+function isRateLimited(ip: string): boolean {
+  const now = Date.now();
+  const cutoff = now - WINDOW_MS;
+  const bucket = (rateLimitBuckets.get(ip) || []).filter(ts => ts > cutoff);
+  if (bucket.length >= MAX_PER_WINDOW) {
+    rateLimitBuckets.set(ip, bucket);
+    return true;
+  }
+  bucket.push(now);
+  rateLimitBuckets.set(ip, bucket);
+  return false;
+}
+
+function sanitizeUsername(raw: string): string {
+  return raw.toLowerCase().replace(/[^a-z0-9_]/g, '');
+}
+
+export async function POST(req: NextRequest) {
+  const ip = getClientIp(req);
+  if (isRateLimited(ip)) {
+    return NextResponse.json(
+      { error: 'Too Many Registration Attempts. Please Wait And Try Again.' },
+      { status: 429 }
+    );
+  }
+
+  const body = await req.json().catch(() => ({}));
+  const { slug, username, email, password, fullName } = body || {};
+
+  if (!slug || !username || !password || !fullName) {
+    return NextResponse.json(
+      { error: 'Slug, Username, Full Name, And Password Are Required.' },
+      { status: 400 }
+    );
+  }
+
+  if (typeof password !== 'string' || password.length < 8) {
+    return NextResponse.json(
+      { error: 'Password Must Be At Least 8 Characters.' },
+      { status: 400 }
+    );
+  }
+
+  const usernameClean = sanitizeUsername(String(username));
+  if (!usernameClean || usernameClean.length < 2) {
+    return NextResponse.json(
+      { error: 'Username Must Be At Least 2 Characters (Letters, Numbers, Underscores).' },
+      { status: 400 }
+    );
+  }
+
+  const supabase = await createServiceClient();
+
+  // Resolve agent by slug (case-insensitive)
+  const { data: agent, error: agentErr } = await supabase
+    .from('agent_profiles')
+    .select('id, slug')
+    .ilike('slug', String(slug))
+    .maybeSingle();
+
+  if (agentErr || !agent) {
+    return NextResponse.json(
+      { error: 'Storefront Not Found.' },
+      { status: 404 }
+    );
+  }
+
+  // Username uniqueness
+  const { data: existingUser } = await supabase
+    .from('profiles')
+    .select('id')
+    .eq('username', usernameClean)
+    .maybeSingle();
+
+  if (existingUser) {
+    return NextResponse.json(
+      { error: 'That Username Is Already Taken.' },
+      { status: 400 }
+    );
+  }
+
+  // Internal email is what Supabase auth indexes against. Keep the
+  // username@pepnationlab.com convention so the existing username login path
+  // keeps working.
+  const internalEmail = `${usernameClean}@pepnationlab.com`;
+
+  const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+    email: internalEmail,
+    password,
+    email_confirm: true,
+  });
+
+  if (authError || !authData?.user) {
+    return NextResponse.json(
+      { error: `Failed To Create Account: ${authError?.message ?? 'Unknown Error'}` },
+      { status: 500 }
+    );
+  }
+
+  const newUserId = authData.user.id;
+  const nowIso = new Date().toISOString();
+
+  const profilePayload: Record<string, any> = {
+    id: newUserId,
+    email: internalEmail,
+    username: usernameClean,
+    full_name: String(fullName).trim(),
+    role: 'researcher',
+    referring_agent_id: agent.id,
+    is_active: true,
+    disclaimer_v1_accepted: true,
+    disclaimer_accepted_at: nowIso,
+    updated_at: nowIso,
+  };
+
+  const { error: profileError } = await supabase
+    .from('profiles')
+    .upsert(profilePayload);
+
+  if (profileError) {
+    await supabase.auth.admin.deleteUser(newUserId);
+    return NextResponse.json(
+      { error: `Profile Creation Failed: ${profileError.message}` },
+      { status: 500 }
+    );
+  }
+
+  // Audit log: registration disclaimer acceptance.
+  const disclaimerVersion = process.env.NEXT_PUBLIC_DISCLAIMER_VERSION || 'v1.0';
+  await supabase.from('disclaimer_acceptances').insert({
+    user_id: newUserId,
+    disclaimer_version: disclaimerVersion,
+    layer: 'registration',
+    ip_address: ip,
+    user_agent: req.headers.get('user-agent') || null,
+    accepted_at: nowIso,
+  });
+
+  return NextResponse.json({
+    success: true,
+    userId: newUserId,
+    username: usernameClean,
+    email: internalEmail,
+  });
+}

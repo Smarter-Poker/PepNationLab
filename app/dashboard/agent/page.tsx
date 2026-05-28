@@ -31,11 +31,24 @@ export default async function AgentDashboardPage() {
   }
 
   // 4. Fetch agent storefront profile
-  const { data: agentProfile } = await supabase
+  const { data: agentProfileRaw } = await supabase
     .from('agent_profiles')
-    .select('id, slug, display_name, tagline, logo_url, primary_color, secondary_color, bio, qr_code_url, payment_handles, shippo_api_key')
+    .select('id, slug, display_name, tagline, logo_url, primary_color, secondary_color, bio, qr_code_url, qr_code_data, payment_handles, warehouse_address, is_active, shippo_api_key')
     .eq('id', user.id)
     .maybeSingle();
+
+  // SECURITY: never send the raw Shippo API token to the client. Strip it
+  // here and expose only a presence boolean + last-4 mask for the UI.
+  const shippoKey = (agentProfileRaw as any)?.shippo_api_key as string | null;
+  const shippoLast4 = shippoKey && shippoKey.length >= 4 ? shippoKey.slice(-4) : null;
+  const agentProfile = agentProfileRaw
+    ? {
+        ...agentProfileRaw,
+        shippo_api_key: null,
+        shippo_api_key_present: !!shippoKey,
+        shippo_api_key_last4: shippoLast4,
+      }
+    : null;
 
   // 5. Fetch referred researchers
   const { data: researchersData } = await supabase

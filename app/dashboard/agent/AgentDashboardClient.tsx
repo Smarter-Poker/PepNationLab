@@ -35,8 +35,13 @@ interface AgentProfile {
   secondary_color: string | null;
   bio: string | null;
   qr_code_url: string | null;
+  qr_code_data?: string | null;
   payment_handles: Record<string, any> | null;
+  warehouse_address?: Record<string, any> | null;
+  is_active?: boolean | null;
   shippo_api_key: string | null;
+  shippo_api_key_present?: boolean;
+  shippo_api_key_last4?: string | null;
 }
 
 interface Researcher {
@@ -102,6 +107,20 @@ export default function AgentDashboardClient({
   const [setupDisplayName, setSetupDisplayName] = useState('');
   const [setupSlug, setSetupSlug] = useState('');
   const [setupTagline, setSetupTagline] = useState('');
+
+  // Payment handles (required at setup so storefront can show pay-to info)
+  const [setupZelle, setSetupZelle] = useState('');
+  const [setupCashApp, setSetupCashApp] = useState('');
+  const [setupVenmo, setSetupVenmo] = useState('');
+  const [setupApplePay, setSetupApplePay] = useState('');
+
+  // Warehouse address (required for Shippo "from" address)
+  const [setupWhName, setSetupWhName] = useState('');
+  const [setupWhStreet1, setSetupWhStreet1] = useState('');
+  const [setupWhStreet2, setSetupWhStreet2] = useState('');
+  const [setupWhCity, setSetupWhCity] = useState('');
+  const [setupWhState, setSetupWhState] = useState('');
+  const [setupWhZip, setSetupWhZip] = useState('');
 
   // Status and Error States
   const [loading, setLoading] = useState(false);
@@ -174,12 +193,35 @@ export default function AgentDashboardClient({
       setError('Storefront URL Slug Must Only Contain Lowercase Letters, Numbers, And Hyphens.');
       return;
     }
-    if (cleanSlug.length < 2 || cleanSlug.length > 50) {
-      setError('Storefront URL Slug Length Must Be Between 2 And 50 Characters.');
+    if (cleanSlug.length < 3 || cleanSlug.length > 30) {
+      setError('Storefront URL Slug Length Must Be Between 3 And 30 Characters.');
       return;
     }
     if (!setupDisplayName.trim()) {
       setError('Storefront Display Name Is Required.');
+      return;
+    }
+
+    // Block submit until ALL payment handles are filled in. The storefront
+    // needs at least one offline payment instruction shown to researchers,
+    // and we require all four so the agent has full coverage on day one.
+    const zelle = setupZelle.trim();
+    const cashapp = setupCashApp.trim();
+    const venmo = setupVenmo.trim();
+    const applePay = setupApplePay.trim();
+    if (!zelle || !cashapp || !venmo || !applePay) {
+      setError('All Four Payment Handles Are Required (Zelle, Cash App, Venmo, Apple Pay).');
+      return;
+    }
+
+    // Block submit until warehouse address is filled in (Shippo From Address).
+    const whName = setupWhName.trim();
+    const whStreet1 = setupWhStreet1.trim();
+    const whCity = setupWhCity.trim();
+    const whState = setupWhState.trim();
+    const whZip = setupWhZip.trim();
+    if (!whName || !whStreet1 || !whCity || !whState || !whZip) {
+      setError('Warehouse Address Is Required (Name, Street, City, State, Zip).');
       return;
     }
 
@@ -193,17 +235,30 @@ export default function AgentDashboardClient({
           slug: cleanSlug,
           display_name: setupDisplayName.trim(),
           tagline: setupTagline.trim() || null,
+          is_active: true,
           payment_handles: {
-            zelle: '',
-            cashapp: '',
-            venmo: '',
-            apple_pay: ''
-          }
+            zelle,
+            cashapp,
+            venmo,
+            apple_pay: applePay,
+          },
+          warehouse_address: {
+            name: whName,
+            street1: whStreet1,
+            street2: setupWhStreet2.trim() || null,
+            city: whCity,
+            state: whState,
+            zip: whZip,
+          },
         })
         .select()
         .single();
 
       if (insertError) {
+        const msg = (insertError.message || '').toLowerCase();
+        if (msg.includes('check') || msg.includes('reserved') || msg.includes('unique') || msg.includes('duplicate')) {
+          throw new Error('Slug Is Reserved Or Already In Use. Please Choose A Different One.');
+        }
         throw new Error(insertError.message ?? 'Failed To Create Storefront Profile.');
       }
 
@@ -309,8 +364,64 @@ export default function AgentDashboardClient({
               />
             </div>
 
+            <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: 'var(--space-4)', marginTop: 'var(--space-2)' }}>
+              <h4 style={{ color: 'var(--teal)', fontSize: '0.95rem', marginBottom: 'var(--space-2)' }}>Payment Handles</h4>
+              <p style={{ fontSize: '0.78rem', color: 'var(--grey-400)', marginBottom: 'var(--space-3)' }}>
+                Shown To Researchers After Checkout. All Four Are Required.
+              </p>
+              <div className="form-group">
+                <label className="form-label">Zelle Handle / Email</label>
+                <input type="text" className="form-input" value={setupZelle} onChange={(e) => setSetupZelle(e.target.value)} required />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Cash App Handle ($)</label>
+                <input type="text" className="form-input" value={setupCashApp} onChange={(e) => setSetupCashApp(e.target.value)} required />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Venmo Handle (@)</label>
+                <input type="text" className="form-input" value={setupVenmo} onChange={(e) => setSetupVenmo(e.target.value)} required />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Apple Pay (Phone / Email)</label>
+                <input type="text" className="form-input" value={setupApplePay} onChange={(e) => setSetupApplePay(e.target.value)} required />
+              </div>
+            </div>
+
+            <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: 'var(--space-4)', marginTop: 'var(--space-2)' }}>
+              <h4 style={{ color: 'var(--teal)', fontSize: '0.95rem', marginBottom: 'var(--space-2)' }}>Warehouse Address</h4>
+              <p style={{ fontSize: '0.78rem', color: 'var(--grey-400)', marginBottom: 'var(--space-3)' }}>
+                Used As The Ship-From Address When Buying Labels. Required Before Generating Shippo Labels.
+              </p>
+              <div className="form-group">
+                <label className="form-label">Warehouse Contact Name</label>
+                <input type="text" className="form-input" value={setupWhName} onChange={(e) => setSetupWhName(e.target.value)} required />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Street Address Line 1</label>
+                <input type="text" className="form-input" value={setupWhStreet1} onChange={(e) => setSetupWhStreet1(e.target.value)} required />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Street Address Line 2 (Optional)</label>
+                <input type="text" className="form-input" value={setupWhStreet2} onChange={(e) => setSetupWhStreet2(e.target.value)} />
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', gap: 'var(--space-3)' }}>
+                <div className="form-group">
+                  <label className="form-label">City</label>
+                  <input type="text" className="form-input" value={setupWhCity} onChange={(e) => setSetupWhCity(e.target.value)} required />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">State</label>
+                  <input type="text" className="form-input" maxLength={2} value={setupWhState} onChange={(e) => setSetupWhState(e.target.value.toUpperCase())} required />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Zip</label>
+                  <input type="text" className="form-input" maxLength={10} value={setupWhZip} onChange={(e) => setSetupWhZip(e.target.value)} required />
+                </div>
+              </div>
+            </div>
+
             <button type="submit" className="btn btn-primary" style={{ marginTop: 'var(--space-4)', width: '100%' }} disabled={loading}>
-              {loading ? 'Activating Profile...' : 'Activate Storefront Catalog'}
+              {loading ? 'Activating Profile...' : 'Continue'}
             </button>
           </form>
 
@@ -675,7 +786,7 @@ export default function AgentDashboardClient({
         {/* TAB: Storefront Configuration */}
         {activeTab === 'Storefront Config' && (
           <div style={{ animation: 'fadeIn 0.3s ease-out' }}>
-            <AgentStorefrontConfig 
+            <AgentStorefrontConfig
               displayName={displayName} setDisplayName={setDisplayName}
               slug={slug} setSlug={setSlug}
               logoUrl={logoUrl} setLogoUrl={setLogoUrl}
@@ -687,6 +798,10 @@ export default function AgentDashboardClient({
               venmoHandle={venmoHandle} setVenmoHandle={setVenmoHandle}
               applePayHandle={applePayHandle} setApplePayHandle={setApplePayHandle}
               shippoApiKey={shippoApiKey} setShippoApiKey={setShippoApiKey}
+              shippoKeyPresent={agentProfile.shippo_api_key_present ?? false}
+              shippoKeyLast4={agentProfile.shippo_api_key_last4 ?? null}
+              warehouseAddress={agentProfile.warehouse_address}
+              isActive={agentProfile.is_active}
               agentId={userProfile.id}
             />
           </div>

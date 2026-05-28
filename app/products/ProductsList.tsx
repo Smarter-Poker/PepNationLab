@@ -287,9 +287,11 @@ export default function ProductsList({
               // Formatting compound name gracefully
               const compoundName = product.name;
 
+              const isBackordered = !product.in_stock || product.inventory_count === 0;
+
               return (
                 <div key={product.id} className="product-card" style={{ display: 'flex', flexDirection: 'column' }}>
-                  
+
                   {/* Decorative skeuomorphic header area */}
                   <div style={{
                     height: 120,
@@ -377,23 +379,34 @@ export default function ProductsList({
                       </div>
 
                       <button
-                        onClick={() => addToCart({
-                          id: product.id,
-                          name: product.name,
-                          sku: product.sku ?? '',
-                          retailPrice: retailPrice,
-                          costPrice: costPrice,
-                          bulkCostPrice: bulkCostPrice,
-                          bulkThreshold: bulkThreshold,
-                          weightOz: Number(product.weight_oz) || 0.5
-                        })}
-                        className="btn btn-primary btn-sm"
-                        style={{ display: 'flex', alignItems: 'center', gap: 6 }}
+                        onClick={() => {
+                          if (isBackordered) return;
+                          addToCart({
+                            id: product.id,
+                            name: product.name,
+                            sku: product.sku ?? '',
+                            retailPrice: retailPrice,
+                            costPrice: costPrice,
+                            bulkCostPrice: bulkCostPrice,
+                            bulkThreshold: bulkThreshold,
+                            weightOz: Number(product.weight_oz) || 0.5,
+                          });
+                        }}
+                        disabled={isBackordered}
+                        aria-disabled={isBackordered}
+                        className={`btn ${isBackordered ? 'btn-secondary' : 'btn-primary'} btn-sm`}
+                        style={{ display: 'flex', alignItems: 'center', gap: 6, opacity: isBackordered ? 0.6 : 1, cursor: isBackordered ? 'not-allowed' : 'pointer' }}
                       >
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                          <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
-                        </svg>
-                        Add To Cart
+                        {isBackordered ? (
+                          'Backordered'
+                        ) : (
+                          <>
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                              <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
+                            </svg>
+                            Add To Cart
+                          </>
+                        )}
                       </button>
                     </div>
                   </div>

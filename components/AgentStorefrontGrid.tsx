@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { motion, Variants, AnimatePresence } from 'framer-motion';
 
 interface ProductItem {
@@ -46,6 +46,7 @@ interface GroupedProduct {
   variants: ProductItem[];
   lowestPrice: number;
   popularity: number;
+  defaultVariantId: string;
 }
 
 // Top 20 most popular peptides (definitive ranking by market demand)
@@ -83,6 +84,19 @@ function fuzzyMatch(query: string, text: string): boolean {
   return qi === q.length;
 }
 
+// Pick the best default variant: prefer 10mg, else closest above, else first
+function pickDefaultVariant(variants: ProductItem[]): string {
+  // Try to find exactly 10
+  const ten = variants.find(v => parseFloat(v.products?.unit_size || '0') === 10);
+  if (ten) return ten.id;
+  // Try closest size >= 10
+  const above = variants.filter(v => parseFloat(v.products?.unit_size || '0') >= 10)
+    .sort((a, b) => parseFloat(a.products?.unit_size || '0') - parseFloat(b.products?.unit_size || '0'));
+  if (above.length > 0) return above[0].id;
+  // Fallback to largest available
+  return variants[variants.length - 1]?.id || variants[0].id;
+}
+
 export default function AgentStorefrontGrid({ products, inventoryMap, primaryColor, agentSlug }: Props) {
   const [selectedVariants, setSelectedVariants] = useState<Record<string, string>>({});
   const [searchQuery, setSearchQuery] = useState('');
@@ -90,6 +104,22 @@ export default function AgentStorefrontGrid({ products, inventoryMap, primaryCol
   const [filterCategory, setFilterCategory] = useState<string>('all');
   const [detailProduct, setDetailProduct] = useState<GroupedProduct | null>(null);
   const [cartItems, setCartItems] = useState<Record<string, number>>({});
+  const [showCartFloat, setShowCartFloat] = useState(false);
+
+  // Load cart from localStorage on mount
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(`cart_${agentSlug}`);
+      if (saved) setCartItems(JSON.parse(saved));
+    } catch { /* ignore */ }
+  }, [agentSlug]);
+
+  // Save cart to localStorage on change
+  useEffect(() => {
+    try {
+      localStorage.setItem(`cart_${agentSlug}`, JSON.stringify(cartItems));
+    } catch { /* ignore */ }
+  }, [cartItems, agentSlug]);
 
   // Group products by name
   const grouped = useMemo(() => {
@@ -105,13 +135,13 @@ export default function AgentStorefrontGrid({ products, inventoryMap, primaryCol
           variants: [],
           lowestPrice: Infinity,
           popularity: POPULAR_ORDER.indexOf(name),
+          defaultVariantId: '',
         });
       }
       const group = map.get(name)!;
       group.variants.push(item);
       if (item.retail_price < group.lowestPrice) group.lowestPrice = item.retail_price;
     });
-    // Sort variants within each group
     for (const group of map.values()) {
       group.variants.sort((a, b) => {
         const aSize = parseFloat(a.products?.unit_size || '0');
@@ -119,52 +149,31 @@ export default function AgentStorefrontGrid({ products, inventoryMap, primaryCol
         return aSize - bSize;
       });
       if (group.popularity === -1) group.popularity = 999;
+      group.defaultVariantId = pickDefaultVariant(group.variants);
     }
     return Array.from(map.values());
   }, [products]);
 
-  // Get unique categories
   const categories = useMemo(() => {
     const cats = new Set<string>();
     grouped.forEach(g => cats.add(g.category));
     return Array.from(cats).sort();
   }, [grouped]);
 
-  // Filter + sort
   const filteredProducts = useMemo(() => {
     let result = grouped;
-
-    // Category filter
-    if (filterCategory !== 'all') {
-      result = result.filter(g => g.category === filterCategory);
-    }
-
-    // Search filter
+    if (filterCategory !== 'all') result = result.filter(g => g.category === filterCategory);
     if (searchQuery.trim()) {
       result = result.filter(g =>
-        fuzzyMatch(searchQuery, g.name) ||
-        fuzzyMatch(searchQuery, g.category) ||
-        fuzzyMatch(searchQuery, g.desc)
+        fuzzyMatch(searchQuery, g.name) || fuzzyMatch(searchQuery, g.category) || fuzzyMatch(searchQuery, g.desc)
       );
     }
-
-    // Sort
     switch (sortBy) {
-      case 'popular':
-        result = [...result].sort((a, b) => a.popularity - b.popularity);
-        break;
-      case 'name_asc':
-        result = [...result].sort((a, b) => a.name.localeCompare(b.name));
-        break;
-      case 'name_desc':
-        result = [...result].sort((a, b) => b.name.localeCompare(a.name));
-        break;
-      case 'price_low':
-        result = [...result].sort((a, b) => a.lowestPrice - b.lowestPrice);
-        break;
-      case 'price_high':
-        result = [...result].sort((a, b) => b.lowestPrice - a.lowestPrice);
-        break;
+      case 'popular': result = [...result].sort((a, b) => a.popularity - b.popularity); break;
+      case 'name_asc': result = [...result].sort((a, b) => a.name.localeCompare(b.name)); break;
+      case 'name_desc': result = [...result].sort((a, b) => b.name.localeCompare(a.name)); break;
+      case 'price_low': result = [...result].sort((a, b) => a.lowestPrice - b.lowestPrice); break;
+      case 'price_high': result = [...result].sort((a, b) => b.lowestPrice - a.lowestPrice); break;
     }
     return result;
   }, [grouped, filterCategory, searchQuery, sortBy]);
@@ -193,102 +202,53 @@ export default function AgentStorefrontGrid({ products, inventoryMap, primaryCol
         padding: 'var(--space-4)', background: 'rgba(255,255,255,0.03)',
         borderRadius: 'var(--radius-lg)', border: '1px solid rgba(255,255,255,0.06)'
       }}>
-        {/* Search */}
         <div style={{ flex: '1 1 240px', position: 'relative' }}>
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--grey-400)" strokeWidth="2"
             style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)' }}>
             <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
           </svg>
           <input
-            type="text"
-            placeholder="Search Peptides..."
-            value={searchQuery}
+            type="text" placeholder="Search Peptides..." value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
             style={{
               width: '100%', padding: '10px 12px 10px 36px',
               background: 'rgba(0,0,0,0.4)', border: '1px solid rgba(255,255,255,0.1)',
-              borderRadius: 'var(--radius-md)', color: 'var(--white)',
-              fontSize: '0.9rem', outline: 'none'
+              borderRadius: 'var(--radius-md)', color: 'var(--white)', fontSize: '0.9rem', outline: 'none'
             }}
           />
         </div>
-
-        {/* Category Filter */}
-        <select
-          value={filterCategory}
-          onChange={e => setFilterCategory(e.target.value)}
-          style={{
-            padding: '10px 14px', background: 'rgba(0,0,0,0.4)',
-            border: '1px solid rgba(255,255,255,0.1)', borderRadius: 'var(--radius-md)',
-            color: 'var(--white)', fontSize: '0.85rem', cursor: 'pointer', minWidth: 160
-          }}
-        >
+        <select value={filterCategory} onChange={e => setFilterCategory(e.target.value)}
+          style={{ padding: '10px 14px', background: 'rgba(0,0,0,0.4)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 'var(--radius-md)', color: 'var(--white)', fontSize: '0.85rem', cursor: 'pointer', minWidth: 160 }}>
           <option value="all">All Categories</option>
           {categories.map(c => <option key={c} value={c}>{c}</option>)}
         </select>
-
-        {/* Sort */}
-        <select
-          value={sortBy}
-          onChange={e => setSortBy(e.target.value as any)}
-          style={{
-            padding: '10px 14px', background: 'rgba(0,0,0,0.4)',
-            border: '1px solid rgba(255,255,255,0.1)', borderRadius: 'var(--radius-md)',
-            color: 'var(--white)', fontSize: '0.85rem', cursor: 'pointer', minWidth: 150
-          }}
-        >
+        <select value={sortBy} onChange={e => setSortBy(e.target.value as typeof sortBy)}
+          style={{ padding: '10px 14px', background: 'rgba(0,0,0,0.4)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 'var(--radius-md)', color: 'var(--white)', fontSize: '0.85rem', cursor: 'pointer', minWidth: 150 }}>
           <option value="popular">Most Popular</option>
           <option value="name_asc">A → Z</option>
           <option value="name_desc">Z → A</option>
           <option value="price_low">Price: Low → High</option>
           <option value="price_high">Price: High → Low</option>
         </select>
-
-        {/* Cart indicator */}
-        {totalCartItems > 0 && (
-          <a
-            href={`/checkout?agent=${agentSlug}&cart=${encodeURIComponent(JSON.stringify(cartItems))}`}
-            style={{
-              display: 'flex', alignItems: 'center', gap: 8,
-              padding: '10px 20px', background: primaryColor, color: 'var(--black)',
-              borderRadius: 'var(--radius-md)', fontWeight: 800, fontSize: '0.85rem',
-              textDecoration: 'none', whiteSpace: 'nowrap'
-            }}
-          >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-              <circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/>
-              <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>
-            </svg>
-            Cart ({totalCartItems})
-          </a>
-        )}
       </div>
 
-      {/* Results count */}
       <div style={{ fontSize: '0.8rem', color: 'var(--grey-400)', paddingLeft: 'var(--space-1)' }}>
         {filteredProducts.length} {filteredProducts.length === 1 ? 'Product' : 'Products'} Found
       </div>
 
       {/* Product Grid */}
       <motion.div
-        className="grid-3"
-        style={{ gap: 'var(--space-6)' }}
-        variants={containerVariants}
-        initial="hidden"
-        animate="show"
+        className="grid-3" style={{ gap: 'var(--space-6)' }}
+        variants={containerVariants} initial="hidden" animate="show"
         key={`${filterCategory}-${sortBy}-${searchQuery}`}
       >
         {filteredProducts.map((group) => {
-          const selectedVariantId = selectedVariants[group.name] || group.variants[0].id;
+          const selectedVariantId = selectedVariants[group.name] || group.defaultVariantId;
           const activeVariant = group.variants.find(v => v.id === selectedVariantId) || group.variants[0];
-          const inventoryCount = inventoryMap[activeVariant.product_id] || 0;
-          const hasAgentStock = inventoryCount > 0;
 
           return (
             <motion.div
-              key={group.name}
-              className="card-metal message-card-hover"
-              variants={itemVariants}
+              key={group.name} className="card-metal message-card-hover" variants={itemVariants}
               style={{
                 display: 'flex', flexDirection: 'column', overflow: 'hidden', padding: 0,
                 background: 'linear-gradient(180deg, var(--surface-2) 0%, rgba(10, 16, 24, 0.8) 100%)',
@@ -324,40 +284,14 @@ export default function AgentStorefrontGrid({ products, inventoryMap, primaryCol
                   </div>
                 )}
 
-                {/* Only show "Available Now" badge if agent actually has stock */}
-                {hasAgentStock && (
-                  <div style={{ position: 'absolute', top: 12, right: 12, display: 'flex', flexDirection: 'column', gap: 6, alignItems: 'flex-end' }}>
-                    <div style={{
-                      display: 'inline-flex', alignItems: 'center', gap: 6,
-                      fontSize: '0.7rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em',
-                      padding: '4px 12px', borderRadius: 'var(--radius-full)',
-                      background: 'rgba(0,196,188,0.15)', border: '1px solid rgba(0,196,188,0.4)',
-                      color: 'var(--teal)', backdropFilter: 'blur(4px)'
-                    }}>
-                      <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--teal)', display: 'inline-block', boxShadow: '0 0 6px var(--teal)' }} />
-                      Available Now
-                    </div>
-                    {inventoryCount <= 5 && (
-                      <div style={{
-                        fontSize: '0.65rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em',
-                        padding: '3px 10px', borderRadius: 'var(--radius-full)',
-                        background: 'rgba(229,62,62,0.15)', border: '1px solid rgba(229,62,62,0.4)',
-                        color: 'var(--red)', backdropFilter: 'blur(4px)'
-                      }}>
-                        Low Stock
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {/* Popular badge for top 10 */}
+                {/* Popular badge — teal */}
                 {group.popularity < 20 && (
                   <div style={{
                     position: 'absolute', top: 12, left: 12,
                     fontSize: '0.65rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em',
                     padding: '4px 10px', borderRadius: 'var(--radius-full)',
-                    background: 'rgba(255,215,0,0.15)', border: '1px solid rgba(255,215,0,0.4)',
-                    color: '#FFD700', backdropFilter: 'blur(4px)'
+                    background: 'rgba(0,196,188,0.15)', border: '1px solid rgba(0,196,188,0.4)',
+                    color: 'var(--teal)', backdropFilter: 'blur(4px)'
                   }}>
                     ★ Popular
                   </div>
@@ -384,7 +318,7 @@ export default function AgentStorefrontGrid({ products, inventoryMap, primaryCol
                   </p>
                 )}
 
-                {/* Variant Selector */}
+                {/* Variant Selector — no em dash */}
                 {group.variants.length > 1 && (
                   <div style={{ marginBottom: 'var(--space-3)' }} onClick={e => e.stopPropagation()}>
                     <select
@@ -397,7 +331,7 @@ export default function AgentStorefrontGrid({ products, inventoryMap, primaryCol
                         const size = v.products?.unit_size ? `${v.products.unit_size}${v.products.unit_measure || ''}` : 'Standard';
                         return (
                           <option key={v.id} value={v.id}>
-                            {size} — ${Number(v.retail_price).toFixed(2)}
+                            {size}  ${Number(v.retail_price).toFixed(2)}
                           </option>
                         );
                       })}
@@ -405,41 +339,32 @@ export default function AgentStorefrontGrid({ products, inventoryMap, primaryCol
                   </div>
                 )}
 
-                {/* Price & Action Row */}
+                {/* Price & Action Row — vertically centered */}
                 <div style={{
                   display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                   marginTop: 'auto', borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: 'var(--space-4)'
                 }}>
-                  <div style={{ display: 'flex', flexDirection: 'column' }}>
-                    <span style={{ fontSize: '0.65rem', color: 'var(--silver)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 2 }}>
-                      {group.variants.length > 1 ? 'From' : 'Price'}
-                    </span>
-                    <span style={{ fontSize: '1.3rem', fontWeight: 800, color: primaryColor, fontFamily: 'var(--font-brand)', textShadow: `0 0 10px ${primaryColor}40` }}>
-                      ${Number(activeVariant.retail_price).toFixed(2)}
-                    </span>
-                  </div>
+                  <span style={{ fontSize: '1.3rem', fontWeight: 800, color: primaryColor, fontFamily: 'var(--font-brand)', textShadow: `0 0 10px ${primaryColor}40` }}>
+                    ${Number(activeVariant.retail_price).toFixed(2)}
+                  </span>
 
                   <button
-                    className="storefront-btn"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      addToCart(activeVariant.id);
-                    }}
+                    onClick={(e) => { e.stopPropagation(); addToCart(activeVariant.id); }}
                     style={{
-                      fontSize: '0.85rem', color: 'var(--black)', background: primaryColor,
-                      padding: '10px 22px', borderRadius: 'var(--radius-md)', fontWeight: 800,
+                      fontSize: '0.75rem', color: 'var(--black)', background: primaryColor,
+                      padding: '6px 14px', borderRadius: 'var(--radius-md)', fontWeight: 800,
                       border: 'none', cursor: 'pointer',
-                      boxShadow: `0 4px 14px ${primaryColor}40`,
+                      boxShadow: `0 2px 8px ${primaryColor}40`,
                       transition: 'transform 0.2s ease, box-shadow 0.2s ease',
-                      whiteSpace: 'nowrap', minWidth: 120, textAlign: 'center'
+                      whiteSpace: 'nowrap', lineHeight: 1.3
                     }}
                     onMouseEnter={(e) => {
-                      e.currentTarget.style.transform = 'translateY(-2px)';
-                      e.currentTarget.style.boxShadow = `0 6px 20px ${primaryColor}60`;
+                      e.currentTarget.style.transform = 'translateY(-1px)';
+                      e.currentTarget.style.boxShadow = `0 4px 12px ${primaryColor}60`;
                     }}
                     onMouseLeave={(e) => {
                       e.currentTarget.style.transform = 'none';
-                      e.currentTarget.style.boxShadow = `0 4px 14px ${primaryColor}40`;
+                      e.currentTarget.style.boxShadow = `0 2px 8px ${primaryColor}40`;
                     }}
                   >
                     Add To Cart
@@ -450,6 +375,107 @@ export default function AgentStorefrontGrid({ products, inventoryMap, primaryCol
           );
         })}
       </motion.div>
+
+      {/* Floating Cart — Bottom Right Corner */}
+      {totalCartItems > 0 && (
+        <div style={{ position: 'fixed', bottom: 24, right: 24, zIndex: 900 }}>
+          <button
+            onClick={() => setShowCartFloat(!showCartFloat)}
+            style={{
+              width: 56, height: 56, borderRadius: '50%',
+              background: primaryColor, border: 'none', cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              boxShadow: `0 4px 20px ${primaryColor}60`,
+              position: 'relative', transition: 'transform 0.2s ease'
+            }}
+            onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.1)'; }}
+            onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)'; }}
+          >
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--black)" strokeWidth="2.5">
+              <circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/>
+              <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>
+            </svg>
+            <span style={{
+              position: 'absolute', top: -4, right: -4, width: 22, height: 22,
+              borderRadius: '50%', background: 'var(--red)', color: 'var(--white)',
+              fontSize: '0.7rem', fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center'
+            }}>
+              {totalCartItems}
+            </span>
+          </button>
+
+          {/* Cart dropdown */}
+          <AnimatePresence>
+            {showCartFloat && (
+              <motion.div
+                initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                style={{
+                  position: 'absolute', bottom: 68, right: 0, width: 300,
+                  background: 'var(--surface-2)', border: '1px solid rgba(255,255,255,0.1)',
+                  borderRadius: 'var(--radius-lg)', boxShadow: '0 16px 48px rgba(0,0,0,0.6)',
+                  overflow: 'hidden'
+                }}
+              >
+                <div style={{ padding: '14px 16px', borderBottom: '1px solid rgba(255,255,255,0.06)', fontWeight: 700, color: 'var(--white)', fontSize: '0.9rem' }}>
+                  Cart ({totalCartItems} Items)
+                </div>
+                <div style={{ maxHeight: 240, overflowY: 'auto', padding: '8px 0' }}>
+                  {Object.entries(cartItems).map(([variantId, qty]) => {
+                    const item = products.find(p => p.id === variantId);
+                    if (!item) return null;
+                    const name = item.products?.name || 'Product';
+                    const size = item.products?.unit_size ? `${item.products.unit_size}${item.products.unit_measure || ''}` : '';
+                    return (
+                      <div key={variantId} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 16px', gap: 8 }}>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontSize: '0.8rem', color: 'var(--white)', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            {name} {size && `(${size})`}
+                          </div>
+                          <div style={{ fontSize: '0.75rem', color: 'var(--grey-400)' }}>
+                            ${Number(item.retail_price).toFixed(2)} × {qty}
+                          </div>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                          <button onClick={() => setCartItems(prev => {
+                            const next = { ...prev };
+                            if (next[variantId] <= 1) delete next[variantId];
+                            else next[variantId]--;
+                            return next;
+                          })} style={{
+                            width: 22, height: 22, borderRadius: '50%', border: '1px solid rgba(255,255,255,0.2)',
+                            background: 'transparent', color: 'var(--white)', cursor: 'pointer', fontSize: '0.85rem',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center'
+                          }}>−</button>
+                          <span style={{ color: 'var(--white)', fontWeight: 700, fontSize: '0.8rem', minWidth: 16, textAlign: 'center' }}>{qty}</span>
+                          <button onClick={() => addToCart(variantId)} style={{
+                            width: 22, height: 22, borderRadius: '50%', border: 'none',
+                            background: primaryColor, color: 'var(--black)', cursor: 'pointer', fontSize: '0.85rem',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800
+                          }}>+</button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+                <div style={{ padding: '12px 16px', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+                  <a
+                    href={`/checkout?agent=${agentSlug}&cart=${encodeURIComponent(JSON.stringify(cartItems))}`}
+                    style={{
+                      display: 'block', textAlign: 'center', padding: '10px',
+                      background: primaryColor, color: 'var(--black)', borderRadius: 'var(--radius-md)',
+                      fontWeight: 800, fontSize: '0.85rem', textDecoration: 'none'
+                    }}
+                  >
+                    Checkout
+                  </a>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+      )}
 
       {/* Product Detail Modal */}
       <AnimatePresence>
@@ -495,7 +521,6 @@ export default function AgentStorefrontGrid({ products, inventoryMap, primaryCol
                     </svg>
                   </div>
                 )}
-                {/* Close button */}
                 <button
                   onClick={() => setDetailProduct(null)}
                   style={{
@@ -526,7 +551,6 @@ export default function AgentStorefrontGrid({ products, inventoryMap, primaryCol
                   </span>
                 </div>
 
-                {/* Description */}
                 <p style={{ fontSize: '0.95rem', color: 'var(--grey-300)', lineHeight: 1.7, marginBottom: 'var(--space-6)' }}>
                   {detailProduct.desc || 'Research compound available for academic and laboratory use.'}
                 </p>
@@ -536,9 +560,7 @@ export default function AgentStorefrontGrid({ products, inventoryMap, primaryCol
                   <h3 style={{ fontSize: '1rem', fontFamily: 'var(--font-brand)', color: 'var(--white)', marginBottom: 'var(--space-3)', letterSpacing: '0.03em' }}>
                     Available Sizes & Pricing
                   </h3>
-                  <div style={{
-                    border: '1px solid rgba(255,255,255,0.08)', borderRadius: 'var(--radius-md)', overflow: 'hidden'
-                  }}>
+                  <div style={{ border: '1px solid rgba(255,255,255,0.08)', borderRadius: 'var(--radius-md)', overflow: 'hidden' }}>
                     <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem' }}>
                       <thead>
                         <tr style={{ background: 'rgba(255,255,255,0.04)' }}>
@@ -589,7 +611,6 @@ export default function AgentStorefrontGrid({ products, inventoryMap, primaryCol
                   </div>
                 </div>
 
-                {/* Bulk Pricing Note */}
                 {detailProduct.variants.length > 1 && (
                   <div style={{
                     padding: 'var(--space-4)', borderRadius: 'var(--radius-md)',
@@ -602,22 +623,19 @@ export default function AgentStorefrontGrid({ products, inventoryMap, primaryCol
                   </div>
                 )}
 
-                {/* Backorder info */}
                 {detailProduct.variants[0]?.products?.backorder_days > 0 && (
                   <p style={{ fontSize: '0.8rem', color: 'var(--grey-400)', marginBottom: 'var(--space-4)' }}>
                     📦 Estimated Shipping: {detailProduct.variants[0].products.backorder_days} Business Days
                   </p>
                 )}
 
-                {/* Modal Footer Actions */}
                 <div style={{ display: 'flex', gap: 'var(--space-3)', justifyContent: 'flex-end' }}>
                   <button
                     onClick={() => setDetailProduct(null)}
                     style={{
-                      padding: '12px 24px', background: 'transparent',
+                      padding: '10px 20px', background: 'transparent',
                       border: '1px solid rgba(255,255,255,0.15)', borderRadius: 'var(--radius-md)',
-                      color: 'var(--white)', cursor: 'pointer', fontWeight: 600, fontSize: '0.9rem',
-                      minWidth: 120, textAlign: 'center'
+                      color: 'var(--white)', cursor: 'pointer', fontWeight: 600, fontSize: '0.85rem'
                     }}
                   >
                     Close
@@ -626,9 +644,9 @@ export default function AgentStorefrontGrid({ products, inventoryMap, primaryCol
                     <a
                       href={`/checkout?agent=${agentSlug}&cart=${encodeURIComponent(JSON.stringify(cartItems))}`}
                       style={{
-                        padding: '12px 24px', background: primaryColor, color: 'var(--black)',
-                        borderRadius: 'var(--radius-md)', fontWeight: 800, fontSize: '0.9rem',
-                        textDecoration: 'none', minWidth: 120, textAlign: 'center'
+                        padding: '10px 20px', background: primaryColor, color: 'var(--black)',
+                        borderRadius: 'var(--radius-md)', fontWeight: 800, fontSize: '0.85rem',
+                        textDecoration: 'none'
                       }}
                     >
                       Checkout ({totalCartItems})

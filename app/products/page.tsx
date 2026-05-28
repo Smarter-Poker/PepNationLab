@@ -38,7 +38,12 @@ export default async function ProductsPage() {
     .select('tier_name, multiplier')
     .order('tier_name');
 
-  const userTier = profile.tier ?? 'tier_3';
+  // Researchers always see Tier 3 retail; agent/super_agent see their stored
+  // wholesale tier. This is enforced server-side so the price displayed
+  // matches what the order-create endpoint will charge them.
+  const userTier = profile.role === 'researcher'
+    ? 'tier_3'
+    : (profile.tier ?? 'tier_3');
 
   // Get custom multipliers override map for this specific user tier
   const { data: overrides } = await supabase

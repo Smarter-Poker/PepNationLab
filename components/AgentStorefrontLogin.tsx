@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 
 interface Props {
@@ -20,6 +21,7 @@ export default function AgentStorefrontLogin({
   tagline,
   errorMessage
 }: Props) {
+  const router = useRouter();
   const [mode, setMode] = useState<'login' | 'register'>('login');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -63,8 +65,9 @@ export default function AgentStorefrontLogin({
         throw new Error('Invalid Username Or Password');
       }
 
-      // Success — reload to show the storefront catalog
-      window.location.reload();
+      // Success — refresh the server component so the storefront catalog
+      // renders for the now-authenticated session.
+      router.refresh();
     } catch (err: any) {
       setError(err.message || 'Network Error');
       setLoading(false);
@@ -81,19 +84,20 @@ export default function AgentStorefrontLogin({
       if (!fullName.trim() || !username.trim() || !password.trim()) {
         throw new Error('All Fields Are Required');
       }
-      if (password.length < 6) {
-        throw new Error('Password Must Be At Least 6 Characters');
+      if (password.length < 8) {
+        throw new Error('Password Must Be At Least 8 Characters');
       }
 
-      // Use the agent's create-researcher endpoint to create the account tied to this agent
-      const res = await fetch('/api/auth/register', {
+      // Public storefront register endpoint resolves the agent by slug
+      // and ties the new researcher to that agent's referring_agent_id.
+      const res = await fetch('/api/storefront/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          full_name: fullName.trim(),
+          slug: agentSlug,
           username: username.trim(),
           password: password.trim(),
-          agent_slug: agentSlug,
+          fullName: fullName.trim(),
         }),
       });
       const data = await res.json();
@@ -110,15 +114,15 @@ export default function AgentStorefrontLogin({
       });
 
       if (authError) {
-        // Account created but auto-login failed — prompt manual login
-        setSuccess('Account Created Successfully! Please Sign In.');
+        // Account created but auto-login failed — prompt manual login.
+        setSuccess('Account Created Successfully. Please Sign In.');
         setMode('login');
         setLoading(false);
         return;
       }
 
-      // Auto-login succeeded — reload to show storefront
-      window.location.reload();
+      // Auto-login succeeded — refresh to render the storefront catalog.
+      router.refresh();
     } catch (err: any) {
       setError(err.message || 'Network Error');
       setLoading(false);
@@ -212,12 +216,12 @@ export default function AgentStorefrontLogin({
 
         {error && (
           <div style={{ background: 'var(--red-bg)', borderLeft: '3px solid var(--red)', padding: 'var(--space-3)', marginBottom: 'var(--space-4)', borderRadius: '0 4px 4px 0' }}>
-            <p style={{ color: 'var(--red)', fontSize: '0.8rem', margin: 0, fontWeight: 500, textTransform: 'none' }}>{error}</p>
+            <p style={{ color: 'var(--red)', fontSize: '0.8rem', margin: 0, fontWeight: 500 }}>{error}</p>
           </div>
         )}
         {success && (
           <div style={{ background: 'rgba(0,196,188,0.06)', borderLeft: `3px solid ${primaryColor}`, padding: 'var(--space-3)', marginBottom: 'var(--space-4)', borderRadius: '0 4px 4px 0' }}>
-            <p style={{ color: primaryColor, fontSize: '0.8rem', margin: 0, fontWeight: 500, textTransform: 'none' }}>{success}</p>
+            <p style={{ color: primaryColor, fontSize: '0.8rem', margin: 0, fontWeight: 500 }}>{success}</p>
           </div>
         )}
 
@@ -283,7 +287,7 @@ export default function AgentStorefrontLogin({
               <input
                 type="text"
                 className="form-input"
-                placeholder="e.g. john_doe"
+                placeholder="E.g. John_Doe"
                 value={username}
                 onChange={e => setUsername(e.target.value)}
                 required
@@ -294,11 +298,11 @@ export default function AgentStorefrontLogin({
               <input
                 type="password"
                 className="form-input"
-                placeholder="Min. 6 Characters"
+                placeholder="Min. 8 Characters"
                 value={password}
                 onChange={e => setPassword(e.target.value)}
                 required
-                minLength={6}
+                minLength={8}
               />
             </div>
             <button
@@ -318,7 +322,7 @@ export default function AgentStorefrontLogin({
         )}
 
         <div style={{ textAlign: 'center', marginTop: 'var(--space-6)', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: 'var(--space-4)' }}>
-          <p style={{ fontSize: '0.75rem', color: 'var(--grey-400)', textTransform: 'none' }}>
+          <p style={{ fontSize: '0.75rem', color: 'var(--grey-400)' }}>
             Powered By PepNationLab White-Label Infrastructure
           </p>
         </div>

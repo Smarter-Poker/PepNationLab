@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
 import { requireAdmin } from '@/lib/admin-auth';
+import { generateQrDataUrl } from '@/lib/qr';
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://pepnationlab.com';
 
@@ -161,7 +162,14 @@ export async function POST(req: NextRequest) {
   // 3. Create the agent_profiles storefront record (agents only, not researchers)
   if (!isResearcher) {
     const storefrontUrl = `${APP_URL}/${slug}`;
-    const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&color=00c4bc&bgcolor=0a1018&data=${encodeURIComponent(storefrontUrl)}`;
+    // In-process QR generation — no external dependency on api.qrserver.com.
+    let qrCodeData: string | null = null;
+    try {
+      qrCodeData = await generateQrDataUrl(storefrontUrl);
+    } catch (qrErr) {
+      console.error('QR generation failed:', qrErr);
+      qrCodeData = null;
+    }
 
     const { error: agentError } = await supabase
       .from('agent_profiles')
@@ -171,7 +179,7 @@ export async function POST(req: NextRequest) {
         display_name,
         tagline: tagline || null,
         bio: bio || null,
-        qr_code_url: qrCodeUrl,
+        qr_code_data: qrCodeData,
         is_active: true,
       });
 

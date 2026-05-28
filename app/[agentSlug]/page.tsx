@@ -11,7 +11,10 @@ export default async function AgentStorefrontPage({ params }: Props) {
   const { agentSlug } = await params;
   const supabase = await createClient();
 
-  // Look up agent by slug
+  // Look up agent by slug — case-insensitive since the DB has a UNIQUE on
+  // lower(slug). Do NOT filter on is_active here; we want to render a
+  // "Storefront Paused" notice rather than 404 when the agent has put the
+  // store into vacation mode.
   const { data: agent, error } = await supabase
     .from('agent_profiles')
     .select(`
@@ -23,14 +26,34 @@ export default async function AgentStorefrontPage({ params }: Props) {
       primary_color,
       secondary_color,
       bio,
-      qr_code_url
+      qr_code_url,
+      qr_code_data,
+      is_active
     `)
-    .eq('slug', agentSlug)
-    .eq('is_active', true)
+    .ilike('slug', agentSlug)
     .single();
 
   if (error || !agent) {
     notFound();
+  }
+
+  if (agent.is_active === false) {
+    const primaryColor = agent.primary_color ?? '#00C4BC';
+    return (
+      <div style={{ minHeight: '100vh', background: 'var(--black)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 'var(--space-6)' }}>
+        <div className="card-metal" style={{ maxWidth: 480, padding: 'var(--space-8)', textAlign: 'center', border: `1px solid ${primaryColor}30` }}>
+          <h1 style={{ color: 'var(--white)', fontSize: '1.4rem', marginBottom: 'var(--space-3)' }}>
+            Storefront Paused
+          </h1>
+          <p style={{ color: 'var(--silver)', fontSize: '0.92rem', marginBottom: 'var(--space-4)' }}>
+            {agent.display_name} Is Temporarily Not Accepting New Orders.
+          </p>
+          <p style={{ color: 'var(--grey-400)', fontSize: '0.82rem' }}>
+            Please Check Back Soon Or Contact Your Agent For Assistance.
+          </p>
+        </div>
+      </div>
+    );
   }
 
   const { data: products } = await supabase
@@ -251,7 +274,7 @@ export async function generateMetadata({ params }: Props) {
   const { data: agent } = await supabase
     .from('agent_profiles')
     .select('display_name, tagline')
-    .eq('slug', agentSlug)
+    .ilike('slug', agentSlug)
     .single();
 
   if (!agent) return { title: 'Not Found' };

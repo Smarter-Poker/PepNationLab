@@ -7,14 +7,31 @@ interface QRCodeGeneratorProps {
   size?: number;
   fgColor?: string;
   bgColor?: string;
+  /**
+   * Pre-generated data URI from `agent_profiles.qr_code_data`. When present,
+   * we render this as an <img> instead of regenerating client-side. The
+   * brand-coloured server-side version is the source of truth.
+   */
+  qrCodeData?: string | null;
 }
 
-export default function QRCodeGenerator({ url, size = 200, fgColor = '#00C4BC', bgColor = '#FFFFFF' }: QRCodeGeneratorProps) {
+export default function QRCodeGenerator({
+  url,
+  size = 200,
+  fgColor = '#00C4BC',
+  bgColor = '#FFFFFF',
+  qrCodeData,
+}: QRCodeGeneratorProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [dataUrl, setDataUrl] = useState<string>('');
   const [error, setError] = useState(false);
 
+  // If the server already produced a brand-coloured QR data URI, render that
+  // directly and skip the client-side qrcode pass.
+  const usePreRendered = !!qrCodeData;
+
   useEffect(() => {
+    if (usePreRendered) return;
     if (!url || !canvasRef.current) return;
 
     // Dynamic import of qrcode library (works client-side only)
@@ -41,7 +58,7 @@ export default function QRCodeGenerator({ url, size = 200, fgColor = '#00C4BC', 
     }).catch(() => {
       setError(true);
     });
-  }, [url, size, fgColor, bgColor]);
+  }, [url, size, fgColor, bgColor, usePreRendered]);
 
   if (error) {
     return (
@@ -53,6 +70,31 @@ export default function QRCodeGenerator({ url, size = 200, fgColor = '#00C4BC', 
         fontSize: '0.8rem', color: 'var(--grey-400)'
       }}>
         QR Error
+      </div>
+    );
+  }
+
+  if (usePreRendered) {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 'var(--space-4)' }}>
+        <div style={{
+          background: bgColor,
+          padding: 12,
+          borderRadius: 'var(--radius-lg)',
+          display: 'inline-block',
+          boxShadow: '0 0 20px rgba(0,196,188,0.15)',
+        }}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={qrCodeData as string} alt="Storefront QR Code" width={size} height={size} style={{ display: 'block', width: size, height: size }} />
+        </div>
+        <a
+          href={qrCodeData as string}
+          download="storefront-qr-code.png"
+          className="btn btn-secondary btn-sm"
+          style={{ width: '100%', textAlign: 'center' }}
+        >
+          Download QR Code PNG
+        </a>
       </div>
     );
   }

@@ -4,17 +4,20 @@ import React, { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
 
+type StatusFilter = 'all' | 'approved_ship' | 'in_fulfillment' | 'shipped';
+
 export default function ShippingDashboard() {
   const [orders, setOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
 
   const fetchOrders = async () => {
     try {
       setLoading(true);
       const res = await fetch('/api/shipping/orders');
       const json = await res.json();
-      if (!res.ok) throw new Error(json.error || 'Failed to fetch orders');
+      if (!res.ok) throw new Error(json.error || 'Failed To Fetch Orders');
       setOrders(json.data || []);
     } catch (err: any) {
       setError(err.message);
@@ -28,6 +31,10 @@ export default function ShippingDashboard() {
     fetchOrders();
   }, []);
 
+  const filteredOrders = statusFilter === 'all'
+    ? orders
+    : orders.filter(o => o.status === statusFilter);
+
   const handleUpdateTracking = async (orderId: string, trackingNumber: string, action: 'save_tracking' | 'mark_shipped') => {
     try {
       const res = await fetch('/api/shipping/orders', {
@@ -36,17 +43,24 @@ export default function ShippingDashboard() {
         body: JSON.stringify({ order_id: orderId, tracking_number: trackingNumber, action })
       });
       const json = await res.json();
-      if (!res.ok) throw new Error(json.error || 'Failed to update order');
-      
-      toast.success(action === 'mark_shipped' ? 'Order marked as shipped!' : 'Tracking number saved');
+      if (!res.ok) throw new Error(json.error || 'Failed To Update Order');
+
+      toast.success(action === 'mark_shipped' ? 'Order Marked As Shipped' : 'Tracking Number Saved');
       fetchOrders();
     } catch (err: any) {
       toast.error(err.message);
     }
   };
 
-  if (loading && orders.length === 0) return <div style={{ color: 'var(--silver)' }}>Loading fulfillment queue...</div>;
+  if (loading && orders.length === 0) return <div style={{ color: 'var(--silver)' }}>Loading Fulfillment Queue...</div>;
   if (error) return <div style={{ color: 'var(--red)' }}>Error: {error}</div>;
+
+  const STATUS_FILTERS: { value: StatusFilter; label: string }[] = [
+    { value: 'all', label: 'All' },
+    { value: 'approved_ship', label: 'New Orders' },
+    { value: 'in_fulfillment', label: 'In Progress' },
+    { value: 'shipped', label: 'Shipped' },
+  ];
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)', opacity: loading ? 0.7 : 1, transition: 'opacity 0.2s' }}>
@@ -56,10 +70,18 @@ export default function ShippingDashboard() {
             Fulfillment Queue
           </h1>
           <p style={{ color: 'var(--grey-400)', fontSize: '0.9rem', marginTop: 4 }}>
-            Orders ready to be shipped. Paste tracking numbers and dispatch.
+            Orders Ready To Be Shipped. Paste Tracking Numbers And Dispatch.
           </p>
         </div>
-        <div style={{ display: 'flex', gap: 'var(--space-3)' }}>
+        <div style={{ display: 'flex', gap: 'var(--space-3)', alignItems: 'center' }}>
+          <button
+            type="button"
+            className="btn btn-secondary btn-sm"
+            onClick={fetchOrders}
+            disabled={loading}
+          >
+            {loading ? 'Refreshing...' : 'Refresh'}
+          </button>
           <div className="card-metal" style={{ padding: 'var(--space-3) var(--space-5)', textAlign: 'center' }}>
             <div style={{ fontSize: '1.5rem', color: 'var(--teal)', fontFamily: 'var(--font-brand)' }}>
               {orders.filter(o => o.status === 'approved_ship').length}
@@ -73,6 +95,28 @@ export default function ShippingDashboard() {
             <div style={{ fontSize: '0.7rem', color: 'var(--silver)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>In Progress</div>
           </div>
         </div>
+      </div>
+
+      <div style={{ display: 'flex', gap: 'var(--space-2)', flexWrap: 'wrap' }}>
+        {STATUS_FILTERS.map(f => (
+          <button
+            key={f.value}
+            type="button"
+            onClick={() => setStatusFilter(f.value)}
+            style={{
+              padding: '6px 14px',
+              borderRadius: 'var(--radius-md)',
+              border: statusFilter === f.value ? '1px solid var(--teal)' : '1px solid rgba(255,255,255,0.06)',
+              background: statusFilter === f.value ? 'rgba(0,196,188,0.1)' : 'var(--surface-3)',
+              color: statusFilter === f.value ? 'var(--teal)' : 'var(--silver)',
+              fontSize: '0.8rem',
+              fontWeight: 600,
+              cursor: 'pointer',
+            }}
+          >
+            {f.label}
+          </button>
+        ))}
       </div>
 
       <div className="card-metal" style={{ padding: 'var(--space-6)' }}>
@@ -91,14 +135,14 @@ export default function ShippingDashboard() {
             </thead>
             <tbody>
               <AnimatePresence>
-                {orders.length === 0 ? (
+                {filteredOrders.length === 0 ? (
                   <tr>
                     <td colSpan={7} style={{ textAlign: 'center', opacity: 0.5, padding: 'var(--space-8)' }}>
-                      No orders in the fulfillment queue.
+                      No Orders In The Fulfillment Queue.
                     </td>
                   </tr>
                 ) : (
-                  orders.map(order => (
+                  filteredOrders.map(order => (
                     <motion.tr 
                       key={order.id}
                       initial={{ opacity: 0, y: 10 }}
@@ -137,7 +181,7 @@ export default function ShippingDashboard() {
                           aria-label="Tracking Number"
                           className="form-input" 
                           defaultValue={order.tracking_number || ''}
-                          placeholder="Paste tracking..." 
+                          placeholder="Paste Tracking..."
                           style={{ width: 180, fontSize: '0.8rem', padding: '6px 10px' }}
                         />
                       </td>
@@ -156,7 +200,7 @@ export default function ShippingDashboard() {
                           onClick={() => {
                             const val = (document.getElementById(`tracking-${order.id}`) as HTMLInputElement).value;
                             if (!val) {
-                              toast.error('Please enter a tracking number first');
+                              toast.error('Please Enter A Tracking Number First');
                               return;
                             }
                             handleUpdateTracking(order.id, val, 'mark_shipped');
