@@ -1,41 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
 import { requireOrdersAccess } from '@/lib/admin-auth';
-
-/**
- * Order status state machine (forward-only).
- * Keys = current status; values = the statuses a transition can legally
- * move them to. Admins additionally may move any non-terminal status to
- * 'cancelled' (handled below). Shipping is further restricted to the three
- * fulfillment edges.
- */
-type OrderStatus =
-  | 'pending_customer_payment'
-  | 'agent_approval_pending'
-  | 'approved_ship'
-  | 'approved_pickup'
-  | 'in_fulfillment'
-  | 'shipped'
-  | 'delivered'
-  | 'cancelled';
-
-const ALLOWED_TRANSITIONS: Record<OrderStatus, OrderStatus[]> = {
-  pending_customer_payment: ['agent_approval_pending', 'approved_ship', 'approved_pickup', 'in_fulfillment', 'cancelled'],
-  agent_approval_pending: ['approved_ship', 'approved_pickup', 'in_fulfillment', 'cancelled'],
-  approved_ship: ['in_fulfillment', 'shipped', 'cancelled'],
-  approved_pickup: ['in_fulfillment', 'delivered', 'cancelled'],
-  in_fulfillment: ['shipped', 'delivered', 'cancelled'],
-  shipped: ['delivered'],
-  delivered: [],
-  cancelled: [],
-};
-
-const SHIPPING_TRANSITIONS: Partial<Record<OrderStatus, OrderStatus[]>> = {
-  pending_customer_payment: ['in_fulfillment'],
-  approved_ship: ['in_fulfillment'],
-  in_fulfillment: ['shipped'],
-  shipped: ['delivered'],
-};
+import { canTransition, type OrderStatus } from '@/lib/order-states';
 
 // GET: List all orders with buyer profile join
 export async function GET(req: NextRequest) {
@@ -115,38 +81,11 @@ export async function POST(req: NextRequest) {
   const currentStatus = existingOrder.status as OrderStatus;
   const nextStatus = status as OrderStatus;
 
-  // Terminal states cannot leave.
-  if (currentStatus === 'cancelled' || currentStatus === 'delivered') {
-    if (currentStatus !== nextStatus) {
-      return NextResponse.json(
-        { error: `Invalid Status Transition From ${currentStatus} To ${nextStatus}` },
-        { status: 422 }
-      );
-    }
-  }
-
-  // Idempotent no-op transitions allowed (e.g. saving a tracking number
-  // without flipping status).
-  if (currentStatus !== nextStatus) {
-    if (gate.role === 'shipping') {
-      // Shipping role restricted to the three fulfillment edges.
-      const allowed = SHIPPING_TRANSITIONS[currentStatus] ?? [];
-      if (!allowed.includes(nextStatus)) {
-        return NextResponse.json(
-          { error: `Invalid Status Transition From ${currentStatus} To ${nextStatus}` },
-          { status: 422 }
-        );
-      }
-    } else {
-      // Admin: forward-only via the ALLOWED_TRANSITIONS table.
-      const allowed = ALLOWED_TRANSITIONS[currentStatus] ?? [];
-      if (!allowed.includes(nextStatus)) {
-        return NextResponse.json(
-          { error: `Invalid Status Transition From ${currentStatus} To ${nextStatus}` },
-          { status: 422 }
-        );
-      }
-    }
+  if (!canTransition(currentStatus, nextStatus, gate.role)) {
+    return NextResponse.json(
+      { error: `Invalid Status Transition From ${currentStatus} To ${nextStatus}` },
+      { status: 422 }
+    );
   }
 
   const updates: any = {

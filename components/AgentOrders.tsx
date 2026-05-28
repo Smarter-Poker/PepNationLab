@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import AgentManualOrder from './AgentManualOrder';
+import { carrierInfo } from '@/lib/carrier';
 
 interface Order {
   id: string;
@@ -756,31 +757,69 @@ export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
                   {PAYMENT_LABEL[detailOrder.payment_method] || detailOrder.payment_method}
                 </div>
 
-                {detailOrder.tracking_number && (
-                  <>
-                    <div
-                      style={{
-                        fontSize: '0.7rem',
-                        color: 'var(--grey-400)',
-                        textTransform: 'uppercase',
-                        letterSpacing: '0.06em',
-                        marginTop: 'var(--space-3)',
-                        marginBottom: 6,
-                      }}
-                    >
-                      Tracking Number
-                    </div>
-                    <div
-                      style={{
-                        color: 'var(--teal)',
-                        fontWeight: 600,
-                        wordBreak: 'break-all',
-                      }}
-                    >
-                      {detailOrder.tracking_number}
-                    </div>
-                  </>
-                )}
+                {detailOrder.tracking_number && (() => {
+                  const ci = carrierInfo(detailOrder.tracking_number);
+                  return (
+                    <>
+                      <div
+                        style={{
+                          fontSize: '0.7rem',
+                          color: 'var(--grey-400)',
+                          textTransform: 'uppercase',
+                          letterSpacing: '0.06em',
+                          marginTop: 'var(--space-3)',
+                          marginBottom: 6,
+                        }}
+                      >
+                        Tracking Number
+                      </div>
+                      <div
+                        style={{
+                          color: 'var(--teal)',
+                          fontWeight: 600,
+                          wordBreak: 'break-all',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 'var(--space-2)',
+                          flexWrap: 'wrap',
+                        }}
+                      >
+                        <span>{detailOrder.tracking_number}</span>
+                        {ci.carrier !== 'Unknown' && (
+                          <span
+                            style={{
+                              fontSize: '0.68rem',
+                              fontWeight: 700,
+                              color: 'var(--white)',
+                              background: 'var(--teal)',
+                              padding: '2px 8px',
+                              borderRadius: 'var(--radius-full)',
+                              letterSpacing: '0.05em',
+                            }}
+                          >
+                            {ci.carrier}
+                          </span>
+                        )}
+                      </div>
+                      {ci.trackingUrl && (
+                        <a
+                          href={ci.trackingUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          style={{
+                            display: 'inline-block',
+                            marginTop: 6,
+                            fontSize: '0.78rem',
+                            color: 'var(--teal)',
+                            textDecoration: 'underline',
+                          }}
+                        >
+                          Track With {ci.carrier}
+                        </a>
+                      )}
+                    </>
+                  );
+                })()}
 
                 {detailOrder.label_url && (
                   <a

@@ -568,6 +568,7 @@ export default function AdminOrdersPage() {
                     {STATUS_LABELS[order.status] || order.status}
                   </span>
                 </button>
+                </div>
               ))}
               <Pagination page={safePage} totalPages={totalPages} onPageChange={setPage} />
             </div>
