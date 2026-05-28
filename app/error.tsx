@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
+import { captureError } from '@/lib/sentry';
 
 export default function Error({
   error,
@@ -10,7 +11,7 @@ export default function Error({
   reset: () => void;
 }) {
   useEffect(() => {
-    console.error('Application Error:', error);
+    captureError(error, { boundary: 'app/error.tsx', digest: error?.digest });
   }, [error]);
 
   return (

@@ -1,10 +1,25 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient, createServiceClient } from '@/lib/supabase/server';
+import { rateLimit, getClientIp } from '@/lib/rate-limit';
 
 const VALID_LAYERS = ['site_entry', 'registration', 'add_to_cart', 'checkout'] as const;
 type DisclaimerLayer = (typeof VALID_LAYERS)[number];
 
 export async function POST(req: NextRequest) {
+  const callerIp = getClientIp(req);
+  const limited = await rateLimit({
+    key: 'disclaimer_log',
+    limit: 60,
+    windowSeconds: 60,
+    identifier: callerIp,
+  });
+  if (!limited.allowed) {
+    return NextResponse.json(
+      { error: 'Too Many Requests. Please Wait And Try Again.' },
+      { status: 429 }
+    );
+  }
+
   const body = await req.json().catch(() => ({} as Record<string, unknown>));
   const rawLayer = String((body as { layer?: unknown }).layer ?? 'site_entry');
 

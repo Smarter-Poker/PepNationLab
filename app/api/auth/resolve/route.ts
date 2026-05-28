@@ -1,11 +1,26 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
+import { rateLimit, getClientIp } from '@/lib/rate-limit';
 
 // POST /api/auth/resolve
 // Takes a username, returns the auth email for that user.
 // Called by the login form before signInWithPassword.
 // Uses service role so it can query profiles regardless of RLS.
 export async function POST(req: NextRequest) {
+  const ip = getClientIp(req);
+  const limited = await rateLimit({
+    key: 'auth_resolve',
+    limit: 20,
+    windowSeconds: 60,
+    identifier: ip,
+  });
+  if (!limited.allowed) {
+    return NextResponse.json(
+      { error: 'Too Many Requests. Please Wait And Try Again.' },
+      { status: 429 }
+    );
+  }
+
   const body = await req.json().catch(() => ({}));
   const username = (body.username ?? '').trim().toLowerCase();
 

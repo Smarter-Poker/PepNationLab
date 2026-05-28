@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
 import { sanitizeUsername } from '@/lib/usernames';
+import { rateLimit, getClientIp } from '@/lib/rate-limit';
 
 /**
  * POST /api/storefront/register
@@ -11,42 +12,21 @@ import { sanitizeUsername } from '@/lib/usernames';
  *
  * Body: { slug, username, email?, password, fullName }
  *
- * Rate limited to 5 requests / IP / hour via an in-memory ring buffer.
- * Per-instance only — fine for the current single-region Vercel deployment;
- * future improvement: swap to Upstash Redis for cluster-wide limits.
+ * Rate limited to 5 requests / IP / hour. Uses Upstash when available
+ * (cluster-wide) and falls back to an in-memory ring buffer when not.
  */
-
-const WINDOW_MS = 60 * 60 * 1000; // 1 hour
-const MAX_PER_WINDOW = 5;
-const rateLimitBuckets: Map<string, number[]> = (global as any).__storefrontRegisterRL
-  ?? ((global as any).__storefrontRegisterRL = new Map());
-
-function getClientIp(req: NextRequest): string {
-  const fwd = req.headers.get('x-forwarded-for');
-  if (fwd) return fwd.split(',')[0].trim();
-  const real = req.headers.get('x-real-ip');
-  if (real) return real;
-  return 'unknown';
-}
-
-function isRateLimited(ip: string): boolean {
-  const now = Date.now();
-  const cutoff = now - WINDOW_MS;
-  const bucket = (rateLimitBuckets.get(ip) || []).filter(ts => ts > cutoff);
-  if (bucket.length >= MAX_PER_WINDOW) {
-    rateLimitBuckets.set(ip, bucket);
-    return true;
-  }
-  bucket.push(now);
-  rateLimitBuckets.set(ip, bucket);
-  return false;
-}
 
 export async function POST(req: NextRequest) {
   const ip = getClientIp(req);
-  if (isRateLimited(ip)) {
+  const limited = await rateLimit({
+    key: 'storefront_register',
+    limit: 5,
+    windowSeconds: 3600,
+    identifier: ip,
+  });
+  if (!limited.allowed) {
     return NextResponse.json(
-      { error: 'Too Many Registration Attempts. Please Wait And Try Again.' },
+      { error: 'Too Many Requests. Please Wait And Try Again.' },
       { status: 429 }
     );
   }

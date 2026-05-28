@@ -149,6 +149,43 @@ export default async function proxy(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
+  // ─── MFA Enforcement (admin + super_agent) ────────────────────────────────
+  // Roles that must have a verified TOTP factor before they can touch the
+  // rest of the platform. The enrollment UI lives at /account/security and
+  // is whitelisted below so the user can actually enroll.
+  const mfaRequiredRoles = new Set(['admin', 'super_agent']);
+  if (profile?.role && mfaRequiredRoles.has(profile.role)) {
+    const isMfaExempt =
+      pathname === '/account/security' ||
+      pathname.startsWith('/account/security/') ||
+      pathname.startsWith('/api/auth/') ||
+      pathname === '/api/health';
+
+    if (!isMfaExempt) {
+      // getAuthenticatorAssuranceLevel returns { currentLevel, nextLevel }.
+      // nextLevel === 'aal2' when the user has at least one verified factor;
+      // currentLevel === 'aal2' when the current session was elevated. We
+      // require nextLevel to be 'aal2' as the minimum bar — i.e. the user
+      // has a factor enrolled at all.
+      const { data: aal } =
+        await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+      const hasVerifiedFactor = aal?.nextLevel === 'aal2';
+
+      if (!hasVerifiedFactor) {
+        if (pathname.startsWith('/api/')) {
+          return NextResponse.json(
+            { error: 'MFA enrollment required.' },
+            { status: 403 }
+          );
+        }
+        const url = request.nextUrl.clone();
+        url.pathname = '/account/security';
+        url.search = '?reason=mfa_required';
+        return NextResponse.redirect(url);
+      }
+    }
+  }
+
   return response;
 }
 

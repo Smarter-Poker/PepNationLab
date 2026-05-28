@@ -50,4 +50,23 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+// Wrap with Sentry only when @sentry/nextjs is resolvable. This keeps the
+// build green in environments that haven't installed Sentry yet (e.g. a fresh
+// clone before `npm install` has resolved the new dependency).
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let exported: any = nextConfig;
+try {
+  // Resolve via a variable so TS does not require the .d.ts to be present.
+  const mod = '@sentry/nextjs';
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { withSentryConfig } = require(mod);
+  exported = withSentryConfig(nextConfig, {
+    silent: true,
+    org: process.env.SENTRY_ORG,
+    project: process.env.SENTRY_PROJECT,
+  });
+} catch {
+  // Sentry not installed yet; ship without it.
+}
+
+export default exported;
