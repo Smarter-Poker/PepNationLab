@@ -189,7 +189,7 @@ export async function POST(req: NextRequest) {
       sender_id: superAgentId,
       receiver_id: sub_agent_id,
       subject: `Invoice For Week ${week_start}`,
-      body: `Your invoice for the week of ${week_start} has been generated.\nTotal Owed: $${totalOwed.toFixed(2)}\n\nPlease review your dashboard to make payment.`,
+      body: `Your invoice for the week of ${week_start} has been generated.\nTotal Owed: $${Math.ceil(totalOwed)}\n\nPlease review your dashboard to make payment.`,
       type: 'invoice'
     });
 

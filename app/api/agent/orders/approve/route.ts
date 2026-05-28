@@ -126,7 +126,7 @@ export async function POST(req: NextRequest) {
       const balance = Number(primaryProfile.prepaid_balance) || 0;
       if (balance < totalOwed) {
         return NextResponse.json({ 
-          error: `Insufficient Prepaid Balance. Requires $${totalOwed.toFixed(2)}, but balance is $${balance.toFixed(2)}. Please recharge your account.`
+          error: `Insufficient Prepaid Balance. Requires $${Math.ceil(totalOwed)}, but balance is $${Math.ceil(balance)}. Please recharge your account.`
         }, { status: 402 });
       }
     } else if (primaryProfile.account_type === 'credit') {
@@ -185,7 +185,7 @@ export async function POST(req: NextRequest) {
 
       if (projected > creditLimit) {
         return NextResponse.json({
-          error: `Credit Limit Exceeded. Approving this order would push outstanding balance to $${projected.toFixed(2)} (Limit: $${creditLimit.toFixed(2)}). Please pay your pending weekly statements.`,
+          error: `Credit Limit Exceeded. Approving this order would push outstanding balance to $${Math.ceil(projected)} (Limit: $${Math.ceil(creditLimit)}). Please pay your pending weekly statements.`,
         }, { status: 403 });
       }
     }
@@ -213,7 +213,27 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // 5. Update the Order Status
+    // 5. Deduct Prepaid Balance atomically via RPC BEFORE updating order
+    //    status. This eliminates the race window where the order could be
+    //    marked approved but the agent was never charged.
+    let prepaidDeducted = false;
+    let oldBalance = 0;
+    if (primaryProfile.account_type === 'prepaid') {
+      oldBalance = Number(primaryProfile.prepaid_balance) || 0;
+      
+      const { data: deductSuccess, error: deductError } = await supabase
+        .rpc('deduct_prepaid_balance', { 
+          agent_id: primaryBilledAgentId, 
+          amount: totalOwed 
+        });
+
+      if (deductError || !deductSuccess) {
+        return NextResponse.json({ error: 'Failed to deduct balance. Please try again.' }, { status: 500 });
+      }
+      prepaidDeducted = true;
+    }
+
+    // 6. Update the Order Status
     const updatePayload: any = {
       status: newStatus,
       agent_approved_at: new Date().toISOString(),
@@ -229,26 +249,23 @@ export async function POST(req: NextRequest) {
       .eq('id', orderId);
 
     if (updateError) {
+      // If we already deducted, refund the balance before returning error
+      if (prepaidDeducted) {
+        try {
+          await supabase.rpc('deduct_prepaid_balance', {
+            agent_id: primaryBilledAgentId,
+            amount: -totalOwed,
+          });
+        } catch {
+          /* best-effort refund */
+        }
+      }
       return NextResponse.json({ error: 'Failed to update order status' }, { status: 500 });
     }
 
-    // 5. Deduct Prepaid Balance atomically via RPC if prepaid
-    if (primaryProfile.account_type === 'prepaid') {
-      const oldBalance = Number(primaryProfile.prepaid_balance) || 0;
-      
-      const { data: deductSuccess, error: deductError } = await supabase
-        .rpc('deduct_prepaid_balance', { 
-          agent_id: primaryBilledAgentId, 
-          amount: totalOwed 
-        });
-
-      if (deductError || !deductSuccess) {
-        return NextResponse.json({ error: 'Failed to deduct balance. Please try again.' }, { status: 500 });
-      }
-
+    // 7. Record the ledger entry for the prepaid deduction
+    if (prepaidDeducted) {
       const newBalance = oldBalance - totalOwed;
-
-      // Insert ledger entry
       await supabase
         .from('balance_transactions')
         .insert({

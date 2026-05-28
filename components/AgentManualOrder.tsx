@@ -78,7 +78,7 @@ export default function AgentManualOrder({ onOrderCreated }: { onOrderCreated: (
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (cart.length === 0) {
-      toast.error('Cart is empty.');
+      toast.error('Cart Is Empty.');
       return;
     }
 
@@ -97,19 +97,19 @@ export default function AgentManualOrder({ onOrderCreated }: { onOrderCreated: (
       });
 
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed to create manual order');
+      if (!res.ok) throw new Error(data.error || 'Failed To Create Manual Order');
 
-      toast.success('Manual Order Created Successfully!');
+      toast.success('Manual Order Created Successfully');
       onOrderCreated(data.order); // Trigger parent refresh or view toggle
     } catch (err: any) {
-      toast.error(err.message || 'An error occurred');
+      toast.error(err.message || 'An Error Occurred');
     } finally {
       setSubmitting(false);
     }
   };
 
   if (loading) {
-    return <div style={{ padding: 'var(--space-4)', color: 'var(--grey-400)' }}>Loading products...</div>;
+    return <div style={{ padding: 'var(--space-4)', color: 'var(--grey-400)' }}>Loading Products...</div>;
   }
 
   return (
@@ -173,7 +173,7 @@ export default function AgentManualOrder({ onOrderCreated }: { onOrderCreated: (
               </select>
             </div>
             <button type="button" onClick={handleAddToCart} className="btn btn-secondary" style={{ height: 42 }}>
-              Add to Cart
+              Add To Cart
             </button>
           </div>
 
@@ -209,7 +209,7 @@ export default function AgentManualOrder({ onOrderCreated }: { onOrderCreated: (
               </div>
             </div>
           ) : (
-            <p style={{ fontSize: '0.85rem', color: 'var(--grey-500)', fontStyle: 'italic' }}>Cart is empty.</p>
+            <p style={{ fontSize: '0.85rem', color: 'var(--grey-500)', fontStyle: 'italic' }}>Cart Is Empty.</p>
           )}
         </div>
 

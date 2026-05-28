@@ -5,21 +5,38 @@ type ServiceClient = Awaited<ReturnType<typeof createServiceClient>>;
 export type AgentTier = 'tier_1' | 'tier_2' | 'tier_3';
 
 /**
- * Per-process cache. Keys:
+ * Per-process cache WITH TTL. Entries expire after CACHE_TTL_MS so admin
+ * changes to base costs, tier multipliers, or product overrides propagate
+ * within ~60 seconds even on warm Vercel lambdas.
+ *
+ * Keys:
  *  - `tier:${tier}` -> default multiplier from pricing_tiers
  *  - `override:${productId}:${tier}` -> custom multiplier (may be null if not set)
  *  - `base:${productId}` -> products.base_cost
  *  - `superBaseline:${superAgentId}:${productId}` -> super_agent_pricing.baseline_cost (or null)
  */
-const cache = new Map<string, unknown>();
+const CACHE_TTL_MS = 60_000; // 60 seconds
+
+interface CacheEntry<T> {
+  value: T;
+  expires: number;
+}
+
+const cache = new Map<string, CacheEntry<unknown>>();
 
 function setCache<T>(key: string, value: T): T {
-  cache.set(key, value);
+  cache.set(key, { value, expires: Date.now() + CACHE_TTL_MS });
   return value;
 }
 
 function getCached<T>(key: string): T | undefined {
-  return cache.has(key) ? (cache.get(key) as T) : undefined;
+  const entry = cache.get(key) as CacheEntry<T> | undefined;
+  if (!entry) return undefined;
+  if (Date.now() > entry.expires) {
+    cache.delete(key);
+    return undefined;
+  }
+  return entry.value;
 }
 
 async function getDefaultTierMultiplier(

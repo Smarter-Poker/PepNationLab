@@ -63,7 +63,7 @@ export default function AgentLedger({ agentId }: { agentId: string }) {
           <div style={{ fontSize: '2rem', fontFamily: 'var(--font-brand)', color: 'var(--white)' }}>
             {formatCurrency(ledgerData?.summary?.totalCollected || 0)}
           </div>
-          <p style={{ fontSize: '0.75rem', color: 'var(--grey-500)', marginTop: 4 }}>Money you collected from your customers</p>
+          <p style={{ fontSize: '0.75rem', color: 'var(--grey-500)', marginTop: 4 }}>Money You Collected From Your Customers</p>
         </div>
 
         <div className="card-metal" style={{ padding: 'var(--space-6)', textAlign: 'center', borderTop: '4px solid var(--red)' }}>
@@ -71,7 +71,7 @@ export default function AgentLedger({ agentId }: { agentId: string }) {
           <div style={{ fontSize: '2rem', fontFamily: 'var(--font-brand)', color: 'var(--red)' }}>
             {formatCurrency(ledgerData?.summary?.totalOwed || 0)}
           </div>
-          <p style={{ fontSize: '0.75rem', color: 'var(--grey-500)', marginTop: 4 }}>Money you owe the Admin/Super Agent</p>
+          <p style={{ fontSize: '0.75rem', color: 'var(--grey-500)', marginTop: 4 }}>Money You Owe The Admin Or Super Agent</p>
         </div>
 
         <div className="card-metal" style={{ padding: 'var(--space-6)', textAlign: 'center', borderTop: '4px solid var(--teal)' }}>
@@ -79,7 +79,7 @@ export default function AgentLedger({ agentId }: { agentId: string }) {
           <div style={{ fontSize: '2rem', fontFamily: 'var(--font-brand)', color: 'var(--teal)' }}>
             {formatCurrency(ledgerData?.summary?.totalProfit || 0)}
           </div>
-          <p style={{ fontSize: '0.75rem', color: 'var(--grey-500)', marginTop: 4 }}>Your true take-home earnings</p>
+          <p style={{ fontSize: '0.75rem', color: 'var(--grey-500)', marginTop: 4 }}>Your True Take-Home Earnings</p>
         </div>
       </div>
 
@@ -119,7 +119,7 @@ export default function AgentLedger({ agentId }: { agentId: string }) {
         </div>
         
         {ledgerData?.transactions?.length === 0 ? (
-          <p style={{ color: 'var(--grey-400)' }}>No transactions found for your downline.</p>
+          <p style={{ color: 'var(--grey-400)' }}>No Transactions Found For Your Downline.</p>
         ) : (
           <div className="table-responsive">
             <table className="data-table" style={{ width: '100%', fontSize: '0.85rem' }}>

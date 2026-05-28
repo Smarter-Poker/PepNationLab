@@ -26,7 +26,34 @@ export default function LegalDocument({
   return (
     <section className="section">
       <div className="container-sm">
-        {/* Counsel review banner */}
+        {/* Visible DRAFT badge — teal on black */}
+        <div
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 'var(--space-2)',
+            background: 'var(--black)',
+            color: 'var(--teal)',
+            border: '1px solid var(--teal)',
+            borderRadius: 'var(--radius-full)',
+            padding: '6px 14px',
+            fontSize: '0.72rem',
+            fontWeight: 700,
+            letterSpacing: '0.08em',
+            textTransform: 'uppercase',
+            marginBottom: 'var(--space-4)',
+            boxShadow: '0 0 0 1px rgba(0,196,188,0.2), 0 0 12px rgba(0,196,188,0.2)',
+          }}
+        >
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="10" />
+            <line x1="12" y1="8" x2="12" y2="12" />
+            <line x1="12" y1="16" x2="12.01" y2="16" />
+          </svg>
+          Draft — Pending Attorney Review
+        </div>
+
+        {/* Counsel review explanation */}
         <div
           style={{
             display: 'flex',

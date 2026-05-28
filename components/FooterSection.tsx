@@ -56,7 +56,7 @@ export default function FooterSection() {
                 { label: 'Products', href: '/products' },
                 { label: 'Become An Agent', href: '/become-agent' },
                 { label: 'Agent Dashboard', href: '/dashboard' },
-                { label: 'Create Account', href: '/register' },
+                { label: 'Sign In', href: '/login' },
               ].map(({ label, href }) => (
                 <Link key={label} href={href} style={{ fontSize: '0.85rem', color: 'var(--grey-400)', transition: 'color 0.2s' }}
                       onMouseOver={e => (e.currentTarget.style.color = 'var(--teal)')}

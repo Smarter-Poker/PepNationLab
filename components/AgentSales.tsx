@@ -27,7 +27,7 @@ export default function AgentSales() {
     return () => clearInterval(interval);
   }, []);
 
-  if (loading) return <div style={{ padding: 'var(--space-6)', color: 'var(--silver)' }}>Loading live sales data...</div>;
+  if (loading) return <div style={{ padding: 'var(--space-6)', color: 'var(--silver)' }}>Loading Live Sales Data...</div>;
   if (error) return <div style={{ padding: 'var(--space-6)', color: 'var(--red)' }}>Error: {error}</div>;
 
   const { liveCarts, sales } = data || { liveCarts: [], sales: [] };
@@ -44,7 +44,7 @@ export default function AgentSales() {
         </h2>
         {liveCarts.length === 0 ? (
           <div className="card-metal" style={{ textAlign: 'center', padding: 'var(--space-8)', opacity: 0.7 }}>
-            No researchers currently have items in their cart.
+            No Researchers Currently Have Items In Their Cart.
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
@@ -99,7 +99,7 @@ export default function AgentSales() {
             <tbody>
               {sales.length === 0 ? (
                 <tr>
-                  <td colSpan={6} style={{ textAlign: 'center', opacity: 0.5 }}>No sales recorded yet.</td>
+                  <td colSpan={6} style={{ textAlign: 'center', opacity: 0.5 }}>No Sales Recorded Yet.</td>
                 </tr>
               ) : (
                 sales.map((sale: any) => (

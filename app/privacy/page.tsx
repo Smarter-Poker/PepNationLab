@@ -47,7 +47,7 @@ export default function PrivacyPage() {
           {
             heading: 'Payment Information',
             body: [
-              'The Platform does not process credit cards and does not collect or store card numbers or bank account credentials. Payments are completed off-platform through Zelle, Venmo, Cash App, or Apple Pay, and are governed by those providers own privacy practices.',
+              "The Platform does not process credit cards and does not collect or store card numbers or bank account credentials. Payments are completed off-platform through Zelle, Venmo, Cash App, or Apple Pay, and are governed by those providers' own privacy practices.",
             ],
           },
           {

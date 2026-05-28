@@ -122,7 +122,12 @@ export default async function OrdersPage() {
               {orders.map((order) => {
                 const statusColor = STATUS_COLORS[order.status] ?? 'var(--grey-400)';
                 return (
-                  <div key={order.id} className="card-metal" style={{ padding: 'var(--space-6)' }}>
+                  <Link
+                    key={order.id}
+                    href={`/orders/${order.id}`}
+                    className="card-metal"
+                    style={{ padding: 'var(--space-6)', textDecoration: 'none', color: 'inherit', display: 'block' }}
+                  >
                     {/* Order header */}
                     <div
                       style={{
@@ -228,7 +233,7 @@ export default async function OrdersPage() {
                         <span style={{ color: 'var(--silver)', fontWeight: 600 }}>{order.tracking_number}</span>
                       </div>
                     )}
-                  </div>
+                  </Link>
                 );
               })}
             </div>

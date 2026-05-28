@@ -157,11 +157,8 @@ export default function AboutPage() {
             Create A Verified Researcher Account To Browse The Full Catalog With Wholesale Pricing.
           </p>
           <div style={{ display: 'flex', gap: 'var(--space-4)', justifyContent: 'center', flexWrap: 'wrap' }}>
-            <Link href="/register" className="btn btn-primary btn-lg">
-              Create Researcher Account
-            </Link>
-            <Link href="/become-agent" className="btn btn-secondary btn-lg">
-              Learn About Becoming An Agent
+            <Link href="/become-agent" className="btn btn-primary btn-lg">
+              Become An Agent
             </Link>
           </div>
         </div>

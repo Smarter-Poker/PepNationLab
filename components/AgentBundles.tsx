@@ -165,7 +165,7 @@ export default function AgentBundles({ agentId }: { agentId: string }) {
               Research Bundles
             </h3>
             <p style={{ color: 'var(--grey-400)', fontSize: '0.82rem', margin: 0 }}>
-              Combine products into discounted bundles for your storefront.
+              Combine Products Into Discounted Bundles For Your Storefront.
             </p>
           </div>
           <button
@@ -312,7 +312,7 @@ export default function AgentBundles({ agentId }: { agentId: string }) {
             No Research Bundles Created Yet
           </p>
           <p style={{ color: 'var(--grey-400)', fontSize: '0.8rem' }}>
-            Combine 2+ products into discounted bundles to increase average order value.
+            Combine 2+ Products Into Discounted Bundles To Increase Average Order Value.
           </p>
         </div>
       ) : (

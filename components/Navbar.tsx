@@ -177,8 +177,8 @@ export default function Navbar() {
           ) : (
             <>
               <Link href="/login" className="btn btn-ghost btn-sm">Sign In</Link>
-              <Link href="/register" className="btn btn-primary btn-sm">
-                Create Account
+              <Link href="/become-agent" className="btn btn-primary btn-sm">
+                Become An Agent
               </Link>
             </>
           )}
@@ -294,7 +294,7 @@ export default function Navbar() {
           ) : (
             <>
               <Link href="/login" onClick={() => setMobileOpen(false)} className="btn btn-ghost w-full">Sign In</Link>
-              <Link href="/register" onClick={() => setMobileOpen(false)} className="btn btn-primary w-full">Create Account</Link>
+              <Link href="/become-agent" onClick={() => setMobileOpen(false)} className="btn btn-primary w-full">Become An Agent</Link>
             </>
           )}
         </div>

@@ -139,6 +139,7 @@ export async function POST(req: NextRequest) {
 
   if (isResearcher) {
     profileData.parent_agent_id = parent_agent_id;
+    profileData.referring_agent_id = parent_agent_id;
   } else {
     profileData.tier = tier;
     profileData.account_type = account_type;

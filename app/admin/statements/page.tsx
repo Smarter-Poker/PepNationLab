@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { toast } from 'sonner';
 
 interface AgentOption {
   id: string;
@@ -145,10 +146,10 @@ export default function AdminStatementsPage() {
         setPayReference('');
         await fetchData();
       } else {
-        alert(json.error || 'Failed To Mark Statement Paid');
+        toast.error(json.error || 'Failed To Mark Statement Paid');
       }
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'An Error Occurred');
+      toast.error(err instanceof Error ? err.message : 'An Error Occurred');
     } finally {
       setSavingPaid(false);
     }

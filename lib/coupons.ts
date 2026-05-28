@@ -67,7 +67,7 @@ export async function validateCoupon(
   ) {
     return {
       valid: false,
-      error: `A Minimum Order Of $${Number(coupon.min_order_amount).toFixed(2)} Is Required For This Coupon.`,
+      error: `A Minimum Order Of $${Math.ceil(Number(coupon.min_order_amount))} Is Required For This Coupon.`,
     };
   }
 

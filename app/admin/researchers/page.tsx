@@ -1,6 +1,10 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { toast } from 'sonner';
+import Pagination from '@/components/Pagination';
+
+const PAGE_SIZE = 25;
 
 interface AgentProfile {
   id: string;
@@ -48,6 +52,7 @@ export default function ResearchersAdminPage() {
   const [error, setError] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState<'researchers' | 'agents' | 'admins'>('researchers');
+  const [page, setPage] = useState(1);
 
   // Modal State
   const [selectedProfile, setSelectedProfile] = useState<Profile | null>(null);
@@ -118,11 +123,11 @@ export default function ResearchersAdminPage() {
       if (!res.ok) {
         setProfiles(prev => prev.map(p => p.id === profile.id ? { ...p, is_active: profile.is_active } : p));
         const json = await res.json();
-        alert(json.error || 'Failed To Toggle Account Status');
+        toast.error(json.error || 'Failed To Toggle Account Status');
       }
     } catch (err: any) {
       setProfiles(prev => prev.map(p => p.id === profile.id ? { ...p, is_active: profile.is_active } : p));
-      alert(err.message || 'Network Error Occurred');
+      toast.error(err.message || 'Network Error Occurred');
     }
   }
 
@@ -308,6 +313,16 @@ export default function ResearchersAdminPage() {
     return true;
   });
 
+  // Pagination
+  const totalPages = Math.max(1, Math.ceil(filteredProfiles.length / PAGE_SIZE));
+  const safePage = Math.min(page, totalPages);
+  const paginatedProfiles = filteredProfiles.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
+
+  // Reset to page 1 when filter or search changes
+  useEffect(() => {
+    setPage(1);
+  }, [searchQuery, activeTab]);
+
   const resolvedAgentProfile = selectedProfile
     ? (Array.isArray(selectedProfile.agent_profiles) ? selectedProfile.agent_profiles[0] : selectedProfile.agent_profiles)
     : null;
@@ -397,7 +412,7 @@ export default function ResearchersAdminPage() {
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
-          {filteredProfiles.map(profile => {
+          {paginatedProfiles.map(profile => {
             const ap = Array.isArray(profile.agent_profiles) ? profile.agent_profiles[0] : profile.agent_profiles;
             return (
               <div key={profile.id} className="card-metal" style={{
@@ -509,6 +524,7 @@ export default function ResearchersAdminPage() {
               </div>
             );
           })}
+          <Pagination page={safePage} totalPages={totalPages} onPageChange={setPage} />
         </div>
       )}
 

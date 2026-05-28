@@ -137,8 +137,8 @@ export default function AdminAgents() {
         }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed to create agent');
-      toast.success(`${createForm.account_role === 'researcher' ? 'Researcher' : 'Agent'} "${createForm.full_name}" created successfully!`);
+      if (!res.ok) throw new Error(data.error || 'Failed To Create Agent');
+      toast.success(`${createForm.account_role === 'researcher' ? 'Researcher' : 'Agent'} "${createForm.full_name}" Created Successfully`);
       setShowCreateModal(false);
       setCreateForm({
         full_name: '',
@@ -159,7 +159,7 @@ export default function AdminAgents() {
       setSlugStatus('idle');
       fetchAgents();
     } catch (err: any) {
-      toast.error(err.message || 'Failed to create agent');
+      toast.error(err.message || 'Failed To Create Agent');
     } finally {
       setIsCreating(false);
     }
@@ -190,11 +190,11 @@ export default function AdminAgents() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
       
-      toast.success('Contact info updated successfully');
+      toast.success('Contact Info Updated Successfully');
       setEditingAgent(null);
       fetchAgents();
     } catch (err: any) {
-      toast.error(err.message || 'Failed to update contact info');
+      toast.error(err.message || 'Failed To Update Contact Info');
     } finally {
       setIsSaving(false);
     }
@@ -344,10 +344,10 @@ export default function AdminAgents() {
                             });
                             const json = await res.json();
                             if (!res.ok) throw new Error(json.error);
-                            toast.success(agent.is_super_agent ? 'Super Agent status revoked' : 'Promoted to Super Agent');
+                            toast.success(agent.is_super_agent ? 'Super Agent Status Revoked' : 'Promoted To Super Agent');
                             fetchAgents(); // refresh
                           } catch (err: any) {
-                            toast.error(err.message || 'Failed to update super agent status');
+                            toast.error(err.message || 'Failed To Update Super Agent Status');
                           }
                         }}
                         className="btn btn-secondary btn-sm"

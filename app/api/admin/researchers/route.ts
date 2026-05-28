@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
 import { requireAdmin } from '@/lib/admin-auth';
+import { generateQrDataUrl } from '@/lib/qr';
 
 // GET: List all profiles with optional roles and search query
 export async function GET(req: NextRequest) {
@@ -208,9 +209,16 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'This Agent Storefront Slug Is Already Taken' }, { status: 400 });
     }
 
-    // Generate dynamic QR code URL
-    const storefrontUrl = `https://pepnationlab.com/${slug}`;
-    const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&color=00c4bc&bgcolor=0a1018&data=${encodeURIComponent(storefrontUrl)}`;
+    // Generate QR code in-process (no external dependency)
+    const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://pepnationlab.com';
+    const storefrontUrl = `${APP_URL}/${slug}`;
+    let qrCodeData: string | null = null;
+    try {
+      qrCodeData = await generateQrDataUrl(storefrontUrl);
+    } catch (qrErr) {
+      console.error('QR generation failed:', qrErr);
+      qrCodeData = null;
+    }
 
     const agentProfileData = {
       id,
@@ -218,7 +226,7 @@ export async function POST(req: NextRequest) {
       display_name,
       tagline: tagline || null,
       bio: bio || null,
-      qr_code_url: qrCodeUrl,
+      qr_code_data: qrCodeData,
       is_active: is_active !== undefined ? is_active : true,
       updated_at: new Date().toISOString(),
     };

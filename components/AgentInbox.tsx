@@ -54,7 +54,7 @@ export default function AgentInbox({ agentId }: { agentId: string }) {
           System Inbox & Notifications
         </h3>
         <p style={{ color: 'var(--grey-400)', fontSize: '0.85rem', marginBottom: 'var(--space-6)' }}>
-          View invoices, alerts, and system notifications here.
+          View Invoices, Alerts, And System Notifications Here.
         </p>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
           {[1, 2, 3].map((i) => (
@@ -86,8 +86,8 @@ export default function AgentInbox({ agentId }: { agentId: string }) {
             <rect x="2" y="4" width="20" height="16" rx="2" />
             <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
           </svg>
-          <div style={{ color: 'var(--grey-400)', fontSize: '0.95rem' }}>Your inbox is empty.</div>
-          <div style={{ color: 'var(--grey-600)', fontSize: '0.8rem', marginTop: 4 }}>System notifications and messages will appear here.</div>
+          <div style={{ color: 'var(--grey-400)', fontSize: '0.95rem' }}>Your Inbox Is Empty.</div>
+          <div style={{ color: 'var(--grey-600)', fontSize: '0.8rem', marginTop: 4 }}>System Notifications And Messages Will Appear Here.</div>
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>

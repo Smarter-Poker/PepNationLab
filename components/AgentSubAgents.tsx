@@ -11,13 +11,17 @@ export default function AgentSubAgents({ agentId }: { agentId?: string }) {
   const [invoices, setInvoices] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  
+
   // Pricing Modal State
   const [showPricingModal, setShowPricingModal] = useState(false);
   const [products, setProducts] = useState<any[]>([]);
   const [loadingPricing, setLoadingPricing] = useState(false);
   const [pricingError, setPricingError] = useState<string | null>(null);
   const [pricingSuccess, setPricingSuccess] = useState<string | null>(null);
+  // Controlled inputs per product — keyed by product id.
+  const [costInputs, setCostInputs] = useState<Record<string, string>>({});
+  const [bulkCostInputs, setBulkCostInputs] = useState<Record<string, string>>({});
+  const [bulkThreshInputs, setBulkThreshInputs] = useState<Record<string, string>>({});
 
   const fetchData = async () => {
     try {
@@ -47,7 +51,20 @@ export default function AgentSubAgents({ agentId }: { agentId?: string }) {
       const res = await fetch('/api/agent/super-agent/pricing');
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || 'Failed to fetch pricing');
-      setProducts(json.data || []);
+      const items = json.data || [];
+      setProducts(items);
+      // Seed controlled inputs from server values.
+      const cost: Record<string, string> = {};
+      const bulkCost: Record<string, string> = {};
+      const bulkThresh: Record<string, string> = {};
+      for (const p of items) {
+        cost[p.id] = p.baseline_cost != null ? String(p.baseline_cost) : '';
+        bulkCost[p.id] = p.bulk_baseline_cost != null ? String(p.bulk_baseline_cost) : '';
+        bulkThresh[p.id] = p.bulk_threshold != null ? String(p.bulk_threshold) : '100';
+      }
+      setCostInputs(cost);
+      setBulkCostInputs(bulkCost);
+      setBulkThreshInputs(bulkThresh);
     } catch (err: any) {
       setPricingError(err.message);
     } finally {
@@ -130,22 +147,31 @@ export default function AgentSubAgents({ agentId }: { agentId?: string }) {
 
   const formatCurrency = (val: number) => `$${(Number(val) || 0).toFixed(2)}`;
 
-  if (loading) return <div style={{ color: 'var(--silver)' }}>Loading sub-agents...</div>;
+  if (loading) return <div style={{ color: 'var(--silver)' }}>Loading Sub-Agents...</div>;
   if (error) return <div style={{ color: 'var(--red)' }}>Error: {error}</div>;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-8)' }}>
       {/* Sub-Agents List */}
       <section>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 'var(--space-4)' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 'var(--space-4)', gap: 'var(--space-4)', flexWrap: 'wrap' }}>
           <div>
             <h2 style={{ fontSize: '1.25rem', color: 'var(--white)', fontFamily: 'var(--font-brand)' }}>
               My Sub-Agents
             </h2>
             <p style={{ color: 'var(--grey-400)', fontSize: '0.85rem', marginTop: 4 }}>
-              Agents you have promoted. They bill their downline directly, and you collect their balances.
+              Agents You Have Promoted. They Bill Their Downline Directly, And You Collect Their Balances.
             </p>
           </div>
+          <button
+            className="btn btn-primary btn-sm"
+            onClick={() => {
+              fetchPricing();
+              setShowPricingModal(true);
+            }}
+          >
+            Manage Baseline Pricing
+          </button>
         </div>
 
         <div className="table-responsive">
@@ -162,7 +188,7 @@ export default function AgentSubAgents({ agentId }: { agentId?: string }) {
             <tbody>
               {subAgents.length === 0 ? (
                 <tr>
-                  <td colSpan={5} style={{ textAlign: 'center', opacity: 0.5 }}>No sub-agents found.</td>
+                  <td colSpan={5} style={{ textAlign: 'center', opacity: 0.5 }}>No Sub-Agents Found.</td>
                 </tr>
               ) : (
                 subAgents.map(agent => (
@@ -183,24 +209,16 @@ export default function AgentSubAgents({ agentId }: { agentId?: string }) {
                           </a>
                         ) : (
                           <span style={{ color: 'var(--grey-400)', fontSize: '0.8rem' }}>No Storefront</span>
+
                         );
                       })()}
                     </td>
                     <td style={{ textAlign: 'right', display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
-                      <button 
-                        className="btn btn-secondary btn-sm" 
+                      <button
+                        className="btn btn-secondary btn-sm"
                         onClick={() => handleGenerateInvoice(agent.id)}
                       >
                         Generate Weekly Invoice
-                      </button>
-                      <button 
-                        className="btn btn-secondary btn-sm" 
-                        onClick={() => {
-                          fetchPricing();
-                          setShowPricingModal(true);
-                        }}
-                      >
-                        Manage Baseline Pricing
                       </button>
                     </td>
                   </tr>
@@ -218,7 +236,7 @@ export default function AgentSubAgents({ agentId }: { agentId?: string }) {
         </h2>
         {invoices.length === 0 ? (
           <div className="card-metal" style={{ padding: 'var(--space-8)', textAlign: 'center', opacity: 0.7 }}>
-            <p>No invoices generated yet. Click Generate below an agent to bill them for this week.</p>
+            <p>No Invoices Generated Yet. Click Generate Below An Agent To Bill Them For This Week.</p>
           </div>
         ) : (
           <div className="table-responsive">
@@ -286,16 +304,16 @@ export default function AgentSubAgents({ agentId }: { agentId?: string }) {
             >
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-5)' }}>
                 <div>
-                  <h3 style={{ fontSize: '1.3rem', fontFamily: 'var(--font-brand)', color: 'var(--white)', letterSpacing: '0.05em', textTransform: 'uppercase' }}>Baseline Pricing Rules</h3>
+                  <h3 style={{ fontSize: '1.3rem', fontFamily: 'var(--font-brand)', color: 'var(--white)', letterSpacing: '0.05em', textTransform: 'uppercase' }}>Baseline Pricing (Applies To All Sub-Agents)</h3>
                   <p style={{ fontSize: '0.85rem', color: 'var(--grey-400)', marginTop: 4 }}>
-                    Set the fixed wholesale cost that your Sub-Agents will pay you for each product. 
+                    Set The Fixed Wholesale Cost That Your Sub-Agents Will Pay You For Each Product. These Rules Apply Globally Across All Sub-Agents.
                   </p>
                 </div>
                 <button onClick={() => setShowPricingModal(false)} className="btn btn-secondary">Close</button>
               </div>
 
             {loadingPricing ? (
-              <div style={{ textAlign: 'center', padding: 'var(--space-8)' }}>Loading products...</div>
+              <div style={{ textAlign: 'center', padding: 'var(--space-8)' }}>Loading Products...</div>
             ) : (
               <table className="data-table" style={{ width: '100%', fontSize: '0.85rem' }}>
                 <thead>
@@ -311,52 +329,52 @@ export default function AgentSubAgents({ agentId }: { agentId?: string }) {
                 <tbody>
                   {products.map(prod => {
                     const yourCost = Number(prod.admin_cost).toFixed(2);
+                    const costVal = costInputs[prod.id] ?? '';
+                    const bulkThreshVal = bulkThreshInputs[prod.id] ?? '100';
+                    const bulkCostVal = bulkCostInputs[prod.id] ?? '';
                     return (
                       <tr key={prod.id}>
                         <td style={{ fontWeight: 'bold' }}>{prod.name}</td>
                         <td style={{ color: 'var(--grey-400)' }}>${yourCost}</td>
                         <td>
-                          <input 
-                            type="number" 
-                            className="form-input" 
+                          <input
+                            type="number"
+                            className="form-input"
                             style={{ width: 120, padding: '6px 12px' }}
-                            defaultValue={prod.baseline_cost || ''}
+                            value={costVal}
+                            onChange={e => setCostInputs(prev => ({ ...prev, [prod.id]: e.target.value }))}
                             placeholder="Set Cost..."
                             step="0.01"
-                            id={`cost-${prod.id}`}
                           />
                         </td>
                         <td>
-                          <input 
-                            type="number" 
-                            className="form-input" 
+                          <input
+                            type="number"
+                            className="form-input"
                             style={{ width: 80, padding: '6px' }}
-                            defaultValue={prod.bulk_threshold ?? 100}
+                            value={bulkThreshVal}
+                            onChange={e => setBulkThreshInputs(prev => ({ ...prev, [prod.id]: e.target.value }))}
                             placeholder="100"
                             min="1"
-                            id={`bulk-thresh-${prod.id}`}
                           />
                         </td>
                         <td>
-                          <input 
-                            type="number" 
-                            className="form-input" 
+                          <input
+                            type="number"
+                            className="form-input"
                             style={{ width: 100, padding: '6px' }}
-                            defaultValue={prod.bulk_baseline_cost || ''}
+                            value={bulkCostVal}
+                            onChange={e => setBulkCostInputs(prev => ({ ...prev, [prod.id]: e.target.value }))}
                             placeholder="Optional"
                             step="0.01"
                             min="0"
-                            id={`bulk-cost-${prod.id}`}
                           />
                         </td>
                         <td style={{ textAlign: 'right' }}>
-                          <button 
+                          <button
                             className="btn btn-primary btn-sm"
                             onClick={() => {
-                              const val = (document.getElementById(`cost-${prod.id}`) as HTMLInputElement).value;
-                              const bulkCost = (document.getElementById(`bulk-cost-${prod.id}`) as HTMLInputElement).value;
-                              const bulkThresh = (document.getElementById(`bulk-thresh-${prod.id}`) as HTMLInputElement).value;
-                              if (val) handleSavePricing(prod.id, val, bulkCost, bulkThresh);
+                              if (costVal) handleSavePricing(prod.id, costVal, bulkCostVal, bulkThreshVal);
                             }}
                           >
                             Save

@@ -35,8 +35,8 @@ export async function GET() {
       shipping_address,
       tracking_number,
       created_at,
-      buyer:profiles!buyer_id(email, full_name),
-      agent:profiles!agent_id(email, full_name)
+      buyer:profiles!orders_buyer_id_fkey(email, full_name),
+      agent:profiles!orders_agent_id_fkey(email, full_name)
     `)
     .in('status', ['approved_ship', 'in_fulfillment'])
     .eq('fulfillment_method', 'ship')

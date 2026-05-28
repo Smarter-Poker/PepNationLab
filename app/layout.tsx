@@ -4,6 +4,7 @@ import { CartProvider } from "@/components/CartContext";
 import { Toaster } from "sonner";
 
 export const viewport: Viewport = {
+  themeColor: "#0A1018",
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,

@@ -140,10 +140,7 @@ export default function HowItWorksSection() {
           </p>
           <div style={{ display: 'flex', gap: 'var(--space-4)', justifyContent: 'center', flexWrap: 'wrap' }}>
             <Link href="/become-agent" className="btn btn-primary btn-lg">
-              Learn About Becoming An Agent
-            </Link>
-            <Link href="/register" className="btn btn-secondary btn-lg">
-              Start As A Researcher
+              Become An Agent
             </Link>
           </div>
         </div>

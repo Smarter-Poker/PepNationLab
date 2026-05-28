@@ -364,16 +364,16 @@ export default function ProductsList({
                       <div>
                         {/* Price rendering based on current wholesale tier */}
                         <div style={{ fontSize: '1.2rem', fontWeight: 800, color: 'var(--teal)', fontFamily: 'var(--font-brand)' }}>
-                          ${costPrice.toFixed(2)}
+                          ${Math.ceil(costPrice)}
                         </div>
                         {userTier !== 'tier_3' && (
                           <div style={{ fontSize: '0.72rem', color: 'var(--grey-400)', textDecoration: 'line-through' }}>
-                            Retail: ${retailPrice.toFixed(2)}
+                            Retail: ${Math.ceil(retailPrice)}
                           </div>
                         )}
                         {bulkCostPrice !== null && (
                           <div style={{ fontSize: '0.72rem', color: 'var(--teal)', marginTop: 2, fontWeight: 600 }}>
-                            Buy {bulkThreshold}+ for ${bulkCostPrice.toFixed(2)}/ea
+                            Buy {bulkThreshold}+ for ${Math.ceil(bulkCostPrice)}/ea
                           </div>
                         )}
                       </div>

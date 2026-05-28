@@ -179,7 +179,7 @@ export async function GET(req: Request) {
             sender_id: subAgent.parent_agent_id,
             receiver_id: subAgent.id,
             subject: `Invoice For Week ${weekStart}`,
-            body: `Your invoice for the week of ${weekStart} has been generated.\nTotal Owed: $${totalOwed.toFixed(2)}\n\nPlease review your dashboard to make payment.`,
+            body: `Your invoice for the week of ${weekStart} has been generated.\nTotal Owed: $${Math.ceil(totalOwed)}\n\nPlease review your dashboard to make payment.`,
             type: 'invoice',
           });
         }

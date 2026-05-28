@@ -85,7 +85,7 @@
 
   /* Status Colors */
   --green:          #48BB78;
-  --orange:         #F6AD55;
+  --orange:         #ED8936;
   --gold:           #F6AD55;
 }
 
@@ -113,13 +113,7 @@ body {
   overflow-x: hidden;
   font-feature-settings: normal !important;
   font-variant-numeric: normal !important;
-  text-transform: capitalize;
   max-width: 100vw;
-}
-
-/* Exclude inputs to prevent corrupting data entry like emails or passwords */
-input, textarea {
-  text-transform: none;
 }
 
 /* ============================================
@@ -709,7 +703,7 @@ a:hover { color: var(--teal-dark); }
 }
 
 .status-active  { background: var(--teal); box-shadow: 0 0 6px var(--teal); }
-.status-pending { background: #F6AD55; box-shadow: 0 0 6px #F6AD55; }
+.status-pending { background: var(--orange); box-shadow: 0 0 6px var(--orange); }
 .status-error   { background: var(--red); box-shadow: 0 0 6px var(--red); }
 
 /* ============================================

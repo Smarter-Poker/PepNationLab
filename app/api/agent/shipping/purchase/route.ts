@@ -21,7 +21,7 @@ export async function POST(req: NextRequest) {
     // 1. Fetch Order and Agent Profile
     const { data: order, error: orderError } = await supabase
       .from('orders')
-      .select('*, profiles!orders_agent_id_fkey(parent_agent_id)')
+      .select('*, profiles!orders_agent_id_fkey(parent_agent_id), buyer:profiles!orders_buyer_id_fkey(full_name, email)')
       .eq('id', orderId)
       .single();
 
@@ -118,13 +118,13 @@ export async function POST(req: NextRequest) {
         email: 'noreply@pepnationlab.com'
       },
       addressTo: {
-        name: order.buyer_name || 'Valued Customer',
+        name: addr.fullName || (order as any).buyer?.full_name || 'Valued Customer',
         street1: street,
         city: city,
         state: state,
         zip: zip,
         country: country,
-        email: order.buyer_email || 'noreply@pepnationlab.com'
+        email: (order as any).buyer?.email || 'noreply@pepnationlab.com'
       },
       parcels: [{
         length: parcelDims.length,

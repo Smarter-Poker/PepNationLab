@@ -2,6 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import Pagination from '@/components/Pagination';
+
+const PAGE_SIZE = 25;
 
 interface AgentSales {
   agent_id: string;
@@ -33,9 +36,11 @@ export default function AdminSalesPage() {
   const [selectedAgent, setSelectedAgent] = useState<AgentSales | null>(null);
   const [ledger, setLedger] = useState<any[]>([]);
   const [ledgerLoading, setLedgerLoading] = useState(false);
+  const [page, setPage] = useState(1);
 
   useEffect(() => {
     fetchSales();
+    setPage(1);
   }, [range]);
 
   async function fetchSales() {
@@ -180,11 +185,15 @@ export default function AdminSalesPage() {
                         No Agent Sales Yet In This Period
                       </td>
                     </tr>
-                  ) : data.agents.map((agent, i) => (
+                  ) : (() => {
+                    const totalPages = Math.max(1, Math.ceil(data.agents.length / PAGE_SIZE));
+                    const safePage = Math.min(page, totalPages);
+                    const paginated = data.agents.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
+                    return paginated.map((agent, i) => (
                     <tr key={agent.agent_id}
                       onClick={() => loadAgentLedger(agent)}
                       style={{
-                        borderBottom: i < data.agents.length - 1 ? '1px solid rgba(255,255,255,0.04)' : 'none',
+                        borderBottom: i < paginated.length - 1 ? '1px solid rgba(255,255,255,0.04)' : 'none',
                         background: selectedAgent?.agent_id === agent.agent_id ? 'rgba(0,196,188,0.04)' : 'transparent',
                         cursor: 'pointer', transition: 'background 0.15s',
                       }}>
@@ -219,9 +228,17 @@ export default function AdminSalesPage() {
                         </button>
                       </td>
                     </tr>
-                  ))}
+                  ));
+                  })()}
                 </tbody>
               </table>
+              {data.agents.length > PAGE_SIZE && (
+                <Pagination
+                  page={Math.min(page, Math.max(1, Math.ceil(data.agents.length / PAGE_SIZE)))}
+                  totalPages={Math.max(1, Math.ceil(data.agents.length / PAGE_SIZE))}
+                  onPageChange={setPage}
+                />
+              )}
             </div>
 
             {/* Transaction Ledger Drawer */}

@@ -2,6 +2,9 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import Pagination from '@/components/Pagination';
+
+const PAGE_SIZE = 25;
 
 interface Transaction {
   id: string;
@@ -38,6 +41,7 @@ export default function AdminTransactionsPage() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
 
   useEffect(() => {
     fetchTransactions();
@@ -61,6 +65,10 @@ export default function AdminTransactionsPage() {
     if (!email) return 'Unknown';
     return `@${email.split('@')[0]}`;
   };
+
+  const totalPages = Math.max(1, Math.ceil(transactions.length / PAGE_SIZE));
+  const safePage = Math.min(page, totalPages);
+  const paginatedTransactions = transactions.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
 
   return (
     <div style={{ padding: 'var(--space-8)' }}>
@@ -110,7 +118,7 @@ export default function AdminTransactionsPage() {
                 </td>
               </tr>
             ) : (
-              transactions.map((tx) => {
+              paginatedTransactions.map((tx) => {
                 const meta = TYPE_META[tx.type] ?? {
                   label: tx.type.replace(/_/g, ' '),
                   badge: 'badge-silver',
@@ -151,6 +159,7 @@ export default function AdminTransactionsPage() {
           </tbody>
         </table>
       </div>
+      <Pagination page={safePage} totalPages={totalPages} onPageChange={setPage} />
     </div>
   );
 }

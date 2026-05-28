@@ -80,7 +80,7 @@ export async function POST(req: NextRequest) {
 
     const baseQuery = supabase
       .from('agent_products')
-      .select('id, product_id, retail_price')
+      .select('id, product_id, retail_price, products:product_id(name)')
       .eq('agent_id', agentId);
 
     const { data: agentProducts, error: agentProductsError } =
@@ -95,14 +95,16 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const byId = new Map<string, { id: string; product_id: string; retail_price: number }>();
-    const byProductId = new Map<string, { id: string; product_id: string; retail_price: number }>();
+    const byId = new Map<string, { id: string; product_id: string; retail_price: number; product_name: string }>();
+    const byProductId = new Map<string, { id: string; product_id: string; retail_price: number; product_name: string }>();
     for (const ap of agentProducts) {
       if (!ap.product_id) continue;
+      const prod = Array.isArray((ap as any).products) ? (ap as any).products[0] : (ap as any).products;
       const row = {
         id: ap.id as string,
         product_id: ap.product_id as string,
         retail_price: Number(ap.retail_price) || 0,
+        product_name: prod?.name || 'Unknown Product',
       };
       byId.set(row.id, row);
       byProductId.set(row.product_id, row);
@@ -111,6 +113,7 @@ export async function POST(req: NextRequest) {
     let computedSubtotal = 0;
     const orderItems: Array<{
       product_id: string;
+      product_name: string;
       agent_product_id: string;
       quantity: number;
       unit_retail_price: number;
@@ -144,6 +147,7 @@ export async function POST(req: NextRequest) {
 
       orderItems.push({
         product_id: ap.product_id,
+        product_name: ap.product_name,
         agent_product_id: ap.id,
         quantity: qty,
         unit_retail_price: unitRetail,
@@ -204,6 +208,7 @@ export async function POST(req: NextRequest) {
     const itemsPayload = orderItems.map(item => ({
       order_id: newOrder.id,
       product_id: item.product_id,
+      product_name: item.product_name,
       agent_product_id: item.agent_product_id,
       quantity: item.quantity,
       unit_retail_price: item.unit_retail_price,

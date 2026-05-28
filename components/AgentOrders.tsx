@@ -65,10 +65,10 @@ export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
 
       const data = await res.json();
       if (!res.ok) {
-        throw new Error(data.error || 'Failed to purchase shipping label.');
+        throw new Error(data.error || 'Failed To Purchase Shipping Label.');
       }
 
-      toast.success('Shipping Label Purchased Successfully!');
+      toast.success('Shipping Label Purchased Successfully');
       if (data.labelUrl) {
         window.open(data.labelUrl, '_blank');
       }

@@ -2,6 +2,7 @@
 
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { motion, Variants, AnimatePresence } from 'framer-motion';
+import { Star, X, Package } from 'lucide-react';
 
 interface ProductItem {
   id: string;
@@ -21,11 +22,20 @@ interface ProductItem {
   };
 }
 
+export interface BundleConfig {
+  id: string;
+  name: string;
+  description?: string;
+  product_ids: string[];
+  price: number;
+}
+
 interface Props {
   products: ProductItem[];
   inventoryMap: Record<string, number>;
   primaryColor: string;
   agentSlug: string;
+  bundles?: BundleConfig[];
 }
 
 const containerVariants: Variants = {
@@ -111,7 +121,7 @@ function pickDefaultVariant(variants: ProductItem[]): string {
   return variants[variants.length - 1]?.id || variants[0].id;
 }
 
-export default function AgentStorefrontGrid({ products, inventoryMap, primaryColor, agentSlug }: Props) {
+export default function AgentStorefrontGrid({ products, inventoryMap, primaryColor, agentSlug, bundles = [] }: Props) {
   const [selectedVariants, setSelectedVariants] = useState<Record<string, string>>({});
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<'popular' | 'name_asc' | 'name_desc' | 'price_low' | 'price_high'>('popular');
@@ -250,6 +260,109 @@ export default function AgentStorefrontGrid({ products, inventoryMap, primaryCol
         {filteredProducts.length} {filteredProducts.length === 1 ? 'Product' : 'Products'} Found
       </div>
 
+      {/* Research Bundles */}
+      {bundles && bundles.length > 0 && (
+        <div style={{ marginTop: 'var(--space-2)' }}>
+          <h3 style={{ fontFamily: 'var(--font-brand)', fontSize: '1.05rem', color: 'var(--white)', marginBottom: 'var(--space-4)', letterSpacing: '0.03em' }}>
+            Research Bundles
+          </h3>
+          <div className="grid-3" style={{ gap: 'var(--space-6)' }}>
+            {bundles.map((bundle) => {
+              const productNames = bundle.product_ids
+                .map((pid) => {
+                  const item = products.find((p) => p.id === pid || p.product_id === pid);
+                  return item?.products?.name || item?.custom_name || null;
+                })
+                .filter(Boolean) as string[];
+              return (
+                <div
+                  key={bundle.id}
+                  className="card-metal"
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    padding: 'var(--space-5)',
+                    background: `linear-gradient(180deg, ${primaryColor}10 0%, var(--surface-2) 100%)`,
+                    border: `1px solid ${primaryColor}30`,
+                    borderRadius: 'var(--radius-lg)',
+                    boxShadow: `0 8px 32px rgba(0,0,0,0.4)`,
+                  }}
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 'var(--space-3)' }}>
+                    <h4 style={{
+                      fontFamily: 'var(--font-brand)',
+                      fontSize: '1.1rem',
+                      color: 'var(--white)',
+                      letterSpacing: '0.02em',
+                      lineHeight: 1.2,
+                    }}>
+                      {bundle.name}
+                    </h4>
+                    <span style={{
+                      fontSize: '0.65rem',
+                      fontWeight: 800,
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.06em',
+                      padding: '4px 10px',
+                      borderRadius: 'var(--radius-full)',
+                      background: `${primaryColor}20`,
+                      border: `1px solid ${primaryColor}40`,
+                      color: primaryColor,
+                      whiteSpace: 'nowrap',
+                    }}>
+                      Bundle
+                    </span>
+                  </div>
+
+                  {bundle.description && (
+                    <p style={{ fontSize: '0.82rem', color: 'var(--grey-400)', lineHeight: 1.5, marginBottom: 'var(--space-3)' }}>
+                      {bundle.description}
+                    </p>
+                  )}
+
+                  {productNames.length > 0 && (
+                    <ul style={{ listStyle: 'none', padding: 0, margin: 0, marginBottom: 'var(--space-4)', display: 'flex', flexDirection: 'column', gap: 4 }}>
+                      {productNames.map((n) => (
+                        <li key={n} style={{ fontSize: '0.78rem', color: 'var(--silver)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                          <span style={{ width: 5, height: 5, borderRadius: '50%', background: primaryColor }} />
+                          {n}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    marginTop: 'auto',
+                    borderTop: '1px solid rgba(255,255,255,0.06)',
+                    paddingTop: 'var(--space-4)',
+                  }}>
+                    <span style={{
+                      fontSize: '1.3rem',
+                      fontWeight: 800,
+                      color: primaryColor,
+                      fontFamily: 'var(--font-brand)',
+                      textShadow: `0 0 10px ${primaryColor}40`,
+                    }}>
+                      ${roundUp(bundle.price)}
+                    </span>
+                    <span style={{
+                      fontSize: '0.72rem',
+                      color: 'var(--grey-400)',
+                      fontStyle: 'italic',
+                    }}>
+                      Bundle Pricing Available At Checkout
+                    </span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       {/* Product Grid */}
       <motion.div
         className="grid-3" style={{ gap: 'var(--space-6)' }}
@@ -307,7 +420,7 @@ export default function AgentStorefrontGrid({ products, inventoryMap, primaryCol
                     background: 'rgba(0,196,188,0.15)', border: '1px solid rgba(0,196,188,0.4)',
                     color: 'var(--teal)', backdropFilter: 'blur(4px)'
                   }}>
-                    ★ Popular
+                    <Star size={10} fill="currentColor" aria-hidden="true" style={{ marginRight: 4, verticalAlign: 'middle' }} />Popular
                   </div>
                 )}
               </div>
@@ -556,8 +669,9 @@ export default function AgentStorefrontGrid({ products, inventoryMap, primaryCol
                     color: 'var(--white)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
                     fontSize: '1.2rem', fontWeight: 700, backdropFilter: 'blur(4px)'
                   }}
+                  aria-label="Close"
                 >
-                  ✕
+                  <X size={18} aria-hidden="true" />
                 </button>
                 <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 60, background: 'linear-gradient(transparent, var(--surface-2))' }} />
               </div>
@@ -665,8 +779,8 @@ export default function AgentStorefrontGrid({ products, inventoryMap, primaryCol
                 )}
 
                 {detailProduct.variants[0]?.products?.backorder_days > 0 && (
-                  <p style={{ fontSize: '0.8rem', color: 'var(--grey-400)', marginBottom: 'var(--space-4)' }}>
-                    📦 Estimated Shipping: {detailProduct.variants[0].products.backorder_days} Business Days
+                  <p style={{ fontSize: '0.8rem', color: 'var(--grey-400)', marginBottom: 'var(--space-4)', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                    <Package size={14} aria-hidden="true" /> Estimated Shipping: {detailProduct.variants[0].products.backorder_days} Business Days
                   </p>
                 )}
 

@@ -1,7 +1,11 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { toast } from 'sonner';
 import { createClient } from '@/lib/supabase/client';
+import Pagination from '@/components/Pagination';
+
+const PAGE_SIZE = 25;
 
 interface BuyerProfile {
   full_name: string | null;
@@ -73,6 +77,7 @@ export default function AdminOrdersPage() {
   const [error, setError] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [page, setPage] = useState(1);
 
   // Selected Order details
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
@@ -175,10 +180,10 @@ export default function AdminOrdersPage() {
           agent_approval_notes: approvalNotes || prev.agent_approval_notes
         } : null);
       } else {
-        alert(json.error || 'Failed To Update Order Status');
+        toast.error(json.error || 'Failed To Update Order Status');
       }
     } catch (err: any) {
-      alert(err.message || 'Error Processing Transition');
+      toast.error(err.message || 'Error Processing Transition');
     } finally {
       setProcessing(false);
     }
@@ -199,6 +204,16 @@ export default function AdminOrdersPage() {
 
     return true;
   });
+
+  // Pagination: slice filtered set to the current page window
+  const totalPages = Math.max(1, Math.ceil(filteredOrders.length / PAGE_SIZE));
+  const safePage = Math.min(page, totalPages);
+  const paginatedOrders = filteredOrders.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
+
+  // Reset to page 1 when filter or search changes
+  useEffect(() => {
+    setPage(1);
+  }, [searchQuery, statusFilter]);
 
   return (
     <div style={{ padding: 'var(--space-8)' }}>
@@ -279,7 +294,7 @@ export default function AdminOrdersPage() {
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
-              {filteredOrders.map(order => (
+              {paginatedOrders.map(order => (
                 <button
                   key={order.id}
                   onClick={() => setSelectedOrder(order)}
@@ -324,6 +339,7 @@ export default function AdminOrdersPage() {
                   </span>
                 </button>
               ))}
+              <Pagination page={safePage} totalPages={totalPages} onPageChange={setPage} />
             </div>
           )}
         </div>
