@@ -649,9 +649,9 @@ export default function AgentDashboardClient({
                 setTimeout(() => setCopiedStorefront(false), 2000);
               }}
               copiedStorefront={copiedStorefront}
-              onNavigate={(tab) => { setActiveTab(tab as any); setIsMobileMenuOpen(false); }}
               agentProfile={agentProfile}
               orders={orders}
+              onNavigate={(tab) => { setActiveTab(tab as any); setIsMobileMenuOpen(false); }}
             />
           </div>
         )}
