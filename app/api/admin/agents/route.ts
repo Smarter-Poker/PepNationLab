@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
 import { requireAdmin } from '@/lib/admin-auth';
 import { generateQrDataUrl } from '@/lib/qr';
+import { sanitizeUsername } from '@/lib/usernames';
+import { assertSameOrigin } from '@/lib/csrf';
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://pepnationlab.com';
 
@@ -27,6 +29,8 @@ export async function GET(req: NextRequest) {
 
 // POST: Create a brand-new agent or researcher directly (no registration required)
 export async function POST(req: NextRequest) {
+  const csrf = assertSameOrigin(req);
+  if (csrf) return csrf;
   const gate = await requireAdmin();
   if (!gate.ok) return gate.response;
 
@@ -64,7 +68,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Password Must Be At Least 8 Characters' }, { status: 400 });
   }
 
-  const usernameClean = username.toLowerCase().replace(/[^a-z0-9_]/g, '');
+  const usernameClean = sanitizeUsername(username);
   if (!usernameClean) {
     return NextResponse.json({ error: 'Invalid Username' }, { status: 400 });
   }

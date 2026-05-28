@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
 import { requireAdmin } from '@/lib/admin-auth';
+import { assertSameOrigin } from '@/lib/csrf';
 
 // GET: List all profiles with optional roles and search query
 export async function GET(req: NextRequest) {
@@ -35,6 +36,8 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
+  const csrf = assertSameOrigin(req);
+  if (csrf) return csrf;
   const gate = await requireAdmin();
   if (!gate.ok) return gate.response;
 

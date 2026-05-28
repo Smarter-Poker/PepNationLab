@@ -17,6 +17,7 @@ import AgentOrders from '@/components/AgentOrders';
 import AgentLedger from '@/components/AgentLedger';
 import AgentBundles from '@/components/AgentBundles';
 import MessageBell from '@/components/MessageBell';
+import { sanitizeUsername } from '@/lib/usernames';
 
 interface Profile {
   id: string;
@@ -671,7 +672,7 @@ export default function AgentDashboardClient({
                     <div className="form-group">
                       <label className="form-label">Username</label>
                       <input type="text" className="form-input" placeholder="E.g. jsmith"
-                        value={crUsername} onChange={e => setCrUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))}
+                        value={crUsername} onChange={e => setCrUsername(sanitizeUsername(e.target.value))}
                         required autoCapitalize="none" spellCheck={false} />
                     </div>
                     <div className="form-group">

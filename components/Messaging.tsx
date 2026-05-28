@@ -12,6 +12,7 @@ interface Message {
   subject: string;
   attachment_url: string | null;
   type: string;
+  is_read: boolean;
   created_at: string;
 }
 
@@ -43,7 +44,7 @@ export default function Messaging({
     const supabase = createClient();
     const { data, error: loadError } = await supabase
       .from('internal_messages')
-      .select('id, sender_id, receiver_id, body, subject, attachment_url, type, created_at')
+      .select('id, sender_id, receiver_id, body, subject, attachment_url, type, is_read, created_at')
       .or(
         `and(sender_id.eq.${selfId},receiver_id.eq.${counterpartId}),and(sender_id.eq.${counterpartId},receiver_id.eq.${selfId})`
       )
@@ -67,24 +68,29 @@ export default function Messaging({
     if (!text && !attachmentUrl) return;
 
     setSending(true);
-    const supabase = createClient();
-    const { error: sendError } = await supabase.from('internal_messages').insert({
-      sender_id: selfId,
-      receiver_id: counterpartId,
-      subject: 'Direct Message',
-      body: text,
-      type: 'direct_message',
-      attachment_url: attachmentUrl
-    });
-    setSending(false);
-
-    if (sendError) {
-      setError(sendError.message);
-      return;
+    setError('');
+    try {
+      const res = await fetch('/api/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          receiverId: counterpartId,
+          subject: 'Direct Message',
+          body: text,
+          type: 'direct_message',
+          attachmentUrl: attachmentUrl || undefined,
+        }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || 'Failed To Send');
+      setBody('');
+      setAttachmentUrl(null);
+      await loadMessages();
+    } catch (err: any) {
+      setError(err.message || 'Failed To Send Message');
+    } finally {
+      setSending(false);
     }
-    setBody('');
-    setAttachmentUrl(null);
-    await loadMessages();
   }
 
   return (

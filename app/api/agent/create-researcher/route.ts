@@ -1,10 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient, createServiceClient } from '@/lib/supabase/server';
+import { sanitizeUsername } from '@/lib/usernames';
+import { assertSameOrigin } from '@/lib/csrf';
 
 // POST /api/agent/create-researcher
 // Called by agents to create researcher accounts linked to them.
 // This is agent-gated — NOT admin-only.
 export async function POST(req: NextRequest) {
+  const csrf = assertSameOrigin(req);
+  if (csrf) return csrf;
+
   // IMPORTANT: Must use createClient() (anon key + cookies) to read the
   // caller's session. createServiceClient() uses the service role key and
   // ignores user session cookies, causing getUser() to always return null.
@@ -43,7 +48,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Password Must Be At Least 8 Characters' }, { status: 400 });
   }
 
-  const usernameClean = username.toLowerCase().replace(/[^a-z0-9_]/g, '');
+  const usernameClean = sanitizeUsername(username);
   if (!usernameClean || usernameClean.length < 2) {
     return NextResponse.json({ error: 'Username Must Be At Least 2 Characters (Letters, Numbers, Underscores)' }, { status: 400 });
   }

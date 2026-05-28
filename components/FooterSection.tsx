@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 
 export default function FooterSection() {
   return (
@@ -21,8 +22,7 @@ export default function FooterSection() {
           {/* Brand column */}
           <div style={{ gridColumn: 'span 1' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', marginBottom: 'var(--space-4)' }}>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/logo-mark.svg" alt="Pep Nation Lab" style={{ height: 40, width: 40, display: 'block' }} />
+              <Image src="/logo-mark.svg" alt="Pep Nation Lab" width={40} height={40} style={{ display: 'block' }} />
               <div style={{
                 fontFamily: 'var(--font-brand)',
                 fontSize: '1rem',

@@ -39,8 +39,12 @@ export async function GET(req: NextRequest) {
 
 /**
  * POST /api/messages
- * Send a message. Admin can message anyone. Agents can message
- * their researchers (referring_agent_id) and sub-agents (parent_agent_id).
+ * Send a message. Hierarchy:
+ *   Admin     → anyone
+ *   SuperAgent→ their agents (parent_agent_id), sub-agents (parent_agent_id),
+ *               and downline researchers (referring_agent_id points to one of their agents)
+ *   Agent     → their researchers (referring_agent_id) and sub-agents (parent_agent_id)
+ *   Anyone    → admin (reply up)
  */
 export async function POST(req: NextRequest) {
   const supabase = await createClient();
@@ -61,7 +65,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Invalid Message Type' }, { status: 400 });
   }
 
-  // Verify sender
+  // Verify sender role
   const { data: senderProfile } = await service
     .from('profiles')
     .select('role')
@@ -72,14 +76,14 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Sender Profile Not Found' }, { status: 400 });
   }
 
-  const isSenderAdmin = senderProfile.role === 'admin';
+  const senderRole = senderProfile.role;
 
-  // Admin can message anyone
-  if (!isSenderAdmin) {
-    // Agents: verify the receiver belongs to them
+  // Admin can message anyone — skip auth checks
+  if (senderRole !== 'admin') {
+    // Get receiver details
     const { data: receiverProfile } = await service
       .from('profiles')
-      .select('referring_agent_id, parent_agent_id')
+      .select('role, referring_agent_id, parent_agent_id')
       .eq('id', receiverId)
       .single();
 
@@ -87,18 +91,31 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Receiver Not Found' }, { status: 404 });
     }
 
-    const isReferredResearcher = receiverProfile.referring_agent_id === user.id;
-    const isSubAgent = receiverProfile.parent_agent_id === user.id;
-
-    // Also allow replying to admin (receiver is admin)
-    const { data: receiverRole } = await service
-      .from('profiles')
-      .select('role')
-      .eq('id', receiverId)
-      .single();
-    const isReplyToAdmin = receiverRole?.role === 'admin';
-
-    if (!isReferredResearcher && !isSubAgent && !isReplyToAdmin) {
+    // Anyone can reply to admin
+    if (receiverProfile.role === 'admin') {
+      // allowed
+    }
+    // Direct relationship: receiver's referring_agent_id = me (my researcher)
+    else if (receiverProfile.referring_agent_id === user.id) {
+      // allowed
+    }
+    // Direct relationship: receiver's parent_agent_id = me (my sub-agent)
+    else if (receiverProfile.parent_agent_id === user.id) {
+      // allowed
+    }
+    // Super Agent downline: receiver is a researcher whose referring_agent_id
+    // is an agent whose parent_agent_id = me
+    else if (senderRole === 'super_agent' && receiverProfile.referring_agent_id) {
+      const { data: referringAgent } = await service
+        .from('profiles')
+        .select('parent_agent_id')
+        .eq('id', receiverProfile.referring_agent_id)
+        .single();
+      if (!referringAgent || referringAgent.parent_agent_id !== user.id) {
+        return NextResponse.json({ error: 'Not Authorized To Message This User' }, { status: 403 });
+      }
+    }
+    else {
       return NextResponse.json({ error: 'Not Authorized To Message This User' }, { status: 403 });
     }
   }

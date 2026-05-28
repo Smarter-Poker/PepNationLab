@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
+import { sanitizeUsername } from '@/lib/usernames';
 
 /**
  * POST /api/storefront/register
@@ -39,10 +40,6 @@ function isRateLimited(ip: string): boolean {
   bucket.push(now);
   rateLimitBuckets.set(ip, bucket);
   return false;
-}
-
-function sanitizeUsername(raw: string): string {
-  return raw.toLowerCase().replace(/[^a-z0-9_]/g, '');
 }
 
 export async function POST(req: NextRequest) {

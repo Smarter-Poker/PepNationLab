@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { useState, useEffect } from 'react';
 import { useCart } from './CartContext';
 import { createClient } from '@/lib/supabase/client';
@@ -72,11 +73,13 @@ export default function Navbar() {
       <div className="container flex-between w-full">
         {/* Logo */}
         <Link href="/" className="nav-logo" style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
+          <Image
             src="/logo-mark.svg"
             alt="Pep Nation Lab"
-            style={{ height: 38, width: 38, display: 'block' }}
+            width={38}
+            height={38}
+            priority
+            style={{ display: 'block' }}
           />
           <span style={{ letterSpacing: '0.1em' }}>PEP NATION LAB</span>
         </Link>

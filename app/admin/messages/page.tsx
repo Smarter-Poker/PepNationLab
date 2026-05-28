@@ -27,6 +27,7 @@ export default function AdminMessagesPage() {
   const [invoiceAmount, setInvoiceAmount] = useState('');
   const [invoiceDesc, setInvoiceDesc] = useState('');
   const [invoiceSending, setInvoiceSending] = useState(false);
+  const [threadKey, setThreadKey] = useState(0); // bump to force Messaging reload
 
   useEffect(() => {
     async function load() {
@@ -74,10 +75,8 @@ export default function AdminMessagesPage() {
       setInvoiceAmount('');
       setInvoiceDesc('');
       setInvoiceAgent(null);
-      // If this agent is currently selected, refresh the thread
-      if (selected?.id === invoiceAgent.id) {
-        setSelected({ ...invoiceAgent }); // force re-render
-      }
+      // Force the thread to reload so the invoice appears instantly
+      setThreadKey(k => k + 1);
     } catch (err: any) {
       toast.error(err.message || 'Failed To Send Invoice');
     } finally {
@@ -164,6 +163,7 @@ export default function AdminMessagesPage() {
                 </button>
               </div>
               <Messaging
+                key={threadKey}
                 selfId={selfId}
                 counterpartId={selected.id}
                 counterpartName={selected.full_name || selected.username || 'Agent'}
