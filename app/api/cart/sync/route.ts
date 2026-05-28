@@ -17,15 +17,19 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Invalid cart format' }, { status: 400 });
     }
 
-    // Only save essential data to save space
+    // Persist the fields the cart needs to re-hydrate accurately. weightOz
+    // and sku are essential for shipping calc and storefront display, so they
+    // must round-trip with the cart state.
     const strippedCart = cart.map((item: any) => ({
       id: item.id,
       name: item.name,
+      sku: item.sku ?? null,
       quantity: item.quantity,
       costPrice: item.costPrice,
       retailPrice: item.retailPrice,
       bulkCostPrice: item.bulkCostPrice,
-      bulkThreshold: item.bulkThreshold
+      bulkThreshold: item.bulkThreshold,
+      weightOz: item.weightOz ?? null,
     }));
 
     const { error } = await supabase

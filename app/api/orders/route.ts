@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClient, createServiceClient } from '@/lib/supabase/server';
-import { validateCoupon } from '@/lib/coupons';
 import { z } from 'zod';
+import { applyBulkPrice } from '@/lib/pricing';
 
 const CheckoutSchema = z.object({
   items: z.array(z.object({
@@ -20,6 +20,8 @@ const CheckoutSchema = z.object({
     phone: z.string().optional().default(''),
   }).optional().nullable(),
   couponCode: z.string().optional().nullable(),
+  idempotencyKey: z.string().uuid().optional().nullable(),
+  wholesale: z.boolean().optional(),
 });
 
 export async function POST(request: Request) {
@@ -40,10 +42,36 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Invalid checkout data.', details: validation.error.issues }, { status: 400 });
     }
 
-    const { items, shippingAddress, fulfillmentMethod, paymentMethod, couponCode } = validation.data;
+    const {
+      items,
+      shippingAddress,
+      fulfillmentMethod,
+      paymentMethod,
+      couponCode,
+      idempotencyKey,
+      wholesale: explicitWholesale,
+    } = validation.data;
 
     if (fulfillmentMethod === 'ship' && !shippingAddress) {
       return NextResponse.json({ error: 'Shipping Address Is Required For Deliveries.' }, { status: 400 });
+    }
+
+    // Idempotency replay: if a request with this key already produced an
+    // order, return that order rather than creating a duplicate.
+    if (idempotencyKey) {
+      const { data: existing } = await serviceSupabase
+        .from('orders')
+        .select('id, total, status')
+        .eq('idempotency_key', idempotencyKey)
+        .maybeSingle();
+      if (existing) {
+        return NextResponse.json({
+          success: true,
+          orderId: existing.id,
+          total: Number(existing.total) || 0,
+          replayed: true,
+        });
+      }
     }
 
     // Get researcher profile
@@ -206,16 +234,16 @@ export async function POST(request: Request) {
 
       if (agentProfile) {
         if (superAgentProfile) {
-          // This is a Sub-Agent. 
+          // This is a Sub-Agent.
           // Super Agent Cost (What Super Agent owes Admin):
           const saMultiplier = superAgentOverrides[dbProduct.id] ?? tierMultipliers[superAgentProfile.tier || 'tier_3'] ?? 7.0;
-          superAgentCost = baseCost * saMultiplier;
+          superAgentCost = applyBulkPrice(
+            baseCost * saMultiplier,
+            itemQty,
+            dbProduct.admin_bulk_price,
+            dbProduct.admin_bulk_threshold
+          );
 
-          // Apply Admin Bulk Pricing to Super Agent if applicable
-          if (dbProduct.admin_bulk_price !== null && itemQty >= (dbProduct.admin_bulk_threshold ?? 100)) {
-            superAgentCost = Number(dbProduct.admin_bulk_price);
-          }
-          
           // Cost Price (What Sub-Agent owes Super Agent):
           const saConfig = superAgentBaselines[dbProduct.id];
           if (saConfig) {
@@ -232,12 +260,12 @@ export async function POST(request: Request) {
           // Standard Agent (or Super Agent buying directly).
           // Agent Cost = Admin Base Cost * Agent Tier Multiplier
           const agentMultiplier = agentOverrides[dbProduct.id] ?? tierMultipliers[agentTier] ?? 7.0;
-          costPrice = baseCost * agentMultiplier;
-
-          // Apply Admin Bulk Pricing to Agent if applicable
-          if (dbProduct.admin_bulk_price !== null && itemQty >= (dbProduct.admin_bulk_threshold ?? 100)) {
-            costPrice = Number(dbProduct.admin_bulk_price);
-          }
+          costPrice = applyBulkPrice(
+            baseCost * agentMultiplier,
+            itemQty,
+            dbProduct.admin_bulk_price,
+            dbProduct.admin_bulk_threshold
+          );
         }
       }
       
@@ -259,37 +287,70 @@ export async function POST(request: Request) {
       });
     }
 
-    // Validate and apply a coupon code
+    // Validate and atomically redeem a coupon code via SECURITY DEFINER RPC.
+    // The RPC increments uses_count + checks expiry, limits, and min subtotal
+    // in a single transaction so two concurrent uses of the last redemption
+    // cannot both succeed.
     let discountAmount = 0;
     let appliedCouponCode: string | null = null;
-    if (couponCode && String(couponCode).trim()) {
-      const couponResult = await validateCoupon(serviceSupabase, {
-        code: String(couponCode),
-        agentId: profile.referring_agent_id ?? null,
-        subtotal,
-      });
-      if (!couponResult.valid) {
+    let appliedCouponId: string | null = null;
+    const trimmedCouponCode = couponCode ? String(couponCode).trim().toUpperCase() : '';
+    if (trimmedCouponCode) {
+      const couponAgentId = profile.referring_agent_id ?? agentProfile?.id ?? null;
+      if (!couponAgentId) {
         return NextResponse.json(
-          { error: couponResult.error ?? 'Coupon Is Not Valid.' },
+          { error: 'Coupon Codes Are Only Valid For Orders Placed Through A Referring Agent.' },
           { status: 400 }
         );
       }
-      discountAmount = couponResult.discount ?? 0;
-      appliedCouponCode = couponResult.code ?? null;
+      const { data: redeem, error: redeemError } = await serviceSupabase
+        .rpc('redeem_coupon', {
+          p_code: trimmedCouponCode,
+          p_agent_id: couponAgentId,
+          p_order_subtotal: subtotal,
+        });
+
+      if (redeemError) {
+        console.error('Coupon RPC Failed:', redeemError);
+        return NextResponse.json(
+          { error: 'Coupon Invalid Or Limit Reached' },
+          { status: 422 }
+        );
+      }
+
+      const row = Array.isArray(redeem) ? redeem[0] : redeem;
+      if (!row?.coupon_id) {
+        return NextResponse.json(
+          { error: 'Coupon Invalid Or Limit Reached' },
+          { status: 422 }
+        );
+      }
+
+      appliedCouponId = row.coupon_id;
+      appliedCouponCode = trimmedCouponCode;
+      discountAmount = Number(row.discount_amount) || 0;
     }
 
-    // Calculate shipping costs
+    // Calculate shipping costs — pick the tier with the highest min_weight_oz
+    // that still covers totalWeightOz. Falls back to a $12 default and logs
+    // a warning so we can audit gaps in the shipping_rates table.
     let shippingCost = 0;
     if (fulfillmentMethod === 'ship') {
       const { data: shippingRates } = await serviceSupabase
         .from('shipping_rates')
-        .select('rate')
+        .select('rate, min_weight_oz, max_weight_oz')
         .lte('min_weight_oz', totalWeightOz)
-        .gt('max_weight_oz', totalWeightOz);
+        .gt('max_weight_oz', totalWeightOz)
+        .order('min_weight_oz', { ascending: false })
+        .limit(1);
 
       if (shippingRates && shippingRates.length > 0) {
         shippingCost = Number(shippingRates[0].rate);
       } else {
+        console.warn(
+          '[orders] No shipping_rates row matched weight=%s oz; falling back to $12.00',
+          totalWeightOz
+        );
         shippingCost = 12.00;
       }
     }
@@ -324,13 +385,20 @@ export async function POST(request: Request) {
       );
     }
 
+    // Wholesale restock flag must be set explicitly by the caller — we never
+    // imply it from buyer role. A plain agent buying through their own
+    // storefront is a retail self-buy, not a wholesale replenishment.
+    const isWholesaleRestock =
+      explicitWholesale === true &&
+      (profile.role === 'agent' || profile.role === 'super_agent');
+
     // Create checkout order
     const { data: order, error: orderError } = await serviceSupabase
       .from('orders')
       .insert({
         buyer_id: user.id,
         agent_id: agentProfile && !isAgentSelfBuy ? agentProfile.id : null,
-        is_wholesale_restock: isAgentSelfBuy,
+        is_wholesale_restock: isWholesaleRestock,
         status: 'pending_customer_payment',
         fulfillment_method: fulfillmentMethod,
         payment_method: paymentMethod,
@@ -339,12 +407,31 @@ export async function POST(request: Request) {
         subtotal: subtotal,
         discount_amount: discountAmount,
         coupon_code: appliedCouponCode,
-        total: total
+        total: total,
+        idempotency_key: idempotencyKey ?? null,
       })
-      .select('id')
+      .select('id, total')
       .single();
 
     if (orderError || !order) {
+      // 23505 = unique_violation. With the unique partial index on
+      // orders.idempotency_key this means a parallel request already
+      // committed; return the prior order as a replay.
+      if (orderError && (orderError as any).code === '23505' && idempotencyKey) {
+        const { data: existing } = await serviceSupabase
+          .from('orders')
+          .select('id, total')
+          .eq('idempotency_key', idempotencyKey)
+          .maybeSingle();
+        if (existing) {
+          return NextResponse.json({
+            success: true,
+            orderId: existing.id,
+            total: Number(existing.total) || 0,
+            replayed: true,
+          });
+        }
+      }
       console.error('Database Order Write Error:', orderError);
       return NextResponse.json({ error: 'Failed To Save Order Transaction.' }, { status: 500 });
     }
@@ -370,29 +457,18 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Failed To Save Checkout Order Line Items.' }, { status: 500 });
     }
 
-    if (appliedCouponCode && agentProfile?.id) {
-      try {
-        const { data: couponRow } = await serviceSupabase
-          .from('coupons')
-          .select('id, uses_count')
-          .eq('agent_id', agentProfile.id)
-          .eq('code', appliedCouponCode)
-          .maybeSingle();
-        if (couponRow) {
-          await serviceSupabase
-            .from('coupons')
-            .update({ uses_count: (Number(couponRow.uses_count) || 0) + 1 })
-            .eq('id', couponRow.id);
-        }
-      } catch (couponError) {
-        console.error('Coupon Usage Increment Failed:', couponError);
-      }
-    }
+    // Coupon usage was incremented atomically by the redeem_coupon RPC before
+    // the order insert; no JS-side increment needed.
+    void appliedCouponId;
 
     // Checkout disclaimer audit row was recorded above, prior to the order
     // insert, so a successful order implies a complete four-layer trail.
 
-    return NextResponse.json({ success: true, orderId: order.id });
+    return NextResponse.json({
+      success: true,
+      orderId: order.id,
+      total: Number(order.total) || 0,
+    });
 
   } catch (error) {
     console.error('Order API Route Caught Exception:', error);

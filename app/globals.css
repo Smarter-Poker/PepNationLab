@@ -260,6 +260,18 @@ a:hover { color: var(--teal-dark); }
   white-space: nowrap;
   position: relative;
   overflow: hidden;
+  /* Fixed size — buttons should never scale with viewport */
+  min-width: fit-content;
+  max-width: 280px;
+  flex-shrink: 0;
+}
+
+/* Storefront action buttons — always fixed size */
+.storefront-btn {
+  min-width: 120px !important;
+  max-width: 160px !important;
+  flex-shrink: 0 !important;
+  white-space: nowrap !important;
 }
 
 .btn::after {

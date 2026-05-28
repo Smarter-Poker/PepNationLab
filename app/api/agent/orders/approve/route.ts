@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
 import { requireAgent } from '@/lib/admin-auth';
+import { pickOne } from '@/lib/relations';
+import { computeAgentCost, type AgentTier } from '@/lib/pricing';
 
 export async function POST(req: NextRequest) {
   try {
@@ -31,7 +33,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Order not found' }, { status: 404 });
     }
 
-    if (order.agent_id !== callerId && order.profiles?.parent_agent_id !== callerId) {
+    const orderAgentProfile = pickOne<{ parent_agent_id: string | null }>(order.profiles);
+    const orderAgentParentId = orderAgentProfile?.parent_agent_id ?? null;
+
+    if (order.agent_id !== callerId && orderAgentParentId !== callerId) {
       return NextResponse.json({ error: 'Unauthorized to modify this order' }, { status: 403 });
     }
 

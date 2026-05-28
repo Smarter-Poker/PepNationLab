@@ -1,6 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
 import { requireAgent } from '@/lib/admin-auth';
+import {
+  computeAgentCost,
+  computeSubAgentBaselineCost,
+  type AgentTier,
+} from '@/lib/pricing';
+
+interface ManualOrderItemInput {
+  product_id?: string;
+  agent_product_id?: string;
+  quantity?: number;
+}
 
 export async function POST(req: NextRequest) {
   try {
@@ -9,68 +20,236 @@ export async function POST(req: NextRequest) {
 
     const supabase = await createServiceClient();
     const agentId = gate.user.id;
-    
-    const body = await req.json();
-    const { buyerName, buyerEmail, street, city, state, zip, items, total, shippingCost, paymentMethod } = body;
 
-    if (!items || !Array.isArray(items) || items.length === 0) {
-      return NextResponse.json({ error: 'Order must contain items' }, { status: 400 });
+    const body = await req.json();
+    const {
+      buyerName,
+      buyerEmail,
+      street,
+      city,
+      state,
+      zip,
+      items,
+      subtotal: clientSubtotal,
+      shippingCost,
+      paymentMethod,
+      fulfillmentMethod,
+    } = body as {
+      buyerName?: string;
+      buyerEmail?: string;
+      street?: string;
+      city?: string;
+      state?: string;
+      zip?: string;
+      items?: ManualOrderItemInput[];
+      subtotal?: number;
+      shippingCost?: number;
+      paymentMethod?: string;
+      fulfillmentMethod?: string;
+    };
+
+    if (!Array.isArray(items) || items.length === 0) {
+      return NextResponse.json({ error: 'Order Must Contain Items.' }, { status: 400 });
     }
 
-    const safeTotal = Number(total) || 0;
     const safeShipping = Number(shippingCost) || 0;
+    const fulfillment = fulfillmentMethod === 'agent_pickup' ? 'agent_pickup' : 'ship';
 
-    // A manual order created by the agent for a client.
-    // We'll create an anonymous buyer in profiles if we wanted, or just store the buyer info on the order directly.
-    // The current order schema has buyer_id, which references profiles. 
-    // If the agent is logging it, we can just use the agent's ID as buyer_id but fill in buyer_name/email, 
-    // OR create a dummy profile. Let's just use the agent's ID but store the correct shipping address.
+    // Fetch the agent's tier and parent (for sub-agent COGS).
+    const { data: agentProfile, error: agentProfileError } = await supabase
+      .from('profiles')
+      .select('tier, parent_agent_id, role')
+      .eq('id', agentId)
+      .single();
 
+    if (agentProfileError || !agentProfile) {
+      return NextResponse.json({ error: 'Agent Profile Not Found.' }, { status: 404 });
+    }
+
+    const tier = (agentProfile.tier as AgentTier | null) ?? 'tier_3';
+    const parentAgentId = agentProfile.parent_agent_id || null;
+
+    // Fetch every agent_product referenced by the request to re-resolve the
+    // authoritative retail price server-side.
+    const agentProductIds = items
+      .map(i => i.agent_product_id)
+      .filter((v): v is string => typeof v === 'string');
+    const fallbackProductIds = items
+      .map(i => i.product_id)
+      .filter((v): v is string => typeof v === 'string');
+
+    const baseQuery = supabase
+      .from('agent_products')
+      .select('id, product_id, retail_price')
+      .eq('agent_id', agentId);
+
+    const { data: agentProducts, error: agentProductsError } =
+      agentProductIds.length > 0
+        ? await baseQuery.in('id', agentProductIds)
+        : await baseQuery.in('product_id', fallbackProductIds);
+
+    if (agentProductsError || !agentProducts) {
+      return NextResponse.json(
+        { error: 'Failed To Resolve Catalog Pricing.' },
+        { status: 500 }
+      );
+    }
+
+    const byId = new Map<string, { id: string; product_id: string; retail_price: number }>();
+    const byProductId = new Map<string, { id: string; product_id: string; retail_price: number }>();
+    for (const ap of agentProducts) {
+      if (!ap.product_id) continue;
+      const row = {
+        id: ap.id as string,
+        product_id: ap.product_id as string,
+        retail_price: Number(ap.retail_price) || 0,
+      };
+      byId.set(row.id, row);
+      byProductId.set(row.product_id, row);
+    }
+
+    let computedSubtotal = 0;
+    const orderItems: Array<{
+      product_id: string;
+      agent_product_id: string;
+      quantity: number;
+      unit_retail_price: number;
+      unit_cost_price: number;
+      unit_super_agent_cost: number | null;
+    }> = [];
+
+    for (const raw of items) {
+      const qty = Math.max(1, Math.floor(Number(raw.quantity) || 0));
+      if (qty <= 0) continue;
+
+      const ap =
+        (raw.agent_product_id && byId.get(raw.agent_product_id)) ||
+        (raw.product_id && byProductId.get(raw.product_id)) ||
+        null;
+
+      if (!ap) {
+        return NextResponse.json(
+          { error: 'One Or More Items Are Not In Your Catalog.' },
+          { status: 400 }
+        );
+      }
+
+      const unitRetail = Number(ap.retail_price) || 0;
+      computedSubtotal += unitRetail * qty;
+
+      const unitCost = await computeAgentCost(supabase, ap.product_id, tier);
+      const unitSuperAgentCost = parentAgentId
+        ? await computeSubAgentBaselineCost(supabase, ap.product_id, parentAgentId)
+        : null;
+
+      orderItems.push({
+        product_id: ap.product_id,
+        agent_product_id: ap.id,
+        quantity: qty,
+        unit_retail_price: unitRetail,
+        unit_cost_price: unitCost,
+        unit_super_agent_cost: unitSuperAgentCost,
+      });
+    }
+
+    // Verify the client-submitted subtotal matches server-side recomputation.
+    if (clientSubtotal != null) {
+      const provided = Number(clientSubtotal) || 0;
+      if (Math.abs(provided - computedSubtotal) > 0.01) {
+        return NextResponse.json(
+          {
+            error:
+              'Order Total Does Not Match Catalog Pricing. Refresh The Order Form And Try Again.',
+          },
+          { status: 422 }
+        );
+      }
+    }
+
+    computedSubtotal = Math.round(computedSubtotal * 100) / 100;
+    const computedTotal = Math.round((computedSubtotal + safeShipping) * 100) / 100;
+
+    // Insert the order as pending agent approval; nullify buyer_id so the
+    // existing FK joins do not silently attribute orders to the agent.
     const { data: newOrder, error: orderError } = await supabase
       .from('orders')
       .insert({
         agent_id: agentId,
-        buyer_id: agentId, // Self-assigned for manual orders
-        status: 'approved_ship', // Pre-approved since agent is making it manually
-        fulfillment_method: 'ship',
-        payment_method: paymentMethod || 'manual',
-        subtotal: safeTotal - safeShipping,
+        buyer_id: null,
+        status: 'agent_approval_pending',
+        fulfillment_method: fulfillment,
+        payment_method: paymentMethod || 'zelle',
+        subtotal: computedSubtotal,
         shipping_cost: safeShipping,
-        total: safeTotal,
-        shipping_address: { street, city, state, zipCode: zip, country: 'US' },
-        buyer_name: buyerName,
-        buyer_email: buyerEmail,
-        agent_approved_at: new Date().toISOString()
+        total: computedTotal,
+        shipping_address:
+          fulfillment === 'ship'
+            ? { street, city, state, zipCode: zip, country: 'US' }
+            : null,
+        buyer_name: buyerName ?? null,
+        buyer_email: buyerEmail ?? null,
       })
-      .select()
+      .select('id')
       .single();
 
-    if (orderError) {
-      console.error(orderError);
-      return NextResponse.json({ error: 'Failed to create manual order' }, { status: 500 });
+    if (orderError || !newOrder) {
+      console.error('Manual Order Insert Error:', orderError);
+      return NextResponse.json(
+        { error: 'Failed To Create Manual Order.' },
+        { status: 500 }
+      );
     }
 
-    // Insert order items
-    const orderItemsToInsert = items.map((item: any) => ({
+    // Insert line items.
+    const itemsPayload = orderItems.map(item => ({
       order_id: newOrder.id,
       product_id: item.product_id,
+      agent_product_id: item.agent_product_id,
       quantity: item.quantity,
-      price_at_time: item.price
+      unit_retail_price: item.unit_retail_price,
+      unit_cost_price: item.unit_cost_price,
+      unit_super_agent_cost: item.unit_super_agent_cost,
     }));
 
-    if (orderItemsToInsert.length > 0) {
-      const { error: itemsError } = await supabase
-        .from('order_items')
-        .insert(orderItemsToInsert);
-        
-      if (itemsError) {
-        console.error(itemsError);
-        return NextResponse.json({ error: 'Failed to add items to order' }, { status: 500 });
-      }
+    const { error: itemsError } = await supabase
+      .from('order_items')
+      .insert(itemsPayload);
+
+    if (itemsError) {
+      console.error('Manual Order Items Error:', itemsError);
+      await supabase.from('orders').delete().eq('id', newOrder.id);
+      return NextResponse.json(
+        { error: 'Failed To Add Items To Order.' },
+        { status: 500 }
+      );
     }
 
-    return NextResponse.json({ success: true, order: newOrder });
+    // Transition the order through approval so the inventory-deduction
+    // trigger fires. If stock is insufficient the trigger raises a
+    // check_violation — roll the order back so manual orders never bypass
+    // the strict inventory gate.
+    const approvedStatus = fulfillment === 'ship' ? 'approved_ship' : 'approved_pickup';
+    const { error: approvalError } = await supabase
+      .from('orders')
+      .update({
+        status: approvedStatus,
+        agent_approved_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', newOrder.id);
 
+    if (approvalError) {
+      console.error('Manual Order Approval Error:', approvalError);
+      await supabase.from('order_items').delete().eq('order_id', newOrder.id);
+      await supabase.from('orders').delete().eq('id', newOrder.id);
+      const message =
+        approvalError.code === '23514' || /insufficient/i.test(approvalError.message)
+          ? approvalError.message
+          : 'Insufficient Inventory To Approve Manual Order.';
+      return NextResponse.json({ error: message }, { status: 422 });
+    }
+
+    return NextResponse.json({ success: true, orderId: newOrder.id });
   } catch (error) {
     console.error('Manual Order API Error:', error);
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });

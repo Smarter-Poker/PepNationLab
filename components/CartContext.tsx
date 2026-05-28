@@ -1,8 +1,9 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
+import { toast } from 'sonner';
 
 export interface CartItem {
   id: string; // Product ID
@@ -44,13 +45,86 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const [loaded, setLoaded] = useState(false);
   const [addToCartAcknowledged, setAddToCartAcknowledged] = useState(false);
   const [pendingAddition, setPendingAddition] = useState<PendingAddition | null>(null);
+  const lastRefreshRef = useRef<number>(0);
+  const refreshInflightRef = useRef<boolean>(false);
+
+  // Re-resolve cart items against the live catalog. Drops banned / missing
+  // items and updates retail / bulk pricing. Throttled to once per ~60s
+  // unless `force` is set.
+  const refreshCartPricing = useCallback(
+    async (items: CartItem[], force = false): Promise<CartItem[]> => {
+      if (items.length === 0) return items;
+      if (refreshInflightRef.current) return items;
+      const now = Date.now();
+      if (!force && now - lastRefreshRef.current < 60_000) return items;
+      refreshInflightRef.current = true;
+      try {
+        const res = await fetch('/api/cart/refresh', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ agentProductIds: items.map(i => i.id) }),
+        });
+        if (!res.ok) return items;
+        const data = (await res.json()) as {
+          items: Array<{
+            id: string;
+            name: string | null;
+            retailPrice: number;
+            bulkCostPrice: number | null;
+            bulkThreshold: number | null;
+            available: boolean;
+          }>;
+          missing: string[];
+        };
+        lastRefreshRef.current = now;
+
+        const next: CartItem[] = [];
+        const removed: string[] = [];
+        for (const item of items) {
+          if (data.missing?.includes(item.id)) {
+            removed.push(item.name);
+            continue;
+          }
+          const fresh = data.items.find(d => d.id === item.id);
+          if (!fresh) {
+            removed.push(item.name);
+            continue;
+          }
+          if (!fresh.available) {
+            removed.push(fresh.name ?? item.name);
+            continue;
+          }
+          next.push({
+            ...item,
+            costPrice: fresh.retailPrice,
+            retailPrice: fresh.retailPrice,
+            bulkCostPrice: fresh.bulkCostPrice,
+            bulkThreshold:
+              fresh.bulkThreshold != null ? fresh.bulkThreshold : item.bulkThreshold,
+          });
+        }
+        for (const name of removed) {
+          try {
+            toast.error(`Item Removed: ${name} Is No Longer Available`);
+          } catch {
+            /* sonner Toaster may not be mounted in tests */
+          }
+        }
+        return next;
+      } finally {
+        refreshInflightRef.current = false;
+      }
+    },
+    []
+  );
 
   // Load from local storage
   useEffect(() => {
+    let initial: CartItem[] = [];
     try {
       const stored = localStorage.getItem('pnl_cart');
       if (stored) {
-        setCart(JSON.parse(stored));
+        initial = JSON.parse(stored);
       }
       setAddToCartAcknowledged(
         localStorage.getItem(ADD_TO_CART_ACK_KEY) === 'true'
@@ -58,8 +132,36 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     } catch (e) {
       console.error('Failed To Load Cart From Local Storage:', e);
     }
+    setCart(initial);
     setLoaded(true);
-  }, []);
+
+    // Validate hydrated items against the live catalog and drop any that
+    // are banned, missing, or no longer visible.
+    if (initial.length > 0) {
+      refreshCartPricing(initial, true).then(next => {
+        if (next.length !== initial.length || next.some((n, i) => n.id !== initial[i]?.id)) {
+          setCart(next);
+        }
+      }).catch(() => { /* network errors leave cart untouched */ });
+    }
+  }, [refreshCartPricing]);
+
+  // Re-validate every 60s while the app is open.
+  useEffect(() => {
+    if (!loaded) return;
+    const id = setInterval(() => {
+      setCart(prev => {
+        if (prev.length === 0) return prev;
+        refreshCartPricing(prev).then(next => {
+          if (next.length !== prev.length || next.some((n, i) => n.id !== prev[i]?.id)) {
+            setCart(next);
+          }
+        }).catch(() => { /* ignore */ });
+        return prev;
+      });
+    }, 60_000);
+    return () => clearInterval(id);
+  }, [loaded, refreshCartPricing]);
 
   // Save to local storage
   useEffect(() => {
@@ -78,14 +180,23 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const commitAddition = (product: Omit<CartItem, 'quantity'>, quantity: number) => {
     setCart(prev => {
       const existing = prev.find(item => item.id === product.id);
-      if (existing) {
-        return prev.map(item =>
-          item.id === product.id
-            ? { ...item, quantity: item.quantity + quantity }
-            : item
-        );
-      }
-      return [...prev, { ...product, quantity }];
+      const next = existing
+        ? prev.map(item =>
+            item.id === product.id
+              ? { ...item, quantity: item.quantity + quantity }
+              : item
+          )
+        : [...prev, { ...product, quantity }];
+
+      // Force a catalog re-check immediately so the newly added item starts
+      // from current pricing rather than whatever was passed in.
+      refreshCartPricing(next, true).then(updated => {
+        if (updated.length !== next.length || updated.some((u, i) => u.id !== next[i]?.id)) {
+          setCart(updated);
+        }
+      }).catch(() => { /* ignore */ });
+
+      return next;
     });
     setIsCartOpen(true);
   };

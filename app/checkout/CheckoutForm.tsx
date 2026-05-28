@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { useCart } from '@/components/CartContext';
 import Link from 'next/link';
 
@@ -23,6 +23,22 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers }
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [orderSuccess, setOrderSuccess] = useState<string | null>(null);
+  const [serverTotal, setServerTotal] = useState<number | null>(null);
+
+  // Idempotency key persists across renders so a double-submit reuses the same
+  // key and the server returns the existing order instead of creating a dup.
+  const idempotencyKeyRef = useRef<string | null>(null);
+  const submittedRef = useRef<boolean>(false);
+
+  const getIdempotencyKey = () => {
+    if (!idempotencyKeyRef.current) {
+      idempotencyKeyRef.current =
+        typeof crypto !== 'undefined' && 'randomUUID' in crypto
+          ? crypto.randomUUID()
+          : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+    }
+    return idempotencyKeyRef.current;
+  };
 
   // Form State
   const [fullName, setFullName] = useState(userProfile.full_name ?? '');
@@ -125,6 +141,11 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers }
       return;
     }
 
+    // Guard against double-submit BEFORE issuing the fetch. A React state
+    // update would race with a fast double-tap; a ref is synchronous.
+    if (submittedRef.current) return;
+    submittedRef.current = true;
+
     setLoading(true);
 
     try {
@@ -146,7 +167,8 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers }
           } : null,
           fulfillmentMethod,
           paymentMethod,
-          couponCode: appliedCoupon?.code ?? null
+          couponCode: appliedCoupon?.code ?? null,
+          idempotencyKey: getIdempotencyKey(),
         })
       });
 
@@ -156,9 +178,14 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers }
         throw new Error(data.error ?? 'Failed To Process Order.');
       }
 
+      if (typeof data.total === 'number') {
+        setServerTotal(Number(data.total));
+      }
       setOrderSuccess(data.orderId);
       clearCart();
     } catch (err: any) {
+      // Allow the user to retry after an error.
+      submittedRef.current = false;
       setError(err.message ?? 'An Error Occurred While Processing Order.');
     } finally {
       setLoading(false);
@@ -266,7 +293,9 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers }
 
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1.1rem' }}>
               <span style={{ color: 'var(--grey-400)', fontWeight: 600 }}>Amount Due</span>
-              <strong style={{ color: 'var(--teal)', fontFamily: 'var(--font-brand)' }}>${grandTotal.toFixed(2)}</strong>
+              <strong style={{ color: 'var(--teal)', fontFamily: 'var(--font-brand)' }}>
+                ${(serverTotal ?? grandTotal).toFixed(2)}
+              </strong>
             </div>
           </div>
 
