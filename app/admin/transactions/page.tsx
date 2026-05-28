@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Pagination from '@/components/Pagination';
+import { exportCSV, downloadCSV } from '@/lib/export';
 
 const PAGE_SIZE = 25;
 
@@ -81,9 +82,40 @@ export default function AdminTransactionsPage() {
             Immutable Record Of All System Financial Transactions & Balance Modifications.
           </p>
         </div>
-        <button onClick={fetchTransactions} className="btn btn-secondary btn-sm" disabled={loading}>
-          {loading ? 'Refreshing...' : 'Refresh Ledger'}
-        </button>
+        <div style={{ display: 'flex', gap: 'var(--space-3)' }}>
+          <button
+            type="button"
+            className="btn btn-secondary btn-sm"
+            disabled={transactions.length === 0}
+            onClick={() => {
+              const rows = transactions.map((tx) => {
+                const meta = TYPE_META[tx.type];
+                return {
+                  created_at: new Date(tx.created_at).toISOString(),
+                  agent: tx.profiles?.full_name || (tx.profiles?.email ? `@${tx.profiles.email.split('@')[0]}` : 'Unknown'),
+                  type: meta?.label || tx.type.replace(/_/g, ' '),
+                  description: tx.description || '',
+                  amount: Number(tx.amount).toFixed(2),
+                  balance_after: Number(tx.balance_after).toFixed(2),
+                };
+              });
+              const csv = exportCSV(rows, [
+                { key: 'created_at', label: 'Date' },
+                { key: 'agent', label: 'Agent' },
+                { key: 'type', label: 'Type' },
+                { key: 'description', label: 'Description' },
+                { key: 'amount', label: 'Amount' },
+                { key: 'balance_after', label: 'Balance After' },
+              ]);
+              downloadCSV(`admin_transactions_${new Date().toISOString().slice(0, 10)}.csv`, csv);
+            }}
+          >
+            Export CSV
+          </button>
+          <button onClick={fetchTransactions} className="btn btn-secondary btn-sm" disabled={loading}>
+            {loading ? 'Refreshing...' : 'Refresh Ledger'}
+          </button>
+        </div>
       </div>
 
       {error && (
