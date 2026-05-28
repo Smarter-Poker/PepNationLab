@@ -23,12 +23,7 @@ export default async function AgentStorefrontPage({ params }: Props) {
       primary_color,
       secondary_color,
       bio,
-      qr_code_url,
-      profiles!inner (
-        full_name,
-        role,
-        tier
-      )
+      qr_code_url
     `)
     .eq('slug', agentSlug)
     .eq('is_active', true)

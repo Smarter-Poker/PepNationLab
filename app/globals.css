@@ -1,5 +1,11 @@
 @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700;800&display=swap');
 
+@font-face {
+  font-family: 'OrbitronNumbersFixed';
+  src: local('Inter');
+  unicode-range: U+0030-0039;
+}
+
 /* ============================================
    PEPNATIONLAB — DESIGN SYSTEM
    Teal / Black / Silver / Grey / White
@@ -38,7 +44,7 @@
   --red-bg:         rgba(229, 62, 62, 0.08);
 
   /* Typography */
-  --font-brand:     'Orbitron', sans-serif;
+  --font-brand:     'OrbitronNumbersFixed', 'Orbitron', sans-serif;
   --font-body:      'Inter', sans-serif;
 
   /* Spacing */
@@ -111,8 +117,8 @@ body {
   line-height: 1.6;
   min-height: 100vh;
   overflow-x: hidden;
-  font-feature-settings: "zero" 0 !important;
-  font-variant-numeric: tabular-nums normal !important;
+  font-feature-settings: normal !important;
+  font-variant-numeric: normal !important;
 }
 
 /* ============================================

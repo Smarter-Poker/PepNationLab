@@ -31,21 +31,21 @@ export default function AgentOverview({
         {/* Stats Cards */}
         <div className="grid-3">
           <div className="card-metal" style={{ padding: 'var(--space-5)' }}>
-            <div style={{ fontSize: '1.6rem', fontWeight: 800, fontFamily: 'var(--font-brand)', color: 'var(--teal)', marginBottom: 4 }}>
+            <div style={{ fontSize: '1.6rem', fontWeight: 800, fontFamily: 'var(--font-body)', color: 'var(--teal)', marginBottom: 4 }}>
               {activeResearchersCount}
             </div>
             <div style={{ fontSize: '0.8rem', color: 'var(--grey-400)', fontWeight: 600 }}>Referred Researchers</div>
           </div>
 
           <div className="card-metal" style={{ padding: 'var(--space-5)' }}>
-            <div style={{ fontSize: '1.6rem', fontWeight: 800, fontFamily: 'var(--font-brand)', color: 'var(--teal)', marginBottom: 4 }}>
+            <div style={{ fontSize: '1.6rem', fontWeight: 800, fontFamily: 'var(--font-body)', color: 'var(--teal)', marginBottom: 4 }}>
               {activeOrdersCount}
             </div>
             <div style={{ fontSize: '0.8rem', color: 'var(--grey-400)', fontWeight: 600 }}>Total Order Ledger</div>
           </div>
 
           <div className="card-metal" style={{ padding: 'var(--space-5)' }}>
-            <div style={{ fontSize: '1.6rem', fontWeight: 800, fontFamily: 'var(--font-brand)', color: 'var(--teal)', marginBottom: 4 }}>
+            <div style={{ fontSize: '1.6rem', fontWeight: 800, fontFamily: 'var(--font-body)', color: 'var(--teal)', marginBottom: 4 }}>
               ${totalRevenue.toFixed(2)}
             </div>
             <div style={{ fontSize: '0.8rem', color: 'var(--grey-400)', fontWeight: 600 }}>Total Referred Revenue</div>
