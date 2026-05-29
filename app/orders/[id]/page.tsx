@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/server';
 import PageShell from '@/components/PageShell';
 import PaymentProofUpload from '@/components/PaymentProofUpload';
 import ReceiptButton from './ReceiptButton';
+import SubscribeReplenishButton from './SubscribeReplenishButton';
 
 export const dynamic = 'force-dynamic';
 
@@ -43,6 +44,7 @@ const PAYMENT_LABELS: Record<string, string> = {
 
 interface OrderItem {
   id: string;
+  agent_product_id: string | null;
   product_name: string;
   quantity: number;
   unit_retail_price: number | string;
@@ -87,7 +89,7 @@ export default async function OrderDetailPage(
       id, status, created_at, payment_method, fulfillment_method,
       subtotal, discount_amount, coupon_code, shipping_cost, total,
       tracking_number, label_url, shipping_address, agent_id, buyer_id,
-      order_items (id, product_name, quantity, unit_retail_price, unit_cost_price),
+      order_items (id, agent_product_id, product_name, quantity, unit_retail_price, unit_cost_price),
       profiles:buyer_id (full_name, email)
     `)
     .eq('id', id)
@@ -143,6 +145,29 @@ export default async function OrderDetailPage(
                 </p>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', flexWrap: 'wrap' }}>
+                {order.buyer_id === user.id && order.status !== 'cancelled' && (
+                  <SubscribeReplenishButton
+                    agentId={order.agent_id}
+                    paymentMethod={order.payment_method}
+                    fulfillmentMethod={order.fulfillment_method}
+                    shippingAddress={
+                      order.fulfillment_method === 'ship' && addr?.street
+                        ? {
+                            fullName: addr.fullName,
+                            street: addr.street,
+                            suite: addr.suite,
+                            city: addr.city,
+                            state: addr.state,
+                            zip: addr.zip,
+                          }
+                        : null
+                    }
+                    items={order.order_items.map((it) => ({
+                      agent_product_id: it.agent_product_id,
+                      quantity: it.quantity,
+                    }))}
+                  />
+                )}
                 <ReceiptButton
                   orderId={order.id}
                   createdAt={order.created_at}
