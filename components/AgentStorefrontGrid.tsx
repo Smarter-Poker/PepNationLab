@@ -5,6 +5,8 @@ import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { motion, Variants, AnimatePresence } from 'framer-motion';
 import { Star, X, Heart, FileText, Search, SlidersHorizontal, RotateCcw, Check } from 'lucide-react';
 import RecommendationStrip, { type RecommendationItem } from './RecommendationStrip';
+import { getProductImage } from '@/lib/categoryImage';
+import PeptideVialCard from '@/components/PeptideVialCard';
 
 interface ProductItem {
   id: string;
@@ -489,7 +491,10 @@ export default function AgentStorefrontGrid({ products, inventoryMap, primaryCol
           name,
           category: item.products?.category || 'Other',
           desc: item.custom_description ?? item.products?.description ?? '',
-          imageUrl: item.custom_image_url ?? item.products?.image_url ?? null,
+          imageUrl: getProductImage(
+            item.custom_image_url ?? item.products?.image_url ?? null,
+            item.products?.category || 'Other'
+          ),
           variants: [],
           lowestPrice: Infinity,
           popularity: POPULAR_ORDER.indexOf(name),
@@ -1181,22 +1186,12 @@ export default function AgentStorefrontGrid({ products, inventoryMap, primaryCol
                   );
                 })()}
 
-                {group.imageUrl ? (
-                  /* eslint-disable-next-line @next/next/no-img-element */
-                  <img src={group.imageUrl} alt={group.name}
-                    style={{ width: '100%', height: '100%', objectFit: 'contain', objectPosition: 'center', padding: '8px', transition: 'transform 0.4s ease' }}
-                    className="store-image-hover"
-                    onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
-                ) : (
-                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 'var(--space-3)', opacity: 0.5 }}>
-                    <svg width="64" height="64" viewBox="0 0 60 60" fill="none">
-                      <circle cx="30" cy="30" r="12" fill="none" stroke={primaryColor} strokeWidth="2"/>
-                      <path d="M30 18v-8M30 50v-8M18 30h-8M50 30h-8" stroke="var(--silver)" strokeWidth="2" strokeLinecap="round"/>
-                      <circle cx="30" cy="30" r="24" fill="none" stroke="var(--silver)" strokeWidth="1" strokeDasharray="4 4"/>
-                    </svg>
-                    <span style={{ fontSize: '0.75rem', color: 'var(--silver)', letterSpacing: '0.1em', textTransform: 'uppercase' }}>Image Coming Soon</span>
-                  </div>
-                )}
+                {/* Branded compound-specific labeled vial card */}
+                <PeptideVialCard
+                  name={group.name}
+                  category={group.category}
+                  style={{ width: '100%', height: '100%' }}
+                />
 
                 {/* Popular badge — teal */}
                 {group.popularity < 20 && (
@@ -1524,18 +1519,12 @@ export default function AgentStorefrontGrid({ products, inventoryMap, primaryCol
                 background: `radial-gradient(circle at 50% 50%, ${primaryColor}20 0%, var(--black) 100%)`,
                 borderRadius: 'var(--radius-xl) var(--radius-xl) 0 0'
               }}>
-                {detailProduct.imageUrl ? (
-                  /* eslint-disable-next-line @next/next/no-img-element */
-                  <img src={detailProduct.imageUrl} alt={detailProduct.name}
-                    style={{ width: '100%', height: '100%', objectFit: 'contain', objectPosition: 'center', padding: '16px' }} />
-                ) : (
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', opacity: 0.3 }}>
-                    <svg width="80" height="80" viewBox="0 0 60 60" fill="none">
-                      <circle cx="30" cy="30" r="12" fill="none" stroke={primaryColor} strokeWidth="2"/>
-                      <circle cx="30" cy="30" r="24" fill="none" stroke="var(--silver)" strokeWidth="1" strokeDasharray="4 4"/>
-                    </svg>
-                  </div>
-                )}
+                {/* Labeled vial card in detail modal */}
+                <PeptideVialCard
+                  name={detailProduct.name}
+                  category={detailProduct.category}
+                  style={{ width: '100%', height: '100%' }}
+                />
                 <button
                   onClick={() => setDetailProduct(null)}
                   style={{
