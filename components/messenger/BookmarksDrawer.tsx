@@ -35,6 +35,13 @@ export default function BookmarksDrawer({ onClose, onJump }: Props) {
   const [rows, setRows] = useState<BookmarkRow[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // Audit2 fix: Escape key closes the drawer.
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [onClose]);
+
   useEffect(() => {
     let cancelled = false;
     (async () => {

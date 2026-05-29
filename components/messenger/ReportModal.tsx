@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { X } from 'lucide-react';
 import { toast } from 'sonner';
 import type { Message } from '@/lib/messenger/types';
@@ -23,6 +23,15 @@ export default function ReportModal({ message, onClose }: Props) {
   const [reason, setReason] = useState<Reason>('spam');
   const [note, setNote] = useState('');
   const [busy, setBusy] = useState(false);
+
+  // Audit2 fix: support Escape to close, matching standard modal behavior.
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [onClose]);
 
   const handleSubmit = async () => {
     if (busy) return;

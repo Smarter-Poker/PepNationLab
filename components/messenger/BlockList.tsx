@@ -30,6 +30,13 @@ export default function BlockList({ onClose }: Props) {
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState<Record<string, boolean>>({});
 
+  // Audit2 fix: Escape key closes the modal.
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [onClose]);
+
   useEffect(() => {
     let cancelled = false;
     (async () => {
