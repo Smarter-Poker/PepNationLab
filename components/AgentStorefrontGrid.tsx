@@ -520,7 +520,15 @@ export default function AgentStorefrontGrid({ products, inventoryMap, primaryCol
                 boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4)',
                 borderRadius: 'var(--radius-lg)', cursor: 'pointer'
               }}
-              onClick={() => { setDetailProduct(group); logRecentlyViewed(activeVariant.product_id); }}
+              onClick={() => {
+                setDetailProduct(group);
+                logRecentlyViewed(activeVariant.product_id);
+                // Auto-init cart to 10 vials when modal opens (if not already in cart)
+                const defaultVId = group.defaultVariantId || group.variants[0]?.id;
+                if (defaultVId && !cartItems[defaultVId]) {
+                  setCartItems(prev => ({ ...prev, [defaultVId]: 10 }));
+                }
+              }}
             >
               {/* Product Image */}
               <div style={{
@@ -811,7 +819,7 @@ export default function AgentStorefrontGrid({ products, inventoryMap, primaryCol
                 {detailProduct.imageUrl ? (
                   /* eslint-disable-next-line @next/next/no-img-element */
                   <img src={detailProduct.imageUrl} alt={detailProduct.name}
-                    style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    style={{ width: '100%', height: '100%', objectFit: 'contain', objectPosition: 'center', padding: '16px' }} />
                 ) : (
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', opacity: 0.3 }}>
                     <svg width="80" height="80" viewBox="0 0 60 60" fill="none">
@@ -942,7 +950,7 @@ export default function AgentStorefrontGrid({ products, inventoryMap, primaryCol
                     return t ? parseFloat((basePrice * (1 + t.pct / 100)).toFixed(2)) : basePrice;
                   };
 
-                  const displayQty = qty || 10; // Show pricing for 10 if nothing in cart
+                  const displayQty = qty > 0 ? qty : 10;
                   const unitPrice = getUnitPrice(displayQty);
                   const lineTotal = unitPrice * displayQty;
 
@@ -1025,39 +1033,41 @@ export default function AgentStorefrontGrid({ products, inventoryMap, primaryCol
                         )}
                       </div>
 
-                      {/* Dynamic Pricing Tiers Table */}
-                      <div style={{
-                        marginTop: 'var(--space-5)', border: '1px solid rgba(255,255,255,0.08)',
-                        borderRadius: 'var(--radius-md)', overflow: 'hidden'
-                      }}>
-                        <div style={{ padding: '8px 16px', background: 'rgba(255,255,255,0.04)', fontSize: '0.75rem', fontWeight: 600, color: 'var(--silver)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                          Quantity Pricing
-                        </div>
-                        {tiers.map((t, i) => {
-                          const tierPrice = parseFloat((basePrice * (1 + t.pct / 100)).toFixed(2));
-                          const isActive = qty > 0 && qty >= t.min && qty <= t.max;
-                          return (
-                            <div key={i} style={{
-                              display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                              padding: '10px 16px',
-                              borderTop: '1px solid rgba(255,255,255,0.04)',
-                              background: isActive ? `${primaryColor}10` : 'transparent'
-                            }}>
-                              <span style={{ fontSize: '0.85rem', color: isActive ? 'var(--white)' : 'var(--grey-400)', fontWeight: isActive ? 600 : 400 }}>
-                                {t.label ?? (t.max === Infinity ? `${t.min}+ vials` : `${t.min}-${t.max} vials`)}
-                                {t.pct > 0 && <span style={{ color: '#F6AD55', marginLeft: 8, fontSize: '0.75rem' }}>+{t.pct}%</span>}
-                                {t.pct === 0 && volumePricingEnabled && <span style={{ color: 'var(--teal)', marginLeft: 8, fontSize: '0.75rem' }}>Best Price</span>}
-                              </span>
-                              <span style={{
-                                fontSize: '0.95rem', fontWeight: 700, fontFamily: 'var(--font-brand)',
-                                color: isActive ? primaryColor : 'var(--grey-300)'
+                      {/* Bulk Pricing Table — only shown when agent has volume pricing enabled */}
+                      {volumePricingEnabled && (
+                        <div style={{
+                          marginTop: 'var(--space-5)', border: '1px solid rgba(255,255,255,0.08)',
+                          borderRadius: 'var(--radius-md)', overflow: 'hidden'
+                        }}>
+                          <div style={{ padding: '8px 16px', background: 'rgba(255,255,255,0.04)', fontSize: '0.75rem', fontWeight: 600, color: 'var(--silver)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                            Bulk Pricing
+                          </div>
+                          {tiers.map((t, i) => {
+                            const tierPrice = parseFloat((basePrice * (1 + t.pct / 100)).toFixed(2));
+                            const isActive = displayQty >= t.min && displayQty <= t.max;
+                            return (
+                              <div key={i} style={{
+                                display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                                padding: '10px 16px',
+                                borderTop: '1px solid rgba(255,255,255,0.04)',
+                                background: isActive ? `${primaryColor}10` : 'transparent'
                               }}>
-                                ${tierPrice.toFixed(2)}/ea
-                              </span>
-                            </div>
-                          );
-                        })}
-                      </div>
+                                <span style={{ fontSize: '0.85rem', color: isActive ? 'var(--white)' : 'var(--grey-400)', fontWeight: isActive ? 600 : 400 }}>
+                                  {t.label ?? (t.max === Infinity ? `${t.min}+ vials` : `${t.min}-${t.max} vials`)}
+                                  {t.pct > 0 && <span style={{ color: '#F6AD55', marginLeft: 8, fontSize: '0.75rem' }}>+{t.pct}%</span>}
+                                  {t.pct === 0 && <span style={{ color: 'var(--teal)', marginLeft: 8, fontSize: '0.75rem' }}>Best Price</span>}
+                                </span>
+                                <span style={{
+                                  fontSize: '0.95rem', fontWeight: 700, fontFamily: 'var(--font-brand)',
+                                  color: isActive ? primaryColor : 'var(--grey-300)'
+                                }}>
+                                  ${tierPrice.toFixed(2)}/ea
+                                </span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
                     </div>
                   );
                 })()}
