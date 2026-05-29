@@ -1034,53 +1034,87 @@ export default function AgentStorefrontGrid({ products, inventoryMap, primaryCol
                         )}
                       </div>
 
-                      {/* See Bulk Pricing — collapsible, only shown when agent has volume pricing enabled */}
+                      {/* Dynamic Pricing Tiers \u2014 always visible when volume pricing is on */}
                       {volumePricingEnabled && (
-                        <div style={{ marginTop: 'var(--space-4)' }}>
-                          <button
-                            type="button"
-                            onClick={() => setShowBulkPricing(prev => !prev)}
-                            style={{
-                              background: 'none', border: 'none', cursor: 'pointer', padding: 0,
-                              color: primaryColor, fontSize: '0.85rem', fontWeight: 600,
-                              display: 'flex', alignItems: 'center', gap: 6, textDecoration: 'underline',
-                              textUnderlineOffset: 3
-                            }}
-                          >
-                            {showBulkPricing ? 'Hide Bulk Pricing ↑' : 'See Bulk Pricing ↓'}
-                          </button>
-                          {showBulkPricing && (
-                            <div style={{
-                              marginTop: 'var(--space-3)', border: '1px solid rgba(255,255,255,0.08)',
-                              borderRadius: 'var(--radius-md)', overflow: 'hidden'
-                            }}>
-                              <div style={{ padding: '8px 16px', background: 'rgba(255,255,255,0.04)', fontSize: '0.75rem', fontWeight: 600, color: 'var(--silver)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                                Bulk Pricing
+                        <div style={{
+                          marginTop: 'var(--space-5)', border: '1px solid rgba(255,255,255,0.08)',
+                          borderRadius: 'var(--radius-md)', overflow: 'hidden'
+                        }}>
+                          <div style={{ padding: '8px 16px', background: 'rgba(255,255,255,0.04)', fontSize: '0.75rem', fontWeight: 600, color: 'var(--silver)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                            Volume Pricing
+                          </div>
+                          {tiers.map((t, i) => {
+                            const tierPrice = parseFloat((basePrice * (1 + t.pct / 100)).toFixed(2));
+                            const isActive = displayQty >= t.min && displayQty <= t.max;
+                            return (
+                              <div key={i} style={{
+                                display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                                padding: '10px 16px', borderTop: '1px solid rgba(255,255,255,0.04)',
+                                background: isActive ? `${primaryColor}10` : 'transparent'
+                              }}>
+                                <span style={{ fontSize: '0.85rem', color: isActive ? 'var(--white)' : 'var(--grey-400)', fontWeight: isActive ? 600 : 400 }}>
+                                  {t.label ?? (t.max === Infinity ? `${t.min}+ vials` : `${t.min}–${t.max} vials`)}
+                                  {t.pct > 0 && <span style={{ color: '#F6AD55', marginLeft: 8, fontSize: '0.75rem' }}>+{t.pct}%</span>}
+                                  {t.pct === 0 && <span style={{ color: 'var(--teal)', marginLeft: 8, fontSize: '0.75rem' }}>Best Price</span>}
+                                </span>
+                                <span style={{ fontSize: '0.95rem', fontWeight: 700, fontFamily: 'var(--font-brand)', color: isActive ? primaryColor : 'var(--grey-300)' }}>
+                                  ${tierPrice.toFixed(2)}/ea
+                                </span>
                               </div>
-                              {tiers.map((t, i) => {
-                                const tierPrice = parseFloat((basePrice * (1 + t.pct / 100)).toFixed(2));
-                                const isActive = displayQty >= t.min && displayQty <= t.max;
-                                return (
-                                  <div key={i} style={{
-                                    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                                    padding: '10px 16px', borderTop: '1px solid rgba(255,255,255,0.04)',
-                                    background: isActive ? `${primaryColor}10` : 'transparent'
-                                  }}>
-                                    <span style={{ fontSize: '0.85rem', color: isActive ? 'var(--white)' : 'var(--grey-400)', fontWeight: isActive ? 600 : 400 }}>
-                                      {t.label ?? (t.max === Infinity ? `${t.min}+ vials` : `${t.min}–${t.max} vials`)}
-                                      {t.pct > 0 && <span style={{ color: '#F6AD55', marginLeft: 8, fontSize: '0.75rem' }}>+{t.pct}%</span>}
-                                      {t.pct === 0 && <span style={{ color: 'var(--teal)', marginLeft: 8, fontSize: '0.75rem' }}>Best Price</span>}
-                                    </span>
-                                    <span style={{ fontSize: '0.95rem', fontWeight: 700, fontFamily: 'var(--font-brand)', color: isActive ? primaryColor : 'var(--grey-300)' }}>
-                                      ${tierPrice.toFixed(2)}/ea
-                                    </span>
-                                  </div>
-                                );
-                              })}
-                            </div>
-                          )}
+                            );
+                          })}
                         </div>
                       )}
+
+                      {/* See Bulk Pricing \u2014 collapsible section for 100/300/500+ vial orders */}
+                      <div style={{ marginTop: 'var(--space-4)' }}>
+                        <button
+                          type="button"
+                          onClick={() => setShowBulkPricing(prev => !prev)}
+                          style={{
+                            background: 'none', border: 'none', cursor: 'pointer', padding: 0,
+                            color: primaryColor, fontSize: '0.82rem', fontWeight: 600,
+                            display: 'flex', alignItems: 'center', gap: 6,
+                            textDecoration: 'underline', textUnderlineOffset: 3
+                          }}
+                        >
+                          {showBulkPricing ? 'Hide Bulk Pricing ↑' : 'See Bulk Pricing ↓'}
+                        </button>
+                        {showBulkPricing && (
+                          <div style={{
+                            marginTop: 'var(--space-3)', border: '1px solid rgba(255,255,255,0.08)',
+                            borderRadius: 'var(--radius-md)', overflow: 'hidden'
+                          }}>
+                            <div style={{ padding: '8px 16px', background: 'rgba(255,255,255,0.04)', fontSize: '0.75rem', fontWeight: 600, color: 'var(--silver)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                              Bulk Volume Discounts
+                            </div>
+                            {[
+                              { min: 100, pct: 5 },
+                              { min: 300, pct: 10 },
+                              { min: 500, pct: 15 },
+                            ].map((tier, i) => {
+                              const discountedPrice = parseFloat((basePrice * (1 - tier.pct / 100)).toFixed(2));
+                              return (
+                                <div key={i} style={{
+                                  display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                                  padding: '10px 16px', borderTop: '1px solid rgba(255,255,255,0.04)'
+                                }}>
+                                  <span style={{ fontSize: '0.85rem', color: 'var(--grey-400)' }}>
+                                    {tier.min}+ Vials
+                                    <span style={{ color: '#68D391', marginLeft: 8, fontSize: '0.75rem' }}>{tier.pct}% off</span>
+                                  </span>
+                                  <span style={{ fontSize: '0.95rem', fontWeight: 700, fontFamily: 'var(--font-brand)', color: 'var(--grey-300)' }}>
+                                    ${discountedPrice.toFixed(2)}/ea
+                                  </span>
+                                </div>
+                              );
+                            })}
+                            <div style={{ padding: '8px 16px', borderTop: '1px solid rgba(255,255,255,0.04)', fontSize: '0.72rem', color: 'var(--grey-500)' }}>
+                              Contact your agent to place a bulk order of 100+ vials.
+                            </div>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   );
                 })()}
