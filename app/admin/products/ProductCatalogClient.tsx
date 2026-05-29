@@ -271,9 +271,8 @@ export default function ProductCatalogClient({
 
   return (
     <>
-      {/* ── Control Bar ── */}
+      {/* Control Bar */}
       <div style={controlBarStyle}>
-        {/* Search */}
         <input
           id="product-search"
           type="text"
@@ -284,7 +283,6 @@ export default function ProductCatalogClient({
           style={inputStyle}
         />
 
-        {/* Sort */}
         <select
           id="product-sort"
           className="form-input"
@@ -299,7 +297,6 @@ export default function ProductCatalogClient({
           <option value="price-desc">Price: High → Low</option>
         </select>
 
-        {/* Category filter */}
         <select
           id="product-category-filter"
           className="form-input"
@@ -313,7 +310,6 @@ export default function ProductCatalogClient({
           ))}
         </select>
 
-        {/* Bulk Import */}
         <button
           type="button"
           onClick={() => setShowBulkModal(true)}
@@ -324,13 +320,13 @@ export default function ProductCatalogClient({
         </button>
       </div>
 
-      {/* ── Results count ── */}
+      {/* Results count */}
       <p style={{ fontSize: '0.82rem', color: 'var(--grey-400)', marginBottom: 'var(--space-4)' }}>
         Showing {displayed.length} of {grouped.length} unique products
         {search && ` matching "${search}"`}
       </p>
 
-      {/* ── Bulk Action Bar ── */}
+      {/* Bulk Action Bar */}
       {selected.size > 0 && (
         <div
           style={{
@@ -371,7 +367,7 @@ export default function ProductCatalogClient({
         </div>
       )}
 
-      {/* ── Table ── */}
+      {/* Table */}
       <div className="card-metal" style={{ padding: 0, overflow: 'hidden' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>
@@ -400,7 +396,6 @@ export default function ProductCatalogClient({
                 borderBottom: i < displayed.length - 1 ? '1px solid rgba(255,255,255,0.04)' : 'none',
                 transition: 'background 0.15s',
               }}>
-                {/* Bulk checkbox */}
                 <td style={{ padding: 'var(--space-4)' }}>
                   <input
                     type="checkbox"
@@ -409,14 +404,12 @@ export default function ProductCatalogClient({
                     onChange={() => toggleRow(p.variantIds)}
                   />
                 </td>
-                {/* Name */}
                 <td style={{ padding: 'var(--space-4)' }}>
                   <div style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--white)' }}>
                     {p.name}
                   </div>
                 </td>
 
-                {/* Variants */}
                 <td style={{ padding: 'var(--space-4)' }}>
                   <span style={{
                     fontSize: '0.75rem',
@@ -432,19 +425,16 @@ export default function ProductCatalogClient({
                   </span>
                 </td>
 
-                {/* Category */}
                 <td style={{ padding: 'var(--space-4)' }}>
                   <span className="badge badge-silver" style={{ fontSize: '0.65rem' }}>
                     {p.category}
                   </span>
                 </td>
 
-                {/* Base Cost */}
                 <td style={{ padding: 'var(--space-4)', fontSize: '0.88rem', fontFamily: 'var(--font-brand)', color: 'var(--grey-400)' }}>
                   ${p.baseCost.toFixed(2)}
                 </td>
 
-                {/* Tier prices — per-product overrides take precedence */}
                 <td style={{ padding: 'var(--space-4)', fontSize: '0.88rem', fontFamily: 'var(--font-brand)', color: 'var(--teal)' }}>
                   {tierPrice(p.representativeId, p.baseCost, 'tier_1')}
                 </td>
@@ -455,14 +445,12 @@ export default function ProductCatalogClient({
                   {tierPrice(p.representativeId, p.baseCost, 'tier_3')}
                 </td>
 
-                {/* Status */}
                 <td style={{ padding: 'var(--space-4)' }}>
                   <span className={`badge ${p.isActive ? 'badge-teal' : 'badge-red'}`} style={{ fontSize: '0.65rem' }}>
                     {p.isActive ? 'Active' : 'Inactive'}
                   </span>
                 </td>
 
-                {/* Actions */}
                 <td style={{ padding: 'var(--space-4)' }}>
                   <Link href={`/admin/products/${p.id}`} style={{ fontSize: '0.8rem', color: 'var(--teal)' }}>
                     Edit
