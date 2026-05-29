@@ -11,6 +11,7 @@ import {
 import { purchaseLabelForOrder } from '@/lib/shippo';
 import { enqueueOrderSms, shortOrderId, type OrderSmsEvent } from '@/lib/sms-enqueue';
 import { enqueueOrderPush } from '@/lib/push-enqueue';
+import { enqueueWebhook, fetchOrderForWebhook, type WebhookEventType } from '@/lib/webhook-dispatch';
 
 interface BulkBody {
   ids?: unknown;
@@ -134,6 +135,28 @@ export async function POST(req: NextRequest) {
           }
         }
       } catch { /* never block bulk response on SMS */ }
+
+      // Fire-and-forget webhook for bulk admin transitions.
+      void (async () => {
+        try {
+          let webhookEvent: WebhookEventType | null = null;
+          if (target === 'approved_ship' || target === 'approved_pickup') webhookEvent = 'order.approved';
+          else if (target === 'shipped') webhookEvent = 'order.shipped';
+          else if (target === 'delivered') webhookEvent = 'order.delivered';
+          else if (target === 'cancelled') webhookEvent = 'order.cancelled';
+          if (webhookEvent) {
+            const orderPayload = await fetchOrderForWebhook(supabase, id);
+            if (orderPayload) {
+              await enqueueWebhook(supabase, {
+                event: webhookEvent,
+                agentId: (orderPayload as { agent_id?: string | null }).agent_id ?? null,
+                payload: { order: orderPayload },
+                relatedOrderId: id,
+              });
+            }
+          }
+        } catch { /* webhook must not break bulk response */ }
+      })();
     }
 
     return NextResponse.json({

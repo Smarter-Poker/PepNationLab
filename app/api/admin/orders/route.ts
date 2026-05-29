@@ -4,6 +4,7 @@ import { requireOrdersAccess } from '@/lib/admin-auth';
 import { canTransition, type OrderStatus } from '@/lib/order-states';
 import { enqueueOrderSms, shortOrderId, type OrderSmsEvent } from '@/lib/sms-enqueue';
 import { enqueueOrderPush } from '@/lib/push-enqueue';
+import { enqueueWebhook, fetchOrderForWebhook, type WebhookEventType } from '@/lib/webhook-dispatch';
 
 // GET: List all orders with buyer profile join
 export async function GET(req: NextRequest) {
@@ -162,6 +163,28 @@ export async function POST(req: NextRequest) {
       }
     }
   } catch { /* never block admin response on SMS failure */ }
+
+  // Fire-and-forget webhook for status transitions admins drive.
+  void (async () => {
+    try {
+      let webhookEvent: WebhookEventType | null = null;
+      if (status === 'approved_ship' || status === 'approved_pickup') webhookEvent = 'order.approved';
+      else if (status === 'shipped') webhookEvent = 'order.shipped';
+      else if (status === 'delivered') webhookEvent = 'order.delivered';
+      else if (status === 'cancelled') webhookEvent = 'order.cancelled';
+      if (webhookEvent) {
+        const orderPayload = await fetchOrderForWebhook(supabase, id);
+        if (orderPayload) {
+          await enqueueWebhook(supabase, {
+            event: webhookEvent,
+            agentId: (orderPayload as { agent_id?: string | null }).agent_id ?? null,
+            payload: { order: orderPayload },
+            relatedOrderId: id,
+          });
+        }
+      }
+    } catch { /* webhook must not break admin response */ }
+  })();
 
   return NextResponse.json({ success: true });
 }

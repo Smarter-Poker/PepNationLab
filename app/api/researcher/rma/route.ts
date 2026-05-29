@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { createClient, createServiceClient } from '@/lib/supabase/server';
 import { assertSameOrigin } from '@/lib/csrf';
+import { enqueueWebhook } from '@/lib/webhook-dispatch';
 
 export const dynamic = 'force-dynamic';
 
@@ -155,6 +156,26 @@ export async function POST(req: NextRequest) {
       type: 'direct_message',
     });
   }
+
+  // Fire-and-forget webhook: rma.created
+  void (async () => {
+    try {
+      await enqueueWebhook(service, {
+        event: 'rma.created',
+        agentId: order.agent_id ?? null,
+        payload: {
+          rma: {
+            id: newRma.id,
+            order_id: order.id,
+            status: 'requested',
+            reason_category: parsed.data.reason_category,
+            requested_resolution: parsed.data.requested_resolution,
+          },
+        },
+        relatedOrderId: order.id,
+      });
+    } catch { /* webhook must not break RMA create */ }
+  })();
 
   return NextResponse.json({ ok: true, id: newRma.id });
 }

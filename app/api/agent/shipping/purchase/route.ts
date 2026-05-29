@@ -5,6 +5,7 @@ import { pickOne } from '@/lib/relations';
 import { Shippo } from 'shippo';
 import { enqueueOrderSms, shortOrderId } from '@/lib/sms-enqueue';
 import { enqueueOrderPush } from '@/lib/push-enqueue';
+import { enqueueWebhook, fetchOrderForWebhook } from '@/lib/webhook-dispatch';
 
 export async function POST(req: NextRequest) {
   try {
@@ -143,6 +144,21 @@ export async function POST(req: NextRequest) {
         });
       } catch { /* push failures must not break shipping */ }
     }
+
+    // Fire-and-forget webhook: order.shipped
+    void (async () => {
+      try {
+        const orderPayload = await fetchOrderForWebhook(supabase, orderId);
+        if (orderPayload) {
+          await enqueueWebhook(supabase, {
+            event: 'order.shipped',
+            agentId: (orderPayload as { agent_id?: string | null }).agent_id ?? null,
+            payload: { order: orderPayload },
+            relatedOrderId: orderId,
+          });
+        }
+      } catch { /* webhook errors must not break shipping */ }
+    })();
 
     return NextResponse.json({ success: true, trackingNumber, labelUrl });
   } catch (error) {

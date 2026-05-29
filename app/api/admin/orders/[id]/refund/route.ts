@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { createServiceClient } from '@/lib/supabase/server';
 import { requireAdmin } from '@/lib/admin-auth';
 import { assertSameOrigin } from '@/lib/csrf';
+import { enqueueWebhook, fetchOrderForWebhook } from '@/lib/webhook-dispatch';
 
 const RefundSchema = z.object({
   amount: z.number().positive(),
@@ -63,6 +64,30 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
       is_partial: parsed.data.is_partial,
     },
   });
+
+  // Fire-and-forget webhook: order.refunded
+  void (async () => {
+    try {
+      const orderPayload = await fetchOrderForWebhook(service, id);
+      if (orderPayload) {
+        await enqueueWebhook(service, {
+          event: 'order.refunded',
+          agentId: (orderPayload as { agent_id?: string | null }).agent_id ?? null,
+          payload: {
+            order: orderPayload,
+            refund: {
+              id: refundId,
+              amount: parsed.data.amount,
+              type: parsed.data.refund_type,
+              reason: parsed.data.reason,
+              is_partial: parsed.data.is_partial,
+            },
+          },
+          relatedOrderId: id,
+        });
+      }
+    } catch { /* webhook must not break refund response */ }
+  })();
 
   return NextResponse.json({
     success: true,

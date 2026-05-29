@@ -5,6 +5,7 @@ import { pickOne } from '@/lib/relations';
 import { computeAgentCost, type AgentTier } from '@/lib/pricing';
 import { enqueueOrderSms, shortOrderId } from '@/lib/sms-enqueue';
 import { enqueueOrderPush } from '@/lib/push-enqueue';
+import { enqueueWebhook, fetchOrderForWebhook } from '@/lib/webhook-dispatch';
 
 export async function POST(req: NextRequest) {
   try {
@@ -39,6 +40,19 @@ export async function POST(req: NextRequest) {
 
     if (newStatus === 'cancelled') {
       await supabase.from('orders').update({ status: 'cancelled', updated_at: new Date().toISOString() }).eq('id', orderId);
+      void (async () => {
+        try {
+          const orderPayload = await fetchOrderForWebhook(supabase, orderId);
+          if (orderPayload) {
+            await enqueueWebhook(supabase, {
+              event: 'order.cancelled',
+              agentId: (orderPayload as { agent_id?: string | null }).agent_id ?? null,
+              payload: { order: orderPayload },
+              relatedOrderId: orderId,
+            });
+          }
+        } catch { /* webhook errors must not break the cancel */ }
+      })();
       return NextResponse.json({ success: true, status: 'cancelled' });
     }
 
@@ -181,6 +195,21 @@ export async function POST(req: NextRequest) {
         });
       } catch { /* push failures must not break the order */ }
     }
+
+    // Fire-and-forget webhook: order.approved
+    void (async () => {
+      try {
+        const orderPayload = await fetchOrderForWebhook(supabase, orderId);
+        if (orderPayload) {
+          await enqueueWebhook(supabase, {
+            event: 'order.approved',
+            agentId: (orderPayload as { agent_id?: string | null }).agent_id ?? null,
+            payload: { order: orderPayload },
+            relatedOrderId: orderId,
+          });
+        }
+      } catch { /* webhook errors must not break the order */ }
+    })();
 
     return NextResponse.json({ success: true, status: newStatus });
   } catch (error) {

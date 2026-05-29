@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
 import { assertCronAuth, claimCronRun, finishCronRun } from '@/lib/cron';
 import { enqueueOrderSms, shortOrderId } from '@/lib/sms-enqueue';
+import { enqueueWebhook } from '@/lib/webhook-dispatch';
 
 export const dynamic = 'force-dynamic';
 
@@ -275,6 +276,22 @@ async function processOne(
 
   // Best-effort notifications.
   await notifyResearcher(service, sub, orderId, total);
+
+  // Fire-and-forget webhook: subscription.run
+  void (async () => {
+    try {
+      await enqueueWebhook(service, {
+        event: 'subscription.run',
+        agentId: sub.agent_id ?? null,
+        payload: {
+          subscription_id: sub.id,
+          order_id: orderId,
+          total,
+        },
+        relatedOrderId: orderId,
+      });
+    } catch { /* webhook must not break cron */ }
+  })();
 
   return 'succeeded';
 }

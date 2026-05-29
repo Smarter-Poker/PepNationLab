@@ -5,6 +5,7 @@ import { applyBulkPrice } from '@/lib/pricing';
 import { assertSameOrigin } from '@/lib/csrf';
 import { rateLimit } from '@/lib/rate-limit';
 import { computeTaxQuote } from '@/lib/tax';
+import { enqueueWebhook, fetchOrderForWebhook } from '@/lib/webhook-dispatch';
 
 const CheckoutSchema = z.object({
   items: z.array(z.object({
@@ -735,6 +736,21 @@ export async function POST(request: NextRequest) {
       } catch {
         // Best-effort attribution; never bubble up.
       }
+    })();
+
+    // Fire-and-forget webhook: order.created. Never blocks the response.
+    void (async () => {
+      try {
+        const orderPayload = await fetchOrderForWebhook(serviceSupabase, order.id);
+        if (orderPayload) {
+          await enqueueWebhook(serviceSupabase, {
+            event: 'order.created',
+            agentId: (orderPayload as { agent_id?: string | null }).agent_id ?? null,
+            payload: { order: orderPayload },
+            relatedOrderId: order.id,
+          });
+        }
+      } catch { /* webhook errors must not block the order */ }
     })();
 
     return NextResponse.json({

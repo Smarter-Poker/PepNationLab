@@ -493,7 +493,8 @@ export default function AgentStorefrontGrid({ products, inventoryMap, primaryCol
           desc: item.custom_description ?? item.products?.description ?? '',
           imageUrl: getProductImage(
             item.custom_image_url ?? item.products?.image_url ?? null,
-            item.products?.category || 'Other'
+            item.products?.category || 'Other',
+            name,
           ),
           variants: [],
           lowestPrice: Infinity,
@@ -1186,11 +1187,14 @@ export default function AgentStorefrontGrid({ products, inventoryMap, primaryCol
                   );
                 })()}
 
-                {/* Branded compound-specific labeled vial card */}
-                <PeptideVialCard
-                  name={group.name}
-                  category={group.category}
-                  style={{ width: '100%', height: '100%' }}
+                {/* Photorealistic branded vial — product-specific image */}
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={group.imageUrl}
+                  alt={group.name}
+                  style={{ width: '100%', height: '100%', objectFit: 'contain', objectPosition: 'center', padding: '8px', transition: 'transform 0.4s ease' }}
+                  className="store-image-hover"
+                  onError={e => { (e.target as HTMLImageElement).style.opacity = '0.3'; }}
                 />
 
                 {/* Popular badge — teal */}
@@ -1519,11 +1523,13 @@ export default function AgentStorefrontGrid({ products, inventoryMap, primaryCol
                 background: `radial-gradient(circle at 50% 50%, ${primaryColor}20 0%, var(--black) 100%)`,
                 borderRadius: 'var(--radius-xl) var(--radius-xl) 0 0'
               }}>
-                {/* Labeled vial card in detail modal */}
-                <PeptideVialCard
-                  name={detailProduct.name}
-                  category={detailProduct.category}
-                  style={{ width: '100%', height: '100%' }}
+                {/* Photorealistic branded vial — product-specific image */}
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={detailProduct.imageUrl}
+                  alt={detailProduct.name}
+                  style={{ width: '100%', height: '100%', objectFit: 'contain', objectPosition: 'center', padding: '16px', transition: 'transform 0.4s ease' }}
+                  onError={e => { (e.target as HTMLImageElement).style.opacity = '0.3'; }}
                 />
                 <button
                   onClick={() => setDetailProduct(null)}

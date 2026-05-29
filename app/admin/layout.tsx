@@ -140,6 +140,11 @@ const NAV = [
     label: 'Push Log',
     icon: <svg {...ICON_PROPS}><path d="M22 8v6a2 2 0 0 1-2 2h-7l-4 4v-4H4a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2z" /></svg>,
   },
+  {
+    href: '/admin/webhooks',
+    label: 'Webhooks',
+    icon: <svg {...ICON_PROPS}><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>,
+  },
 ];
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {

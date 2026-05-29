@@ -4,6 +4,7 @@ import { createClient, createServiceClient } from '@/lib/supabase/server';
 import { requireAgent } from '@/lib/admin-auth';
 import { assertSameOrigin } from '@/lib/csrf';
 import { pickOne } from '@/lib/relations';
+import { enqueueWebhook } from '@/lib/webhook-dispatch';
 
 export const dynamic = 'force-dynamic';
 
@@ -303,6 +304,30 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
         type: 'direct_message',
       });
     }
+    // Fire-and-forget webhook: rma.resolved
+    const resolutionType = parsed.data.resolution_type;
+    const resolvedOrderId = rma.order_id;
+    const resolvedAgentId = order.agent_id ?? null;
+    const resolvedRefundId = refundId;
+    void (async () => {
+      try {
+        await enqueueWebhook(service, {
+          event: 'rma.resolved',
+          agentId: resolvedAgentId,
+          payload: {
+            rma: {
+              id,
+              order_id: resolvedOrderId,
+              status: 'resolved',
+              resolution_type: resolutionType,
+              refund_id: resolvedRefundId,
+            },
+          },
+          relatedOrderId: resolvedOrderId,
+        });
+      } catch { /* webhook must not break RMA resolve */ }
+    })();
+
     return NextResponse.json({ ok: true, refund_id: refundId });
   }
 
