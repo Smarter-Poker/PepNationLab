@@ -66,8 +66,10 @@ export default function Error({
         </div>
         <h1 style={{ fontSize: '1.6rem', color: 'var(--white, #FFFFFF)', marginBottom: '0.75rem', fontWeight: 700 }}>Something Went Wrong</h1>
         <p style={{ fontSize: '0.95rem', color: 'var(--silver, #A8B4C0)', marginBottom: '1.5rem', lineHeight: 1.6 }}>An Unexpected Error Occurred. Please Try Again Or Contact Support If The Problem Persists.</p>
-        {error?.message ? (
+        {process.env.NODE_ENV !== 'production' && error?.message ? (
           <p style={{ fontSize: '0.8rem', color: 'var(--grey-400, #6B7785)', marginBottom: '2rem', fontFamily: 'monospace', wordBreak: 'break-word', textTransform: 'none' }}>{error.message}</p>
+        ) : error?.digest ? (
+          <p style={{ fontSize: '0.75rem', color: 'var(--grey-400, #6B7785)', marginBottom: '2rem', fontFamily: 'monospace', wordBreak: 'break-word', textTransform: 'none' }}>Reference: {error.digest}</p>
         ) : null}
         <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center', flexWrap: 'wrap' }}>
           <button onClick={() => reset()} style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '0.75rem 1.5rem', background: 'var(--teal, #00C4BC)', color: 'var(--black, #050A0F)', borderRadius: '0.5rem', fontWeight: 600, border: 'none', cursor: 'pointer', fontSize: '0.95rem' }}>Try Again</button>

@@ -29,9 +29,13 @@ interface SubRow {
 }
 
 function fivemPartitionKey(d: Date = new Date()): string {
-  // YYYY-MM-DDTHH (hourly partition — cron fires every 5 min but we only
-  // need one row per hour so concurrent invocations are skipped cleanly).
-  return d.toISOString().slice(0, 13);
+  // YYYY-MM-DDTHH:MM rounded down to the nearest 5-minute slot. Cron fires
+  // every 5 minutes and each firing must do real work, so the partition key
+  // is granular enough that each invocation gets its own row in cron_runs.
+  // Concurrent re-triggers inside the same 5-minute window still dedupe.
+  const hh = d.toISOString().slice(0, 13); // YYYY-MM-DDTHH
+  const slot = Math.floor(d.getUTCMinutes() / 5) * 5;
+  return `${hh}:${String(slot).padStart(2, '0')}`;
 }
 
 export async function GET(req: NextRequest) {
@@ -41,7 +45,7 @@ export async function GET(req: NextRequest) {
   const partitionKey = fivemPartitionKey();
   const claim = await claimCronRun('push_dispatch', partitionKey);
   if (!claim) {
-    return Response.json({ skipped: true, reason: 'already_ran_this_hour' });
+    return Response.json({ skipped: true, reason: 'already_ran_this_slot' });
   }
 
   let processed = 0;
