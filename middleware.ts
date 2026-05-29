@@ -27,6 +27,9 @@ const PUBLIC_ROUTES = [
   '/api/disclaimer-log',
   // Storefront-scoped researcher signup (rate-limited inside the route).
   '/api/storefront/register',
+  // Agent invitation redemption — the token in the URL is the credential.
+  '/invite',
+  '/api/agent-invitations/redeem',
   // Vercel cron entrypoints — authenticated via CRON_SECRET inside the route
   // using a constant-time compare, NOT via the session middleware.
   '/api/cron/invoices',
@@ -41,7 +44,7 @@ function isPublicDynamicRoute(pathname: string): boolean {
     '/admin', '/dashboard', '/api', '/orders', '/products',
     '/checkout', '/messages', '/register', '/login', '/forgot-password',
     '/become-agent', '/about', '/terms', '/privacy', '/compliance',
-    '/disclaimer', '/shipping',
+    '/disclaimer', '/shipping', '/invite',
   ];
   if (protectedPrefixes.some(p => pathname.startsWith(p))) return false;
   // A single-segment slug path (e.g. /midway) is a public storefront
