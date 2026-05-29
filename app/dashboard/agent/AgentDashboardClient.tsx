@@ -479,7 +479,7 @@ export default function AgentDashboardClient({
           </button>
           
           <Link href="/dashboard" style={{ display: 'inline-flex', alignItems: 'center' }}>
-            <img src="/images/back-arrow.png" alt="Back" width={70} height={46} style={{ display: 'block', transition: 'opacity 0.2s' }} onMouseEnter={e => (e.currentTarget.style.opacity = '0.8')} onMouseLeave={e => (e.currentTarget.style.opacity = '1')} />
+            <img src="/images/back-arrow.png" alt="Back" width={36} height={36} style={{ display: 'block', transition: 'opacity 0.2s' }} onMouseEnter={e => (e.currentTarget.style.opacity = '0.8')} onMouseLeave={e => (e.currentTarget.style.opacity = '1')} />
           </Link>
           <div style={{ width: 1, height: 16, background: 'rgba(255,255,255,0.1)' }} />
           <span style={{ fontFamily: 'var(--font-brand)', fontSize: '0.9rem', fontWeight: 800, letterSpacing: '0.12em', color: 'var(--teal)' }}>
