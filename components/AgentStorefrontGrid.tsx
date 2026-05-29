@@ -346,9 +346,9 @@ export default function AgentStorefrontGrid({ products, inventoryMap, primaryCol
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
+    <div style={{ display: 'flex', flexDirection: 'column' }}>
       {/* Product count */}
-      <div style={{ fontSize: '0.8rem', color: 'var(--grey-400)', paddingLeft: 'var(--space-1)' }}>
+      <div style={{ fontSize: '0.8rem', color: 'var(--grey-400)', paddingLeft: 'var(--space-1)', marginBottom: 'var(--space-2)' }}>
         {filteredProducts.length} {filteredProducts.length === 1 ? 'Product' : 'Products'} Found
       </div>
 
@@ -356,7 +356,8 @@ export default function AgentStorefrontGrid({ products, inventoryMap, primaryCol
       <div style={{
         display: 'flex', flexWrap: 'wrap', gap: 'var(--space-3)', alignItems: 'center',
         padding: 'var(--space-4)', background: 'rgba(255,255,255,0.03)',
-        borderRadius: 'var(--radius-lg)', border: '1px solid rgba(255,255,255,0.06)'
+        borderRadius: 'var(--radius-lg)', border: '1px solid rgba(255,255,255,0.06)',
+        marginBottom: 'var(--space-2)'
       }}>
         <div style={{ flex: '1 1 240px', position: 'relative' }}>
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--grey-400)" strokeWidth="2"
@@ -391,7 +392,7 @@ export default function AgentStorefrontGrid({ products, inventoryMap, primaryCol
 
       {/* Research Bundles */}
       {bundles && bundles.length > 0 && (
-        <div style={{ marginTop: 'var(--space-2)' }}>
+        <div style={{ marginTop: 0 }}>
           <h3 style={{ fontFamily: 'var(--font-brand)', fontSize: '1.05rem', color: 'var(--white)', marginBottom: 'var(--space-4)', letterSpacing: '0.03em' }}>
             Research Bundles
           </h3>
@@ -646,25 +647,27 @@ export default function AgentStorefrontGrid({ products, inventoryMap, primaryCol
                     const defaultV = group.variants.find(v => v.id === group.defaultVariantId) || group.variants[0];
                     const size = defaultV.products?.unit_size || '10';
                     const measure = defaultV.products?.unit_measure || 'mg';
-                    const priceForTen = defaultV.retail_price * 10;
+                    // retail_price is the 10-pack price; divide by 10 for individual vial price
+                    const perVialBase = defaultV.retail_price / 10;
                     const isOnSale = (defaultV as any).is_on_sale && (defaultV as any).sale_price;
-                    const displayPrice = isOnSale ? (defaultV as any).sale_price * 10 : priceForTen;
+                    const perVialDisplay = isOnSale ? (defaultV as any).sale_price / 10 : perVialBase;
+                    const perVialOriginal = perVialBase;
                     return (
                       <>
                         <div style={{ fontSize: '0.85rem', color: 'var(--grey-300)', marginBottom: 4 }}>
-                          10 vials of {size}{measure}
+                          {size}{measure} · from
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
                           {isOnSale && (
                             <span style={{ fontSize: '1rem', color: 'var(--grey-500)', textDecoration: 'line-through', fontWeight: 600 }}>
-                              ${priceForTen.toFixed(2)}
+                              ${perVialOriginal.toFixed(2)}
                             </span>
                           )}
                           <span style={{
                             fontSize: '1.3rem', fontWeight: 800, color: isOnSale ? '#F56565' : primaryColor,
                             fontFamily: 'var(--font-brand)', textShadow: `0 0 10px ${isOnSale ? 'rgba(245,101,101,0.4)' : primaryColor + '40'}`
                           }}>
-                            ${displayPrice.toFixed(2)}
+                            ${perVialDisplay.toFixed(2)}/vial
                           </span>
                         </div>
                       </>
@@ -921,9 +924,11 @@ export default function AgentStorefrontGrid({ products, inventoryMap, primaryCol
                   const selectedVId = selectedVariants[detailProduct.name] || detailProduct.defaultVariantId;
                   const activeV = detailProduct.variants.find(v => v.id === selectedVId) || detailProduct.variants[0];
                   const qty = cartItems[activeV.id] || 0;
-                  const basePrice = (activeV as any).is_on_sale && (activeV as any).sale_price
+                  // retail_price is the 10-pack price — divide by 10 for individual vial base price
+                  const rawPrice = (activeV as any).is_on_sale && (activeV as any).sale_price
                     ? (activeV as any).sale_price
                     : activeV.retail_price;
+                  const basePrice = rawPrice / 10;
 
                   // Dynamic pricing tiers
                   const tiers = [
