@@ -257,6 +257,7 @@ export default function AgentStorefrontGrid({ products, inventoryMap, primaryCol
   const [detailProduct, setDetailProduct] = useState<GroupedProduct | null>(null);
   const [cartItems, setCartItems] = useState<Record<string, number>>({});
   const [showCartFloat, setShowCartFloat] = useState(false);
+  const [cartToast, setCartToast] = useState(false);
   const [showBulkPricing, setShowBulkPricing] = useState(false);
 
   // Load cart from localStorage on mount
@@ -683,26 +684,34 @@ export default function AgentStorefrontGrid({ products, inventoryMap, primaryCol
           );
         })}
       </motion.div>
-
       {/* Floating Cart — Bottom Right Corner */}
-      {totalCartItems > 0 && (
-        <div style={{ position: 'fixed', bottom: 24, right: 24, zIndex: 900 }}>
-          <button
-            onClick={() => setShowCartFloat(!showCartFloat)}
-            style={{
-              width: 56, height: 56, borderRadius: '50%',
-              background: primaryColor, border: 'none', cursor: 'pointer',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              boxShadow: `0 4px 20px ${primaryColor}60`,
-              position: 'relative', transition: 'transform 0.2s ease'
-            }}
-            onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.1)'; }}
-            onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)'; }}
-          >
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--white)" strokeWidth="2.5">
-              <circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/>
-              <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>
-            </svg>
+      <div style={{ position: 'fixed', bottom: 24, right: 24, zIndex: 900 }}>
+        <button
+          onClick={() => {
+            if (totalCartItems === 0) {
+              setCartToast(true);
+              setTimeout(() => setCartToast(false), 2500);
+            } else {
+              setShowCartFloat(!showCartFloat);
+            }
+          }}
+          style={{
+            width: 56, height: 56, borderRadius: '50%',
+            background: totalCartItems > 0 ? primaryColor : 'var(--surface-2)',
+            border: totalCartItems > 0 ? 'none' : '1px solid rgba(255,255,255,0.15)',
+            cursor: 'pointer',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            boxShadow: totalCartItems > 0 ? `0 4px 20px ${primaryColor}60` : '0 4px 20px rgba(0,0,0,0.4)',
+            position: 'relative', transition: 'transform 0.2s ease'
+          }}
+          onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.1)'; }}
+          onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)'; }}
+        >
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--white)" strokeWidth="2.5">
+            <circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/>
+            <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>
+          </svg>
+          {totalCartItems > 0 && (
             <span style={{
               position: 'absolute', top: -4, right: -4, width: 22, height: 22,
               borderRadius: '50%', background: 'var(--red)', color: 'var(--white)',
@@ -710,7 +719,8 @@ export default function AgentStorefrontGrid({ products, inventoryMap, primaryCol
             }}>
               {totalCartItems}
             </span>
-          </button>
+          )}
+        </button>
 
           {/* Cart dropdown */}
           <AnimatePresence>
@@ -767,21 +777,55 @@ export default function AgentStorefrontGrid({ products, inventoryMap, primaryCol
                     );
                   })}
                 </div>
-                <div style={{ padding: '12px 16px', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
-                  <a
-                    href={`/checkout?agent=${agentSlug}&cart=${encodeURIComponent(JSON.stringify(cartItems))}`}
+                <div style={{ padding: '12px 16px', borderTop: '1px solid rgba(255,255,255,0.06)', display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', color: 'var(--grey-400)', marginBottom: 4 }}>
+                    <span>Total</span>
+                    <span style={{ color: 'var(--white)', fontWeight: 700 }}>
+                      ${Object.entries(cartItems).reduce((sum, [vId, qty]) => {
+                        const item = products.find(p => p.id === vId);
+                        return sum + (item ? (item.retail_price / 10) * qty : 0);
+                      }, 0).toFixed(2)}
+                    </span>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setShowCartFloat(false);
+                      window.location.href = `/checkout?agent=${agentSlug}&cart=${encodeURIComponent(JSON.stringify(cartItems))}`;
+                    }}
                     style={{
-                      display: 'block', textAlign: 'center', padding: '10px',
+                      display: 'block', width: '100%', textAlign: 'center', padding: '10px',
                       background: primaryColor, color: 'var(--white)', borderRadius: 'var(--radius-md)',
-                      fontWeight: 800, fontSize: '0.85rem', textDecoration: 'none'
+                      fontWeight: 800, fontSize: '0.85rem', border: 'none', cursor: 'pointer'
                     }}
                   >
                     Checkout
-                  </a>
+                  </button>
+                  <button
+                    onClick={() => { setCartItems({}); setShowCartFloat(false); }}
+                    style={{
+                      display: 'block', width: '100%', textAlign: 'center', padding: '8px',
+                      background: 'transparent', color: 'var(--grey-400)', borderRadius: 'var(--radius-md)',
+                      fontWeight: 500, fontSize: '0.78rem', border: '1px solid rgba(255,255,255,0.08)', cursor: 'pointer'
+                    }}
+                  >
+                    Clear Cart
+                  </button>
                 </div>
               </motion.div>
             )}
           </AnimatePresence>
+          {/* Empty cart toast */}
+          {cartToast && (
+            <div style={{
+              position: 'absolute', bottom: 68, right: 0, width: 240,
+              background: 'var(--surface-2)', border: '1px solid rgba(255,255,255,0.1)',
+              borderRadius: 'var(--radius-lg)', padding: '14px 18px',
+              boxShadow: '0 8px 32px rgba(0,0,0,0.5)', fontSize: '0.85rem',
+              color: 'var(--grey-300)', fontWeight: 500, textAlign: 'center'
+            }}>
+              🛒 Your cart is empty
+            </div>
+          )}
         </div>
       )}
 
@@ -1065,93 +1109,97 @@ export default function AgentStorefrontGrid({ products, inventoryMap, primaryCol
                           })}
                         </div>
                       )}
-
-                      {/* See Bulk Pricing \u2014 collapsible section for 100/300/500+ vial orders */}
-                      <div style={{ marginTop: 'var(--space-4)' }}>
-                        <button
-                          type="button"
-                          onClick={() => setShowBulkPricing(prev => !prev)}
-                          style={{
-                            background: 'none', border: 'none', cursor: 'pointer', padding: 0,
-                            color: primaryColor, fontSize: '0.82rem', fontWeight: 600,
-                            display: 'flex', alignItems: 'center', gap: 6,
-                            textDecoration: 'underline', textUnderlineOffset: 3
-                          }}
-                        >
-                          {showBulkPricing ? 'Hide Bulk Pricing ↑' : 'See Bulk Pricing ↓'}
-                        </button>
-                        {showBulkPricing && (
-                          <div style={{
-                            marginTop: 'var(--space-3)', border: '1px solid rgba(255,255,255,0.08)',
-                            borderRadius: 'var(--radius-md)', overflow: 'hidden'
-                          }}>
-                            <div style={{ padding: '8px 16px', background: 'rgba(255,255,255,0.04)', fontSize: '0.75rem', fontWeight: 600, color: 'var(--silver)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                              Bulk Volume Discounts
-                            </div>
-                            {[
-                              { min: 100, pct: 5 },
-                              { min: 300, pct: 10 },
-                              { min: 500, pct: 15 },
-                            ].map((tier, i) => {
-                              const discountedPrice = parseFloat((basePrice * (1 - tier.pct / 100)).toFixed(2));
-                              return (
-                                <div key={i} style={{
-                                  display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                                  padding: '10px 16px', borderTop: '1px solid rgba(255,255,255,0.04)'
-                                }}>
-                                  <span style={{ fontSize: '0.85rem', color: 'var(--grey-400)' }}>
-                                    {tier.min}+ Vials
-                                    <span style={{ color: '#68D391', marginLeft: 8, fontSize: '0.75rem' }}>{tier.pct}% off</span>
-                                  </span>
-                                  <span style={{ fontSize: '0.95rem', fontWeight: 700, fontFamily: 'var(--font-brand)', color: 'var(--grey-300)' }}>
-                                    ${discountedPrice.toFixed(2)}/ea
-                                  </span>
-                                </div>
-                              );
-                            })}
-                            <div style={{ padding: '8px 16px', borderTop: '1px solid rgba(255,255,255,0.04)', fontSize: '0.72rem', color: 'var(--grey-500)' }}>
-                              Contact your agent to place a bulk order of 100+ vials.
-                            </div>
-                          </div>
-                        )}
-                      </div>
                     </div>
                   );
                 })()}
 
 
-                <div style={{ display: 'flex', gap: 'var(--space-3)', justifyContent: 'flex-end', flexWrap: 'wrap', marginTop: 'var(--space-5)' }}>
-                  <button
-                    onClick={() => setDetailProduct(null)}
-                    style={{
-                      padding: '10px 20px', background: 'transparent',
-                      border: '1px solid rgba(255,255,255,0.15)', borderRadius: 'var(--radius-md)',
-                      color: 'var(--white)', cursor: 'pointer', fontWeight: 600, fontSize: '0.85rem'
-                    }}
-                  >
-                    Close
-                  </button>
-                  {(() => {
-                    const selVId = selectedVariants[detailProduct.name] || detailProduct.defaultVariantId;
-                    const qty = cartItems[selVId] || 10;
-                    return (
-                      <button
-                        onClick={() => {
-                          const vId = selectedVariants[detailProduct.name] || detailProduct.defaultVariantId;
-                          const currentQty = cartItems[vId] || 10;
-                          setCartItems(prev => ({ ...prev, [vId]: currentQty }));
-                          setDetailProduct(null);
-                        }}
-                        style={{
-                          padding: '10px 24px', background: primaryColor, color: 'var(--white)',
-                          borderRadius: 'var(--radius-md)', fontWeight: 800, fontSize: '0.85rem',
-                          border: 'none', cursor: 'pointer'
-                        }}
-                      >
-                        Add To Cart ({qty})
-                      </button>
-                    );
-                  })()}
+                {/* Footer: See Bulk Pricing on left, action buttons on right */}
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 'var(--space-3)', marginTop: 'var(--space-5)' }}>
+                  {/* See Bulk Pricing toggle — bottom left */}
+                  <div>
+                    <button
+                      type="button"
+                      onClick={() => setShowBulkPricing(prev => !prev)}
+                      style={{
+                        background: 'none', border: 'none', cursor: 'pointer', padding: 0,
+                        color: primaryColor, fontSize: '0.82rem', fontWeight: 600,
+                        display: 'flex', alignItems: 'center', gap: 6,
+                        textDecoration: 'underline', textUnderlineOffset: 3
+                      }}
+                    >
+                      {showBulkPricing ? 'Hide Bulk Pricing ↑' : 'See Bulk Pricing ↓'}
+                    </button>
+                    {showBulkPricing && (
+                      <div style={{
+                        position: 'absolute', bottom: 80, left: 24, right: 24,
+                        border: '1px solid rgba(255,255,255,0.08)',
+                        borderRadius: 'var(--radius-md)', overflow: 'hidden',
+                        background: 'var(--surface-2)', zIndex: 10,
+                        boxShadow: '0 8px 32px rgba(0,0,0,0.5)'
+                      }}>
+                        <div style={{ padding: '8px 16px', background: 'rgba(255,255,255,0.04)', fontSize: '0.75rem', fontWeight: 600, color: 'var(--silver)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                          Bulk Volume Discounts
+                        </div>
+                        {(() => {
+                          const selVId2 = selectedVariants[detailProduct.name] || detailProduct.defaultVariantId;
+                          const activeV2 = detailProduct.variants.find(v => v.id === selVId2) || detailProduct.variants[0];
+                          const rawP = (activeV2 as any).is_on_sale && (activeV2 as any).sale_price ? (activeV2 as any).sale_price : activeV2.retail_price;
+                          const bp = rawP / 10;
+                          return [{ min: 100, pct: 5 }, { min: 300, pct: 10 }, { min: 500, pct: 15 }].map((tier, i) => {
+                            const dp = parseFloat((bp * (1 - tier.pct / 100)).toFixed(2));
+                            return (
+                              <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 16px', borderTop: '1px solid rgba(255,255,255,0.04)' }}>
+                                <span style={{ fontSize: '0.85rem', color: 'var(--grey-400)' }}>
+                                  {tier.min}+ Vials <span style={{ color: '#68D391', marginLeft: 8, fontSize: '0.75rem' }}>{tier.pct}% off</span>
+                                </span>
+                                <span style={{ fontSize: '0.9rem', fontWeight: 700, fontFamily: 'var(--font-brand)', color: 'var(--grey-300)' }}>${dp.toFixed(2)}/ea</span>
+                              </div>
+                            );
+                          });
+                        })()}
+                        <div style={{ padding: '8px 16px', borderTop: '1px solid rgba(255,255,255,0.04)', fontSize: '0.72rem', color: 'var(--grey-500)' }}>
+                          Contact your agent to place a bulk order of 100+ vials.
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Close + Add To Cart */}
+                  <div style={{ display: 'flex', gap: 'var(--space-3)' }}>
+                    <button
+                      onClick={() => setDetailProduct(null)}
+                      style={{
+                        padding: '10px 20px', background: 'transparent',
+                        border: '1px solid rgba(255,255,255,0.15)', borderRadius: 'var(--radius-md)',
+                        color: 'var(--white)', cursor: 'pointer', fontWeight: 600, fontSize: '0.85rem'
+                      }}
+                    >
+                      Close
+                    </button>
+                    {(() => {
+                      const selVId = selectedVariants[detailProduct.name] || detailProduct.defaultVariantId;
+                      const qty = cartItems[selVId] || 10;
+                      return (
+                        <button
+                          onClick={() => {
+                            const vId = selectedVariants[detailProduct.name] || detailProduct.defaultVariantId;
+                            const currentQty = cartItems[vId] || 10;
+                            setCartItems(prev => ({ ...prev, [vId]: currentQty }));
+                            setDetailProduct(null);
+                            setShowCartFloat(true);
+                          }}
+                          style={{
+                            padding: '10px 24px', background: primaryColor, color: 'var(--white)',
+                            borderRadius: 'var(--radius-md)', fontWeight: 800, fontSize: '0.85rem',
+                            border: 'none', cursor: 'pointer'
+                          }}
+                        >
+                          Add To Cart ({qty})
+                        </button>
+                      );
+                    })()}
+                  </div>
                 </div>
               </div>
             </motion.div>
