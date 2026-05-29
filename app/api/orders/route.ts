@@ -115,8 +115,11 @@ export async function POST(request: NextRequest) {
     let agentProfile = null;
     let superAgentProfile = null;
     let isAgentSelfBuy = false;
-    
-    if (profile.role === 'agent' || profile.role === 'super_agent' || profile.role === 'admin') {
+
+    // NOTE: Admins are intentionally excluded from isAgentSelfBuy.
+    // Admins don't have agent_profiles rows, so the tier-pricing path would
+    // fail or fall back to tier_3 (retail). Admins buy at standard pricing.
+    if (profile.role === 'agent' || profile.role === 'super_agent') {
       agentProfile = profile;
       isAgentSelfBuy = true;
       if (profile.parent_agent_id) {
@@ -347,9 +350,21 @@ export async function POST(request: NextRequest) {
         }
       }
       
-      // If agent self buy, they pay exactly what they owe.
+      // If agent self buy, they pay exactly what they owe — UNLESS the item
+      // quantity is below the 10-vial minimum, in which case standard retail
+      // dynamic pricing applies (same rule enforced in the storefront UI).
       if (isAgentSelfBuy) {
-        retailPrice = costPrice;
+        if (itemQty >= 10) {
+          // Qualifies for agent direct pricing — pay their tier cost.
+          retailPrice = costPrice;
+        } else {
+          // Below minimum: charge standard retail (tier_3 markup).
+          const retailMultiplier = tierMultipliers['tier_3'] ?? 7.0;
+          retailPrice = baseCost * retailMultiplier;
+          // costPrice remains the tier cost for accounting (commission calcs),
+          // but the buyer pays retail.
+          costPrice = retailPrice;
+        }
       }
 
       subtotal += retailPrice * itemQty;

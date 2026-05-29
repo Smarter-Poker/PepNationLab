@@ -263,8 +263,11 @@ export default function AgentStorefrontGrid({ products, inventoryMap, primaryCol
   const [showCartFloat, setShowCartFloat] = useState(false);
   const [cartToast, setCartToast] = useState(false);
   const [showBulkPricing, setShowBulkPricing] = useState(false);
-  // Modal-only quantity input — does NOT touch cartItems until "Add To Cart" is pressed
-  const [pendingQty, setPendingQty] = useState(10);
+  // Modal-only quantity input — does NOT touch cartItems until "Add To Cart" is pressed.
+  // Agent self-buy: minimum 10 vials, increments of 10 (enforced here + server-side).
+  const selfBuyStep = isStorefrontOwner ? 10 : 1;
+  const selfBuyMin  = isStorefrontOwner ? 10 : 1;
+  const [pendingQty, setPendingQty] = useState(isStorefrontOwner ? 10 : 1);
 
   // Load cart from localStorage on mount
   useEffect(() => {
@@ -531,14 +534,11 @@ export default function AgentStorefrontGrid({ products, inventoryMap, primaryCol
               onClick={() => {
                 setDetailProduct(group);
                 logRecentlyViewed(activeVariant.product_id);
-                // Pre-fill pendingQty for the modal but do NOT touch cartItems
-                // — items only enter the cart when user clicks "Add To Cart".
+                // Pre-fill pendingQty: start at 10 for agent self-buy (minimum),
+                // or restore existing cart qty, or 1 for researchers.
                 const defaultVId = group.defaultVariantId || group.variants[0]?.id;
-                if (defaultVId && !cartItems[defaultVId]) {
-                  setPendingQty(10);
-                } else if (defaultVId) {
-                  setPendingQty(cartItems[defaultVId]);
-                }
+                const existingQty = defaultVId ? cartItems[defaultVId] : undefined;
+                setPendingQty(existingQty ?? (isStorefrontOwner ? 10 : 1));
               }}
             >
               {/* Product Image */}
@@ -1037,8 +1037,15 @@ export default function AgentStorefrontGrid({ products, inventoryMap, primaryCol
                     : activeV.retail_price;
                   const basePrice = rawPrice / 10;
 
-                  // Dynamic pricing tiers (only when agent has volume pricing enabled)
-                  const tiers = volumePricingEnabled
+                  // ── AGENT SELF-BUY PRICING RULE ─────────────────────────────────
+                  // Agent direct (tier) pricing requires MINIMUM 10 vials in increments
+                  // of 10. Below 10 vials the standard retail dynamic pricing applies.
+                  // This is enforced here (display) AND server-side (API).
+                  const agentQualifiesForDiscount = isStorefrontOwner && qty >= 10;
+
+                  // Dynamic pricing tiers (only when agent has volume pricing enabled
+                  // AND the order is not an agent self-buy — agents get a flat tier rate)
+                  const tiers = (!isStorefrontOwner && volumePricingEnabled)
                     ? [
                         { label: '1–2 Vials', min: 1, max: 2, pct: 20 },
                         { label: '3–5 Vials', min: 3, max: 5, pct: 15 },
@@ -1054,7 +1061,10 @@ export default function AgentStorefrontGrid({ products, inventoryMap, primaryCol
                     return t ? parseFloat((basePrice * (1 + t.pct / 100)).toFixed(2)) : basePrice;
                   };
 
-                  const displayQty = qty > 0 ? qty : 10;
+                  const displayQty = qty > 0 ? qty : (isStorefrontOwner ? 10 : 1);
+                  // For agent self-buy: server computes actual tier cost. Show retail
+                  // here as the "before discount" price; discount is applied at checkout.
+                  // If qty < 10 (below minimum), retail pricing applies — no discount.
                   const unitPrice = getUnitPrice(displayQty);
                   const lineTotal = unitPrice * displayQty;
 
@@ -1097,34 +1107,68 @@ export default function AgentStorefrontGrid({ products, inventoryMap, primaryCol
                           <label style={{ fontSize: '0.8rem', color: 'var(--silver)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block', marginBottom: 6 }}>
                             Quantity (Vials)
                           </label>
+                          {/* Agent self-buy: min 10, increments of 10 */}
+                          {isStorefrontOwner && (
+                            <div style={{
+                              fontSize: '0.68rem', fontWeight: 700, letterSpacing: '0.06em',
+                              textTransform: 'uppercase', color: '#F6AD55',
+                              background: 'rgba(246,173,85,0.10)', border: '1px solid rgba(246,173,85,0.30)',
+                              borderRadius: 'var(--radius-full)', padding: '2px 10px',
+                              display: 'inline-block', marginBottom: 8
+                            }}>
+                              ⚡ Minimum 10 Vials · Increments Of 10
+                            </div>
+                          )}
                           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                            <button onClick={() => setPendingQty(prev => Math.max(1, prev - 1))} style={{
-                              width: 36, height: 36, borderRadius: 'var(--radius-md)',
-                              border: '1px solid rgba(255,255,255,0.2)', background: 'transparent',
-                              color: 'var(--white)', cursor: 'pointer', fontSize: '1.1rem',
-                              display: 'flex', alignItems: 'center', justifyContent: 'center'
-                            }}>-</button>
+                            <button
+                              onClick={() => setPendingQty(prev => Math.max(selfBuyMin, prev - selfBuyStep))}
+                              disabled={qty <= selfBuyMin}
+                              style={{
+                                width: 36, height: 36, borderRadius: 'var(--radius-md)',
+                                border: '1px solid rgba(255,255,255,0.2)', background: 'transparent',
+                                color: qty <= selfBuyMin ? 'var(--grey-600)' : 'var(--white)',
+                                cursor: qty <= selfBuyMin ? 'not-allowed' : 'pointer',
+                                fontSize: '1.1rem', display: 'flex', alignItems: 'center', justifyContent: 'center'
+                              }}
+                            >-</button>
                             <span style={{
                               minWidth: 44, textAlign: 'center', fontSize: '1.2rem', fontWeight: 800,
                               color: 'var(--white)', fontFamily: 'var(--font-brand)'
                             }}>{qty}</span>
-                            <button onClick={() => setPendingQty(prev => prev + 1)} style={{
-                              width: 36, height: 36, borderRadius: 'var(--radius-md)',
-                              border: 'none', background: primaryColor, color: 'var(--white)',
-                              cursor: 'pointer', fontSize: '1.1rem', fontWeight: 800,
-                              display: 'flex', alignItems: 'center', justifyContent: 'center'
-                            }}>+</button>
+                            <button
+                              onClick={() => setPendingQty(prev => prev + selfBuyStep)}
+                              style={{
+                                width: 36, height: 36, borderRadius: 'var(--radius-md)',
+                                border: 'none', background: primaryColor, color: 'var(--white)',
+                                cursor: 'pointer', fontSize: '1.1rem', fontWeight: 800,
+                                display: 'flex', alignItems: 'center', justifyContent: 'center'
+                              }}
+                            >+</button>
                           </div>
                         </div>
 
                         {qty > 0 && (
                           <div style={{ flex: 1, textAlign: 'right' }}>
+                            {isStorefrontOwner && agentQualifiesForDiscount && (
+                              <div style={{ fontSize: '0.7rem', color: '#68D391', fontWeight: 700,
+                                textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 2 }}>
+                                ⚡ Agent Direct Price Applied
+                              </div>
+                            )}
+                            {isStorefrontOwner && !agentQualifiesForDiscount && (
+                              <div style={{ fontSize: '0.7rem', color: '#FC8181', fontWeight: 700,
+                                textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 2 }}>
+                                ⚠ Retail Pricing — Add {10 - qty} More For Agent Rate
+                              </div>
+                            )}
                             <div style={{ fontSize: '0.78rem', color: 'var(--grey-400)', marginBottom: 2 }}>
                               ${unitPrice.toFixed(2)}/vial x {qty}
                             </div>
                             <div style={{
-                              fontSize: '1.5rem', fontWeight: 800, color: primaryColor,
-                              fontFamily: 'var(--font-brand)', textShadow: `0 0 10px ${primaryColor}40`
+                              fontSize: '1.5rem', fontWeight: 800,
+                              color: isStorefrontOwner && !agentQualifiesForDiscount ? '#FC8181' : primaryColor,
+                              fontFamily: 'var(--font-brand)',
+                              textShadow: `0 0 10px ${isStorefrontOwner && !agentQualifiesForDiscount ? 'rgba(252,129,129,0.4)' : primaryColor + '40'}`
                             }}>
                               ${lineTotal.toFixed(2)}
                             </div>

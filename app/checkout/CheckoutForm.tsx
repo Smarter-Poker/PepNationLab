@@ -308,6 +308,16 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
       return;
     }
 
+    // AGENT SELF-BUY RULE: Minimum 10 vials per item, increments of 10.
+    // Enforce client-side before sending to server (server also enforces this).
+    if (isAgentSelfBuy && storefrontCart.length > 0) {
+      const belowMin = storefrontCart.find(item => item.quantity < 10);
+      if (belowMin) {
+        setError(`Agent Direct Pricing Requires A Minimum Of 10 Vials Per Item. "${belowMin.name}" Has Only ${belowMin.quantity}. Please Update Your Cart.`);
+        return;
+      }
+    }
+
     // Guard against double-submit BEFORE issuing the fetch. A React state
     // update would race with a fast double-tap; a ref is synchronous.
     if (submittedRef.current) return;
