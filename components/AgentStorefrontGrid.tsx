@@ -837,7 +837,11 @@ export default function AgentStorefrontGrid({ products, inventoryMap, primaryCol
                       try {
                         // Write to a per-agent scoped cart key so Agent A's cart
                         // can NEVER contaminate Agent B's checkout. Closed-loop isolation.
-                        localStorage.setItem(`pnl_storefront_cart_${agentSlug}`, JSON.stringify(pnlCart));
+                        // Write cart with _savedAt timestamp so CheckoutForm can detect staleness.
+                        localStorage.setItem(`pnl_storefront_cart_${agentSlug}`, JSON.stringify({
+                          items: pnlCart,
+                          _savedAt: Date.now(),
+                        }));
                         // Wipe any stale storefront carts from OTHER agents to prevent
                         // cross-contamination if user visited multiple storefronts.
                         Object.keys(localStorage)

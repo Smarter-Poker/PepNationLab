@@ -14,11 +14,18 @@ import { createServiceClient } from '@/lib/supabase/server';
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const requestedIds = Array.isArray(body?.agentProductIds)
-      ? (body.agentProductIds as unknown[])
-          .filter((v): v is string => typeof v === 'string')
-          .slice(0, 200)
+
+    // Two query modes:
+    // 1. agentProductIds: agent_products.id UUIDs (used by agent dashboard)
+    // 2. productIds: master products.id UUIDs (used by CartContext main catalog path)
+    const agentProductIds = Array.isArray(body?.agentProductIds)
+      ? (body.agentProductIds as unknown[]).filter((v): v is string => typeof v === 'string').slice(0, 200)
       : [];
+    const productIds = Array.isArray(body?.productIds)
+      ? (body.productIds as unknown[]).filter((v): v is string => typeof v === 'string').slice(0, 200)
+      : [];
+
+    const requestedIds = agentProductIds.length > 0 ? agentProductIds : productIds;
 
     if (requestedIds.length === 0) {
       return NextResponse.json({ items: [] });
@@ -26,7 +33,8 @@ export async function POST(req: NextRequest) {
 
     const supabase = await createServiceClient();
 
-    const { data: rows, error } = await supabase
+    // Build the query: either by agent_products.id or by product_id depending on mode.
+    const query = supabase
       .from('agent_products')
       .select(`
         id,
@@ -34,8 +42,11 @@ export async function POST(req: NextRequest) {
         is_visible,
         product_id,
         products:product_id ( id, name, is_banned, is_active, admin_bulk_price, admin_bulk_threshold )
-      `)
-      .in('id', requestedIds);
+      `);
+
+    const { data: rows, error } = agentProductIds.length > 0
+      ? await query.in('id', requestedIds)
+      : await query.in('product_id', requestedIds);
 
     if (error) {
       console.error('Cart Refresh Error:', error);

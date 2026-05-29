@@ -58,13 +58,20 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
     retailPrice: number; costPrice: number; weightOz: number;
   }>>([]);
   const [storefrontLoaded, setStorefrontLoaded] = useState(false);
+  // Cart staleness: populated from the _savedAt timestamp written by AgentStorefrontGrid.
+  const [cartSavedAt, setCartSavedAt] = useState<number | null>(null);
 
   useEffect(() => {
     try {
       const raw = localStorage.getItem(storefrontCartKey);
       if (raw) {
         const parsed = JSON.parse(raw);
-        if (Array.isArray(parsed) && parsed.length > 0) {
+        // New format: { items: [...], _savedAt: timestamp }
+        if (parsed && typeof parsed === 'object' && !Array.isArray(parsed) && Array.isArray(parsed.items)) {
+          if (parsed.items.length > 0) setStorefrontCart(parsed.items);
+          if (typeof parsed._savedAt === 'number') setCartSavedAt(parsed._savedAt);
+        } else if (Array.isArray(parsed) && parsed.length > 0) {
+          // Legacy format: plain array (no timestamp — treat as not stale to avoid false warnings)
           setStorefrontCart(parsed);
         }
       }
@@ -108,9 +115,10 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
   // Tracks if server adjusted the total — shown as warning on success screen.
   const [totalAdjusted, setTotalAdjusted] = useState(false);
 
-  // Cart staleness: warn if cart was loaded from localStorage more than 24h ago.
-  const [cartLoadedAt] = useState(() => Date.now());
-  const cartIsStale = (Date.now() - cartLoadedAt) > 24 * 60 * 60 * 1000;
+  // Cart staleness: warn if cart was saved to localStorage more than 24h ago.
+  // cartSavedAt comes from the _savedAt timestamp written by AgentStorefrontGrid.
+  // If null (legacy cart or no storefront path), we never show the warning.
+  const cartIsStale = cartSavedAt !== null && (Date.now() - cartSavedAt) > 24 * 60 * 60 * 1000;
 
   // Idempotency key persists across renders to prevent double-submit.
   // RESET after a successful order so that a subsequent visit to checkout
