@@ -4,6 +4,7 @@ import Link from 'next/link';
 import AdminAnalytics from '@/components/AdminAnalytics';
 import AdminOverviewSparkline from '@/components/AdminOverviewSparkline';
 import { fetchAdminMetrics, computeGmvDelta, timeAgo } from '@/lib/admin-metrics';
+import { getImpersonationContext } from '@/lib/impersonation';
 
 const ICON_PROPS = {
   width: 22,
@@ -41,6 +42,9 @@ export default async function AdminDashboard() {
 
   const metrics = await fetchAdminMetrics(user.id);
   const delta = computeGmvDelta(metrics.gmvLast7, metrics.gmvPrior7);
+  const impersonation = await getImpersonationContext();
+  const activeImpersonation =
+    impersonation && impersonation.impersonatorId === user.id ? impersonation : null;
 
   const KPIS: Array<{
     label: string;
@@ -158,6 +162,32 @@ export default async function AdminDashboard() {
           Pep Nation Lab Control Center
         </p>
       </div>
+
+      {activeImpersonation && (
+        <div
+          style={{
+            background: 'rgba(229,62,62,0.12)',
+            border: '1px solid rgba(229,62,62,0.5)',
+            borderRadius: 'var(--radius-md)',
+            padding: 'var(--space-4) var(--space-5)',
+            marginBottom: 'var(--space-6)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 'var(--space-3)',
+            color: 'var(--red)',
+            fontSize: '0.85rem',
+            fontWeight: 600,
+          }}
+        >
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+            <circle cx="12" cy="12" r="3" />
+          </svg>
+          <span>
+            Active Impersonation: Viewing As {activeImpersonation.targetName ?? 'User'} ({activeImpersonation.targetRole})
+          </span>
+        </div>
+      )}
 
       <div className="grid-4" style={{ marginBottom: 'var(--space-8)' }}>
         {KPIS.map(({ label, value, sub, href, color, icon, trend }) => (

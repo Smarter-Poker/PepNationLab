@@ -118,7 +118,7 @@ export default function MessageBell({ onViewAll, dropUp }: { onViewAll: () => vo
         onMouseEnter={e => { if (!open) e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; }}
         onMouseLeave={e => { if (!open) e.currentTarget.style.background = 'none'; }}
       >
-        <img src="/images/messenger-icon.png" alt="Messages" width={32} height={32} style={{ transition: 'opacity 0.2s', display: 'block' }} />
+        <img src="/images/messenger-icon.png" alt="Messages" width={42} height={42} style={{ transition: 'opacity 0.2s', display: 'block' }} />
         {unreadCount > 0 && (
           <span style={{
             position: 'absolute', top: 2, right: 2,
