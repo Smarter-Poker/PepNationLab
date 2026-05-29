@@ -16,7 +16,7 @@ export const SendMessageSchema = z
       .enum(['text', 'image', 'gif', 'voice', 'file', 'contact_card', 'location', 'poll', 'system'])
       .default('text'),
     mediaUrl: z.string().url().optional(),
-    mediaMetadata: z.record(z.unknown()).optional(),
+    mediaMetadata: z.record(z.string(), z.unknown()).optional(),
     replyToId: z.string().uuid().optional(),
     threadParentId: z.string().uuid().optional(),
   })
