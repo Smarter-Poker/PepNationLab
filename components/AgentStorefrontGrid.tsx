@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo, useCallback, useEffect } from 'react';
+import React, { useState, useMemo, useCallback, useEffect, useDeferredValue } from 'react';
 import { motion, Variants, AnimatePresence } from 'framer-motion';
 import { Star, X, Heart, FileText } from 'lucide-react';
 
@@ -251,11 +251,13 @@ export default function AgentStorefrontGrid({ products, inventoryMap, primaryCol
 
   const [selectedVariants, setSelectedVariants] = useState<Record<string, string>>({});
   const [searchQuery, setSearchQuery] = useState('');
+  const deferredSearch = useDeferredValue(searchQuery);
   const [sortBy, setSortBy] = useState<'popular' | 'name_asc' | 'name_desc' | 'price_low' | 'price_high'>('popular');
   const [filterCategory, setFilterCategory] = useState<string>('all');
   const [detailProduct, setDetailProduct] = useState<GroupedProduct | null>(null);
   const [cartItems, setCartItems] = useState<Record<string, number>>({});
   const [showCartFloat, setShowCartFloat] = useState(false);
+  const [showBulkPricing, setShowBulkPricing] = useState(false);
 
   // Load cart from localStorage on mount
   useEffect(() => {
@@ -316,10 +318,9 @@ export default function AgentStorefrontGrid({ products, inventoryMap, primaryCol
     if (filterCategory === 'on_sale') {
       result = result.filter(g => g.variants.some(v => (v as any).is_on_sale));
     } else if (filterCategory !== 'all') result = result.filter(g => g.category === filterCategory);
-    if (searchQuery.trim()) {
-      result = result.filter(g =>
-        fuzzyMatch(searchQuery, g.name) || fuzzyMatch(searchQuery, g.category) || fuzzyMatch(searchQuery, g.desc)
-      );
+    if (deferredSearch.trim()) {
+      const q = deferredSearch.trim().toLowerCase();
+      result = result.filter(g => g.name.toLowerCase().includes(q));
     }
     switch (sortBy) {
       case 'popular': result = [...result].sort((a, b) => a.popularity - b.popularity); break;
@@ -329,7 +330,7 @@ export default function AgentStorefrontGrid({ products, inventoryMap, primaryCol
       case 'price_high': result = [...result].sort((a, b) => b.lowestPrice - a.lowestPrice); break;
     }
     return result;
-  }, [grouped, filterCategory, searchQuery, sortBy]);
+  }, [grouped, filterCategory, deferredSearch, sortBy]);
 
   const addToCart = useCallback((variantId: string) => {
     setCartItems(prev => ({ ...prev, [variantId]: (prev[variantId] || 0) + 1 }));
@@ -1033,39 +1034,51 @@ export default function AgentStorefrontGrid({ products, inventoryMap, primaryCol
                         )}
                       </div>
 
-                      {/* Bulk Pricing Table — only shown when agent has volume pricing enabled */}
+                      {/* See Bulk Pricing — collapsible, only shown when agent has volume pricing enabled */}
                       {volumePricingEnabled && (
-                        <div style={{
-                          marginTop: 'var(--space-5)', border: '1px solid rgba(255,255,255,0.08)',
-                          borderRadius: 'var(--radius-md)', overflow: 'hidden'
-                        }}>
-                          <div style={{ padding: '8px 16px', background: 'rgba(255,255,255,0.04)', fontSize: '0.75rem', fontWeight: 600, color: 'var(--silver)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                            Bulk Pricing
-                          </div>
-                          {tiers.map((t, i) => {
-                            const tierPrice = parseFloat((basePrice * (1 + t.pct / 100)).toFixed(2));
-                            const isActive = displayQty >= t.min && displayQty <= t.max;
-                            return (
-                              <div key={i} style={{
-                                display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                                padding: '10px 16px',
-                                borderTop: '1px solid rgba(255,255,255,0.04)',
-                                background: isActive ? `${primaryColor}10` : 'transparent'
-                              }}>
-                                <span style={{ fontSize: '0.85rem', color: isActive ? 'var(--white)' : 'var(--grey-400)', fontWeight: isActive ? 600 : 400 }}>
-                                  {t.label ?? (t.max === Infinity ? `${t.min}+ vials` : `${t.min}-${t.max} vials`)}
-                                  {t.pct > 0 && <span style={{ color: '#F6AD55', marginLeft: 8, fontSize: '0.75rem' }}>+{t.pct}%</span>}
-                                  {t.pct === 0 && <span style={{ color: 'var(--teal)', marginLeft: 8, fontSize: '0.75rem' }}>Best Price</span>}
-                                </span>
-                                <span style={{
-                                  fontSize: '0.95rem', fontWeight: 700, fontFamily: 'var(--font-brand)',
-                                  color: isActive ? primaryColor : 'var(--grey-300)'
-                                }}>
-                                  ${tierPrice.toFixed(2)}/ea
-                                </span>
+                        <div style={{ marginTop: 'var(--space-4)' }}>
+                          <button
+                            type="button"
+                            onClick={() => setShowBulkPricing(prev => !prev)}
+                            style={{
+                              background: 'none', border: 'none', cursor: 'pointer', padding: 0,
+                              color: primaryColor, fontSize: '0.85rem', fontWeight: 600,
+                              display: 'flex', alignItems: 'center', gap: 6, textDecoration: 'underline',
+                              textUnderlineOffset: 3
+                            }}
+                          >
+                            {showBulkPricing ? 'Hide Bulk Pricing ↑' : 'See Bulk Pricing ↓'}
+                          </button>
+                          {showBulkPricing && (
+                            <div style={{
+                              marginTop: 'var(--space-3)', border: '1px solid rgba(255,255,255,0.08)',
+                              borderRadius: 'var(--radius-md)', overflow: 'hidden'
+                            }}>
+                              <div style={{ padding: '8px 16px', background: 'rgba(255,255,255,0.04)', fontSize: '0.75rem', fontWeight: 600, color: 'var(--silver)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                                Bulk Pricing
                               </div>
-                            );
-                          })}
+                              {tiers.map((t, i) => {
+                                const tierPrice = parseFloat((basePrice * (1 + t.pct / 100)).toFixed(2));
+                                const isActive = displayQty >= t.min && displayQty <= t.max;
+                                return (
+                                  <div key={i} style={{
+                                    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                                    padding: '10px 16px', borderTop: '1px solid rgba(255,255,255,0.04)',
+                                    background: isActive ? `${primaryColor}10` : 'transparent'
+                                  }}>
+                                    <span style={{ fontSize: '0.85rem', color: isActive ? 'var(--white)' : 'var(--grey-400)', fontWeight: isActive ? 600 : 400 }}>
+                                      {t.label ?? (t.max === Infinity ? `${t.min}+ vials` : `${t.min}–${t.max} vials`)}
+                                      {t.pct > 0 && <span style={{ color: '#F6AD55', marginLeft: 8, fontSize: '0.75rem' }}>+{t.pct}%</span>}
+                                      {t.pct === 0 && <span style={{ color: 'var(--teal)', marginLeft: 8, fontSize: '0.75rem' }}>Best Price</span>}
+                                    </span>
+                                    <span style={{ fontSize: '0.95rem', fontWeight: 700, fontFamily: 'var(--font-brand)', color: isActive ? primaryColor : 'var(--grey-300)' }}>
+                                      ${tierPrice.toFixed(2)}/ea
+                                    </span>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          )}
                         </div>
                       )}
                     </div>
@@ -1073,7 +1086,7 @@ export default function AgentStorefrontGrid({ products, inventoryMap, primaryCol
                 })()}
 
 
-                <div style={{ display: 'flex', gap: 'var(--space-3)', justifyContent: 'flex-end', flexWrap: 'wrap' }}>
+                <div style={{ display: 'flex', gap: 'var(--space-3)', justifyContent: 'flex-end', flexWrap: 'wrap', marginTop: 'var(--space-5)' }}>
                   <button
                     onClick={() => setDetailProduct(null)}
                     style={{
@@ -1084,18 +1097,27 @@ export default function AgentStorefrontGrid({ products, inventoryMap, primaryCol
                   >
                     Close
                   </button>
-                  {totalCartItems > 0 && (
-                    <a
-                      href={`/checkout?agent=${agentSlug}&cart=${encodeURIComponent(JSON.stringify(cartItems))}`}
-                      style={{
-                        padding: '10px 20px', background: primaryColor, color: 'var(--white)',
-                        borderRadius: 'var(--radius-md)', fontWeight: 800, fontSize: '0.85rem',
-                        textDecoration: 'none'
-                      }}
-                    >
-                      Checkout ({totalCartItems})
-                    </a>
-                  )}
+                  {(() => {
+                    const selVId = selectedVariants[detailProduct.name] || detailProduct.defaultVariantId;
+                    const qty = cartItems[selVId] || 10;
+                    return (
+                      <button
+                        onClick={() => {
+                          const vId = selectedVariants[detailProduct.name] || detailProduct.defaultVariantId;
+                          const currentQty = cartItems[vId] || 10;
+                          setCartItems(prev => ({ ...prev, [vId]: currentQty }));
+                          setDetailProduct(null);
+                        }}
+                        style={{
+                          padding: '10px 24px', background: primaryColor, color: 'var(--white)',
+                          borderRadius: 'var(--radius-md)', fontWeight: 800, fontSize: '0.85rem',
+                          border: 'none', cursor: 'pointer'
+                        }}
+                      >
+                        Add To Cart ({qty})
+                      </button>
+                    );
+                  })()}
                 </div>
               </div>
             </motion.div>
