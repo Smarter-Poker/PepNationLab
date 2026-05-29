@@ -25,9 +25,13 @@ export async function POST(req: NextRequest) {
 
   const svc = await createServiceClient();
 
+  // Audit fix (Phase 9): include `settings` so the UI can render the caller's
+  // per-participant flags (archived, etc.) without an extra round trip.
+  // Other participants' settings are not sensitive (per-participant prefs),
+  // but we still scrub them out before returning so only the caller sees their own.
   const { data, error: qErr } = await svc
     .from('messenger_participants')
-    .select('id, user_id, role, joined_at, profile:profiles!messenger_participants_user_id_fkey(full_name, username, role, email)')
+    .select('id, user_id, role, joined_at, settings, profile:profiles!messenger_participants_user_id_fkey(full_name, username, role, email)')
     .eq('conversation_id', parsed.data.conversationId)
     .order('joined_at', { ascending: true });
 
@@ -38,6 +42,7 @@ export async function POST(req: NextRequest) {
     user_id: string;
     role: string;
     joined_at: string;
+    settings: Record<string, unknown> | null;
     profile: { full_name: string | null; username: string | null; role: string | null; email: string | null } | null;
   };
   const flat = ((data ?? []) as unknown as Row[]).map((r) => ({
@@ -45,6 +50,8 @@ export async function POST(req: NextRequest) {
     user_id: r.user_id,
     role: r.role,
     joined_at: r.joined_at,
+    // Only return settings for the caller's own participant row.
+    settings: r.user_id === user.id ? (r.settings ?? {}) : null,
     full_name: r.profile?.full_name ?? null,
     username: r.profile?.username ?? null,
     profile_role: r.profile?.role ?? null,

@@ -33,6 +33,9 @@ export default function GroupInfoDrawer({
   const [selfRole, setSelfRole] = useState<ParticipantRole | null>(null);
   const [isMuted, setIsMuted] = useState<boolean>(conversation.is_muted ?? false);
   const [muteBusy, setMuteBusy] = useState(false);
+  // Audit fix (Phase 9): `archived` must be initialized from the caller's own
+  // messenger_participants.settings.archived row, not hardcoded false. We pull
+  // it from list-participants which now returns `settings` for the caller.
   const [archived, setArchived] = useState<boolean>(false);
   const [archiveBusy, setArchiveBusy] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
@@ -45,7 +48,7 @@ export default function GroupInfoDrawer({
   const [excludeIds, setExcludeIds] = useState<Set<string>>(new Set([selfId]));
   const [addBusy, setAddBusy] = useState(false);
 
-  // Load self role + per-participant archive flag
+  // Load self role + per-participant archive flag + exclude list for add-people.
   useEffect(() => {
     let cancelled = false;
     (async () => {
@@ -57,11 +60,13 @@ export default function GroupInfoDrawer({
         });
         if (!res.ok) return;
         const json = (await res.json()) as {
-          participants?: Array<{ user_id: string; role: ParticipantRole }>;
+          participants?: Array<{ user_id: string; role: ParticipantRole; settings?: Record<string, unknown> | null }>;
         };
         if (cancelled) return;
         const me = json.participants?.find((p) => p.user_id === selfId);
         setSelfRole(me?.role ?? null);
+        const archivedFlag = Boolean(me?.settings && (me.settings as { archived?: unknown }).archived === true);
+        setArchived(archivedFlag);
         const excluded = new Set<string>([selfId]);
         (json.participants ?? []).forEach((p) => excluded.add(p.user_id));
         setExcludeIds(excluded);
