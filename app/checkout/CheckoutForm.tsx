@@ -208,6 +208,15 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
   const [useAllCredit, setUseAllCredit] = useState(false);
   const [creditInput, setCreditInput] = useState('');
 
+  // Tax quote — re-fetched whenever subtotal, shipping, or shipping state change.
+  const [taxQuote, setTaxQuote] = useState<{
+    taxAmount: number;
+    rate: number;
+    jurisdiction: string | null;
+    exempt: boolean;
+    exemptionId: string | null;
+  }>({ taxAmount: 0, rate: 0, jurisdiction: null, exempt: false, exemptionId: null });
+
   useEffect(() => {
     let cancelled = false;
     (async () => {
@@ -226,6 +235,57 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
   // Compute standard weight and shipping fee on client for preview
   const totalWeightOz = cart.reduce((acc, item) => acc + (item.weightOz ?? 0.5) * item.quantity, 0);
 
+  // Fetch the tax quote whenever destination state, subtotal, fulfillment,
+  // or coupon discount change. Soft-fails to zero tax so checkout never blocks.
+  // Declared BEFORE the conditional early return so hook order stays stable.
+  useEffect(() => {
+    let cancelled = false;
+    const shippingState = fulfillmentMethod === 'ship' ? (state || '').trim().toUpperCase() : '';
+    if (!shippingState || shippingState.length !== 2) {
+      setTaxQuote({ taxAmount: 0, rate: 0, jurisdiction: null, exempt: false, exemptionId: null });
+      return;
+    }
+    const liveShipping = fulfillmentMethod === 'ship' ? (
+      totalWeightOz <= 1 ? 8 :
+      totalWeightOz <= 4 ? 12 :
+      totalWeightOz <= 8 ? 16 :
+      totalWeightOz <= 16 ? 20 : 28
+    ) : 0;
+    const payload = {
+      subtotal: Math.max(0, cartSubtotal - (appliedCoupon?.discount ?? 0)),
+      shipping: liveShipping,
+      shippingState,
+    };
+    const ctrl = new AbortController();
+    (async () => {
+      try {
+        const res = await fetch('/api/checkout/tax-quote', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+          signal: ctrl.signal,
+        });
+        if (!res.ok) throw new Error('tax quote failed');
+        const json = await res.json();
+        const q = json?.data;
+        if (cancelled || !q) return;
+        setTaxQuote({
+          taxAmount: Number(q.taxAmount) || 0,
+          rate: Number(q.rate) || 0,
+          jurisdiction: q.jurisdiction ?? null,
+          exempt: Boolean(q.exempt),
+          exemptionId: q.exemptionId ?? null,
+        });
+      } catch {
+        if (!cancelled) {
+          setTaxQuote({ taxAmount: 0, rate: 0, jurisdiction: null, exempt: false, exemptionId: null });
+        }
+      }
+    })();
+    return () => { cancelled = true; ctrl.abort(); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cartSubtotal, fulfillmentMethod, state, totalWeightOz, appliedCoupon?.discount]);
+
   // Don't render until we know which cart source to use (avoids flash of empty cart)
   if (!storefrontLoaded) return null;
 
@@ -240,7 +300,7 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
 
   const shippingCost = calculateShippingCost();
   const discount = appliedCoupon?.discount ?? 0;
-  const subtotalAfterDiscount = Math.max(0, cartSubtotal - discount) + shippingCost;
+  const subtotalAfterDiscount = Math.max(0, cartSubtotal - discount) + shippingCost + (taxQuote.taxAmount || 0);
 
   // Cap requested credit at the available balance AND at the remaining due.
   const requestedCredit = useAllCredit
@@ -1179,7 +1239,7 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
 
               {agentPricingDiscount > 0 && (
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem', padding: '6px 10px', background: 'rgba(0,196,188,0.06)', borderRadius: 'var(--radius-sm)', border: '1px solid rgba(0,196,188,0.2)' }}>
-                  <span style={{ color: 'var(--teal)', fontWeight: 600 }}>⚡ Agent Direct Pricing Discount</span>
+                  <span style={{ color: 'var(--teal)', fontWeight: 600 }}>Agent Direct Pricing Discount</span>
                   <strong style={{ color: 'var(--teal)' }}>-${agentPricingDiscount.toFixed(2)}</strong>
                 </div>
               )}
@@ -1210,6 +1270,23 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
               {fulfillmentMethod === 'ship' && (
                 <div style={{ fontSize: '0.7rem', color: 'var(--grey-400)', textAlign: 'right', marginTop: -4 }}>
                   Total Weight: {totalWeightOz.toFixed(1)} Oz
+                </div>
+              )}
+
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem' }}>
+                <span style={{ color: 'var(--grey-400)' }}>
+                  {taxQuote.exempt ? 'Tax (Exempt)' : taxQuote.jurisdiction ? `Tax (${taxQuote.jurisdiction})` : 'Tax'}
+                </span>
+                {taxQuote.exempt ? (
+                  <strong style={{ color: 'var(--teal)' }}>$0.00</strong>
+                ) : (
+                  <strong style={{ color: 'var(--white)' }}>${(taxQuote.taxAmount || 0).toFixed(2)}</strong>
+                )}
+              </div>
+
+              {taxQuote.exempt && (
+                <div style={{ fontSize: '0.7rem', color: 'var(--teal)', textAlign: 'right', marginTop: -4 }}>
+                  Tax-Exempt Certificate Applied
                 </div>
               )}
 
