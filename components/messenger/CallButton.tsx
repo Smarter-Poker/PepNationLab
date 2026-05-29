@@ -1,0 +1,101 @@
+'use client';
+import { useEffect, useState } from 'react';
+import { Phone, Video } from 'lucide-react';
+import { toast } from 'sonner';
+import type { CallSignalRow } from '@/lib/messenger/realtime';
+
+interface Props {
+  conversationId: string;
+  onCallStarted: (call: CallSignalRow) => void;
+}
+
+const iconBtn: React.CSSProperties = {
+  background: 'transparent',
+  border: '1px solid var(--surface-3, #1D2D3E)',
+  borderRadius: 8,
+  width: 32,
+  height: 32,
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  cursor: 'pointer',
+  color: 'var(--white, #FFFFFF)',
+};
+
+export default function CallButton({ conversationId, onCallStarted }: Props) {
+  const [available, setAvailable] = useState(true);
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch('/api/messenger/list-active-calls', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: '{}',
+        });
+        if (!cancelled && res.status === 503) setAvailable(false);
+      } catch {
+        // network issue -- keep buttons available; the click handler will surface a toast
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  if (!available) return null;
+
+  const startCall = async (callType: 'audio' | 'video') => {
+    if (busy) return;
+    setBusy(true);
+    try {
+      const res = await fetch('/api/messenger/call-signal', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ action: 'start', conversationId, callType }),
+      });
+      if (res.status === 503) {
+        setAvailable(false);
+        toast('Calls Not Configured');
+        return;
+      }
+      if (!res.ok) {
+        toast('Could Not Start Call');
+        return;
+      }
+      const json = (await res.json()) as { call: CallSignalRow };
+      onCallStarted(json.call);
+    } catch {
+      toast('Network Error');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div style={{ display: 'inline-flex', gap: 6 }}>
+      <button
+        type="button"
+        onClick={() => void startCall('audio')}
+        disabled={busy}
+        aria-label="Start Voice Call"
+        title="Start Voice Call"
+        style={iconBtn}
+      >
+        <Phone size={16} aria-hidden="true" />
+      </button>
+      <button
+        type="button"
+        onClick={() => void startCall('video')}
+        disabled={busy}
+        aria-label="Start Video Call"
+        title="Start Video Call"
+        style={iconBtn}
+      >
+        <Video size={16} aria-hidden="true" />
+      </button>
+    </div>
+  );
+}

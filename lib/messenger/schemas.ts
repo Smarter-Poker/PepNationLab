@@ -222,3 +222,22 @@ export const TemplateActionSchema = z.discriminatedUnion('action', [
   TemplateDeleteSchema,
 ]);
 export type TemplateActionInput = z.infer<typeof TemplateActionSchema>;
+
+// Phase 11: voice / video calls (LiveKit)
+
+export const StartCallSchema = z.object({
+  conversationId: z.string().uuid(),
+  callType: z.enum(['audio', 'video']),
+});
+export type StartCallInput = z.infer<typeof StartCallSchema>;
+
+export const CallSignalSchema = z.object({
+  callId: z.string().uuid(),
+  action: z.enum(['accept', 'decline', 'hangup']),
+});
+export type CallSignalInput = z.infer<typeof CallSignalSchema>;
+
+export const LivekitTokenSchema = z.object({
+  callId: z.string().uuid(),
+});
+export type LivekitTokenInput = z.infer<typeof LivekitTokenSchema>;
