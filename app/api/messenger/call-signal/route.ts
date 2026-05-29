@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
 import { assertSameOrigin } from '@/lib/csrf';
-import { requireSession, getParticipant } from '@/lib/messenger/server';
+import { requireSession, getParticipant, isBlocked } from '@/lib/messenger/server';
 import { StartCallSchema, CallSignalSchema } from '@/lib/messenger/schemas';
 import { z } from 'zod';
 import crypto from 'crypto';
@@ -58,6 +58,31 @@ export async function POST(req: NextRequest) {
   if (parsed.data.action === 'start') {
     const callerPart = await getParticipant(parsed.data.conversationId, user.id);
     if (!callerPart) return NextResponse.json({ error: 'Not A Participant' }, { status: 403 });
+
+    // Audit3 fix: in direct conversations, refuse to ring the counterparty if
+    // either side has blocked the other. Group conversations rely on the
+    // existing add-participant block gate for membership, so calls within a
+    // group are allowed (blocked users won't be members in the first place).
+    const { data: convCheck } = await svc
+      .from('messenger_conversations')
+      .select('id, type')
+      .eq('id', parsed.data.conversationId)
+      .maybeSingle();
+    if (convCheck && convCheck.type === 'direct') {
+      const { data: others } = await svc
+        .from('messenger_participants')
+        .select('user_id')
+        .eq('conversation_id', parsed.data.conversationId)
+        .neq('user_id', user.id);
+      const otherId = ((others ?? [])[0] as { user_id: string } | undefined)?.user_id;
+      if (otherId) {
+        const blockedByCaller = await isBlocked(user.id, otherId);
+        const blockedByOther = await isBlocked(otherId, user.id);
+        if (blockedByCaller || blockedByOther) {
+          return NextResponse.json({ error: 'User Blocked' }, { status: 403 });
+        }
+      }
+    }
 
     // Audit2 fix: prevent two simultaneous starts from forking the conversation
     // into two LiveKit rooms with no way to reconcile. If a ringing or active
