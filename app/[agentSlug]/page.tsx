@@ -138,6 +138,15 @@ export default async function AgentStorefrontPage({ params }: Props) {
 
   const inventoryMap = new Map(inventory?.map(i => [i.product_id, i.stock_count]) || []);
 
+  let initialWishlistIds: string[] = [];
+  if (userProfile?.role === 'researcher') {
+    const { data: favRows } = await supabase
+      .from('researcher_favorites')
+      .select('product_id')
+      .eq('user_id', user.id);
+    initialWishlistIds = (favRows ?? []).map(r => r.product_id);
+  }
+
   const primaryColor = agent.primary_color ?? '#00C4BC';
   const displayName = agent.display_name;
 
@@ -252,11 +261,13 @@ export default async function AgentStorefrontPage({ params }: Props) {
           <h2 style={{ marginBottom: 'var(--space-8)', fontSize: '1.4rem', fontFamily: 'var(--font-brand)', color: 'var(--white)' }}>
             Available Research Compounds
           </h2>
-          <AgentStorefrontGrid 
-            products={products as any} 
-            inventoryMap={Object.fromEntries(inventoryMap)} 
-            primaryColor={primaryColor} 
-            agentSlug={agentSlug} 
+          <AgentStorefrontGrid
+            products={products as any}
+            inventoryMap={Object.fromEntries(inventoryMap)}
+            primaryColor={primaryColor}
+            agentSlug={agentSlug}
+            initialWishlistIds={initialWishlistIds}
+            agentId={agent.id}
           />
         </div>
       </section>
