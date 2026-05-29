@@ -9,6 +9,7 @@ import {
   type OrderStatus,
 } from '@/lib/order-states';
 import { purchaseLabelForOrder } from '@/lib/shippo';
+import { enqueueOrderSms, shortOrderId, type OrderSmsEvent } from '@/lib/sms-enqueue';
 
 interface BulkBody {
   ids?: unknown;
@@ -51,7 +52,7 @@ export async function POST(req: NextRequest) {
 
   const { data: orders, error: ordersErr } = await supabase
     .from('orders')
-    .select('id, status, agent_id, fulfillment_method, label_url')
+    .select('id, status, agent_id, fulfillment_method, label_url, buyer_id, tracking_number')
     .in('id', ids);
 
   if (ordersErr) {
@@ -95,6 +96,35 @@ export async function POST(req: NextRequest) {
         continue;
       }
       succeeded.push(id);
+
+      // SMS notification (fire-and-forget) for bulk transitions.
+      try {
+        if (order.buyer_id) {
+          const short = shortOrderId(id);
+          let event: OrderSmsEvent | null = null;
+          let body = '';
+          if (target === 'approved_ship' || target === 'approved_pickup') {
+            event = 'order_approved';
+            body = `Your Order #${short} Has Been Approved. Get Ready For Shipping.`;
+          } else if (target === 'shipped') {
+            event = 'order_shipped';
+            body = order.tracking_number
+              ? `Your Order #${short} Shipped. Tracking: ${order.tracking_number}`
+              : `Your Order #${short} Shipped.`;
+          } else if (target === 'delivered') {
+            event = 'order_delivered';
+            body = `Your Order #${short} Has Been Delivered. Thank You.`;
+          }
+          if (event && body) {
+            await enqueueOrderSms(supabase, {
+              userId: order.buyer_id,
+              orderId: id,
+              event,
+              body,
+            });
+          }
+        }
+      } catch { /* never block bulk response on SMS */ }
     }
 
     return NextResponse.json({
