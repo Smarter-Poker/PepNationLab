@@ -27,6 +27,8 @@ const PUBLIC_ROUTES = [
   '/api/disclaimer-log',
   // Storefront-scoped researcher signup (rate-limited inside the route).
   '/api/storefront/register',
+  // Faceted storefront search — public, rate-limited inside the route.
+  '/api/storefront/search',
   // Agent invitation redemption — the token in the URL is the credential.
   '/invite',
   '/api/agent-invitations/redeem',
