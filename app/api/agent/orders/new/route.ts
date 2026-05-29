@@ -63,7 +63,8 @@ export async function POST(req: NextRequest) {
       const ap = (raw.agent_product_id && byId.get(raw.agent_product_id)) || (raw.product_id && byProductId.get(raw.product_id)) || null;
       if (!ap) return NextResponse.json({ error: 'One Or More Items Are Not In Your Catalog.' }, { status: 400 });
 
-      const unitRetail = Number(ap.retail_price) || 0;
+      // retail_price is stored as a 10-pack price; divide by 10 for per-vial unit price.
+      const unitRetail = (Number(ap.retail_price) || 0) / 10;
       computedSubtotal += unitRetail * qty;
       const unitCost = await computeAgentCost(supabase, ap.product_id, tier);
       const unitSuperAgentCost = parentAgentId ? await computeSubAgentBaselineCost(supabase, ap.product_id, parentAgentId) : null;

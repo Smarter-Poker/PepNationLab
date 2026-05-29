@@ -53,7 +53,11 @@ export async function POST(req: NextRequest) {
         .filter(ap => ap.product_id)
         .map(async ap => {
           const agentCost = await computeAgentCost(supabase, ap.product_id as string, tier);
-          const retailPrice = parseFloat((agentCost * (1 + marginPercent / 100)).toFixed(2));
+          // retail_price is stored as a 10-pack price (DB convention: base_cost * 10).
+          // The storefront grid divides by 10 for per-vial display.
+          // We must store agentCost * margin * 10 so the grid shows the correct price.
+          const perVialRetail = agentCost * (1 + marginPercent / 100);
+          const retailPrice = parseFloat((perVialRetail * 10).toFixed(2));
           return { id: ap.id, retail_price: retailPrice };
         })
     );

@@ -269,9 +269,14 @@ export async function POST(request: NextRequest) {
         .select('product_id, retail_price, is_on_sale, sale_price')
         .eq('agent_id', agentProfile.id);
       acr?.forEach(a => {
-        // Use sale_price if the product is currently on sale
-        const price = a.is_on_sale && a.sale_price != null ? Number(a.sale_price) : Number(a.retail_price);
-        agentCustomRetail[a.product_id] = price;
+        // IMPORTANT: retail_price and sale_price are stored as 10-pack prices
+        // (seeded as base_cost * 10 by the DB trigger). The storefront grid
+        // divides by 10 for per-vial display. We must do the same here so
+        // the server charges exactly what the customer saw on the storefront.
+        const rawPrice = a.is_on_sale && a.sale_price != null
+          ? Number(a.sale_price)
+          : Number(a.retail_price);
+        agentCustomRetail[a.product_id] = rawPrice / 10;
       });
     }
 
