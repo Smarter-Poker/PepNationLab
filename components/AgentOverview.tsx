@@ -116,11 +116,11 @@ export default function AgentOverview({
         <span
           className="dash-url"
           style={{
-            bottom: '4.5%',
+            bottom: '6.5%',
             left: '5%',
-            width: '55%',
+            width: '50%',
             height: '5%',
-            fontSize: 'clamp(0.6rem, 1.8vw, 1rem)',
+            fontSize: 'clamp(0.55rem, 1.6vw, 0.95rem)',
           }}
         >
           {storefrontUrl}
@@ -131,7 +131,7 @@ export default function AgentOverview({
           className="dash-btn-zone"
           onClick={copyStorefrontLink}
           aria-label={copiedStorefront ? 'Link Copied' : 'Copy Link'}
-          style={{ bottom: '3.5%', right: '16%', width: '14%', height: '5.5%' }}
+          style={{ bottom: '5.5%', right: '22%', width: '14%', height: '5.5%' }}
         />
 
         {/* Invisible clickable zone over "Visit Store" button */}
@@ -141,7 +141,7 @@ export default function AgentOverview({
           rel="noopener noreferrer"
           className="dash-btn-zone"
           aria-label="Visit Store"
-          style={{ bottom: '3.5%', right: '1.5%', width: '12%', height: '5.5%' }}
+          style={{ bottom: '5.5%', right: '7%', width: '12%', height: '5.5%' }}
         />
       </div>
     </>
