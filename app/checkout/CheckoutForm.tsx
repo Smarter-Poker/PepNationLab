@@ -483,7 +483,7 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
           <div style={{ background: 'var(--surface-2)', border: '1px solid rgba(255, 255, 255, 0.05)', borderRadius: 'var(--radius-lg)', padding: 'var(--space-5)', marginBottom: 'var(--space-6)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid rgba(255, 255, 255, 0.05)', paddingBottom: 'var(--space-3)', marginBottom: 'var(--space-3)' }}>
               <span style={{ color: 'var(--grey-400)', fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Order Identifier</span>
-              <strong style={{ color: 'var(--white)', fontFamily: 'var(--font-brand)', fontSize: '0.95rem' }}>{orderSuccess}</strong>
+              <strong style={{ color: 'var(--white)', fontFamily: 'var(--font-brand)', fontSize: '0.95rem', wordBreak: 'break-all' }}>{orderSuccess}</strong>
             </div>
 
             <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid rgba(255, 255, 255, 0.05)', paddingBottom: 'var(--space-3)', marginBottom: 'var(--space-3)' }}>
@@ -551,12 +551,12 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
     <div className="container section" style={{ maxWidth: 1000 }}>
       {/* Page Header */}
       <div style={{ marginBottom: 'var(--space-8)', textAlign: 'center' }}>
-        <h1 style={{ fontSize: '2.2rem', color: 'var(--white)', marginBottom: 'var(--space-2)' }}>Secure Order Checkout</h1>
+        <h1 style={{ fontSize: 'clamp(1.4rem, 5vw, 2.2rem)', color: 'var(--white)', marginBottom: 'var(--space-2)' }}>Secure Order Checkout</h1>
         <p style={{ color: 'var(--silver)' }}>Complete Your Compliance Steps To Register Your Research Request.</p>
       </div>
 
       {/* Stepper progress */}
-      <div style={{ display: 'flex', justifyContent: 'center', gap: 'var(--space-2)', marginBottom: 'var(--space-8)' }}>
+      <div style={{ display: 'flex', justifyContent: 'center', gap: 'var(--space-2)', marginBottom: 'var(--space-8)', flexWrap: 'wrap' }}>
         {[
           { num: 1, label: 'Fulfillment' },
           { num: 2, label: 'Billing' },
@@ -604,6 +604,20 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
             .checkout-grid {
               grid-template-columns: 1fr !important;
             }
+            .checkout-grid > :last-child {
+              order: -1;
+            }
+            .fulfillment-grid, .payment-grid {
+              grid-template-columns: 1fr !important;
+            }
+            .address-city-grid {
+              grid-template-columns: 1fr 1fr !important;
+            }
+          }
+          @media (max-width: 400px) {
+            .address-city-grid {
+              grid-template-columns: 1fr !important;
+            }
           }
         `}</style>
         {/* Main Form Area */}
@@ -637,7 +651,7 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
                   <h3 style={{ color: 'var(--teal)', fontSize: '1.2rem', marginBottom: 'var(--space-4)', borderBottom: '1px solid rgba(255, 255, 255, 0.05)', paddingBottom: 'var(--space-2)' }}>
                     Fulfillment Method
                   </h3>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-4)' }}>
+                  <div className="fulfillment-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-4)' }}>
                     <label style={{
                       display: 'flex',
                       flexDirection: 'column',
@@ -799,7 +813,7 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
                         </div>
                       </div>
 
-                      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', gap: 'var(--space-4)' }}>
+                      <div className="address-city-grid" style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', gap: 'var(--space-4)' }}>
                         <div className="form-group">
                           <label className="form-label">City</label>
                           <input
@@ -840,7 +854,7 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
                       <div className="form-group">
                         <label className="form-label">Phone Number</label>
                         <input
-                          type="text"
+                          type="tel"
                           className="form-input"
                           placeholder="123-456-7890 (For Shipping Updates)"
                           value={phone}
@@ -904,7 +918,7 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
                     Select Your Preferred Offline Channel To Finalize Cash Settlement. Our Staff Will Release Your Lab Experimentation Order Instantly Upon Verifying Receipt.
                   </p>
 
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-4)' }}>
+                  <div className="payment-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-4)' }}>
                     {[
                       { id: 'zelle', name: 'Zelle Payment', desc: 'Instant Direct Transfer. Fastest Processing.' },
                       { id: 'cashapp', name: 'Cash App', desc: 'Secure Mobile Check. Handled Manually.' },

@@ -689,7 +689,7 @@ export default function AgentStorefrontGrid({ products, inventoryMap, primaryCol
         })}
       </motion.div>
       {/* Floating Cart — Bottom Right Corner */}
-      <div style={{ position: 'fixed', bottom: 24, right: 24, zIndex: 900 }}>
+      <div style={{ position: 'fixed', bottom: 'calc(24px + env(safe-area-inset-bottom, 0px))', right: 24, zIndex: 900 }}>
         <button
           onClick={() => {
             if (totalCartItems === 0) {
@@ -734,7 +734,8 @@ export default function AgentStorefrontGrid({ products, inventoryMap, primaryCol
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={{ opacity: 0, y: 10, scale: 0.95 }}
                 style={{
-                  position: 'absolute', bottom: 68, right: 0, width: 300,
+                  position: 'absolute', bottom: 68, right: 0,
+                  width: 'min(300px, 85vw)',
                   background: 'var(--surface-2)', border: '1px solid rgba(255,255,255,0.1)',
                   borderRadius: 'var(--radius-lg)', boxShadow: '0 16px 48px rgba(0,0,0,0.6)',
                   overflow: 'hidden'
@@ -766,15 +767,17 @@ export default function AgentStorefrontGrid({ products, inventoryMap, primaryCol
                             else next[variantId]--;
                             return next;
                           })} style={{
-                            width: 22, height: 22, borderRadius: '50%', border: '1px solid rgba(255,255,255,0.2)',
+                            width: 36, height: 36, borderRadius: '50%', border: '1px solid rgba(255,255,255,0.2)',
                             background: 'transparent', color: 'var(--white)', cursor: 'pointer', fontSize: '0.85rem',
-                            display: 'flex', alignItems: 'center', justifyContent: 'center'
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            flexShrink: 0, touchAction: 'manipulation'
                           }}>-</button>
-                          <span style={{ color: 'var(--white)', fontWeight: 700, fontSize: '0.8rem', minWidth: 16, textAlign: 'center' }}>{qty}</span>
+                          <span style={{ color: 'var(--white)', fontWeight: 700, fontSize: '0.8rem', minWidth: 20, textAlign: 'center' }}>{qty}</span>
                           <button onClick={() => addToCart(variantId)} style={{
-                            width: 22, height: 22, borderRadius: '50%', border: 'none',
+                            width: 36, height: 36, borderRadius: '50%', border: 'none',
                             background: primaryColor, color: 'var(--white)', cursor: 'pointer', fontSize: '0.85rem',
-                            display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800
+                            display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800,
+                            flexShrink: 0, touchAction: 'manipulation'
                           }}>+</button>
                         </div>
                       </div>
