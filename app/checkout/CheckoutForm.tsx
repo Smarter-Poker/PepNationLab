@@ -380,7 +380,7 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers }
           </svg>
           <h2 style={{ fontSize: '1.5rem', marginBottom: 'var(--space-2)' }}>Your Shopping Cart Is Empty</h2>
           <p style={{ color: 'var(--silver)', marginBottom: 'var(--space-6)' }}>Add Research Compounds From The Catalog To Proceed.</p>
-          <Link href="/products" className="btn btn-primary">
+          <Link href="/" className="btn btn-primary">
             Browse Catalog
           </Link>
         </div>
@@ -475,7 +475,7 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers }
 
           {/* Action Button */}
           <div style={{ textAlign: 'center' }}>
-            <Link href="/products" className="btn btn-primary" style={{ minWidth: 200 }}>
+            <Link href="/" className="btn btn-primary" style={{ minWidth: 200 }}>
               Return To Catalog
             </Link>
           </div>

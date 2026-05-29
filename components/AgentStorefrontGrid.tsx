@@ -789,8 +789,38 @@ export default function AgentStorefrontGrid({ products, inventoryMap, primaryCol
                   </div>
                   <button
                     onClick={() => {
+                      // Translate storefront cartItems (Record<variantId, qty>) →
+                      // CartItem[] format that CartContext/CheckoutForm reads from
+                      // localStorage['pnl_cart'].
+                      const pnlCart = Object.entries(cartItems)
+                        .filter(([, qty]) => qty > 0)
+                        .map(([vId, qty]) => {
+                          const item = products.find(p => p.id === vId);
+                          if (!item) return null;
+                          const perVial = item.retail_price / 10;
+                          return {
+                            id: vId,
+                            name: `${item.products?.name || 'Product'} ${item.products?.unit_size ? `(${item.products.unit_size}${item.products.unit_measure || ''})` : ''}`.trim(),
+                            sku: vId,
+                            quantity: qty,
+                            retailPrice: perVial,
+                            costPrice: perVial,
+                            weightOz: 0.5,
+                          };
+                        })
+                        .filter(Boolean);
+
+                      try {
+                        localStorage.setItem('pnl_cart', JSON.stringify(pnlCart));
+                        // Also clear the agent-specific cart key so it doesn't
+                        // show stale data if the user returns
+                        localStorage.removeItem(`cart_${agentSlug}`);
+                        setCartItems({});
+                      } catch (e) {
+                        console.error('Failed to sync cart:', e);
+                      }
                       setShowCartFloat(false);
-                      window.location.href = `/checkout?agent=${agentSlug}&cart=${encodeURIComponent(JSON.stringify(cartItems))}`;
+                      window.location.href = '/checkout';
                     }}
                     style={{
                       display: 'block', width: '100%', textAlign: 'center', padding: '10px',
