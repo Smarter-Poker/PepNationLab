@@ -1,21 +1,33 @@
 'use client';
-import { useState } from 'react';
-import { Reply, Smile, Pencil, Trash2, Check, X, Download } from 'lucide-react';
-import type { Message, Reaction } from '@/lib/messenger/types';
+import { useEffect, useState } from 'react';
+import { Reply, Smile, Pencil, Trash2, Check, X, Download, Pin, Bookmark, Tag, MessageSquare } from 'lucide-react';
+import type { Message, Reaction, ParticipantRole } from '@/lib/messenger/types';
+import type { MessageLabelValue } from '@/lib/messenger/schemas';
 import ReactionPopover from './ReactionPopover';
 import VoicePlayer from './VoicePlayer';
 import ImageLightbox from './ImageLightbox';
 import LinkPreview from './LinkPreview';
+import LabelsMenu from './LabelsMenu';
+import { toast } from 'sonner';
 
 interface Props {
   message: Message;
   isOwn: boolean;
   reactions: Reaction[];
   selfId: string;
+  selfRole?: ParticipantRole | null;
+  conversationType?: 'direct' | 'group' | 'announcement';
+  isPinned?: boolean;
+  isBookmarked?: boolean;
+  currentLabels?: MessageLabelValue[];
   onReply: (m: Message) => void;
   onReact: (m: Message, emoji: string, action: 'add' | 'remove') => void;
   onEdit: (m: Message, nextText: string) => Promise<boolean>;
   onDelete: (m: Message, scope: 'for_me' | 'for_everyone') => void;
+  onPinToggle?: (m: Message, action: 'pin' | 'unpin') => void;
+  onBookmarkToggle?: (m: Message, action: 'add' | 'remove') => void;
+  onLabelToggle?: (m: Message, label: MessageLabelValue, action: 'add' | 'remove') => void;
+  onThread?: (m: Message) => void;
 }
 
 const URL_RE = /https?:\/\/[^\s<>]+/i;
@@ -43,9 +55,28 @@ function extractFirstUrl(text: string | null): string | null {
   return m ? m[0] : null;
 }
 
+function formatExpiry(iso: string | null): string | null {
+  if (!iso) return null;
+  const t = Date.parse(iso);
+  if (Number.isNaN(t)) return null;
+  const ms = t - Date.now();
+  if (ms <= 0) return 'Expired';
+  const sec = Math.floor(ms / 1000);
+  if (sec < 60) return `Expires In ${sec}s`;
+  const min = Math.floor(sec / 60);
+  if (min < 60) return `Expires In ${min}m`;
+  const hr = Math.floor(min / 60);
+  if (hr < 24) return `Expires In ${hr}h`;
+  const d = Math.floor(hr / 24);
+  return `Expires In ${d}d`;
+}
+
 export default function MessageBubble({
   message, isOwn, reactions, selfId,
+  selfRole = null, conversationType,
+  isPinned = false, isBookmarked = false, currentLabels = [],
   onReply, onReact, onEdit, onDelete,
+  onPinToggle, onBookmarkToggle, onLabelToggle, onThread,
 }: Props) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [popoverOpen, setPopoverOpen] = useState(false);
@@ -53,11 +84,22 @@ export default function MessageBubble({
   const [editText, setEditText] = useState(message.text ?? '');
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [lightbox, setLightbox] = useState(false);
+  const [labelsOpen, setLabelsOpen] = useState(false);
+  const [expiryTick, setExpiryTick] = useState(0);
   const failed = (message.metadata as { failed?: boolean })?.failed === true;
   const pending = message.id.startsWith('temp-');
   const meta = (message.media_metadata ?? {}) as { filename?: string; size?: number; durationSec?: number; contentType?: string };
   const url = extractFirstUrl(message.text);
   const isMediaBubble = message.message_type === 'image' || message.message_type === 'gif';
+
+  // Re-render once a minute to update the expiry countdown label.
+  useEffect(() => {
+    if (!message.expires_at) return;
+    const id = setInterval(() => setExpiryTick((n) => n + 1), 60_000);
+    return () => clearInterval(id);
+  }, [message.expires_at]);
+  // expiryTick is intentionally read to ensure React re-renders when the timer fires.
+  void expiryTick;
 
   const grouped = reactions.reduce<Record<string, { count: number; mine: boolean }>>((acc, r) => {
     const key = r.emoji ?? r.gif_url ?? '?';
@@ -67,6 +109,23 @@ export default function MessageBubble({
   }, {});
 
   const showActionMenu = !editing && !confirmDelete && !message.is_deleted;
+
+  // Pin policy:
+  //   - In group/announcement conversations: anyone can pin their own, owner/admin can unpin anyone.
+  //   - In direct conversations: either participant can pin.
+  // Both surfaces are gated by canPin (action menu is hidden if it's false).
+  const canPin = Boolean(onPinToggle) && !message.is_deleted;
+  const canBookmark = Boolean(onBookmarkToggle) && !message.is_deleted;
+  const canLabel = Boolean(onLabelToggle) && !message.is_deleted;
+  const canThread = Boolean(onThread)
+    && !message.is_deleted
+    && conversationType !== 'direct'
+    && !message.thread_parent_id; // Don't allow threads on replies in this iteration.
+
+  // selfRole gates visibility for additional admin-only affordances later; for
+  // now any participant can pin so we only consult it for the Unpin path in
+  // PinnedBar. Keep the prop here so consumers don't lose it.
+  void selfRole;
 
   const renderBody = () => {
     if (message.is_deleted && message.delete_scope === 'for_everyone') {
@@ -130,6 +189,8 @@ export default function MessageBubble({
     return <span>{message.text ?? ''}</span>;
   };
 
+  const expiryLabel = formatExpiry(message.expires_at);
+
   return (
     <div
       data-msg-id={message.id}
@@ -137,6 +198,28 @@ export default function MessageBubble({
         display: 'flex', flexDirection: 'column', gap: 2, position: 'relative' }}
       onContextMenu={(e) => { e.preventDefault(); if (editing || confirmDelete) return; setMenuOpen((v) => !v); }}
     >
+      {(isPinned || isBookmarked || currentLabels.length > 0) && (
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, alignSelf: isOwn ? 'flex-end' : 'flex-start', padding: '0 4px' }}>
+          {isPinned && (
+            <span style={badgeStyle} aria-label="Pinned">
+              <Pin size={10} aria-hidden="true" />
+              Pinned
+            </span>
+          )}
+          {isBookmarked && (
+            <span style={badgeStyle} aria-label="Bookmarked">
+              <Bookmark size={10} aria-hidden="true" />
+              Saved
+            </span>
+          )}
+          {currentLabels.map((label) => (
+            <span key={label} style={badgeStyle} aria-label={`Label ${label}`}>
+              <Tag size={10} aria-hidden="true" />
+              {label}
+            </span>
+          ))}
+        </div>
+      )}
       <div
         style={{
           position: 'relative',
@@ -157,6 +240,50 @@ export default function MessageBubble({
           >
             <button type="button" onClick={() => { onReply(message); setMenuOpen(false); }} style={menuBtn} aria-label="Reply" title="Reply"><Reply size={16} /></button>
             <button type="button" onClick={() => { setMenuOpen(false); setPopoverOpen(true); }} style={menuBtn} aria-label="React" title="React"><Smile size={16} /></button>
+            {canPin && (
+              <button
+                type="button"
+                onClick={() => { onPinToggle?.(message, isPinned ? 'unpin' : 'pin'); setMenuOpen(false); }}
+                style={menuBtn}
+                aria-label={isPinned ? 'Unpin Message' : 'Pin Message'}
+                title={isPinned ? 'Unpin Message' : 'Pin Message'}
+              >
+                <Pin size={16} />
+              </button>
+            )}
+            {canBookmark && (
+              <button
+                type="button"
+                onClick={() => { onBookmarkToggle?.(message, isBookmarked ? 'remove' : 'add'); setMenuOpen(false); }}
+                style={menuBtn}
+                aria-label={isBookmarked ? 'Remove Bookmark' : 'Bookmark'}
+                title={isBookmarked ? 'Remove Bookmark' : 'Bookmark'}
+              >
+                <Bookmark size={16} />
+              </button>
+            )}
+            {canLabel && (
+              <button
+                type="button"
+                onClick={() => { setMenuOpen(false); setLabelsOpen(true); }}
+                style={menuBtn}
+                aria-label="Labels"
+                title="Labels"
+              >
+                <Tag size={16} />
+              </button>
+            )}
+            {canThread && (
+              <button
+                type="button"
+                onClick={() => { onThread?.(message); setMenuOpen(false); }}
+                style={menuBtn}
+                aria-label="Reply In Thread"
+                title="Reply In Thread"
+              >
+                <MessageSquare size={16} />
+              </button>
+            )}
             {isOwn && message.message_type === 'text' && (
               <button type="button" onClick={() => { setMenuOpen(false); setEditing(true); }} style={menuBtn} aria-label="Edit" title="Edit"><Pencil size={16} /></button>
             )}
@@ -167,6 +294,17 @@ export default function MessageBubble({
           <ReactionPopover
             onPick={(emoji) => { const had = grouped[emoji]?.mine === true; onReact(message, emoji, had ? 'remove' : 'add'); }}
             onClose={() => setPopoverOpen(false)}
+          />
+        )}
+        {labelsOpen && onLabelToggle && (
+          <LabelsMenu
+            messageId={message.id}
+            currentLabels={currentLabels}
+            onToggle={(label, action) => {
+              try { onLabelToggle(message, label, action); }
+              catch { toast('Could Not Update Label'); }
+            }}
+            onClose={() => setLabelsOpen(false)}
           />
         )}
         {confirmDelete && (
@@ -213,6 +351,7 @@ export default function MessageBubble({
       >
         {failed ? 'Failed To Send' : pending ? 'Sending' : formatTime(message.created_at)}
         {message.is_edited && !message.is_deleted ? ' (Edited)' : ''}
+        {expiryLabel ? ` (${expiryLabel})` : ''}
       </div>
 
       {lightbox && message.media_url && <ImageLightbox src={message.media_url} onClose={() => setLightbox(false)} />}
@@ -232,4 +371,10 @@ const confirmBtn: React.CSSProperties = {
 const confirmBtnText: React.CSSProperties = {
   background: 'transparent', border: 0, color: 'var(--white, #FFFFFF)', cursor: 'pointer',
   padding: '4px 8px', borderRadius: 6, fontSize: '0.84rem',
+};
+const badgeStyle: React.CSSProperties = {
+  display: 'inline-flex', alignItems: 'center', gap: 3,
+  padding: '2px 6px', borderRadius: 999,
+  background: 'var(--surface-3, #1D2D3E)', color: 'var(--grey-400, #A8B4C0)',
+  fontSize: '0.66rem', fontWeight: 700, textTransform: 'uppercase',
 };

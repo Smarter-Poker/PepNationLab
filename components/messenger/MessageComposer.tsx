@@ -1,6 +1,6 @@
 'use client';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Send, Smile, Paperclip, Image as ImageIcon } from 'lucide-react';
+import { Send, Smile, Paperclip, Image as ImageIcon, FileText, Calendar, Clock } from 'lucide-react';
 import { toast } from 'sonner';
 import { useMessengerStore } from '@/stores/messengerStore';
 import type { Message, MessageType } from '@/lib/messenger/types';
@@ -9,6 +9,9 @@ import ReplyChip from './ReplyChip';
 import AttachMenu from './AttachMenu';
 import VoiceRecorder from './VoiceRecorder';
 import GifPicker from './GifPicker';
+import TemplatesMenu from './TemplatesMenu';
+import ScheduledMessageList from './ScheduledMessageList';
+import ExpiryPicker from './ExpiryPicker';
 import { subscribeTyping, unsubscribe } from '@/lib/messenger/realtime';
 
 interface Props {
@@ -47,6 +50,13 @@ async function putBlob(uploadUrl: string, blob: Blob, contentType: string): Prom
   }
 }
 
+function formatExpirySummary(seconds: number | null): string {
+  if (seconds === null) return 'No Expiry';
+  if (seconds < 3600) return `Expires In ${Math.round(seconds / 60)} Minutes`;
+  if (seconds < 86_400) return `Expires In ${Math.round(seconds / 3600)} Hours`;
+  return `Expires In ${Math.round(seconds / 86_400)} Days`;
+}
+
 export default function MessageComposer({ conversationId, selfId, replyTo, onClearReply }: Props) {
   const [text, setText] = useState('');
   const [sending, setSending] = useState(false);
@@ -55,6 +65,12 @@ export default function MessageComposer({ conversationId, selfId, replyTo, onCle
   const [voiceMode, setVoiceMode] = useState(false);
   const [showGif, setShowGif] = useState(false);
   const [gifAvailable, setGifAvailable] = useState(true);
+  const [showTemplates, setShowTemplates] = useState(false);
+  const [showScheduled, setShowScheduled] = useState(false);
+  const [showExpiry, setShowExpiry] = useState(false);
+  const [showScheduleInput, setShowScheduleInput] = useState(false);
+  const [scheduleAt, setScheduleAt] = useState('');
+  const [pendingExpirySeconds, setPendingExpirySeconds] = useState<number | null>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -78,11 +94,6 @@ export default function MessageComposer({ conversationId, selfId, replyTo, onCle
     };
   }, [conversationId, selfId]);
 
-  // Audit fix: when the user switches into a non-text input mode (voice
-  // recording, GIF picker, attach menu) the typing-stop timer would not
-  // fire for up to 3 seconds, and a long voice recording could keep the
-  // indicator on for a full minute. Force a stop-broadcast every time the
-  // composer transitions away from raw text entry.
   const stopTypingNow = useCallback(() => {
     if (stopTimerRef.current) clearTimeout(stopTimerRef.current);
     stopTimerRef.current = null;
@@ -143,7 +154,7 @@ export default function MessageComposer({ conversationId, selfId, replyTo, onCle
 
   const sendOptimistic = async (
     optimistic: Message,
-    payload: { text?: string; mediaUrl?: string; mediaMetadata?: Record<string, unknown>; messageType: MessageType }
+    payload: { text?: string; mediaUrl?: string; mediaMetadata?: Record<string, unknown>; messageType: MessageType; expiresAt?: string }
   ) => {
     appendMessage(conversationId, optimistic);
     setSending(true);
@@ -156,6 +167,7 @@ export default function MessageComposer({ conversationId, selfId, replyTo, onCle
       if (payload.text) body.text = payload.text;
       if (payload.mediaUrl) body.mediaUrl = payload.mediaUrl;
       if (payload.mediaMetadata) body.mediaMetadata = payload.mediaMetadata;
+      if (payload.expiresAt) body.expiresAt = payload.expiresAt;
       const res = await fetch('/api/messenger/send-message', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
@@ -170,6 +182,8 @@ export default function MessageComposer({ conversationId, selfId, replyTo, onCle
       const json = (await res.json()) as { message: Message };
       removeMessage(conversationId, optimistic.id);
       appendMessage(conversationId, json.message);
+      // Clear the one-shot expiry once it has been applied.
+      setPendingExpirySeconds(null);
     } catch {
       updateMessage(conversationId, { ...optimistic, metadata: { ...optimistic.metadata, failed: true } });
       toast('Network Error');
@@ -183,11 +197,54 @@ export default function MessageComposer({ conversationId, selfId, replyTo, onCle
     const trimmed = text.trim();
     if (!trimmed || sending) return;
     stopTypingNow();
-    const optimistic = buildOptimistic({ message_type: 'text', text: trimmed });
+    const expiresAt =
+      pendingExpirySeconds === null
+        ? undefined
+        : new Date(Date.now() + pendingExpirySeconds * 1000).toISOString();
+    const optimistic = buildOptimistic({
+      message_type: 'text',
+      text: trimmed,
+      expires_at: expiresAt ?? null,
+    });
     setText('');
-    await sendOptimistic(optimistic, { text: trimmed, messageType: 'text' });
+    await sendOptimistic(optimistic, { text: trimmed, messageType: 'text', expiresAt });
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [text, sending, replyTo, conversationId, selfId, stopTypingNow]);
+  }, [text, sending, replyTo, conversationId, selfId, stopTypingNow, pendingExpirySeconds]);
+
+  const handleSchedule = async () => {
+    const trimmed = text.trim();
+    if (!trimmed) { toast('Type A Message First'); return; }
+    if (!scheduleAt) { toast('Pick A Send Time'); return; }
+    const t = Date.parse(scheduleAt);
+    if (Number.isNaN(t)) { toast('Invalid Time'); return; }
+    if (t < Date.now() + 30_000) { toast('Pick A Time At Least Thirty Seconds Away'); return; }
+    try {
+      const res = await fetch('/api/messenger/schedule-message', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          action: 'create',
+          conversationId,
+          text: trimmed,
+          messageType: 'text',
+          scheduledAt: new Date(t).toISOString(),
+          replyToId: replyTo?.id,
+        }),
+      });
+      if (!res.ok) {
+        const json = (await res.json().catch(() => ({}))) as { error?: string };
+        toast(json.error ?? 'Could Not Schedule');
+        return;
+      }
+      setText('');
+      setScheduleAt('');
+      setShowScheduleInput(false);
+      onClearReply();
+      toast('Message Scheduled');
+    } catch {
+      toast('Network Error');
+    }
+  };
 
   const uploadAndSend = async (blob: Blob, contentType: string, messageType: MessageType, metadata: Record<string, unknown>) => {
     setSending(true);
@@ -195,15 +252,21 @@ export default function MessageComposer({ conversationId, selfId, replyTo, onCle
     if (!sig) { toast('Upload Sign Failed'); setSending(false); return; }
     const ok = await putBlob(sig.uploadUrl, blob, contentType);
     if (!ok) { toast('Upload Failed'); setSending(false); return; }
+    const expiresAt =
+      pendingExpirySeconds === null
+        ? undefined
+        : new Date(Date.now() + pendingExpirySeconds * 1000).toISOString();
     const optimistic = buildOptimistic({
       message_type: messageType,
       media_url: sig.publicUrl,
       media_metadata: metadata,
+      expires_at: expiresAt ?? null,
     });
     await sendOptimistic(optimistic, {
       mediaUrl: sig.publicUrl,
       mediaMetadata: metadata,
       messageType,
+      expiresAt,
     });
   };
 
@@ -235,8 +298,16 @@ export default function MessageComposer({ conversationId, selfId, replyTo, onCle
 
   const handleGif = async (gifUrl: string) => {
     setShowGif(false);
-    const optimistic = buildOptimistic({ message_type: 'gif', media_url: gifUrl });
-    await sendOptimistic(optimistic, { mediaUrl: gifUrl, messageType: 'gif' });
+    const expiresAt =
+      pendingExpirySeconds === null
+        ? undefined
+        : new Date(Date.now() + pendingExpirySeconds * 1000).toISOString();
+    const optimistic = buildOptimistic({
+      message_type: 'gif',
+      media_url: gifUrl,
+      expires_at: expiresAt ?? null,
+    });
+    await sendOptimistic(optimistic, { mediaUrl: gifUrl, messageType: 'gif', expiresAt });
   };
 
   return (
@@ -265,6 +336,33 @@ export default function MessageComposer({ conversationId, selfId, replyTo, onCle
 
       {replyTo && <ReplyChip replyTo={replyTo} onClear={onClearReply} />}
 
+      {pendingExpirySeconds !== null && (
+        <div
+          style={{
+            display: 'inline-flex', alignItems: 'center', gap: 6,
+            padding: '4px 10px', borderRadius: 999,
+            background: 'var(--surface-3, #1D2D3E)',
+            color: 'var(--teal, #00C4BC)',
+            fontSize: '0.72rem', fontWeight: 700,
+            marginBottom: 6,
+          }}
+          role="status"
+          aria-label="Pending Expiry"
+        >
+          <Clock size={10} aria-hidden="true" />
+          {formatExpirySummary(pendingExpirySeconds)}
+          <button
+            type="button"
+            onClick={() => setPendingExpirySeconds(null)}
+            aria-label="Clear Expiry"
+            style={{
+              background: 'transparent', border: 0, color: 'var(--white, #FFFFFF)',
+              cursor: 'pointer', padding: 0, marginLeft: 4, fontWeight: 700,
+            }}
+          >Clear</button>
+        </div>
+      )}
+
       {voiceMode ? (
         <VoiceRecorder
           onComplete={(b, sec) => void handleVoice(b, sec)}
@@ -283,6 +381,36 @@ export default function MessageComposer({ conversationId, selfId, replyTo, onCle
               <ImageIcon size={18} />
             </button>
           )}
+          <button type="button" onClick={() => setShowTemplates((v) => !v)} style={iconBtn} aria-label="Templates" title="Templates">
+            <FileText size={18} />
+          </button>
+          <button
+            type="button"
+            onClick={() => setShowScheduleInput((v) => !v)}
+            style={iconBtn}
+            aria-label="Schedule Send"
+            title="Schedule Send"
+          >
+            <Calendar size={18} />
+          </button>
+          <button
+            type="button"
+            onClick={() => setShowExpiry((v) => !v)}
+            style={iconBtn}
+            aria-label="Set Expiry"
+            title="Set Expiry"
+          >
+            <Clock size={18} />
+          </button>
+          <button
+            type="button"
+            onClick={() => setShowScheduled(true)}
+            style={iconBtn}
+            aria-label="View Scheduled Messages"
+            title="View Scheduled Messages"
+          >
+            <span style={{ fontSize: '0.72rem', fontWeight: 700 }}>List</span>
+          </button>
           <textarea
             ref={inputRef}
             value={text}
@@ -317,6 +445,55 @@ export default function MessageComposer({ conversationId, selfId, replyTo, onCle
         </div>
       )}
 
+      {showScheduleInput && !voiceMode && (
+        <div
+          style={{
+            marginTop: 8, padding: 10, borderRadius: 8,
+            background: 'var(--surface-2, #162230)',
+            border: '1px solid var(--surface-3, #1D2D3E)',
+            display: 'flex', flexDirection: 'column', gap: 6,
+          }}
+        >
+          <label style={{ fontSize: '0.74rem', color: 'var(--grey-400, #A8B4C0)' }} htmlFor="schedule-at-input">
+            Send At
+          </label>
+          <input
+            id="schedule-at-input"
+            type="datetime-local"
+            value={scheduleAt}
+            onChange={(e) => setScheduleAt(e.target.value)}
+            aria-label="Schedule Date And Time"
+            style={{
+              padding: '6px 8px', borderRadius: 6,
+              border: '1px solid var(--surface-3, #1D2D3E)',
+              background: 'var(--surface-1, #0F1923)',
+              color: 'var(--white, #FFFFFF)', fontSize: '0.85rem',
+            }}
+          />
+          <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
+            <button
+              type="button"
+              onClick={() => { setShowScheduleInput(false); setScheduleAt(''); }}
+              style={{
+                padding: '6px 10px', borderRadius: 6,
+                border: '1px solid var(--surface-3, #1D2D3E)',
+                background: 'transparent', color: 'var(--white, #FFFFFF)',
+                cursor: 'pointer', fontSize: '0.78rem',
+              }}
+            >Cancel</button>
+            <button
+              type="button"
+              onClick={() => void handleSchedule()}
+              style={{
+                padding: '6px 10px', borderRadius: 6, border: 0,
+                background: 'var(--teal, #00C4BC)', color: '#000',
+                cursor: 'pointer', fontSize: '0.78rem', fontWeight: 700,
+              }}
+            >Schedule</button>
+          </div>
+        </div>
+      )}
+
       {!voiceMode && (
         <div style={{ fontSize: '0.72rem', color: 'var(--grey-400, #A8B4C0)', textAlign: 'right', marginTop: 4 }}>
           {text.length} / {MAX_LEN}
@@ -338,6 +515,23 @@ export default function MessageComposer({ conversationId, selfId, replyTo, onCle
           onClose={() => setShowGif(false)}
           onUnavailable={() => setGifAvailable(false)}
         />
+      )}
+      {showTemplates && (
+        <TemplatesMenu
+          draftText={text}
+          onPick={(body) => insertAtCursor(body)}
+          onClose={() => setShowTemplates(false)}
+        />
+      )}
+      {showExpiry && (
+        <ExpiryPicker
+          currentSeconds={pendingExpirySeconds}
+          onPick={(s) => setPendingExpirySeconds(s)}
+          onClose={() => setShowExpiry(false)}
+        />
+      )}
+      {showScheduled && (
+        <ScheduledMessageList onClose={() => setShowScheduled(false)} />
       )}
     </div>
   );
