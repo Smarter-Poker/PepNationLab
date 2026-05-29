@@ -691,11 +691,21 @@ a:hover { color: var(--teal-dark); }
   padding-top: 64px;
   min-height: 100vh;
   background: var(--black);
+  /* Stretch to fill any remaining vertical space so no background gap appears */
+  flex: 1;
 }
 
 @media (max-width: 1024px) {
   .sidebar { transform: translateX(-100%); }
+  /* On mobile there is no sidebar margin — main fills the full width */
+  .dashboard-main {
+    margin-left: 0 !important;
+    width: 100% !important;
+    /* Ensure the page background fills all the way to bottom of viewport */
+    min-height: 100dvh;
+  }
 }
+
 
 /* ============================================
    STATUS INDICATORS
@@ -1062,5 +1072,21 @@ html {
 
   .message-card-hover:hover {
     transform: none !important;
+  }
+}
+
+/* Faceted Storefront Toolbar — stack vertically on phones */
+@media (max-width: 640px) {
+  .storefront-toolbar {
+    flex-direction: column !important;
+    align-items: stretch !important;
+  }
+  .storefront-toolbar > * {
+    width: 100%;
+    min-width: 0;
+  }
+  .storefront-toolbar select,
+  .storefront-toolbar button {
+    width: 100% !important;
   }
 }
