@@ -24,6 +24,7 @@ const CheckoutSchema = z.object({
   couponCode: z.string().optional().nullable(),
   idempotencyKey: z.string().uuid().optional().nullable(),
   wholesale: z.boolean().optional(),
+  creditRedeemed: z.number().min(0).optional(),
 });
 
 export async function POST(request: NextRequest) {
@@ -69,6 +70,7 @@ export async function POST(request: NextRequest) {
       couponCode,
       idempotencyKey,
       wholesale: explicitWholesale,
+      creditRedeemed: requestedCredit,
     } = validation.data;
 
     if (fulfillmentMethod === 'ship' && !shippingAddress) {
@@ -378,7 +380,33 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const total = Math.max(0, subtotal - discountAmount) + shippingCost;
+    const grossTotal = Math.max(0, subtotal - discountAmount) + shippingCost;
+
+    // Validate requested store credit against the server-side balance view.
+    // Cap at the order gross so a researcher can never go negative via credit.
+    let creditRedeemed = 0;
+    if (requestedCredit && requestedCredit > 0) {
+      const { data: balanceRow, error: balanceErr } = await serviceSupabase
+        .from('store_credit_balances')
+        .select('balance')
+        .eq('user_id', user.id)
+        .maybeSingle();
+      if (balanceErr) {
+        return NextResponse.json({ error: 'Failed To Verify Store Credit Balance.' }, { status: 500 });
+      }
+      const available = Number(balanceRow?.balance ?? 0);
+      if (available < requestedCredit) {
+        return NextResponse.json(
+          { error: `Insufficient Store Credit (Have $${available.toFixed(2)}, Need $${requestedCredit.toFixed(2)}).` },
+          { status: 422 }
+        );
+      }
+      creditRedeemed = Math.min(requestedCredit, grossTotal);
+      // Round to two decimals to avoid float-vs-numeric drift on the DB row.
+      creditRedeemed = Math.round(creditRedeemed * 100) / 100;
+    }
+
+    const total = Math.max(0, grossTotal - creditRedeemed);
 
     // Record the Layer 4 (checkout) disclaimer audit row BEFORE the order
     // insert. If the audit fails we refuse to place the order — research-only
@@ -431,6 +459,7 @@ export async function POST(request: NextRequest) {
         discount_amount: discountAmount,
         coupon_code: appliedCouponCode,
         total: total,
+        credits_redeemed: creditRedeemed,
         idempotency_key: idempotencyKey ?? null,
       })
       .select('id, total')
@@ -484,6 +513,27 @@ export async function POST(request: NextRequest) {
     // the order insert; no JS-side increment needed.
     void appliedCouponId;
 
+    // Atomically debit the buyer's store credit if any was applied. If this
+    // fails we roll back the order so the ledger and the credit balance never
+    // disagree.
+    if (creditRedeemed > 0) {
+      const { error: redeemErr } = await serviceSupabase.rpc('redeem_store_credit', {
+        p_user_id: user.id,
+        p_amount: creditRedeemed,
+        p_order_id: order.id,
+        p_description: `Order Credit Redemption (${order.id.slice(0, 8)})`,
+      });
+      if (redeemErr) {
+        await serviceSupabase.from('order_items').delete().eq('order_id', order.id);
+        await serviceSupabase.from('orders').delete().eq('id', order.id);
+        console.error('Store Credit Redemption Failed:', redeemErr);
+        return NextResponse.json(
+          { error: 'Store Credit Redemption Failed. No Charge Has Been Made.' },
+          { status: 422 }
+        );
+      }
+    }
+
     // Checkout disclaimer audit row was recorded above, prior to the order
     // insert, so a successful order implies a complete four-layer trail.
 
@@ -491,6 +541,7 @@ export async function POST(request: NextRequest) {
       success: true,
       orderId: order.id,
       total: Number(order.total) || 0,
+      creditRedeemed,
     });
 
   } catch (error) {

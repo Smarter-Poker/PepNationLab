@@ -18,18 +18,20 @@ export default function AgentOverview({
   copiedStorefront,
   onNavigate
 }: AgentOverviewProps) {
+  /* Stacked vertical layout — 6 full-width rows + bottom share section
+     Image is 1022 x 769. Rows are evenly spaced in the top ~75% of the image. */
   const cardZones = [
-    { id: 'storefront', top: '2%', left: '1.5%', width: '47%', height: '18%',
+    { id: 'storefront', top: '1%', left: '2%', width: '96%', height: '11%',
       action: () => window.open(storefrontUrl, '_blank', 'noopener,noreferrer') },
-    { id: 'researchers', top: '2%', left: '51.5%', width: '47%', height: '18%',
+    { id: 'researchers', top: '14%', left: '2%', width: '96%', height: '11%',
       action: () => onNavigate?.('Researchers') },
-    { id: 'inventory', top: '23%', left: '1.5%', width: '47%', height: '18%',
+    { id: 'inventory', top: '27%', left: '2%', width: '96%', height: '11%',
       action: () => onNavigate?.('Inventory') },
-    { id: 'products', top: '23%', left: '51.5%', width: '47%', height: '18%',
+    { id: 'products', top: '40%', left: '2%', width: '96%', height: '11%',
       action: () => onNavigate?.('Store Products') },
-    { id: 'sales', top: '44%', left: '1.5%', width: '47%', height: '18%',
+    { id: 'sales', top: '53%', left: '2%', width: '96%', height: '11%',
       action: () => onNavigate?.('Sales & Carts') },
-    { id: 'orders', top: '44%', left: '51.5%', width: '47%', height: '18%',
+    { id: 'orders', top: '66%', left: '2%', width: '96%', height: '11%',
       action: () => onNavigate?.('Orders') },
   ];
 
@@ -50,15 +52,15 @@ export default function AgentOverview({
         .dash-zone {
           position: absolute;
           cursor: pointer;
-          border-radius: 6px;
+          border-radius: 4px;
           transition: background 0.15s ease;
           z-index: 2;
         }
         .dash-zone:hover {
-          background: rgba(0, 196, 188, 0.06);
+          background: rgba(255, 255, 255, 0.04);
         }
         .dash-zone:active {
-          background: rgba(0, 196, 188, 0.12);
+          background: rgba(255, 255, 255, 0.08);
         }
         .dash-url {
           position: absolute;
@@ -83,7 +85,7 @@ export default function AgentOverview({
           display: block;
         }
         .dash-btn-zone:hover {
-          background: rgba(255,255,255,0.04);
+          background: rgba(255,255,255,0.06);
           border-radius: 4px;
         }
       `}} />
@@ -96,7 +98,7 @@ export default function AgentOverview({
           draggable={false}
         />
 
-        {/* 6 card clickable zones */}
+        {/* 6 stacked card clickable zones */}
         {cardZones.map((zone) => (
           <div
             key={zone.id}
@@ -110,15 +112,15 @@ export default function AgentOverview({
           />
         ))}
 
-        {/* Dynamic storefront URL — inside the dark input frame */}
+        {/* Dynamic storefront URL — inside the dark input frame at bottom */}
         <span
           className="dash-url"
           style={{
-            bottom: '6%',
-            left: '6%',
-            width: '50%',
+            bottom: '4.5%',
+            left: '5%',
+            width: '55%',
             height: '5%',
-            fontSize: 'clamp(0.65rem, 2vw, 1.05rem)',
+            fontSize: 'clamp(0.6rem, 1.8vw, 1rem)',
           }}
         >
           {storefrontUrl}
@@ -129,7 +131,7 @@ export default function AgentOverview({
           className="dash-btn-zone"
           onClick={copyStorefrontLink}
           aria-label={copiedStorefront ? 'Link Copied' : 'Copy Link'}
-          style={{ bottom: '7%', right: '20%', width: '14%', height: '5.5%' }}
+          style={{ bottom: '3.5%', right: '16%', width: '14%', height: '5.5%' }}
         />
 
         {/* Invisible clickable zone over "Visit Store" button */}
@@ -139,7 +141,7 @@ export default function AgentOverview({
           rel="noopener noreferrer"
           className="dash-btn-zone"
           aria-label="Visit Store"
-          style={{ bottom: '7%', right: '5%', width: '13%', height: '5.5%' }}
+          style={{ bottom: '3.5%', right: '1.5%', width: '12%', height: '5.5%' }}
         />
       </div>
     </>
