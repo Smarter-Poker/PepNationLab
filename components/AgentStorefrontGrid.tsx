@@ -110,6 +110,8 @@ interface Props {
   agentId?: string | null;
   /** product_id -> public URL of the most-recent active lot's COA document. */
   coaByProductId?: Record<string, string>;
+  /** When false, volume tier markups are not applied — all quantities use the base per-vial price. */
+  volumePricingEnabled?: boolean;
 }
 
 const containerVariants: Variants = {
@@ -195,7 +197,7 @@ function pickDefaultVariant(variants: ProductItem[]): string {
   return variants[variants.length - 1]?.id || variants[0].id;
 }
 
-export default function AgentStorefrontGrid({ products, inventoryMap, primaryColor, agentSlug, bundles = [], initialWishlistIds = [], agentId = null, coaByProductId = {} }: Props) {
+export default function AgentStorefrontGrid({ products, inventoryMap, primaryColor, agentSlug, bundles = [], initialWishlistIds = [], agentId = null, coaByProductId = {}, volumePricingEnabled = true }: Props) {
   const [wishlist, setWishlist] = useState<Set<string>>(() => new Set(initialWishlistIds));
   const toggleWishlist = useCallback(async (productId: string) => {
     if (!productId) return;
@@ -930,13 +932,17 @@ export default function AgentStorefrontGrid({ products, inventoryMap, primaryCol
                     : activeV.retail_price;
                   const basePrice = rawPrice / 10;
 
-                  // Dynamic pricing tiers
-                  const tiers = [
-                    { min: 1, max: 2, pct: 20 },
-                    { min: 3, max: 5, pct: 15 },
-                    { min: 6, max: 9, pct: 10 },
-                    { min: 10, max: Infinity, pct: 0 },
-                  ];
+                  // Dynamic pricing tiers (only when agent has volume pricing enabled)
+                  const tiers = volumePricingEnabled
+                    ? [
+                        { label: '1–2 Vials', min: 1, max: 2, pct: 20 },
+                        { label: '3–5 Vials', min: 3, max: 5, pct: 15 },
+                        { label: '6–9 Vials', min: 6, max: 9, pct: 10 },
+                        { label: '10+ Vials — Best Price', min: 10, max: Infinity, pct: 0 },
+                      ]
+                    : [
+                        { label: 'All Quantities — Flat Price', min: 1, max: Infinity, pct: 0 },
+                      ];
 
                   const getUnitPrice = (q: number) => {
                     const t = tiers.find(t => q >= t.min && q <= t.max);
@@ -1045,9 +1051,9 @@ export default function AgentStorefrontGrid({ products, inventoryMap, primaryCol
                               background: isActive ? `${primaryColor}10` : 'transparent'
                             }}>
                               <span style={{ fontSize: '0.85rem', color: isActive ? 'var(--white)' : 'var(--grey-400)', fontWeight: isActive ? 600 : 400 }}>
-                                {t.max === Infinity ? `${t.min}+ vials` : `${t.min}-${t.max} vials`}
+                                {t.label ?? (t.max === Infinity ? `${t.min}+ vials` : `${t.min}-${t.max} vials`)}
                                 {t.pct > 0 && <span style={{ color: '#F6AD55', marginLeft: 8, fontSize: '0.75rem' }}>+{t.pct}%</span>}
-                                {t.pct === 0 && <span style={{ color: 'var(--teal)', marginLeft: 8, fontSize: '0.75rem' }}>Best Price</span>}
+                                {t.pct === 0 && volumePricingEnabled && <span style={{ color: 'var(--teal)', marginLeft: 8, fontSize: '0.75rem' }}>Best Price</span>}
                               </span>
                               <span style={{
                                 fontSize: '0.95rem', fontWeight: 700, fontFamily: 'var(--font-brand)',

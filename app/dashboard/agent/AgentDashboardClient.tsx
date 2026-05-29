@@ -48,6 +48,7 @@ interface AgentProfile {
   shippo_api_key: string | null;
   shippo_api_key_present?: boolean;
   shippo_api_key_last4?: string | null;
+  volume_pricing_enabled?: boolean | null;
 }
 
 interface Researcher {
@@ -108,6 +109,7 @@ export default function AgentDashboardClient({
   const [venmoHandle, setVenmoHandle] = useState(agentProfile?.payment_handles?.venmo ?? '');
   const [applePayHandle, setApplePayHandle] = useState(agentProfile?.payment_handles?.apple_pay ?? '');
   const [shippoApiKey, setShippoApiKey] = useState(agentProfile?.shippo_api_key ?? '');
+  const [volumePricingEnabled, setVolumePricingEnabled] = useState<boolean>(agentProfile?.volume_pricing_enabled !== false);
 
   // Setup Form State (If no profile exists yet)
   const [setupDisplayName, setSetupDisplayName] = useState('');
@@ -854,6 +856,8 @@ export default function AgentDashboardClient({
               shippoKeyLast4={agentProfile.shippo_api_key_last4 ?? null}
               warehouseAddress={agentProfile.warehouse_address}
               isActive={agentProfile.is_active}
+              volumePricingEnabled={volumePricingEnabled}
+              setVolumePricingEnabled={setVolumePricingEnabled}
               agentId={userProfile.id}
             />
           </div>

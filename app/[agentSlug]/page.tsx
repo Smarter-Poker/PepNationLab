@@ -28,7 +28,8 @@ export default async function AgentStorefrontPage({ params }: Props) {
       bio,
       qr_code_url,
       qr_code_data,
-      is_active
+      is_active,
+      volume_pricing_enabled
     `)
     .ilike('slug', agentSlug)
     .single();
@@ -262,6 +263,7 @@ export default async function AgentStorefrontPage({ params }: Props) {
             initialWishlistIds={initialWishlistIds}
             agentId={agent.id}
             coaByProductId={coaByProductId}
+            volumePricingEnabled={(agent as any).volume_pricing_enabled !== false}
           />
         </div>
       </section>

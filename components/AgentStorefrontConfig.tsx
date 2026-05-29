@@ -36,6 +36,9 @@ interface AgentStorefrontConfigProps {
   warehouseAddress?: Record<string, any> | null;
   // Vacation mode — flips agent_profiles.is_active.
   isActive?: boolean | null;
+  // Volume (tiered) pricing — on by default, agents can disable.
+  volumePricingEnabled: boolean;
+  setVolumePricingEnabled: (val: boolean) => void;
   agentId: string;
 }
 
@@ -55,6 +58,8 @@ export default function AgentStorefrontConfig({
   shippoKeyLast4 = null,
   warehouseAddress,
   isActive,
+  volumePricingEnabled,
+  setVolumePricingEnabled,
   agentId,
 }: AgentStorefrontConfigProps) {
   const [loading, setLoading] = React.useState(false);
@@ -145,6 +150,7 @@ export default function AgentStorefrontConfig({
         tagline: tagline.trim() || null,
         bio: bio.trim() || null,
         primary_color: primaryColor,
+        volume_pricing_enabled: volumePricingEnabled,
         payment_handles: {
           zelle: zelleHandle.trim(),
           cashapp: cashappHandle.trim(),
@@ -193,38 +199,81 @@ export default function AgentStorefrontConfig({
               Configure Your Public-Facing White-Label Storefront.
             </p>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
-            <span style={{ fontSize: '0.78rem', color: vacationToggle ? 'var(--teal)' : 'var(--grey-400)' }}>
-              {vacationToggle ? 'Open For Business' : 'Vacation Mode'}
-            </span>
-            <button
-              type="button"
-              onClick={() => handleVacationToggle(!vacationToggle)}
-              aria-label="Toggle Vacation Mode"
-              style={{
-                width: 44,
-                height: 24,
-                borderRadius: 12,
-                background: vacationToggle ? 'var(--teal)' : 'var(--surface-3)',
-                border: '1px solid rgba(255,255,255,0.1)',
-                position: 'relative',
-                cursor: 'pointer',
-                transition: 'background 0.2s',
-              }}
-            >
-              <span
-                style={{
-                  position: 'absolute',
-                  top: 2,
-                  left: vacationToggle ? 22 : 2,
-                  width: 18,
-                  height: 18,
-                  borderRadius: '50%',
-                  background: 'var(--black)',
-                  transition: 'left 0.2s',
+          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-5)' }}>
+
+            {/* Volume Pricing Toggle */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+              <div style={{ textAlign: 'right' }}>
+                <span style={{ fontSize: '0.78rem', color: volumePricingEnabled ? '#C0B8A8' : 'var(--grey-400)', display: 'block', lineHeight: 1.2 }}>
+                  {volumePricingEnabled ? 'Volume Pricing On' : 'Volume Pricing Off'}
+                </span>
+                <span style={{ fontSize: '0.68rem', color: 'var(--grey-500)' }}>
+                  {volumePricingEnabled ? 'Tiers active' : 'Flat per-vial price'}
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={async () => {
+                  const next = !volumePricingEnabled;
+                  setVolumePricingEnabled(next);
+                  const supabase = createClient();
+                  const { error } = await supabase
+                    .from('agent_profiles')
+                    .update({ volume_pricing_enabled: next })
+                    .eq('id', agentId);
+                  if (error) {
+                    setVolumePricingEnabled(!next);
+                    const { toast } = await import('sonner');
+                    toast.error('Failed to update volume pricing setting');
+                  } else {
+                    const { toast } = await import('sonner');
+                    toast.success(next ? 'Volume pricing enabled' : 'Volume pricing disabled');
+                  }
                 }}
-              />
-            </button>
+                aria-label="Toggle Volume Pricing"
+                style={{
+                  width: 44, height: 24, borderRadius: 12,
+                  background: volumePricingEnabled ? '#C0B8A8' : 'var(--surface-3)',
+                  border: '1px solid rgba(255,255,255,0.1)',
+                  position: 'relative', cursor: 'pointer', transition: 'background 0.2s',
+                }}
+              >
+                <span style={{
+                  position: 'absolute', top: 2,
+                  left: volumePricingEnabled ? 22 : 2,
+                  width: 18, height: 18, borderRadius: '50%',
+                  background: 'var(--black)', transition: 'left 0.2s',
+                }} />
+              </button>
+            </div>
+
+            {/* Divider */}
+            <div style={{ width: 1, height: 32, background: 'rgba(255,255,255,0.08)' }} />
+
+            {/* Vacation Mode Toggle */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+              <span style={{ fontSize: '0.78rem', color: vacationToggle ? 'var(--teal)' : 'var(--grey-400)' }}>
+                {vacationToggle ? 'Open For Business' : 'Vacation Mode'}
+              </span>
+              <button
+                type="button"
+                onClick={() => handleVacationToggle(!vacationToggle)}
+                aria-label="Toggle Vacation Mode"
+                style={{
+                  width: 44, height: 24, borderRadius: 12,
+                  background: vacationToggle ? 'var(--teal)' : 'var(--surface-3)',
+                  border: '1px solid rgba(255,255,255,0.1)',
+                  position: 'relative', cursor: 'pointer', transition: 'background 0.2s',
+                }}
+              >
+                <span style={{
+                  position: 'absolute', top: 2,
+                  left: vacationToggle ? 22 : 2,
+                  width: 18, height: 18, borderRadius: '50%',
+                  background: 'var(--black)', transition: 'left 0.2s',
+                }} />
+              </button>
+            </div>
           </div>
         </div>
 
