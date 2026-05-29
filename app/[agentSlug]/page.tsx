@@ -181,7 +181,7 @@ export default async function AgentStorefrontPage({ params }: Props) {
       <nav style={{
         height: 64,
         background: 'var(--black-2)',
-        borderBottom: `1px solid ${primaryColor}30`,
+        borderBottom: '1px solid rgba(192,184,168,0.2)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
