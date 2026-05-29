@@ -7,20 +7,24 @@ export const dynamic = 'force-dynamic';
 
 const BATCH_LIMIT = 100;
 
-function hourlyPartitionKey(d: Date = new Date()): string {
-  // YYYY-MM-DDTHH — cron runs every 5 minutes; the hourly partition lets a
-  // re-trigger inside the same UTC hour short-circuit cleanly.
-  return d.toISOString().slice(0, 13);
+function fivemPartitionKey(d: Date = new Date()): string {
+  // YYYY-MM-DDTHH:MM rounded down to the nearest 5-minute slot. Cron fires
+  // every 5 minutes and each firing must do real work, so the partition key
+  // is granular enough that each invocation gets its own row in cron_runs.
+  // Concurrent re-triggers inside the same 5-minute window still dedupe.
+  const hh = d.toISOString().slice(0, 13);
+  const slot = Math.floor(d.getUTCMinutes() / 5) * 5;
+  return `${hh}:${String(slot).padStart(2, '0')}`;
 }
 
 export async function GET(req: NextRequest) {
   const unauth = assertCronAuth(req);
   if (unauth) return unauth;
 
-  const partitionKey = hourlyPartitionKey();
+  const partitionKey = fivemPartitionKey();
   const claim = await claimCronRun('webhooks_dispatch', partitionKey);
   if (!claim) {
-    return Response.json({ skipped: true, reason: 'already_ran_this_hour' });
+    return Response.json({ skipped: true, reason: 'already_ran_this_slot' });
   }
 
   let processed = 0;

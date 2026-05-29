@@ -194,7 +194,17 @@ export default function TemplatesMenu({ draftText, onPick, onClose }: Props) {
           >
             <button
               type="button"
-              onClick={() => { onPick(row.body); onClose(); }}
+              onClick={() => {
+                // Audit3 fix: fire 'use' so the server can bump usage_count.
+                // Best-effort -- failures don't block the pick.
+                void fetch('/api/messenger/template', {
+                  method: 'POST',
+                  headers: { 'content-type': 'application/json' },
+                  body: JSON.stringify({ action: 'use', id: row.id }),
+                }).catch(() => undefined);
+                onPick(row.body);
+                onClose();
+              }}
               aria-label={`Insert Template ${row.title}`}
               style={{
                 flex: 1, textAlign: 'left',

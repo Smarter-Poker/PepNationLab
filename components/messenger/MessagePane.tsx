@@ -614,19 +614,48 @@ export default function MessagePane({ userId, activeCall, setActiveCall }: Props
     }
   }, []);
 
+  // Audit3 fix: pending jump survives the activeId switch. The messages
+  // effect re-fires when activeId changes; once messages render we look for
+  // a pending jump and execute it. Replaces the fragile 800ms setTimeout
+  // race that silently failed on slow networks.
+  const [pendingJumpMessageId, setPendingJumpMessageId] = useState<string | null>(null);
+
   const handleJumpAcrossConv = useCallback(
     (conversationId: string, messageId: string) => {
       setBookmarksOpen(false);
       if (conversationId !== activeId) {
+        setPendingJumpMessageId(messageId);
         setActive(conversationId);
-        // Defer scroll until messages load.
-        setTimeout(() => handleJumpToMessage(messageId), 800);
       } else {
         handleJumpToMessage(messageId);
       }
     },
     [activeId, setActive, handleJumpToMessage],
   );
+
+  // Audit3 fix: consume the pending cross-conv jump once messages for the
+  // new activeId have actually rendered into the DOM. Polls 100ms up to ~5s
+  // so it tolerates slow networks much better than the previous fixed
+  // 800ms setTimeout race.
+  useEffect(() => {
+    if (!pendingJumpMessageId || !activeId) return;
+    let attempts = 0;
+    const interval = setInterval(() => {
+      attempts += 1;
+      const el = document.querySelector(`[data-msg-id="${pendingJumpMessageId}"]`);
+      if (el) {
+        handleJumpToMessage(pendingJumpMessageId);
+        setPendingJumpMessageId(null);
+        clearInterval(interval);
+        return;
+      }
+      if (attempts >= 50) {
+        setPendingJumpMessageId(null);
+        clearInterval(interval);
+      }
+    }, 100);
+    return () => clearInterval(interval);
+  }, [pendingJumpMessageId, activeId, handleJumpToMessage]);
 
   if (!activeId) {
     return (

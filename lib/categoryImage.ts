@@ -200,28 +200,75 @@ export function getCategoryVialImage(category: string): string {
 
 // ─── Title Case helper ───────────────────────────────────────────────────────
 // Converts any product name to Title Case (first letter of each word capitalised).
-// Preserves known acronyms and special tokens (BPC, TB, GHK, NAD, etc.).
+// Preserves known acronyms and special tokens in any context:
+//   • Full word:  "BPC" → "BPC"
+//   • Hyphenated: "CJC-1295" → "CJC-1295"  (each part checked individually)
+//   • Suffixed:   "TB500"   → "TB500"       (alpha prefix checked)
+//   • Prefixed:   "1MQ"     → "1MQ"         (all-alpha content checked)
 const PRESERVE_UPPERCASE = new Set([
-  'BPC', 'TB', 'GHK', 'NAD', 'IGF', 'PEG', 'MGF', 'HMG', 'HGH', 'CJC', 'IPA',
-  'GLP', 'GHK-CU', 'GLOW', 'KLOW', 'DSIP', 'LL', 'PT', 'MT', 'AOD', 'KPV',
-  'MOTS', 'MOD', 'GRF', 'MK', 'SNAP', 'DAC', 'LR3',
+  // GLP-1 / weight-loss
+  'GLP', 'AOD', 'HGH', 'GHK',
+  // Healing / recovery
+  'BPC', 'TB', 'KPV', 'LL',
+  // Growth hormone peptides
+  'CJC', 'IPA', 'DAC', 'GRF', 'MOD', 'GHRP', 'HMG', 'GH',
+  // Muscle / IGF
+  'IGF', 'PEG', 'MGF', 'LR',
+  // Anti-aging
+  'NAD', 'GHK-CU',
+  // Sexual health
+  'PT', 'HCG',
+  // Skin / cosmetics
+  'MT', 'SNAP',
+  // Nootropics
+  'MK', 'VIP', 'SS',
+  // Blends
+  'GLOW', 'KLOW',
+  // Other acronyms
+  'DSIP', 'MOTS', 'MQ', 'AHK', 'AICAR', 'FOXO', 'DRI', 'LR3',
+  // Numbers embedded in names (all-alpha portion)
+  'MQ',   // 1MQ in 5-Amino-1MQ
+  'AA',   // 191AA in HGH 191AA
 ]);
 
 export function toTitleCase(name: string): string {
   if (!name) return name;
-  // Split on spaces, hyphens kept as part of token, parentheses boundaries
+
   return name
     .split(' ')
     .map(word => {
-      // Keep parenthetical suffixes as-is
+      // Fully parenthetical suffix e.g. "(Somatropin)" — leave as-is
       if (word.startsWith('(') && word.endsWith(')')) return word;
-      const upper = word.toUpperCase();
-      // Preserve full uppercase acronyms
-      if (PRESERVE_UPPERCASE.has(upper)) return upper;
-      // Capitalise first letter, lowercase rest — but protect hyphens
+
+      // Whole-word exact match (e.g. "BPC", "GLOW", "NAD+" stripped)
+      const upper = word.replace(/[^A-Za-z]/g, '').toUpperCase();
+      if (upper && PRESERVE_UPPERCASE.has(upper)) {
+        // Re-compose preserving non-alpha chars like "+" in "NAD+"
+        return word.toUpperCase();
+      }
+
+      // Split on hyphens, process each segment individually
       return word
         .split('-')
-        .map(part => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
+        .map(part => {
+          if (!part) return part;
+
+          // 1. Whole part exact match (e.g. "CJC", "DAC", "1295" skips)
+          if (PRESERVE_UPPERCASE.has(part.toUpperCase())) return part.toUpperCase();
+
+          // 2. Leading-alpha prefix check — covers "CJC" in "CJC-1295",
+          //    "TB" in "TB500", "GHRP" in "GHRP-2"
+          const leadAlpha = (part.match(/^[A-Za-z]+/)?.[0] ?? '').toUpperCase();
+          if (leadAlpha && PRESERVE_UPPERCASE.has(leadAlpha)) return part.toUpperCase();
+
+          // 3. All-alpha content check — covers "1MQ" (alpha = "MQ"),
+          //    "191AA" (alpha = "AA")
+          const allAlpha = part.replace(/[^A-Za-z]/g, '').toUpperCase();
+          if (allAlpha.length >= 2 && PRESERVE_UPPERCASE.has(allAlpha)) return part.toUpperCase();
+
+          // 4. Standard title-case: capitalise first letter, lower the rest
+          return part.charAt(0).toUpperCase() + part.slice(1).toLowerCase();
+        })
         .join('-');
     })
     .join(' ');

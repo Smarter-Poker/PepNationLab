@@ -43,6 +43,14 @@ export default function ThreadDrawer({ threadParentId, selfId, onClose }: Props)
 
   useEffect(() => { void load(); }, [load]);
 
+  // Audit3 fix: Escape key closes the drawer (parity with BookmarksDrawer,
+  // BlockList, ReportModal).
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [onClose]);
+
   const handleSend = async () => {
     const trimmed = text.trim();
     if (!trimmed || sending) return;

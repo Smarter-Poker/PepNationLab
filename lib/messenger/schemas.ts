@@ -216,10 +216,21 @@ export const TemplateDeleteSchema = z.object({
 });
 export type TemplateDeleteInput = z.infer<typeof TemplateDeleteSchema>;
 
+// Audit3 fix: usage_count column on messenger_templates was never bumped,
+// making it a dead column and breaking the "most used templates" sort in
+// list-templates. Add a `use` action that the TemplatesMenu fires when the
+// user picks a template.
+export const TemplateUseSchema = z.object({
+  action: z.literal('use'),
+  id: z.string().uuid(),
+});
+export type TemplateUseInput = z.infer<typeof TemplateUseSchema>;
+
 export const TemplateActionSchema = z.discriminatedUnion('action', [
   TemplateCreateSchema,
   TemplateUpdateSchema,
   TemplateDeleteSchema,
+  TemplateUseSchema,
 ]);
 export type TemplateActionInput = z.infer<typeof TemplateActionSchema>;
 

@@ -66,6 +66,27 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ template: updated });
   }
 
+  // Audit3 fix: 'use' bumps usage_count so list-templates can sort by
+  // most-used. Service role write, scoped to the caller's templates.
+  if (parsed.data.action === 'use') {
+    const { data: existingUse } = await svc
+      .from('messenger_templates')
+      .select('id, user_id, usage_count')
+      .eq('id', parsed.data.id)
+      .maybeSingle();
+    if (!existingUse) return NextResponse.json({ error: 'Not Found' }, { status: 404 });
+    if (existingUse.user_id !== user.id) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+    const nextCount = (existingUse.usage_count as number | null ?? 0) + 1;
+    const { error: upErr } = await svc
+      .from('messenger_templates')
+      .update({ usage_count: nextCount })
+      .eq('id', parsed.data.id);
+    if (upErr) return NextResponse.json({ error: upErr.message }, { status: 500 });
+    return NextResponse.json({ ok: true, usage_count: nextCount });
+  }
+
   // delete
   const { data: existing } = await svc
     .from('messenger_templates')

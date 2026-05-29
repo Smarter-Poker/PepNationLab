@@ -38,6 +38,13 @@ export default function CallOverlay({ call, selfId, onClose }: Props) {
           setError('Calls Not Configured');
           return;
         }
+        // Audit3 fix: 410 means the call ended while we were trying to join.
+        // Auto-close the overlay instead of leaving the user stuck on the
+        // 'Connecting To Call' spinner.
+        if (res.status === 410) {
+          onClose();
+          return;
+        }
         if (!res.ok) {
           setError('Could Not Join Call');
           return;
@@ -52,21 +59,37 @@ export default function CallOverlay({ call, selfId, onClose }: Props) {
     return () => {
       cancelled = true;
     };
-  }, [call.id]);
+  }, [call.id, onClose]);
 
   // Audit2 fix: if the user closes the tab without hanging up, the call row
   // stays 'active' forever and blocks future starts (via the new dedupe
   // check in call-signal start). Send a best-effort hangup via sendBeacon
   // during pagehide so the row transitions to 'ended'.
+  // Audit3 fix: iOS Safari's sendBeacon during pagehide has historically been
+  // unreliable; add a synchronous-ish keepalive fetch as a fallback so the
+  // hangup still flushes even when sendBeacon silently drops.
   useEffect(() => {
     const callId = call.id;
     const handler = () => {
+      const body = JSON.stringify({ action: 'hangup', callId });
+      let sent = false;
       try {
-        const body = JSON.stringify({ action: 'hangup', callId });
         const blob = new Blob([body], { type: 'application/json' });
-        navigator.sendBeacon?.('/api/messenger/call-signal', blob);
+        sent = Boolean(navigator.sendBeacon?.('/api/messenger/call-signal', blob));
       } catch {
-        // best effort -- nothing else to do once the page is unloading
+        sent = false;
+      }
+      if (!sent) {
+        try {
+          void fetch('/api/messenger/call-signal', {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body,
+            keepalive: true,
+          });
+        } catch {
+          // best effort -- nothing else to do once the page is unloading
+        }
       }
     };
     window.addEventListener('pagehide', handler);

@@ -41,7 +41,7 @@ export async function GET(req: NextRequest) {
   const partitionKey = fivemPartitionKey();
   const claim = await claimCronRun('push_dispatch', partitionKey);
   if (!claim) {
-    return Response.json({ skipped: true, reason: 'already_ran_this_hour' });
+    return Response.json({ skipped: true, reason: 'already_ran_this_slot' });
   }
 
   let processed = 0;

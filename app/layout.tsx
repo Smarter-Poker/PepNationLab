@@ -3,6 +3,7 @@ import "./globals.css";
 import { CartProvider } from "@/components/CartContext";
 import ImpersonationBanner from "@/components/ImpersonationBanner";
 import PwaInstallPrompt from "@/components/PwaInstallPrompt";
+import SiteDisclaimerGate from "@/components/SiteDisclaimerGate";
 import { Toaster } from "sonner";
 
 export const viewport: Viewport = {
@@ -52,9 +53,11 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
-        <CartProvider>
-          {children}
-        </CartProvider>
+        <SiteDisclaimerGate>
+          <CartProvider>
+            {children}
+          </CartProvider>
+        </SiteDisclaimerGate>
         <Toaster theme="dark" position="bottom-right" richColors />
         <ImpersonationBanner />
         <PwaInstallPrompt />
