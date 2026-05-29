@@ -19,7 +19,75 @@ interface ProductItem {
     backorder_days: number;
     unit_size: string | null;
     unit_measure: string | null;
+    inventory_count?: number | null;
+    low_stock_threshold?: number | null;
   };
+}
+
+type StockState =
+  | { kind: 'in_stock' }
+  | { kind: 'low_stock'; count: number }
+  | { kind: 'backorder'; days: number }
+  | { kind: 'out_of_stock' };
+
+function computeStockState(
+  agentCount: number,
+  masterInventory: number,
+  threshold: number,
+  backorderDays: number
+): StockState {
+  if (agentCount > threshold) return { kind: 'in_stock' };
+  if (agentCount > 0) return { kind: 'low_stock', count: agentCount };
+  // agentCount === 0 (or negative — clamp to 0 for display)
+  if (masterInventory > 0) return { kind: 'in_stock' };
+  if (backorderDays > 0) return { kind: 'backorder', days: backorderDays };
+  return { kind: 'out_of_stock' };
+}
+
+function StockBadge({ state }: { state: StockState }) {
+  let bg = 'rgba(0,196,188,0.15)';
+  let fg = '#00C4BC';
+  let border = 'rgba(0,196,188,0.40)';
+  let label = 'In Stock';
+  if (state.kind === 'low_stock') {
+    bg = 'rgba(246,173,85,0.15)';
+    fg = '#F6AD55';
+    border = 'rgba(246,173,85,0.40)';
+    label = `Only ${state.count} Left`;
+  } else if (state.kind === 'backorder') {
+    bg = 'rgba(168,180,192,0.15)';
+    fg = '#A8B4C0';
+    border = 'rgba(168,180,192,0.40)';
+    label = `Backordered: Ships In ${state.days} Days`;
+  } else if (state.kind === 'out_of_stock') {
+    bg = 'rgba(229,62,62,0.15)';
+    fg = '#E53E3E';
+    border = 'rgba(229,62,62,0.40)';
+    label = 'Out Of Stock';
+  }
+  return (
+    <span
+      className="stock-badge"
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: 4,
+        fontSize: '0.65rem',
+        fontWeight: 800,
+        letterSpacing: '0.05em',
+        textTransform: 'uppercase',
+        padding: '4px 10px',
+        borderRadius: 9999,
+        background: bg,
+        color: fg,
+        border: `1px solid ${border}`,
+        backdropFilter: 'blur(4px)',
+        whiteSpace: 'nowrap',
+      }}
+    >
+      {label}
+    </span>
+  );
 }
 
 export interface BundleConfig {
@@ -247,15 +315,15 @@ export default function AgentStorefrontGrid({ products, inventoryMap, primaryCol
           style={{ padding: '10px 14px', background: 'rgba(0,0,0,0.4)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 'var(--radius-md)', color: 'var(--white)', fontSize: '0.85rem', cursor: 'pointer', minWidth: 160 }}>
           <option value="all">All Categories</option>
           {categories.map(c => <option key={c} value={c}>{c}</option>)}
-          <option value="on_sale">🔥 On Sale</option>
+          <option value="on_sale">On Sale</option>
         </select>
         <select value={sortBy} onChange={e => setSortBy(e.target.value as typeof sortBy)}
           style={{ padding: '10px 14px', background: 'rgba(0,0,0,0.4)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 'var(--radius-md)', color: 'var(--white)', fontSize: '0.85rem', cursor: 'pointer', minWidth: 150 }}>
           <option value="popular">Most Popular</option>
-          <option value="name_asc">A → Z</option>
-          <option value="name_desc">Z → A</option>
-          <option value="price_low">Price: Low → High</option>
-          <option value="price_high">Price: High → Low</option>
+          <option value="name_asc">A to Z</option>
+          <option value="name_desc">Z to A</option>
+          <option value="price_low">Price: Low to High</option>
+          <option value="price_high">Price: High to Low</option>
         </select>
       </div>
 
@@ -376,6 +444,15 @@ export default function AgentStorefrontGrid({ products, inventoryMap, primaryCol
           const selectedVariantId = selectedVariants[group.name] || group.defaultVariantId;
           const activeVariant = group.variants.find(v => v.id === selectedVariantId) || group.variants[0];
 
+          // Stock state — based on the variant the storefront initially shows
+          // (the picked default). Master inventory + backorder come from
+          // the master products row, agent count from inventoryMap.
+          const stockAgentCount = Math.max(0, Number(inventoryMap[activeVariant.product_id] ?? 0));
+          const stockMasterInventory = Math.max(0, Number(activeVariant.products?.inventory_count ?? 0));
+          const stockThreshold = Math.max(0, Number(activeVariant.products?.low_stock_threshold ?? 5));
+          const stockBackorder = Math.max(0, Number(activeVariant.products?.backorder_days ?? 0));
+          const stockState = computeStockState(stockAgentCount, stockMasterInventory, stockThreshold, stockBackorder);
+
           return (
             <motion.div
               key={group.name} className="card-metal message-card-hover" variants={itemVariants}
@@ -437,6 +514,13 @@ export default function AgentStorefrontGrid({ products, inventoryMap, primaryCol
                     color: '#F56565', backdropFilter: 'blur(4px)'
                   }}>
                     Sale
+                  </div>
+                )}
+
+                {/* Stock badge — bottom left, hidden for default "In Stock" (cleaner look). */}
+                {stockState.kind !== 'in_stock' && (
+                  <div style={{ position: 'absolute', bottom: 12, left: 12 }}>
+                    <StockBadge state={stockState} />
                   </div>
                 )}
               </div>
@@ -561,7 +645,7 @@ export default function AgentStorefrontGrid({ products, inventoryMap, primaryCol
                             {name} {size && `(${size})`}
                           </div>
                           <div style={{ fontSize: '0.75rem', color: 'var(--grey-400)' }}>
-                            ${formatPrice(item.retail_price)} × {qty}
+                            ${formatPrice(item.retail_price)} x {qty}
                           </div>
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
@@ -574,7 +658,7 @@ export default function AgentStorefrontGrid({ products, inventoryMap, primaryCol
                             width: 22, height: 22, borderRadius: '50%', border: '1px solid rgba(255,255,255,0.2)',
                             background: 'transparent', color: 'var(--white)', cursor: 'pointer', fontSize: '0.85rem',
                             display: 'flex', alignItems: 'center', justifyContent: 'center'
-                          }}>−</button>
+                          }}>-</button>
                           <span style={{ color: 'var(--white)', fontWeight: 700, fontSize: '0.8rem', minWidth: 16, textAlign: 'center' }}>{qty}</span>
                           <button onClick={() => addToCart(variantId)} style={{
                             width: 22, height: 22, borderRadius: '50%', border: 'none',
@@ -785,7 +869,7 @@ export default function AgentStorefrontGrid({ products, inventoryMap, primaryCol
                               border: '1px solid rgba(255,255,255,0.2)', background: 'transparent',
                               color: 'var(--white)', cursor: 'pointer', fontSize: '1.1rem',
                               display: 'flex', alignItems: 'center', justifyContent: 'center'
-                            }}>−</button>
+                            }}>-</button>
                             <span style={{
                               minWidth: 44, textAlign: 'center', fontSize: '1.2rem', fontWeight: 800,
                               color: 'var(--white)', fontFamily: 'var(--font-brand)'
@@ -802,7 +886,7 @@ export default function AgentStorefrontGrid({ products, inventoryMap, primaryCol
                         {qty > 0 && (
                           <div style={{ flex: 1, textAlign: 'right' }}>
                             <div style={{ fontSize: '0.78rem', color: 'var(--grey-400)', marginBottom: 2 }}>
-                              ${unitPrice.toFixed(2)}/vial × {qty}
+                              ${unitPrice.toFixed(2)}/vial x {qty}
                             </div>
                             <div style={{
                               fontSize: '1.5rem', fontWeight: 800, color: primaryColor,
