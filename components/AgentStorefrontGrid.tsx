@@ -198,7 +198,7 @@ function pickDefaultVariant(variants: ProductItem[]): string {
     .sort((a, b) => parseFloat(a.products?.unit_size || '0') - parseFloat(b.products?.unit_size || '0'));
   if (above.length > 0) return above[0].id;
   // Fallback to largest available
-  return variants[variants.length - 1]?.id || variants[0].id;
+  return variants[variants.length - 1]?.id ?? variants[0]?.id ?? '';
 }
 
 export default function AgentStorefrontGrid({ products, inventoryMap, primaryColor, agentSlug, bundles = [], initialWishlistIds = [], agentId = null, coaByProductId = {}, volumePricingEnabled = true, isStorefrontOwner = false, viewerTier = 'tier_3' }: Props) {
@@ -1280,10 +1280,15 @@ export default function AgentStorefrontGrid({ products, inventoryMap, primaryCol
                         <button
                           onClick={() => {
                             const vId = selectedVariants[detailProduct.name] || detailProduct.defaultVariantId;
-                            // Commit pendingQty (what user dialed in) to the real cart
-                            setCartItems(prev => ({ ...prev, [vId]: pendingQty }));
+                            // Commit pendingQty (what user dialed in) to the real cart.
+                            // ADD to existing quantity rather than replace, so two modal
+                            // opens correctly accumulate (e.g., 10 + 10 = 20).
+                            setCartItems(prev => ({
+                              ...prev,
+                              [vId]: (prev[vId] || 0) + pendingQty,
+                            }));
                             setDetailProduct(null);
-                            setPendingQty(10); // Reset for next modal open
+                            setPendingQty(isStorefrontOwner ? 10 : 1); // Reset to minimum for next open
                             setShowCartFloat(true);
                           }}
                           style={{

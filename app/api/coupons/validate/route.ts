@@ -1,13 +1,16 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { createClient, createServiceClient } from '@/lib/supabase/server';
 import { validateCoupon } from '@/lib/coupons';
+import { assertSameOrigin } from '@/lib/csrf';
 
 /**
  * Validates a coupon code for the signed-in researcher at checkout.
  * Always returns HTTP 200 with a { valid, ... } body unless the caller
  * is unauthenticated. Order creation re-validates server-side.
  */
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
+  const csrf = assertSameOrigin(request);
+  if (csrf) return csrf;
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 

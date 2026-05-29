@@ -20,6 +20,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Invalid cart format' }, { status: 400 });
     }
 
+    // Hard cap at 50 items to prevent DB bloat from malicious payloads.
+    if (cart.length > 50) {
+      return NextResponse.json({ error: 'Cart Exceeds Maximum Item Limit (50).' }, { status: 400 });
+    }
+
     // Persist the fields the cart needs to re-hydrate accurately. weightOz
     // and sku are essential for shipping calc and storefront display, so they
     // must round-trip with the cart state.

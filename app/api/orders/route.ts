@@ -290,7 +290,15 @@ export async function POST(request: NextRequest) {
 
     for (const cartItem of items) {
       const dbProduct = dbProducts.find(p => p.id === cartItem.id);
-      if (!dbProduct) continue;
+      if (!dbProduct) {
+        // Hard fail: never silently drop a line item. If the product doesn't
+        // exist in the catalog, the cart is stale — reject and let the user
+        // refresh their storefront.
+        return NextResponse.json(
+          { error: `Product ID "${cartItem.id}" Is No Longer Available. Please Return To The Store And Refresh Your Cart.` },
+          { status: 400 }
+        );
+      }
 
       const baseCost = Number(dbProduct.base_cost);
       
@@ -388,6 +396,16 @@ export async function POST(request: NextRequest) {
     let appliedCouponCode: string | null = null;
     let appliedCouponId: string | null = null;
     const trimmedCouponCode = couponCode ? String(couponCode).trim().toUpperCase() : '';
+
+    // HARD RULE: Agents CANNOT use coupons on their own self-buy orders.
+    // Agent pricing is already the discounted tier cost — no stacking allowed.
+    if (isAgentSelfBuy && trimmedCouponCode) {
+      return NextResponse.json(
+        { error: 'Coupon Codes Cannot Be Applied To Agent Self-Buy Orders.' },
+        { status: 403 }
+      );
+    }
+
     if (trimmedCouponCode) {
       const couponAgentId = profile.referring_agent_id ?? agentProfile?.id ?? null;
       if (!couponAgentId) {
@@ -453,6 +471,15 @@ export async function POST(request: NextRequest) {
     // Validate requested store credit against the server-side balance view.
     // Cap at the order gross so a researcher can never go negative via credit.
     let creditRedeemed = 0;
+
+    // HARD RULE: Agents CANNOT apply store credit to their own self-buy orders.
+    if (isAgentSelfBuy && requestedCredit && requestedCredit > 0) {
+      return NextResponse.json(
+        { error: 'Store Credit Cannot Be Applied To Agent Self-Buy Orders.' },
+        { status: 403 }
+      );
+    }
+
     if (requestedCredit && requestedCredit > 0) {
       const { data: balanceRow, error: balanceErr } = await serviceSupabase
         .from('store_credit_balances')

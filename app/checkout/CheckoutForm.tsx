@@ -88,8 +88,11 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
 
   const clearAllCarts = () => {
     clearCart();
-    // Only clear THIS agent's cart key — never touch other agents' carts
+    // Remove BOTH per-agent cart keys: the checkout staging key and the
+    // live grid state key. This prevents ghost cart reload if user navigates
+    // back to the storefront after a successful order.
     try { localStorage.removeItem(storefrontCartKey); } catch { /* ok */ }
+    try { if (agentSlug) localStorage.removeItem(`cart_${agentSlug}`); } catch { /* ok */ }
     setStorefrontCart([]);
   };
 
@@ -376,9 +379,11 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
           } : null,
           fulfillmentMethod,
           paymentMethod,
-          couponCode: appliedCoupon?.code ?? null,
+          // HARD RULE: agent self-buy orders NEVER get coupon codes or store credits.
+          // Zero these out client-side regardless of state (server also enforces this).
+          couponCode: isAgentSelfBuy ? null : (appliedCoupon?.code ?? null),
           idempotencyKey: getIdempotencyKey(),
-          creditRedeemed,
+          creditRedeemed: isAgentSelfBuy ? 0 : creditRedeemed,
           // Closed-loop: tells server which agent's catalog to validate against
           agentSlug: agentSlug ?? null,
         })
@@ -1089,7 +1094,8 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
               })}
             </div>
 
-            {/* Coupon */}
+            {/* Coupon — HIDDEN for agent self-buy: agents cannot use coupons on their own orders */}
+            {!isAgentSelfBuy && (
             <div style={{ borderTop: '1px solid rgba(255, 255, 255, 0.05)', paddingTop: 'var(--space-3)', marginBottom: 'var(--space-3)' }}>
               {appliedCoupon ? (
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(104,211,145,0.08)', border: '1px solid rgba(104,211,145,0.3)', borderRadius: 'var(--radius-md)', padding: 'var(--space-2) var(--space-3)' }}>
@@ -1129,8 +1135,10 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
                 <p style={{ fontSize: '0.72rem', color: 'var(--red)', margin: 'var(--space-2) 0 0' }}>{couponError}</p>
               )}
             </div>
+            )}
 
-            {storeCreditBalance > 0 && (
+            {/* Store Credit — HIDDEN for agent self-buy: agents cannot apply discounts on their own orders */}
+            {!isAgentSelfBuy && storeCreditBalance > 0 && (
               <div style={{ padding: 'var(--space-3)', background: 'var(--surface-2)', borderRadius: 'var(--radius-md)', border: 'var(--border-subtle)', marginBottom: 'var(--space-3)' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.82rem', marginBottom: 'var(--space-2)' }}>
                   <span style={{ color: 'var(--silver)' }}>Available Store Credit</span>
