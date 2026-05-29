@@ -124,12 +124,13 @@ export default function MessengerShell({ userId }: Props) {
         </aside>
         <MessagePane userId={userId} activeCall={activeCall} setActiveCall={setActiveCall} />
       </div>
-      {incomingCalls.map((c) => (
+      {incomingCalls.map((c, idx) => (
         <IncomingCallToast
           key={c.id}
           call={c}
           onAccept={() => handleAccept(c)}
           onDecline={() => handleDecline(c)}
+          stackIndex={idx}
         />
       ))}
       {activeCall && (

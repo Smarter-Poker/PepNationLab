@@ -5,7 +5,7 @@ import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { motion, Variants, AnimatePresence } from 'framer-motion';
 import { Star, X, Heart, FileText, Search, SlidersHorizontal, RotateCcw, Check } from 'lucide-react';
 import RecommendationStrip, { type RecommendationItem } from './RecommendationStrip';
-import { getProductImage } from '@/lib/categoryImage';
+import { getProductImage, toTitleCase } from '@/lib/categoryImage';
 import PeptideVialCard from '@/components/PeptideVialCard';
 
 interface ProductItem {
@@ -1234,7 +1234,7 @@ export default function AgentStorefrontGrid({ products, inventoryMap, primaryCol
               {/* Product Details */}
               <div style={{ padding: 'var(--space-5)', flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
                 {(() => {
-                  const { main, subtitle } = splitProductName(group.name);
+                  const { main, subtitle } = splitProductName(toTitleCase(group.name));
                   return (
                     <div style={{ textAlign: 'center', marginBottom: 'var(--space-2)' }}>
                       <h4 style={{
@@ -1551,7 +1551,7 @@ export default function AgentStorefrontGrid({ products, inventoryMap, primaryCol
                 <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 'var(--space-4)', marginBottom: 'var(--space-2)' }}>
                   <div>
                     {(() => {
-                      const { main, subtitle } = splitProductName(detailProduct.name);
+                      const { main, subtitle } = splitProductName(toTitleCase(detailProduct.name));
                       return (
                         <>
                           <h2 style={{ fontFamily: 'var(--font-brand)', fontSize: '1.8rem', color: 'var(--white)', lineHeight: 1.2 }}>

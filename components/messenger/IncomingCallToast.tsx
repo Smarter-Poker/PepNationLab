@@ -7,9 +7,13 @@ interface Props {
   call: CallSignalRow;
   onAccept: () => void;
   onDecline: () => void;
+  // Audit2: stack-offset index so multiple simultaneous rings do not overlap
+  // at the same top/right anchor. Driven by MessengerShell which knows the
+  // queued order.
+  stackIndex?: number;
 }
 
-export default function IncomingCallToast({ call, onAccept, onDecline }: Props) {
+export default function IncomingCallToast({ call, onAccept, onDecline, stackIndex = 0 }: Props) {
   const [callerName, setCallerName] = useState<string>('Someone');
 
   useEffect(() => {
@@ -66,7 +70,7 @@ export default function IncomingCallToast({ call, onAccept, onDecline }: Props) 
       aria-label="Incoming Call"
       style={{
         position: 'fixed',
-        top: 16,
+        top: 16 + stackIndex * 112,
         right: 16,
         background: 'var(--surface-2, #162230)',
         border: '1px solid var(--surface-3, #1D2D3E)',

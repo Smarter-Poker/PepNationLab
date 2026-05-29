@@ -19,6 +19,12 @@ const PRODUCT_IMAGE_MAP: Record<string, string> = {
   'ozempic':                                  '/images/products/semaglutide.png',
   'wegovy':                                   '/images/products/semaglutide.png',
   'retatrutide':                              '/images/products/retatrutide.png',
+  'lemon bottle':                             '/images/products/lemon-bottle.png',
+  'l-carnitine blend':                        '/images/products/l-carnitine-blend.png',
+  'l-carnitine':                              '/images/products/l-carnitine.png',
+  'l carnitine blend':                        '/images/products/l-carnitine-blend.png',
+  'l carnitine':                              '/images/products/l-carnitine.png',
+  'lcarnitine':                               '/images/products/l-carnitine.png',
   'aod-9604':                                 '/images/products/aod-9604.png',
   'aod 9604':                                 '/images/products/aod-9604.png',
   'aod9604':                                  '/images/products/aod-9604.png',
@@ -64,6 +70,8 @@ const PRODUCT_IMAGE_MAP: Record<string, string> = {
   'larazotide acetate':                       '/images/products/larazotide.png',
 
   // ── Growth Hormone Peptides — GOLD cap ──────────────────────────────────────
+  'hmg':                                      '/images/products/hmg.png',
+  'human menopausal gonadotropin':            '/images/products/hmg.png',
   'sermorelin':                               '/images/products/sermorelin.png',
   'sermorelin acetate':                       '/images/products/sermorelin-acetate.png',
   'cjc-1295 without dac 5mg + ipa 5mg':       '/images/products/cjc-1295-ipa.png',
@@ -188,6 +196,35 @@ export function getCategoryVialImage(category: string): string {
   if (lower.includes('growth') || lower.includes('sermorelin') || lower.includes('ipamorelin') || lower.includes('cjc')) return '/images/vial_growth_hormone.png';
   if (lower.includes('nootropic') || lower.includes('cognitive') || lower.includes('brain')) return '/images/vial_nootropics.png';
   return DEFAULT_IMAGE;
+}
+
+// ─── Title Case helper ───────────────────────────────────────────────────────
+// Converts any product name to Title Case (first letter of each word capitalised).
+// Preserves known acronyms and special tokens (BPC, TB, GHK, NAD, etc.).
+const PRESERVE_UPPERCASE = new Set([
+  'BPC', 'TB', 'GHK', 'NAD', 'IGF', 'PEG', 'MGF', 'HMG', 'HGH', 'CJC', 'IPA',
+  'GLP', 'GHK-CU', 'GLOW', 'KLOW', 'DSIP', 'LL', 'PT', 'MT', 'AOD', 'KPV',
+  'MOTS', 'MOD', 'GRF', 'MK', 'SNAP', 'DAC', 'LR3',
+]);
+
+export function toTitleCase(name: string): string {
+  if (!name) return name;
+  // Split on spaces, hyphens kept as part of token, parentheses boundaries
+  return name
+    .split(' ')
+    .map(word => {
+      // Keep parenthetical suffixes as-is
+      if (word.startsWith('(') && word.endsWith(')')) return word;
+      const upper = word.toUpperCase();
+      // Preserve full uppercase acronyms
+      if (PRESERVE_UPPERCASE.has(upper)) return upper;
+      // Capitalise first letter, lowercase rest — but protect hyphens
+      return word
+        .split('-')
+        .map(part => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
+        .join('-');
+    })
+    .join(' ');
 }
 
 /**

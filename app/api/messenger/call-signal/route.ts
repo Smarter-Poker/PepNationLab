@@ -59,6 +59,22 @@ export async function POST(req: NextRequest) {
     const callerPart = await getParticipant(parsed.data.conversationId, user.id);
     if (!callerPart) return NextResponse.json({ error: 'Not A Participant' }, { status: 403 });
 
+    // Audit2 fix: prevent two simultaneous starts from forking the conversation
+    // into two LiveKit rooms with no way to reconcile. If a ringing or active
+    // call already exists for this conversation, return it so the client can
+    // join instead of starting a fresh room.
+    const { data: existingCall } = await svc
+      .from('messenger_calls')
+      .select('*')
+      .eq('conversation_id', parsed.data.conversationId)
+      .in('status', ['ringing', 'active'])
+      .order('started_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (existingCall) {
+      return NextResponse.json({ call: existingCall, alreadyActive: true });
+    }
+
     const livekitRoom = `call-${crypto.randomUUID()}`;
     const { data: inserted, error: insErr } = await svc
       .from('messenger_calls')

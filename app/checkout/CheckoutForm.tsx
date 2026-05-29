@@ -5,6 +5,7 @@ import { useCart } from '@/components/CartContext';
 import Link from 'next/link';
 import { US_STATES } from '@/lib/us-states';
 import PaymentProofUpload from '@/components/PaymentProofUpload';
+import { toTitleCase } from '@/lib/categoryImage';
 
 interface Profile {
   full_name: string | null;
@@ -1253,7 +1254,7 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
                 return (
                   <div key={item.id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem', alignItems: 'flex-start' }}>
                     <div style={{ flexGrow: 1, paddingRight: 'var(--space-3)' }}>
-                      <span style={{ color: 'var(--white)', fontWeight: 500 }}>{item.name}</span>
+                      <span style={{ color: 'var(--white)', fontWeight: 500 }}>{toTitleCase(item.name)}</span>
                       <div style={{ color: 'var(--grey-400)', fontSize: '0.72rem' }}>Qty: {item.quantity}</div>
                     </div>
                     <div style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
