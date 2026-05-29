@@ -38,7 +38,6 @@ export async function POST(req: NextRequest) {
 
   const service = await createServiceClient();
 
-  // Validate the target exists and capture their role for routing.
   const { data: target } = await service
     .from('profiles')
     .select('id, role')
@@ -49,7 +48,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Target User Not Found' }, { status: 404 });
   }
 
-  // Close any existing active impersonation row for this admin (single-active).
   await service
     .from('impersonation_sessions')
     .update({ ended_at: new Date().toISOString() })
