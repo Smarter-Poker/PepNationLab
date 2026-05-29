@@ -402,7 +402,7 @@ function ResearchersAdminPageInner() {
             Manage Research Accounts, Role Upgrades, Pricing Tiers, And Prepaid Balances
           </p>
         </div>
-        {/* ── Create New Agent Button ── */}
+        {/* Create New Agent Button */}
         <button
           onClick={openCreateAgentModal}
           className="btn btn-primary"
@@ -677,7 +677,7 @@ function ResearchersAdminPageInner() {
         </div>
       )}
 
-      {/* ── CREATE NEW AGENT MODAL ── */}
+      {/* CREATE NEW AGENT MODAL */}
       {modalMode === 'create_agent' && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.88)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100, padding: 'var(--space-4)' }}>
           <div className="card-metal" style={{ width: '100%', maxWidth: 580, padding: 'var(--space-6)', maxHeight: '92vh', overflowY: 'auto' }}>
@@ -693,7 +693,6 @@ function ResearchersAdminPageInner() {
             )}
 
             <form onSubmit={handleCreateAgent}>
-              {/* Account Info */}
               <h4 style={{ fontSize: '0.88rem', color: 'var(--silver)', marginBottom: 'var(--space-4)' }}>Account Credentials</h4>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-4)', marginBottom: 'var(--space-4)' }}>
                 <div className="form-group">
@@ -716,7 +715,6 @@ function ResearchersAdminPageInner() {
 
               <hr style={{ border: 'none', borderTop: '1px solid rgba(255,255,255,0.06)', margin: 'var(--space-4) 0' }} />
 
-              {/* Pricing & Billing */}
               <h4 style={{ fontSize: '0.88rem', color: 'var(--silver)', marginBottom: 'var(--space-4)' }}>Pricing & Billing</h4>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-4)', marginBottom: 'var(--space-4)' }}>
                 <div className="form-group">
@@ -752,7 +750,6 @@ function ResearchersAdminPageInner() {
 
               <hr style={{ border: 'none', borderTop: '1px solid rgba(255,255,255,0.06)', margin: 'var(--space-4) 0' }} />
 
-              {/* Storefront */}
               <h4 style={{ fontSize: '0.88rem', color: 'var(--silver)', marginBottom: 'var(--space-4)' }}>Storefront Setup</h4>
               <div className="form-group" style={{ marginBottom: 'var(--space-4)' }}>
                 <label className="form-label">Display Name</label>
@@ -789,7 +786,7 @@ function ResearchersAdminPageInner() {
         </div>
       )}
 
-      {/* ── UPGRADE / CONFIGURE MODAL ── */}
+      {/* UPGRADE / CONFIGURE MODAL */}
       {(modalMode === 'upgrade' || modalMode === 'edit') && selectedProfile && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.88)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100, padding: 'var(--space-4)' }}>
           <div className="card-metal" style={{ width: '100%', maxWidth: 540, padding: 'var(--space-6)', maxHeight: '90vh', overflowY: 'auto' }}>
@@ -877,7 +874,7 @@ function ResearchersAdminPageInner() {
         </div>
       )}
 
-      {/* ── BALANCE ADJUSTMENT MODAL ── */}
+      {/* BALANCE ADJUSTMENT MODAL */}
       {modalMode === 'balance' && selectedProfile && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.88)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100, padding: 'var(--space-4)' }}>
           <div className="card-metal" style={{ width: '100%', maxWidth: 400, padding: 'var(--space-6)' }}>
@@ -942,7 +939,7 @@ function ResearchersAdminPageInner() {
         </div>
       )}
 
-      {/* ── QR CODE MODAL ── */}
+      {/* QR CODE MODAL */}
       {modalMode === 'qr' && selectedProfile && resolvedAgentProfile && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.88)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100, padding: 'var(--space-4)' }}>
           <div className="card-metal" style={{ width: '100%', maxWidth: 420, padding: 'var(--space-6)', textAlign: 'center' }}>
