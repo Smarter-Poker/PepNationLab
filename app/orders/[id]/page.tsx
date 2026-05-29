@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { createClient } from '@/lib/supabase/server';
 import PageShell from '@/components/PageShell';
 import PaymentProofUpload from '@/components/PaymentProofUpload';
+import ReceiptButton from './ReceiptButton';
 
 export const dynamic = 'force-dynamic';
 
@@ -141,17 +142,51 @@ export default async function OrderDetailPage(
                   Placed {new Date(order.created_at).toLocaleString()} / {PAYMENT_LABELS[order.payment_method] ?? order.payment_method}
                 </p>
               </div>
-              <span style={{
-                fontSize: '0.78rem',
-                fontWeight: 700,
-                color: statusColor,
-                background: `${statusColor}15`,
-                border: `1px solid ${statusColor}40`,
-                padding: '6px var(--space-4)',
-                borderRadius: 'var(--radius-full)',
-              }}>
-                {STATUS_LABELS[order.status] ?? order.status}
-              </span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', flexWrap: 'wrap' }}>
+                <ReceiptButton
+                  orderId={order.id}
+                  createdAt={order.created_at}
+                  buyerName={buyer?.full_name || 'Researcher'}
+                  buyerEmail={buyer?.email || ''}
+                  sellerName={sellerName}
+                  paymentMethodLabel={PAYMENT_LABELS[order.payment_method] ?? order.payment_method}
+                  paymentHandle={handleForMethod}
+                  trackingNumber={order.tracking_number}
+                  shippingAddress={
+                    order.fulfillment_method === 'ship' && addr?.street
+                      ? {
+                          fullName: addr.fullName,
+                          street: addr.street,
+                          suite: addr.suite,
+                          city: addr.city,
+                          state: addr.state,
+                          zip: addr.zip,
+                        }
+                      : null
+                  }
+                  items={order.order_items.map((it) => ({
+                    product_name: it.product_name,
+                    quantity: it.quantity,
+                    unit_retail_price: num(it.unit_retail_price),
+                  }))}
+                  subtotal={num(order.subtotal)}
+                  discount={num(order.discount_amount)}
+                  couponCode={order.coupon_code}
+                  shipping={num(order.shipping_cost)}
+                  total={num(order.total)}
+                />
+                <span style={{
+                  fontSize: '0.78rem',
+                  fontWeight: 700,
+                  color: statusColor,
+                  background: `${statusColor}15`,
+                  border: `1px solid ${statusColor}40`,
+                  padding: '6px var(--space-4)',
+                  borderRadius: 'var(--radius-full)',
+                }}>
+                  {STATUS_LABELS[order.status] ?? order.status}
+                </span>
+              </div>
             </div>
           </div>
 
