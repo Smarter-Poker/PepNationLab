@@ -112,6 +112,10 @@ interface Props {
   coaByProductId?: Record<string, string>;
   /** When false, volume tier markups are not applied — all quantities use the base per-vial price. */
   volumePricingEnabled?: boolean;
+  /** True when the logged-in user IS the agent who owns this store (agent self-buy). */
+  isStorefrontOwner?: boolean;
+  /** The viewer's pricing tier — used to compute agent-direct cost for self-buy. */
+  viewerTier?: string;
 }
 
 const containerVariants: Variants = {
@@ -197,7 +201,7 @@ function pickDefaultVariant(variants: ProductItem[]): string {
   return variants[variants.length - 1]?.id || variants[0].id;
 }
 
-export default function AgentStorefrontGrid({ products, inventoryMap, primaryColor, agentSlug, bundles = [], initialWishlistIds = [], agentId = null, coaByProductId = {}, volumePricingEnabled = true }: Props) {
+export default function AgentStorefrontGrid({ products, inventoryMap, primaryColor, agentSlug, bundles = [], initialWishlistIds = [], agentId = null, coaByProductId = {}, volumePricingEnabled = true, isStorefrontOwner = false, viewerTier = 'tier_3' }: Props) {
   const [wishlist, setWishlist] = useState<Set<string>>(() => new Set(initialWishlistIds));
   const toggleWishlist = useCallback(async (productId: string) => {
     if (!productId) return;
@@ -808,9 +812,13 @@ export default function AgentStorefrontGrid({ products, inventoryMap, primaryCol
                             name: `${item.products?.name || 'Product'} ${sizeLabel}`.trim(),
                             sku: item.product_id,
                             quantity: qty,
+                            // retailPrice = public markup price (shown as strikethrough for agent self-buy)
                             retailPrice: perVial,
+                            // costPrice = same as retail here; server-side API computes the real tier price.
+                            // For checkout display, agentSelfBuy flag tells CheckoutForm to show "Agent Direct Pricing".
                             costPrice: perVial,
                             weightOz: 0.5,
+                            agentSelfBuy: isStorefrontOwner,
                           };
                         })
                         .filter(Boolean);

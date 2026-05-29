@@ -35,6 +35,8 @@ interface SavedAddress {
 }
 
 export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, agentSlug }: CheckoutFormProps) {
+  // Agent buying from their own store → show tier-discounted pricing
+  const isAgentSelfBuy = userProfile.role === 'agent' || userProfile.role === 'super_agent';
   const { cart: contextCart, cartSubtotal: contextSubtotal, clearCart } = useCart();
 
   // The per-agent cart key — ONLY reads this agent's cart, never another agent's.
@@ -68,9 +70,19 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
 
   // Use storefront cart if present, otherwise fall back to CartContext
   const cart = storefrontCart.length > 0 ? storefrontCart : contextCart;
+  // Always use costPrice for subtotal — for agent self-buy this IS their tier price.
+  // For researchers, costPrice === retailPrice (set identically in AgentStorefrontGrid).
   const cartSubtotal = storefrontCart.length > 0
     ? storefrontCart.reduce((sum, item) => sum + item.costPrice * item.quantity, 0)
     : contextSubtotal;
+
+  // Agent Direct Pricing Discount = difference between public retail and their tier cost
+  const agentPricingDiscount = isAgentSelfBuy && storefrontCart.length > 0
+    ? storefrontCart.reduce((sum, item) => {
+        const retail = item.retailPrice ?? item.costPrice;
+        return sum + Math.max(0, retail - item.costPrice) * item.quantity;
+      }, 0)
+    : 0;
 
   const clearAllCarts = () => {
     clearCart();
@@ -1027,17 +1039,28 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
             </h3>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)', maxHeight: 220, overflowY: 'auto', paddingRight: 4, marginBottom: 'var(--space-4)' }}>
-              {cart.map(item => (
-                <div key={item.id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem' }}>
-                  <div style={{ flexGrow: 1, paddingRight: 'var(--space-3)' }}>
-                    <span style={{ color: 'var(--white)', fontWeight: 500 }}>{item.name}</span>
-                    <div style={{ color: 'var(--grey-400)', fontSize: '0.72rem' }}>Qty: {item.quantity}</div>
+              {cart.map(item => {
+                const retail = (item as any).retailPrice ?? item.costPrice;
+                const showDiscount = isAgentSelfBuy && retail > item.costPrice;
+                return (
+                  <div key={item.id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem', alignItems: 'flex-start' }}>
+                    <div style={{ flexGrow: 1, paddingRight: 'var(--space-3)' }}>
+                      <span style={{ color: 'var(--white)', fontWeight: 500 }}>{item.name}</span>
+                      <div style={{ color: 'var(--grey-400)', fontSize: '0.72rem' }}>Qty: {item.quantity}</div>
+                    </div>
+                    <div style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
+                      {showDiscount && (
+                        <div style={{ color: 'var(--grey-500)', fontSize: '0.70rem', textDecoration: 'line-through' }}>
+                          ${(retail * item.quantity).toFixed(2)}
+                        </div>
+                      )}
+                      <strong style={{ color: showDiscount ? 'var(--teal)' : 'var(--silver-light)' }}>
+                        ${(item.costPrice * item.quantity).toFixed(2)}
+                      </strong>
+                    </div>
                   </div>
-                  <strong style={{ color: 'var(--silver-light)', whiteSpace: 'nowrap' }}>
-                    ${(item.costPrice * item.quantity).toFixed(2)}
-                  </strong>
-                </div>
-              ))}
+                );
+              })}
             </div>
 
             {/* Coupon */}
@@ -1119,6 +1142,13 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
                 <span style={{ color: 'var(--grey-400)' }}>Items Subtotal</span>
                 <strong style={{ color: 'var(--white)' }}>${cartSubtotal.toFixed(2)}</strong>
               </div>
+
+              {agentPricingDiscount > 0 && (
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem', padding: '6px 10px', background: 'rgba(0,196,188,0.06)', borderRadius: 'var(--radius-sm)', border: '1px solid rgba(0,196,188,0.2)' }}>
+                  <span style={{ color: 'var(--teal)', fontWeight: 600 }}>⚡ Agent Direct Pricing Discount</span>
+                  <strong style={{ color: 'var(--teal)' }}>-${agentPricingDiscount.toFixed(2)}</strong>
+                </div>
+              )}
 
               {appliedCoupon && (
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem' }}>

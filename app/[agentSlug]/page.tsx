@@ -104,7 +104,7 @@ export default async function AgentStorefrontPage({ params }: Props) {
   // Check if logged-in user belongs to THIS agent — CRITICAL SECURITY GATE
   const { data: userProfile } = await supabase
     .from('profiles')
-    .select('role, referring_agent_id, parent_agent_id, id')
+    .select('role, referring_agent_id, parent_agent_id, id, tier')
     .eq('id', user.id)
     .single();
 
@@ -264,6 +264,8 @@ export default async function AgentStorefrontPage({ params }: Props) {
             agentId={agent.id}
             coaByProductId={coaByProductId}
             volumePricingEnabled={(agent as any).volume_pricing_enabled !== false}
+            isStorefrontOwner={isStorefrontOwner}
+            viewerTier={(userProfile as any)?.tier ?? 'tier_3'}
           />
         </div>
       </section>
