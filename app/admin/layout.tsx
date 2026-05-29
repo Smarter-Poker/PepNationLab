@@ -76,6 +76,11 @@ const NAV = [
     icon: <svg {...ICON_PROPS}><polyline points="1 4 1 10 7 10" /><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10" /></svg>,
   },
   {
+    href: '/admin/rma',
+    label: 'Returns',
+    icon: <svg {...ICON_PROPS}><polyline points="3 6 5 6 21 6"/><path d="M19 6l-2 14a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2L5 6"/><path d="M10 11l4 4M14 11l-4 4"/></svg>,
+  },
+  {
     href: '/admin/store-credits',
     label: 'Store Credits',
     icon: <svg {...ICON_PROPS}><rect x="2" y="5" width="20" height="14" rx="2" ry="2" /><line x1="2" y1="10" x2="22" y2="10" /></svg>,
