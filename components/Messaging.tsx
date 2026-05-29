@@ -274,7 +274,7 @@ export default function Messaging({
         display: 'flex', flexDirection: 'column',
         height: 540, overflow: 'hidden',
         border: dragOver ? '2px solid var(--teal)' : '1px solid rgba(255,255,255,0.06)',
-        boxShadow: dragOver ? '0 0 20px rgba(0,196,188,0.2)' : '0 4px 24px rgba(0,0,0,0.3)',
+        boxShadow: dragOver ? '0 0 20px rgba(192,184,168,0.2)' : '0 4px 24px rgba(0,0,0,0.3)',
         transition: 'border 0.2s, box-shadow 0.2s',
       }}
       onDragOver={handleDragOver}
@@ -285,7 +285,7 @@ export default function Messaging({
       {dragOver && (
         <div style={{
           position: 'absolute', inset: 0, zIndex: 50,
-          background: 'rgba(0,196,188,0.05)', backdropFilter: 'blur(2px)',
+          background: 'rgba(192,184,168,0.05)', backdropFilter: 'blur(2px)',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           borderRadius: 16, pointerEvents: 'none',
         }}>
@@ -303,7 +303,7 @@ export default function Messaging({
       }}>
         <div style={{
           width: 34, height: 34, borderRadius: '50%',
-          background: 'linear-gradient(135deg, #00C4BC 0%, #0099FF 100%)',
+          background: 'linear-gradient(135deg, #C0B8A8 0%, #0099FF 100%)',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           fontSize: '0.7rem', fontWeight: 800, color: '#fff', flexShrink: 0,
         }}>{initials}</div>
@@ -312,7 +312,7 @@ export default function Messaging({
         </div>
         {/* Search toggle */}
         <button onClick={() => { setSearchOpen(!searchOpen); setSearchResults([]); setSearchQuery(''); }}
-          style={{ background: searchOpen ? 'rgba(0,196,188,0.08)' : 'none', border: 'none', cursor: 'pointer', padding: 6, borderRadius: 8, color: searchOpen ? 'var(--teal)' : 'rgba(255,255,255,0.3)', transition: 'all 0.2s' }}
+          style={{ background: searchOpen ? 'rgba(192,184,168,0.08)' : 'none', border: 'none', cursor: 'pointer', padding: 6, borderRadius: 8, color: searchOpen ? 'var(--teal)' : 'rgba(255,255,255,0.3)', transition: 'all 0.2s' }}
           title="Search Messages">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>
         </button>
@@ -336,7 +336,7 @@ export default function Messaging({
             onKeyDown={e => e.key === 'Enter' && handleSearch()}
             style={{ flex: 1, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 8, padding: '6px 10px', color: '#fff', fontSize: '0.8rem', outline: 'none', fontFamily: 'inherit' }} />
           <button onClick={handleSearch}
-            style={{ background: 'rgba(0,196,188,0.1)', border: '1px solid rgba(0,196,188,0.2)', borderRadius: 8, padding: '6px 12px', color: 'var(--teal)', fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer' }}>
+            style={{ background: 'rgba(192,184,168,0.1)', border: '1px solid rgba(192,184,168,0.2)', borderRadius: 8, padding: '6px 12px', color: 'var(--teal)', fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer' }}>
             Search
           </button>
         </div>
@@ -355,12 +355,12 @@ export default function Messaging({
       <div ref={scrollRef} style={{ flexGrow: 1, overflowY: 'auto', padding: '12px 16px 6px', display: 'flex', flexDirection: 'column', scrollBehavior: 'smooth', position: 'relative' }}>
         {loading ? (
           <div style={{ margin: 'auto', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10 }}>
-            <div style={{ width: 28, height: 28, borderRadius: '50%', border: '2.5px solid rgba(0,196,188,0.2)', borderTopColor: 'var(--teal)', animation: 'spin 0.8s linear infinite' }} />
+            <div style={{ width: 28, height: 28, borderRadius: '50%', border: '2.5px solid rgba(192,184,168,0.2)', borderTopColor: 'var(--teal)', animation: 'spin 0.8s linear infinite' }} />
             <span style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.25)' }}>Loading...</span>
           </div>
         ) : messages.length === 0 ? (
           <div style={{ margin: 'auto', textAlign: 'center', padding: '30px 16px' }}>
-            <div style={{ width: 56, height: 56, borderRadius: '50%', background: 'linear-gradient(135deg, rgba(0,196,188,0.1) 0%, rgba(0,153,255,0.1) 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 14px' }}>
+            <div style={{ width: 56, height: 56, borderRadius: '50%', background: 'linear-gradient(135deg, rgba(192,184,168,0.1) 0%, rgba(0,153,255,0.1) 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 14px' }}>
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--teal)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.5 }}><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg>
             </div>
             <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.85rem', fontWeight: 600 }}>Start A Conversation</div>
@@ -397,7 +397,7 @@ export default function Messaging({
                     {!mine && (
                       <div style={{
                         width: 26, height: 26, borderRadius: '50%',
-                        background: showAv ? 'linear-gradient(135deg, #00C4BC, #0099FF)' : 'transparent',
+                        background: showAv ? 'linear-gradient(135deg, #C0B8A8, #0099FF)' : 'transparent',
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
                         fontSize: '0.55rem', fontWeight: 800, color: '#fff', flexShrink: 0,
                         visibility: showAv ? 'visible' : 'hidden',
@@ -429,11 +429,11 @@ export default function Messaging({
                       ) : isSpecial ? (
                         <div style={{
                           background: isInvoice
-                            ? 'linear-gradient(135deg, rgba(0,196,188,0.06), rgba(0,153,255,0.06))'
+                            ? 'linear-gradient(135deg, rgba(192,184,168,0.06), rgba(0,153,255,0.06))'
                             : isBroadcast
                               ? 'linear-gradient(135deg, rgba(192,132,252,0.06), rgba(99,179,237,0.06))'
                               : 'linear-gradient(135deg, rgba(99,179,237,0.06), rgba(99,179,237,0.03))',
-                          border: `1px solid ${isInvoice ? 'rgba(0,196,188,0.15)' : isBroadcast ? 'rgba(192,132,252,0.15)' : 'rgba(99,179,237,0.15)'}`,
+                          border: `1px solid ${isInvoice ? 'rgba(192,184,168,0.15)' : isBroadcast ? 'rgba(192,132,252,0.15)' : 'rgba(99,179,237,0.15)'}`,
                           borderRadius: 14, padding: '12px 14px',
                         }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6, paddingBottom: 6, borderBottom: `1px solid rgba(255,255,255,0.04)` }}>
@@ -470,7 +470,7 @@ export default function Messaging({
                         </div>
                       ) : (
                         <div style={{
-                          background: mine ? 'linear-gradient(135deg, #00C4BC, #0099FF)' : 'rgba(255,255,255,0.06)',
+                          background: mine ? 'linear-gradient(135deg, #C0B8A8, #0099FF)' : 'rgba(255,255,255,0.06)',
                           borderRadius: mine ? (first ? '16px 16px 4px 16px' : '16px 4px 4px 16px') : (first ? '16px 16px 16px 4px' : '4px 16px 16px 4px'),
                           padding: '8px 12px',
                         }}>
@@ -480,7 +480,7 @@ export default function Messaging({
                             isImage(m.attachment_url) ? (
                               <img src={m.attachment_url} alt="attachment" style={{ maxWidth: '100%', maxHeight: 200, borderRadius: 8, marginTop: 6, cursor: 'pointer' }} onClick={() => window.open(m.attachment_url!, '_blank')} />
                             ) : (
-                              <a href={m.attachment_url} target="_blank" rel="noopener noreferrer" style={{ color: mine ? 'rgba(255,255,255,0.8)' : 'var(--teal)', fontSize: '0.73rem', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 4, background: mine ? 'rgba(255,255,255,0.12)' : 'rgba(0,196,188,0.06)', padding: '3px 8px', borderRadius: 6, marginTop: 4 }}>
+                              <a href={m.attachment_url} target="_blank" rel="noopener noreferrer" style={{ color: mine ? 'rgba(255,255,255,0.8)' : 'var(--teal)', fontSize: '0.73rem', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 4, background: mine ? 'rgba(255,255,255,0.12)' : 'rgba(192,184,168,0.06)', padding: '3px 8px', borderRadius: 6, marginTop: 4 }}>
                                 📎 Attachment
                               </a>
                             )
@@ -494,8 +494,8 @@ export default function Messaging({
                           {msgReactions.map(r => (
                             <button key={r.emoji} onClick={() => handleReaction(m.id, r.emoji)}
                               style={{
-                                background: r.myReaction ? 'rgba(0,196,188,0.12)' : 'rgba(255,255,255,0.04)',
-                                border: `1px solid ${r.myReaction ? 'rgba(0,196,188,0.3)' : 'rgba(255,255,255,0.06)'}`,
+                                background: r.myReaction ? 'rgba(192,184,168,0.12)' : 'rgba(255,255,255,0.04)',
+                                border: `1px solid ${r.myReaction ? 'rgba(192,184,168,0.3)' : 'rgba(255,255,255,0.06)'}`,
                                 borderRadius: 10, padding: '1px 6px', cursor: 'pointer',
                                 fontSize: '0.7rem', display: 'flex', alignItems: 'center', gap: 3,
                                 color: 'rgba(255,255,255,0.6)',
@@ -556,7 +556,7 @@ export default function Messaging({
               );
             })}
             {showReadReceipt && (
-              <div style={{ textAlign: 'right', fontSize: '0.62rem', color: 'rgba(0,196,188,0.5)', fontWeight: 500, padding: '1px 6px 0' }}>✓ Seen</div>
+              <div style={{ textAlign: 'right', fontSize: '0.62rem', color: 'rgba(192,184,168,0.5)', fontWeight: 500, padding: '1px 6px 0' }}>✓ Seen</div>
             )}
           </>
         )}
@@ -590,7 +590,7 @@ export default function Messaging({
 
       {/* Reply-to banner */}
       {replyTo && (
-        <div style={{ padding: '6px 16px', borderTop: '1px solid rgba(0,196,188,0.1)', background: 'rgba(0,196,188,0.03)', display: 'flex', alignItems: 'center', gap: 8 }}>
+        <div style={{ padding: '6px 16px', borderTop: '1px solid rgba(192,184,168,0.1)', background: 'rgba(192,184,168,0.03)', display: 'flex', alignItems: 'center', gap: 8 }}>
           <div style={{ borderLeft: '3px solid var(--teal)', paddingLeft: 8, flex: 1 }}>
             <div style={{ fontSize: '0.68rem', color: 'var(--teal)', fontWeight: 600 }}>Replying to</div>
             <div style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.4)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{replyTo.body?.substring(0, 60)}</div>
@@ -673,7 +673,7 @@ export default function Messaging({
           <button type="submit" disabled={sending || uploadingFile || (!(editingMsg ? editBody.trim() : body.trim()) && !attachmentUrl)}
             style={{
               width: 32, height: 32, borderRadius: '50%', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-              background: ((editingMsg ? editBody.trim() : body.trim()) || attachmentUrl) ? 'linear-gradient(135deg, #00C4BC, #0099FF)' : 'rgba(255,255,255,0.05)',
+              background: ((editingMsg ? editBody.trim() : body.trim()) || attachmentUrl) ? 'linear-gradient(135deg, #C0B8A8, #0099FF)' : 'rgba(255,255,255,0.05)',
               transition: 'background 0.2s, transform 0.15s', transform: sending ? 'scale(0.9)' : 'scale(1)',
             }}>
             {sending ? <div style={{ width: 12, height: 12, borderRadius: '50%', border: '2px solid rgba(255,255,255,0.3)', borderTopColor: '#fff', animation: 'spin 0.8s linear infinite' }} /> : (

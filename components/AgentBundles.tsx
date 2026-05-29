@@ -179,7 +179,7 @@ export default function AgentBundles({ agentId }: { agentId: string }) {
 
       {/* Create Bundle Form */}
       {showCreate && (
-        <div className="card-metal" style={{ padding: 'var(--space-6)', border: '1px solid rgba(0,196,188,0.2)' }}>
+        <div className="card-metal" style={{ padding: 'var(--space-6)', border: '1px solid rgba(192,184,168,0.2)' }}>
           <h4 style={{ color: 'var(--teal)', fontSize: '0.95rem', marginBottom: 'var(--space-4)' }}>New Research Bundle</h4>
 
           {error && (
@@ -188,7 +188,7 @@ export default function AgentBundles({ agentId }: { agentId: string }) {
             </div>
           )}
           {success && (
-            <div style={{ background: 'rgba(0,196,188,0.06)', borderLeft: '3px solid var(--teal)', padding: 'var(--space-3)', marginBottom: 'var(--space-4)', borderRadius: '0 4px 4px 0' }}>
+            <div style={{ background: 'rgba(192,184,168,0.06)', borderLeft: '3px solid var(--teal)', padding: 'var(--space-3)', marginBottom: 'var(--space-4)', borderRadius: '0 4px 4px 0' }}>
               <p style={{ color: 'var(--teal)', fontSize: '0.8rem', margin: 0 }}>{success}</p>
             </div>
           )}
@@ -251,8 +251,8 @@ export default function AgentBundles({ agentId }: { agentId: string }) {
                       style={{
                         display: 'flex', alignItems: 'center', gap: 'var(--space-3)',
                         padding: '8px var(--space-3)', borderRadius: 'var(--radius-sm)',
-                        background: isSelected ? 'rgba(0,196,188,0.1)' : 'transparent',
-                        border: isSelected ? '1px solid rgba(0,196,188,0.3)' : '1px solid transparent',
+                        background: isSelected ? 'rgba(192,184,168,0.1)' : 'transparent',
+                        border: isSelected ? '1px solid rgba(192,184,168,0.3)' : '1px solid transparent',
                         cursor: 'pointer', transition: 'all 0.15s', width: '100%', textAlign: 'left',
                       }}
                     >
@@ -286,7 +286,7 @@ export default function AgentBundles({ agentId }: { agentId: string }) {
                     <span style={{ fontSize: '1.2rem', fontWeight: 800, color: 'var(--teal)' }}>
                       ${(products.filter(p => selectedProducts.includes(p.product_id)).reduce((s, p) => s + Number(p.retail_price), 0) * (1 - discountPercent / 100)).toFixed(2)}
                     </span>
-                    <span style={{ fontSize: '0.75rem', background: 'rgba(0,196,188,0.15)', color: 'var(--teal)', padding: '2px 8px', borderRadius: 12, fontWeight: 600 }}>
+                    <span style={{ fontSize: '0.75rem', background: 'rgba(192,184,168,0.15)', color: 'var(--teal)', padding: '2px 8px', borderRadius: 12, fontWeight: 600 }}>
                       Save {discountPercent}%
                     </span>
                   </div>
@@ -330,7 +330,7 @@ export default function AgentBundles({ agentId }: { agentId: string }) {
                       <h4 style={{ fontSize: '1rem', color: 'var(--white)', margin: 0, fontFamily: 'var(--font-brand)' }}>{bundle.name}</h4>
                       <span style={{
                         fontSize: '0.68rem', padding: '2px 8px', borderRadius: 12,
-                        background: bundle.is_active ? 'rgba(0,196,188,0.1)' : 'rgba(255,255,255,0.05)',
+                        background: bundle.is_active ? 'rgba(192,184,168,0.1)' : 'rgba(255,255,255,0.05)',
                         color: bundle.is_active ? 'var(--teal)' : 'var(--grey-400)',
                       }}>
                         {bundle.is_active ? 'Active' : 'Inactive'}
@@ -381,7 +381,7 @@ export default function AgentBundles({ agentId }: { agentId: string }) {
                   <span style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--teal)' }}>
                     ${bundlePrice.toFixed(2)}
                   </span>
-                  <span style={{ fontSize: '0.72rem', background: 'rgba(0,196,188,0.12)', color: 'var(--teal)', padding: '2px 8px', borderRadius: 12, fontWeight: 600 }}>
+                  <span style={{ fontSize: '0.72rem', background: 'rgba(192,184,168,0.12)', color: 'var(--teal)', padding: '2px 8px', borderRadius: 12, fontWeight: 600 }}>
                     {bundle.discount_percent}% Off
                   </span>
                   <span style={{ fontSize: '0.75rem', color: 'var(--grey-400)', marginLeft: 'auto' }}>

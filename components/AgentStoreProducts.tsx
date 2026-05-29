@@ -289,7 +289,7 @@ export default function AgentStoreProducts({ agentId }: { agentId: string }) {
               <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
                 <span style={{ color: 'var(--teal)', fontSize: '0.7rem', transform: isExpanded ? 'rotate(90deg)' : 'rotate(0)', transition: 'transform 0.2s' }}>▶</span>
                 <span style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--white)', fontFamily: 'var(--font-brand)' }}>{category}</span>
-                <span style={{ fontSize: '0.7rem', padding: '2px 8px', borderRadius: 12, background: 'rgba(0,196,188,0.1)', color: 'var(--teal)' }}>
+                <span style={{ fontSize: '0.7rem', padding: '2px 8px', borderRadius: 12, background: 'rgba(192,184,168,0.1)', color: 'var(--teal)' }}>
                   {catActiveCount}/{catProducts.length} Active
                 </span>
               </div>

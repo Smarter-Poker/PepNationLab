@@ -8,10 +8,10 @@
 
 :root {
   /* Core Palette */
-  --teal:           #00C4BC;
-  --teal-dark:      #00908A;
-  --teal-glow:      rgba(0, 196, 188, 0.25);
-  --teal-subtle:    rgba(0, 196, 188, 0.08);
+  --teal:           #C0B8A8;
+  --teal-dark:      #9E978A;
+  --teal-glow:      rgba(192, 184, 168, 0.25);
+  --teal-subtle:    rgba(192, 184, 168, 0.08);
 
   --black:          #050A0F;
   --black-2:        #0A1018;

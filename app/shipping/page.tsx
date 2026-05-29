@@ -270,7 +270,7 @@ export default function ShippingDashboard() {
                 ) : (
                   filteredOrders.map(order => (
                     <motion.tr key={order.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95 }} layout
-                      style={{ background: selectedIds.has(order.id) ? 'rgba(0,196,188,0.03)' : undefined }}>
+                      style={{ background: selectedIds.has(order.id) ? 'rgba(192,184,168,0.03)' : undefined }}>
                       <td>
                         {order.status !== 'shipped' && (
                           <input type="checkbox" checked={selectedIds.has(order.id)} onChange={() => toggleSelect(order.id)} style={{ accentColor: 'var(--teal)' }} />

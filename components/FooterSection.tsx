@@ -7,7 +7,7 @@ export default function FooterSection() {
   return (
     <footer style={{
       background: 'var(--black-2)',
-      borderTop: '1px solid rgba(0,196,188,0.1)',
+      borderTop: '1px solid rgba(192,184,168,0.1)',
       paddingTop: 'var(--space-12)',
       paddingBottom: 'var(--space-8)'
     }}>
@@ -29,7 +29,7 @@ export default function FooterSection() {
                 fontWeight: 800,
                 color: 'var(--teal)',
                 letterSpacing: '0.1em',
-                textShadow: '0 0 20px rgba(0,196,188,0.4)'
+                textShadow: '0 0 20px rgba(192,184,168,0.4)'
               }}>
                 PEP NATION LAB
               </div>

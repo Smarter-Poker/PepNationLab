@@ -27,7 +27,7 @@ function bodyPreview(body: string | null | undefined): string {
 
 function statusBadge(status: string) {
   const colors: Record<string, { bg: string; fg: string }> = {
-    sent: { bg: 'rgba(0,196,188,0.15)', fg: '#00C4BC' },
+    sent: { bg: 'rgba(192,184,168,0.15)', fg: '#00C4BC' },
     pending: { bg: 'rgba(168,180,192,0.15)', fg: '#A8B4C0' },
     failed: { bg: 'rgba(229,62,62,0.15)', fg: '#E53E3E' },
     skipped: { bg: 'rgba(246,173,85,0.15)', fg: '#F6AD55' },

@@ -36,7 +36,7 @@ export default function ProductsPreview() {
               {/* Product image placeholder */}
               <div style={{
                 height: 160, 
-                background: `radial-gradient(circle at ${30 + i * 10}% ${40 + i * 8}%, rgba(0,196,188,0.15) 0%, var(--surface-2) 70%)`,
+                background: `radial-gradient(circle at ${30 + i * 10}% ${40 + i * 8}%, rgba(192,184,168,0.15) 0%, var(--surface-2) 70%)`,
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 position: 'relative', overflow: 'hidden'
               }}>

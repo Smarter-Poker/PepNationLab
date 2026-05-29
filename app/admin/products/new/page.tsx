@@ -266,7 +266,7 @@ export default function NewProductPage() {
           </div>
 
           {/* Bulk Pricing */}
-          <div style={{ marginTop: 'var(--space-6)', padding: 'var(--space-4)', background: 'var(--surface-3)', borderRadius: 'var(--radius-md)', border: '1px dashed rgba(0, 196, 188, 0.3)' }}>
+          <div style={{ marginTop: 'var(--space-6)', padding: 'var(--space-4)', background: 'var(--surface-3)', borderRadius: 'var(--radius-md)', border: '1px dashed rgba(192, 184, 168, 0.3)' }}>
             <h4 style={{ fontSize: '0.85rem', color: 'var(--teal)', marginBottom: 'var(--space-3)' }}>
               Bulk Wholesale Pricing
             </h4>
@@ -301,7 +301,7 @@ export default function NewProductPage() {
               padding: 'var(--space-4)',
               background: 'var(--surface-2)',
               borderRadius: 'var(--radius-md)',
-              border: '1px solid rgba(0,196,188,0.15)',
+              border: '1px solid rgba(192,184,168,0.15)',
             }}>
               <div style={{ fontSize: '0.72rem', color: 'var(--grey-400)', marginBottom: 'var(--space-2)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
                 Agent Sell Prices (From DB Multipliers)
@@ -339,8 +339,8 @@ export default function NewProductPage() {
           {/* Live shipping status preview */}
           <div style={{
             padding: 'var(--space-4)',
-            background: invCount > 0 ? 'rgba(0,196,188,0.06)' : 'rgba(246,173,85,0.06)',
-            border: `1px solid ${invCount > 0 ? 'rgba(0,196,188,0.3)' : 'rgba(246,173,85,0.3)'}`,
+            background: invCount > 0 ? 'rgba(192,184,168,0.06)' : 'rgba(246,173,85,0.06)',
+            border: `1px solid ${invCount > 0 ? 'rgba(192,184,168,0.3)' : 'rgba(246,173,85,0.3)'}`,
             borderRadius: 'var(--radius-md)',
             marginBottom: 'var(--space-5)',
             display: 'flex', alignItems: 'center', gap: 'var(--space-3)'

@@ -116,7 +116,7 @@ export default function Navbar() {
               borderRadius: '50%',
               background: 'var(--surface-2)',
               border: '1.5px solid var(--teal)',
-              boxShadow: '0 0 10px rgba(0, 196, 188, 0.3)',
+              boxShadow: '0 0 10px rgba(192, 184, 168, 0.3)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
@@ -126,11 +126,11 @@ export default function Navbar() {
               marginRight: 'var(--space-2)'
             }}
             onMouseOver={e => {
-              e.currentTarget.style.boxShadow = '0 0 18px rgba(0, 196, 188, 0.6)';
+              e.currentTarget.style.boxShadow = '0 0 18px rgba(192, 184, 168, 0.6)';
               e.currentTarget.style.borderColor = 'var(--white)';
             }}
             onMouseOut={e => {
-              e.currentTarget.style.boxShadow = '0 0 10px rgba(0, 196, 188, 0.3)';
+              e.currentTarget.style.boxShadow = '0 0 10px rgba(192, 184, 168, 0.3)';
               e.currentTarget.style.borderColor = 'var(--teal)';
             }}
             aria-label="Open Cart"
@@ -198,7 +198,7 @@ export default function Navbar() {
               borderRadius: '50%',
               background: 'var(--surface-2)',
               border: '1.5px solid var(--teal)',
-              boxShadow: '0 0 8px rgba(0, 196, 188, 0.25)',
+              boxShadow: '0 0 8px rgba(192, 184, 168, 0.25)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',

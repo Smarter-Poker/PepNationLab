@@ -742,7 +742,7 @@ function AdminOrdersPageInner() {
                     padding: 'var(--space-4)',
                     width: '100%',
                     cursor: 'pointer',
-                    background: selectedOrder?.id === order.id ? 'rgba(0,196,188,0.04)' : 'var(--surface-1)',
+                    background: selectedOrder?.id === order.id ? 'rgba(192,184,168,0.04)' : 'var(--surface-1)',
                     borderColor: selectedOrder?.id === order.id ? 'var(--teal)' : 'rgba(255,255,255,0.06)',
                   }}
                 >

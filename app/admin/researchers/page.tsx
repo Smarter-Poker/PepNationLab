@@ -583,7 +583,7 @@ function ResearchersAdminPageInner() {
                         {profile.full_name || 'No Name Provided'}
                       </span>
                       <span className="badge" style={{
-                        background: profile.role === 'admin' ? 'rgba(229,62,62,0.15)' : profile.role === 'super_agent' ? 'rgba(214,158,46,0.15)' : 'rgba(0,196,188,0.15)',
+                        background: profile.role === 'admin' ? 'rgba(229,62,62,0.15)' : profile.role === 'super_agent' ? 'rgba(214,158,46,0.15)' : 'rgba(192,184,168,0.15)',
                         color: profile.role === 'admin' ? 'var(--red)' : profile.role === 'super_agent' ? '#D69E2E' : 'var(--teal)',
                         borderColor: profile.role === 'admin' ? 'var(--red)' : profile.role === 'super_agent' ? '#D69E2E' : 'var(--teal)',
                       }}>
@@ -632,7 +632,7 @@ function ResearchersAdminPageInner() {
                       style={{
                         padding: 'var(--space-2) var(--space-3)',
                         fontSize: '0.78rem', fontWeight: 600,
-                        background: profile.is_active ? 'rgba(229,62,62,0.1)' : 'rgba(0,196,188,0.1)',
+                        background: profile.is_active ? 'rgba(229,62,62,0.1)' : 'rgba(192,184,168,0.1)',
                         color: profile.is_active ? 'var(--red)' : 'var(--teal)',
                         border: '1px solid currentColor',
                         borderRadius: 'var(--radius-sm)', cursor: 'pointer',
@@ -879,7 +879,7 @@ function ResearchersAdminPageInner() {
             <p style={{ fontSize: '0.8rem', color: 'var(--grey-400)', marginBottom: 'var(--space-4)' }}>
               {selectedProfile.full_name}{selectedProfile.username ? ` (@${selectedProfile.username})` : ''}
             </p>
-            <div style={{ padding: 'var(--space-3) var(--space-4)', background: 'rgba(0,196,188,0.06)', border: '1px solid rgba(0,196,188,0.2)', borderRadius: 'var(--radius-md)', marginBottom: 'var(--space-5)' }}>
+            <div style={{ padding: 'var(--space-3) var(--space-4)', background: 'rgba(192,184,168,0.06)', border: '1px solid rgba(192,184,168,0.2)', borderRadius: 'var(--radius-md)', marginBottom: 'var(--space-5)' }}>
               <div style={{ fontSize: '0.72rem', color: 'var(--grey-400)', textTransform: 'uppercase', marginBottom: 4 }}>Current Balance</div>
               <div style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--teal)', fontFamily: 'var(--font-brand)' }}>
                 ${(selectedProfile.prepaid_balance ?? 0).toFixed(2)}

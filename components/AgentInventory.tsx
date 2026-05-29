@@ -183,7 +183,7 @@ export default function AgentInventory({ agentId }: { agentId: string }) {
             ))}
           </div>
 
-          <div style={{ background: 'rgba(0,196,188,0.1)', border: '1px solid var(--teal)', borderRadius: 8, padding: 'var(--space-4)' }}>
+          <div style={{ background: 'rgba(192,184,168,0.1)', border: '1px solid var(--teal)', borderRadius: 8, padding: 'var(--space-4)' }}>
             <h4 style={{ color: 'var(--teal)', marginBottom: 'var(--space-2)' }}>Weekly Suggested Reorder Cart</h4>
             <ul style={{ margin: '0 0 var(--space-4) 20px', fontSize: '0.85rem', color: 'var(--grey-200)' }}>
               {suggestedCart.map(item => (

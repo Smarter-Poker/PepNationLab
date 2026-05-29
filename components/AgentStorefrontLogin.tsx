@@ -177,7 +177,7 @@ export default function AgentStorefrontLogin({
           </div>
         )}
         {success && (
-          <div style={{ background: 'rgba(0,196,188,0.06)', borderLeft: `3px solid ${primaryColor}`, padding: 'var(--space-3)', marginBottom: 'var(--space-4)', borderRadius: '0 4px 4px 0' }}>
+          <div style={{ background: 'rgba(192,184,168,0.06)', borderLeft: `3px solid ${primaryColor}`, padding: 'var(--space-3)', marginBottom: 'var(--space-4)', borderRadius: '0 4px 4px 0' }}>
             <p style={{ color: primaryColor, fontSize: '0.8rem', margin: 0, fontWeight: 500 }}>{success}</p>
           </div>
         )}

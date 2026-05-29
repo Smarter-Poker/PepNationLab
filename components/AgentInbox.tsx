@@ -74,7 +74,7 @@ export default function AgentInbox({ agentId }: { agentId: string }) {
   }
 
   const typeConfig: Record<string, { icon: string; color: string; gradient: string }> = {
-    invoice: { icon: '💰', color: 'var(--teal)', gradient: 'linear-gradient(135deg, #00C4BC 0%, #0099FF 100%)' },
+    invoice: { icon: '💰', color: 'var(--teal)', gradient: 'linear-gradient(135deg, #C0B8A8 0%, #0099FF 100%)' },
     notification: { icon: '🔔', color: '#63B3ED', gradient: 'linear-gradient(135deg, #63B3ED 0%, #805AD5 100%)' },
     direct_message: { icon: '💬', color: 'rgba(255,255,255,0.5)', gradient: 'linear-gradient(135deg, #374151 0%, #4B5563 100%)' },
   };
@@ -95,7 +95,7 @@ export default function AgentInbox({ agentId }: { agentId: string }) {
       }}>
         <div style={{
           width: 32, height: 32, borderRadius: '50%',
-          border: '2.5px solid rgba(0,196,188,0.2)', borderTopColor: 'var(--teal)',
+          border: '2.5px solid rgba(192,184,168,0.2)', borderTopColor: 'var(--teal)',
           animation: 'spin 0.8s linear infinite',
         }} />
         <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: '0.82rem' }}>Loading Inbox...</span>
@@ -138,7 +138,7 @@ export default function AgentInbox({ agentId }: { agentId: string }) {
               display: 'flex', alignItems: 'center', gap: 6,
               transition: 'background 0.2s, color 0.2s',
             }}
-            onMouseEnter={e => { e.currentTarget.style.background = 'rgba(0,196,188,0.08)'; e.currentTarget.style.color = 'var(--teal)'; }}
+            onMouseEnter={e => { e.currentTarget.style.background = 'rgba(192,184,168,0.08)'; e.currentTarget.style.color = 'var(--teal)'; }}
             onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.04)'; e.currentTarget.style.color = 'rgba(255,255,255,0.4)'; }}
           >
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -164,7 +164,7 @@ export default function AgentInbox({ agentId }: { agentId: string }) {
               padding: '6px 14px', borderRadius: 8,
               border: 'none', cursor: 'pointer',
               fontSize: '0.75rem', fontWeight: activeFilter === f.key ? 700 : 500,
-              background: activeFilter === f.key ? 'rgba(0,196,188,0.1)' : 'transparent',
+              background: activeFilter === f.key ? 'rgba(192,184,168,0.1)' : 'transparent',
               color: activeFilter === f.key ? 'var(--teal)' : 'rgba(255,255,255,0.35)',
               transition: 'all 0.15s',
             }}
@@ -173,7 +173,7 @@ export default function AgentInbox({ agentId }: { agentId: string }) {
             {counts[f.key] > 0 && (
               <span style={{
                 marginLeft: 5, fontSize: '0.62rem', fontWeight: 700,
-                background: activeFilter === f.key ? 'rgba(0,196,188,0.2)' : 'rgba(255,255,255,0.05)',
+                background: activeFilter === f.key ? 'rgba(192,184,168,0.2)' : 'rgba(255,255,255,0.05)',
                 padding: '1px 6px', borderRadius: 4,
               }}>
                 {counts[f.key]}
@@ -222,11 +222,11 @@ export default function AgentInbox({ agentId }: { agentId: string }) {
                   display: 'flex', gap: 14,
                   padding: '14px 24px',
                   borderBottom: i < filtered.length - 1 ? '1px solid rgba(255,255,255,0.03)' : 'none',
-                  background: !msg.is_read ? 'rgba(0,196,188,0.02)' : 'transparent',
+                  background: !msg.is_read ? 'rgba(192,184,168,0.02)' : 'transparent',
                   transition: 'background 0.15s',
                 }}
                 onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.02)')}
-                onMouseLeave={e => (e.currentTarget.style.background = !msg.is_read ? 'rgba(0,196,188,0.02)' : 'transparent')}
+                onMouseLeave={e => (e.currentTarget.style.background = !msg.is_read ? 'rgba(192,184,168,0.02)' : 'transparent')}
               >
                 {/* Type avatar */}
                 <div style={{
@@ -284,7 +284,7 @@ export default function AgentInbox({ agentId }: { agentId: string }) {
                       <div style={{
                         width: 6, height: 6, borderRadius: '50%',
                         background: 'var(--teal)',
-                        boxShadow: '0 0 4px rgba(0,196,188,0.4)',
+                        boxShadow: '0 0 4px rgba(192,184,168,0.4)',
                         marginLeft: 'auto',
                       }} />
                     )}

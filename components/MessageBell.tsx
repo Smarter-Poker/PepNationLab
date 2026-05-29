@@ -106,7 +106,7 @@ export default function MessageBell({ onViewAll, dropUp }: { onViewAll: () => vo
         aria-label="Messages"
         style={{
           position: 'relative',
-          background: open ? 'rgba(0,196,188,0.08)' : 'none',
+          background: open ? 'rgba(192,184,168,0.08)' : 'none',
           border: 'none',
           cursor: 'pointer',
           padding: 8,
@@ -118,7 +118,7 @@ export default function MessageBell({ onViewAll, dropUp }: { onViewAll: () => vo
         onMouseEnter={e => { if (!open) e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; }}
         onMouseLeave={e => { if (!open) e.currentTarget.style.background = 'none'; }}
       >
-        <img src="/images/messenger-icon.png" alt="Messages" width={24} height={24} style={{ transition: 'opacity 0.2s', opacity: open ? 1 : 0.7, filter: open ? 'none' : 'brightness(0.9)' }} />
+        <img src="/images/messenger-icon.png" alt="Messages" width={32} height={32} style={{ transition: 'opacity 0.2s', display: 'block' }} />
         {unreadCount > 0 && (
           <span style={{
             position: 'absolute', top: 2, right: 2,
@@ -149,7 +149,7 @@ export default function MessageBell({ onViewAll, dropUp }: { onViewAll: () => vo
           background: '#111827',
           border: '1px solid rgba(255,255,255,0.08)',
           borderRadius: 16,
-          boxShadow: '0 16px 48px rgba(0,0,0,0.5), 0 0 0 1px rgba(0,196,188,0.05)',
+          boxShadow: '0 16px 48px rgba(0,0,0,0.5), 0 0 0 1px rgba(192,184,168,0.05)',
           zIndex: 1000, overflow: 'hidden',
           animation: 'dropdownSlide 0.2s ease-out',
         }}>
@@ -167,13 +167,13 @@ export default function MessageBell({ onViewAll, dropUp }: { onViewAll: () => vo
             <button
               onClick={() => { setOpen(false); onViewAll(); }}
               style={{
-                fontSize: '0.75rem', color: 'var(--teal)', background: 'rgba(0,196,188,0.06)',
-                border: '1px solid rgba(0,196,188,0.15)', borderRadius: 8,
+                fontSize: '0.75rem', color: 'var(--teal)', background: 'rgba(192,184,168,0.06)',
+                border: '1px solid rgba(192,184,168,0.15)', borderRadius: 8,
                 cursor: 'pointer', fontWeight: 600, padding: '4px 12px',
                 transition: 'background 0.2s',
               }}
-              onMouseEnter={e => (e.currentTarget.style.background = 'rgba(0,196,188,0.12)')}
-              onMouseLeave={e => (e.currentTarget.style.background = 'rgba(0,196,188,0.06)')}
+              onMouseEnter={e => (e.currentTarget.style.background = 'rgba(192,184,168,0.12)')}
+              onMouseLeave={e => (e.currentTarget.style.background = 'rgba(192,184,168,0.06)')}
             >
               View All
             </button>
@@ -188,7 +188,7 @@ export default function MessageBell({ onViewAll, dropUp }: { onViewAll: () => vo
               <div style={{ padding: 32, textAlign: 'center' }}>
                 <div style={{
                   width: 24, height: 24, borderRadius: '50%', margin: '0 auto 10px',
-                  border: '2px solid rgba(0,196,188,0.2)', borderTopColor: 'var(--teal)',
+                  border: '2px solid rgba(192,184,168,0.2)', borderTopColor: 'var(--teal)',
                   animation: 'spin 0.8s linear infinite',
                 }} />
                 <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: '0.78rem' }}>Loading...</span>
@@ -214,20 +214,20 @@ export default function MessageBell({ onViewAll, dropUp }: { onViewAll: () => vo
                   style={{
                     display: 'flex', alignItems: 'flex-start', gap: 12,
                     padding: '10px 20px',
-                    background: !msg.is_read ? 'rgba(0,196,188,0.03)' : 'transparent',
+                    background: !msg.is_read ? 'rgba(192,184,168,0.03)' : 'transparent',
                     cursor: 'pointer',
                     transition: 'background 0.15s',
                     position: 'relative',
                   }}
                   onClick={() => { setOpen(false); onViewAll(); }}
                   onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.03)')}
-                  onMouseLeave={e => (e.currentTarget.style.background = !msg.is_read ? 'rgba(0,196,188,0.03)' : 'transparent')}
+                  onMouseLeave={e => (e.currentTarget.style.background = !msg.is_read ? 'rgba(192,184,168,0.03)' : 'transparent')}
                 >
                   {/* Avatar */}
                   <div style={{
                     width: 44, height: 44, borderRadius: '50%',
                     background: msg.type === 'invoice'
-                      ? 'linear-gradient(135deg, #00C4BC, #0099FF)'
+                      ? 'linear-gradient(135deg, #C0B8A8, #0099FF)'
                       : msg.type === 'notification'
                         ? 'linear-gradient(135deg, #63B3ED, #805AD5)'
                         : 'linear-gradient(135deg, #374151, #4B5563)',
@@ -278,7 +278,7 @@ export default function MessageBell({ onViewAll, dropUp }: { onViewAll: () => vo
                     <div style={{
                       width: 8, height: 8, borderRadius: '50%',
                       background: 'var(--teal)',
-                      boxShadow: '0 0 6px rgba(0,196,188,0.4)',
+                      boxShadow: '0 0 6px rgba(192,184,168,0.4)',
                       flexShrink: 0, marginTop: 6,
                     }} />
                   )}

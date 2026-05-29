@@ -27,7 +27,7 @@ export default function DisclaimerGate({ onAccept }: DisclaimerGateProps) {
             letterSpacing: '0.15em',
             textTransform: 'uppercase',
             marginBottom: 'var(--space-2)',
-            textShadow: '0 0 20px rgba(0,196,188,0.5)'
+            textShadow: '0 0 20px rgba(192,184,168,0.5)'
           }}>
             Pep Nation Lab
           </div>

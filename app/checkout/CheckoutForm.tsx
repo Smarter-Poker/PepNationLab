@@ -392,7 +392,7 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers }
     const payment = getPaymentDetails();
     return (
       <div className="container-sm section" style={{ display: 'flex', justifyContent: 'center', padding: 'var(--space-10) var(--space-4)' }}>
-        <div className="card-metal" style={{ width: '100%', maxWidth: 640, padding: 'var(--space-8)', border: '2px solid var(--teal)', boxShadow: '0 0 30px rgba(0, 196, 188, 0.2)' }}>
+        <div className="card-metal" style={{ width: '100%', maxWidth: 640, padding: 'var(--space-8)', border: '2px solid var(--teal)', boxShadow: '0 0 30px rgba(192, 184, 168, 0.2)' }}>
           {/* Success Header */}
           <div style={{ textAlign: 'center', marginBottom: 'var(--space-6)' }}>
             <div style={{
@@ -402,7 +402,7 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers }
               width: 72,
               height: 72,
               borderRadius: '50%',
-              background: 'rgba(0, 196, 188, 0.1)',
+              background: 'rgba(192, 184, 168, 0.1)',
               border: '2px solid var(--teal)',
               color: 'var(--teal)',
               marginBottom: 'var(--space-4)',
@@ -437,7 +437,7 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers }
           </div>
 
           {/* Instructions Box */}
-          <div style={{ background: 'rgba(0, 196, 188, 0.04)', border: '1px dashed var(--teal)', borderRadius: 'var(--radius-lg)', padding: 'var(--space-5)', marginBottom: 'var(--space-8)' }}>
+          <div style={{ background: 'rgba(192, 184, 168, 0.04)', border: '1px dashed var(--teal)', borderRadius: 'var(--radius-lg)', padding: 'var(--space-5)', marginBottom: 'var(--space-8)' }}>
             <h3 style={{ fontSize: '1rem', color: 'var(--teal)', marginBottom: 'var(--space-3)', textTransform: 'uppercase', letterSpacing: '0.05em', fontFamily: 'var(--font-brand)', display: 'flex', alignItems: 'center', gap: 8 }}>
               <svg
                 width="14"
@@ -510,7 +510,7 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers }
               fontWeight: 'bold',
               fontFamily: 'var(--font-brand)',
               fontSize: '0.88rem',
-              background: step === s.num ? 'var(--teal)' : step > s.num ? 'rgba(0, 196, 188, 0.15)' : 'var(--surface-3)',
+              background: step === s.num ? 'var(--teal)' : step > s.num ? 'rgba(192, 184, 168, 0.15)' : 'var(--surface-3)',
               color: step === s.num ? '#fff' : step > s.num ? 'var(--teal)' : 'var(--silver-dark)',
               border: step >= s.num ? '1px solid var(--teal)' : '1px solid rgba(255, 255, 255, 0.05)',
               boxShadow: step === s.num ? 'var(--shadow-teal-sm)' : 'none',
@@ -581,7 +581,7 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers }
                       gap: 4,
                       padding: 'var(--space-4)',
                       borderRadius: 'var(--radius-lg)',
-                      background: fulfillmentMethod === 'ship' ? 'rgba(0, 196, 188, 0.06)' : 'var(--surface-2)',
+                      background: fulfillmentMethod === 'ship' ? 'rgba(192, 184, 168, 0.06)' : 'var(--surface-2)',
                       border: fulfillmentMethod === 'ship' ? '2px solid var(--teal)' : '1px solid rgba(255, 255, 255, 0.05)',
                       cursor: 'pointer',
                       boxShadow: fulfillmentMethod === 'ship' ? 'var(--shadow-teal-sm)' : 'none',
@@ -608,7 +608,7 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers }
                       gap: 4,
                       padding: 'var(--space-4)',
                       borderRadius: 'var(--radius-lg)',
-                      background: fulfillmentMethod === 'agent_pickup' ? 'rgba(0, 196, 188, 0.06)' : 'var(--surface-2)',
+                      background: fulfillmentMethod === 'agent_pickup' ? 'rgba(192, 184, 168, 0.06)' : 'var(--surface-2)',
                       border: fulfillmentMethod === 'agent_pickup' ? '2px solid var(--teal)' : '1px solid rgba(255, 255, 255, 0.05)',
                       cursor: 'pointer',
                       boxShadow: fulfillmentMethod === 'agent_pickup' ? 'var(--shadow-teal-sm)' : 'none',
@@ -650,7 +650,7 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers }
                                 gap: 'var(--space-3)',
                                 padding: 'var(--space-3)',
                                 borderRadius: 'var(--radius-md)',
-                                background: selectedAddressId === a.id ? 'rgba(0, 196, 188, 0.06)' : 'var(--surface-2)',
+                                background: selectedAddressId === a.id ? 'rgba(192, 184, 168, 0.06)' : 'var(--surface-2)',
                                 border: selectedAddressId === a.id ? '2px solid var(--teal)' : '1px solid rgba(255, 255, 255, 0.05)',
                                 cursor: 'pointer',
                               }}
@@ -683,7 +683,7 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers }
                               gap: 'var(--space-3)',
                               padding: 'var(--space-3)',
                               borderRadius: 'var(--radius-md)',
-                              background: selectedAddressId === 'new' ? 'rgba(0, 196, 188, 0.06)' : 'var(--surface-2)',
+                              background: selectedAddressId === 'new' ? 'rgba(192, 184, 168, 0.06)' : 'var(--surface-2)',
                               border: selectedAddressId === 'new' ? '2px solid var(--teal)' : '1px solid rgba(255, 255, 255, 0.05)',
                               cursor: 'pointer',
                             }}
@@ -813,7 +813,7 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers }
                 )}
 
                 {fulfillmentMethod === 'agent_pickup' && (
-                  <div style={{ background: 'rgba(0, 196, 188, 0.03)', border: '1px solid rgba(0, 196, 188, 0.2)', borderRadius: 'var(--radius-lg)', padding: 'var(--space-5)' }}>
+                  <div style={{ background: 'rgba(192, 184, 168, 0.03)', border: '1px solid rgba(192, 184, 168, 0.2)', borderRadius: 'var(--radius-lg)', padding: 'var(--space-5)' }}>
                     <h4 style={{ color: 'var(--teal)', fontSize: '0.95rem', marginBottom: 'var(--space-2)', fontFamily: 'var(--font-brand)' }}>Agent Hand-Off Confirmation</h4>
                     <p style={{ fontSize: '0.85rem', color: 'var(--silver-light)', margin: 0, lineHeight: 1.6 }}>
                       You Have Opted For Manual In-Person Pickup. No Package Shipping Fee Will Be Charged.
@@ -854,7 +854,7 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers }
                         gap: 4,
                         padding: 'var(--space-4)',
                         borderRadius: 'var(--radius-lg)',
-                        background: paymentMethod === p.id ? 'rgba(0, 196, 188, 0.06)' : 'var(--surface-2)',
+                        background: paymentMethod === p.id ? 'rgba(192, 184, 168, 0.06)' : 'var(--surface-2)',
                         border: paymentMethod === p.id ? '2px solid var(--teal)' : '1px solid rgba(255, 255, 255, 0.05)',
                         cursor: 'pointer',
                         boxShadow: paymentMethod === p.id ? 'var(--shadow-teal-sm)' : 'none',

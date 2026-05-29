@@ -74,7 +74,7 @@ export default function HowItWorksSection() {
             position: 'absolute',
             top: 36, left: 'calc(12.5% + 36px)', right: 'calc(12.5% + 36px)',
             height: 1,
-            background: 'linear-gradient(90deg, transparent, rgba(0,196,188,0.3), rgba(0,196,188,0.3), transparent)',
+            background: 'linear-gradient(90deg, transparent, rgba(192,184,168,0.3), rgba(192,184,168,0.3), transparent)',
             pointerEvents: 'none',
             zIndex: 0
           }} />
@@ -92,7 +92,7 @@ export default function HowItWorksSection() {
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   margin: '0 auto var(--space-4)',
                   color: 'var(--teal)',
-                  boxShadow: '0 0 20px rgba(0,196,188,0.2)',
+                  boxShadow: '0 0 20px rgba(192,184,168,0.2)',
                   position: 'relative'
                 }}>
                   {step.icon}
@@ -127,7 +127,7 @@ export default function HowItWorksSection() {
         <div className="card-glass" style={{ 
           marginTop: 'var(--space-12)',
           textAlign: 'center',
-          background: 'linear-gradient(135deg, rgba(0,196,188,0.05) 0%, rgba(15,25,35,0.95) 100%)'
+          background: 'linear-gradient(135deg, rgba(192,184,168,0.05) 0%, rgba(15,25,35,0.95) 100%)'
         }}>
           <h3 style={{ marginBottom: 'var(--space-4)' }}>
             Ready To Run Your Own{' '}

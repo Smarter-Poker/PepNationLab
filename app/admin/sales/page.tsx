@@ -225,7 +225,7 @@ export default function AdminSalesPage() {
                       onClick={() => loadAgentLedger(agent)}
                       style={{
                         borderBottom: i < paginated.length - 1 ? '1px solid rgba(255,255,255,0.04)' : 'none',
-                        background: selectedAgent?.agent_id === agent.agent_id ? 'rgba(0,196,188,0.04)' : 'transparent',
+                        background: selectedAgent?.agent_id === agent.agent_id ? 'rgba(192,184,168,0.04)' : 'transparent',
                         cursor: 'pointer', transition: 'background 0.15s',
                       }}>
                       <td style={{ padding: 'var(--space-3) var(--space-4)' }}>
@@ -239,7 +239,7 @@ export default function AdminSalesPage() {
                         </div>
                       </td>
                       <td style={{ padding: 'var(--space-3) var(--space-4)' }}>
-                        <span style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--teal)', background: 'rgba(0,196,188,0.1)', padding: '2px 8px', borderRadius: 4, border: '1px solid rgba(0,196,188,0.3)' }}>
+                        <span style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--teal)', background: 'rgba(192,184,168,0.1)', padding: '2px 8px', borderRadius: 4, border: '1px solid rgba(192,184,168,0.3)' }}>
                           {agent.tier ? (TIER_LABELS[agent.tier] ?? agent.tier) : '—'}
                         </span>
                       </td>
@@ -254,7 +254,7 @@ export default function AdminSalesPage() {
                       </td>
                       <td style={{ padding: 'var(--space-3) var(--space-4)' }}>
                         <button onClick={e => { e.stopPropagation(); loadAgentLedger(agent); }}
-                          style={{ fontSize: '0.75rem', color: 'var(--teal)', background: 'none', border: '1px solid rgba(0,196,188,0.3)', borderRadius: 4, padding: '3px 10px', cursor: 'pointer' }}>
+                          style={{ fontSize: '0.75rem', color: 'var(--teal)', background: 'none', border: '1px solid rgba(192,184,168,0.3)', borderRadius: 4, padding: '3px 10px', cursor: 'pointer' }}>
                           Ledger
                         </button>
                       </td>

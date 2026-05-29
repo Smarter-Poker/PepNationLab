@@ -272,9 +272,9 @@ export default function AdminMessagesPage() {
             style={{
               padding: '8px 18px', borderRadius: 10, cursor: 'pointer',
               fontSize: '0.82rem', fontWeight: tab === t.key ? 700 : 500,
-              background: tab === t.key ? 'rgba(0,196,188,0.08)' : 'rgba(255,255,255,0.03)',
+              background: tab === t.key ? 'rgba(192,184,168,0.08)' : 'rgba(255,255,255,0.03)',
               color: tab === t.key ? 'var(--teal)' : 'rgba(255,255,255,0.4)',
-              border: tab === t.key ? '1px solid rgba(0,196,188,0.15)' : '1px solid rgba(255,255,255,0.05)',
+              border: tab === t.key ? '1px solid rgba(192,184,168,0.15)' : '1px solid rgba(255,255,255,0.05)',
               transition: 'all 0.15s',
             }}>
             {t.icon} {t.label}
@@ -293,13 +293,13 @@ export default function AdminMessagesPage() {
                 <input type="text" placeholder="Search..." value={filter} onChange={e => setFilter(e.target.value)} style={{ background: 'transparent', border: 'none', outline: 'none', color: '#fff', fontSize: '0.78rem', padding: '8px 0', width: '100%', fontFamily: 'inherit' }} />
               </div>
               <div style={{ display: 'flex', gap: 4 }}>
-                <button onClick={() => setShowArchived(false)} style={{ flex: 1, padding: '4px 8px', borderRadius: 6, border: 'none', cursor: 'pointer', fontSize: '0.68rem', fontWeight: !showArchived ? 700 : 500, background: !showArchived ? 'rgba(0,196,188,0.08)' : 'transparent', color: !showArchived ? 'var(--teal)' : 'rgba(255,255,255,0.3)' }}>Active</button>
+                <button onClick={() => setShowArchived(false)} style={{ flex: 1, padding: '4px 8px', borderRadius: 6, border: 'none', cursor: 'pointer', fontSize: '0.68rem', fontWeight: !showArchived ? 700 : 500, background: !showArchived ? 'rgba(192,184,168,0.08)' : 'transparent', color: !showArchived ? 'var(--teal)' : 'rgba(255,255,255,0.3)' }}>Active</button>
                 <button onClick={() => setShowArchived(true)} style={{ flex: 1, padding: '4px 8px', borderRadius: 6, border: 'none', cursor: 'pointer', fontSize: '0.68rem', fontWeight: showArchived ? 700 : 500, background: showArchived ? 'rgba(255,255,255,0.06)' : 'transparent', color: showArchived ? 'rgba(255,255,255,0.6)' : 'rgba(255,255,255,0.3)' }}>Archived</button>
               </div>
             </div>
             <div style={{ flex: 1, overflowY: 'auto' }}>
               {loading ? (
-                <div style={{ padding: 32, textAlign: 'center' }}><div style={{ width: 22, height: 22, borderRadius: '50%', margin: '0 auto', border: '2px solid rgba(0,196,188,0.2)', borderTopColor: 'var(--teal)', animation: 'spin 0.8s linear infinite' }} /></div>
+                <div style={{ padding: 32, textAlign: 'center' }}><div style={{ width: 22, height: 22, borderRadius: '50%', margin: '0 auto', border: '2px solid rgba(192,184,168,0.2)', borderTopColor: 'var(--teal)', animation: 'spin 0.8s linear infinite' }} /></div>
               ) : filtered.length === 0 ? (
                 <div style={{ padding: 32, textAlign: 'center', color: 'rgba(255,255,255,0.25)', fontSize: '0.78rem' }}>{showArchived ? 'No Archived Chats' : 'No Agents'}</div>
               ) : filtered.map(a => {
@@ -307,7 +307,7 @@ export default function AdminMessagesPage() {
                 const online = isOnline(a);
                 return (
                   <div key={a.id} style={{ display: 'flex', alignItems: 'center' }}>
-                    <button onClick={() => setSelected(a)} style={{ flex: 1, textAlign: 'left', background: active ? 'rgba(0,196,188,0.06)' : 'transparent', border: 'none', borderLeft: active ? '3px solid var(--teal)' : '3px solid transparent', padding: '10px 12px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 10, transition: 'background 0.15s' }}
+                    <button onClick={() => setSelected(a)} style={{ flex: 1, textAlign: 'left', background: active ? 'rgba(192,184,168,0.06)' : 'transparent', border: 'none', borderLeft: active ? '3px solid var(--teal)' : '3px solid transparent', padding: '10px 12px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 10, transition: 'background 0.15s' }}
                       onMouseEnter={e => { if (!active) e.currentTarget.style.background = 'rgba(255,255,255,0.02)'; }}
                       onMouseLeave={e => { if (!active) e.currentTarget.style.background = 'transparent'; }}>
                       <div style={{ position: 'relative', flexShrink: 0 }}>
@@ -334,7 +334,7 @@ export default function AdminMessagesPage() {
               <>
                 <div style={{ padding: '8px 16px', background: 'rgba(255,255,255,0.02)', borderBottom: '1px solid rgba(255,255,255,0.04)', display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
                   <button onClick={() => { setInvoiceAgent(selected); setShowInvoice(true); setInvoiceAmount(''); setInvoiceDesc(''); setInvoiceDueDate(''); setLineItems([]); }}
-                    style={{ display: 'flex', alignItems: 'center', gap: 5, background: 'linear-gradient(135deg, rgba(0,196,188,0.08), rgba(0,153,255,0.08))', border: '1px solid rgba(0,196,188,0.15)', color: 'var(--teal)', fontSize: '0.75rem', fontWeight: 600, padding: '5px 14px', borderRadius: 8, cursor: 'pointer' }}>
+                    style={{ display: 'flex', alignItems: 'center', gap: 5, background: 'linear-gradient(135deg, rgba(192,184,168,0.08), rgba(0,153,255,0.08))', border: '1px solid rgba(192,184,168,0.15)', color: 'var(--teal)', fontSize: '0.75rem', fontWeight: 600, padding: '5px 14px', borderRadius: 8, cursor: 'pointer' }}>
                     💰 Invoice
                   </button>
                   <button onClick={() => { setCreditAgent(selected); setShowCreditMemo(true); setCreditAmount(''); setCreditDesc(''); }}
@@ -346,8 +346,8 @@ export default function AdminMessagesPage() {
               </>
             ) : (
               <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 14 }}>
-                <div style={{ width: 70, height: 70, borderRadius: '50%', background: 'linear-gradient(135deg, rgba(0,196,188,0.05), rgba(0,153,255,0.05))', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="rgba(0,196,188,0.25)" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg>
+                <div style={{ width: 70, height: 70, borderRadius: '50%', background: 'linear-gradient(135deg, rgba(192,184,168,0.05), rgba(0,153,255,0.05))', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="rgba(192,184,168,0.25)" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg>
                 </div>
                 <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.92rem', fontWeight: 600 }}>Select A Conversation</div>
               </div>
@@ -362,14 +362,14 @@ export default function AdminMessagesPage() {
           <div style={{ padding: '16px 20px', borderBottom: '1px solid rgba(255,255,255,0.04)', display: 'flex', alignItems: 'center', gap: 8 }}>
             {['all', 'pending', 'paid', 'overdue', 'cancelled'].map(s => (
               <button key={s} onClick={() => { setInvoiceFilter(s); setTimeout(loadInvoices, 50); }}
-                style={{ padding: '5px 14px', borderRadius: 8, border: 'none', cursor: 'pointer', fontSize: '0.75rem', fontWeight: invoiceFilter === s ? 700 : 500, background: invoiceFilter === s ? 'rgba(0,196,188,0.08)' : 'transparent', color: invoiceFilter === s ? 'var(--teal)' : 'rgba(255,255,255,0.35)', textTransform: 'capitalize' }}>
+                style={{ padding: '5px 14px', borderRadius: 8, border: 'none', cursor: 'pointer', fontSize: '0.75rem', fontWeight: invoiceFilter === s ? 700 : 500, background: invoiceFilter === s ? 'rgba(192,184,168,0.08)' : 'transparent', color: invoiceFilter === s ? 'var(--teal)' : 'rgba(255,255,255,0.35)', textTransform: 'capitalize' }}>
                 {s}
               </button>
             ))}
           </div>
           <div style={{ maxHeight: 500, overflowY: 'auto' }}>
             {invoicesLoading ? (
-              <div style={{ padding: 32, textAlign: 'center' }}><div style={{ width: 24, height: 24, borderRadius: '50%', margin: '0 auto', border: '2px solid rgba(0,196,188,0.2)', borderTopColor: 'var(--teal)', animation: 'spin 0.8s linear infinite' }} /></div>
+              <div style={{ padding: 32, textAlign: 'center' }}><div style={{ width: 24, height: 24, borderRadius: '50%', margin: '0 auto', border: '2px solid rgba(192,184,168,0.2)', borderTopColor: 'var(--teal)', animation: 'spin 0.8s linear infinite' }} /></div>
             ) : invoices.length === 0 ? (
               <div style={{ padding: 48, textAlign: 'center', color: 'rgba(255,255,255,0.3)', fontSize: '0.85rem' }}>No Invoices Found</div>
             ) : invoices.map(inv => (
@@ -408,7 +408,7 @@ export default function AdminMessagesPage() {
       {tab === 'analytics' && (
         <div style={{ background: '#0a0f1a', borderRadius: 16, border: '1px solid rgba(255,255,255,0.06)', padding: 24 }}>
           {analyticsLoading || !analytics ? (
-            <div style={{ textAlign: 'center', padding: 32 }}><div style={{ width: 28, height: 28, borderRadius: '50%', margin: '0 auto', border: '2.5px solid rgba(0,196,188,0.2)', borderTopColor: 'var(--teal)', animation: 'spin 0.8s linear infinite' }} /></div>
+            <div style={{ textAlign: 'center', padding: 32 }}><div style={{ width: 28, height: 28, borderRadius: '50%', margin: '0 auto', border: '2.5px solid rgba(192,184,168,0.2)', borderTopColor: 'var(--teal)', animation: 'spin 0.8s linear infinite' }} /></div>
           ) : (
             <>
               {/* Stats cards */}
@@ -466,7 +466,7 @@ export default function AdminMessagesPage() {
       {/* Invoice Modal */}
       {showInvoice && invoiceAgent && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={() => !invoiceSending && setShowInvoice(false)}>
-          <div onClick={e => e.stopPropagation()} style={{ width: '100%', maxWidth: 480, background: '#111827', border: '1px solid rgba(0,196,188,0.15)', borderRadius: 18, padding: 24, boxShadow: '0 24px 64px rgba(0,0,0,0.5)', maxHeight: '80vh', overflowY: 'auto' }}>
+          <div onClick={e => e.stopPropagation()} style={{ width: '100%', maxWidth: 480, background: '#111827', border: '1px solid rgba(192,184,168,0.15)', borderRadius: 18, padding: 24, boxShadow: '0 24px 64px rgba(0,0,0,0.5)', maxHeight: '80vh', overflowY: 'auto' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 18 }}>
               <span style={{ fontSize: '1.4rem' }}>💰</span>
               <div><h3 style={{ margin: 0, fontSize: '1rem', color: '#fff' }}>Send Invoice</h3><p style={{ margin: '2px 0 0', fontSize: '0.75rem', color: 'rgba(255,255,255,0.4)' }}>To: <strong style={{ color: 'var(--teal)' }}>{invoiceAgent.full_name || invoiceAgent.username}</strong></p></div>
@@ -479,7 +479,7 @@ export default function AdminMessagesPage() {
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
                   <label style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.5)', fontWeight: 600 }}>Line Items</label>
                   <button type="button" onClick={() => setLineItems([...lineItems, { name: '', qty: 1, price: 0 }])}
-                    style={{ background: 'rgba(0,196,188,0.06)', border: '1px solid rgba(0,196,188,0.15)', color: 'var(--teal)', fontSize: '0.68rem', fontWeight: 600, padding: '3px 10px', borderRadius: 6, cursor: 'pointer' }}>+ Add Item</button>
+                    style={{ background: 'rgba(192,184,168,0.06)', border: '1px solid rgba(192,184,168,0.15)', color: 'var(--teal)', fontSize: '0.68rem', fontWeight: 600, padding: '3px 10px', borderRadius: 6, cursor: 'pointer' }}>+ Add Item</button>
                 </div>
                 {lineItems.map((li, idx) => (
                   <div key={idx} style={{ display: 'flex', gap: 6, marginBottom: 6 }}>

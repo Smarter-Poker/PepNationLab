@@ -202,9 +202,9 @@ export default function AdminRestockPage() {
                           <td
                             colSpan={7}
                             style={{
-                              background: 'rgba(0,196,188,0.04)',
+                              background: 'rgba(192,184,168,0.04)',
                               padding: 'var(--space-4)',
-                              borderTop: '1px solid rgba(0,196,188,0.12)',
+                              borderTop: '1px solid rgba(192,184,168,0.12)',
                             }}
                           >
                             <div

@@ -24,7 +24,7 @@ export default function NotFound() {
           right: 0,
           bottom: 0,
           background:
-            "radial-gradient(ellipse at 50% 0%, rgba(0,196,188,0.06) 0%, transparent 60%)",
+            "radial-gradient(ellipse at 50% 0%, rgba(192,184,168,0.06) 0%, transparent 60%)",
           pointerEvents: "none",
         }}
       />

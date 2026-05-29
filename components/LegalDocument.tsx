@@ -42,7 +42,7 @@ export default function LegalDocument({
             letterSpacing: '0.08em',
             textTransform: 'uppercase',
             marginBottom: 'var(--space-4)',
-            boxShadow: '0 0 0 1px rgba(0,196,188,0.2), 0 0 12px rgba(0,196,188,0.2)',
+            boxShadow: '0 0 0 1px rgba(192,184,168,0.2), 0 0 12px rgba(192,184,168,0.2)',
           }}
         >
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">

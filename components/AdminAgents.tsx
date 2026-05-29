@@ -317,7 +317,7 @@ export default function AdminAgents() {
                         padding: '2px 8px',
                         borderRadius: 12,
                         fontSize: '0.75rem',
-                        background: 'rgba(0,196,188,0.1)',
+                        background: 'rgba(192,184,168,0.1)',
                         color: 'var(--teal)'
                       }}>
                         {agent.tier?.toUpperCase() || 'TIER_3'}

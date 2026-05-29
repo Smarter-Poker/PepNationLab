@@ -142,7 +142,7 @@ export default function ProductsList({
             onClick={() => setIsCartOpen(true)}
             style={{
               background: 'var(--surface-2)',
-              border: '1px solid rgba(0, 196, 188, 0.2)',
+              border: '1px solid rgba(192, 184, 168, 0.2)',
               borderRadius: 'var(--radius-md)',
               padding: '8px 14px',
               display: 'flex',
@@ -212,7 +212,7 @@ export default function ProductsList({
                     padding: '8px 16px',
                     borderRadius: 'var(--radius-md)',
                     border: activeCategory === cat ? '1px solid var(--teal)' : '1px solid rgba(255,255,255,0.06)',
-                    background: activeCategory === cat ? 'rgba(0,196,188,0.1)' : 'var(--surface-3)',
+                    background: activeCategory === cat ? 'rgba(192,184,168,0.1)' : 'var(--surface-3)',
                     color: activeCategory === cat ? 'var(--teal)' : 'var(--silver)',
                     fontSize: '0.82rem',
                     fontWeight: 600,
@@ -295,7 +295,7 @@ export default function ProductsList({
                   {/* Decorative skeuomorphic header area */}
                   <div style={{
                     height: 120,
-                    background: 'radial-gradient(circle at 35% 35%, rgba(0, 196, 188, 0.1) 0%, var(--surface-2) 80%)',
+                    background: 'radial-gradient(circle at 35% 35%, rgba(192, 184, 168, 0.1) 0%, var(--surface-2) 80%)',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
@@ -321,8 +321,8 @@ export default function ProductsList({
                         fontWeight: 700,
                         padding: '3px 10px',
                         borderRadius: 'var(--radius-full)',
-                        background: product.in_stock ? 'rgba(0,196,188,0.08)' : 'rgba(246,173,85,0.08)',
-                        border: `1px solid ${product.in_stock ? 'rgba(0,196,188,0.25)' : 'rgba(246,173,85,0.25)'}`,
+                        background: product.in_stock ? 'rgba(192,184,168,0.08)' : 'rgba(246,173,85,0.08)',
+                        border: `1px solid ${product.in_stock ? 'rgba(192,184,168,0.25)' : 'rgba(246,173,85,0.25)'}`,
                         color: product.in_stock ? 'var(--teal)' : '#F6AD55'
                       }}>
                         <span style={{

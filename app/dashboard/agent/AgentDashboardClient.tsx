@@ -101,7 +101,7 @@ export default function AgentDashboardClient({
   const [logoUrl, setLogoUrl] = useState(agentProfile?.logo_url ?? '');
   const [tagline, setTagline] = useState(agentProfile?.tagline ?? '');
   const [bio, setBio] = useState(agentProfile?.bio ?? '');
-  const [primaryColor, setPrimaryColor] = useState(agentProfile?.primary_color ?? '#00C4BC');
+  const [primaryColor, setPrimaryColor] = useState(agentProfile?.primary_color ?? '#C0B8A8');
   const [zelleHandle, setZelleHandle] = useState(agentProfile?.payment_handles?.zelle ?? '');
   const [cashappHandle, setCashappHandle] = useState(agentProfile?.payment_handles?.cashapp ?? '');
   const [venmoHandle, setVenmoHandle] = useState(agentProfile?.payment_handles?.venmo ?? '');
@@ -472,14 +472,14 @@ export default function AgentDashboardClient({
         <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)' }}>
           <button 
             className="btn btn-ghost btn-sm hamburger-btn" 
-            style={{ padding: '4px' }} 
+            style={{ padding: '2px' }} 
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
           >
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="3" y1="12" x2="21" y2="12" /><line x1="3" y1="6" x2="21" y2="6" /><line x1="3" y1="18" x2="21" y2="18" /></svg>
+            <img src="/images/hamburger-icon.png" alt="Menu" width={32} height={32} style={{ display: 'block' }} />
           </button>
           
           <Link href="/dashboard" style={{ display: 'inline-flex', alignItems: 'center' }}>
-            <img src="/images/back-arrow.png" alt="Back" width={40} height={26} style={{ opacity: 0.85, transition: 'opacity 0.2s' }} onMouseEnter={e => (e.currentTarget.style.opacity = '1')} onMouseLeave={e => (e.currentTarget.style.opacity = '0.85')} />
+            <img src="/images/back-arrow.png" alt="Back" width={53} height={35} style={{ display: 'block', transition: 'opacity 0.2s' }} onMouseEnter={e => (e.currentTarget.style.opacity = '0.8')} onMouseLeave={e => (e.currentTarget.style.opacity = '1')} />
           </Link>
           <div style={{ width: 1, height: 16, background: 'rgba(255,255,255,0.1)' }} />
           <span style={{ fontFamily: 'var(--font-brand)', fontSize: '0.9rem', fontWeight: 800, letterSpacing: '0.12em', color: 'var(--teal)' }}>
@@ -585,7 +585,7 @@ export default function AgentDashboardClient({
             </div>
           )}
           {success && (
-            <div style={{ borderLeft: '3px solid var(--teal)', background: 'rgba(0,196,188,0.06)', padding: 'var(--space-4)', borderRadius: '0 var(--radius-md) var(--radius-md) 0', marginBottom: 'var(--space-6)' }}>
+            <div style={{ borderLeft: '3px solid var(--teal)', background: 'rgba(192,184,168,0.06)', padding: 'var(--space-4)', borderRadius: '0 var(--radius-md) var(--radius-md) 0', marginBottom: 'var(--space-6)' }}>
               <p style={{ color: 'var(--teal)', fontSize: '0.85rem', margin: 0, fontWeight: 500 }}>{success}</p>
             </div>
           )}
@@ -677,9 +677,9 @@ export default function AgentDashboardClient({
                 zIndex: 1000, padding: 'var(--space-6)', backdropFilter: 'blur(4px)',
               }}>
                 <div onClick={e => e.stopPropagation()} style={{
-                  background: 'var(--grey-900)', border: '1px solid rgba(0,196,188,0.25)',
+                  background: 'var(--grey-900)', border: '1px solid rgba(192,184,168,0.25)',
                   borderRadius: 16, padding: 'var(--space-7)', maxWidth: 420, width: '100%',
-                  boxShadow: '0 0 60px rgba(0,196,188,0.1)',
+                  boxShadow: '0 0 60px rgba(192,184,168,0.1)',
                 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-5)' }}>
                     <div>
@@ -693,7 +693,7 @@ export default function AgentDashboardClient({
                   </div>
 
                   {crError && <div style={{ background: 'rgba(229,62,62,0.1)', border: '1px solid rgba(229,62,62,0.3)', borderRadius: 8, padding: 'var(--space-3)', marginBottom: 'var(--space-4)', fontSize: '0.82rem', color: 'var(--red)' }}>{crError}</div>}
-                  {crSuccess && <div style={{ background: 'rgba(0,196,188,0.1)', border: '1px solid rgba(0,196,188,0.3)', borderRadius: 8, padding: 'var(--space-3)', marginBottom: 'var(--space-4)', fontSize: '0.82rem', color: 'var(--teal)' }}>{crSuccess}</div>}
+                  {crSuccess && <div style={{ background: 'rgba(192,184,168,0.1)', border: '1px solid rgba(192,184,168,0.3)', borderRadius: 8, padding: 'var(--space-3)', marginBottom: 'var(--space-4)', fontSize: '0.82rem', color: 'var(--teal)' }}>{crSuccess}</div>}
 
                   <form onSubmit={handleCreateResearcher} style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
                     <div className="form-group">

@@ -18,7 +18,7 @@ interface QRCodeGeneratorProps {
 export default function QRCodeGenerator({
   url,
   size = 200,
-  fgColor = '#00C4BC',
+  fgColor = '#C0B8A8',
   bgColor = '#FFFFFF',
   qrCodeData,
 }: QRCodeGeneratorProps) {
@@ -82,7 +82,7 @@ export default function QRCodeGenerator({
           padding: 12,
           borderRadius: 'var(--radius-lg)',
           display: 'inline-block',
-          boxShadow: '0 0 20px rgba(0,196,188,0.15)',
+          boxShadow: '0 0 20px rgba(192,184,168,0.15)',
         }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={qrCodeData as string} alt="Storefront QR Code" width={size} height={size} style={{ display: 'block', width: size, height: size }} />
@@ -106,7 +106,7 @@ export default function QRCodeGenerator({
         padding: 12,
         borderRadius: 'var(--radius-lg)',
         display: 'inline-block',
-        boxShadow: '0 0 20px rgba(0,196,188,0.15)',
+        boxShadow: '0 0 20px rgba(192,184,168,0.15)',
       }}>
         <canvas ref={canvasRef} style={{ display: 'block', width: size, height: size }} />
       </div>

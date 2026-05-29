@@ -89,7 +89,7 @@ export default function WishlistClient({ initialItems, storefrontSlug }: Props) 
             <div
               style={{
                 height: 160,
-                background: 'radial-gradient(circle at 50% 50%, rgba(0,196,188,0.10) 0%, var(--black) 100%)',
+                background: 'radial-gradient(circle at 50% 50%, rgba(192,184,168,0.10) 0%, var(--black) 100%)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',

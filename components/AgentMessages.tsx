@@ -200,11 +200,11 @@ export default function AgentMessages({
         </div>
         <div style={{ display: 'flex', gap: 6 }}>
           <button onClick={() => { setShowTemplates(!showTemplates); setShowSettings(false); }}
-            style={{ background: showTemplates ? 'rgba(0,196,188,0.08)' : 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 8, padding: '5px 12px', cursor: 'pointer', color: showTemplates ? 'var(--teal)' : 'rgba(255,255,255,0.4)', fontSize: '0.72rem', fontWeight: 600 }}>
+            style={{ background: showTemplates ? 'rgba(192,184,168,0.08)' : 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 8, padding: '5px 12px', cursor: 'pointer', color: showTemplates ? 'var(--teal)' : 'rgba(255,255,255,0.4)', fontSize: '0.72rem', fontWeight: 600 }}>
             📝 Templates
           </button>
           <button onClick={() => { setShowSettings(!showSettings); setShowTemplates(false); }}
-            style={{ background: showSettings ? 'rgba(0,196,188,0.08)' : 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 8, padding: '5px 12px', cursor: 'pointer', color: showSettings ? 'var(--teal)' : 'rgba(255,255,255,0.4)', fontSize: '0.72rem', fontWeight: 600 }}>
+            style={{ background: showSettings ? 'rgba(192,184,168,0.08)' : 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 8, padding: '5px 12px', cursor: 'pointer', color: showSettings ? 'var(--teal)' : 'rgba(255,255,255,0.4)', fontSize: '0.72rem', fontWeight: 600 }}>
             ⚙️ Settings
           </button>
         </div>
@@ -224,7 +224,7 @@ export default function AgentMessages({
               <textarea value={autoMessage} onChange={e => setAutoMessage(e.target.value)} placeholder="Your auto-reply message..." rows={2}
                 style={{ width: '100%', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 8, padding: 8, color: '#fff', fontSize: '0.78rem', fontFamily: 'inherit', outline: 'none', resize: 'none', marginBottom: 8 }} />
               <button onClick={saveAutoResponder} disabled={savingAuto}
-                style={{ background: 'rgba(0,196,188,0.08)', border: '1px solid rgba(0,196,188,0.15)', color: 'var(--teal)', fontSize: '0.72rem', fontWeight: 600, padding: '4px 12px', borderRadius: 6, cursor: 'pointer' }}>
+                style={{ background: 'rgba(192,184,168,0.08)', border: '1px solid rgba(192,184,168,0.15)', color: 'var(--teal)', fontSize: '0.72rem', fontWeight: 600, padding: '4px 12px', borderRadius: 6, cursor: 'pointer' }}>
                 {savingAuto ? 'Saving...' : 'Save'}
               </button>
             </div>
@@ -244,7 +244,7 @@ export default function AgentMessages({
                 </label>
               ))}
               <button onClick={savePrefs} disabled={savingPrefs}
-                style={{ background: 'rgba(0,196,188,0.08)', border: '1px solid rgba(0,196,188,0.15)', color: 'var(--teal)', fontSize: '0.72rem', fontWeight: 600, padding: '4px 12px', borderRadius: 6, cursor: 'pointer', marginTop: 4 }}>
+                style={{ background: 'rgba(192,184,168,0.08)', border: '1px solid rgba(192,184,168,0.15)', color: 'var(--teal)', fontSize: '0.72rem', fontWeight: 600, padding: '4px 12px', borderRadius: 6, cursor: 'pointer', marginTop: 4 }}>
                 {savingPrefs ? 'Saving...' : 'Save'}
               </button>
             </div>
@@ -258,7 +258,7 @@ export default function AgentMessages({
           <div style={{ display: 'flex', gap: 6, marginBottom: 10 }}>
             <input value={newTplTitle} onChange={e => setNewTplTitle(e.target.value)} placeholder="Template title" style={{ flex: 0.4, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 6, padding: '6px 8px', color: '#fff', fontSize: '0.75rem', outline: 'none', fontFamily: 'inherit' }} />
             <input value={newTplBody} onChange={e => setNewTplBody(e.target.value)} placeholder="Template message..." style={{ flex: 1, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 6, padding: '6px 8px', color: '#fff', fontSize: '0.75rem', outline: 'none', fontFamily: 'inherit' }} />
-            <button onClick={addTemplate} style={{ background: 'rgba(0,196,188,0.08)', border: '1px solid rgba(0,196,188,0.15)', color: 'var(--teal)', fontSize: '0.72rem', fontWeight: 600, padding: '4px 10px', borderRadius: 6, cursor: 'pointer', whiteSpace: 'nowrap' }}>+ Add</button>
+            <button onClick={addTemplate} style={{ background: 'rgba(192,184,168,0.08)', border: '1px solid rgba(192,184,168,0.15)', color: 'var(--teal)', fontSize: '0.72rem', fontWeight: 600, padding: '4px 10px', borderRadius: 6, cursor: 'pointer', whiteSpace: 'nowrap' }}>+ Add</button>
           </div>
           {templates.map(t => (
             <div key={t.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 0', borderBottom: '1px solid rgba(255,255,255,0.02)' }}>
@@ -280,13 +280,13 @@ export default function AgentMessages({
               <input type="text" placeholder="Search..." value={filter} onChange={e => setFilter(e.target.value)} style={{ background: 'transparent', border: 'none', outline: 'none', color: '#fff', fontSize: '0.75rem', padding: '7px 0', width: '100%', fontFamily: 'inherit' }} />
             </div>
             <div style={{ display: 'flex', gap: 3 }}>
-              <button onClick={() => setShowArchived(false)} style={{ flex: 1, padding: '3px 6px', borderRadius: 5, border: 'none', cursor: 'pointer', fontSize: '0.65rem', fontWeight: !showArchived ? 700 : 500, background: !showArchived ? 'rgba(0,196,188,0.08)' : 'transparent', color: !showArchived ? 'var(--teal)' : 'rgba(255,255,255,0.3)' }}>Active</button>
+              <button onClick={() => setShowArchived(false)} style={{ flex: 1, padding: '3px 6px', borderRadius: 5, border: 'none', cursor: 'pointer', fontSize: '0.65rem', fontWeight: !showArchived ? 700 : 500, background: !showArchived ? 'rgba(192,184,168,0.08)' : 'transparent', color: !showArchived ? 'var(--teal)' : 'rgba(255,255,255,0.3)' }}>Active</button>
               <button onClick={() => setShowArchived(true)} style={{ flex: 1, padding: '3px 6px', borderRadius: 5, border: 'none', cursor: 'pointer', fontSize: '0.65rem', fontWeight: showArchived ? 700 : 500, background: showArchived ? 'rgba(255,255,255,0.05)' : 'transparent', color: showArchived ? 'rgba(255,255,255,0.5)' : 'rgba(255,255,255,0.3)' }}>Archived</button>
             </div>
           </div>
           <div style={{ flex: 1, overflowY: 'auto' }}>
             {loading ? (
-              <div style={{ padding: 24, textAlign: 'center' }}><div style={{ width: 20, height: 20, borderRadius: '50%', margin: '0 auto', border: '2px solid rgba(0,196,188,0.2)', borderTopColor: 'var(--teal)', animation: 'spin 0.8s linear infinite' }} /></div>
+              <div style={{ padding: 24, textAlign: 'center' }}><div style={{ width: 20, height: 20, borderRadius: '50%', margin: '0 auto', border: '2px solid rgba(192,184,168,0.2)', borderTopColor: 'var(--teal)', animation: 'spin 0.8s linear infinite' }} /></div>
             ) : filtered.length === 0 ? (
               <div style={{ padding: 24, textAlign: 'center', color: 'rgba(255,255,255,0.2)', fontSize: '0.75rem' }}>No Contacts</div>
             ) : filtered.map(c => {
@@ -294,11 +294,11 @@ export default function AgentMessages({
               const online = isOnline(c);
               return (
                 <div key={c.id} style={{ display: 'flex', alignItems: 'center' }}>
-                  <button type="button" onClick={() => setSelected(c)} style={{ flex: 1, textAlign: 'left', background: isActive ? 'rgba(0,196,188,0.06)' : 'transparent', border: 'none', borderLeft: isActive ? '3px solid var(--teal)' : '3px solid transparent', padding: '9px 10px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, transition: 'background 0.15s' }}
+                  <button type="button" onClick={() => setSelected(c)} style={{ flex: 1, textAlign: 'left', background: isActive ? 'rgba(192,184,168,0.06)' : 'transparent', border: 'none', borderLeft: isActive ? '3px solid var(--teal)' : '3px solid transparent', padding: '9px 10px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, transition: 'background 0.15s' }}
                     onMouseEnter={e => { if (!isActive) e.currentTarget.style.background = 'rgba(255,255,255,0.02)'; }}
-                    onMouseLeave={e => { if (!isActive) e.currentTarget.style.background = isActive ? 'rgba(0,196,188,0.06)' : 'transparent'; }}>
+                    onMouseLeave={e => { if (!isActive) e.currentTarget.style.background = isActive ? 'rgba(192,184,168,0.06)' : 'transparent'; }}>
                     <div style={{ position: 'relative', flexShrink: 0 }}>
-                      <div style={{ width: 34, height: 34, borderRadius: '50%', background: isActive ? 'linear-gradient(135deg, #00C4BC, #0099FF)' : avatarGradient(c), display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.6rem', fontWeight: 800, color: '#fff' }}>{getInitials(c)}</div>
+                      <div style={{ width: 34, height: 34, borderRadius: '50%', background: isActive ? 'linear-gradient(135deg, #C0B8A8, #0099FF)' : avatarGradient(c), display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.6rem', fontWeight: 800, color: '#fff' }}>{getInitials(c)}</div>
                       <div style={{ position: 'absolute', bottom: 0, right: 0, width: 9, height: 9, borderRadius: '50%', background: online ? '#4ADE80' : '#4B5563', border: '2px solid #0a0f1a' }} />
                     </div>
                     <div style={{ flex: 1, minWidth: 0 }}>
@@ -309,7 +309,7 @@ export default function AgentMessages({
                       <div style={{ fontSize: '0.62rem', color: online ? '#4ADE80' : 'rgba(255,255,255,0.2)' }}>{online ? 'Online' : 'Offline'}</div>
                     </div>
                     {(c.unreadCount || 0) > 0 && (
-                      <span style={{ background: 'var(--teal)', color: '#fff', fontSize: '0.58rem', fontWeight: 800, minWidth: 18, height: 18, borderRadius: 999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 4px', flexShrink: 0, boxShadow: '0 0 6px rgba(0,196,188,0.3)' }}>
+                      <span style={{ background: 'var(--teal)', color: '#fff', fontSize: '0.58rem', fontWeight: 800, minWidth: 18, height: 18, borderRadius: 999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 4px', flexShrink: 0, boxShadow: '0 0 6px rgba(192,184,168,0.3)' }}>
                         {c.unreadCount}
                       </span>
                     )}
@@ -330,8 +330,8 @@ export default function AgentMessages({
             <Messaging selfId={agentId} counterpartId={selected.id} counterpartName={selected.full_name || selected.email} />
           ) : (
             <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 12 }}>
-              <div style={{ width: 56, height: 56, borderRadius: '50%', background: 'linear-gradient(135deg, rgba(0,196,188,0.05), rgba(0,153,255,0.05))', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="rgba(0,196,188,0.2)" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg>
+              <div style={{ width: 56, height: 56, borderRadius: '50%', background: 'linear-gradient(135deg, rgba(192,184,168,0.05), rgba(0,153,255,0.05))', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="rgba(192,184,168,0.2)" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg>
               </div>
               <div style={{ color: 'rgba(255,255,255,0.35)', fontSize: '0.85rem', fontWeight: 600 }}>Select A Contact</div>
             </div>

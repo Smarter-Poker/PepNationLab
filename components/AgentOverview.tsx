@@ -65,7 +65,7 @@ export default function AgentOverview({
         .dash-url {
           position: absolute;
           z-index: 3;
-          color: #00C4BC;
+          color: #C0B8A8;
           white-space: nowrap;
           overflow: hidden;
           text-overflow: ellipsis;
@@ -116,7 +116,7 @@ export default function AgentOverview({
         <span
           className="dash-url"
           style={{
-            bottom: '5.5%',
+            bottom: '5.65%',
             left: '7%',
             width: '50%',
             height: '5%',

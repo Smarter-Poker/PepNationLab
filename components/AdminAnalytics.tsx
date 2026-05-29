@@ -18,7 +18,7 @@ interface AnalyticsData {
   avgOrderValue: number;
 }
 
-const COLORS = ['#00C4BC', '#0099FF', '#F6AD55', '#68D391', '#FC8181', '#C084FC', '#63B3ED'];
+const COLORS = ['#C0B8A8', '#0099FF', '#F6AD55', '#68D391', '#FC8181', '#C084FC', '#63B3ED'];
 
 export default function AdminAnalytics() {
   const [data, setData] = useState<AnalyticsData | null>(null);
@@ -86,7 +86,7 @@ export default function AdminAnalytics() {
         pending_customer_payment: { label: 'Pending Payment', color: '#FC8181' },
         agent_approval_pending: { label: 'Pending Approval', color: '#F6AD55' },
         approved_ship: { label: 'Approved', color: '#63B3ED' },
-        in_fulfillment: { label: 'Fulfilling', color: '#00C4BC' },
+        in_fulfillment: { label: 'Fulfilling', color: '#C0B8A8' },
         shipped: { label: 'Shipped', color: '#0099FF' },
         delivered: { label: 'Delivered', color: '#68D391' },
       };
@@ -171,9 +171,9 @@ export default function AdminAnalytics() {
               style={{
                 padding: '4px 12px', borderRadius: 6, cursor: 'pointer',
                 fontSize: '0.72rem', fontWeight: range === r.value ? 700 : 500,
-                background: range === r.value ? 'rgba(0,196,188,0.08)' : 'transparent',
+                background: range === r.value ? 'rgba(192,184,168,0.08)' : 'transparent',
                 color: range === r.value ? 'var(--teal)' : 'rgba(255,255,255,0.35)',
-                border: range === r.value ? '1px solid rgba(0,196,188,0.15)' : '1px solid rgba(255,255,255,0.04)',
+                border: range === r.value ? '1px solid rgba(192,184,168,0.15)' : '1px solid rgba(255,255,255,0.04)',
               }}>
               {r.label}
             </button>
@@ -234,19 +234,19 @@ export default function AdminAnalytics() {
               <AreaChart data={data.revenueData} margin={{ top: 5, right: 5, left: -20, bottom: 5 }}>
                 <defs>
                   <linearGradient id="revGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#00C4BC" stopOpacity={0.3} />
-                    <stop offset="95%" stopColor="#00C4BC" stopOpacity={0} />
+                    <stop offset="5%" stopColor="#C0B8A8" stopOpacity={0.3} />
+                    <stop offset="95%" stopColor="#C0B8A8" stopOpacity={0} />
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" vertical={false} />
                 <XAxis dataKey="date" stroke="rgba(255,255,255,0.2)" fontSize={11} tickLine={false} axisLine={false} />
                 <YAxis stroke="rgba(255,255,255,0.2)" fontSize={11} tickLine={false} axisLine={false} tickFormatter={v => `$${v}`} />
                 <Tooltip
-                  contentStyle={{ background: '#111827', border: '1px solid rgba(0,196,188,0.2)', borderRadius: 10, fontSize: '0.8rem' }}
-                  itemStyle={{ color: '#00C4BC' }}
+                  contentStyle={{ background: '#111827', border: '1px solid rgba(192,184,168,0.2)', borderRadius: 10, fontSize: '0.8rem' }}
+                  itemStyle={{ color: '#C0B8A8' }}
                   formatter={(val: any) => [`$${Number(val).toFixed(2)}`, 'Revenue']}
                 />
-                <Area type="monotone" dataKey="revenue" stroke="#00C4BC" strokeWidth={2.5} fill="url(#revGrad)" dot={false} activeDot={{ r: 5, fill: '#00C4BC' }} />
+                <Area type="monotone" dataKey="revenue" stroke="#C0B8A8" strokeWidth={2.5} fill="url(#revGrad)" dot={false} activeDot={{ r: 5, fill: '#C0B8A8' }} />
               </AreaChart>
             </ResponsiveContainer>
           </div>

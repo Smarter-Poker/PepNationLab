@@ -68,8 +68,8 @@ export default async function DashboardPage({
         {/* Welcome banner */}
         {isWelcome && (
           <div style={{
-            background: 'rgba(0,196,188,0.08)',
-            border: '1px solid rgba(0,196,188,0.25)',
+            background: 'rgba(192,184,168,0.08)',
+            border: '1px solid rgba(192,184,168,0.25)',
             borderRadius: 'var(--radius-md)',
             padding: 'var(--space-4) var(--space-6)',
             marginBottom: 'var(--space-6)',

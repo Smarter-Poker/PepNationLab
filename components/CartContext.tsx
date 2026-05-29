@@ -332,8 +332,8 @@ function AddToCartAcknowledgment({
           width: '100%',
           padding: 'var(--space-6)',
           borderRadius: 'var(--radius-lg)',
-          border: '1px solid rgba(0, 196, 188, 0.4)',
-          boxShadow: '0 20px 50px rgba(0, 0, 0, 0.5), 0 0 30px rgba(0, 196, 188, 0.2)',
+          border: '1px solid rgba(192, 184, 168, 0.4)',
+          boxShadow: '0 20px 50px rgba(0, 0, 0, 0.5), 0 0 30px rgba(192, 184, 168, 0.2)',
         }}
       >
         <h2
@@ -428,7 +428,7 @@ function CartDrawer() {
           display: 'flex',
           flexDirection: 'column',
           padding: 'var(--space-6)',
-          boxShadow: '-10px 0 30px rgba(0, 196, 188, 0.15)',
+          boxShadow: '-10px 0 30px rgba(192, 184, 168, 0.15)',
           position: 'relative',
         }}
       >

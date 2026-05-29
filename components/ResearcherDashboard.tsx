@@ -60,7 +60,7 @@ const STATUS_COLORS: Record<string, string> = {
   agent_approval_pending: '#F6AD55',
   approved_ship: '#63B3ED',
   approved_pickup: '#63B3ED',
-  in_fulfillment: '#00C4BC',
+  in_fulfillment: '#C0B8A8',
   shipped: '#0099FF',
   delivered: '#68D391',
   cancelled: 'rgba(255,255,255,0.25)',
@@ -154,9 +154,9 @@ export default function ResearcherDashboard({ userId, userName, userEmail, agent
             style={{
               padding: '8px 16px', borderRadius: 10, cursor: 'pointer',
               fontSize: '0.82rem', fontWeight: tab === t.key ? 700 : 500,
-              background: tab === t.key ? 'rgba(0,196,188,0.08)' : 'rgba(255,255,255,0.02)',
+              background: tab === t.key ? 'rgba(192,184,168,0.08)' : 'rgba(255,255,255,0.02)',
               color: tab === t.key ? 'var(--teal)' : 'rgba(255,255,255,0.4)',
-              border: tab === t.key ? '1px solid rgba(0,196,188,0.15)' : '1px solid rgba(255,255,255,0.04)',
+              border: tab === t.key ? '1px solid rgba(192,184,168,0.15)' : '1px solid rgba(255,255,255,0.04)',
               transition: 'all 0.15s',
             }}>
             {t.icon} {t.label}
@@ -243,7 +243,7 @@ export default function ResearcherDashboard({ userId, userName, userEmail, agent
         <div>
           {loadingOrders ? (
             <div style={{ display: 'flex', justifyContent: 'center', padding: 40 }}>
-              <div style={{ width: 24, height: 24, borderRadius: '50%', border: '2px solid rgba(0,196,188,0.2)', borderTopColor: 'var(--teal)', animation: 'spin 0.8s linear infinite' }} />
+              <div style={{ width: 24, height: 24, borderRadius: '50%', border: '2px solid rgba(192,184,168,0.2)', borderTopColor: 'var(--teal)', animation: 'spin 0.8s linear infinite' }} />
             </div>
           ) : orders.length === 0 ? (
             <div className="card-metal" style={{ textAlign: 'center', padding: 40 }}>
@@ -324,7 +324,7 @@ export default function ResearcherDashboard({ userId, userName, userEmail, agent
                       <div style={{ marginTop: 12 }}>
                         <a href="/products" style={{
                           display: 'inline-flex', alignItems: 'center', gap: 6, padding: '6px 14px',
-                          background: 'rgba(0,196,188,0.08)', border: '1px solid rgba(0,196,188,0.15)',
+                          background: 'rgba(192,184,168,0.08)', border: '1px solid rgba(192,184,168,0.15)',
                           borderRadius: 8, color: 'var(--teal)', fontSize: '0.75rem', fontWeight: 600,
                           textDecoration: 'none',
                         }}>
@@ -365,7 +365,7 @@ export default function ResearcherDashboard({ userId, userName, userEmail, agent
         <div>
           {loadingFavs ? (
             <div style={{ display: 'flex', justifyContent: 'center', padding: 40 }}>
-              <div style={{ width: 24, height: 24, borderRadius: '50%', border: '2px solid rgba(0,196,188,0.2)', borderTopColor: 'var(--teal)', animation: 'spin 0.8s linear infinite' }} />
+              <div style={{ width: 24, height: 24, borderRadius: '50%', border: '2px solid rgba(192,184,168,0.2)', borderTopColor: 'var(--teal)', animation: 'spin 0.8s linear infinite' }} />
             </div>
           ) : favorites.length === 0 ? (
             <div className="card-metal" style={{ textAlign: 'center', padding: 40 }}>
@@ -387,8 +387,8 @@ export default function ResearcherDashboard({ userId, userName, userEmail, agent
                   <div style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--teal)', marginBottom: 8 }}>${Number(f.products.base_price).toFixed(2)}</div>
                   <div style={{ display: 'flex', gap: 6 }}>
                     <a href="/products" style={{
-                      flex: 1, textAlign: 'center', padding: '5px 10px', background: 'rgba(0,196,188,0.08)',
-                      border: '1px solid rgba(0,196,188,0.15)', borderRadius: 6, color: 'var(--teal)',
+                      flex: 1, textAlign: 'center', padding: '5px 10px', background: 'rgba(192,184,168,0.08)',
+                      border: '1px solid rgba(192,184,168,0.15)', borderRadius: 6, color: 'var(--teal)',
                       fontSize: '0.72rem', fontWeight: 600, textDecoration: 'none',
                     }}>View In Store</a>
                     <button onClick={() => removeFavorite(f.product_id)} style={{
@@ -451,7 +451,7 @@ export default function ResearcherDashboard({ userId, userName, userEmail, agent
             </div>
 
             {agentName && (
-              <div style={{ marginTop: 'var(--space-5)', padding: '12px 14px', background: 'rgba(0,196,188,0.04)', borderRadius: 10, border: '1px solid rgba(0,196,188,0.1)' }}>
+              <div style={{ marginTop: 'var(--space-5)', padding: '12px 14px', background: 'rgba(192,184,168,0.04)', borderRadius: 10, border: '1px solid rgba(192,184,168,0.1)' }}>
                 <div style={{ fontSize: '0.68rem', color: 'rgba(255,255,255,0.3)', marginBottom: 4 }}>Your Agent</div>
                 <div style={{ fontSize: '0.85rem', color: 'var(--teal)', fontWeight: 700 }}>{agentName}</div>
               </div>

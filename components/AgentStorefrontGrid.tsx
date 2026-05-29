@@ -45,9 +45,9 @@ function computeStockState(
 }
 
 function StockBadge({ state }: { state: StockState }) {
-  let bg = 'rgba(0,196,188,0.15)';
-  let fg = '#00C4BC';
-  let border = 'rgba(0,196,188,0.40)';
+  let bg = 'rgba(192,184,168,0.15)';
+  let fg = '#C0B8A8';
+  let border = 'rgba(192,184,168,0.40)';
   let label = 'In Stock';
   if (state.kind === 'low_stock') {
     bg = 'rgba(246,173,85,0.15)';
@@ -584,7 +584,7 @@ export default function AgentStorefrontGrid({ products, inventoryMap, primaryCol
                     position: 'absolute', top: 12, left: 12,
                     fontSize: '0.65rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em',
                     padding: '4px 10px', borderRadius: 'var(--radius-full)',
-                    background: 'rgba(0,196,188,0.15)', border: '1px solid rgba(0,196,188,0.4)',
+                    background: 'rgba(192,184,168,0.15)', border: '1px solid rgba(192,184,168,0.4)',
                     color: 'var(--teal)', backdropFilter: 'blur(4px)'
                   }}>
                     <Star size={10} fill="currentColor" aria-hidden="true" style={{ marginRight: 4, verticalAlign: 'middle' }} />Popular

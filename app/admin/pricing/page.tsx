@@ -203,7 +203,7 @@ export default function PricingTiersPage() {
           </div>
 
           {/* Pricing Rules Legal Card */}
-          <div className="card-metal" style={{ padding: 'var(--space-6)', borderColor: 'rgba(0,196,188,0.15)' }}>
+          <div className="card-metal" style={{ padding: 'var(--space-6)', borderColor: 'rgba(192,184,168,0.15)' }}>
             <h4 style={{ fontSize: '0.85rem', color: 'var(--teal)', marginBottom: 'var(--space-3)' }}>
               Platform Rules & Regulations
             </h4>

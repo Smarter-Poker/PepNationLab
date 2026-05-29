@@ -16,18 +16,18 @@ export default function HeroSection() {
         transform: 'translateY(-50%)',
         width: 600, height: 600,
         borderRadius: '50%',
-        border: '1px solid rgba(0,196,188,0.08)',
+        border: '1px solid rgba(192,184,168,0.08)',
         pointerEvents: 'none'
       }}>
         <div style={{
           position: 'absolute', inset: 40,
           borderRadius: '50%',
-          border: '1px solid rgba(0,196,188,0.05)'
+          border: '1px solid rgba(192,184,168,0.05)'
         }} />
         <div style={{
           position: 'absolute', inset: 100,
           borderRadius: '50%',
-          border: '1px solid rgba(0,196,188,0.03)'
+          border: '1px solid rgba(192,184,168,0.03)'
         }} />
       </div>
 
@@ -132,7 +132,7 @@ export default function HeroSection() {
                   fontSize: '1.75rem', 
                   fontWeight: 800,
                   color: 'var(--teal)',
-                  textShadow: '0 0 20px rgba(0,196,188,0.4)'
+                  textShadow: '0 0 20px rgba(192,184,168,0.4)'
                 }}>{num}</div>
                 <div style={{ fontSize: '0.8rem', color: 'var(--grey-400)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                   {label}

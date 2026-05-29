@@ -345,7 +345,7 @@ export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
                           style={{
                             padding: '2px 8px',
                             fontSize: '0.7rem',
-                            background: 'rgba(0,196,188,0.1)',
+                            background: 'rgba(192,184,168,0.1)',
                             border: '1px solid var(--teal)',
                             color: 'var(--teal)',
                           }}
@@ -445,7 +445,7 @@ export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
                               border: '1px solid var(--teal)',
                               color: 'var(--teal)',
                               fontSize: '0.75rem',
-                              background: 'rgba(0,196,188,0.1)',
+                              background: 'rgba(192,184,168,0.1)',
                             }}
                             disabled={loadingOrderId === order.id || buyingLabelId === order.id}
                           >
@@ -589,8 +589,8 @@ export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
             >
               <div
                 style={{
-                  background: 'rgba(0,196,188,0.04)',
-                  border: '1px solid rgba(0,196,188,0.12)',
+                  background: 'rgba(192,184,168,0.04)',
+                  border: '1px solid rgba(192,184,168,0.12)',
                   borderRadius: 'var(--radius-md)',
                   padding: 'var(--space-4)',
                 }}
@@ -622,8 +622,8 @@ export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
               </div>
               <div
                 style={{
-                  background: 'rgba(0,196,188,0.04)',
-                  border: '1px solid rgba(0,196,188,0.12)',
+                  background: 'rgba(192,184,168,0.04)',
+                  border: '1px solid rgba(192,184,168,0.12)',
                   borderRadius: 'var(--radius-md)',
                   padding: 'var(--space-4)',
                 }}

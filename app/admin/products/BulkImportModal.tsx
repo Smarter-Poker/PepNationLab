@@ -396,7 +396,7 @@ export default function BulkImportModal({ onClose }: { onClose: () => void }) {
                             ? 'rgba(229,62,62,0.08)'
                             : r.status === 'valid_update'
                               ? 'rgba(168,180,192,0.06)'
-                              : 'rgba(0,196,188,0.06)';
+                              : 'rgba(192,184,168,0.06)';
                         return (
                           <tr key={r.row_number} style={{ background: bg, borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
                             <td style={{ padding: 'var(--space-2)' }}>{r.row_number}</td>

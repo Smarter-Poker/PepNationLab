@@ -112,7 +112,7 @@ export default function AgentSales() {
                         padding: '2px 8px',
                         borderRadius: 12,
                         fontSize: '0.75rem',
-                        background: sale.status === 'cancelled' ? 'rgba(245,101,101,0.1)' : 'rgba(0,196,188,0.1)',
+                        background: sale.status === 'cancelled' ? 'rgba(245,101,101,0.1)' : 'rgba(192,184,168,0.1)',
                         color: sale.status === 'cancelled' ? 'var(--red)' : 'var(--teal)'
                       }}>
                         {sale.status.replace(/_/g, ' ')}

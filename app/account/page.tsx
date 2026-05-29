@@ -33,7 +33,7 @@ function NavCard({ href, label, description, Icon }: NavCardProps) {
           width: 38,
           height: 38,
           borderRadius: 10,
-          background: 'rgba(0,196,188,0.12)',
+          background: 'rgba(192,184,168,0.12)',
           color: 'var(--teal)',
           display: 'flex',
           alignItems: 'center',

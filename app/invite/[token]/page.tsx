@@ -60,7 +60,7 @@ export default async function InviteRedeemPage(
               fontWeight: 800,
               letterSpacing: '0.12em',
               color: 'var(--teal)',
-              textShadow: '0 0 12px rgba(0,196,188,0.3)',
+              textShadow: '0 0 12px rgba(192,184,168,0.3)',
               marginBottom: 'var(--space-2)',
             }}
           >

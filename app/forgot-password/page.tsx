@@ -60,7 +60,7 @@ export default function ForgotPasswordPage() {
           left: 0,
           right: 0,
           bottom: 0,
-          background: 'radial-gradient(ellipse at 50% 0%, rgba(0,196,188,0.06) 0%, transparent 60%)',
+          background: 'radial-gradient(ellipse at 50% 0%, rgba(192,184,168,0.06) 0%, transparent 60%)',
           pointerEvents: 'none',
         }}
       />
@@ -87,7 +87,7 @@ export default function ForgotPasswordPage() {
                   width: 56,
                   height: 56,
                   borderRadius: '50%',
-                  background: 'rgba(0,196,188,0.1)',
+                  background: 'rgba(192,184,168,0.1)',
                   border: '2px solid var(--teal)',
                   color: 'var(--teal)',
                   marginBottom: 'var(--space-4)',
@@ -112,8 +112,8 @@ export default function ForgotPasswordPage() {
               <div style={{
                 width: 48, height: 48,
                 borderRadius: '50%',
-                background: 'rgba(0,196,188,0.12)',
-                border: '1px solid rgba(0,196,188,0.3)',
+                background: 'rgba(192,184,168,0.12)',
+                border: '1px solid rgba(192,184,168,0.3)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 margin: '0 auto var(--space-4)',
                 color: 'var(--teal)',

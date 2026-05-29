@@ -70,7 +70,7 @@ function LoginPageInner() {
       {/* Background Glow */}
       <div style={{
         position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-        background: 'radial-gradient(ellipse at 50% 0%, rgba(0,196,188,0.06) 0%, transparent 60%)',
+        background: 'radial-gradient(ellipse at 50% 0%, rgba(192,184,168,0.06) 0%, transparent 60%)',
         pointerEvents: 'none'
       }} />
 
@@ -91,20 +91,20 @@ function LoginPageInner() {
             onClick={e => e.stopPropagation()}
             style={{
               background: 'var(--grey-900)',
-              border: '1px solid rgba(0,196,188,0.25)',
+              border: '1px solid rgba(192,184,168,0.25)',
               borderRadius: 16,
               padding: 'var(--space-8)',
               maxWidth: 380,
               width: '100%',
               textAlign: 'center',
-              boxShadow: '0 0 60px rgba(0,196,188,0.1)',
+              boxShadow: '0 0 60px rgba(192,184,168,0.1)',
             }}
           >
             <div style={{
               width: 48, height: 48,
               borderRadius: '50%',
-              background: 'rgba(0,196,188,0.12)',
-              border: '1px solid rgba(0,196,188,0.3)',
+              background: 'rgba(192,184,168,0.12)',
+              border: '1px solid rgba(192,184,168,0.3)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               margin: '0 auto var(--space-4)',
               color: 'var(--teal)',
