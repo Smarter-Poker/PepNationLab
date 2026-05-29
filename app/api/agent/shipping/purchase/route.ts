@@ -3,6 +3,7 @@ import { createServiceClient } from '@/lib/supabase/server';
 import { requireAgent } from '@/lib/admin-auth';
 import { pickOne } from '@/lib/relations';
 import { Shippo } from 'shippo';
+import { enqueueOrderSms, shortOrderId } from '@/lib/sms-enqueue';
 
 export async function POST(req: NextRequest) {
   try {
@@ -120,6 +121,18 @@ export async function POST(req: NextRequest) {
     if (updateError) {
       console.error("Order Update Error:", updateError);
       return NextResponse.json({ error: 'Failed to save tracking information to order' }, { status: 500 });
+    }
+
+    // Fire-and-forget SMS notification — never blocks shipping.
+    if (order.buyer_id) {
+      try {
+        await enqueueOrderSms(supabase, {
+          userId: order.buyer_id,
+          orderId,
+          event: 'order_shipped',
+          body: `Your Order #${shortOrderId(orderId)} Shipped. Tracking: ${trackingNumber}`,
+        });
+      } catch { /* notification failures must not break shipping */ }
     }
 
     return NextResponse.json({ success: true, trackingNumber, labelUrl });
