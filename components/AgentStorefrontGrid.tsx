@@ -2,7 +2,7 @@
 
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { motion, Variants, AnimatePresence } from 'framer-motion';
-import { Star, X } from 'lucide-react';
+import { Star, X, Heart } from 'lucide-react';
 
 interface ProductItem {
   id: string;
@@ -104,6 +104,10 @@ interface Props {
   primaryColor: string;
   agentSlug: string;
   bundles?: BundleConfig[];
+  /** Set of product_ids the researcher already has in their wishlist. */
+  initialWishlistIds?: string[];
+  /** Agent profile id used when logging recently-viewed rows. */
+  agentId?: string | null;
 }
 
 const containerVariants: Variants = {
@@ -189,7 +193,58 @@ function pickDefaultVariant(variants: ProductItem[]): string {
   return variants[variants.length - 1]?.id || variants[0].id;
 }
 
-export default function AgentStorefrontGrid({ products, inventoryMap, primaryColor, agentSlug, bundles = [] }: Props) {
+export default function AgentStorefrontGrid({ products, inventoryMap, primaryColor, agentSlug, bundles = [], initialWishlistIds = [], agentId = null }: Props) {
+  const [wishlist, setWishlist] = useState<Set<string>>(() => new Set(initialWishlistIds));
+  const toggleWishlist = useCallback(async (productId: string) => {
+    if (!productId) return;
+    const isAdding = !wishlist.has(productId);
+    setWishlist(prev => {
+      const next = new Set(prev);
+      if (isAdding) next.add(productId);
+      else next.delete(productId);
+      return next;
+    });
+    try {
+      const res = await fetch('/api/researcher/wishlist', {
+        method: isAdding ? 'POST' : 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify({ productId }),
+      });
+      if (!res.ok) {
+        // Revert optimistic state on failure
+        setWishlist(prev => {
+          const next = new Set(prev);
+          if (isAdding) next.delete(productId);
+          else next.add(productId);
+          return next;
+        });
+      }
+    } catch {
+      setWishlist(prev => {
+        const next = new Set(prev);
+        if (isAdding) next.delete(productId);
+        else next.add(productId);
+        return next;
+      });
+    }
+  }, [wishlist]);
+
+  const logRecentlyViewed = useCallback((productId: string) => {
+    if (!productId) return;
+    try {
+      void fetch('/api/researcher/recently-viewed', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify({ productId, agentId }),
+        keepalive: true,
+      });
+    } catch {
+      // Best-effort — never block UI
+    }
+  }, [agentId]);
+
   const [selectedVariants, setSelectedVariants] = useState<Record<string, string>>({});
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<'popular' | 'name_asc' | 'name_desc' | 'price_low' | 'price_high'>('popular');
@@ -463,7 +518,7 @@ export default function AgentStorefrontGrid({ products, inventoryMap, primaryCol
                 boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4)',
                 borderRadius: 'var(--radius-lg)', cursor: 'pointer'
               }}
-              onClick={() => setDetailProduct(group)}
+              onClick={() => { setDetailProduct(group); logRecentlyViewed(activeVariant.product_id); }}
             >
               {/* Product Image */}
               <div style={{
@@ -473,6 +528,38 @@ export default function AgentStorefrontGrid({ products, inventoryMap, primaryCol
                 borderBottom: '1px solid rgba(255,255,255,0.02)', position: 'relative'
               }}>
                 <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 1, background: `linear-gradient(90deg, transparent, ${primaryColor}50, transparent)` }} />
+
+                {/* Wishlist Heart Button — top right of card image */}
+                {(() => {
+                  const wished = wishlist.has(activeVariant.product_id);
+                  return (
+                    <button
+                      type="button"
+                      aria-label={wished ? 'Remove From Wishlist' : 'Add To Wishlist'}
+                      onClick={e => { e.stopPropagation(); void toggleWishlist(activeVariant.product_id); }}
+                      style={{
+                        position: 'absolute',
+                        top: 10,
+                        right: 10,
+                        width: 34,
+                        height: 34,
+                        borderRadius: '50%',
+                        background: wished ? 'rgba(229,62,62,0.20)' : 'rgba(0,0,0,0.55)',
+                        border: `1px solid ${wished ? 'rgba(229,62,62,0.50)' : 'rgba(255,255,255,0.15)'}`,
+                        color: wished ? '#FF5A6E' : 'var(--silver)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        backdropFilter: 'blur(6px)',
+                        cursor: 'pointer',
+                        zIndex: 5,
+                        transition: 'transform 0.15s ease',
+                      }}
+                    >
+                      <Heart size={16} fill={wished ? '#FF5A6E' : 'none'} aria-hidden="true" />
+                    </button>
+                  );
+                })()}
 
                 {group.imageUrl ? (
                   /* eslint-disable-next-line @next/next/no-img-element */
