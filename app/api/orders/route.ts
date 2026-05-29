@@ -551,11 +551,14 @@ export async function POST(request: NextRequest) {
     const itemsToInsert = computedItems.map(item => ({
       order_id: order.id,
       product_id: item.product_id,
-      product_name: item.product_name,
+      product_name: item.product_name ?? 'Unknown Product',
       quantity: item.quantity,
-      unit_retail_price: item.unit_retail_price,
-      unit_cost_price: item.unit_cost_price,
-      unit_super_agent_cost: item.unit_super_agent_cost ?? null
+      // Guard NaN / undefined — Postgres rejects NaN for NUMERIC columns
+      unit_retail_price: isFinite(item.unit_retail_price) ? Math.round(item.unit_retail_price * 100) / 100 : 0,
+      unit_cost_price: isFinite(item.unit_cost_price) ? Math.round(item.unit_cost_price * 100) / 100 : 0,
+      unit_super_agent_cost: item.unit_super_agent_cost != null && isFinite(item.unit_super_agent_cost)
+        ? Math.round(item.unit_super_agent_cost * 100) / 100
+        : null,
     }));
 
     const { error: itemsError } = await serviceSupabase
@@ -564,6 +567,7 @@ export async function POST(request: NextRequest) {
 
     if (itemsError) {
       console.error('Database Order Items Write Error:', JSON.stringify(itemsError));
+      console.error('Items payload attempted:', JSON.stringify(itemsToInsert));
       await serviceSupabase.from('orders').delete().eq('id', order.id);
       return NextResponse.json({ error: `Failed To Save Checkout Order Line Items. (${itemsError.code}: ${itemsError.message})` }, { status: 500 });
     }
