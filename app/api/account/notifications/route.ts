@@ -2,22 +2,21 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { assertSameOrigin } from '@/lib/csrf';
 
-const PHONE_RE = /^\+\d{10,15}$/;
-
 const DEFAULT_PREFS = {
-  sms_enabled: false,
-  sms_phone: null as string | null,
-  sms_phone_verified: false,
   events_order_approved: true,
   events_order_shipped: true,
   events_order_delivered: true,
   events_payment_reminder: true,
+  push_enabled: false,
+  push_events_order: true,
+  push_events_messages: true,
+  push_events_marketing: false,
 };
 
 async function getCurrentUserPrefs(supabase: Awaited<ReturnType<typeof createClient>>, userId: string) {
   const { data } = await supabase
     .from('notification_preferences')
-    .select('sms_enabled, sms_phone, sms_phone_verified, events_order_approved, events_order_shipped, events_order_delivered, events_payment_reminder, push_enabled, push_events_order, push_events_messages, push_events_marketing, updated_at')
+    .select('events_order_approved, events_order_shipped, events_order_delivered, events_payment_reminder, push_enabled, push_events_order, push_events_messages, push_events_marketing, updated_at')
     .eq('user_id', userId)
     .maybeSingle();
   return data;
@@ -63,7 +62,6 @@ export async function PATCH(req: NextRequest) {
   }
 
   const updates: Record<string, unknown> = {};
-  if (typeof body.sms_enabled === 'boolean') updates.sms_enabled = body.sms_enabled;
   if (typeof body.events_order_approved === 'boolean') updates.events_order_approved = body.events_order_approved;
   if (typeof body.events_order_shipped === 'boolean') updates.events_order_shipped = body.events_order_shipped;
   if (typeof body.events_order_delivered === 'boolean') updates.events_order_delivered = body.events_order_delivered;
@@ -72,22 +70,6 @@ export async function PATCH(req: NextRequest) {
   if (typeof body.push_events_order === 'boolean') updates.push_events_order = body.push_events_order;
   if (typeof body.push_events_messages === 'boolean') updates.push_events_messages = body.push_events_messages;
   if (typeof body.push_events_marketing === 'boolean') updates.push_events_marketing = body.push_events_marketing;
-
-  if (body.sms_phone === null || body.sms_phone === '') {
-    updates.sms_phone = null;
-    updates.sms_phone_verified = false;
-  } else if (typeof body.sms_phone === 'string') {
-    const phone = body.sms_phone.trim();
-    if (!PHONE_RE.test(phone)) {
-      return NextResponse.json(
-        { error: 'Phone Number Must Be In E.164 Format (Example: +12025550100).' },
-        { status: 422 }
-      );
-    }
-    updates.sms_phone = phone;
-    // Future: trigger Twilio Verify here; for now treat as verified-on-save.
-    updates.sms_phone_verified = true;
-  }
 
   if (Object.keys(updates).length === 0) {
     return NextResponse.json({ error: 'No Valid Fields To Update.' }, { status: 400 });

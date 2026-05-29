@@ -7,10 +7,9 @@ import { assertCronAuth, claimCronRun, finishCronRun } from '@/lib/cron';
  *
  * Runs every 6 hours. Targets researchers whose cart has been sitting for
  * more than 24 hours but less than 14 days, and who have not received a
- * reminder in the past 7 days. Sends one in-app notification and (if the
- * user has SMS enabled + payment-reminder event opted in) one SMS via the
- * sms_outbox. Logs every send to the abandoned_cart_reminders ledger so
- * the recovery channel can be attributed when the user later checks out.
+ * reminder in the past 7 days. Sends one in-app notification. Logs every
+ * send to the abandoned_cart_reminders ledger so the recovery channel can
+ * be attributed when the user later checks out.
  *
  * Bounded to 200 users per run to keep the function within Vercel limits.
  */
@@ -49,7 +48,6 @@ export async function GET(req: Request) {
     }
 
     let sent = 0;
-    let smsSent = 0;
     let skipped = 0;
 
     for (const candidate of candidates ?? []) {
@@ -99,43 +97,11 @@ export async function GET(req: Request) {
         continue;
       }
 
-      let channel: 'in_app' | 'sms' | 'both' = 'in_app';
-      try {
-        const { data: prefs } = await supabase
-          .from('notification_preferences')
-          .select('sms_enabled, sms_phone, events_payment_reminder')
-          .eq('user_id', candidate.id)
-          .maybeSingle();
-        if (
-          prefs?.sms_enabled &&
-          prefs.sms_phone &&
-          prefs.events_payment_reminder !== false &&
-          /^\+\d{10,15}$/.test(String(prefs.sms_phone).trim())
-        ) {
-          const smsBody = `PepNationLab: Hi ${firstName}, you have ${itemCount} item${itemCount === 1 ? '' : 's'} waiting in your cart${cartValue > 0 ? ` ($${cartValue.toFixed(2)})` : ''}. Log in to complete your order.`;
-          const { error: smsErr } = await supabase.from('sms_outbox').insert({
-            recipient_user_id: candidate.id,
-            to_phone: String(prefs.sms_phone).trim(),
-            body: smsBody.slice(0, 1000),
-            event: 'abandoned_cart',
-            related_order_id: null,
-            status: 'pending',
-            provider: 'twilio',
-          });
-          if (!smsErr) {
-            channel = 'both';
-            smsSent++;
-          }
-        }
-      } catch {
-        // SMS best-effort.
-      }
-
       await supabase.from('abandoned_cart_reminders').insert({
         user_id: candidate.id,
         cart_state_snapshot: candidate.cart_state,
         cart_value: cartValue || null,
-        channel,
+        channel: 'in_app',
       });
 
       await supabase
@@ -149,13 +115,12 @@ export async function GET(req: Request) {
     await finishCronRun(
       claim.id,
       'succeeded',
-      `sent=${sent} smsSent=${smsSent} skipped=${skipped}`
+      `sent=${sent} skipped=${skipped}`
     );
 
     return NextResponse.json({
       success: true,
       sent,
-      smsSent,
       skipped,
       considered: candidates?.length ?? 0,
     });

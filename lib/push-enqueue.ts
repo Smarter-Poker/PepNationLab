@@ -1,5 +1,12 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { shortOrderId } from '@/lib/sms-enqueue';
+
+/**
+ * Pretty-print an order id for the user (first 8 chars uppercase).
+ */
+export function shortOrderId(orderId: string | null | undefined): string {
+  if (!orderId) return 'Unknown';
+  return String(orderId).slice(0, 8).toUpperCase();
+}
 
 export type PushEvent =
   | 'order_approved'
@@ -89,7 +96,7 @@ export interface EnqueueOrderPushArgs {
 
 /**
  * Convenience wrapper for the four order-status push events. Builds the
- * Title Case title/body strings the same way the SMS enqueue does, then
+ * Title Case title/body strings then
  * delegates to enqueuePush.
  */
 export async function enqueueOrderPush(

@@ -3,7 +3,6 @@ import { createServiceClient } from '@/lib/supabase/server';
 import { requireAgent } from '@/lib/admin-auth';
 import { pickOne } from '@/lib/relations';
 import { Shippo } from 'shippo';
-import { enqueueOrderSms, shortOrderId } from '@/lib/sms-enqueue';
 import { enqueueOrderPush } from '@/lib/push-enqueue';
 import { enqueueWebhook, fetchOrderForWebhook } from '@/lib/webhook-dispatch';
 
@@ -125,16 +124,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Failed to save tracking information to order' }, { status: 500 });
     }
 
-    // Fire-and-forget SMS notification — never blocks shipping.
+    // Fire-and-forget push notification — never blocks shipping.
     if (order.buyer_id) {
-      try {
-        await enqueueOrderSms(supabase, {
-          userId: order.buyer_id,
-          orderId,
-          event: 'order_shipped',
-          body: `Your Order #${shortOrderId(orderId)} Shipped. Tracking: ${trackingNumber}`,
-        });
-      } catch { /* notification failures must not break shipping */ }
       try {
         await enqueueOrderPush(supabase, {
           userId: order.buyer_id,

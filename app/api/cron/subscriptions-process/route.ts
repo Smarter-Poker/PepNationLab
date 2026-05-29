@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
 import { assertCronAuth, claimCronRun, finishCronRun } from '@/lib/cron';
-import { enqueueOrderSms, shortOrderId } from '@/lib/sms-enqueue';
+import { shortOrderId } from '@/lib/push-enqueue';
 import { enqueueWebhook } from '@/lib/webhook-dispatch';
 
 export const dynamic = 'force-dynamic';
@@ -38,7 +38,7 @@ interface DueSubscription {
  *      current retail prices.
  *   3. Insert a `pending_customer_payment` order with a fresh idempotency_key.
  *   4. Insert the order_items.
- *   5. Notify the researcher (in-app message + SMS via sms_outbox).
+ *   5. Notify the researcher (in-app message).
  *   6. Update the subscription's last_run_at / next_run_at / last_order_id.
  *
  * Notifications and per-row failures NEVER abort the batch — the goal is best
@@ -375,17 +375,6 @@ async function notifyResearcher(
     /* swallow */
   }
 
-  try {
-    // Use the existing enqueueOrderSms helper. We model the auto-replenish
-    // message as a `payment_reminder` event for opt-out semantics — that
-    // event is the closest existing flag in notification_preferences.
-    await enqueueOrderSms(service, {
-      userId: sub.researcher_id,
-      orderId,
-      event: 'payment_reminder',
-      body,
-    });
-  } catch {
-    /* swallow */
-  }
+  // SMS removed 2026-05-29. In-app message above is the durable channel; push
+  // delivery is handled separately by lib/push-enqueue when callers opt in.
 }

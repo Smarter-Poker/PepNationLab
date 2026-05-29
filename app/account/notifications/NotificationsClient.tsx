@@ -11,9 +11,6 @@ import {
 } from '@/lib/push-client';
 
 interface Prefs {
-  sms_enabled: boolean;
-  sms_phone: string | null;
-  sms_phone_verified: boolean;
   events_order_approved: boolean;
   events_order_shipped: boolean;
   events_order_delivered: boolean;
@@ -32,15 +29,11 @@ interface Props {
 const TEAL = '#00C4BC';
 const SILVER = '#A8B4C0';
 const SURFACE_2 = '#162230';
-const PHONE_RE = /^\+\d{10,15}$/;
 
 export default function NotificationsClient({ initialPrefs, userEmail }: Props) {
   const [prefs, setPrefs] = useState<Prefs>(initialPrefs);
-  const [phoneInput, setPhoneInput] = useState<string>(initialPrefs.sms_phone ?? '');
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{ kind: 'ok' | 'err'; text: string } | null>(null);
-
-  const phoneIsValid = phoneInput === '' || PHONE_RE.test(phoneInput.trim());
 
   // Push state tracked locally so the buttons reflect browser permission.
   const [pushSupported, setPushSupported] = useState(false);
@@ -97,10 +90,6 @@ export default function NotificationsClient({ initialPrefs, userEmail }: Props) 
   }
 
   async function save() {
-    if (!phoneIsValid) {
-      setMessage({ kind: 'err', text: 'Phone Number Must Be In E.164 Format (Example: +12025550100).' });
-      return;
-    }
     setSaving(true);
     setMessage(null);
     try {
@@ -108,8 +97,6 @@ export default function NotificationsClient({ initialPrefs, userEmail }: Props) 
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          sms_enabled: prefs.sms_enabled,
-          sms_phone: phoneInput.trim() === '' ? null : phoneInput.trim(),
           events_order_approved: prefs.events_order_approved,
           events_order_shipped: prefs.events_order_shipped,
           events_order_delivered: prefs.events_order_delivered,
@@ -127,9 +114,6 @@ export default function NotificationsClient({ initialPrefs, userEmail }: Props) 
         setMessage({ kind: 'ok', text: 'Preferences Saved.' });
         if (data?.preferences) {
           setPrefs({
-            sms_enabled: !!data.preferences.sms_enabled,
-            sms_phone: data.preferences.sms_phone ?? null,
-            sms_phone_verified: !!data.preferences.sms_phone_verified,
             events_order_approved: data.preferences.events_order_approved !== false,
             events_order_shipped: data.preferences.events_order_shipped !== false,
             events_order_delivered: data.preferences.events_order_delivered !== false,
@@ -139,7 +123,6 @@ export default function NotificationsClient({ initialPrefs, userEmail }: Props) 
             push_events_messages: data.preferences.push_events_messages !== false,
             push_events_marketing: !!data.preferences.push_events_marketing,
           });
-          setPhoneInput(data.preferences.sms_phone ?? '');
         }
       }
     } catch (err) {
@@ -271,97 +254,12 @@ export default function NotificationsClient({ initialPrefs, userEmail }: Props) 
               </label>
             ))}
           </div>
-        </section>
 
-        <section className="card" style={{ padding: '1.5rem', background: SURFACE_2, borderRadius: '0.75rem', border: '1px solid rgba(255,255,255,0.06)' }}>
-          <h2 style={{ fontSize: '1.05rem', color: '#FFFFFF', marginBottom: '0.5rem' }}>
-            SMS Text Messages
-          </h2>
-          <p style={{ fontSize: '0.8rem', color: SILVER, marginBottom: '1.25rem' }}>
-            Standard Carrier Rates May Apply. Reply STOP To Unsubscribe.
-          </p>
-
-          {/* SMS Enabled Toggle */}
-          <label style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', cursor: 'pointer', marginBottom: '1rem' }}>
-            <input
-              type="checkbox"
-              checked={prefs.sms_enabled}
-              onChange={(e) => update('sms_enabled', e.target.checked)}
-              style={{ width: 18, height: 18, accentColor: TEAL, cursor: 'pointer' }}
-            />
-            <span style={{ color: '#FFFFFF', fontSize: '0.92rem', fontWeight: 600 }}>
-              Enable SMS Notifications
-            </span>
-          </label>
-
-          {/* Phone */}
-          <div style={{ marginBottom: '1rem' }}>
-            <label htmlFor="sms-phone" style={{ display: 'block', fontSize: '0.78rem', color: SILVER, marginBottom: 6 }}>
-              Mobile Number (E.164 Format)
-            </label>
-            <input
-              id="sms-phone"
-              type="tel"
-              value={phoneInput}
-              onChange={(e) => setPhoneInput(e.target.value)}
-              placeholder="+12025550100"
-              autoComplete="tel"
-              style={{
-                width: '100%',
-                background: 'var(--black-2)',
-                border: `1px solid ${phoneIsValid ? 'rgba(255,255,255,0.12)' : '#E53E3E'}`,
-                borderRadius: '0.4rem',
-                padding: '0.6rem 0.75rem',
-                color: '#FFFFFF',
-                fontSize: '0.95rem',
-                letterSpacing: '0.05em',
-              }}
-            />
-            <div style={{ marginTop: 6, fontSize: '0.72rem', color: phoneIsValid ? SILVER : '#E53E3E' }}>
-              Format: Country Code Plus Number, No Spaces. Example: +12025550100.
-              {prefs.sms_phone_verified && phoneIsValid && phoneInput.trim() === (prefs.sms_phone ?? '') && (
-                <span style={{ marginLeft: 8, color: TEAL, fontWeight: 600 }}>Verified On File</span>
-              )}
-            </div>
-          </div>
-
-          {/* Event Toggles */}
-          <div style={{ marginTop: '1.5rem', borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: '1.25rem' }}>
-            <h3 style={{ fontSize: '0.9rem', color: '#FFFFFF', marginBottom: '0.75rem' }}>
-              Send Me A Text When:
-            </h3>
-            {([
-              { key: 'events_order_approved', label: 'My Order Is Approved' },
-              { key: 'events_order_shipped', label: 'My Order Ships' },
-              { key: 'events_order_delivered', label: 'My Order Is Delivered' },
-              { key: 'events_payment_reminder', label: 'A Payment Reminder Is Sent' },
-            ] as const).map((row) => (
-              <label
-                key={row.key}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: '0.75rem',
-                  cursor: 'pointer', padding: '0.5rem 0',
-                  opacity: prefs.sms_enabled ? 1 : 0.5,
-                }}
-              >
-                <input
-                  type="checkbox"
-                  disabled={!prefs.sms_enabled}
-                  checked={prefs[row.key]}
-                  onChange={(e) => update(row.key, e.target.checked)}
-                  style={{ width: 16, height: 16, accentColor: TEAL, cursor: prefs.sms_enabled ? 'pointer' : 'not-allowed' }}
-                />
-                <span style={{ color: '#FFFFFF', fontSize: '0.88rem' }}>{row.label}</span>
-              </label>
-            ))}
-          </div>
-
-          {/* Save */}
           <div style={{ marginTop: '1.5rem', display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
             <button
               type="button"
               onClick={save}
-              disabled={saving || !phoneIsValid}
+              disabled={saving}
               style={{
                 background: TEAL,
                 color: '#050A0F',
@@ -369,8 +267,8 @@ export default function NotificationsClient({ initialPrefs, userEmail }: Props) 
                 borderRadius: '0.5rem',
                 padding: '0.65rem 1.5rem',
                 fontWeight: 700,
-                cursor: saving || !phoneIsValid ? 'not-allowed' : 'pointer',
-                opacity: saving || !phoneIsValid ? 0.5 : 1,
+                cursor: saving ? 'not-allowed' : 'pointer',
+                opacity: saving ? 0.5 : 1,
                 fontSize: '0.88rem',
               }}
             >

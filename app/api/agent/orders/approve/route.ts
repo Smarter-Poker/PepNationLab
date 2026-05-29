@@ -3,7 +3,6 @@ import { createServiceClient } from '@/lib/supabase/server';
 import { requireAgent } from '@/lib/admin-auth';
 import { pickOne } from '@/lib/relations';
 import { computeAgentCost, type AgentTier } from '@/lib/pricing';
-import { enqueueOrderSms, shortOrderId } from '@/lib/sms-enqueue';
 import { enqueueOrderPush } from '@/lib/push-enqueue';
 import { enqueueWebhook, fetchOrderForWebhook } from '@/lib/webhook-dispatch';
 
@@ -177,16 +176,8 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    // Fire-and-forget SMS notification — never blocks order completion.
+    // Fire-and-forget push notification — never blocks order completion.
     if ((newStatus === 'approved_ship' || newStatus === 'approved_pickup') && order.buyer_id) {
-      try {
-        await enqueueOrderSms(supabase, {
-          userId: order.buyer_id,
-          orderId,
-          event: 'order_approved',
-          body: `Your Order #${shortOrderId(orderId)} Has Been Approved. Get Ready For Shipping.`,
-        });
-      } catch { /* notification failures must not break the order */ }
       try {
         await enqueueOrderPush(supabase, {
           userId: order.buyer_id,

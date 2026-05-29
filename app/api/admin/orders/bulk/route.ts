@@ -9,9 +9,10 @@ import {
   type OrderStatus,
 } from '@/lib/order-states';
 import { purchaseLabelForOrder } from '@/lib/shippo';
-import { enqueueOrderSms, shortOrderId, type OrderSmsEvent } from '@/lib/sms-enqueue';
 import { enqueueOrderPush } from '@/lib/push-enqueue';
 import { enqueueWebhook, fetchOrderForWebhook, type WebhookEventType } from '@/lib/webhook-dispatch';
+
+type BulkPushEvent = 'order_approved' | 'order_shipped' | 'order_delivered';
 
 interface BulkBody {
   ids?: unknown;
@@ -99,31 +100,18 @@ export async function POST(req: NextRequest) {
       }
       succeeded.push(id);
 
-      // SMS notification (fire-and-forget) for bulk transitions.
+      // Push notification (fire-and-forget) for bulk transitions.
       try {
         if (order.buyer_id) {
-          const short = shortOrderId(id);
-          let event: OrderSmsEvent | null = null;
-          let body = '';
+          let event: BulkPushEvent | null = null;
           if (target === 'approved_ship' || target === 'approved_pickup') {
             event = 'order_approved';
-            body = `Your Order #${short} Has Been Approved. Get Ready For Shipping.`;
           } else if (target === 'shipped') {
             event = 'order_shipped';
-            body = order.tracking_number
-              ? `Your Order #${short} Shipped. Tracking: ${order.tracking_number}`
-              : `Your Order #${short} Shipped.`;
           } else if (target === 'delivered') {
             event = 'order_delivered';
-            body = `Your Order #${short} Has Been Delivered. Thank You.`;
           }
-          if (event && body) {
-            await enqueueOrderSms(supabase, {
-              userId: order.buyer_id,
-              orderId: id,
-              event,
-              body,
-            });
+          if (event) {
             try {
               await enqueueOrderPush(supabase, {
                 userId: order.buyer_id,
@@ -134,7 +122,7 @@ export async function POST(req: NextRequest) {
             } catch { /* push must not block bulk response */ }
           }
         }
-      } catch { /* never block bulk response on SMS */ }
+      } catch { /* never block bulk response on push */ }
 
       // Fire-and-forget webhook for bulk admin transitions.
       void (async () => {

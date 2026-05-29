@@ -2,9 +2,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
 import { requireOrdersAccess } from '@/lib/admin-auth';
 import { canTransition, type OrderStatus } from '@/lib/order-states';
-import { enqueueOrderSms, shortOrderId, type OrderSmsEvent } from '@/lib/sms-enqueue';
 import { enqueueOrderPush } from '@/lib/push-enqueue';
 import { enqueueWebhook, fetchOrderForWebhook, type WebhookEventType } from '@/lib/webhook-dispatch';
+
+type OrderPushEvent = 'order_approved' | 'order_shipped' | 'order_delivered';
 
 // GET: List all orders with buyer profile join
 export async function GET(req: NextRequest) {
@@ -118,7 +119,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  // SMS notification (fire-and-forget — must never break the admin write).
+  // Push notification (fire-and-forget — must never break the admin write).
   try {
     const { data: orderRow } = await supabase
       .from('orders')
@@ -127,30 +128,16 @@ export async function POST(req: NextRequest) {
       .maybeSingle();
 
     if (orderRow?.buyer_id) {
-      const short = shortOrderId(id);
-      let event: OrderSmsEvent | null = null;
-      let body = '';
+      let event: OrderPushEvent | null = null;
       if (status === 'approved_ship' || status === 'approved_pickup') {
         event = 'order_approved';
-        body = `Your Order #${short} Has Been Approved. Get Ready For Shipping.`;
       } else if (status === 'shipped') {
         event = 'order_shipped';
-        const trk = orderRow.tracking_number || tracking_number;
-        body = trk
-          ? `Your Order #${short} Shipped. Tracking: ${trk}`
-          : `Your Order #${short} Shipped.`;
       } else if (status === 'delivered') {
         event = 'order_delivered';
-        body = `Your Order #${short} Has Been Delivered. Thank You.`;
       }
 
-      if (event && body) {
-        await enqueueOrderSms(supabase, {
-          userId: orderRow.buyer_id,
-          orderId: id,
-          event,
-          body,
-        });
+      if (event) {
         try {
           const trk = orderRow.tracking_number || tracking_number || null;
           await enqueueOrderPush(supabase, {
@@ -162,7 +149,7 @@ export async function POST(req: NextRequest) {
         } catch { /* push failures must not break admin response */ }
       }
     }
-  } catch { /* never block admin response on SMS failure */ }
+  } catch { /* never block admin response on push failure */ }
 
   // Fire-and-forget webhook for status transitions admins drive.
   void (async () => {

@@ -38,7 +38,6 @@ const PUBLIC_ROUTES = [
   // using a constant-time compare, NOT via the session middleware.
   '/api/cron/invoices',
   '/api/cron/reminders',
-  '/api/cron/sms-dispatch',
   '/api/cron/abandoned-cart-recovery',
   '/api/cron/apply-price-changes',
   '/api/cron/subscriptions-process',

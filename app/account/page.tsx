@@ -77,7 +77,7 @@ export default async function AccountHubPage() {
           <NavCard href="/account/subscriptions" label="Subscriptions" description="Manage Your Auto-Replenish Schedules." Icon={RotateCcw} />
           <NavCard href="/account/rma" label="Returns" description="Track Return Requests And Refunds." Icon={Package} />
           <NavCard href="/account/referrals" label="Referrals" description="Share Your Code And Earn Store Credit." Icon={Gift} />
-          <NavCard href="/account/notifications" label="Notifications" description="SMS And In-App Notification Preferences." Icon={Bell} />
+          <NavCard href="/account/notifications" label="Notifications" description="Push And In-App Notification Preferences." Icon={Bell} />
           <NavCard href="/account/security" label="Security" description="Password, 2FA, And Login Sessions." Icon={ShieldCheck} />
           <NavCard href="/account/credits" label="Store Credits" description="View Your Balance And Transaction History." Icon={CreditCard} />
           <NavCard href="/account/tax-exemption" label="Tax-Exempt Certificates" description="Submit Or Track Sales Tax Exemption Certificates." Icon={FileCheck} />
