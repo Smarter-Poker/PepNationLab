@@ -464,6 +464,13 @@ export default function AccountSecurityClient({
             </div>
           )}
         </section>
+
+        {/* Footer link to notification preferences */}
+        <p style={{ marginTop: '1.5rem', textAlign: 'center', fontSize: '0.8rem', color: SILVER }}>
+          <Link href="/account/notifications" style={{ color: TEAL, textDecoration: 'none' }}>
+            Notification Preferences
+          </Link>
+        </p>
       </div>
     </div>
   );
