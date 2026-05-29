@@ -18,10 +18,10 @@ export default async function CheckoutPage({ searchParams }: PageProps) {
   const agentSlug = rawAgent && /^[a-zA-Z0-9_-]+$/.test(rawAgent) ? rawAgent : null;
 
   if (!user) {
-    const redirectUrl = agentSlug
-      ? `/login?redirect=/checkout?agent=${encodeURIComponent(agentSlug)}`
-      : '/login?redirect=/checkout';
-    redirect(redirectUrl);
+    const redirectTarget = agentSlug
+      ? `/checkout?agent=${encodeURIComponent(agentSlug)}`
+      : '/checkout';
+    redirect(`/login?redirect=${encodeURIComponent(redirectTarget)}`);
   }
 
   // Get profile

@@ -176,14 +176,31 @@ export async function POST(request: NextRequest) {
     }
 
     // ── CLOSED-LOOP CATALOG GUARD ──────────────────────────────────────────────
-    // If an agentSlug was provided, EVERY product must be visible in that
-    // agent's catalog. This prevents cross-agent product injection and ensures
-    // each storefront is a fully closed business-inside-a-business.
-    if (agentSlug && agentProfile) {
+    // Resolve the storefront agent from the slug — this is independent of
+    // referring_agent_id so a researcher referred by Agent A cannot order
+    // Agent B's products by just shopping at B's URL.
+    if (agentSlug) {
+      // Look up the agent_profiles row by slug (same table the storefront page uses)
+      const { data: storefrontAgent } = await serviceSupabase
+        .from('agent_profiles')
+        .select('id')
+        .ilike('slug', agentSlug)
+        .single();
+
+      if (!storefrontAgent) {
+        return NextResponse.json(
+          { error: 'Agent Storefront Not Found.' },
+          { status: 404 }
+        );
+      }
+
+      // Every product must be visible in the slug-identified agent's catalog.
+      // We use storefrontAgent.id, NOT agentProfile?.id, because the researcher
+      // may have a different referring_agent_id than the storefront they shopped.
       const { data: visibleRows } = await serviceSupabase
         .from('agent_products')
         .select('product_id')
-        .eq('agent_id', agentProfile.id)
+        .eq('agent_id', storefrontAgent.id)
         .eq('is_visible', true)
         .in('product_id', items.map(i => i.id));
 

@@ -790,8 +790,8 @@ export default function AgentStorefrontGrid({ products, inventoryMap, primaryCol
                   <button
                     onClick={() => {
                       // Translate storefront cartItems (Record<variantId, qty>) →
-                      // CartItem[] format that CartContext/CheckoutForm reads from
-                      // localStorage['pnl_cart'].
+                      // CartItem[] format that CheckoutForm reads from
+                      // localStorage[`pnl_storefront_cart_${agentSlug}`].
                       const pnlCart = Object.entries(cartItems)
                         .filter(([, qty]) => qty > 0)
                         .map(([vId, qty]) => {
