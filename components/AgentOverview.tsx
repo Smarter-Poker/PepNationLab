@@ -116,11 +116,11 @@ export default function AgentOverview({
         <span
           className="dash-url"
           style={{
-            bottom: '8.5%',
-            left: '5%',
+            bottom: '5.5%',
+            left: '7%',
             width: '50%',
-            height: '4%',
-            fontSize: 'clamp(0.55rem, 1.6vw, 0.95rem)',
+            height: '5%',
+            fontSize: 'clamp(0.85rem, 2.4vw, 1.4rem)',
           }}
         >
           {storefrontUrl}

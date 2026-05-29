@@ -478,12 +478,8 @@ export default function AgentDashboardClient({
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="3" y1="12" x2="21" y2="12" /><line x1="3" y1="6" x2="21" y2="6" /><line x1="3" y1="18" x2="21" y2="18" /></svg>
           </button>
           
-          <Link href="/dashboard" style={{ color: 'var(--grey-400)', fontSize: '0.85rem', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <line x1="19" y1="12" x2="5" y2="12" />
-              <polyline points="12 19 5 12 12 5" />
-            </svg>
-            <span className="hide-on-mobile">Back To Hub</span>
+          <Link href="/dashboard" style={{ display: 'inline-flex', alignItems: 'center' }}>
+            <img src="/images/back-arrow.png" alt="Back" width={40} height={26} style={{ opacity: 0.85, transition: 'opacity 0.2s' }} onMouseEnter={e => (e.currentTarget.style.opacity = '1')} onMouseLeave={e => (e.currentTarget.style.opacity = '0.85')} />
           </Link>
           <div style={{ width: 1, height: 16, background: 'rgba(255,255,255,0.1)' }} />
           <span style={{ fontFamily: 'var(--font-brand)', fontSize: '0.9rem', fontWeight: 800, letterSpacing: '0.12em', color: 'var(--teal)' }}>
@@ -491,9 +487,7 @@ export default function AgentDashboardClient({
           </span>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
-          <div style={{ width: 24, height: 24, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <MessageBell onViewAll={() => { setActiveTab('Messages'); setIsMobileMenuOpen(false); }} />
-          </div>
+          <MessageBell onViewAll={() => { setActiveTab('Messages'); setIsMobileMenuOpen(false); }} />
           <span className="hide-on-mobile" style={{ fontSize: '0.85rem', color: 'var(--silver)' }}>{agentProfile.display_name}</span>
         </div>
       </nav>
