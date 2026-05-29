@@ -38,6 +38,9 @@ const PUBLIC_ROUTES = [
   // using a constant-time compare, NOT via the session middleware.
   '/api/cron/invoices',
   '/api/cron/reminders',
+  // Tombstone — sms-dispatch has been removed (returns 410 Gone). Public so the
+  // gone status is visible to any straggler caller; the handler does no work.
+  '/api/cron/sms-dispatch',
   '/api/cron/abandoned-cart-recovery',
   '/api/cron/apply-price-changes',
   '/api/cron/subscriptions-process',
