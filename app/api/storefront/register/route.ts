@@ -32,7 +32,7 @@ export async function POST(req: NextRequest) {
   }
 
   const body = await req.json().catch(() => ({}));
-  const { slug, username, email, password, fullName } = body || {};
+  const { slug, username, email, password, fullName, referralCode } = body || {};
 
   if (!slug || !username || !password || !fullName) {
     return NextResponse.json(
@@ -143,10 +143,25 @@ export async function POST(req: NextRequest) {
     accepted_at: nowIso,
   });
 
+  // Optional referral code (?ref=<code>). Non-blocking — any failure is
+  // surfaced as a warning in the response but never aborts signup.
+  let referralWarning: string | null = null;
+  if (referralCode && typeof referralCode === 'string') {
+    const trimmed = referralCode.trim();
+    if (trimmed && trimmed.length <= 32) {
+      const { error: refError } = await supabase.rpc('apply_referral_code', {
+        p_referee_id: newUserId,
+        p_code: trimmed,
+      });
+      if (refError) referralWarning = refError.message || 'Could Not Apply Referral Code';
+    }
+  }
+
   return NextResponse.json({
     success: true,
     userId: newUserId,
     username: usernameClean,
     email: internalEmail,
+    referralWarning,
   });
 }

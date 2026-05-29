@@ -61,14 +61,19 @@ const NAV = [
     icon: <svg {...ICON_PROPS}><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" /><path d="M7.5 4.21l9 5.16" /></svg>,
   },
   {
-    href: '/admin/refunds',
-    label: 'Refunds',
-    icon: <svg {...ICON_PROPS}><polyline points="1 4 1 10 7 10" /><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10" /></svg>,
-  },
-  {
     href: '/admin/subscriptions',
     label: 'Subscriptions',
     icon: <svg {...ICON_PROPS}><circle cx="12" cy="12" r="10"/><polyline points="12 8 12 12 14 14"/></svg>,
+  },
+  {
+    href: '/admin/referrals',
+    label: 'Referrals',
+    icon: <svg {...ICON_PROPS}><path d="M17 11a4 4 0 1 0-8 0M3 21h18M5 21a7 7 0 0 1 14 0"/></svg>,
+  },
+  {
+    href: '/admin/refunds',
+    label: 'Refunds',
+    icon: <svg {...ICON_PROPS}><polyline points="1 4 1 10 7 10" /><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10" /></svg>,
   },
   {
     href: '/admin/store-credits',
