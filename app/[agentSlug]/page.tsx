@@ -207,7 +207,7 @@ export default async function AgentStorefrontPage({ params }: Props) {
         <div style={{ display: 'flex', gap: 'var(--space-3)' }}>
           <Link href="/dashboard" className="btn btn-secondary btn-sm">My Dashboard</Link>
           <Link
-            href="/checkout"
+            href={`/checkout?agent=${encodeURIComponent(agentSlug)}`}
             className="btn btn-sm"
             style={{ background: primaryColor, color: '#fff', fontWeight: 700, border: 'none' }}
           >

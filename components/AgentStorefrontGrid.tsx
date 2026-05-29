@@ -263,6 +263,8 @@ export default function AgentStorefrontGrid({ products, inventoryMap, primaryCol
   const [showCartFloat, setShowCartFloat] = useState(false);
   const [cartToast, setCartToast] = useState(false);
   const [showBulkPricing, setShowBulkPricing] = useState(false);
+  // Modal-only quantity input — does NOT touch cartItems until "Add To Cart" is pressed
+  const [pendingQty, setPendingQty] = useState(10);
 
   // Load cart from localStorage on mount
   useEffect(() => {
@@ -529,10 +531,13 @@ export default function AgentStorefrontGrid({ products, inventoryMap, primaryCol
               onClick={() => {
                 setDetailProduct(group);
                 logRecentlyViewed(activeVariant.product_id);
-                // Auto-init cart to 10 vials when modal opens (if not already in cart)
+                // Pre-fill pendingQty for the modal but do NOT touch cartItems
+                // — items only enter the cart when user clicks "Add To Cart".
                 const defaultVId = group.defaultVariantId || group.variants[0]?.id;
                 if (defaultVId && !cartItems[defaultVId]) {
-                  setCartItems(prev => ({ ...prev, [defaultVId]: 10 }));
+                  setPendingQty(10);
+                } else if (defaultVId) {
+                  setPendingQty(cartItems[defaultVId]);
                 }
               }}
             >
@@ -757,7 +762,7 @@ export default function AgentStorefrontGrid({ products, inventoryMap, primaryCol
                             {name} {size && `(${size})`}
                           </div>
                           <div style={{ fontSize: '0.75rem', color: 'var(--grey-400)' }}>
-                            ${formatPrice(item.retail_price)} x {qty}
+                            ${formatPrice(item.retail_price / 10)} x {qty}
                           </div>
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
@@ -1024,7 +1029,8 @@ export default function AgentStorefrontGrid({ products, inventoryMap, primaryCol
                 {(() => {
                   const selectedVId = selectedVariants[detailProduct.name] || detailProduct.defaultVariantId;
                   const activeV = detailProduct.variants.find(v => v.id === selectedVId) || detailProduct.variants[0];
-                  const qty = cartItems[activeV.id] || 0;
+                  // Use pendingQty for display — only committed to cartItems on "Add To Cart"
+                  const qty = pendingQty;
                   // retail_price is the 10-pack price — divide by 10 for individual vial base price
                   const rawPrice = (activeV as any).is_on_sale && (activeV as any).sale_price
                     ? (activeV as any).sale_price
@@ -1092,12 +1098,7 @@ export default function AgentStorefrontGrid({ products, inventoryMap, primaryCol
                             Quantity (Vials)
                           </label>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                            <button onClick={() => setCartItems(prev => {
-                              const next = { ...prev };
-                              if ((next[activeV.id] || 0) <= 1) delete next[activeV.id];
-                              else next[activeV.id]--;
-                              return next;
-                            })} style={{
+                            <button onClick={() => setPendingQty(prev => Math.max(1, prev - 1))} style={{
                               width: 36, height: 36, borderRadius: 'var(--radius-md)',
                               border: '1px solid rgba(255,255,255,0.2)', background: 'transparent',
                               color: 'var(--white)', cursor: 'pointer', fontSize: '1.1rem',
@@ -1107,7 +1108,7 @@ export default function AgentStorefrontGrid({ products, inventoryMap, primaryCol
                               minWidth: 44, textAlign: 'center', fontSize: '1.2rem', fontWeight: 800,
                               color: 'var(--white)', fontFamily: 'var(--font-brand)'
                             }}>{qty}</span>
-                            <button onClick={() => addToCart(activeV.id)} style={{
+                            <button onClick={() => setPendingQty(prev => prev + 1)} style={{
                               width: 36, height: 36, borderRadius: 'var(--radius-md)',
                               border: 'none', background: primaryColor, color: 'var(--white)',
                               cursor: 'pointer', fontSize: '1.1rem', fontWeight: 800,
@@ -1231,15 +1232,14 @@ export default function AgentStorefrontGrid({ products, inventoryMap, primaryCol
                       Close
                     </button>
                     {(() => {
-                      const selVId = selectedVariants[detailProduct.name] || detailProduct.defaultVariantId;
-                      const qty = cartItems[selVId] || 10;
                       return (
                         <button
                           onClick={() => {
                             const vId = selectedVariants[detailProduct.name] || detailProduct.defaultVariantId;
-                            const currentQty = cartItems[vId] || 10;
-                            setCartItems(prev => ({ ...prev, [vId]: currentQty }));
+                            // Commit pendingQty (what user dialed in) to the real cart
+                            setCartItems(prev => ({ ...prev, [vId]: pendingQty }));
                             setDetailProduct(null);
+                            setPendingQty(10); // Reset for next modal open
                             setShowCartFloat(true);
                           }}
                           style={{
@@ -1248,7 +1248,7 @@ export default function AgentStorefrontGrid({ products, inventoryMap, primaryCol
                             border: 'none', cursor: 'pointer'
                           }}
                         >
-                          Add To Cart ({qty})
+                          Add To Cart ({pendingQty})
                         </button>
                       );
                     })()}

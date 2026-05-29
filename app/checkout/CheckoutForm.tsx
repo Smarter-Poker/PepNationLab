@@ -36,6 +36,8 @@ interface SavedAddress {
 
 export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, agentSlug }: CheckoutFormProps) {
   // Agent buying from their own store → show tier-discounted pricing
+  // Admins are intentionally excluded: they don't have agent_profiles rows
+  // and should not trigger the self-buy wholesale path.
   const isAgentSelfBuy = userProfile.role === 'agent' || userProfile.role === 'super_agent';
   const { cart: contextCart, cartSubtotal: contextSubtotal, clearCart } = useCart();
 
@@ -1153,7 +1155,7 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
 
             <div style={{ borderTop: '1px solid rgba(255, 255, 255, 0.05)', paddingTop: 'var(--space-3)', display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem' }}>
-                <span style={{ color: 'var(--grey-400)' }}>Items Subtotal</span>
+                <span style={{ color: 'var(--grey-400)' }}>{isAgentSelfBuy ? 'Agent Direct Subtotal' : 'Items Subtotal'}</span>
                 <strong style={{ color: 'var(--white)' }}>${cartSubtotal.toFixed(2)}</strong>
               </div>
 
