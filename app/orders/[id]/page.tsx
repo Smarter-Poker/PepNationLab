@@ -1,9 +1,10 @@
 import type { Metadata } from 'next';
 import { redirect, notFound } from 'next/navigation';
 import Link from 'next/link';
-import { createClient } from '@/lib/supabase/server';
+import { createClient, createServiceClient } from '@/lib/supabase/server';
 import PageShell from '@/components/PageShell';
 import PaymentProofUpload from '@/components/PaymentProofUpload';
+import RecommendationStrip, { type RecommendationItem } from '@/components/RecommendationStrip';
 import ReceiptButton from './ReceiptButton';
 import SubscribeReplenishButton from './SubscribeReplenishButton';
 import RequestReturnButton from './RequestReturnButton';
@@ -46,6 +47,7 @@ const PAYMENT_LABELS: Record<string, string> = {
 interface OrderItem {
   id: string;
   agent_product_id: string | null;
+  product_id: string | null;
   product_name: string;
   quantity: number;
   unit_retail_price: number | string;
@@ -90,7 +92,7 @@ export default async function OrderDetailPage(
       id, status, created_at, payment_method, fulfillment_method,
       subtotal, discount_amount, coupon_code, shipping_cost, total,
       tracking_number, label_url, shipping_address, agent_id, buyer_id,
-      order_items (id, agent_product_id, product_name, quantity, unit_retail_price, unit_cost_price),
+      order_items (id, agent_product_id, product_id, product_name, quantity, unit_retail_price, unit_cost_price),
       profiles:buyer_id (full_name, email)
     `)
     .eq('id', id)
@@ -105,16 +107,110 @@ export default async function OrderDetailPage(
   // Resolve seller payment handles if order has an agent
   let paymentHandles: Record<string, string> = {};
   let sellerName = 'Pep Nation Lab';
+  let agentSlug: string | null = null;
   if (order.agent_id) {
     const { data: agentProfile } = await supabase
       .from('agent_profiles')
-      .select('display_name, payment_handles')
+      .select('display_name, payment_handles, slug')
       .eq('id', order.agent_id)
       .maybeSingle();
     if (agentProfile) {
       sellerName = agentProfile.display_name || sellerName;
       paymentHandles = (agentProfile.payment_handles as any) || {};
+      agentSlug = (agentProfile.slug as string | null) ?? null;
     }
+  }
+
+  // ─── Recommendations ("You May Also Like") ──────────────────────────────
+  // Seed from the FIRST eligible order_item.product_id. Service client used
+  // so the SECURITY DEFINER RPC + materialized view reads work regardless
+  // of the researcher's row-level role. We intersect the candidate ids
+  // with the order's agent's agent_products catalog so all "View" links go
+  // to a real storefront listing the recommended product.
+  let recommendations: RecommendationItem[] = [];
+  try {
+    const seedProductId = order.order_items.find((it) => it.product_id)?.product_id ?? null;
+    if (seedProductId && order.agent_id) {
+      const service = await createServiceClient();
+      const { data: pairs } = await service.rpc('get_copurchase_recommendations', {
+        p_product_id: seedProductId,
+        p_limit: 16,
+      });
+      const candidates: string[] = Array.isArray(pairs)
+        ? (pairs as Array<{ related_product_id: string }>)
+            .map((r) => r.related_product_id)
+            .filter((id) => !!id && id !== seedProductId)
+        : [];
+      // Fallback to popular if we don't have enough co-purchase data.
+      if (candidates.length < 6) {
+        const { data: pop } = await service
+          .from('product_popular_60d')
+          .select('product_id')
+          .order('units', { ascending: false })
+          .limit(16);
+        for (const row of (pop ?? []) as Array<{ product_id: string }>) {
+          if (row.product_id && row.product_id !== seedProductId && !candidates.includes(row.product_id)) {
+            candidates.push(row.product_id);
+          }
+        }
+      }
+      if (candidates.length > 0) {
+        const { data: prods } = await service
+          .from('products')
+          .select('id, name, slug, category, image_url, base_cost, is_active, is_banned')
+          .in('id', candidates);
+        const productMap = new Map<string, RecommendationItem & { is_active?: boolean | null; is_banned?: boolean | null }>();
+        for (const p of (prods ?? []) as Array<{
+          id: string; name: string; slug: string | null; category: string | null;
+          image_url: string | null; base_cost: number | string | null;
+          is_active: boolean | null; is_banned: boolean | null;
+        }>) {
+          if (!p?.id) continue;
+          if (p.is_active === false) continue;
+          if (p.is_banned === true) continue;
+          productMap.set(p.id, {
+            id: p.id,
+            name: p.name,
+            slug: p.slug,
+            category: p.category,
+            image_url: p.image_url,
+            base_cost: Number(p.base_cost ?? 0),
+          });
+        }
+        // Intersect with the order's agent's catalog so the storefront
+        // actually carries each recommended product.
+        const { data: aps } = await service
+          .from('agent_products')
+          .select('product_id, retail_price, is_visible, is_on_sale, sale_price')
+          .eq('agent_id', order.agent_id)
+          .in('product_id', Array.from(productMap.keys()));
+        const agentPriceMap = new Map<string, number>();
+        const agentVisible = new Set<string>();
+        for (const ap of (aps ?? []) as Array<{
+          product_id: string; retail_price: number | string | null;
+          is_visible: boolean | null; is_on_sale?: boolean | null; sale_price?: number | string | null;
+        }>) {
+          if (ap.is_visible === false) continue;
+          agentVisible.add(ap.product_id);
+          const raw = ap.is_on_sale && ap.sale_price != null ? Number(ap.sale_price) : Number(ap.retail_price);
+          const perVial = Number.isFinite(raw) && raw > 0 ? raw / 10 : 0;
+          if (perVial > 0) agentPriceMap.set(ap.product_id, perVial);
+        }
+        for (const cid of candidates) {
+          if (recommendations.length >= 6) break;
+          const p = productMap.get(cid);
+          if (!p) continue;
+          if (!agentVisible.has(cid)) continue;
+          recommendations.push({
+            ...p,
+            ...(agentPriceMap.has(cid) ? { retail_price: agentPriceMap.get(cid)! } : {}),
+          });
+        }
+      }
+    }
+  } catch {
+    // Recommendations are best-effort; never break the order detail page.
+    recommendations = [];
   }
 
   const statusColor = STATUS_COLORS[order.status] ?? 'var(--grey-400)';
@@ -304,6 +400,17 @@ export default async function OrderDetailPage(
               </div>
             </div>
           </div>
+
+          {/* You May Also Like */}
+          {recommendations.length > 0 && (
+            <div className="card-metal" style={{ padding: 'var(--space-6)', marginBottom: 'var(--space-5)' }}>
+              <RecommendationStrip
+                title="You May Also Like"
+                recommendations={recommendations}
+                buildHref={(pid) => agentSlug ? `/${agentSlug}?product=${encodeURIComponent(pid)}` : '/orders'}
+              />
+            </div>
+          )}
 
           {/* Payment Instructions */}
           {order.status === 'pending_customer_payment' && (
