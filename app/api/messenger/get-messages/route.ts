@@ -73,9 +73,24 @@ export async function POST(req: NextRequest) {
   const messages = (data ?? []) as MessageRow[];
   const messageIds = messages.map((m) => m.id);
 
+  // Audit fix: honor `for_me` dismissals. A user-issued dismissal hides the
+  // message from the dismisser's view only. The send/edit/delete paths never
+  // looked at this table on read, so dismissed messages were still served.
+  let dismissedSet: Set<string> = new Set();
+  if (messageIds.length > 0) {
+    const { data: dis } = await svc
+      .from('messenger_message_dismissals')
+      .select('message_id')
+      .eq('user_id', user.id)
+      .in('message_id', messageIds);
+    dismissedSet = new Set(((dis ?? []) as Array<{ message_id: string }>).map((r) => r.message_id));
+  }
+  const visibleMessages = messages.filter((m) => !dismissedSet.has(m.id));
+  const visibleIds = visibleMessages.map((m) => m.id);
+
   // Bulk-load sender profiles. The sender_id FK targets auth.users, not
-  // profiles, so PostgREST cannot embed profiles directly — we fetch by id.
-  const senderIds = Array.from(new Set(messages.map((m) => m.sender_id)));
+  // profiles, so PostgREST cannot embed profiles directly -- we fetch by id.
+  const senderIds = Array.from(new Set(visibleMessages.map((m) => m.sender_id)));
   let senders: Array<{ id: string; full_name: string | null; username: string | null; role: string | null }> = [];
   if (senderIds.length > 0) {
     const { data: p } = await svc
@@ -85,17 +100,17 @@ export async function POST(req: NextRequest) {
     senders = p ?? [];
   }
   const senderMap = new Map(senders.map((s) => [s.id, s]));
-  const messagesWithSenders = messages.map((m) => ({
+  const messagesWithSenders = visibleMessages.map((m) => ({
     ...m,
     sender: senderMap.get(m.sender_id) ?? null,
   }));
 
   let reactions: Array<{ message_id: string; user_id: string; emoji: string | null; gif_url: string | null }> = [];
-  if (messageIds.length > 0) {
+  if (visibleIds.length > 0) {
     const { data: r } = await svc
       .from('messenger_reactions')
       .select('message_id, user_id, emoji, gif_url')
-      .in('message_id', messageIds);
+      .in('message_id', visibleIds);
     reactions = r ?? [];
   }
 

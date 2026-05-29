@@ -78,6 +78,20 @@ export default function MessageComposer({ conversationId, selfId, replyTo, onCle
     };
   }, [conversationId, selfId]);
 
+  // Audit fix: when the user switches into a non-text input mode (voice
+  // recording, GIF picker, attach menu) the typing-stop timer would not
+  // fire for up to 3 seconds, and a long voice recording could keep the
+  // indicator on for a full minute. Force a stop-broadcast every time the
+  // composer transitions away from raw text entry.
+  const stopTypingNow = useCallback(() => {
+    if (stopTimerRef.current) clearTimeout(stopTimerRef.current);
+    stopTimerRef.current = null;
+    lastSentAtRef.current = 0;
+    broadcastRef.current?.(false);
+  }, []);
+
+  useEffect(() => { if (voiceMode || showGif || showAttach) stopTypingNow(); }, [voiceMode, showGif, showAttach, stopTypingNow]);
+
   const pulseTyping = useCallback(() => {
     const now = Date.now();
     if (now - lastSentAtRef.current > TYPING_THROTTLE_MS) {
@@ -168,13 +182,12 @@ export default function MessageComposer({ conversationId, selfId, replyTo, onCle
   const handleSendText = useCallback(async () => {
     const trimmed = text.trim();
     if (!trimmed || sending) return;
-    if (stopTimerRef.current) clearTimeout(stopTimerRef.current);
-    broadcastRef.current?.(false);
+    stopTypingNow();
     const optimistic = buildOptimistic({ message_type: 'text', text: trimmed });
     setText('');
     await sendOptimistic(optimistic, { text: trimmed, messageType: 'text' });
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [text, sending, replyTo, conversationId, selfId]);
+  }, [text, sending, replyTo, conversationId, selfId, stopTypingNow]);
 
   const uploadAndSend = async (blob: Blob, contentType: string, messageType: MessageType, metadata: Record<string, unknown>) => {
     setSending(true);

@@ -19,6 +19,12 @@ interface Props {
 }
 
 const URL_RE = /https?:\/\/[^\s<>]+/i;
+const SAFE_URL_RE = /^(https?:|mailto:|tel:)/i;
+
+function safeHref(raw: string | null): string {
+  if (!raw) return '#';
+  return SAFE_URL_RE.test(raw) ? raw : '#';
+}
 
 function formatTime(iso: string): string {
   try { return new Date(iso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }); } catch { return ''; }
@@ -111,7 +117,7 @@ export default function MessageBubble({
     }
     if (message.message_type === 'file' && message.media_url) {
       return (
-        <a href={message.media_url} target="_blank" rel="noopener noreferrer" download={meta.filename ?? true}
+        <a href={safeHref(message.media_url)} target="_blank" rel="noopener noreferrer" download={meta.filename ?? true}
           style={{ display: 'inline-flex', alignItems: 'center', gap: 8, color: isOwn ? '#000' : 'var(--white, #FFFFFF)' }}
           aria-label={`Download ${meta.filename ?? 'File'}`}
         >
@@ -126,6 +132,7 @@ export default function MessageBubble({
 
   return (
     <div
+      data-msg-id={message.id}
       style={{ alignSelf: isOwn ? 'flex-end' : 'flex-start', maxWidth: '70%',
         display: 'flex', flexDirection: 'column', gap: 2, position: 'relative' }}
       onContextMenu={(e) => { e.preventDefault(); if (editing || confirmDelete) return; setMenuOpen((v) => !v); }}

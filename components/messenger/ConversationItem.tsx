@@ -19,8 +19,19 @@ function timeAgo(iso: string | null): string {
   return `${Math.floor(hrs / 24)}d`;
 }
 
+function resolveLabel(c: ConversationListItem): string {
+  if (c.title && c.title.trim().length > 0) return c.title;
+  if (c.type === 'direct') {
+    if (c.counterparty_full_name && c.counterparty_full_name.trim().length > 0) return c.counterparty_full_name;
+    if (c.counterparty_username && c.counterparty_username.trim().length > 0) return c.counterparty_username;
+    return 'Direct Message';
+  }
+  return 'Conversation';
+}
+
 export default function ConversationItem({ conversation, active, onClick }: Props) {
   const unread = conversation.unread_count ?? 0;
+  const label = resolveLabel(conversation);
   return (
     <button
       type="button"
@@ -39,7 +50,7 @@ export default function ConversationItem({ conversation, active, onClick }: Prop
         color: 'var(--white, #FFFFFF)',
       }}
     >
-      <Avatar name={conversation.title ?? 'Conversation'} avatarUrl={conversation.avatar_url} size={44} />
+      <Avatar name={label} avatarUrl={conversation.avatar_url} size={44} />
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8 }}>
           <span
@@ -51,7 +62,7 @@ export default function ConversationItem({ conversation, active, onClick }: Prop
               whiteSpace: 'nowrap',
             }}
           >
-            {conversation.title || 'Direct Message'}
+            {label}
           </span>
           <span style={{ fontSize: '0.75rem', color: 'var(--grey-400, #A8B4C0)' }}>
             {timeAgo(conversation.last_message_at)}

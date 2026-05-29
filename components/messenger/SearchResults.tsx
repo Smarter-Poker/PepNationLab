@@ -16,6 +16,8 @@ interface ResultConversation {
   avatar_url: string | null;
   last_message_text: string | null;
   last_message_at: string | null;
+  counterparty_full_name?: string | null;
+  counterparty_username?: string | null;
 }
 
 interface Props {
@@ -29,6 +31,16 @@ interface Props {
 function snippet(text: string | null): string {
   if (!text) return '(Media)';
   return text.length > 120 ? text.slice(0, 120) + '...' : text;
+}
+
+function resolveLabel(c: ResultConversation): string {
+  if (c.title && c.title.trim().length > 0) return c.title;
+  if (c.type === 'direct') {
+    if (c.counterparty_full_name && c.counterparty_full_name.trim().length > 0) return c.counterparty_full_name;
+    if (c.counterparty_username && c.counterparty_username.trim().length > 0) return c.counterparty_username;
+    return 'Direct Message';
+  }
+  return 'Conversation';
 }
 
 export default function SearchResults({ messages, conversations, loading, onPick, onClose }: Props) {
@@ -52,16 +64,19 @@ export default function SearchResults({ messages, conversations, loading, onPick
       {conversations.length > 0 && (
         <div style={{ marginBottom: 4 }}>
           <div style={sectionLabel}>Conversations</div>
-          {conversations.map((c) => (
-            <button key={c.id} type="button"
-              onMouseDown={(e) => e.preventDefault()}
-              onClick={() => { onPick(c.id); onClose(); }}
-              style={resultBtn}
-              aria-label={`Open Conversation ${c.title ?? c.id}`}
-            >
-              <span style={{ fontWeight: 600 }}>{c.title ?? 'Direct Message'}</span>
-            </button>
-          ))}
+          {conversations.map((c) => {
+            const label = resolveLabel(c);
+            return (
+              <button key={c.id} type="button"
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => { onPick(c.id); onClose(); }}
+                style={resultBtn}
+                aria-label={`Open Conversation ${label}`}
+              >
+                <span style={{ fontWeight: 600 }}>{label}</span>
+              </button>
+            );
+          })}
         </div>
       )}
       {messages.length > 0 && (

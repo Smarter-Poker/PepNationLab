@@ -55,9 +55,19 @@ interface ReactionHandlers {
   onDelete?: (r: { message_id: string; user_id: string; emoji: string | null }) => void;
 }
 
-export function subscribeReactions(messageIds: string[], handlers: ReactionHandlers): RealtimeChannel | null {
+// Audit fix: accept a `channelHint` so the channel name is stable across
+// re-subs for the same set of message ids. Previous code keyed on the
+// first id, so two sets that started with the same id (rare but possible)
+// would collide. Caller passes a hash of all ids; we fall back to the
+// first id for back-compat.
+export function subscribeReactions(
+  messageIds: string[],
+  handlers: ReactionHandlers,
+  channelHint?: string,
+): RealtimeChannel | null {
   if (messageIds.length === 0) return null;
-  const ch = supabase.channel(`mr:${messageIds[0]}`);
+  const suffix = channelHint && channelHint.length > 0 ? channelHint : messageIds[0];
+  const ch = supabase.channel(`mr:${suffix}`);
   ch.on(
     'postgres_changes',
     {

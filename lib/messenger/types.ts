@@ -78,4 +78,11 @@ export interface ConversationListItem {
   unread_count: number;
   is_pinned: boolean;
   is_muted: boolean;
+  // Audit phase 8 fix: direct-conversation counterparty profile, so the UI
+  // can render the OTHER participant's name instead of "Direct Message".
+  // NULL for group / announcement / when the RPC has not been redeployed.
+  counterparty_id?: string | null;
+  counterparty_full_name?: string | null;
+  counterparty_username?: string | null;
+  counterparty_role?: string | null;
 }

@@ -21,6 +21,31 @@ interface Props {
 
 const TYPING_TTL_MS = 4000;
 
+// Audit fix: stable channel suffix derived from the message ID list so the
+// reaction channel name is unique to the current set, not just "first id".
+function stableKey(parts: string[]): string {
+  let h = 5381;
+  for (const p of parts) {
+    for (let i = 0; i < p.length; i++) {
+      h = ((h << 5) + h) ^ p.charCodeAt(i);
+      h |= 0;
+    }
+  }
+  return (h >>> 0).toString(36);
+}
+
+async function markConversationRead(conversationId: string, lastReadMessageId: string) {
+  try {
+    await fetch('/api/messenger/mark-read', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ conversationId, lastReadMessageId }),
+    });
+  } catch {
+    // Best-effort -- the trigger will re-increment when the next message arrives.
+  }
+}
+
 export default function MessagePane({ userId }: Props) {
   const activeId = useMessengerStore((s) => s.activeConversationId);
   const messagesByConv = useMessengerStore((s) => s.messages);
@@ -30,6 +55,8 @@ export default function MessagePane({ userId }: Props) {
   const appendMessage = useMessengerStore((s) => s.appendMessage);
   const updateMessage = useMessengerStore((s) => s.updateMessage);
   const removeMessage = useMessengerStore((s) => s.removeMessage);
+  const conversations = useMessengerStore((s) => s.conversations);
+  const setConversations = useMessengerStore((s) => s.setConversations);
   const [replyTo, setReplyTo] = useState<Message | null>(null);
   const [reactionsByMsg, setReactionsByMsg] = useState<Record<string, Reaction[]>>({});
   const [typingUserIds, setTypingUserIds] = useState<string[]>([]);
@@ -57,12 +84,18 @@ export default function MessagePane({ userId }: Props) {
         if (!res.ok) return;
         const json = (await res.json()) as { messages?: Message[]; reactions?: Reaction[] };
         if (cancelled) return;
-        setMessages(activeId, json.messages ?? []);
+        const list = json.messages ?? [];
+        setMessages(activeId, list);
         const map: Record<string, Reaction[]> = {};
         (json.reactions ?? []).forEach((r) => {
           (map[r.message_id] ??= []).push(r);
         });
         setReactionsByMsg(map);
+        // Audit fix: mark conversation read when the user opens it, so the
+        // unread badge on the conversation list drops to zero. The previous
+        // build never called this endpoint, leaving badges permanently stale.
+        const lastId = list.length > 0 ? list[list.length - 1].id : null;
+        if (lastId) void markConversationRead(activeId, lastId);
       } finally {
         if (!cancelled) setLoading(activeId, false);
       }
@@ -79,6 +112,8 @@ export default function MessagePane({ userId }: Props) {
       onInsert: (m) => {
         if (m.sender_id === userId) return;
         appendMessage(activeId, m);
+        // Audit fix: clear unread for messages the user is actively viewing.
+        void markConversationRead(activeId, m.id);
       },
       onUpdate: (m) => updateMessage(activeId, m),
       onDelete: (id) => removeMessage(activeId, id),
@@ -116,6 +151,17 @@ export default function MessagePane({ userId }: Props) {
     };
   }, [activeId, userId, appendMessage, updateMessage, removeMessage]);
 
+  // Audit fix: also bump the local conversation list unread to zero when
+  // we activate -- the API call lands eventually but the optimistic update
+  // prevents the badge from flashing on a quick switch.
+  useEffect(() => {
+    if (!activeId) return;
+    if (!conversations.some((c) => c.conversation_id === activeId && (c.unread_count ?? 0) > 0)) return;
+    setConversations(
+      conversations.map((c) => (c.conversation_id === activeId ? { ...c, unread_count: 0 } : c)),
+    );
+  }, [activeId, conversations, setConversations]);
+
   const messageIds = (messagesByConv[activeId ?? ''] ?? []).map((m) => m.id);
   const messageIdsKey = messageIds.join('|');
   const reactionChannelRef = useRef<RealtimeChannel | null>(null);
@@ -129,10 +175,24 @@ export default function MessagePane({ userId }: Props) {
       }
       return;
     }
+    const channelHint = stableKey(messageIds);
     const ch = subscribeReactions(messageIds, {
       onInsert: (r) => {
         setReactionsByMsg((prev) => {
           const arr = prev[r.message_id] ?? [];
+          // Audit fix: when the realtime echo of our OWN optimistic reaction
+          // arrives, replace the temp `r-...` entry with the server row so
+          // the visible count stays correct. For other users, dedupe by
+          // (user_id, emoji) -- one user can only hold one of an emoji.
+          if (r.user_id === userId) {
+            const withoutTemp = arr.filter(
+              (x) => !(x.user_id === userId && x.emoji === r.emoji && x.id.startsWith('r-')),
+            );
+            if (withoutTemp.some((x) => x.user_id === userId && x.emoji === r.emoji && x.id === r.id)) {
+              return { ...prev, [r.message_id]: withoutTemp };
+            }
+            return { ...prev, [r.message_id]: [...withoutTemp, r] };
+          }
           if (arr.some((x) => x.user_id === r.user_id && x.emoji === r.emoji)) return prev;
           return { ...prev, [r.message_id]: [...arr, r] };
         });
@@ -146,7 +206,7 @@ export default function MessagePane({ userId }: Props) {
           };
         });
       },
-    });
+    }, channelHint);
     reactionChannelRef.current = ch;
     return () => {
       if (reactionChannelRef.current) {
@@ -154,7 +214,8 @@ export default function MessagePane({ userId }: Props) {
         reactionChannelRef.current = null;
       }
     };
-  }, [activeId, messageIdsKey]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeId, messageIdsKey, userId]);
 
   const handleReact = useCallback(
     async (m: Message, emoji: string, action: 'add' | 'remove') => {
