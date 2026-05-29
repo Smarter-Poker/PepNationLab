@@ -5,6 +5,7 @@ import { requireSession, getParticipant } from '@/lib/messenger/server';
 import { SendMessageSchema } from '@/lib/messenger/schemas';
 import { sanitizeMessageText } from '@/lib/messenger/sanitize';
 
+export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 export async function POST(req: NextRequest) {
@@ -29,6 +30,26 @@ export async function POST(req: NextRequest) {
     if (cleanText.length === 0 && !parsed.data.mediaUrl) {
       return NextResponse.json({ error: 'Empty Message' }, { status: 400 });
     }
+  }
+
+  // Phase 10: expiry timer. Optional ISO datetime; must be in the future and
+  // within a sane window (5 minutes to 30 days) so callers can't set a 100-year
+  // expiry or a past one that immediately evicts the row.
+  let expiresAt: string | null = null;
+  if (parsed.data.expiresAt) {
+    const t = Date.parse(parsed.data.expiresAt);
+    if (Number.isNaN(t)) {
+      return NextResponse.json({ error: 'Invalid expiresAt' }, { status: 400 });
+    }
+    const minMs = Date.now() + 60_000; // 1 minute minimum
+    const maxMs = Date.now() + 60 * 60 * 24 * 30 * 1000; // 30 day maximum
+    if (t < minMs) {
+      return NextResponse.json({ error: 'expiresAt Must Be At Least One Minute In The Future' }, { status: 400 });
+    }
+    if (t > maxMs) {
+      return NextResponse.json({ error: 'expiresAt Cannot Exceed Thirty Days' }, { status: 400 });
+    }
+    expiresAt = new Date(t).toISOString();
   }
 
   const participant = await getParticipant(parsed.data.conversationId, user.id);
@@ -57,7 +78,7 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  const insertRow = {
+  const insertRow: Record<string, unknown> = {
     conversation_id: parsed.data.conversationId,
     sender_id: user.id,
     text: cleanText,
@@ -67,6 +88,7 @@ export async function POST(req: NextRequest) {
     reply_to_id: parsed.data.replyToId ?? null,
     thread_parent_id: parsed.data.threadParentId ?? null,
   };
+  if (expiresAt) insertRow.expires_at = expiresAt;
 
   const { data: inserted, error: insErr } = await svc
     .from('messenger_messages')
