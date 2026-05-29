@@ -3,6 +3,7 @@ import { createServiceClient } from '@/lib/supabase/server';
 import { requireAgent } from '@/lib/admin-auth';
 import { pickOne } from '@/lib/relations';
 import { computeAgentCost, type AgentTier } from '@/lib/pricing';
+import { enqueueOrderSms, shortOrderId } from '@/lib/sms-enqueue';
 
 export async function POST(req: NextRequest) {
   try {
@@ -159,6 +160,18 @@ export async function POST(req: NextRequest) {
         balance_before: oldBalance, balance_after: newBalance,
         description: `Charge for Order ${orderId}`, reference_id: orderId, reference_type: 'order', created_by: callerId
       });
+    }
+
+    // Fire-and-forget SMS notification — never blocks order completion.
+    if ((newStatus === 'approved_ship' || newStatus === 'approved_pickup') && order.buyer_id) {
+      try {
+        await enqueueOrderSms(supabase, {
+          userId: order.buyer_id,
+          orderId,
+          event: 'order_approved',
+          body: `Your Order #${shortOrderId(orderId)} Has Been Approved. Get Ready For Shipping.`,
+        });
+      } catch { /* notification failures must not break the order */ }
     }
 
     return NextResponse.json({ success: true, status: newStatus });
