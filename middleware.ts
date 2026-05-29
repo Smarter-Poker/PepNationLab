@@ -35,6 +35,7 @@ const PUBLIC_ROUTES = [
   '/api/cron/invoices',
   '/api/cron/reminders',
   '/api/cron/sms-dispatch',
+  '/api/cron/abandoned-cart-recovery',
 ];
 
 // Dynamic route check — agent storefronts are public

@@ -118,10 +118,7 @@ export default function MessageBell({ onViewAll, dropUp }: { onViewAll: () => vo
         onMouseEnter={e => { if (!open) e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; }}
         onMouseLeave={e => { if (!open) e.currentTarget.style.background = 'none'; }}
       >
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={open ? 'var(--teal)' : 'rgba(255,255,255,0.5)'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ transition: 'stroke 0.2s' }}>
-          <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
-          <polyline points="22,6 12,13 2,6" />
-        </svg>
+        <img src="/images/messenger-icon.png" alt="Messages" width={24} height={24} style={{ transition: 'opacity 0.2s', opacity: open ? 1 : 0.7, filter: open ? 'none' : 'brightness(0.9)' }} />
         {unreadCount > 0 && (
           <span style={{
             position: 'absolute', top: 2, right: 2,
