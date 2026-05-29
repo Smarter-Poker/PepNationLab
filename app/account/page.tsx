@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/server';
-import { Bell, ShieldCheck, CreditCard, Heart, History, MapPin, Package, RotateCcw, Gift } from 'lucide-react';
+import { Bell, ShieldCheck, CreditCard, Heart, History, MapPin, Package, RotateCcw, Gift, FileCheck } from 'lucide-react';
 
 export const dynamic = 'force-dynamic';
 
@@ -80,6 +80,7 @@ export default async function AccountHubPage() {
           <NavCard href="/account/notifications" label="Notifications" description="SMS And In-App Notification Preferences." Icon={Bell} />
           <NavCard href="/account/security" label="Security" description="Password, 2FA, And Login Sessions." Icon={ShieldCheck} />
           <NavCard href="/account/credits" label="Store Credits" description="View Your Balance And Transaction History." Icon={CreditCard} />
+          <NavCard href="/account/tax-exemption" label="Tax-Exempt Certificates" description="Submit Or Track Sales Tax Exemption Certificates." Icon={FileCheck} />
           <NavCard href="/checkout" label="Saved Addresses" description="Manage Shipping Addresses Used At Checkout." Icon={MapPin} />
         </div>
       </div>
