@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { applyBulkPrice } from '@/lib/pricing';
 import { assertSameOrigin } from '@/lib/csrf';
 import { rateLimit } from '@/lib/rate-limit';
+import { computeTaxQuote } from '@/lib/tax';
 
 const CheckoutSchema = z.object({
   items: z.array(z.object({
@@ -466,7 +467,33 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const grossTotal = Math.max(0, subtotal - discountAmount) + shippingCost;
+    // ── SALES TAX (PER DESTINATION STATE) ─────────────────────────────
+    // Look up the active tax rule for the buyer's shipping state and
+    // apply any approved exemption certificate they have on file. Pickup
+    // orders without a shipping address default to zero tax. Failures
+    // here never block checkout — we fall back to a zero quote.
+    let taxAmount = 0;
+    let taxJurisdiction: string | null = null;
+    let taxExemptionId: string | null = null;
+    try {
+      const stateForTax =
+        fulfillmentMethod === 'ship' && shippingAddress?.state
+          ? shippingAddress.state
+          : null;
+      const quote = await computeTaxQuote(serviceSupabase, {
+        buyerId: user.id,
+        subtotal: Math.max(0, subtotal - discountAmount),
+        shipping: shippingCost,
+        shippingState: stateForTax,
+      });
+      taxAmount = Number.isFinite(quote.taxAmount) ? quote.taxAmount : 0;
+      taxJurisdiction = quote.jurisdiction;
+      taxExemptionId = quote.exemptionId;
+    } catch (taxErr) {
+      console.error('Tax Quote Failed (defaulting to 0):', taxErr);
+    }
+
+    const grossTotal = Math.max(0, subtotal - discountAmount) + shippingCost + taxAmount;
 
     // Validate requested store credit against the server-side balance view.
     // Cap at the order gross so a researcher can never go negative via credit.
@@ -554,6 +581,9 @@ export async function POST(request: NextRequest) {
         discount_amount: discountAmount,
         coupon_code: appliedCouponCode,
         total: total,
+        tax_amount: taxAmount,
+        tax_jurisdiction: taxJurisdiction,
+        tax_exemption_id: taxExemptionId,
         credits_redeemed: creditRedeemed,
         idempotency_key: idempotencyKey ?? null,
       })
