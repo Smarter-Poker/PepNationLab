@@ -1190,7 +1190,7 @@ export default function AgentStorefrontGrid({ products, inventoryMap, primaryCol
                 {/* Photorealistic branded vial — product-specific image */}
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
-                  src={group.imageUrl}
+                  src={group.imageUrl ?? undefined}
                   alt={group.name}
                   style={{ width: '100%', height: '100%', objectFit: 'contain', objectPosition: 'center', padding: '8px', transition: 'transform 0.4s ease' }}
                   className="store-image-hover"
@@ -1526,7 +1526,7 @@ export default function AgentStorefrontGrid({ products, inventoryMap, primaryCol
                 {/* Photorealistic branded vial — product-specific image */}
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
-                  src={detailProduct.imageUrl}
+                  src={detailProduct.imageUrl ?? undefined}
                   alt={detailProduct.name}
                   style={{ width: '100%', height: '100%', objectFit: 'contain', objectPosition: 'center', padding: '16px', transition: 'transform 0.4s ease' }}
                   onError={e => { (e.target as HTMLImageElement).style.opacity = '0.3'; }}
