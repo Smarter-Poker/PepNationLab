@@ -116,7 +116,7 @@ export default function AgentOverview({
         <span
           className="dash-url"
           style={{
-            bottom: '5.65%',
+            bottom: '6%',
             left: '7%',
             width: '50%',
             height: '5%',

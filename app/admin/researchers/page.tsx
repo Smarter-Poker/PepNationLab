@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { toast } from 'sonner';
 import Pagination from '@/components/Pagination';
+import ViewAsButton from '@/components/ViewAsButton';
 
 const PAGE_SIZE = 25;
 
@@ -640,6 +641,11 @@ function ResearchersAdminPageInner() {
                     >
                       {profile.is_active ? 'Deactivate' : 'Activate'}
                     </button>
+
+                    <ViewAsButton
+                      targetUserId={profile.id}
+                      targetLabel={profile.full_name ?? profile.email}
+                    />
 
                     {profile.role === 'researcher' ? (
                       <button onClick={() => openUpgradeModal(profile)} className="btn btn-primary" style={{ padding: 'var(--space-2) var(--space-4)', fontSize: '0.78rem' }}>

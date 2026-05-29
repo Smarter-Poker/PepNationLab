@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { toast } from 'sonner';
 import { createClient } from '@/lib/supabase/client';
+import ViewAsButton from '@/components/ViewAsButton';
 
 export default function AdminAgents() {
   const [agents, setAgents] = useState<any[]>([]);
@@ -373,6 +374,12 @@ export default function AdminAgents() {
                       >
                         {agent.is_super_agent ? 'Revoke Super' : 'Make Super'}
                       </button>
+                      <div style={{ marginTop: 6 }}>
+                        <ViewAsButton
+                          targetUserId={agent.id}
+                          targetLabel={agent.full_name ?? agent.email}
+                        />
+                      </div>
                     </td>
                   </tr>
                 );
