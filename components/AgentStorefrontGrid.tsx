@@ -827,7 +827,7 @@ export default function AgentStorefrontGrid({ products, inventoryMap, primaryCol
             </div>
           )}
         </div>
-      )}
+
 
       {/* Product Detail Modal */}
       <AnimatePresence>
