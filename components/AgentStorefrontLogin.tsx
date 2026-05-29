@@ -29,6 +29,21 @@ export default function AgentStorefrontLogin({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(errorMessage || null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [referralCode, setReferralCode] = useState<string>('');
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const ref = params.get('ref');
+      if (ref && /^[A-Za-z0-9]{1,32}$/.test(ref)) {
+        setReferralCode(ref.toUpperCase());
+        setMode('register');
+      }
+    } catch {
+      /* ignore */
+    }
+  }, []);
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
@@ -113,6 +128,7 @@ export default function AgentStorefrontLogin({
           username: username.trim(),
           password: password.trim(),
           fullName: fullName.trim(),
+          referralCode: referralCode || undefined,
         }),
       });
       const data = await res.json();
