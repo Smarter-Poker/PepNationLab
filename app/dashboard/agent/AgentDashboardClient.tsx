@@ -17,6 +17,7 @@ import AgentOrders from '@/components/AgentOrders';
 import AgentLedger from '@/components/AgentLedger';
 import AgentBundles from '@/components/AgentBundles';
 import AgentCommissions from '@/components/AgentCommissions';
+import AgentSetupChecklist from '@/components/AgentSetupChecklist';
 import MessageBell from '@/components/MessageBell';
 import { sanitizeUsername } from '@/lib/usernames';
 
@@ -594,6 +595,12 @@ export default function AgentDashboardClient({
               <p style={{ color: 'var(--teal)', fontSize: '0.85rem', margin: 0, fontWeight: 500 }}>{success}</p>
             </div>
           )}
+
+          {/* First-Time Agent Setup Walkthrough */}
+          <AgentSetupChecklist
+            agentProfile={agentProfile}
+            onOpenConfig={() => { setActiveTab('Storefront Config'); setIsMobileMenuOpen(false); }}
+          />
 
         {/* Sales & Live Carts Tab */}
         {activeTab === 'Sales & Carts' && (
