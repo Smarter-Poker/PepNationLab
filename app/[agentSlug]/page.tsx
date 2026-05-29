@@ -1,4 +1,5 @@
 import { notFound } from 'next/navigation';
+import { Suspense } from 'react';
 import { createClient } from '@/lib/supabase/server';
 import Link from 'next/link';
 import AgentStorefrontGrid from '@/components/AgentStorefrontGrid';
@@ -256,18 +257,20 @@ export default async function AgentStorefrontPage({ params }: Props) {
       {/* Products */}
       <section className="section" style={{ paddingTop: 'var(--space-2)' }}>
         <div className="container">
-          <AgentStorefrontGrid
-            products={products as any}
-            inventoryMap={Object.fromEntries(inventoryMap)}
-            primaryColor={primaryColor}
-            agentSlug={agentSlug}
-            initialWishlistIds={initialWishlistIds}
-            agentId={agent.id}
-            coaByProductId={coaByProductId}
-            volumePricingEnabled={(agent as any).volume_pricing_enabled !== false}
-            isStorefrontOwner={isStorefrontOwner}
-            viewerTier={(userProfile as any)?.tier ?? 'tier_3'}
-          />
+          <Suspense fallback={null}>
+            <AgentStorefrontGrid
+              products={products as any}
+              inventoryMap={Object.fromEntries(inventoryMap)}
+              primaryColor={primaryColor}
+              agentSlug={agentSlug}
+              initialWishlistIds={initialWishlistIds}
+              agentId={agent.id}
+              coaByProductId={coaByProductId}
+              volumePricingEnabled={(agent as any).volume_pricing_enabled !== false}
+              isStorefrontOwner={isStorefrontOwner}
+              viewerTier={(userProfile as any)?.tier ?? 'tier_3'}
+            />
+          </Suspense>
         </div>
       </section>
 
