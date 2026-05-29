@@ -17,7 +17,7 @@ const DEFAULT_PREFS = {
 async function getCurrentUserPrefs(supabase: Awaited<ReturnType<typeof createClient>>, userId: string) {
   const { data } = await supabase
     .from('notification_preferences')
-    .select('sms_enabled, sms_phone, sms_phone_verified, events_order_approved, events_order_shipped, events_order_delivered, events_payment_reminder, updated_at')
+    .select('sms_enabled, sms_phone, sms_phone_verified, events_order_approved, events_order_shipped, events_order_delivered, events_payment_reminder, push_enabled, push_events_order, push_events_messages, push_events_marketing, updated_at')
     .eq('user_id', userId)
     .maybeSingle();
   return data;
@@ -68,6 +68,10 @@ export async function PATCH(req: NextRequest) {
   if (typeof body.events_order_shipped === 'boolean') updates.events_order_shipped = body.events_order_shipped;
   if (typeof body.events_order_delivered === 'boolean') updates.events_order_delivered = body.events_order_delivered;
   if (typeof body.events_payment_reminder === 'boolean') updates.events_payment_reminder = body.events_payment_reminder;
+  if (typeof body.push_enabled === 'boolean') updates.push_enabled = body.push_enabled;
+  if (typeof body.push_events_order === 'boolean') updates.push_events_order = body.push_events_order;
+  if (typeof body.push_events_messages === 'boolean') updates.push_events_messages = body.push_events_messages;
+  if (typeof body.push_events_marketing === 'boolean') updates.push_events_marketing = body.push_events_marketing;
 
   if (body.sms_phone === null || body.sms_phone === '') {
     updates.sms_phone = null;
