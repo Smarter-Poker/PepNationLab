@@ -110,7 +110,6 @@ export default function MessageComposer({ conversationId, selfId, replyTo, onCle
     conversation_id: conversationId,
     sender_id: selfId,
     text: null,
-    message_type: overrides.message_type,
     media_url: null,
     media_metadata: {},
     reply_to_id: replyTo?.id ?? null,
