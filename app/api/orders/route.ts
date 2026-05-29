@@ -175,12 +175,11 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // ── CLOSED-LOOP CATALOG GUARD ──────────────────────────────────────────────
-    // Resolve the storefront agent from the slug — this is independent of
-    // referring_agent_id so a researcher referred by Agent A cannot order
-    // Agent B's products by just shopping at B's URL.
+    // ── CLOSED-LOOP RESEARCHER OWNERSHIP + CATALOG GUARD ──────────────────────
+    // HARD RULE: A researcher can ONLY place orders through the agent who
+    // created their account. No cross-agent access. Ever.
     if (agentSlug) {
-      // Look up the agent_profiles row by slug (same table the storefront page uses)
+      // Resolve the storefront agent from the slug (same table the storefront page uses)
       const { data: storefrontAgent } = await serviceSupabase
         .from('agent_profiles')
         .select('id')
@@ -194,9 +193,19 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      // Every product must be visible in the slug-identified agent's catalog.
-      // We use storefrontAgent.id, NOT agentProfile?.id, because the researcher
-      // may have a different referring_agent_id than the storefront they shopped.
+      // For researchers: their referring_agent_id MUST match the storefront agent.
+      // Agents/admins placing self-buy orders are exempt from this check.
+      if (!isAgentSelfBuy) {
+        const researcherBelongsToAgent = profile.referring_agent_id === storefrontAgent.id;
+        if (!researcherBelongsToAgent) {
+          return NextResponse.json(
+            { error: 'Your Account Does Not Have Access To This Store.' },
+            { status: 403 }
+          );
+        }
+      }
+
+      // Every product must also be visible in this agent's catalog.
       const { data: visibleRows } = await serviceSupabase
         .from('agent_products')
         .select('product_id')
