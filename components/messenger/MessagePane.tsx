@@ -1,8 +1,10 @@
 'use client';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useMessengerStore } from '@/stores/messengerStore';
 import type { Message } from '@/lib/messenger/types';
 import { MessageCircle } from 'lucide-react';
+import MessageBubble from './MessageBubble';
+import MessageComposer from './MessageComposer';
 
 interface Props {
   userId: string;
@@ -14,6 +16,11 @@ export default function MessagePane({ userId }: Props) {
   const setMessages = useMessengerStore((s) => s.setMessages);
   const setLoading = useMessengerStore((s) => s.setLoadingMessages);
   const loadingByConv = useMessengerStore((s) => s.loadingMessages);
+  const [replyTo, setReplyTo] = useState<Message | null>(null);
+
+  useEffect(() => {
+    setReplyTo(null);
+  }, [activeId]);
 
   useEffect(() => {
     if (!activeId) return;
@@ -55,9 +62,7 @@ export default function MessagePane({ userId }: Props) {
         }}
       >
         <MessageCircle size={56} aria-hidden="true" />
-        <div style={{ fontWeight: 600, color: 'var(--white, #FFFFFF)' }}>
-          Open A Conversation
-        </div>
+        <div style={{ fontWeight: 600, color: 'var(--white, #FFFFFF)' }}>Open A Conversation</div>
         <div style={{ fontSize: '0.9rem' }}>Select One From The Left To See Messages.</div>
       </div>
     );
@@ -82,39 +87,20 @@ export default function MessagePane({ userId }: Props) {
           </div>
         ) : messages.length === 0 ? (
           <div style={{ color: 'var(--grey-400, #A8B4C0)', textAlign: 'center', marginTop: 32 }}>
-            No Messages Yet. Composer Ships In Phase 4.
+            No Messages Yet. Send The First One Below.
           </div>
         ) : (
           messages.map((m) => (
-            <div
-              key={m.id}
-              style={{
-                alignSelf: m.sender_id === userId ? 'flex-end' : 'flex-start',
-                background: m.sender_id === userId ? 'var(--teal, #00C4BC)' : 'var(--surface-2, #162230)',
-                color: m.sender_id === userId ? '#000' : 'var(--white, #FFFFFF)',
-                padding: '8px 12px',
-                borderRadius: 14,
-                maxWidth: '70%',
-                whiteSpace: 'pre-wrap',
-                wordBreak: 'break-word',
-              }}
-            >
-              {m.text ?? ''}
-            </div>
+            <MessageBubble key={m.id} message={m} isOwn={m.sender_id === userId} onReply={setReplyTo} />
           ))
         )}
       </div>
-      <div
-        style={{
-          padding: 16,
-          borderTop: '1px solid var(--surface-3, #1D2D3E)',
-          color: 'var(--grey-400, #A8B4C0)',
-          fontSize: '0.84rem',
-          textAlign: 'center',
-        }}
-      >
-        Composer Ships In Phase 4.
-      </div>
+      <MessageComposer
+        conversationId={activeId}
+        selfId={userId}
+        replyTo={replyTo}
+        onClearReply={() => setReplyTo(null)}
+      />
     </div>
   );
 }

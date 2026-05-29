@@ -3,6 +3,7 @@ import { createServiceClient } from '@/lib/supabase/server';
 import { assertSameOrigin } from '@/lib/csrf';
 import { requireSession, getParticipant } from '@/lib/messenger/server';
 import { SendMessageSchema } from '@/lib/messenger/schemas';
+import { sanitizeMessageText } from '@/lib/messenger/sanitize';
 
 export const dynamic = 'force-dynamic';
 
@@ -17,6 +18,17 @@ export async function POST(req: NextRequest) {
   const parsed = SendMessageSchema.safeParse(body);
   if (!parsed.success) {
     return NextResponse.json({ error: 'Invalid Body', details: parsed.error.flatten() }, { status: 400 });
+  }
+
+  let cleanText: string | null = null;
+  if (parsed.data.text !== undefined) {
+    cleanText = sanitizeMessageText(parsed.data.text);
+    if (cleanText === null) {
+      return NextResponse.json({ error: 'Unsafe Text' }, { status: 400 });
+    }
+    if (cleanText.length === 0 && !parsed.data.mediaUrl) {
+      return NextResponse.json({ error: 'Empty Message' }, { status: 400 });
+    }
   }
 
   const participant = await getParticipant(parsed.data.conversationId, user.id);
@@ -48,7 +60,7 @@ export async function POST(req: NextRequest) {
   const insertRow = {
     conversation_id: parsed.data.conversationId,
     sender_id: user.id,
-    text: parsed.data.text ?? null,
+    text: cleanText,
     message_type: parsed.data.messageType,
     media_url: parsed.data.mediaUrl ?? null,
     media_metadata: parsed.data.mediaMetadata ?? {},
