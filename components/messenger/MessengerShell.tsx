@@ -1,4 +1,5 @@
 'use client';
+import { useEffect } from 'react';
 import ConversationList from './ConversationList';
 import MessagePane from './MessagePane';
 
@@ -6,7 +7,32 @@ interface Props {
   userId: string;
 }
 
+const PRESENCE_INTERVAL_MS = 30_000;
+
 export default function MessengerShell({ userId }: Props) {
+  useEffect(() => {
+    let cancelled = false;
+    const ping = async () => {
+      try {
+        await fetch('/api/messenger/update-presence', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: '{}',
+        });
+      } catch {
+        // network blips are tolerated
+      }
+    };
+    void ping();
+    const id = setInterval(() => {
+      if (!cancelled) void ping();
+    }, PRESENCE_INTERVAL_MS);
+    return () => {
+      cancelled = true;
+      clearInterval(id);
+    };
+  }, [userId]);
+
   return (
     <section className="section" style={{ padding: 0 }}>
       <div

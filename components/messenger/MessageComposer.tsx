@@ -1,11 +1,12 @@
 'use client';
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Send, Smile, Paperclip } from 'lucide-react';
 import { toast } from 'sonner';
 import { useMessengerStore } from '@/stores/messengerStore';
 import type { Message } from '@/lib/messenger/types';
 import EmojiPicker from './EmojiPicker';
 import ReplyChip from './ReplyChip';
+import { subscribeTyping, unsubscribe } from '@/lib/messenger/realtime';
 
 interface Props {
   conversationId: string;
@@ -15,6 +16,8 @@ interface Props {
 }
 
 const MAX_LEN = 2000;
+const TYPING_THROTTLE_MS = 1500;
+const TYPING_STOP_MS = 3000;
 
 export default function MessageComposer({ conversationId, selfId, replyTo, onClearReply }: Props) {
   const [text, setText] = useState('');
@@ -24,6 +27,35 @@ export default function MessageComposer({ conversationId, selfId, replyTo, onCle
   const appendMessage = useMessengerStore((s) => s.appendMessage);
   const updateMessage = useMessengerStore((s) => s.updateMessage);
   const removeMessage = useMessengerStore((s) => s.removeMessage);
+
+  const broadcastRef = useRef<((isTyping: boolean) => void) | null>(null);
+  const lastSentAtRef = useRef(0);
+  const stopTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    const { channel, broadcast } = subscribeTyping(conversationId, selfId, () => {});
+    broadcastRef.current = broadcast;
+    return () => {
+      if (stopTimerRef.current) clearTimeout(stopTimerRef.current);
+      stopTimerRef.current = null;
+      broadcast(false);
+      unsubscribe(channel);
+      broadcastRef.current = null;
+    };
+  }, [conversationId, selfId]);
+
+  const pulseTyping = useCallback(() => {
+    const now = Date.now();
+    if (now - lastSentAtRef.current > TYPING_THROTTLE_MS) {
+      broadcastRef.current?.(true);
+      lastSentAtRef.current = now;
+    }
+    if (stopTimerRef.current) clearTimeout(stopTimerRef.current);
+    stopTimerRef.current = setTimeout(() => {
+      broadcastRef.current?.(false);
+      lastSentAtRef.current = 0;
+    }, TYPING_STOP_MS);
+  }, []);
 
   const insertAtCursor = (chunk: string) => {
     const el = inputRef.current;
@@ -45,6 +77,9 @@ export default function MessageComposer({ conversationId, selfId, replyTo, onCle
   const handleSend = useCallback(async () => {
     const trimmed = text.trim();
     if (!trimmed || sending) return;
+    if (stopTimerRef.current) clearTimeout(stopTimerRef.current);
+    broadcastRef.current?.(false);
+
     const tempId = `temp-${crypto.randomUUID()}`;
     const optimistic: Message = {
       id: tempId,
@@ -138,7 +173,10 @@ export default function MessageComposer({ conversationId, selfId, replyTo, onCle
         <textarea
           ref={inputRef}
           value={text}
-          onChange={(e) => setText(e.target.value.slice(0, MAX_LEN))}
+          onChange={(e) => {
+            setText(e.target.value.slice(0, MAX_LEN));
+            pulseTyping();
+          }}
           onKeyDown={(e) => {
             if (e.key === 'Enter' && !e.shiftKey) {
               e.preventDefault();
