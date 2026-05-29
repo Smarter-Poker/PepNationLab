@@ -18,6 +18,12 @@ export const metadata: Metadata = {
   title: "Pep Nation Lab | Premium Research Peptides",
   description: "Pep Nation Lab — Wholesale research peptide distribution for qualified researchers and institutions. All products for in vitro research use only.",
   keywords: "research peptides, peptide wholesale, laboratory research compounds",
+  manifest: "/manifest.webmanifest",
+  appleWebApp: {
+    capable: true,
+    title: "PNL",
+    statusBarStyle: "black-translucent",
+  },
   icons: {
     icon: "/logo-mark.svg",
     shortcut: "/logo-mark.svg",

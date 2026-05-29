@@ -31,10 +31,12 @@ export default function SiteDisclaimerGate({
     localStorage.setItem(STORAGE_KEY, 'true');
     setAccepted(true);
     // Best-effort compliance log; failure must not block site entry.
+    // The 3-checkbox DisclaimerGate enforces 21+ research-only no-human-use
+    // confirmation before this handler fires, so we record both bits here.
     fetch('/api/disclaimer-log', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ layer: 'site_entry' }),
+      body: JSON.stringify({ layer: 'site_entry', age_verified: true, verified_age: 21 }),
     }).catch(() => { /* logging is non-blocking */ });
   };
 

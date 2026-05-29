@@ -28,6 +28,20 @@ export async function POST(req: NextRequest) {
   }
   const layer = rawLayer as DisclaimerLayer;
 
+  // Optional age-gate fields. Only meaningful on site_entry, but we accept them
+  // on any layer in case future flows want to record a re-verification.
+  const rawAgeVerified = (body as { age_verified?: unknown }).age_verified;
+  const ageVerified = rawAgeVerified === true || rawAgeVerified === 'true';
+  const rawVerifiedAge = (body as { verified_age?: unknown }).verified_age;
+  let verifiedAge: number | null = null;
+  if (rawVerifiedAge !== undefined && rawVerifiedAge !== null && rawVerifiedAge !== '') {
+    const n = Number(rawVerifiedAge);
+    if (!Number.isFinite(n) || !Number.isInteger(n) || n < 0 || n > 150) {
+      return NextResponse.json({ error: 'Invalid Age Value' }, { status: 400 });
+    }
+    verifiedAge = n;
+  }
+
   // Resolve the user from the session cookie. RLS on disclaimer_acceptances
   // requires user_id = auth.uid() for any layer other than site_entry, so we
   // authenticate first and gate accordingly.
@@ -58,6 +72,8 @@ export async function POST(req: NextRequest) {
     layer,
     ip_address: ip,
     user_agent: userAgent,
+    age_verified: ageVerified,
+    verified_age: verifiedAge,
   });
 
   if (error) {
