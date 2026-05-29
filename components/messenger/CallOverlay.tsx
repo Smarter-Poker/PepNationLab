@@ -16,6 +16,9 @@ interface Props {
 }
 
 export default function CallOverlay({ call, selfId, onClose }: Props) {
+  // selfId is kept on the interface so callers cannot drop it. LiveKit
+  // identity is bound server-side in /api/messenger/livekit-token from
+  // auth.uid() -- we just acknowledge the prop here.
   void selfId;
   const [token, setToken] = useState<string | null>(null);
   const [url, setUrl] = useState<string | null>(null);
@@ -49,6 +52,25 @@ export default function CallOverlay({ call, selfId, onClose }: Props) {
     return () => {
       cancelled = true;
     };
+  }, [call.id]);
+
+  // Audit2 fix: if the user closes the tab without hanging up, the call row
+  // stays 'active' forever and blocks future starts (via the new dedupe
+  // check in call-signal start). Send a best-effort hangup via sendBeacon
+  // during pagehide so the row transitions to 'ended'.
+  useEffect(() => {
+    const callId = call.id;
+    const handler = () => {
+      try {
+        const body = JSON.stringify({ action: 'hangup', callId });
+        const blob = new Blob([body], { type: 'application/json' });
+        navigator.sendBeacon?.('/api/messenger/call-signal', blob);
+      } catch {
+        // best effort -- nothing else to do once the page is unloading
+      }
+    };
+    window.addEventListener('pagehide', handler);
+    return () => window.removeEventListener('pagehide', handler);
   }, [call.id]);
 
   const handleHangup = async () => {
