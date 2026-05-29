@@ -241,3 +241,32 @@ export const LivekitTokenSchema = z.object({
   callId: z.string().uuid(),
 });
 export type LivekitTokenInput = z.infer<typeof LivekitTokenSchema>;
+
+// Phase 12: safety - blocks / reports / admin moderation
+
+export const BlockUserSchema = z.object({
+  targetUserId: z.string().uuid(),
+  action: z.enum(['block', 'unblock']),
+  reason: z.string().max(500).optional(),
+});
+export type BlockUserInput = z.infer<typeof BlockUserSchema>;
+
+export const ReportMessageSchema = z.object({
+  messageId: z.string().uuid(),
+  reason: z.enum(['spam', 'harassment', 'inappropriate', 'scam', 'other']),
+  note: z.string().max(500).optional(),
+});
+export type ReportMessageInput = z.infer<typeof ReportMessageSchema>;
+
+export const ResolveReportSchema = z.object({
+  reportId: z.string().uuid(),
+  status: z.enum(['resolved', 'dismissed']),
+  note: z.string().max(500).optional(),
+});
+export type ResolveReportInput = z.infer<typeof ResolveReportSchema>;
+
+export const DeleteReportedMessageSchema = z.object({
+  messageId: z.string().uuid(),
+  reportId: z.string().uuid().optional(),
+});
+export type DeleteReportedMessageInput = z.infer<typeof DeleteReportedMessageSchema>;

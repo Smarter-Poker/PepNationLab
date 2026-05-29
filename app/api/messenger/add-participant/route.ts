@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
 import { assertSameOrigin } from '@/lib/csrf';
-import { requireSession, getParticipant, canInvite, isAdminUser } from '@/lib/messenger/server';
+import { requireSession, getParticipant, canInvite, isAdminUser, isBlocked } from '@/lib/messenger/server';
 import { AddParticipantSchema } from '@/lib/messenger/schemas';
 
 export const runtime = 'nodejs';
@@ -48,6 +48,14 @@ export async function POST(req: NextRequest) {
     if (!allowed) {
       return NextResponse.json({ error: 'Cannot Invite User' }, { status: 403 });
     }
+  }
+
+  // Phase 12: block check in both directions. Blocked relationships cannot be
+  // bridged via group invitation.
+  const blockedByCaller = await isBlocked(user.id, parsed.data.userId);
+  const blockedByTarget = await isBlocked(parsed.data.userId, user.id);
+  if (blockedByCaller || blockedByTarget) {
+    return NextResponse.json({ error: 'User Blocked', userId: parsed.data.userId }, { status: 403 });
   }
 
   // Idempotent: if already present, return 200 with the existing row.

@@ -1,0 +1,73 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { createServiceClient } from '@/lib/supabase/server';
+import { assertSameOrigin } from '@/lib/csrf';
+import { requireAdmin } from '@/lib/admin-auth';
+import { DeleteReportedMessageSchema } from '@/lib/messenger/schemas';
+
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
+
+export async function POST(req: NextRequest) {
+  const csrf = assertSameOrigin(req);
+  if (csrf) return csrf;
+
+  const gate = await requireAdmin();
+  if (!gate.ok) return gate.response;
+
+  const body = await req.json().catch(() => ({}));
+  const parsed = DeleteReportedMessageSchema.safeParse(body);
+  if (!parsed.success) {
+    return NextResponse.json({ error: 'Invalid Body', details: parsed.error.flatten() }, { status: 400 });
+  }
+
+  const { messageId, reportId } = parsed.data;
+  const svc = await createServiceClient();
+
+  const { data: existing } = await svc
+    .from('messenger_messages')
+    .select('id')
+    .eq('id', messageId)
+    .maybeSingle();
+  if (!existing) {
+    return NextResponse.json({ error: 'Message Not Found' }, { status: 404 });
+  }
+
+  const { error: updErr } = await svc
+    .from('messenger_messages')
+    .update({
+      is_deleted: true,
+      delete_scope: 'for_everyone',
+      text: null,
+      media_url: null,
+      media_metadata: {},
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', messageId);
+
+  if (updErr) {
+    return NextResponse.json({ error: updErr.message }, { status: 500 });
+  }
+
+  // Auto-resolve associated report if provided.
+  if (reportId) {
+    await svc
+      .from('messenger_reports')
+      .update({
+        status: 'resolved',
+        resolved_by: gate.userId,
+        resolved_at: new Date().toISOString(),
+        resolution_note: 'Message Deleted For Everyone',
+      })
+      .eq('id', reportId);
+  }
+
+  await svc.from('admin_audit_log').insert({
+    actor_id: gate.userId,
+    action: 'messenger_message_deleted_for_everyone',
+    entity_type: 'messenger_message',
+    entity_id: messageId,
+    changes: { reportId: reportId ?? null },
+  });
+
+  return NextResponse.json({ ok: true });
+}

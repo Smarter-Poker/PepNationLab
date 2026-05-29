@@ -95,3 +95,20 @@ export async function canInvite(callerId: string, targetUserId: string): Promise
 
   return false;
 }
+
+/**
+ * Phase 12: returns true if `blockerId` has blocked `blockedId`. Used to gate
+ * direct-conversation creation and add-participant flows. Service-role read so
+ * we can check both directions regardless of the caller's RLS context.
+ */
+export async function isBlocked(blockerId: string, blockedId: string): Promise<boolean> {
+  if (blockerId === blockedId) return false;
+  const svc = await createServiceClient();
+  const { data } = await svc
+    .from('messenger_blocked')
+    .select('id')
+    .eq('blocker_id', blockerId)
+    .eq('blocked_id', blockedId)
+    .maybeSingle();
+  return Boolean(data);
+}

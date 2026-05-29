@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
 import { assertSameOrigin } from '@/lib/csrf';
-import { requireSession, canInvite } from '@/lib/messenger/server';
+import { requireSession, canInvite, isBlocked } from '@/lib/messenger/server';
 import { StartConversationSchema } from '@/lib/messenger/schemas';
 
 export const runtime = 'nodejs';
@@ -26,11 +26,17 @@ export async function POST(req: NextRequest) {
   // Phase 9: enforce hierarchy on every invitee. Direct conversations and
   // groups both go through this gate. Self is always allowed (filtered by
   // the helper). Returns 403 with the offending user ID on first failure.
+  // Phase 12: additionally reject if a block exists in either direction.
   for (const targetId of parsed.data.participantIds) {
     if (targetId === user.id) continue;
     const allowed = await canInvite(user.id, targetId);
     if (!allowed) {
       return NextResponse.json({ error: 'Cannot Invite User', userId: targetId }, { status: 403 });
+    }
+    const blockedByMe = await isBlocked(user.id, targetId);
+    const blockedByThem = await isBlocked(targetId, user.id);
+    if (blockedByMe || blockedByThem) {
+      return NextResponse.json({ error: 'User Blocked', userId: targetId }, { status: 403 });
     }
   }
 
