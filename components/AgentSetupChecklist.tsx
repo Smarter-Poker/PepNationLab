@@ -24,7 +24,7 @@ export default function AgentSetupChecklist({ agentProfile, onOpenConfig }: Agen
   if (!agentProfile) return null;
   const slugMissing = !agentProfile.slug || /^agent(?:-|$)/i.test(agentProfile.slug);
   const warehouse = agentProfile.warehouse_address;
-  const warehouseEmpty = !warehouse || !warehouse.street || !warehouse.city || !warehouse.state || !warehouse.zip;
+  const warehouseEmpty = !warehouse || !warehouse.street1 || !warehouse.city || !warehouse.state || !warehouse.zip;
   const handles = agentProfile.payment_handles;
   const handlesEmpty = !handles || Object.keys(handles).every((k) => !handles[k]);
   const shippoMissing = !agentProfile.shippo_api_key_present;

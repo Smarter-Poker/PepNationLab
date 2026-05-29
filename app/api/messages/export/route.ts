@@ -10,6 +10,8 @@ export async function GET(req: NextRequest) {
   const url = new URL(req.url);
   const counterpartId = url.searchParams.get('counterpartId');
   if (!counterpartId) return NextResponse.json({ error: 'Missing counterpartId' }, { status: 400 });
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (!uuidRegex.test(counterpartId)) return NextResponse.json({ error: 'Invalid counterpartId' }, { status: 400 });
 
   const service = await createServiceClient();
   const { data, error } = await service

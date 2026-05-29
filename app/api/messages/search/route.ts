@@ -12,13 +12,20 @@ export async function GET(req: NextRequest) {
   const counterpartId = url.searchParams.get('counterpartId');
   if (!q || q.trim().length < 2) return NextResponse.json({ error: 'Query too short' }, { status: 400 });
 
+  // Sanitize inputs to prevent PostgREST filter injection
+  const safeQ = q.replace(/[.,()]/g, '');
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (counterpartId && !uuidRegex.test(counterpartId)) {
+    return NextResponse.json({ error: 'Invalid counterpartId' }, { status: 400 });
+  }
+
   const service = await createServiceClient();
   let query = service
     .from('internal_messages')
     .select('id, sender_id, receiver_id, subject, body, type, created_at, sender_profile:profiles!internal_messages_sender_id_fkey(full_name, email)')
     .or(`sender_id.eq.${user.id},receiver_id.eq.${user.id}`)
     .is('deleted_at', null)
-    .or(`body.ilike.%${q}%,subject.ilike.%${q}%`)
+    .or(`body.ilike.%${safeQ}%,subject.ilike.%${safeQ}%`)
     .order('created_at', { ascending: false })
     .limit(50);
 
