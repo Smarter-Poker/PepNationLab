@@ -33,7 +33,41 @@ interface SavedAddress {
 }
 
 export default function CheckoutForm({ userProfile, userEmail, tierMultipliers }: CheckoutFormProps) {
-  const { cart, cartSubtotal, clearCart } = useCart();
+  const { cart: contextCart, cartSubtotal: contextSubtotal, clearCart } = useCart();
+
+  // Storefront orders written by AgentStorefrontGrid. These bypass the CartContext
+  // refresh (which validates agent_product ids, not master product ids).
+  const [storefrontCart, setStorefrontCart] = useState<Array<{
+    id: string; name: string; sku: string; quantity: number;
+    retailPrice: number; costPrice: number; weightOz: number;
+  }>>([]);
+  const [storefrontLoaded, setStorefrontLoaded] = useState(false);
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem('pnl_storefront_cart');
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setStorefrontCart(parsed);
+        }
+      }
+    } catch { /* non-blocking */ }
+    setStorefrontLoaded(true);
+  }, []);
+
+  // Use storefront cart if present, otherwise fall back to CartContext
+  const cart = storefrontCart.length > 0 ? storefrontCart : contextCart;
+  const cartSubtotal = storefrontCart.length > 0
+    ? storefrontCart.reduce((sum, item) => sum + item.costPrice * item.quantity, 0)
+    : contextSubtotal;
+
+  const clearAllCarts = () => {
+    clearCart();
+    try { localStorage.removeItem('pnl_storefront_cart'); } catch { /* ok */ }
+    setStorefrontCart([]);
+  };
+
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -44,6 +78,7 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers }
   // key and the server returns the existing order instead of creating a dup.
   const idempotencyKeyRef = useRef<string | null>(null);
   const submittedRef = useRef<boolean>(false);
+
 
   const getIdempotencyKey = () => {
     if (!idempotencyKeyRef.current) {
@@ -162,6 +197,9 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers }
 
   // Compute standard weight and shipping fee on client for preview
   const totalWeightOz = cart.reduce((acc, item) => acc + (item.weightOz ?? 0.5) * item.quantity, 0);
+
+  // Don't render until we know which cart source to use (avoids flash of empty cart)
+  if (!storefrontLoaded) return null;
 
   const calculateShippingCost = () => {
     if (fulfillmentMethod === 'agent_pickup') return 0;
@@ -319,7 +357,7 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers }
         setServerTotal(Number(data.total));
       }
       setOrderSuccess(data.orderId);
-      clearCart();
+      clearAllCarts();
     } catch (err: any) {
       // Allow the user to retry after an error.
       submittedRef.current = false;

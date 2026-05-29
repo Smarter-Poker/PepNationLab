@@ -798,10 +798,15 @@ export default function AgentStorefrontGrid({ products, inventoryMap, primaryCol
                           const item = products.find(p => p.id === vId);
                           if (!item) return null;
                           const perVial = item.retail_price / 10;
+                          const sizeLabel = item.products?.unit_size
+                            ? `(${item.products.unit_size}${item.products.unit_measure || ''})`
+                            : '';
                           return {
-                            id: vId,
-                            name: `${item.products?.name || 'Product'} ${item.products?.unit_size ? `(${item.products.unit_size}${item.products.unit_measure || ''})` : ''}`.trim(),
-                            sku: vId,
+                            // IMPORTANT: orders API queries `products` table by id,
+                            // so must use product_id (master catalog ID), NOT agent_product.id
+                            id: item.product_id,
+                            name: `${item.products?.name || 'Product'} ${sizeLabel}`.trim(),
+                            sku: item.product_id,
                             quantity: qty,
                             retailPrice: perVial,
                             costPrice: perVial,
@@ -811,9 +816,10 @@ export default function AgentStorefrontGrid({ products, inventoryMap, primaryCol
                         .filter(Boolean);
 
                       try {
-                        localStorage.setItem('pnl_cart', JSON.stringify(pnlCart));
-                        // Also clear the agent-specific cart key so it doesn't
-                        // show stale data if the user returns
+                        // Write to pnl_storefront_cart — CheckoutForm reads this key first,
+                        // bypassing CartContext's refresh cycle (which validates agent_product IDs
+                        // and would wipe items that use master product_id).
+                        localStorage.setItem('pnl_storefront_cart', JSON.stringify(pnlCart));
                         localStorage.removeItem(`cart_${agentSlug}`);
                         setCartItems({});
                       } catch (e) {
