@@ -35,6 +35,10 @@
     {
       "path": "/api/cron/push-dispatch",
       "schedule": "*/5 * * * *"
+    },
+    {
+      "path": "/api/cron/recommendations-refresh",
+      "schedule": "0 4 * * *"
     }
   ]
 }
