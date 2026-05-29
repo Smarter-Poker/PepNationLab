@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
 import { requireOrdersAccess } from '@/lib/admin-auth';
 import { canTransition, type OrderStatus } from '@/lib/order-states';
+import { enqueueOrderSms, shortOrderId, type OrderSmsEvent } from '@/lib/sms-enqueue';
 
 // GET: List all orders with buyer profile join
 export async function GET(req: NextRequest) {
@@ -114,6 +115,43 @@ export async function POST(req: NextRequest) {
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
+
+  // SMS notification (fire-and-forget — must never break the admin write).
+  try {
+    const { data: orderRow } = await supabase
+      .from('orders')
+      .select('buyer_id, tracking_number')
+      .eq('id', id)
+      .maybeSingle();
+
+    if (orderRow?.buyer_id) {
+      const short = shortOrderId(id);
+      let event: OrderSmsEvent | null = null;
+      let body = '';
+      if (status === 'approved_ship' || status === 'approved_pickup') {
+        event = 'order_approved';
+        body = `Your Order #${short} Has Been Approved. Get Ready For Shipping.`;
+      } else if (status === 'shipped') {
+        event = 'order_shipped';
+        const trk = orderRow.tracking_number || tracking_number;
+        body = trk
+          ? `Your Order #${short} Shipped. Tracking: ${trk}`
+          : `Your Order #${short} Shipped.`;
+      } else if (status === 'delivered') {
+        event = 'order_delivered';
+        body = `Your Order #${short} Has Been Delivered. Thank You.`;
+      }
+
+      if (event && body) {
+        await enqueueOrderSms(supabase, {
+          userId: orderRow.buyer_id,
+          orderId: id,
+          event,
+          body,
+        });
+      }
+    }
+  } catch { /* never block admin response on SMS failure */ }
 
   return NextResponse.json({ success: true });
 }
