@@ -182,6 +182,49 @@ export function subscribePresence(
   return ch;
 }
 
+export interface CallSignalRow {
+  id: string;
+  conversation_id: string;
+  initiator_id: string;
+  call_type: 'audio' | 'video';
+  status: 'ringing' | 'active' | 'ended' | 'missed' | 'declined';
+  livekit_room: string;
+  started_at: string;
+}
+
+interface CallSignalHandlers {
+  onInsert?: (c: CallSignalRow) => void;
+  onUpdate?: (c: CallSignalRow) => void;
+}
+
+// Phase 11: subscribe to call signal INSERTs and UPDATEs across every
+// conversation the user participates in. RLS on messenger_calls already
+// filters rows to the caller's conversations -- the channel does not need
+// an additional filter for ownership.
+export function subscribeCallSignals(userId: string, handlers: CallSignalHandlers): RealtimeChannel {
+  const ch = supabase.channel(`mc_calls:${userId}`);
+  ch.on(
+    'postgres_changes',
+    {
+      event: 'INSERT',
+      schema: 'public',
+      table: 'messenger_calls',
+    },
+    (payload) => handlers.onInsert?.(payload.new as CallSignalRow),
+  );
+  ch.on(
+    'postgres_changes',
+    {
+      event: 'UPDATE',
+      schema: 'public',
+      table: 'messenger_calls',
+    },
+    (payload) => handlers.onUpdate?.(payload.new as CallSignalRow),
+  );
+  ch.subscribe();
+  return ch;
+}
+
 export function unsubscribe(ch: RealtimeChannel | null) {
   if (!ch) return;
   void supabase.removeChannel(ch);

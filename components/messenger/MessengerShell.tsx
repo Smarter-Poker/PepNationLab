@@ -1,8 +1,16 @@
 'use client';
-import { useEffect } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import ConversationList from './ConversationList';
 import MessagePane from './MessagePane';
 import SearchBar from './SearchBar';
+import IncomingCallToast from './IncomingCallToast';
+import CallOverlay from './CallOverlay';
+import { useMessengerStore } from '@/stores/messengerStore';
+import {
+  subscribeCallSignals,
+  unsubscribe,
+  type CallSignalRow,
+} from '@/lib/messenger/realtime';
 
 interface Props {
   userId: string;
@@ -11,6 +19,10 @@ interface Props {
 const PRESENCE_INTERVAL_MS = 30_000;
 
 export default function MessengerShell({ userId }: Props) {
+  const setActive = useMessengerStore((s) => s.setActive);
+  const [incomingCalls, setIncomingCalls] = useState<CallSignalRow[]>([]);
+  const [activeCall, setActiveCall] = useState<CallSignalRow | null>(null);
+
   useEffect(() => {
     let cancelled = false;
     const ping = async () => {
@@ -33,6 +45,44 @@ export default function MessengerShell({ userId }: Props) {
       clearInterval(id);
     };
   }, [userId]);
+
+  // Phase 11: subscribe to call signals across every conversation the user
+  // participates in. RLS already filters rows to allowed conversations.
+  useEffect(() => {
+    const ch = subscribeCallSignals(userId, {
+      onInsert: (c) => {
+        if (c.status !== 'ringing') return;
+        if (c.initiator_id === userId) return;
+        setIncomingCalls((cur) => (cur.some((x) => x.id === c.id) ? cur : [...cur, c]));
+      },
+      onUpdate: (c) => {
+        // remove from incoming whenever status leaves 'ringing'
+        if (c.status !== 'ringing') {
+          setIncomingCalls((cur) => cur.filter((x) => x.id !== c.id));
+        }
+        // if the call we are in just ended for everyone, dismiss the overlay
+        setActiveCall((cur) => {
+          if (!cur || cur.id !== c.id) return cur;
+          if (c.status === 'ended' || c.status === 'declined' || c.status === 'missed') return null;
+          return { ...cur, status: c.status };
+        });
+      },
+    });
+    return () => unsubscribe(ch);
+  }, [userId]);
+
+  const handleAccept = useCallback(
+    (call: CallSignalRow) => {
+      setIncomingCalls((cur) => cur.filter((x) => x.id !== call.id));
+      setActive(call.conversation_id);
+      setActiveCall(call);
+    },
+    [setActive],
+  );
+
+  const handleDecline = useCallback((call: CallSignalRow) => {
+    setIncomingCalls((cur) => cur.filter((x) => x.id !== call.id));
+  }, []);
 
   return (
     <section className="section" style={{ padding: 0 }}>
@@ -72,8 +122,23 @@ export default function MessengerShell({ userId }: Props) {
           </header>
           <ConversationList selfId={userId} />
         </aside>
-        <MessagePane userId={userId} />
+        <MessagePane userId={userId} activeCall={activeCall} setActiveCall={setActiveCall} />
       </div>
+      {incomingCalls.map((c) => (
+        <IncomingCallToast
+          key={c.id}
+          call={c}
+          onAccept={() => handleAccept(c)}
+          onDecline={() => handleDecline(c)}
+        />
+      ))}
+      {activeCall && (
+        <CallOverlay
+          call={activeCall}
+          selfId={userId}
+          onClose={() => setActiveCall(null)}
+        />
+      )}
     </section>
   );
 }

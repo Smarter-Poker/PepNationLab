@@ -1,0 +1,138 @@
+'use client';
+import { useEffect, useState } from 'react';
+import { Phone, PhoneOff, Video } from 'lucide-react';
+import type { CallSignalRow } from '@/lib/messenger/realtime';
+
+interface Props {
+  call: CallSignalRow;
+  onAccept: () => void;
+  onDecline: () => void;
+}
+
+export default function IncomingCallToast({ call, onAccept, onDecline }: Props) {
+  const [callerName, setCallerName] = useState<string>('Someone');
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch('/api/messenger/get-conversations', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({}),
+        });
+        if (cancelled || !res.ok) return;
+        const json = (await res.json()) as {
+          conversations?: Array<{
+            conversation_id: string;
+            counterparty_full_name?: string | null;
+            counterparty_username?: string | null;
+            title?: string | null;
+          }>;
+        };
+        const conv = (json.conversations ?? []).find((c) => c.conversation_id === call.conversation_id);
+        if (conv && !cancelled) {
+          const name = conv.counterparty_full_name ?? conv.counterparty_username ?? conv.title ?? 'Someone';
+          setCallerName(name);
+        }
+      } catch {
+        // non-fatal -- keep default name
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [call.conversation_id]);
+
+  const handleAction = async (action: 'accept' | 'decline') => {
+    try {
+      await fetch('/api/messenger/call-signal', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ action, callId: call.id }),
+      });
+    } catch {
+      // best effort -- proceed with UI update
+    }
+    if (action === 'accept') onAccept();
+    else onDecline();
+  };
+
+  const isVideo = call.call_type === 'video';
+
+  return (
+    <div
+      role="alertdialog"
+      aria-label="Incoming Call"
+      style={{
+        position: 'fixed',
+        top: 16,
+        right: 16,
+        background: 'var(--surface-2, #162230)',
+        border: '1px solid var(--surface-3, #1D2D3E)',
+        borderRadius: 12,
+        padding: 16,
+        boxShadow: '0 8px 24px rgba(0,0,0,0.4)',
+        zIndex: 1500,
+        minWidth: 280,
+        color: 'var(--white, #FFFFFF)',
+      }}
+    >
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+        {isVideo ? <Video size={18} aria-hidden="true" /> : <Phone size={18} aria-hidden="true" />}
+        <div>
+          <div style={{ fontSize: '0.78rem', color: 'var(--grey-400, #A8B4C0)' }}>
+            {isVideo ? 'Incoming Video Call' : 'Incoming Voice Call'}
+          </div>
+          <div style={{ fontWeight: 700 }}>{callerName}</div>
+        </div>
+      </div>
+      <div style={{ display: 'flex', gap: 8 }}>
+        <button
+          type="button"
+          onClick={() => void handleAction('accept')}
+          style={{
+            flex: 1,
+            background: 'var(--teal, #00C4BC)',
+            color: '#000',
+            border: 0,
+            padding: '8px 12px',
+            borderRadius: 8,
+            cursor: 'pointer',
+            display: 'inline-flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 6,
+            fontWeight: 600,
+          }}
+          aria-label="Accept"
+          title="Accept"
+        >
+          <Phone size={14} aria-hidden="true" /> Accept
+        </button>
+        <button
+          type="button"
+          onClick={() => void handleAction('decline')}
+          style={{
+            flex: 1,
+            background: 'var(--red, #E53E3E)',
+            color: '#FFFFFF',
+            border: 0,
+            padding: '8px 12px',
+            borderRadius: 8,
+            cursor: 'pointer',
+            display: 'inline-flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 6,
+            fontWeight: 600,
+          }}
+          aria-label="Decline"
+          title="Decline"
+        >
+          <PhoneOff size={14} aria-hidden="true" /> Decline
+        </button>
+      </div>
+    </div>
+  );
+}

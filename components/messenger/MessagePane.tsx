@@ -3,6 +3,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useMessengerStore } from '@/stores/messengerStore';
 import type { ConversationListItem, Message, Reaction, ParticipantRole } from '@/lib/messenger/types';
 import type { MessageLabelValue, ThemeValue } from '@/lib/messenger/schemas';
+import type { CallSignalRow } from '@/lib/messenger/realtime';
 import { MessageCircle, Info } from 'lucide-react';
 import MessageBubble from './MessageBubble';
 import MessageComposer from './MessageComposer';
@@ -11,6 +12,7 @@ import GroupInfoDrawer from './GroupInfoDrawer';
 import PinnedBar from './PinnedBar';
 import ThreadDrawer from './ThreadDrawer';
 import BookmarksDrawer from './BookmarksDrawer';
+import CallButton from './CallButton';
 import { toast } from 'sonner';
 import {
   subscribeMessages,
@@ -22,6 +24,8 @@ import type { RealtimeChannel } from '@supabase/supabase-js';
 
 interface Props {
   userId: string;
+  activeCall: CallSignalRow | null;
+  setActiveCall: (c: CallSignalRow | null) => void;
 }
 
 const TYPING_TTL_MS = 4000;
@@ -69,7 +73,7 @@ async function markConversationRead(conversationId: string, lastReadMessageId: s
   }
 }
 
-export default function MessagePane({ userId }: Props) {
+export default function MessagePane({ userId, activeCall, setActiveCall }: Props) {
   const activeId = useMessengerStore((s) => s.activeConversationId);
   const messagesByConv = useMessengerStore((s) => s.messages);
   const setMessages = useMessengerStore((s) => s.setMessages);
@@ -93,6 +97,9 @@ export default function MessagePane({ userId }: Props) {
   const [threadParentId, setThreadParentId] = useState<string | null>(null);
   const [bookmarksOpen, setBookmarksOpen] = useState(false);
   const [themeValue, setThemeValue] = useState<ThemeValue>('default');
+
+  // activeCall is hoisted to MessengerShell so IncomingCallToast accept-handlers can set it.
+  void activeCall;
 
   const typingExpiryRef = useRef<Record<string, number>>({});
   const typingSweeperRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -647,7 +654,11 @@ export default function MessagePane({ userId }: Props) {
         >
           {headerLabel}
         </div>
-        <div style={{ display: 'inline-flex', gap: 6 }}>
+        <div style={{ display: 'inline-flex', gap: 6, alignItems: 'center' }}>
+          <CallButton
+            conversationId={activeId}
+            onCallStarted={(c) => setActiveCall(c)}
+          />
           <button
             type="button"
             onClick={() => setBookmarksOpen(true)}
