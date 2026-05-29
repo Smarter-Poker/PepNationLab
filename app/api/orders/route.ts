@@ -537,6 +537,31 @@ export async function POST(request: NextRequest) {
     // Checkout disclaimer audit row was recorded above, prior to the order
     // insert, so a successful order implies a complete four-layer trail.
 
+    // Fire-and-forget abandoned-cart recovery attribution. We never fail the
+    // order if this lookup misses or errors — it is purely an analytics signal.
+    void (async () => {
+      try {
+        const fourteenDaysAgo = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString();
+        const { data: openReminder } = await serviceSupabase
+          .from('abandoned_cart_reminders')
+          .select('id')
+          .eq('user_id', user.id)
+          .is('recovered_order_id', null)
+          .gt('sent_at', fourteenDaysAgo)
+          .order('sent_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        if (openReminder?.id) {
+          await serviceSupabase
+            .from('abandoned_cart_reminders')
+            .update({ recovered_order_id: order.id })
+            .eq('id', openReminder.id);
+        }
+      } catch {
+        // Best-effort attribution; never bubble up.
+      }
+    })();
+
     return NextResponse.json({
       success: true,
       orderId: order.id,
