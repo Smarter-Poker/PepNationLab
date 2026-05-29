@@ -135,6 +135,11 @@ const NAV = [
     label: 'SMS Log',
     icon: <svg {...ICON_PROPS}><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg>,
   },
+  {
+    href: '/admin/push',
+    label: 'Push Log',
+    icon: <svg {...ICON_PROPS}><path d="M22 8v6a2 2 0 0 1-2 2h-7l-4 4v-4H4a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2z" /></svg>,
+  },
 ];
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
