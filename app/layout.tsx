@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { CartProvider } from "@/components/CartContext";
 import ImpersonationBanner from "@/components/ImpersonationBanner";
+import PwaInstallPrompt from "@/components/PwaInstallPrompt";
 import { Toaster } from "sonner";
 
 export const viewport: Viewport = {
@@ -56,6 +57,7 @@ export default function RootLayout({
         </CartProvider>
         <Toaster theme="dark" position="bottom-right" richColors />
         <ImpersonationBanner />
+        <PwaInstallPrompt />
       </body>
     </html>
   );
