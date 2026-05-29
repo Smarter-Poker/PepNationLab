@@ -543,6 +543,11 @@ export async function POST(request: NextRequest) {
     }
 
     // Create order items
+    if (computedItems.length === 0) {
+      await serviceSupabase.from('orders').delete().eq('id', order.id);
+      return NextResponse.json({ error: 'Cart Items Could Not Be Processed. Please Try Again.' }, { status: 400 });
+    }
+
     const itemsToInsert = computedItems.map(item => ({
       order_id: order.id,
       product_id: item.product_id,
@@ -550,7 +555,7 @@ export async function POST(request: NextRequest) {
       quantity: item.quantity,
       unit_retail_price: item.unit_retail_price,
       unit_cost_price: item.unit_cost_price,
-      unit_super_agent_cost: item.unit_super_agent_cost
+      unit_super_agent_cost: item.unit_super_agent_cost ?? null
     }));
 
     const { error: itemsError } = await serviceSupabase
@@ -558,9 +563,9 @@ export async function POST(request: NextRequest) {
       .insert(itemsToInsert);
 
     if (itemsError) {
-      console.error('Database Order Items Write Error:', itemsError);
+      console.error('Database Order Items Write Error:', JSON.stringify(itemsError));
       await serviceSupabase.from('orders').delete().eq('id', order.id);
-      return NextResponse.json({ error: 'Failed To Save Checkout Order Line Items.' }, { status: 500 });
+      return NextResponse.json({ error: `Failed To Save Checkout Order Line Items. (${itemsError.code}: ${itemsError.message})` }, { status: 500 });
     }
 
     // Coupon usage was incremented atomically by the redeem_coupon RPC before
