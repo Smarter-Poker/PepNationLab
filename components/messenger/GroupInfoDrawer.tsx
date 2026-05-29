@@ -1,19 +1,31 @@
 'use client';
 import { useEffect, useState } from 'react';
-import { X, UserPlus } from 'lucide-react';
+import { X, UserPlus, Bookmark } from 'lucide-react';
 import { toast } from 'sonner';
 import { useMessengerStore } from '@/stores/messengerStore';
 import type { ConversationListItem, ParticipantRole } from '@/lib/messenger/types';
+import type { ThemeValue } from '@/lib/messenger/schemas';
 import ParticipantList from './ParticipantList';
 import ContactPicker, { type Contact } from './ContactPicker';
+import ThemePicker from './ThemePicker';
 
 interface Props {
   conversation: ConversationListItem;
   selfId: string;
   onClose: () => void;
+  currentTheme?: ThemeValue;
+  onThemeChange?: (next: ThemeValue) => void;
+  onOpenBookmarks?: () => void;
 }
 
-export default function GroupInfoDrawer({ conversation, selfId, onClose }: Props) {
+export default function GroupInfoDrawer({
+  conversation,
+  selfId,
+  onClose,
+  currentTheme = 'default',
+  onThemeChange,
+  onOpenBookmarks,
+}: Props) {
   const conversations = useMessengerStore((s) => s.conversations);
   const setConversations = useMessengerStore((s) => s.setConversations);
   const setActive = useMessengerStore((s) => s.setActive);
@@ -239,6 +251,44 @@ export default function GroupInfoDrawer({ conversation, selfId, onClose }: Props
             <div style={{ fontSize: '0.78rem', color: 'var(--grey-400, #A8B4C0)', textTransform: 'capitalize' }}>
               {conversation.type}
             </div>
+          </section>
+
+          <section style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            <div style={{ fontSize: '0.74rem', color: 'var(--grey-400, #A8B4C0)', textTransform: 'uppercase' }}>
+              Theme
+            </div>
+            <ThemePicker
+              conversationId={conversation.conversation_id}
+              currentTheme={currentTheme}
+              onChange={(next) => onThemeChange?.(next)}
+            />
+          </section>
+
+          <section style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            <div style={{ fontSize: '0.74rem', color: 'var(--grey-400, #A8B4C0)', textTransform: 'uppercase' }}>
+              Saved Messages
+            </div>
+            <button
+              type="button"
+              onClick={() => onOpenBookmarks?.()}
+              style={{
+                padding: '8px 12px',
+                borderRadius: 8,
+                border: '1px solid var(--surface-3, #1D2D3E)',
+                background: 'var(--surface-1, #0F1923)',
+                color: 'var(--white, #FFFFFF)',
+                cursor: 'pointer',
+                fontWeight: 600,
+                fontSize: '0.86rem',
+                textAlign: 'left',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 8,
+              }}
+            >
+              <Bookmark size={14} aria-hidden="true" />
+              Open Bookmarks
+            </button>
           </section>
 
           <section style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>

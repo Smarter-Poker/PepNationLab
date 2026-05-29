@@ -1,12 +1,16 @@
 'use client';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useMessengerStore } from '@/stores/messengerStore';
-import type { ConversationListItem, Message, Reaction } from '@/lib/messenger/types';
+import type { ConversationListItem, Message, Reaction, ParticipantRole } from '@/lib/messenger/types';
+import type { MessageLabelValue, ThemeValue } from '@/lib/messenger/schemas';
 import { MessageCircle, Info } from 'lucide-react';
 import MessageBubble from './MessageBubble';
 import MessageComposer from './MessageComposer';
 import TypingIndicator from './TypingIndicator';
 import GroupInfoDrawer from './GroupInfoDrawer';
+import PinnedBar from './PinnedBar';
+import ThreadDrawer from './ThreadDrawer';
+import BookmarksDrawer from './BookmarksDrawer';
 import { toast } from 'sonner';
 import {
   subscribeMessages,
@@ -21,6 +25,15 @@ interface Props {
 }
 
 const TYPING_TTL_MS = 4000;
+
+const THEME_BACKGROUND: Record<ThemeValue, string> = {
+  default: 'var(--surface-1, #0F1923)',
+  teal: 'linear-gradient(180deg, #0F1923 0%, #032427 100%)',
+  indigo: 'linear-gradient(180deg, #0F1923 0%, #1E1B4B 100%)',
+  rose: 'linear-gradient(180deg, #0F1923 0%, #4C0519 100%)',
+  amber: 'linear-gradient(180deg, #0F1923 0%, #451A03 100%)',
+  slate: 'linear-gradient(180deg, #0F1923 0%, #1E293B 100%)',
+};
 
 function stableKey(parts: string[]): string {
   let h = 5381;
@@ -67,10 +80,19 @@ export default function MessagePane({ userId }: Props) {
   const removeMessage = useMessengerStore((s) => s.removeMessage);
   const conversations = useMessengerStore((s) => s.conversations);
   const setConversations = useMessengerStore((s) => s.setConversations);
+  const setActive = useMessengerStore((s) => s.setActive);
   const [replyTo, setReplyTo] = useState<Message | null>(null);
   const [reactionsByMsg, setReactionsByMsg] = useState<Record<string, Reaction[]>>({});
   const [typingUserIds, setTypingUserIds] = useState<string[]>([]);
   const [infoOpen, setInfoOpen] = useState(false);
+  const [selfRole, setSelfRole] = useState<ParticipantRole | null>(null);
+  const [pinRefreshKey, setPinRefreshKey] = useState(0);
+  const [pinnedIds, setPinnedIds] = useState<Set<string>>(new Set());
+  const [bookmarkedIds, setBookmarkedIds] = useState<Set<string>>(new Set());
+  const [labelsByMsg, setLabelsByMsg] = useState<Record<string, MessageLabelValue[]>>({});
+  const [threadParentId, setThreadParentId] = useState<string | null>(null);
+  const [bookmarksOpen, setBookmarksOpen] = useState(false);
+  const [themeValue, setThemeValue] = useState<ThemeValue>('default');
 
   const typingExpiryRef = useRef<Record<string, number>>({});
   const typingSweeperRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -78,7 +100,95 @@ export default function MessagePane({ userId }: Props) {
   useEffect(() => {
     setReplyTo(null);
     setInfoOpen(false);
+    setThreadParentId(null);
+    setBookmarksOpen(false);
   }, [activeId]);
+
+  // Resolve self role + theme for the active conversation. Drives Pin/Unpin
+  // policy in PinnedBar and applies the per-user theme override to the pane.
+  useEffect(() => {
+    if (!activeId) {
+      setSelfRole(null);
+      setThemeValue('default');
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      try {
+        const [rolesRes, themeRes] = await Promise.all([
+          fetch('/api/messenger/list-participants', {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({ conversationId: activeId }),
+          }),
+          fetch('/api/messenger/get-theme', {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({ conversationId: activeId }),
+          }),
+        ]);
+        if (cancelled) return;
+        if (rolesRes.ok) {
+          const json = (await rolesRes.json()) as { participants?: Array<{ user_id: string; role: ParticipantRole }> };
+          const me = json.participants?.find((p) => p.user_id === userId);
+          setSelfRole(me?.role ?? null);
+        }
+        if (themeRes.ok) {
+          const json = (await themeRes.json()) as { themeValue?: ThemeValue | null };
+          setThemeValue((json.themeValue ?? 'default') as ThemeValue);
+        }
+      } catch {
+        // non-fatal
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [activeId, userId]);
+
+  // Resolve pins, bookmarks, labels for the loaded messages.
+  const loadPinsBookmarksLabels = useCallback(async (conversationId: string, messageIds: string[]) => {
+    try {
+      const reqs: Promise<Response>[] = [
+        fetch('/api/messenger/list-pins', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ conversationId }),
+        }),
+        fetch('/api/messenger/list-bookmarks', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: '{}',
+        }),
+      ];
+      if (messageIds.length > 0) {
+        reqs.push(
+          fetch('/api/messenger/list-labels', {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({ messageIds }),
+          }),
+        );
+      }
+      const [pinsRes, bksRes, labelsRes] = await Promise.all(reqs);
+      if (pinsRes.ok) {
+        const json = (await pinsRes.json()) as { pins?: Array<{ message_id: string }> };
+        setPinnedIds(new Set((json.pins ?? []).map((p) => p.message_id)));
+      }
+      if (bksRes.ok) {
+        const json = (await bksRes.json()) as { bookmarks?: Array<{ message_id: string }> };
+        setBookmarkedIds(new Set((json.bookmarks ?? []).map((b) => b.message_id)));
+      }
+      if (labelsRes && labelsRes.ok) {
+        const json = (await labelsRes.json()) as { labels?: Array<{ message_id: string; label: MessageLabelValue }> };
+        const map: Record<string, MessageLabelValue[]> = {};
+        (json.labels ?? []).forEach((r) => {
+          (map[r.message_id] ??= []).push(r.label);
+        });
+        setLabelsByMsg(map);
+      }
+    } catch {
+      // non-fatal
+    }
+  }, []);
 
   useEffect(() => {
     if (!activeId) return;
@@ -105,6 +215,7 @@ export default function MessagePane({ userId }: Props) {
         setReactionsByMsg(map);
         const lastId = list.length > 0 ? list[list.length - 1].id : null;
         if (lastId) void markConversationRead(activeId, lastId);
+        void loadPinsBookmarksLabels(activeId, list.map((m) => m.id));
       } finally {
         if (!cancelled) setLoading(activeId, false);
       }
@@ -112,7 +223,7 @@ export default function MessagePane({ userId }: Props) {
     return () => {
       cancelled = true;
     };
-  }, [activeId, messagesByConv, setMessages, setLoading]);
+  }, [activeId, messagesByConv, setMessages, setLoading, loadPinsBookmarksLabels]);
 
   useEffect(() => {
     if (!activeId) return;
@@ -333,6 +444,152 @@ export default function MessagePane({ userId }: Props) {
     [appendMessage, removeMessage, updateMessage],
   );
 
+  const handlePinToggle = useCallback(
+    async (m: Message, action: 'pin' | 'unpin') => {
+      if (!activeId) return;
+      const wasPinned = pinnedIds.has(m.id);
+      setPinnedIds((cur) => {
+        const next = new Set(cur);
+        if (action === 'pin') next.add(m.id);
+        else next.delete(m.id);
+        return next;
+      });
+      try {
+        const res = await fetch('/api/messenger/pin-message', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({
+            messageId: m.id,
+            conversationId: activeId,
+            action,
+          }),
+        });
+        if (!res.ok) {
+          const json = (await res.json().catch(() => ({}))) as { error?: string };
+          toast(json.error ?? (action === 'pin' ? 'Could Not Pin' : 'Could Not Unpin'));
+          // revert
+          setPinnedIds((cur) => {
+            const next = new Set(cur);
+            if (wasPinned) next.add(m.id);
+            else next.delete(m.id);
+            return next;
+          });
+          return;
+        }
+        setPinRefreshKey((k) => k + 1);
+      } catch {
+        toast('Network Error');
+        setPinnedIds((cur) => {
+          const next = new Set(cur);
+          if (wasPinned) next.add(m.id);
+          else next.delete(m.id);
+          return next;
+        });
+      }
+    },
+    [activeId, pinnedIds],
+  );
+
+  const handleBookmarkToggle = useCallback(
+    async (m: Message, action: 'add' | 'remove') => {
+      const wasBookmarked = bookmarkedIds.has(m.id);
+      setBookmarkedIds((cur) => {
+        const next = new Set(cur);
+        if (action === 'add') next.add(m.id);
+        else next.delete(m.id);
+        return next;
+      });
+      try {
+        const res = await fetch('/api/messenger/bookmark-message', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ messageId: m.id, action }),
+        });
+        if (!res.ok) {
+          const json = (await res.json().catch(() => ({}))) as { error?: string };
+          toast(json.error ?? 'Could Not Update Bookmark');
+          setBookmarkedIds((cur) => {
+            const next = new Set(cur);
+            if (wasBookmarked) next.add(m.id);
+            else next.delete(m.id);
+            return next;
+          });
+        }
+      } catch {
+        toast('Network Error');
+        setBookmarkedIds((cur) => {
+          const next = new Set(cur);
+          if (wasBookmarked) next.add(m.id);
+          else next.delete(m.id);
+          return next;
+        });
+      }
+    },
+    [bookmarkedIds],
+  );
+
+  const handleLabelToggle = useCallback(
+    async (m: Message, label: MessageLabelValue, action: 'add' | 'remove') => {
+      const had = (labelsByMsg[m.id] ?? []).includes(label);
+      setLabelsByMsg((cur) => {
+        const arr = cur[m.id] ?? [];
+        if (action === 'add') {
+          if (arr.includes(label)) return cur;
+          return { ...cur, [m.id]: [...arr, label] };
+        }
+        return { ...cur, [m.id]: arr.filter((l) => l !== label) };
+      });
+      try {
+        const res = await fetch('/api/messenger/label-message', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ messageId: m.id, label, action }),
+        });
+        if (!res.ok) {
+          const json = (await res.json().catch(() => ({}))) as { error?: string };
+          toast(json.error ?? 'Could Not Update Label');
+          // revert
+          setLabelsByMsg((cur) => {
+            const arr = cur[m.id] ?? [];
+            if (had) {
+              if (arr.includes(label)) return cur;
+              return { ...cur, [m.id]: [...arr, label] };
+            }
+            return { ...cur, [m.id]: arr.filter((l) => l !== label) };
+          });
+        }
+      } catch {
+        toast('Network Error');
+      }
+    },
+    [labelsByMsg],
+  );
+
+  const handleJumpToMessage = useCallback((messageId: string) => {
+    const el = document.querySelector(`[data-msg-id="${messageId}"]`);
+    if (el && 'scrollIntoView' in el) {
+      (el as HTMLElement).scrollIntoView({ behavior: 'smooth', block: 'center' });
+      (el as HTMLElement).style.outline = '2px solid var(--teal, #00C4BC)';
+      setTimeout(() => {
+        (el as HTMLElement).style.outline = '';
+      }, 1600);
+    }
+  }, []);
+
+  const handleJumpAcrossConv = useCallback(
+    (conversationId: string, messageId: string) => {
+      setBookmarksOpen(false);
+      if (conversationId !== activeId) {
+        setActive(conversationId);
+        // Defer scroll until messages load.
+        setTimeout(() => handleJumpToMessage(messageId), 800);
+      } else {
+        handleJumpToMessage(messageId);
+      }
+    },
+    [activeId, setActive, handleJumpToMessage],
+  );
+
   if (!activeId) {
     return (
       <div
@@ -357,6 +614,7 @@ export default function MessagePane({ userId }: Props) {
   const loading = loadingByConv[activeId] ?? false;
   const currentConv = conversations.find((c) => c.conversation_id === activeId);
   const headerLabel = resolveConversationLabel(currentConv);
+  const conversationType = currentConv?.type;
 
   return (
     <div
@@ -364,7 +622,7 @@ export default function MessagePane({ userId }: Props) {
         flex: 1,
         display: 'flex',
         flexDirection: 'column',
-        background: 'var(--surface-1, #0F1923)',
+        background: THEME_BACKGROUND[themeValue] ?? THEME_BACKGROUND.default,
       }}
     >
       <header
@@ -389,28 +647,33 @@ export default function MessagePane({ userId }: Props) {
         >
           {headerLabel}
         </div>
-        <button
-          type="button"
-          onClick={() => setInfoOpen(true)}
-          aria-label="Conversation Info"
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: 6,
-            padding: '4px 8px',
-            borderRadius: 6,
-            border: '1px solid var(--surface-3, #1D2D3E)',
-            background: 'transparent',
-            color: 'var(--white, #FFFFFF)',
-            cursor: 'pointer',
-            fontSize: '0.78rem',
-            fontWeight: 600,
-          }}
-        >
-          <Info size={12} aria-hidden="true" />
-          Info
-        </button>
+        <div style={{ display: 'inline-flex', gap: 6 }}>
+          <button
+            type="button"
+            onClick={() => setBookmarksOpen(true)}
+            aria-label="Open Bookmarks"
+            style={headerBtn}
+          >
+            Bookmarks
+          </button>
+          <button
+            type="button"
+            onClick={() => setInfoOpen(true)}
+            aria-label="Conversation Info"
+            style={headerBtn}
+          >
+            <Info size={12} aria-hidden="true" />
+            Info
+          </button>
+        </div>
       </header>
+      <PinnedBar
+        conversationId={activeId}
+        selfId={userId}
+        selfRole={selfRole}
+        refreshKey={pinRefreshKey}
+        onJump={handleJumpToMessage}
+      />
       <div style={{ flex: 1, overflowY: 'auto', padding: 16, display: 'flex', flexDirection: 'column', gap: 8 }}>
         {loading && messages.length === 0 ? (
           <div style={{ color: 'var(--grey-400, #A8B4C0)', textAlign: 'center', marginTop: 32 }}>
@@ -428,10 +691,19 @@ export default function MessagePane({ userId }: Props) {
               isOwn={m.sender_id === userId}
               reactions={reactionsByMsg[m.id] ?? []}
               selfId={userId}
+              selfRole={selfRole}
+              conversationType={conversationType}
+              isPinned={pinnedIds.has(m.id)}
+              isBookmarked={bookmarkedIds.has(m.id)}
+              currentLabels={labelsByMsg[m.id] ?? []}
               onReply={setReplyTo}
               onReact={handleReact}
               onEdit={handleEdit}
               onDelete={handleDelete}
+              onPinToggle={handlePinToggle}
+              onBookmarkToggle={handleBookmarkToggle}
+              onLabelToggle={handleLabelToggle}
+              onThread={(parent) => setThreadParentId(parent.id)}
             />
           ))
         )}
@@ -444,8 +716,42 @@ export default function MessagePane({ userId }: Props) {
         onClearReply={() => setReplyTo(null)}
       />
       {infoOpen && currentConv && (
-        <GroupInfoDrawer conversation={currentConv} selfId={userId} onClose={() => setInfoOpen(false)} />
+        <GroupInfoDrawer
+          conversation={currentConv}
+          selfId={userId}
+          onClose={() => setInfoOpen(false)}
+          currentTheme={themeValue}
+          onThemeChange={(next) => setThemeValue(next)}
+          onOpenBookmarks={() => { setInfoOpen(false); setBookmarksOpen(true); }}
+        />
+      )}
+      {threadParentId && (
+        <ThreadDrawer
+          threadParentId={threadParentId}
+          selfId={userId}
+          onClose={() => setThreadParentId(null)}
+        />
+      )}
+      {bookmarksOpen && (
+        <BookmarksDrawer
+          onClose={() => setBookmarksOpen(false)}
+          onJump={handleJumpAcrossConv}
+        />
       )}
     </div>
   );
 }
+
+const headerBtn: React.CSSProperties = {
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: 6,
+  padding: '4px 8px',
+  borderRadius: 6,
+  border: '1px solid var(--surface-3, #1D2D3E)',
+  background: 'transparent',
+  color: 'var(--white, #FFFFFF)',
+  cursor: 'pointer',
+  fontSize: '0.78rem',
+  fontWeight: 600,
+};
