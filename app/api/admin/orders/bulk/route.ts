@@ -10,6 +10,7 @@ import {
 } from '@/lib/order-states';
 import { purchaseLabelForOrder } from '@/lib/shippo';
 import { enqueueOrderSms, shortOrderId, type OrderSmsEvent } from '@/lib/sms-enqueue';
+import { enqueueOrderPush } from '@/lib/push-enqueue';
 
 interface BulkBody {
   ids?: unknown;
@@ -122,6 +123,14 @@ export async function POST(req: NextRequest) {
               event,
               body,
             });
+            try {
+              await enqueueOrderPush(supabase, {
+                userId: order.buyer_id,
+                orderId: id,
+                event,
+                tracking: order.tracking_number ?? null,
+              });
+            } catch { /* push must not block bulk response */ }
           }
         }
       } catch { /* never block bulk response on SMS */ }

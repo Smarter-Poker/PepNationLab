@@ -4,6 +4,7 @@ import { requireAgent } from '@/lib/admin-auth';
 import { pickOne } from '@/lib/relations';
 import { computeAgentCost, type AgentTier } from '@/lib/pricing';
 import { enqueueOrderSms, shortOrderId } from '@/lib/sms-enqueue';
+import { enqueueOrderPush } from '@/lib/push-enqueue';
 
 export async function POST(req: NextRequest) {
   try {
@@ -172,6 +173,13 @@ export async function POST(req: NextRequest) {
           body: `Your Order #${shortOrderId(orderId)} Has Been Approved. Get Ready For Shipping.`,
         });
       } catch { /* notification failures must not break the order */ }
+      try {
+        await enqueueOrderPush(supabase, {
+          userId: order.buyer_id,
+          orderId,
+          event: 'order_approved',
+        });
+      } catch { /* push failures must not break the order */ }
     }
 
     return NextResponse.json({ success: true, status: newStatus });

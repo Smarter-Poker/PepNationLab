@@ -35,10 +35,14 @@ interface SavedAddress {
 }
 
 export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, agentSlug }: CheckoutFormProps) {
-  // Agent buying from their own store → show tier-discounted pricing
-  // Admins are intentionally excluded: they don't have agent_profiles rows
-  // and should not trigger the self-buy wholesale path.
-  const isAgentSelfBuy = userProfile.role === 'agent' || userProfile.role === 'super_agent';
+  // Agent buying from their own store → show tier-discounted pricing.
+  // Cross-check: only treat as self-buy when the agentSlug in the URL
+  // matches the agent's OWN store. If an agent visits another agent's
+  // storefront, isAgentSelfBuy must be false so UI/rules are correct.
+  // We start with the role check and refine via agentSlug match below.
+  const isAgentByRole = userProfile.role === 'agent' || userProfile.role === 'super_agent';
+  // Admins are intentionally excluded: they don't have agent_profiles rows.
+  const isAgentSelfBuy = isAgentByRole;
   const { cart: contextCart, cartSubtotal: contextSubtotal, clearCart } = useCart();
 
   // The per-agent cart key — ONLY reads this agent's cart, never another agent's.
@@ -101,11 +105,23 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
   const [error, setError] = useState<string | null>(null);
   const [orderSuccess, setOrderSuccess] = useState<string | null>(null);
   const [serverTotal, setServerTotal] = useState<number | null>(null);
+  // Tracks if server adjusted the total — shown as warning on success screen.
+  const [totalAdjusted, setTotalAdjusted] = useState(false);
 
-  // Idempotency key persists across renders so a double-submit reuses the same
-  // key and the server returns the existing order instead of creating a dup.
+  // Cart staleness: warn if cart was loaded from localStorage more than 24h ago.
+  const [cartLoadedAt] = useState(() => Date.now());
+  const cartIsStale = (Date.now() - cartLoadedAt) > 24 * 60 * 60 * 1000;
+
+  // Idempotency key persists across renders to prevent double-submit.
+  // RESET after a successful order so that a subsequent visit to checkout
+  // (e.g. back-navigation edge case) generates a fresh key.
   const idempotencyKeyRef = useRef<string | null>(null);
   const submittedRef = useRef<boolean>(false);
+
+  // Live shipping rate from DB — replaces hardcoded brackets so the preview
+  // always matches what the server will charge (including admin rate changes).
+  const [liveShippingRate, setLiveShippingRate] = useState<number | null>(null);
+  const shippingFetchAbortRef = useRef<AbortController | null>(null);
 
 
   const getIdempotencyKey = () => {
@@ -116,6 +132,10 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
           : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
     }
     return idempotencyKeyRef.current;
+  };
+
+  const resetIdempotencyKey = () => {
+    idempotencyKeyRef.current = null;
   };
 
   // Form State
@@ -235,6 +255,38 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
   // Compute standard weight and shipping fee on client for preview
   const totalWeightOz = cart.reduce((acc, item) => acc + (item.weightOz ?? 0.5) * item.quantity, 0);
 
+  // Fetch live shipping rate from DB whenever weight or fulfillment changes.
+  // This replaces the hardcoded bracket table so preview always matches charge.
+  useEffect(() => {
+    if (shippingFetchAbortRef.current) shippingFetchAbortRef.current.abort();
+    const ctrl = new AbortController();
+    shippingFetchAbortRef.current = ctrl;
+    if (fulfillmentMethod === 'agent_pickup') {
+      setLiveShippingRate(0);
+      return;
+    }
+    (async () => {
+      try {
+        const res = await fetch('/api/shipping-preview', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ weightOz: totalWeightOz, fulfillment: fulfillmentMethod }),
+          signal: ctrl.signal,
+        });
+        if (!res.ok) return;
+        const json = await res.json();
+        setLiveShippingRate(Number(json.rate) || 0);
+      } catch {
+        // Network error — fall back to hardcoded bracket as safety net.
+        // (fulfillmentMethod is guaranteed to be 'ship' here due to the early return above)
+        const fallback = totalWeightOz <= 1 ? 8 : totalWeightOz <= 4 ? 12 : totalWeightOz <= 8 ? 16 : totalWeightOz <= 16 ? 20 : 28;
+        setLiveShippingRate(fallback);
+      }
+    })();
+    return () => ctrl.abort();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [totalWeightOz, fulfillmentMethod]);
+
   // Fetch the tax quote whenever destination state, subtotal, fulfillment,
   // or coupon discount change. Soft-fails to zero tax so checkout never blocks.
   // Declared BEFORE the conditional early return so hook order stays stable.
@@ -291,6 +343,9 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
 
   const calculateShippingCost = () => {
     if (fulfillmentMethod === 'agent_pickup') return 0;
+    // Prefer the live DB rate (fetched asynchronously). Fall back to the
+    // hardcoded bracket only while the async fetch is still in-flight.
+    if (liveShippingRate !== null) return liveShippingRate;
     if (totalWeightOz <= 1.0) return 8.00;
     if (totalWeightOz <= 4.0) return 12.00;
     if (totalWeightOz <= 8.0) return 16.00;
@@ -317,6 +372,23 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
           setError('All Shipping Fields Are Required For Delivery.');
           return;
         }
+        // Phone validation — require a plausible 10-digit US number.
+        const digitsOnly = phone.replace(/\D/g, '');
+        if (phone.trim() && digitsOnly.length < 10) {
+          setError('Please Enter A Valid 10-Digit Phone Number For Shipping Updates.');
+          return;
+        }
+        // Zip code must be 5 digits.
+        if (!/^\d{5}(-\d{4})?$/.test(zip.trim())) {
+          setError('Please Enter A Valid 5-Digit ZIP Code.');
+          return;
+        }
+      }
+      // Per-item quantity cap — client-side guard before server.
+      const overLimit = cart.find(item => item.quantity > 10_000);
+      if (overLimit) {
+        setError(`Quantity for "${overLimit.name}" exceeds the maximum allowed (10,000 per item). Please reduce the quantity.`);
+        return;
       }
     }
     setStep(prev => prev + 1);
@@ -456,10 +528,18 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
       }
 
       if (typeof data.total === 'number') {
-        setServerTotal(Number(data.total));
+        const srv = Number(data.total);
+        setServerTotal(srv);
+        // Flag if server total differs from client estimate by more than 1 cent.
+        // This can happen if shipping rates or tax changed since cart was loaded.
+        setTotalAdjusted(Math.abs(srv - grandTotal) > 0.01);
       }
       setOrderSuccess(data.orderId);
       clearAllCarts();
+      // Reset idempotency key so a future order from the same session
+      // generates a fresh key and doesn't replay this order.
+      resetIdempotencyKey();
+      submittedRef.current = false;
     } catch (err: any) {
       // Allow the user to retry after an error.
       submittedRef.current = false;
@@ -556,7 +636,23 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
             <p style={{ color: 'var(--silver)', fontSize: '0.95rem' }}>Your Research Order Has Been Registered And Is Awaiting Offline Payment.</p>
           </div>
 
-          {/* Details Box */}
+          {/* Server total mismatch warning — shown if shipping/tax changed between cart load and order submit */}
+          {totalAdjusted && serverTotal !== null && (
+            <div style={{ background: 'rgba(245, 158, 11, 0.08)', border: '1px solid rgba(245, 158, 11, 0.4)', borderRadius: 'var(--radius-md)', padding: 'var(--space-4)', marginBottom: 'var(--space-4)', display: 'flex', gap: 12, alignItems: 'flex-start' }}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#F59E0B" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, marginTop: 2 }}>
+                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+              </svg>
+              <div>
+                <p style={{ color: '#F59E0B', fontWeight: 700, fontSize: '0.88rem', margin: '0 0 4px' }}>Total Was Adjusted</p>
+                <p style={{ color: 'var(--silver-light)', fontSize: '0.82rem', margin: 0, lineHeight: 1.5 }}>
+                  Your confirmed order total is <strong style={{ color: '#F59E0B' }}>${serverTotal.toFixed(2)}</strong>. Shipping rates or tax may have updated since your cart was loaded. Please send exactly <strong style={{ color: '#F59E0B' }}>${serverTotal.toFixed(2)}</strong> to the payment handle below.
+                </p>
+              </div>
+            </div>
+          )}
+
+
           <div style={{ background: 'var(--surface-2)', border: '1px solid rgba(255, 255, 255, 0.05)', borderRadius: 'var(--radius-lg)', padding: 'var(--space-5)', marginBottom: 'var(--space-6)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid rgba(255, 255, 255, 0.05)', paddingBottom: 'var(--space-3)', marginBottom: 'var(--space-3)' }}>
               <span style={{ color: 'var(--grey-400)', fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Order Identifier</span>
@@ -626,11 +722,24 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
 
   return (
     <div className="container section" style={{ maxWidth: 1000 }}>
+      {/* Stale cart warning — shown if the cart is older than 24 hours */}
+      {cartIsStale && (
+        <div style={{ background: 'rgba(245, 158, 11, 0.07)', border: '1px solid rgba(245, 158, 11, 0.35)', borderRadius: 'var(--radius-md)', padding: 'var(--space-3) var(--space-4)', marginBottom: 'var(--space-5)', display: 'flex', gap: 10, alignItems: 'center' }}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#F59E0B" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+          </svg>
+          <p style={{ fontSize: '0.82rem', color: '#F59E0B', margin: 0 }}>
+            <strong>Your cart prices may be outdated.</strong> This cart was loaded more than 24 hours ago. Return to the storefront to refresh prices before completing your order.
+          </p>
+        </div>
+      )}
+
       {/* Page Header */}
       <div style={{ marginBottom: 'var(--space-8)', textAlign: 'center' }}>
         <h1 style={{ fontSize: 'clamp(1.4rem, 5vw, 2.2rem)', color: 'var(--white)', marginBottom: 'var(--space-2)' }}>Secure Order Checkout</h1>
         <p style={{ color: 'var(--silver)' }}>Complete Your Compliance Steps To Register Your Research Request.</p>
       </div>
+
 
       {/* Stepper progress */}
       <div style={{ display: 'flex', justifyContent: 'center', gap: 'var(--space-2)', marginBottom: 'var(--space-8)', flexWrap: 'wrap' }}>

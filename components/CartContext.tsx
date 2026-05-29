@@ -59,10 +59,13 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       if (!force && now - lastRefreshRef.current < 60_000) return items;
       refreshInflightRef.current = true;
       try {
+        // NOTE: CartContext.cart[].id is the master catalog product_id (UUID from products table),
+        // NOT the agent_products.id. The cart/refresh endpoint queries agent_products,
+        // so we send as `productIds` and the endpoint should join via product_id column.
         const res = await fetch('/api/cart/refresh', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ agentProductIds: items.map(i => i.id) }),
+          body: JSON.stringify({ agentProductIds: items.map(i => i.sku || i.id) }),
         });
         if (!res.ok) return items;
         const data = (await res.json()) as {

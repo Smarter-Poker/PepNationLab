@@ -3,6 +3,7 @@ import { createServiceClient } from '@/lib/supabase/server';
 import { requireOrdersAccess } from '@/lib/admin-auth';
 import { canTransition, type OrderStatus } from '@/lib/order-states';
 import { enqueueOrderSms, shortOrderId, type OrderSmsEvent } from '@/lib/sms-enqueue';
+import { enqueueOrderPush } from '@/lib/push-enqueue';
 
 // GET: List all orders with buyer profile join
 export async function GET(req: NextRequest) {
@@ -149,6 +150,15 @@ export async function POST(req: NextRequest) {
           event,
           body,
         });
+        try {
+          const trk = orderRow.tracking_number || tracking_number || null;
+          await enqueueOrderPush(supabase, {
+            userId: orderRow.buyer_id,
+            orderId: id,
+            event,
+            tracking: trk,
+          });
+        } catch { /* push failures must not break admin response */ }
       }
     }
   } catch { /* never block admin response on SMS failure */ }

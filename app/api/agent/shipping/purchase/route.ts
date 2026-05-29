@@ -4,6 +4,7 @@ import { requireAgent } from '@/lib/admin-auth';
 import { pickOne } from '@/lib/relations';
 import { Shippo } from 'shippo';
 import { enqueueOrderSms, shortOrderId } from '@/lib/sms-enqueue';
+import { enqueueOrderPush } from '@/lib/push-enqueue';
 
 export async function POST(req: NextRequest) {
   try {
@@ -133,6 +134,14 @@ export async function POST(req: NextRequest) {
           body: `Your Order #${shortOrderId(orderId)} Shipped. Tracking: ${trackingNumber}`,
         });
       } catch { /* notification failures must not break shipping */ }
+      try {
+        await enqueueOrderPush(supabase, {
+          userId: order.buyer_id,
+          orderId,
+          event: 'order_shipped',
+          tracking: trackingNumber,
+        });
+      } catch { /* push failures must not break shipping */ }
     }
 
     return NextResponse.json({ success: true, trackingNumber, labelUrl });

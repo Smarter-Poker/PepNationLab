@@ -174,6 +174,16 @@ export async function POST(request: NextRequest) {
       }
 
       const qty = Number(cartItem.quantity) || 1;
+
+      // Server-side per-item quantity safety cap. 10,000 vials is enough for
+      // any legitimate research order; anything above is likely a data error.
+      if (qty > 10_000) {
+        return NextResponse.json(
+          { error: `Quantity for "${dbProduct.name}" exceeds the maximum allowed (10,000 per item).` },
+          { status: 400 }
+        );
+      }
+
       let availableStock = Number(dbProduct.inventory_count);
       
       if (agentProfile && !isAgentSelfBuy) {
@@ -329,6 +339,14 @@ export async function POST(request: NextRequest) {
       }
 
       const itemQty = Number(cartItem.quantity) || 1;
+
+      // Consistent quantity cap in the pricing loop — mirrors the inventory loop.
+      if (itemQty > 10_000) {
+        return NextResponse.json(
+          { error: `Quantity for a cart item exceeds the maximum allowed (10,000 per item).` },
+          { status: 400 }
+        );
+      }
 
       // Calculate Agent Cost (What the agent of record owes Admin or Super Agent)
       let costPrice = retailPrice; // Default to retail if no agent
@@ -552,7 +570,8 @@ export async function POST(request: NextRequest) {
       null;
     const checkoutUserAgent = request.headers.get('user-agent') || null;
 
-    const { error: disclaimerError } = await serviceSupabase
+    // disclaimer_id is captured so we can back-fill order_id after the order insert.
+    const { data: disclaimerRow, error: disclaimerError } = await serviceSupabase
       .from('disclaimer_acceptances')
       .insert({
         user_id: user.id,
@@ -560,9 +579,11 @@ export async function POST(request: NextRequest) {
         layer: 'checkout',
         user_agent: checkoutUserAgent,
         ip_address: checkoutIp,
-      });
+      })
+      .select('id')
+      .single();
 
-    if (disclaimerError) {
+    if (disclaimerError || !disclaimerRow) {
       console.error('Checkout Disclaimer Audit Insert Failed:', disclaimerError);
       return NextResponse.json(
         { error: 'Disclaimer audit failed; order not placed.' },
@@ -625,6 +646,13 @@ export async function POST(request: NextRequest) {
       console.error('Database Order Write Error:', orderError);
       return NextResponse.json({ error: 'Failed To Save Order Transaction.' }, { status: 500 });
     }
+
+    // Back-fill the disclaimer row with this order_id so the compliance audit
+    // trail is complete and no checkout disclaimer is ever orphaned.
+    void serviceSupabase
+      .from('disclaimer_acceptances')
+      .update({ order_id: order.id })
+      .eq('id', disclaimerRow.id);
 
     // Create order items
     if (computedItems.length === 0) {
