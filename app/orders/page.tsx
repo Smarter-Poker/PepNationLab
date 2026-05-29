@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/server';
 import PageShell from '@/components/PageShell';
+import ReorderButton, { ViewLink } from './OrdersListClient';
 
 export const dynamic = 'force-dynamic';
 
@@ -122,11 +123,10 @@ export default async function OrdersPage() {
               {orders.map((order) => {
                 const statusColor = STATUS_COLORS[order.status] ?? 'var(--grey-400)';
                 return (
-                  <Link
+                  <div
                     key={order.id}
-                    href={`/orders/${order.id}`}
                     className="card-metal"
-                    style={{ padding: 'var(--space-6)', textDecoration: 'none', color: 'inherit', display: 'block' }}
+                    style={{ padding: 'var(--space-6)' }}
                   >
                     {/* Order header */}
                     <div
@@ -233,7 +233,21 @@ export default async function OrdersPage() {
                         <span style={{ color: 'var(--silver)', fontWeight: 600 }}>{order.tracking_number}</span>
                       </div>
                     )}
-                  </Link>
+
+                    {/* Actions */}
+                    <div style={{
+                      marginTop: 'var(--space-4)',
+                      paddingTop: 'var(--space-4)',
+                      borderTop: '1px solid rgba(255,255,255,0.06)',
+                      display: 'flex',
+                      gap: 'var(--space-2)',
+                      justifyContent: 'flex-end',
+                      flexWrap: 'wrap',
+                    }}>
+                      <ReorderButton orderId={order.id} />
+                      <ViewLink href={`/orders/${order.id}`} />
+                    </div>
+                  </div>
                 );
               })}
             </div>
