@@ -245,8 +245,50 @@ export default function AgentStorefrontConfig({
 
           <div className="grid-2">
             <div className="form-group">
-              <label className="form-label">Logo URL</label>
-              <input type="url" className="form-input" placeholder="https://..." value={logoUrl} onChange={(e) => setLogoUrl(e.target.value)} />
+              <label className="form-label">Store Logo</label>
+              {logoUrl ? (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', marginBottom: 'var(--space-2)' }}>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={logoUrl} alt="Logo" style={{ height: 48, borderRadius: 6, border: '1px solid rgba(255,255,255,0.1)' }} />
+                  <button type="button" className="btn btn-secondary btn-sm" onClick={() => setLogoUrl('')} style={{ fontSize: '0.75rem' }}>Remove</button>
+                </div>
+              ) : null}
+              <label
+                style={{
+                  display: 'inline-flex', alignItems: 'center', gap: 6,
+                  padding: '8px 16px', borderRadius: 'var(--radius-md)',
+                  background: 'var(--surface-3)', border: '1px solid rgba(255,255,255,0.1)',
+                  cursor: 'pointer', fontSize: '0.85rem', color: 'var(--silver)',
+                  transition: 'background 0.2s',
+                }}
+                onMouseEnter={e => { e.currentTarget.style.background = 'var(--surface-2)'; }}
+                onMouseLeave={e => { e.currentTarget.style.background = 'var(--surface-3)'; }}
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                {logoUrl ? 'Replace Logo' : 'Upload Logo'}
+                <input
+                  type="file"
+                  accept="image/*"
+                  style={{ display: 'none' }}
+                  onChange={async (e) => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    const supabase = createClient();
+                    const ext = file.name.split('.').pop() || 'png';
+                    const path = `agent-logos/${agentId}-${Date.now()}.${ext}`;
+                    const { error: uploadError } = await supabase.storage.from('public-assets').upload(path, file, { upsert: true });
+                    if (uploadError) {
+                      toast.error('Failed to upload logo: ' + uploadError.message);
+                      return;
+                    }
+                    const { data: pub } = supabase.storage.from('public-assets').getPublicUrl(path);
+                    if (pub?.publicUrl) {
+                      setLogoUrl(pub.publicUrl);
+                      toast.success('Logo uploaded! Click Save to apply.');
+                    }
+                  }}
+                />
+              </label>
             </div>
             <div className="form-group">
               <label className="form-label">Primary Brand Color</label>

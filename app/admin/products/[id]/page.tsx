@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
+import AdminProductLots from '@/components/AdminProductLots';
 
 const CATEGORIES = [
   'Weight Loss & Metabolism',
@@ -483,6 +484,11 @@ export default function EditProductPage() {
           </Link>
         </div>
       </form>
+
+      {/* ── Lot Tracking + COA Documents ── */}
+      <div style={{ marginTop: 'var(--space-8)' }}>
+        <AdminProductLots productId={id} />
+      </div>
     </div>
   );
 }

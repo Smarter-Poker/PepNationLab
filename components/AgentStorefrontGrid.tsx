@@ -2,7 +2,7 @@
 
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { motion, Variants, AnimatePresence } from 'framer-motion';
-import { Star, X, Heart } from 'lucide-react';
+import { Star, X, Heart, FileText } from 'lucide-react';
 
 interface ProductItem {
   id: string;
@@ -108,6 +108,8 @@ interface Props {
   initialWishlistIds?: string[];
   /** Agent profile id used when logging recently-viewed rows. */
   agentId?: string | null;
+  /** product_id -> public URL of the most-recent active lot's COA document. */
+  coaByProductId?: Record<string, string>;
 }
 
 const containerVariants: Variants = {
@@ -193,7 +195,7 @@ function pickDefaultVariant(variants: ProductItem[]): string {
   return variants[variants.length - 1]?.id || variants[0].id;
 }
 
-export default function AgentStorefrontGrid({ products, inventoryMap, primaryColor, agentSlug, bundles = [], initialWishlistIds = [], agentId = null }: Props) {
+export default function AgentStorefrontGrid({ products, inventoryMap, primaryColor, agentSlug, bundles = [], initialWishlistIds = [], agentId = null, coaByProductId = {} }: Props) {
   const [wishlist, setWishlist] = useState<Set<string>>(() => new Set(initialWishlistIds));
   const toggleWishlist = useCallback(async (productId: string) => {
     if (!productId) return;
@@ -345,6 +347,11 @@ export default function AgentStorefrontGrid({ products, inventoryMap, primaryCol
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
+      {/* Product count */}
+      <div style={{ fontSize: '0.8rem', color: 'var(--grey-400)', paddingLeft: 'var(--space-1)' }}>
+        {filteredProducts.length} {filteredProducts.length === 1 ? 'Product' : 'Products'} Found
+      </div>
+
       {/* Search & Filter Bar */}
       <div style={{
         display: 'flex', flexWrap: 'wrap', gap: 'var(--space-3)', alignItems: 'center',
@@ -380,10 +387,6 @@ export default function AgentStorefrontGrid({ products, inventoryMap, primaryCol
           <option value="price_low">Price: Low to High</option>
           <option value="price_high">Price: High to Low</option>
         </select>
-      </div>
-
-      <div style={{ fontSize: '0.8rem', color: 'var(--grey-400)', paddingLeft: 'var(--space-1)' }}>
-        {filteredProducts.length} {filteredProducts.length === 1 ? 'Product' : 'Products'} Found
       </div>
 
       {/* Research Bundles */}
@@ -876,9 +879,42 @@ export default function AgentStorefrontGrid({ products, inventoryMap, primaryCol
                   </div>
                 </div>
 
-                <p style={{ fontSize: '0.95rem', color: 'var(--grey-300)', lineHeight: 1.7, marginBottom: 'var(--space-6)' }}>
+                <p style={{ fontSize: '0.95rem', color: 'var(--grey-300)', lineHeight: 1.7, marginBottom: 'var(--space-4)' }}>
                   {detailProduct.desc || 'Research compound available for academic and laboratory use.'}
                 </p>
+
+                {/* Certificate Of Analysis */}
+                {(() => {
+                  const firstVariant = detailProduct.variants[0];
+                  const pid = firstVariant?.product_id;
+                  const coaUrl = pid ? coaByProductId[pid] : undefined;
+                  if (!coaUrl) return null;
+                  return (
+                    <div style={{ marginBottom: 'var(--space-6)' }}>
+                      <a
+                        href={coaUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 8,
+                          padding: '8px 14px',
+                          borderRadius: 'var(--radius-md)',
+                          background: `${primaryColor}15`,
+                          color: primaryColor,
+                          border: `1px solid ${primaryColor}40`,
+                          fontSize: '0.85rem',
+                          fontWeight: 700,
+                          textDecoration: 'none',
+                        }}
+                      >
+                        <FileText size={14} aria-hidden="true" />
+                        View Certificate Of Analysis
+                      </a>
+                    </div>
+                  );
+                })()}
 
                 {/* Size & Quantity Selector */}
                 {(() => {

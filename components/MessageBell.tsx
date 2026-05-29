@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { useRouter } from 'next/navigation';
 
 interface InboxMessage {
   id: string;
@@ -69,10 +70,11 @@ export default function MessageBell({ onViewAll, dropUp }: { onViewAll: () => vo
     return () => document.removeEventListener('mousedown', handleClick);
   }, []);
 
+  const router = useRouter();
+
   const handleToggle = () => {
-    const next = !open;
-    setOpen(next);
-    if (next) fetchLatest();
+    // Navigate directly to the messages page
+    router.push('/messages');
   };
 
   function timeAgo(dateStr: string): string {

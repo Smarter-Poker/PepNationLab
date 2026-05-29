@@ -138,6 +138,31 @@ export default async function AgentStorefrontPage({ params }: Props) {
 
   const inventoryMap = new Map(inventory?.map(i => [i.product_id, i.stock_count]) || []);
 
+  // Most-recent active lot with an attached COA, per product currently in the
+  // storefront. Used to render the "View Certificate Of Analysis" link in the
+  // product detail modal.
+  const productIds = (products ?? [])
+    .map(p => p.product_id)
+    .filter((v): v is string => !!v);
+  const coaByProductId: Record<string, string> = {};
+  if (productIds.length > 0) {
+    const { data: lots } = await supabase
+      .from('product_lots')
+      .select('product_id, coa_storage_key, received_at')
+      .in('product_id', productIds)
+      .eq('is_active', true)
+      .not('coa_storage_key', 'is', null)
+      .order('received_at', { ascending: false });
+    for (const row of lots ?? []) {
+      if (!row.coa_storage_key) continue;
+      if (coaByProductId[row.product_id]) continue; // keep most recent only
+      const { data: pub } = supabase.storage
+        .from('product-coas')
+        .getPublicUrl(row.coa_storage_key);
+      if (pub?.publicUrl) coaByProductId[row.product_id] = pub.publicUrl;
+    }
+  }
+
   let initialWishlistIds: string[] = [];
   if (userProfile?.role === 'researcher') {
     const { data: favRows } = await supabase
@@ -168,24 +193,13 @@ export default async function AgentStorefrontPage({ params }: Props) {
         <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
           {agent.logo_url ? (
             <img src={agent.logo_url} alt={displayName} style={{ height: 36, borderRadius: 6 }} />
-          ) : (
-            <div style={{
-              width: 36, height: 36, borderRadius: 8,
-              background: `linear-gradient(135deg, ${primaryColor}40, var(--surface-2))`,
-              border: `1px solid ${primaryColor}50`,
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontFamily: 'var(--font-brand)', fontWeight: 800, fontSize: '0.9rem',
-              color: primaryColor
-            }}>
-              {displayName[0].toUpperCase()}
-            </div>
-          )}
+          ) : null}
           <div>
-            <div style={{ fontFamily: 'var(--font-brand)', fontSize: '0.9rem', fontWeight: 800, color: primaryColor, letterSpacing: '0.05em' }}>
+            <div style={{ fontFamily: 'var(--font-brand)', fontSize: '0.9rem', fontWeight: 800, color: '#C0B8A8', letterSpacing: '0.05em' }}>
               {displayName}
             </div>
             <div style={{ fontSize: '0.7rem', color: 'var(--grey-400)' }}>
-              Powered By <span style={{ color: 'var(--teal)' }}>Pep Nation Lab</span>
+              Powered By <span style={{ color: '#C0B8A8' }}>Pep Nation Lab</span>
             </div>
           </div>
         </div>
@@ -201,40 +215,22 @@ export default async function AgentStorefrontPage({ params }: Props) {
         </div>
       </nav>
 
-      {/* Agent Hero */}
       <section style={{
-        padding: 'var(--space-16) var(--space-6)',
+        padding: 'var(--space-6) var(--space-6) var(--space-4)',
         textAlign: 'center',
         background: `radial-gradient(ellipse at 50% 0%, ${primaryColor}10 0%, transparent 70%)`
       }}>
         <div className="container" style={{ maxWidth: 640 }}>
-          <div className="badge badge-teal" style={{ marginBottom: 'var(--space-4)', fontSize: '0.7rem', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-            <svg
-              width="10"
-              height="10"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <path d="M6 3h12" />
-              <path d="M9 3v6l-5 9a2 2 0 0 0 1.7 3h12.6a2 2 0 0 0 1.7-3l-5-9V3" />
-            </svg>
-            Research Compounds
-          </div>
-          <h1 style={{ marginBottom: 'var(--space-4)', color: 'var(--white)' }}>
-            {displayName}&apos;s{' '}
-            <span style={{ color: primaryColor }}>Research Store</span>
+          <h1 style={{ marginBottom: 'var(--space-3)', color: 'var(--white)', fontSize: '1.6rem' }}>
+            {displayName}&apos;s Research Store
           </h1>
           {agent.tagline && (
-            <p style={{ fontSize: '1rem', color: 'var(--silver-light)', marginBottom: 'var(--space-8)', maxWidth: 500, margin: '0 auto var(--space-8)' }}>
+            <p style={{ fontSize: '1rem', color: 'var(--silver-light)', marginBottom: 'var(--space-4)', maxWidth: 500, margin: '0 auto var(--space-4)' }}>
               {agent.tagline}
             </p>
           )}
           {agent.bio && (
-            <p style={{ fontSize: '0.9rem', color: 'var(--grey-400)', maxWidth: 500, margin: '0 auto var(--space-8)', lineHeight: 1.7 }}>
+            <p style={{ fontSize: '0.9rem', color: 'var(--grey-400)', maxWidth: 500, margin: '0 auto var(--space-4)', lineHeight: 1.7 }}>
               {agent.bio}
             </p>
           )}
@@ -256,11 +252,8 @@ export default async function AgentStorefrontPage({ params }: Props) {
       </section>
 
       {/* Products */}
-      <section className="section" style={{ paddingTop: 'var(--space-8)' }}>
+      <section className="section" style={{ paddingTop: 'var(--space-4)' }}>
         <div className="container">
-          <h2 style={{ marginBottom: 'var(--space-8)', fontSize: '1.4rem', fontFamily: 'var(--font-brand)', color: 'var(--white)' }}>
-            Available Research Compounds
-          </h2>
           <AgentStorefrontGrid
             products={products as any}
             inventoryMap={Object.fromEntries(inventoryMap)}
@@ -268,6 +261,7 @@ export default async function AgentStorefrontPage({ params }: Props) {
             agentSlug={agentSlug}
             initialWishlistIds={initialWishlistIds}
             agentId={agent.id}
+            coaByProductId={coaByProductId}
           />
         </div>
       </section>
