@@ -1,3 +1,4 @@
+import type React from 'react';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { createClient, createServiceClient } from '@/lib/supabase/server';
@@ -85,6 +86,44 @@ export default async function RecentlyViewedPage() {
   }
 
   const items = ((rows as unknown as ItemRow[]) ?? []).filter(r => r.products && r.products.is_active && !r.products.is_banned);
+
+  // ─── Trending Now ───────────────────────────────────────────────────────
+  // Top products by units sold in the last 60 days. Joined to the master
+  // products table for image + category. Visible to everyone — the link
+  // routes back to the researcher's referring agent storefront when known.
+  interface TrendingRow {
+    id: string;
+    name: string;
+    image_url: string | null;
+    category: string | null;
+  }
+  const trending: TrendingRow[] = [];
+  try {
+    const { data: pop } = await service
+      .from('product_popular_60d')
+      .select('product_id, units')
+      .order('units', { ascending: false })
+      .limit(24);
+    const popIds = ((pop ?? []) as Array<{ product_id: string }>).map(r => r.product_id);
+    if (popIds.length > 0) {
+      const { data: prods } = await service
+        .from('products')
+        .select('id, name, image_url, category, is_active, is_banned')
+        .in('id', popIds);
+      const byId = new Map<string, TrendingRow>();
+      for (const p of (prods ?? []) as Array<{ id: string; name: string; image_url: string | null; category: string | null; is_active: boolean | null; is_banned: boolean | null }>) {
+        if (p.is_active === false || p.is_banned === true) continue;
+        byId.set(p.id, { id: p.id, name: p.name, image_url: p.image_url, category: p.category });
+      }
+      for (const pid of popIds) {
+        if (trending.length >= 8) break;
+        const row = byId.get(pid);
+        if (row) trending.push(row);
+      }
+    }
+  } catch {
+    // Best-effort — render an empty section.
+  }
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--black)', padding: 'var(--space-6) var(--space-4)' }}>
@@ -211,6 +250,101 @@ export default async function RecentlyViewedPage() {
                 );
               })}
             </ul>
+          </div>
+        )}
+
+        {trending.length > 0 && (
+          <div className="card-metal" style={{ marginTop: 'var(--space-6)', padding: 'var(--space-5) var(--space-5) var(--space-6)' }}>
+            <h2 style={{ color: 'var(--white)', fontSize: '1.05rem', fontFamily: 'var(--font-brand)', marginBottom: 'var(--space-2)' }}>
+              Trending Now
+            </h2>
+            <p style={{ color: 'var(--silver)', fontSize: '0.85rem', marginBottom: 'var(--space-4)' }}>
+              The Top Eight Products Researchers Have Ordered In The Last Sixty Days.
+            </p>
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))',
+                gap: 'var(--space-3)',
+              }}
+            >
+              {trending.map((t) => {
+                const inner = (
+                  <>
+                    <div
+                      style={{
+                        width: '100%',
+                        aspectRatio: '1 / 1',
+                        background: 'var(--black-2)',
+                        borderRadius: 'var(--radius-md)',
+                        overflow: 'hidden',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        marginBottom: 8,
+                      }}
+                    >
+                      {t.image_url ? (
+                        /* eslint-disable-next-line @next/next/no-img-element */
+                        <img
+                          src={t.image_url}
+                          alt={t.name}
+                          style={{ width: '100%', height: '100%', objectFit: 'contain', padding: 8 }}
+                        />
+                      ) : (
+                        <span style={{ color: 'var(--grey-600)', fontSize: '0.65rem' }}>No Image</span>
+                      )}
+                    </div>
+                    <div
+                      style={{
+                        color: 'var(--white)',
+                        fontWeight: 700,
+                        fontSize: '0.82rem',
+                        lineHeight: 1.25,
+                        marginBottom: 4,
+                        display: '-webkit-box',
+                        WebkitLineClamp: 2,
+                        WebkitBoxOrient: 'vertical',
+                        overflow: 'hidden',
+                      }}
+                    >
+                      {t.name}
+                    </div>
+                    {t.category && (
+                      <div style={{ color: 'var(--grey-500)', fontSize: '0.7rem' }}>
+                        {t.category}
+                      </div>
+                    )}
+                  </>
+                );
+                const baseStyle: React.CSSProperties = {
+                  display: 'flex',
+                  flexDirection: 'column',
+                  padding: 10,
+                  background: 'var(--surface-2)',
+                  border: '1px solid rgba(255,255,255,0.06)',
+                  borderRadius: 'var(--radius-lg)',
+                  textDecoration: 'none',
+                  color: 'var(--white)',
+                };
+                if (storefrontSlug) {
+                  return (
+                    <Link
+                      key={t.id}
+                      href={`/${storefrontSlug}?product=${encodeURIComponent(t.id)}`}
+                      style={baseStyle}
+                    >
+                      {inner}
+                    </Link>
+                  );
+                }
+                return (
+                  <div key={t.id} style={baseStyle}>
+                    {inner}
+                  </div>
+                );
+              })}
+            </div>
           </div>
         )}
       </div>
