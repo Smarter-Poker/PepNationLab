@@ -56,3 +56,48 @@ export const GetMessagesSchema = z.object({
   limit: z.number().int().min(1).max(100).default(50).optional(),
 });
 export type GetMessagesInput = z.infer<typeof GetMessagesSchema>;
+
+// Phase 9: groups / participants / mute / archive
+
+export const AddParticipantSchema = z.object({
+  conversationId: z.string().uuid(),
+  userId: z.string().uuid(),
+  role: z.enum(['admin', 'moderator', 'member']).optional(),
+});
+export type AddParticipantInput = z.infer<typeof AddParticipantSchema>;
+
+export const RemoveParticipantSchema = z.object({
+  conversationId: z.string().uuid(),
+  userId: z.string().uuid(),
+});
+export type RemoveParticipantInput = z.infer<typeof RemoveParticipantSchema>;
+
+export const SetParticipantRoleSchema = z.object({
+  conversationId: z.string().uuid(),
+  userId: z.string().uuid(),
+  role: z.enum(['owner', 'admin', 'moderator', 'member']),
+});
+export type SetParticipantRoleInput = z.infer<typeof SetParticipantRoleSchema>;
+
+export const MuteConversationSchema = z.object({
+  conversationId: z.string().uuid(),
+  muteUntil: z.string().datetime().optional(),
+  unmute: z.boolean().optional(),
+});
+export type MuteConversationInput = z.infer<typeof MuteConversationSchema>;
+
+export const ArchiveConversationSchema = z.object({
+  conversationId: z.string().uuid(),
+  archived: z.boolean(),
+});
+export type ArchiveConversationInput = z.infer<typeof ArchiveConversationSchema>;
+
+export const LeaveConversationSchema = z.object({
+  conversationId: z.string().uuid(),
+});
+export type LeaveConversationInput = z.infer<typeof LeaveConversationSchema>;
+
+export const ListParticipantsSchema = z.object({
+  conversationId: z.string().uuid(),
+});
+export type ListParticipantsInput = z.infer<typeof ListParticipantsSchema>;

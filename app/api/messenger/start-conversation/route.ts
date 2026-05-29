@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
 import { assertSameOrigin } from '@/lib/csrf';
-import { requireSession } from '@/lib/messenger/server';
+import { requireSession, canInvite } from '@/lib/messenger/server';
 import { StartConversationSchema } from '@/lib/messenger/schemas';
 
+export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 export async function POST(req: NextRequest) {
@@ -21,6 +22,17 @@ export async function POST(req: NextRequest) {
 
   const svc = await createServiceClient();
   const ids = Array.from(new Set([user.id, ...parsed.data.participantIds]));
+
+  // Phase 9: enforce hierarchy on every invitee. Direct conversations and
+  // groups both go through this gate. Self is always allowed (filtered by
+  // the helper). Returns 403 with the offending user ID on first failure.
+  for (const targetId of parsed.data.participantIds) {
+    if (targetId === user.id) continue;
+    const allowed = await canInvite(user.id, targetId);
+    if (!allowed) {
+      return NextResponse.json({ error: 'Cannot Invite User', userId: targetId }, { status: 403 });
+    }
+  }
 
   if (parsed.data.type === 'direct' && ids.length === 2) {
     const { data: existingId } = await svc.rpc('fn_find_direct_conversation', { a: ids[0], b: ids[1] });

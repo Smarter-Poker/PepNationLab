@@ -1,11 +1,12 @@
 'use client';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useMessengerStore } from '@/stores/messengerStore';
-import type { Message, Reaction } from '@/lib/messenger/types';
-import { MessageCircle } from 'lucide-react';
+import type { ConversationListItem, Message, Reaction } from '@/lib/messenger/types';
+import { MessageCircle, Info } from 'lucide-react';
 import MessageBubble from './MessageBubble';
 import MessageComposer from './MessageComposer';
 import TypingIndicator from './TypingIndicator';
+import GroupInfoDrawer from './GroupInfoDrawer';
 import { toast } from 'sonner';
 import {
   subscribeMessages,
@@ -21,8 +22,6 @@ interface Props {
 
 const TYPING_TTL_MS = 4000;
 
-// Audit fix: stable channel suffix derived from the message ID list so the
-// reaction channel name is unique to the current set, not just "first id".
 function stableKey(parts: string[]): string {
   let h = 5381;
   for (const p of parts) {
@@ -32,6 +31,17 @@ function stableKey(parts: string[]): string {
     }
   }
   return (h >>> 0).toString(36);
+}
+
+function resolveConversationLabel(c: ConversationListItem | undefined): string {
+  if (!c) return 'Conversation';
+  if (c.title && c.title.trim().length > 0) return c.title;
+  if (c.type === 'direct') {
+    if (c.counterparty_full_name && c.counterparty_full_name.trim().length > 0) return c.counterparty_full_name;
+    if (c.counterparty_username && c.counterparty_username.trim().length > 0) return c.counterparty_username;
+    return 'Direct Message';
+  }
+  return 'Conversation';
 }
 
 async function markConversationRead(conversationId: string, lastReadMessageId: string) {
@@ -60,12 +70,14 @@ export default function MessagePane({ userId }: Props) {
   const [replyTo, setReplyTo] = useState<Message | null>(null);
   const [reactionsByMsg, setReactionsByMsg] = useState<Record<string, Reaction[]>>({});
   const [typingUserIds, setTypingUserIds] = useState<string[]>([]);
+  const [infoOpen, setInfoOpen] = useState(false);
 
   const typingExpiryRef = useRef<Record<string, number>>({});
   const typingSweeperRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
     setReplyTo(null);
+    setInfoOpen(false);
   }, [activeId]);
 
   useEffect(() => {
@@ -91,9 +103,6 @@ export default function MessagePane({ userId }: Props) {
           (map[r.message_id] ??= []).push(r);
         });
         setReactionsByMsg(map);
-        // Audit fix: mark conversation read when the user opens it, so the
-        // unread badge on the conversation list drops to zero. The previous
-        // build never called this endpoint, leaving badges permanently stale.
         const lastId = list.length > 0 ? list[list.length - 1].id : null;
         if (lastId) void markConversationRead(activeId, lastId);
       } finally {
@@ -112,7 +121,6 @@ export default function MessagePane({ userId }: Props) {
       onInsert: (m) => {
         if (m.sender_id === userId) return;
         appendMessage(activeId, m);
-        // Audit fix: clear unread for messages the user is actively viewing.
         void markConversationRead(activeId, m.id);
       },
       onUpdate: (m) => updateMessage(activeId, m),
@@ -151,9 +159,6 @@ export default function MessagePane({ userId }: Props) {
     };
   }, [activeId, userId, appendMessage, updateMessage, removeMessage]);
 
-  // Audit fix: also bump the local conversation list unread to zero when
-  // we activate -- the API call lands eventually but the optimistic update
-  // prevents the badge from flashing on a quick switch.
   useEffect(() => {
     if (!activeId) return;
     if (!conversations.some((c) => c.conversation_id === activeId && (c.unread_count ?? 0) > 0)) return;
@@ -180,10 +185,6 @@ export default function MessagePane({ userId }: Props) {
       onInsert: (r) => {
         setReactionsByMsg((prev) => {
           const arr = prev[r.message_id] ?? [];
-          // Audit fix: when the realtime echo of our OWN optimistic reaction
-          // arrives, replace the temp `r-...` entry with the server row so
-          // the visible count stays correct. For other users, dedupe by
-          // (user_id, emoji) -- one user can only hold one of an emoji.
           if (r.user_id === userId) {
             const withoutTemp = arr.filter(
               (x) => !(x.user_id === userId && x.emoji === r.emoji && x.id.startsWith('r-')),
@@ -354,6 +355,8 @@ export default function MessagePane({ userId }: Props) {
 
   const messages = messagesByConv[activeId] ?? [];
   const loading = loadingByConv[activeId] ?? false;
+  const currentConv = conversations.find((c) => c.conversation_id === activeId);
+  const headerLabel = resolveConversationLabel(currentConv);
 
   return (
     <div
@@ -364,6 +367,50 @@ export default function MessagePane({ userId }: Props) {
         background: 'var(--surface-1, #0F1923)',
       }}
     >
+      <header
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '10px 14px',
+          borderBottom: '1px solid var(--surface-3, #1D2D3E)',
+          background: 'var(--surface-2, #162230)',
+        }}
+      >
+        <div
+          style={{
+            fontWeight: 700,
+            fontSize: '0.95rem',
+            color: 'var(--white, #FFFFFF)',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+          }}
+        >
+          {headerLabel}
+        </div>
+        <button
+          type="button"
+          onClick={() => setInfoOpen(true)}
+          aria-label="Conversation Info"
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 6,
+            padding: '4px 8px',
+            borderRadius: 6,
+            border: '1px solid var(--surface-3, #1D2D3E)',
+            background: 'transparent',
+            color: 'var(--white, #FFFFFF)',
+            cursor: 'pointer',
+            fontSize: '0.78rem',
+            fontWeight: 600,
+          }}
+        >
+          <Info size={12} aria-hidden="true" />
+          Info
+        </button>
+      </header>
       <div style={{ flex: 1, overflowY: 'auto', padding: 16, display: 'flex', flexDirection: 'column', gap: 8 }}>
         {loading && messages.length === 0 ? (
           <div style={{ color: 'var(--grey-400, #A8B4C0)', textAlign: 'center', marginTop: 32 }}>
@@ -396,6 +443,9 @@ export default function MessagePane({ userId }: Props) {
         replyTo={replyTo}
         onClearReply={() => setReplyTo(null)}
       />
+      {infoOpen && currentConv && (
+        <GroupInfoDrawer conversation={currentConv} selfId={userId} onClose={() => setInfoOpen(false)} />
+      )}
     </div>
   );
 }

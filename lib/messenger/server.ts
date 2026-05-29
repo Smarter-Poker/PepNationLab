@@ -38,3 +38,60 @@ export async function isAdminUser(userId: string): Promise<boolean> {
   const { data } = await svc.from('profiles').select('role').eq('id', userId).maybeSingle();
   return data?.role === 'admin';
 }
+
+/**
+ * Hierarchy gate for messenger invitations. Mirrors the canMessage logic in
+ * the legacy app/api/messages/route.ts but exposed as a reusable helper.
+ *
+ *   admin       -> anyone (and anyone -> admin)
+ *   super_agent -> direct sub-agents (parent_agent_id = me) AND researchers
+ *                  whose referring agent is one of my direct sub-agents
+ *   agent       -> own researchers (referring_agent_id = me), own sub-agents
+ *                  (parent_agent_id = me), and my own parent super_agent
+ *   researcher  -> only my referring agent
+ */
+export async function canInvite(callerId: string, targetUserId: string): Promise<boolean> {
+  if (callerId === targetUserId) return true;
+  const svc = await createServiceClient();
+  const { data: caller } = await svc
+    .from('profiles')
+    .select('id, role, parent_agent_id, referring_agent_id')
+    .eq('id', callerId)
+    .maybeSingle();
+  const { data: target } = await svc
+    .from('profiles')
+    .select('id, role, parent_agent_id, referring_agent_id')
+    .eq('id', targetUserId)
+    .maybeSingle();
+  if (!caller || !target) return false;
+
+  if (caller.role === 'admin') return true;
+  if (target.role === 'admin') return true;
+
+  if (caller.role === 'super_agent') {
+    if (target.parent_agent_id === caller.id) return true;
+    if (target.referring_agent_id) {
+      const { data: midAgent } = await svc
+        .from('profiles')
+        .select('id, parent_agent_id')
+        .eq('id', target.referring_agent_id)
+        .maybeSingle();
+      if (midAgent?.parent_agent_id === caller.id) return true;
+    }
+    return false;
+  }
+
+  if (caller.role === 'agent') {
+    if (target.referring_agent_id === caller.id) return true;
+    if (target.parent_agent_id === caller.id) return true;
+    if (caller.parent_agent_id && target.id === caller.parent_agent_id) return true;
+    return false;
+  }
+
+  if (caller.role === 'researcher') {
+    if (caller.referring_agent_id && target.id === caller.referring_agent_id) return true;
+    return false;
+  }
+
+  return false;
+}

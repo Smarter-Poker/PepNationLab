@@ -70,7 +70,7 @@ export default function MessengerShell({ userId }: Props) {
             <div style={{ fontWeight: 700, fontSize: '1rem' }}>Messenger</div>
             <SearchBar />
           </header>
-          <ConversationList />
+          <ConversationList selfId={userId} />
         </aside>
         <MessagePane userId={userId} />
       </div>
