@@ -166,6 +166,7 @@ export default function Navbar() {
             <div style={{ width: 120, height: 32, borderRadius: 'var(--radius-md)', background: 'var(--surface-2)' }} className="skeleton" />
           ) : user ? (
             <>
+              <Link href="/messenger" className="btn btn-ghost btn-sm">Messenger</Link>
               {role === 'admin' ? (
                 <Link href="/admin" className="btn btn-ghost btn-sm">Admin Panel</Link>
               ) : role.includes('agent') ? (
@@ -283,6 +284,7 @@ export default function Navbar() {
             <div style={{ height: 40, borderRadius: 'var(--radius-md)', background: 'var(--surface-2)' }} className="skeleton" />
           ) : user ? (
             <>
+              <Link href="/messenger" onClick={() => setMobileOpen(false)} className="btn btn-ghost w-full">Messenger</Link>
               {role === 'admin' ? (
                 <Link href="/admin" onClick={() => setMobileOpen(false)} className="btn btn-ghost w-full">Admin Panel</Link>
               ) : role.includes('agent') ? (

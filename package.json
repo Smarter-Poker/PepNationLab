@@ -25,7 +25,8 @@
     "recharts": "^3.8.1",
     "shippo": "^2.18.0",
     "sonner": "^2.0.7",
-    "zod": "^4.4.3"
+    "zod": "^4.4.3",
+    "zustand": "^5.0.14"
   },
   "devDependencies": {
     "@types/node": "^20",
