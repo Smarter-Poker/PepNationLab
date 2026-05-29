@@ -13,6 +13,8 @@ import PinnedBar from './PinnedBar';
 import ThreadDrawer from './ThreadDrawer';
 import BookmarksDrawer from './BookmarksDrawer';
 import CallButton from './CallButton';
+import ReportModal from './ReportModal';
+import BlockList from './BlockList';
 import { toast } from 'sonner';
 import {
   subscribeMessages,
@@ -97,6 +99,10 @@ export default function MessagePane({ userId, activeCall, setActiveCall }: Props
   const [threadParentId, setThreadParentId] = useState<string | null>(null);
   const [bookmarksOpen, setBookmarksOpen] = useState(false);
   const [themeValue, setThemeValue] = useState<ThemeValue>('default');
+  // Phase 12: blocks + report modal
+  const [blockedIds, setBlockedIds] = useState<Set<string>>(new Set());
+  const [reportTarget, setReportTarget] = useState<Message | null>(null);
+  const [blockListOpen, setBlockListOpen] = useState(false);
 
   // activeCall is hoisted to MessengerShell so IncomingCallToast accept-handlers can set it.
   void activeCall;
@@ -109,7 +115,32 @@ export default function MessagePane({ userId, activeCall, setActiveCall }: Props
     setInfoOpen(false);
     setThreadParentId(null);
     setBookmarksOpen(false);
+    setReportTarget(null);
   }, [activeId]);
+
+  // Phase 12: fetch the caller's block list once per session (re-fetches when
+  // activeId changes so newly-added blocks made elsewhere in the UI propagate).
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch('/api/messenger/list-blocks', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: '{}',
+        });
+        if (!res.ok) return;
+        const json = (await res.json()) as { blocks?: Array<{ blocked_id: string }> };
+        if (cancelled) return;
+        setBlockedIds(new Set((json.blocks ?? []).map((b) => b.blocked_id)));
+      } catch {
+        // non-fatal
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [activeId, blockListOpen]);
 
   // Resolve self role + theme for the active conversation. Drives Pin/Unpin
   // policy in PinnedBar and applies the per-user theme override to the pane.
@@ -622,6 +653,7 @@ export default function MessagePane({ userId, activeCall, setActiveCall }: Props
   const currentConv = conversations.find((c) => c.conversation_id === activeId);
   const headerLabel = resolveConversationLabel(currentConv);
   const conversationType = currentConv?.type;
+  const isDirectConv = conversationType === 'direct';
 
   return (
     <div
@@ -695,28 +727,61 @@ export default function MessagePane({ userId, activeCall, setActiveCall }: Props
             No Messages Yet. Send The First One Below.
           </div>
         ) : (
-          messages.map((m) => (
-            <MessageBubble
-              key={m.id}
-              message={m}
-              isOwn={m.sender_id === userId}
-              reactions={reactionsByMsg[m.id] ?? []}
-              selfId={userId}
-              selfRole={selfRole}
-              conversationType={conversationType}
-              isPinned={pinnedIds.has(m.id)}
-              isBookmarked={bookmarkedIds.has(m.id)}
-              currentLabels={labelsByMsg[m.id] ?? []}
-              onReply={setReplyTo}
-              onReact={handleReact}
-              onEdit={handleEdit}
-              onDelete={handleDelete}
-              onPinToggle={handlePinToggle}
-              onBookmarkToggle={handleBookmarkToggle}
-              onLabelToggle={handleLabelToggle}
-              onThread={(parent) => setThreadParentId(parent.id)}
-            />
-          ))
+          messages
+            .filter((m) => {
+              // Phase 12: in direct conversations, fully hide messages from blocked
+              // senders. In groups we keep a placeholder so context flow is
+              // preserved -- handled below.
+              if (!isDirectConv) return true;
+              return !blockedIds.has(m.sender_id);
+            })
+            .map((m) => {
+              const isBlockedSender = blockedIds.has(m.sender_id) && m.sender_id !== userId;
+              if (isBlockedSender && !isDirectConv) {
+                return (
+                  <div
+                    key={m.id}
+                    data-msg-id={m.id}
+                    style={{
+                      alignSelf: 'flex-start',
+                      maxWidth: '70%',
+                      padding: '8px 12px',
+                      borderRadius: 14,
+                      background: 'var(--surface-2, #162230)',
+                      color: 'var(--grey-400, #A8B4C0)',
+                      fontStyle: 'italic',
+                      fontSize: '0.82rem',
+                      border: '1px dashed var(--surface-3, #1D2D3E)',
+                    }}
+                  >
+                    Message Hidden — Blocked User
+                  </div>
+                );
+              }
+              return (
+                <MessageBubble
+                  key={m.id}
+                  message={m}
+                  isOwn={m.sender_id === userId}
+                  reactions={reactionsByMsg[m.id] ?? []}
+                  selfId={userId}
+                  selfRole={selfRole}
+                  conversationType={conversationType}
+                  isPinned={pinnedIds.has(m.id)}
+                  isBookmarked={bookmarkedIds.has(m.id)}
+                  currentLabels={labelsByMsg[m.id] ?? []}
+                  onReply={setReplyTo}
+                  onReact={handleReact}
+                  onEdit={handleEdit}
+                  onDelete={handleDelete}
+                  onPinToggle={handlePinToggle}
+                  onBookmarkToggle={handleBookmarkToggle}
+                  onLabelToggle={handleLabelToggle}
+                  onThread={(parent) => setThreadParentId(parent.id)}
+                  onReport={(msg) => setReportTarget(msg)}
+                />
+              );
+            })
         )}
       </div>
       <TypingIndicator typingUserIds={typingUserIds} />
@@ -734,6 +799,7 @@ export default function MessagePane({ userId, activeCall, setActiveCall }: Props
           currentTheme={themeValue}
           onThemeChange={(next) => setThemeValue(next)}
           onOpenBookmarks={() => { setInfoOpen(false); setBookmarksOpen(true); }}
+          onOpenBlockList={() => { setInfoOpen(false); setBlockListOpen(true); }}
         />
       )}
       {threadParentId && (
@@ -749,6 +815,13 @@ export default function MessagePane({ userId, activeCall, setActiveCall }: Props
           onJump={handleJumpAcrossConv}
         />
       )}
+      {reportTarget && (
+        <ReportModal
+          message={reportTarget}
+          onClose={() => setReportTarget(null)}
+        />
+      )}
+      {blockListOpen && <BlockList onClose={() => setBlockListOpen(false)} />}
     </div>
   );
 }

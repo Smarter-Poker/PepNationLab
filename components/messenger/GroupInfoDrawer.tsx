@@ -1,6 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
-import { X, UserPlus, Bookmark } from 'lucide-react';
+import { X, UserPlus, Bookmark, Shield } from 'lucide-react';
 import { toast } from 'sonner';
 import { useMessengerStore } from '@/stores/messengerStore';
 import type { ConversationListItem, ParticipantRole } from '@/lib/messenger/types';
@@ -16,6 +16,7 @@ interface Props {
   currentTheme?: ThemeValue;
   onThemeChange?: (next: ThemeValue) => void;
   onOpenBookmarks?: () => void;
+  onOpenBlockList?: () => void;
 }
 
 export default function GroupInfoDrawer({
@@ -25,6 +26,7 @@ export default function GroupInfoDrawer({
   currentTheme = 'default',
   onThemeChange,
   onOpenBookmarks,
+  onOpenBlockList,
 }: Props) {
   const conversations = useMessengerStore((s) => s.conversations);
   const setConversations = useMessengerStore((s) => s.setConversations);
@@ -293,6 +295,33 @@ export default function GroupInfoDrawer({
             >
               <Bookmark size={14} aria-hidden="true" />
               Open Bookmarks
+            </button>
+          </section>
+
+          <section style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            <div style={{ fontSize: '0.74rem', color: 'var(--grey-400, #A8B4C0)', textTransform: 'uppercase' }}>
+              Safety
+            </div>
+            <button
+              type="button"
+              onClick={() => onOpenBlockList?.()}
+              style={{
+                padding: '8px 12px',
+                borderRadius: 8,
+                border: '1px solid var(--surface-3, #1D2D3E)',
+                background: 'var(--surface-1, #0F1923)',
+                color: 'var(--white, #FFFFFF)',
+                cursor: 'pointer',
+                fontWeight: 600,
+                fontSize: '0.86rem',
+                textAlign: 'left',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 8,
+              }}
+            >
+              <Shield size={14} aria-hidden="true" />
+              Blocked Users
             </button>
           </section>
 
