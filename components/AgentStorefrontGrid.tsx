@@ -816,17 +816,23 @@ export default function AgentStorefrontGrid({ products, inventoryMap, primaryCol
                         .filter(Boolean);
 
                       try {
-                        // Write to pnl_storefront_cart — CheckoutForm reads this key first,
-                        // bypassing CartContext's refresh cycle (which validates agent_product IDs
-                        // and would wipe items that use master product_id).
-                        localStorage.setItem('pnl_storefront_cart', JSON.stringify(pnlCart));
+                        // Write to a per-agent scoped cart key so Agent A's cart
+                        // can NEVER contaminate Agent B's checkout. Closed-loop isolation.
+                        localStorage.setItem(`pnl_storefront_cart_${agentSlug}`, JSON.stringify(pnlCart));
+                        // Wipe any stale storefront carts from OTHER agents to prevent
+                        // cross-contamination if user visited multiple storefronts.
+                        Object.keys(localStorage)
+                          .filter(k => k.startsWith('pnl_storefront_cart_') && k !== `pnl_storefront_cart_${agentSlug}`)
+                          .forEach(k => localStorage.removeItem(k));
+                        localStorage.removeItem('pnl_storefront_cart'); // legacy key cleanup
                         localStorage.removeItem(`cart_${agentSlug}`);
                         setCartItems({});
                       } catch (e) {
                         console.error('Failed to sync cart:', e);
                       }
                       setShowCartFloat(false);
-                      window.location.href = '/checkout';
+                      // Pass agentSlug in URL so checkout page enforces this agent's catalog only.
+                      window.location.href = `/checkout?agent=${encodeURIComponent(agentSlug)}`;
                     }}
                     style={{
                       display: 'block', width: '100%', textAlign: 'center', padding: '10px',

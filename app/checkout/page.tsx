@@ -4,12 +4,24 @@ import CheckoutForm from './CheckoutForm';
 
 export const dynamic = 'force-dynamic';
 
-export default async function CheckoutPage() {
+interface PageProps {
+  searchParams: Promise<{ agent?: string }>;
+}
+
+export default async function CheckoutPage({ searchParams }: PageProps) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
+  const params = await searchParams;
+  // Sanitize the agentSlug — only allow alphanumeric + hyphens/underscores
+  const rawAgent = params.agent ?? null;
+  const agentSlug = rawAgent && /^[a-zA-Z0-9_-]+$/.test(rawAgent) ? rawAgent : null;
+
   if (!user) {
-    redirect('/login?redirect=/checkout');
+    const redirectUrl = agentSlug
+      ? `/login?redirect=/checkout?agent=${encodeURIComponent(agentSlug)}`
+      : '/login?redirect=/checkout';
+    redirect(redirectUrl);
   }
 
   // Get profile
@@ -38,6 +50,7 @@ export default async function CheckoutPage() {
       userProfile={profile}
       userEmail={user.email ?? ''}
       tierMultipliers={tierMultipliers}
+      agentSlug={agentSlug}
     />
   );
 }

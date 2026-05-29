@@ -25,6 +25,8 @@ const CheckoutSchema = z.object({
   idempotencyKey: z.string().uuid().optional().nullable(),
   wholesale: z.boolean().optional(),
   creditRedeemed: z.number().min(0).optional(),
+  /** Which agent storefront initiated this checkout — used for closed-loop catalog validation */
+  agentSlug: z.string().regex(/^[a-zA-Z0-9_-]+$/).optional().nullable(),
 });
 
 export async function POST(request: NextRequest) {
@@ -71,6 +73,7 @@ export async function POST(request: NextRequest) {
       idempotencyKey,
       wholesale: explicitWholesale,
       creditRedeemed: requestedCredit,
+      agentSlug,
     } = validation.data;
 
     if (fulfillmentMethod === 'ship' && !shippingAddress) {
@@ -172,7 +175,29 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // --- PRICING ENGINE ---
+    // ── CLOSED-LOOP CATALOG GUARD ──────────────────────────────────────────────
+    // If an agentSlug was provided, EVERY product must be visible in that
+    // agent's catalog. This prevents cross-agent product injection and ensures
+    // each storefront is a fully closed business-inside-a-business.
+    if (agentSlug && agentProfile) {
+      const { data: visibleRows } = await serviceSupabase
+        .from('agent_products')
+        .select('product_id')
+        .eq('agent_id', agentProfile.id)
+        .eq('is_visible', true)
+        .in('product_id', items.map(i => i.id));
+
+      const visibleSet = new Set((visibleRows ?? []).map((r: any) => r.product_id as string));
+      const blocked = items.find(i => !visibleSet.has(i.id));
+      if (blocked) {
+        const blockedName = dbProducts.find(p => p.id === blocked.id)?.name ?? blocked.id;
+        return NextResponse.json(
+          { error: `Product "${blockedName}" Is Not Available Through This Agent's Store.` },
+          { status: 403 }
+        );
+      }
+    }
+    // ──────────────────────────────────────────────────────────────────────────
 
     // 1. Fetch Admin Default Multipliers (Tier 3 is standard retail)
     const { data: tiers } = await serviceSupabase.from('pricing_tiers').select('tier_name, multiplier');

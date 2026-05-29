@@ -17,6 +17,8 @@ interface CheckoutFormProps {
   userProfile: Profile;
   userEmail: string;
   tierMultipliers: Record<string, number>;
+  /** Which agent storefront initiated this checkout — enforces closed-loop isolation */
+  agentSlug?: string | null;
 }
 
 interface SavedAddress {
@@ -32,11 +34,17 @@ interface SavedAddress {
   is_default: boolean;
 }
 
-export default function CheckoutForm({ userProfile, userEmail, tierMultipliers }: CheckoutFormProps) {
+export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, agentSlug }: CheckoutFormProps) {
   const { cart: contextCart, cartSubtotal: contextSubtotal, clearCart } = useCart();
 
-  // Storefront orders written by AgentStorefrontGrid. These bypass the CartContext
-  // refresh (which validates agent_product ids, not master product ids).
+  // The per-agent cart key — ONLY reads this agent's cart, never another agent's.
+  // If no agentSlug (admin/direct checkout), reads legacy global key as fallback.
+  const storefrontCartKey = agentSlug
+    ? `pnl_storefront_cart_${agentSlug}`
+    : 'pnl_storefront_cart';
+
+  // Storefront orders written by AgentStorefrontGrid — bypass CartContext refresh
+  // (which validates agent_product ids, not master product ids).
   const [storefrontCart, setStorefrontCart] = useState<Array<{
     id: string; name: string; sku: string; quantity: number;
     retailPrice: number; costPrice: number; weightOz: number;
@@ -45,7 +53,7 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers }
 
   useEffect(() => {
     try {
-      const raw = localStorage.getItem('pnl_storefront_cart');
+      const raw = localStorage.getItem(storefrontCartKey);
       if (raw) {
         const parsed = JSON.parse(raw);
         if (Array.isArray(parsed) && parsed.length > 0) {
@@ -54,6 +62,8 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers }
       }
     } catch { /* non-blocking */ }
     setStorefrontLoaded(true);
+  // storefrontCartKey is stable (derived from prop) — safe dep
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Use storefront cart if present, otherwise fall back to CartContext
@@ -64,7 +74,8 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers }
 
   const clearAllCarts = () => {
     clearCart();
-    try { localStorage.removeItem('pnl_storefront_cart'); } catch { /* ok */ }
+    // Only clear THIS agent's cart key — never touch other agents' carts
+    try { localStorage.removeItem(storefrontCartKey); } catch { /* ok */ }
     setStorefrontCart([]);
   };
 
@@ -344,6 +355,8 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers }
           couponCode: appliedCoupon?.code ?? null,
           idempotencyKey: getIdempotencyKey(),
           creditRedeemed,
+          // Closed-loop: tells server which agent's catalog to validate against
+          agentSlug: agentSlug ?? null,
         })
       });
 
