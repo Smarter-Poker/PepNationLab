@@ -2,6 +2,7 @@
 import { useEffect } from 'react';
 import ConversationList from './ConversationList';
 import MessagePane from './MessagePane';
+import SearchBar from './SearchBar';
 
 interface Props {
   userId: string;
@@ -59,13 +60,15 @@ export default function MessengerShell({ userId }: Props) {
         >
           <header
             style={{
-              padding: '14px 16px',
+              padding: '10px 12px',
               borderBottom: '1px solid var(--surface-3, #1D2D3E)',
-              fontWeight: 700,
-              fontSize: '1rem',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 8,
             }}
           >
-            Messenger
+            <div style={{ fontWeight: 700, fontSize: '1rem' }}>Messenger</div>
+            <SearchBar />
           </header>
           <ConversationList />
         </aside>
