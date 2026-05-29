@@ -81,12 +81,14 @@ export async function POST(request: NextRequest) {
     }
 
     // Idempotency replay: if a request with this key already produced an
-    // order, return that order rather than creating a duplicate.
+    // order for THIS user, return that order rather than creating a duplicate.
+    // Scoped to buyer_id so a user cannot replay another user's order.
     if (idempotencyKey) {
       const { data: existing } = await serviceSupabase
         .from('orders')
         .select('id, total, status')
         .eq('idempotency_key', idempotencyKey)
+        .eq('buyer_id', user.id)
         .maybeSingle();
       if (existing) {
         return NextResponse.json({
@@ -525,6 +527,7 @@ export async function POST(request: NextRequest) {
           .from('orders')
           .select('id, total')
           .eq('idempotency_key', idempotencyKey)
+          .eq('buyer_id', user.id)
           .maybeSingle();
         if (existing) {
           return NextResponse.json({
