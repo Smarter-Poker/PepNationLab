@@ -217,7 +217,7 @@ export default async function AgentStorefrontPage({ params }: Props) {
       </nav>
 
       <section style={{
-        padding: 'var(--space-6) var(--space-6) var(--space-4)',
+        padding: 'var(--space-6) var(--space-6) var(--space-2)',
         textAlign: 'center',
         background: `radial-gradient(ellipse at 50% 0%, ${primaryColor}10 0%, transparent 70%)`
       }}>
@@ -247,13 +247,13 @@ export default async function AgentStorefrontPage({ params }: Props) {
               <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
               <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
             </svg>
-            <strong style={{ color: 'var(--red)' }}>Research Use Only</strong> — Not For Human Consumption
+            <strong style={{ color: 'var(--red)' }}>Research Use Only</strong> Not For Human Consumption
           </div>
         </div>
       </section>
 
       {/* Products */}
-      <section className="section" style={{ paddingTop: 'var(--space-4)' }}>
+      <section className="section" style={{ paddingTop: 'var(--space-2)' }}>
         <div className="container">
           <AgentStorefrontGrid
             products={products as any}

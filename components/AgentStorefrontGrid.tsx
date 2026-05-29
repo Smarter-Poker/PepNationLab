@@ -349,17 +349,13 @@ export default function AgentStorefrontGrid({ products, inventoryMap, primaryCol
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column' }}>
-      {/* Product count */}
-      <div style={{ fontSize: '0.8rem', color: 'var(--grey-400)', paddingLeft: 'var(--space-1)', marginBottom: 'var(--space-2)' }}>
-        {filteredProducts.length} {filteredProducts.length === 1 ? 'Product' : 'Products'} Found
-      </div>
 
       {/* Search & Filter Bar */}
       <div style={{
         display: 'flex', flexWrap: 'wrap', gap: 'var(--space-3)', alignItems: 'center',
         padding: 'var(--space-4)', background: 'rgba(255,255,255,0.03)',
         borderRadius: 'var(--radius-lg)', border: '1px solid rgba(255,255,255,0.06)',
-        marginBottom: 'var(--space-2)'
+        marginBottom: 'var(--space-3)'
       }}>
         <div style={{ flex: '1 1 240px', position: 'relative' }}>
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--grey-400)" strokeWidth="2"
@@ -570,7 +566,7 @@ export default function AgentStorefrontGrid({ products, inventoryMap, primaryCol
                 {group.imageUrl ? (
                   /* eslint-disable-next-line @next/next/no-img-element */
                   <img src={group.imageUrl} alt={group.name}
-                    style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.4s ease' }}
+                    style={{ width: '100%', height: '100%', objectFit: 'contain', objectPosition: 'center', padding: '8px', transition: 'transform 0.4s ease' }}
                     className="store-image-hover"
                     onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
                 ) : (
@@ -656,20 +652,17 @@ export default function AgentStorefrontGrid({ products, inventoryMap, primaryCol
                     const perVialOriginal = perVialBase;
                     return (
                       <>
-                        <div style={{ fontSize: '0.85rem', color: 'var(--grey-300)', marginBottom: 4 }}>
-                          {size}{measure} · from
-                        </div>
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
                           {isOnSale && (
-                            <span style={{ fontSize: '1rem', color: 'var(--grey-500)', textDecoration: 'line-through', fontWeight: 600 }}>
+                            <span style={{ fontSize: '0.95rem', color: 'var(--grey-500)', textDecoration: 'line-through', fontWeight: 600 }}>
                               ${perVialOriginal.toFixed(2)}
                             </span>
                           )}
                           <span style={{
-                            fontSize: '1.3rem', fontWeight: 800, color: isOnSale ? '#F56565' : primaryColor,
+                            fontSize: '1.2rem', fontWeight: 800, color: isOnSale ? '#F56565' : primaryColor,
                             fontFamily: 'var(--font-brand)', textShadow: `0 0 10px ${isOnSale ? 'rgba(245,101,101,0.4)' : primaryColor + '40'}`
                           }}>
-                            ${perVialDisplay.toFixed(2)}/vial
+                            {size}{measure} Vials &nbsp;${perVialDisplay.toFixed(2)}
                           </span>
                         </div>
                       </>
