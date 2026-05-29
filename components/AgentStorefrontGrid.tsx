@@ -19,6 +19,7 @@ interface ProductItem {
     backorder_days: number;
     unit_size: string | null;
     unit_measure: string | null;
+    weight_oz: number | null;
     inventory_count?: number | null;
     low_stock_threshold?: number | null;
   };
@@ -825,7 +826,9 @@ export default function AgentStorefrontGrid({ products, inventoryMap, primaryCol
                             // costPrice = same as retail here; server-side API computes the real tier price.
                             // For checkout display, agentSelfBuy flag tells CheckoutForm to show "Agent Direct Pricing".
                             costPrice: perVial,
-                            weightOz: 0.5,
+                            // Use actual product weight; fall back to 0.5 oz if not set.
+                            // weight_oz is fetched from products table via the storefront page query.
+                            weightOz: Number(item.products?.weight_oz) || 0.5,
                             agentSelfBuy: isStorefrontOwner,
                           };
                         })

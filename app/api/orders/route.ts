@@ -160,7 +160,14 @@ export async function POST(request: NextRequest) {
     // Check for banned or deactivated products and inventory limits
     for (const cartItem of items) {
       const dbProduct = dbProducts.find(p => p.id === cartItem.id);
-      if (!dbProduct) continue;
+      if (!dbProduct) {
+        // Hard fail — consistent with the pricing loop below. A missing product
+        // at this stage means the cart is stale; reject cleanly.
+        return NextResponse.json(
+          { error: `Product ID "${cartItem.id}" Is No Longer Available. Please Return To The Store And Refresh Your Cart.` },
+          { status: 400 }
+        );
+      }
       
       if (dbProduct.is_banned || !dbProduct.is_active) {
         return NextResponse.json({ error: `Product "${dbProduct.name}" Is Unavailable For Sale.` }, { status: 400 });

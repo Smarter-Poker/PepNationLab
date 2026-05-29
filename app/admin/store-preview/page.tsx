@@ -25,6 +25,7 @@ export default async function AdminStorePreviewPage() {
       base_cost,
       unit_size,
       unit_measure,
+      weight_oz,
       backorder_days,
       inventory_count,
       in_stock,
@@ -92,7 +93,8 @@ export default async function AdminStorePreviewPage() {
         in_stock: p.in_stock ?? count > 0,
         inventory_count: count,
         unit_size: p.unit_size,
-        unit_measure: p.unit_measure
+        unit_measure: p.unit_measure,
+        weight_oz: Number(p.weight_oz) || 0.5,
       }
     };
   });

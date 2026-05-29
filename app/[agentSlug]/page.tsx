@@ -76,6 +76,7 @@ export default async function AgentStorefrontPage({ params }: Props) {
         backorder_days,
         unit_size,
         unit_measure,
+        weight_oz,
         inventory_count,
         low_stock_threshold
       )
