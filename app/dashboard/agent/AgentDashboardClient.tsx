@@ -644,9 +644,9 @@ export default function AgentDashboardClient({
           </div>
         )}
 
-        {/* TAB: Overview */}
+        {/* TAB: Overview — breaks out of container for full-width image */}
         {activeTab === 'Overview' && (
-          <div style={{ animation: 'fadeIn 0.3s ease-out' }}>
+          <div style={{ animation: 'fadeIn 0.3s ease-out', marginLeft: 'calc(-1 * var(--space-6))', marginRight: 'calc(-1 * var(--space-6))', width: 'calc(100% + var(--space-6) * 2)' }}>
             <AgentOverview 
               activeResearchersCount={activeResearchersCount}
               activeOrdersCount={activeOrdersCount}

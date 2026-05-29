@@ -39,7 +39,6 @@ export default function AgentOverview({
         .dash-hero {
           position: relative;
           width: 100%;
-          margin: 0 auto;
         }
         .dash-hero-img {
           width: 100%;
@@ -111,7 +110,7 @@ export default function AgentOverview({
           />
         ))}
 
-        {/* Dynamic storefront URL — centered inside the dark input frame */}
+        {/* Dynamic storefront URL — inside the dark input frame */}
         <span
           className="dash-url"
           style={{
@@ -125,7 +124,7 @@ export default function AgentOverview({
           {storefrontUrl}
         </span>
 
-        {/* Invisible clickable zone over "Copy Link" — moved up and right */}
+        {/* Invisible clickable zone over "Copy Link" button */}
         <button
           className="dash-btn-zone"
           onClick={copyStorefrontLink}
@@ -133,7 +132,7 @@ export default function AgentOverview({
           style={{ bottom: '7%', right: '20%', width: '14%', height: '5.5%' }}
         />
 
-        {/* Invisible clickable zone over "Visit Store" — moved up */}
+        {/* Invisible clickable zone over "Visit Store" button */}
         <a
           href={storefrontUrl}
           target="_blank"
