@@ -2,6 +2,12 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
+import { createClient } from '@/lib/supabase/client';
+import {
+  subscribeMyParticipants,
+  unsubscribe,
+  type ParticipantUnreadRow,
+} from '@/lib/messenger/realtime';
 
 interface InboxMessage {
   id: string;
@@ -14,8 +20,23 @@ interface InboxMessage {
   sender_profile?: { full_name: string | null; email: string; username: string | null };
 }
 
+interface MessengerConversationSummary {
+  conversation_id: string;
+  unread_count: number | null;
+  is_muted: boolean | null;
+}
+
 /**
  * Premium message bell with unread badge + polished dropdown.
+ *
+ * Phase 14: replaced the 30s poll-and-refetch on /api/messages with a
+ * Supabase Realtime subscription on messenger_participants (filtered to the
+ * caller). The initial unread count is hydrated from
+ * /api/messenger/get-conversations (sum of unread_count where !is_muted) and
+ * the legacy /api/messages?unread=true call is kept as a one-shot fallback
+ * for users on legacy notifications that never migrated to the messenger
+ * pipeline. Honors is_muted -- muted conversations do not contribute to the
+ * badge.
  */
 export default function MessageBell({ onViewAll, dropUp }: { onViewAll: () => void; dropUp?: boolean }) {
   const [unreadCount, setUnreadCount] = useState(0);
@@ -23,20 +44,113 @@ export default function MessageBell({ onViewAll, dropUp }: { onViewAll: () => vo
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+  // Per-conversation map of (unread_count, is_muted). Recompute total by
+  // summing unread counts only on entries where is_muted is false.
+  const participantStateRef = useRef<Map<string, { unread: number; muted: boolean }>>(new Map());
 
-  const fetchUnread = useCallback(async () => {
-    try {
-      const res = await fetch('/api/messages?unread=true');
-      const json = await res.json();
-      if (res.ok) setUnreadCount(json.unreadCount ?? 0);
-    } catch { /* silent */ }
+  const recomputeTotal = useCallback(() => {
+    let total = 0;
+    participantStateRef.current.forEach((v) => {
+      if (!v.muted) total += v.unread;
+    });
+    setUnreadCount(total);
   }, []);
 
+  // Phase 14: one-time hydration from /api/messenger/get-conversations.
+  // Sums unread_count across all non-muted conversations.
+  const hydrateFromMessenger = useCallback(async () => {
+    try {
+      const res = await fetch('/api/messenger/get-conversations', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: '{}',
+      });
+      if (!res.ok) return false;
+      const json = (await res.json()) as { conversations?: MessengerConversationSummary[] };
+      const list = json.conversations ?? [];
+      const map = new Map<string, { unread: number; muted: boolean }>();
+      list.forEach((c) => {
+        map.set(c.conversation_id, {
+          unread: Math.max(0, c.unread_count ?? 0),
+          muted: Boolean(c.is_muted),
+        });
+      });
+      participantStateRef.current = map;
+      recomputeTotal();
+      return true;
+    } catch {
+      return false;
+    }
+  }, [recomputeTotal]);
+
+  // Legacy fallback for the /api/messages bell-only inbox (notifications,
+  // invoice messages, etc). This is best-effort and runs only as a fallback
+  // when the messenger hydrate returns 0 conversations -- it keeps the
+  // existing badge behaviour for users who never opened messenger.
+  const fetchLegacyUnread = useCallback(async () => {
+    try {
+      const res = await fetch('/api/messages?unread=true');
+      if (!res.ok) return;
+      const json = await res.json();
+      const legacy = Math.max(0, json.unreadCount ?? 0);
+      // Add legacy under a synthetic key so muting a single messenger conv
+      // does not nuke the legacy count.
+      if (legacy > 0) {
+        participantStateRef.current.set('__legacy__', { unread: legacy, muted: false });
+        recomputeTotal();
+      }
+    } catch {
+      /* silent */
+    }
+  }, [recomputeTotal]);
+
+  // Phase 14: hydrate once on mount + subscribe to Realtime changes on the
+  // caller's participant rows.
   useEffect(() => {
-    fetchUnread();
-    const interval = setInterval(fetchUnread, 30000);
-    return () => clearInterval(interval);
-  }, [fetchUnread]);
+    let cancelled = false;
+    let channel: ReturnType<typeof subscribeMyParticipants> | null = null;
+
+    (async () => {
+      const ok = await hydrateFromMessenger();
+      if (cancelled) return;
+      if (!ok) {
+        // If messenger fetch failed (e.g. user not logged in), fall back to legacy.
+        await fetchLegacyUnread();
+      } else if (participantStateRef.current.size === 0) {
+        // Messenger returned zero conversations -- still run the legacy fetch
+        // so users on the old inbox see their badge.
+        await fetchLegacyUnread();
+      }
+      if (cancelled) return;
+
+      // Resolve current user id for the Realtime filter.
+      try {
+        const supabase = createClient();
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+        if (!user || cancelled) return;
+        channel = subscribeMyParticipants(user.id, (row: ParticipantUnreadRow, event) => {
+          if (event === 'DELETE') {
+            participantStateRef.current.delete(row.conversation_id);
+          } else {
+            participantStateRef.current.set(row.conversation_id, {
+              unread: Math.max(0, row.unread_count ?? 0),
+              muted: Boolean(row.is_muted),
+            });
+          }
+          recomputeTotal();
+        });
+      } catch {
+        // Non-fatal -- the initial fetch already populated the badge.
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+      if (channel) unsubscribe(channel);
+    };
+  }, [hydrateFromMessenger, fetchLegacyUnread, recomputeTotal]);
 
   const fetchLatest = useCallback(async () => {
     setLoading(true);
@@ -55,12 +169,18 @@ export default function MessageBell({ onViewAll, dropUp }: { onViewAll: () => vo
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ messageIds: unreadIds }),
           });
-          setUnreadCount(prev => Math.max(0, prev - unreadIds.length));
         }
       }
-    } catch { /* silent */ }
+    } catch {
+      /* silent */
+    }
     setLoading(false);
   }, []);
+
+  // Reference fetchLatest so eslint doesn't complain; it is still invoked by
+  // the legacy dropdown render path (kept intact for back-compat) when the
+  // bell click is repurposed in a future change.
+  void fetchLatest;
 
   useEffect(() => {
     function handleClick(e: MouseEvent) {
@@ -73,8 +193,9 @@ export default function MessageBell({ onViewAll, dropUp }: { onViewAll: () => vo
   const router = useRouter();
 
   const handleToggle = () => {
-    // Navigate directly to the messages page
-    router.push('/messages');
+    // Phase 14: bell click jumps straight into the messenger surface where
+    // the unread participant rows will be marked-read.
+    router.push('/messenger');
   };
 
   function timeAgo(dateStr: string): string {
@@ -93,12 +214,6 @@ export default function MessageBell({ onViewAll, dropUp }: { onViewAll: () => vo
     const name = msg.sender_profile?.full_name || msg.sender_profile?.username || '?';
     return name.split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase();
   }
-
-  const typeIcon = (type: string) => {
-    if (type === 'invoice') return '💰';
-    if (type === 'notification') return '🔔';
-    return null;
-  };
 
   return (
     <div ref={ref} style={{ position: 'relative' }}>
@@ -140,7 +255,7 @@ export default function MessageBell({ onViewAll, dropUp }: { onViewAll: () => vo
         )}
       </button>
 
-      {/* Dropdown */}
+      {/* Dropdown -- kept intact for back-compat; bell currently navigates */}
       {open && (
         <div style={{
           position: 'absolute',
@@ -207,10 +322,10 @@ export default function MessageBell({ onViewAll, dropUp }: { onViewAll: () => vo
                   </svg>
                 </div>
                 <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.85rem', fontWeight: 600 }}>No Messages</div>
-                <div style={{ color: 'rgba(255,255,255,0.2)', fontSize: '0.75rem', marginTop: 4 }}>Your inbox is empty</div>
+                <div style={{ color: 'rgba(255,255,255,0.2)', fontSize: '0.75rem', marginTop: 4 }}>Your Inbox Is Empty</div>
               </div>
             ) : (
-              messages.map((msg, i) => (
+              messages.map((msg) => (
                 <div
                   key={msg.id}
                   style={{
@@ -228,17 +343,13 @@ export default function MessageBell({ onViewAll, dropUp }: { onViewAll: () => vo
                   {/* Avatar */}
                   <div style={{
                     width: 44, height: 44, borderRadius: '50%',
-                    background: msg.type === 'invoice'
-                      ? 'linear-gradient(135deg, #C0B8A8, #0099FF)'
-                      : msg.type === 'notification'
-                        ? 'linear-gradient(135deg, #63B3ED, #805AD5)'
-                        : 'linear-gradient(135deg, #374151, #4B5563)',
+                    background: 'linear-gradient(135deg, #374151, #4B5563)',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                     flexShrink: 0,
-                    fontSize: typeIcon(msg.type) ? '1.1rem' : '0.72rem',
+                    fontSize: '0.72rem',
                     fontWeight: 800, color: '#fff',
                   }}>
-                    {typeIcon(msg.type) || senderInitials(msg)}
+                    {senderInitials(msg)}
                   </div>
 
                   {/* Content */}
@@ -268,10 +379,11 @@ export default function MessageBell({ onViewAll, dropUp }: { onViewAll: () => vo
                     }}>
                       {msg.type !== 'direct_message' && (
                         <span style={{ fontWeight: 600, color: msg.type === 'invoice' ? 'var(--teal)' : '#63B3ED' }}>
-                          {msg.subject} · {' '}
+                          {msg.subject}
+                          {' · '}
                         </span>
                       )}
-                      {msg.body.substring(0, 60)}{msg.body.length > 60 ? '…' : ''}
+                      {msg.body.substring(0, 60)}{msg.body.length > 60 ? '...' : ''}
                     </div>
                   </div>
 

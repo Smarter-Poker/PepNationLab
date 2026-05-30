@@ -4,7 +4,7 @@ import { useMessengerStore } from '@/stores/messengerStore';
 import type { ConversationListItem, Message, Reaction, ParticipantRole } from '@/lib/messenger/types';
 import type { MessageLabelValue, ThemeValue } from '@/lib/messenger/schemas';
 import type { CallSignalRow } from '@/lib/messenger/realtime';
-import { MessageCircle, Info, Bell } from 'lucide-react';
+import { MessageCircle, Info, Bell, BellOff } from 'lucide-react';
 import MessageBubble from './MessageBubble';
 import MessageComposer from './MessageComposer';
 import TypingIndicator from './TypingIndicator';
@@ -32,6 +32,7 @@ interface Props {
 }
 
 const TYPING_TTL_MS = 4000;
+const PUSH_DISMISS_KEY = 'messenger:push-opt-in-dismissed';
 
 const THEME_BACKGROUND: Record<ThemeValue, string> = {
   default: 'var(--surface-1, #0F1923)',
@@ -95,6 +96,8 @@ async function markConversationRead(conversationId: string, lastReadMessageId: s
   }
 }
 
+type PushBannerState = 'hidden' | 'default' | 'denied';
+
 export default function MessagePane({ userId, activeCall, setActiveCall }: Props) {
   const activeId = useMessengerStore((s) => s.activeConversationId);
   const messagesByConv = useMessengerStore((s) => s.messages);
@@ -129,6 +132,8 @@ export default function MessagePane({ userId, activeCall, setActiveCall }: Props
     | { messageId?: string; conversationId?: string; preview?: string }
     | null
   >(null);
+  // Phase 14: push opt-in banner state
+  const [pushBanner, setPushBanner] = useState<PushBannerState>('hidden');
 
   // activeCall is hoisted to MessengerShell so IncomingCallToast accept-handlers can set it.
   void activeCall;
@@ -145,6 +150,105 @@ export default function MessagePane({ userId, activeCall, setActiveCall }: Props
     setRemindersOpen(false);
     setReminderSeed(null);
   }, [activeId]);
+
+  // Phase 14: decide whether to show the push opt-in banner. Visible only
+  // when the Notification API exists, permission === 'default', the user
+  // hasn't already opted in (browser_push !== true), and the user has not
+  // dismissed the banner this session.
+  useEffect(() => {
+    if (typeof window === 'undefined' || typeof Notification === 'undefined') {
+      setPushBanner('hidden');
+      return;
+    }
+    if (Notification.permission === 'denied') {
+      setPushBanner('denied');
+      return;
+    }
+    if (Notification.permission === 'granted') {
+      setPushBanner('hidden');
+      return;
+    }
+    // permission === 'default'
+    let cancelled = false;
+    const dismissed = window.sessionStorage.getItem(PUSH_DISMISS_KEY) === '1';
+    if (dismissed) {
+      setPushBanner('hidden');
+      return;
+    }
+    (async () => {
+      try {
+        const res = await fetch('/api/messenger/notification-prefs', {
+          method: 'GET',
+          cache: 'no-store',
+        });
+        if (!res.ok) return;
+        const json = (await res.json()) as { prefs?: { browser_push?: boolean | null } };
+        if (cancelled) return;
+        if (json.prefs?.browser_push === true) {
+          setPushBanner('hidden');
+        } else {
+          setPushBanner('default');
+        }
+      } catch {
+        // non-fatal
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [activeId]);
+
+  const handleAllowPush = useCallback(async () => {
+    try {
+      if (typeof Notification === 'undefined') return;
+      const result = await Notification.requestPermission();
+      if (result === 'granted') {
+        const res = await fetch('/api/messenger/notification-prefs', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ browserPush: true }),
+        });
+        if (res.ok) {
+          toast('Notifications Enabled');
+          // Notify MessengerShell so its cached prefs stay in sync without
+          // a window reload.
+          try {
+            window.dispatchEvent(
+              new CustomEvent('messenger:prefs-updated', {
+                detail: { browser_push: true },
+              }),
+            );
+          } catch {
+            /* non-fatal */
+          }
+          setPushBanner('hidden');
+        } else {
+          toast('Could Not Save Preference');
+        }
+      } else if (result === 'denied') {
+        setPushBanner('denied');
+      } else {
+        // 'default' -- user dismissed the prompt; honor that for the session.
+        try {
+          window.sessionStorage.setItem(PUSH_DISMISS_KEY, '1');
+        } catch {
+          /* non-fatal */
+        }
+        setPushBanner('hidden');
+      }
+    } catch {
+      toast('Notifications Not Available');
+    }
+  }, []);
+
+  const handleDismissPush = useCallback(() => {
+    try {
+      window.sessionStorage.setItem(PUSH_DISMISS_KEY, '1');
+    } catch {
+      /* non-fatal */
+    }
+    setPushBanner('hidden');
+  }, []);
 
   // Phase 12: fetch the caller's block list once per session (re-fetches when
   // activeId changes so newly-added blocks made elsewhere in the UI propagate).
@@ -791,6 +895,72 @@ export default function MessagePane({ userId, activeCall, setActiveCall }: Props
           </button>
         </div>
       </header>
+      {pushBanner !== 'hidden' && (
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: 12,
+            padding: '10px 14px',
+            borderBottom: '1px solid var(--surface-3, #1D2D3E)',
+            background: pushBanner === 'denied' ? 'rgba(229,62,62,0.06)' : 'rgba(0,196,188,0.06)',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, color: 'var(--white, #FFFFFF)', fontSize: '0.82rem' }}>
+            {pushBanner === 'denied' ? (
+              <>
+                <BellOff size={14} aria-hidden="true" />
+                <span style={{ fontWeight: 700 }}>Push Notifications Blocked</span>
+                <span style={{ color: 'var(--grey-400, #A8B4C0)' }}>
+                  Allow In Browser Settings To Get Alerts.
+                </span>
+              </>
+            ) : (
+              <>
+                <Bell size={14} aria-hidden="true" />
+                <span style={{ fontWeight: 700 }}>Enable Push Notifications</span>
+                <span style={{ color: 'var(--grey-400, #A8B4C0)' }}>
+                  Allow Push To Get Alerts When Tab Is Hidden.
+                </span>
+              </>
+            )}
+          </div>
+          {pushBanner === 'default' && (
+            <div style={{ display: 'inline-flex', gap: 6 }}>
+              <button
+                type="button"
+                onClick={handleAllowPush}
+                style={{
+                  ...headerBtn,
+                  background: 'var(--teal, #00C4BC)',
+                  color: '#0F1923',
+                  border: '1px solid var(--teal, #00C4BC)',
+                }}
+              >
+                Allow
+              </button>
+              <button
+                type="button"
+                onClick={handleDismissPush}
+                style={headerBtn}
+              >
+                Not Now
+              </button>
+            </div>
+          )}
+          {pushBanner === 'denied' && (
+            <button
+              type="button"
+              onClick={handleDismissPush}
+              style={headerBtn}
+              aria-label="Dismiss Push Notice"
+            >
+              Dismiss
+            </button>
+          )}
+        </div>
+      )}
       <PinnedBar
         conversationId={activeId}
         selfId={userId}
