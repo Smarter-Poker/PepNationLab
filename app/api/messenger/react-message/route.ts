@@ -4,6 +4,7 @@ import { assertSameOrigin } from '@/lib/csrf';
 import { requireSession, getParticipant } from '@/lib/messenger/server';
 import { ReactSchema } from '@/lib/messenger/schemas';
 
+export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 // The messenger_reactions UNIQUE INDEX uses COALESCE(emoji, gif_url) which is
