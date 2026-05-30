@@ -228,7 +228,7 @@ export default function EditProductPage() {
             Product Information
           </h3>
 
-          <div className="grid-2" style={{ gap: 'var(--space-4)', marginBottom: 'var(--space-4)' }}>
+          <div className="grid-2" style={{ gap: 'var(--space-4)', marginBottom: 'var(--space-4)', alignItems: 'start' }}>
             <div className="form-group">
               <label className="form-label" htmlFor="name">Product Name</label>
               <input id="name" type="text" className="form-input" placeholder="e.g. BPC-157"

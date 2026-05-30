@@ -181,45 +181,34 @@ export function AdminLayoutClient({
           WebkitOverflowScrolling: 'touch' as const,
         }}
       >
-        {/* Admin top bar — desktop shows breadcrumb + bell; on mobile shows hamburger */}
-        <div style={{
-          position: 'sticky',
-          top: 60,
-          background: 'var(--black)',
-          borderBottom: '1px solid rgba(255,255,255,0.05)',
-          padding: 'var(--space-3) var(--space-5)',
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          zIndex: 10,
-          gap: 'var(--space-3)',
-        }}>
-          {/* Mobile hamburger — only visible on ≤1024px */}
+
+        {/* Mobile-only sidebar toggle — compact, doesn't duplicate the Navbar */}
+        <div className="admin-mobile-topbar">
           <button
             onClick={() => setSidebarOpen(o => !o)}
-            className="admin-mobile-menu-btn"
             aria-label="Open Admin Menu"
             style={{
               background: 'none',
               border: 'none',
               cursor: 'pointer',
-              color: 'var(--teal)',
-              padding: 10,
+              color: 'var(--silver)',
+              padding: '10px 14px',
               display: 'flex',
               alignItems: 'center',
-              borderRadius: 6,
+              gap: 8,
+              fontSize: '0.82rem',
+              fontWeight: 600,
             }}
           >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
               <path d="M3 7h18M3 12h18M3 17h18" />
             </svg>
+            Admin Menu
           </button>
-
-          <span style={{ color: 'var(--silver)', fontSize: '0.85rem', flex: 1 }}>Admin Dashboard</span>
-          <AdminMessageBell />
         </div>
 
         {children}
+
       </main>
 
       <style>{`
@@ -227,8 +216,15 @@ export function AdminLayoutClient({
           background: rgba(255,255,255,0.04) !important;
           color: var(--white) !important;
         }
+        /* Mobile-only topbar: visible on mobile, hidden on desktop */
+        .admin-mobile-topbar {
+          display: none;
+          border-bottom: 1px solid rgba(255,255,255,0.05);
+          padding: 4px 0;
+        }
         /* Mobile: sidebar is a fixed drawer, hidden off-screen by default */
         @media (max-width: 1024px) {
+          .admin-mobile-topbar { display: flex; }
           .admin-sidebar {
             position: fixed !important;
             top: 60px !important;
@@ -245,7 +241,6 @@ export function AdminLayoutClient({
         }
         /* Desktop: sidebar is sticky in the flex row */
         @media (min-width: 1025px) {
-          .admin-mobile-menu-btn { display: none !important; }
           .admin-sidebar {
             position: sticky !important;
             transform: none !important;
