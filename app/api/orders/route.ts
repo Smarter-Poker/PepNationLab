@@ -6,6 +6,8 @@ import { assertSameOrigin } from '@/lib/csrf';
 import { rateLimit } from '@/lib/rate-limit';
 import { computeTaxQuote } from '@/lib/tax';
 import { enqueueWebhook, fetchOrderForWebhook } from '@/lib/webhook-dispatch';
+import { enqueuePush, shortOrderId } from '@/lib/push-enqueue';
+
 
 const CheckoutSchema = z.object({
   items: z.array(z.object({
@@ -829,6 +831,43 @@ export async function POST(request: NextRequest) {
           });
         }
       } catch { /* webhook errors must not block the order */ }
+    })();
+
+    // Fire-and-forget: push notifications for new order.
+    void (async () => {
+      try {
+        const short = shortOrderId(order.id);
+        // 1. Notify agent when a researcher places an order
+        if (agentProfile && !isAgentSelfBuy) {
+          const { data: buyerProfile } = await serviceSupabase
+            .from('profiles')
+            .select('full_name')
+            .eq('id', user.id)
+            .maybeSingle();
+          const buyerName = buyerProfile?.full_name || 'A Researcher';
+          await enqueuePush(serviceSupabase, {
+            userId: agentProfile.id,
+            title: `New Order #${short}`,
+            body: `${buyerName} Placed A New Order. Tap To Review.`,
+            url: `/dashboard/agent?tab=orders`,
+            event: 'order_new',
+            relatedOrderId: order.id,
+            tag: `new-order-${order.id}`,
+          });
+        }
+        // 2. Confirm to the researcher that their order was placed
+        await enqueuePush(serviceSupabase, {
+          userId: user.id,
+          title: `Order #${short} Placed`,
+          body: 'Your Order Has Been Placed. You Will Be Notified When It Is Approved.',
+          url: `/orders/${order.id}`,
+          event: 'order_placed',
+          relatedOrderId: order.id,
+          tag: `order-placed-${order.id}`,
+        });
+      } catch {
+        // Never propagate — push is best-effort
+      }
     })();
 
     return NextResponse.json({

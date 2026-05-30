@@ -6,6 +6,7 @@ import { messengerRateLimit, messengerRateLimitResponse } from '@/lib/messengerR
 import { SendMessageSchema } from '@/lib/messenger/schemas';
 import { sanitizeMessageText } from '@/lib/messenger/sanitize';
 import { hasAdminMention, recordAdminMention } from '@/lib/messenger/admin-mentions';
+import { enqueuePush } from '@/lib/push-enqueue';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -148,6 +149,53 @@ export async function POST(req: NextRequest) {
       text: cleanText,
     });
   }
+
+  // Fire-and-forget: push notification to all OTHER conversation participants.
+  // Never blocks the response — notification side-effects must not slow sends.
+  void (async () => {
+    try {
+      // Get sender display name
+      const { data: senderProfile } = await svc
+        .from('profiles')
+        .select('full_name')
+        .eq('id', user.id)
+        .maybeSingle();
+      const senderName = senderProfile?.full_name || 'Someone';
+
+      // Get all OTHER participants in this conversation
+      const { data: participants } = await svc
+        .from('messenger_participants')
+        .select('user_id')
+        .eq('conversation_id', parsed.data.conversationId)
+        .neq('user_id', user.id);
+
+      if (!participants || participants.length === 0) return;
+
+      // Build notification body — truncate long messages
+      const isMedia = !cleanText && parsed.data.mediaUrl;
+      const rawBody = cleanText ?? (isMedia ? '📎 Media' : 'New Message');
+      const body = rawBody.length > 120 ? `${rawBody.slice(0, 117)}…` : rawBody;
+      const title = senderName;
+      const url = `/messenger?conv=${parsed.data.conversationId}`;
+      const tag = `msg-${parsed.data.conversationId}`;
+
+      // Enqueue for each recipient — enqueuePush handles opt-out checks
+      await Promise.all(
+        participants.map((p: { user_id: string }) =>
+          enqueuePush(svc, {
+            userId: p.user_id,
+            title,
+            body,
+            url,
+            event: 'message',
+            tag,
+          })
+        )
+      );
+    } catch {
+      // Never propagate — push is best-effort
+    }
+  })();
 
   return NextResponse.json({ message: inserted });
 }
