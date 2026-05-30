@@ -765,57 +765,220 @@ export default function AgentDashboardClient({
           <div>
             {/* Create Researcher Modal */}
             {showCreateResearcher && (
-              <div onClick={() => setShowCreateResearcher(false)} style={{
-                position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                zIndex: 1000, padding: 'var(--space-6)', backdropFilter: 'blur(4px)',
-              }}>
-                <div onClick={e => e.stopPropagation()} style={{
-                  background: 'var(--grey-900)', border: '1px solid rgba(192,184,168,0.25)',
-                  borderRadius: 16, padding: 'var(--space-7)', maxWidth: 420, width: '100%',
-                  boxShadow: '0 0 60px rgba(192,184,168,0.1)',
-                }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-5)' }}>
-                    <div>
-                      <h3 style={{ fontSize: '1.1rem', marginBottom: 4 }}>Create Researcher Account</h3>
-                      <p style={{ fontSize: '0.78rem', color: 'var(--grey-400)' }}>Account Will Be Linked To Your Agency</p>
+              <div
+                onClick={() => setShowCreateResearcher(false)}
+                style={{
+                  position: 'fixed', inset: 0,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  zIndex: 1000, padding: 'var(--space-4)',
+                  background: 'rgba(0,0,0,0.6)',
+                }}
+              >
+                {/* Brushed-steel outer frame */}
+                <div
+                  onClick={e => e.stopPropagation()}
+                  style={{
+                    maxWidth: 480, width: '100%',
+                    borderRadius: 20,
+                    padding: 10,
+                    background: 'linear-gradient(145deg, #c8c2b8 0%, #a09890 30%, #8a847c 50%, #a09890 70%, #c8c2b8 100%)',
+                    boxShadow: '0 8px 48px rgba(0,0,0,0.8), inset 0 1px 0 rgba(255,255,255,0.35), inset 0 -1px 0 rgba(0,0,0,0.4)',
+                  }}
+                >
+                  {/* Inner dark panel */}
+                  <div style={{
+                    borderRadius: 12,
+                    background: 'linear-gradient(180deg, #1a1f2e 0%, #141820 40%, #111520 100%)',
+                    padding: '28px 28px 24px',
+                    boxShadow: 'inset 0 2px 8px rgba(0,0,0,0.6)',
+                    position: 'relative',
+                  }}>
+
+                    {/* Header row */}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24 }}>
+                      <div>
+                        <h3 style={{
+                          fontSize: '1.45rem', fontWeight: 700, color: '#ffffff',
+                          margin: 0, marginBottom: 6,
+                          textShadow: '0 1px 3px rgba(0,0,0,0.6)',
+                          fontFamily: 'var(--font-brand)',
+                        }}>
+                          Create Researcher Account
+                        </h3>
+                        <p style={{ fontSize: '0.85rem', color: '#8a9ab0', margin: 0 }}>
+                          Account Will Be Linked To Your Agency
+                        </p>
+                      </div>
+                      {/* X close button */}
+                      <button
+                        type="button"
+                        onClick={() => setShowCreateResearcher(false)}
+                        style={{
+                          background: 'none', border: 'none', cursor: 'pointer',
+                          color: '#8a9ab0', fontSize: '1.3rem', fontWeight: 700,
+                          lineHeight: 1, padding: '2px 4px', marginTop: -2,
+                          transition: 'color 0.15s',
+                        }}
+                        onMouseEnter={e => (e.currentTarget.style.color = '#ffffff')}
+                        onMouseLeave={e => (e.currentTarget.style.color = '#8a9ab0')}
+                        aria-label="Close"
+                      >
+                        ✕
+                      </button>
                     </div>
-                    <button onClick={() => setShowCreateResearcher(false)}
-                      style={{ background: 'none', border: 'none', color: 'var(--grey-400)', cursor: 'pointer' }}>
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
-                    </button>
+
+                    {/* Error / success banners */}
+                    {crError && (
+                      <div style={{
+                        background: 'rgba(229,62,62,0.1)', border: '1px solid rgba(229,62,62,0.35)',
+                        borderRadius: 8, padding: '10px 14px', marginBottom: 16,
+                        fontSize: '0.82rem', color: '#fc8181',
+                      }}>{crError}</div>
+                    )}
+                    {crSuccess && (
+                      <div style={{
+                        background: 'rgba(0,196,188,0.08)', border: '1px solid rgba(0,196,188,0.3)',
+                        borderRadius: 8, padding: '10px 14px', marginBottom: 16,
+                        fontSize: '0.82rem', color: 'var(--teal)',
+                      }}>{crSuccess}</div>
+                    )}
+
+                    <form onSubmit={handleCreateResearcher} style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
+
+                      {/* Full Name */}
+                      <div style={{ marginBottom: 18 }}>
+                        <label style={{
+                          display: 'block', fontSize: '0.92rem', fontWeight: 700,
+                          color: '#d0d8e4', marginBottom: 8,
+                        }}>Full Name</label>
+                        <input
+                          type="text"
+                          value={crFullName}
+                          onChange={e => setCrFullName(e.target.value)}
+                          required
+                          placeholder=""
+                          style={{
+                            width: '100%', boxSizing: 'border-box',
+                            background: 'linear-gradient(180deg, #0a0c14 0%, #0d1018 100%)',
+                            border: '1px solid #2a3045',
+                            borderRadius: 8,
+                            padding: '13px 14px',
+                            color: '#ffffff',
+                            fontSize: '0.95rem',
+                            outline: 'none',
+                            boxShadow: 'inset 0 2px 6px rgba(0,0,0,0.7), inset 0 1px 3px rgba(0,0,0,0.5)',
+                            caretColor: '#00C4BC',
+                          }}
+                          onFocus={e => { e.currentTarget.style.border = '1px solid #00C4BC'; }}
+                          onBlur={e => { e.currentTarget.style.border = '1px solid #2a3045'; }}
+                        />
+                      </div>
+
+                      {/* Username */}
+                      <div style={{ marginBottom: 6 }}>
+                        <label style={{
+                          display: 'block', fontSize: '0.92rem', fontWeight: 700,
+                          color: '#d0d8e4', marginBottom: 8,
+                        }}>Username</label>
+                        <input
+                          type="text"
+                          value={crUsername}
+                          onChange={e => setCrUsername(e.target.value.replace(/[^a-zA-Z0-9_]/g, ''))}
+                          required
+                          autoCapitalize="none"
+                          spellCheck={false}
+                          placeholder=""
+                          style={{
+                            width: '100%', boxSizing: 'border-box',
+                            background: 'linear-gradient(180deg, #0a0c14 0%, #0d1018 100%)',
+                            border: '1px solid #2a3045',
+                            borderRadius: 8,
+                            padding: '13px 14px',
+                            color: '#ffffff',
+                            fontSize: '0.95rem',
+                            outline: 'none',
+                            boxShadow: 'inset 0 2px 6px rgba(0,0,0,0.7), inset 0 1px 3px rgba(0,0,0,0.5)',
+                            caretColor: '#00C4BC',
+                          }}
+                          onFocus={e => { e.currentTarget.style.border = '1px solid #00C4BC'; }}
+                          onBlur={e => { e.currentTarget.style.border = '1px solid #2a3045'; }}
+                        />
+                        <p style={{ fontSize: '0.76rem', color: '#5a6a7a', marginTop: 6, marginBottom: 18 }}>
+                          Login Is Case-Insensitive — Displayed Exactly As Entered.
+                        </p>
+                      </div>
+
+                      {/* Temporary Password */}
+                      <div style={{ marginBottom: 6 }}>
+                        <label style={{
+                          display: 'block', fontSize: '0.92rem', fontWeight: 700,
+                          color: '#d0d8e4', marginBottom: 8,
+                        }}>Temporary Password</label>
+                        <input
+                          type="text"
+                          value={crPassword}
+                          onChange={e => setCrPassword(e.target.value)}
+                          required
+                          placeholder=""
+                          style={{
+                            width: '100%', boxSizing: 'border-box',
+                            background: 'linear-gradient(180deg, #0a0c14 0%, #0d1018 100%)',
+                            border: '1px solid #2a3045',
+                            borderRadius: 8,
+                            padding: '13px 14px',
+                            color: '#ffffff',
+                            fontSize: '0.95rem',
+                            outline: 'none',
+                            boxShadow: 'inset 0 2px 6px rgba(0,0,0,0.7), inset 0 1px 3px rgba(0,0,0,0.5)',
+                            caretColor: '#00C4BC',
+                          }}
+                          onFocus={e => { e.currentTarget.style.border = '1px solid #00C4BC'; }}
+                          onBlur={e => { e.currentTarget.style.border = '1px solid #2a3045'; }}
+                        />
+                        <p style={{ fontSize: '0.76rem', color: '#5a6a7a', marginTop: 6, marginBottom: 22 }}>
+                          You Set This — Tell Them Directly. No Automatic Emails.
+                        </p>
+                      </div>
+
+                      {/* Submit button */}
+                      <button
+                        type="submit"
+                        disabled={crLoading}
+                        style={{
+                          width: '100%',
+                          padding: '15px',
+                          background: 'linear-gradient(180deg, #2a3350 0%, #1e2640 50%, #161c30 100%)',
+                          border: '1px solid #3a4560',
+                          borderRadius: 8,
+                          color: '#ffffff',
+                          fontSize: '1rem',
+                          fontWeight: 700,
+                          cursor: crLoading ? 'not-allowed' : 'pointer',
+                          opacity: crLoading ? 0.65 : 1,
+                          letterSpacing: '0.02em',
+                          boxShadow: '0 2px 8px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.06)',
+                          transition: 'background 0.15s, box-shadow 0.15s',
+                        }}
+                        onMouseEnter={e => {
+                          if (!crLoading) {
+                            e.currentTarget.style.background = 'linear-gradient(180deg, #354068 0%, #263050 50%, #1a2240 100%)';
+                            e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,196,188,0.15), inset 0 1px 0 rgba(255,255,255,0.08)';
+                          }
+                        }}
+                        onMouseLeave={e => {
+                          e.currentTarget.style.background = 'linear-gradient(180deg, #2a3350 0%, #1e2640 50%, #161c30 100%)';
+                          e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.06)';
+                        }}
+                      >
+                        {crLoading ? 'Creating Account...' : 'Create Researcher Account'}
+                      </button>
+
+                    </form>
                   </div>
-
-                  {crError && <div style={{ background: 'rgba(229,62,62,0.1)', border: '1px solid rgba(229,62,62,0.3)', borderRadius: 8, padding: 'var(--space-3)', marginBottom: 'var(--space-4)', fontSize: '0.82rem', color: 'var(--red)' }}>{crError}</div>}
-                  {crSuccess && <div style={{ background: 'rgba(192,184,168,0.1)', border: '1px solid rgba(192,184,168,0.3)', borderRadius: 8, padding: 'var(--space-3)', marginBottom: 'var(--space-4)', fontSize: '0.82rem', color: 'var(--teal)' }}>{crSuccess}</div>}
-
-                  <form onSubmit={handleCreateResearcher} style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
-                    <div className="form-group">
-                      <label className="form-label">Full Name</label>
-                      <input type="text" className="form-input" placeholder="E.g. Dr. Jane Smith"
-                        value={crFullName} onChange={e => setCrFullName(e.target.value)} required />
-                    </div>
-                    <div className="form-group">
-                      <label className="form-label">Username</label>
-                      <input type="text" className="form-input" placeholder="E.g. jsmith"
-                        value={crUsername} onChange={e => setCrUsername(e.target.value.replace(/[^a-zA-Z0-9_]/g, ''))}
-                        required autoCapitalize="none" spellCheck={false} />
-                      <p style={{ fontSize: '0.72rem', color: 'var(--grey-500)', marginTop: 4 }}>Login Is Case-Insensitive — Displayed Exactly As Entered.</p>
-                    </div>
-                    <div className="form-group">
-                      <label className="form-label">Temporary Password</label>
-                      <input type="text" className="form-input" placeholder="Min 8 Characters"
-                        value={crPassword} onChange={e => setCrPassword(e.target.value)} required />
-                      <p style={{ fontSize: '0.72rem', color: 'var(--grey-500)', marginTop: 4 }}>You Set This — Tell Them Directly. No Automatic Emails.</p>
-                    </div>
-                    <button type="submit" className="btn btn-primary" disabled={crLoading}
-                      style={{ width: '100%', justifyContent: 'center', opacity: crLoading ? 0.7 : 1 }}>
-                      {crLoading ? 'Creating Account...' : 'Create Researcher Account'}
-                    </button>
-                  </form>
                 </div>
               </div>
             )}
+
 
             <div className="card-metal" style={{ padding: 'var(--space-6)' }}>
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', marginBottom: 'var(--space-6)' }}>
