@@ -135,7 +135,7 @@ export async function POST(req: NextRequest) {
       order_item_id: it.order_item_id,
       product_name: oi.product_name,
       quantity: it.quantity,
-      unit_amount: it.unit_amount > 0 ? it.unit_amount : Number(oi.unit_retail_price),
+      unit_amount: Number(oi.unit_retail_price), // always use server-side price from order_items
       condition_received: it.condition_received ?? null,
     };
   });

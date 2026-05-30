@@ -110,7 +110,7 @@ export default function AgentDashboardClient({
   const [cashappHandle, setCashappHandle] = useState(agentProfile?.payment_handles?.cashapp ?? '');
   const [venmoHandle, setVenmoHandle] = useState(agentProfile?.payment_handles?.venmo ?? '');
   const [applePayHandle, setApplePayHandle] = useState(agentProfile?.payment_handles?.apple_pay ?? '');
-  const [shippoApiKey, setShippoApiKey] = useState(agentProfile?.shippo_api_key ?? '');
+
   const [volumePricingEnabled, setVolumePricingEnabled] = useState<boolean>(agentProfile?.volume_pricing_enabled !== false);
 
   // Setup Form State (If no profile exists yet)

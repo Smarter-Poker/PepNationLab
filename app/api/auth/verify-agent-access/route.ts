@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createServiceClient } from '@/lib/supabase/server';
+import { createClient, createServiceClient } from '@/lib/supabase/server';
 import { assertSameOrigin } from '@/lib/csrf';
 
 /**
@@ -11,15 +11,22 @@ import { assertSameOrigin } from '@/lib/csrf';
  * Returns { allowed: true } or { allowed: false, reason: '...' }.
  *
  * This is the CRITICAL gate that prevents cross-agent access.
+ * The caller MUST be authenticated — we always use the session user id,
+ * not a caller-supplied userId, to prevent IDOR enumeration.
  */
 export async function POST(req: NextRequest) {
   const csrf = assertSameOrigin(req);
   if (csrf) return csrf;
 
-  const body = await req.json().catch(() => ({}));
-  const { userId, agentSlug } = body || {};
+  // Require authentication — use session user, never trust caller-supplied userId
+  const supabaseAuth = await createClient();
+  const { data: { user } } = await supabaseAuth.auth.getUser();
+  if (!user) return NextResponse.json({ allowed: false, reason: 'Not Authenticated' }, { status: 401 });
 
-  if (!userId || !agentSlug) {
+  const body = await req.json().catch(() => ({}));
+  const { agentSlug } = body || {};
+
+  if (!agentSlug) {
     return NextResponse.json({ allowed: false, reason: 'Missing Parameters' }, { status: 400 });
   }
 
@@ -36,11 +43,11 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ allowed: false, reason: 'Agent Not Found' }, { status: 404 });
   }
 
-  // Get user profile
+  // Get authenticated user's own profile — always use session user.id, never caller-supplied userId
   const { data: profile } = await supabase
     .from('profiles')
     .select('role, referring_agent_id, parent_agent_id, id')
-    .eq('id', userId)
+    .eq('id', user.id)
     .single();
 
   if (!profile) {
@@ -57,7 +64,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ allowed: true });
   }
 
-  // Super-agent: their parent_agent_id matches the agent
+  // Sub-agent: their parent_agent_id matches the agent
   if (profile.role === 'agent' && profile.parent_agent_id === agent.id) {
     return NextResponse.json({ allowed: true });
   }
