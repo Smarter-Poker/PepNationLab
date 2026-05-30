@@ -1528,4 +1528,100 @@ html[data-theme="light"] .messenger-back-btn {
   outline-offset: 2px;
 }
 
+/* ================================================================
+   MESSENGER — COMPREHENSIVE MOBILE FIXES
+   ================================================================ */
+
+/* ---- Header action buttons: show label on desktop, icon-only on mobile ---- */
+.msg-header-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* ---- Composer toolbar: scrollable on very small screens ---- */
+.msg-composer > div[style*="flex"] {
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  padding-bottom: 2px;
+}
+.msg-composer > div[style*="flex"]::-webkit-scrollbar {
+  display: none;
+}
+
+@media (max-width: 480px) {
+  /* Header action labels: hidden on small screens → icon-only buttons */
+  .msg-header-action-label {
+    display: none;
+  }
+
+  /* Back button needs more breathing room on small screens */
+  .messenger-back-btn {
+    font-size: 0.82rem !important;
+  }
+
+  /* Sidebar header safe area for iPhone notch (status bar) */
+  .messenger-sidebar header {
+    padding-top: max(10px, env(safe-area-inset-top));
+  }
+
+  /* Message list — tighter horizontal padding to maximize bubble width */
+  .msg-list {
+    padding-left: 8px !important;
+    padding-right: 8px !important;
+  }
+
+  /* Composer icon buttons — slightly smaller on 390px screens */
+  .msg-composer button[aria-label] {
+    width: 36px !important;
+    height: 36px !important;
+  }
+
+  /* The send button stays full teal but also 36px */
+  .msg-composer button[aria-label="Send Message"] {
+    width: 36px !important;
+    height: 36px !important;
+    border-radius: 8px !important;
+  }
+
+  /* Push notification banner: stack vertically on very small screens */
+  .messenger-main > div > div[style*="flexWrap"] {
+    flex-direction: column;
+    align-items: flex-start !important;
+    gap: 6px !important;
+  }
+}
+
+@media (max-width: 390px) {
+  /* Extra-small screens (iPhone SE etc.) — even tighter */
+  .msg-composer button[aria-label] {
+    width: 32px !important;
+    height: 32px !important;
+  }
+}
+
+/* ---- Conversation list item layout fix: prevent text overflow ---- */
+.messenger-sidebar [role="listitem"] > div,
+.messenger-sidebar [role="button"] > div {
+  min-width: 0;
+  overflow: hidden;
+}
+
+/* ---- Ensure messenger root fills entire screen including safe areas ---- */
+.messenger-layout-root {
+  padding-top: env(safe-area-inset-top);
+  /* Note: bottom safe area handled per-composer via max(12px, env(safe-area-inset-bottom)) */
+}
+
+/* ---- Video in message list: always fully clickable on mobile ---- */
+@media (max-width: 768px) {
+  .messenger-main video {
+    pointer-events: auto !important;
+    touch-action: auto !important;
+  }
+}
+
+
 

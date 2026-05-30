@@ -854,6 +854,9 @@ export default function MessagePane({ userId, activeCall, setActiveCall }: Props
           padding: '10px 14px',
           borderBottom: '1px solid var(--surface-3, #1D2D3E)',
           background: 'var(--surface-2, #162230)',
+          flexShrink: 0,
+          gap: 8,
+          minWidth: 0,
         }}
       >
         <div
@@ -864,11 +867,13 @@ export default function MessagePane({ userId, activeCall, setActiveCall }: Props
             overflow: 'hidden',
             textOverflow: 'ellipsis',
             whiteSpace: 'nowrap',
+            flex: '1 1 0',
+            minWidth: 0,
           }}
         >
           {headerLabel}
         </div>
-        <div style={{ display: 'inline-flex', gap: 6, alignItems: 'center' }}>
+        <div style={{ display: 'inline-flex', gap: 6, alignItems: 'center', flexShrink: 0 }}>
           <CallButton
             conversationId={activeId}
             onCallStarted={(c) => setActiveCall(c)}
@@ -877,27 +882,30 @@ export default function MessagePane({ userId, activeCall, setActiveCall }: Props
             type="button"
             onClick={() => { setReminderSeed(null); setRemindersOpen(true); }}
             aria-label="Open Reminders"
+            className="msg-header-action"
             style={headerBtn}
           >
             <Bell size={12} aria-hidden="true" />
-            Reminders
+            <span className="msg-header-action-label">Reminders</span>
           </button>
           <button
             type="button"
             onClick={() => setBookmarksOpen(true)}
             aria-label="Open Bookmarks"
+            className="msg-header-action"
             style={headerBtn}
           >
-            Bookmarks
+            <span className="msg-header-action-label">Bookmarks</span>
           </button>
           <button
             type="button"
             onClick={() => setInfoOpen(true)}
             aria-label="Conversation Info"
+            className="msg-header-action"
             style={headerBtn}
           >
             <Info size={12} aria-hidden="true" />
-            Info
+            <span className="msg-header-action-label">Info</span>
           </button>
         </div>
       </header>
@@ -907,33 +915,35 @@ export default function MessagePane({ userId, activeCall, setActiveCall }: Props
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            gap: 12,
-            padding: '10px 14px',
+            gap: 8,
+            padding: '8px 14px',
             borderBottom: '1px solid var(--surface-3, #1D2D3E)',
             background: pushBanner === 'denied' ? 'rgba(229,62,62,0.06)' : 'rgba(0,196,188,0.06)',
+            flexWrap: 'wrap',
+            flexShrink: 0,
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, color: 'var(--white, #FFFFFF)', fontSize: '0.82rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'var(--white, #FFFFFF)', fontSize: '0.82rem', flex: '1 1 180px', minWidth: 0 }}>
             {pushBanner === 'denied' ? (
               <>
-                <BellOff size={14} aria-hidden="true" />
-                <span style={{ fontWeight: 700 }}>Push Notifications Blocked</span>
-                <span style={{ color: 'var(--grey-400, #A8B4C0)' }}>
-                  Allow In Browser Settings To Get Alerts.
+                <BellOff size={14} aria-hidden="true" style={{ flexShrink: 0 }} />
+                <span style={{ fontWeight: 700, whiteSpace: 'nowrap' }}>Notifications Blocked</span>
+                <span style={{ color: 'var(--grey-400, #A8B4C0)', fontSize: '0.76rem' }}>
+                  Allow In Browser Settings.
                 </span>
               </>
             ) : (
               <>
-                <Bell size={14} aria-hidden="true" />
-                <span style={{ fontWeight: 700 }}>Enable Push Notifications</span>
-                <span style={{ color: 'var(--grey-400, #A8B4C0)' }}>
-                  Allow Push To Get Alerts When Tab Is Hidden.
+                <Bell size={14} aria-hidden="true" style={{ flexShrink: 0 }} />
+                <span style={{ fontWeight: 700, whiteSpace: 'nowrap' }}>Enable Push</span>
+                <span style={{ color: 'var(--grey-400, #A8B4C0)', fontSize: '0.76rem' }}>
+                  Get Alerts When Tab Is Hidden.
                 </span>
               </>
             )}
           </div>
           {pushBanner === 'default' && (
-            <div style={{ display: 'inline-flex', gap: 6 }}>
+            <div style={{ display: 'inline-flex', gap: 6, flexShrink: 0 }}>
               <button
                 type="button"
                 onClick={handleAllowPush}
@@ -959,10 +969,10 @@ export default function MessagePane({ userId, activeCall, setActiveCall }: Props
             <button
               type="button"
               onClick={handleDismissPush}
-              style={headerBtn}
+              style={{ ...headerBtn, flexShrink: 0 }}
               aria-label="Dismiss Push Notice"
             >
-              Dismiss
+              ✕
             </button>
           )}
         </div>
@@ -974,7 +984,7 @@ export default function MessagePane({ userId, activeCall, setActiveCall }: Props
         refreshKey={pinRefreshKey}
         onJump={handleJumpToMessage}
       />
-      <div style={{ flex: 1, overflowY: 'auto', padding: 16, display: 'flex', flexDirection: 'column', gap: 8 }}>
+      <div className="msg-list" style={{ flex: 1, overflowY: 'auto', padding: 16, display: 'flex', flexDirection: 'column', gap: 8 }}>
         {loading && messages.length === 0 ? (
           <div style={{ color: 'var(--grey-400, #A8B4C0)', textAlign: 'center', marginTop: 32 }}>
             Loading Messages

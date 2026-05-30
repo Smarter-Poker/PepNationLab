@@ -333,11 +333,14 @@ export default function MessageComposer({ conversationId, selfId, replyTo, onCle
 
   return (
     <div
+      className="msg-composer"
       style={{
         borderTop: '1px solid var(--surface-3, #1D2D3E)',
         padding: 12,
+        paddingBottom: 'max(12px, env(safe-area-inset-bottom))',
         background: 'var(--surface-1, #0F1923)',
         position: 'relative',
+        flexShrink: 0,
       }}
     >
       <input ref={imageInputRef} type="file" accept="image/*" style={{ display: 'none' }}
