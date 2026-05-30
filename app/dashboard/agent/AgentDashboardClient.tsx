@@ -769,9 +769,12 @@ export default function AgentDashboardClient({
                 onClick={() => setShowCreateResearcher(false)}
                 style={{
                   position: 'fixed', inset: 0,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  zIndex: 1000, padding: 'var(--space-4)',
+                  display: 'flex', alignItems: 'flex-start', justifyContent: 'center',
+                  zIndex: 1000,
+                  padding: '16px 16px 32px',
+                  paddingTop: 'max(16px, env(safe-area-inset-top, 16px))',
                   background: 'rgba(0,0,0,0.6)',
+                  overflowY: 'auto',
                 }}
               >
                 {/* Brushed-steel outer frame */}
@@ -783,6 +786,7 @@ export default function AgentDashboardClient({
                     padding: 10,
                     background: 'linear-gradient(145deg, #c8c2b8 0%, #a09890 30%, #8a847c 50%, #a09890 70%, #c8c2b8 100%)',
                     boxShadow: '0 8px 48px rgba(0,0,0,0.8), inset 0 1px 0 rgba(255,255,255,0.35), inset 0 -1px 0 rgba(0,0,0,0.4)',
+                    flexShrink: 0,
                   }}
                 >
                   {/* Inner dark panel */}

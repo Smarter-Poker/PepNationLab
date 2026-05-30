@@ -688,9 +688,11 @@ a:hover { color: var(--teal-dark); }
   -webkit-backdrop-filter: blur(8px);
   z-index: 1000;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
-  padding: var(--space-6);
+  padding: 16px 16px 32px;
+  padding-top: max(16px, env(safe-area-inset-top, 16px));
+  overflow-y: auto;
 }
 
 .modal-content {
@@ -700,10 +702,10 @@ a:hover { color: var(--teal-dark); }
   padding: var(--space-8);
   max-width: 640px;
   width: 100%;
-  max-height: 90vh;
-  overflow-y: auto;
+  overflow-y: visible;
   box-shadow: var(--shadow-teal);
   animation: fadeInUp 0.3s ease;
+  flex-shrink: 0;
 }
 
 /* ============================================

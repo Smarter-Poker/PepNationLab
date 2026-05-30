@@ -66,9 +66,10 @@ export async function POST(req: NextRequest) {
 
   const internalEmail = `${usernameClean}@pepnationlab.com`;
 
-  // Create the auth user via service role
-  // Pass username in user_metadata so the handle_new_user trigger
-  // sets the correct username on the auto-created profile row.
+  // Create the auth user via service role.
+  // The handle_new_user trigger fires AFTER INSERT on auth.users and automatically
+  // creates the profile row. We pass username + full_name in user_metadata so the
+  // trigger sets them correctly on the auto-created row.
   const { data: authData, error: authError } = await supabase.auth.admin.createUser({
     email: internalEmail,
     password,
@@ -79,36 +80,38 @@ export async function POST(req: NextRequest) {
     },
   });
 
-  if (authError || !authData.user) {
+  if (authError || !authData?.user) {
+    console.error('[create-researcher] auth.admin.createUser error:', authError);
     return NextResponse.json(
-      { error: 'Failed To Create Account.' },
+      { error: authError?.message || 'Failed To Create Auth Account' },
       { status: 500 }
     );
   }
 
   const newUserId = authData.user.id;
 
-  // Upsert the profile as researcher, linked to this agent.
-  // The trigger (handle_new_user) already created the row on INSERT into auth.users,
-  // so we must upsert (not insert) with explicit onConflict:'id'.
+  // The trigger already created the profile row. Use UPDATE (not upsert/insert)
+  // to set the remaining fields the trigger doesn't know about.
+  // Using update() avoids any INSERT conflict with the trigger-created row.
   const { error: profileError } = await supabase
     .from('profiles')
-    .upsert({
-      id: newUserId,
-      email: internalEmail,
-      username: usernameClean,        // ← Required for username-based login
+    .update({
+      username: usernameClean,
       full_name,
       role: 'researcher',
-      referring_agent_id: user.id,    // Links researcher to the creating agent
-      disclaimer_v1_accepted: false,  // Researcher must accept on first login
+      referring_agent_id: user.id,
+      disclaimer_v1_accepted: false,
       is_active: true,
       updated_at: new Date().toISOString(),
-    }, { onConflict: 'id' });
+    })
+    .eq('id', newUserId);
 
   if (profileError) {
+    console.error('[create-researcher] profile update error:', profileError);
+    // Roll back: delete the auth user we just created
     await supabase.auth.admin.deleteUser(newUserId);
     return NextResponse.json(
-      { error: 'Profile Creation Failed.' },
+      { error: `Profile Setup Failed: ${profileError.message}` },
       { status: 500 }
     );
   }
@@ -120,4 +123,3 @@ export async function POST(req: NextRequest) {
     full_name,
   });
 }
-
