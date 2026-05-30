@@ -322,3 +322,18 @@ export const ListAdminMentionsSchema = z.object({
   status: z.enum(['unread', 'read', 'resolved']).optional(),
 });
 export type ListAdminMentionsInput = z.infer<typeof ListAdminMentionsSchema>;
+
+// Phase 14: notifications - notification_preferences upsert
+//
+// The platform-wide rule is "zero email" -- lib/email.ts is a no-op shim --
+// but the columns exist so future opt-in flows have a place to write. The
+// only field surfaced in the messenger UI today is browserPush (via the
+// in-pane "Enable Push Notifications" prompt). The rest are accepted here
+// for parity with the underlying table.
+export const NotificationPrefsSchema = z.object({
+  browserPush: z.boolean().optional(),
+  emailOnMessage: z.boolean().optional(),
+  emailOnInvoice: z.boolean().optional(),
+  muteAll: z.boolean().optional(),
+});
+export type NotificationPrefsInput = z.infer<typeof NotificationPrefsSchema>;

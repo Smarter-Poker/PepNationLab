@@ -225,6 +225,108 @@ export function subscribeCallSignals(userId: string, handlers: CallSignalHandler
   return ch;
 }
 
+// Phase 14: realtime unread bell.
+//
+// Subscribes to every messenger_participants row owned by the caller and emits
+// the new row on INSERT/UPDATE so a consumer can recompute the badge count.
+// The DELETE branch surfaces the OLD row (Realtime sends only old on delete)
+// so a caller can drop the conv from any cached aggregate.
+export interface ParticipantUnreadRow {
+  conversation_id: string;
+  user_id: string;
+  unread_count: number;
+  is_muted: boolean;
+  last_read_at: string | null;
+}
+
+interface MyParticipantsHandler {
+  (row: ParticipantUnreadRow, event: 'INSERT' | 'UPDATE' | 'DELETE'): void;
+}
+
+export function subscribeMyParticipants(
+  userId: string,
+  onChange: MyParticipantsHandler,
+): RealtimeChannel {
+  const ch = supabase.channel(`mp_self:${userId}`);
+  ch.on(
+    'postgres_changes',
+    {
+      event: 'INSERT',
+      schema: 'public',
+      table: 'messenger_participants',
+      filter: `user_id=eq.${userId}`,
+    },
+    (payload) => {
+      const row = payload.new as ParticipantUnreadRow;
+      if (row) onChange(row, 'INSERT');
+    },
+  );
+  ch.on(
+    'postgres_changes',
+    {
+      event: 'UPDATE',
+      schema: 'public',
+      table: 'messenger_participants',
+      filter: `user_id=eq.${userId}`,
+    },
+    (payload) => {
+      const row = payload.new as ParticipantUnreadRow;
+      if (row) onChange(row, 'UPDATE');
+    },
+  );
+  ch.on(
+    'postgres_changes',
+    {
+      event: 'DELETE',
+      schema: 'public',
+      table: 'messenger_participants',
+      filter: `user_id=eq.${userId}`,
+    },
+    (payload) => {
+      const row = payload.old as ParticipantUnreadRow;
+      if (row) onChange(row, 'DELETE');
+    },
+  );
+  ch.subscribe();
+  return ch;
+}
+
+// Phase 14: cross-conversation incoming-message stream.
+//
+// The Phase 6 publication already publishes every messenger_messages INSERT,
+// and RLS gates the channel so the caller only sees rows from conversations
+// they participate in. We filter out self-authored messages locally so the
+// caller never browser-pushes its own send.
+export interface IncomingMessageNotification {
+  id: string;
+  conversation_id: string;
+  sender_id: string;
+  text: string | null;
+  message_type: string;
+  created_at: string;
+}
+
+export function subscribeMyIncomingMessages(
+  userId: string,
+  onInsert: (m: IncomingMessageNotification) => void,
+): RealtimeChannel {
+  const ch = supabase.channel(`mm_self:${userId}`);
+  ch.on(
+    'postgres_changes',
+    {
+      event: 'INSERT',
+      schema: 'public',
+      table: 'messenger_messages',
+    },
+    (payload) => {
+      const m = payload.new as IncomingMessageNotification & { sender_id: string };
+      if (m && m.sender_id !== userId) onInsert(m);
+    },
+  );
+  ch.subscribe();
+  return ch;
+}
+
 export function unsubscribe(ch: RealtimeChannel | null) {
   if (!ch) return;
   void supabase.removeChannel(ch);
