@@ -74,6 +74,7 @@ export default function MessageComposer({ conversationId, selfId, replyTo, onCle
   const [pendingExpirySeconds, setPendingExpirySeconds] = useState<number | null>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
+  const videoInputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const appendMessage = useMessengerStore((s) => s.appendMessage);
   const updateMessage = useMessengerStore((s) => s.updateMessage);
@@ -285,10 +286,23 @@ export default function MessageComposer({ conversationId, selfId, replyTo, onCle
     });
   };
 
+  const handleVideo = async (file: File) => {
+    const allowed = new Set([
+      'video/mp4', 'video/webm', 'video/quicktime', 'video/x-m4v',
+    ]);
+    if (!allowed.has(file.type)) { toast('Unsupported Video Type. Use MP4, MOV, Or WebM'); return; }
+    if (file.size > 200 * 1024 * 1024) { toast('Video Too Large (Max 200 MB)'); return; }
+    await uploadAndSend(file, file.type, 'video', {
+      filename: file.name, size: file.size, contentType: file.type,
+      duration: null, // populated client-side if needed via VideoMetadata API
+    });
+  };
+
   const handleFile = async (file: File) => {
+    const videoMimes = new Set(['video/mp4', 'video/webm', 'video/quicktime', 'video/x-m4v']);
+    if (videoMimes.has(file.type)) { return handleVideo(file); }
     const allowed = new Set([
       'image/jpeg', 'image/png', 'image/gif', 'image/webp',
-      'video/mp4', 'video/webm',
       'audio/webm', 'audio/mp4', 'audio/mpeg',
       'application/pdf',
     ]);
@@ -331,6 +345,15 @@ export default function MessageComposer({ conversationId, selfId, replyTo, onCle
           const f = e.target.files?.[0];
           e.target.value = '';
           if (f) void handleImage(f);
+        }}
+      />
+      <input ref={videoInputRef} type="file"
+        accept="video/mp4,video/webm,video/quicktime,video/*"
+        style={{ display: 'none' }}
+        onChange={(e) => {
+          const f = e.target.files?.[0];
+          e.target.value = '';
+          if (f) void handleVideo(f);
         }}
       />
       <input ref={fileInputRef} type="file" style={{ display: 'none' }}
@@ -534,6 +557,7 @@ export default function MessageComposer({ conversationId, selfId, replyTo, onCle
         <AttachMenu
           onClose={() => setShowAttach(false)}
           onPickImage={() => imageInputRef.current?.click()}
+          onPickVideo={() => videoInputRef.current?.click()}
           onPickVoice={() => setVoiceMode(true)}
           onPickFile={() => fileInputRef.current?.click()}
         />

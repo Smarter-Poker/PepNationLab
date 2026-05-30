@@ -1,6 +1,6 @@
 export type ConversationType = 'direct' | 'group' | 'announcement';
 export type MessageType =
-  | 'text' | 'image' | 'gif' | 'voice' | 'file'
+  | 'text' | 'image' | 'gif' | 'voice' | 'video' | 'file'
   | 'contact_card' | 'location' | 'poll' | 'system';
 export type ParticipantRole = 'owner' | 'admin' | 'moderator' | 'member';
 export type MessageStatus = 'sent' | 'delivered' | 'read';

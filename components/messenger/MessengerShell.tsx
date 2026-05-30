@@ -1,5 +1,6 @@
 'use client';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { ArrowLeft } from 'lucide-react';
 import ConversationList from './ConversationList';
 import MessagePane from './MessagePane';
 import SearchBar from './SearchBar';
@@ -335,40 +336,97 @@ export default function MessengerShell({ userId }: Props) {
 
   return (
     <>
+      {/* ============================================================
+          Facebook-style two-panel layout.
+
+          Desktop (>768px): aside (320px) + main fill side by side.
+          Mobile  (≤768px): CSS class "msg-panel-active" on the shell
+                            hides the aside (translateX(-100%)) and
+                            shows the message pane (translateX(0)).
+                            No JS required for the transition — the CSS
+                            responds to a class on the shell container.
+
+          Key rules (also in globals.css .messenger-* classes):
+            - Shell: display:flex, height:100%, overflow:hidden
+            - aside: flex-shrink:0, width:320px
+            - main:  flex:1 1 0, min-width:0
+          ============================================================ */}
       <div
+        className={`messenger-shell${activeId ? ' msg-panel-active' : ''}`}
         style={{
           display: 'flex',
           height: '100%',
-          border: '1px solid var(--surface-3, #1D2D3E)',
           overflow: 'hidden',
           background: 'var(--surface-1, #0F1923)',
+          position: 'relative',
         }}
       >
-          <aside
-            style={{
-              width: 320,
-              borderRight: '1px solid var(--surface-3, #1D2D3E)',
-              background: 'var(--surface-2, #162230)',
-              display: 'flex',
-              flexDirection: 'column',
-            }}
-          >
-            <header
+        {/* ---- Conversation list sidebar ---- */}
+        <aside className="messenger-sidebar" style={{
+          flexShrink: 0,
+          width: 320,
+          borderRight: '1px solid var(--surface-3, #1D2D3E)',
+          background: 'var(--surface-2, #162230)',
+          display: 'flex',
+          flexDirection: 'column',
+          // On mobile this slides out when a conv is active (CSS handles it)
+        }}>
+          <header style={{
+            padding: '10px 12px',
+            borderBottom: '1px solid var(--surface-3, #1D2D3E)',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 8,
+            flexShrink: 0,
+          }}>
+            <div style={{ fontWeight: 700, fontSize: '1rem', color: 'var(--white, #FFFFFF)' }}>Messenger</div>
+            <SearchBar />
+          </header>
+          <ConversationList selfId={userId} />
+        </aside>
+
+        {/* ---- Message pane (fills remaining space) ---- */}
+        <div className="messenger-main" style={{
+          flex: '1 1 0',
+          minWidth: 0,
+          display: 'flex',
+          flexDirection: 'column',
+          overflow: 'hidden',
+          position: 'relative',
+        }}>
+          {/* Mobile back button — only visible on mobile when a conv is active */}
+          {activeId && (
+            <button
+              type="button"
+              className="messenger-back-btn"
+              onClick={() => setActive(null)}
+              aria-label="Back To Conversations"
               style={{
-                padding: '10px 12px',
-                borderBottom: '1px solid var(--surface-3, #1D2D3E)',
-                display: 'flex',
-                flexDirection: 'column',
+                display: 'none', // shown via CSS on mobile
+                alignItems: 'center',
                 gap: 8,
+                padding: '8px 12px',
+                background: 'var(--surface-2, #162230)',
+                border: 'none',
+                borderBottom: '1px solid var(--surface-3, #1D2D3E)',
+                color: 'var(--teal, #00C4BC)',
+                cursor: 'pointer',
+                fontSize: '0.88rem',
+                fontWeight: 600,
+                flexShrink: 0,
+                width: '100%',
+                textAlign: 'left',
               }}
             >
-              <div style={{ fontWeight: 700, fontSize: '1rem' }}>Messenger</div>
-              <SearchBar />
-            </header>
-            <ConversationList selfId={userId} />
-          </aside>
+              <ArrowLeft size={16} aria-hidden="true" />
+              All Conversations
+            </button>
+          )}
           <MessagePane userId={userId} activeCall={activeCall} setActiveCall={setActiveCall} />
+        </div>
       </div>
+
+      {/* Incoming call toasts — absolutely positioned so they don't affect layout */}
       {incomingCalls.map((c, idx) => (
         <IncomingCallToast
           key={c.id}

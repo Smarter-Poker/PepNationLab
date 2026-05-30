@@ -9,16 +9,22 @@ export const dynamic = 'force-dynamic';
 
 const ALLOWED_MIME = new Set([
   'image/jpeg', 'image/png', 'image/gif', 'image/webp',
-  'video/mp4', 'video/webm',
+  'video/mp4', 'video/webm', 'video/quicktime', 'video/x-m4v',
   'audio/webm', 'audio/mp4', 'audio/mpeg',
   'application/pdf',
 ]);
 
 const MIME_TO_EXT: Record<string, string> = {
   'image/jpeg': 'jpg', 'image/png': 'png', 'image/gif': 'gif', 'image/webp': 'webp',
-  'video/mp4': 'mp4', 'video/webm': 'webm',
+  'video/mp4': 'mp4', 'video/webm': 'webm', 'video/quicktime': 'mov', 'video/x-m4v': 'm4v',
   'audio/webm': 'webm', 'audio/mp4': 'm4a', 'audio/mpeg': 'mp3',
   'application/pdf': 'pdf',
+};
+
+// Video files need higher size limit than images
+const MAX_BYTES: Record<string, number> = {
+  default: 50 * 1024 * 1024,   // 50 MB for images, audio, PDF
+  video: 200 * 1024 * 1024,    // 200 MB for video
 };
 
 export async function POST(req: NextRequest) {
@@ -38,8 +44,13 @@ export async function POST(req: NextRequest) {
   if (!ALLOWED_MIME.has(contentType)) {
     return NextResponse.json({ error: 'Unsupported Content Type' }, { status: 400 });
   }
-  if (!Number.isFinite(bytes) || bytes <= 0 || bytes > 50 * 1024 * 1024) {
-    return NextResponse.json({ error: 'Invalid Size' }, { status: 400 });
+  const isVideo = contentType.startsWith('video/');
+  const maxBytes = isVideo ? MAX_BYTES.video : MAX_BYTES.default;
+  if (!Number.isFinite(bytes) || bytes <= 0 || bytes > maxBytes) {
+    return NextResponse.json(
+      { error: isVideo ? 'Video Too Large (200 MB Max)' : 'File Too Large (50 MB Max)' },
+      { status: 400 }
+    );
   }
 
   const ext = MIME_TO_EXT[contentType];

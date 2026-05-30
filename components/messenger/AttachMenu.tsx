@@ -1,14 +1,15 @@
 'use client';
-import { Image as ImageIcon, Mic, FileText } from 'lucide-react';
+import { Image as ImageIcon, Mic, FileText, Video } from 'lucide-react';
 
 interface Props {
   onPickImage: () => void;
+  onPickVideo: () => void;
   onPickVoice: () => void;
   onPickFile: () => void;
   onClose: () => void;
 }
 
-export default function AttachMenu({ onPickImage, onPickVoice, onPickFile, onClose }: Props) {
+export default function AttachMenu({ onPickImage, onPickVideo, onPickVoice, onPickFile, onClose }: Props) {
   const item = (label: string, Icon: typeof ImageIcon, click: () => void) => (
     <button
       type="button"
@@ -34,6 +35,7 @@ export default function AttachMenu({ onPickImage, onPickVoice, onPickFile, onClo
       }}
     >
       {item('Upload Image', ImageIcon, onPickImage)}
+      {item('Upload Video', Video, onPickVideo)}
       {item('Record Voice', Mic, onPickVoice)}
       {item('Upload File', FileText, onPickFile)}
     </div>

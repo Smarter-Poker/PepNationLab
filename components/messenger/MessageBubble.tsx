@@ -92,7 +92,7 @@ export default function MessageBubble({
   const pending = message.id.startsWith('temp-');
   const meta = (message.media_metadata ?? {}) as { filename?: string; size?: number; durationSec?: number; contentType?: string };
   const url = extractFirstUrl(message.text);
-  const isMediaBubble = message.message_type === 'image' || message.message_type === 'gif';
+  const isMediaBubble = ['image', 'gif', 'video'].includes(message.message_type);
 
   // Re-render once a minute to update the expiry countdown label.
   useEffect(() => {
@@ -179,6 +179,46 @@ export default function MessageBubble({
     }
     if (message.message_type === 'voice' && message.media_url) {
       return <VoicePlayer src={message.media_url} />;
+    }
+    if (message.message_type === 'video' && message.media_url) {
+      return (
+        <div style={{ position: 'relative', maxWidth: 320 }}>
+          {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
+          <video
+            src={message.media_url}
+            controls
+            playsInline
+            preload="metadata"
+            aria-label={`Video${meta.filename ? `: ${meta.filename}` : ''}`}
+            style={{
+              maxWidth: '100%',
+              width: 320,
+              borderRadius: 10,
+              display: 'block',
+              background: '#000',
+              aspectRatio: '16 / 9',
+            }}
+          />
+          {meta.filename && (
+            <a
+              href={safeHref(message.media_url)}
+              download={meta.filename}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                display: 'flex', alignItems: 'center', gap: 6,
+                padding: '4px 8px', fontSize: '0.76rem',
+                color: isOwn ? '#000' : 'var(--grey-400, #A8B4C0)',
+              }}
+              aria-label={`Download ${meta.filename}`}
+            >
+              <Download size={12} />
+              {meta.filename}
+              {meta.size ? <span style={{ opacity: 0.7 }}>({formatSize(meta.size)})</span> : null}
+            </a>
+          )}
+        </div>
+      );
     }
     if (message.message_type === 'file' && message.media_url) {
       return (
