@@ -53,7 +53,7 @@ export async function POST(req: NextRequest) {
   try {
     encrypted = encryptSecret(apiKey);
   } catch (err) {
-    const msg = err instanceof Error ? err.message : 'Encryption failed.';
+    const msg = 'Encryption failed.';
     return NextResponse.json({ error: `Encryption Error: ${msg}` }, { status: 500 });
   }
 
@@ -98,7 +98,7 @@ export async function POST(req: NextRequest) {
 
   if (insertErr || !inserted) {
     return NextResponse.json(
-      { error: `Database Error: ${insertErr?.message ?? 'insert failed'}` },
+      { error: 'A database error occurred.' },
       { status: 500 },
     );
   }

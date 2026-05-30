@@ -135,7 +135,7 @@ export async function POST(req: NextRequest) {
     shippoAddressId = validation.shippoAddressId ?? null;
   } catch (err) {
     // Shippo unavailable or no credentials — save the origin but warn.
-    const msg = err instanceof Error ? err.message : 'Shippo unavailable';
+    const msg = 'Shippo unavailable';
     validationWarning = `Address Not Validated: ${msg}`;
   }
 
@@ -172,7 +172,7 @@ export async function POST(req: NextRequest) {
 
   if (insertErr || !inserted) {
     return NextResponse.json(
-      { error: `Database Error: ${insertErr?.message ?? 'insert failed'}` },
+      { error: 'A database error occurred.' },
       { status: 500 },
     );
   }

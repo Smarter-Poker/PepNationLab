@@ -140,7 +140,7 @@ export async function POST(req: NextRequest) {
       });
 
     if (uploadErr) {
-      skipped.push({ file: fileName, reason: `Upload Failed: ${uploadErr.message}` });
+      skipped.push({ file: fileName, reason: 'Upload Failed.' });
       continue;
     }
 
@@ -160,7 +160,7 @@ export async function POST(req: NextRequest) {
       .eq('id', productId);
 
     if (updateErr) {
-      skipped.push({ file: fileName, reason: `DB Update Failed: ${updateErr.message}` });
+      skipped.push({ file: fileName, reason: 'DB Update Failed.' });
       continue;
     }
 

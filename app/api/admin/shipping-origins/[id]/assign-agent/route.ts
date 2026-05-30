@@ -90,7 +90,7 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
 
   if (updateErr) {
     return NextResponse.json(
-      { error: `Database Error: ${updateErr.message}` },
+      { error: 'A database error occurred.' },
       { status: 500 },
     );
   }
@@ -168,7 +168,7 @@ export async function DELETE(req: NextRequest, { params }: RouteParams) {
 
   if (updateErr) {
     return NextResponse.json(
-      { error: `Database Error: ${updateErr.message}` },
+      { error: 'A database error occurred.' },
       { status: 500 },
     );
   }

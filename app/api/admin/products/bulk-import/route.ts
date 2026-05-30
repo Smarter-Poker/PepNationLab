@@ -410,7 +410,7 @@ export async function POST(req: NextRequest) {
 
   if (upsertErr) {
     return NextResponse.json(
-      { error: `Database Upsert Failed: ${upsertErr.message}` },
+      { error: 'Database Upsert Failed.' },
       { status: 500 }
     );
   }

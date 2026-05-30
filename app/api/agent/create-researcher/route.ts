@@ -83,7 +83,7 @@ export async function POST(req: NextRequest) {
   if (authError || !authData?.user) {
     console.error('[create-researcher] auth.admin.createUser error:', authError);
     return NextResponse.json(
-      { error: authError?.message || 'Failed To Create Auth Account' },
+      { error: 'Failed To Create Auth Account.' },
       { status: 500 }
     );
   }
@@ -111,7 +111,7 @@ export async function POST(req: NextRequest) {
     // Roll back: delete the auth user we just created
     await supabase.auth.admin.deleteUser(newUserId);
     return NextResponse.json(
-      { error: `Profile Setup Failed: ${profileError.message}` },
+      { error: 'Profile Setup Failed.' },
       { status: 500 }
     );
   }

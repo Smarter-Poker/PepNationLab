@@ -107,7 +107,7 @@ export async function POST(req: NextRequest) {
   if (insertError) {
     const friendly = insertError.message.toLowerCase().includes('duplicate')
       ? 'A Coupon With That Code Already Exists For This Agent.'
-      : insertError.message;
+      : 'An unexpected error occurred.';
     return NextResponse.json({ error: friendly }, { status: 500 });
   }
 

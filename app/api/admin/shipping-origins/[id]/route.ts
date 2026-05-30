@@ -121,7 +121,7 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
 
   if (updateErr || !updated) {
     return NextResponse.json(
-      { error: `Database Error: ${updateErr?.message ?? 'update failed'}` },
+      { error: 'A database error occurred.' },
       { status: 500 },
     );
   }
@@ -176,7 +176,7 @@ export async function DELETE(req: NextRequest, { params }: RouteParams) {
 
   if (updateErr) {
     return NextResponse.json(
-      { error: `Database Error: ${updateErr.message}` },
+      { error: 'A database error occurred.' },
       { status: 500 },
     );
   }
