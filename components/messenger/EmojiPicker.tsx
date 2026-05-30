@@ -17,6 +17,7 @@ export default function EmojiPicker({ onPick, onClose }: Props) {
   return (
     <div
       role="dialog"
+      aria-modal="true"
       aria-label="Pick An Emoji"
       style={{
         position: 'absolute',

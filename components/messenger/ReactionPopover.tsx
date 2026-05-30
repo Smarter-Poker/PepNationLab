@@ -15,6 +15,7 @@ export default function ReactionPopover({ onPick, onClose }: Props) {
   return (
     <div
       role="dialog"
+      aria-modal="true"
       aria-label="Pick A Reaction"
       style={{
         position: 'absolute',

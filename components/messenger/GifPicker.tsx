@@ -47,6 +47,7 @@ export default function GifPicker({ onPick, onClose, onUnavailable }: Props) {
   return (
     <div
       role="dialog"
+      aria-modal="true"
       aria-label="Pick A Gif"
       style={{
         position: 'absolute', bottom: 56, left: 8, right: 8,
