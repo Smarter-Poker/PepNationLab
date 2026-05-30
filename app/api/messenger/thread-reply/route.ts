@@ -37,9 +37,6 @@ export async function POST(req: NextRequest) {
 
   const svc = await createServiceClient();
 
-  // Audit4 fix: also reject when the parent is soft-deleted. Without this
-  // check, a reply could land on a tombstoned thread parent and the UI
-  // would render an orphaned reply with no readable parent context.
   const { data: parent } = await svc
     .from('messenger_messages')
     .select('id, conversation_id, is_deleted')
@@ -70,10 +67,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: insErr?.message ?? 'Insert Failed' }, { status: 500 });
   }
 
-  // Audit6 fix: thread replies were silently dropping @admin mentions because
-  // detection only lived in /api/messenger/send-message. Mirror the
-  // send-message path here so a moderator notice lands in the admin inbox
-  // whether the mention arrives in a top-level message or a thread reply.
   if (cleanText && hasAdminMention(cleanText)) {
     await recordAdminMention(svc, {
       messageId: (inserted as { id: string }).id,

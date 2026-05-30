@@ -35,8 +35,6 @@ export async function POST(req: NextRequest) {
   const targetPart = await getParticipant(parsed.data.conversationId, parsed.data.userId);
   if (!targetPart) return NextResponse.json({ error: 'Target Not A Participant' }, { status: 404 });
 
-  // Demoting the only owner is forbidden -- the conversation must always have
-  // at least one owner who can manage participants.
   if (targetPart.role === 'owner' && parsed.data.role !== 'owner') {
     const { count: ownerCount } = await svc
       .from('messenger_participants')

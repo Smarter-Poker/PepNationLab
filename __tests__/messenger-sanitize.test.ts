@@ -56,8 +56,6 @@ test('leading and trailing whitespace is trimmed', () => {
 });
 
 test('control characters are stripped', () => {
-  // NUL, BEL, BS, VT, FF, ESC, DEL — all in the control-char ranges the
-  // sanitizer scrubs. The visible word "hi" should survive.
   assert.equal(sanitizeMessageText('\x00h\x07i\x08\x0B\x0C\x1B\x7F'), 'hi');
 });
 
@@ -72,22 +70,17 @@ test('trailing whitespace on lines is collapsed', () => {
 });
 
 test('non-string input is rejected', () => {
-  // The sanitizer's runtime guard must catch callers that pass garbage.
-  // We intentionally cast through unknown to test that defense.
   assert.equal(sanitizeMessageText(null as unknown as string), null);
   assert.equal(sanitizeMessageText(undefined as unknown as string), null);
   assert.equal(sanitizeMessageText(42 as unknown as string), null);
 });
 
 test('case-insensitive scheme detection', () => {
-  // Mixed-case must still trip the filter — uppercase is a classic bypass.
   assert.equal(sanitizeMessageText('JaVaScRiPt:alert(1)'), null);
   assert.equal(sanitizeMessageText('DATA:text/html,evil'), null);
 });
 
 test('empty string is preserved as empty string (not null)', () => {
-  // Empty bodies are allowed at this layer — the route handler decides
-  // whether to reject them based on whether media accompanies the message.
   assert.equal(sanitizeMessageText(''), '');
   assert.equal(sanitizeMessageText('   '), '');
 });
