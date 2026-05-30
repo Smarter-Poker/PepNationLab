@@ -13,8 +13,6 @@ const VALID_EVENTS = [
   'order.shipped',
   'order.delivered',
   'order.cancelled',
-  'rma.created',
-  'rma.resolved',
   'subscription.run',
   'price.changed',
 ] as const;
@@ -48,7 +46,7 @@ export async function GET(req: NextRequest) {
   }
 
   const { data, count, error } = await query;
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
 
   return NextResponse.json({
     endpoints: data ?? [],
@@ -119,7 +117,7 @@ export async function DELETE(req: NextRequest) {
     .update({ is_active: false, updated_at: new Date().toISOString() })
     .eq('id', id);
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
 
   await service.from('admin_audit_log').insert({
     actor_id: gate.userId,

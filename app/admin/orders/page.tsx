@@ -114,79 +114,15 @@ function AdminOrdersPageInner() {
   // User Auth
   const [userRole, setUserRole] = useState<string>('');
 
-  // Refund modal state
-  const [showRefundModal, setShowRefundModal] = useState(false);
-  const [refundAmount, setRefundAmount] = useState('');
-  const [refundReason, setRefundReason] = useState('');
-  const [refundType, setRefundType] = useState<'agent_balance' | 'store_credit' | 'original_payment' | 'admin_manual'>('agent_balance');
-  const [refundNotes, setRefundNotes] = useState('');
-  const [refundSubmitting, setRefundSubmitting] = useState(false);
-
   // Cancel modal state
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [cancelReason, setCancelReason] = useState('');
-  const [cancelRefundType, setCancelRefundType] = useState<'agent_balance' | 'store_credit' | 'original_payment' | 'admin_manual' | 'none'>('none');
   const [cancelSubmitting, setCancelSubmitting] = useState(false);
-
-  // refunded_amount lives outside the typed Order interface — read it loosely.
-  const refundedAmount = selectedOrder ? Number((selectedOrder as any).refunded_amount ?? 0) : 0;
-  const remainingRefundable = selectedOrder ? Math.max(0, Number(selectedOrder.total) - refundedAmount) : 0;
-
-  function openRefundModal() {
-    if (!selectedOrder) return;
-    setRefundAmount(remainingRefundable.toFixed(2));
-    setRefundReason('');
-    setRefundType('agent_balance');
-    setRefundNotes('');
-    setShowRefundModal(true);
-  }
 
   function openCancelModal() {
     if (!selectedOrder) return;
     setCancelReason('');
-    setCancelRefundType('none');
     setShowCancelModal(true);
-  }
-
-  async function submitRefund() {
-    if (!selectedOrder) return;
-    const amount = Number(refundAmount);
-    if (!Number.isFinite(amount) || amount <= 0) {
-      toast.error('Amount Must Be Greater Than Zero');
-      return;
-    }
-    if (amount > remainingRefundable + 0.001) {
-      toast.error(`Amount Exceeds Remaining Refundable ($${remainingRefundable.toFixed(2)})`);
-      return;
-    }
-    if (!refundReason.trim()) {
-      toast.error('Reason Is Required');
-      return;
-    }
-    setRefundSubmitting(true);
-    try {
-      const res = await fetch(`/api/admin/orders/${selectedOrder.id}/refund`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          amount,
-          reason: refundReason.trim(),
-          refund_type: refundType,
-          is_partial: amount < Number(selectedOrder.total) - 0.001,
-          notes: refundNotes.trim() || null,
-        }),
-      });
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.error || 'Refund Failed');
-      toast.success(`Refund Issued ($${amount.toFixed(2)})`);
-      setShowRefundModal(false);
-      setSelectedOrder((prev) => prev ? ({ ...(prev as any), refunded_amount: json.new_refunded_amount } as Order) : null);
-      await fetchOrders();
-    } catch (e: any) {
-      toast.error(e.message || 'Refund Failed');
-    } finally {
-      setRefundSubmitting(false);
-    }
   }
 
   async function submitCancel() {
@@ -200,14 +136,12 @@ function AdminOrdersPageInner() {
       const res = await fetch(`/api/admin/orders/${selectedOrder.id}/cancel`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          reason: cancelReason.trim(),
-          refund_type: cancelRefundType,
-        }),
+        // All sales are final — no refund_type param. The API always uses 'none'.
+        body: JSON.stringify({ reason: cancelReason.trim() }),
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || 'Cancel Failed');
-      toast.success(cancelRefundType === 'none' ? 'Order Cancelled' : 'Order Cancelled And Refunded');
+      toast.success('Order Cancelled');
       setShowCancelModal(false);
       setSelectedOrder((prev) => prev ? ({ ...prev, status: 'cancelled' as any }) : null);
       await fetchOrders();
@@ -1029,36 +963,6 @@ function AdminOrdersPageInner() {
                       </div>
                     )}
 
-                    {/* Refund (available when there is remaining refundable amount) */}
-                    {remainingRefundable > 0.001 && userRole !== 'shipping' && (
-                      <button
-                        onClick={openRefundModal}
-                        className="btn btn-secondary"
-                        style={{ width: '100%', justifyContent: 'center', borderColor: 'var(--teal)', color: 'var(--teal)' }}
-                      >
-                        Issue Refund (Remaining ${remainingRefundable.toFixed(2)})
-                      </button>
-                    )}
-
-                    {/* Refunded summary */}
-                    {refundedAmount > 0.001 && (
-                      <div
-                        style={{
-                          padding: 'var(--space-3)',
-                          background: 'var(--surface-1)',
-                          borderRadius: 'var(--radius-md)',
-                          border: 'var(--border-subtle)',
-                          fontSize: '0.78rem',
-                          color: 'var(--grey-400)',
-                        }}
-                      >
-                        Refunded To Date:{' '}
-                        <span style={{ color: 'var(--teal)', fontWeight: 600 }}>
-                          ${refundedAmount.toFixed(2)}
-                        </span>
-                      </div>
-                    )}
-
                     {/* Cancellation (available for any status except cancelled/delivered) */}
                     {selectedOrder.status !== 'cancelled' && selectedOrder.status !== 'delivered' && userRole !== 'shipping' && (
                       <button
@@ -1080,87 +984,6 @@ function AdminOrdersPageInner() {
           )}
         </div>
       </div>
-      {/* Refund Modal */}
-      {showRefundModal && selectedOrder && (
-        <div
-          onClick={() => !refundSubmitting && setShowRefundModal(false)}
-          style={{
-            position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            zIndex: 1000, padding: 'var(--space-4)',
-          }}
-        >
-          <div
-            onClick={(e) => e.stopPropagation()}
-            className="card-metal"
-            style={{ padding: 'var(--space-6)', maxWidth: 480, width: '100%' }}
-          >
-            <h2 style={{ fontSize: '1.1rem', marginBottom: 'var(--space-2)' }}>Issue Refund</h2>
-            <p style={{ fontSize: '0.78rem', color: 'var(--grey-400)', marginBottom: 'var(--space-4)' }}>
-              Order Total ${Number(selectedOrder.total).toFixed(2)} — Refunded To Date ${refundedAmount.toFixed(2)} — Remaining ${remainingRefundable.toFixed(2)}
-            </p>
-
-            <div className="form-group" style={{ marginBottom: 'var(--space-3)' }}>
-              <label className="form-label">Amount (USD)</label>
-              <input
-                type="number"
-                step="0.01"
-                min="0.01"
-                max={remainingRefundable}
-                className="form-input"
-                value={refundAmount}
-                onChange={(e) => setRefundAmount(e.target.value)}
-              />
-            </div>
-
-            <div className="form-group" style={{ marginBottom: 'var(--space-3)' }}>
-              <label className="form-label">Reason</label>
-              <textarea
-                className="form-input"
-                rows={2}
-                value={refundReason}
-                onChange={(e) => setRefundReason(e.target.value)}
-                placeholder="Damaged Shipment, Customer Service Recovery, Wrong Item Sent..."
-              />
-            </div>
-
-            <div className="form-group" style={{ marginBottom: 'var(--space-3)' }}>
-              <label className="form-label">Refund Method</label>
-              <select
-                className="form-input"
-                value={refundType}
-                onChange={(e) => setRefundType(e.target.value as any)}
-              >
-                <option value="agent_balance">Agent Balance</option>
-                <option value="store_credit">Store Credit</option>
-                <option value="original_payment">Original Payment</option>
-                <option value="admin_manual">Admin Manual</option>
-              </select>
-            </div>
-
-            <div className="form-group" style={{ marginBottom: 'var(--space-5)' }}>
-              <label className="form-label">Notes (Optional)</label>
-              <textarea
-                className="form-input"
-                rows={2}
-                value={refundNotes}
-                onChange={(e) => setRefundNotes(e.target.value)}
-                placeholder="Internal Notes..."
-              />
-            </div>
-
-            <div style={{ display: 'flex', gap: 'var(--space-3)', justifyContent: 'flex-end' }}>
-              <button className="btn btn-secondary" onClick={() => setShowRefundModal(false)} disabled={refundSubmitting}>
-                Cancel
-              </button>
-              <button className="btn btn-primary" onClick={submitRefund} disabled={refundSubmitting}>
-                {refundSubmitting ? 'Issuing...' : 'Issue Refund'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Cancel Modal */}
       {showCancelModal && selectedOrder && (
         <div
@@ -1178,10 +1001,10 @@ function AdminOrdersPageInner() {
           >
             <h2 style={{ fontSize: '1.1rem', marginBottom: 'var(--space-2)' }}>Cancel Order</h2>
             <p style={{ fontSize: '0.78rem', color: 'var(--grey-400)', marginBottom: 'var(--space-4)' }}>
-              Order Total ${Number(selectedOrder.total).toFixed(2)} — Remaining To Refund ${remainingRefundable.toFixed(2)}. This Action Cannot Be Undone.
+              Order Total ${Number(selectedOrder.total).toFixed(2)}. All Sales Are Final — This Action Cannot Be Undone.
             </p>
 
-            <div className="form-group" style={{ marginBottom: 'var(--space-3)' }}>
+            <div className="form-group" style={{ marginBottom: 'var(--space-5)' }}>
               <label className="form-label">Reason</label>
               <textarea
                 className="form-input"
@@ -1190,21 +1013,6 @@ function AdminOrdersPageInner() {
                 onChange={(e) => setCancelReason(e.target.value)}
                 placeholder="Researcher Request, Payment Failed, Inventory Issue..."
               />
-            </div>
-
-            <div className="form-group" style={{ marginBottom: 'var(--space-5)' }}>
-              <label className="form-label">Auto-Refund Remaining Amount As</label>
-              <select
-                className="form-input"
-                value={cancelRefundType}
-                onChange={(e) => setCancelRefundType(e.target.value as any)}
-              >
-                <option value="none">No Refund</option>
-                <option value="agent_balance">Agent Balance</option>
-                <option value="store_credit">Store Credit</option>
-                <option value="original_payment">Original Payment</option>
-                <option value="admin_manual">Admin Manual</option>
-              </select>
             </div>
 
             <div style={{ display: 'flex', gap: 'var(--space-3)', justifyContent: 'flex-end' }}>

@@ -55,7 +55,7 @@ export default async function AdminAuditPage({
         Audit Log
       </h1>
       <p style={{ color: 'var(--silver)', fontSize: '0.92rem', marginBottom: 'var(--space-5)' }}>
-        Append-Only Record Of Sensitive Admin Actions: Password Resets, Role Changes, Tier Multiplier Updates, Refunds, And Balance Adjustments.
+        Append-Only Record Of Sensitive Admin Actions: Password Resets, Role Changes, Tier Multiplier Updates, And Balance Adjustments.
       </p>
       <AdminAuditClient
         initialRows={rows ?? []}
