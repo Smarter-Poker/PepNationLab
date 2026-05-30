@@ -150,6 +150,11 @@ const NAV = [
     label: 'Audit Log',
     icon: <svg {...ICON_PROPS}><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>,
   },
+  {
+    href: '/admin/push',
+    label: 'Push Log',
+    icon: <svg {...ICON_PROPS}><path d="M22 8v6a2 2 0 0 1-2 2h-7l-4 4v-4H4a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2z" /></svg>,
+  },
 ];
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
