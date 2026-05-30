@@ -818,11 +818,9 @@ export default function AgentDashboardClient({
             )}
 
             <div className="card-metal" style={{ padding: 'var(--space-6)' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 'var(--space-5)' }}>
-                <div>
-                  <h3 style={{ fontSize: '1.1rem', color: 'var(--white)', fontFamily: 'var(--font-brand)', letterSpacing: '0.05em', textTransform: 'uppercase' }}>My Researchers</h3>
-                  <p style={{ color: 'var(--grey-400)', fontSize: '0.82rem', marginTop: 4 }}>All Researcher Accounts You Have Created</p>
-                </div>
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', marginBottom: 'var(--space-6)' }}>
+                <h3 style={{ fontSize: '1.1rem', color: 'var(--white)', fontFamily: 'var(--font-brand)', letterSpacing: '0.05em', textTransform: 'uppercase', marginBottom: 6 }}>My Researchers</h3>
+                <p style={{ color: 'var(--grey-400)', fontSize: '0.82rem', marginBottom: 'var(--space-4)' }}>All Researcher Accounts You Have Created</p>
                 <button onClick={() => { setShowCreateResearcher(true); setCrError(''); setCrSuccess(''); }}
                   className="btn btn-primary" style={{ fontSize: '0.82rem' }}>
                   + Create Researcher Account
