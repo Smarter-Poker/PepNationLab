@@ -78,42 +78,42 @@ const NAV = [
   {
     href: '/admin/rma',
     label: 'Returns',
-    icon: <svg {...ICON_PROPS}><polyline points="3 6 5 6 21 6"/><path d="M19 6l-2 14a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2L5 6"/><path d="M10 11l4 4M14 11l-4 4"/></svg>,
+    icon: <svg {...ICON_PROPS}><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>,
   },
   {
     href: '/admin/store-credits',
     label: 'Store Credits',
-    icon: <svg {...ICON_PROPS}><rect x="2" y="5" width="20" height="14" rx="2" ry="2" /><line x1="2" y1="10" x2="22" y2="10" /></svg>,
+    icon: <svg {...ICON_PROPS}><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>,
   },
   {
     href: '/admin/transactions',
-    label: 'Transaction History',
-    icon: <svg {...ICON_PROPS}><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" /></svg>,
+    label: 'Transactions',
+    icon: <svg {...ICON_PROPS}><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>,
   },
   {
     href: '/admin/pricing',
-    label: 'Pricing Tiers',
+    label: 'Pricing',
     icon: <svg {...ICON_PROPS}><line x1="12" y1="1" x2="12" y2="23" /><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" /></svg>,
   },
   {
     href: '/admin/tax-rules',
     label: 'Tax Rules',
-    icon: <svg {...ICON_PROPS}><path d="M3 17l6-6 4 4 8-8M14 7h7v7"/></svg>,
+    icon: <svg {...ICON_PROPS}><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>,
   },
   {
     href: '/admin/tax-exemptions',
     label: 'Tax Exemptions',
-    icon: <svg {...ICON_PROPS}><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>,
+    icon: <svg {...ICON_PROPS}><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><polyline points="9 15 11 17 15 13"/></svg>,
   },
   {
     href: '/admin/scheduled-prices',
     label: 'Scheduled Prices',
-    icon: <svg {...ICON_PROPS}><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg>,
+    icon: <svg {...ICON_PROPS}><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>,
   },
   {
     href: '/admin/coupons',
     label: 'Coupons',
-    icon: <svg {...ICON_PROPS}><path d="M20 12V8H6a2 2 0 0 1-2-2 2 2 0 0 1 2-2h12v4" /><path d="M4 6v12a2 2 0 0 0 2 2h14v-4" /><path d="M18 12a2 2 0 0 0-2 2c0 1.1.9 2 2 2h4v-4h-4z" /></svg>,
+    icon: <svg {...ICON_PROPS}><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z" /><line x1="7" y1="7" x2="7.01" y2="7" /></svg>,
   },
   {
     href: '/admin/statements',
@@ -139,6 +139,11 @@ const NAV = [
     href: '/admin/webhooks',
     label: 'Webhooks',
     icon: <svg {...ICON_PROPS}><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>,
+  },
+  {
+    href: '/admin/audit',
+    label: 'Audit Log',
+    icon: <svg {...ICON_PROPS}><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>,
   },
 ];
 
@@ -168,95 +173,82 @@ export default async function AdminLayout({ children }: { children: React.ReactN
         width: 240,
         minHeight: '100vh',
         background: 'var(--black-2)',
-        borderRight: 'var(--border-silver)',
-        display: 'flex',
-        flexDirection: 'column',
-        position: 'fixed',
-        top: 0, left: 0, bottom: 0,
-        zIndex: 50,
+        borderRight: 'var(--border-teal)',
+        padding: 'var(--space-4) 0',
+        position: 'sticky',
+        top: 0,
+        alignSelf: 'flex-start',
+        height: '100vh',
+        overflowY: 'auto',
+        flexShrink: 0,
       }}>
-        {/* Brand — clickable home link */}
-        <Link href="/admin" style={{
-          padding: 'var(--space-6)',
-          borderBottom: '1px solid rgba(255,255,255,0.06)',
-          textDecoration: 'none',
-          display: 'block',
-        }}>
-          <div style={{
-            fontFamily: 'var(--font-brand)',
-            fontSize: '0.92rem',
-            fontWeight: 800,
-            letterSpacing: '0.12em',
-            color: 'var(--teal)',
-            textShadow: '0 0 12px rgba(192,184,168,0.3)'
-          }}>
-            PEP NATION LAB
-          </div>
-          <div style={{ fontSize: '0.72rem', color: 'var(--grey-400)', marginTop: 4 }}>
-            Admin Control Panel
-          </div>
-        </Link>
-
-        {/* Nav */}
-        <nav style={{ padding: 'var(--space-4) 0', flex: 1 }}>
+        <div style={{ padding: '0 var(--space-4) var(--space-4)' }}>
+          <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', color: 'var(--white)', textDecoration: 'none' }}>
+            <span style={{ fontFamily: 'var(--font-brand)', fontSize: '1.05rem', letterSpacing: '0.1em' }}>
+              PEP NATION LAB
+            </span>
+          </Link>
+          <div style={{ marginTop: 'var(--space-1)', color: 'var(--silver)', fontSize: '0.78rem' }}>Admin</div>
+        </div>
+        <nav style={{ display: 'flex', flexDirection: 'column', gap: 2, padding: '0 var(--space-2)' }}>
           {NAV.map(({ href, label, icon }) => {
-            if (profile?.role === 'shipping' && href !== '/admin/orders') return null;
-            
             return (
               <Link
                 key={href}
                 href={href}
-                className="sidebar-nav-item"
-                style={{ padding: 'var(--space-3) var(--space-5)' }}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 'var(--space-3)',
+                  padding: '8px 12px',
+                  borderRadius: 'var(--radius-md)',
+                  color: 'var(--silver)',
+                  fontSize: '0.85rem',
+                  textDecoration: 'none',
+                  transition: 'background 0.15s, color 0.15s',
+                }}
+                className="admin-nav-link"
               >
-                <span style={{ fontSize: '0.9rem', color: 'var(--teal)' }}>{icon}</span>
-                {label}
+                <span style={{ display: 'inline-flex', width: 16, height: 16 }}>{icon}</span>
+                <span>{label}</span>
               </Link>
             );
           })}
         </nav>
-
-        {/* Bottom */}
-        <div style={{
-          padding: 'var(--space-4) var(--space-5)',
-          borderTop: '1px solid rgba(255,255,255,0.06)'
-        }}>
-          <div style={{ fontSize: '0.78rem', color: 'var(--grey-400)', marginBottom: 'var(--space-2)' }}>
+        <div style={{ padding: 'var(--space-4) var(--space-4) 0' }}>
+          <div style={{ color: 'var(--silver)', fontSize: '0.75rem' }}>
             Signed In As
           </div>
-          <div style={{ fontSize: '0.82rem', color: 'var(--silver)', marginBottom: 'var(--space-3)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <span>{profile?.full_name ?? (user.email ? `@${user.email.split('@')[0]}` : 'Admin')}</span>
-            <AdminMessageBell />
+          <div style={{ color: 'var(--white)', fontSize: '0.88rem', marginTop: 2 }}>
+            {profile?.full_name ?? 'Admin'}
           </div>
-          <Link href="/dashboard" style={{ fontSize: '0.78rem', color: 'var(--teal)', display: 'inline-flex', alignItems: 'center', gap: 6, marginBottom: 'var(--space-2)' }}>
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <line x1="19" y1="12" x2="5" y2="12" />
-              <polyline points="12 19 5 12 12 5" />
-            </svg>
-            Back To Dashboard
-          </Link>
-          <Link href="/account/security" style={{ fontSize: '0.78rem', color: 'var(--silver)', display: 'inline-flex', alignItems: 'center', gap: 6, marginBottom: 'var(--space-2)' }}>
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-              <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-            </svg>
-            Account Security
-          </Link>
-          <form action="/api/auth/signout" method="POST">
-            <button type="submit" style={{
-              fontSize: '0.75rem', color: 'var(--grey-400)',
-              background: 'none', border: 'none', cursor: 'pointer', padding: 0
-            }}>
-              Sign Out
-            </button>
-          </form>
         </div>
       </aside>
 
-      {/* Main content — constrained to viewport */}
-      <main style={{ marginLeft: 240, flex: 1, minHeight: '100vh', maxWidth: 'calc(100vw - 240px)', overflowX: 'auto' }}>
+      {/* Main */}
+      <main style={{ flex: 1, minWidth: 0 }}>
+        <div style={{
+          position: 'sticky',
+          top: 0,
+          background: 'var(--black)',
+          borderBottom: '1px solid rgba(255,255,255,0.05)',
+          padding: 'var(--space-3) var(--space-5)',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          zIndex: 10,
+        }}>
+          <span style={{ color: 'var(--silver)', fontSize: '0.85rem' }}>Admin Dashboard</span>
+          <AdminMessageBell />
+        </div>
         {children}
       </main>
+      <style>{`
+        .admin-nav-link:hover {
+          background: rgba(255,255,255,0.04);
+          color: var(--white);
+        }
+      `}</style>
     </div>
   );
 }
