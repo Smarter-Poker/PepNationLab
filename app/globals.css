@@ -1641,5 +1641,36 @@ html[data-theme="light"] .messenger-back-btn {
   }
 }
 
+/* ============================================
+   GLOBAL SCROLL SAFETY
+   Ensures every page and every tab can be scrolled
+   vertically on mobile. No page-level wrapper should
+   ever trap vertical scroll.
+   ============================================ */
 
+/* Researcher dashboard tab content — always scrollable on mobile */
+.researcher-main {
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
 
+/* Any div that already has overflowY:auto set inline should also
+   get iOS momentum scrolling. The CSS in-attr selector is too
+   broad, so target the specific wrappers we know need it. */
+.researcher-main > div {
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* On mobile, any full-height flex column page should allow
+   the content area to scroll if it overflows */
+@media (max-width: 768px) {
+  /* Dashboard-style pages: content below the navbar scrolls */
+  .dashboard-main,
+  .researcher-main,
+  [class*="-content"],
+  [class*="-body"] {
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch;
+  }
+}

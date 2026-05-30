@@ -272,7 +272,9 @@ export default function Messaging({
       style={{
         background: '#0a0f1a', borderRadius: 16,
         display: 'flex', flexDirection: 'column',
-        height: 540, overflow: 'hidden',
+        /* Responsive height: fills most of the viewport, capped on desktop */
+        height: 'clamp(420px, calc(100dvh - 220px), 720px)',
+        overflow: 'hidden',
         border: dragOver ? '2px solid var(--teal)' : '1px solid rgba(255,255,255,0.06)',
         boxShadow: dragOver ? '0 0 20px rgba(192,184,168,0.2)' : '0 4px 24px rgba(0,0,0,0.3)',
         transition: 'border 0.2s, box-shadow 0.2s',
@@ -352,7 +354,7 @@ export default function Messaging({
       )}
 
       {/* Messages */}
-      <div ref={scrollRef} style={{ flexGrow: 1, overflowY: 'auto', padding: '12px 16px 6px', display: 'flex', flexDirection: 'column', scrollBehavior: 'smooth', position: 'relative' }}>
+      <div ref={scrollRef} style={{ flexGrow: 1, overflowY: 'auto', WebkitOverflowScrolling: 'touch', padding: '12px 16px 6px', display: 'flex', flexDirection: 'column', scrollBehavior: 'smooth', position: 'relative' }}>
         {loading ? (
           <div style={{ margin: 'auto', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10 }}>
             <div style={{ width: 28, height: 28, borderRadius: '50%', border: '2.5px solid rgba(192,184,168,0.2)', borderTopColor: 'var(--teal)', animation: 'spin 0.8s linear infinite' }} />
