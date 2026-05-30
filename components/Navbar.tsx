@@ -6,6 +6,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import NavbarNotificationBell from '@/components/NavbarNotificationBell';
+import MessageBell from '@/components/MessageBell';
 
 /* ─────────────────────────────────────────────
    Page title resolution — maps route prefixes
@@ -312,8 +313,8 @@ export default function Navbar({ onMenuClick }: { onMenuClick?: () => void } = {
             background: 'none',
             border: 'none',
             cursor: 'pointer',
-            color: 'var(--teal)',
-            padding: 8,
+            color: 'var(--silver)',
+            padding: 4,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -322,11 +323,13 @@ export default function Navbar({ onMenuClick }: { onMenuClick?: () => void } = {
             transition: 'background 0.15s',
           }}
         >
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-            {(onMenuClick ? false : drawerOpen)
-              ? <path d="M18 6L6 18M6 6l12 12" />
-              : <path d="M3 7h18M3 12h18M3 17h18" />}
-          </svg>
+          {(onMenuClick ? false : drawerOpen) ? (
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+              <path d="M18 6L6 18M6 6l12 12" />
+            </svg>
+          ) : (
+            <img src="/images/hamburger-icon.png" alt="Menu" width={36} height={36} style={{ display: 'block' }} />
+          )}
         </button>
 
         {/* Back arrow */}
@@ -340,20 +343,18 @@ export default function Navbar({ onMenuClick }: { onMenuClick?: () => void } = {
                 border: 'none',
                 cursor: 'pointer',
                 color: 'var(--silver)',
-                padding: 6,
+                padding: 4,
                 display: 'flex',
                 alignItems: 'center',
                 borderRadius: 6,
                 flexShrink: 0,
               }}
             >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-                <path d="M19 12H5M12 5l-7 7 7 7" />
-              </svg>
+              <img src="/images/back-arrow.png" alt="Back" width={36} height={36} style={{ display: 'block', transition: 'opacity 0.2s' }} onMouseEnter={e => (e.currentTarget.style.opacity = '0.8')} onMouseLeave={e => (e.currentTarget.style.opacity = '1')} />
             </button>
 
             {/* Vertical divider */}
-            <div style={{ width: 1, height: 22, background: 'var(--surface-3)', flexShrink: 0 }} />
+            <div style={{ width: 1, height: 22, background: 'var(--surface-3)', flexShrink: 0, marginLeft: 4 }} />
           </>
         )}
 
@@ -381,29 +382,11 @@ export default function Navbar({ onMenuClick }: { onMenuClick?: () => void } = {
             <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'var(--surface-2)' }} className="skeleton" />
           ) : user ? (
             <>
-              {/* Right icon: notification bell for agents/admin, messenger shortcut for researchers */}
-              {role === 'researcher' ? (
-                <Link
-                  href="/messenger"
-                  aria-label="Messenger"
-                  style={{
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    width: 36, height: 36, borderRadius: '50%',
-                    background: 'var(--surface-2)',
-                    border: '1px solid rgba(192,184,168,0.15)',
-                    color: 'var(--teal)',
-                    textDecoration: 'none',
-                    flexShrink: 0,
-                    transition: 'background 0.15s, border-color 0.15s',
-                  }}
-                >
-                  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-                  </svg>
-                </Link>
-              ) : (
-                <NavbarNotificationBell />
-              )}
+              {/* Messenger / Notification Bell */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                <MessageBell onViewAll={() => router.push('/messenger')} />
+                {role !== 'researcher' && <NavbarNotificationBell />}
+              </div>
 
               {/* Messenger exception: show Agent Dashboard btn instead of messenger icon */}
               {isMessenger ? (

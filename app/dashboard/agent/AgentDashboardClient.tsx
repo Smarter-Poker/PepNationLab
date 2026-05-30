@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import Navbar from '@/components/Navbar';
 import { toast } from 'sonner';
 import Link from 'next/link';
 import AgentCoupons from '@/components/AgentCoupons';
@@ -478,30 +479,8 @@ export default function AgentDashboardClient({
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--black)' }}>
-      {/* Mobile Top Navbar */}
-      <nav className="nav" style={{ justifyContent: 'space-between', padding: '0 var(--space-4)', display: 'flex' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)' }}>
-          <button 
-            className="btn btn-ghost btn-sm hamburger-btn" 
-            style={{ padding: '2px' }} 
-            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-          >
-            <img src="/images/hamburger-icon.png" alt="Menu" width={36} height={36} style={{ display: 'block' }} />
-          </button>
-          
-          <Link href="/dashboard" style={{ display: 'inline-flex', alignItems: 'center' }}>
-            <img src="/images/back-arrow.png" alt="Back" width={36} height={36} style={{ display: 'block', transition: 'opacity 0.2s' }} onMouseEnter={e => (e.currentTarget.style.opacity = '0.8')} onMouseLeave={e => (e.currentTarget.style.opacity = '1')} />
-          </Link>
-          <div style={{ width: 1, height: 16, background: 'rgba(255,255,255,0.1)' }} />
-          <span style={{ fontFamily: 'var(--font-brand)', fontSize: '0.9rem', fontWeight: 800, letterSpacing: '0.12em', color: 'var(--teal)' }}>
-            AGENT STOREFRONT
-          </span>
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
-          <MessageBell onViewAll={() => { setActiveTab('Messages'); setIsMobileMenuOpen(false); }} />
-          <span className="hide-on-mobile" style={{ fontSize: '0.85rem', color: 'var(--silver)' }}>{agentProfile.display_name}</span>
-        </div>
-      </nav>
+      {/* Mobile Top Navbar (Global) */}
+      <Navbar onMenuClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} />
 
       {/* Overlay to close menu when clicking outside */}
       {isMobileMenuOpen && (
