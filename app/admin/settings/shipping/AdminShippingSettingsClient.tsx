@@ -885,7 +885,7 @@ export default function AdminShippingSettingsClient() {
                       color: 'var(--white)',
                       border: '1px solid var(--border)',
                       borderRadius: 6,
-                      padding: '4px 8px',
+                      padding: '10px 8px',
                       fontSize: '0.82rem',
                     }}
                   >
@@ -938,7 +938,7 @@ export default function AdminShippingSettingsClient() {
                       color: 'var(--black)',
                       border: 'none',
                       borderRadius: 6,
-                      padding: '4px 14px',
+                      padding: '10px 14px',
                       fontSize: '0.82rem',
                       fontWeight: 700,
                       cursor: 'pointer',

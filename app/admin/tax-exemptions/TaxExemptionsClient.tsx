@@ -108,7 +108,7 @@ export default function TaxExemptionsClient() {
               type="button"
               onClick={() => { setStatus(opt.value); setPage(1); }}
               className={status === opt.value ? 'btn btn-primary' : 'btn btn-secondary'}
-              style={{ fontSize: '0.8rem', padding: '6px 14px' }}
+              style={{ fontSize: '0.8rem', padding: '10px 14px' }}
             >
               {opt.label}
             </button>
@@ -163,7 +163,7 @@ export default function TaxExemptionsClient() {
                     }}>{it.status}</span>
                   </td>
                   <td style={{ padding: 'var(--space-3)', textAlign: 'right' }}>
-                    <button type="button" className="btn btn-secondary" style={{ fontSize: '0.78rem', padding: '4px 12px' }} onClick={() => { setSelected(it); setRejectReason(''); }}>
+                    <button type="button" className="btn btn-secondary" style={{ fontSize: '0.78rem', padding: '10px 12px' }} onClick={() => { setSelected(it); setRejectReason(''); }}>
                       Review
                     </button>
                   </td>

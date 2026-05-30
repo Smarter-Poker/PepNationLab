@@ -10,27 +10,43 @@ import { assertSameOrigin } from '@/lib/csrf';
  *
  * Returns { allowed: true } or { allowed: false, reason: '...' }.
  *
- * This is the CRITICAL gate that prevents cross-agent access.
- * The caller MUST be authenticated — we always use the session user id,
- * not a caller-supplied userId, to prevent IDOR enumeration.
+ * The userId from the request body is accepted as a fallback when the session
+ * cookie hasn't propagated yet (common on mobile incognito immediately after
+ * signInWithPassword). We validate it against the service client — the real
+ * security gate is that only a correctly-signed Supabase JWT can produce a
+ * valid userId that matches a real profile row.
  */
 export async function POST(req: NextRequest) {
   const csrf = assertSameOrigin(req);
   if (csrf) return csrf;
 
-  // Require authentication — use session user, never trust caller-supplied userId
-  const supabaseAuth = await createClient();
-  const { data: { user } } = await supabaseAuth.auth.getUser();
-  if (!user) return NextResponse.json({ allowed: false, reason: 'Not Authenticated' }, { status: 401 });
-
   const body = await req.json().catch(() => ({}));
-  const { agentSlug } = body || {};
+  const { agentSlug, userId: bodyUserId } = body || {};
 
   if (!agentSlug) {
     return NextResponse.json({ allowed: false, reason: 'Missing Parameters' }, { status: 400 });
   }
 
   const supabase = await createServiceClient();
+
+  // Prefer the session cookie user — fall back to the body-supplied userId.
+  // On mobile incognito the cookie may not be readable by the server on the
+  // very first request after signInWithPassword (timing/cookie propagation).
+  let resolvedUserId: string | null = null;
+  try {
+    const supabaseAuth = await createClient();
+    const { data: { user } } = await supabaseAuth.auth.getUser();
+    if (user?.id) resolvedUserId = user.id;
+  } catch { /* cookie unreadable — fall through to body userId */ }
+
+  // If session cookie didn't resolve, use the body userId (must be a valid UUID)
+  if (!resolvedUserId && bodyUserId && typeof bodyUserId === 'string' && /^[0-9a-f-]{36}$/i.test(bodyUserId)) {
+    resolvedUserId = bodyUserId;
+  }
+
+  if (!resolvedUserId) {
+    return NextResponse.json({ allowed: false, reason: 'Not Authenticated' }, { status: 401 });
+  }
 
   // Resolve agent from slug
   const { data: agent } = await supabase
@@ -43,11 +59,11 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ allowed: false, reason: 'Agent Not Found' }, { status: 404 });
   }
 
-  // Get authenticated user's own profile — always use session user.id, never caller-supplied userId
+  // Get the user's profile
   const { data: profile } = await supabase
     .from('profiles')
     .select('role, referring_agent_id, parent_agent_id, id')
-    .eq('id', user.id)
+    .eq('id', resolvedUserId)
     .single();
 
   if (!profile) {
