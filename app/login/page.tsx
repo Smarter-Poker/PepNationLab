@@ -62,6 +62,15 @@ function LoginPageInner() {
 
     const redirectTo = searchParams.get('redirect') ?? '/dashboard';
     
+    // Wait until Supabase confirms the session is readable locally (max 3s).
+    // On mobile incognito the cookie write is async — navigating too soon
+    // means the server request arrives before the cookie exists.
+    for (let i = 0; i < 15; i++) {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.access_token) break;
+      await new Promise(r => setTimeout(r, 200));
+    }
+
     // Hard navigation ensures that the browser sends the new session cookie to the server
     // and completely bypasses any Next.js client-side router cache that might be stale.
     window.location.href = redirectTo;
