@@ -21,6 +21,10 @@ export default function AdminAgents() {
   const [newPassword, setNewPassword] = useState('');
   const [passwordSaving, setPasswordSaving] = useState(false);
 
+  // Inline Tier Editing
+  const [tierEditing, setTierEditing] = useState<Set<string>>(new Set());
+  const [tierSaving, setTierSaving] = useState<Set<string>>(new Set());
+
   // Modal State — Create Agent
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [createForm, setCreateForm] = useState({
@@ -173,6 +177,35 @@ export default function AdminAgents() {
 
   const formatCurrency = (val: number) => `$${(Number(val) || 0).toFixed(2)}`;
 
+  // Inline tier change — saves immediately on select change
+  const handleTierChange = async (agentId: string, newTier: string) => {
+    setTierSaving(prev => new Set([...prev, agentId]));
+    try {
+      const res = await fetch('/api/admin/agents/update-tier', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ agentId, tier: newTier }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || 'Failed to update tier');
+      toast.success(`Tier updated to ${newTier.replace('_', ' ').toUpperCase()}`);
+      // Update local state immediately (no full refetch needed)
+      setAgents(prev => prev.map(a => a.id === agentId ? { ...a, tier: newTier } : a));
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to update tier');
+    } finally {
+      setTierSaving(prev => { const n = new Set(prev); n.delete(agentId); return n; });
+      setTierEditing(prev => { const n = new Set(prev); n.delete(agentId); return n; });
+    }
+  };
+
+  // Tier badge colours
+  const tierStyle = (tier: string) => ({
+    tier_1: { bg: 'rgba(104,211,145,0.15)', color: '#68D391', border: '1px solid rgba(104,211,145,0.35)' },
+    tier_2: { bg: 'rgba(99,179,237,0.15)',  color: '#63B3ED', border: '1px solid rgba(99,179,237,0.35)' },
+    tier_3: { bg: 'rgba(246,173,85,0.15)',  color: '#F6AD55', border: '1px solid rgba(246,173,85,0.35)' },
+  }[tier] ?? { bg: 'rgba(192,184,168,0.1)', color: 'var(--teal)', border: '1px solid rgba(192,184,168,0.3)' });
+
   const openEditModal = (agent: any) => {
     setEditingAgent(agent);
     setEditEmail(agent.email?.includes('@pepnationlab.com') ? '' : (agent.email || ''));
@@ -314,15 +347,49 @@ export default function AdminAgents() {
                       </div>
                     </td>
                     <td>
-                      <span style={{
-                        padding: '2px 8px',
-                        borderRadius: 12,
-                        fontSize: '0.75rem',
-                        background: 'rgba(192,184,168,0.1)',
-                        color: 'var(--teal)'
-                      }}>
-                        {agent.tier?.toUpperCase() || 'TIER_3'}
-                      </span>
+                      {/* Inline tier editor — click badge to change */}
+                      {tierEditing.has(agent.id) ? (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                          <select
+                            autoFocus
+                            defaultValue={agent.tier || 'tier_3'}
+                            disabled={tierSaving.has(agent.id)}
+                            onChange={e => handleTierChange(agent.id, e.target.value)}
+                            onBlur={() => setTierEditing(prev => { const n = new Set(prev); n.delete(agent.id); return n; })}
+                            style={{
+                              background: 'var(--surface-3)', color: 'var(--white)',
+                              border: '1px solid rgba(255,255,255,0.15)', borderRadius: 6,
+                              padding: '3px 6px', fontSize: '0.75rem', cursor: 'pointer',
+                            }}
+                          >
+                            <option value="tier_1">Tier 1 — Best Price</option>
+                            <option value="tier_2">Tier 2 — Mid Price</option>
+                            <option value="tier_3">Tier 3 — Standard</option>
+                          </select>
+                          {tierSaving.has(agent.id) && (
+                            <span style={{ fontSize: '0.68rem', color: 'var(--teal)' }}>Saving…</span>
+                          )}
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => setTierEditing(prev => new Set([...prev, agent.id]))}
+                          title="Click to change tier"
+                          style={{
+                            background: 'none', border: 'none', cursor: 'pointer', padding: 0,
+                            display: 'flex', alignItems: 'center', gap: 5,
+                          }}
+                        >
+                          <span style={{
+                            padding: '3px 10px', borderRadius: 12, fontSize: '0.75rem', fontWeight: 700,
+                            background: tierStyle(agent.tier || 'tier_3').bg,
+                            color: tierStyle(agent.tier || 'tier_3').color,
+                            border: tierStyle(agent.tier || 'tier_3').border,
+                          }}>
+                            {(agent.tier || 'tier_3').replace('_', ' ').toUpperCase()}
+                          </span>
+                          <span style={{ fontSize: '0.65rem', color: 'var(--grey-500)', lineHeight: 1 }}>✎</span>
+                        </button>
+                      )}
                     </td>
                     <td>{agent.account_type === 'prepaid' ? 'Prepaid' : 'Credit'}</td>
                     <td>
