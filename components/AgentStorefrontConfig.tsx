@@ -167,11 +167,9 @@ export default function AgentStorefrontConfig({
         },
       };
 
-      // Only PATCH the Shippo key if the user actually typed one (avoids
-      // wiping the stored key when the field is empty / hidden).
-      if (showShippoKey && shippoApiKey.trim()) {
-        updatePayload.shippo_api_key = shippoApiKey.trim();
-      }
+      // Per-agent Shippo key write intentionally removed post-M1.
+      // All labels are purchased through the platform Shippo account.
+      // shippo_api_key on agent_profiles is deprecated and ignored.
 
       const { error: updateError } = await supabase
         .from('agent_profiles')
@@ -420,36 +418,19 @@ export default function AgentStorefrontConfig({
 
           <hr style={{ border: 'none', borderTop: '1px solid rgba(255,255,255,0.05)', margin: 'var(--space-4) 0' }} />
 
-          <h4 style={{ color: 'var(--teal)', fontSize: '1rem', marginBottom: 'var(--space-2)' }}>Automated Shipping Integration (Optional)</h4>
-          <p style={{ color: 'var(--grey-400)', fontSize: '0.85rem', marginBottom: 'var(--space-4)' }}>
-            Connect Your Own Shippo Account To Instantly Purchase And Print USPS/UPS Shipping Labels From The Orders Dashboard.
-          </p>
-
-          <div className="form-group">
-            <label className="form-label">Shippo API Token (Live Token)</label>
-            <div style={{ display: 'flex', gap: 'var(--space-3)', alignItems: 'center' }}>
-              <input
-                type={showShippoKey ? 'text' : 'password'}
-                placeholder={shippoKeyPresent ? `Token On File (...${shippoKeyLast4 ?? ''})` : 'shippo_live_...'}
-                className="form-input"
-                value={shippoApiKey}
-                onChange={(e) => setShippoApiKey(e.target.value)}
-                style={{ flex: 1 }}
-              />
-              <button
-                type="button"
-                onClick={handleRevealShippoKey}
-                className="btn btn-secondary btn-sm"
-                disabled={loadingKey}
-              >
-                {loadingKey ? 'Loading...' : showShippoKey ? 'Hide Key' : 'Show Key'}
-              </button>
-            </div>
-            {shippoKeyPresent && !showShippoKey && (
-              <p style={{ fontSize: '0.72rem', color: 'var(--grey-500)', marginTop: 4 }}>
-                A Token Is Already On File (Ending In {shippoKeyLast4}). Leave Blank To Keep It.
-              </p>
-            )}
+          <h4 style={{ color: 'var(--teal)', fontSize: '1rem', marginBottom: 'var(--space-2)' }}>Shipping Integration</h4>
+          <div style={{
+            background: 'rgba(0,196,188,0.06)',
+            border: '1px solid rgba(0,196,188,0.2)',
+            borderRadius: 8,
+            padding: 'var(--space-4)',
+          }}>
+            <p style={{ color: 'var(--silver)', fontSize: '0.875rem', margin: 0, lineHeight: 1.6 }}>
+              Shipping Labels Are Purchased Through The PepNationLab Platform Account.
+              No Per-Agent Shippo Key Required.
+              To Set Your Warehouse Ship-From Address, Contact Your Admin To Assign A Shipping Origin
+              In Settings &rarr; Shipping &rarr; Agent Warehouses.
+            </p>
           </div>
 
           <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 'var(--space-4)' }}>
