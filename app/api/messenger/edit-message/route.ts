@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
 import { assertSameOrigin } from '@/lib/csrf';
-import { requireSession } from '@/lib/messenger/server';
+import { requireSession, getParticipant } from '@/lib/messenger/server';
 import { messengerRateLimit, messengerRateLimitResponse } from '@/lib/messengerRateLimit';
 import { EditMessageSchema } from '@/lib/messenger/schemas';
 import { sanitizeMessageText } from '@/lib/messenger/sanitize';
@@ -33,7 +33,7 @@ export async function POST(req: NextRequest) {
   const svc = await createServiceClient();
   const { data: existing } = await svc
     .from('messenger_messages')
-    .select('id, sender_id, text, is_deleted, delete_scope')
+    .select('id, conversation_id, sender_id, text, is_deleted, delete_scope')
     .eq('id', parsed.data.messageId)
     .maybeSingle();
   if (!existing) return NextResponse.json({ error: 'Message Not Found' }, { status: 404 });
@@ -42,14 +42,16 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Already Deleted' }, { status: 400 });
   }
 
-  // Audit9: short-circuit no-op edits so we don't fabricate history rows or
-  // flip is_edited spuriously when the sanitized text is identical.
+  // Audit10: only CURRENT participants may edit. A user who left or was
+  // removed from a group can no longer edit historical messages they sent;
+  // this complements the audit10 RLS WITH CHECK fix on mm_update_self.
+  const part = await getParticipant(existing.conversation_id, user.id);
+  if (!part) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+
   if (cleanText === existing.text) {
     return NextResponse.json({ message: existing, unchanged: true });
   }
 
-  // Audit9: write history AFTER the update succeeds. Previous order produced
-  // orphan history rows if the update later failed.
   const { data: updated, error: updErr } = await svc
     .from('messenger_messages')
     .update({
@@ -64,8 +66,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: updErr?.message ?? 'Update Failed' }, { status: 500 });
   }
 
-  // Best-effort: log the audit trail. A history-insert failure does not
-  // un-do the user-visible edit.
   await svc.from('messenger_edit_history').insert({
     message_id: parsed.data.messageId,
     previous_text: existing.text ?? null,

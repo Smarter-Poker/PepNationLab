@@ -11,8 +11,6 @@ function boundedMetadata() {
     .refine(
       (v) => {
         try {
-          // Audit9: count bytes not UTF-16 code units so multi-byte payloads
-          // don't sneak past the cap.
           return Buffer.byteLength(JSON.stringify(v), 'utf8') <= MEDIA_METADATA_MAX_BYTES;
         } catch {
           return false;
@@ -36,15 +34,12 @@ export const SendMessageSchema = z
     text: z.string().max(2000).optional(),
     messageType: z
       .enum(['text', 'image', 'gif', 'voice', 'file', 'contact_card', 'location', 'poll'])
-      // Audit9: 'system' is server-only — clients cannot post system messages.
       .default('text'),
     mediaUrl: z.string().url().optional(),
     mediaMetadata: boundedMetadata().optional(),
     replyToId: z.string().uuid().optional(),
     threadParentId: z.string().uuid().optional(),
     expiresAt: z.string().datetime().optional(),
-    // Audit9: client-supplied idempotency key. The route returns the existing
-    // row on (conversation_id, sender_id, client_message_id) unique violation.
     clientMessageId: z.string().uuid().optional(),
   })
   .refine((d) => Boolean(d.text && d.text.trim().length > 0) || Boolean(d.mediaUrl), {
@@ -109,11 +104,18 @@ export const SetParticipantRoleSchema = z.object({
 });
 export type SetParticipantRoleInput = z.infer<typeof SetParticipantRoleSchema>;
 
-export const MuteConversationSchema = z.object({
-  conversationId: z.string().uuid(),
-  muteUntil: z.string().datetime().optional(),
-  unmute: z.boolean().optional(),
-});
+// Audit10: require one of (unmute=true | muteUntil) so a no-arg call cannot
+// silently mute indefinitely.
+export const MuteConversationSchema = z
+  .object({
+    conversationId: z.string().uuid(),
+    muteUntil: z.string().datetime().optional(),
+    unmute: z.boolean().optional(),
+  })
+  .refine(
+    (v) => v.unmute === true || Boolean(v.muteUntil),
+    { message: 'Must Provide Either Unmute Or muteUntil' },
+  );
 export type MuteConversationInput = z.infer<typeof MuteConversationSchema>;
 
 export const ArchiveConversationSchema = z.object({

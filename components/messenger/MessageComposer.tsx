@@ -24,8 +24,6 @@ interface Props {
 const MAX_LEN = 2000;
 const TYPING_THROTTLE_MS = 1500;
 const TYPING_STOP_MS = 3000;
-// Phase 13: keep this in sync with the server-side detector in
-// app/api/messenger/send-message/route.ts. Word-bounded, case-insensitive.
 const ADMIN_MENTION_RE = /(^|\s)@admin(\s|$|[.,!?;:])/i;
 
 interface UploadResult { uploadUrl: string; publicUrl: string; path: string }
@@ -85,9 +83,6 @@ export default function MessageComposer({ conversationId, selfId, replyTo, onCle
   const lastSentAtRef = useRef(0);
   const stopTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Phase 13: surface a soft hint when the draft contains @admin so the user
-  // knows the admin moderation surface will be notified. The actual mention
-  // is detected server-side in send-message - this is purely UI.
   const adminMention = useMemo(() => ADMIN_MENTION_RE.test(text), [text]);
 
   useEffect(() => {
@@ -166,11 +161,16 @@ export default function MessageComposer({ conversationId, selfId, replyTo, onCle
   ) => {
     appendMessage(conversationId, optimistic);
     setSending(true);
+    // Audit10: stamp a fresh idempotency uuid per send. The server's
+    // unique partial index on (conversation_id, sender_id, client_message_id)
+    // + the 23505 replay path in send-message use this to dedup retries.
+    const clientMessageId = crypto.randomUUID();
     try {
       const body: Record<string, unknown> = {
         conversationId,
         messageType: payload.messageType,
         replyToId: replyTo?.id,
+        clientMessageId,
       };
       if (payload.text) body.text = payload.text;
       if (payload.mediaUrl) body.mediaUrl = payload.mediaUrl;
@@ -190,7 +190,6 @@ export default function MessageComposer({ conversationId, selfId, replyTo, onCle
       const json = (await res.json()) as { message: Message };
       removeMessage(conversationId, optimistic.id);
       appendMessage(conversationId, json.message);
-      // Clear the one-shot expiry once it has been applied.
       setPendingExpirySeconds(null);
     } catch {
       updateMessage(conversationId, { ...optimistic, metadata: { ...optimistic.metadata, failed: true } });

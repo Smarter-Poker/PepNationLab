@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
 import { assertSameOrigin } from '@/lib/csrf';
-import { requireSession, getParticipant, canInvite, isAdminUser, isBlocked } from '@/lib/messenger/server';
+import { requireSession, getParticipant, canInvite, isAdminUser, isBlockedEither } from '@/lib/messenger/server';
 import { messengerRateLimit, messengerRateLimitResponse } from '@/lib/messengerRateLimit';
 import { AddParticipantSchema } from '@/lib/messenger/schemas';
 
@@ -54,11 +54,8 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  // Phase 12: block check in both directions. Blocked relationships cannot be
-  // bridged via group invitation.
-  const blockedByCaller = await isBlocked(user.id, parsed.data.userId);
-  const blockedByTarget = await isBlocked(parsed.data.userId, user.id);
-  if (blockedByCaller || blockedByTarget) {
+  // Audit10: one bidirectional block check via RPC instead of two round-trips.
+  if (await isBlockedEither(user.id, parsed.data.userId)) {
     return NextResponse.json({ error: 'User Blocked', userId: parsed.data.userId }, { status: 403 });
   }
 
@@ -79,7 +76,6 @@ export async function POST(req: NextRequest) {
     .maybeSingle();
 
   if (insErr) {
-    // Unique violation = concurrent add; treat as idempotent success.
     if (insErr.code === '23505') {
       const again = await getParticipant(parsed.data.conversationId, parsed.data.userId);
       return NextResponse.json({ participant: again, added: false });

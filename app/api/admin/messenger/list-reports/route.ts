@@ -21,6 +21,14 @@ export async function POST(req: NextRequest) {
   const statusFilter = typeof body?.status === 'string' && ['open', 'resolved', 'dismissed'].includes(body.status)
     ? (body.status as 'open' | 'resolved' | 'dismissed')
     : null;
+  // Audit10: paginate via { before: ISO created_at cursor, limit: 1..100 }.
+  // Without this, status='all' callers could lose newer open reports behind
+  // 200 newer dismissed ones.
+  const before = typeof body?.before === 'string' && Number.isFinite(Date.parse(body.before))
+    ? new Date(Date.parse(body.before)).toISOString()
+    : null;
+  const rawLimit = typeof body?.limit === 'number' ? body.limit : 50;
+  const limit = Math.min(Math.max(1, Math.floor(rawLimit)), 100);
 
   const svc = await createServiceClient();
 
@@ -28,9 +36,10 @@ export async function POST(req: NextRequest) {
     .from('messenger_reports')
     .select('id, reporter_id, message_id, conversation_id, reason, note, status, resolved_by, resolved_at, resolution_note, created_at')
     .order('created_at', { ascending: false })
-    .limit(200);
+    .limit(limit);
 
   if (statusFilter) q = q.eq('status', statusFilter);
+  if (before) q = q.lt('created_at', before);
 
   const { data: reports, error: qErr } = await q;
   if (qErr) {
@@ -39,7 +48,7 @@ export async function POST(req: NextRequest) {
 
   const rows = reports ?? [];
   if (rows.length === 0) {
-    return NextResponse.json({ reports: [] });
+    return NextResponse.json({ reports: [], nextBefore: null });
   }
 
   const reporterIds = Array.from(new Set(rows.map((r) => r.reporter_id as string).filter(Boolean)));
@@ -114,5 +123,17 @@ export async function POST(req: NextRequest) {
     };
   });
 
-  return NextResponse.json({ reports: enriched });
+  // The cursor returned to the client is the OLDEST created_at in this page,
+  // i.e. the boundary they should pass back as `before` for the next call.
+  const lastCreatedAt = rows.reduce<string | null>((acc, r) => {
+    const t = r.created_at as string | null;
+    if (!t) return acc;
+    if (!acc) return t;
+    return Date.parse(t) < Date.parse(acc) ? t : acc;
+  }, null);
+
+  return NextResponse.json({
+    reports: enriched,
+    nextBefore: rows.length === limit ? lastCreatedAt : null,
+  });
 }

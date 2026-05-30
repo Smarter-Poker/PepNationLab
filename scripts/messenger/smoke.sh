@@ -1,14 +1,13 @@
 #!/usr/bin/env bash
 # ============================================================================
-# Messenger Smoke Test (Phase 15)
+# Messenger Smoke Test (Phase 15 + Audit10)
 # ----------------------------------------------------------------------------
 # Hits every messenger surface area against the target host (production by
-# default) without credentials. Every authenticated route must return 401
-# Unauthorized — that's the smoke signal that:
+# default) without credentials.
 #
-#   * the route is deployed and reachable,
-#   * CSRF + session gates fire before any DB work,
-#   * the rate limiter shipped in Phase 15 hasn't broken the auth gate.
+#   * State-changing routes must return 401 Unauthorized (auth gate fires).
+#   * Cron routes must return 401 (CRON_SECRET set) OR 503 (CRON_SECRET
+#     unset) -- both indicate the route is deployed and gated.
 #
 # Run:
 #
@@ -40,6 +39,23 @@ check() {
   fi
 }
 
+# Allows either of two status codes (used for cron rows where 401|503 are both fine).
+check_any() {
+  local desc="$1"
+  local actual="$2"
+  shift 2
+  local expected="$*"
+  for code in $expected; do
+    if [[ "$actual" == "$code" ]]; then
+      printf 'PASS  %-60s %s\n' "$desc" "$actual"
+      PASS=$((PASS+1))
+      return
+    fi
+  done
+  printf 'FAIL  %-60s expected one of: %s got=%s\n' "$desc" "$expected" "$actual"
+  FAIL=$((FAIL+1))
+}
+
 # smoke_endpoint METHOD PATH EXPECTED_STATUS DESCRIPTION
 smoke_endpoint() {
   local method="$1"
@@ -53,6 +69,19 @@ smoke_endpoint() {
     --max-time 15 \
     "$BASE$path" 2>/dev/null || echo "000")
   check "$desc" "$expected" "$actual"
+}
+
+# smoke_cron PATH DESCRIPTION -- accepts 401 OR 503.
+smoke_cron() {
+  local path="$1"
+  local desc="$2"
+  local actual
+  actual=$(curl -s -o /dev/null -w "%{http_code}" -X GET \
+    -H "content-type: application/json" \
+    --data-raw '{}' \
+    --max-time 15 \
+    "$BASE$path" 2>/dev/null || echo "000")
+  check_any "$desc" "$actual" 401 503
 }
 
 echo "=== Phase 15 Messenger Smoke ==="
@@ -143,10 +172,12 @@ echo "--- Phase 14 Notifications ---"
 smoke_endpoint POST /api/messenger/notification-prefs   401 "notification-prefs gated"
 
 echo
-echo "--- Phase 13 Crons (Bearer-gated) ---"
-smoke_endpoint GET /api/messenger/cron/process-scheduled 401 "process-scheduled cron unauth=401"
-smoke_endpoint GET /api/messenger/cron/fire-reminders    401 "fire-reminders cron unauth=401"
-smoke_endpoint GET /api/messenger/cron/expire-messages   401 "expire-messages cron unauth=401"
+echo "--- Crons (Bearer-gated; 401 or 503 both pass) ---"
+smoke_cron /api/messenger/cron/process-scheduled "process-scheduled cron gated"
+smoke_cron /api/messenger/cron/fire-reminders    "fire-reminders cron gated"
+smoke_cron /api/messenger/cron/expire-messages   "expire-messages cron gated"
+smoke_cron /api/messenger/cron/mark-missed-calls "mark-missed-calls cron gated"
+smoke_cron /api/messenger/cron/cleanup-presence  "cleanup-presence cron gated"
 
 echo
 echo "--- Phase 12 Admin Moderation ---"

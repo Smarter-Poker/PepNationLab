@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
 import { assertSameOrigin } from '@/lib/csrf';
-import { requireSession, getParticipant, isBlocked } from '@/lib/messenger/server';
+import { requireSession, getParticipant, isBlockedEither } from '@/lib/messenger/server';
 import { messengerRateLimit, messengerRateLimitResponse } from '@/lib/messengerRateLimit';
 import { LivekitTokenSchema } from '@/lib/messenger/schemas';
 
@@ -56,28 +56,20 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Call No Longer Active' }, { status: 410 });
   }
 
-  // Audit3 fix: if the caller is in a direct conversation and either side has
-  // a block in place, deny the token. Caller is either the initiator (rare,
-  // see call-signal guard) or the accepter. The block guard at the token
-  // layer keeps a stale invite that survives a mid-call block from working.
-  const { data: convCheck } = await svc
-    .from('messenger_conversations')
-    .select('id, type')
-    .eq('id', (call as CallRow).conversation_id)
-    .maybeSingle();
-  if (convCheck && convCheck.type === 'direct') {
-    const { data: others } = await svc
-      .from('messenger_participants')
-      .select('user_id')
-      .eq('conversation_id', (call as CallRow).conversation_id)
-      .neq('user_id', user.id);
-    const otherId = ((others ?? [])[0] as { user_id: string } | undefined)?.user_id;
-    if (otherId) {
-      const blockedByCaller = await isBlocked(user.id, otherId);
-      const blockedByOther = await isBlocked(otherId, user.id);
-      if (blockedByCaller || blockedByOther) {
-        return NextResponse.json({ error: 'User Blocked' }, { status: 403 });
-      }
+  // Audit10: block-pair gate now applies to direct, group, AND announcement
+  // conversations. A blocked user could otherwise still mint a token for a
+  // group room shared with their blocker (e.g. blocker is the initiator, the
+  // blocked counterpart was added to the group earlier). Iterate all OTHER
+  // participants and refuse if any pairwise block exists between the caller
+  // and any of them.
+  const { data: others } = await svc
+    .from('messenger_participants')
+    .select('user_id')
+    .eq('conversation_id', (call as CallRow).conversation_id)
+    .neq('user_id', user.id);
+  for (const row of (others ?? []) as Array<{ user_id: string }>) {
+    if (await isBlockedEither(user.id, row.user_id)) {
+      return NextResponse.json({ error: 'User Blocked' }, { status: 403 });
     }
   }
 

@@ -1,0 +1,76 @@
+-- ============================================================================
+-- Messenger Audit 9b -- RPC service-role compatibility (2026-05-30)
+-- Mirror of the body applied to ydsaqnnuwyvtyxgvrnys via MCP. Committed here
+-- so a fresh Supabase project bootstrapped off this repo arrives at the same
+-- function signature.
+-- ============================================================================
+
+DROP FUNCTION IF EXISTS public.fn_get_user_conversations(uuid);
+
+CREATE FUNCTION public.fn_get_user_conversations(p_user UUID)
+RETURNS TABLE (
+  conversation_id UUID,
+  type TEXT,
+  title TEXT,
+  avatar_url TEXT,
+  last_message_text TEXT,
+  last_message_at TIMESTAMPTZ,
+  unread_count INTEGER,
+  is_pinned BOOLEAN,
+  is_muted BOOLEAN,
+  counterparty_id UUID,
+  counterparty_full_name TEXT,
+  counterparty_username TEXT,
+  counterparty_role TEXT
+)
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
+DECLARE
+  caller UUID := auth.uid();
+  caller_role_in_jwt TEXT;
+  caller_profile_role TEXT;
+BEGIN
+  caller_role_in_jwt := auth.role();
+  IF caller_role_in_jwt = 'service_role' THEN
+    NULL;
+  ELSIF caller IS NULL THEN
+    RAISE EXCEPTION 'unauthorized' USING ERRCODE='42501';
+  ELSIF p_user IS DISTINCT FROM caller THEN
+    SELECT role::TEXT INTO caller_profile_role FROM public.profiles WHERE id = caller;
+    IF caller_profile_role IS DISTINCT FROM 'admin' THEN
+      RAISE EXCEPTION 'forbidden' USING ERRCODE='42501';
+    END IF;
+  END IF;
+
+  RETURN QUERY
+  SELECT
+    c.id AS conversation_id,
+    c.type::TEXT,
+    c.title,
+    c.avatar_url,
+    c.last_message_text,
+    c.last_message_at,
+    p.unread_count,
+    p.is_pinned,
+    p.is_muted,
+    cp.user_id AS counterparty_id,
+    cprofile.full_name AS counterparty_full_name,
+    cprofile.username AS counterparty_username,
+    cprofile.role::TEXT AS counterparty_role
+  FROM public.messenger_participants p
+  JOIN public.messenger_conversations c ON c.id = p.conversation_id
+  LEFT JOIN LATERAL (
+    SELECT user_id FROM public.messenger_participants
+    WHERE conversation_id = c.id AND user_id <> p_user AND c.type = 'direct'
+    LIMIT 1
+  ) cp ON true
+  LEFT JOIN public.profiles cprofile ON cprofile.id = cp.user_id
+  WHERE p.user_id = p_user
+    AND c.is_archived = false
+    AND COALESCE((p.settings ->> 'archived')::boolean, false) = false
+  ORDER BY c.last_message_at DESC NULLS LAST
+  LIMIT 200;
+END;
+$$;
+
+REVOKE EXECUTE ON FUNCTION public.fn_get_user_conversations(uuid) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.fn_get_user_conversations(uuid) TO authenticated, service_role;

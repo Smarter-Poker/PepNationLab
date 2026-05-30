@@ -24,6 +24,17 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Invalid Body', details: parsed.error.flatten() }, { status: 400 });
   }
 
+  // Audit10: schema-level refine guarantees one of (unmute=true | muteUntil),
+  // so the route no longer accepts a no-op shape that silently mutes
+  // indefinitely. The check below is defense-in-depth in case the schema
+  // refine ever changes.
+  if (parsed.data.unmute !== true && !parsed.data.muteUntil) {
+    return NextResponse.json(
+      { error: 'Must Provide Either Unmute Or muteUntil' },
+      { status: 400 },
+    );
+  }
+
   const svc = await createServiceClient();
 
   const callerPart = await getParticipant(parsed.data.conversationId, user.id);

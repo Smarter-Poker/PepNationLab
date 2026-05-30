@@ -55,15 +55,16 @@ interface ReactionHandlers {
   onDelete?: (r: { message_id: string; user_id: string; emoji: string | null }) => void;
 }
 
-// Audit9: postgres_changes `filter` only supports `=eq.` / `=neq.` / range
-// operators -- NOT `=in.()`. Previous code silently delivered no events.
-// Subscribe by conversation_id instead (callers always know the conv) and
-// let the consumer filter on `messageIds` client-side.
+// Audit10 fix: `messenger_reactions` has no `conversation_id` column, so the
+// previous `filter: conversation_id=eq.<convId>` was an invalid filter that
+// Realtime silently dropped, breaking reaction delivery for everyone. We now
+// subscribe at the table level with no postgres_changes filter and let the
+// caller-side `messageIdSet` discard rows we do not care about. RLS on
+// messenger_reactions already restricts which rows the channel can see.
 export function subscribeReactions(
   messageIds: string[],
   handlers: ReactionHandlers,
   channelHint?: string,
-  conversationId?: string,
 ): RealtimeChannel | null {
   if (messageIds.length === 0) return null;
   const suffix = channelHint && channelHint.length > 0 ? channelHint : messageIds[0];
@@ -75,7 +76,6 @@ export function subscribeReactions(
       event: 'INSERT',
       schema: 'public',
       table: 'messenger_reactions',
-      ...(conversationId ? { filter: `conversation_id=eq.${conversationId}` } : {}),
     },
     (payload) => {
       const row = payload.new as Reaction;
@@ -88,7 +88,6 @@ export function subscribeReactions(
       event: 'DELETE',
       schema: 'public',
       table: 'messenger_reactions',
-      ...(conversationId ? { filter: `conversation_id=eq.${conversationId}` } : {}),
     },
     (payload) => {
       const old = payload.old as { message_id?: string; user_id?: string; emoji?: string | null };
@@ -178,8 +177,6 @@ export function subscribePresence(
     }
     onSync(flat);
   });
-  // Audit9: re-track on every SUBSCRIBED (including reconnects) so presence
-  // survives transient disconnects.
   ch.subscribe(async (status) => {
     if (status === 'SUBSCRIBED') {
       await ch.track({ userId: selfId, online_at: new Date().toISOString() } satisfies PresenceState);
@@ -279,8 +276,6 @@ export function subscribeMyParticipants(
       filter: `user_id=eq.${userId}`,
     },
     (payload) => {
-      // Audit9: now that REPLICA IDENTITY is FULL on this table, the OLD row
-      // payload carries all columns -- not just the PK.
       const row = payload.old as ParticipantUnreadRow;
       if (row) onChange(row, 'DELETE');
     },
@@ -298,9 +293,6 @@ export interface IncomingMessageNotification {
   created_at: string;
 }
 
-// Audit9: accept an optional allowlist of conversation ids so a future
-// realtime auth misconfiguration cannot leak rows from rooms the caller no
-// longer participates in. Callers pass the live conversation-id Set.
 export function subscribeMyIncomingMessages(
   userId: string,
   onInsert: (m: IncomingMessageNotification) => void,

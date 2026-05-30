@@ -29,7 +29,6 @@ export async function POST(req: NextRequest) {
 
   const svc = await createServiceClient();
 
-  // Sanity: the message must belong to this conversation.
   const { data: msg } = await svc
     .from('messenger_messages')
     .select('id, conversation_id')
@@ -50,14 +49,21 @@ export async function POST(req: NextRequest) {
       .select('*')
       .maybeSingle();
     if (insErr) {
-      // 23505 unique violation -> message already pinned. Treat as success.
-      if ((insErr as { code?: string }).code === '23505') {
+      const code = (insErr as { code?: string }).code;
+      // Already pinned -> idempotent success.
+      if (code === '23505') {
         const { data: existing } = await svc
           .from('messenger_pins')
           .select('*')
           .eq('message_id', parsed.data.messageId)
           .maybeSingle();
         return NextResponse.json({ pin: existing, alreadyPinned: true });
+      }
+      // Audit10: pin cap (max 10 per conversation) is enforced by the
+      // fn_mpins_enforce_cap trigger which raises ERRCODE='23514'. Map to a
+      // friendly 400 instead of letting the user see an opaque 500.
+      if (code === '23514') {
+        return NextResponse.json({ error: 'Pin Limit Reached' }, { status: 400 });
       }
       return NextResponse.json({ error: insErr.message }, { status: 500 });
     }
