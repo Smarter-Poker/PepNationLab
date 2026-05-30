@@ -112,7 +112,7 @@ export default function AgentDashboardClient({
   const [venmoHandle, setVenmoHandle] = useState(agentProfile?.payment_handles?.venmo ?? '');
   const [applePayHandle, setApplePayHandle] = useState(agentProfile?.payment_handles?.apple_pay ?? '');
 
-  const handlesEmpty = !!agentProfile && !zelleHandle.trim() && !cashappHandle.trim() && !venmoHandle.trim() && !applePayHandle.trim();
+  const handlesEmpty = !!agentProfile && (!agentProfile.payment_handles || Object.keys(agentProfile.payment_handles || {}).every((k) => !(agentProfile.payment_handles as any)[k]));
   const [activeTab, setActiveTab] = useState<'Overview' | 'Sales & Carts' | 'Researchers' | 'My Sub-Agents' | 'Orders' | 'Store Products' | 'Research Bundles' | 'Inventory' | 'Accounting' | 'Commissions' | 'Subscriptions' | 'Coupons' | 'Messages' | 'Webhooks' | 'Storefront Config' | 'Settings'>(
     (initialAgentProfile && (!initialAgentProfile.payment_handles || Object.keys(initialAgentProfile.payment_handles).every((k) => !initialAgentProfile.payment_handles![k]))) ? 'Storefront Config' : 'Overview'
   );
@@ -1109,11 +1109,16 @@ export default function AgentDashboardClient({
               cashappHandle={cashappHandle} setCashappHandle={setCashappHandle}
               venmoHandle={venmoHandle} setVenmoHandle={setVenmoHandle}
               applePayHandle={applePayHandle} setApplePayHandle={setApplePayHandle}
-              warehouseAddress={agentProfile.warehouse_address}
-              isActive={agentProfile.is_active}
+              warehouseAddress={agentProfile?.warehouse_address}
+              isActive={agentProfile?.is_active}
               volumePricingEnabled={volumePricingEnabled}
               setVolumePricingEnabled={setVolumePricingEnabled}
               agentId={userProfile.id}
+              onSaveSuccess={(updatedData) => {
+                if (agentProfile) {
+                  setAgentProfile({ ...agentProfile, ...updatedData });
+                }
+              }}
             />
           </div>
         )}

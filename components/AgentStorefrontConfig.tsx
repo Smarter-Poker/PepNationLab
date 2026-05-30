@@ -33,6 +33,7 @@ interface AgentStorefrontConfigProps {
   volumePricingEnabled: boolean;
   setVolumePricingEnabled: (val: boolean) => void;
   agentId: string;
+  onSaveSuccess?: (updatedData: any) => void;
 }
 
 export default function AgentStorefrontConfig({
@@ -51,6 +52,7 @@ export default function AgentStorefrontConfig({
   volumePricingEnabled,
   setVolumePricingEnabled,
   agentId,
+  onSaveSuccess,
 }: AgentStorefrontConfigProps) {
   const [loading, setLoading] = React.useState(false);
 
@@ -160,6 +162,7 @@ export default function AgentStorefrontConfig({
         throw new Error(updateError.message);
       }
       toast.success('Storefront Configuration Updated Successfully');
+      if (onSaveSuccess) onSaveSuccess(updatePayload);
     } catch (err: any) {
       toast.error(err.message ?? 'Failed To Update Storefront Configuration.');
     } finally {
