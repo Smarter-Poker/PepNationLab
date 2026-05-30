@@ -24,7 +24,6 @@ export default function EditProductPage() {
   const router = useRouter();
   const params = useParams();
   const id = params.id as string;
-
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -285,9 +284,9 @@ export default function EditProductPage() {
             Pricing
           </h3>
 
-          <div className="grid-2" style={{ gap: 'var(--space-4)' }}>
-            {/* Base cost */}
-            <div className="form-group">
+          <div style={{ display: 'flex', gap: 'var(--space-4)', alignItems: 'flex-end', flexWrap: 'wrap' }}>
+            {/* Base cost — takes most of the space */}
+            <div className="form-group" style={{ flex: '1 1 180px', marginBottom: 0 }}>
               <label className="form-label" htmlFor="base_cost">
                 Base Cost{' '}
                 <span style={{ fontSize: '0.72rem', color: 'var(--grey-400)', fontWeight: 400 }}>
@@ -306,22 +305,22 @@ export default function EditProductPage() {
               </div>
             </div>
 
-            {/* Unit */}
-            <div className="grid-2" style={{ gap: 'var(--space-3)', alignSelf: 'start' }}>
-              <div className="form-group">
-                <label className="form-label" htmlFor="unit_size">Unit Size</label>
-                <input id="unit_size" type="text" className="form-input" placeholder="e.g. 5"
-                  value={form.unit_size} onChange={e => set('unit_size', e.target.value)} />
-              </div>
-              <div className="form-group">
-                <label className="form-label" htmlFor="unit_measure">Unit</label>
-                <select id="unit_measure" className="form-input" value={form.unit_measure}
-                  onChange={e => set('unit_measure', e.target.value)}>
-                  {['mg', 'mcg', 'g', 'ml', 'IU', 'unit'].map(u => (
-                    <option key={u} value={u}>{u}</option>
-                  ))}
-                </select>
-              </div>
+            {/* Unit Size */}
+            <div className="form-group" style={{ flex: '0 1 100px', marginBottom: 0 }}>
+              <label className="form-label" htmlFor="unit_size">Unit Size</label>
+              <input id="unit_size" type="text" className="form-input" placeholder="e.g. 5"
+                value={form.unit_size} onChange={e => set('unit_size', e.target.value)} />
+            </div>
+
+            {/* Unit measure */}
+            <div className="form-group" style={{ flex: '0 1 100px', marginBottom: 0 }}>
+              <label className="form-label" htmlFor="unit_measure">Unit</label>
+              <select id="unit_measure" className="form-input" value={form.unit_measure}
+                onChange={e => set('unit_measure', e.target.value)}>
+                {['mg', 'mcg', 'g', 'ml', 'IU', 'unit'].map(u => (
+                  <option key={u} value={u}>{u}</option>
+                ))}
+              </select>
             </div>
           </div>
 
@@ -330,13 +329,13 @@ export default function EditProductPage() {
             <h4 style={{ fontSize: '0.85rem', color: 'var(--teal)', marginBottom: 'var(--space-3)' }}>
               Bulk Wholesale Pricing
             </h4>
-            <div className="grid-2" style={{ gap: 'var(--space-4)' }}>
-              <div className="form-group">
+            <div style={{ display: 'flex', gap: 'var(--space-4)', alignItems: 'flex-end', flexWrap: 'wrap' }}>
+              <div className="form-group" style={{ flex: '1 1 160px', marginBottom: 0 }}>
                 <label className="form-label" htmlFor="admin_bulk_threshold">Threshold (Vials)</label>
                 <input id="admin_bulk_threshold" type="number" min="1" className="form-input" placeholder="e.g. 100"
                   value={form.admin_bulk_threshold} onChange={e => set('admin_bulk_threshold', e.target.value)} />
               </div>
-              <div className="form-group">
+              <div className="form-group" style={{ flex: '1 1 160px', marginBottom: 0 }}>
                 <label className="form-label" htmlFor="admin_bulk_price">Bulk Unit Cost ($)</label>
                 <div style={{ position: 'relative' }}>
                   <span style={{
@@ -350,7 +349,7 @@ export default function EditProductPage() {
               </div>
             </div>
             <p style={{ fontSize: '0.72rem', color: 'var(--grey-400)', marginTop: 'var(--space-2)', marginBottom: 0 }}>
-              If set, Agents purchasing at or above the threshold quantity will receive this flat unit cost regardless of their tier.
+              If Set, Agents Purchasing At Or Above The Threshold Quantity Will Receive This Flat Unit Cost Regardless Of Their Tier.
             </p>
           </div>
 
@@ -423,17 +422,17 @@ export default function EditProductPage() {
             </div>
           </div>
 
-          <div className="grid-3" style={{ gap: 'var(--space-4)' }}>
-            <div className="form-group">
+          <div style={{ display: 'flex', gap: 'var(--space-4)', alignItems: 'flex-end', flexWrap: 'wrap' }}>
+            <div className="form-group" style={{ flex: '1 1 120px', marginBottom: 0 }}>
               <label className="form-label" htmlFor="inventory_count">Units In Stock</label>
               <input id="inventory_count" type="number" min="0" className="form-input"
                 placeholder="0" value={form.inventory_count}
                 onChange={e => set('inventory_count', e.target.value)} />
             </div>
-            <div className="form-group">
+            <div className="form-group" style={{ flex: '1 1 140px', marginBottom: 0 }}>
               <label className="form-label" htmlFor="low_stock_threshold">
                 Low Stock Alert
-                <span style={{ fontSize: '0.7rem', color: 'var(--grey-400)', fontWeight: 400, marginLeft: 6 }}>
+                <span style={{ fontSize: '0.7rem', color: 'var(--grey-400)', fontWeight: 400, display: 'block' }}>
                   (Badge Below This)
                 </span>
               </label>
@@ -441,7 +440,7 @@ export default function EditProductPage() {
                 placeholder="5" value={form.low_stock_threshold}
                 onChange={e => set('low_stock_threshold', e.target.value)} />
             </div>
-            <div className="form-group">
+            <div className="form-group" style={{ flex: '1 1 120px', marginBottom: 0 }}>
               <label className="form-label" htmlFor="backorder_days">Backorder Days</label>
               <input id="backorder_days" type="number" min="1" className="form-input"
                 placeholder="14" value={form.backorder_days}

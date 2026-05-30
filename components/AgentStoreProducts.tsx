@@ -31,10 +31,6 @@ interface AgentProduct {
   agent_cost: number | null;
   /** The agent’s current tier key, e.g. ‘tier_1’ */
   agent_tier: string | null;
-  /** Raw base_cost from the products table — for diagnostic display */
-  base_cost_raw: number | null;
-  /** The multiplier that was applied (global or per-product override) */
-  effective_multiplier: number | null;
 }
 
 type FilterMode = 'all' | 'active' | 'hidden';
