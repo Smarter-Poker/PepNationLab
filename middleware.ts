@@ -79,7 +79,7 @@ function isPublicDynamicRoute(pathname: string): boolean {
   // Exclude known protected prefixes
   const protectedPrefixes = [
     '/admin', '/dashboard', '/api', '/orders', '/products',
-    '/checkout', '/messages', '/register', '/login', '/forgot-password',
+    '/checkout', '/messages', '/messenger', '/register', '/login', '/forgot-password',
     '/become-agent', '/about', '/terms', '/privacy', '/compliance',
     '/disclaimer', '/shipping', '/invite',
   ];
