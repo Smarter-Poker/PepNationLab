@@ -116,9 +116,38 @@ export default async function proxy(request: NextRequest) {
     return NextResponse.next({ request });
   }
 
-  // Allow public agent storefronts through
+  // Agent storefronts are publicly accessible, but we still run the Supabase
+  // session refresh so that a logged-in researcher's JWT is refreshed before
+  // the page's server-side getUser() call. Without this, an expired access
+  // token would cause getUser() to return null even though the researcher has
+  // a valid refresh token in their cookie.
   if (isPublicDynamicRoute(pathname)) {
-    return NextResponse.next({ request });
+    // Run a lightweight Supabase client just to refresh the session cookie.
+    // We do NOT block on auth — if the user isn't logged in, that's fine.
+    let storeResponse = NextResponse.next({ request });
+    try {
+      const storeSupabase = createServerClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        {
+          cookies: {
+            getAll() { return request.cookies.getAll(); },
+            setAll(cookiesToSet) {
+              cookiesToSet.forEach(({ name, value, options }) => {
+                request.cookies.set({ name, value, ...options });
+              });
+              storeResponse = NextResponse.next({ request });
+              cookiesToSet.forEach(({ name, value, options }) => {
+                storeResponse.cookies.set({ name, value, ...options });
+              });
+            },
+          },
+        },
+      );
+      // getUser() triggers the token refresh — result is intentionally ignored.
+      await storeSupabase.auth.getUser();
+    } catch { /* ignore — unauthenticated visitors are fine */ }
+    return storeResponse;
   }
 
   // Allow Next internals

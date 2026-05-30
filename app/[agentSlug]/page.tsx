@@ -121,8 +121,22 @@ export default async function AgentStorefrontPage({ params }: Props) {
   const hasAccess = isAdmin || isStorefrontOwner || isSubAgent || isDownlineResearcher;
 
   if (!hasAccess) {
-    // Do NOT sign out — the user may have a valid session for their own agent's storefront.
-    // Just show the login form with an error message so they can authenticate for this store.
+    // If the researcher is logged in but belongs to a DIFFERENT agent,
+    // redirect them to THEIR actual storefront instead of showing a login form.
+    if (userProfile?.role === 'researcher' && userProfile?.referring_agent_id) {
+      const { data: correctAgent } = await supabase
+        .from('agent_profiles')
+        .select('slug')
+        .eq('id', userProfile.referring_agent_id)
+        .maybeSingle();
+
+      if (correctAgent?.slug) {
+        const { redirect } = await import('next/navigation');
+        redirect(`/${correctAgent.slug}`);
+      }
+    }
+
+    // Not a researcher or no referring agent — show the storefront login form.
     const AgentStorefrontLogin = (await import('@/components/AgentStorefrontLogin')).default;
     return (
       <AgentStorefrontLogin 
