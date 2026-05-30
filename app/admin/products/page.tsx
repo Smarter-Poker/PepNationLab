@@ -22,7 +22,7 @@ export default async function AdminProductsPage() {
 
   const { data: products } = await supabase
     .from('products')
-    .select('id, name, category, base_cost, is_active, created_at, sku')
+    .select('id, name, category, base_cost, is_active, created_at, sku, unit_size, unit_measure')
     .order('created_at', { ascending: false });
 
   const { data: tiers } = await supabase

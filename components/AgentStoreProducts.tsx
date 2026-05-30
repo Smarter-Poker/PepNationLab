@@ -357,9 +357,9 @@ export default function AgentStoreProducts({ agentId }: { agentId: string }) {
                         />
                         {p.agent_cost != null && (editForm as any).margin_percent != null && (
                           <p style={{ fontSize: '0.68rem', color: 'var(--grey-400)', marginTop: 4, marginBottom: 0 }}>
-                            Sale Price: <strong style={{ color: 'var(--teal)' }}>
-                              ${(p.agent_cost * (1 + Number((editForm as any).margin_percent) / 100)).toFixed(2)}
-                            </strong> per 10-vial pack
+                            Your Sale Price: <strong style={{ color: 'var(--teal)' }}>
+                              ${(p.agent_cost / 10 * (1 + Number((editForm as any).margin_percent) / 100)).toFixed(2)}
+                            </strong> / vial
                           </p>
                         )}
                       </div>
@@ -411,13 +411,24 @@ export default function AgentStoreProducts({ agentId }: { agentId: string }) {
                         <span style={{ fontSize: '0.65rem', color: 'var(--grey-500)', padding: '1px 6px', borderRadius: 4, background: 'rgba(255,255,255,0.04)' }}>{p.products.category}</span>
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-                        <span style={{ fontSize: '0.7rem', color: 'var(--grey-500)', fontWeight: 500 }}>Sale:</span>
+                        {/* Agent cost per vial — what they pay PNL */}
+                        {p.agent_cost != null && p.agent_cost > 0 && (
+                          <>
+                            <span style={{ fontSize: '0.7rem', color: 'var(--grey-500)', fontWeight: 500 }}>Your Cost:</span>
+                            <span style={{ fontSize: '0.82rem', color: '#68D391', fontWeight: 700 }}>
+                              ${(p.agent_cost / 10).toFixed(2)}/vial
+                            </span>
+                            <span style={{ fontSize: '0.65rem', color: 'var(--grey-600)' }}>→</span>
+                          </>
+                        )}
+                        {/* Agent's listed sale price per vial */}
+                        <span style={{ fontSize: '0.7rem', color: 'var(--grey-500)', fontWeight: 500 }}>Listed:</span>
                         <span style={{ fontSize: '0.82rem', color: 'var(--teal)', fontWeight: 700 }}>
-                          ${Number(p.retail_price).toFixed(2)}
+                          ${(Number(p.retail_price) / 10).toFixed(2)}/vial
                         </span>
                         {p.is_on_sale && p.sale_price && (
                           <span style={{ fontSize: '0.7rem', color: '#F56565', fontWeight: 700, background: 'rgba(245,101,101,0.10)', padding: '2px 6px', borderRadius: 4 }}>
-                            On Sale ${Number(p.sale_price).toFixed(2)}
+                            On Sale ${(Number(p.sale_price) / 10).toFixed(2)}/vial
                           </span>
                         )}
                         {p.agent_cost != null && p.agent_cost > 0 && p.retail_price > 0 && (
@@ -507,9 +518,9 @@ export default function AgentStoreProducts({ agentId }: { agentId: string }) {
                               />
                               {p.agent_cost != null && (editForm as any).margin_percent != null && (
                                 <p style={{ fontSize: '0.68rem', color: 'var(--grey-400)', marginTop: 4, marginBottom: 0 }}>
-                                  Sale Price: <strong style={{ color: 'var(--teal)' }}>
-                                    ${(p.agent_cost * (1 + Number((editForm as any).margin_percent) / 100)).toFixed(2)}
-                                  </strong> per 10-vial pack
+                                  Your Sale Price: <strong style={{ color: 'var(--teal)' }}>
+                                    ${(p.agent_cost / 10 * (1 + Number((editForm as any).margin_percent) / 100)).toFixed(2)}
+                                  </strong> / vial
                                 </p>
                               )}
                             </div>
@@ -547,13 +558,20 @@ export default function AgentStoreProducts({ agentId }: { agentId: string }) {
                               <span style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--white)' }}>{displayName}</span>
                               {sizeLabel && <span style={{ fontSize: '0.7rem', color: 'var(--grey-400)', background: 'var(--surface-3)', padding: '1px 6px', borderRadius: 4 }}>{sizeLabel}</span>}
                             </div>
-                            {/* Sale price + margin badge only - no cost/markup formula */}
+                            {/* Agent cost + listed price per vial — no raw base cost or multiplier */}
                             <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-                              <span style={{ fontSize: '0.7rem', color: 'var(--grey-500)', fontWeight: 500 }}>Sale:</span>
-                              <span style={{ fontSize: '0.82rem', color: 'var(--teal)', fontWeight: 700 }}>${Number(p.retail_price).toFixed(2)}</span>
+                              {p.agent_cost != null && p.agent_cost > 0 && (
+                                <>
+                                  <span style={{ fontSize: '0.7rem', color: 'var(--grey-500)', fontWeight: 500 }}>Your Cost:</span>
+                                  <span style={{ fontSize: '0.82rem', color: '#68D391', fontWeight: 700 }}>${(p.agent_cost / 10).toFixed(2)}/vial</span>
+                                  <span style={{ fontSize: '0.65rem', color: 'var(--grey-600)' }}>→</span>
+                                </>
+                              )}
+                              <span style={{ fontSize: '0.7rem', color: 'var(--grey-500)', fontWeight: 500 }}>Listed:</span>
+                              <span style={{ fontSize: '0.82rem', color: 'var(--teal)', fontWeight: 700 }}>${(Number(p.retail_price) / 10).toFixed(2)}/vial</span>
                               {p.is_on_sale && p.sale_price && (
                                 <span style={{ fontSize: '0.7rem', color: '#F56565', fontWeight: 700, background: 'rgba(245,101,101,0.10)', padding: '2px 6px', borderRadius: 4 }}>
-                                  On Sale ${Number(p.sale_price).toFixed(2)}
+                                  On Sale ${(Number(p.sale_price) / 10).toFixed(2)}/vial
                                 </span>
                               )}
                               {p.agent_cost != null && p.agent_cost > 0 && p.retail_price > 0 && (
