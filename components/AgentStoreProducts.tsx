@@ -240,7 +240,7 @@ export default function AgentStoreProducts({ agentId }: { agentId: string }) {
               Product Catalog Manager
             </h3>
             <p style={{ color: 'var(--grey-400)', fontSize: '0.82rem', margin: 0 }}>
-              Toggle products on/off, reorder them, set custom prices and descriptions.
+              Toggle Products On/Off, Reorder Them, Set Custom Prices And Descriptions.
             </p>
           </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -332,12 +332,12 @@ export default function AgentStoreProducts({ agentId }: { agentId: string }) {
               >
                 {isEditing ? (
                   <form onSubmit={handleSave} style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
-                    <div className="grid-2" style={{ gap: 'var(--space-3)', alignItems: 'flex-start' }}>
-                      <div className="form-group" style={{ marginBottom: 0 }}>
+                    <div style={{ display: 'flex', gap: 'var(--space-3)', alignItems: 'flex-end' }}>
+                      <div className="form-group" style={{ marginBottom: 0, flex: 1 }}>
                         <label className="form-label" style={{ fontSize: '0.75rem' }}>Custom Name</label>
                         <input type="text" className="form-input" placeholder={p.products.name} value={editForm.custom_name || ''} onChange={e => setEditForm({ ...editForm, custom_name: e.target.value })} />
                       </div>
-                      <div className="form-group" style={{ marginBottom: 0 }}>
+                      <div className="form-group" style={{ marginBottom: 0, flex: '0 0 160px' }}>
                         <label className="form-label" style={{ fontSize: '0.75rem' }}>
                           Your Markup
                           <span style={{ fontWeight: 400, color: 'var(--grey-400)', marginLeft: 6 }}>(%)</span>
@@ -347,7 +347,7 @@ export default function AgentStoreProducts({ agentId }: { agentId: string }) {
                           step="1"
                           min="0"
                           className="form-input"
-                          placeholder="e.g. 50 for 50% markup"
+                          placeholder="e.g. 50"
                           value={(editForm as any).margin_percent ?? 50}
                           onChange={e => setEditForm({ ...editForm, margin_percent: Number(e.target.value) } as any)}
                         />
@@ -355,7 +355,7 @@ export default function AgentStoreProducts({ agentId }: { agentId: string }) {
                           <p style={{ fontSize: '0.68rem', color: 'var(--grey-400)', marginTop: 4, marginBottom: 0 }}>
                             Your Sale Price: <strong style={{ color: 'var(--teal)' }}>
                               ${(p.agent_cost / 10 * (1 + Number((editForm as any).margin_percent) / 100)).toFixed(2)}
-                            </strong> / vial
+                            </strong> / Vial
                           </p>
                         )}
                       </div>
@@ -412,7 +412,7 @@ export default function AgentStoreProducts({ agentId }: { agentId: string }) {
                           <>
                             <span style={{ fontSize: '0.7rem', color: 'var(--grey-500)', fontWeight: 500 }}>Your Cost:</span>
                             <span style={{ fontSize: '0.82rem', color: '#68D391', fontWeight: 700 }}>
-                              ${(p.agent_cost / 10).toFixed(2)}/vial
+                              ${(p.agent_cost / 10).toFixed(2)} / Vial
                             </span>
                             <span style={{ fontSize: '0.65rem', color: 'var(--grey-600)' }}>→</span>
                           </>
@@ -420,11 +420,11 @@ export default function AgentStoreProducts({ agentId }: { agentId: string }) {
                         {/* Agent's listed sale price per vial */}
                         <span style={{ fontSize: '0.7rem', color: 'var(--grey-500)', fontWeight: 500 }}>Listed:</span>
                         <span style={{ fontSize: '0.82rem', color: 'var(--teal)', fontWeight: 700 }}>
-                          ${(Number(p.retail_price) / 10).toFixed(2)}/vial
+                          ${(Number(p.retail_price) / 10).toFixed(2)} / Vial
                         </span>
                         {p.is_on_sale && p.sale_price && (
                           <span style={{ fontSize: '0.7rem', color: '#F56565', fontWeight: 700, background: 'rgba(245,101,101,0.10)', padding: '2px 6px', borderRadius: 4 }}>
-                            On Sale ${(Number(p.sale_price) / 10).toFixed(2)}/vial
+                            On Sale ${(Number(p.sale_price) / 10).toFixed(2)} / Vial
                           </span>
                         )}
                         {p.agent_cost != null && p.agent_cost > 0 && p.retail_price > 0 && (
@@ -498,17 +498,17 @@ export default function AgentStoreProducts({ agentId }: { agentId: string }) {
                     >
                       {isEditing ? (
                         <form onSubmit={handleSave} style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
-                          <div className="grid-2" style={{ gap: 'var(--space-3)', alignItems: 'flex-start' }}>
-                            <div className="form-group" style={{ marginBottom: 0 }}>
+                          <div style={{ display: 'flex', gap: 'var(--space-3)', alignItems: 'flex-end' }}>
+                            <div className="form-group" style={{ marginBottom: 0, flex: 1 }}>
                               <label className="form-label" style={{ fontSize: '0.75rem' }}>Custom Name</label>
                               <input type="text" className="form-input" placeholder={p.products.name} value={editForm.custom_name || ''} onChange={e => setEditForm({ ...editForm, custom_name: e.target.value })} />
                             </div>
-                            <div className="form-group" style={{ marginBottom: 0 }}>
+                            <div className="form-group" style={{ marginBottom: 0, flex: '0 0 160px' }}>
                               <label className="form-label" style={{ fontSize: '0.75rem' }}>
                                 Your Markup
                                 <span style={{ fontWeight: 400, color: 'var(--grey-400)', marginLeft: 6 }}>(%)</span>
                               </label>
-                              <input type="number" step="1" min="0" className="form-input" placeholder="e.g. 50 for 50% markup"
+                              <input type="number" step="1" min="0" className="form-input" placeholder="e.g. 50"
                                 value={(editForm as any).margin_percent ?? 50}
                                 onChange={e => setEditForm({ ...editForm, margin_percent: Number(e.target.value) } as any)}
                               />
@@ -516,7 +516,7 @@ export default function AgentStoreProducts({ agentId }: { agentId: string }) {
                                 <p style={{ fontSize: '0.68rem', color: 'var(--grey-400)', marginTop: 4, marginBottom: 0 }}>
                                   Your Sale Price: <strong style={{ color: 'var(--teal)' }}>
                                     ${(p.agent_cost / 10 * (1 + Number((editForm as any).margin_percent) / 100)).toFixed(2)}
-                                  </strong> / vial
+                                  </strong> / Vial
                                 </p>
                               )}
                             </div>
@@ -559,15 +559,15 @@ export default function AgentStoreProducts({ agentId }: { agentId: string }) {
                               {p.agent_cost != null && p.agent_cost > 0 && (
                                 <>
                                   <span style={{ fontSize: '0.7rem', color: 'var(--grey-500)', fontWeight: 500 }}>Your Cost:</span>
-                                  <span style={{ fontSize: '0.82rem', color: '#68D391', fontWeight: 700 }}>${(p.agent_cost / 10).toFixed(2)}/vial</span>
+                                  <span style={{ fontSize: '0.82rem', color: '#68D391', fontWeight: 700 }}>${(p.agent_cost / 10).toFixed(2)} / Vial</span>
                                   <span style={{ fontSize: '0.65rem', color: 'var(--grey-600)' }}>→</span>
                                 </>
                               )}
                               <span style={{ fontSize: '0.7rem', color: 'var(--grey-500)', fontWeight: 500 }}>Listed:</span>
-                              <span style={{ fontSize: '0.82rem', color: 'var(--teal)', fontWeight: 700 }}>${(Number(p.retail_price) / 10).toFixed(2)}/vial</span>
+                              <span style={{ fontSize: '0.82rem', color: 'var(--teal)', fontWeight: 700 }}>${(Number(p.retail_price) / 10).toFixed(2)} / Vial</span>
                               {p.is_on_sale && p.sale_price && (
                                 <span style={{ fontSize: '0.7rem', color: '#F56565', fontWeight: 700, background: 'rgba(245,101,101,0.10)', padding: '2px 6px', borderRadius: 4 }}>
-                                  On Sale ${(Number(p.sale_price) / 10).toFixed(2)}/vial
+                                  On Sale ${(Number(p.sale_price) / 10).toFixed(2)} / Vial
                                 </span>
                               )}
                               {p.agent_cost != null && p.agent_cost > 0 && p.retail_price > 0 && (
