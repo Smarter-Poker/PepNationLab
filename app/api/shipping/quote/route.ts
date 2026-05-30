@@ -23,6 +23,7 @@ import { NextResponse } from 'next/server';
 import { rateLimit, getClientIp } from '@/lib/rate-limit';
 import { quoteRates, type AddressInput } from '@/lib/shippo';
 import { createClient, createServiceClient } from '@/lib/supabase/server';
+import { assertSameOrigin } from '@/lib/csrf';
 
 export const dynamic = 'force-dynamic';
 
@@ -38,6 +39,9 @@ const ORIGIN_FALLBACK: AddressInput = {
 };
 
 export async function POST(req: NextRequest) {
+  const csrf = assertSameOrigin(req);
+  if (csrf) return csrf;
+
   // Rate limit
   const ip = getClientIp(req);
   const rl = await rateLimit({ key: 'shipping_quote', limit: 60, windowSeconds: 60, identifier: ip });
@@ -118,31 +122,92 @@ export async function POST(req: NextRequest) {
   else if (totalQty > 10) { lengthIn = 12; widthIn = 9; heightIn = 4; }
 
   // Resolve ship-from origin.
+  // Priority: agent warehouse_origin_id (via agent_slug) → platform default → LA fallback.
+  // Using the agent's real warehouse ensures checkout rates match the actual label cost.
   let fromAddr = ORIGIN_FALLBACK;
   try {
     const service = await createServiceClient();
-    const { data: origin } = await service
-      .from('shipping_origins')
-      .select('name, company, street1, street2, city, state, zip, country, phone, email')
-      .eq('is_default', true)
-      .eq('is_active', true)
-      .maybeSingle();
-    if (origin) {
-      fromAddr = {
-        name: origin.name,
-        company: origin.company ?? undefined,
-        street1: origin.street1,
-        street2: origin.street2 ?? undefined,
-        city: origin.city,
-        state: origin.state,
-        zip: origin.zip,
-        country: origin.country,
-        phone: origin.phone,
-        email: origin.email,
-      };
+
+    // 1) If agent_slug provided, find the agent's own warehouse first.
+    const agentSlug = typeof body.agent_slug === 'string' ? body.agent_slug.trim() : null;
+    if (agentSlug) {
+      const { data: agentProfile } = await service
+        .from('agent_profiles')
+        .select('warehouse_origin_id, warehouse_address, display_name')
+        .eq('slug', agentSlug)
+        .eq('is_active', true)
+        .maybeSingle();
+
+      if (agentProfile?.warehouse_origin_id) {
+        // Post-M1 canonical path: agent has a linked shipping_origins row.
+        const { data: agentOrigin } = await service
+          .from('shipping_origins')
+          .select('name, company, street1, street2, city, state, zip, country, phone, email')
+          .eq('id', agentProfile.warehouse_origin_id)
+          .eq('is_active', true)
+          .maybeSingle();
+        if (agentOrigin) {
+          fromAddr = {
+            name: agentOrigin.name,
+            company: (agentOrigin.company as string | null) ?? undefined,
+            street1: agentOrigin.street1,
+            street2: (agentOrigin.street2 as string | null) ?? undefined,
+            city: agentOrigin.city,
+            state: agentOrigin.state,
+            zip: agentOrigin.zip,
+            country: agentOrigin.country,
+            phone: agentOrigin.phone,
+            email: agentOrigin.email,
+          };
+        }
+      } else if (agentProfile?.warehouse_address && typeof agentProfile.warehouse_address === 'object') {
+        // Legacy path: agent still has JSONB warehouse_address, not yet migrated.
+        const wh = agentProfile.warehouse_address as Record<string, unknown>;
+        const street1 = String(wh.street1 ?? wh.street ?? '').trim();
+        const city = String(wh.city ?? '').trim();
+        const state = String(wh.state ?? '').trim();
+        const zip = String(wh.zip ?? wh.zipCode ?? '').trim();
+        if (street1 && city && state && zip) {
+          fromAddr = {
+            name: String(wh.name ?? agentProfile.display_name ?? 'Agent Warehouse'),
+            street1,
+            street2: typeof wh.street2 === 'string' ? wh.street2 : undefined,
+            city,
+            state,
+            zip,
+            country: String(wh.country ?? 'US') || 'US',
+            phone: typeof wh.phone === 'string' ? wh.phone : '0000000000',
+            email: typeof wh.email === 'string' && wh.email.includes('@') ? wh.email : 'ops@pepnationlab.com',
+          };
+        }
+      }
+    }
+
+    // 2) If no agent-specific origin resolved, fall back to platform default.
+    if (fromAddr === ORIGIN_FALLBACK) {
+      const { data: origin } = await service
+        .from('shipping_origins')
+        .select('name, company, street1, street2, city, state, zip, country, phone, email')
+        .eq('is_default', true)
+        .eq('is_active', true)
+        .maybeSingle();
+      if (origin) {
+        fromAddr = {
+          name: origin.name,
+          company: (origin.company as string | null) ?? undefined,
+          street1: origin.street1,
+          street2: (origin.street2 as string | null) ?? undefined,
+          city: origin.city,
+          state: origin.state,
+          zip: origin.zip,
+          country: origin.country,
+          phone: origin.phone,
+          email: origin.email,
+        };
+      }
     }
   } catch {
-    /* use fallback */
+    /* use hardcoded LA fallback */
   }
 
   // Try live Shippo quote.

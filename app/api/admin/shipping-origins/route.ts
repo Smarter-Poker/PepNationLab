@@ -41,7 +41,27 @@ export async function GET() {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  return NextResponse.json({ origins: data ?? [] });
+  // For each origin, fetch which agents are assigned to it.
+  const origins = data ?? [];
+  const originIds = origins.map((o) => o.id);
+  let agentAssignments: Array<{ id: string; display_name: string; slug: string; warehouse_origin_id: string }> = [];
+  if (originIds.length > 0) {
+    const { data: agents } = await supabase
+      .from('agent_profiles')
+      .select('id, display_name, slug, warehouse_origin_id')
+      .in('warehouse_origin_id', originIds)
+      .eq('is_active', true);
+    agentAssignments = (agents ?? []) as typeof agentAssignments;
+  }
+
+  const enriched = origins.map((o) => ({
+    ...o,
+    assigned_agents: agentAssignments
+      .filter((a) => a.warehouse_origin_id === o.id)
+      .map((a) => ({ id: a.id, display_name: a.display_name, slug: a.slug })),
+  }));
+
+  return NextResponse.json({ origins: enriched });
 }
 
 // ---------------------------------------------------------------------------

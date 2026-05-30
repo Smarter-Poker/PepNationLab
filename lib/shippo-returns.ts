@@ -1,27 +1,31 @@
 /**
  * Return label purchase — used by the RMA workflow when an agent decides to
- * issue a pre-paid return shipping label to the buyer. Modeled after
- * lib/shippo.ts purchaseLabelForOrder but the addressFrom is the BUYER (the
- * person mailing the package back) and addressTo is the agent's warehouse.
+ * issue a pre-paid return shipping label to the buyer. Migrated to the M1
+ * platform-account model: uses lib/shippo.getActiveKey() instead of the
+ * deprecated agent_profiles.shippo_api_key column. From-address is the
+ * BUYER (mailing the package back); to-address is the warehouse origin
+ * (resolved from agent_profiles.warehouse_origin_id, falling back to the
+ * default shipping_origin, finally falling back to the legacy
+ * agent_profiles.warehouse_address JSONB if neither is set).
  *
  * Writes back to rma_requests:
  *   return_tracking_number TEXT
  *   return_label_url TEXT
- *   return_label_purchased_at TIMESTAMPTZ (ISO 8601, e.g. 2026-05-29T18:30:00.000Z)
+ *   return_label_purchased_at TIMESTAMPTZ (ISO 8601, e.g. 2026-05-30T05:30:00.000Z)
  *   status TEXT = 'label_sent'
  *   updated_at TIMESTAMPTZ
  */
 
-import { Shippo } from 'shippo';
 import { pickOne } from '@/lib/relations';
+import { getActiveKey } from '@/lib/shippo';
 import type { SupabaseClient } from '@supabase/supabase-js';
+
+const SHIPPO_BASE = 'https://api.goshippo.com';
+const SHIPPO_API_VERSION = '2018-02-08';
+const ALLOWED_CARRIERS = new Set(['usps', 'ups', 'fedex', 'dhl_express']);
 
 export interface PurchaseReturnLabelOptions {
   rmaId: string;
-  /**
-   * The agent whose Shippo API key + warehouse address should be used.
-   * For super-agent triggered returns, pass the order's `agent_id`.
-   */
   agentId: string;
 }
 
@@ -38,6 +42,17 @@ export interface PurchaseReturnLabelErr {
 }
 
 export type PurchaseReturnLabelResult = PurchaseReturnLabelOk | PurchaseReturnLabelErr;
+
+interface ShipFromTo {
+  name?: string;
+  street1: string;
+  street2?: string;
+  city: string;
+  state: string;
+  zip: string;
+  country: string;
+  email?: string;
+}
 
 export async function purchaseReturnLabel(
   supabase: SupabaseClient,
@@ -78,40 +93,52 @@ export async function purchaseReturnLabel(
     return { ok: false, error: 'Unauthorized To Manage This Return.', status: 403 };
   }
 
-  const { data: agentProfile, error: profileError } = await supabase
-    .from('agent_profiles')
-    .select('display_name, shippo_api_key, warehouse_address')
-    .eq('id', agentId)
-    .single();
-
-  if (profileError || !agentProfile) {
-    return { ok: false, error: 'Agent Profile Not Found.', status: 404 };
-  }
-
-  if (!agentProfile.shippo_api_key) {
-    return {
-      ok: false,
-      error: 'Shippo API Key Missing. Add Your Shippo API Token In The Storefront Config Tab To Generate Return Labels.',
-      status: 400,
-    };
-  }
-
-  const wh = (agentProfile.warehouse_address || {}) as Record<string, any>;
-  if (!wh.street1 || !wh.city || !wh.state || !wh.zip) {
-    return { ok: false, error: 'Warehouse Return Address Not Configured.', status: 422 };
-  }
-
-  const addr = (order.shipping_address || {}) as Record<string, any>;
-  const street = addr.street || addr.street1 || '';
-  const city = addr.city || '';
-  const state = addr.state || '';
-  const zip = addr.zipCode || addr.zip || '';
-  const country = addr.country || 'US';
+  // ---------------------------------------------------------------------------
+  // Resolve from-address (the buyer who is mailing the package back).
+  // Handles both legacy JSONB shapes (street/zipCode vs street1/zip).
+  // ---------------------------------------------------------------------------
+  const addr = (order.shipping_address || {}) as Record<string, unknown>;
+  const street = String(addr.street1 ?? addr.street ?? '').trim();
+  const city = String(addr.city ?? '').trim();
+  const state = String(addr.state ?? '').trim();
+  const zip = String(addr.zip ?? addr.zipCode ?? '').trim();
+  const country = String(addr.country ?? 'US').trim() || 'US';
 
   if (!street || !city || !state || !zip) {
     return { ok: false, error: 'Buyer Address Missing For Return Label.', status: 422 };
   }
 
+  const buyer = pickOne<{ full_name?: string | null; email?: string | null }>(order.buyer);
+  const from: ShipFromTo = {
+    name: String(addr.fullName ?? addr.name ?? buyer?.full_name ?? 'Returning Customer'),
+    street1: street,
+    street2: typeof addr.street2 === 'string' ? addr.street2 : undefined,
+    city,
+    state,
+    zip,
+    country,
+    email: buyer?.email && buyer.email.includes('@') ? buyer.email : undefined,
+  };
+
+  // ---------------------------------------------------------------------------
+  // Resolve to-address (the warehouse). Cascade matches lib/shippo.resolveOrigin:
+  // agent.warehouse_origin_id -> default shipping_origins row -> legacy JSONB.
+  // ---------------------------------------------------------------------------
+  const to = await resolveAgentOrigin(supabase, agentId);
+  if (!to) {
+    return {
+      ok: false,
+      error: 'No Warehouse Origin Configured. Add A Warehouse In Admin -> Settings -> Shipping.',
+      status: 422,
+    };
+  }
+
+  // ---------------------------------------------------------------------------
+  // Compute parcel from rma_items weights (with 4 oz vial fallback).
+  // ---------------------------------------------------------------------------
+  type WeightRow = { weight_oz?: number | null };
+  type OrderItemRow = { products: WeightRow | WeightRow[] | null };
+  type RmaItemRow = { quantity: number; order_items: OrderItemRow | OrderItemRow[] | null };
   const { data: items } = await supabase
     .from('rma_items')
     .select('quantity, order_item_id, order_items(products(weight_oz))')
@@ -119,87 +146,133 @@ export async function purchaseReturnLabel(
 
   let totalWeightOz = 0;
   let totalQty = 0;
-  for (const it of (items || []) as any[]) {
+  for (const it of (items ?? []) as RmaItemRow[]) {
     const qty = Number(it.quantity) || 0;
-    const oi = Array.isArray(it.order_items) ? it.order_items[0] : it.order_items;
-    const prod = oi && oi.products ? (Array.isArray(oi.products) ? oi.products[0] : oi.products) : null;
-    const w = Number(prod?.weight_oz) || 0.5;
+    const oi = pickOne<OrderItemRow>(it.order_items);
+    const prod = oi ? pickOne<WeightRow>(oi.products) : null;
+    const w = Number(prod?.weight_oz) || 4;
     totalWeightOz += qty * w;
     totalQty += qty;
   }
-  const parcelWeight = Math.max(1, Math.ceil(totalWeightOz)).toString();
+  const weightOz = Math.max(1, Math.round(totalWeightOz));
+  let lengthIn = 6;
+  let widthIn = 4;
+  let heightIn = 4;
+  if (totalQty > 3 && totalQty <= 10) { lengthIn = 9; widthIn = 6; heightIn = 3; }
+  else if (totalQty > 10) { lengthIn = 12; widthIn = 9; heightIn = 4; }
 
-  let parcelDims: { length: string; width: string; height: string };
-  if (totalQty <= 3) parcelDims = { length: '6', width: '4', height: '4' };
-  else if (totalQty <= 10) parcelDims = { length: '9', width: '6', height: '3' };
-  else parcelDims = { length: '12', width: '9', height: '4' };
+  // ---------------------------------------------------------------------------
+  // Resolve platform key (no more per-agent SDK).
+  // ---------------------------------------------------------------------------
+  let key;
+  try {
+    key = await getActiveKey(agentId);
+  } catch (err) {
+    return {
+      ok: false,
+      error: err instanceof Error ? err.message : 'No Active Shippo Credentials.',
+      status: 503,
+    };
+  }
 
-  const shippo = new Shippo({ apiKeyHeader: agentProfile.shippo_api_key });
+  const headers: Record<string, string> = {
+    Authorization: `ShippoToken ${key.token}`,
+    'Shippo-API-Version': SHIPPO_API_VERSION,
+    'Content-Type': 'application/json',
+    Accept: 'application/json',
+  };
+  if (key.accountScope) headers['SHIPPO-ACCOUNT-ID'] = key.accountScope;
 
-  const shipmentRequest: any = {
-    addressFrom: {
-      name: addr.fullName || (order as any).buyer?.full_name || 'Returning Customer',
-      street1: street,
-      city,
-      state,
-      zip,
-      country,
-      email: (order as any).buyer?.email || 'noreply@pepnationlab.com',
-    },
-    addressTo: {
-      name: wh.name || agentProfile.display_name || 'Agent Warehouse',
-      street1: wh.street1,
-      street2: wh.street2 || undefined,
-      city: wh.city,
-      state: wh.state,
-      zip: wh.zip,
-      country: 'US',
-      email: 'noreply@pepnationlab.com',
-    },
+  // ---------------------------------------------------------------------------
+  // POST /shipments/
+  // ---------------------------------------------------------------------------
+  const shipmentBody = {
+    address_from: toShippoAddress(from),
+    address_to: toShippoAddress(to),
     parcels: [{
-      length: parcelDims.length,
-      width: parcelDims.width,
-      height: parcelDims.height,
-      distanceUnit: 'in',
-      weight: parcelWeight,
-      massUnit: 'oz',
+      length: String(lengthIn),
+      width: String(widthIn),
+      height: String(heightIn),
+      distance_unit: 'in',
+      weight: String(weightOz),
+      mass_unit: 'oz',
     }],
-    extra: { isReturn: true },
+    extra: { is_return: true },
     async: false,
   };
 
-  let shipment: any;
+  let shipmentJson: {
+    rates?: Array<{
+      object_id: string;
+      provider?: string;
+      amount?: string;
+      attributes?: string[];
+    }>;
+    messages?: Array<{ text?: string }>;
+  };
   try {
-    shipment = await shippo.shipments.create(shipmentRequest);
-  } catch (err: any) {
-    return { ok: false, error: `Shippo Error: Failed To Generate Return Shipment. ${err?.message || ''}`.trim(), status: 400 };
-  }
-
-  if (!shipment.rates || shipment.rates.length === 0) {
-    return { ok: false, error: 'No Return Shipping Rates Returned From Shippo.', status: 400 };
-  }
-
-  const ratesSorted = [...shipment.rates].sort((a: any, b: any) => parseFloat(a.amount) - parseFloat(b.amount));
-  const rate: any = ratesSorted[0];
-
-  let transaction: any;
-  try {
-    transaction = await shippo.transactions.create({
-      rate: rate.objectId,
-      labelFileType: 'PDF',
-      async: false,
+    const resp = await fetch(`${SHIPPO_BASE}/shipments/`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(shipmentBody),
     });
-  } catch (err: any) {
-    return { ok: false, error: `Shippo Error: Failed To Purchase Return Label. ${err?.message || ''}`.trim(), status: 400 };
+    if (!resp.ok) {
+      console.error('[shippo-returns] shipments.create failed', resp.status);
+      return { ok: false, error: 'Failed To Generate Return Shipment.', status: 502 };
+    }
+    shipmentJson = await resp.json();
+  } catch (err) {
+    console.error('[shippo-returns] shipments.create network err', err);
+    return { ok: false, error: 'Shippo Unreachable.', status: 502 };
   }
 
-  if (transaction.status === 'ERROR' || !transaction.labelUrl) {
-    const msgs = transaction.messages?.map((m: any) => m.text).join('; ') || 'Unknown Error';
-    return { ok: false, error: `Shippo Transaction Failed: ${msgs}`, status: 400 };
+  const rates = (shipmentJson.rates ?? [])
+    .filter((r) => r.provider && ALLOWED_CARRIERS.has(r.provider.toLowerCase().replace(/\s+/g, '_')))
+    .filter((r) => parseFloat(r.amount || '0') > 0)
+    .sort((a, b) => parseFloat(a.amount || '0') - parseFloat(b.amount || '0'));
+
+  if (rates.length === 0) {
+    return { ok: false, error: 'No Return Shipping Rates Returned For This Address.', status: 422 };
+  }
+  const rate = rates[0];
+
+  // ---------------------------------------------------------------------------
+  // POST /transactions/
+  // ---------------------------------------------------------------------------
+  let transactionJson: {
+    object_id?: string;
+    status?: string;
+    tracking_number?: string;
+    label_url?: string;
+    messages?: Array<{ text?: string }>;
+  };
+  try {
+    const resp = await fetch(`${SHIPPO_BASE}/transactions/`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({
+        rate: rate.object_id,
+        label_file_type: 'PDF',
+        async: false,
+      }),
+    });
+    if (!resp.ok) {
+      console.error('[shippo-returns] transactions.create failed', resp.status);
+      return { ok: false, error: 'Failed To Purchase Return Label.', status: 502 };
+    }
+    transactionJson = await resp.json();
+  } catch (err) {
+    console.error('[shippo-returns] transactions.create network err', err);
+    return { ok: false, error: 'Shippo Unreachable.', status: 502 };
   }
 
-  const trackingNumber = transaction.trackingNumber as string;
-  const labelUrl = transaction.labelUrl as string;
+  if (transactionJson.status === 'ERROR' || !transactionJson.label_url || !transactionJson.tracking_number) {
+    console.error('[shippo-returns] transaction not SUCCESS', transactionJson.status);
+    return { ok: false, error: 'Shippo Return Transaction Failed.', status: 502 };
+  }
+
+  const trackingNumber = transactionJson.tracking_number;
+  const labelUrl = transactionJson.label_url;
 
   const nowIso = new Date().toISOString();
   const { error: updateError } = await supabase
@@ -218,4 +291,87 @@ export async function purchaseReturnLabel(
   }
 
   return { ok: true, trackingNumber, labelUrl };
+}
+
+// ---------------------------------------------------------------------------
+// Origin resolver — match lib/shippo.resolveOrigin behavior.
+// ---------------------------------------------------------------------------
+
+async function resolveAgentOrigin(supabase: SupabaseClient, agentId: string): Promise<ShipFromTo | null> {
+  // 1) agent_profiles.warehouse_origin_id (canonical post-M1 path)
+  const { data: agentProfile } = await supabase
+    .from('agent_profiles')
+    .select('display_name, warehouse_origin_id, warehouse_address')
+    .eq('id', agentId)
+    .maybeSingle();
+
+  if (agentProfile?.warehouse_origin_id) {
+    const { data: origin } = await supabase
+      .from('shipping_origins')
+      .select('name, street1, street2, city, state, zip, country, email')
+      .eq('id', agentProfile.warehouse_origin_id)
+      .eq('is_active', true)
+      .maybeSingle();
+    if (origin) {
+      return originRowToShipFromTo(origin);
+    }
+  }
+
+  // 2) Default shipping_origins row
+  const { data: def } = await supabase
+    .from('shipping_origins')
+    .select('name, street1, street2, city, state, zip, country, email')
+    .eq('is_default', true)
+    .eq('is_active', true)
+    .maybeSingle();
+  if (def) return originRowToShipFromTo(def);
+
+  // 3) Legacy agent_profiles.warehouse_address JSONB
+  const wh = (agentProfile?.warehouse_address ?? null) as Record<string, unknown> | null;
+  if (wh && typeof wh === 'object') {
+    const street1 = String(wh.street1 ?? wh.street ?? '').trim();
+    const city = String(wh.city ?? '').trim();
+    const state = String(wh.state ?? '').trim();
+    const zip = String(wh.zip ?? wh.zipCode ?? '').trim();
+    if (street1 && city && state && zip) {
+      return {
+        name: String(wh.name ?? agentProfile?.display_name ?? 'Agent Warehouse'),
+        street1,
+        street2: typeof wh.street2 === 'string' ? wh.street2 : undefined,
+        city,
+        state,
+        zip,
+        country: String(wh.country ?? 'US') || 'US',
+        email: typeof wh.email === 'string' && wh.email.includes('@') ? wh.email : undefined,
+      };
+    }
+  }
+
+  return null;
+}
+
+function originRowToShipFromTo(row: Record<string, unknown>): ShipFromTo {
+  return {
+    name: typeof row.name === 'string' ? row.name : 'Warehouse',
+    street1: String(row.street1 ?? ''),
+    street2: typeof row.street2 === 'string' ? row.street2 : undefined,
+    city: String(row.city ?? ''),
+    state: String(row.state ?? ''),
+    zip: String(row.zip ?? ''),
+    country: String(row.country ?? 'US') || 'US',
+    email: typeof row.email === 'string' && row.email.includes('@') ? row.email : undefined,
+  };
+}
+
+function toShippoAddress(a: ShipFromTo): Record<string, unknown> {
+  return {
+    name: a.name,
+    street1: a.street1,
+    street2: a.street2,
+    city: a.city,
+    state: a.state,
+    zip: a.zip,
+    country: a.country,
+    email: a.email,
+  };
 }
