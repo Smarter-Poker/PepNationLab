@@ -66,8 +66,8 @@ export function AdminLayoutClient({
 
   return (
     <>
-      {/* ── Global site header — same as every other page ── */}
-      <Navbar />
+      {/* ── Global site header — hamburger wired to admin sidebar ── */}
+      <Navbar onMenuClick={() => setSidebarOpen(o => !o)} />
 
       <div style={{ minHeight: '100dvh', background: 'var(--black)', display: 'flex', paddingTop: 60 }}>
 
@@ -187,31 +187,6 @@ export function AdminLayoutClient({
         }}
       >
 
-        {/* Mobile-only sidebar toggle — compact, doesn't duplicate the Navbar */}
-        <div className="admin-mobile-topbar">
-          <button
-            onClick={() => setSidebarOpen(o => !o)}
-            aria-label="Open Admin Menu"
-            style={{
-              background: 'none',
-              border: 'none',
-              cursor: 'pointer',
-              color: 'var(--silver)',
-              padding: '10px 14px',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 8,
-              fontSize: '0.82rem',
-              fontWeight: 600,
-            }}
-          >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-              <path d="M3 7h18M3 12h18M3 17h18" />
-            </svg>
-            Admin Menu
-          </button>
-        </div>
-
         {children}
 
       </main>
@@ -221,15 +196,8 @@ export function AdminLayoutClient({
           background: rgba(255,255,255,0.04) !important;
           color: var(--white) !important;
         }
-        /* Mobile-only topbar: visible on mobile, hidden on desktop */
-        .admin-mobile-topbar {
-          display: none;
-          border-bottom: 1px solid rgba(255,255,255,0.05);
-          padding: 4px 0;
-        }
-        /* Mobile: sidebar is a fixed drawer, hidden off-screen by default */
+        /* No admin-mobile-topbar needed — Navbar hamburger opens the admin sidebar */
         @media (max-width: 1024px) {
-          .admin-mobile-topbar { display: flex; }
           .admin-sidebar {
             position: fixed !important;
             top: 60px !important;

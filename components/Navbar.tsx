@@ -136,7 +136,7 @@ function DrawerLink({
 
 const IP = { width: 18, height: 18, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const };
 
-export default function Navbar() {
+export default function Navbar({ onMenuClick }: { onMenuClick?: () => void } = {}) {
   const router = useRouter();
   const pathname = usePathname();
 
@@ -268,7 +268,7 @@ export default function Navbar() {
       >
         {/* LEFT: Hamburger */}
         <button
-          onClick={() => setDrawerOpen(o => !o)}
+          onClick={() => onMenuClick ? onMenuClick() : setDrawerOpen(o => !o)}
           aria-label="Open Navigation Menu"
           style={{
             background: 'none',
@@ -285,7 +285,7 @@ export default function Navbar() {
           }}
         >
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-            {drawerOpen
+            {(onMenuClick ? false : drawerOpen)
               ? <path d="M18 6L6 18M6 6l12 12" />
               : <path d="M3 7h18M3 12h18M3 17h18" />}
           </svg>
@@ -410,10 +410,10 @@ export default function Navbar() {
       </nav>
 
       {/* ══════════════════════════════════════════
-          SLIDE-OUT DRAWER
+          SLIDE-OUT DRAWER (global site nav — not shown when admin controls hamburger)
       ══════════════════════════════════════════ */}
       {/* Backdrop */}
-      {drawerOpen && (
+      {!onMenuClick && drawerOpen && (
         <div
           onClick={closeDrawer}
           style={{
@@ -428,7 +428,8 @@ export default function Navbar() {
         />
       )}
 
-      {/* Drawer panel */}
+      {/* Drawer panel — only rendered for non-admin pages */}
+      {!onMenuClick && (
       <div
         style={{
           position: 'fixed',
@@ -579,6 +580,7 @@ export default function Navbar() {
           )}
         </nav>
       </div>
+      )} {/* end !onMenuClick drawer panel */}
 
       <style>{`
         .pnl-navbar { }
