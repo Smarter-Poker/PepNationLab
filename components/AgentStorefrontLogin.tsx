@@ -80,33 +80,44 @@ export default function AgentStorefrontLogin({
         throw new Error('Invalid Username Or Password');
       }
 
-      // CRITICAL: Verify user belongs to THIS agent's downline
-      const userId = authData?.user?.id;
-      if (userId) {
-        const verifyRes = await fetch('/api/auth/verify-agent-access', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ userId, agentSlug }),
-        });
-        const verifyData = await verifyRes.json();
-        if (!verifyData.allowed) {
-          // Sign them out immediately — they don't belong here
-          await supabase.auth.signOut();
-          throw new Error(verifyData.reason || 'This Account Does Not Belong To This Store.');
-        }
+      if (!authData?.user?.id) {
+        throw new Error('Sign In Failed. Please Try Again.');
+      }
+
+      // Verify user belongs to THIS agent's downline
+      const verifyRes = await fetch('/api/auth/verify-agent-access', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: authData.user.id, agentSlug }),
+      });
+
+      if (!verifyRes.ok && verifyRes.status !== 200) {
+        await supabase.auth.signOut();
+        throw new Error('Access verification failed. Please try again.');
+      }
+
+      const verifyData = await verifyRes.json();
+      if (!verifyData.allowed) {
+        await supabase.auth.signOut();
+        throw new Error(verifyData.reason || 'This Account Does Not Belong To This Store.');
       }
 
       // Single-session enforcement — best-effort, never block login
       supabase.auth.signOut({ scope: 'others' }).catch(() => {});
 
-      // Force a FULL page navigation (not just a React soft-refresh).
-      // router.refresh() only triggers a server re-render but does NOT
-      // guarantee the browser will send the newly-set auth cookie in the
-      // same request — particularly on mobile incognito.
-      // A hard navigation forces the browser to re-attach all current cookies.
+      // Wait until Supabase confirms the session is readable locally (max 3s).
+      // On mobile incognito the cookie write is async — navigating too soon
+      // means the server request arrives before the cookie exists.
+      for (let i = 0; i < 15; i++) {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.access_token) break;
+        await new Promise(r => setTimeout(r, 200));
+      }
+
+      // Hard navigation — forces browser to re-send all cookies to the server
       window.location.href = window.location.pathname;
     } catch (err: any) {
-      setError(err.message || 'Network Error');
+      setError(err.message || 'Sign In Failed. Please Try Again.');
       setLoading(false);
     }
   }
