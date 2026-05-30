@@ -451,64 +451,28 @@ export default function ResearcherDashboard({ userId, userName, userEmail, agent
       </aside>
 
       {/* ── Main content area ── */}
-      <main style={{ flex: 1, marginLeft: 220, minWidth: 0 }} className="researcher-main">
+      <main style={{ flex: 1, minWidth: 0, width: "100%" }} className="researcher-main">
 
-        {/* Mobile top bar */}
-        <div style={{
-          display: 'none',
-          alignItems: 'center',
-          gap: 12,
-          padding: '12px 16px',
-          background: 'var(--black-2)',
-          borderBottom: '1px solid rgba(192,184,168,0.08)',
-          position: 'sticky',
-          top: 60,
-          zIndex: 10,
-        }} className="researcher-mobile-bar">
-          <button
-            onClick={() => setSidebarOpen(o => !o)}
-            style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--teal)', padding: 4, display: 'flex' }}
-          >
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-              {sidebarOpen
-                ? <path d="M18 6L6 18M6 6l12 12" />
-                : <path d="M3 7h18M3 12h18M3 17h18" />}
-            </svg>
-          </button>
-          <span style={{ fontFamily: 'var(--font-brand)', fontSize: '0.85rem', fontWeight: 800, color: 'var(--nav-title)', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
-            {currentTab?.label ?? 'Dashboard'}
-          </span>
-        </div>
 
-        <div style={{ padding: 'var(--space-6)' }}>
 
-          {/* Page heading */}
-          <div style={{ marginBottom: 'var(--space-6)' }}>
-            <h1 style={{ fontSize: '1.4rem', fontWeight: 800, marginBottom: 4 }}>
-              {tab === 'overview' ? <>Welcome Back, <span style={{ color: 'var(--teal)' }}>{userName}</span></> : currentTab?.label}
-            </h1>
-            {tab === 'overview' && (
-              <p style={{ color: 'var(--grey-400)', fontSize: '0.82rem', margin: 0 }}>
-                Researcher Dashboard — Research Use Only
-              </p>
-            )}
-          </div>
-
-          {/* ── OVERVIEW TAB — Full-Screen Image Menu ── */}
+        {tab === 'overview' ? (
+          <>
+          {/* ── OVERVIEW TAB — Full-Screen Image, no padding, no heading ── */}
           {tab === 'overview' && (
             <div style={{
               width: '100%',
+              minHeight: 'calc(100dvh - 60px)',
               display: 'flex',
               justifyContent: 'center',
               alignItems: 'flex-start',
-              background: '#0a0a0a',
+              background: '#000',
             }}>
-              {/* Portrait panel — width-driven, aspect-ratio-derived height */}
+              {/* Portrait panel — width-driven, aspect-ratio fills screen */}
               <div style={{
                 position: 'relative',
                 flexShrink: 0,
-                width: 'calc(100% - 4px)',
-                maxWidth: 480,
+                width: '100%',
+                maxWidth: 600,
                 aspectRatio: '576 / 1024',
                 overflow: 'hidden',
                 backgroundImage: "url('/researcher-menu.jpg')",
@@ -543,6 +507,15 @@ export default function ResearcherDashboard({ userId, userName, userEmail, agent
               </div>
             </div>
           )}
+          </>
+        ) : (
+          <div style={{ padding: 'var(--space-6)' }}>
+            {/* Page heading for non-overview tabs */}
+            <div style={{ marginBottom: 'var(--space-6)' }}>
+              <h1 style={{ fontSize: '1.4rem', fontWeight: 800, marginBottom: 4 }}>
+                {currentTab?.label}
+              </h1>
+            </div>
 
           {/* ── ORDERS TAB ── */}
           {tab === 'orders' && (
@@ -752,28 +725,18 @@ export default function ResearcherDashboard({ userId, userName, userEmail, agent
             </div>
           )}
 
-        </div>
+          </div>
+        )}
       </main>
 
       <style>{`
         @keyframes spin { to { transform: rotate(360deg); } }
 
-        /* Desktop: sidebar always visible */
+        /* Sidebar: always hidden until hamburger opens it */
         .researcher-sidebar {
-          transform: translateX(0) !important;
+          transform: translateX(-100%);
         }
-
-        /* Mobile: sidebar hidden by default, shown via state */
         @media (max-width: 768px) {
-          .researcher-sidebar {
-            transform: translateX(-100%);
-          }
-          .researcher-main {
-            margin-left: 0 !important;
-          }
-          .researcher-mobile-bar {
-            display: flex !important;
-          }
           .overview-grid {
             grid-template-columns: 1fr !important;
           }
