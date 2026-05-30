@@ -182,7 +182,8 @@ export async function PATCH(req: NextRequest) {
   const { error } = await supabase
     .from('agent_products')
     .update(updatePayload)
-    .eq('id', id);
+    .eq('id', id)
+    .eq('agent_id', gate.user.id); // enforce ownership on the write, not just the pre-check
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
