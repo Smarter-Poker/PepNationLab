@@ -73,8 +73,12 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  // Audit9: use the new transactional RPC so conv+participants insert is atomic.
+  // Audit11: pass p_caller_id explicitly so the SECURITY DEFINER RPC's
+  // service-role / postgres bypass can derive `effective_caller`.
+  // Without this the route gets 'unauthorized' because auth.uid() is NULL
+  // under the service-role JWT used by createServiceClient().
   const { data: newConvId, error: rpcErr } = await svc.rpc('fn_messenger_create_conversation', {
+    p_caller_id: user.id,
     p_type: parsed.data.type,
     p_title: parsed.data.title ?? null,
     p_avatar: parsed.data.avatarUrl ?? null,

@@ -27,13 +27,15 @@ export async function POST(req: NextRequest) {
   const participant = await getParticipant(parsed.data.conversationId, user.id);
   if (!participant) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
-  // Audit10: use the SECURITY DEFINER RPC so the validate-belongs-to-conv +
-  // GREATEST-no-rewind + zero-unread is one atomic statement instead of a
-  // racy compare-and-write pair. The RPC raises predictable error codes:
+  // Audit11: explicit p_caller_id so the SECURITY DEFINER RPC works when
+  // called via the service-role client (auth.uid() returns NULL under
+  // service-role JWT, and the RPC has a service_role / postgres bypass
+  // that trusts p_caller_id). The RPC returns predictable error codes:
   //   42501 unauthorized / not_a_participant
   //   22023 message_not_in_conversation
   const svc = await createServiceClient();
   const { error: rpcErr } = await svc.rpc('fn_messenger_mark_read', {
+    p_caller_id: user.id,
     p_conv_id: parsed.data.conversationId,
     p_last_msg_id: parsed.data.lastReadMessageId,
   });
