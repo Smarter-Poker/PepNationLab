@@ -4,6 +4,7 @@ import { assertSameOrigin } from '@/lib/csrf';
 import { requireSession, getParticipant } from '@/lib/messenger/server';
 import { GetMessagesSchema } from '@/lib/messenger/schemas';
 
+export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 interface MessageRow {

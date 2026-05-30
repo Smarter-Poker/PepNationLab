@@ -430,8 +430,8 @@ export default function AgentStorefrontGrid({ products, inventoryMap, primaryCol
   const [showBulkPricing, setShowBulkPricing] = useState(false);
   // Modal-only quantity input — does NOT touch cartItems until "Add To Cart" is pressed.
   // Agent self-buy: minimum 10 vials, increments of 10 (enforced here + server-side).
-  const selfBuyStep = isStorefrontOwner ? 10 : 1;
-  const selfBuyMin  = isStorefrontOwner ? 10 : 1;
+  const selfBuyStep = 1;   // agents can buy any quantity; tiered pricing applies below 10
+  const selfBuyMin  = 1;   // minimum 1 vial; agent direct price unlocks at 10+
 
   // ─── Recommendations ("Researchers Also Bought") ────────────────────────
   // When the product detail modal opens, fetch a strip of related products
@@ -735,6 +735,77 @@ export default function AgentStorefrontGrid({ products, inventoryMap, primaryCol
           .sf-toolbar-reset   { flex: 0 0 auto; grid-area: unset; }
           .sf-toolbar select  { width: auto; min-width: 160px; padding: 9px 12px; font-size: 0.85rem; }
           .sf-filter-btn, .sf-reset-btn { width: auto; padding: 9px 12px; justify-content: flex-start; }
+        }
+
+        /* ── Wishlist Heart Button — always a perfect circle ─────────── */
+        .sf-wishlist-btn {
+          position: absolute; top: 10px; right: 10px;
+          width: 34px; height: 34px; min-width: 34px; min-height: 34px;
+          max-width: 34px; max-height: 34px; border-radius: 50%;
+          display: flex; align-items: center; justify-content: center;
+          cursor: pointer; z-index: 5; flex-shrink: 0;
+          backdrop-filter: blur(6px); transition: transform 0.15s ease;
+          box-sizing: border-box;
+        }
+        .sf-wishlist-btn:hover { transform: scale(1.12); }
+
+        /* ── Product Detail Modal / Bottom Sheet ─────────────────────── */
+        .sf-modal-overlay {
+          position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+          background: rgba(0,0,0,0.85); backdrop-filter: blur(8px);
+          z-index: 1000; display: flex; align-items: flex-end; justify-content: center;
+          overflow: hidden;
+        }
+        .sf-modal-sheet {
+          width: 100%; max-height: 95dvh; overflow-y: auto;
+          -webkit-overflow-scrolling: touch;
+          background: linear-gradient(180deg, var(--surface-2) 0%, var(--black-2) 100%);
+          border-radius: 22px 22px 0 0;
+          border: 1px solid rgba(255,255,255,0.08);
+          box-shadow: 0 -8px 40px rgba(0,0,0,0.7);
+          display: flex; flex-direction: column;
+        }
+        .sf-modal-drag-bar {
+          width: 40px; height: 4px; border-radius: 2px;
+          background: rgba(255,255,255,0.15); margin: 10px auto 0;
+          flex-shrink: 0;
+        }
+        .sf-modal-img {
+          height: 160px; flex-shrink: 0; position: relative; overflow: hidden;
+          border-radius: 22px 22px 0 0;
+        }
+        .sf-modal-body { padding: 14px 16px; flex: 1; }
+        .sf-modal-h2 { font-size: 1.2rem !important; }
+        .sf-modal-actions {
+          display: flex; gap: 10px;
+          padding: 12px 16px calc(16px + env(safe-area-inset-bottom, 0px));
+          position: sticky; bottom: 0; z-index: 5;
+          background: linear-gradient(to top, var(--black-2) 80%, transparent);
+        }
+        .sf-modal-actions .sf-close-btn {
+          padding: 11px 16px; background: transparent;
+          border: 1px solid rgba(255,255,255,0.15); border-radius: var(--radius-md);
+          color: var(--white); cursor: pointer; font-weight: 600; font-size: 0.85rem;
+          white-space: nowrap;
+        }
+        .sf-modal-actions .sf-add-btn {
+          flex: 1; padding: 12px 20px; border-radius: var(--radius-md);
+          font-weight: 800; font-size: 0.9rem; border: none; cursor: pointer;
+          color: #fff; white-space: nowrap;
+        }
+        @media (min-width: 600px) {
+          .sf-modal-overlay { align-items: center; padding: 16px; overflow-y: auto; }
+          .sf-modal-sheet {
+            border-radius: var(--radius-xl); max-width: 720px; max-height: 90vh;
+          }
+          .sf-modal-drag-bar { display: none; }
+          .sf-modal-img { height: 280px; border-radius: var(--radius-xl) var(--radius-xl) 0 0; }
+          .sf-modal-body { padding: 24px 32px 16px; }
+          .sf-modal-h2 { font-size: 1.8rem !important; }
+          .sf-modal-actions {
+            position: static; background: none; padding: 0 32px 28px;
+          }
+          .sf-modal-actions .sf-add-btn { flex: none; padding: 10px 24px; }
         }
       `}} />
 
@@ -1213,23 +1284,11 @@ export default function AgentStorefrontGrid({ products, inventoryMap, primaryCol
                       type="button"
                       aria-label={wished ? 'Remove From Wishlist' : 'Add To Wishlist'}
                       onClick={e => { e.stopPropagation(); void toggleWishlist(activeVariant.product_id); }}
+                      className="sf-wishlist-btn"
                       style={{
-                        position: 'absolute',
-                        top: 10,
-                        right: 10,
-                        width: 34,
-                        height: 34,
-                        borderRadius: '50%',
                         background: wished ? 'rgba(229,62,62,0.20)' : 'rgba(0,0,0,0.55)',
                         border: `1px solid ${wished ? 'rgba(229,62,62,0.50)' : 'rgba(255,255,255,0.15)'}`,
                         color: wished ? '#FF5A6E' : 'var(--silver)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        backdropFilter: 'blur(6px)',
-                        cursor: 'pointer',
-                        zIndex: 5,
-                        transition: 'transform 0.15s ease',
                       }}
                     >
                       <Heart size={16} fill={wished ? '#FF5A6E' : 'none'} aria-hidden="true" />
@@ -1541,38 +1600,29 @@ export default function AgentStorefrontGrid({ products, inventoryMap, primaryCol
         </div>
 
 
-      {/* Product Detail Modal */}
+      {/* Product Detail Modal — bottom-sheet on mobile, centered on desktop */}
       <AnimatePresence>
         {detailProduct && (
           <motion.div
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            style={{
-              position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-              background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(8px)',
-              zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center',
-              padding: 'var(--space-4)', overflowY: 'auto'
-            }}
+            className="sf-modal-overlay"
             onClick={() => setDetailProduct(null)}
           >
             <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+              initial={{ opacity: 0, y: 80 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 80 }}
+              transition={{ type: 'spring', stiffness: 320, damping: 32 }}
               onClick={e => e.stopPropagation()}
-              style={{
-                width: '100%', maxWidth: 720, maxHeight: '90vh', overflowY: 'auto',
-                background: 'linear-gradient(180deg, var(--surface-2) 0%, var(--black-2) 100%)',
-                borderRadius: 'var(--radius-xl)', border: '1px solid rgba(255,255,255,0.08)',
-                boxShadow: '0 24px 80px rgba(0,0,0,0.6)'
-              }}
+              className="sf-modal-sheet"
             >
+              {/* Drag handle for bottom-sheet affordance on mobile */}
+              <div className="sf-modal-drag-bar" aria-hidden="true" />
               {/* Modal Header Image */}
-              <div style={{
-                height: 280, position: 'relative', overflow: 'hidden',
-                background: `radial-gradient(circle at 50% 50%, ${primaryColor}20 0%, var(--black) 100%)`,
-                borderRadius: 'var(--radius-xl) var(--radius-xl) 0 0'
-              }}>
+              <div
+                className="sf-modal-img"
+                style={{ background: `radial-gradient(circle at 50% 50%, ${primaryColor}20 0%, var(--black) 100%)` }}
+              >
                 {/* Photorealistic branded vial — product-specific image */}
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
@@ -1597,14 +1647,14 @@ export default function AgentStorefrontGrid({ products, inventoryMap, primaryCol
               </div>
 
               {/* Modal Body */}
-              <div style={{ padding: 'var(--space-6) var(--space-8) var(--space-8)' }}>
-                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 'var(--space-4)', marginBottom: 'var(--space-2)' }}>
+              <div className="sf-modal-body">
+                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 'var(--space-3)', marginBottom: 'var(--space-2)' }}>
                   <div>
                     {(() => {
                       const { main, subtitle } = splitProductName(toTitleCase(detailProduct.name));
                       return (
                         <>
-                          <h2 style={{ fontFamily: 'var(--font-brand)', fontSize: '1.8rem', color: 'var(--white)', lineHeight: 1.2 }}>
+                          <h2 className="sf-modal-h2" style={{ fontFamily: 'var(--font-brand)', color: 'var(--white)', lineHeight: 1.2 }}>
                             {main}
                           </h2>
                           {subtitle && (
@@ -1693,18 +1743,27 @@ export default function AgentStorefrontGrid({ products, inventoryMap, primaryCol
                   // This is enforced here (display) AND server-side (API).
                   const agentQualifiesForDiscount = isStorefrontOwner && qty >= 10;
 
-                  // Dynamic pricing tiers (only when agent has volume pricing enabled
-                  // AND the order is not an agent self-buy — agents get a flat tier rate)
-                  const tiers = (!isStorefrontOwner && volumePricingEnabled)
+                  // Dynamic pricing tiers:
+                  // Agents see tiered pricing with 10+ labeled "Agent Direct Price".
+                  // Below 10 vials, agents pay the same retail dynamic rate as researchers.
+                  // Researchers see tiers only when volumePricingEnabled.
+                  const tiers = isStorefrontOwner
                     ? [
                         { label: '1–2 Vials', min: 1, max: 2, pct: 20 },
                         { label: '3–5 Vials', min: 3, max: 5, pct: 15 },
                         { label: '6–9 Vials', min: 6, max: 9, pct: 10 },
-                        { label: '10+ Vials — Best Price', min: 10, max: Infinity, pct: 0 },
+                        { label: '10+ Vials — Agent Direct Price', min: 10, max: Infinity, pct: 0 },
                       ]
-                    : [
-                        { label: 'All Quantities — Flat Price', min: 1, max: Infinity, pct: 0 },
-                      ];
+                    : volumePricingEnabled
+                      ? [
+                          { label: '1–2 Vials', min: 1, max: 2, pct: 20 },
+                          { label: '3–5 Vials', min: 3, max: 5, pct: 15 },
+                          { label: '6–9 Vials', min: 6, max: 9, pct: 10 },
+                          { label: '10+ Vials — Best Price', min: 10, max: Infinity, pct: 0 },
+                        ]
+                      : [
+                          { label: 'All Quantities — Flat Price', min: 1, max: Infinity, pct: 0 },
+                        ];
 
                   const getUnitPrice = (q: number) => {
                     const t = tiers.find(t => q >= t.min && q <= t.max);
@@ -1757,7 +1816,7 @@ export default function AgentStorefrontGrid({ products, inventoryMap, primaryCol
                           <label style={{ fontSize: '0.8rem', color: 'var(--silver)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block', marginBottom: 6 }}>
                             Quantity (Vials)
                           </label>
-                          {/* Agent self-buy: min 10, increments of 10 */}
+                          {/* Agent self-buy: default 10, can buy fewer at dynamic pricing */}
                           {isStorefrontOwner && (
                             <div style={{
                               fontSize: '0.68rem', fontWeight: 700, letterSpacing: '0.06em',
@@ -1766,7 +1825,7 @@ export default function AgentStorefrontGrid({ products, inventoryMap, primaryCol
                               borderRadius: 'var(--radius-full)', padding: '2px 10px',
                               display: 'inline-block', marginBottom: 8
                             }}>
-                              Minimum 10 Vials In Increments Of 10
+                              Default 10 Vials · Fewer Vials = Dynamic Pricing
                             </div>
                           )}
                           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -1826,8 +1885,8 @@ export default function AgentStorefrontGrid({ products, inventoryMap, primaryCol
                         )}
                       </div>
 
-                      {/* Dynamic Pricing Tiers — always visible when volume pricing is on */}
-                      {volumePricingEnabled && (
+                      {/* Dynamic Pricing Tiers — visible for agents always, or when volume pricing on */}
+                      {(volumePricingEnabled || isStorefrontOwner) && (
                         <div style={{
                           marginTop: 'var(--space-5)', border: '1px solid rgba(255,255,255,0.08)',
                           borderRadius: 'var(--radius-md)', overflow: 'hidden'
@@ -1928,44 +1987,31 @@ export default function AgentStorefrontGrid({ products, inventoryMap, primaryCol
                     }}
                   />
 
-                  {/* Close + Add To Cart */}
-                  <div style={{ display: 'flex', gap: 'var(--space-3)', marginTop: 'var(--space-4)' }}>
+                  {/* Close + Add To Cart — sticky at bottom on mobile */}
+                  <div className="sf-modal-actions">
                     <button
+                      className="sf-close-btn"
                       onClick={() => setDetailProduct(null)}
-                      style={{
-                        padding: '10px 20px', background: 'transparent',
-                        border: '1px solid rgba(255,255,255,0.15)', borderRadius: 'var(--radius-md)',
-                        color: 'var(--white)', cursor: 'pointer', fontWeight: 600, fontSize: '0.85rem'
-                      }}
                     >
                       Close
                     </button>
-                    {(() => {
-                      return (
-                        <button
-                          onClick={() => {
-                            const vId = selectedVariants[detailProduct.name] || detailProduct.defaultVariantId;
-                            // Commit pendingQty (what user dialed in) to the real cart.
-                            // ADD to existing quantity rather than replace, so two modal
-                            // opens correctly accumulate (e.g., 10 + 10 = 20).
-                            setCartItems(prev => ({
-                              ...prev,
-                              [vId]: (prev[vId] || 0) + pendingQty,
-                            }));
-                            setDetailProduct(null);
-                            setPendingQty(isStorefrontOwner ? 10 : 1); // Reset to minimum for next open
-                            setShowCartFloat(true);
-                          }}
-                          style={{
-                            padding: '10px 24px', background: primaryColor, color: 'var(--white)',
-                            borderRadius: 'var(--radius-md)', fontWeight: 800, fontSize: '0.85rem',
-                            border: 'none', cursor: 'pointer'
-                          }}
-                        >
-                          Add To Cart ({pendingQty})
-                        </button>
-                      );
-                    })()}
+                    <button
+                      className="sf-add-btn"
+                      style={{ background: primaryColor }}
+                      onClick={() => {
+                        const vId = selectedVariants[detailProduct.name] || detailProduct.defaultVariantId;
+                        // Commit pendingQty to cart — ADD so repeated opens accumulate correctly.
+                        setCartItems(prev => ({
+                          ...prev,
+                          [vId]: (prev[vId] || 0) + pendingQty,
+                        }));
+                        setDetailProduct(null);
+                        setPendingQty(isStorefrontOwner ? 10 : 1); // Reset to default for next open
+                        setShowCartFloat(true);
+                      }}
+                    >
+                      Add To Cart ({pendingQty})
+                    </button>
                   </div>
                 </div>
               </div>
