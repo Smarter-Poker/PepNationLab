@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
 import { assertSameOrigin } from '@/lib/csrf';
 import { requireAdmin } from '@/lib/admin-auth';
+import { messengerRateLimit, messengerRateLimitResponse } from '@/lib/messengerRateLimit';
 import { ResolveReportSchema } from '@/lib/messenger/schemas';
 
 export const runtime = 'nodejs';
@@ -13,6 +14,9 @@ export async function POST(req: NextRequest) {
 
   const gate = await requireAdmin();
   if (!gate.ok) return gate.response;
+
+  const limited = await messengerRateLimit('admin', gate.userId);
+  if (!limited.allowed) return messengerRateLimitResponse(limited);
 
   const body = await req.json().catch(() => ({}));
   const parsed = ResolveReportSchema.safeParse(body);
