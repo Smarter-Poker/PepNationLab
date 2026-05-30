@@ -781,7 +781,7 @@ export async function POST(request: NextRequest) {
       success: true,
       orderId: order.id,
       total: Number(order.total) || 0,
-      creditRedeemed,
+
     });
 
   } catch (error) {
