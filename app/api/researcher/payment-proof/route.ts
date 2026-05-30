@@ -36,6 +36,22 @@ export async function GET(req: NextRequest) {
   const orderId = req.nextUrl.searchParams.get('orderId');
   if (!orderId) return NextResponse.json({ error: 'orderId Required' }, { status: 400 });
 
+  const service = await createServiceClient();
+
+  // Code-level ownership check: verify the caller is the order's buyer.
+  // This provides defense-in-depth beyond RLS — if RLS on payment_proofs
+  // is ever misconfigured, callers cannot access another user's proofs.
+  const { data: orderCheck } = await service
+    .from('orders')
+    .select('buyer_id')
+    .eq('id', orderId)
+    .maybeSingle();
+
+  if (!orderCheck) return NextResponse.json({ error: 'Order Not Found.' }, { status: 404 });
+  if (orderCheck.buyer_id !== user.id) {
+    return NextResponse.json({ error: 'Forbidden.' }, { status: 403 });
+  }
+
   const { data, error } = await supabase
     .from('payment_proofs')
     .select('id, order_id, uploader_id, storage_key, mime_type, size_bytes, uploaded_at, verified_at, verified_by')
@@ -44,7 +60,6 @@ export async function GET(req: NextRequest) {
 
   if (error) return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
 
-  const service = await createServiceClient();
   const enriched = await Promise.all(
     (data ?? []).map(async (row) => {
       const { data: signed } = await service.storage
@@ -98,7 +113,7 @@ export async function POST(req: NextRequest) {
     .eq('id', orderId)
     .maybeSingle();
 
-  if (orderErr) return NextResponse.json({ error: orderErr.message }, { status: 500 });
+  if (orderErr) return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
   if (!order) return NextResponse.json({ error: 'Order Not Found.' }, { status: 404 });
   if (order.buyer_id !== user.id) {
     return NextResponse.json({ error: 'Forbidden.' }, { status: 403 });
@@ -134,7 +149,7 @@ export async function POST(req: NextRequest) {
 
   if (insertErr) {
     await service.storage.from('payment-proofs').remove([key]).catch(() => {});
-    return NextResponse.json({ error: insertErr.message }, { status: 500 });
+    return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
   }
 
   const { data: signed } = await service.storage

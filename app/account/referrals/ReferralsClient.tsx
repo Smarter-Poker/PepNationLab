@@ -180,12 +180,13 @@ export default function ReferralsClient({ code, settings, referrals, redeemed, s
           <div
             style={{
               fontFamily: 'var(--font-brand)',
-              fontSize: '2.4rem',
+              fontSize: 'clamp(1.8rem, 8vw, 2.4rem)',
               fontWeight: 800,
               letterSpacing: '0.2em',
               color: 'var(--teal)',
               marginBottom: 'var(--space-4)',
               textShadow: '0 0 24px rgba(0,196,188,0.25)',
+              wordBreak: 'break-all',
             }}
           >
             {code || '------'}

@@ -21,7 +21,7 @@ export async function GET(req: NextRequest) {
   if (agentId) query = query.eq('agent_id', agentId);
 
   const { data, error } = await query.limit(200);
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
 
   const pending = (data ?? []).filter(c => c.status === 'pending');
   const approved = (data ?? []).filter(c => c.status === 'approved');
@@ -69,7 +69,7 @@ export async function POST(req: NextRequest) {
       .update({ status: 'approved', approved_at: new Date().toISOString() })
       .in('id', commissionIds)
       .eq('status', 'pending');
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    if (error) return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
     return NextResponse.json({ success: true, approved: commissionIds.length });
   }
 
@@ -131,7 +131,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Rate Must Be Between 0 And 100' }, { status: 400 });
     }
     const { error } = await service.from('profiles').update({ commission_rate: numRate }).eq('id', agentId);
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    if (error) return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
     await service.from('admin_audit_log').insert({
       actor_id: user.id,
       action: 'commission_rate_update',
