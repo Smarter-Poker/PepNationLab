@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient, createServiceClient } from '@/lib/supabase/server';
+import { createServiceClient } from '@/lib/supabase/server';
 import { requireAgent } from '@/lib/admin-auth';
 import { z } from 'zod';
 import { assertSameOrigin } from '@/lib/csrf';
@@ -25,7 +25,8 @@ export async function POST(request: NextRequest) {
   if (csrf) return csrf;
 
   try {
-    const supabase = await createClient();
+    // BUG-11 FIX: createClient() was created but never used — all calls used
+    // serviceSupabase. Removed to avoid wasting a DB connection.
     const serviceSupabase = await createServiceClient();
 
     const gate = await requireAgent();
@@ -73,7 +74,14 @@ export async function POST(request: NextRequest) {
     // Check for banned or deactivated products and inventory limits
     for (const cartItem of items) {
       const dbProduct = dbProducts.find(p => p.id === cartItem.id);
-      if (!dbProduct) continue;
+      // BUG-5 FIX: was silently skipping unknown product IDs with 'continue'.
+      // This meant an order could be created with missing items and still return { success: true }.
+      if (!dbProduct) {
+        return NextResponse.json(
+          { error: `Product ID "${cartItem.id}" not found. Please refresh and try again.` },
+          { status: 400 }
+        );
+      }
       
       if (dbProduct.is_banned || !dbProduct.is_active) {
         return NextResponse.json({ error: `Product "${dbProduct.name}" Is Unavailable For Sale.` }, { status: 400 });
@@ -140,7 +148,14 @@ export async function POST(request: NextRequest) {
 
     for (const cartItem of items) {
       const dbProduct = dbProducts.find(p => p.id === cartItem.id);
-      if (!dbProduct) continue;
+      // At this point every cartItem.id has already been validated above;
+      // this guard is a safety net for future code changes.
+      if (!dbProduct) {
+        return NextResponse.json(
+          { error: `Product ID "${cartItem.id}" not found during pricing.` },
+          { status: 400 }
+        );
+      }
 
       // NOTE: base_cost and admin_bulk_price in the DB are per-10-vial-pack prices.
       // cartItem.quantity is individual VIALS (sourced from agent_inventory.stock_count
@@ -255,6 +270,9 @@ export async function POST(request: NextRequest) {
 
     if (itemsError) {
       console.error('Database Order Items Write Error:', itemsError);
+      // BUG-6 FIX: orders/new cleans up the bare order on items-insert failure;
+      // restock did not. Delete the orphan order before returning the error.
+      await serviceSupabase.from('orders').delete().eq('id', order.id);
       return NextResponse.json({ error: 'Failed To Save Order Items.' }, { status: 500 });
     }
 

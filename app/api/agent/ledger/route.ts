@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
 import { requireAgent } from '@/lib/admin-auth';
+import { pickOne } from '@/lib/relations';
 
 export async function GET(req: Request) {
   try {
@@ -26,7 +27,10 @@ export async function GET(req: Request) {
       `)
       .eq('agent_id', agentId)
       .eq('is_wholesale_restock', false)
-      .not('status', 'eq', 'cancelled')
+      // BUG-7 FIX: was .not('status','eq','cancelled') which included
+      // pending_customer_payment and agent_approval_pending orders —
+      // uncollected revenue was being counted as collected in totals.
+      .in('status', ['approved_ship', 'approved_pickup', 'in_fulfillment', 'shipped', 'delivered'])
       .order('created_at', { ascending: false });
 
     if (ordersError) {
@@ -58,10 +62,15 @@ export async function GET(req: Request) {
       totalOwed += owed;
       totalProfit += profit;
 
+      // BUG-13 FIX: Supabase nested FK joins return arrays even on single-row
+      // relations. Direct property access on an array returns undefined.
+      // Use pickOne() to unwrap correctly.
+      const buyer = pickOne<{ full_name?: string; email?: string }>(order.buyer as any);
+
       return {
         id: order.id,
         date: order.created_at,
-        customer: (order.buyer as any)?.full_name || (order.buyer as any)?.email || 'Anonymous',
+        customer: buyer?.full_name || buyer?.email || 'Anonymous',
         status: order.status,
         collected,
         owed,

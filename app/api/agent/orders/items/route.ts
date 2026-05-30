@@ -48,11 +48,13 @@ export async function GET(req: NextRequest) {
 
   const { data, error } = await supabase
     .from('order_items')
-    .select('id, product_name, quantity, unit_retail_price, unit_cost_price, product_id')
+    // BUG-20 FIX: unit_super_agent_cost was missing from the select.
+    // It is needed by callers to display correct cost breakdown for sub-agent orders.
+    .select('id, product_name, quantity, unit_retail_price, unit_cost_price, unit_super_agent_cost, product_id')
     .eq('order_id', orderId);
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
   }
 
   return NextResponse.json({ data });

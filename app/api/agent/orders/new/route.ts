@@ -62,8 +62,14 @@ export async function POST(req: NextRequest) {
     const orderItems: Array<{ product_id: string; product_name: string; agent_product_id: string; quantity: number; unit_retail_price: number; unit_cost_price: number; unit_super_agent_cost: number | null; }> = [];
 
     for (const raw of items) {
-      const qty = Math.max(1, Math.floor(Number(raw.quantity) || 0));
-      if (qty <= 0) continue;
+      // BUG-9 FIX: Math.max(1, ...) was silently promoting qty=0 to qty=1,
+      // and the if (qty <= 0) continue below was dead/unreachable code.
+      // Validate quantity >= 1 first, then floor for float safety.
+      const rawQty = Number(raw.quantity);
+      if (!Number.isFinite(rawQty) || rawQty < 1) {
+        return NextResponse.json({ error: 'Each item must have a quantity of at least 1.' }, { status: 400 });
+      }
+      const qty = Math.floor(rawQty);
       const ap = (raw.agent_product_id && byId.get(raw.agent_product_id)) || (raw.product_id && byProductId.get(raw.product_id)) || null;
       if (!ap) return NextResponse.json({ error: 'One Or More Items Are Not In Your Catalog.' }, { status: 400 });
 
@@ -81,12 +87,16 @@ export async function POST(req: NextRequest) {
       orderItems.push({ product_id: ap.product_id, product_name: ap.product_name, agent_product_id: ap.id, quantity: qty, unit_retail_price: unitRetail, unit_cost_price: unitCost, unit_super_agent_cost: unitSuperAgentCost });
     }
 
+    // BUG-10 FIX: round BEFORE the mismatch check, not after.
+    // Floating-point accumulation across many items can make the pre-round value
+    // differ enough from the post-round value to cause spurious 422 rejections.
+    computedSubtotal = Math.round(computedSubtotal * 100) / 100;
+
     if (clientSubtotal != null) {
-      const provided = Number(clientSubtotal) || 0;
+      const provided = Math.round((Number(clientSubtotal) || 0) * 100) / 100;
       if (Math.abs(provided - computedSubtotal) > 0.01) return NextResponse.json({ error: 'Order Total Does Not Match Catalog Pricing. Refresh The Order Form And Try Again.' }, { status: 422 });
     }
 
-    computedSubtotal = Math.round(computedSubtotal * 100) / 100;
     const computedTotal = Math.round((computedSubtotal + safeShipping) * 100) / 100;
 
     const { data: newOrder, error: orderError } = await supabase.from('orders').insert({
@@ -112,7 +122,9 @@ export async function POST(req: NextRequest) {
     const { error: itemsError } = await supabase.from('order_items').insert(itemsPayload);
     if (itemsError) {
       console.error('Manual Order Items Error:', itemsError);
-      await supabase.from('orders').delete().eq('id', newOrder.id);
+      // BUG-19 FIX: log rollback errors instead of silently ignoring them.
+      const { error: cleanupErr } = await supabase.from('orders').delete().eq('id', newOrder.id);
+      if (cleanupErr) console.error('[CRITICAL] Orphan order cleanup failed:', newOrder.id, cleanupErr.message);
       return NextResponse.json({ error: 'Failed To Add Items To Order.' }, { status: 500 });
     }
 

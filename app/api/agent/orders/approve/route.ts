@@ -21,7 +21,12 @@ export async function POST(req: NextRequest) {
     const { orderId, newStatus, tracking_number } = body;
 
     if (!orderId || !newStatus) return NextResponse.json({ error: 'Order ID and Status required' }, { status: 400 });
-    if (!newStatus.startsWith('approved_') && newStatus !== 'cancelled') return NextResponse.json({ error: 'Invalid agent status transition' }, { status: 400 });
+    // BUG-3 FIX: enumerate exact valid values instead of prefix-only check.
+    // Previously any string starting with 'approved_' would pass (e.g. 'approved_garbage').
+    const VALID_AGENT_TRANSITIONS = new Set(['approved_ship', 'approved_pickup', 'cancelled']);
+    if (!VALID_AGENT_TRANSITIONS.has(newStatus)) {
+      return NextResponse.json({ error: 'Invalid agent status transition. Must be approved_ship, approved_pickup, or cancelled.' }, { status: 400 });
+    }
 
     const { data: order, error: orderError } = await supabase
       .from('orders')
@@ -42,7 +47,12 @@ export async function POST(req: NextRequest) {
     }
 
     if (newStatus === 'cancelled') {
-      await supabase.from('orders').update({ status: 'cancelled', updated_at: new Date().toISOString() }).eq('id', orderId);
+      // BUG-2 FIX: was silently swallowing the cancel update error → false success.
+      const { error: cancelError } = await supabase.from('orders').update({ status: 'cancelled', updated_at: new Date().toISOString() }).eq('id', orderId);
+      if (cancelError) {
+        console.error('Cancel order update failed:', cancelError.message);
+        return NextResponse.json({ error: 'Failed to cancel order. Please try again.' }, { status: 500 });
+      }
       void (async () => {
         try {
           const orderPayload = await fetchOrderForWebhook(supabase, orderId);
@@ -120,6 +130,9 @@ export async function POST(req: NextRequest) {
         .from('orders')
         .select('id, shipping_cost, statement_orders(statement_id), order_items(quantity, unit_cost_price, unit_super_agent_cost), agent_id')
         .eq('agent_id', primaryBilledAgentId)
+        // BUG-8 FIX: exclude wholesale restock orders from in-flight COGS.
+        // Restocks inflate the calculation and can incorrectly block customer-order approvals.
+        .eq('is_wholesale_restock', false)
         .in('status', ['approved_ship', 'approved_pickup', 'in_fulfillment', 'shipped', 'delivered']);
 
       let inFlight = 0;
@@ -192,11 +205,21 @@ export async function POST(req: NextRequest) {
 
     if (prepaidDeducted) {
       const newBalance = oldBalance - totalOwed;
-      await supabase.from('balance_transactions').insert({
+      // BUG-4 FIX: was silently dropping balance_transactions insert error.
+      // Balance was already deducted and order approved. Log error prominently
+      // for reconciliation — this is a financial audit trail failure.
+      const { error: txError } = await supabase.from('balance_transactions').insert({
         agent_id: primaryBilledAgentId, type: 'order_charge', amount: totalOwed,
         balance_before: oldBalance, balance_after: newBalance,
         description: `Charge for Order ${orderId}`, reference_id: orderId, reference_type: 'order', created_by: callerId
       });
+      if (txError) {
+        // Balance already deducted and order approved — do NOT fail the request.
+        // Log CRITICAL for manual reconciliation.
+        console.error('[CRITICAL] balance_transactions insert failed after prepaid deduction', {
+          orderId, agentId: primaryBilledAgentId, amount: totalOwed, error: txError.message
+        });
+      }
     }
 
     // Fire-and-forget push notification — never blocks order completion.

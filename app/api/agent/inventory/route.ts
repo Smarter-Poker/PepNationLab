@@ -59,14 +59,25 @@ export async function POST(req: NextRequest) {
     const agentId = gate.user.id;
     const { productId, stockCount } = await req.json();
 
-    if (!productId || typeof stockCount !== 'number' || Number.isNaN(stockCount)) {
+    // BUG-16 FIX: validate productId is a valid UUID before hitting the DB.
+    // Without this, a malformed ID triggers a raw FK constraint error leaking schema details.
+    const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!productId || !UUID_RE.test(String(productId))) {
+      return NextResponse.json({ error: 'Invalid Product ID.' }, { status: 400 });
+    }
+
+    if (typeof stockCount !== 'number' || Number.isNaN(stockCount) || !Number.isFinite(stockCount)) {
       return NextResponse.json({ error: 'Product ID and stockCount required' }, { status: 400 });
     }
 
-    // Reject negative inventory — the agent cannot have less than zero stock,
-    // and negative values would corrupt downstream pricing/availability logic.
+    // Reject negative inventory.
     if (stockCount < 0) {
       return NextResponse.json({ error: 'Stock Count Cannot Be Negative' }, { status: 400 });
+    }
+    // BUG-21 FIX: add upper bound to prevent Number.MAX_SAFE_INTEGER from being
+    // set, which would permanently bypass the inventory gate in orders/approve.
+    if (stockCount > 100_000) {
+      return NextResponse.json({ error: 'Stock Count Cannot Exceed 100,000' }, { status: 400 });
     }
 
     // Upsert the inventory count
@@ -80,7 +91,7 @@ export async function POST(req: NextRequest) {
       }, { onConflict: 'agent_id, product_id' });
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
     }
 
     return NextResponse.json({ success: true });
