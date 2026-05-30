@@ -598,6 +598,30 @@ export default function AgentDashboardClient({
             </div>
           </button>
 
+          {/* ── Notification Settings ── */}
+          <button
+            type="button"
+            className="sidebar-nav-item"
+            onClick={() => {
+              // Open the Settings tab (which contains notification prefs).
+              // Also trigger the browser push permission dialog if not yet decided.
+              setActiveTab('Settings');
+              setIsMobileMenuOpen(false);
+              if (typeof Notification !== 'undefined' && Notification.permission === 'default') {
+                Notification.requestPermission();
+              }
+            }}
+            style={{ width: '100%', background: 'transparent', border: 'none', textAlign: 'left' }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+                <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+              </svg>
+              <span style={{ fontSize: '0.85rem', fontFamily: 'var(--font-brand)', letterSpacing: '0.05em' }}>Notification Settings</span>
+            </div>
+          </button>
+
           {/* ── Account Security ── */}
           <Link href="/account/security" className="sidebar-nav-item" style={{ display: 'block', textDecoration: 'none' }} onClick={() => setIsMobileMenuOpen(false)}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>

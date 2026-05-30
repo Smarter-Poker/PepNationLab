@@ -125,43 +125,73 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized or not found' }, { status: 403 });
   }
 
-  // Determine what margin_percent to store.
-  // Priority: explicit margin_percent > back-computed from retail_price > existing.
+  // ── Compute agent cost for server-side floor enforcement ──────────────────
+  // Hard rule: agents can NEVER list for less than their wholesale cost.
+  // We compute it here even though the client enforces it too — a bypassed
+  // client-side check must not allow below-cost listings to reach the DB.
+  let agentCostPer10 = 0;
+  {
+    const { data: prodData } = await supabase
+      .from('products')
+      .select('base_cost')
+      .eq('id', check.product_id)
+      .single();
+    const { data: profData } = await supabase
+      .from('profiles')
+      .select('tier')
+      .eq('id', gate.user.id)
+      .single();
+    if (prodData?.base_cost && profData?.tier) {
+      const { data: multData } = await supabase
+        .from('pricing_tiers')
+        .select('multiplier')
+        .eq('tier_name', profData.tier)
+        .single();
+      agentCostPer10 = Number(prodData.base_cost) * (Number(multData?.multiplier) || 1.7);
+    }
+  }
+
+  // ── Resolve the price to store ────────────────────────────────────────────
+  // Priority: explicit retail_price (direct $ entry) takes precedence over
+  // margin_percent. When the agent types a dollar amount, that IS the price —
+  // we save retail_price directly and back-compute margin_percent so the DB
+  // trigger column stays consistent. When only margin_percent arrives (e.g.
+  // from the bulk-margin flow), let the DB trigger recalculate retail_price.
+  let resolvedRetailPrice: number | undefined;
   let resolvedMarginPercent: number | undefined;
 
-  if (margin_percent !== undefined && Number.isFinite(Number(margin_percent))) {
-    // Agent directly set their markup %
+  if (retail_price !== undefined && Number.isFinite(Number(retail_price))) {
+    resolvedRetailPrice = Number(retail_price);
+
+    // ── Server-side retail price floor ───────────────────────────────────
+    if (agentCostPer10 > 0 && resolvedRetailPrice < agentCostPer10) {
+      return NextResponse.json(
+        {
+          error: `Listed price ($${(resolvedRetailPrice / 10).toFixed(2)}/vial) cannot be below your cost ($${(agentCostPer10 / 10).toFixed(2)}/vial).`,
+        },
+        { status: 422 }
+      );
+    }
+
+    // Back-compute margin_percent to keep the DB column consistent.
+    if (agentCostPer10 > 0) {
+      resolvedMarginPercent = Math.round((resolvedRetailPrice / agentCostPer10 - 1) * 100 * 100) / 100;
+    }
+  } else if (margin_percent !== undefined && Number.isFinite(Number(margin_percent))) {
+    // Markup-% only path — DB trigger will recalculate retail_price.
     resolvedMarginPercent = Number(margin_percent);
-  } else if (retail_price !== undefined) {
-    // Legacy path: agent entered a dollar price — back-compute the markup so
-    // future auto-recalculations preserve their intent.
-    const agentCostData = await supabase
-      .from('agent_products')
-      .select('product_id, agent_id')
-      .eq('id', id)
-      .single();
-    if (agentCostData.data) {
-      const { data: priceData } = await supabase
-        .from('products')
-        .select('base_cost')
-        .eq('id', agentCostData.data.product_id)
-        .single();
-      const { data: tierData } = await supabase
-        .from('profiles')
-        .select('tier')
-        .eq('id', agentCostData.data.agent_id)
-        .single();
-      if (priceData?.base_cost && tierData?.tier) {
-        const { data: multData } = await supabase
-          .from('pricing_tiers')
-          .select('multiplier')
-          .eq('tier_name', tierData.tier)
-          .single();
-        const agentCost = Number(priceData.base_cost) * (Number(multData?.multiplier) || 1.7);
-        if (agentCost > 0) {
-          resolvedMarginPercent = Math.round((Number(retail_price) / agentCost - 1) * 100 * 100) / 100;
-        }
-      }
+  }
+
+  // ── Server-side sale price floor ─────────────────────────────────────────
+  if (is_on_sale && sale_price != null && agentCostPer10 > 0) {
+    const salePricePer10 = Number(sale_price);
+    if (salePricePer10 < agentCostPer10) {
+      return NextResponse.json(
+        {
+          error: `Sale price ($${(salePricePer10 / 10).toFixed(2)}/vial) cannot be below your cost ($${(agentCostPer10 / 10).toFixed(2)}/vial).`,
+        },
+        { status: 422 }
+      );
     }
   }
 
@@ -178,12 +208,16 @@ export async function PATCH(req: NextRequest) {
   // Remove undefined entries so we don't accidentally null out fields we didn't touch
   Object.keys(updatePayload).forEach(k => updatePayload[k] === undefined && delete updatePayload[k]);
 
-  // If margin_percent resolved, store it. DB trigger will auto-update retail_price.
-  // Otherwise store retail_price directly (and trigger won't fire on this change).
-  if (resolvedMarginPercent !== undefined) {
+  // When retail_price is the source of truth, save it directly plus the
+  // back-computed margin_percent. When only margin_percent, let the DB
+  // trigger handle retail_price recalculation automatically.
+  if (resolvedRetailPrice !== undefined) {
+    updatePayload.retail_price = resolvedRetailPrice;
+    if (resolvedMarginPercent !== undefined) {
+      updatePayload.margin_percent = resolvedMarginPercent;
+    }
+  } else if (resolvedMarginPercent !== undefined) {
     updatePayload.margin_percent = resolvedMarginPercent;
-  } else if (retail_price !== undefined) {
-    updatePayload.retail_price = Number(retail_price);
   }
 
   const { error } = await supabase
