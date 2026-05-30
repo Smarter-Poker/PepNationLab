@@ -99,8 +99,12 @@ export default function AgentStorefrontLogin({
       // Single-session enforcement — best-effort, never block login
       supabase.auth.signOut({ scope: 'others' }).catch(() => {});
 
-      // Access verified — refresh the server component
-      router.refresh();
+      // Force a FULL page navigation (not just a React soft-refresh).
+      // router.refresh() only triggers a server re-render but does NOT
+      // guarantee the browser will send the newly-set auth cookie in the
+      // same request — particularly on mobile incognito.
+      // A hard navigation forces the browser to re-attach all current cookies.
+      window.location.href = window.location.pathname;
     } catch (err: any) {
       setError(err.message || 'Network Error');
       setLoading(false);
@@ -158,8 +162,8 @@ export default function AgentStorefrontLogin({
       // Single-session enforcement — best-effort, never block login
       supabase.auth.signOut({ scope: 'others' }).catch(() => {});
 
-      // Auto-login succeeded — refresh to render the storefront catalog.
-      router.refresh();
+      // Force full navigation so the new auth cookie is sent to the server
+      window.location.href = window.location.pathname;
     } catch (err: any) {
       setError(err.message || 'Network Error');
       setLoading(false);
