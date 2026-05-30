@@ -23,12 +23,13 @@ ALTER TABLE public.messenger_messages
     'contact_card','location','poll','system'
   ));
 
--- ── 2. messenger_scheduled_messages CHECK ───────────────────────────────────
-ALTER TABLE public.messenger_scheduled_messages
-  DROP CONSTRAINT IF EXISTS messenger_scheduled_messages_message_type_check;
+-- ── 2. messenger_scheduled CHECK ────────────────────────────────────────────
+-- NOTE: The actual table name is messenger_scheduled (not messenger_scheduled_messages).
+ALTER TABLE public.messenger_scheduled
+  DROP CONSTRAINT IF EXISTS messenger_scheduled_message_type_check;
 
-ALTER TABLE public.messenger_scheduled_messages
-  ADD CONSTRAINT messenger_scheduled_messages_message_type_check
+ALTER TABLE public.messenger_scheduled
+  ADD CONSTRAINT messenger_scheduled_message_type_check
   CHECK (message_type IN ('text','image','gif','voice','video','file'));
 
 -- ── 3. Extend messenger_media bucket for video ──────────────────────────────
