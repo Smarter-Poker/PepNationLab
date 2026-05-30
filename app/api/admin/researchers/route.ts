@@ -47,6 +47,18 @@ export async function POST(req: NextRequest) {
   const { id, action, role, tier, account_type, credit_limit, is_active, slug, display_name, tagline, bio, balance_delta } = body;
   if (!id) return NextResponse.json({ error: 'Missing User ID' }, { status: 400 });
 
+  // Security: role must be one of the allowed non-admin values.
+  // Admin-to-admin promotion is never permitted via this endpoint.
+  const ALLOWED_ROLES = new Set(['researcher', 'agent', 'super_agent']);
+  if (action !== 'toggle_active' && action !== 'adjust_balance') {
+    if (!role || !ALLOWED_ROLES.has(role)) {
+      return NextResponse.json(
+        { error: 'Invalid Role. Must Be researcher, agent, Or super_agent.' },
+        { status: 400 }
+      );
+    }
+  }
+
   if (action === 'toggle_active') {
     if (is_active === undefined) return NextResponse.json({ error: 'Missing is_active Value' }, { status: 400 });
     const { error: toggleError } = await supabase.from('profiles').update({ is_active, updated_at: new Date().toISOString() }).eq('id', id);
@@ -57,7 +69,9 @@ export async function POST(req: NextRequest) {
 
   if (action === 'adjust_balance') {
     const delta = Number(balance_delta);
-    if (isNaN(delta)) return NextResponse.json({ error: 'Invalid Balance Amount' }, { status: 400 });
+    if (isNaN(delta) || !isFinite(delta)) return NextResponse.json({ error: 'Invalid Balance Amount' }, { status: 400 });
+    // Cap single adjustments to ±$10,000 to prevent accidental massive credits.
+    if (Math.abs(delta) > 10000) return NextResponse.json({ error: 'Balance Adjustment Exceeds $10,000 Limit' }, { status: 400 });
 
     const { data: currentProfile, error: fetchError } = await supabase.from('profiles').select('prepaid_balance, full_name').eq('id', id).single();
     if (fetchError) return NextResponse.json({ error: `Failed To Fetch Profile: ${fetchError.message}` }, { status: 500 });
@@ -76,6 +90,15 @@ export async function POST(req: NextRequest) {
       reference_type: 'admin_adjustment',
     });
 
+    // Audit log for balance adjustments.
+    void supabase.from('admin_audit_log').insert({
+      actor_id: gate.userId,
+      action: 'balance_adjusted',
+      entity_type: 'profile',
+      entity_id: id,
+      changes: { delta, balance_before: balanceBefore, balance_after: newBalance },
+    });
+
     return NextResponse.json({ success: true, new_balance: newBalance });
   }
 
@@ -90,6 +113,15 @@ export async function POST(req: NextRequest) {
 
   const { error: profileError } = await supabase.from('profiles').update(profileUpdates).eq('id', id);
   if (profileError) return NextResponse.json({ error: `Profile Update Failed: ${profileError.message}` }, { status: 500 });
+
+  // Audit log for profile role changes.
+  void supabase.from('admin_audit_log').insert({
+    actor_id: gate.userId,
+    action: 'profile_role_updated',
+    entity_type: 'profile',
+    entity_id: id,
+    changes: { role, tier, account_type, credit_limit },
+  });
 
   if (role === 'agent' || role === 'super_agent') {
     if (!slug || !display_name) return NextResponse.json({ error: 'Slug And Display Name Are Required For Agents' }, { status: 400 });
