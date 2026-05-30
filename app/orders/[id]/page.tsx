@@ -42,6 +42,11 @@ const PAYMENT_LABELS: Record<string, string> = {
   cashapp: 'Cash App',
   venmo: 'Venmo',
   apple_pay: 'Apple Pay',
+  paypal: 'PayPal',
+  apple_cash: 'Apple Cash',
+  google_wallet: 'Google Wallet',
+  wise: 'Wise',
+  chime: 'Chime',
 };
 
 interface OrderItem {
@@ -425,16 +430,41 @@ export default async function OrderDetailPage(
               {handleForMethod ? (
                 <div style={{ padding: 'var(--space-3)', background: 'var(--surface-2)', borderRadius: 'var(--radius-md)', border: 'var(--border-subtle)' }}>
                   <div style={{ fontSize: '0.72rem', color: 'var(--grey-500)', textTransform: 'uppercase', marginBottom: 4 }}>
-                    {PAYMENT_LABELS[order.payment_method] ?? order.payment_method} Handle
+                    {PAYMENT_LABELS[order.payment_method] ?? order.payment_method} Contact Info
                   </div>
                   <div style={{ fontSize: '0.95rem', color: 'var(--white)', fontWeight: 600, fontFamily: 'var(--font-brand)', wordBreak: 'break-all' }}>
                     {handleForMethod}
                   </div>
                 </div>
               ) : (
-                <p style={{ fontSize: '0.82rem', color: 'var(--grey-400)' }}>
-                  Contact Your Agent For Payment Details.
-                </p>
+                /* Primary method not set — show ALL enabled methods as alternatives */
+                (() => {
+                  const allEnabled = Object.entries(paymentHandles)
+                    .filter(([, v]) => v && v.trim().length > 0);
+                  return allEnabled.length > 0 ? (
+                    <div>
+                      <p style={{ fontSize: '0.8rem', color: 'var(--grey-400)', marginBottom: 'var(--space-3)' }}>
+                        Your Agent Also Accepts Payment Via:
+                      </p>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
+                        {allEnabled.map(([key, handle]) => (
+                          <div key={key} style={{ padding: 'var(--space-3)', background: 'var(--surface-2)', borderRadius: 'var(--radius-md)', border: 'var(--border-subtle)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <span style={{ fontSize: '0.78rem', color: 'var(--grey-400)', textTransform: 'uppercase' }}>
+                              {PAYMENT_LABELS[key] ?? key}
+                            </span>
+                            <span style={{ fontSize: '0.9rem', color: 'var(--white)', fontWeight: 600, fontFamily: 'var(--font-brand)', wordBreak: 'break-all' }}>
+                              {handle}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ) : (
+                    <p style={{ fontSize: '0.82rem', color: 'var(--grey-400)' }}>
+                      Contact Your Agent For Payment Details.
+                    </p>
+                  );
+                })()
               )}
               <p style={{ fontSize: '0.78rem', color: 'var(--grey-500)', marginTop: 'var(--space-3)' }}>
                 Include Order #{order.id.slice(0, 8).toUpperCase()} In The Memo.
