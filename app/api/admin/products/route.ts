@@ -57,8 +57,9 @@ export async function POST(req: NextRequest) {
     admin_bulk_price, admin_bulk_threshold,
   } = body;
 
-  if (!name || !base_cost) {
-    return NextResponse.json({ error: 'Name And Base Cost Are Required' }, { status: 400 });
+  const parsedBaseCost = Number(base_cost);
+  if (!name || isNaN(parsedBaseCost) || parsedBaseCost <= 0) {
+    return NextResponse.json({ error: 'Name And A Positive Base Cost Are Required' }, { status: 400 });
   }
 
   const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
@@ -120,6 +121,14 @@ export async function PATCH(req: NextRequest) {
   const updates: Record<string, unknown> = { updated_at: new Date().toISOString() };
   for (const field of ALLOWED_FIELDS) {
     if (field in raw) {
+      // Guard base_cost against zero or negative values — these would cascade
+      // corrupt pricing to all agent_products via recalculate_agent_product_prices.
+      if (field === 'base_cost') {
+        const cost = Number(raw[field]);
+        if (isNaN(cost) || cost <= 0) {
+          return NextResponse.json({ error: 'base_cost Must Be A Positive Number' }, { status: 400 });
+        }
+      }
       updates[field] = raw[field];
     }
   }

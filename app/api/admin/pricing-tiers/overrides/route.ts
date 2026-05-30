@@ -47,6 +47,11 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Missing Required Fields' }, { status: 400 });
   }
 
+  // Enforce the same multiplier range as global tiers — prevents free/invalid product pricing.
+  if (isNaN(custom_multiplier) || custom_multiplier < 1.0 || custom_multiplier > 99.99) {
+    return NextResponse.json({ error: 'custom_multiplier Must Be Between 1.0 And 99.99' }, { status: 400 });
+  }
+
   // Upsert the override
   const { error } = await supabase
     .from('product_tier_overrides')
