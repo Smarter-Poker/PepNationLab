@@ -669,24 +669,17 @@ export default function AgentStorefrontGrid({ products, inventoryMap, primaryCol
     <div style={{ display: 'flex', flexDirection: 'column' }}>
       <style dangerouslySetInnerHTML={{__html: `
         .sf-toolbar {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          grid-template-areas:
-            "search search"
-            "cat    sort"
-            "more   reset";
+          display: flex;
           gap: 8px;
           padding: 10px;
           background: rgba(255,255,255,0.03);
           border-radius: var(--radius-lg);
           border: 1px solid rgba(255,255,255,0.06);
           margin-bottom: 10px;
+          flex-direction: column;
         }
-        .sf-toolbar-search  { grid-area: search; position: relative; }
-        .sf-toolbar-cat     { grid-area: cat; }
-        .sf-toolbar-sort    { grid-area: sort; }
-        .sf-toolbar-more    { grid-area: more; }
-        .sf-toolbar-reset   { grid-area: reset; }
+        .sf-toolbar-search  { position: relative; }
+        .sf-toolbar-cat     { }
         .sf-toolbar select, .sf-toolbar .sf-filter-btn {
           width: 100%; padding: 8px 10px; font-size: 0.8rem;
           background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.1);
@@ -709,32 +702,11 @@ export default function AgentStorefrontGrid({ products, inventoryMap, primaryCol
           background: rgba(255,255,255,0.08); border: none; color: var(--silver);
           cursor: pointer; display: flex; align-items: center; justify-content: center;
         }
-        .sf-filter-btn {
-          padding: 8px 10px; background: rgba(0,0,0,0.4);
-          border: 1px solid rgba(255,255,255,0.1); border-radius: var(--radius-md);
-          color: var(--white); font-size: 0.8rem; cursor: pointer;
-          display: inline-flex; align-items: center; gap: 5px; font-weight: 600;
-          white-space: nowrap; justify-content: center;
-        }
-        .sf-reset-btn {
-          padding: 8px 10px; background: transparent;
-          border: 1px solid rgba(255,255,255,0.1); border-radius: var(--radius-md);
-          color: var(--silver); font-size: 0.78rem; cursor: pointer;
-          display: inline-flex; align-items: center; gap: 5px; width: 100%;
-          justify-content: center;
-        }
         @media (min-width: 640px) {
-          .sf-toolbar {
-            display: flex; flex-wrap: wrap; gap: 10px; padding: 14px;
-            grid-template-columns: unset; grid-template-areas: unset;
-          }
-          .sf-toolbar-search  { flex: 1 1 240px; grid-area: unset; }
-          .sf-toolbar-cat     { flex: 0 0 auto; grid-area: unset; }
-          .sf-toolbar-sort    { flex: 0 0 auto; grid-area: unset; }
-          .sf-toolbar-more    { flex: 0 0 auto; grid-area: unset; }
-          .sf-toolbar-reset   { flex: 0 0 auto; grid-area: unset; }
+          .sf-toolbar { flex-direction: row; flex-wrap: nowrap; padding: 14px; }
+          .sf-toolbar-search  { flex: 1 1 240px; }
+          .sf-toolbar-cat     { flex: 0 0 auto; }
           .sf-toolbar select  { width: auto; min-width: 160px; padding: 9px 12px; font-size: 0.85rem; }
-          .sf-filter-btn, .sf-reset-btn { width: auto; padding: 9px 12px; justify-content: flex-start; }
         }
 
         /* ── Wishlist Heart Button — always a perfect circle ─────────── */
@@ -850,250 +822,9 @@ export default function AgentStorefrontGrid({ products, inventoryMap, primaryCol
           </select>
         </div>
 
-        {/* Sort */}
-        <div className="sf-toolbar-sort">
-          <select
-            aria-label="Sort Products"
-            value={sortBy}
-            onChange={e => setSortBy(e.target.value as typeof sortBy)}
-          >
-            <option value="popular">Popularity (Default)</option>
-            <option value="price_low">Price: Low → High</option>
-            <option value="price_high">Price: High → Low</option>
-            <option value="newest">Newest</option>
-            <option value="name_asc">Name A–Z</option>
-            <option value="name_desc">Name Z–A</option>
-          </select>
-        </div>
-
-        {/* More Filters */}
-        <div className="sf-toolbar-more">
-          <button
-            type="button"
-            className="sf-filter-btn"
-            aria-expanded={showFilterPanel}
-            aria-controls="storefront-filter-panel"
-            onClick={() => setShowFilterPanel(prev => !prev)}
-            style={showFilterPanel ? { background: `${primaryColor}20`, border: `1px solid ${primaryColor}55`, color: primaryColor } : {}}
-          >
-            <SlidersHorizontal size={13} aria-hidden="true" />
-            More Filters
-          </button>
-        </div>
-
-        {/* Reset */}
-        {hasActiveFilters && (
-          <div className="sf-toolbar-reset">
-            <button type="button" className="sf-reset-btn" aria-label="Reset Filters" onClick={resetFilters}>
-              <RotateCcw size={13} aria-hidden="true" />
-              Reset
-            </button>
-          </div>
-        )}
       </div>
 
-      {/* More Filters Panel */}
-      <AnimatePresence>
-        {showFilterPanel && (
-          <motion.div
-            id="storefront-filter-panel"
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
-            transition={{ duration: 0.18 }}
-            style={{ overflow: 'hidden', marginBottom: 'var(--space-3)' }}
-          >
-            <div style={{
-              padding: 'var(--space-5)',
-              background: 'rgba(255,255,255,0.02)',
-              border: '1px solid rgba(255,255,255,0.06)',
-              borderRadius: 'var(--radius-lg)',
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
-              gap: 'var(--space-5)',
-            }}>
-              {/* Price Range */}
-              <div>
-                <label style={{
-                  display: 'block', fontSize: '0.78rem', fontWeight: 700,
-                  color: 'var(--silver)', textTransform: 'uppercase', letterSpacing: '0.05em',
-                  marginBottom: 8,
-                }}>
-                  Price Range
-                </label>
-                <div style={{ fontSize: '0.85rem', color: 'var(--white)', marginBottom: 8, fontWeight: 600 }}>
-                  ${minPrice.toFixed(0)} – ${maxPrice.toFixed(0)}
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                  <input
-                    type="range"
-                    aria-label="Minimum Price"
-                    min={priceBounds.min}
-                    max={priceBounds.max}
-                    step={1}
-                    value={minPrice}
-                    onChange={e => {
-                      const v = Number(e.target.value);
-                      setMinPrice(Math.min(v, maxPrice));
-                    }}
-                    style={{ width: '100%', accentColor: primaryColor }}
-                  />
-                  <input
-                    type="range"
-                    aria-label="Maximum Price"
-                    min={priceBounds.min}
-                    max={priceBounds.max}
-                    step={1}
-                    value={maxPrice}
-                    onChange={e => {
-                      const v = Number(e.target.value);
-                      setMaxPrice(Math.max(v, minPrice));
-                    }}
-                    style={{ width: '100%', accentColor: primaryColor }}
-                  />
-                </div>
-              </div>
 
-              {/* Weight Range */}
-              {weightBounds.max > 0 && (
-                <div>
-                  <label style={{
-                    display: 'block', fontSize: '0.78rem', fontWeight: 700,
-                    color: 'var(--silver)', textTransform: 'uppercase', letterSpacing: '0.05em',
-                    marginBottom: 8,
-                  }}>
-                    Weight Range (Oz)
-                  </label>
-                  <div style={{ fontSize: '0.85rem', color: 'var(--white)', marginBottom: 8, fontWeight: 600 }}>
-                    {minWeight.toFixed(1)} – {maxWeight.toFixed(1)} Oz
-                  </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                    <input
-                      type="range"
-                      aria-label="Minimum Weight"
-                      min={weightBounds.min}
-                      max={weightBounds.max}
-                      step={0.5}
-                      value={minWeight}
-                      onChange={e => {
-                        const v = Number(e.target.value);
-                        setMinWeight(Math.min(v, maxWeight));
-                      }}
-                      style={{ width: '100%', accentColor: primaryColor }}
-                    />
-                    <input
-                      type="range"
-                      aria-label="Maximum Weight"
-                      min={weightBounds.min}
-                      max={weightBounds.max}
-                      step={0.5}
-                      value={maxWeight}
-                      onChange={e => {
-                        const v = Number(e.target.value);
-                        setMaxWeight(Math.max(v, minWeight));
-                      }}
-                      style={{ width: '100%', accentColor: primaryColor }}
-                    />
-                  </div>
-                </div>
-              )}
-
-              {/* Toggles */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
-                <label style={{
-                  display: 'block', fontSize: '0.78rem', fontWeight: 700,
-                  color: 'var(--silver)', textTransform: 'uppercase', letterSpacing: '0.05em',
-                }}>
-                  Availability
-                </label>
-                <button
-                  type="button"
-                  role="switch"
-                  aria-checked={inStockOnly}
-                  onClick={() => setInStockOnly(prev => !prev)}
-                  style={{
-                    display: 'inline-flex', alignItems: 'center', gap: 10,
-                    padding: '8px 12px', borderRadius: 'var(--radius-md)',
-                    background: inStockOnly ? `${primaryColor}20` : 'rgba(0,0,0,0.3)',
-                    border: `1px solid ${inStockOnly ? `${primaryColor}55` : 'rgba(255,255,255,0.1)'}`,
-                    color: inStockOnly ? primaryColor : 'var(--white)',
-                    cursor: 'pointer', fontSize: '0.85rem', fontWeight: 600,
-                    textAlign: 'left',
-                  }}
-                >
-                  <span style={{
-                    width: 18, height: 18, borderRadius: 4,
-                    background: inStockOnly ? primaryColor : 'transparent',
-                    border: `1px solid ${inStockOnly ? primaryColor : 'rgba(255,255,255,0.3)'}`,
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    flexShrink: 0,
-                  }}>
-                    {inStockOnly && <Check size={12} color="#fff" aria-hidden="true" />}
-                  </span>
-                  In-Stock Only
-                </button>
-                <button
-                  type="button"
-                  role="switch"
-                  aria-checked={bulkOnly}
-                  onClick={() => setBulkOnly(prev => !prev)}
-                  style={{
-                    display: 'inline-flex', alignItems: 'center', gap: 10,
-                    padding: '8px 12px', borderRadius: 'var(--radius-md)',
-                    background: bulkOnly ? `${primaryColor}20` : 'rgba(0,0,0,0.3)',
-                    border: `1px solid ${bulkOnly ? `${primaryColor}55` : 'rgba(255,255,255,0.1)'}`,
-                    color: bulkOnly ? primaryColor : 'var(--white)',
-                    cursor: 'pointer', fontSize: '0.85rem', fontWeight: 600,
-                    textAlign: 'left',
-                  }}
-                >
-                  <span style={{
-                    width: 18, height: 18, borderRadius: 4,
-                    background: bulkOnly ? primaryColor : 'transparent',
-                    border: `1px solid ${bulkOnly ? primaryColor : 'rgba(255,255,255,0.3)'}`,
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    flexShrink: 0,
-                  }}>
-                    {bulkOnly && <Check size={12} color="#fff" aria-hidden="true" />}
-                  </span>
-                  Bulk-Pricing Eligible
-                </button>
-                <button
-                  type="button"
-                  onClick={resetFilters}
-                  style={{
-                    padding: '8px 12px', background: 'transparent',
-                    border: '1px solid rgba(255,255,255,0.1)',
-                    borderRadius: 'var(--radius-md)',
-                    color: 'var(--silver)', fontSize: '0.82rem',
-                    cursor: 'pointer', textAlign: 'left',
-                    display: 'inline-flex', alignItems: 'center', gap: 8,
-                  }}
-                >
-                  <RotateCcw size={14} aria-hidden="true" />
-                  Reset Filters
-                </button>
-              </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Result Count */}
-      <div style={{
-        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-        marginBottom: 'var(--space-4)', padding: '0 var(--space-1)',
-        fontSize: '0.82rem', color: 'var(--grey-400)',
-      }}>
-        <span>
-          Showing {shownProductsCount} Of {totalProductsCount} Products
-        </span>
-        {hasActiveFilters && (
-          <span style={{ fontSize: '0.78rem', color: 'var(--silver)' }}>
-            Filters Active
-          </span>
-        )}
-      </div>
 
       {/* Research Bundles */}
       {bundles && bundles.length > 0 && (
@@ -1688,9 +1419,35 @@ export default function AgentStorefrontGrid({ products, inventoryMap, primaryCol
                   </div>
                 </div>
 
-                <p style={{ fontSize: '0.95rem', color: 'var(--grey-300)', lineHeight: 1.7, marginBottom: 'var(--space-4)' }}>
+                <p style={{ fontSize: '0.9rem', color: 'var(--grey-300)', lineHeight: 1.7, marginBottom: 'var(--space-3)' }}>
                   {detailProduct.desc || 'Research compound available for academic and laboratory use.'}
                 </p>
+
+                {/* Agent Local Inventory Badge — show when agent has this product in their own stock */}
+                {(() => {
+                  const selVId0 = selectedVariants[detailProduct.name] || detailProduct.defaultVariantId;
+                  const selV0 = detailProduct.variants.find(v => v.id === selVId0) || detailProduct.variants[0];
+                  const localStock = Math.max(0, Number(inventoryMap[selV0?.product_id ?? ''] ?? 0));
+                  if (localStock <= 0) return null;
+                  return (
+                    <div style={{
+                      display: 'inline-flex', alignItems: 'center', gap: 8,
+                      padding: '7px 14px', borderRadius: 'var(--radius-md)',
+                      background: 'rgba(72,187,120,0.10)',
+                      border: '1px solid rgba(72,187,120,0.30)',
+                      marginBottom: 'var(--space-4)'
+                    }}>
+                      <span style={{
+                        width: 8, height: 8, borderRadius: '50%',
+                        background: '#68D391', flexShrink: 0,
+                        boxShadow: '0 0 6px #68D39180'
+                      }} />
+                      <span style={{ fontSize: '0.82rem', color: '#68D391', fontWeight: 700 }}>
+                        {localStock} Vial{localStock !== 1 ? 's' : ''} In Agent Local Stock — Ships Immediately
+                      </span>
+                    </div>
+                  );
+                })()}
 
                 {/* Certificate Of Analysis */}
                 {(() => {
