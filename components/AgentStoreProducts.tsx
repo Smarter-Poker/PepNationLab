@@ -44,6 +44,7 @@ export default function AgentStoreProducts({ agentId }: { agentId: string }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [filter, setFilter] = useState<FilterMode>('all');
+  const [viewMode, setViewMode] = useState<'flat' | 'category'>('flat');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<Partial<AgentProduct>>({});
   const [saving, setSaving] = useState(false);
@@ -246,25 +247,24 @@ export default function AgentStoreProducts({ agentId }: { agentId: string }) {
               Toggle products on/off, reorder them, set custom prices and descriptions.
             </p>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            {/* Tier badge — sourced from API */}
-            {products.length > 0 && products[0].agent_tier && (
-              <span style={{
-                fontSize: '0.7rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em',
-                padding: '4px 10px', borderRadius: 20,
-                background: products[0].agent_tier === 'tier_1'
-                  ? 'rgba(104,211,145,0.15)' : products[0].agent_tier === 'tier_2'
-                  ? 'rgba(99,179,237,0.15)' : 'rgba(246,173,85,0.15)',
-                color: products[0].agent_tier === 'tier_1'
-                  ? '#68D391' : products[0].agent_tier === 'tier_2'
-                  ? '#63B3ED' : '#F6AD55',
-                border: `1px solid ${products[0].agent_tier === 'tier_1'
-                  ? 'rgba(104,211,145,0.35)' : products[0].agent_tier === 'tier_2'
-                  ? 'rgba(99,179,237,0.35)' : 'rgba(246,173,85,0.35)'}`,
-              }}>
-                {products[0].agent_tier.replace('_', ' ').toUpperCase()}
-              </span>
-            )}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            {/* View mode toggle */}
+            <div style={{ display: 'flex', gap: 4, background: 'var(--surface-2)', borderRadius: 'var(--radius-md)', padding: 3 }}>
+              {([['flat', 'All'], ['category', 'By Category']] as ['flat' | 'category', string][]).map(([key, label]) => (
+                <button
+                  key={key}
+                  onClick={() => setViewMode(key)}
+                  style={{
+                    padding: '5px 12px', border: 'none', borderRadius: 'var(--radius-sm)', cursor: 'pointer',
+                    fontSize: '0.75rem', fontWeight: 600, transition: 'all 0.2s',
+                    background: viewMode === key ? 'var(--surface-3)' : 'transparent',
+                    color: viewMode === key ? 'var(--white)' : 'var(--grey-400)',
+                  }}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
             <div style={{ display: 'flex', gap: 4, background: 'var(--surface-2)', borderRadius: 'var(--radius-md)', padding: 3 }}>
             {([['all', `All (${products.length})`], ['active', `Active (${activeCount})`], ['hidden', `Hidden (${hiddenCount})`]] as [FilterMode, string][]).map(([key, label]) => (
               <button
@@ -315,15 +315,144 @@ export default function AgentStoreProducts({ agentId }: { agentId: string }) {
         </div>
       )}
 
-      {/* Products by Category */}
-      {sortedCategories.map(category => {
+      {/* ── Flat alphabetical list (default) ── */}
+      {viewMode === 'flat' && (
+        <div className="card-metal" style={{ padding: 0, overflow: 'hidden' }}>
+          {filtered.map((p, _idx) => {
+            const displayName = p.custom_name || p.products.name;
+            const isEditing = editingId === p.id;
+            const sizeLabel = p.products.unit_size && p.products.unit_measure
+              ? `${p.products.unit_size}${p.products.unit_measure}`
+              : '';
+            return (
+              <div
+                key={p.id}
+                style={{
+                  padding: 'var(--space-4) var(--space-5)',
+                  borderBottom: '1px solid rgba(255,255,255,0.04)',
+                  opacity: p.is_visible ? 1 : 0.5,
+                  transition: 'opacity 0.2s',
+                }}
+              >
+                {isEditing ? (
+                  <form onSubmit={handleSave} style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
+                    <div className="grid-2" style={{ gap: 'var(--space-3)', alignItems: 'flex-start' }}>
+                      <div className="form-group" style={{ marginBottom: 0 }}>
+                        <label className="form-label" style={{ fontSize: '0.75rem' }}>Custom Name</label>
+                        <input type="text" className="form-input" placeholder={p.products.name} value={editForm.custom_name || ''} onChange={e => setEditForm({ ...editForm, custom_name: e.target.value })} />
+                      </div>
+                      <div className="form-group" style={{ marginBottom: 0 }}>
+                        <label className="form-label" style={{ fontSize: '0.75rem' }}>
+                          Your Markup
+                          <span style={{ fontWeight: 400, color: 'var(--grey-400)', marginLeft: 6 }}>(%)</span>
+                        </label>
+                        <input
+                          type="number"
+                          step="1"
+                          min="0"
+                          className="form-input"
+                          placeholder="e.g. 50 for 50% markup"
+                          value={(editForm as any).margin_percent ?? 50}
+                          onChange={e => setEditForm({ ...editForm, margin_percent: Number(e.target.value) } as any)}
+                        />
+                        {p.agent_cost != null && (editForm as any).margin_percent != null && (
+                          <p style={{ fontSize: '0.68rem', color: 'var(--grey-400)', marginTop: 4, marginBottom: 0 }}>
+                            Sale Price: <strong style={{ color: 'var(--teal)' }}>
+                              ${(p.agent_cost * (1 + Number((editForm as any).margin_percent) / 100)).toFixed(2)}
+                            </strong> per 10-vial pack
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                    <div className="form-group" style={{ marginBottom: 0 }}>
+                      <label className="form-label" style={{ fontSize: '0.75rem' }}>Custom Description</label>
+                      <textarea className="form-input" rows={2} placeholder={p.products.description || 'No Description'} value={editForm.custom_description || ''} onChange={e => setEditForm({ ...editForm, custom_description: e.target.value })} />
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)', flexWrap: 'wrap' }}>
+                      <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: '0.82rem', color: 'var(--grey-300)' }}>
+                        <input
+                          type="checkbox"
+                          checked={(editForm as any).is_on_sale || false}
+                          onChange={e => setEditForm({ ...editForm, is_on_sale: e.target.checked } as any)}
+                          style={{ accentColor: 'var(--teal)', width: 16, height: 16 }}
+                        />
+                        Mark On Sale
+                      </label>
+                      {(editForm as any).is_on_sale && (
+                        <div className="form-group" style={{ marginBottom: 0, flex: 1, minWidth: 120 }}>
+                          <label className="form-label" style={{ fontSize: '0.75rem' }}>Sale Price ($)</label>
+                          <input type="number" step="0.01" className="form-input" placeholder="Sale price" value={(editForm as any).sale_price || ''} onChange={e => setEditForm({ ...editForm, sale_price: Number(e.target.value) || null } as any)} />
+                        </div>
+                      )}
+                    </div>
+                    <div style={{ display: 'flex', gap: 'var(--space-3)' }}>
+                      <button type="submit" disabled={saving} className="btn btn-primary btn-sm">{saving ? 'Saving...' : 'Save'}</button>
+                      <button type="button" onClick={() => setEditingId(null)} className="btn btn-secondary btn-sm">Cancel</button>
+                    </div>
+                  </form>
+                ) : (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)' }}>
+                    {/* Reorder Arrows */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                      <button onClick={() => moveProduct(p.id, 'up')} disabled={reordering} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 2, fontSize: '0.7rem', color: 'var(--grey-400)', lineHeight: 1 }} title="Move Up">▲</button>
+                      <button onClick={() => moveProduct(p.id, 'down')} disabled={reordering} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 2, fontSize: '0.7rem', color: 'var(--grey-400)', lineHeight: 1 }} title="Move Down">▼</button>
+                    </div>
+                    {/* Product Image */}
+                    <img
+                      src={p.custom_image_url || p.products.image_url || '/images/peptide_clear.png'}
+                      alt={displayName}
+                      style={{ width: 40, height: 40, borderRadius: 6, objectFit: 'cover', background: 'var(--surface-3)' }}
+                    />
+                    {/* Product Info */}
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 2 }}>
+                        <span style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--white)' }}>{displayName}</span>
+                        {sizeLabel && <span style={{ fontSize: '0.7rem', color: 'var(--grey-400)', background: 'var(--surface-3)', padding: '1px 6px', borderRadius: 4 }}>{sizeLabel}</span>}
+                        <span style={{ fontSize: '0.65rem', color: 'var(--grey-500)', padding: '1px 6px', borderRadius: 4, background: 'rgba(255,255,255,0.04)' }}>{p.products.category}</span>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                        <span style={{ fontSize: '0.7rem', color: 'var(--grey-500)', fontWeight: 500 }}>Sale:</span>
+                        <span style={{ fontSize: '0.82rem', color: 'var(--teal)', fontWeight: 700 }}>
+                          ${Number(p.retail_price).toFixed(2)}
+                        </span>
+                        {p.is_on_sale && p.sale_price && (
+                          <span style={{ fontSize: '0.7rem', color: '#F56565', fontWeight: 700, background: 'rgba(245,101,101,0.10)', padding: '2px 6px', borderRadius: 4 }}>
+                            On Sale ${Number(p.sale_price).toFixed(2)}
+                          </span>
+                        )}
+                        {p.agent_cost != null && p.agent_cost > 0 && p.retail_price > 0 && (
+                          <span style={{ fontSize: '0.65rem', fontWeight: 700, padding: '1px 5px', borderRadius: 4, background: 'rgba(255,255,255,0.04)', color: (p.retail_price / p.agent_cost - 1) >= 0.15 ? 'var(--teal)' : '#F6AD55' }}>
+                            +{Math.round((p.retail_price / p.agent_cost - 1) * 100)}%
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    {/* Toggle Switch */}
+                    <button
+                      onClick={() => toggleVisibility(p)}
+                      style={{ width: 44, height: 24, borderRadius: 12, border: 'none', cursor: 'pointer', position: 'relative', transition: 'background 0.2s', background: p.is_visible ? 'var(--teal)' : 'var(--surface-3)' }}
+                      title={p.is_visible ? 'Click To Hide' : 'Click To Show'}
+                    >
+                      <div style={{ width: 18, height: 18, borderRadius: '50%', background: 'var(--white)', position: 'absolute', top: 3, transition: 'left 0.2s', left: p.is_visible ? 23 : 3, boxShadow: '0 1px 3px rgba(0,0,0,0.3)' }} />
+                    </button>
+                    {/* Edit Button */}
+                    <button onClick={() => handleEdit(p)} className="btn btn-secondary btn-sm" style={{ padding: '4px 10px', fontSize: '0.75rem' }}>Edit</button>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* ── By Category view ── */}
+      {viewMode === 'category' && sortedCategories.map(category => {
         const catProducts = grouped[category];
         const isExpanded = expandedCategories.has(category);
         const catActiveCount = catProducts.filter(p => p.is_visible).length;
 
         return (
           <div key={category} className="card-metal" style={{ padding: 0, overflow: 'hidden' }}>
-            {/* Category Header */}
             <button
               onClick={() => toggleCategory(category)}
               style={{
@@ -343,7 +472,7 @@ export default function AgentStoreProducts({ agentId }: { agentId: string }) {
 
             {isExpanded && (
               <div style={{ display: 'flex', flexDirection: 'column' }}>
-                {catProducts.map((p, idx) => {
+                {catProducts.map((p) => {
                   const displayName = p.custom_name || p.products.name;
                   const isEditing = editingId === p.id;
                   const sizeLabel = p.products.unit_size && p.products.unit_measure
@@ -372,19 +501,13 @@ export default function AgentStoreProducts({ agentId }: { agentId: string }) {
                                 Your Markup
                                 <span style={{ fontWeight: 400, color: 'var(--grey-400)', marginLeft: 6 }}>(%)</span>
                               </label>
-                              <input
-                                type="number"
-                                step="1"
-                                min="0"
-                                className="form-input"
-                                placeholder="e.g. 50 for 50% markup"
+                              <input type="number" step="1" min="0" className="form-input" placeholder="e.g. 50 for 50% markup"
                                 value={(editForm as any).margin_percent ?? 50}
                                 onChange={e => setEditForm({ ...editForm, margin_percent: Number(e.target.value) } as any)}
                               />
-                              {/* Show computed sale price read-only */}
                               {p.agent_cost != null && (editForm as any).margin_percent != null && (
                                 <p style={{ fontSize: '0.68rem', color: 'var(--grey-400)', marginTop: 4, marginBottom: 0 }}>
-                                  Sale price: <strong style={{ color: 'var(--teal)' }}>
+                                  Sale Price: <strong style={{ color: 'var(--teal)' }}>
                                     ${(p.agent_cost * (1 + Number((editForm as any).margin_percent) / 100)).toFixed(2)}
                                   </strong> per 10-vial pack
                                 </p>
@@ -392,26 +515,21 @@ export default function AgentStoreProducts({ agentId }: { agentId: string }) {
                             </div>
                           </div>
                           <div className="form-group" style={{ marginBottom: 0 }}>
-                              <label className="form-label" style={{ fontSize: '0.75rem' }}>Custom Description</label>
-                              <textarea className="form-input" rows={2} placeholder={p.products.description || 'No Description'} value={editForm.custom_description || ''} onChange={e => setEditForm({ ...editForm, custom_description: e.target.value })} />
-                            </div>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)', flexWrap: 'wrap' }}>
-                              <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: '0.82rem', color: 'var(--grey-300)' }}>
-                                <input
-                                  type="checkbox"
-                                  checked={(editForm as any).is_on_sale || false}
-                                  onChange={e => setEditForm({ ...editForm, is_on_sale: e.target.checked } as any)}
-                                  style={{ accentColor: 'var(--teal)', width: 16, height: 16 }}
-                                />
-                                Mark On Sale
-                              </label>
-                              {(editForm as any).is_on_sale && (
-                                <div className="form-group" style={{ marginBottom: 0, flex: 1, minWidth: 120 }}>
-                                  <label className="form-label" style={{ fontSize: '0.75rem' }}>Sale Price ($)</label>
-                                  <input type="number" step="0.01" className="form-input" placeholder="Sale price" value={(editForm as any).sale_price || ''} onChange={e => setEditForm({ ...editForm, sale_price: Number(e.target.value) || null } as any)} />
-                                </div>
-                              )}
-                            </div>
+                            <label className="form-label" style={{ fontSize: '0.75rem' }}>Custom Description</label>
+                            <textarea className="form-input" rows={2} placeholder={p.products.description || 'No Description'} value={editForm.custom_description || ''} onChange={e => setEditForm({ ...editForm, custom_description: e.target.value })} />
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)', flexWrap: 'wrap' }}>
+                            <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: '0.82rem', color: 'var(--grey-300)' }}>
+                              <input type="checkbox" checked={(editForm as any).is_on_sale || false} onChange={e => setEditForm({ ...editForm, is_on_sale: e.target.checked } as any)} style={{ accentColor: 'var(--teal)', width: 16, height: 16 }} />
+                              Mark On Sale
+                            </label>
+                            {(editForm as any).is_on_sale && (
+                              <div className="form-group" style={{ marginBottom: 0, flex: 1, minWidth: 120 }}>
+                                <label className="form-label" style={{ fontSize: '0.75rem' }}>Sale Price ($)</label>
+                                <input type="number" step="0.01" className="form-input" placeholder="Sale price" value={(editForm as any).sale_price || ''} onChange={e => setEditForm({ ...editForm, sale_price: Number(e.target.value) || null } as any)} />
+                              </div>
+                            )}
+                          </div>
                           <div style={{ display: 'flex', gap: 'var(--space-3)' }}>
                             <button type="submit" disabled={saving} className="btn btn-primary btn-sm">{saving ? 'Saving...' : 'Save'}</button>
                             <button type="button" onClick={() => setEditingId(null)} className="btn btn-secondary btn-sm">Cancel</button>
@@ -419,95 +537,36 @@ export default function AgentStoreProducts({ agentId }: { agentId: string }) {
                         </form>
                       ) : (
                         <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)' }}>
-                          {/* Reorder Arrows */}
                           <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                            <button
-                              onClick={() => moveProduct(p.id, 'up')}
-                              disabled={reordering}
-                              style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 2, fontSize: '0.7rem', color: 'var(--grey-400)', lineHeight: 1 }}
-                              title="Move Up"
-                            >▲</button>
-                            <button
-                              onClick={() => moveProduct(p.id, 'down')}
-                              disabled={reordering}
-                              style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 2, fontSize: '0.7rem', color: 'var(--grey-400)', lineHeight: 1 }}
-                              title="Move Down"
-                            >▼</button>
+                            <button onClick={() => moveProduct(p.id, 'up')} disabled={reordering} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 2, fontSize: '0.7rem', color: 'var(--grey-400)', lineHeight: 1 }} title="Move Up">▲</button>
+                            <button onClick={() => moveProduct(p.id, 'down')} disabled={reordering} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 2, fontSize: '0.7rem', color: 'var(--grey-400)', lineHeight: 1 }} title="Move Down">▼</button>
                           </div>
-
-                          {/* Product Image */}
-                          <img
-                            src={p.custom_image_url || p.products.image_url || '/images/peptide_clear.png'}
-                            alt={displayName}
-                            style={{ width: 40, height: 40, borderRadius: 6, objectFit: 'cover', background: 'var(--surface-3)' }}
-                          />
-
-                          {/* Product Info */}
+                          <img src={p.custom_image_url || p.products.image_url || '/images/peptide_clear.png'} alt={displayName} style={{ width: 40, height: 40, borderRadius: 6, objectFit: 'cover', background: 'var(--surface-3)' }} />
                           <div style={{ flex: 1, minWidth: 0 }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 2 }}>
                               <span style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--white)' }}>{displayName}</span>
                               {sizeLabel && <span style={{ fontSize: '0.7rem', color: 'var(--grey-400)', background: 'var(--surface-3)', padding: '1px 6px', borderRadius: 4 }}>{sizeLabel}</span>}
                             </div>
-                          {/* Pricing: Your Cost (tier price) → Sale Price with margin hint */}
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-                            {p.agent_cost != null && (
-                              <>
-                                <span style={{ fontSize: '0.7rem', color: 'var(--grey-500)', fontWeight: 500 }}>Cost:</span>
-                                <span style={{ fontSize: '0.82rem', color: '#68D391', fontWeight: 700 }}>
-                                  ${Number(p.agent_cost).toFixed(2)}
+                            {/* Sale price + margin badge only - no cost/markup formula */}
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                              <span style={{ fontSize: '0.7rem', color: 'var(--grey-500)', fontWeight: 500 }}>Sale:</span>
+                              <span style={{ fontSize: '0.82rem', color: 'var(--teal)', fontWeight: 700 }}>${Number(p.retail_price).toFixed(2)}</span>
+                              {p.is_on_sale && p.sale_price && (
+                                <span style={{ fontSize: '0.7rem', color: '#F56565', fontWeight: 700, background: 'rgba(245,101,101,0.10)', padding: '2px 6px', borderRadius: 4 }}>
+                                  On Sale ${Number(p.sale_price).toFixed(2)}
                                 </span>
-                                {/* Diagnostic: show the formula so wrong base_cost is instantly visible */}
-                                {p.base_cost_raw != null && p.effective_multiplier != null && (
-                                  <span style={{ fontSize: '0.6rem', color: 'var(--grey-600)', fontStyle: 'italic' }}>
-                                    (${Number(p.base_cost_raw).toFixed(2)}×{Number(p.effective_multiplier).toFixed(2)})
-                                  </span>
-                                )}
-                                <span style={{ fontSize: '0.65rem', color: 'var(--grey-600)' }}>→</span>
-                              </>
-                            )}
-                            <span style={{ fontSize: '0.7rem', color: 'var(--grey-500)', fontWeight: 500 }}>Sale:</span>
-                            <span style={{ fontSize: '0.82rem', color: 'var(--teal)', fontWeight: 700 }}>
-                              ${Number(p.retail_price).toFixed(2)}
-                            </span>
-                            {p.is_on_sale && p.sale_price && (
-                              <span style={{ fontSize: '0.7rem', color: '#F56565', fontWeight: 700, background: 'rgba(245,101,101,0.10)', padding: '2px 6px', borderRadius: 4 }}>
-                                On Sale ${Number(p.sale_price).toFixed(2)}
-                              </span>
-                            )}
-                            {/* Margin indicator */}
-                            {p.agent_cost != null && p.agent_cost > 0 && p.retail_price > 0 && (
-                              <span style={{
-                                fontSize: '0.65rem', fontWeight: 700,
-                                padding: '1px 5px', borderRadius: 4,
-                                background: 'rgba(255,255,255,0.04)',
-                                color: (p.retail_price / p.agent_cost - 1) >= 0.15
-                                  ? 'var(--teal)' : '#F6AD55',
-                              }}>
-                                +{Math.round((p.retail_price / p.agent_cost - 1) * 100)}%
-                              </span>
-                            )}
+                              )}
+                              {p.agent_cost != null && p.agent_cost > 0 && p.retail_price > 0 && (
+                                <span style={{ fontSize: '0.65rem', fontWeight: 700, padding: '1px 5px', borderRadius: 4, background: 'rgba(255,255,255,0.04)', color: (p.retail_price / p.agent_cost - 1) >= 0.15 ? 'var(--teal)' : '#F6AD55' }}>
+                                  +{Math.round((p.retail_price / p.agent_cost - 1) * 100)}%
+                                </span>
+                              )}
+                            </div>
                           </div>
-                          </div>
-
-                          {/* Toggle Switch */}
-                          <button
-                            onClick={() => toggleVisibility(p)}
-                            style={{
-                              width: 44, height: 24, borderRadius: 12, border: 'none', cursor: 'pointer', position: 'relative', transition: 'background 0.2s',
-                              background: p.is_visible ? 'var(--teal)' : 'var(--surface-3)',
-                            }}
-                            title={p.is_visible ? 'Click To Hide' : 'Click To Show'}
-                          >
-                            <div style={{
-                              width: 18, height: 18, borderRadius: '50%', background: 'var(--white)', position: 'absolute', top: 3, transition: 'left 0.2s',
-                              left: p.is_visible ? 23 : 3, boxShadow: '0 1px 3px rgba(0,0,0,0.3)',
-                            }} />
+                          <button onClick={() => toggleVisibility(p)} style={{ width: 44, height: 24, borderRadius: 12, border: 'none', cursor: 'pointer', position: 'relative', transition: 'background 0.2s', background: p.is_visible ? 'var(--teal)' : 'var(--surface-3)' }} title={p.is_visible ? 'Click To Hide' : 'Click To Show'}>
+                            <div style={{ width: 18, height: 18, borderRadius: '50%', background: 'var(--white)', position: 'absolute', top: 3, transition: 'left 0.2s', left: p.is_visible ? 23 : 3, boxShadow: '0 1px 3px rgba(0,0,0,0.3)' }} />
                           </button>
-
-                          {/* Edit Button */}
-                          <button onClick={() => handleEdit(p)} className="btn btn-secondary btn-sm" style={{ padding: '4px 10px', fontSize: '0.75rem' }}>
-                            Edit
-                          </button>
+                          <button onClick={() => handleEdit(p)} className="btn btn-secondary btn-sm" style={{ padding: '4px 10px', fontSize: '0.75rem' }}>Edit</button>
                         </div>
                       )}
                     </div>
