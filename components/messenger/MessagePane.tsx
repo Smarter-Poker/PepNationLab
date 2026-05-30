@@ -4,7 +4,7 @@ import { useMessengerStore } from '@/stores/messengerStore';
 import type { ConversationListItem, Message, Reaction, ParticipantRole } from '@/lib/messenger/types';
 import type { MessageLabelValue, ThemeValue } from '@/lib/messenger/schemas';
 import type { CallSignalRow } from '@/lib/messenger/realtime';
-import { MessageCircle, Info } from 'lucide-react';
+import { MessageCircle, Info, Bell } from 'lucide-react';
 import MessageBubble from './MessageBubble';
 import MessageComposer from './MessageComposer';
 import TypingIndicator from './TypingIndicator';
@@ -15,6 +15,7 @@ import BookmarksDrawer from './BookmarksDrawer';
 import CallButton from './CallButton';
 import ReportModal from './ReportModal';
 import BlockList from './BlockList';
+import RemindersList from './RemindersList';
 import { toast } from 'sonner';
 import {
   subscribeMessages,
@@ -63,6 +64,25 @@ function resolveConversationLabel(c: ConversationListItem | undefined): string {
   return 'Conversation';
 }
 
+function reminderPreviewFromMessage(m: Message): string {
+  if (m.text && m.text.trim().length > 0) {
+    const t = m.text.trim();
+    return t.length > 200 ? `${t.slice(0, 200)}...` : t;
+  }
+  switch (m.message_type) {
+    case 'image':
+      return '[Image]';
+    case 'gif':
+      return '[Gif]';
+    case 'voice':
+      return '[Voice Note]';
+    case 'file':
+      return '[File]';
+    default:
+      return m.media_url ? '[Media]' : '';
+  }
+}
+
 async function markConversationRead(conversationId: string, lastReadMessageId: string) {
   try {
     await fetch('/api/messenger/mark-read', {
@@ -103,6 +123,12 @@ export default function MessagePane({ userId, activeCall, setActiveCall }: Props
   const [blockedIds, setBlockedIds] = useState<Set<string>>(new Set());
   const [reportTarget, setReportTarget] = useState<Message | null>(null);
   const [blockListOpen, setBlockListOpen] = useState(false);
+  // Phase 13: reminders drawer
+  const [remindersOpen, setRemindersOpen] = useState(false);
+  const [reminderSeed, setReminderSeed] = useState<
+    | { messageId?: string; conversationId?: string; preview?: string }
+    | null
+  >(null);
 
   // activeCall is hoisted to MessengerShell so IncomingCallToast accept-handlers can set it.
   void activeCall;
@@ -116,6 +142,8 @@ export default function MessagePane({ userId, activeCall, setActiveCall }: Props
     setThreadParentId(null);
     setBookmarksOpen(false);
     setReportTarget(null);
+    setRemindersOpen(false);
+    setReminderSeed(null);
   }, [activeId]);
 
   // Phase 12: fetch the caller's block list once per session (re-fetches when
@@ -657,6 +685,20 @@ export default function MessagePane({ userId, activeCall, setActiveCall }: Props
     return () => clearInterval(interval);
   }, [pendingJumpMessageId, activeId, handleJumpToMessage]);
 
+  // Phase 13: opens the reminders drawer in create-mode pre-populated with the
+  // message reference + preview snippet.
+  const handleSetReminder = useCallback(
+    (m: Message) => {
+      setReminderSeed({
+        messageId: m.id,
+        conversationId: m.conversation_id,
+        preview: reminderPreviewFromMessage(m),
+      });
+      setRemindersOpen(true);
+    },
+    [],
+  );
+
   if (!activeId) {
     return (
       <div
@@ -691,6 +733,7 @@ export default function MessagePane({ userId, activeCall, setActiveCall }: Props
         display: 'flex',
         flexDirection: 'column',
         background: THEME_BACKGROUND[themeValue] ?? THEME_BACKGROUND.default,
+        position: 'relative',
       }}
     >
       <header
@@ -720,6 +763,15 @@ export default function MessagePane({ userId, activeCall, setActiveCall }: Props
             conversationId={activeId}
             onCallStarted={(c) => setActiveCall(c)}
           />
+          <button
+            type="button"
+            onClick={() => { setReminderSeed(null); setRemindersOpen(true); }}
+            aria-label="Open Reminders"
+            style={headerBtn}
+          >
+            <Bell size={12} aria-hidden="true" />
+            Reminders
+          </button>
           <button
             type="button"
             onClick={() => setBookmarksOpen(true)}
@@ -783,7 +835,7 @@ export default function MessagePane({ userId, activeCall, setActiveCall }: Props
                       border: '1px dashed var(--surface-3, #1D2D3E)',
                     }}
                   >
-                    Message Hidden — Blocked User
+                    Message Hidden - Blocked User
                   </div>
                 );
               }
@@ -808,6 +860,7 @@ export default function MessagePane({ userId, activeCall, setActiveCall }: Props
                   onLabelToggle={handleLabelToggle}
                   onThread={(parent) => setThreadParentId(parent.id)}
                   onReport={(msg) => setReportTarget(msg)}
+                  onSetReminder={handleSetReminder}
                 />
               );
             })
@@ -851,6 +904,12 @@ export default function MessagePane({ userId, activeCall, setActiveCall }: Props
         />
       )}
       {blockListOpen && <BlockList onClose={() => setBlockListOpen(false)} />}
+      {remindersOpen && (
+        <RemindersList
+          onClose={() => { setRemindersOpen(false); setReminderSeed(null); }}
+          seed={reminderSeed}
+        />
+      )}
     </div>
   );
 }

@@ -1,6 +1,6 @@
 'use client';
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { Send, Smile, Paperclip, Image as ImageIcon, FileText, Calendar, Clock } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Send, Smile, Paperclip, Image as ImageIcon, FileText, Calendar, Clock, Shield } from 'lucide-react';
 import { toast } from 'sonner';
 import { useMessengerStore } from '@/stores/messengerStore';
 import type { Message, MessageType } from '@/lib/messenger/types';
@@ -24,6 +24,9 @@ interface Props {
 const MAX_LEN = 2000;
 const TYPING_THROTTLE_MS = 1500;
 const TYPING_STOP_MS = 3000;
+// Phase 13: keep this in sync with the server-side detector in
+// app/api/messenger/send-message/route.ts. Word-bounded, case-insensitive.
+const ADMIN_MENTION_RE = /(^|\s)@admin(\s|$|[.,!?;:])/i;
 
 interface UploadResult { uploadUrl: string; publicUrl: string; path: string }
 
@@ -81,6 +84,11 @@ export default function MessageComposer({ conversationId, selfId, replyTo, onCle
   const broadcastRef = useRef<((isTyping: boolean) => void) | null>(null);
   const lastSentAtRef = useRef(0);
   const stopTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Phase 13: surface a soft hint when the draft contains @admin so the user
+  // knows the admin moderation surface will be notified. The actual mention
+  // is detected server-side in send-message - this is purely UI.
+  const adminMention = useMemo(() => ADMIN_MENTION_RE.test(text), [text]);
 
   useEffect(() => {
     const { channel, broadcast } = subscribeTyping(conversationId, selfId, () => {});
@@ -442,6 +450,28 @@ export default function MessageComposer({ conversationId, selfId, replyTo, onCle
           >
             <Send size={18} />
           </button>
+        </div>
+      )}
+
+      {adminMention && !voiceMode && (
+        <div
+          role="status"
+          aria-label="Admin Will Be Notified"
+          style={{
+            marginTop: 6,
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 6,
+            padding: '4px 10px',
+            borderRadius: 999,
+            background: 'var(--surface-3, #1D2D3E)',
+            color: 'var(--teal, #00C4BC)',
+            fontSize: '0.72rem',
+            fontWeight: 700,
+          }}
+        >
+          <Shield size={10} aria-hidden="true" />
+          Admin Will Be Notified
         </div>
       )}
 
