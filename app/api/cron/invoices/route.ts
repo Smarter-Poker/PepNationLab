@@ -3,6 +3,7 @@ import { createServiceClient } from '@/lib/supabase/server';
 import { computeStatement, persistStatement } from '@/lib/statements';
 import { assertCronAuth, claimCronRun, finishCronRun } from '@/lib/cron';
 import { computeSubAgentBaselineCost } from '@/lib/pricing';
+import { notifyInvoiceGenerated } from '@/lib/notify';
 
 function addDays(dateStr: string, days: number): string {
   const d = new Date(`${dateStr}T00:00:00Z`);
@@ -182,6 +183,8 @@ export async function GET(req: Request) {
             body: `Your invoice for the week of ${weekStart} has been generated.\nTotal Owed: $${totalOwed.toFixed(2)}\n\nPlease review your dashboard to make payment.`,
             type: 'invoice',
           });
+          // In-app notification — shows in bell immediately via Realtime
+          void notifyInvoiceGenerated(supabase, subAgent.id, weekStart, totalOwed).catch(() => { /* best-effort */ });
         }
       }
     }

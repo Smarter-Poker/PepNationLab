@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient, createServiceClient } from '@/lib/supabase/server';
 import { assertSameOrigin } from '@/lib/csrf';
+import { notifyPaymentReminder } from '@/lib/notify';
 
 /** POST: Send payment reminder for an overdue invoice */
 export async function POST(req: NextRequest) {
@@ -42,6 +43,14 @@ Please remit payment as soon as possible to avoid any service interruptions.`,
   });
 
   if (sendError) return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
+
+  // In-app notification — shows in bell immediately
+  void notifyPaymentReminder(
+    service,
+    invoice.receiver_id,
+    invoice.subject ?? 'Invoice',
+    Number(invoice.invoice_amount || 0),
+  ).catch(() => { /* best-effort */ });
 
   // Mark invoice as overdue only after the message has been delivered successfully
   await service.from('internal_messages')
