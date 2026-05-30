@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { useState, useEffect } from 'react';
 import { useCart } from './CartContext';
 import { createClient } from '@/lib/supabase/client';
+import NavbarNotificationBell from '@/components/NavbarNotificationBell';
 
 export default function Navbar() {
   const { cartCount, setIsCartOpen } = useCart();

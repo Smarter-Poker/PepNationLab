@@ -19,8 +19,13 @@ const EventSchema = z.object({
 
 export async function POST(req: NextRequest) {
   const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
-  const limited = await rateLimit('storefront_events', ip, 240, 60);
-  if (!limited.ok) return NextResponse.json({ error: 'rate_limited' }, { status: 429 });
+  const limited = await rateLimit({
+    key: 'storefront_events',
+    identifier: ip,
+    limit: 240,
+    windowSeconds: 60,
+  });
+  if (!limited.allowed) return NextResponse.json({ error: 'rate_limited' }, { status: 429 });
 
   let body: unknown;
   try {

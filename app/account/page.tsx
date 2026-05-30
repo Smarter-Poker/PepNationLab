@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/server';
-import { Bell, ShieldCheck, CreditCard, Heart, History, MapPin, Package, RotateCcw, Gift, FileCheck } from 'lucide-react';
+import { Bell, ShieldCheck, CreditCard, Heart, History, MapPin, Package, RotateCcw, Gift, FileCheck, Wallet } from 'lucide-react';
 
 export const dynamic = 'force-dynamic';
 

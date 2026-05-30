@@ -8,7 +8,7 @@ export async function POST(req: NextRequest) {
   if (csrf) return csrf;
 
   const gate = await requireAgent();
-  if (gate) return gate;
+  if (!gate.ok) return gate.response;
 
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
