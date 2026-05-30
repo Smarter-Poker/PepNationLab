@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import NavbarNotificationBell from '@/components/NavbarNotificationBell';
@@ -165,14 +165,32 @@ export default function Navbar({ onMenuClick }: { onMenuClick?: () => void } = {
 
   const closeDrawer = useCallback(() => setDrawerOpen(false), []);
 
+  // ── Smart back-navigation tracking ──────────────────────────────────────
+  // We track whether the user has made a meaningful in-app navigation.
+  // Auth pages (login, register, etc.) are intentionally excluded so that
+  // the login→redirect transition does NOT count as "real" history.
+  // If no real navigation has happened, back() would land on the login screen,
+  // so we fall back to the user's role-appropriate home page instead.
+  const AUTH_PATHS = ['/login', '/register', '/forgot-password', '/invite'];
+  const hasNavigatedRef = useRef(false);
+  const prevPathnameRef = useRef<string | null>(null);
+
   // Lock body scroll when drawer is open
   useEffect(() => {
     document.body.style.overflow = drawerOpen ? 'hidden' : '';
     return () => { document.body.style.overflow = ''; };
   }, [drawerOpen]);
 
-  // Close drawer on route change
-  useEffect(() => { setDrawerOpen(false); }, [pathname]);
+  // Close drawer on route change + track meaningful navigation
+  useEffect(() => {
+    setDrawerOpen(false);
+    const prev = prevPathnameRef.current;
+    // Only mark as navigated when coming FROM a non-auth page
+    if (prev !== null && prev !== pathname && !AUTH_PATHS.some(p => prev.startsWith(p))) {
+      hasNavigatedRef.current = true;
+    }
+    prevPathnameRef.current = pathname;
+  }, [pathname]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Auth state
   useEffect(() => {
@@ -241,8 +259,28 @@ export default function Navbar({ onMenuClick }: { onMenuClick?: () => void } = {
     window.location.href = '/';
   };
 
-  // ── Back button: only shown when there's a meaningful back destination
-  const showBack = pathname !== '/';
+  // ── Safe fallback for back button ───────────────────────────────────────
+  // Researchers land on their agent's storefront; agents on their dashboard;
+  // admins on the admin panel.
+  const safeBack = role === 'admin'
+    ? '/admin'
+    : role.includes('agent')
+    ? '/dashboard/agent'
+    : agentSlug
+    ? `/${agentSlug}`
+    : '/dashboard';
+
+  const handleBack = () => {
+    if (hasNavigatedRef.current) {
+      router.back();
+    } else {
+      // No real in-app history — go to the user's home instead of login
+      router.push(safeBack);
+    }
+  };
+
+  // Hide back button on root page and on the user's own home/dashboard page
+  const showBack = pathname !== '/' && pathname !== safeBack && pathname !== dashLink;
 
   return (
     <>
@@ -295,7 +333,7 @@ export default function Navbar({ onMenuClick }: { onMenuClick?: () => void } = {
         {showBack && (
           <>
             <button
-              onClick={() => router.back()}
+              onClick={handleBack}
               aria-label="Go Back"
               style={{
                 background: 'none',
