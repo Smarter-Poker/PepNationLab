@@ -214,7 +214,7 @@ export async function POST(req: NextRequest) {
         body: `Your researcher submitted a payment proof for Order #${shortId}. Review and mark as paid.`,
         type: 'order',
         metadata: { orderId, action: 'mark_paid' },
-      }).catch(() => {}); // Non-blocking
+      });
     } catch (err) {
       console.error('[payment-proof] messenger integration error:', err);
     }

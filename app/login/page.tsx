@@ -61,15 +61,10 @@ function LoginPageInner() {
     const supabaseForSignOut = supabase; // capture ref
 
     const redirectTo = searchParams.get('redirect') ?? '/dashboard';
-    router.push(redirectTo);
-    // Do NOT call router.refresh() here — it triggers a server re-render that
-    // can race against the cookie being set in incognito, causing the middleware
-    // to see no session and redirect back to /login.
-    // The destination page's own useEffect / server component will load fresh data.
-
-    setTimeout(() => {
-      supabaseForSignOut.auth.signOut({ scope: 'others' }).catch(() => {});
-    }, 3000);
+    
+    // Hard navigation ensures that the browser sends the new session cookie to the server
+    // and completely bypasses any Next.js client-side router cache that might be stale.
+    window.location.href = redirectTo;
   }
 
   return (

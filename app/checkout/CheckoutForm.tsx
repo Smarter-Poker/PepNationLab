@@ -750,9 +750,9 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
 
           {/* Action Button */}
           <div style={{ textAlign: 'center' }}>
-            <Link href={agentSlug ? `/${agentSlug}` : '/dashboard'} className="btn btn-primary" style={{ minWidth: 200 }}>
+            <a href={agentSlug ? `/${agentSlug}` : '/dashboard'} className="btn btn-primary" style={{ minWidth: 200, display: 'inline-block', lineHeight: '42px', textDecoration: 'none' }}>
               Return To Catalog
-            </Link>
+            </a>
           </div>
         </div>
       </div>
