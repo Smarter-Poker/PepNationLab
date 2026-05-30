@@ -531,7 +531,7 @@ a:hover { color: var(--teal-dark); }
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border-bottom: 1px solid rgba(0, 196, 188, 0.15);
-  height: 64px;
+  height: 60px;
   display: flex;
   align-items: center;
 }
@@ -789,7 +789,7 @@ a:hover { color: var(--teal-dark); }
 }
 
 .dashboard-main {
-  padding-top: 64px;
+  padding-top: 60px;
   min-height: 100vh;
   background: var(--black);
   /* Stretch to fill any remaining vertical space so no background gap appears */
