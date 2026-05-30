@@ -9,12 +9,19 @@ import { ThemeProvider } from "@/components/ThemeProvider";
 import { Toaster } from "sonner";
 
 export const viewport: Viewport = {
-  themeColor: "#0A1018",
+  themeColor: [
+    { media: '(prefers-color-scheme: light)', color: '#F8F5F0' },
+    { media: '(prefers-color-scheme: dark)', color: '#0A1018' },
+  ],
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
   viewportFit: "cover",
+  // Shrinks the visual viewport when the software keyboard appears.
+  // This lets CSS flex layouts (like the messenger) adjust naturally
+  // without JavaScript scroll hacks. Supported in Chrome 108+, Safari 16+.
+  interactiveWidget: "resizes-visual",
 };
 
 export const metadata: Metadata = {
@@ -67,7 +74,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       {/* No-flash script runs synchronously before page renders */}
       <head>
         <script dangerouslySetInnerHTML={{ __html: NO_FLASH_SCRIPT }} />

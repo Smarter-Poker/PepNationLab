@@ -849,10 +849,9 @@ a:hover { color: var(--teal-dark); }
 .nav-logo         { text-transform: uppercase; }
 .sidebar-nav-item { text-transform: capitalize; }
 
-/* Nav links and standalone UI text */
-nav a,
-nav span,
-nav button { text-transform: capitalize; }
+/* Nav drawer links only — NOT the page-title span (would corrupt scientific names) */
+.drawer-link,
+nav button.drawer-close { text-transform: capitalize; }
 
 /* Error messages, alerts */
 .disclaimer-warning p,
@@ -1009,10 +1008,10 @@ img, video, svg, iframe {
     padding: var(--space-3);
   }
 
-  /* Navigation — compact */
-  nav {
-    padding: 0 var(--space-3) !important;
-    height: 52px !important;
+  /* Navigation — keep 60px height, only tighten padding */
+  .pnl-navbar {
+    padding: 0 var(--space-2) !important;
+    /* height stays 60px — paddingTop:60 offsets in layouts depend on this */
   }
 
   nav .btn, nav a.btn {
@@ -1193,9 +1192,9 @@ html {
 }
 
 /* ============================================
-   NAVBAR HEIGHT UPDATE — 60px (was 64px)
+   NAVBAR HEIGHT — 60px
    ============================================ */
-.nav { height: 60px !important; }
+.pnl-navbar { height: 60px; }  /* Scoped to app navbar only, not all nav elements */
 .dashboard-main { padding-top: 60px; }
 .sidebar { top: 60px; }
 
@@ -1272,13 +1271,13 @@ html {
 @media (max-width: 1024px) {
   .admin-sidebar {
     position: fixed !important;
-    top: 0 !important;
+    top: 60px !important; /* Below the universal Navbar — matches AdminLayoutClient */
     left: 0 !important;
     bottom: 0 !important;
     z-index: 500 !important;
     transform: translateX(-100%);
     transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
-    width: 260px !important;
+    width: 240px !important; /* Match AdminLayoutClient inline style */
   }
   .admin-sidebar.open {
     transform: translateX(0);

@@ -22,10 +22,13 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   // Sync from the data-theme attribute that the no-flash script set before
   // React hydrated. This avoids a flash of wrong theme on load.
   useEffect(() => {
-    const saved = (typeof window !== 'undefined'
-      ? localStorage.getItem('pnl-theme')
-      : null) as Theme | null;
-    const initial = saved ?? 'dark';
+    let initial: Theme = 'dark';
+    try {
+      const saved = localStorage.getItem('pnl-theme') as Theme | null;
+      if (saved === 'light' || saved === 'dark') initial = saved;
+    } catch {
+      // localStorage unavailable (private browsing, quota full) — stay dark
+    }
     setThemeState(initial);
     document.documentElement.setAttribute('data-theme', initial);
   }, []);
@@ -33,7 +36,11 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const setTheme = (t: Theme) => {
     setThemeState(t);
     document.documentElement.setAttribute('data-theme', t);
-    localStorage.setItem('pnl-theme', t);
+    try {
+      localStorage.setItem('pnl-theme', t);
+    } catch {
+      // localStorage unavailable — theme works for session but won't persist
+    }
   };
 
   const toggleTheme = () => setTheme(theme === 'dark' ? 'light' : 'dark');

@@ -22,7 +22,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   }
 
   return (
-    <AdminLayoutClient adminName={profile?.full_name ?? 'Admin'}>
+    <AdminLayoutClient adminName={profile?.full_name || 'Admin'}>
       {children}
     </AdminLayoutClient>
   );
