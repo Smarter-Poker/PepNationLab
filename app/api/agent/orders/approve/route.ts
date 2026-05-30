@@ -3,9 +3,10 @@ import { createServiceClient } from '@/lib/supabase/server';
 import { requireAgent } from '@/lib/admin-auth';
 import { pickOne } from '@/lib/relations';
 import { computeAgentCost, type AgentTier } from '@/lib/pricing';
-import { enqueueOrderPush } from '@/lib/push-enqueue';
+import { enqueueOrderPush, shortOrderId } from '@/lib/push-enqueue';
 import { enqueueWebhook, fetchOrderForWebhook } from '@/lib/webhook-dispatch';
 import { assertSameOrigin } from '@/lib/csrf';
+import { notifyOrderApproved } from '@/lib/notify';
 
 export async function POST(req: NextRequest) {
   const csrf = assertSameOrigin(req);
@@ -222,15 +223,15 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Fire-and-forget push notification — never blocks order completion.
+    // Fire-and-forget in-app + push notification — never blocks order completion.
     if ((newStatus === 'approved_ship' || newStatus === 'approved_pickup') && order.buyer_id) {
-      try {
-        await enqueueOrderPush(supabase, {
-          userId: order.buyer_id,
-          orderId,
-          event: 'order_approved',
-        });
-      } catch { /* push failures must not break the order */ }
+      void (async () => {
+        try {
+          const short = shortOrderId(orderId);
+          await notifyOrderApproved(supabase, order.buyer_id, orderId, short);
+          await enqueueOrderPush(supabase, { userId: order.buyer_id, orderId, event: 'order_approved' });
+        } catch { /* notification failures must not break the order */ }
+      })();
     }
 
     // Auto-enqueue label job for shipping orders — fire-and-forget, idempotent server-side.

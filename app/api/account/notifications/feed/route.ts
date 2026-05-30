@@ -8,44 +8,42 @@ export async function GET() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ unread_count: 0, recent: [] });
 
-  const { data: msgs, count: msgUnreadCount } = await supabase
-    .from('internal_messages')
-    .select('id, subject, body, created_at, read_at', { count: 'exact' })
-    .eq('recipient_id', user.id)
+  // Read from dedicated notifications table
+  const { data: notifs, count: unreadCount } = await supabase
+    .from('notifications')
+    .select('id, type, title, body, url, read_at, created_at', { count: 'exact' })
+    .eq('user_id', user.id)
     .is('read_at', null)
     .order('created_at', { ascending: false })
-    .limit(10);
+    .limit(1);  // just for count
 
-  const { data: pushes } = await supabase
-    .from('push_outbox')
-    .select('id, title, body, url, sent_at, created_at, status')
-    .eq('recipient_user_id', user.id)
+  const { data: recent } = await supabase
+    .from('notifications')
+    .select('id, type, title, body, url, read_at, created_at')
+    .eq('user_id', user.id)
     .order('created_at', { ascending: false })
-    .limit(5);
+    .limit(20);
 
-  const recent = [
-    ...(msgs ?? []).map((m) => ({
-      id: String(m.id),
-      title: m.subject || 'Message',
-      body: m.body,
-      url: '/messenger',
-      created_at: m.created_at,
-      kind: 'message' as const,
-    })),
-    ...(pushes ?? []).map((p) => ({
-      id: String(p.id),
-      title: p.title || 'Notification',
-      body: p.body,
-      url: p.url || '/account/notifications',
-      created_at: p.created_at,
-      kind: 'push' as const,
-    })),
-  ]
-    .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-    .slice(0, 15);
+  // Also count unread messenger messages separately
+  const { count: msgCount } = await supabase
+    .from('internal_messages')
+    .select('id', { count: 'exact', head: true })
+    .eq('recipient_id', user.id)
+    .is('read_at', null);
+
+  const totalUnread = (unreadCount ?? 0) + (msgCount ?? 0);
 
   return NextResponse.json({
-    unread_count: msgUnreadCount ?? 0,
-    recent,
+    unread_count: totalUnread,
+    recent: (recent ?? []).map((n) => ({
+      id: String(n.id),
+      type: n.type,
+      title: n.title,
+      body: n.body,
+      url: n.url || '/dashboard',
+      read_at: n.read_at,
+      created_at: n.created_at,
+      kind: 'notification' as const,
+    })),
   });
 }

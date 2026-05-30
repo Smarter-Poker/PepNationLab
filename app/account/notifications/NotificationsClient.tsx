@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import {
   enablePush,
@@ -9,6 +9,17 @@ import {
   isWebPushSupported,
   notificationPermission,
 } from '@/lib/push-client';
+
+/* ─── Types ────────────────────────────────────────────────────────────────── */
+interface NotifItem {
+  id: string;
+  type: string;
+  title: string;
+  body: string | null;
+  url: string | null;
+  read_at: string | null;
+  created_at: string;
+}
 
 interface Prefs {
   events_order_approved: boolean;
@@ -21,270 +32,594 @@ interface Prefs {
   push_events_marketing: boolean;
 }
 
-interface Props {
-  initialPrefs: Prefs;
-  userEmail: string;
+/* ─── Helpers ──────────────────────────────────────────────────────────────── */
+function timeAgo(iso: string): string {
+  const d = Date.now() - new Date(iso).getTime();
+  const s = Math.floor(d / 1000);
+  if (s < 60)  return 'just now';
+  const m = Math.floor(s / 60);
+  if (m < 60)  return `${m}m ago`;
+  const h = Math.floor(m / 60);
+  if (h < 24)  return `${h}h ago`;
+  return new Date(iso).toLocaleDateString();
 }
 
-const TEAL = '#00C4BC';
-const SILVER = '#A8B4C0';
-const SURFACE_2 = '#162230';
+const TYPE_ICON: Record<string, string> = {
+  order_placed:     '📦',
+  order_approved:   '✅',
+  order_shipped:    '🚚',
+  order_delivered:  '🎉',
+  order_cancelled:  '❌',
+  commission_earned:'💰',
+  new_researcher:   '👤',
+  new_message:      '💬',
+  invoice:          '📄',
+  payment_reminder: '⏰',
+  cart_reminder:    '🛒',
+  referral:         '🔗',
+  system:           '🔔',
+};
 
-export default function NotificationsClient({ initialPrefs, userEmail }: Props) {
-  const [prefs, setPrefs] = useState<Prefs>(initialPrefs);
-  const [saving, setSaving] = useState(false);
-  const [message, setMessage] = useState<{ kind: 'ok' | 'err'; text: string } | null>(null);
+const TYPE_LABEL: Record<string, string> = {
+  order_placed:     'Order Placed',
+  order_approved:   'Order Approved',
+  order_shipped:    'Order Shipped',
+  order_delivered:  'Order Delivered',
+  order_cancelled:  'Order Cancelled',
+  commission_earned:'Commission',
+  new_researcher:   'New Researcher',
+  new_message:      'Message',
+  invoice:          'Invoice',
+  payment_reminder: 'Payment Reminder',
+  cart_reminder:    'Cart Reminder',
+  referral:         'Referral',
+  system:           'System',
+};
 
-  // Push state tracked locally so the buttons reflect browser permission.
+/* ─── Style constants ──────────────────────────────────────────────────────── */
+const TEAL    = 'var(--teal, #C0B8A8)';
+const SILVER  = 'rgba(192,184,168,0.65)';
+const SURFACE = 'rgba(255,255,255,0.03)';
+const BORDER  = '1px solid rgba(255,255,255,0.08)';
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   Notification Center Page
+══════════════════════════════════════════════════════════════════════════════ */
+export default function NotificationCenterClient({ initialPrefs }: { initialPrefs: Prefs }) {
+  const [activeTab, setActiveTab] = useState<'notifications' | 'settings'>('notifications');
+
+  /* ── Notifications state ──────────────────────────────────────────────── */
+  const [items, setItems]         = useState<NotifItem[]>([]);
+  const [loadingList, setLoadingList] = useState(true);
+  const [filterType, setFilterType] = useState<string>('all');
+
+  /* ── Preferences state ────────────────────────────────────────────────── */
+  const [prefs, setPrefs]         = useState<Prefs>(initialPrefs);
+  const [saving, setSaving]       = useState(false);
+  const [saveMsg, setSaveMsg]     = useState<{ text: string; ok: boolean } | null>(null);
+
+  /* ── Push state ───────────────────────────────────────────────────────── */
   const [pushSupported, setPushSupported] = useState(false);
   const [pushPermission, setPushPermission] = useState<NotificationPermission | 'unsupported'>('default');
-  const [pushBusy, setPushBusy] = useState(false);
-  const [pushMessage, setPushMessage] = useState<{ kind: 'ok' | 'err'; text: string } | null>(null);
+  const [pushBusy, setPushBusy]   = useState(false);
+  const [pushMsg, setPushMsg]     = useState<{ text: string; ok: boolean } | null>(null);
 
+  /* ── Load feed ────────────────────────────────────────────────────────── */
+  const loadFeed = useCallback(async () => {
+    setLoadingList(true);
+    try {
+      const res = await fetch('/api/account/notifications/feed', { cache: 'no-store' });
+      if (res.ok) {
+        const json = await res.json();
+        setItems(json.recent ?? []);
+      }
+    } catch { /* ignore */ } finally {
+      setLoadingList(false);
+    }
+  }, []);
+
+  useEffect(() => { loadFeed(); }, [loadFeed]);
+
+  /* ── Push support check ───────────────────────────────────────────────── */
   useEffect(() => {
     setPushSupported(isWebPushSupported());
     setPushPermission(notificationPermission());
   }, []);
 
-  function update<K extends keyof Prefs>(key: K, value: Prefs[K]) {
-    setPrefs((p) => ({ ...p, [key]: value }));
-  }
+  /* ── Mark individual as read ────────────────────────────────────────────── */
+  const markRead = async (id: string) => {
+    setItems(prev => prev.map(n => n.id === id ? { ...n, read_at: new Date().toISOString() } : n));
+    await fetch('/api/account/notifications/mark-read', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ids: [Number(id)] }),
+    }).catch(() => { /* ignore */ });
+  };
 
-  async function handleEnablePush() {
-    setPushBusy(true);
-    setPushMessage(null);
-    const result = await enablePush();
-    setPushPermission(notificationPermission());
-    if (result.ok) {
-      update('push_enabled', true);
-      setPushMessage({ kind: 'ok', text: 'Push Notifications Enabled On This Device.' });
-    } else {
-      setPushMessage({ kind: 'err', text: result.error || 'Could Not Enable Push Notifications.' });
-    }
-    setPushBusy(false);
-  }
+  /* ── Mark all read ────────────────────────────────────────────────────── */
+  const markAllRead = async () => {
+    await fetch('/api/account/notifications/mark-read', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ all: true }),
+    }).catch(() => { /* ignore */ });
+    setItems(prev => prev.map(n => ({ ...n, read_at: n.read_at ?? new Date().toISOString() })));
+  };
 
-  async function handleDisablePush() {
-    setPushBusy(true);
-    setPushMessage(null);
-    const result = await disablePush();
-    if (result.ok) {
-      update('push_enabled', false);
-      setPushMessage({ kind: 'ok', text: 'Push Notifications Disabled On This Device.' });
-    } else {
-      setPushMessage({ kind: 'err', text: result.error || 'Could Not Disable Push Notifications.' });
-    }
-    setPushBusy(false);
-  }
-
-  async function handleSendTestPush() {
-    setPushBusy(true);
-    setPushMessage(null);
-    const result = await sendTestPush();
-    if (result.ok) {
-      setPushMessage({ kind: 'ok', text: 'Test Push Sent. Check Your Notifications.' });
-    } else {
-      setPushMessage({ kind: 'err', text: result.error || 'Test Push Did Not Send.' });
-    }
-    setPushBusy(false);
-  }
-
-  async function save() {
+  /* ── Save preferences ─────────────────────────────────────────────────── */
+  const save = async () => {
     setSaving(true);
-    setMessage(null);
+    setSaveMsg(null);
     try {
       const res = await fetch('/api/account/notifications', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          events_order_approved: prefs.events_order_approved,
-          events_order_shipped: prefs.events_order_shipped,
-          events_order_delivered: prefs.events_order_delivered,
-          events_payment_reminder: prefs.events_payment_reminder,
-          push_enabled: prefs.push_enabled,
-          push_events_order: prefs.push_events_order,
-          push_events_messages: prefs.push_events_messages,
-          push_events_marketing: prefs.push_events_marketing,
-        }),
+        body: JSON.stringify(prefs),
       });
-      const data = await res.json();
-      if (!res.ok) {
-        setMessage({ kind: 'err', text: data?.error || 'Save Failed.' });
+      const json = await res.json();
+      if (res.ok) {
+        setSaveMsg({ text: 'Preferences saved.', ok: true });
+        if (json.preferences) setPrefs(json.preferences);
       } else {
-        setMessage({ kind: 'ok', text: 'Preferences Saved.' });
-        if (data?.preferences) {
-          setPrefs({
-            events_order_approved: data.preferences.events_order_approved !== false,
-            events_order_shipped: data.preferences.events_order_shipped !== false,
-            events_order_delivered: data.preferences.events_order_delivered !== false,
-            events_payment_reminder: data.preferences.events_payment_reminder !== false,
-            push_enabled: !!data.preferences.push_enabled,
-            push_events_order: data.preferences.push_events_order !== false,
-            push_events_messages: data.preferences.push_events_messages !== false,
-            push_events_marketing: !!data.preferences.push_events_marketing,
-          });
-        }
+        setSaveMsg({ text: json.error || 'Save failed.', ok: false });
       }
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Save Failed.';
-      setMessage({ kind: 'err', text: msg });
+    } catch {
+      setSaveMsg({ text: 'Network error. Please try again.', ok: false });
     } finally {
       setSaving(false);
+      setTimeout(() => setSaveMsg(null), 4000);
     }
-  }
+  };
+
+  /* ── Push enable/disable ──────────────────────────────────────────────── */
+  const handleEnablePush = async () => {
+    setPushBusy(true);
+    setPushMsg(null);
+    const r = await enablePush();
+    if (r.ok) {
+      setPrefs(p => ({ ...p, push_enabled: true }));
+      setPushMsg({ text: 'Push notifications enabled!', ok: true });
+      setPushPermission('granted');
+    } else {
+      setPushMsg({ text: r.error || 'Failed to enable push.', ok: false });
+    }
+    setPushBusy(false);
+  };
+
+  const handleDisablePush = async () => {
+    setPushBusy(true);
+    setPushMsg(null);
+    const r = await disablePush();
+    if (r.ok) {
+      setPrefs(p => ({ ...p, push_enabled: false }));
+      setPushMsg({ text: 'Push notifications disabled.', ok: true });
+    } else {
+      setPushMsg({ text: r.error || 'Failed to disable push.', ok: false });
+    }
+    setPushBusy(false);
+  };
+
+  const handleTestPush = async () => {
+    setPushBusy(true);
+    setPushMsg(null);
+    const r = await sendTestPush();
+    if (r.ok) {
+      setPushMsg({ text: `Test push sent to ${r.sent ?? 1} device(s).`, ok: true });
+    } else {
+      setPushMsg({ text: r.error || 'Test push failed.', ok: false });
+    }
+    setPushBusy(false);
+  };
+
+  /* ── Filtered items ───────────────────────────────────────────────────── */
+  const filteredItems = filterType === 'all'
+    ? items
+    : filterType === 'unread'
+    ? items.filter(n => !n.read_at)
+    : items.filter(n => n.type === filterType);
+
+  const unreadCount = items.filter(n => !n.read_at).length;
+
+  /* ── Tabs ─────────────────────────────────────────────────────────────── */
+  const tabs = [
+    { key: 'notifications', label: 'Notifications' },
+    { key: 'settings', label: 'Settings' },
+  ] as const;
 
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--black)', padding: '2rem 1rem', paddingTop: 'calc(60px + 2rem)' }}>
-      <div style={{ maxWidth: 640, margin: '0 auto' }}>
-        <header style={{ marginBottom: '1.5rem' }}>
-          <Link
-            href="/dashboard"
-            style={{ fontSize: '0.78rem', color: TEAL, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 6 }}
-          >
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-              <line x1="19" y1="12" x2="5" y2="12" />
-              <polyline points="12 19 5 12 12 5" />
-            </svg>
-            Back To Dashboard
-          </Link>
-          <h1 style={{ marginTop: '0.75rem', fontSize: '1.5rem', color: '#FFFFFF' }}>
-            Notification Preferences
+    <div style={{
+      minHeight: '100vh',
+      background: 'var(--black)',
+      paddingTop: 80,
+      paddingBottom: 60,
+    }}>
+      <div style={{ maxWidth: 680, margin: '0 auto', padding: '0 20px' }}>
+
+        {/* Page title */}
+        <div style={{ marginBottom: 28 }}>
+          <h1 style={{ fontSize: '1.6rem', fontWeight: 800, color: 'var(--white)', margin: 0 }}>
+            Notification Center
           </h1>
-          <p style={{ marginTop: '0.5rem', color: SILVER, fontSize: '0.85rem' }}>
-            Signed In As {userEmail}. Control How Pep Nation Lab Reaches You About Your Orders.
+          <p style={{ color: SILVER, fontSize: '0.85rem', marginTop: 6 }}>
+            Manage your alerts, preferences, and push notifications.
           </p>
-        </header>
+        </div>
 
-        <section className="card" style={{ padding: '1.5rem', background: SURFACE_2, borderRadius: '0.75rem', border: '1px solid rgba(255,255,255,0.06)', marginBottom: '1.25rem' }}>
-          <h2 style={{ fontSize: '1.05rem', color: '#FFFFFF', marginBottom: '0.5rem' }}>
-            Browser Push Notifications
-          </h2>
-          <p style={{ fontSize: '0.8rem', color: SILVER, marginBottom: '1rem' }}>
-            Get Instant Order And Message Alerts In Your Browser, Even When This Tab Is Closed.
-          </p>
-
-          <div style={{ marginBottom: '1rem', fontSize: '0.8rem', color: SILVER }}>
-            <span style={{ color: '#FFFFFF', fontWeight: 600 }}>Status:</span>{' '}
-            {!pushSupported && <span style={{ color: '#F6AD55' }}>Not Supported In This Browser</span>}
-            {pushSupported && pushPermission === 'default' && <span>Not Yet Requested</span>}
-            {pushSupported && pushPermission === 'denied' && <span style={{ color: '#E53E3E' }}>Blocked By Browser Settings</span>}
-            {pushSupported && pushPermission === 'granted' && prefs.push_enabled && <span style={{ color: TEAL }}>Enabled</span>}
-            {pushSupported && pushPermission === 'granted' && !prefs.push_enabled && <span>Granted But Disabled</span>}
-          </div>
-
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '0.75rem' }}>
-            {pushSupported && !prefs.push_enabled && (
-              <button
-                type="button"
-                onClick={handleEnablePush}
-                disabled={pushBusy || pushPermission === 'denied'}
-                style={{
-                  background: TEAL, color: '#050A0F', border: 'none', borderRadius: '0.5rem',
-                  padding: '0.75rem 1.25rem', fontWeight: 700, fontSize: '0.82rem',
-                  cursor: pushBusy || pushPermission === 'denied' ? 'not-allowed' : 'pointer',
-                  opacity: pushBusy || pushPermission === 'denied' ? 0.5 : 1,
-                }}
-              >
-                {pushBusy ? 'Working...' : 'Enable Push Notifications'}
-              </button>
-            )}
-            {pushSupported && prefs.push_enabled && (
-              <>
-                <button
-                  type="button"
-                  onClick={handleDisablePush}
-                  disabled={pushBusy}
-                  style={{
-                    background: 'transparent', color: '#FFFFFF',
-                    border: '1px solid rgba(255,255,255,0.18)', borderRadius: '0.5rem',
-                    padding: '0.75rem 1.25rem', fontWeight: 600, fontSize: '0.82rem',
-                    cursor: pushBusy ? 'not-allowed' : 'pointer', opacity: pushBusy ? 0.5 : 1,
-                  }}
-                >
-                  {pushBusy ? 'Working...' : 'Disable Push Notifications'}
-                </button>
-                <button
-                  type="button"
-                  onClick={handleSendTestPush}
-                  disabled={pushBusy}
-                  style={{
-                    background: 'transparent', color: TEAL,
-                    border: `1px solid ${TEAL}`, borderRadius: '0.5rem',
-                    padding: '0.75rem 1.25rem', fontWeight: 600, fontSize: '0.82rem',
-                    cursor: pushBusy ? 'not-allowed' : 'pointer', opacity: pushBusy ? 0.5 : 1,
-                  }}
-                >
-                  Send Test Push
-                </button>
-              </>
-            )}
-          </div>
-
-          {pushMessage && (
-            <div style={{ fontSize: '0.78rem', color: pushMessage.kind === 'ok' ? TEAL : '#E53E3E', marginBottom: '0.75rem' }}>
-              {pushMessage.text}
-            </div>
-          )}
-
-          <div style={{ marginTop: '1rem', borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: '1rem' }}>
-            <h3 style={{ fontSize: '0.88rem', color: '#FFFFFF', marginBottom: '0.6rem' }}>
-              Send Me A Push When:
-            </h3>
-            {([
-              { key: 'push_events_order', label: 'My Order Status Changes' },
-              { key: 'push_events_messages', label: 'I Receive A New Message' },
-              { key: 'push_events_marketing', label: 'There Are New Products Or Promotions' },
-            ] as const).map((row) => (
-              <label
-                key={row.key}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: '0.75rem',
-                  cursor: 'pointer', padding: '0.4rem 0',
-                  opacity: prefs.push_enabled ? 1 : 0.5,
-                }}
-              >
-                <input
-                  type="checkbox"
-                  disabled={!prefs.push_enabled}
-                  checked={prefs[row.key]}
-                  onChange={(e) => update(row.key, e.target.checked)}
-                  style={{ width: 16, height: 16, accentColor: TEAL, cursor: prefs.push_enabled ? 'pointer' : 'not-allowed' }}
-                />
-                <span style={{ color: '#FFFFFF', fontSize: '0.85rem' }}>{row.label}</span>
-              </label>
-            ))}
-          </div>
-
-          <div style={{ marginTop: '1.5rem', display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
+        {/* Tab bar */}
+        <div style={{
+          display: 'flex',
+          gap: 4,
+          background: SURFACE,
+          border: BORDER,
+          borderRadius: 12,
+          padding: 4,
+          marginBottom: 24,
+        }}>
+          {tabs.map(t => (
             <button
-              type="button"
-              onClick={save}
-              disabled={saving}
+              key={t.key}
+              onClick={() => setActiveTab(t.key)}
               style={{
-                background: TEAL,
-                color: '#050A0F',
+                flex: 1,
+                padding: '9px 0',
                 border: 'none',
-                borderRadius: '0.5rem',
-                padding: '0.75rem 1.5rem',
-                fontWeight: 700,
-                cursor: saving ? 'not-allowed' : 'pointer',
-                opacity: saving ? 0.5 : 1,
-                fontSize: '0.88rem',
+                borderRadius: 10,
+                background: activeTab === t.key ? TEAL : 'transparent',
+                color: activeTab === t.key ? 'var(--black)' : SILVER,
+                fontWeight: activeTab === t.key ? 700 : 500,
+                fontSize: '0.84rem',
+                cursor: 'pointer',
+                transition: 'all 0.18s',
               }}
             >
-              {saving ? 'Saving...' : 'Save Preferences'}
+              {t.label}
+              {t.key === 'notifications' && unreadCount > 0 && (
+                <span style={{
+                  background: activeTab === 'notifications' ? 'rgba(0,0,0,0.3)' : '#E53E3E',
+                  color: '#fff',
+                  fontSize: '0.65rem',
+                  borderRadius: 99,
+                  padding: '1px 6px',
+                  marginLeft: 6,
+                  fontWeight: 800,
+                }}>
+                  {unreadCount}
+                </span>
+              )}
             </button>
-            {message && (
-              <span style={{ fontSize: '0.82rem', color: message.kind === 'ok' ? TEAL : '#E53E3E' }}>
-                {message.text}
-              </span>
-            )}
-          </div>
-        </section>
+          ))}
+        </div>
 
-        <p style={{ marginTop: '1.5rem', fontSize: '0.72rem', color: 'var(--grey-400)', textAlign: 'center' }}>
-          Looking For Account Security? <Link href="/account/security" style={{ color: TEAL }}>Manage Two-Factor Authentication</Link>
-        </p>
+        {/* ══ NOTIFICATIONS TAB ══════════════════════════════════════════════ */}
+        {activeTab === 'notifications' && (
+          <div>
+            {/* Filter bar */}
+            <div style={{
+              display: 'flex',
+              gap: 8,
+              marginBottom: 16,
+              flexWrap: 'wrap',
+              alignItems: 'center',
+            }}>
+              <div style={{ flex: 1, display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                {['all', 'unread', 'order_placed', 'order_approved', 'order_shipped', 'new_message', 'commission_earned', 'new_researcher'].map(f => (
+                  <button
+                    key={f}
+                    onClick={() => setFilterType(f)}
+                    style={{
+                      padding: '5px 12px',
+                      borderRadius: 99,
+                      border: `1px solid ${filterType === f ? TEAL : 'rgba(255,255,255,0.1)'}`,
+                      background: filterType === f ? 'rgba(192,184,168,0.1)' : 'transparent',
+                      color: filterType === f ? TEAL : SILVER,
+                      fontSize: '0.72rem',
+                      cursor: 'pointer',
+                      fontWeight: filterType === f ? 600 : 400,
+                      transition: 'all 0.15s',
+                    }}
+                  >
+                    {f === 'all' ? 'All' : f === 'unread' ? `Unread (${unreadCount})` : (TYPE_ICON[f] + ' ' + (TYPE_LABEL[f] ?? f))}
+                  </button>
+                ))}
+              </div>
+              {unreadCount > 0 && (
+                <button
+                  onClick={markAllRead}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    color: TEAL,
+                    fontSize: '0.75rem',
+                    cursor: 'pointer',
+                    padding: '5px 0',
+                    fontWeight: 600,
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  Mark all read
+                </button>
+              )}
+            </div>
+
+            {/* List */}
+            <div style={{
+              background: SURFACE,
+              border: BORDER,
+              borderRadius: 14,
+              overflow: 'hidden',
+            }}>
+              {loadingList ? (
+                <div style={{ padding: '40px 20px', textAlign: 'center', color: SILVER, fontSize: '0.85rem' }}>
+                  Loading notifications…
+                </div>
+              ) : filteredItems.length === 0 ? (
+                <div style={{ padding: '48px 20px', textAlign: 'center' }}>
+                  <div style={{ fontSize: '2.5rem', marginBottom: 12 }}>🔔</div>
+                  <div style={{ color: SILVER, fontSize: '0.88rem', fontWeight: 600 }}>
+                    {filterType === 'unread' ? 'All caught up!' : 'No notifications yet'}
+                  </div>
+                  <div style={{ color: 'rgba(192,184,168,0.35)', fontSize: '0.75rem', marginTop: 6 }}>
+                    {filterType === 'unread'
+                      ? 'You have no unread notifications.'
+                      : 'Orders, messages, and updates will appear here.'}
+                  </div>
+                </div>
+              ) : (
+                filteredItems.map((n, i) => (
+                  <div
+                    key={n.id}
+                    style={{
+                      display: 'flex',
+                      gap: 14,
+                      padding: '14px 18px',
+                      borderBottom: i < filteredItems.length - 1 ? '1px solid rgba(255,255,255,0.05)' : 'none',
+                      background: !n.read_at ? 'rgba(192,184,168,0.03)' : 'transparent',
+                      transition: 'background 0.15s',
+                      alignItems: 'flex-start',
+                    }}
+                  >
+                    {/* Icon */}
+                    <div style={{
+                      width: 40,
+                      height: 40,
+                      borderRadius: '50%',
+                      background: !n.read_at ? 'rgba(192,184,168,0.1)' : 'rgba(255,255,255,0.04)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: '1.15rem',
+                      flexShrink: 0,
+                    }}>
+                      {TYPE_ICON[n.type] ?? '🔔'}
+                    </div>
+
+                    {/* Content */}
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                        <span style={{
+                          color: !n.read_at ? 'var(--white)' : 'rgba(255,255,255,0.65)',
+                          fontSize: '0.87rem',
+                          fontWeight: !n.read_at ? 600 : 400,
+                        }}>
+                          {n.title}
+                        </span>
+                        {!n.read_at && (
+                          <span style={{
+                            width: 6,
+                            height: 6,
+                            borderRadius: '50%',
+                            background: TEAL,
+                            flexShrink: 0,
+                          }} />
+                        )}
+                        <span style={{ color: 'rgba(192,184,168,0.3)', fontSize: '0.68rem', marginLeft: 'auto' }}>
+                          {timeAgo(n.created_at)}
+                        </span>
+                      </div>
+                      {n.body && (
+                        <div style={{ color: SILVER, fontSize: '0.78rem', marginTop: 3, lineHeight: 1.45 }}>
+                          {n.body}
+                        </div>
+                      )}
+                      <div style={{ display: 'flex', gap: 10, marginTop: 8 }}>
+                        {n.url && (
+                          <Link
+                            href={n.url}
+                            style={{ color: TEAL, fontSize: '0.74rem', textDecoration: 'none', fontWeight: 600 }}
+                            onClick={() => !n.read_at && markRead(n.id)}
+                          >
+                            View →
+                          </Link>
+                        )}
+                        {!n.read_at && (
+                          <button
+                            onClick={() => markRead(n.id)}
+                            style={{
+                              background: 'none',
+                              border: 'none',
+                              color: 'rgba(192,184,168,0.4)',
+                              fontSize: '0.7rem',
+                              cursor: 'pointer',
+                              padding: 0,
+                            }}
+                          >
+                            Mark read
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* ══ SETTINGS TAB ═══════════════════════════════════════════════════ */}
+        {activeTab === 'settings' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+
+            {/* In-app event prefs */}
+            <section style={{ background: SURFACE, border: BORDER, borderRadius: 14, padding: '20px 22px' }}>
+              <h2 style={{ fontSize: '1rem', color: 'var(--white)', fontWeight: 700, margin: '0 0 4px' }}>
+                In-App Notifications
+              </h2>
+              <p style={{ color: SILVER, fontSize: '0.78rem', marginBottom: 18, marginTop: 4 }}>
+                Control which events appear in your notification bell.
+              </p>
+              {([
+                { key: 'events_order_approved', label: 'Order Approved', desc: 'When your order gets approved' },
+                { key: 'events_order_shipped',  label: 'Order Shipped',  desc: 'When your order ships with tracking' },
+                { key: 'events_order_delivered',label: 'Order Delivered',desc: 'When your order is delivered' },
+                { key: 'events_payment_reminder',label: 'Payment Reminders', desc: 'Outstanding balance reminders' },
+              ] as const).map(row => (
+                <label
+                  key={row.key}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 14,
+                    padding: '10px 0',
+                    borderBottom: '1px solid rgba(255,255,255,0.05)',
+                    cursor: 'pointer',
+                  }}
+                >
+                  <input
+                    type="checkbox"
+                    checked={prefs[row.key]}
+                    onChange={e => setPrefs(p => ({ ...p, [row.key]: e.target.checked }))}
+                    style={{ width: 17, height: 17, accentColor: TEAL, cursor: 'pointer' }}
+                  />
+                  <div>
+                    <div style={{ color: 'var(--white)', fontSize: '0.85rem', fontWeight: 500 }}>{row.label}</div>
+                    <div style={{ color: SILVER, fontSize: '0.72rem' }}>{row.desc}</div>
+                  </div>
+                </label>
+              ))}
+            </section>
+
+            {/* Browser push */}
+            <section style={{ background: SURFACE, border: BORDER, borderRadius: 14, padding: '20px 22px' }}>
+              <h2 style={{ fontSize: '1rem', color: 'var(--white)', fontWeight: 700, margin: '0 0 4px' }}>
+                Browser Push Notifications
+              </h2>
+              <p style={{ color: SILVER, fontSize: '0.78rem', marginBottom: 16, marginTop: 4 }}>
+                Receive alerts even when the browser tab is closed or minimized.
+              </p>
+
+              {/* Status */}
+              <div style={{ marginBottom: 14, fontSize: '0.8rem' }}>
+                <span style={{ color: 'var(--white)', fontWeight: 600 }}>Status: </span>
+                {!pushSupported && <span style={{ color: '#F6AD55' }}>Not supported in this browser</span>}
+                {pushSupported && pushPermission === 'default' && <span style={{ color: SILVER }}>Not yet enabled</span>}
+                {pushSupported && pushPermission === 'denied' && <span style={{ color: '#E53E3E' }}>Blocked — check browser settings</span>}
+                {pushSupported && pushPermission === 'granted' && prefs.push_enabled && <span style={{ color: TEAL }}>✓ Active</span>}
+                {pushSupported && pushPermission === 'granted' && !prefs.push_enabled && <span style={{ color: SILVER }}>Granted but disabled</span>}
+              </div>
+
+              {/* Enable/disable buttons */}
+              <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 16 }}>
+                {pushSupported && !prefs.push_enabled && (
+                  <button
+                    onClick={handleEnablePush}
+                    disabled={pushBusy || pushPermission === 'denied'}
+                    style={{
+                      background: TEAL, color: 'var(--black)', border: 'none',
+                      borderRadius: 8, padding: '9px 18px', fontWeight: 700,
+                      fontSize: '0.82rem', cursor: pushBusy ? 'wait' : 'pointer',
+                      opacity: (pushBusy || pushPermission === 'denied') ? 0.5 : 1,
+                    }}
+                  >
+                    {pushBusy ? 'Working…' : 'Enable Push Notifications'}
+                  </button>
+                )}
+                {pushSupported && prefs.push_enabled && (
+                  <>
+                    <button
+                      onClick={handleDisablePush}
+                      disabled={pushBusy}
+                      style={{
+                        background: 'transparent', color: 'var(--white)',
+                        border: '1px solid rgba(255,255,255,0.2)', borderRadius: 8,
+                        padding: '9px 18px', fontWeight: 600, fontSize: '0.82rem',
+                        cursor: pushBusy ? 'wait' : 'pointer', opacity: pushBusy ? 0.5 : 1,
+                      }}
+                    >
+                      {pushBusy ? 'Working…' : 'Disable Push'}
+                    </button>
+                    <button
+                      onClick={handleTestPush}
+                      disabled={pushBusy}
+                      style={{
+                        background: 'transparent', color: TEAL,
+                        border: `1px solid ${TEAL}`, borderRadius: 8,
+                        padding: '9px 18px', fontWeight: 600, fontSize: '0.82rem',
+                        cursor: pushBusy ? 'wait' : 'pointer', opacity: pushBusy ? 0.5 : 1,
+                      }}
+                    >
+                      Send Test Push
+                    </button>
+                  </>
+                )}
+              </div>
+              {pushMsg && (
+                <div style={{ fontSize: '0.78rem', color: pushMsg.ok ? TEAL : '#E53E3E', marginBottom: 12 }}>
+                  {pushMsg.text}
+                </div>
+              )}
+
+              {/* Push event prefs */}
+              {prefs.push_enabled && (
+                <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: 14 }}>
+                  <h3 style={{ fontSize: '0.85rem', color: 'var(--white)', fontWeight: 600, marginBottom: 10 }}>
+                    Send Push For:
+                  </h3>
+                  {([
+                    { key: 'push_events_order', label: 'Order status changes' },
+                    { key: 'push_events_messages', label: 'New messages' },
+                    { key: 'push_events_marketing', label: 'Promotions & new products' },
+                  ] as const).map(row => (
+                    <label key={row.key} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '6px 0', cursor: 'pointer' }}>
+                      <input
+                        type="checkbox"
+                        checked={prefs[row.key]}
+                        onChange={e => setPrefs(p => ({ ...p, [row.key]: e.target.checked }))}
+                        style={{ width: 16, height: 16, accentColor: TEAL, cursor: 'pointer' }}
+                      />
+                      <span style={{ color: 'var(--white)', fontSize: '0.83rem' }}>{row.label}</span>
+                    </label>
+                  ))}
+                </div>
+              )}
+            </section>
+
+            {/* Save button */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+              <button
+                onClick={save}
+                disabled={saving}
+                style={{
+                  background: TEAL, color: 'var(--black)', border: 'none',
+                  borderRadius: 10, padding: '11px 28px', fontWeight: 700,
+                  fontSize: '0.88rem', cursor: saving ? 'wait' : 'pointer',
+                  opacity: saving ? 0.5 : 1,
+                }}
+              >
+                {saving ? 'Saving…' : 'Save Preferences'}
+              </button>
+              {saveMsg && (
+                <span style={{ fontSize: '0.82rem', color: saveMsg.ok ? TEAL : '#E53E3E' }}>
+                  {saveMsg.text}
+                </span>
+              )}
+            </div>
+
+            <p style={{ fontSize: '0.7rem', color: 'rgba(192,184,168,0.3)', textAlign: 'center' }}>
+              Need to change your password?{' '}
+              <Link href="/account/security" style={{ color: TEAL }}>Account Security</Link>
+            </p>
+          </div>
+        )}
       </div>
     </div>
   );

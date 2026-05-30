@@ -50,5 +50,5 @@ export default async function NotificationsPage() {
       }
     : DEFAULT_PREFS;
 
-  return <NotificationsClient initialPrefs={prefs} userEmail={user.email ?? ''} />;
+  return <NotificationsClient initialPrefs={prefs} />;
 }

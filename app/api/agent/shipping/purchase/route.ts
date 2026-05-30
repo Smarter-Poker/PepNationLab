@@ -17,8 +17,9 @@ import { requireAgent } from '@/lib/admin-auth';
 import { assertSameOrigin } from '@/lib/csrf';
 import { pickOne } from '@/lib/relations';
 import { purchaseLabelForOrder } from '@/lib/shippo';
-import { enqueueOrderPush } from '@/lib/push-enqueue';
+import { enqueueOrderPush, shortOrderId } from '@/lib/push-enqueue';
 import { enqueueWebhook, fetchOrderForWebhook } from '@/lib/webhook-dispatch';
+import { notifyOrderShipped } from '@/lib/notify';
 
 export async function POST(req: NextRequest) {
   const csrf = assertSameOrigin(req);
@@ -61,16 +62,15 @@ export async function POST(req: NextRequest) {
 
     const { trackingNumber, labelUrl } = result;
 
-    // Fire-and-forget push notification — never blocks shipping.
+    // Fire-and-forget in-app + push notification — never blocks shipping.
     if (order.buyer_id) {
-      try {
-        await enqueueOrderPush(supabase, {
-          userId: order.buyer_id,
-          orderId,
-          event: 'order_shipped',
-          tracking: trackingNumber,
-        });
-      } catch { /* push failures must not break shipping */ }
+      void (async () => {
+        try {
+          const short = shortOrderId(orderId);
+          await notifyOrderShipped(supabase, order.buyer_id, orderId, short, trackingNumber ?? undefined);
+          await enqueueOrderPush(supabase, { userId: order.buyer_id, orderId, event: 'order_shipped', tracking: trackingNumber });
+        } catch { /* notification failures must not break shipping */ }
+      })();
     }
 
     // Fire-and-forget webhook: order.shipped

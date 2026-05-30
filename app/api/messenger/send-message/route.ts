@@ -7,6 +7,7 @@ import { SendMessageSchema } from '@/lib/messenger/schemas';
 import { sanitizeMessageText } from '@/lib/messenger/sanitize';
 import { hasAdminMention, recordAdminMention } from '@/lib/messenger/admin-mentions';
 import { enqueuePush } from '@/lib/push-enqueue';
+import { notifyNewMessage } from '@/lib/notify';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -150,7 +151,7 @@ export async function POST(req: NextRequest) {
     });
   }
 
-  // Fire-and-forget: push notification to all OTHER conversation participants.
+  // Fire-and-forget: in-app notification + push to all OTHER conversation participants.
   // Never blocks the response — notification side-effects must not slow sends.
   void (async () => {
     try {
@@ -175,25 +176,27 @@ export async function POST(req: NextRequest) {
       const isMedia = !cleanText && parsed.data.mediaUrl;
       const rawBody = cleanText ?? (isMedia ? '📎 Media' : 'New Message');
       const body = rawBody.length > 120 ? `${rawBody.slice(0, 117)}…` : rawBody;
-      const title = senderName;
       const url = `/messenger?conv=${parsed.data.conversationId}`;
       const tag = `msg-${parsed.data.conversationId}`;
 
-      // Enqueue for each recipient — enqueuePush handles opt-out checks
+      // Enqueue in-app notification + push for each recipient
       await Promise.all(
-        participants.map((p: { user_id: string }) =>
-          enqueuePush(svc, {
+        participants.map(async (p: { user_id: string }) => {
+          // In-app notification (shows in bell immediately via Realtime)
+          await notifyNewMessage(svc, p.user_id, senderName, rawBody);
+          // Web push (background, requires subscription + permission)
+          await enqueuePush(svc, {
             userId: p.user_id,
-            title,
+            title: senderName,
             body,
             url,
             event: 'message',
             tag,
-          })
-        )
+          });
+        })
       );
     } catch {
-      // Never propagate — push is best-effort
+      // Never propagate — notifications are best-effort
     }
   })();
 

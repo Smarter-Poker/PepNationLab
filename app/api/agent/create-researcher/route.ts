@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient, createAdminClient } from '@/lib/supabase/server';
 import { sanitizeUsername } from '@/lib/usernames';
 import { assertSameOrigin } from '@/lib/csrf';
+import { notifyNewResearcher } from '@/lib/notify';
 
 // POST /api/agent/create-researcher
 export async function POST(req: NextRequest) {
@@ -119,6 +120,9 @@ export async function POST(req: NextRequest) {
       { status: 500 }
     );
   }
+
+  // Fire-and-forget: notify the agent that a new researcher joined their team
+  void notifyNewResearcher(admin, user.id, full_name).catch(() => { /* ignore */ });
 
   return NextResponse.json({
     success: true,

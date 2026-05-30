@@ -7,6 +7,7 @@ import { rateLimit } from '@/lib/rate-limit';
 import { computeTaxQuote } from '@/lib/tax';
 import { enqueueWebhook, fetchOrderForWebhook } from '@/lib/webhook-dispatch';
 import { enqueuePush, shortOrderId } from '@/lib/push-enqueue';
+import { notifyOrderPlaced, notify } from '@/lib/notify';
 
 
 const CheckoutSchema = z.object({
@@ -833,7 +834,7 @@ export async function POST(request: NextRequest) {
       } catch { /* webhook errors must not block the order */ }
     })();
 
-    // Fire-and-forget: push notifications for new order.
+    // Fire-and-forget: in-app + push notifications for new order.
     void (async () => {
       try {
         const short = shortOrderId(order.id);
@@ -845,6 +846,9 @@ export async function POST(request: NextRequest) {
             .eq('id', user.id)
             .maybeSingle();
           const buyerName = buyerProfile?.full_name || 'A Researcher';
+          // In-app notification for agent
+          await notifyOrderPlaced(serviceSupabase, agentProfile.id, order.id, short, buyerName);
+          // Web push for agent
           await enqueuePush(serviceSupabase, {
             userId: agentProfile.id,
             title: `New Order #${short}`,
@@ -855,7 +859,14 @@ export async function POST(request: NextRequest) {
             tag: `new-order-${order.id}`,
           });
         }
-        // 2. Confirm to the researcher that their order was placed
+        // 2. In-app + push confirm to researcher
+        await notify(serviceSupabase, {
+          userId: user.id,
+          type: 'order_placed',
+          title: `Order #${short} Placed`,
+          body: 'Your order has been placed. You will be notified when it is approved.',
+          url: `/orders/${order.id}`,
+        });
         await enqueuePush(serviceSupabase, {
           userId: user.id,
           title: `Order #${short} Placed`,
@@ -866,7 +877,7 @@ export async function POST(request: NextRequest) {
           tag: `order-placed-${order.id}`,
         });
       } catch {
-        // Never propagate — push is best-effort
+        // Never propagate — notifications are best-effort
       }
     })();
 
