@@ -288,6 +288,10 @@ export default function AgentDashboardClient({
       setDisplayName(data.display_name);
       setSlug(data.slug);
       setTagline(data.tagline ?? '');
+      setZelleHandle(data.payment_handles?.zelle ?? '');
+      setCashappHandle(data.payment_handles?.cashapp ?? '');
+      setVenmoHandle(data.payment_handles?.venmo ?? '');
+      setApplePayHandle(data.payment_handles?.apple_pay ?? '');
       setSuccess('Your Storefront White-Label Profile Has Been Successfully Activated!');
     } catch (err: any) {
       setError(err.message ?? 'An Error Occurred During Setup.');
