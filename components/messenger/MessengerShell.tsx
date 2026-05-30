@@ -338,7 +338,7 @@ export default function MessengerShell({ userId }: Props) {
       <div
         style={{
           display: 'flex',
-          height: '100dvh',
+          height: '100%',
           border: '1px solid var(--surface-3, #1D2D3E)',
           overflow: 'hidden',
           background: 'var(--surface-1, #0F1923)',

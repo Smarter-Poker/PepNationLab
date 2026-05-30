@@ -460,7 +460,7 @@ export default function AgentDashboardClient({
     { id: 'Accounting', label: 'Accounting', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" /></svg> },
     { id: 'Commissions', label: 'Commissions', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="1" x2="12" y2="23" /><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" /></svg> },
     { id: 'Subscriptions', label: 'Subscriptions', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><polyline points="12 8 12 12 14 14" /></svg> },
-    { id: 'Sales & Carts', label: 'Sales & Charts', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17" /><polyline points="16 7 22 7 22 13" /></svg> },
+    { id: 'Sales & Carts', label: 'Sales & Carts', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17" /><polyline points="16 7 22 7 22 13" /></svg> },
     { id: 'Researchers', label: 'Researchers', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /></svg> },
     ...(userProfile.is_super_agent ? [{ id: 'My Sub-Agents', label: 'My Sub-Agents', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /></svg> }] : []),
     { id: 'Coupons', label: 'Coupons', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z" /><line x1="7" y1="7" x2="7.01" y2="7" /></svg> },
@@ -984,12 +984,22 @@ export default function AgentDashboardClient({
             </div>
 
             {/* Change Password */}
-            <div className="card-metal" style={{ padding: 'var(--space-6)' }}>
+            <div className="card-metal" style={{ padding: 'var(--space-6)', marginBottom: 'var(--space-6)' }}>
               <h4 style={{ marginBottom: 'var(--space-4)', color: 'var(--teal)' }}>Change Password</h4>
               <SettingsPasswordForm />
             </div>
+
+            {/* Notification Preferences */}
+            <div className="card-metal" style={{ padding: 'var(--space-6)' }}>
+              <h4 style={{ marginBottom: 'var(--space-2)', color: 'var(--teal)' }}>Notification Preferences</h4>
+              <p style={{ fontSize: '0.82rem', color: 'var(--grey-400)', marginBottom: 'var(--space-4)', marginTop: 0 }}>
+                Manage Push Notifications For New Messages When The Tab Is Hidden.
+              </p>
+              <NotificationPrefsPanel />
+            </div>
           </div>
         )}
+
 
       </div>
       </div>
@@ -1055,6 +1065,137 @@ export default function AgentDashboardClient({
         </div>
       )}
 
+    </div>
+  );
+}
+
+function NotificationPrefsPanel() {
+  const [permission, setPermission] = useState<NotificationPermission | 'unsupported'>('default');
+  const [browserPush, setBrowserPush] = useState<boolean | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [loaded, setLoaded] = useState(false);
+
+  useEffect(() => {
+    if (typeof Notification === 'undefined') {
+      setPermission('unsupported');
+      setLoaded(true);
+      return;
+    }
+    setPermission(Notification.permission);
+    // Load saved pref from DB
+    fetch('/api/messenger/notification-prefs', { cache: 'no-store' })
+      .then(r => r.json())
+      .then((j: { prefs?: { browser_push?: boolean | null } }) => {
+        setBrowserPush(Boolean(j.prefs?.browser_push));
+        setLoaded(true);
+      })
+      .catch(() => setLoaded(true));
+  }, []);
+
+  async function handleEnable() {
+    if (typeof Notification === 'undefined') return;
+    setSaving(true);
+    try {
+      const result = await Notification.requestPermission();
+      setPermission(result);
+      if (result === 'granted') {
+        const res = await fetch('/api/messenger/notification-prefs', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ browserPush: true }),
+        });
+        if (res.ok) {
+          setBrowserPush(true);
+          try {
+            window.dispatchEvent(new CustomEvent('messenger:prefs-updated', { detail: { browser_push: true } }));
+          } catch { /* non-fatal */ }
+        }
+      }
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleDisable() {
+    setSaving(true);
+    try {
+      const res = await fetch('/api/messenger/notification-prefs', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ browserPush: false }),
+      });
+      if (res.ok) {
+        setBrowserPush(false);
+        try {
+          window.dispatchEvent(new CustomEvent('messenger:prefs-updated', { detail: { browser_push: false } }));
+        } catch { /* non-fatal */ }
+      }
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  if (!loaded) {
+    return <p style={{ fontSize: '0.82rem', color: 'var(--grey-400)' }}>Loading...</p>;
+  }
+
+  if (permission === 'unsupported') {
+    return <p style={{ fontSize: '0.82rem', color: 'var(--grey-400)' }}>Push Notifications Are Not Supported In This Browser.</p>;
+  }
+
+  if (permission === 'denied') {
+    return (
+      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+        <div style={{ width: 10, height: 10, borderRadius: '50%', background: 'var(--red)', marginTop: 4, flexShrink: 0 }} />
+        <div>
+          <p style={{ fontSize: '0.85rem', color: 'var(--white)', margin: '0 0 4px', fontWeight: 600 }}>Push Notifications Blocked</p>
+          <p style={{ fontSize: '0.78rem', color: 'var(--grey-400)', margin: 0 }}>
+            Your Browser Has Blocked Notifications For This Site. To Enable Them, Go To Your Browser Settings And Allow Notifications For This Domain.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  const isEnabled = permission === 'granted' && browserPush === true;
+
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        <div style={{
+          width: 10, height: 10, borderRadius: '50%', flexShrink: 0,
+          background: isEnabled ? 'var(--teal)' : 'var(--grey-500)',
+        }} />
+        <div>
+          <p style={{ fontSize: '0.85rem', color: 'var(--white)', margin: '0 0 2px', fontWeight: 600 }}>
+            {isEnabled ? 'Push Notifications Enabled' : 'Push Notifications Disabled'}
+          </p>
+          <p style={{ fontSize: '0.75rem', color: 'var(--grey-400)', margin: 0 }}>
+            {isEnabled ? 'You Will Receive Alerts When A New Message Arrives.' : 'Enable To Get Alerts When The Tab Is Hidden.'}
+          </p>
+        </div>
+      </div>
+      {isEnabled ? (
+        <button
+          type="button"
+          onClick={handleDisable}
+          disabled={saving}
+          className="btn btn-secondary btn-sm"
+          style={{ flexShrink: 0, minWidth: 90 }}
+        >
+          {saving ? 'Saving...' : 'Disable'}
+        </button>
+      ) : (
+        <button
+          type="button"
+          onClick={handleEnable}
+          disabled={saving}
+          className="btn btn-primary btn-sm"
+          style={{ flexShrink: 0, minWidth: 90 }}
+        >
+          {saving ? 'Saving...' : 'Enable'}
+        </button>
+      )}
     </div>
   );
 }

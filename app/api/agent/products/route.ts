@@ -212,9 +212,11 @@ export async function PATCH(req: NextRequest) {
     custom_name: custom_name !== undefined ? (custom_name || null) : undefined,
     custom_description: custom_description !== undefined ? (custom_description || null) : undefined,
     custom_image_url: custom_image_url !== undefined ? (custom_image_url || null) : undefined,
-    is_visible: is_visible ?? true,
-    is_on_sale: is_on_sale ?? false,
-    sale_price: sale_price ?? null,
+    // Only write is_visible/is_on_sale/sale_price when the client explicitly sent them.
+    // Using `?? default` would overwrite existing DB values when the key is absent from the body.
+    is_visible: is_visible !== undefined ? Boolean(is_visible) : undefined,
+    is_on_sale: is_on_sale !== undefined ? Boolean(is_on_sale) : undefined,
+    sale_price: sale_price !== undefined ? (sale_price ?? null) : undefined,
     updated_at: new Date().toISOString(),
   };
 

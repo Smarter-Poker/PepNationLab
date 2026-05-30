@@ -157,7 +157,17 @@ export async function isBlocked(blockerId: string, blockedId: string): Promise<b
 export async function isBlockedEither(a: string, b: string): Promise<boolean> {
   if (a === b) return false;
   const svc = await createServiceClient();
-  const { data } = await svc.rpc('fn_is_blocked_either', { p_a: a, p_b: b });
+  const { data, error } = await svc.rpc('fn_is_blocked_either', { p_a: a, p_b: b });
+  if (error) {
+    // Fail-closed: if the block-check RPC fails, treat as blocked to prevent
+    // a DB error from silently permitting communication between blocked users.
+    console.error('[messenger] isBlockedEither rpc failed — failing closed', {
+      a, b,
+      code: (error as { code?: string }).code,
+      message: error.message,
+    });
+    return true;
+  }
   return Boolean(data);
 }
 

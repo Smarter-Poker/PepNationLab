@@ -174,10 +174,13 @@ async function processOne(
     apById.set(String(ap.id), ap);
   }
 
-  // Fetch agent tier + multipliers so we can compute the correct per-pack
-  // cost (what the agent owes PNL) as unit_cost_price.
-  // Subscriptions use a PACK unit model: quantity = # of 10-vial packs,
-  // unit_retail_price = per-pack retail, unit_cost_price = per-pack agent cost.
+  // Fetch agent tier + multipliers so we can compute per-vial cost (unit_cost_price).
+  // IMPORTANT: All per-vial prices must match the convention used by orders/route.ts
+  // and orders/new/route.ts:
+  //   unit_retail_price = ap.retail_price / 10  (per-vial retail)
+  //   unit_cost_price   = base_cost × mult / 10 (per-vial agent cost)
+  // The approve/accounting routes multiply both by quantity (# vials) to compute
+  // revenue and COGS — so both MUST be per-vial to stay dimensionally consistent.
   const { data: agentProfile } = await service
     .from('profiles')
     .select('tier')
@@ -208,7 +211,10 @@ async function processOne(
     const ap = apById.get(String(snap.agent_product_id));
     const prod = productById.get(String(ap.product_id));
     const qty = Number(snap.quantity);
-    const unitPrice = Number(ap.retail_price ?? 0);
+    // Divide by 10: ap.retail_price is stored as a 10-pack price in the DB.
+    // orders/route.ts (line 290) and orders/new/route.ts (line 72) both divide
+    // by 10 before writing unit_retail_price — we must match that convention.
+    const unitRetailPrice = Math.round((Number(ap.retail_price ?? 0) / 10) * 100) / 100;
     const baseCost = Number(prod?.base_cost ?? 0);
 
     // Resolve per-product tier multiplier override if one exists.
@@ -229,14 +235,14 @@ async function processOne(
     // Storing the per-pack value would inflate COGS by 10×.
     const agentCostPerVial = Math.round((baseCost * effectiveMult / 10) * 100) / 100;
 
-    subtotal += unitPrice * qty;
+    subtotal += unitRetailPrice * qty;
     orderItems.push({
       agent_product_id: ap.id,
       product_id: ap.product_id,
       product_name: ap.custom_name || prod?.name || 'Item',
       quantity: qty,
-      unit_retail_price: unitPrice,
-      unit_cost_price: agentCostPerVial,   // per-vial cost (base_cost × mult ÷ 10)
+      unit_retail_price: unitRetailPrice,  // per-vial (ap.retail_price ÷ 10)
+      unit_cost_price: agentCostPerVial,   // per-vial (base_cost × mult ÷ 10)
       unit_super_agent_cost: null,
     });
   }
@@ -287,9 +293,15 @@ async function processOne(
   }));
   const { error: itemsError } = await service.from('order_items').insert(itemsToInsert);
   if (itemsError) {
-    // We already created the order; mark a failed run but leave the order
-    // intact so the agent can manually resolve.
-    await recordFailedRun(service, sub, `Order Created But Items Insert Failed: ${itemsError.message}`);
+    // Order exists but items failed — the order is in an invalid state.
+    // Mark a failed run and return 'failed' so the subscription schedule is NOT
+    // advanced. The orphaned order header is left intact for manual resolution.
+    await recordFailedRun(
+      service,
+      sub,
+      `Order ${orderId} Created But Items Insert Failed: ${itemsError.message}`
+    );
+    return 'failed';
   }
 
   // Log the run, link the order, and roll the schedule forward.

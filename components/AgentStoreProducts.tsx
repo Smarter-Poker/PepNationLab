@@ -370,7 +370,7 @@ export default function AgentStoreProducts({ agentId }: { agentId: string }) {
                             className="form-input"
                             style={{ paddingLeft: 26 }}
                             placeholder={(Number(editForm.retail_price) / 10).toFixed(2)}
-                            value={Number((editForm as any).retail_price) > 0 ? (Number((editForm as any).retail_price) / 10).toFixed(2) : ''}
+                            value={Number((editForm as any).retail_price) >= 0 ? (Number((editForm as any).retail_price) / 10).toFixed(2) : ''}
                             onChange={e => {
                               const perVial = parseFloat(e.target.value) || 0;
                               const per10 = perVial * 10;
@@ -574,7 +574,7 @@ export default function AgentStoreProducts({ agentId }: { agentId: string }) {
                                   className="form-input"
                                   style={{ paddingLeft: 26 }}
                                   placeholder={(Number(editForm.retail_price) / 10).toFixed(2)}
-                                  value={Number((editForm as any).retail_price) > 0 ? (Number((editForm as any).retail_price) / 10).toFixed(2) : ''}
+                                  value={Number((editForm as any).retail_price) >= 0 ? (Number((editForm as any).retail_price) / 10).toFixed(2) : ''}
                                   onChange={e => {
                                     const perVial = parseFloat(e.target.value) || 0;
                                     const per10 = perVial * 10;

@@ -67,7 +67,7 @@ export async function GET(req: NextRequest) {
     
     const mergedData = products?.map(prod => {
       const base = Number(prod.base_cost);
-      const mult = overrideMap[prod.id] ?? tierMultipliers[tier] ?? 7.0;
+      const mult = overrideMap[prod.id] ?? tierMultipliers[tier] ?? 1.7;
       const exactCost = base * mult;
       
       const priceRow = pricingMap.get(prod.id);
@@ -101,8 +101,11 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const { product_id, baseline_cost, bulk_baseline_cost, bulk_threshold } = body;
 
-    if (!product_id || typeof baseline_cost !== 'number') {
-      return NextResponse.json({ error: 'product_id and baseline_cost are required' }, { status: 400 });
+    if (!product_id || typeof baseline_cost !== 'number' || baseline_cost <= 0) {
+      return NextResponse.json(
+        { error: 'product_id is required and baseline_cost must be a positive number greater than zero.' },
+        { status: 400 }
+      );
     }
 
     // Verify caller is a Super Agent
