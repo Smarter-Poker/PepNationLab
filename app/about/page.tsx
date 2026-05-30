@@ -139,9 +139,11 @@ export default function AboutPage() {
               by the FDA.
             </p>
             <p style={{ fontSize: '0.9rem', color: 'var(--silver)', lineHeight: 1.8, margin: 0 }}>
-              Pep Nation Lab and its agents never sell BAC water, needles, syringes, or any
-              injection or delivery devices. Compliance is not a formality for us — it is the
-              foundation the platform is built on.
+              Pep Nation Lab Strictly Prohibits The Sale Of Needles, Syringes, Or Any Medical
+              Injection Delivery Devices By Our Company Or Our Agents. We Only Provide
+              Research-Grade Peptides And Authorized Laboratory Diluents Exclusively For In
+              Vitro Testing. Compliance is not a formality for us — it is the foundation the
+              platform is built on.
             </p>
           </div>
         </div>

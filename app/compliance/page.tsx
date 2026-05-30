@@ -34,7 +34,7 @@ export default function CompliancePage() {
           {
             heading: 'Prohibited Products Policy',
             body: [
-              'Pep Nation Lab does not sell bacteriostatic water, needles, syringes, or any injection or delivery device. Products flagged as banned are permanently blocked from sale at the database level and cannot be listed by any agent.',
+              'Pep Nation Lab Strictly Prohibits The Sale Of Needles, Syringes, Or Any Medical Injection Delivery Devices By Our Company Or Our Agents. We Only Provide Research-Grade Peptides And Authorized Laboratory Diluents Exclusively For In Vitro Testing. Products flagged as prohibited are permanently blocked from sale at the database level and cannot be listed by any agent.',
             ],
           },
           {
