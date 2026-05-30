@@ -189,13 +189,14 @@ export default async function proxy(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  // ─── MFA Enforcement (admin + super_agent) ────────────────────────────────
-  // Roles that must have a verified TOTP factor before they can touch the
-  // rest of the platform. The enrollment UI lives at /account/security and
-  // is whitelisted below so the user can actually enroll.
-  const mfaRequiredRoles = new Set(['admin', 'super_agent']);
+  // ─── MFA Enforcement (super_agent only) ────────────────────────────────────
+  // Admin (business owner) is intentionally exempt — only super_agent accounts
+  // require a verified TOTP factor. Removing 'admin' here prevents the owner
+  // from being locked out of their own platform.
+  const mfaRequiredRoles = new Set(['super_agent']);
   if (profile?.role && mfaRequiredRoles.has(profile.role)) {
     const isMfaExempt =
+      pathname === '/' ||
       pathname === '/account/security' ||
       pathname.startsWith('/account/security/') ||
       pathname.startsWith('/api/auth/') ||
