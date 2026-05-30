@@ -61,19 +61,26 @@ export async function GET(req: NextRequest) {
   // ── Augment each product with agent_cost ────────────────────────────────────────────────────
   // agent_cost = base_cost × effective_multiplier (per-product override wins
   // over global tier multiplier). This is what the agent pays PNL per 10 vials.
+  // IMPORTANT: base_cost_raw and effective_multiplier are computed internally but
+  // must NOT be returned to the agent — they expose the wholesale cost. Only
+  // the computed agent_cost (what they pay) is returned.
   const augmented = (data ?? []).map(ap => {
     const baseCost = (ap.products as any)?.base_cost != null
       ? Number((ap.products as any).base_cost)
       : 0;
     const effectiveMultiplier = overrideMap[ap.product_id as string] ?? globalMultiplier;
     const agentCost = Math.round(baseCost * effectiveMultiplier * 100) / 100;
+
+    // Strip base_cost from the nested products object before sending to client.
+    const { base_cost: _stripped, ...safeProducts } = (ap.products as any) ?? {};
+    void _stripped; // suppress unused-var lint
+
     return {
       ...ap,
+      products: safeProducts,
       agent_cost: baseCost > 0 ? agentCost : null,
       agent_tier: tier,
-      // Diagnostic fields — surfaced in catalog UI to help spot wrong base_cost or overrides
-      base_cost_raw: baseCost > 0 ? baseCost : null,
-      effective_multiplier: effectiveMultiplier,
+      // base_cost_raw and effective_multiplier intentionally omitted — cost leak.
     };
   });
 
