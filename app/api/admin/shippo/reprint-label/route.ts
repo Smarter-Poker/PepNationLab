@@ -69,7 +69,7 @@ export async function POST(req: NextRequest) {
   // Find the active label purchase.
   const { data: purchase } = await supabase
     .from('shipping_label_purchases')
-    .select('id, shippo_transaction_id, label_amount_cents')
+    .select('id, shippo_transaction_id, label_amount_cents, label_cost_cents')
     .eq('order_id', orderId)
     .eq('refunded', false)
     .maybeSingle();
@@ -77,11 +77,13 @@ export async function POST(req: NextRequest) {
   // Step 1: Refund the existing label (if any).
   if (purchase?.shippo_transaction_id) {
     const refundResult = await refundLabel(purchase.shippo_transaction_id);
+    // Coalesce: label_amount_cents is NULL until webhook fires; RPC raises on NULL.
+    const refundAmountCents: number = purchase.label_amount_cents ?? purchase.label_cost_cents ?? 0;
     if (refundResult.ok || refundResult.status === 'QUEUED') {
       // Mark the old purchase as refunded via RPC.
       await supabase.rpc('shippo_record_refund', {
         p_label_purchase_id: purchase.id,
-        p_refund_amount_cents: purchase.label_amount_cents,
+        p_refund_amount_cents: refundAmountCents,
         p_shippo_refund_id: refundResult.shippoRefundId ?? null,
         p_reason: `Reprint: ${reason}`,
         p_initiated_by: gate.userId,

@@ -46,3 +46,4 @@ next-env.d.ts
 CLAUDE.md
 AUDIT-2026-05-28.md
 pepnationrx
+.gcp-sa-key.json

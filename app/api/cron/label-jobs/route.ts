@@ -58,7 +58,7 @@ export async function GET(req: NextRequest) {
 
     const { data: jobs, error: fetchErr } = await supabase
       .from('label_jobs')
-      .select('id, order_id, agent_id, service_level_token, origin_id, label_file_type, attempts')
+      .select('id, order_id, agent_id, service_level_token, preferred_service_level, origin_id, label_file_type, attempts')
       .in('status', ['pending', 'queued'])
       .lt('attempts', MAX_ATTEMPTS)
       .order('created_at', { ascending: true })
@@ -98,7 +98,8 @@ export async function GET(req: NextRequest) {
         const result = await buyLabel({
           orderId,
           agentId,
-          preferredServiceLevel: typeof job.service_level_token === 'string' ? job.service_level_token : null,
+          preferredServiceLevel: (typeof job.service_level_token === 'string' ? job.service_level_token : null)
+            ?? (typeof job.preferred_service_level === 'string' ? job.preferred_service_level : null),
           originId: typeof job.origin_id === 'string' ? job.origin_id : null,
           labelFileType: (['PDF', 'PDF_4x6', 'PNG', 'ZPL_203'].includes(String(job.label_file_type))
             ? String(job.label_file_type)

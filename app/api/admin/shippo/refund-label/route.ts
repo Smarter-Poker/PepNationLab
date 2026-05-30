@@ -45,7 +45,7 @@ export async function POST(req: NextRequest) {
   // Find the active (non-refunded) label purchase for this order.
   const { data: purchase, error: fetchErr } = await supabase
     .from('shipping_label_purchases')
-    .select('id, shippo_transaction_id, label_amount_cents, tracking_number, refunded')
+    .select('id, shippo_transaction_id, label_amount_cents, label_cost_cents, tracking_number, refunded')
     .eq('order_id', orderId)
     .eq('refunded', false)
     .maybeSingle();
@@ -67,10 +67,14 @@ export async function POST(req: NextRequest) {
   // Request refund from Shippo.
   const refundResult = await refundLabel(purchase.shippo_transaction_id);
 
+  // Coalesce label_amount_cents (set by Shippo webhook) with label_cost_cents (set at purchase time).
+  // label_amount_cents starts NULL until the webhook fires; RPC raises if NULL is passed.
+  const refundAmountCents: number = purchase.label_amount_cents ?? purchase.label_cost_cents ?? 0;
+
   // Call the DB RPC to mark the purchase as refunded and insert refund ledger row.
   const { error: rpcErr } = await supabase.rpc('shippo_record_refund', {
     p_label_purchase_id: purchase.id,
-    p_refund_amount_cents: purchase.label_amount_cents,
+    p_refund_amount_cents: refundAmountCents,
     p_shippo_refund_id: refundResult.shippoRefundId ?? null,
     p_reason: reason,
     p_initiated_by: gate.userId,
@@ -92,7 +96,7 @@ export async function POST(req: NextRequest) {
       order_id: orderId,
       shippo_refund_id: refundResult.shippoRefundId,
       shippo_status: refundResult.status,
-      amount_cents: purchase.label_amount_cents,
+      amount_cents: refundAmountCents,
       reason,
     },
   });

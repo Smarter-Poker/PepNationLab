@@ -139,5 +139,62 @@ ALTER TABLE public.cron_runs
   ADD COLUMN IF NOT EXISTS summary TEXT;
 
 -- =========================================================================
+-- 6. Update shippo_enqueue_label_job to also populate service_level_token
+--    (the cron reads service_level_token; the RPC originally only wrote
+--     preferred_service_level which is the migration-001 column name).
+--    Re-create with RETURNS void alias since label_jobs now has updated_at.
+-- =========================================================================
+CREATE OR REPLACE FUNCTION public.shippo_enqueue_label_job(
+  p_order_id                UUID,
+  p_preferred_service_level TEXT DEFAULT NULL,
+  p_origin_id               UUID DEFAULT NULL
+) RETURNS public.label_jobs
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
+DECLARE
+  v_order public.orders%ROWTYPE;
+  v_job   public.label_jobs;
+BEGIN
+  SELECT * INTO v_order FROM public.orders WHERE id = p_order_id;
+  IF v_order.id IS NULL THEN
+    RAISE EXCEPTION 'Order % not found', p_order_id;
+  END IF;
+
+  IF NOT (
+    public.is_admin()
+    OR public.get_user_role() = 'shipping'
+    OR v_order.agent_id = (SELECT auth.uid())
+  ) THEN
+    RAISE EXCEPTION 'Not authorized to enqueue label for this order';
+  END IF;
+
+  -- Idempotent: return existing non-terminal job.
+  SELECT * INTO v_job FROM public.label_jobs
+   WHERE order_id = p_order_id AND status NOT IN ('succeeded','dead')
+   LIMIT 1;
+
+  IF v_job.id IS NOT NULL THEN
+    RETURN v_job;
+  END IF;
+
+  -- Write both column names so the cron can read either.
+  INSERT INTO public.label_jobs (
+    order_id, requested_by,
+    preferred_service_level, service_level_token,
+    origin_id
+  ) VALUES (
+    p_order_id, (SELECT auth.uid()),
+    p_preferred_service_level, p_preferred_service_level,
+    p_origin_id
+  )
+  RETURNING * INTO v_job;
+
+  RETURN v_job;
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.shippo_enqueue_label_job(UUID, TEXT, UUID) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.shippo_enqueue_label_job(UUID, TEXT, UUID) TO authenticated;
+
+-- =========================================================================
 -- Done.
 -- =========================================================================

@@ -32,7 +32,7 @@ export async function GET(req: NextRequest) {
     .from('agent_products')
     .select(`
       id, agent_id, product_id, custom_name, custom_description,
-      custom_image_url, retail_price, is_visible, is_on_sale, sale_price, sort_order,
+      custom_image_url, retail_price, margin_percent, is_visible, is_on_sale, sale_price, sort_order,
       products (name, description, image_url, category, in_stock, inventory_count,
                unit_size, unit_measure, base_cost)
     `)
