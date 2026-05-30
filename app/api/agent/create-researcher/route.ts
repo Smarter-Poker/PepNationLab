@@ -44,8 +44,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Full Name, Username, And Password Are Required' }, { status: 400 });
   }
 
-  if (password.length < 8) {
-    return NextResponse.json({ error: 'Password Must Be At Least 8 Characters' }, { status: 400 });
+  if (password.length < 6) {
+    return NextResponse.json({ error: 'Password Must Be At Least 6 Characters' }, { status: 400 });
   }
 
   const usernameClean = sanitizeUsername(username);

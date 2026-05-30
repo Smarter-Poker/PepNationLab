@@ -24,8 +24,6 @@ function resolveTitle(pathname: string, role: string): string {
   if (pathname.startsWith('/admin/coupons'))  return 'Coupons';
   if (pathname.startsWith('/admin/statements')) return 'Statements';
   if (pathname.startsWith('/admin/restock'))  return 'Wholesale Restock';
-  if (pathname.startsWith('/admin/rma'))      return 'Returns';
-  if (pathname.startsWith('/admin/refunds'))  return 'Refunds';
   if (pathname.startsWith('/admin/transactions')) return 'Transactions';
   if (pathname.startsWith('/admin/webhooks')) return 'Webhooks';
   if (pathname.startsWith('/admin/settings')) return 'Admin Settings';

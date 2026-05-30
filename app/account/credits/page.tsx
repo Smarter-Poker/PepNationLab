@@ -9,7 +9,6 @@ interface LedgerRow {
   balance_before: number | string;
   balance_after: number | string;
   type: 'issue' | 'redeem' | 'expire' | 'adjustment';
-  source_refund_id: string | null;
   source_order_id: string | null;
   expires_at: string | null;
   description: string | null;
@@ -41,7 +40,7 @@ export default async function AccountCreditsPage() {
     service.from('store_credit_balances').select('balance').eq('user_id', user.id).maybeSingle(),
     service
       .from('store_credits')
-      .select('id, amount, balance_before, balance_after, type, source_refund_id, source_order_id, expires_at, description, created_at')
+      .select('id, amount, balance_before, balance_after, type, source_order_id, expires_at, description, created_at')
       .eq('user_id', user.id)
       .order('created_at', { ascending: false })
       .limit(50),

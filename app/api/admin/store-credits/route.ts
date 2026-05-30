@@ -20,7 +20,7 @@ export async function GET(req: NextRequest) {
 
   let query = service
     .from('store_credits')
-    .select('id, user_id, amount, balance_before, balance_after, type, source_refund_id, source_order_id, expires_at, description, created_by, created_at')
+    .select('id, user_id, amount, balance_before, balance_after, type, source_order_id, expires_at, description, created_by, created_at')
     .order('created_at', { ascending: false })
     .limit(500);
 

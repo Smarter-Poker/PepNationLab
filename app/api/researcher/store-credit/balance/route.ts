@@ -14,7 +14,7 @@ export async function GET() {
     service.from('store_credit_balances').select('balance').eq('user_id', user.id).maybeSingle(),
     service
       .from('store_credits')
-      .select('id, amount, balance_before, balance_after, type, source_refund_id, source_order_id, expires_at, description, created_at')
+      .select('id, amount, balance_before, balance_after, type, source_order_id, expires_at, description, created_at')
       .eq('user_id', user.id)
       .order('created_at', { ascending: false })
       .limit(20),

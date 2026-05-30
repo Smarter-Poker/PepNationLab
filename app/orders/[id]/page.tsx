@@ -7,7 +7,6 @@ import PaymentProofUpload from '@/components/PaymentProofUpload';
 import RecommendationStrip, { type RecommendationItem } from '@/components/RecommendationStrip';
 import ReceiptButton from './ReceiptButton';
 import SubscribeReplenishButton from './SubscribeReplenishButton';
-import RequestReturnButton from './RequestReturnButton';
 
 export const dynamic = 'force-dynamic';
 
@@ -302,18 +301,6 @@ export default async function OrderDetailPage(
                   shipping={num(order.shipping_cost)}
                   total={num(order.total)}
                 />
-                {order.buyer_id === user.id && (
-                  <RequestReturnButton
-                    orderId={order.id}
-                    orderStatus={order.status}
-                    items={order.order_items.map((it) => ({
-                      order_item_id: it.id,
-                      product_name: it.product_name,
-                      quantity: Number(it.quantity),
-                      unit_retail_price: num(it.unit_retail_price),
-                    }))}
-                  />
-                )}
                 <span style={{
                   fontSize: '0.78rem',
                   fontWeight: 700,

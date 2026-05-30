@@ -26,7 +26,7 @@ interface Referral {
 /**
  * Hourly cron — for every researcher_referrals row in 'qualifying' status,
  * search the referee's order history for the earliest non-restock order with
- * status IN ELIGIBLE_STATUSES whose (total - refunded_amount) crosses the
+ * status IN ELIGIBLE_STATUSES whose total crosses the
  * configured minimum and whose created_at is after the referral applied_at.
  * If found, fulfil the reward (issues store credits to both parties) and
  * notify them in-app.
@@ -97,7 +97,7 @@ export async function GET(req: NextRequest) {
       try {
         const { data: candidates } = await service
           .from('orders')
-          .select('id, total, refunded_amount, status, created_at, is_wholesale_restock')
+          .select('id, total, status, created_at, is_wholesale_restock')
           .eq('buyer_id', ref.referee_id)
           .in('status', ELIGIBLE_STATUSES)
           .eq('is_wholesale_restock', false)
@@ -107,7 +107,7 @@ export async function GET(req: NextRequest) {
 
         const qualifying = (candidates ?? []).find(
           (o) =>
-            Number(o.total ?? 0) - Number(o.refunded_amount ?? 0) >= minOrderTotal,
+            Number(o.total ?? 0) >= minOrderTotal,
         );
         if (!qualifying) {
           summary.skipped += 1;

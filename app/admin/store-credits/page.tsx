@@ -10,7 +10,6 @@ interface CreditRow {
   balance_before: number | string;
   balance_after: number | string;
   type: 'issue' | 'redeem' | 'expire' | 'adjustment';
-  source_refund_id: string | null;
   source_order_id: string | null;
   expires_at: string | null;
   description: string | null;
