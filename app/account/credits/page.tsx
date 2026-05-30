@@ -51,7 +51,7 @@ export default async function AccountCreditsPage() {
   const rows: LedgerRow[] = (ledger ?? []) as LedgerRow[];
 
   return (
-    <div style={{ maxWidth: 800, margin: '0 auto', padding: 'var(--space-6)' }}>
+    <div style={{ maxWidth: 800, margin: '0 auto', padding: 'var(--space-6)', paddingTop: 'calc(60px + var(--space-6))' }}>
       <h1 style={{ fontSize: '1.5rem', marginBottom: 'var(--space-2)' }}>Store Credit</h1>
       <p style={{ color: 'var(--grey-400)', fontSize: '0.9rem', marginBottom: 'var(--space-5)' }}>
         Use Store Credit Toward Future Orders At Checkout.
@@ -71,7 +71,7 @@ export default async function AccountCreditsPage() {
           No Credit Activity Yet.
         </div>
       ) : (
-        <div className="card-metal" style={{ padding: 0, overflow: 'hidden' }}>
+        <div className="card-metal" style={{ padding: 0, overflowX: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.82rem' }}>
             <thead>
               <tr style={{ background: 'var(--surface-2)' }}>

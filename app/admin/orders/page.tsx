@@ -488,7 +488,7 @@ function AdminOrdersPageInner() {
         </button>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 420px', gap: 'var(--space-8)', alignItems: 'start' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 360px), 1fr))', gap: 'var(--space-6)', alignItems: 'start' }}>
         {/* Left Side: Order List, Filter & Search */}
         <div>
           {/* Controls */}

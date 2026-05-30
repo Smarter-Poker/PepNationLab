@@ -167,7 +167,7 @@ export function AdminLayoutClient({
               border: 'none',
               cursor: 'pointer',
               color: 'var(--teal)',
-              padding: 6,
+              padding: 10,
               display: 'flex',
               alignItems: 'center',
               borderRadius: 6,

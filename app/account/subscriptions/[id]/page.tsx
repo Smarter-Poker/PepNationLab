@@ -98,7 +98,7 @@ export default async function SubscriptionDetailPage({ params }: { params: Promi
   const addr = (sub.shipping_address ?? {}) as Record<string, string | undefined>;
 
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--black)', padding: 'var(--space-6) var(--space-4)' }}>
+    <div style={{ minHeight: '100vh', background: 'var(--black)', padding: 'var(--space-6) var(--space-4)', paddingTop: 'calc(60px + var(--space-6))' }}>
       <div className="container" style={{ maxWidth: 880 }}>
         <div style={{ marginBottom: 'var(--space-4)' }}>
           <Link href="/account/subscriptions" style={{ fontSize: '0.85rem', color: 'var(--teal)', textDecoration: 'none' }}>

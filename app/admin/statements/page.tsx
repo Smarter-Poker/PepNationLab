@@ -209,7 +209,7 @@ export default function AdminStatementsPage() {
         )}
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 320px', gap: 'var(--space-8)', alignItems: 'start' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 280px), 1fr))', gap: 'var(--space-6)', alignItems: 'start' }}>
         {/* Statements list */}
         <div>
           {loading ? (

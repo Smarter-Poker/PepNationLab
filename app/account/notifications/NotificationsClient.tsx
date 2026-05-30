@@ -134,7 +134,7 @@ export default function NotificationsClient({ initialPrefs, userEmail }: Props) 
   }
 
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--black)', padding: '2rem 1rem' }}>
+    <div style={{ minHeight: '100vh', background: 'var(--black)', padding: '2rem 1rem', paddingTop: 'calc(60px + 2rem)' }}>
       <div style={{ maxWidth: 640, margin: '0 auto' }}>
         <header style={{ marginBottom: '1.5rem' }}>
           <Link
@@ -180,7 +180,7 @@ export default function NotificationsClient({ initialPrefs, userEmail }: Props) 
                 disabled={pushBusy || pushPermission === 'denied'}
                 style={{
                   background: TEAL, color: '#050A0F', border: 'none', borderRadius: '0.5rem',
-                  padding: '0.55rem 1.25rem', fontWeight: 700, fontSize: '0.82rem',
+                  padding: '0.75rem 1.25rem', fontWeight: 700, fontSize: '0.82rem',
                   cursor: pushBusy || pushPermission === 'denied' ? 'not-allowed' : 'pointer',
                   opacity: pushBusy || pushPermission === 'denied' ? 0.5 : 1,
                 }}
@@ -197,7 +197,7 @@ export default function NotificationsClient({ initialPrefs, userEmail }: Props) 
                   style={{
                     background: 'transparent', color: '#FFFFFF',
                     border: '1px solid rgba(255,255,255,0.18)', borderRadius: '0.5rem',
-                    padding: '0.55rem 1.25rem', fontWeight: 600, fontSize: '0.82rem',
+                    padding: '0.75rem 1.25rem', fontWeight: 600, fontSize: '0.82rem',
                     cursor: pushBusy ? 'not-allowed' : 'pointer', opacity: pushBusy ? 0.5 : 1,
                   }}
                 >
@@ -210,7 +210,7 @@ export default function NotificationsClient({ initialPrefs, userEmail }: Props) 
                   style={{
                     background: 'transparent', color: TEAL,
                     border: `1px solid ${TEAL}`, borderRadius: '0.5rem',
-                    padding: '0.55rem 1.25rem', fontWeight: 600, fontSize: '0.82rem',
+                    padding: '0.75rem 1.25rem', fontWeight: 600, fontSize: '0.82rem',
                     cursor: pushBusy ? 'not-allowed' : 'pointer', opacity: pushBusy ? 0.5 : 1,
                   }}
                 >
@@ -255,7 +255,7 @@ export default function NotificationsClient({ initialPrefs, userEmail }: Props) 
             ))}
           </div>
 
-          <div style={{ marginTop: '1.5rem', display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+          <div style={{ marginTop: '1.5rem', display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
             <button
               type="button"
               onClick={save}
@@ -265,7 +265,7 @@ export default function NotificationsClient({ initialPrefs, userEmail }: Props) 
                 color: '#050A0F',
                 border: 'none',
                 borderRadius: '0.5rem',
-                padding: '0.65rem 1.5rem',
+                padding: '0.75rem 1.5rem',
                 fontWeight: 700,
                 cursor: saving ? 'not-allowed' : 'pointer',
                 opacity: saving ? 0.5 : 1,

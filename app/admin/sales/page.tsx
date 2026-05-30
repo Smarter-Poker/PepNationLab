@@ -194,9 +194,9 @@ export default function AdminSalesPage() {
             </div>
           )}
 
-          <div style={{ display: 'grid', gridTemplateColumns: selectedAgent ? '1fr 420px' : '1fr', gap: 'var(--space-6)', alignItems: 'start' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: selectedAgent ? 'repeat(auto-fit, minmax(min(100%, 360px), 1fr))' : '1fr', gap: 'var(--space-6)', alignItems: 'start' }}>
             {/* Agent Table */}
-            <div className="card-metal" style={{ padding: 0, overflow: 'hidden' }}>
+            <div className="card-metal" style={{ padding: 0, overflowX: 'auto' }}>
               <div style={{ padding: 'var(--space-4) var(--space-5)', borderBottom: '1px solid rgba(255,255,255,0.06)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <h3 style={{ fontSize: '0.95rem', color: 'var(--silver)' }}>Revenue By Agent</h3>
                 <span style={{ fontSize: '0.76rem', color: 'var(--grey-500)' }}>Click Any Agent To View Their Transaction Ledger</span>
