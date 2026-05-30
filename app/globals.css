@@ -1327,3 +1327,183 @@ html[data-theme="light"] .admin-nav-link:hover {
   background: rgba(0,0,0,0.04) !important;
   color: var(--teal) !important;
 }
+
+/* ============================================================
+   MESSENGER — FACEBOOK-STYLE MOBILE-FIRST LAYOUT
+   ============================================================
+
+   Architecture (matches the Facebook/WhatsApp Web pattern):
+
+   .messenger-layout-root  — flex column, height: 100dvh
+     Navbar div             — flex-shrink: 0 (takes natural 60px)
+     content div            — flex: 1 1 0, min-height: 0
+
+       .messenger-shell     — display: flex, height: 100%
+         .messenger-sidebar — flex-shrink: 0, width: 320px
+         .messenger-main    — flex: 1 1 0, min-width: 0
+           .messenger-back-btn  (mobile only)
+           MessagePane      — flex: 1 flex column
+
+   On desktop (>768px): both panels visible side by side.
+   On mobile (≤768px):  slide transition — list OR pane, never both.
+   ============================================================ */
+
+/* ---- Desktop: both panels visible ---- */
+.messenger-shell {
+  display: flex;
+  height: 100%;
+  overflow: hidden;
+  position: relative;
+}
+
+.messenger-sidebar {
+  flex-shrink: 0;
+  width: 320px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  /* Momentum scroll on iOS for the conversation list */
+  -webkit-overflow-scrolling: touch;
+}
+
+.messenger-main {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* Message list inside MessagePane — this is the ONLY scrolling region */
+.messenger-main > div > div[style*="overflow"] {
+  /* Natural flex child scroll — let it breathe */
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Hide mobile back button on desktop */
+.messenger-back-btn {
+  display: none !important;
+}
+
+/* ---- Mobile: two-panel slide transition ---- */
+@media (max-width: 768px) {
+  .messenger-shell {
+    /* On mobile the two panels stack and translate */
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* Default (no conversation selected): sidebar fills the shell */
+  .messenger-sidebar {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    transform: translateX(0);
+    transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 1;
+  }
+
+  .messenger-main {
+    position: absolute;
+    inset: 0;
+    transform: translateX(100%); /* offscreen right */
+    transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 2;
+  }
+
+  /* When a conversation IS active, slide the list left and the pane in */
+  .messenger-shell.msg-panel-active .messenger-sidebar {
+    transform: translateX(-100%);
+    pointer-events: none;
+  }
+
+  .messenger-shell.msg-panel-active .messenger-main {
+    transform: translateX(0);
+  }
+
+  /* Show the back button on mobile */
+  .messenger-back-btn {
+    display: flex !important;
+    min-height: 44px; /* iOS tap target minimum */
+  }
+
+  /* Conversation list items — bigger touch targets on mobile */
+  .messenger-sidebar [role="listitem"],
+  .messenger-sidebar [role="button"],
+  .messenger-sidebar button {
+    min-height: 56px;
+  }
+
+  /* Composer bar — add safe area inset for iPhone home bar */
+  .messenger-main > div > div:last-child,
+  .messenger-main > div [data-composer] {
+    padding-bottom: max(12px, env(safe-area-inset-bottom));
+  }
+
+  /* Video messages — full width on mobile */
+  .messenger-main video {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  /* Image messages — full width on mobile */
+  .messenger-main img[alt="Image"],
+  .messenger-main img[alt="Gif"] {
+    max-width: 100% !important;
+  }
+}
+
+/* ---- iOS safe area for the composer bar (all screen sizes) ---- */
+@supports (padding: env(safe-area-inset-bottom)) {
+  /* The MessageComposer is the last child of the MessagePane flex column.
+     We apply safe-area padding to prevent the iPhone home bar from covering
+     the composer input. This doesn't affect desktop. */
+  .messenger-main > div > form,
+  .messenger-main > div > div:last-of-type {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}
+
+/* ---- Message list momentum scroll ---- */
+.msg-list {
+  flex: 1 1 0;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+  scrollbar-width: thin;
+  scrollbar-color: var(--surface-3, #1D2D3E) transparent;
+}
+
+/* ---- Conversation list scrolls ---- */
+.conv-list {
+  flex: 1 1 0;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  scrollbar-color: var(--surface-3, #1D2D3E) transparent;
+}
+
+/* ---- Light mode messenger ---- */
+html[data-theme="light"] .messenger-sidebar,
+html[data-theme="light"] .messenger-shell {
+  background: #EDE9E3 !important;
+}
+html[data-theme="light"] .messenger-sidebar header,
+html[data-theme="light"] .messenger-sidebar aside {
+  background: #F5F2ED !important;
+  border-color: rgba(0,0,0,0.08) !important;
+}
+html[data-theme="light"] .messenger-main {
+  background: #F8F5F0 !important;
+}
+html[data-theme="light"] .messenger-back-btn {
+  background: #F5F2ED !important;
+  border-color: rgba(0,0,0,0.08) !important;
+}
+

@@ -33,7 +33,7 @@ export const SendMessageSchema = z
     conversationId: z.string().uuid(),
     text: z.string().max(2000).optional(),
     messageType: z
-      .enum(['text', 'image', 'gif', 'voice', 'file', 'contact_card', 'location', 'poll'])
+      .enum(['text', 'image', 'gif', 'voice', 'video', 'file', 'contact_card', 'location', 'poll'])
       .default('text'),
     mediaUrl: z.string().url().optional(),
     mediaMetadata: boundedMetadata().optional(),
@@ -188,7 +188,7 @@ export const ScheduleMessageCreateSchema = z
     action: z.literal('create').optional().default('create'),
     conversationId: z.string().uuid(),
     text: z.string().max(2000).optional(),
-    messageType: z.enum(['text', 'image', 'gif', 'voice', 'file']).default('text'),
+    messageType: z.enum(['text', 'image', 'gif', 'voice', 'video', 'file']).default('text'),
     mediaUrl: z.string().url().optional(),
     mediaMetadata: boundedMetadata().optional(),
     replyToId: z.string().uuid().optional(),
@@ -209,7 +209,7 @@ export const ThreadReplySchema = z
   .object({
     threadParentId: z.string().uuid(),
     text: z.string().max(2000).optional(),
-    messageType: z.enum(['text', 'image', 'gif', 'voice', 'file']).default('text'),
+    messageType: z.enum(['text', 'image', 'gif', 'voice', 'video', 'file']).default('text'),
     mediaUrl: z.string().url().optional(),
   })
   .refine((d) => Boolean(d.text && d.text.trim().length > 0) || Boolean(d.mediaUrl), {
