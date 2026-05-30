@@ -1,5 +1,6 @@
 import { createClient, createServiceClient } from '@/lib/supabase/server';
 import type { ParticipantRole } from './types';
+import { timingSafeEqual } from 'crypto';
 
 export type RequireSessionResult =
   | { user: { id: string; email: string | null }; error: null }
@@ -11,6 +12,19 @@ export async function requireSession(): Promise<RequireSessionResult> {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return { user: null, error: 'Unauthorized' };
+
+  // Audit9 fix: a user whose profile is_active was flipped to false should
+  // not be able to hit messenger routes via a cached session. Page-level
+  // middleware enforces this for app/* routes but /api/messenger/* bypasses
+  // it. Service-role lookup so deactivation cannot be evaded by RLS bypass.
+  const svc = await createServiceClient();
+  const { data: prof } = await svc
+    .from('profiles')
+    .select('is_active')
+    .eq('id', user.id)
+    .maybeSingle();
+  if (prof && prof.is_active === false) return { user: null, error: 'Unauthorized' };
+
   return { user: { id: user.id, email: user.email ?? null }, error: null };
 }
 
@@ -114,10 +128,23 @@ export async function isBlocked(blockerId: string, blockedId: string): Promise<b
 }
 
 /**
+ * Audit9: single-roundtrip bidirectional block check. Use this everywhere we
+ * previously did `isBlocked(a, b) || isBlocked(b, a)` to halve the DB cost.
+ */
+export async function isBlockedEither(a: string, b: string): Promise<boolean> {
+  if (a === b) return false;
+  const svc = await createServiceClient();
+  const { data } = await svc.rpc('fn_is_blocked_either', { p_a: a, p_b: b });
+  return Boolean(data);
+}
+
+/**
  * Phase 13: cron auth gate. Returns ok=true only when the request carries
  * Authorization: Bearer ${CRON_SECRET}. Returns 503 (not 500) when the env
  * var is unset so /api/messenger/cron/* can be probed cleanly before secrets
  * are provisioned. Mirrors the LiveKit / Tenor un-configured pattern.
+ *
+ * Audit9: uses timingSafeEqual to thwart timing-channel recovery of the secret.
  */
 export function getCronAuth(
   req: Request,
@@ -125,6 +152,14 @@ export function getCronAuth(
   const secret = process.env.CRON_SECRET;
   if (!secret) return { ok: false, status: 503, error: 'Cron Not Configured' };
   const header = req.headers.get('authorization') ?? '';
-  if (header !== `Bearer ${secret}`) return { ok: false, status: 401, error: 'Unauthorized' };
+  const expected = `Bearer ${secret}`;
+  const headerBuf = Buffer.from(header);
+  const expectedBuf = Buffer.from(expected);
+  if (headerBuf.length !== expectedBuf.length) {
+    return { ok: false, status: 401, error: 'Unauthorized' };
+  }
+  if (!timingSafeEqual(headerBuf, expectedBuf)) {
+    return { ok: false, status: 401, error: 'Unauthorized' };
+  }
   return { ok: true };
 }

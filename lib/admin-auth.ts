@@ -31,12 +31,14 @@ export async function requireAdmin(): Promise<
   }
 
   // Role lookup via service client so it is not affected by RLS visibility.
+  // Audit9 fix: .maybeSingle() so a fresh auth user without a profiles row
+  // does not crash the request with PGRST116.
   const service = await createServiceClient();
   const { data: profile } = await service
     .from('profiles')
     .select('role')
     .eq('id', user.id)
-    .single();
+    .maybeSingle();
 
   if (profile?.role !== 'admin') {
     return {
@@ -73,7 +75,7 @@ export async function requireOrdersAccess(): Promise<
     .from('profiles')
     .select('role')
     .eq('id', user.id)
-    .single();
+    .maybeSingle();
 
   if (profile?.role !== 'admin' && profile?.role !== 'shipping') {
     return {
@@ -107,7 +109,7 @@ export async function requireAgent(): Promise<
     .from('profiles')
     .select('role')
     .eq('id', user.id)
-    .single();
+    .maybeSingle();
 
   if (profile?.role !== 'agent' && profile?.role !== 'super_agent' && profile?.role !== 'admin') {
     return {
@@ -123,14 +125,6 @@ export async function requireAgent(): Promise<
  * Guards high-sensitivity admin endpoints (Shippo connect / rotate /
  * disconnect) by verifying that the authenticated admin completed an MFA
  * challenge within the last `windowMs` milliseconds.
- *
- * The Supabase `auth.mfa_amr_claims` view lists every authenticated method
- * for the current JWT. We look for a TOTP or webauthn entry whose timestamp
- * is within the window.
- *
- * @param req     The incoming Next.js request (used only for context here).
- * @param windowMs  Maximum age of the MFA assertion in milliseconds (default 5 min).
- * @returns null when MFA is recent enough, NextResponse 403 otherwise.
  */
 export async function assertMfaRecent(
   _req: NextRequest,
@@ -145,7 +139,6 @@ export async function assertMfaRecent(
     );
   }
 
-  // Retrieve AMR (Authentication Method Reference) claims from the session.
   const { data: { session } } = await supabase.auth.getSession();
   if (!session) {
     return NextResponse.json(
@@ -154,8 +147,6 @@ export async function assertMfaRecent(
     );
   }
 
-  // The AMR array is embedded in the JWT. Each entry has { method, timestamp }.
-  // We look for a MFA method (totp, webauthn, recovery) within the window.
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const amr: Array<{ method: string; timestamp: number }> = (session as any).user?.amr ?? [];
   if (!Array.isArray(amr) || amr.length === 0) {

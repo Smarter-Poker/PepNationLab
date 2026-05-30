@@ -12,14 +12,13 @@ export async function GET(req: NextRequest) {
   const svc = await createServiceClient();
   const nowIso = new Date().toISOString();
 
-  // Pull the candidate set first so we know how many rows were scanned. The
-  // update uses the same WHERE clause so even if more arrive between SELECT
-  // and UPDATE they will be picked up next tick.
+  // Audit9: drain oldest first so backlogged rows are guaranteed to clear.
   const { data: due, error: qErr } = await svc
     .from('messenger_messages')
     .select('id')
     .lte('expires_at', nowIso)
     .eq('is_deleted', false)
+    .order('expires_at', { ascending: true })
     .limit(200);
   if (qErr) return NextResponse.json({ error: qErr.message }, { status: 500 });
 

@@ -33,22 +33,23 @@ export async function POST(req: NextRequest) {
   const svc = await createServiceClient();
   const { data: existing } = await svc
     .from('messenger_messages')
-    .select('id, sender_id, text, is_deleted')
+    .select('id, sender_id, text, is_deleted, delete_scope')
     .eq('id', parsed.data.messageId)
     .maybeSingle();
   if (!existing) return NextResponse.json({ error: 'Message Not Found' }, { status: 404 });
   if (existing.sender_id !== user.id) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-  if (existing.is_deleted) return NextResponse.json({ error: 'Already Deleted' }, { status: 400 });
+  if (existing.is_deleted && existing.delete_scope === 'for_everyone') {
+    return NextResponse.json({ error: 'Already Deleted' }, { status: 400 });
+  }
 
-  // Write to edit history BEFORE updating the message, so the audit trail
-  // is preserved even if the update later rolls back.
-  const { error: histErr } = await svc.from('messenger_edit_history').insert({
-    message_id: parsed.data.messageId,
-    previous_text: existing.text ?? null,
-    edited_by: user.id,
-  });
-  if (histErr) return NextResponse.json({ error: histErr.message }, { status: 500 });
+  // Audit9: short-circuit no-op edits so we don't fabricate history rows or
+  // flip is_edited spuriously when the sanitized text is identical.
+  if (cleanText === existing.text) {
+    return NextResponse.json({ message: existing, unchanged: true });
+  }
 
+  // Audit9: write history AFTER the update succeeds. Previous order produced
+  // orphan history rows if the update later failed.
   const { data: updated, error: updErr } = await svc
     .from('messenger_messages')
     .update({
@@ -62,6 +63,14 @@ export async function POST(req: NextRequest) {
   if (updErr || !updated) {
     return NextResponse.json({ error: updErr?.message ?? 'Update Failed' }, { status: 500 });
   }
+
+  // Best-effort: log the audit trail. A history-insert failure does not
+  // un-do the user-visible edit.
+  await svc.from('messenger_edit_history').insert({
+    message_id: parsed.data.messageId,
+    previous_text: existing.text ?? null,
+    edited_by: user.id,
+  });
 
   return NextResponse.json({ message: updated });
 }

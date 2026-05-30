@@ -26,6 +26,11 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Invalid Body', details: parsed.error.flatten() }, { status: 400 });
   }
 
+  // Audit9: participant check moved BEFORE content validation so non-members
+  // can't probe text/expiresAt validation surface.
+  const participant = await getParticipant(parsed.data.conversationId, user.id);
+  if (!participant) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+
   let cleanText: string | null = null;
   if (parsed.data.text !== undefined) {
     cleanText = sanitizeMessageText(parsed.data.text);
@@ -54,10 +59,21 @@ export async function POST(req: NextRequest) {
     expiresAt = new Date(t).toISOString();
   }
 
-  const participant = await getParticipant(parsed.data.conversationId, user.id);
-  if (!participant) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-
   const svc = await createServiceClient();
+
+  // Audit9: idempotent replay — same client_message_id from the same
+  // (conversation_id, sender_id) returns the existing row instead of creating
+  // a duplicate. The DB unique index enforces this even on race.
+  if (parsed.data.clientMessageId) {
+    const { data: existing } = await svc
+      .from('messenger_messages')
+      .select('*')
+      .eq('conversation_id', parsed.data.conversationId)
+      .eq('sender_id', user.id)
+      .eq('client_message_id', parsed.data.clientMessageId)
+      .maybeSingle();
+    if (existing) return NextResponse.json({ message: existing, idempotent: true });
+  }
 
   if (parsed.data.replyToId) {
     const { data: parent } = await svc
@@ -97,6 +113,7 @@ export async function POST(req: NextRequest) {
     thread_parent_id: parsed.data.threadParentId ?? null,
   };
   if (expiresAt) insertRow.expires_at = expiresAt;
+  if (parsed.data.clientMessageId) insertRow.client_message_id = parsed.data.clientMessageId;
 
   const { data: inserted, error: insErr } = await svc
     .from('messenger_messages')
@@ -104,8 +121,23 @@ export async function POST(req: NextRequest) {
     .select('*')
     .maybeSingle();
 
-  if (insErr || !inserted) {
-    return NextResponse.json({ error: insErr?.message ?? 'Insert Failed' }, { status: 500 });
+  if (insErr) {
+    const code = (insErr as { code?: string }).code;
+    // Audit9: idempotency race — return the existing row on unique violation.
+    if (code === '23505' && parsed.data.clientMessageId) {
+      const { data: existing } = await svc
+        .from('messenger_messages')
+        .select('*')
+        .eq('conversation_id', parsed.data.conversationId)
+        .eq('sender_id', user.id)
+        .eq('client_message_id', parsed.data.clientMessageId)
+        .maybeSingle();
+      if (existing) return NextResponse.json({ message: existing, idempotent: true });
+    }
+    return NextResponse.json({ error: insErr.message }, { status: 500 });
+  }
+  if (!inserted) {
+    return NextResponse.json({ error: 'Insert Failed' }, { status: 500 });
   }
 
   if (cleanText && hasAdminMention(cleanText)) {

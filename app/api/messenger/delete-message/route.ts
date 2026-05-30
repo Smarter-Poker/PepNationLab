@@ -32,9 +32,6 @@ export async function POST(req: NextRequest) {
     .maybeSingle();
   if (!msg) return NextResponse.json({ error: 'Message Not Found' }, { status: 404 });
 
-  // for_me delete is purely a per-user dismissal -- the row is hidden from
-  // the caller's view but stays visible to other participants. Caller must
-  // still be a participant in the conversation to dismiss.
   if (parsed.data.scope === 'for_me') {
     const participant = await getParticipant(msg.conversation_id, user.id);
     if (!participant) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
@@ -61,12 +58,16 @@ export async function POST(req: NextRequest) {
 
   if (msg.is_deleted) return NextResponse.json({ ok: true });
 
-  // for_everyone: must be the sender, or an owner/admin of the conversation.
+  // Audit9: for_everyone delete now requires the caller to be a CURRENT
+  // participant of the conversation. Former participants (who left or were
+  // removed) cannot retroactively tombstone messages even if they sent them.
   const participant = await getParticipant(msg.conversation_id, user.id);
+  if (!participant) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+
   const allowed =
     msg.sender_id === user.id ||
-    participant?.role === 'owner' ||
-    participant?.role === 'admin';
+    participant.role === 'owner' ||
+    participant.role === 'admin';
   if (!allowed) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
   const { error: updErr } = await svc

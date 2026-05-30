@@ -55,28 +55,32 @@ interface ReactionHandlers {
   onDelete?: (r: { message_id: string; user_id: string; emoji: string | null }) => void;
 }
 
-// Audit fix: accept a `channelHint` so the channel name is stable across
-// re-subs for the same set of message ids. Previous code keyed on the
-// first id, so two sets that started with the same id (rare but possible)
-// would collide. Caller passes a hash of all ids; we fall back to the
-// first id for back-compat.
+// Audit9: postgres_changes `filter` only supports `=eq.` / `=neq.` / range
+// operators -- NOT `=in.()`. Previous code silently delivered no events.
+// Subscribe by conversation_id instead (callers always know the conv) and
+// let the consumer filter on `messageIds` client-side.
 export function subscribeReactions(
   messageIds: string[],
   handlers: ReactionHandlers,
   channelHint?: string,
+  conversationId?: string,
 ): RealtimeChannel | null {
   if (messageIds.length === 0) return null;
   const suffix = channelHint && channelHint.length > 0 ? channelHint : messageIds[0];
   const ch = supabase.channel(`mr:${suffix}`);
+  const messageIdSet = new Set(messageIds);
   ch.on(
     'postgres_changes',
     {
       event: 'INSERT',
       schema: 'public',
       table: 'messenger_reactions',
-      filter: `message_id=in.(${messageIds.join(',')})`,
+      ...(conversationId ? { filter: `conversation_id=eq.${conversationId}` } : {}),
     },
-    (payload) => handlers.onInsert?.(payload.new as Reaction),
+    (payload) => {
+      const row = payload.new as Reaction;
+      if (row && messageIdSet.has(row.message_id)) handlers.onInsert?.(row);
+    },
   );
   ch.on(
     'postgres_changes',
@@ -84,11 +88,11 @@ export function subscribeReactions(
       event: 'DELETE',
       schema: 'public',
       table: 'messenger_reactions',
-      filter: `message_id=in.(${messageIds.join(',')})`,
+      ...(conversationId ? { filter: `conversation_id=eq.${conversationId}` } : {}),
     },
     (payload) => {
       const old = payload.old as { message_id?: string; user_id?: string; emoji?: string | null };
-      if (old?.message_id && old?.user_id) {
+      if (old?.message_id && old?.user_id && messageIdSet.has(old.message_id)) {
         handlers.onDelete?.({
           message_id: old.message_id,
           user_id: old.user_id,
@@ -174,6 +178,8 @@ export function subscribePresence(
     }
     onSync(flat);
   });
+  // Audit9: re-track on every SUBSCRIBED (including reconnects) so presence
+  // survives transient disconnects.
   ch.subscribe(async (status) => {
     if (status === 'SUBSCRIBED') {
       await ch.track({ userId: selfId, online_at: new Date().toISOString() } satisfies PresenceState);
@@ -197,10 +203,6 @@ interface CallSignalHandlers {
   onUpdate?: (c: CallSignalRow) => void;
 }
 
-// Phase 11: subscribe to call signal INSERTs and UPDATEs across every
-// conversation the user participates in. RLS on messenger_calls already
-// filters rows to the caller's conversations -- the channel does not need
-// an additional filter for ownership.
 export function subscribeCallSignals(userId: string, handlers: CallSignalHandlers): RealtimeChannel {
   const ch = supabase.channel(`mc_calls:${userId}`);
   ch.on(
@@ -225,12 +227,6 @@ export function subscribeCallSignals(userId: string, handlers: CallSignalHandler
   return ch;
 }
 
-// Phase 14: realtime unread bell.
-//
-// Subscribes to every messenger_participants row owned by the caller and emits
-// the new row on INSERT/UPDATE so a consumer can recompute the badge count.
-// The DELETE branch surfaces the OLD row (Realtime sends only old on delete)
-// so a caller can drop the conv from any cached aggregate.
 export interface ParticipantUnreadRow {
   conversation_id: string;
   user_id: string;
@@ -283,6 +279,8 @@ export function subscribeMyParticipants(
       filter: `user_id=eq.${userId}`,
     },
     (payload) => {
+      // Audit9: now that REPLICA IDENTITY is FULL on this table, the OLD row
+      // payload carries all columns -- not just the PK.
       const row = payload.old as ParticipantUnreadRow;
       if (row) onChange(row, 'DELETE');
     },
@@ -291,12 +289,6 @@ export function subscribeMyParticipants(
   return ch;
 }
 
-// Phase 14: cross-conversation incoming-message stream.
-//
-// The Phase 6 publication already publishes every messenger_messages INSERT,
-// and RLS gates the channel so the caller only sees rows from conversations
-// they participate in. We filter out self-authored messages locally so the
-// caller never browser-pushes its own send.
 export interface IncomingMessageNotification {
   id: string;
   conversation_id: string;
@@ -306,9 +298,13 @@ export interface IncomingMessageNotification {
   created_at: string;
 }
 
+// Audit9: accept an optional allowlist of conversation ids so a future
+// realtime auth misconfiguration cannot leak rows from rooms the caller no
+// longer participates in. Callers pass the live conversation-id Set.
 export function subscribeMyIncomingMessages(
   userId: string,
   onInsert: (m: IncomingMessageNotification) => void,
+  allowConversationIds?: Set<string>,
 ): RealtimeChannel {
   const ch = supabase.channel(`mm_self:${userId}`);
   ch.on(
@@ -320,7 +316,9 @@ export function subscribeMyIncomingMessages(
     },
     (payload) => {
       const m = payload.new as IncomingMessageNotification & { sender_id: string };
-      if (m && m.sender_id !== userId) onInsert(m);
+      if (!m || m.sender_id === userId) return;
+      if (allowConversationIds && !allowConversationIds.has(m.conversation_id)) return;
+      onInsert(m);
     },
   );
   ch.subscribe();

@@ -58,6 +58,8 @@ export async function POST(req: NextRequest) {
       'id, conversation_id, sender_id, text, message_type, media_url, media_metadata, reply_to_id, thread_parent_id, is_edited, is_deleted, delete_scope, priority, status, labels, expires_at, metadata, created_at, updated_at'
     )
     .eq('conversation_id', parsed.data.conversationId)
+    // Audit9: thread replies belong in the thread drawer, not the main pane.
+    .is('thread_parent_id', null)
     .order('created_at', { ascending: false })
     .limit(limit);
 
@@ -76,11 +78,21 @@ export async function POST(req: NextRequest) {
   if (qErr) return NextResponse.json({ error: qErr.message }, { status: 500 });
 
   const messages = (data ?? []) as MessageRow[];
+
+  // Audit9: scrub content from messages tombstoned via for_everyone delete
+  // so the server is the source of truth (defense in depth alongside the UI).
+  for (const m of messages) {
+    if (m.is_deleted && m.delete_scope === 'for_everyone') {
+      m.text = null;
+      m.media_url = null;
+      m.media_metadata = {};
+    }
+  }
+
   const messageIds = messages.map((m) => m.id);
 
-  // Audit fix: honor `for_me` dismissals. A user-issued dismissal hides the
-  // message from the dismisser's view only. The send/edit/delete paths never
-  // looked at this table on read, so dismissed messages were still served.
+  // Honor `for_me` dismissals. A user-issued dismissal hides the message from
+  // the dismisser's view only.
   let dismissedSet: Set<string> = new Set();
   if (messageIds.length > 0) {
     const { data: dis } = await svc
@@ -95,12 +107,14 @@ export async function POST(req: NextRequest) {
 
   // Bulk-load sender profiles. The sender_id FK targets auth.users, not
   // profiles, so PostgREST cannot embed profiles directly -- we fetch by id.
+  // Audit9: drop counterparty role from the response so non-admin viewers
+  // don't learn the role of other group/announcement participants.
   const senderIds = Array.from(new Set(visibleMessages.map((m) => m.sender_id)));
-  let senders: Array<{ id: string; full_name: string | null; username: string | null; role: string | null }> = [];
+  let senders: Array<{ id: string; full_name: string | null; username: string | null }> = [];
   if (senderIds.length > 0) {
     const { data: p } = await svc
       .from('profiles')
-      .select('id, full_name, username, role')
+      .select('id, full_name, username')
       .in('id', senderIds);
     senders = p ?? [];
   }
@@ -110,14 +124,16 @@ export async function POST(req: NextRequest) {
     sender: senderMap.get(m.sender_id) ?? null,
   }));
 
-  let reactions: Array<{ message_id: string; user_id: string; emoji: string | null; gif_url: string | null }> = [];
+  let reactions: Array<{ message_id: string; user_id: string; emoji: string | null; gif_url: string | null; reaction_type: string }> = [];
   if (visibleIds.length > 0) {
     const { data: r } = await svc
       .from('messenger_reactions')
-      .select('message_id, user_id, emoji, gif_url')
+      .select('message_id, user_id, emoji, gif_url, reaction_type')
       .in('message_id', visibleIds);
     reactions = r ?? [];
   }
 
-  return NextResponse.json({ messages: messagesWithSenders.reverse(), reactions });
+  const res = NextResponse.json({ messages: messagesWithSenders.reverse(), reactions });
+  res.headers.set('Cache-Control', 'private, no-store, max-age=0');
+  return res;
 }

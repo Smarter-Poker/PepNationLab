@@ -28,13 +28,39 @@ export async function POST(req: NextRequest) {
   if (!participant) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
   const svc = await createServiceClient();
+
+  // Audit9: validate the message belongs to the conversation, never rewind
+  // last_read_message_id to an earlier point. Service-client variant is fine
+  // because we already verified participation above.
+  const { data: msg } = await svc
+    .from('messenger_messages')
+    .select('conversation_id, created_at')
+    .eq('id', parsed.data.lastReadMessageId)
+    .maybeSingle();
+  if (!msg || msg.conversation_id !== parsed.data.conversationId) {
+    return NextResponse.json({ error: 'Message Not In Conversation' }, { status: 400 });
+  }
+
+  const { data: current } = await svc
+    .from('messenger_participants')
+    .select('last_read_at, last_read_message_id')
+    .eq('conversation_id', parsed.data.conversationId)
+    .eq('user_id', user.id)
+    .maybeSingle();
+
+  const msgTs = msg.created_at as string;
+  const currentLast = current?.last_read_at as string | null | undefined;
+  const newer = !currentLast || new Date(msgTs).getTime() >= new Date(currentLast).getTime();
+
+  const updateRow: Record<string, unknown> = {
+    unread_count: 0,
+    last_read_at: newer ? msgTs : currentLast,
+  };
+  if (newer) updateRow.last_read_message_id = parsed.data.lastReadMessageId;
+
   const { error: updErr } = await svc
     .from('messenger_participants')
-    .update({
-      last_read_at: new Date().toISOString(),
-      last_read_message_id: parsed.data.lastReadMessageId,
-      unread_count: 0,
-    })
+    .update(updateRow)
     .eq('conversation_id', parsed.data.conversationId)
     .eq('user_id', user.id);
 

@@ -16,7 +16,7 @@ export default function Navbar() {
 
   useEffect(() => {
     const supabase = createClient();
-    
+
     // Get initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) {
@@ -25,7 +25,7 @@ export default function Navbar() {
           .from('profiles')
           .select('full_name, role, tier')
           .eq('id', session.user.id)
-          .single()
+          .maybeSingle()
           .then(({ data }) => {
             if (data) setProfile(data);
             setLoading(false);
@@ -45,7 +45,7 @@ export default function Navbar() {
           .from('profiles')
           .select('full_name, role, tier')
           .eq('id', session.user.id)
-          .single()
+          .maybeSingle()
           .then(({ data }) => {
             if (data) setProfile(data);
           });
@@ -97,7 +97,7 @@ export default function Navbar() {
                 onMouseOut={e => (e.currentTarget.style.color = 'var(--silver)')}>
             About
           </Link>
-          
+
           {role === 'researcher' && (
             <Link href="/become-agent" style={{ color: 'var(--silver)', fontSize: '0.9rem', fontWeight: 500, transition: 'color 0.2s' }}
                   onMouseOver={e => (e.currentTarget.style.color = 'var(--teal)')}
@@ -109,7 +109,7 @@ export default function Navbar() {
           <div style={{ width: 1, height: 20, background: 'var(--surface-3)' }} />
 
           {/* Cart Button */}
-          <button 
+          <button
             onClick={() => setIsCartOpen(true)}
             style={{
               width: 42,
@@ -193,7 +193,7 @@ export default function Navbar() {
         {/* Mobile menu trigger + cart */}
         <div style={{ display: 'none', alignItems: 'center', gap: 'var(--space-3)' }} className="mobile-actions-wrapper">
           {/* Mobile Cart Button */}
-          <button 
+          <button
             onClick={() => setIsCartOpen(true)}
             style={{
               width: 36,
@@ -273,7 +273,7 @@ export default function Navbar() {
           <Link href="/about" onClick={() => setMobileOpen(false)} style={{ padding: 'var(--space-3)', color: 'var(--silver)', borderRadius: 'var(--radius-md)', fontWeight: 500 }}>
             About
           </Link>
-          
+
           {role === 'researcher' && (
             <Link href="/become-agent" onClick={() => setMobileOpen(false)} style={{ padding: 'var(--space-3)', color: 'var(--silver)', borderRadius: 'var(--radius-md)', fontWeight: 500 }}>
               Become An Agent
@@ -281,7 +281,7 @@ export default function Navbar() {
           )}
 
           <div style={{ height: 1, background: 'var(--surface-2)', margin: 'var(--space-2) 0' }} />
-          
+
           {loading ? (
             <div style={{ height: 40, borderRadius: 'var(--radius-md)', background: 'var(--surface-2)' }} className="skeleton" />
           ) : user ? (

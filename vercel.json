@@ -53,6 +53,14 @@
       "schedule": "*/5 * * * *"
     },
     {
+      "path": "/api/messenger/cron/mark-missed-calls",
+      "schedule": "* * * * *"
+    },
+    {
+      "path": "/api/messenger/cron/cleanup-presence",
+      "schedule": "*/5 * * * *"
+    },
+    {
       "path": "/api/cron/label-jobs",
       "schedule": "*/5 * * * *"
     },

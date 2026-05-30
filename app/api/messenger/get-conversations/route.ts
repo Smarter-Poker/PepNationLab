@@ -21,5 +21,8 @@ export async function POST(req: NextRequest) {
   const { data, error: rpcErr } = await svc.rpc('fn_get_user_conversations', { p_user: user.id });
   if (rpcErr) return NextResponse.json({ error: rpcErr.message }, { status: 500 });
 
-  return NextResponse.json({ conversations: data ?? [] });
+  // Audit9: private cache — inbox results must not be cached by intermediaries.
+  const res = NextResponse.json({ conversations: data ?? [] });
+  res.headers.set('Cache-Control', 'private, no-store, max-age=0');
+  return res;
 }

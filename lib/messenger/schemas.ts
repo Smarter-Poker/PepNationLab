@@ -11,7 +11,9 @@ function boundedMetadata() {
     .refine(
       (v) => {
         try {
-          return JSON.stringify(v).length <= MEDIA_METADATA_MAX_BYTES;
+          // Audit9: count bytes not UTF-16 code units so multi-byte payloads
+          // don't sneak past the cap.
+          return Buffer.byteLength(JSON.stringify(v), 'utf8') <= MEDIA_METADATA_MAX_BYTES;
         } catch {
           return false;
         }
@@ -33,16 +35,23 @@ export const SendMessageSchema = z
     conversationId: z.string().uuid(),
     text: z.string().max(2000).optional(),
     messageType: z
-      .enum(['text', 'image', 'gif', 'voice', 'file', 'contact_card', 'location', 'poll', 'system'])
+      .enum(['text', 'image', 'gif', 'voice', 'file', 'contact_card', 'location', 'poll'])
+      // Audit9: 'system' is server-only — clients cannot post system messages.
       .default('text'),
     mediaUrl: z.string().url().optional(),
     mediaMetadata: boundedMetadata().optional(),
     replyToId: z.string().uuid().optional(),
     threadParentId: z.string().uuid().optional(),
     expiresAt: z.string().datetime().optional(),
+    // Audit9: client-supplied idempotency key. The route returns the existing
+    // row on (conversation_id, sender_id, client_message_id) unique violation.
+    clientMessageId: z.string().uuid().optional(),
   })
   .refine((d) => Boolean(d.text && d.text.trim().length > 0) || Boolean(d.mediaUrl), {
     message: 'Either text or mediaUrl required',
+  })
+  .refine((d) => !(d.replyToId && d.threadParentId), {
+    message: 'Cannot Both Reply And Thread',
   });
 export type SendMessageInput = z.infer<typeof SendMessageSchema>;
 
@@ -236,10 +245,6 @@ export const TemplateDeleteSchema = z.object({
 });
 export type TemplateDeleteInput = z.infer<typeof TemplateDeleteSchema>;
 
-// Audit3 fix: usage_count column on messenger_templates was never bumped,
-// making it a dead column and breaking the "most used templates" sort in
-// list-templates. Add a `use` action that the TemplatesMenu fires when the
-// user picks a template.
 export const TemplateUseSchema = z.object({
   action: z.literal('use'),
   id: z.string().uuid(),
@@ -264,7 +269,7 @@ export type StartCallInput = z.infer<typeof StartCallSchema>;
 
 export const CallSignalSchema = z.object({
   callId: z.string().uuid(),
-  action: z.enum(['accept', 'decline', 'hangup']),
+  action: z.enum(['start', 'accept', 'decline', 'hangup']),
 });
 export type CallSignalInput = z.infer<typeof CallSignalSchema>;
 
@@ -311,11 +316,6 @@ export const SetReminderSchema = z
     remindAt: z.string().datetime(),
     note: z.string().max(500).optional(),
   })
-  // Audit7 fix: reject orphan reminders (no message AND no conversation).
-  // The reminder route previously accepted this shape and inserted a row
-  // with both bindings null -- it could never be acted on because the UI
-  // surfaces reminders by conversation/message, but it would still show in
-  // list-reminders and clutter the user's pending queue.
   .refine(
     (v) => Boolean(v.messageId) || Boolean(v.conversationId),
     { message: 'Reminder Must Bind To A Message Or Conversation' },
@@ -332,10 +332,6 @@ export const ListAdminMentionsSchema = z.object({
 });
 export type ListAdminMentionsInput = z.infer<typeof ListAdminMentionsSchema>;
 
-// Audit5 fix: admin moderation surface had no way to flip an @admin mention
-// from `unread` -> `read` / `resolved`, so the AdminMessengerClient's docstring
-// noted the route was missing. Add it now so admins can clear the unread
-// counter from the inbox.
 export const ResolveAdminMentionSchema = z.object({
   mentionId: z.string().uuid(),
   status: z.enum(['read', 'resolved']),
@@ -343,13 +339,6 @@ export const ResolveAdminMentionSchema = z.object({
 });
 export type ResolveAdminMentionInput = z.infer<typeof ResolveAdminMentionSchema>;
 
-// Phase 14: notifications - notification_preferences upsert
-//
-// The platform-wide rule is "zero email" -- lib/email.ts is a no-op shim --
-// but the columns exist so future opt-in flows have a place to write. The
-// only field surfaced in the messenger UI today is browserPush (via the
-// in-pane "Enable Push Notifications" prompt). The rest are accepted here
-// for parity with the underlying table.
 export const NotificationPrefsSchema = z.object({
   browserPush: z.boolean().optional(),
   emailOnMessage: z.boolean().optional(),
