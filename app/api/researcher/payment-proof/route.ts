@@ -38,17 +38,32 @@ export async function GET(req: NextRequest) {
 
   const service = await createServiceClient();
 
-  // Code-level ownership check: verify the caller is the order's buyer.
-  // This provides defense-in-depth beyond RLS — if RLS on payment_proofs
-  // is ever misconfigured, callers cannot access another user's proofs.
+  // Code-level ownership check: allow the order's buyer OR the order's agent
+  // (and admins checked via profile below). This provides defense-in-depth
+  // beyond RLS — ensures agents can view payment proofs to approve orders.
   const { data: orderCheck } = await service
     .from('orders')
-    .select('buyer_id')
+    .select('buyer_id, agent_id')
     .eq('id', orderId)
     .maybeSingle();
 
   if (!orderCheck) return NextResponse.json({ error: 'Order Not Found.' }, { status: 404 });
-  if (orderCheck.buyer_id !== user.id) {
+
+  const isBuyer = orderCheck.buyer_id === user.id;
+  const isAgent = orderCheck.agent_id === user.id;
+
+  // Allow admins as a third access tier
+  let isAdmin = false;
+  if (!isBuyer && !isAgent) {
+    const { data: prof } = await service
+      .from('profiles')
+      .select('role')
+      .eq('id', user.id)
+      .maybeSingle();
+    isAdmin = prof?.role === 'admin';
+  }
+
+  if (!isBuyer && !isAgent && !isAdmin) {
     return NextResponse.json({ error: 'Forbidden.' }, { status: 403 });
   }
 
@@ -71,6 +86,7 @@ export async function GET(req: NextRequest) {
 
   return NextResponse.json({ data: enriched });
 }
+
 
 export async function POST(req: NextRequest) {
   const csrfFail = assertSameOrigin(req);

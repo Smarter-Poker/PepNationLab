@@ -45,12 +45,41 @@ export default async function CheckoutPage({ searchParams }: PageProps) {
     tierMultipliers[t.tier_name] = Number(t.multiplier);
   });
 
+  // Resolve the agent's payment handles so CheckoutForm shows only the
+  // handles this specific agent has configured (not hardcoded platform handles).
+  // Prefer agentSlug (storefront URL) → then researcher's referring_agent_id.
+  let agentPaymentHandles: Record<string, string> = {};
+  try {
+    if (agentSlug) {
+      const { data: ap } = await supabase
+        .from('agent_profiles')
+        .select('payment_handles')
+        .ilike('slug', agentSlug)
+        .single();
+      if (ap?.payment_handles) {
+        agentPaymentHandles = ap.payment_handles as Record<string, string>;
+      }
+    } else if (profile.referring_agent_id) {
+      const { data: ap } = await supabase
+        .from('agent_profiles')
+        .select('payment_handles')
+        .eq('id', profile.referring_agent_id)
+        .single();
+      if (ap?.payment_handles) {
+        agentPaymentHandles = ap.payment_handles as Record<string, string>;
+      }
+    }
+  } catch {
+    // Non-blocking — checkout still works without agent handles
+  }
+
   return (
     <CheckoutForm
       userProfile={profile}
       userEmail={user.email ?? ''}
       tierMultipliers={tierMultipliers}
       agentSlug={agentSlug}
+      agentPaymentHandles={agentPaymentHandles}
     />
   );
 }

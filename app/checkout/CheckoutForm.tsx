@@ -7,6 +7,15 @@ import { US_STATES } from '@/lib/us-states';
 import PaymentProofUpload from '@/components/PaymentProofUpload';
 import { toTitleCase } from '@/lib/categoryImage';
 
+type PaymentMethodId = 'zelle' | 'cashapp' | 'venmo' | 'apple_pay';
+
+const ALL_PAYMENT_METHODS: { id: PaymentMethodId; name: string; desc: string }[] = [
+  { id: 'zelle',     name: 'Zelle Payment',  desc: 'Instant Direct Transfer. Fastest Processing.' },
+  { id: 'cashapp',   name: 'Cash App',        desc: 'Secure Mobile Check. Handled Manually.' },
+  { id: 'venmo',     name: 'Venmo Payment',   desc: 'Social Transfer. Manual Clearance.' },
+  { id: 'apple_pay', name: 'Apple Pay',       desc: 'Secure Contactless Flow. Fast Settlement.' },
+];
+
 interface Profile {
   full_name: string | null;
   role: string;
@@ -20,6 +29,8 @@ interface CheckoutFormProps {
   tierMultipliers: Record<string, number>;
   /** Which agent storefront initiated this checkout — enforces closed-loop isolation */
   agentSlug?: string | null;
+  /** Payment handles configured by the agent (from agent_profiles.payment_handles) */
+  agentPaymentHandles?: Record<string, string>;
 }
 
 interface SavedAddress {
@@ -35,7 +46,7 @@ interface SavedAddress {
   is_default: boolean;
 }
 
-export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, agentSlug }: CheckoutFormProps) {
+export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, agentSlug, agentPaymentHandles }: CheckoutFormProps) {
   // Agent buying from their own store → show tier-discounted pricing.
   // Cross-check: only treat as self-buy when the agentSlug in the URL
   // matches the agent's OWN store. If an agent visits another agent's
@@ -44,6 +55,15 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
   const isAgentByRole = userProfile.role === 'agent' || userProfile.role === 'super_agent';
   // Admins are intentionally excluded: they don't have agent_profiles rows.
   const isAgentSelfBuy = isAgentByRole;
+
+  // Derive available payment methods from what the agent has actually configured.
+  // If agentPaymentHandles has no non-empty values, fall back to all methods.
+  const availablePaymentMethods = (
+    agentPaymentHandles &&
+    Object.values(agentPaymentHandles).some(v => v?.trim())
+  )
+    ? ALL_PAYMENT_METHODS.filter(p => (agentPaymentHandles[p.id] ?? '').trim().length > 0)
+    : ALL_PAYMENT_METHODS;
   const { cart: contextCart, cartSubtotal: contextSubtotal, clearCart } = useCart();
 
   // The per-agent cart key — ONLY reads this agent's cart, never another agent's.
@@ -157,7 +177,7 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
   const [phone, setPhone] = useState('');
 
   const [fulfillmentMethod, setFulfillmentMethod] = useState<'ship' | 'agent_pickup'>('ship');
-  const [paymentMethod, setPaymentMethod] = useState<'zelle' | 'cashapp' | 'venmo' | 'apple_pay'>('zelle');
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethodId>(availablePaymentMethods[0]?.id ?? 'zelle');
 
   // Saved addresses
   const [savedAddresses, setSavedAddresses] = useState<SavedAddress[]>([]);
@@ -558,32 +578,42 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
     }
   };
 
-  // Get payment handles text
+  // Get payment handles text — uses the agent's actual configured handle, not hardcoded admin handles.
   const getPaymentDetails = () => {
+    const handle = (agentPaymentHandles?.[paymentMethod] ?? '').trim();
+    const noHandle = 'Contact Your Agent For Handle';
     switch (paymentMethod) {
       case 'zelle':
         return {
           label: 'Zelle Payment Details',
-          handle: 'payments@pepnationlab.com',
-          instructions: 'Send Total Amount To Our Official Zelle Account: payments@pepnationlab.com. Please Include Your Order ID In Memo.'
+          handle: handle || noHandle,
+          instructions: handle
+            ? `Send Total Amount To: ${handle}. Please Include Your Order ID In The Memo Field.`
+            : 'Contact Your Agent For Zelle Payment Instructions.',
         };
       case 'cashapp':
         return {
           label: 'Cash App Details',
-          handle: '$PepNationLab',
-          instructions: 'Send Total Amount To Our Official Cash App Handle: $PepNationLab. Please Reference Your Order ID In Memo.'
+          handle: handle || noHandle,
+          instructions: handle
+            ? `Send Total Amount To Cash App: ${handle}. Please Reference Your Order ID In Memo.`
+            : 'Contact Your Agent For Cash App Payment Instructions.',
         };
       case 'venmo':
         return {
           label: 'Venmo Payment Details',
-          handle: '@PepNationLab',
-          instructions: 'Send Total Amount To Our Official Venmo Handle: @PepNationLab. Please Reference Your Order ID In Memo.'
+          handle: handle || noHandle,
+          instructions: handle
+            ? `Send Total Amount To Venmo: ${handle}. Please Reference Your Order ID In Memo.`
+            : 'Contact Your Agent For Venmo Payment Instructions.',
         };
       case 'apple_pay':
         return {
           label: 'Apple Pay Details',
-          handle: 'payments@pepnationlab.com',
-          instructions: 'Send Total Amount via Apple Pay Cash To: payments@pepnationlab.com. Please Reference Your Order ID.'
+          handle: handle || noHandle,
+          instructions: handle
+            ? `Send Total Amount Via Apple Pay Cash To: ${handle}. Please Reference Your Order ID.`
+            : 'Contact Your Agent For Apple Pay Instructions.',
         };
     }
   };
@@ -655,7 +685,7 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
               <div>
                 <p style={{ color: '#F59E0B', fontWeight: 700, fontSize: '0.88rem', margin: '0 0 4px' }}>Total Was Adjusted</p>
                 <p style={{ color: 'var(--silver-light)', fontSize: '0.82rem', margin: 0, lineHeight: 1.5 }}>
-                  Your confirmed order total is <strong style={{ color: '#F59E0B' }}>${serverTotal.toFixed(2)}</strong>. Shipping rates or tax may have updated since your cart was loaded. Please send exactly <strong style={{ color: '#F59E0B' }}>${serverTotal.toFixed(2)}</strong> to the payment handle below.
+                  Your Confirmed Order Total Is <strong style={{ color: '#F59E0B' }}>${serverTotal.toFixed(2)}</strong>. Shipping Rates Or Tax May Have Updated Since Your Cart Was Loaded. Please Send Exactly <strong style={{ color: '#F59E0B' }}>${serverTotal.toFixed(2)}</strong> To The Payment Handle Below.
                 </p>
               </div>
             </div>
@@ -1124,12 +1154,7 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
                   </p>
 
                   <div className="payment-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-4)' }}>
-                    {[
-                      { id: 'zelle', name: 'Zelle Payment', desc: 'Instant Direct Transfer. Fastest Processing.' },
-                      { id: 'cashapp', name: 'Cash App', desc: 'Secure Mobile Check. Handled Manually.' },
-                      { id: 'venmo', name: 'Venmo Payment', desc: 'Social Transfer. Manual Clearance.' },
-                      { id: 'apple_pay', name: 'Apple Pay', desc: 'Secure Contactless Flow. Fast Settlement.' }
-                    ].map((p) => (
+                    {availablePaymentMethods.map((p) => (
                       <label key={p.id} style={{
                         display: 'flex',
                         flexDirection: 'column',
@@ -1147,7 +1172,7 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
                             type="radio"
                             name="paymentMethod"
                             checked={paymentMethod === p.id}
-                            onChange={() => setPaymentMethod(p.id as any)}
+                            onChange={() => setPaymentMethod(p.id)}
                             style={{ accentColor: 'var(--teal)' }}
                           />
                           <strong style={{ color: 'var(--white)', fontSize: '0.95rem' }}>{p.name}</strong>
