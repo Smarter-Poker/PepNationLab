@@ -42,7 +42,7 @@ export async function GET(req: NextRequest) {
     .eq('order_id', orderId)
     .order('uploaded_at', { ascending: false });
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
 
   const service = await createServiceClient();
   const enriched = await Promise.all(
@@ -117,7 +117,7 @@ export async function POST(req: NextRequest) {
     });
 
   if (uploadErr) {
-    return NextResponse.json({ error: `Upload Failed: ${uploadErr.message}` }, { status: 500 });
+    return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
   }
 
   const { data: row, error: insertErr } = await service

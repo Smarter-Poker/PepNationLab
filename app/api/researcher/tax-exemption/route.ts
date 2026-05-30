@@ -30,7 +30,7 @@ export async function GET(req: NextRequest) {
     .eq('user_id', user.id)
     .order('uploaded_at', { ascending: false });
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
 
   const enriched = await Promise.all(
     (data ?? []).map(async (row) => {
@@ -107,7 +107,7 @@ export async function POST(req: NextRequest) {
       upsert: false,
     });
   if (uploadErr) {
-    return NextResponse.json({ error: `Upload Failed: ${uploadErr.message}` }, { status: 500 });
+    return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
   }
 
   // Upsert by (user_id, state_code) — keep the latest submission. If a
@@ -146,7 +146,7 @@ export async function POST(req: NextRequest) {
       .single();
     if (error) {
       await service.storage.from('tax-exemption-certs').remove([key]).catch(() => {});
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
     }
     row = data;
     if (prior.storage_key && prior.storage_key !== key) {
@@ -160,7 +160,7 @@ export async function POST(req: NextRequest) {
       .single();
     if (error) {
       await service.storage.from('tax-exemption-certs').remove([key]).catch(() => {});
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
     }
     row = data;
   }

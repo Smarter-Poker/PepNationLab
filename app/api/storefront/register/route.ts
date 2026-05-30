@@ -103,7 +103,7 @@ export async function POST(req: NextRequest) {
 
   if (authError || !authData?.user) {
     return NextResponse.json(
-      { error: `Failed To Create Account: ${authError?.message ?? 'Unknown Error'}` },
+      { error: 'Failed To Create Account.' },
       { status: 500 }
     );
   }
@@ -131,7 +131,7 @@ export async function POST(req: NextRequest) {
   if (profileError) {
     await supabase.auth.admin.deleteUser(newUserId);
     return NextResponse.json(
-      { error: `Profile Creation Failed: ${profileError.message}` },
+      { error: 'Profile Creation Failed.' },
       { status: 500 }
     );
   }

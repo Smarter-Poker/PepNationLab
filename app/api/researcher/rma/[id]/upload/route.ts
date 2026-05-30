@@ -79,7 +79,7 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
     .from('rma-attachments')
     .upload(key, bytes, { contentType: file.type, upsert: false });
   if (uploadErr) {
-    return NextResponse.json({ error: `Upload Failed: ${uploadErr.message}` }, { status: 500 });
+    return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
   }
 
   const { data: row, error: insertErr } = await service

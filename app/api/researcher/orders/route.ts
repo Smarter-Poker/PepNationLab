@@ -20,6 +20,6 @@ export async function GET(_req: NextRequest) {
     .order('created_at', { ascending: false })
     .limit(50);
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
   return NextResponse.json({ orders: data });
 }

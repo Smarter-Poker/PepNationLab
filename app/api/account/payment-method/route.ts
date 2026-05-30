@@ -18,7 +18,7 @@ export async function GET() {
     .eq('id', user.id)
     .maybeSingle();
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
   return NextResponse.json({ data: { default_payment_method: data?.default_payment_method ?? null } });
 }
 
@@ -39,6 +39,6 @@ export async function PUT(req: NextRequest) {
     .update({ default_payment_method: parsed.data.default_payment_method })
     .eq('id', user.id);
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
   return NextResponse.json({ ok: true });
 }

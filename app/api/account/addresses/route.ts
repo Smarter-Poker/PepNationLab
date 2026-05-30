@@ -26,7 +26,7 @@ export async function GET() {
     .order('is_default', { ascending: false })
     .order('updated_at', { ascending: false });
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
   return NextResponse.json({ data });
 }
 
@@ -64,6 +64,6 @@ export async function POST(req: NextRequest) {
     .select('id, label, full_name, street1, street2, city, state, zip, country, is_default, created_at, updated_at')
     .single();
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
   return NextResponse.json({ data });
 }

@@ -26,7 +26,7 @@ export async function GET(_req: NextRequest) {
     .eq('user_id', user.id)
     .order('created_at', { ascending: false });
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
 
   type Row = {
     product_id: string;
@@ -93,7 +93,7 @@ export async function POST(req: NextRequest) {
     { onConflict: 'user_id,product_id' }
   );
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
   return NextResponse.json({ success: true });
 }
 
@@ -113,6 +113,6 @@ export async function DELETE(req: NextRequest) {
     .eq('user_id', user.id)
     .eq('product_id', productId);
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
   return NextResponse.json({ success: true });
 }

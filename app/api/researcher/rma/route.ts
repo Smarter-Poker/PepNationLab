@@ -52,7 +52,7 @@ export async function GET() {
     .eq('requester_id', user.id)
     .order('created_at', { ascending: false });
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
   return NextResponse.json({ rmas: data ?? [] });
 }
 

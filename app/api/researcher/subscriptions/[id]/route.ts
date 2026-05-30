@@ -145,7 +145,7 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
     .eq('researcher_id', gate.userId!);
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
   }
 
   return NextResponse.json({ ok: true });
