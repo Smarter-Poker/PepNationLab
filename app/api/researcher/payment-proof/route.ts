@@ -125,7 +125,7 @@ export async function POST(req: NextRequest) {
   const service = await createServiceClient();
   const { data: order, error: orderErr } = await service
     .from('orders')
-    .select('id, buyer_id')
+    .select('id, buyer_id, agent_id')
     .eq('id', orderId)
     .maybeSingle();
 
@@ -172,5 +172,109 @@ export async function POST(req: NextRequest) {
     .from('payment-proofs')
     .createSignedUrl(key, 600);
 
+  // ── Messenger integration (fire-and-forget) ────────────────────────────
+  // Post a message in the researcher↔agent conversation so the agent is
+  // immediately alerted and can view the proof without leaving the app.
+  void (async () => {
+    try {
+      if (!order.agent_id) return; // No agent on this order
+      const conversationId = await findOrCreateDirectConversation(
+        service,
+        order.buyer_id,
+        order.agent_id
+      );
+      if (!conversationId) return;
+
+      const shortId = orderId.slice(0, 8).toUpperCase();
+      const isImage = file.type.startsWith('image/');
+
+      // 24-hour signed URL for the messenger preview
+      const { data: longSigned } = await service.storage
+        .from('payment-proofs')
+        .createSignedUrl(key, 86400);
+
+      await service.from('messenger_messages').insert({
+        conversation_id: conversationId,
+        sender_id: user.id, // The researcher who uploaded
+        text: `📎 Payment proof submitted for Order #${shortId}. Please review and mark as paid once verified.`,
+        message_type: isImage ? 'image' : 'file',
+        media_url: longSigned?.signedUrl ?? null,
+        media_metadata: {
+          fileName: file.name || `payment-proof.${EXT_BY_MIME[file.type] || 'bin'}`,
+          mimeType: file.type,
+          sizeBytes: file.size,
+          orderId,
+        },
+      });
+
+      // Also drop an in-app notification for the agent
+      await service.from('notifications').insert({
+        user_id: order.agent_id,
+        title: 'Payment Proof Received',
+        body: `Your researcher submitted a payment proof for Order #${shortId}. Review and mark as paid.`,
+        type: 'order',
+        metadata: { orderId, action: 'mark_paid' },
+      }).catch(() => {}); // Non-blocking
+    } catch (err) {
+      console.error('[payment-proof] messenger integration error:', err);
+    }
+  })();
+
   return NextResponse.json({ data: { ...row, signed_url: signed?.signedUrl ?? null } });
+}
+
+// ── Helper shared with mark-paid route ─────────────────────────────────────
+async function findOrCreateDirectConversation(
+  svc: Awaited<ReturnType<typeof createServiceClient>>,
+  userAId: string,
+  userBId: string
+): Promise<string | null> {
+  try {
+    const { data: aParticipations } = await svc
+      .from('messenger_participants')
+      .select('conversation_id')
+      .eq('user_id', userAId);
+
+    const aConvoIds = (aParticipations ?? [])
+      .map((p) => p.conversation_id)
+      .filter(Boolean) as string[];
+
+    if (aConvoIds.length > 0) {
+      const { data: sharedPart } = await svc
+        .from('messenger_participants')
+        .select('conversation_id')
+        .eq('user_id', userBId)
+        .in('conversation_id', aConvoIds)
+        .limit(1)
+        .maybeSingle();
+
+      if (sharedPart?.conversation_id) {
+        const { data: convo } = await svc
+          .from('messenger_conversations')
+          .select('id')
+          .eq('id', sharedPart.conversation_id)
+          .eq('type', 'direct')
+          .maybeSingle();
+        if (convo?.id) return convo.id;
+      }
+    }
+
+    // Create a new direct conversation
+    const { data: newConvo, error: convoErr } = await svc
+      .from('messenger_conversations')
+      .insert({ type: 'direct' })
+      .select('id')
+      .single();
+
+    if (convoErr || !newConvo?.id) return null;
+
+    await svc.from('messenger_participants').insert([
+      { conversation_id: newConvo.id, user_id: userAId },
+      { conversation_id: newConvo.id, user_id: userBId },
+    ]);
+
+    return newConvo.id;
+  } catch {
+    return null;
+  }
 }

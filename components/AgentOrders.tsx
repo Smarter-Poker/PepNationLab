@@ -177,6 +177,35 @@ export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
     }
   };
 
+  const handleMarkPaid = async (orderId: string) => {
+    setLoadingOrderId(orderId);
+    try {
+      const res = await fetch('/api/agent/orders/mark-paid', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderId }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || 'Failed To Mark Order As Paid.');
+      }
+
+      setOrders((prev) =>
+        prev.map((o) =>
+          o.id === orderId
+            ? { ...o, status: data.newStatus }
+            : o
+        )
+      );
+      toast.success('Order Marked As Paid!');
+    } catch (err: any) {
+      toast.error(err.message ?? 'An Error Occurred Marking Order As Paid.');
+    } finally {
+      setLoadingOrderId(null);
+    }
+  };
+
   const detailSubtotal = detailItems.reduce(
     (sum, it) => sum + Number(it.unit_retail_price || 0) * Number(it.quantity || 0),
     0
@@ -394,7 +423,7 @@ export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
                         alignItems: 'flex-end',
                       }}
                     >
-                      {order.fulfillment_method === 'ship' && (
+                      {order.fulfillment_method === 'ship' && isPendingApproval && (
                         <input
                           type="text"
                           placeholder="Tracking Number (USPS/UPS)"
@@ -422,22 +451,34 @@ export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
                         >
                           Cancel
                         </button>
-                        <button
-                          onClick={() =>
-                            handleUpdateOrderStatus(
-                              order.id,
-                              order.fulfillment_method === 'agent_pickup'
-                                ? 'approved_pickup'
-                                : 'approved_ship'
-                            )
-                          }
-                          className="btn btn-primary btn-sm"
-                          style={{ fontSize: '0.75rem' }}
-                          disabled={loadingOrderId === order.id || buyingLabelId === order.id}
-                        >
-                          {loadingOrderId === order.id ? 'Processing...' : 'Approve Offline Payment'}
-                        </button>
-                        {order.fulfillment_method === 'ship' && (
+                        
+                        {isPendingPayment && (
+                          <button
+                            onClick={() => handleMarkPaid(order.id)}
+                            className="btn btn-primary btn-sm"
+                            style={{ fontSize: '0.75rem' }}
+                            disabled={loadingOrderId === order.id || buyingLabelId === order.id}
+                          >
+                            {loadingOrderId === order.id ? 'Processing...' : 'Mark As Paid'}
+                          </button>
+                        )}
+                        
+                        {isPendingApproval && (
+                          <span style={{ 
+                            fontSize: '0.75rem', 
+                            color: '#F6AD55', 
+                            border: '1px solid #F6AD5540',
+                            padding: '4px 8px',
+                            borderRadius: 'var(--radius-sm)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            background: 'rgba(246,173,85,0.1)'
+                          }}>
+                            Awaiting Admin Approval
+                          </span>
+                        )}
+
+                        {isPendingApproval && order.fulfillment_method === 'ship' && (
                           <button
                             onClick={() => handleBuyShippingLabel(order.id)}
                             className="btn btn-secondary btn-sm"

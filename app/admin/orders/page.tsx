@@ -91,7 +91,7 @@ function AdminOrdersPageInner() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [searchQuery, setSearchQuery] = useState(searchParams.get('q') ?? '');
-  const [statusFilter, setStatusFilter] = useState<string>(searchParams.get('status') ?? 'all');
+  const [statusFilter, setStatusFilter] = useState<string>(searchParams.get('status') ?? 'agent_approval_pending');
   const [dateFrom, setDateFrom] = useState<string>(searchParams.get('from') ?? '');
   const [dateTo, setDateTo] = useState<string>(searchParams.get('to') ?? '');
   const [wholesaleOnly, setWholesaleOnly] = useState<boolean>(searchParams.get('wholesale') === '1');
