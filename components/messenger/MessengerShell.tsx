@@ -144,6 +144,10 @@ export default function MessengerShell({ userId }: Props) {
   // browser Notification only when the tab is hidden OR the message belongs
   // to a different conversation than the one currently active.
   const lastNotifiedRef = useRef<Set<string>>(new Set());
+  // Audit6 fix: cache sender name lookups so consecutive messages from the
+  // same sender don't hit the network for every notification. Cleared on
+  // unmount with the rest of the component state.
+  const senderNameCacheRef = useRef<Map<string, string>>(new Map());
   useEffect(() => {
     function preview(m: IncomingMessageNotification): string {
       if (m.text && m.text.trim().length > 0) {
@@ -163,7 +167,37 @@ export default function MessengerShell({ userId }: Props) {
           return '[Media]';
       }
     }
-    function maybeNotify(m: IncomingMessageNotification) {
+    async function resolveSenderName(m: IncomingMessageNotification): Promise<string> {
+      const cached = senderNameCacheRef.current.get(m.sender_id);
+      if (cached) return cached;
+      try {
+        const res = await fetch('/api/messenger/list-participants', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ conversationId: m.conversation_id }),
+        });
+        if (!res.ok) {
+          senderNameCacheRef.current.set(m.sender_id, 'Someone');
+          return 'Someone';
+        }
+        const json = (await res.json()) as {
+          participants?: Array<{ user_id: string; full_name: string | null; username: string | null }>;
+        };
+        // Populate the cache with everyone in the conversation in one shot.
+        (json.participants ?? []).forEach((p) => {
+          const name =
+            (p.full_name && p.full_name.trim()) ||
+            (p.username && p.username.trim()) ||
+            'Someone';
+          senderNameCacheRef.current.set(p.user_id, name);
+        });
+        return senderNameCacheRef.current.get(m.sender_id) ?? 'Someone';
+      } catch {
+        senderNameCacheRef.current.set(m.sender_id, 'Someone');
+        return 'Someone';
+      }
+    }
+    async function maybeNotify(m: IncomingMessageNotification) {
       try {
         // Skip if user is actively looking at this conversation.
         const hidden = typeof document !== 'undefined' && document.visibilityState !== 'visible';
@@ -184,18 +218,86 @@ export default function MessengerShell({ userId }: Props) {
           const arr = Array.from(lastNotifiedRef.current);
           lastNotifiedRef.current = new Set(arr.slice(-100));
         }
-        new Notification('New Message On Pep Nation Lab', {
-          body: preview(m),
+        // Audit6 fix: include sender name in body so the user knows who
+        // messaged without opening the tab. Lookup is cached per sender.
+        const senderName = await resolveSenderName(m);
+        const body = `${senderName}: ${preview(m)}`;
+        const n = new Notification('New Message On Pep Nation Lab', {
+          body,
           tag: m.conversation_id,
           icon: '/logo-mark.svg',
         });
+        // Audit6 fix: clicking the OS notification used to do nothing. Focus
+        // the tab if possible and navigate to the messenger surface with the
+        // target conversation activated. encodeURIComponent guards against
+        // an anomalous conv id surfacing in the URL.
+        n.onclick = () => {
+          try {
+            if (typeof window !== 'undefined') {
+              window.focus();
+              if (window.location.pathname.startsWith('/messenger')) {
+                // Already on the surface - dispatch an event so MessengerShell
+                // / MessagePane can swap conversations without a full nav.
+                window.dispatchEvent(
+                  new CustomEvent('messenger:open-conv', {
+                    detail: { conversationId: m.conversation_id },
+                  }),
+                );
+              } else {
+                window.location.href = `/messenger?conv=${encodeURIComponent(m.conversation_id)}`;
+              }
+            }
+          } catch {
+            // non-fatal
+          } finally {
+            try {
+              n.close();
+            } catch {
+              /* noop */
+            }
+          }
+        };
       } catch {
         // non-fatal
       }
     }
-    const ch = subscribeMyIncomingMessages(userId, maybeNotify);
+    const ch = subscribeMyIncomingMessages(userId, (m) => {
+      // Fire-and-forget; maybeNotify is async because of the sender lookup.
+      void maybeNotify(m);
+    });
     return () => unsubscribe(ch);
   }, [userId]);
+
+  // Audit6 fix: when the OS notification click dispatches messenger:open-conv,
+  // activate the requested conversation in-place. This avoids a full page
+  // reload when the user is already on /messenger.
+  useEffect(() => {
+    function onOpenConv(e: Event) {
+      const detail = (e as CustomEvent<{ conversationId?: string }>).detail;
+      if (detail?.conversationId) setActive(detail.conversationId);
+    }
+    window.addEventListener('messenger:open-conv', onOpenConv as EventListener);
+    return () =>
+      window.removeEventListener('messenger:open-conv', onOpenConv as EventListener);
+  }, [setActive]);
+
+  // Audit6 fix: when arriving from an OS notification full-navigation, the URL
+  // is /messenger?conv=<uuid>. Activate that conversation on mount so the
+  // user lands directly on the message they were notified about. Validated
+  // server-side via subsequent get-messages call.
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      const sp = new URLSearchParams(window.location.search);
+      const conv = sp.get('conv');
+      const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      if (conv && UUID_RE.test(conv)) setActive(conv);
+    } catch {
+      // non-fatal
+    }
+    // Run once on mount.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleAccept = useCallback(
     (call: CallSignalRow) => {

@@ -61,6 +61,22 @@ export async function POST(req: NextRequest) {
       .eq('id', reportId);
   }
 
+  // Audit6 fix: when an admin deletes a message that previously triggered an
+  // @admin mention, auto-resolve the associated messenger_admin_messages row
+  // so it does not linger in the unread admin inbox pointing at a tombstoned
+  // message. Best-effort and idempotent (only updates rows that are not
+  // already resolved).
+  await svc
+    .from('messenger_admin_messages')
+    .update({
+      status: 'resolved',
+      resolved_by: gate.userId,
+      resolved_at: new Date().toISOString(),
+      resolution_note: 'Resolved Automatically When Message Deleted For Everyone',
+    })
+    .eq('message_id', messageId)
+    .neq('status', 'resolved');
+
   await svc.from('admin_audit_log').insert({
     actor_id: gate.userId,
     action: 'messenger_message_deleted_for_everyone',

@@ -4,6 +4,7 @@ import { assertSameOrigin } from '@/lib/csrf';
 import { requireSession, getParticipant } from '@/lib/messenger/server';
 import { ThreadReplySchema } from '@/lib/messenger/schemas';
 import { sanitizeMessageText } from '@/lib/messenger/sanitize';
+import { hasAdminMention, recordAdminMention } from '@/lib/messenger/admin-mentions';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -63,6 +64,19 @@ export async function POST(req: NextRequest) {
     .maybeSingle();
   if (insErr || !inserted) {
     return NextResponse.json({ error: insErr?.message ?? 'Insert Failed' }, { status: 500 });
+  }
+
+  // Audit6 fix: thread replies were silently dropping @admin mentions because
+  // detection only lived in /api/messenger/send-message. Mirror the
+  // send-message path here so a moderator notice lands in the admin inbox
+  // whether the mention arrives in a top-level message or a thread reply.
+  if (cleanText && hasAdminMention(cleanText)) {
+    await recordAdminMention(svc, {
+      messageId: (inserted as { id: string }).id,
+      conversationId: parent.conversation_id as string,
+      senderId: user.id,
+      text: cleanText,
+    });
   }
 
   return NextResponse.json({ message: inserted });

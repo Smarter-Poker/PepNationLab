@@ -25,13 +25,25 @@ async function ensurePrefsRow(userId: string): Promise<PrefsRow | null> {
     .eq('user_id', userId)
     .maybeSingle();
   if (existing) return existing as PrefsRow;
-  // Insert with defaults if row doesn't exist yet. Service-role bypasses RLS.
+  // Audit6 fix: two-tab race could fire two concurrent INSERTs. The table has
+  // UNIQUE(user_id) so the loser hit ON CONFLICT and the original code
+  // returned null, surfacing a transient null prefs to the user.
+  // Use upsert(onConflict: user_id) so both tabs resolve to the same row.
+  // Service-role bypasses RLS.
   const { data: created } = await svc
     .from('notification_preferences')
-    .insert({ user_id: userId })
+    .upsert({ user_id: userId }, { onConflict: 'user_id', ignoreDuplicates: false })
     .select('id, user_id, email_on_message, email_on_invoice, browser_push, mute_all, email_digest_messenger')
     .maybeSingle();
-  return (created as PrefsRow | null) ?? null;
+  if (created) return created as PrefsRow;
+  // Final fallback: in the extremely rare case the upsert returns no row,
+  // SELECT the row written by the racing tab so we never return null.
+  const { data: again } = await svc
+    .from('notification_preferences')
+    .select('id, user_id, email_on_message, email_on_invoice, browser_push, mute_all, email_digest_messenger')
+    .eq('user_id', userId)
+    .maybeSingle();
+  return (again as PrefsRow | null) ?? null;
 }
 
 export async function GET(req: NextRequest) {

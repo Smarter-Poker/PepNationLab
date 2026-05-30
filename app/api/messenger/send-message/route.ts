@@ -4,13 +4,10 @@ import { assertSameOrigin } from '@/lib/csrf';
 import { requireSession, getParticipant } from '@/lib/messenger/server';
 import { SendMessageSchema } from '@/lib/messenger/schemas';
 import { sanitizeMessageText } from '@/lib/messenger/sanitize';
+import { hasAdminMention, recordAdminMention } from '@/lib/messenger/admin-mentions';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
-
-// Phase 13: server-side @admin detection. Word-bounded, case-insensitive,
-// matches @admin surrounded by start/end/whitespace/sentence-punctuation.
-const ADMIN_MENTION_RE = /(^|\s)@admin(\s|$|[.,!?;:])/i;
 
 export async function POST(req: NextRequest) {
   const csrf = assertSameOrigin(req);
@@ -110,31 +107,16 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: insErr?.message ?? 'Insert Failed' }, { status: 500 });
   }
 
-  // Phase 13: if the sanitized text contains an @admin mention, ALSO insert a
-  // row into messenger_admin_messages so the admin moderation surface can list
-  // it even when no admin is a participant in this conversation. We use the
-  // sanitized text so clients can't bypass HTML sanitization by mention-only.
-  // Insert failure here is non-fatal - the user message is already persisted.
-  // Audit5 fix: use upsert(ignoreDuplicates) so a client retry that re-sends
-  // the same message with @admin doesn't create duplicate mention rows. The
-  // UNIQUE(message_id) partial index added in audit5 backs the dedupe.
-  if (cleanText && ADMIN_MENTION_RE.test(cleanText)) {
-    try {
-      await svc
-        .from('messenger_admin_messages')
-        .upsert(
-          {
-            message_id: (inserted as { id: string }).id,
-            conversation_id: parsed.data.conversationId,
-            sender_id: user.id,
-            message_text: cleanText.slice(0, 500),
-            status: 'unread',
-          },
-          { onConflict: 'message_id', ignoreDuplicates: true },
-        );
-    } catch {
-      // non-fatal
-    }
+  // Phase 13 / Audit6: @admin detection is shared with thread-reply and the
+  // scheduled-message cron via lib/messenger/admin-mentions. Use the sanitized
+  // text so clients can't bypass HTML sanitization by mention-only.
+  if (cleanText && hasAdminMention(cleanText)) {
+    await recordAdminMention(svc, {
+      messageId: (inserted as { id: string }).id,
+      conversationId: parsed.data.conversationId,
+      senderId: user.id,
+      text: cleanText,
+    });
   }
 
   return NextResponse.json({ message: inserted });

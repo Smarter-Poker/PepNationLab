@@ -632,7 +632,7 @@ export default function AgentDashboardClient({
       `}} />
 
       <div className="dashboard-main" style={{ minHeight: '100vh' }}>
-        <div className="container" style={{ paddingTop: 'var(--space-8)', paddingBottom: 'var(--space-12)' }}>
+        <div className="container" style={{ paddingTop: 'var(--space-8)', paddingBottom: activeTab === 'Overview' ? 0 : 'var(--space-12)' }}>
           {/* Status Alerts */}
           {error && (
             <div style={{ borderLeft: '3px solid var(--red)', background: 'var(--red-bg)', padding: 'var(--space-4)', borderRadius: '0 var(--radius-md) var(--radius-md) 0', marginBottom: 'var(--space-6)' }}>

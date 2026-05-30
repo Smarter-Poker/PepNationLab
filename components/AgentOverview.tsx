@@ -17,34 +17,35 @@ export default function AgentOverview({
   onNavigate,
 }: AgentOverviewProps) {
   /*
-   * Image: agent-dashboard-nav.jpg — 576 × 1024 px (portrait, 9:16)
+   * Image: agent-dashboard-nav.jpg  576 × 1024 px  (9:16 portrait)
    *
-   * THE PROBLEM with background-size:cover:
-   *   On mobile Safari with browser chrome (URL bar + nav bar), the usable
-   *   viewport height is only ~600-680px. At 390px wide, cover scales the image
-   *   to fill WIDTH → rendered at 390×693px, but container is only ~604px →
-   *   bottom ~90px (Row 6 + border) gets clipped.
+   * Strategy — WIDTH-DRIVEN with 2 px gutters:
+   *   .dash-hero width  = calc(100% - 4px)  →  ~386px on a 390px phone
+   *   .dash-hero height = auto via aspect-ratio: 576/1024  →  ~686px
    *
-   * THE FIX — aspect-ratio + background-size: 100% 100%:
-   *   Lock the container to the IMAGE'S own aspect ratio (576:1024).
-   *   Height = 100dvh - 64px (nav).  Width = height × (576/1024) — derived by
-   *   the browser from aspect-ratio.  background-size:100% 100% then maps the
-   *   image pixel-perfect onto the container with ZERO clipping on any axis.
-   *   Dark side bars appear on the parent (matching the dashboard background)
-   *   when the viewport is wider than the panel — identical to how a phone app
-   *   looks in landscape or on a desktop browser.
+   *   background-size: 100% 100%  maps image pixel-perfect onto the container
+   *   (no clipping on any edge, no distortion because the container IS the
+   *   image's exact aspect ratio).
    *
-   * Click zone calibration (measured from 576×1024 source):
-   *   border top:  ~12 px  (1.2 %)
-   *   each button: ~158 px (15.4 %)
-   *   each gap:    ~10 px  (1.0 %)
+   *   On mobile the panel is ~686px tall. Safari's "large" viewport (chrome
+   *   hidden while interacting) is ~780px — the full panel is always visible
+   *   when the user is actively using the dashboard. When the browser UI bar
+   *   is visible at rest (~600px), the user sees rows 1-5 + partial row 6;
+   *   the click zone for row 6 is at 571px (still tappable).
    *
-   *   Row 1  top:  1.2 %   Row 2  top: 17.6 %
-   *   Row 3  top: 34.0 %   Row 4  top: 50.5 %
-   *   Row 5  top: 66.9 %   Row 6  top: 83.3 %
-   *   Each row height: 15.4 %
+   *   On desktop the panel is capped at 480px wide → ~854px tall, centered on
+   *   the page with dark background on the sides. All 6 rows visible.
    *
-   *   Because container IS the image (100% 100%), zone % = image % exactly.
+   * Click zone calibration (measured against 576×1024 source):
+   *   border top: ~12px (1.2%)   border bottom: ~12px (1.2%)
+   *   each row:  ~158px (15.4%)  each gap:       ~10px (1.0%)
+   *
+   *   Row 1 top:  1.2%    Row 2 top: 17.6%
+   *   Row 3 top: 34.0%    Row 4 top: 50.5%
+   *   Row 5 top: 66.9%    Row 6 top: 83.3%
+   *
+   *   Because the container has the exact image aspect ratio + background-size
+   *   100% 100%, zone % === image pixel % — no offset math needed.
    */
   const cardZones = [
     {
@@ -83,48 +84,49 @@ export default function AgentOverview({
     <>
       <style dangerouslySetInnerHTML={{__html: `
 
-        /* ── Outer wrapper ── */
+        /* ── Outer wrapper ────────────────────────────────────────────────── */
         .dash-hero-wrap {
           width: 100%;
-          min-height: calc(100dvh - 64px);
           display: flex;
           justify-content: center;
           align-items: flex-start;
-          background: #0a0a0a;   /* dark fill visible on wide/desktop viewports */
+
+          /* 2 px gap between global header and the image */
+          padding-top: 2px;
+
+          /* Dark fill visible on desktop beside the centered panel */
+          background: #0a0a0a;
         }
 
-        /* ── Hero panel ──
+        /* ── Hero panel ───────────────────────────────────────────────────── *
          *
-         *  Key trick: aspect-ratio + height → browser derives width.
-         *  The panel is always exactly as wide as the portrait image needs to be
-         *  to fill the viewport height — so background-size:100% 100% maps the
-         *  image pixel-perfect with NO top/bottom OR left/right clipping.
+         * Width drives height (aspect-ratio derives height from width).
+         * 4 px total horizontal inset (2 px each side) — shows full brushed-
+         * nickel frame with minimal dark border.
+         *
+         * background-size: 100% 100% → image fills the container exactly with
+         * ZERO clipping because the container matches the image's own ratio.
          */
         .dash-hero {
           position: relative;
           flex-shrink: 0;
 
-          /* Height = available viewport (minus nav bar) */
-          height: calc(100dvh - 64px);
-          min-height: 480px;
+          /* 2 px gutter each side → full visible frame */
+          width: calc(100% - 4px);
+          max-width: 480px;           /* cap on wide desktop */
 
-          /* Width is derived from height × (576/1024) by the browser */
+          /* Height auto-calculated by browser: width × (1024/576) */
           aspect-ratio: 576 / 1024;
-
-          /* Never overflow the parent on very narrow screens */
-          max-width: 100%;
 
           overflow: hidden;
 
           background-image: url('/images/agent-dashboard-nav.jpg');
           background-repeat: no-repeat;
           background-position: top left;
-          /* 100% 100% = stretch to exactly fill this container.
-             No cover/contain math needed — container IS the image ratio. */
-          background-size: 100% 100%;
+          background-size: 100% 100%;   /* pixel-perfect: container = image */
         }
 
-        /* ── Click zones ── */
+        /* ── Click zones ─────────────────────────────────────────────────── */
         .dash-zone {
           position: absolute;
           left: 3%;
@@ -134,6 +136,7 @@ export default function AgentOverview({
           transition: background 0.15s ease;
           z-index: 2;
           -webkit-tap-highlight-color: transparent;
+          outline: none;
         }
         .dash-zone:hover  { background: rgba(255, 255, 255, 0.05); }
         .dash-zone:active { background: rgba(255, 255, 255, 0.12); }

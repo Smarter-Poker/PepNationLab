@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
 import { getCronAuth } from '@/lib/messenger/server';
+import { hasAdminMention, recordAdminMention } from '@/lib/messenger/admin-mentions';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -90,16 +91,20 @@ export async function GET(req: NextRequest) {
       .maybeSingle();
     if (claimErr || !claimed) continue;
 
-    const { error: insErr } = await svc.from('messenger_messages').insert({
-      conversation_id: row.conversation_id,
-      sender_id: row.sender_id,
-      text: row.text,
-      message_type: row.message_type,
-      media_url: row.media_url,
-      media_metadata: row.media_metadata ?? {},
-      reply_to_id: replyToId,
-    });
-    if (insErr) {
+    const { data: insertedMsg, error: insErr } = await svc
+      .from('messenger_messages')
+      .insert({
+        conversation_id: row.conversation_id,
+        sender_id: row.sender_id,
+        text: row.text,
+        message_type: row.message_type,
+        media_url: row.media_url,
+        media_metadata: row.media_metadata ?? {},
+        reply_to_id: replyToId,
+      })
+      .select('id')
+      .maybeSingle();
+    if (insErr || !insertedMsg) {
       // Roll the scheduled row back to pending so the next tick can retry.
       await svc
         .from('messenger_scheduled')
@@ -107,6 +112,20 @@ export async function GET(req: NextRequest) {
         .eq('id', row.id);
       continue;
     }
+
+    // Audit6 fix: scheduled messages were skipping @admin detection because
+    // the cron bypasses /api/messenger/send-message. Run the shared detector
+    // here so admins still see the moderation entry when a scheduled message
+    // fires with @admin in the body.
+    if (row.text && hasAdminMention(row.text)) {
+      await recordAdminMention(svc, {
+        messageId: (insertedMsg as { id: string }).id,
+        conversationId: row.conversation_id,
+        senderId: row.sender_id,
+        text: row.text,
+      });
+    }
+
     processed += 1;
   }
 
