@@ -127,6 +127,7 @@ export default function AgentStorefrontConfig({
 
       const updatePayload: Record<string, any> = {
         display_name: displayName.trim(),
+        slug: cleanSlug,
         logo_url: logoUrl.trim() || null,
         tagline: tagline.trim() || null,
         bio: bio.trim() || null,

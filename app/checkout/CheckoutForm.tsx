@@ -7,13 +7,17 @@ import { US_STATES } from '@/lib/us-states';
 import PaymentProofUpload from '@/components/PaymentProofUpload';
 import { toTitleCase } from '@/lib/categoryImage';
 
-type PaymentMethodId = 'zelle' | 'cashapp' | 'venmo' | 'apple_pay';
+type PaymentMethodId = 'zelle' | 'cashapp' | 'venmo' | 'paypal' | 'apple_cash' | 'google_wallet' | 'wise' | 'chime';
 
-const ALL_PAYMENT_METHODS: { id: PaymentMethodId; name: string; desc: string }[] = [
-  { id: 'zelle',     name: 'Zelle Payment',  desc: 'Instant Direct Transfer. Fastest Processing.' },
-  { id: 'cashapp',   name: 'Cash App',        desc: 'Secure Mobile Check. Handled Manually.' },
-  { id: 'venmo',     name: 'Venmo Payment',   desc: 'Social Transfer. Manual Clearance.' },
-  { id: 'apple_pay', name: 'Apple Pay',       desc: 'Secure Contactless Flow. Fast Settlement.' },
+const ALL_PAYMENT_METHODS: { id: PaymentMethodId; name: string; desc: string; icon: string }[] = [
+  { id: 'zelle',         name: 'Zelle',           desc: 'Instant Direct Transfer. Fastest Processing.', icon: '💳' },
+  { id: 'cashapp',       name: 'Cash App',        desc: 'Secure Mobile Check. Handled Manually.', icon: '💚' },
+  { id: 'venmo',         name: 'Venmo',           desc: 'Social Transfer. Manual Clearance.', icon: '💙' },
+  { id: 'paypal',        name: 'PayPal',          desc: 'Email Or @Username.', icon: '🅿️' },
+  { id: 'apple_cash',    name: 'Apple Cash',      desc: 'Secure Contactless Flow. Fast Settlement.', icon: '🍎' },
+  { id: 'google_wallet', name: 'Google Wallet',   desc: 'Gmail Address.', icon: '🔵' },
+  { id: 'wise',          name: 'Wise',            desc: 'Email Or Wise Username.', icon: '🌍' },
+  { id: 'chime',         name: 'Chime',           desc: 'Chime Username Or Link.', icon: '🟢' },
 ];
 
 interface Profile {
@@ -607,13 +611,21 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
             ? `Send Total Amount To Venmo: ${handle}. Please Reference Your Order ID In Memo.`
             : 'Contact Your Agent For Venmo Payment Instructions.',
         };
-      case 'apple_pay':
+      case 'apple_cash':
         return {
           label: 'Apple Pay Details',
           handle: handle || noHandle,
           instructions: handle
             ? `Send Total Amount Via Apple Pay Cash To: ${handle}. Please Reference Your Order ID.`
             : 'Contact Your Agent For Apple Pay Instructions.',
+        };
+      default:
+        return {
+          label: 'Payment Details',
+          handle: handle || noHandle,
+          instructions: handle
+            ? `Send Total Amount To: ${handle}. Please Reference Your Order ID.`
+            : 'Contact Your Agent For Payment Instructions.',
         };
     }
   };
@@ -700,7 +712,7 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
 
             <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid rgba(255, 255, 255, 0.05)', paddingBottom: 'var(--space-3)', marginBottom: 'var(--space-3)' }}>
               <span style={{ color: 'var(--grey-400)', fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Payment Method</span>
-              <strong style={{ color: 'var(--white)', fontSize: '0.95rem', textTransform: 'capitalize' }}>{paymentMethod === 'cashapp' ? 'Cash App' : paymentMethod === 'apple_pay' ? 'Apple Pay' : paymentMethod}</strong>
+              <strong style={{ color: 'var(--white)', fontSize: '0.95rem', textTransform: 'capitalize' }}>{paymentMethod === 'cashapp' ? 'Cash App' : paymentMethod === 'apple_cash' ? 'Apple Pay' : paymentMethod}</strong>
             </div>
 
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1.1rem' }}>
@@ -1175,9 +1187,10 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
                             onChange={() => setPaymentMethod(p.id)}
                             style={{ accentColor: 'var(--teal)' }}
                           />
+                          <span style={{ fontSize: '1.2rem', lineHeight: 1 }}>{p.icon}</span>
                           <strong style={{ color: 'var(--white)', fontSize: '0.95rem' }}>{p.name}</strong>
                         </div>
-                        <span style={{ fontSize: '0.78rem', color: 'var(--grey-400)', paddingLeft: 22 }}>
+                        <span style={{ fontSize: '0.78rem', color: 'var(--grey-400)', paddingLeft: 42 }}>
                           {p.desc}
                         </span>
                       </label>

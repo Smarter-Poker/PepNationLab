@@ -180,14 +180,6 @@ export async function POST(req: NextRequest) {
   // immediately alerted and can view the proof without leaving the app.
   void (async () => {
     try {
-      if (!order.agent_id) return; // No agent on this order
-      const conversationId = await findOrCreateDirectConversation(
-        service,
-        order.buyer_id,
-        order.agent_id
-      );
-      if (!conversationId) return;
-
       const shortId = orderId.slice(0, 8).toUpperCase();
       const isImage = file.type.startsWith('image/');
 
@@ -195,6 +187,29 @@ export async function POST(req: NextRequest) {
       const { data: longSigned } = await service.storage
         .from('payment-proofs')
         .createSignedUrl(key, 86400);
+
+      if (!order.agent_id) {
+        // Direct to admin — fetch admins and drop notifications
+        const { data: admins } = await service.from('profiles').select('id').eq('role', 'admin');
+        if (admins && admins.length > 0) {
+          const payload = admins.map(a => ({
+            user_id: a.id,
+            title: 'Payment Proof Received (Direct Order)',
+            body: `A direct customer submitted a payment proof for Order #${shortId}. Review and mark as paid.`,
+            type: 'order',
+            metadata: { orderId, action: 'mark_paid' },
+          }));
+          await service.from('notifications').insert(payload);
+        }
+        return; // No agent messenger chat to update
+      }
+
+      const conversationId = await findOrCreateDirectConversation(
+        service,
+        order.buyer_id,
+        order.agent_id
+      );
+      if (!conversationId) return;
 
       await service.from('messenger_messages').insert({
         conversation_id: conversationId,

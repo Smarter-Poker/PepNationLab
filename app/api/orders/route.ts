@@ -666,7 +666,7 @@ export async function POST(request: NextRequest) {
       .from('orders')
       .insert({
         buyer_id: user.id,
-        agent_id: agentProfile && !isAgentSelfBuy ? agentProfile.id : null,
+        agent_id: isAgentSelfBuy ? (superAgentProfile ? superAgentProfile.id : null) : (agentProfile ? agentProfile.id : null),
         is_wholesale_restock: isWholesaleRestock,
         status: 'pending_customer_payment',
         fulfillment_method: fulfillmentMethod,

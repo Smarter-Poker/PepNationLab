@@ -74,11 +74,9 @@ export default async function AccountHubPage() {
           <NavCard href="/account/wishlist" label="Wishlist" description="Products You Saved For Later." Icon={Heart} />
           <NavCard href="/account/recently-viewed" label="Recently Viewed" description="The Last 50 Products You Browsed." Icon={History} />
           <NavCard href="/orders" label="Orders" description="Track Past And Pending Orders." Icon={Package} />
-          <NavCard href="/account/subscriptions" label="Subscriptions" description="Manage Your Auto-Replenish Schedules." Icon={RotateCcw} />          <NavCard href="/account/referrals" label="Referrals" description="Share Your Code And Earn Store Credit." Icon={Gift} />
+          <NavCard href="/account/referrals" label="Referrals" description="Share Your Code And Earn Store Credit." Icon={Gift} />
           <NavCard href="/account/notifications" label="Notifications" description="Push And In-App Notification Preferences." Icon={Bell} />
           <NavCard href="/account/security" label="Security" description="Password, 2FA, And Login Sessions." Icon={ShieldCheck} />
-          <NavCard href="/account/credits" label="Store Credits" description="View Your Balance And Transaction History." Icon={CreditCard} />
-          <NavCard href="/account/tax-exemption" label="Tax-Exempt Certificates" description="Submit Or Track Sales Tax Exemption Certificates." Icon={FileCheck} />
           <NavCard href="/account/addresses" label="Saved Addresses" description="Manage Shipping Addresses Used At Checkout." Icon={MapPin} />
           <NavCard href="/account/payment-method" label="Default Payment Method" description="Pre-Select Zelle, Venmo, Cash App, Or Apple Pay." Icon={Wallet} />
         </div>
