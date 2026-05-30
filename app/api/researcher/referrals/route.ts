@@ -45,7 +45,7 @@ export async function GET() {
     p_user_id: user.id,
   });
   if (codeErr) {
-    return NextResponse.json({ error: codeErr.message }, { status: 500 });
+    return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
   }
 
   // Referrals issued by this researcher.

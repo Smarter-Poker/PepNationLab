@@ -28,7 +28,7 @@ export async function GET(req: NextRequest) {
   }
 
   const { data, error, count } = await query;
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
 
   const enriched = await Promise.all(
     (data ?? []).map(async (row: any) => {
@@ -72,7 +72,7 @@ export async function PATCH(req: NextRequest) {
     .select('id, user_id, state_code, organization_name, status')
     .eq('id', id)
     .maybeSingle();
-  if (fetchErr) return NextResponse.json({ error: fetchErr.message }, { status: 500 });
+  if (fetchErr) return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
   if (!existing) return NextResponse.json({ error: 'Exemption Not Found.' }, { status: 404 });
 
   const update: Record<string, unknown> = { notes: notes ?? null };
@@ -99,7 +99,7 @@ export async function PATCH(req: NextRequest) {
     .from('tax_exemptions')
     .update(update)
     .eq('id', id);
-  if (updateErr) return NextResponse.json({ error: updateErr.message }, { status: 500 });
+  if (updateErr) return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
 
   // Audit log
   await service.from('admin_audit_log').insert({

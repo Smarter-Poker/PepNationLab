@@ -41,7 +41,7 @@ export async function POST(req: NextRequest) {
     .select('id, message_id, pinned_by, created_at')
     .eq('conversation_id', parsed.data.conversationId)
     .order('created_at', { ascending: false });
-  if (pErr) return NextResponse.json({ error: pErr.message }, { status: 500 });
+  if (pErr) return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
 
   const pinList = (pinRows ?? []) as PinRow[];
   if (pinList.length === 0) return NextResponse.json({ pins: [] });
@@ -51,7 +51,7 @@ export async function POST(req: NextRequest) {
     .from('messenger_messages')
     .select('id, text, message_type, sender_id, created_at, media_url, is_deleted')
     .in('id', messageIds);
-  if (mErr) return NextResponse.json({ error: mErr.message }, { status: 500 });
+  if (mErr) return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
 
   const byId = new Map<string, NonNullable<typeof msgs>[number]>();
   (msgs ?? []).forEach((m) => byId.set(m.id, m));

@@ -26,7 +26,7 @@ export async function POST(req: NextRequest) {
     .order('created_at', { ascending: false });
 
   if (qErr) {
-    return NextResponse.json({ error: qErr.message }, { status: 500 });
+    return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
   }
 
   const ids = (rows ?? []).map((r) => r.blocked_id as string);

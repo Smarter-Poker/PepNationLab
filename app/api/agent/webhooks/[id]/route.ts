@@ -78,7 +78,7 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
     .select('id, name, url, event_types, is_active, failure_count, last_failure_at, last_failure_reason, last_success_at, created_at, updated_at')
     .single();
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
   return NextResponse.json({ endpoint: data });
 }
 
@@ -101,6 +101,6 @@ export async function DELETE(req: NextRequest, ctx: { params: Promise<{ id: stri
     .update({ is_active: false, updated_at: new Date().toISOString() })
     .eq('id', id);
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
   return NextResponse.json({ ok: true });
 }

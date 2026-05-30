@@ -69,7 +69,7 @@ export async function DELETE(
     .eq('id', id);
 
   if (updateErr) {
-    return NextResponse.json({ error: updateErr.message }, { status: 500 });
+    return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
   }
 
   if (isAdmin) {

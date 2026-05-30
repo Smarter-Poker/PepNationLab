@@ -17,7 +17,7 @@ export async function GET(req: NextRequest) {
     .select('emoji, user_id, profiles:user_id(full_name)')
     .eq('message_id', messageId);
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
 
   // Group by emoji
   const grouped: Record<string, { emoji: string; count: number; users: { id: string; name: string }[]; myReaction: boolean }> = {};
@@ -49,7 +49,7 @@ export async function POST(req: NextRequest) {
   });
 
   if (error?.code === '23505') return NextResponse.json({ error: 'Already reacted' }, { status: 409 });
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
   return NextResponse.json({ success: true });
 }
 
@@ -72,6 +72,6 @@ export async function DELETE(req: NextRequest) {
     .eq('user_id', user.id)
     .eq('emoji', emoji);
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
   return NextResponse.json({ success: true });
 }

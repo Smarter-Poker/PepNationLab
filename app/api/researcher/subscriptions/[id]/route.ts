@@ -119,7 +119,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     .single();
 
   if (updError || !updated) {
-    return NextResponse.json({ error: updError?.message ?? 'Update Failed' }, { status: 500 });
+    return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
   }
 
   return NextResponse.json({ subscription: updated });

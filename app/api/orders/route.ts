@@ -774,7 +774,7 @@ export async function POST(request: NextRequest) {
           p_description: `Order creation failed — credit restored (${order.id.slice(0, 8)})`,
         });
       }
-      return NextResponse.json({ error: `Failed To Save Checkout Order Line Items. (${itemsError.code}: ${itemsError.message})` }, { status: 500 });
+      return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
     }
 
     // Store credit was pre-deducted in Step C above. Back-fill the order_id on

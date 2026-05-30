@@ -62,7 +62,7 @@ export async function POST(req: NextRequest) {
       if ((insErr as { code?: string }).code === '23505') {
         return NextResponse.json({ alreadyBookmarked: true });
       }
-      return NextResponse.json({ error: insErr.message }, { status: 500 });
+      return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
     }
     return NextResponse.json({ bookmark: inserted });
   }
@@ -73,6 +73,6 @@ export async function POST(req: NextRequest) {
     .delete()
     .eq('message_id', parsed.data.messageId)
     .eq('user_id', user.id);
-  if (delErr) return NextResponse.json({ error: delErr.message }, { status: 500 });
+  if (delErr) return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
   return NextResponse.json({ ok: true });
 }

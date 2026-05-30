@@ -42,7 +42,7 @@ export async function PATCH(req: NextRequest) {
       });
       
       if (authError) {
-        return NextResponse.json({ error: `Auth Error: ${authError.message}` }, { status: 500 });
+        return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
       }
     }
 
@@ -54,12 +54,12 @@ export async function PATCH(req: NextRequest) {
         .eq('id', id);
 
       if (profileError) {
-        return NextResponse.json({ error: `Profile Error: ${profileError.message}` }, { status: 500 });
+        return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
       }
     }
 
     return NextResponse.json({ success: true });
   } catch (err: any) {
-    return NextResponse.json({ error: err.message || 'Internal Server Error' }, { status: 500 });
+    return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
   }
 }

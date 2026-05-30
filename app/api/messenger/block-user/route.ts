@@ -36,7 +36,7 @@ export async function POST(req: NextRequest) {
       .from('messenger_blocked')
       .insert({ blocker_id: user.id, blocked_id: targetUserId, reason: reason ?? null });
     if (insErr && insErr.code !== '23505') {
-      return NextResponse.json({ error: insErr.message }, { status: 500 });
+      return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
     }
     return NextResponse.json({ ok: true });
   }
@@ -48,7 +48,7 @@ export async function POST(req: NextRequest) {
     .eq('blocker_id', user.id)
     .eq('blocked_id', targetUserId);
   if (delErr) {
-    return NextResponse.json({ error: delErr.message }, { status: 500 });
+    return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
   }
   return NextResponse.json({ ok: true });
 }

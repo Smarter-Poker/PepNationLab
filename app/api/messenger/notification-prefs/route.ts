@@ -96,6 +96,6 @@ export async function POST(req: NextRequest) {
     .eq('user_id', user.id)
     .select('id, user_id, email_on_message, email_on_invoice, browser_push, mute_all, email_digest_messenger')
     .maybeSingle();
-  if (updErr) return NextResponse.json({ error: updErr.message }, { status: 500 });
+  if (updErr) return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
   return NextResponse.json({ prefs: data });
 }

@@ -74,7 +74,7 @@ export async function GET(req: NextRequest) {
 
     if (dueError) {
       await finishCronRun(claim.id, 'failed', dueError.message);
-      return NextResponse.json({ ok: false, error: dueError.message }, { status: 500 });
+      return NextResponse.json({ ok: false, error: 'An unexpected error occurred.' }, { status: 500 });
     }
 
     const subs = (due ?? []) as unknown as DueSubscription[];
@@ -112,7 +112,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ ok: true, ...summary });
   } catch (err) {
     await finishCronRun(claim.id, 'failed', (err as Error)?.message ?? 'Unknown Error');
-    return NextResponse.json({ ok: false, error: (err as Error)?.message }, { status: 500 });
+    return NextResponse.json({ ok: false, error: 'An unexpected error occurred.' }, { status: 500 });
   }
 }
 

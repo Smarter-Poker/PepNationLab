@@ -76,7 +76,7 @@ export async function GET() {
 
   const { data, error } = await query;
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
   }
 
   const origin = appOrigin();
@@ -187,7 +187,7 @@ export async function POST(req: NextRequest) {
     .single();
 
   if (error || !inserted) {
-    return NextResponse.json({ error: error?.message || 'Failed To Create Invite' }, { status: 500 });
+    return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
   }
 
   // Audit log (admin only — super-agent invites are scoped by RLS anyway).

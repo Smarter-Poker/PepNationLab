@@ -31,7 +31,7 @@ export async function POST(req: NextRequest) {
     .select('message_id, label')
     .in('message_id', parsed.data.messageIds)
     .eq('user_id', user.id);
-  if (qErr) return NextResponse.json({ error: qErr.message }, { status: 500 });
+  if (qErr) return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
 
   return NextResponse.json({ labels: data ?? [] });
 }

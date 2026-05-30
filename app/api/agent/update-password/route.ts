@@ -58,7 +58,7 @@ export async function POST(req: NextRequest) {
 
   const { error } = await serviceSupabase.auth.admin.updateUserById(userId, { password: newPassword });
   if (error) {
-    return NextResponse.json({ error: `Failed To Update Password: ${error.message}` }, { status: 500 });
+    return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
   }
 
   return NextResponse.json({ success: true });

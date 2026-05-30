@@ -87,7 +87,7 @@ export async function POST(req: NextRequest, { params }: Params) {
     });
 
   if (uploadErr) {
-    return NextResponse.json({ error: `Upload Failed: ${uploadErr.message}` }, { status: 500 });
+    return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
   }
 
   const nowIso = new Date().toISOString();

@@ -27,7 +27,7 @@ export async function GET(req: NextRequest) {
   if (userId) query = query.eq('user_id', userId);
 
   const { data, error } = await query;
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
 
   // Join in user names for display
   const userIds = Array.from(new Set((data ?? []).map((r: any) => r.user_id).filter(Boolean)));
@@ -65,7 +65,7 @@ export async function POST(req: NextRequest) {
     .select('balance')
     .eq('user_id', parsed.data.user_id)
     .maybeSingle();
-  if (balanceErr) return NextResponse.json({ error: balanceErr.message }, { status: 500 });
+  if (balanceErr) return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
 
   const balanceBefore = Number(balanceRow?.balance ?? 0);
   const balanceAfter = balanceBefore + parsed.data.amount;
@@ -85,7 +85,7 @@ export async function POST(req: NextRequest) {
     .select('id, balance_after')
     .single();
 
-  if (insertErr) return NextResponse.json({ error: insertErr.message }, { status: 500 });
+  if (insertErr) return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
 
   await service.from('admin_audit_log').insert({
     actor_id: gate.userId,

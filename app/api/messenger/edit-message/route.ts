@@ -63,7 +63,7 @@ export async function POST(req: NextRequest) {
     .select('*')
     .maybeSingle();
   if (updErr || !updated) {
-    return NextResponse.json({ error: updErr?.message ?? 'Update Failed' }, { status: 500 });
+    return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
   }
 
   await svc.from('messenger_edit_history').insert({

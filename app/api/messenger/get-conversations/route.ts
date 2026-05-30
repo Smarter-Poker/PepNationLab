@@ -19,7 +19,7 @@ export async function POST(req: NextRequest) {
 
   const svc = await createServiceClient();
   const { data, error: rpcErr } = await svc.rpc('fn_get_user_conversations', { p_user: user.id });
-  if (rpcErr) return NextResponse.json({ error: rpcErr.message }, { status: 500 });
+  if (rpcErr) return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
 
   // Audit9: private cache — inbox results must not be cached by intermediaries.
   const res = NextResponse.json({ conversations: data ?? [] });

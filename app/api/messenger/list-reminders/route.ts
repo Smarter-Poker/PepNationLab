@@ -30,7 +30,7 @@ export async function POST(req: NextRequest) {
     .eq('status', 'pending')
     .order('remind_at', { ascending: true })
     .limit(100);
-  if (pErr) return NextResponse.json({ error: pErr.message }, { status: 500 });
+  if (pErr) return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
 
   let fired: unknown[] = [];
   if (includeFired) {
@@ -41,7 +41,7 @@ export async function POST(req: NextRequest) {
       .eq('status', 'fired')
       .order('fired_at', { ascending: false })
       .limit(50);
-    if (fErr) return NextResponse.json({ error: fErr.message }, { status: 500 });
+    if (fErr) return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
     fired = firedRows ?? [];
   }
 

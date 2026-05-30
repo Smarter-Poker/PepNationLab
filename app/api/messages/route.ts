@@ -34,7 +34,7 @@ export async function GET(req: NextRequest) {
     .order('created_at', { ascending: false })
     .limit(50);
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
   return NextResponse.json({ messages: data });
 }
 
@@ -155,7 +155,7 @@ export async function POST(req: NextRequest) {
     .select()
     .single();
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
 
   // Auto-responder: check if receiver has it enabled
   try {
@@ -205,6 +205,6 @@ export async function PATCH(req: NextRequest) {
     .in('id', messageIds)
     .eq('receiver_id', user.id); // Only mark YOUR messages as read
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
   return NextResponse.json({ success: true });
 }

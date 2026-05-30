@@ -64,6 +64,6 @@ export async function POST(req: NextRequest) {
     .delete()
     .eq('id', callerPart.id);
 
-  if (delErr) return NextResponse.json({ error: delErr.message }, { status: 500 });
+  if (delErr) return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
   return NextResponse.json({ success: true });
 }

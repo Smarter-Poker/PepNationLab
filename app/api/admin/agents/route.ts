@@ -21,7 +21,7 @@ export async function GET(req: NextRequest) {
     .order('created_at', { ascending: false });
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
   }
 
   return NextResponse.json({ data });
@@ -101,7 +101,7 @@ export async function POST(req: NextRequest) {
   });
 
   if (authError || !authData.user) {
-    return NextResponse.json({ error: `Failed To Create Auth User: ${authError?.message ?? 'Unknown Error'}` }, { status: 500 });
+    return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
   }
 
   const userId = authData.user.id;
@@ -132,7 +132,7 @@ export async function POST(req: NextRequest) {
   const { error: profileError } = await supabase.from('profiles').upsert(profileData);
   if (profileError) {
     await supabase.auth.admin.deleteUser(userId);
-    return NextResponse.json({ error: `Profile Creation Failed: ${profileError.message}` }, { status: 500 });
+    return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
   }
 
   if (!isResearcher) {
@@ -157,7 +157,7 @@ export async function POST(req: NextRequest) {
 
     if (agentError) {
       await supabase.auth.admin.deleteUser(userId);
-      return NextResponse.json({ error: `Storefront Creation Failed: ${agentError.message}` }, { status: 500 });
+      return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
     }
   }
 

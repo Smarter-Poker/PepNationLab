@@ -65,7 +65,7 @@ export async function POST(req: NextRequest) {
 
   const { error: insertErr } = await service.from('scheduled_price_changes').insert(rows);
   if (insertErr) {
-    return NextResponse.json({ error: `Failed To Schedule: ${insertErr.message}` }, { status: 500 });
+    return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
   }
 
   let appliedCount = 0;

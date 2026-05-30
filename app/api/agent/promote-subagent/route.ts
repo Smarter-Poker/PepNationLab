@@ -61,7 +61,7 @@ export async function POST(req: NextRequest) {
       .eq('id', researcherId);
 
     if (updateError) {
-      return NextResponse.json({ error: updateError.message }, { status: 500 });
+      return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
     }
 
     return NextResponse.json({ success: true });

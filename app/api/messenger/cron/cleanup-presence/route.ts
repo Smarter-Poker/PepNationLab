@@ -23,7 +23,7 @@ export async function GET(req: NextRequest) {
       .select('id');
     if (error) {
       // Table missing or column missing -- noop without raising.
-      return NextResponse.json({ deleted: 0, note: error.message });
+      return NextResponse.json({ deleted: 0, note: 'cleanup_error' });
     }
     return NextResponse.json({ deleted: (data ?? []).length });
   } catch (e) {

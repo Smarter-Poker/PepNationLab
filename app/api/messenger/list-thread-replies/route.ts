@@ -42,7 +42,7 @@ export async function POST(req: NextRequest) {
     .eq('thread_parent_id', parsed.data.threadParentId)
     .order('created_at', { ascending: true })
     .limit(500);
-  if (qErr) return NextResponse.json({ error: qErr.message }, { status: 500 });
+  if (qErr) return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
 
   return NextResponse.json({ parent, messages: data ?? [] });
 }

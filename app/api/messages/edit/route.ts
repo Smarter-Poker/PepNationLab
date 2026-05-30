@@ -36,7 +36,7 @@ export async function PATCH(req: NextRequest) {
     .update({ body: newBody.trim(), edited_at: new Date().toISOString() })
     .eq('id', messageId);
 
-  if (updateError) return NextResponse.json({ error: updateError.message }, { status: 500 });
+  if (updateError) return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
   return NextResponse.json({ success: true });
 }
 
@@ -72,6 +72,6 @@ export async function DELETE(req: NextRequest) {
     .update({ deleted_at: new Date().toISOString() })
     .eq('id', messageId);
 
-  if (updateError) return NextResponse.json({ error: updateError.message }, { status: 500 });
+  if (updateError) return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
   return NextResponse.json({ success: true });
 }

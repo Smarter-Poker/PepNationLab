@@ -14,7 +14,7 @@ export async function GET(req: NextRequest) {
     .select('counterpart_id, archived_at')
     .eq('user_id', user.id);
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
   return NextResponse.json({ archived: data });
 }
 
@@ -35,7 +35,7 @@ export async function POST(req: NextRequest) {
     user_id: user.id, counterpart_id: counterpartId,
   }, { onConflict: 'user_id,counterpart_id' });
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
   return NextResponse.json({ success: true });
 }
 
@@ -57,6 +57,6 @@ export async function DELETE(req: NextRequest) {
     .eq('user_id', user.id)
     .eq('counterpart_id', counterpartId);
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
   return NextResponse.json({ success: true });
 }

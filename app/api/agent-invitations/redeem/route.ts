@@ -143,7 +143,7 @@ export async function POST(req: NextRequest) {
     if (msg.includes('already') || msg.includes('exists') || msg.includes('registered')) {
       return NextResponse.json({ error: 'An Account With That Email Already Exists. Please Sign In.' }, { status: 409 });
     }
-    return NextResponse.json({ error: createErr?.message || 'Failed To Create Account.' }, { status: 500 });
+    return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
   }
 
   const newUserId = created.user.id;

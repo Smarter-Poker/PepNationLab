@@ -80,7 +80,7 @@ export async function POST(req: NextRequest) {
       const again = await getParticipant(parsed.data.conversationId, parsed.data.userId);
       return NextResponse.json({ participant: again, added: false });
     }
-    return NextResponse.json({ error: insErr.message }, { status: 500 });
+    return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
   }
 
   return NextResponse.json({ participant: inserted, added: true });

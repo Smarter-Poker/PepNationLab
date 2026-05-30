@@ -21,7 +21,7 @@ export async function GET(req: NextRequest) {
       .order('name', { ascending: true });
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
     }
 
     return NextResponse.json({ data });
@@ -34,7 +34,7 @@ export async function GET(req: NextRequest) {
     .single();
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 404 });
+    return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 404 });
   }
 
   return NextResponse.json(data);
@@ -88,7 +88,7 @@ export async function POST(req: NextRequest) {
     .single();
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
   }
 
   return NextResponse.json({ id: data.id }, { status: 201 });
@@ -144,7 +144,7 @@ export async function PATCH(req: NextRequest) {
     .eq('id', id);
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
   }
 
   // If base_cost changed, cascade the new price to all agent_products for this product.

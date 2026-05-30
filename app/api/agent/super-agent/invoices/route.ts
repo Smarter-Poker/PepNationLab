@@ -36,7 +36,7 @@ export async function GET(req: NextRequest) {
       .order('week_start', { ascending: false });
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
     }
 
     return NextResponse.json({ data: invoices });
@@ -127,7 +127,7 @@ export async function POST(req: NextRequest) {
       .lt('created_at', rangeEndExclusive);
 
     if (ordersError) {
-      return NextResponse.json({ error: ordersError.message }, { status: 500 });
+      return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
     }
 
     let totalCogs = 0;
@@ -185,7 +185,7 @@ export async function POST(req: NextRequest) {
       .single();
 
     if (invoiceError) {
-      return NextResponse.json({ error: invoiceError.message }, { status: 500 });
+      return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
     }
 
     // Auto-send internal message to sub-agent

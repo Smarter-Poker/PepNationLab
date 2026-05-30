@@ -51,7 +51,7 @@ export async function POST(req: NextRequest) {
     if (insErr) {
       const code = (insErr as { code?: string }).code;
       if (code === '23505') return NextResponse.json({ ok: true });
-      return NextResponse.json({ error: insErr.message }, { status: 500 });
+      return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
     }
     return NextResponse.json({ ok: true });
   }
@@ -81,7 +81,7 @@ export async function POST(req: NextRequest) {
       updated_at: new Date().toISOString(),
     })
     .eq('id', parsed.data.messageId);
-  if (updErr) return NextResponse.json({ error: updErr.message }, { status: 500 });
+  if (updErr) return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
 
   return NextResponse.json({ ok: true });
 }

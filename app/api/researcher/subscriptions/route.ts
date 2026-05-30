@@ -130,7 +130,7 @@ export async function POST(req: NextRequest) {
     .in('id', apIds);
 
   if (apError) {
-    return NextResponse.json({ error: apError.message }, { status: 500 });
+    return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
   }
 
   if (!agentProducts || agentProducts.length !== apIds.length) {
@@ -195,7 +195,7 @@ export async function POST(req: NextRequest) {
     .single();
 
   if (insertError || !created) {
-    return NextResponse.json({ error: insertError?.message ?? 'Failed To Create Subscription' }, { status: 500 });
+    return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
   }
 
   return NextResponse.json({ subscription: created }, { status: 201 });

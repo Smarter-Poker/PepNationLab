@@ -87,7 +87,7 @@ export async function POST(req: NextRequest) {
     .single();
 
   if (error || !data) {
-    return NextResponse.json({ error: error?.message || 'Failed To Create Webhook' }, { status: 500 });
+    return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
   }
 
   await service.from('admin_audit_log').insert({

@@ -41,7 +41,7 @@ export async function GET(req: NextRequest) {
     .order('sort_order', { ascending: true });
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
   }
 
   // ── Batch fetch per-product tier overrides (single query) ──────────────────
@@ -242,7 +242,7 @@ export async function PATCH(req: NextRequest) {
     .eq('agent_id', gate.user.id); // enforce ownership on the write, not just the pre-check
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
   }
 
   return NextResponse.json({ success: true });

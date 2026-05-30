@@ -20,7 +20,7 @@ export async function GET(req: NextRequest) {
     .eq('is_deleted', false)
     .order('expires_at', { ascending: true })
     .limit(200);
-  if (qErr) return NextResponse.json({ error: qErr.message }, { status: 500 });
+  if (qErr) return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
 
   const ids = (due ?? []).map((r) => r.id as string);
   if (ids.length === 0) return NextResponse.json({ expired: 0, scanned: 0 });
@@ -38,7 +38,7 @@ export async function GET(req: NextRequest) {
     .in('id', ids)
     .eq('is_deleted', false)
     .select('id');
-  if (upErr) return NextResponse.json({ error: upErr.message }, { status: 500 });
+  if (upErr) return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
 
   return NextResponse.json({ expired: (expired ?? []).length, scanned: ids.length });
 }

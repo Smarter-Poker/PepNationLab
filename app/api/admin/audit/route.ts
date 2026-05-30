@@ -26,6 +26,6 @@ export async function GET(req: NextRequest) {
   if (cursor) query = query.lt('created_at', cursor);
 
   const { data, error } = await query;
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
   return NextResponse.json({ data });
 }

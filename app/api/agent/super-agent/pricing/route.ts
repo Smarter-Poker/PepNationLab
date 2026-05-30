@@ -30,7 +30,7 @@ export async function GET(req: NextRequest) {
       .eq('super_agent_id', superAgentId);
 
     if (pricingError) {
-      return NextResponse.json({ error: pricingError.message }, { status: 500 });
+      return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
     }
 
     // Fetch all active products
@@ -41,7 +41,7 @@ export async function GET(req: NextRequest) {
       .order('name');
       
     if (productsError) {
-      return NextResponse.json({ error: productsError.message }, { status: 500 });
+      return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
     }
 
     const { data: superAgent } = await supabase
@@ -179,7 +179,7 @@ export async function POST(req: NextRequest) {
       );
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
     }
 
     return NextResponse.json({ success: true });

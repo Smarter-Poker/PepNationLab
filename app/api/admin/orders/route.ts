@@ -32,7 +32,7 @@ export async function GET(req: NextRequest) {
   const { data, error } = await dbQuery;
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
   }
 
   // Filter in memory for fuzzy text search across joined profile fields
@@ -120,7 +120,7 @@ export async function POST(req: NextRequest) {
     .eq('id', id);
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
   }
 
   // Write audit log entry (fire-and-forget — must not block admin response).

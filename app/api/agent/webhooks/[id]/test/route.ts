@@ -48,7 +48,7 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
     .single();
 
   if (insertErr || !delivery) {
-    return NextResponse.json({ error: insertErr?.message || 'Failed To Enqueue Test' }, { status: 500 });
+    return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
   }
 
   const result = await deliverWebhook(service, delivery.id);

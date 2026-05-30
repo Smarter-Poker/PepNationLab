@@ -23,7 +23,7 @@ export async function GET(req: NextRequest) {
     .is('deleted_at', null)
     .order('created_at', { ascending: true });
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
 
   // Build CSV
   const rows = [['Date', 'Sender', 'Type', 'Subject', 'Body'].join(',')];

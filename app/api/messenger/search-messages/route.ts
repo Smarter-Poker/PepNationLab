@@ -43,6 +43,6 @@ export async function POST(req: NextRequest) {
     .order('created_at', { ascending: false })
     .limit(50);
 
-  if (qErr) return NextResponse.json({ error: qErr.message }, { status: 500 });
+  if (qErr) return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
   return NextResponse.json({ results: data ?? [] });
 }

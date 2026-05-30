@@ -23,14 +23,14 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     .from('saved_addresses')
     .update({ is_default: false })
     .eq('user_id', user.id);
-  if (clearErr) return NextResponse.json({ error: clearErr.message }, { status: 500 });
+  if (clearErr) return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
 
   const { error: setErr } = await supabase
     .from('saved_addresses')
     .update({ is_default: true })
     .eq('id', id)
     .eq('user_id', user.id);
-  if (setErr) return NextResponse.json({ error: setErr.message }, { status: 500 });
+  if (setErr) return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
 
   return NextResponse.json({ ok: true });
 }

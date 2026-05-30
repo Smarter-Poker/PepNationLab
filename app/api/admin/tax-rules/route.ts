@@ -14,7 +14,7 @@ export async function GET() {
     .select('id, jurisdiction, state_code, base_rate, applies_to, shipping_taxable, is_active, notes, updated_at, updated_by')
     .order('state_code', { ascending: true });
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
   return NextResponse.json({ data: data ?? [] });
 }
 
@@ -51,7 +51,7 @@ export async function PATCH(req: NextRequest) {
     .select('id, state_code, base_rate, applies_to, shipping_taxable, is_active, notes')
     .eq('state_code', stateCode)
     .maybeSingle();
-  if (fetchErr) return NextResponse.json({ error: fetchErr.message }, { status: 500 });
+  if (fetchErr) return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
   if (!existing) return NextResponse.json({ error: 'Tax Rule Not Found.' }, { status: 404 });
 
   const update: Record<string, unknown> = { updated_at: new Date().toISOString(), updated_by: gate.userId };
@@ -65,7 +65,7 @@ export async function PATCH(req: NextRequest) {
     .from('tax_rules')
     .update(update)
     .eq('state_code', stateCode);
-  if (updateErr) return NextResponse.json({ error: updateErr.message }, { status: 500 });
+  if (updateErr) return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
 
   await service.from('admin_audit_log').insert({
     actor_id: gate.userId,

@@ -36,8 +36,8 @@ export async function GET(req: NextRequest) {
       .select('id'),
   ]);
 
-  if (missedRes.error) return NextResponse.json({ error: missedRes.error.message }, { status: 500 });
-  if (staleRes.error) return NextResponse.json({ error: staleRes.error.message }, { status: 500 });
+  if (missedRes.error) return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
+  if (staleRes.error) return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
 
   return NextResponse.json({
     marked_missed: (missedRes.data ?? []).length,

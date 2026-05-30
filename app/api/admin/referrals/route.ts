@@ -41,7 +41,7 @@ export async function GET(req: NextRequest) {
 
   const { data: rows, error } = await query;
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
   }
 
   // Decorate referrer / referee for display.
@@ -140,7 +140,7 @@ export async function PATCH(req: NextRequest) {
     .update({ status })
     .eq('id', id);
   if (updateError) {
-    return NextResponse.json({ error: updateError.message }, { status: 500 });
+    return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
   }
 
   // Audit trail.

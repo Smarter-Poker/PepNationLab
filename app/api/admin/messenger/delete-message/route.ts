@@ -49,7 +49,7 @@ export async function POST(req: NextRequest) {
     .eq('id', messageId);
 
   if (updErr) {
-    return NextResponse.json({ error: updErr.message }, { status: 500 });
+    return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
   }
 
   // Auto-resolve associated report if provided.

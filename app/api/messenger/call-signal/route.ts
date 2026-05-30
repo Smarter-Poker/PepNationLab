@@ -101,7 +101,7 @@ export async function POST(req: NextRequest) {
       })
       .select('*')
       .maybeSingle();
-    if (insErr) return NextResponse.json({ error: insErr.message }, { status: 500 });
+    if (insErr) return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
     return NextResponse.json({ call: inserted });
   }
 
@@ -131,7 +131,7 @@ export async function POST(req: NextRequest) {
       .eq('status', 'ringing')
       .select('*')
       .maybeSingle();
-    if (upErr) return NextResponse.json({ error: upErr.message }, { status: 500 });
+    if (upErr) return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
     if (!updated) {
       const { data: current } = await svc
         .from('messenger_calls')
@@ -154,7 +154,7 @@ export async function POST(req: NextRequest) {
       .eq('status', 'ringing')
       .select('*')
       .maybeSingle();
-    if (upErr) return NextResponse.json({ error: upErr.message }, { status: 500 });
+    if (upErr) return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
     if (!updated) {
       const { data: current } = await svc
         .from('messenger_calls')
@@ -188,6 +188,6 @@ export async function POST(req: NextRequest) {
     .eq('id', callId)
     .select('*')
     .maybeSingle();
-  if (upErr) return NextResponse.json({ error: upErr.message }, { status: 500 });
+  if (upErr) return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
   return NextResponse.json({ call: updated });
 }

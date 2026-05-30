@@ -32,7 +32,7 @@ export async function POST(req: NextRequest) {
     .eq('user_id', user.id)
     .order('created_at', { ascending: false })
     .limit(200);
-  if (bErr) return NextResponse.json({ error: bErr.message }, { status: 500 });
+  if (bErr) return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
 
   const list = (bks ?? []) as BookmarkRow[];
   if (list.length === 0) return NextResponse.json({ bookmarks: [] });

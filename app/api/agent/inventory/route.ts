@@ -19,7 +19,7 @@ export async function GET(req: NextRequest) {
       .eq('is_active', true);
 
     if (productsError) {
-      return NextResponse.json({ error: productsError.message }, { status: 500 });
+      return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
     }
 
     // Fetch the agent's inventory
@@ -29,7 +29,7 @@ export async function GET(req: NextRequest) {
       .eq('agent_id', agentId);
 
     if (inventoryError) {
-      return NextResponse.json({ error: inventoryError.message }, { status: 500 });
+      return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
     }
 
     const inventoryMap = new Map(inventory?.map(i => [i.product_id, i.stock_count]) || []);

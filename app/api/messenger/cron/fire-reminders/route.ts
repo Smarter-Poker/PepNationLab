@@ -19,7 +19,7 @@ export async function GET(req: NextRequest) {
     .lte('remind_at', nowIso)
     .order('remind_at', { ascending: true })
     .limit(100);
-  if (qErr) return NextResponse.json({ error: qErr.message }, { status: 500 });
+  if (qErr) return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
 
   const candidates = (due ?? []) as Array<{ id: string; message_id: string | null }>;
   if (candidates.length === 0) return NextResponse.json({ fired: 0, scanned: 0, cancelled: 0 });
@@ -60,7 +60,7 @@ export async function GET(req: NextRequest) {
       .in('id', toCancel)
       .eq('status', 'pending')
       .select('id');
-    if (cErr) return NextResponse.json({ error: cErr.message }, { status: 500 });
+    if (cErr) return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
     cancelledCount = (cancelled ?? []).length;
   }
 
@@ -72,7 +72,7 @@ export async function GET(req: NextRequest) {
       .in('id', toFire)
       .eq('status', 'pending')
       .select('id');
-    if (upErr) return NextResponse.json({ error: upErr.message }, { status: 500 });
+    if (upErr) return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
     firedCount = (fired ?? []).length;
   }
 

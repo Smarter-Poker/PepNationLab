@@ -46,7 +46,7 @@ export async function POST(req: NextRequest) {
     .from('messenger_reminders')
     .update({ status: 'cancelled' })
     .eq('id', parsed.data.reminderId);
-  if (upErr) return NextResponse.json({ error: upErr.message }, { status: 500 });
+  if (upErr) return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
 
   return NextResponse.json({ ok: true });
 }

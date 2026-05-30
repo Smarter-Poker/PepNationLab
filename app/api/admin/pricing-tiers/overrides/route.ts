@@ -15,7 +15,7 @@ export async function GET(req: NextRequest) {
     .select('id, product_id, tier_name, custom_multiplier, products(name)');
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
   }
 
   // Flatten the products mapping for easier UI consumption
@@ -65,7 +65,7 @@ export async function POST(req: NextRequest) {
     );
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
   }
 
   return NextResponse.json({ success: true });
@@ -94,7 +94,7 @@ export async function DELETE(req: NextRequest) {
     .eq('tier_name', tier_name);
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
   }
 
   return NextResponse.json({ success: true });

@@ -41,7 +41,7 @@ Please remit payment as soon as possible to avoid any service interruptions.`,
     type: 'payment_reminder',
   });
 
-  if (sendError) return NextResponse.json({ error: sendError.message }, { status: 500 });
+  if (sendError) return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
 
   // Mark invoice as overdue only after the message has been delivered successfully
   await service.from('internal_messages')

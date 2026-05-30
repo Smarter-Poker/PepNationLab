@@ -58,7 +58,7 @@ export async function POST(req: NextRequest) {
     .in('id', ids);
 
   if (ordersErr) {
-    return NextResponse.json({ error: ordersErr.message }, { status: 500 });
+    return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
   }
 
   const orderMap = new Map<string, Record<string, unknown>>();

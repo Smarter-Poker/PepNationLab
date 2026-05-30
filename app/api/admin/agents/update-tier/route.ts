@@ -50,7 +50,7 @@ export async function PATCH(req: NextRequest) {
     .eq('id', agentId);
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
   }
 
   // Cascade new tier pricing to all of this agent's products immediately.

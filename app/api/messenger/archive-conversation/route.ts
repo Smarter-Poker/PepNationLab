@@ -51,6 +51,6 @@ export async function POST(req: NextRequest) {
     .update({ settings: nextSettings })
     .eq('id', row.id);
 
-  if (updErr) return NextResponse.json({ error: updErr.message }, { status: 500 });
+  if (updErr) return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
   return NextResponse.json({ success: true, archived: parsed.data.archived });
 }

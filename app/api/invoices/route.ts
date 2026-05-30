@@ -31,7 +31,7 @@ export async function GET(req: NextRequest) {
   }
 
   const { data, error } = await query.limit(100);
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
   return NextResponse.json({ invoices: data });
 }
 
@@ -86,7 +86,7 @@ export async function PATCH(req: NextRequest) {
     .select('receiver_id, invoice_amount, subject')
     .single();
 
-  if (updateError) return NextResponse.json({ error: updateError.message }, { status: 500 });
+  if (updateError) return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
 
   // Send notification to the receiver
   if (invoice) {

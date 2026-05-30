@@ -28,7 +28,7 @@ export async function GET() {
     .order('display_name', { ascending: true });
 
   if (agentsErr) {
-    return NextResponse.json({ error: agentsErr.message }, { status: 500 });
+    return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
   }
 
   // Collect the distinct origin IDs that are actually in use.

@@ -19,7 +19,7 @@ export async function GET() {
     .eq('id', 1)
     .maybeSingle();
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
   }
   return NextResponse.json({ settings: data });
 }
@@ -90,7 +90,7 @@ export async function PATCH(req: NextRequest) {
     .update(patch)
     .eq('id', 1);
   if (updateError) {
-    return NextResponse.json({ error: updateError.message }, { status: 500 });
+    return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
   }
 
   await service.from('admin_audit_log').insert({

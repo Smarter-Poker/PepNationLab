@@ -39,7 +39,7 @@ export async function POST(req: NextRequest) {
   if (parsed.data.status) q = q.eq('status', parsed.data.status);
 
   const { data: mentions, error: qErr } = await q;
-  if (qErr) return NextResponse.json({ error: qErr.message }, { status: 500 });
+  if (qErr) return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
 
   const rows = mentions ?? [];
   if (rows.length === 0) return NextResponse.json({ mentions: [] });

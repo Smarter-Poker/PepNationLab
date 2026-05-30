@@ -53,7 +53,7 @@ export async function POST(req: NextRequest) {
   if (error) {
     // PG RAISE EXCEPTION surfaces here as a 400 to the caller with the
     // human-readable Title Case message defined in the RPC.
-    return NextResponse.json({ error: error.message || 'Could Not Apply Code' }, { status: 400 });
+    return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 400 });
   }
 
   // Re-fetch the just-created row for the client.

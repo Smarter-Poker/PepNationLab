@@ -38,7 +38,7 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
     .update({ secret, updated_at: new Date().toISOString() })
     .eq('id', id);
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
 
   // Audit so we can see who rotated which secret.
   await service.from('admin_audit_log').insert({

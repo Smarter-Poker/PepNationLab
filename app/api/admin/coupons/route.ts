@@ -16,7 +16,7 @@ export async function GET() {
     .order('created_at', { ascending: false });
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
   }
 
   return NextResponse.json({ data });
@@ -160,7 +160,7 @@ export async function PATCH(req: NextRequest) {
     .eq('id', id);
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
   }
 
   await supabase.from('admin_audit_log').insert({
@@ -207,7 +207,7 @@ export async function DELETE(req: NextRequest) {
   const { error } = await supabase.from('coupons').delete().eq('id', id);
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
   }
 
   await supabase.from('admin_audit_log').insert({

@@ -31,7 +31,7 @@ export async function GET(req: NextRequest) {
 
   dbQuery = dbQuery.order('created_at', { ascending: false });
   const { data, error } = await dbQuery;
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
   return NextResponse.json({ data });
 }
 
@@ -62,7 +62,7 @@ export async function POST(req: NextRequest) {
   if (action === 'toggle_active') {
     if (is_active === undefined) return NextResponse.json({ error: 'Missing is_active Value' }, { status: 400 });
     const { error: toggleError } = await supabase.from('profiles').update({ is_active, updated_at: new Date().toISOString() }).eq('id', id);
-    if (toggleError) return NextResponse.json({ error: `Toggle Failed: ${toggleError.message}` }, { status: 500 });
+    if (toggleError) return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
     await supabase.from('agent_profiles').update({ is_active: !!is_active }).eq('id', id);
     return NextResponse.json({ success: true });
   }
@@ -74,13 +74,13 @@ export async function POST(req: NextRequest) {
     if (Math.abs(delta) > 10000) return NextResponse.json({ error: 'Balance Adjustment Exceeds $10,000 Limit' }, { status: 400 });
 
     const { data: currentProfile, error: fetchError } = await supabase.from('profiles').select('prepaid_balance, full_name').eq('id', id).single();
-    if (fetchError) return NextResponse.json({ error: `Failed To Fetch Profile: ${fetchError.message}` }, { status: 500 });
+    if (fetchError) return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
 
     const balanceBefore = Number(currentProfile?.prepaid_balance ?? 0);
     const newBalance = Math.max(0, balanceBefore + delta);
 
     const { error: balanceError } = await supabase.from('profiles').update({ prepaid_balance: newBalance, updated_at: new Date().toISOString() }).eq('id', id);
-    if (balanceError) return NextResponse.json({ error: `Balance Update Failed: ${balanceError.message}` }, { status: 500 });
+    if (balanceError) return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
 
     const txType = delta >= 0 ? 'credit' : 'debit';
     await supabase.from('balance_transactions').insert({
@@ -112,7 +112,7 @@ export async function POST(req: NextRequest) {
   };
 
   const { error: profileError } = await supabase.from('profiles').update(profileUpdates).eq('id', id);
-  if (profileError) return NextResponse.json({ error: `Profile Update Failed: ${profileError.message}` }, { status: 500 });
+  if (profileError) return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
 
   // Audit log for profile role changes.
   void supabase.from('admin_audit_log').insert({
@@ -130,7 +130,7 @@ export async function POST(req: NextRequest) {
     if (slug.length < 2 || slug.length > 50) return NextResponse.json({ error: 'Slug Length Must Be Between 2 And 50 Characters' }, { status: 400 });
 
     const { data: existingSlug, error: slugCheckError } = await supabase.from('agent_profiles').select('id').eq('slug', slug).neq('id', id).maybeSingle();
-    if (slugCheckError) return NextResponse.json({ error: `Slug Check Failed: ${slugCheckError.message}` }, { status: 500 });
+    if (slugCheckError) return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
     if (existingSlug) return NextResponse.json({ error: 'This Agent Storefront Slug Is Already Taken' }, { status: 400 });
 
     const agentProfileData = {
@@ -140,7 +140,7 @@ export async function POST(req: NextRequest) {
       updated_at: new Date().toISOString(),
     };
     const { error: agentError } = await supabase.from('agent_profiles').upsert(agentProfileData);
-    if (agentError) return NextResponse.json({ error: `Agent Profile Update Failed: ${agentError.message}` }, { status: 500 });
+    if (agentError) return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
   } else {
     await supabase.from('agent_profiles').update({ is_active: false }).eq('id', id);
   }

@@ -84,7 +84,7 @@ export async function POST(req: NextRequest) {
       .update({ is_default: false })
       .eq('user_id', auth.userId)
       .eq('is_default', true);
-    if (clearErr) return NextResponse.json({ error: clearErr.message }, { status: 500 });
+    if (clearErr) return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
   }
 
   const { data, error } = await auth.supabase
@@ -148,7 +148,7 @@ export async function PATCH(req: NextRequest) {
       .eq('user_id', auth.userId)
       .eq('is_default', true)
       .neq('id', body.id);
-    if (clearErr) return NextResponse.json({ error: clearErr.message }, { status: 500 });
+    if (clearErr) return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
     updates.is_default = true;
   } else if (body.is_default === false) {
     updates.is_default = false;

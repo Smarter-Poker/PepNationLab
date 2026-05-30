@@ -39,7 +39,7 @@ export async function POST(req: NextRequest) {
     .eq('conversation_id', parsed.data.conversationId)
     .order('joined_at', { ascending: true });
 
-  if (qErr) return NextResponse.json({ error: qErr.message }, { status: 500 });
+  if (qErr) return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
 
   type Row = {
     id: string;

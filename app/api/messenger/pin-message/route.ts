@@ -65,7 +65,7 @@ export async function POST(req: NextRequest) {
       if (code === '23514') {
         return NextResponse.json({ error: 'Pin Limit Reached' }, { status: 400 });
       }
-      return NextResponse.json({ error: insErr.message }, { status: 500 });
+      return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
     }
     return NextResponse.json({ pin: inserted });
   }
@@ -88,6 +88,6 @@ export async function POST(req: NextRequest) {
     .from('messenger_pins')
     .delete()
     .eq('id', existing.id);
-  if (delErr) return NextResponse.json({ error: delErr.message }, { status: 500 });
+  if (delErr) return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
   return NextResponse.json({ ok: true, removed: 1 });
 }

@@ -80,7 +80,7 @@ export async function POST(req: NextRequest) {
     .eq('parent_agent_id', callerId);
 
   if (updateErr) {
-    return NextResponse.json({ error: updateErr.message }, { status: 500 });
+    return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
   }
 
   // Audit log
