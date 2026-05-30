@@ -58,8 +58,14 @@ export async function POST(req: NextRequest) {
     const primaryBilledAgentId = orderAgentParentId || order.agent_id;
     const isSubAgentOrder = !!orderAgentParentId && primaryBilledAgentId !== order.agent_id;
 
-    let totalCogs = 0;
-    const items = (order.order_items as any[]) || [];
+    interface OrderItem {
+      quantity?: number;
+      product_id?: string;
+      product_name?: string;
+      unit_cost_price?: number;
+      unit_super_agent_cost?: number;
+    }
+    const items = (order.order_items as OrderItem[]) || [];
 
     let billedAgentTier: AgentTier = 'tier_3';
     if (!isSubAgentOrder) {
@@ -156,7 +162,7 @@ export async function POST(req: NextRequest) {
       prepaidDeducted = true;
     }
 
-    const updatePayload: any = { status: newStatus, agent_approved_at: new Date().toISOString(), updated_at: new Date().toISOString() };
+    const updatePayload: Record<string, string> = { status: newStatus, agent_approved_at: new Date().toISOString(), updated_at: new Date().toISOString() };
     if (tracking_number && typeof tracking_number === 'string') updatePayload.tracking_number = tracking_number;
 
     const { error: updateError } = await supabase.from('orders').update(updatePayload).eq('id', orderId);

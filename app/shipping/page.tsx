@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -62,7 +62,7 @@ export default function ShippingDashboard() {
   const [quickScanValue, setQuickScanValue] = useState('');
   const quickScanRef = useRef<HTMLInputElement>(null);
 
-  const fetchOrders = async () => {
+  const fetchOrders = useCallback(async () => {
     try {
       setLoading(true);
       const res = await fetch('/api/shipping/orders');
@@ -76,9 +76,9 @@ export default function ShippingDashboard() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  useEffect(() => { fetchOrders(); }, []);
+  useEffect(() => { void fetchOrders(); }, [fetchOrders]);
 
   const filteredOrders = statusFilter === 'all'
     ? orders
@@ -150,7 +150,7 @@ export default function ShippingDashboard() {
   function toggleSelect(id: string) {
     setSelectedIds(prev => {
       const next = new Set(prev);
-      next.has(id) ? next.delete(id) : next.add(id);
+      if (next.has(id)) { next.delete(id); } else { next.add(id); }
       return next;
     });
   }
