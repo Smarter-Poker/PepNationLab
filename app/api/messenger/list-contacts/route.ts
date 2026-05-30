@@ -15,14 +15,37 @@ interface ContactRow {
   role: string;
 }
 
+// Audit12: admins always sort to the top of every non-admin caller's contact
+// list so agents/super_agents/researchers can find platform support quickly.
 function sortContacts(rows: ContactRow[]): ContactRow[] {
   return rows
     .filter((r) => r && r.id)
     .sort((a, b) => {
+      const aAdmin = a.role === 'admin' ? 0 : 1;
+      const bAdmin = b.role === 'admin' ? 0 : 1;
+      if (aAdmin !== bAdmin) return aAdmin - bAdmin;
       const an = (a.full_name ?? a.username ?? a.email ?? '').toLowerCase();
       const bn = (b.full_name ?? b.username ?? b.email ?? '').toLowerCase();
       return an.localeCompare(bn);
     });
+}
+
+// Audit12: every non-admin caller should always have at least the platform
+// admin(s) in their contact list. Returns active admin profiles excluding
+// the caller (defense in depth -- the caller cannot be in this set anyway
+// because the caller is non-admin in every branch that uses this helper).
+async function loadAdminContacts(
+  svc: ReturnType<typeof createServiceClient> extends Promise<infer T> ? T : never,
+  excludeId: string,
+): Promise<ContactRow[]> {
+  const { data } = await svc
+    .from('profiles')
+    .select('id, full_name, username, email, role')
+    .eq('role', 'admin')
+    .eq('is_active', true)
+    .neq('id', excludeId)
+    .limit(50);
+  return (data ?? []) as ContactRow[];
 }
 
 export async function POST(req: NextRequest) {
@@ -67,8 +90,10 @@ export async function POST(req: NextRequest) {
         .limit(500);
       researcherRows = (researchers ?? []) as ContactRow[];
     }
+    // Audit12: always include platform admin(s).
+    const admins = await loadAdminContacts(svc, me.id);
     const byId = new Map<string, ContactRow>();
-    for (const r of [...downlineRows, ...researcherRows]) byId.set(r.id, r);
+    for (const r of [...downlineRows, ...researcherRows, ...admins]) byId.set(r.id, r);
     return NextResponse.json({ contacts: sortContacts(Array.from(byId.values())) });
   }
 
@@ -90,19 +115,34 @@ export async function POST(req: NextRequest) {
         .maybeSingle();
       if (parent) byId.set(parent.id, parent as ContactRow);
     }
+    // Audit12: always include platform admin(s).
+    const admins = await loadAdminContacts(svc, me.id);
+    for (const a of admins) byId.set(a.id, a);
     return NextResponse.json({ contacts: sortContacts(Array.from(byId.values())) });
   }
 
   if (me.role === 'researcher') {
-    if (!me.referring_agent_id) return NextResponse.json({ contacts: [] });
-    const { data: agent } = await svc
-      .from('profiles')
-      .select(SELECT)
-      .eq('id', me.referring_agent_id)
-      .eq('is_active', true)
-      .maybeSingle();
-    return NextResponse.json({ contacts: agent ? [agent as ContactRow] : [] });
+    const byId = new Map<string, ContactRow>();
+    if (me.referring_agent_id) {
+      const { data: agent } = await svc
+        .from('profiles')
+        .select(SELECT)
+        .eq('id', me.referring_agent_id)
+        .eq('is_active', true)
+        .maybeSingle();
+      if (agent) byId.set(agent.id, agent as ContactRow);
+    }
+    // Audit12: researchers always get the admin(s) as a contact even if the
+    // referring_agent_id is NULL (deactivated upstream agent) -- so they can
+    // always reach platform support.
+    const admins = await loadAdminContacts(svc, me.id);
+    for (const a of admins) byId.set(a.id, a);
+    return NextResponse.json({ contacts: sortContacts(Array.from(byId.values())) });
   }
 
-  return NextResponse.json({ contacts: [] });
+  // Unknown role -- still expose the platform admin(s) so the caller is
+  // not entirely contactless. (Defensive; the production role enum is
+  // admin/super_agent/agent/researcher/shipping.)
+  const admins = await loadAdminContacts(svc, me.id);
+  return NextResponse.json({ contacts: sortContacts(admins) });
 }
