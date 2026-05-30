@@ -1,6 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
-import { Reply, Smile, Pencil, Trash2, Check, X, Download, Pin, Bookmark, Tag, MessageSquare, Flag } from 'lucide-react';
+import { Reply, Smile, Pencil, Trash2, Check, X, Download, Pin, Bookmark, Tag, MessageSquare, Flag, Bell } from 'lucide-react';
 import type { Message, Reaction, ParticipantRole } from '@/lib/messenger/types';
 import type { MessageLabelValue } from '@/lib/messenger/schemas';
 import ReactionPopover from './ReactionPopover';
@@ -29,6 +29,7 @@ interface Props {
   onLabelToggle?: (m: Message, label: MessageLabelValue, action: 'add' | 'remove') => void;
   onThread?: (m: Message) => void;
   onReport?: (m: Message) => void;
+  onSetReminder?: (m: Message) => void;
 }
 
 const URL_RE = /https?:\/\/[^\s<>]+/i;
@@ -77,7 +78,7 @@ export default function MessageBubble({
   selfRole = null, conversationType,
   isPinned = false, isBookmarked = false, currentLabels = [],
   onReply, onReact, onEdit, onDelete,
-  onPinToggle, onBookmarkToggle, onLabelToggle, onThread, onReport,
+  onPinToggle, onBookmarkToggle, onLabelToggle, onThread, onReport, onSetReminder,
 }: Props) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [popoverOpen, setPopoverOpen] = useState(false);
@@ -124,6 +125,8 @@ export default function MessageBubble({
     && !message.thread_parent_id; // Don't allow threads on replies in this iteration.
   // Phase 12: only non-owner can report, and the message can't already be deleted.
   const canReport = Boolean(onReport) && !isOwn && !message.is_deleted;
+  // Phase 13: anyone can set a reminder on any non-deleted message.
+  const canRemind = Boolean(onSetReminder) && !message.is_deleted;
 
   // selfRole gates visibility for additional admin-only affordances later; for
   // now any participant can pin so we only consult it for the Unpin path in
@@ -243,6 +246,17 @@ export default function MessageBubble({
           >
             <button type="button" onClick={() => { onReply(message); setMenuOpen(false); }} style={menuBtn} aria-label="Reply" title="Reply"><Reply size={16} /></button>
             <button type="button" onClick={() => { setMenuOpen(false); setPopoverOpen(true); }} style={menuBtn} aria-label="React" title="React"><Smile size={16} /></button>
+            {canRemind && (
+              <button
+                type="button"
+                onClick={() => { onSetReminder?.(message); setMenuOpen(false); }}
+                style={menuBtn}
+                aria-label="Remind Me"
+                title="Remind Me"
+              >
+                <Bell size={16} />
+              </button>
+            )}
             {canReport && (
               <button
                 type="button"

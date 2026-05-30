@@ -8,6 +8,10 @@ import { sanitizeMessageText } from '@/lib/messenger/sanitize';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
+// Phase 13: server-side @admin detection. Word-bounded, case-insensitive,
+// matches @admin surrounded by start/end/whitespace/sentence-punctuation.
+const ADMIN_MENTION_RE = /(^|\s)@admin(\s|$|[.,!?;:])/i;
+
 export async function POST(req: NextRequest) {
   const csrf = assertSameOrigin(req);
   if (csrf) return csrf;
@@ -98,6 +102,25 @@ export async function POST(req: NextRequest) {
 
   if (insErr || !inserted) {
     return NextResponse.json({ error: insErr?.message ?? 'Insert Failed' }, { status: 500 });
+  }
+
+  // Phase 13: if the sanitized text contains an @admin mention, ALSO insert a
+  // row into messenger_admin_messages so the admin moderation surface can list
+  // it even when no admin is a participant in this conversation. We use the
+  // sanitized text so clients can't bypass HTML sanitization by mention-only.
+  // Insert failure here is non-fatal - the user message is already persisted.
+  if (cleanText && ADMIN_MENTION_RE.test(cleanText)) {
+    try {
+      await svc.from('messenger_admin_messages').insert({
+        message_id: (inserted as { id: string }).id,
+        conversation_id: parsed.data.conversationId,
+        sender_id: user.id,
+        message_text: cleanText.slice(0, 500),
+        status: 'unread',
+      });
+    } catch {
+      // non-fatal
+    }
   }
 
   return NextResponse.json({ message: inserted });
