@@ -81,6 +81,7 @@ const PUBLIC_ROUTES = [
 
 // Dynamic route check — agent storefronts are public
 // e.g. /midway, /orlando-peps, etc. (but NOT /admin, /dashboard, /api, etc.)
+// Also allows /[slug]/[productId] for storefront product detail pages.
 function isPublicDynamicRoute(pathname: string): boolean {
   // Exclude known protected prefixes
   const protectedPrefixes = [
@@ -91,8 +92,10 @@ function isPublicDynamicRoute(pathname: string): boolean {
   ];
   if (protectedPrefixes.some(p => pathname.startsWith(p))) return false;
   // A single-segment slug path (e.g. /midway) is a public storefront
+  // A two-segment path where the first segment is NOT a protected prefix
+  // (e.g. /midway/some-product-id) is a storefront product detail page.
   const segments = pathname.split('/').filter(Boolean);
-  return segments.length === 1;
+  return segments.length === 1 || segments.length === 2;
 }
 
 export default async function proxy(request: NextRequest) {

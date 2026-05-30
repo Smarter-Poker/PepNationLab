@@ -53,14 +53,23 @@ function LoginPageInner() {
       return;
     }
 
-    // Single-session enforcement — best-effort, never block login.
-    // Fire-and-forget: if this fails (e.g. incognito cookie timing) the
-    // new session is still valid. Old sessions expire naturally.
-    supabase.auth.signOut({ scope: 'others' }).catch(() => {});
+    // Single-session enforcement — deferred to avoid a race condition in
+    // incognito mode where the signOut RPC can race against the new session
+    // cookie being written, causing silent logout. We fire it 3 seconds after
+    // navigation starts — by then the session cookie is safely committed.
+    // Best-effort: failures are ignored (old sessions expire naturally).
+    const supabaseForSignOut = supabase; // capture ref
 
     const redirectTo = searchParams.get('redirect') ?? '/dashboard';
     router.push(redirectTo);
-    router.refresh();
+    // Do NOT call router.refresh() here — it triggers a server re-render that
+    // can race against the cookie being set in incognito, causing the middleware
+    // to see no session and redirect back to /login.
+    // The destination page's own useEffect / server component will load fresh data.
+
+    setTimeout(() => {
+      supabaseForSignOut.auth.signOut({ scope: 'others' }).catch(() => {});
+    }, 3000);
   }
 
   return (
