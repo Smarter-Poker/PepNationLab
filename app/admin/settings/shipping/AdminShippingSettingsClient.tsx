@@ -146,7 +146,12 @@ export default function AdminShippingSettingsClient() {
   }, []);
 
   useEffect(() => {
-    Promise.all([fetchStatus(), fetchOrigins()]).finally(() => setLoading(false));
+    let cancelled = false;
+    (async () => {
+      await Promise.all([fetchStatus(), fetchOrigins()]);
+      if (!cancelled) setLoading(false);
+    })();
+    return () => { cancelled = true; };
   }, [fetchStatus, fetchOrigins]);
 
   // ---------------------------------------------------------------------------

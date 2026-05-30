@@ -147,7 +147,8 @@ async function handleTrackUpdated(supabase: any, data: Record<string, unknown>) 
   const trackingNumber = String(data.tracking_number ?? '').trim();
   if (!trackingNumber) return;
 
-  const status = String(data.tracking_status?.status ?? data.status ?? '').trim().toUpperCase();
+  const trackingStatusObj = (data.tracking_status && typeof data.tracking_status === 'object') ? data.tracking_status as Record<string, unknown> : null;
+  const status = String(trackingStatusObj?.status ?? data.status ?? '').trim().toUpperCase();
 
   // Find the order by tracking number.
   const { data: order } = await supabase
@@ -200,7 +201,8 @@ async function handleTransaction(supabase: any, data: Record<string, unknown>) {
   const labelUrl = String(data.label_url ?? '').trim() || null;
   const trackingNumber = String(data.tracking_number ?? '').trim() || null;
   const status = String(data.status ?? '').trim().toUpperCase();
-  const amountStr = String(data.rate?.amount ?? data.amount ?? '').trim();
+  const rateObj = (data.rate && typeof data.rate === 'object') ? data.rate as Record<string, unknown> : null;
+  const amountStr = String(rateObj?.amount ?? data.amount ?? '').trim();
   const amountCents = amountStr ? Math.round(Number(amountStr) * 100) : null;
 
   // Find label_job by shippo_transaction_id.

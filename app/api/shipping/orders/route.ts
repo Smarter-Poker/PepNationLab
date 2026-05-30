@@ -77,7 +77,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Missing order_id or action' }, { status: 400 });
   }
 
-  let updateData: any = {};
+  let updateData: Record<string, string | null> = {};
   
   if (action === 'mark_shipped') {
     if (!tracking_number) {
