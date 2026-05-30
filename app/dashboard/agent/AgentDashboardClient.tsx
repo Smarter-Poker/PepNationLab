@@ -194,7 +194,7 @@ export default function AgentDashboardClient({
     }
   }
 
-  const originUrl = typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000';
+  const originUrl = typeof window !== 'undefined' ? window.location.origin : (process.env.NEXT_PUBLIC_APP_URL ?? '');
   const storefrontUrl = agentProfile ? `${originUrl}/${agentProfile.slug}` : '';
 
 
