@@ -520,7 +520,7 @@ export default function ResearcherDashboard({ userId, userName, userEmail, agent
                   gap: 8,
                 }}>
                   <MenuButton
-                    onClick={() => { window.location.href = agentSlug ? `/${agentSlug}` : '/products'; }}
+                    onClick={() => { window.location.href = agentSlug ? `/${agentSlug}` : '/dashboard'; }}
                     icon={<StorefrontIcon />}
                     title="VISIT STOREFRONT"
                     subtitle="SEE ALL AVAILABLE PEPTIDES AND PRODUCTS"
@@ -563,7 +563,7 @@ export default function ResearcherDashboard({ userId, userName, userEmail, agent
                     <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
                   </div>
                   <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.9rem', fontWeight: 600, marginBottom: 12 }}>No Orders Yet</div>
-                  <a href={agentSlug ? `/${agentSlug}` : '/products'} style={{ display: 'inline-block', fontSize: '0.82rem', color: 'var(--teal)', fontWeight: 600 }}>Browse Catalog</a>
+                  <a href={agentSlug ? `/${agentSlug}` : '/dashboard'} style={{ display: 'inline-block', fontSize: '0.82rem', color: 'var(--teal)', fontWeight: 600 }}>Browse Catalog</a>
                 </div>
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -629,7 +629,7 @@ export default function ResearcherDashboard({ userId, userName, userEmail, agent
                           )}
 
                           <div style={{ marginTop: 12 }}>
-                            <a href={agentSlug ? `/${agentSlug}` : '/products'} style={{
+                            <a href={agentSlug ? `/${agentSlug}` : '/dashboard'} style={{
                               display: 'inline-flex', alignItems: 'center', gap: 6, padding: '6px 14px',
                               background: 'rgba(192,184,168,0.08)', border: '1px solid rgba(192,184,168,0.15)',
                               borderRadius: 8, color: 'var(--teal)', fontSize: '0.75rem', fontWeight: 600, textDecoration: 'none',
@@ -680,7 +680,7 @@ export default function ResearcherDashboard({ userId, userName, userEmail, agent
                     <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
                   </div>
                   <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.9rem', fontWeight: 600, marginBottom: 12 }}>No Favorites Yet</div>
-                  <a href={agentSlug ? `/${agentSlug}` : '/products'} style={{ display: 'inline-block', fontSize: '0.82rem', color: 'var(--teal)', fontWeight: 600 }}>Browse Catalog</a>
+                  <a href={agentSlug ? `/${agentSlug}` : '/dashboard'} style={{ display: 'inline-block', fontSize: '0.82rem', color: 'var(--teal)', fontWeight: 600 }}>Browse Catalog</a>
                 </div>
               ) : (
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 'var(--space-4)' }}>
@@ -695,7 +695,7 @@ export default function ResearcherDashboard({ userId, userName, userEmail, agent
                       {f.products.category && <div style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.3)', marginBottom: 6 }}>{f.products.category}</div>}
                       <div style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--teal)', marginBottom: 8 }}>${Number(f.products.base_price).toFixed(2)}</div>
                       <div style={{ display: 'flex', gap: 6 }}>
-                        <a href={agentSlug ? `/${agentSlug}` : '/products'} style={{ flex: 1, textAlign: 'center', padding: '5px 10px', background: 'rgba(192,184,168,0.08)', border: '1px solid rgba(192,184,168,0.15)', borderRadius: 6, color: 'var(--teal)', fontSize: '0.72rem', fontWeight: 600, textDecoration: 'none' }}>View In Store</a>
+                        <a href={agentSlug ? `/${agentSlug}` : '/dashboard'} style={{ flex: 1, textAlign: 'center', padding: '5px 10px', background: 'rgba(192,184,168,0.08)', border: '1px solid rgba(192,184,168,0.15)', borderRadius: 6, color: 'var(--teal)', fontSize: '0.72rem', fontWeight: 600, textDecoration: 'none' }}>View In Store</a>
                         <button onClick={() => removeFavorite(f.product_id)} style={{ padding: '5px 10px', background: 'rgba(252,129,129,0.08)', border: '1px solid rgba(252,129,129,0.15)', borderRadius: 6, color: '#FC8181', fontSize: '0.72rem', fontWeight: 600, cursor: 'pointer' }}>Remove</button>
                       </div>
                     </div>

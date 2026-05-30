@@ -121,8 +121,8 @@ export default async function AgentStorefrontPage({ params }: Props) {
   const hasAccess = isAdmin || isStorefrontOwner || isSubAgent || isDownlineResearcher;
 
   if (!hasAccess) {
-    // Sign the user out of this session so they can't keep refreshing
-    await supabase.auth.signOut();
+    // Do NOT sign out — the user may have a valid session for their own agent's storefront.
+    // Just show the login form with an error message so they can authenticate for this store.
     const AgentStorefrontLogin = (await import('@/components/AgentStorefrontLogin')).default;
     return (
       <AgentStorefrontLogin 
@@ -135,6 +135,7 @@ export default async function AgentStorefrontPage({ params }: Props) {
       />
     );
   }
+
 
   const { data: inventory } = await supabase
     .from('agent_inventory')
