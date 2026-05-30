@@ -494,62 +494,52 @@ export default function ResearcherDashboard({ userId, userName, userEmail, agent
             )}
           </div>
 
-          {/* ── OVERVIEW TAB — Brushed-Steel Menu ── */}
+          {/* ── OVERVIEW TAB — Full-Screen Image Menu ── */}
           {tab === 'overview' && (
             <div style={{
+              width: '100%',
               display: 'flex',
               justifyContent: 'center',
               alignItems: 'flex-start',
-              padding: '8px 0 32px',
+              background: '#0a0a0a',
             }}>
+              {/* Portrait panel — width-driven, aspect-ratio-derived height */}
               <div style={{
-                width: '100%',
-                maxWidth: 520,
-                borderRadius: 22,
-                padding: 10,
-                background: 'linear-gradient(145deg, #d4cec4 0%, #b0a89e 25%, #8a847c 50%, #b0a89e 75%, #d4cec4 100%)',
-                boxShadow: '0 12px 60px rgba(0,0,0,0.85), inset 0 1px 0 rgba(255,255,255,0.4), inset 0 -1px 0 rgba(0,0,0,0.5)',
+                position: 'relative',
+                flexShrink: 0,
+                width: 'calc(100% - 4px)',
+                maxWidth: 480,
+                aspectRatio: '576 / 1024',
+                overflow: 'hidden',
+                backgroundImage: "url('/researcher-menu.jpg')",
+                backgroundRepeat: 'no-repeat',
+                backgroundPosition: 'top left',
+                backgroundSize: '100% 100%',
               }}>
-                <div style={{
-                  borderRadius: 14,
-                  background: 'linear-gradient(180deg, #1a1d28 0%, #13151f 50%, #0e1018 100%)',
-                  padding: '14px 12px',
-                  boxShadow: 'inset 0 3px 12px rgba(0,0,0,0.7)',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: 8,
-                }}>
-                  <MenuButton
-                    onClick={() => { window.location.href = agentSlug ? `/${agentSlug}` : '/dashboard'; }}
-                    icon={<StorefrontIcon />}
-                    title="VISIT STOREFRONT"
-                    subtitle="SEE ALL AVAILABLE PEPTIDES AND PRODUCTS"
+                {/* Invisible click zones — percentages map 1:1 to image pixels */}
+                {[
+                  { key: 'storefront', top: '5.5%',  height: '17%',   action: () => { window.location.href = agentSlug ? `/${agentSlug}` : '/products'; } },
+                  { key: 'orders',     top: '23.5%', height: '19.5%', action: () => setTab('orders') },
+                  { key: 'messages',   top: '44%',   height: '19%',   action: () => setTab('messages') },
+                  { key: 'favorites',  top: '64%',   height: '15.5%', action: () => setTab('favorites') },
+                  { key: 'account',    top: '80.5%', height: '14.5%', action: () => setTab('account') },
+                ].map(z => (
+                  <div
+                    key={z.key}
+                    onClick={z.action}
+                    style={{
+                      position: 'absolute',
+                      top: z.top, height: z.height,
+                      left: '3%', width: '94%',
+                      cursor: 'pointer',
+                      zIndex: 2,
+                      WebkitTapHighlightColor: 'transparent',
+                      borderRadius: 8,
+                    }}
+                    onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.background = 'rgba(255,255,255,0.06)'; }}
+                    onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.background = 'transparent'; }}
                   />
-                  <MenuButton
-                    onClick={() => setTab('orders')}
-                    icon={<OrdersIcon />}
-                    title="VIEW ALL ORDERS"
-                    subtitle="CHECK ORDERS, TRACKING NUMBERS AND PREVIOUS ORDERS"
-                  />
-                  <MenuButton
-                    onClick={() => setTab('messages')}
-                    icon={<MessageIcon />}
-                    title="MESSAGE YOUR AGENT"
-                    subtitle="SEND PROOF OF PAYMENT OR ASK YOUR AGENT ANY QUESTIONS"
-                  />
-                  <MenuButton
-                    onClick={() => setTab('favorites')}
-                    icon={<FavoritesIcon />}
-                    title="FAVORITES"
-                    subtitle="ALL ITEMS YOU LIKED OR PREVIOUSLY ORDERED"
-                  />
-                  <MenuButton
-                    onClick={() => setTab('account')}
-                    icon={<SettingsIcon />}
-                    title="ACCOUNT SETTINGS"
-                    subtitle="PROFILE SETTINGS AND ACCOUNT INFORMATION"
-                  />
-                </div>
+                ))}
               </div>
             </div>
           )}
