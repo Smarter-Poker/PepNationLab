@@ -129,6 +129,8 @@ export async function PATCH(req: NextRequest) {
   // Hard rule: agents can NEVER list for less than their wholesale cost.
   // We compute it here even though the client enforces it too — a bypassed
   // client-side check must not allow below-cost listings to reach the DB.
+  // Per-product tier overrides take priority over the global tier multiplier,
+  // matching the same effective-multiplier logic used in the GET handler.
   let agentCostPer10 = 0;
   {
     const { data: prodData } = await supabase
@@ -142,12 +144,23 @@ export async function PATCH(req: NextRequest) {
       .eq('id', gate.user.id)
       .single();
     if (prodData?.base_cost && profData?.tier) {
-      const { data: multData } = await supabase
-        .from('pricing_tiers')
-        .select('multiplier')
+      // Check for per-product override first (mirrors GET handler logic).
+      const { data: overrideData } = await supabase
+        .from('product_tier_overrides')
+        .select('custom_multiplier')
+        .eq('product_id', check.product_id)
         .eq('tier_name', profData.tier)
-        .single();
-      agentCostPer10 = Number(prodData.base_cost) * (Number(multData?.multiplier) || 1.7);
+        .maybeSingle();
+      if (overrideData?.custom_multiplier != null) {
+        agentCostPer10 = Number(prodData.base_cost) * Number(overrideData.custom_multiplier);
+      } else {
+        const { data: multData } = await supabase
+          .from('pricing_tiers')
+          .select('multiplier')
+          .eq('tier_name', profData.tier)
+          .single();
+        agentCostPer10 = Number(prodData.base_cost) * (Number(multData?.multiplier) || 1.7);
+      }
     }
   }
 
