@@ -5,26 +5,42 @@ import { getCronAuth } from '@/lib/messenger/server';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-// Audit9: a ringing call with no accept/decline/hangup wedges the next call
-// in the same conversation (the start guard refuses to create a second
-// active row). Sweep rows older than 60 seconds in `ringing` status to
-// `missed`.
+// Audit9: ringing-call timeout (60s -> missed) so the next call slot in the
+// conversation is not wedged forever.
+//
+// Audit10 extension: also sweep 'active' calls older than 4 hours. With the
+// CallOverlay onDisconnected handler now routing only to onClose (no
+// auto-hangup on transient disconnect), a stale 'active' row could otherwise
+// sit forever if both parties closed the tab without sendBeacon firing.
 export async function GET(req: NextRequest) {
   const auth = getCronAuth(req);
   if (!auth.ok) return NextResponse.json({ error: auth.error }, { status: auth.status });
 
   const svc = await createServiceClient();
   const nowIso = new Date().toISOString();
-  const cutoffIso = new Date(Date.now() - 60_000).toISOString();
+  const ringingCutoff = new Date(Date.now() - 60_000).toISOString();
+  const activeCutoff = new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString();
 
-  const { data, error } = await svc
-    .from('messenger_calls')
-    .update({ status: 'missed', ended_at: nowIso })
-    .eq('status', 'ringing')
-    .lt('started_at', cutoffIso)
-    .select('id');
+  const [missedRes, staleRes] = await Promise.all([
+    svc
+      .from('messenger_calls')
+      .update({ status: 'missed', ended_at: nowIso })
+      .eq('status', 'ringing')
+      .lt('started_at', ringingCutoff)
+      .select('id'),
+    svc
+      .from('messenger_calls')
+      .update({ status: 'ended', ended_at: nowIso })
+      .eq('status', 'active')
+      .lt('answered_at', activeCutoff)
+      .select('id'),
+  ]);
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (missedRes.error) return NextResponse.json({ error: missedRes.error.message }, { status: 500 });
+  if (staleRes.error) return NextResponse.json({ error: staleRes.error.message }, { status: 500 });
 
-  return NextResponse.json({ marked: (data ?? []).length });
+  return NextResponse.json({
+    marked_missed: (missedRes.data ?? []).length,
+    closed_stale_active: (staleRes.data ?? []).length,
+  });
 }

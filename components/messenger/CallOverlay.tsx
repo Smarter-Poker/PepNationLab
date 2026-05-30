@@ -83,19 +83,6 @@ export default function CallOverlay({ call, selfId, onClose }: Props) {
     return () => window.removeEventListener('pagehide', handler);
   }, [call.id]);
 
-  const handleHangup = async () => {
-    try {
-      await fetch('/api/messenger/call-signal', {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ action: 'hangup', callId: call.id }),
-      });
-    } catch {
-      // best effort -- still close the overlay
-    }
-    onClose();
-  };
-
   const isVideo = call.call_type === 'video';
 
   return (
@@ -146,7 +133,7 @@ export default function CallOverlay({ call, selfId, onClose }: Props) {
           style={{ flex: 1, background: '#000' }}
         >
           {isVideo ? <VideoConference /> : <RoomAudioRenderer />}
-          <ControlBar onLeave={() => void handleHangup()} />
+          <ControlBar />
         </LiveKitRoom>
       )}
       {!error && !token && (
