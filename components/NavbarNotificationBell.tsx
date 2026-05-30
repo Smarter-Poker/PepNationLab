@@ -227,28 +227,26 @@ export default function NavbarNotificationBell() {
         aria-label={`Notifications${unread > 0 ? ` (${unread} unread)` : ''}`}
         aria-expanded={open}
         style={{
-          width: 42,
-          height: 42,
-          borderRadius: '50%',
-          border: `1.5px solid ${unread > 0 ? 'var(--teal)' : 'rgba(192,184,168,0.2)'}`,
-          boxShadow: unread > 0 ? '0 0 12px rgba(192,184,168,0.35)' : '0 0 8px rgba(0,0,0,0.3)',
+          position: 'relative',
+          background: open ? 'rgba(192,184,168,0.08)' : 'none',
+          border: 'none',
+          cursor: 'pointer',
+          padding: 8,
+          borderRadius: 10,
           display: 'flex',
           alignItems: 'center',
-          justifyContent: 'center',
-          cursor: 'pointer',
-          position: 'relative',
-          marginRight: 'var(--space-2)',
-          transition: 'border-color 0.2s, box-shadow 0.2s',
-          padding: 0,
-          background: 'none',
+          transition: 'background 0.2s',
           animation: ringing ? 'pnl-bell-ring 0.8s ease' : 'none',
           transformOrigin: 'top center',
         }}
+        onMouseEnter={e => { if (!open) e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; }}
+        onMouseLeave={e => { if (!open) e.currentTarget.style.background = 'none'; }}
       >
         <img
-          src="/images/notification-bell.jpg"
+          src="/images/notification-bell.png"
           alt="Notifications"
-          style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }}
+          width={42} height={42}
+          style={{ transition: 'opacity 0.2s', display: 'block' }}
         />
 
         {/* Unread badge */}
@@ -256,22 +254,22 @@ export default function NavbarNotificationBell() {
           <span
             style={{
               position: 'absolute',
-              top: -5,
-              right: -5,
+              top: 2,
+              right: 2,
               background: '#E53E3E',
               color: '#fff',
-              fontSize: '0.65rem',
-              fontWeight: 900,
-              borderRadius: '50%',
-              minWidth: 18,
-              height: 18,
-              padding: '0 3px',
+              fontSize: '0.58rem',
+              fontWeight: 800,
+              minWidth: 16,
+              height: 16,
+              borderRadius: 999,
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              border: '2px solid var(--black)',
-              animation: 'pnl-badge-pop 0.3s ease both',
+              padding: '0 4px',
               lineHeight: 1,
+              boxShadow: '0 2px 6px rgba(229,62,62,0.4)',
+              animation: 'pnl-badge-pop 0.3s ease both',
             }}
           >
             {unread > 99 ? '99+' : unread}
