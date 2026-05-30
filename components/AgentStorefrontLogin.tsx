@@ -115,7 +115,7 @@ export default function AgentStorefrontLogin({
       }
 
       // Hard navigation — forces browser to re-send all cookies to the server
-      window.location.href = window.location.pathname;
+      window.location.replace(window.location.pathname);
     } catch (err: any) {
       setError(err.message || 'Sign In Failed. Please Try Again.');
       setLoading(false);
@@ -174,7 +174,7 @@ export default function AgentStorefrontLogin({
       supabase.auth.signOut({ scope: 'others' }).catch(() => {});
 
       // Force full navigation so the new auth cookie is sent to the server
-      window.location.href = window.location.pathname;
+      window.location.replace(window.location.pathname);
     } catch (err: any) {
       setError(err.message || 'Network Error');
       setLoading(false);

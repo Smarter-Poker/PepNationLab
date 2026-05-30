@@ -83,7 +83,7 @@ export default function InviteRedeemClient({ token, email, suggestedFullName, in
       }
 
       // Hard navigation ensures that the browser sends the new session cookie to the server
-      window.location.href = '/dashboard';
+      window.location.replace('/dashboard');
     } catch {
       setError('Failed To Accept Invitation.');
       setSubmitting(false);
