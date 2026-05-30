@@ -157,7 +157,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({
         ok: true,
         estimated: false,
-        mode: result.result.modes,
+        mode: result.result.mode,
         rates: result.result.rates.slice(0, 5).map((r) => ({
           carrier: r.carrier,
           service: r.serviceLevelName,
