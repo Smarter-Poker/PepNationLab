@@ -37,12 +37,27 @@ const nextConfig: NextConfig = {
           { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
           {
             key: "Permissions-Policy",
-            value: "camera=(), microphone=(), geolocation=()",
+            // microphone=(self) is required for VoiceRecorder (getUserMedia({ audio: true })).
+            // camera=() remains blocked — no video calling in-browser (calls use LiveKit server-side).
+            value: "camera=(), microphone=(self), geolocation=()",
           },
           {
             key: "Content-Security-Policy",
             value:
-              "default-src 'self'; img-src 'self' data: blob: https://ydsaqnnuwyvtyxgvrnys.supabase.co https://api.dicebear.com; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self' https://*.supabase.co https://api.goshippo.com wss://*.supabase.co https://*.sentry.io https://*.ingest.sentry.io https://*.ingest.us.sentry.io; worker-src 'self' blob:; frame-ancestors 'none';",
+              // img-src: wildcard *.supabase.co covers all project IDs (storage, avatars).
+              // media-src: blob: needed for VoiceRecorder (local audio blobs) and video playback.
+              // connect-src: *.livekit.cloud covers LiveKit WebSocket for voice/video calls.
+              "default-src 'self'; " +
+              "img-src 'self' data: blob: https://*.supabase.co https://api.dicebear.com https://media.tenor.com; " +
+              "media-src 'self' blob: https://*.supabase.co; " +
+              "script-src 'self' 'unsafe-inline' 'unsafe-eval'; " +
+              "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
+              "font-src 'self' data: https://fonts.gstatic.com; " +
+              "connect-src 'self' https://*.supabase.co https://api.goshippo.com wss://*.supabase.co " +
+                "wss://*.livekit.cloud https://*.livekit.cloud " +
+                "https://*.sentry.io https://*.ingest.sentry.io https://*.ingest.us.sentry.io; " +
+              "worker-src 'self' blob:; " +
+              "frame-ancestors 'none';",
           },
         ],
       },
