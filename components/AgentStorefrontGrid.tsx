@@ -1681,7 +1681,11 @@ export default function AgentStorefrontGrid({ products, inventoryMap, primaryCol
                             Volume Pricing
                           </div>
                           {tiers.map((t, i) => {
-                            const tierPrice = parseFloat((basePrice * (1 + t.pct / 100)).toFixed(2));
+                            // For the 10+ agent-direct tier, show the actual cost price, not retail.
+                            // For all other tiers, apply the surcharge % on top of base retail price.
+                            const tierPrice = (isStorefrontOwner && t.pct === 0)
+                              ? agentCostPerVial
+                              : parseFloat((basePrice * (1 + t.pct / 100)).toFixed(2));
                             const isActive = displayQty >= t.min && displayQty <= t.max;
                             return (
                               <div key={i} style={{
@@ -1692,7 +1696,7 @@ export default function AgentStorefrontGrid({ products, inventoryMap, primaryCol
                                 <span style={{ fontSize: '0.85rem', color: isActive ? 'var(--white)' : 'var(--grey-400)', fontWeight: isActive ? 600 : 400 }}>
                                   {t.label ?? (t.max === Infinity ? `${t.min}+ vials` : `${t.min}–${t.max} vials`)}
                                   {t.pct > 0 && <span style={{ color: '#F6AD55', marginLeft: 8, fontSize: '0.75rem' }}>+{t.pct}%</span>}
-                                  {t.pct === 0 && <span style={{ color: 'var(--teal)', marginLeft: 8, fontSize: '0.75rem' }}>Best Price</span>}
+                                  {t.pct === 0 && !isStorefrontOwner && <span style={{ color: 'var(--teal)', marginLeft: 8, fontSize: '0.75rem' }}>Best Price</span>}
                                 </span>
                                 <span style={{ fontSize: '0.95rem', fontWeight: 700, fontFamily: 'var(--font-brand)', color: isActive ? primaryColor : 'var(--grey-300)' }}>
                                   ${tierPrice.toFixed(2)}/ea
