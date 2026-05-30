@@ -27,6 +27,6 @@ export async function GET(req: NextRequest) {
     }
     return NextResponse.json({ deleted: (data ?? []).length });
   } catch (e) {
-    return NextResponse.json({ deleted: 0, note: e instanceof Error ? e.message : 'noop' });
+    return NextResponse.json({ deleted: 0, note: 'cleanup_error' });
   }
 }
