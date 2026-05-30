@@ -19,6 +19,17 @@ export async function PATCH(req: NextRequest) {
       return NextResponse.json({ error: 'Agent ID is required' }, { status: 400 });
     }
 
+    // Block modifying another admin's contact info — prevents account takeover via email change.
+    const { data: targetProfile } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', id)
+      .maybeSingle();
+
+    if (targetProfile?.role === 'admin') {
+      return NextResponse.json({ error: 'Cannot Modify Another Admin\'s Contact Info Via This Route' }, { status: 403 });
+    }
+
     const updates: { email?: string; phone?: string | null } = {};
     if (email !== undefined) updates.email = email;
     if (phone !== undefined) updates.phone = phone || null;
