@@ -17,8 +17,10 @@ const PUBLIC_ROUTES = [
   '/privacy',
   '/compliance',
   '/disclaimer',
+  '/account/change-password',
   '/api/auth/resolve',
   '/api/auth/signout',
+  '/api/auth/change-password',
   // Liveness probe — must be reachable for monitoring.
   '/api/health',
   // Layer 1 (site_entry) disclaimer log is hit by anonymous visitors before login.
@@ -167,7 +169,7 @@ export default async function proxy(request: NextRequest) {
   // Check the user's is_active flag — deactivated accounts get signed out.
   const { data: profile } = await supabase
     .from('profiles')
-    .select('is_active, role')
+    .select('is_active, role, must_change_password')
     .eq('id', user.id)
     .maybeSingle();
 
@@ -180,6 +182,18 @@ export default async function proxy(request: NextRequest) {
     url.pathname = '/login';
     url.searchParams.set('error', 'account_disabled');
     return NextResponse.redirect(url);
+  }
+
+  // ─── Must-change-password enforcement (researcher first login) ────────────
+  // Researchers created by agents get a temp password and must_change_password=true.
+  // Redirect them to /account/change-password until they save or skip.
+  if ((profile as any)?.must_change_password === true && pathname !== '/account/change-password') {
+    if (!pathname.startsWith('/api/')) {
+      const url = request.nextUrl.clone();
+      url.pathname = '/account/change-password';
+      url.search = '';
+      return NextResponse.redirect(url);
+    }
   }
 
   // Already-logged-in users land on /login → bounce to their dashboard

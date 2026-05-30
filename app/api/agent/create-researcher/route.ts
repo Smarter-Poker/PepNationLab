@@ -1,28 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient, createServiceClient } from '@/lib/supabase/server';
+import { createClient, createAdminClient } from '@/lib/supabase/server';
 import { sanitizeUsername } from '@/lib/usernames';
 import { assertSameOrigin } from '@/lib/csrf';
 
 // POST /api/agent/create-researcher
-// Called by agents to create researcher accounts linked to them.
-// This is agent-gated — NOT admin-only.
 export async function POST(req: NextRequest) {
   const csrf = assertSameOrigin(req);
   if (csrf) return csrf;
 
-  // IMPORTANT: Must use createClient() (anon key + cookies) to read the
-  // caller's session. createServiceClient() uses the service role key and
-  // ignores user session cookies, causing getUser() to always return null.
   const userSupabase = await createClient();
   const { data: { user }, error: authErr } = await userSupabase.auth.getUser();
   if (authErr || !user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  // Use service client for all DB operations (bypasses RLS)
-  const supabase = await createServiceClient();
+  // Use the true RLS-bypassing admin client for all DB writes
+  const admin = createAdminClient();
 
-  const { data: agentProfile, error: profileErr } = await supabase
+  const { data: agentProfile, error: profileErr } = await admin
     .from('profiles')
     .select('id, role, is_active, full_name')
     .eq('id', user.id)
@@ -48,13 +43,14 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Password Must Be At Least 6 Characters' }, { status: 400 });
   }
 
+  // sanitizeUsername lowercases + strips non-alphanumeric
   const usernameClean = sanitizeUsername(username);
   if (!usernameClean || usernameClean.length < 2) {
     return NextResponse.json({ error: 'Username Must Be At Least 2 Characters (Letters, Numbers, Underscores)' }, { status: 400 });
   }
 
   // Check username uniqueness
-  const { data: existingUser } = await supabase
+  const { data: existingUser } = await admin
     .from('profiles')
     .select('id')
     .ilike('username', usernameClean)
@@ -64,36 +60,31 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'That Username Is Already Taken' }, { status: 400 });
   }
 
+  // Email is always lowercase (sanitizeUsername lowercases the username)
   const internalEmail = `${usernameClean}@pepnationlab.com`;
 
-  // Create the auth user via service role.
-  // The handle_new_user trigger fires AFTER INSERT on auth.users and automatically
-  // creates the profile row. We pass username + full_name in user_metadata so the
-  // trigger sets them correctly on the auto-created row.
-  const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+  // Create the auth user. The handle_new_user trigger fires and auto-creates
+  // a partial profile row. We pass metadata so the trigger sets username + full_name.
+  const { data: authData, error: authError } = await admin.auth.admin.createUser({
     email: internalEmail,
     password,
     email_confirm: true,
-    user_metadata: {
-      username: usernameClean,
-      full_name,
-    },
+    user_metadata: { username: usernameClean, full_name },
   });
 
   if (authError || !authData?.user) {
     console.error('[create-researcher] auth.admin.createUser error:', authError);
     return NextResponse.json(
-      { error: 'Failed To Create Auth Account.' },
+      { error: authError?.message || 'Failed To Create Auth Account' },
       { status: 500 }
     );
   }
 
   const newUserId = authData.user.id;
 
-  // The trigger already created the profile row. Use UPDATE (not upsert/insert)
-  // to set the remaining fields the trigger doesn't know about.
-  // Using update() avoids any INSERT conflict with the trigger-created row.
-  const { error: profileError } = await supabase
+  // UPDATE (not upsert/insert) — trigger already created the row.
+  // createAdminClient() truly bypasses RLS so this always succeeds.
+  const { error: profileError } = await admin
     .from('profiles')
     .update({
       username: usernameClean,
@@ -102,16 +93,16 @@ export async function POST(req: NextRequest) {
       referring_agent_id: user.id,
       disclaimer_v1_accepted: false,
       is_active: true,
+      must_change_password: true,   // Researcher must change temp password on first login
       updated_at: new Date().toISOString(),
     })
     .eq('id', newUserId);
 
   if (profileError) {
     console.error('[create-researcher] profile update error:', profileError);
-    // Roll back: delete the auth user we just created
-    await supabase.auth.admin.deleteUser(newUserId);
+    await admin.auth.admin.deleteUser(newUserId);
     return NextResponse.json(
-      { error: 'Profile Setup Failed.' },
+      { error: `Profile Setup Failed: ${profileError.message}` },
       { status: 500 }
     );
   }
