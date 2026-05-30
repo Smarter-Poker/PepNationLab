@@ -5,6 +5,7 @@ import ImpersonationBanner from "@/components/ImpersonationBanner";
 import PwaInstallPrompt from "@/components/PwaInstallPrompt";
 import SiteDisclaimerGate from "@/components/SiteDisclaimerGate";
 import StaleBrowserBanner from "@/components/StaleBrowserBanner";
+import { ThemeProvider } from "@/components/ThemeProvider";
 import { Toaster } from "sonner";
 
 export const viewport: Viewport = {
@@ -46,6 +47,20 @@ export const metadata: Metadata = {
   },
 };
 
+// Inline script injected into <head> before React hydration.
+// Reads localStorage synchronously to set data-theme on <html>
+// BEFORE the first paint, preventing a flash of the wrong theme.
+const NO_FLASH_SCRIPT = `
+(function(){
+  try {
+    var t = localStorage.getItem('pnl-theme') || 'dark';
+    document.documentElement.setAttribute('data-theme', t);
+  } catch(e) {
+    document.documentElement.setAttribute('data-theme', 'dark');
+  }
+})();
+`;
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -53,16 +68,22 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
+      {/* No-flash script runs synchronously before page renders */}
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: NO_FLASH_SCRIPT }} />
+      </head>
       <body>
-        <StaleBrowserBanner />
-        <SiteDisclaimerGate>
-          <CartProvider>
-            {children}
-          </CartProvider>
-        </SiteDisclaimerGate>
-        <Toaster theme="dark" position="bottom-right" richColors />
-        <ImpersonationBanner />
-        <PwaInstallPrompt />
+        <ThemeProvider>
+          <StaleBrowserBanner />
+          <SiteDisclaimerGate>
+            <CartProvider>
+              {children}
+            </CartProvider>
+          </SiteDisclaimerGate>
+          <Toaster theme="dark" position="bottom-right" richColors />
+          <ImpersonationBanner />
+          <PwaInstallPrompt />
+        </ThemeProvider>
       </body>
     </html>
   );

@@ -63,13 +63,13 @@
   --radius-full: 9999px;
 
   /* Shadows */
-  --shadow-teal:    0 0 20px rgba(0, 196, 188, 0.3), 0 0 60px rgba(0, 196, 188, 0.1);
-  --shadow-teal-sm: 0 0 10px rgba(0, 196, 188, 0.2);
+  --shadow-teal:    0 0 20px rgba(192, 184, 168, 0.3), 0 0 60px rgba(192, 184, 168, 0.1);
+  --shadow-teal-sm: 0 0 10px rgba(192, 184, 168, 0.2);
   --shadow-card:    0 4px 24px rgba(0, 0, 0, 0.5);
   --shadow-elevated:0 8px 40px rgba(0, 0, 0, 0.7);
 
   /* Borders */
-  --border-teal:    1px solid rgba(0, 196, 188, 0.3);
+  --border-teal:    1px solid rgba(192, 184, 168, 0.3);
   --border-silver:  1px solid rgba(168, 180, 192, 0.2);
   --border-subtle:  1px solid rgba(255, 255, 255, 0.05);
 
@@ -87,6 +87,107 @@
   --green:          #48BB78;
   --orange:         #ED8936;
   --gold:           #F6AD55;
+
+  /* ── Semantic nav tokens (used by the universal Navbar) ── */
+  --nav-bg:         rgba(5, 10, 15, 0.92);
+  --nav-border:     rgba(192, 184, 168, 0.15);
+  --nav-title:      #FFFFFF;
+}
+
+/* ============================================
+   LIGHT MODE — html[data-theme="light"]
+   Warm off-white palette, dark charcoal text,
+   same sand/teal accent (#C0B8A8).
+   ============================================ */
+html[data-theme="light"] {
+  --black:          #F8F5F0;
+  --black-2:        #EDE9E3;
+  --surface-1:      #FFFFFF;
+  --surface-2:      #F2EEE8;
+  --surface-3:      #E8E3DC;
+
+  --white:          #1A1A1A;
+  --silver:         #5A6875;
+  --silver-dark:    #3A4855;
+  --silver-light:   #2A3848;
+
+  --grey-100:       #F8F5F0;
+  --grey-200:       #E0DCD6;
+  --grey-300:       #B8B4AE;
+  --grey-400:       #7A7470;
+  --grey-500:       #6A6460;
+  --grey-600:       #4A4440;
+  --grey-800:       #2A2420;
+  --grey-900:       #1A1410;
+
+  --shadow-card:    0 2px 16px rgba(0, 0, 0, 0.10);
+  --shadow-elevated:0 4px 24px rgba(0, 0, 0, 0.15);
+  --shadow-teal:    0 0 16px rgba(192, 184, 168, 0.4);
+  --shadow-teal-sm: 0 0 8px rgba(192, 184, 168, 0.2);
+
+  --border-subtle:  1px solid rgba(0, 0, 0, 0.07);
+  --border-silver:  1px solid rgba(0, 0, 0, 0.12);
+
+  --teal-subtle:    rgba(192, 184, 168, 0.15);
+  --red-bg:         rgba(229, 62, 62, 0.06);
+
+  /* Nav tokens for light mode */
+  --nav-bg:         rgba(248, 245, 240, 0.95);
+  --nav-border:     rgba(0, 0, 0, 0.10);
+  --nav-title:      #1A1A1A;
+}
+
+/* Light mode body background & text */
+html[data-theme="light"] body {
+  background-color: var(--black);
+  color: var(--white);
+}
+
+/* Light mode cards */
+html[data-theme="light"] .card,
+html[data-theme="light"] .card-glass {
+  background: var(--surface-1);
+  border-color: rgba(192, 184, 168, 0.3);
+  box-shadow: var(--shadow-card);
+}
+
+html[data-theme="light"] .card-metal {
+  background: linear-gradient(145deg, #F5F0EA 0%, #FAF7F2 50%, #EDE8E2 100%);
+  border-color: rgba(192, 184, 168, 0.4);
+  box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+}
+
+/* Light mode form inputs */
+html[data-theme="light"] .form-input {
+  background: #FFFFFF;
+  border-color: rgba(0, 0, 0, 0.15);
+  color: var(--white); /* white is remapped to dark text in light mode */
+}
+
+html[data-theme="light"] .form-input:focus {
+  border-color: var(--teal);
+  box-shadow: 0 0 0 3px rgba(192, 184, 168, 0.2);
+}
+
+/* Light mode sidebar */
+html[data-theme="light"] .sidebar,
+html[data-theme="light"] aside {
+  background: #EDE9E3;
+  border-right-color: rgba(0,0,0,0.08);
+}
+
+/* Light mode nav drawer */
+html[data-theme="light"] .nav-drawer {
+  background: #F8F5F0;
+}
+
+/* Light mode scrollbar */
+html[data-theme="light"] ::-webkit-scrollbar-track { background: #F0ECE6; }
+html[data-theme="light"] ::-webkit-scrollbar-thumb { background: var(--teal-dark); }
+
+/* Light mode skeleton */
+html[data-theme="light"] .skeleton {
+  background: linear-gradient(90deg, #E8E3DC 25%, #F0EBE4 50%, #E8E3DC 75%);
 }
 
 /* ============================================
@@ -574,7 +675,7 @@ a:hover { color: var(--teal-dark); }
 .mb-6  { margin-bottom: var(--space-6); }
 .mb-8  { margin-bottom: var(--space-8); }
 
-.page-top-padding { padding-top: 64px; }
+.page-top-padding { padding-top: 60px; }
 
 /* ============================================
    MODAL / OVERLAY
@@ -1089,4 +1190,141 @@ html {
   .storefront-toolbar button {
     width: 100% !important;
   }
+}
+
+/* ============================================
+   NAVBAR HEIGHT UPDATE — 60px (was 64px)
+   ============================================ */
+.nav { height: 60px !important; }
+.dashboard-main { padding-top: 60px; }
+.sidebar { top: 60px; }
+
+/* ============================================
+   ADMIN PANEL — MOBILE-FIRST LAYOUT
+   ============================================ */
+
+/* Admin content area — prevents overflow on mobile */
+.admin-content {
+  padding: var(--space-6);
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+/* Admin table wrapper — horizontal scroll for dense data tables */
+.admin-table-wrap {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  border-radius: var(--radius-md);
+}
+.admin-table-wrap table {
+  min-width: 640px; /* Tables maintain minimum usable width */
+  display: table;  /* Override the global mobile table block display */
+  white-space: nowrap;
+}
+.admin-table-wrap thead,
+.admin-table-wrap tbody,
+.admin-table-wrap tr {
+  display: table-row; /* Override global mobile display:table override */
+}
+.admin-table-wrap th,
+.admin-table-wrap td {
+  display: table-cell;
+}
+
+/* Admin KPI grid — responsive from 4 → 2 → 1 column */
+.admin-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-4);
+}
+
+@media (max-width: 1200px) {
+  .admin-kpi-grid { grid-template-columns: repeat(3, 1fr); }
+}
+
+@media (max-width: 900px) {
+  .admin-kpi-grid { grid-template-columns: repeat(2, 1fr); }
+  .admin-content { padding: var(--space-4); }
+}
+
+@media (max-width: 600px) {
+  .admin-kpi-grid { grid-template-columns: 1fr 1fr; }
+  .admin-content { padding: var(--space-3); }
+}
+
+@media (max-width: 400px) {
+  .admin-kpi-grid { grid-template-columns: 1fr; }
+}
+
+/* Admin 2-col section grid */
+.admin-grid-2 {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--space-6);
+}
+
+@media (max-width: 768px) {
+  .admin-grid-2 { grid-template-columns: 1fr; gap: var(--space-4); }
+}
+
+/* Admin mobile — sidebar becomes a slide-out drawer */
+@media (max-width: 1024px) {
+  .admin-sidebar {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    bottom: 0 !important;
+    z-index: 500 !important;
+    transform: translateX(-100%);
+    transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+    width: 260px !important;
+  }
+  .admin-sidebar.open {
+    transform: translateX(0);
+    box-shadow: 4px 0 40px rgba(0,0,0,0.6);
+  }
+  .admin-main {
+    margin-left: 0 !important;
+    width: 100% !important;
+  }
+}
+
+/* Admin nav link touch targets */
+.admin-nav-link {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+}
+
+/* Admin page header row — stack on mobile */
+.admin-page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  margin-bottom: var(--space-6);
+  flex-wrap: wrap;
+}
+
+@media (max-width: 640px) {
+  .admin-page-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-3);
+  }
+  .admin-page-header .btn {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+/* Light mode admin sidebar */
+html[data-theme="light"] .admin-sidebar {
+  background: #EDE9E3 !important;
+  border-right: 1px solid rgba(0,0,0,0.08) !important;
+}
+html[data-theme="light"] .admin-nav-link:hover {
+  background: rgba(0,0,0,0.04) !important;
+  color: var(--teal) !important;
 }

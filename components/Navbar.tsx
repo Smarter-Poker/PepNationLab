@@ -2,28 +2,188 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
-import { useState, useEffect } from 'react';
-import { useCart } from './CartContext';
+import { useState, useEffect, useCallback } from 'react';
+import { useRouter, usePathname } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import NavbarNotificationBell from '@/components/NavbarNotificationBell';
 
+/* ─────────────────────────────────────────────
+   Page title resolution — maps route prefixes
+   to human-readable, title-case labels.
+   ───────────────────────────────────────────── */
+function resolveTitle(pathname: string, role: string): string {
+  if (pathname === '/')               return 'Pep Nation Lab';
+  if (pathname.startsWith('/admin/products')) return 'Product Catalog';
+  if (pathname.startsWith('/admin/agents'))   return 'Agents';
+  if (pathname.startsWith('/admin/orders'))   return 'Orders';
+  if (pathname.startsWith('/admin/sales'))    return 'Sales & Revenue';
+  if (pathname.startsWith('/admin/pricing'))  return 'Pricing';
+  if (pathname.startsWith('/admin/researchers')) return 'Researchers';
+  if (pathname.startsWith('/admin/invitations')) return 'Invitations';
+  if (pathname.startsWith('/admin/commissions')) return 'Commissions';
+  if (pathname.startsWith('/admin/coupons'))  return 'Coupons';
+  if (pathname.startsWith('/admin/statements')) return 'Statements';
+  if (pathname.startsWith('/admin/restock'))  return 'Wholesale Restock';
+  if (pathname.startsWith('/admin/rma'))      return 'Returns';
+  if (pathname.startsWith('/admin/refunds'))  return 'Refunds';
+  if (pathname.startsWith('/admin/transactions')) return 'Transactions';
+  if (pathname.startsWith('/admin/webhooks')) return 'Webhooks';
+  if (pathname.startsWith('/admin/settings')) return 'Admin Settings';
+  if (pathname.startsWith('/admin/audit'))    return 'Audit Log';
+  if (pathname.startsWith('/admin/push'))     return 'Push Notifications';
+  if (pathname.startsWith('/admin/messages')) return 'Admin Messages';
+  if (pathname.startsWith('/admin/messenger')) return 'Messenger';
+  if (pathname.startsWith('/admin/subscriptions')) return 'Subscriptions';
+  if (pathname.startsWith('/admin/tax-rules')) return 'Tax Rules';
+  if (pathname.startsWith('/admin/tax-exemptions')) return 'Tax Exemptions';
+  if (pathname.startsWith('/admin/scheduled-prices')) return 'Scheduled Prices';
+  if (pathname.startsWith('/admin/store-credits')) return 'Store Credits';
+  if (pathname.startsWith('/admin/store-preview')) return 'Store Preview';
+  if (pathname.startsWith('/admin/referrals')) return 'Referrals';
+  if (pathname.startsWith('/admin/sms'))      return 'SMS';
+  if (pathname.startsWith('/admin'))          return 'Admin Dashboard';
+  if (pathname.startsWith('/messenger'))      return 'Messenger';
+  if (pathname.startsWith('/dashboard/agent')) return 'Agent Dashboard';
+  if (pathname.startsWith('/dashboard'))      return 'Dashboard';
+  if (pathname.startsWith('/products'))       return 'Products';
+  if (pathname.startsWith('/about'))          return 'About';
+  if (pathname.startsWith('/become-agent'))   return 'Become An Agent';
+  if (pathname.startsWith('/login'))          return 'Sign In';
+  if (pathname.startsWith('/account'))        return 'Account';
+  if (pathname.startsWith('/orders'))         return 'My Orders';
+  if (pathname.startsWith('/checkout'))       return 'Checkout';
+  if (pathname.startsWith('/shipping'))       return 'Shipping';
+  if (pathname.startsWith('/invite'))         return 'Invitation';
+
+  // Agent storefront slugs — single-segment paths
+  const segments = pathname.split('/').filter(Boolean);
+  if (segments.length === 1 && !pathname.startsWith('/api')) {
+    if (role.includes('agent') || role === 'researcher') return 'Agent Storefront';
+  }
+
+  return 'Pep Nation Lab';
+}
+
+/* ─────────────────────────────────────────────
+   Avatar — shows initials circle from name
+   ───────────────────────────────────────────── */
+function Avatar({ name, size = 36 }: { name: string; size?: number }) {
+  const initials = name
+    .split(' ')
+    .map(w => w[0])
+    .slice(0, 2)
+    .join('')
+    .toUpperCase() || '?';
+  return (
+    <div style={{
+      width: size,
+      height: size,
+      borderRadius: '50%',
+      background: 'linear-gradient(135deg, var(--teal) 0%, var(--teal-dark) 100%)',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      fontSize: size * 0.38,
+      fontWeight: 800,
+      color: 'var(--black)',
+      fontFamily: 'var(--font-brand)',
+      flexShrink: 0,
+      border: '2px solid rgba(192,184,168,0.4)',
+      boxShadow: '0 0 10px rgba(192,184,168,0.2)',
+      letterSpacing: 0,
+    }}>
+      {initials}
+    </div>
+  );
+}
+
+/* ─────────────────────────────────────────────
+   Mobile / slide-out nav drawer items
+   ───────────────────────────────────────────── */
+function DrawerLink({
+  href,
+  label,
+  icon,
+  onClick,
+}: {
+  href: string;
+  label: string;
+  icon: React.ReactNode;
+  onClick: () => void;
+}) {
+  return (
+    <Link
+      href={href}
+      onClick={onClick}
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 'var(--space-3)',
+        padding: '12px var(--space-5)',
+        color: 'var(--silver)',
+        fontSize: '0.95rem',
+        fontWeight: 500,
+        textDecoration: 'none',
+        borderLeft: '3px solid transparent',
+        transition: 'all 0.15s',
+        minHeight: 48,
+      }}
+      className="drawer-link"
+    >
+      <span style={{ display: 'inline-flex', opacity: 0.7 }}>{icon}</span>
+      {label}
+    </Link>
+  );
+}
+
+const IP = { width: 18, height: 18, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const };
+
 export default function Navbar() {
-  const { cartCount, setIsCartOpen } = useCart();
-  const [mobileOpen, setMobileOpen] = useState(false);
-  const [user, setUser] = useState<{ email?: string } | null>(null);
-  const [profile, setProfile] = useState<{ full_name?: string | null; role?: string; tier?: string | null } | null>(null);
+  const router = useRouter();
+  const pathname = usePathname();
+
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [user, setUser] = useState<{ id: string; email?: string } | null>(null);
+  const [profile, setProfile] = useState<{ full_name?: string | null; role?: string } | null>(null);
   const [loading, setLoading] = useState(true);
 
+  const role = profile?.role ?? 'researcher';
+  const displayName = profile?.full_name || user?.email?.split('@')[0] || '';
+  const pageTitle = resolveTitle(pathname, role);
+  const isMessenger = pathname.startsWith('/messenger');
+
+  // Dashboard link based on role
+  const dashLink = role === 'admin'
+    ? '/admin'
+    : role.includes('agent')
+    ? '/dashboard/agent'
+    : '/dashboard';
+  const dashLabel = role === 'admin'
+    ? 'Admin Dashboard'
+    : role.includes('agent')
+    ? 'Agent Dashboard'
+    : 'Dashboard';
+
+  const closeDrawer = useCallback(() => setDrawerOpen(false), []);
+
+  // Lock body scroll when drawer is open
+  useEffect(() => {
+    document.body.style.overflow = drawerOpen ? 'hidden' : '';
+    return () => { document.body.style.overflow = ''; };
+  }, [drawerOpen]);
+
+  // Close drawer on route change
+  useEffect(() => { setDrawerOpen(false); }, [pathname]);
+
+  // Auth state
   useEffect(() => {
     const supabase = createClient();
-
-    // Get initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) {
-        setUser(session.user);
+        setUser({ id: session.user.id, email: session.user.email });
         supabase
           .from('profiles')
-          .select('full_name, role, tier')
+          .select('full_name, role')
           .eq('id', session.user.id)
           .maybeSingle()
           .then(({ data }) => {
@@ -31,34 +191,25 @@ export default function Navbar() {
             setLoading(false);
           });
       } else {
-        setUser(null);
-        setProfile(null);
         setLoading(false);
       }
     });
-
-    // Listen to auth state changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_, session) => {
       if (session) {
-        setUser(session.user);
+        setUser({ id: session.user.id, email: session.user.email });
         supabase
           .from('profiles')
-          .select('full_name, role, tier')
+          .select('full_name, role')
           .eq('id', session.user.id)
           .maybeSingle()
-          .then(({ data }) => {
-            if (data) setProfile(data);
-          });
+          .then(({ data }) => { if (data) setProfile(data); });
       } else {
         setUser(null);
         setProfile(null);
       }
       setLoading(false);
     });
-
-    return () => {
-      subscription.unsubscribe();
-    };
+    return () => subscription.unsubscribe();
   }, []);
 
   const handleSignOut = async () => {
@@ -67,252 +218,328 @@ export default function Navbar() {
     window.location.href = '/';
   };
 
-  const role = profile?.role ?? 'researcher';
+  // ── Back button: only shown when there's a meaningful back destination
+  const showBack = pathname !== '/';
 
   return (
-    <nav className="nav">
-      <div className="container flex-between w-full">
-        {/* Logo */}
-        <Link href="/" className="nav-logo" style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
-          <Image
-            src="/logo-mark.svg"
-            alt="Pep Nation Lab"
-            width={38}
-            height={38}
-            priority
-            style={{ display: 'block' }}
-          />
-          <span style={{ letterSpacing: '0.1em' }}>PEP NATION LAB</span>
-        </Link>
+    <>
+      {/* ══════════════════════════════════════════
+          HEADER BAR
+      ══════════════════════════════════════════ */}
+      <nav
+        className="nav pnl-navbar"
+        style={{
+          position: 'fixed',
+          top: 0, left: 0, right: 0,
+          zIndex: 200,
+          height: 60,
+          background: 'var(--nav-bg)',
+          backdropFilter: 'blur(20px)',
+          WebkitBackdropFilter: 'blur(20px)',
+          borderBottom: '1px solid var(--nav-border)',
+          display: 'flex',
+          alignItems: 'center',
+          padding: '0 var(--space-3)',
+          gap: 'var(--space-2)',
+        }}
+      >
+        {/* LEFT: Hamburger */}
+        <button
+          onClick={() => setDrawerOpen(o => !o)}
+          aria-label="Open Navigation Menu"
+          style={{
+            background: 'none',
+            border: 'none',
+            cursor: 'pointer',
+            color: 'var(--teal)',
+            padding: 8,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            borderRadius: 8,
+            flexShrink: 0,
+            transition: 'background 0.15s',
+          }}
+        >
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+            {drawerOpen
+              ? <path d="M18 6L6 18M6 6l12 12" />
+              : <path d="M3 7h18M3 12h18M3 17h18" />}
+          </svg>
+        </button>
 
-        {/* Desktop Nav */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-6)' }} className="desktop-nav">
-          <Link href="/products" style={{ color: 'var(--silver)', fontSize: '0.9rem', fontWeight: 500, transition: 'color 0.2s' }}
-                onMouseOver={e => (e.currentTarget.style.color = 'var(--teal)')}
-                onMouseOut={e => (e.currentTarget.style.color = 'var(--silver)')}>
-            Products
-          </Link>
-          <Link href="/about" style={{ color: 'var(--silver)', fontSize: '0.9rem', fontWeight: 500, transition: 'color 0.2s' }}
-                onMouseOver={e => (e.currentTarget.style.color = 'var(--teal)')}
-                onMouseOut={e => (e.currentTarget.style.color = 'var(--silver)')}>
-            About
-          </Link>
-
-          {role === 'researcher' && (
-            <Link href="/become-agent" style={{ color: 'var(--silver)', fontSize: '0.9rem', fontWeight: 500, transition: 'color 0.2s' }}
-                  onMouseOver={e => (e.currentTarget.style.color = 'var(--teal)')}
-                  onMouseOut={e => (e.currentTarget.style.color = 'var(--silver)')}>
-              Become An Agent
-            </Link>
-          )}
-
-          <div style={{ width: 1, height: 20, background: 'var(--surface-3)' }} />
-
-          {/* Cart Button */}
-          <button
-            onClick={() => setIsCartOpen(true)}
-            style={{
-              width: 42,
-              height: 42,
-              borderRadius: '50%',
-              background: 'var(--surface-2)',
-              border: '1.5px solid var(--teal)',
-              boxShadow: '0 0 10px rgba(192, 184, 168, 0.3)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              cursor: 'pointer',
-              position: 'relative',
-              transition: 'all 0.2s',
-              marginRight: 'var(--space-2)'
-            }}
-            onMouseOver={e => {
-              e.currentTarget.style.boxShadow = '0 0 18px rgba(192, 184, 168, 0.6)';
-              e.currentTarget.style.borderColor = 'var(--white)';
-            }}
-            onMouseOut={e => {
-              e.currentTarget.style.boxShadow = '0 0 10px rgba(192, 184, 168, 0.3)';
-              e.currentTarget.style.borderColor = 'var(--teal)';
-            }}
-            aria-label="Open Cart"
-          >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--teal)" strokeWidth="2">
-              <circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/>
-              <path d="M1 1h4l2.68 13.39a2 2 0 002 1.61h9.72a2 2 0 002-1.61L23 6H6"/>
-            </svg>
-            {cartCount > 0 && (
-              <span style={{
-                position: 'absolute',
-                top: -4,
-                right: -4,
-                background: 'var(--teal)',
-                color: 'var(--white)',
-                fontSize: '0.72rem',
-                fontWeight: 900,
-                borderRadius: '50%',
-                width: 18,
-                height: 18,
+        {/* Back arrow */}
+        {showBack && (
+          <>
+            <button
+              onClick={() => router.back()}
+              aria-label="Go Back"
+              style={{
+                background: 'none',
+                border: 'none',
+                cursor: 'pointer',
+                color: 'var(--silver)',
+                padding: 6,
                 display: 'flex',
                 alignItems: 'center',
-                justifyContent: 'center',
-                fontFamily: 'var(--font-brand)',
-                boxShadow: '0 0 8px var(--teal)',
-              }}>
-                {cartCount}
-              </span>
-            )}
-          </button>
+                borderRadius: 6,
+                flexShrink: 0,
+              }}
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                <path d="M19 12H5M12 5l-7 7 7 7" />
+              </svg>
+            </button>
 
+            {/* Vertical divider */}
+            <div style={{ width: 1, height: 22, background: 'var(--surface-3)', flexShrink: 0 }} />
+          </>
+        )}
+
+        {/* CENTER: Page title */}
+        <div style={{ flex: 1, minWidth: 0, overflow: 'hidden' }}>
+          <span style={{
+            fontFamily: 'var(--font-brand)',
+            fontSize: '0.9rem',
+            fontWeight: 800,
+            color: 'var(--nav-title)',
+            letterSpacing: '0.08em',
+            textTransform: 'uppercase',
+            whiteSpace: 'nowrap',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            display: 'block',
+          }}>
+            {pageTitle}
+          </span>
+        </div>
+
+        {/* RIGHT: Actions */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', flexShrink: 0 }}>
           {loading ? (
-            <div style={{ width: 120, height: 32, borderRadius: 'var(--radius-md)', background: 'var(--surface-2)' }} className="skeleton" />
+            <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'var(--surface-2)' }} className="skeleton" />
           ) : user ? (
             <>
               <NavbarNotificationBell />
-              <Link href="/messenger" className="btn btn-ghost btn-sm">Messenger</Link>
-              {role === 'admin' ? (
-                <Link href="/admin" className="btn btn-ghost btn-sm">Admin Panel</Link>
-              ) : role.includes('agent') ? (
-                <Link href="/dashboard/agent" className="btn btn-ghost btn-sm">Agent Dashboard</Link>
-              ) : (
-                <Link href="/dashboard" className="btn btn-ghost btn-sm">Dashboard</Link>
-              )}
-              <button onClick={handleSignOut} className="btn btn-secondary btn-sm">
-                Sign Out
-              </button>
+
+              {/* Messenger exception: show Agent Dashboard btn instead of messenger icon */}
+              {isMessenger ? (
+                <Link href={dashLink} className="btn btn-ghost btn-sm" style={{ fontSize: '0.78rem', padding: '6px 10px' }}>
+                  {dashLabel}
+                </Link>
+              ) : null}
+
+              {/* Avatar + name (desktop shows name, mobile shows avatar only) */}
+              <div
+                style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', cursor: 'pointer' }}
+                onClick={() => setDrawerOpen(o => !o)}
+                title={displayName}
+              >
+                <Avatar name={displayName} size={34} />
+                <span
+                  className="nav-display-name"
+                  style={{
+                    fontSize: '0.82rem',
+                    fontWeight: 600,
+                    color: 'var(--nav-title)',
+                    maxWidth: 130,
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  {displayName}
+                </span>
+              </div>
             </>
           ) : (
             <>
               <Link href="/login" className="btn btn-ghost btn-sm">Sign In</Link>
-              <Link href="/become-agent" className="btn btn-primary btn-sm">
-                Become An Agent
+              <Link href="/become-agent" className="btn btn-primary btn-sm" style={{ fontSize: '0.78rem', padding: '6px 10px' }}>
+                Join
               </Link>
             </>
           )}
         </div>
+      </nav>
 
-        {/* Mobile menu trigger + cart */}
-        <div style={{ display: 'none', alignItems: 'center', gap: 'var(--space-3)' }} className="mobile-actions-wrapper">
-          {/* Mobile Cart Button */}
-          <button
-            onClick={() => setIsCartOpen(true)}
-            style={{
-              width: 36,
-              height: 36,
-              borderRadius: '50%',
-              background: 'var(--surface-2)',
-              border: '1.5px solid var(--teal)',
-              boxShadow: '0 0 8px rgba(192, 184, 168, 0.25)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              cursor: 'pointer',
-              position: 'relative',
-              transition: 'all 0.2s',
-            }}
-            aria-label="Open Cart"
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--teal)" strokeWidth="2">
-              <circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/>
-              <path d="M1 1h4l2.68 13.39a2 2 0 002 1.61h9.72a2 2 0 002-1.61L23 6H6"/>
-            </svg>
-            {cartCount > 0 && (
-              <span style={{
-                position: 'absolute',
-                top: -3,
-                right: -3,
-                background: 'var(--teal)',
-                color: 'var(--white)',
-                fontSize: '0.65rem',
-                fontWeight: 900,
-                borderRadius: '50%',
-                width: 15,
-                height: 15,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontFamily: 'var(--font-brand)',
-                boxShadow: '0 0 6px var(--teal)',
-              }}>
-                {cartCount}
-              </span>
-            )}
-          </button>
+      {/* ══════════════════════════════════════════
+          SLIDE-OUT DRAWER
+      ══════════════════════════════════════════ */}
+      {/* Backdrop */}
+      {drawerOpen && (
+        <div
+          onClick={closeDrawer}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(5,10,15,0.6)',
+            backdropFilter: 'blur(4px)',
+            WebkitBackdropFilter: 'blur(4px)',
+            zIndex: 300,
+            animation: 'navBackdropIn 0.2s ease',
+          }}
+        />
+      )}
 
-          <button
-            onClick={() => setMobileOpen(!mobileOpen)}
-            style={{
-              background: 'none', border: 'none', cursor: 'pointer',
-              color: 'var(--teal)', padding: 4, display: 'flex', alignItems: 'center', justifyContent: 'center'
-            }}
-            aria-label="Toggle Menu"
-          >
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              {mobileOpen
-                ? <path d="M18 6L6 18M6 6l12 12"/>
-                : <path d="M3 12h18M3 6h18M3 18h18"/>}
-            </svg>
-          </button>
-        </div>
-      </div>
-
-      {/* Mobile menu */}
-      {mobileOpen && (
-        <div style={{
-          position: 'absolute',
-          top: 64, left: 0, right: 0,
+      {/* Drawer panel */}
+      <div
+        style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          bottom: 0,
+          width: 280,
           background: 'var(--black-2)',
-          borderBottom: 'var(--border-teal)',
-          padding: 'var(--space-5)',
-          display: 'flex', flexDirection: 'column', gap: 'var(--space-3)',
-          boxShadow: '0 10px 20px rgba(0,0,0,0.8)',
-          zIndex: 99
+          borderRight: '1px solid var(--nav-border)',
+          zIndex: 400,
+          display: 'flex',
+          flexDirection: 'column',
+          transform: drawerOpen ? 'translateX(0)' : 'translateX(-100%)',
+          transition: 'transform 0.28s cubic-bezier(0.4,0,0.2,1)',
+          overflowY: 'auto',
+          boxShadow: drawerOpen ? '4px 0 40px rgba(0,0,0,0.6)' : 'none',
+          willChange: 'transform',
+        }}
+      >
+        {/* Drawer header */}
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 'var(--space-3)',
+          padding: 'var(--space-4) var(--space-5)',
+          borderBottom: '1px solid rgba(255,255,255,0.06)',
+          minHeight: 64,
         }}>
-          <Link href="/products" onClick={() => setMobileOpen(false)} style={{ padding: 'var(--space-3)', color: 'var(--silver)', borderRadius: 'var(--radius-md)', fontWeight: 500 }}>
-            Products
+          <Link href="/" onClick={closeDrawer} style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', textDecoration: 'none' }}>
+            <Image src="/logo-mark.svg" alt="Pep Nation Lab" width={32} height={32} priority />
+            <span style={{ fontFamily: 'var(--font-brand)', fontSize: '0.95rem', fontWeight: 800, color: 'var(--teal)', letterSpacing: '0.08em' }}>
+              PEP NATION LAB
+            </span>
           </Link>
-          <Link href="/about" onClick={() => setMobileOpen(false)} style={{ padding: 'var(--space-3)', color: 'var(--silver)', borderRadius: 'var(--radius-md)', fontWeight: 500 }}>
-            About
-          </Link>
+        </div>
 
-          {role === 'researcher' && (
-            <Link href="/become-agent" onClick={() => setMobileOpen(false)} style={{ padding: 'var(--space-3)', color: 'var(--silver)', borderRadius: 'var(--radius-md)', fontWeight: 500 }}>
-              Become An Agent
-            </Link>
-          )}
+        {/* User info in drawer */}
+        {user && (
+          <div style={{
+            padding: 'var(--space-4) var(--space-5)',
+            borderBottom: '1px solid rgba(255,255,255,0.06)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 'var(--space-3)',
+          }}>
+            <Avatar name={displayName} size={40} />
+            <div style={{ minWidth: 0 }}>
+              <div style={{ fontWeight: 600, color: 'var(--white)', fontSize: '0.9rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {displayName}
+              </div>
+              <div style={{ fontSize: '0.72rem', color: 'var(--grey-400)', textTransform: 'capitalize' }}>
+                {role.replace('_', ' ')}
+              </div>
+            </div>
+          </div>
+        )}
 
-          <div style={{ height: 1, background: 'var(--surface-2)', margin: 'var(--space-2) 0' }} />
+        {/* Navigation links */}
+        <nav style={{ flex: 1, padding: 'var(--space-3) 0' }}>
+          {/* Common links */}
+          <DrawerLink href="/" label="Home" onClick={closeDrawer}
+            icon={<svg {...IP}><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>}
+          />
+          <DrawerLink href="/products" label="Products" onClick={closeDrawer}
+            icon={<svg {...IP}><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>}
+          />
+          <DrawerLink href="/about" label="About" onClick={closeDrawer}
+            icon={<svg {...IP}><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>}
+          />
 
-          {loading ? (
-            <div style={{ height: 40, borderRadius: 'var(--radius-md)', background: 'var(--surface-2)' }} className="skeleton" />
-          ) : user ? (
+          {user && (
             <>
-              <Link href="/messenger" onClick={() => setMobileOpen(false)} className="btn btn-ghost w-full">Messenger</Link>
-              {role === 'admin' ? (
-                <Link href="/admin" onClick={() => setMobileOpen(false)} className="btn btn-ghost w-full">Admin Panel</Link>
-              ) : role.includes('agent') ? (
-                <Link href="/dashboard/agent" onClick={() => setMobileOpen(false)} className="btn btn-ghost w-full">Agent Dashboard</Link>
-              ) : (
-                <Link href="/dashboard" onClick={() => setMobileOpen(false)} className="btn btn-ghost w-full">Dashboard</Link>
+              <div style={{ height: 1, background: 'rgba(255,255,255,0.06)', margin: 'var(--space-2) 0' }} />
+
+              {/* Dashboard */}
+              <DrawerLink href={dashLink} label={dashLabel} onClick={closeDrawer}
+                icon={<svg {...IP}><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>}
+              />
+
+              {/* Messenger — only shown when NOT on messenger page */}
+              {!isMessenger && (
+                <DrawerLink href="/messenger" label="Messenger" onClick={closeDrawer}
+                  icon={<svg {...IP}><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>}
+                />
               )}
-              <button onClick={() => { setMobileOpen(false); handleSignOut(); }} className="btn btn-secondary w-full">
+
+              {/* Agent-specific */}
+              {role.includes('agent') && (
+                <>
+                  <DrawerLink href="/dashboard/agent" label="My Store" onClick={closeDrawer}
+                    icon={<svg {...IP}><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>}
+                  />
+                </>
+              )}
+
+              {/* Researcher */}
+              {role === 'researcher' && (
+                <DrawerLink href="/become-agent" label="Become An Agent" onClick={closeDrawer}
+                  icon={<svg {...IP}><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>}
+                />
+              )}
+
+              <div style={{ height: 1, background: 'rgba(255,255,255,0.06)', margin: 'var(--space-2) 0' }} />
+
+              <button
+                onClick={() => { closeDrawer(); handleSignOut(); }}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 'var(--space-3)',
+                  padding: '12px var(--space-5)',
+                  color: 'var(--red)',
+                  fontSize: '0.95rem',
+                  fontWeight: 500,
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  width: '100%',
+                  textAlign: 'left',
+                  minHeight: 48,
+                }}
+              >
+                <svg {...IP} stroke="var(--red)"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
                 Sign Out
               </button>
             </>
-          ) : (
+          )}
+
+          {!user && !loading && (
             <>
-              <Link href="/login" onClick={() => setMobileOpen(false)} className="btn btn-ghost w-full">Sign In</Link>
-              <Link href="/become-agent" onClick={() => setMobileOpen(false)} className="btn btn-primary w-full">Become An Agent</Link>
+              <div style={{ height: 1, background: 'rgba(255,255,255,0.06)', margin: 'var(--space-2) 0' }} />
+              <DrawerLink href="/login" label="Sign In" onClick={closeDrawer}
+                icon={<svg {...IP}><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>}
+              />
+              <DrawerLink href="/become-agent" label="Become An Agent" onClick={closeDrawer}
+                icon={<svg {...IP}><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>}
+              />
             </>
           )}
-        </div>
-      )}
+        </nav>
+      </div>
 
       <style>{`
-        @media (max-width: 768px) {
-          .desktop-nav { display: none !important; }
-          .mobile-actions-wrapper { display: flex !important; }
+        .pnl-navbar { }
+        .drawer-link:hover {
+          color: var(--teal) !important;
+          background: rgba(192,184,168,0.07);
+          border-left-color: var(--teal) !important;
+        }
+        @keyframes navBackdropIn {
+          from { opacity: 0; }
+          to   { opacity: 1; }
+        }
+        @media (max-width: 480px) {
+          .nav-display-name { display: none !important; }
         }
       `}</style>
-    </nav>
+    </>
   );
 }
