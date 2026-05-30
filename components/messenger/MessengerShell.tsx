@@ -28,6 +28,7 @@ interface CachedPrefs {
 export default function MessengerShell({ userId }: Props) {
   const setActive = useMessengerStore((s) => s.setActive);
   const activeId = useMessengerStore((s) => s.activeConversationId);
+  const conversations = useMessengerStore((s) => s.conversations);
   const [incomingCalls, setIncomingCalls] = useState<CallSignalRow[]>([]);
   const [activeCall, setActiveCall] = useState<CallSignalRow | null>(null);
 
@@ -38,9 +39,24 @@ export default function MessengerShell({ userId }: Props) {
   const prefsRef = useRef<CachedPrefs>({ browser_push: false, mute_all: false });
   const activeIdRef = useRef<string | null>(null);
 
+  // Audit5 fix: also honor per-conversation mute. Previously the cross-conv
+  // browser push subscription only checked prefs.mute_all -- if a user muted a
+  // single noisy conversation, messages from that conv would still fire OS
+  // notifications when the tab was hidden. Mirror the in-list mute by keeping
+  // a Set<conversation_id> of muted convs derived from the store.
+  const mutedConvIdsRef = useRef<Set<string>>(new Set());
+
   useEffect(() => {
     activeIdRef.current = activeId ?? null;
   }, [activeId]);
+
+  useEffect(() => {
+    const next = new Set<string>();
+    conversations.forEach((c) => {
+      if (c.is_muted) next.add(c.conversation_id);
+    });
+    mutedConvIdsRef.current = next;
+  }, [conversations]);
 
   useEffect(() => {
     let cancelled = false;
@@ -155,6 +171,8 @@ export default function MessengerShell({ userId }: Props) {
           activeIdRef.current === m.conversation_id && !hidden;
         if (lookingAtThisConv) return;
         if (prefsRef.current.mute_all) return;
+        // Audit5 fix: per-conversation mute honored here too.
+        if (mutedConvIdsRef.current.has(m.conversation_id)) return;
         if (!prefsRef.current.browser_push) return;
         if (typeof Notification === 'undefined') return;
         if (Notification.permission !== 'granted') return;
