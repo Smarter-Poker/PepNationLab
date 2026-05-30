@@ -67,10 +67,16 @@ export async function POST(req: NextRequest) {
   const internalEmail = `${usernameClean}@pepnationlab.com`;
 
   // Create the auth user via service role
+  // Pass username in user_metadata so the handle_new_user trigger
+  // sets the correct username on the auto-created profile row.
   const { data: authData, error: authError } = await supabase.auth.admin.createUser({
     email: internalEmail,
     password,
     email_confirm: true,
+    user_metadata: {
+      username: usernameClean,
+      full_name,
+    },
   });
 
   if (authError || !authData.user) {
@@ -82,8 +88,9 @@ export async function POST(req: NextRequest) {
 
   const newUserId = authData.user.id;
 
-  // Upsert the profile as researcher, linked to this agent
-  // IMPORTANT: username must be set so the researcher can log in via /api/auth/resolve
+  // Upsert the profile as researcher, linked to this agent.
+  // The trigger (handle_new_user) already created the row on INSERT into auth.users,
+  // so we must upsert (not insert) with explicit onConflict:'id'.
   const { error: profileError } = await supabase
     .from('profiles')
     .upsert({
@@ -96,7 +103,7 @@ export async function POST(req: NextRequest) {
       disclaimer_v1_accepted: false,  // Researcher must accept on first login
       is_active: true,
       updated_at: new Date().toISOString(),
-    });
+    }, { onConflict: 'id' });
 
   if (profileError) {
     await supabase.auth.admin.deleteUser(newUserId);
