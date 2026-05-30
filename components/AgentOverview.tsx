@@ -41,11 +41,18 @@ export default function AgentOverview({
         .dash-hero {
           position: relative;
           width: 100%;
+          /* Fill from just below the top nav all the way to the bottom of the viewport.
+             --nav-h is 64px (the height of the .nav bar). Fall back to 64px. */
+          height: calc(100dvh - 64px);
+          min-height: 400px;
+          overflow: hidden;
         }
         .dash-hero-img {
           width: 100%;
-          height: auto;
+          height: 100%;
           display: block;
+          object-fit: cover;           /* fills the box, crops if needed */
+          object-position: top center; /* keep menu items visible at top */
           user-select: none;
           -webkit-user-drag: none;
         }

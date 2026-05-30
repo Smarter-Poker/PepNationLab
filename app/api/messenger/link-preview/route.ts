@@ -143,12 +143,28 @@ export async function POST(req: NextRequest) {
     for (const c of chunks) { buf.set(c, offset); offset += c.byteLength; }
     const html = new TextDecoder('utf-8', { fatal: false }).decode(buf);
     const host = new URL(url).host;
+    // Audit4 fix: og:image is attacker-controlled HTML metadata. Validate
+    // it as an http(s) absolute URL before persisting. Drop javascript:,
+    // data:, vbscript:, file:, and relative paths so the <img src> on the
+    // client only ever points at a real fetchable image.
+    const rawImage = pickMeta(html, 'og:image');
+    let imageUrl: string | null = null;
+    if (rawImage) {
+      try {
+        const u = new URL(rawImage, url);
+        if (u.protocol === 'http:' || u.protocol === 'https:') {
+          imageUrl = u.toString();
+        }
+      } catch {
+        imageUrl = null;
+      }
+    }
     const preview = {
       url_hash: hash,
       url,
       title: pickMeta(html, 'og:title') ?? pickTitle(html),
       description: pickMeta(html, 'og:description') ?? pickMeta(html, 'description'),
-      image_url: pickMeta(html, 'og:image'),
+      image_url: imageUrl,
       host,
       fetched_at: new Date().toISOString(),
     };

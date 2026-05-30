@@ -657,9 +657,15 @@ export default function AgentDashboardClient({
           </div>
         )}
 
-        {/* TAB: Overview — breaks out of container for full-width image, flush to header */}
+        {/* TAB: Overview — full-bleed image fills 100dvh minus navbar */}
         {activeTab === 'Overview' && (
-          <div style={{ animation: 'fadeIn 0.3s ease-out', marginLeft: 'calc(-1 * var(--space-6))', marginRight: 'calc(-1 * var(--space-6))', marginTop: 'calc(-1 * var(--space-8))', width: 'calc(100% + var(--space-6) * 2)' }}>
+          <div style={{
+            animation: 'fadeIn 0.3s ease-out',
+            /* Bust out of the container so the image goes edge-to-edge */
+            marginLeft: 'calc(-1 * var(--container-px, var(--space-6)))',
+            marginRight: 'calc(-1 * var(--container-px, var(--space-6)))',
+            marginTop: 'calc(-1 * var(--space-8))',
+          }}>
             <AgentOverview 
               activeResearchersCount={activeResearchersCount}
               activeOrdersCount={activeOrdersCount}

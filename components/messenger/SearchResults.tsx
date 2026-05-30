@@ -47,6 +47,7 @@ export default function SearchResults({ messages, conversations, loading, onPick
   return (
     <div
       role="dialog"
+      aria-modal="true"
       aria-label="Search Results"
       style={{
         position: 'absolute', top: 44, left: 0, right: 0,

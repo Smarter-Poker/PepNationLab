@@ -1,5 +1,25 @@
 import { z } from 'zod';
 
+// Audit4 fix: media_metadata is JSONB and is currently capped only by the
+// 1 MB Next.js request body limit. Persisting multi-megabyte client JSON
+// per message is wasteful, slows realtime fanout, and the column was only
+// ever spec'd for filename / mime / dimensions. Cap to 8 KB serialized.
+const MEDIA_METADATA_MAX_BYTES = 8 * 1024;
+function boundedMetadata() {
+  return z
+    .record(z.string(), z.unknown())
+    .refine(
+      (v) => {
+        try {
+          return JSON.stringify(v).length <= MEDIA_METADATA_MAX_BYTES;
+        } catch {
+          return false;
+        }
+      },
+      { message: 'mediaMetadata exceeds 8KB' },
+    );
+}
+
 export const StartConversationSchema = z.object({
   type: z.enum(['direct', 'group', 'announcement']),
   participantIds: z.array(z.string().uuid()).min(1).max(50),
@@ -16,7 +36,7 @@ export const SendMessageSchema = z
       .enum(['text', 'image', 'gif', 'voice', 'file', 'contact_card', 'location', 'poll', 'system'])
       .default('text'),
     mediaUrl: z.string().url().optional(),
-    mediaMetadata: z.record(z.string(), z.unknown()).optional(),
+    mediaMetadata: boundedMetadata().optional(),
     replyToId: z.string().uuid().optional(),
     threadParentId: z.string().uuid().optional(),
     expiresAt: z.string().datetime().optional(),
@@ -159,7 +179,7 @@ export const ScheduleMessageCreateSchema = z
     text: z.string().max(2000).optional(),
     messageType: z.enum(['text', 'image', 'gif', 'voice', 'file']).default('text'),
     mediaUrl: z.string().url().optional(),
-    mediaMetadata: z.record(z.string(), z.unknown()).optional(),
+    mediaMetadata: boundedMetadata().optional(),
     replyToId: z.string().uuid().optional(),
     scheduledAt: z.string().datetime(),
   })

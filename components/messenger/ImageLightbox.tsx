@@ -13,6 +13,7 @@ export default function ImageLightbox({ src, onClose }: Props) {
   return (
     <div
       role="dialog"
+      aria-modal="true"
       aria-label="Image Preview"
       onClick={onClose}
       style={{

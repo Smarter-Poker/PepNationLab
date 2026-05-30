@@ -135,13 +135,26 @@ export async function POST(req: NextRequest) {
     if ((call as CallRow).status !== 'ringing') {
       return NextResponse.json({ error: 'Call Not Ringing' }, { status: 400 });
     }
+    // Audit4 fix: condition the update on status='ringing' so two
+    // concurrent accepts can't both succeed. The loser sees null and
+    // re-fetches to find the call already active.
     const { data: updated, error: upErr } = await svc
       .from('messenger_calls')
       .update({ status: 'active', answered_at: new Date().toISOString() })
       .eq('id', callId)
+      .eq('status', 'ringing')
       .select('*')
       .maybeSingle();
     if (upErr) return NextResponse.json({ error: upErr.message }, { status: 500 });
+    if (!updated) {
+      // Lost the race; return whatever the current row looks like.
+      const { data: current } = await svc
+        .from('messenger_calls')
+        .select('*')
+        .eq('id', callId)
+        .maybeSingle();
+      return NextResponse.json({ call: current, alreadyAccepted: true });
+    }
     return NextResponse.json({ call: updated });
   }
 
@@ -149,13 +162,24 @@ export async function POST(req: NextRequest) {
     if ((call as CallRow).status !== 'ringing') {
       return NextResponse.json({ error: 'Call Not Ringing' }, { status: 400 });
     }
+    // Audit4 fix: condition the update on status='ringing' so an accept
+    // that lands first wins and a decline doesn't clobber an active call.
     const { data: updated, error: upErr } = await svc
       .from('messenger_calls')
       .update({ status: 'declined', ended_at: new Date().toISOString() })
       .eq('id', callId)
+      .eq('status', 'ringing')
       .select('*')
       .maybeSingle();
     if (upErr) return NextResponse.json({ error: upErr.message }, { status: 500 });
+    if (!updated) {
+      const { data: current } = await svc
+        .from('messenger_calls')
+        .select('*')
+        .eq('id', callId)
+        .maybeSingle();
+      return NextResponse.json({ call: current, alreadyResolved: true });
+    }
     return NextResponse.json({ call: updated });
   }
 

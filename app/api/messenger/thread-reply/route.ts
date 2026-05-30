@@ -32,12 +32,18 @@ export async function POST(req: NextRequest) {
 
   const svc = await createServiceClient();
 
+  // Audit4 fix: also reject when the parent is soft-deleted. Without this
+  // check, a reply could land on a tombstoned thread parent and the UI
+  // would render an orphaned reply with no readable parent context.
   const { data: parent } = await svc
     .from('messenger_messages')
-    .select('id, conversation_id')
+    .select('id, conversation_id, is_deleted')
     .eq('id', parsed.data.threadParentId)
     .maybeSingle();
   if (!parent) return NextResponse.json({ error: 'Invalid Thread Parent' }, { status: 400 });
+  if ((parent as { is_deleted?: boolean }).is_deleted) {
+    return NextResponse.json({ error: 'Thread Parent Deleted' }, { status: 410 });
+  }
 
   const callerPart = await getParticipant(parent.conversation_id, user.id);
   if (!callerPart) return NextResponse.json({ error: 'Not A Participant' }, { status: 403 });
