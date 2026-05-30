@@ -242,7 +242,7 @@ export default function Navbar({ onMenuClick, title }: { onMenuClick?: () => voi
   const handleSignOut = async () => {
     const supabase = createClient();
     await supabase.auth.signOut();
-    window.location.href = '/';
+    window.location.replace('/');
   };
 
   // ── True Back Button ───────────────────────────────────────

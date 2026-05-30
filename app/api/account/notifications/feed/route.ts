@@ -24,14 +24,7 @@ export async function GET() {
     .order('created_at', { ascending: false })
     .limit(20);
 
-  // Also count unread messenger messages separately
-  const { count: msgCount } = await supabase
-    .from('internal_messages')
-    .select('id', { count: 'exact', head: true })
-    .eq('receiver_id', user.id)
-    .eq('is_read', false);
-
-  const totalUnread = (unreadCount ?? 0) + (msgCount ?? 0);
+  const totalUnread = unreadCount ?? 0;
 
   return NextResponse.json({
     unread_count: totalUnread,

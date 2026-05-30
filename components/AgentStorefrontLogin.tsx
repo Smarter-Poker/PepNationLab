@@ -173,6 +173,15 @@ export default function AgentStorefrontLogin({
       // Single-session enforcement — best-effort, never block login
       supabase.auth.signOut({ scope: 'others' }).catch(() => {});
 
+      // Wait until Supabase confirms the session is readable locally (max 3s).
+      // On mobile incognito the cookie write is async — navigating too soon
+      // means the server request arrives before the cookie exists.
+      for (let i = 0; i < 15; i++) {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.access_token) break;
+        await new Promise(r => setTimeout(r, 200));
+      }
+
       // Force full navigation so the new auth cookie is sent to the server
       window.location.replace(window.location.pathname);
     } catch (err: any) {

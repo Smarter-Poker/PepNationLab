@@ -97,11 +97,8 @@ export default function AgentDashboardClient({
 }: AgentDashboardClientProps) {
   const supabase = createClient();
 
-  const [activeTab, setActiveTab] = useState<'Overview' | 'Sales & Carts' | 'Researchers' | 'My Sub-Agents' | 'Orders' | 'Store Products' | 'Research Bundles' | 'Inventory' | 'Accounting' | 'Commissions' | 'Subscriptions' | 'Coupons' | 'Messages' | 'Webhooks' | 'Storefront Config' | 'Settings'>('Overview');
   const [agentProfile, setAgentProfile] = useState<AgentProfile | null>(initialAgentProfile);
   const [orders, setOrders] = useState<Order[]>(initialOrders);
-
-
 
   // Storefront Config Form State
   const [displayName, setDisplayName] = useState(agentProfile?.display_name ?? '');
@@ -114,6 +111,11 @@ export default function AgentDashboardClient({
   const [cashappHandle, setCashappHandle] = useState(agentProfile?.payment_handles?.cashapp ?? '');
   const [venmoHandle, setVenmoHandle] = useState(agentProfile?.payment_handles?.venmo ?? '');
   const [applePayHandle, setApplePayHandle] = useState(agentProfile?.payment_handles?.apple_pay ?? '');
+
+  const handlesEmpty = !!agentProfile && !zelleHandle.trim() && !cashappHandle.trim() && !venmoHandle.trim() && !applePayHandle.trim();
+  const [activeTab, setActiveTab] = useState<'Overview' | 'Sales & Carts' | 'Researchers' | 'My Sub-Agents' | 'Orders' | 'Store Products' | 'Research Bundles' | 'Inventory' | 'Accounting' | 'Commissions' | 'Subscriptions' | 'Coupons' | 'Messages' | 'Webhooks' | 'Storefront Config' | 'Settings'>(
+    (initialAgentProfile && (!initialAgentProfile.payment_handles || Object.keys(initialAgentProfile.payment_handles).every((k) => !initialAgentProfile.payment_handles![k]))) ? 'Storefront Config' : 'Overview'
+  );
 
   const [volumePricingEnabled, setVolumePricingEnabled] = useState<boolean>(agentProfile?.volume_pricing_enabled !== false);
 
@@ -509,19 +511,36 @@ export default function AgentDashboardClient({
         overflow: 'hidden',
       }}>
         <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 2 }}>
-          {MENU_ITEMS.map((item) => (
-            <button
-              key={item.id}
-              onClick={() => { setActiveTab(item.id as any); setIsMobileMenuOpen(false); setError(null); setSuccess(null); }}
-              className={`sidebar-nav-item ${activeTab === item.id ? 'active' : ''}`}
-              style={{ background: 'transparent', width: '100%', textAlign: 'left', border: 'none', borderLeft: activeTab === item.id ? '3px solid var(--teal)' : '3px solid transparent' }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', width: '100%' }}>
-                {item.icon}
-                <span style={{ fontSize: '0.85rem', fontFamily: 'var(--font-brand)', letterSpacing: '0.05em' }}>{item.label}</span>
-              </div>
-            </button>
-          ))}
+          {MENU_ITEMS.map((item) => {
+            const isDisabled = handlesEmpty && item.id !== 'Storefront Config';
+            return (
+              <button
+                key={item.id}
+                onClick={() => { 
+                  if (isDisabled) return;
+                  setActiveTab(item.id as any); 
+                  setIsMobileMenuOpen(false); 
+                  setError(null); 
+                  setSuccess(null); 
+                }}
+                className={`sidebar-nav-item ${activeTab === item.id ? 'active' : ''}`}
+                style={{ 
+                  background: 'transparent', 
+                  width: '100%', 
+                  textAlign: 'left', 
+                  border: 'none', 
+                  borderLeft: activeTab === item.id ? '3px solid var(--teal)' : '3px solid transparent',
+                  opacity: isDisabled ? 0.4 : 1,
+                  cursor: isDisabled ? 'not-allowed' : 'pointer'
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', width: '100%' }}>
+                  {item.icon}
+                  <span style={{ fontSize: '0.85rem', fontFamily: 'var(--font-brand)', letterSpacing: '0.05em' }}>{item.label}</span>
+                </div>
+              </button>
+            );
+          })}
         </div>
 
         <div style={{ padding: 'var(--space-4)', display: 'flex', flexDirection: 'column', gap: 2, flexShrink: 0, paddingBottom: 'max(var(--space-4), env(safe-area-inset-bottom, 16px))' }}>
@@ -1069,6 +1088,16 @@ export default function AgentDashboardClient({
         {/* TAB: Storefront Configuration */}
         {activeTab === 'Storefront Config' && (
           <div style={{ animation: 'fadeIn 0.3s ease-out' }}>
+            {handlesEmpty && (
+              <div style={{
+                background: 'var(--red-bg)', border: '1px solid var(--red)', borderRadius: 8, padding: 'var(--space-4)', marginBottom: 'var(--space-6)'
+              }}>
+                <h4 style={{ color: 'var(--red)', margin: '0 0 var(--space-2) 0', fontSize: '1rem' }}>Action Required: Add Payment Handles</h4>
+                <p style={{ color: 'var(--red)', fontSize: '0.9rem', margin: 0 }}>
+                  You must configure at least one payment method before you can access the rest of your dashboard. This ensures researchers know how to pay you.
+                </p>
+              </div>
+            )}
             <AgentStorefrontConfig
               displayName={displayName} setDisplayName={setDisplayName}
               slug={slug} setSlug={setSlug}
