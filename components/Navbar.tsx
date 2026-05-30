@@ -142,7 +142,8 @@ export default function Navbar() {
 
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [user, setUser] = useState<{ id: string; email?: string } | null>(null);
-  const [profile, setProfile] = useState<{ full_name?: string | null; role?: string } | null>(null);
+  const [profile, setProfile] = useState<{ full_name?: string | null; role?: string; referring_agent_id?: string | null } | null>(null);
+  const [agentSlug, setAgentSlug] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   const role = profile?.role ?? 'researcher';
@@ -181,11 +182,22 @@ export default function Navbar() {
         setUser({ id: session.user.id, email: session.user.email });
         supabase
           .from('profiles')
-          .select('full_name, role')
+          .select('full_name, role, referring_agent_id')
           .eq('id', session.user.id)
           .maybeSingle()
           .then(({ data }) => {
-            if (data) setProfile(data);
+            if (data) {
+              setProfile(data);
+              // If researcher, look up their agent's storefront slug
+              if (data.role === 'researcher' && data.referring_agent_id) {
+                supabase
+                  .from('agent_profiles')
+                  .select('slug')
+                  .eq('id', data.referring_agent_id)
+                  .maybeSingle()
+                  .then(({ data: ap }) => { if (ap?.slug) setAgentSlug(ap.slug); });
+              }
+            }
             setLoading(false);
           });
       } else {
@@ -197,13 +209,26 @@ export default function Navbar() {
         setUser({ id: session.user.id, email: session.user.email });
         supabase
           .from('profiles')
-          .select('full_name, role')
+          .select('full_name, role, referring_agent_id')
           .eq('id', session.user.id)
           .maybeSingle()
-          .then(({ data }) => { if (data) setProfile(data); });
+          .then(({ data }) => {
+            if (data) {
+              setProfile(data);
+              if (data.role === 'researcher' && data.referring_agent_id) {
+                supabase
+                  .from('agent_profiles')
+                  .select('slug')
+                  .eq('id', data.referring_agent_id)
+                  .maybeSingle()
+                  .then(({ data: ap }) => { if (ap?.slug) setAgentSlug(ap.slug); });
+              }
+            }
+          });
       } else {
         setUser(null);
         setProfile(null);
+        setAgentSlug(null);
       }
       setLoading(false);
     });
@@ -467,9 +492,18 @@ export default function Navbar() {
           <DrawerLink href="/" label="Home" onClick={closeDrawer}
             icon={<svg {...IP}><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>}
           />
-          <DrawerLink href="/products" label="Products" onClick={closeDrawer}
-            icon={<svg {...IP}><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>}
-          />
+          {/* Products link — hidden for researchers (they use their agent's storefront) */}
+          {role !== 'researcher' && (
+            <DrawerLink href="/products" label="Products" onClick={closeDrawer}
+              icon={<svg {...IP}><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>}
+            />
+          )}
+          {/* Researchers see their agent's storefront instead */}
+          {role === 'researcher' && agentSlug && (
+            <DrawerLink href={`/${agentSlug}`} label="Visit Your Store" onClick={closeDrawer}
+              icon={<svg {...IP}><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>}
+            />
+          )}
           <DrawerLink href="/about" label="About" onClick={closeDrawer}
             icon={<svg {...IP}><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>}
           />
