@@ -728,35 +728,44 @@ export default function AgentStorefrontGrid({ products, inventoryMap, primaryCol
           z-index: 1000; display: flex; align-items: flex-end; justify-content: center;
           overflow: hidden;
         }
+        /* Brushed-nickel border: 2px metallic silver gradient ring */
         .sf-modal-sheet {
           width: 100%; max-height: 95dvh; overflow-y: auto;
           -webkit-overflow-scrolling: touch;
-          background: linear-gradient(180deg, var(--surface-2) 0%, var(--black-2) 100%);
+          background: linear-gradient(180deg, #131b24 0%, #0a0f14 100%);
           border-radius: 22px 22px 0 0;
-          border: 1px solid rgba(255,255,255,0.08);
-          box-shadow: 0 -8px 40px rgba(0,0,0,0.7);
+          border: 2px solid transparent;
+          background-clip: padding-box;
+          box-shadow:
+            0 0 0 2px #8a9099,
+            0 0 0 2.5px rgba(255,255,255,0.18),
+            inset 0 1px 0 rgba(255,255,255,0.08),
+            0 -10px 50px rgba(0,0,0,0.8),
+            0 4px 24px rgba(138,144,153,0.12);
           display: flex; flex-direction: column;
+          position: relative;
         }
         .sf-modal-drag-bar {
           width: 40px; height: 4px; border-radius: 2px;
-          background: rgba(255,255,255,0.15); margin: 10px auto 0;
+          background: rgba(255,255,255,0.18); margin: 12px auto 0;
           flex-shrink: 0;
         }
         .sf-modal-img {
           height: 160px; flex-shrink: 0; position: relative; overflow: hidden;
-          border-radius: 22px 22px 0 0;
+          border-radius: 20px 20px 0 0;
+          margin: 0;
         }
-        .sf-modal-body { padding: 14px 16px; flex: 1; }
+        .sf-modal-body { padding: 20px 22px 8px; flex: 1; }
         .sf-modal-h2 { font-size: 1.2rem !important; }
         .sf-modal-actions {
           display: flex; gap: 10px;
-          padding: 12px 16px calc(16px + env(safe-area-inset-bottom, 0px));
+          padding: 14px 22px calc(20px + env(safe-area-inset-bottom, 0px));
           position: sticky; bottom: 0; z-index: 5;
-          background: linear-gradient(to top, var(--black-2) 80%, transparent);
+          background: linear-gradient(to top, #0a0f14 75%, transparent);
         }
         .sf-modal-actions .sf-close-btn {
-          padding: 11px 16px; background: transparent;
-          border: 1px solid rgba(255,255,255,0.15); border-radius: var(--radius-md);
+          padding: 11px 20px; background: transparent;
+          border: 1px solid rgba(255,255,255,0.18); border-radius: var(--radius-md);
           color: var(--white); cursor: pointer; font-weight: 600; font-size: 0.85rem;
           white-space: nowrap;
         }
@@ -766,18 +775,24 @@ export default function AgentStorefrontGrid({ products, inventoryMap, primaryCol
           color: #fff; white-space: nowrap;
         }
         @media (min-width: 600px) {
-          .sf-modal-overlay { align-items: center; padding: 16px; overflow-y: auto; }
+          .sf-modal-overlay { align-items: center; padding: 20px; overflow-y: auto; }
           .sf-modal-sheet {
-            border-radius: var(--radius-xl); max-width: 720px; max-height: 90vh;
+            border-radius: 20px; max-width: 560px; max-height: 90vh;
+            box-shadow:
+              0 0 0 2px #8a9099,
+              0 0 0 2.5px rgba(255,255,255,0.18),
+              inset 0 1px 0 rgba(255,255,255,0.08),
+              0 24px 80px rgba(0,0,0,0.85),
+              0 4px 24px rgba(138,144,153,0.12);
           }
           .sf-modal-drag-bar { display: none; }
-          .sf-modal-img { height: 280px; border-radius: var(--radius-xl) var(--radius-xl) 0 0; }
-          .sf-modal-body { padding: 24px 32px 16px; }
-          .sf-modal-h2 { font-size: 1.8rem !important; }
+          .sf-modal-img { height: 240px; border-radius: 18px 18px 0 0; }
+          .sf-modal-body { padding: 24px 32px 12px; }
+          .sf-modal-h2 { font-size: 1.75rem !important; }
           .sf-modal-actions {
-            position: static; background: none; padding: 0 32px 28px;
+            position: static; background: none; padding: 16px 32px 28px;
           }
-          .sf-modal-actions .sf-add-btn { flex: none; padding: 10px 24px; }
+          .sf-modal-actions .sf-add-btn { flex: none; padding: 10px 28px; }
         }
       `}} />
 
@@ -1360,22 +1375,25 @@ export default function AgentStorefrontGrid({ products, inventoryMap, primaryCol
             >
               {/* Top bar: drag handle (centered) + close button (right) */}
               <div style={{
-                display: 'flex', alignItems: 'center', padding: '12px 14px 8px', flexShrink: 0,
+                display: 'flex', alignItems: 'center', padding: '14px 18px 8px', flexShrink: 0,
               }}>
                 <div style={{ flex: 1 }} />
-                <div style={{ width: 44, height: 4, borderRadius: 2, background: 'rgba(255,255,255,0.18)' }} aria-hidden="true" />
+                <div style={{ width: 44, height: 4, borderRadius: 2, background: 'rgba(255,255,255,0.20)' }} aria-hidden="true" />
                 <div style={{ flex: 1, display: 'flex', justifyContent: 'flex-end' }}>
                   <button
                     onClick={() => setDetailProduct(null)}
                     aria-label="Close"
                     style={{
-                      width: 30, height: 30, minWidth: 30, minHeight: 30,
+                      width: 32, height: 32, minWidth: 32, minHeight: 32,
                       borderRadius: '50%', padding: 0,
-                      background: 'rgba(255,255,255,0.10)',
-                      border: '1px solid rgba(255,255,255,0.25)',
+                      background: 'rgba(255,255,255,0.08)',
+                      border: '1px solid rgba(255,255,255,0.22)',
                       cursor: 'pointer', display: 'flex', alignItems: 'center',
                       justifyContent: 'center', boxSizing: 'border-box', flexShrink: 0,
+                      transition: 'background 0.15s ease',
                     }}
+                    onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.16)'; }}
+                    onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.08)'; }}
                   >
                     <X size={14} stroke="#ffffff" strokeWidth={2.5} aria-hidden="true" />
                   </button>
