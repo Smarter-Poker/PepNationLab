@@ -230,8 +230,7 @@ export default function NavbarNotificationBell() {
           width: 42,
           height: 42,
           borderRadius: '50%',
-          background: open ? 'rgba(192,184,168,0.15)' : 'var(--surface-2)',
-          border: `1.5px solid ${unread > 0 ? 'var(--teal)' : 'rgba(192,184,168,0.3)'}`,
+          border: `1.5px solid ${unread > 0 ? 'var(--teal)' : 'rgba(192,184,168,0.2)'}`,
           boxShadow: unread > 0 ? '0 0 12px rgba(192,184,168,0.35)' : '0 0 8px rgba(0,0,0,0.3)',
           display: 'flex',
           alignItems: 'center',
@@ -239,25 +238,18 @@ export default function NavbarNotificationBell() {
           cursor: 'pointer',
           position: 'relative',
           marginRight: 'var(--space-2)',
-          transition: 'border-color 0.2s, box-shadow 0.2s, background 0.2s',
+          transition: 'border-color 0.2s, box-shadow 0.2s',
+          padding: 0,
+          background: 'none',
+          animation: ringing ? 'pnl-bell-ring 0.8s ease' : 'none',
+          transformOrigin: 'top center',
         }}
       >
-        <svg
-          width="18" height="18"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke={unread > 0 ? 'var(--teal)' : 'rgba(192,184,168,0.7)'}
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          style={{
-            animation: ringing ? 'pnl-bell-ring 0.8s ease' : 'none',
-            transformOrigin: 'top center',
-          }}
-        >
-          <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9" />
-          <path d="M13.73 21a2 2 0 01-3.46 0" />
-        </svg>
+        <img
+          src="/images/notification-bell.jpg"
+          alt="Notifications"
+          style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }}
+        />
 
         {/* Unread badge */}
         {unread > 0 && (
