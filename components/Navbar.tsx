@@ -318,7 +318,29 @@ export default function Navbar() {
             <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'var(--surface-2)' }} className="skeleton" />
           ) : user ? (
             <>
-              <NavbarNotificationBell />
+              {/* Right icon: notification bell for agents/admin, messenger shortcut for researchers */}
+              {role === 'researcher' ? (
+                <Link
+                  href="/messenger"
+                  aria-label="Messenger"
+                  style={{
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    width: 36, height: 36, borderRadius: '50%',
+                    background: 'var(--surface-2)',
+                    border: '1px solid rgba(192,184,168,0.15)',
+                    color: 'var(--teal)',
+                    textDecoration: 'none',
+                    flexShrink: 0,
+                    transition: 'background 0.15s, border-color 0.15s',
+                  }}
+                >
+                  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                  </svg>
+                </Link>
+              ) : (
+                <NavbarNotificationBell />
+              )}
 
               {/* Messenger exception: show Agent Dashboard btn instead of messenger icon */}
               {isMessenger ? (
@@ -326,6 +348,7 @@ export default function Navbar() {
                   {dashLabel}
                 </Link>
               ) : null}
+
 
               {/* Avatar + name (desktop shows name, mobile shows avatar only) */}
               <div
