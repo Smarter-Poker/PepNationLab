@@ -301,3 +301,24 @@ export const DeleteReportedMessageSchema = z.object({
   reportId: z.string().uuid().optional(),
 });
 export type DeleteReportedMessageInput = z.infer<typeof DeleteReportedMessageSchema>;
+
+// Phase 13: intelligence - reminders
+
+export const SetReminderSchema = z
+  .object({
+    messageId: z.string().uuid().optional(),
+    conversationId: z.string().uuid().optional(),
+    remindAt: z.string().datetime(),
+    note: z.string().max(500).optional(),
+  });
+export type SetReminderInput = z.infer<typeof SetReminderSchema>;
+
+export const CancelReminderSchema = z.object({
+  reminderId: z.string().uuid(),
+});
+export type CancelReminderInput = z.infer<typeof CancelReminderSchema>;
+
+export const ListAdminMentionsSchema = z.object({
+  status: z.enum(['unread', 'read', 'resolved']).optional(),
+});
+export type ListAdminMentionsInput = z.infer<typeof ListAdminMentionsSchema>;

@@ -112,3 +112,19 @@ export async function isBlocked(blockerId: string, blockedId: string): Promise<b
     .maybeSingle();
   return Boolean(data);
 }
+
+/**
+ * Phase 13: cron auth gate. Returns ok=true only when the request carries
+ * Authorization: Bearer ${CRON_SECRET}. Returns 503 (not 500) when the env
+ * var is unset so /api/messenger/cron/* can be probed cleanly before secrets
+ * are provisioned. Mirrors the LiveKit / Tenor un-configured pattern.
+ */
+export function getCronAuth(
+  req: Request,
+): { ok: true } | { ok: false; status: number; error: string } {
+  const secret = process.env.CRON_SECRET;
+  if (!secret) return { ok: false, status: 503, error: 'Cron Not Configured' };
+  const header = req.headers.get('authorization') ?? '';
+  if (header !== `Bearer ${secret}`) return { ok: false, status: 401, error: 'Unauthorized' };
+  return { ok: true };
+}

@@ -1,0 +1,108 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { createServiceClient } from '@/lib/supabase/server';
+import { getCronAuth } from '@/lib/messenger/server';
+
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
+
+interface ScheduledRow {
+  id: string;
+  conversation_id: string;
+  sender_id: string;
+  text: string | null;
+  message_type: string;
+  media_url: string | null;
+  media_metadata: Record<string, unknown> | null;
+  reply_to_id: string | null;
+  scheduled_at: string;
+  status: string;
+}
+
+export async function GET(req: NextRequest) {
+  const auth = getCronAuth(req);
+  if (!auth.ok) return NextResponse.json({ error: auth.error }, { status: auth.status });
+
+  const svc = await createServiceClient();
+  const nowIso = new Date().toISOString();
+
+  const { data: rows, error: qErr } = await svc
+    .from('messenger_scheduled')
+    .select('id, conversation_id, sender_id, text, message_type, media_url, media_metadata, reply_to_id, scheduled_at, status')
+    .eq('status', 'pending')
+    .lte('scheduled_at', nowIso)
+    .order('scheduled_at', { ascending: true })
+    .limit(50);
+  if (qErr) return NextResponse.json({ error: qErr.message }, { status: 500 });
+
+  const list = (rows ?? []) as ScheduledRow[];
+  let processed = 0;
+  let cancelled = 0;
+
+  for (const row of list) {
+    // Re-verify the sender is still a participant. If not, mark cancelled
+    // rather than insert into a conversation they no longer belong to.
+    const { data: part } = await svc
+      .from('messenger_participants')
+      .select('id')
+      .eq('conversation_id', row.conversation_id)
+      .eq('user_id', row.sender_id)
+      .maybeSingle();
+
+    if (!part) {
+      const { error: cErr } = await svc
+        .from('messenger_scheduled')
+        .update({ status: 'cancelled', updated_at: new Date().toISOString() })
+        .eq('id', row.id)
+        .eq('status', 'pending');
+      if (!cErr) cancelled += 1;
+      continue;
+    }
+
+    // Validate reply target still belongs to the same conversation.
+    let replyToId: string | null = row.reply_to_id;
+    if (replyToId) {
+      const { data: parent } = await svc
+        .from('messenger_messages')
+        .select('conversation_id')
+        .eq('id', replyToId)
+        .maybeSingle();
+      if (!parent || parent.conversation_id !== row.conversation_id) {
+        replyToId = null; // Drop dangling reply rather than fail the entire send.
+      }
+    }
+
+    // Optimistic-claim: only insert and mark sent if the row is still pending.
+    // This is the simplest race-safe pattern without a distributed lock - the
+    // update sets status='sent' atomically and the .eq('status','pending')
+    // guard means a concurrent invocation will get rowCount=0 and skip.
+    const { data: claimed, error: claimErr } = await svc
+      .from('messenger_scheduled')
+      .update({ status: 'sent', updated_at: new Date().toISOString() })
+      .eq('id', row.id)
+      .eq('status', 'pending')
+      .select('id')
+      .maybeSingle();
+    if (claimErr || !claimed) continue;
+
+    const { error: insErr } = await svc.from('messenger_messages').insert({
+      conversation_id: row.conversation_id,
+      sender_id: row.sender_id,
+      text: row.text,
+      message_type: row.message_type,
+      media_url: row.media_url,
+      media_metadata: row.media_metadata ?? {},
+      reply_to_id: replyToId,
+    });
+    if (insErr) {
+      // Roll the scheduled row back to pending so the next tick can retry.
+      await svc
+        .from('messenger_scheduled')
+        .update({ status: 'pending', updated_at: new Date().toISOString() })
+        .eq('id', row.id);
+      continue;
+    }
+    processed += 1;
+  }
+
+  return NextResponse.json({ processed, cancelled, scanned: list.length });
+}
