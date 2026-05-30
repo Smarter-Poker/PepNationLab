@@ -4,6 +4,7 @@ import { CartProvider } from "@/components/CartContext";
 import ImpersonationBanner from "@/components/ImpersonationBanner";
 import PwaInstallPrompt from "@/components/PwaInstallPrompt";
 import SiteDisclaimerGate from "@/components/SiteDisclaimerGate";
+import StaleBrowserBanner from "@/components/StaleBrowserBanner";
 import { Toaster } from "sonner";
 
 export const viewport: Viewport = {
@@ -53,6 +54,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
+        <StaleBrowserBanner />
         <SiteDisclaimerGate>
           <CartProvider>
             {children}

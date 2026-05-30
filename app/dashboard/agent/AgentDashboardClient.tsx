@@ -542,7 +542,50 @@ export default function AgentDashboardClient({
           ))}
         </div>
 
-        <div style={{ padding: 'var(--space-4)' }}>
+        <div style={{ padding: 'var(--space-4)', display: 'flex', flexDirection: 'column', gap: 2 }}>
+
+          {/* ── Copy Storefront Link ── */}
+          {agentProfile && (
+            <>
+              <button
+                className="sidebar-nav-item"
+                onClick={() => { copyStorefrontLink(); setIsMobileMenuOpen(false); }}
+                style={{ width: '100%', background: 'transparent', border: 'none', textAlign: 'left' }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
+                    <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+                  </svg>
+                  <span style={{ fontSize: '0.85rem', fontFamily: 'var(--font-brand)', letterSpacing: '0.05em', color: copiedStorefront ? 'var(--teal)' : 'currentColor', transition: 'color 0.2s' }}>
+                    {copiedStorefront ? '✓ Link Copied!' : 'Copy Storefront Link'}
+                  </span>
+                </div>
+              </button>
+
+              <a
+                href={storefrontUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="sidebar-nav-item"
+                style={{ display: 'block', textDecoration: 'none' }}
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+                    <polyline points="15 3 21 3 21 9"/>
+                    <line x1="10" y1="14" x2="21" y2="3"/>
+                  </svg>
+                  <span style={{ fontSize: '0.85rem', fontFamily: 'var(--font-brand)', letterSpacing: '0.05em' }}>Visit My Storefront</span>
+                </div>
+              </a>
+
+              <div style={{ height: 1, background: 'rgba(255,255,255,0.07)', margin: 'var(--space-2) 0' }} />
+            </>
+          )}
+
+          {/* ── QR Code ── */}
           <button 
             className="sidebar-nav-item" 
             onClick={() => { setActiveTab('Storefront Config' as any); setIsMobileMenuOpen(false); }}
@@ -554,6 +597,8 @@ export default function AgentDashboardClient({
               <span style={{ fontSize: '0.85rem', fontFamily: 'var(--font-brand)', letterSpacing: '0.05em' }}>QR Code</span>
             </div>
           </button>
+
+          {/* ── Account Security ── */}
           <Link href="/account/security" className="sidebar-nav-item" style={{ display: 'block', textDecoration: 'none' }} onClick={() => setIsMobileMenuOpen(false)}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -563,6 +608,8 @@ export default function AgentDashboardClient({
               <span style={{ fontSize: '0.85rem', fontFamily: 'var(--font-brand)', letterSpacing: '0.05em' }}>Account Security</span>
             </div>
           </Link>
+
+          {/* ── Sign Out ── */}
           <form action="/api/auth/signout" method="post">
             <button type="submit" className="sidebar-nav-item" style={{ width: '100%', background: 'transparent', border: 'none', color: 'var(--red)' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>

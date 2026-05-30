@@ -14,25 +14,50 @@ interface AgentOverviewProps {
 
 export default function AgentOverview({
   storefrontUrl,
-  copyStorefrontLink,
-  copiedStorefront,
-  onNavigate
+  onNavigate,
 }: AgentOverviewProps) {
-  /* Stacked vertical layout — 6 full-width rows + bottom share section
-     Image is 1022 x 769. Rows are evenly spaced in the top ~75% of the image. */
+  /*
+   * Layout math:
+   *   background-size: auto 130%  →  image rendered at 130% of container height.
+   *   Container shows top (100 / 130) = 76.9% of the image.
+   *   The 6 nav rows occupy the top 77% of the image → they fill the screen exactly.
+   *   The "Share Your Storefront" section (77-100%) is clipped off by overflow:hidden.
+   *
+   * Click zone positions must be scaled by 1.3 to convert image-% → container-%:
+   *   image top T%  →  container top = T × 1.3 %
+   *   image height H%  →  container height = H × 1.3 %
+   */
   const cardZones = [
-    { id: 'storefront', top: '1%', left: '2%', width: '96%', height: '11%',
-      action: () => window.open(storefrontUrl, '_blank', 'noopener,noreferrer') },
-    { id: 'researchers', top: '14%', left: '2%', width: '96%', height: '11%',
-      action: () => onNavigate?.('Researchers') },
-    { id: 'inventory', top: '27%', left: '2%', width: '96%', height: '11%',
-      action: () => onNavigate?.('Inventory') },
-    { id: 'products', top: '40%', left: '2%', width: '96%', height: '11%',
-      action: () => onNavigate?.('Store Products') },
-    { id: 'sales', top: '53%', left: '2%', width: '96%', height: '11%',
-      action: () => onNavigate?.('Sales & Carts') },
-    { id: 'orders', top: '66%', left: '2%', width: '96%', height: '11%',
-      action: () => onNavigate?.('Orders') },
+    {
+      id: 'storefront',
+      top: '1.3%', height: '14.3%',
+      action: () => window.open(storefrontUrl, '_blank', 'noopener,noreferrer'),
+    },
+    {
+      id: 'researchers',
+      top: '18.2%', height: '14.3%',
+      action: () => onNavigate?.('Researchers'),
+    },
+    {
+      id: 'inventory',
+      top: '35.1%', height: '14.3%',
+      action: () => onNavigate?.('Inventory'),
+    },
+    {
+      id: 'products',
+      top: '52.0%', height: '14.3%',
+      action: () => onNavigate?.('Store Products'),
+    },
+    {
+      id: 'sales',
+      top: '68.9%', height: '14.3%',
+      action: () => onNavigate?.('Sales & Carts'),
+    },
+    {
+      id: 'orders',
+      top: '85.8%', height: '14.3%',
+      action: () => onNavigate?.('Orders'),
+    },
   ];
 
   return (
@@ -41,21 +66,22 @@ export default function AgentOverview({
         .dash-hero {
           position: relative;
           width: 100%;
-          /* Fill from just below the top nav all the way to the bottom of the viewport.
-             --nav-h is 64px (the height of the .nav bar). Fall back to 64px. */
+          /* Full viewport height minus the top nav bar (64 px) */
           height: calc(100dvh - 64px);
-          min-height: 400px;
+          min-height: 350px;
           overflow: hidden;
+
+          /*
+           * Background image at 130% of container height, top-anchored.
+           * This shows only the top 77 % (= 100/130) of the image —
+           * exactly the 6 nav-row cards — and clips the rest.
+           */
+          background-image: url('/images/agent-dashboard-nav.jpg');
+          background-repeat: no-repeat;
+          background-position: top center;
+          background-size: auto 130%;
         }
-        .dash-hero-img {
-          width: 100%;
-          height: 100%;
-          display: block;
-          object-fit: cover;           /* fills the box, crops if needed */
-          object-position: top center; /* keep menu items visible at top */
-          user-select: none;
-          -webkit-user-drag: none;
-        }
+
         .dash-zone {
           position: absolute;
           cursor: pointer;
@@ -63,49 +89,11 @@ export default function AgentOverview({
           transition: background 0.15s ease;
           z-index: 2;
         }
-        .dash-zone:hover {
-          background: rgba(255, 255, 255, 0.04);
-        }
-        .dash-zone:active {
-          background: rgba(255, 255, 255, 0.08);
-        }
-        .dash-url {
-          position: absolute;
-          z-index: 3;
-          color: #C0B8A8;
-          white-space: nowrap;
-          overflow: hidden;
-          text-overflow: ellipsis;
-          pointer-events: none;
-          display: flex;
-          align-items: center;
-          font-weight: 600;
-          letter-spacing: 0.02em;
-        }
-        .dash-btn-zone {
-          position: absolute;
-          cursor: pointer;
-          z-index: 3;
-          background: transparent;
-          border: none;
-          padding: 0;
-          display: block;
-        }
-        .dash-btn-zone:hover {
-          background: rgba(255,255,255,0.06);
-          border-radius: 4px;
-        }
+        .dash-zone:hover  { background: rgba(255, 255, 255, 0.04); }
+        .dash-zone:active { background: rgba(255, 255, 255, 0.08); }
       `}} />
 
       <div className="dash-hero">
-        <img
-          src="/images/agent-dashboard-nav.jpg"
-          alt="Agent Dashboard"
-          className="dash-hero-img"
-          draggable={false}
-        />
-
-        {/* 6 stacked card clickable zones */}
         {cardZones.map((zone) => (
           <div
             key={zone.id}
@@ -113,43 +101,18 @@ export default function AgentOverview({
             onClick={zone.action}
             role="button"
             tabIndex={0}
-            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') zone.action(); }}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') zone.action();
+            }}
             aria-label={zone.id}
-            style={{ top: zone.top, left: zone.left, width: zone.width, height: zone.height }}
+            style={{
+              top: zone.top,
+              left: '2%',
+              width: '96%',
+              height: zone.height,
+            }}
           />
         ))}
-
-        {/* Dynamic storefront URL — inside the dark input frame at bottom */}
-        <span
-          className="dash-url"
-          style={{
-            bottom: '6%',
-            left: '7%',
-            width: '50%',
-            height: '5%',
-            fontSize: 'clamp(0.85rem, 2.4vw, 1.4rem)',
-          }}
-        >
-          {storefrontUrl}
-        </span>
-
-        {/* Invisible clickable zone over "Copy Link" button */}
-        <button
-          className="dash-btn-zone"
-          onClick={copyStorefrontLink}
-          aria-label={copiedStorefront ? 'Link Copied' : 'Copy Link'}
-          style={{ bottom: '5.5%', right: '22%', width: '14%', height: '5.5%' }}
-        />
-
-        {/* Invisible clickable zone over "Visit Store" button */}
-        <a
-          href={storefrontUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="dash-btn-zone"
-          aria-label="Visit Store"
-          style={{ bottom: '5.5%', right: '7%', width: '12%', height: '5.5%' }}
-        />
       </div>
     </>
   );

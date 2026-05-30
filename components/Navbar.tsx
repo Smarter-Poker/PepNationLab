@@ -166,6 +166,7 @@ export default function Navbar() {
             <div style={{ width: 120, height: 32, borderRadius: 'var(--radius-md)', background: 'var(--surface-2)' }} className="skeleton" />
           ) : user ? (
             <>
+              <NavbarNotificationBell />
               <Link href="/messenger" className="btn btn-ghost btn-sm">Messenger</Link>
               {role === 'admin' ? (
                 <Link href="/admin" className="btn btn-ghost btn-sm">Admin Panel</Link>

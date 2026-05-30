@@ -81,7 +81,8 @@ export default async function AccountHubPage() {
           <NavCard href="/account/security" label="Security" description="Password, 2FA, And Login Sessions." Icon={ShieldCheck} />
           <NavCard href="/account/credits" label="Store Credits" description="View Your Balance And Transaction History." Icon={CreditCard} />
           <NavCard href="/account/tax-exemption" label="Tax-Exempt Certificates" description="Submit Or Track Sales Tax Exemption Certificates." Icon={FileCheck} />
-          <NavCard href="/checkout" label="Saved Addresses" description="Manage Shipping Addresses Used At Checkout." Icon={MapPin} />
+          <NavCard href="/account/addresses" label="Saved Addresses" description="Manage Shipping Addresses Used At Checkout." Icon={MapPin} />
+          <NavCard href="/account/payment-method" label="Default Payment Method" description="Pre-Select Zelle, Venmo, Cash App, Or Apple Pay." Icon={Wallet} />
         </div>
       </div>
     </div>

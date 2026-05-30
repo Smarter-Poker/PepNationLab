@@ -122,6 +122,7 @@ export default function CallOverlay({ call, selfId, onClose }: Props) {
         zIndex: 2000,
       }}
       role="dialog"
+      aria-modal="true"
       aria-label={isVideo ? 'Video Call' : 'Voice Call'}
     >
       {error && (
