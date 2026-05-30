@@ -90,9 +90,9 @@ export async function POST(req: NextRequest) {
   await supabase.from('admin_audit_log').insert({
     actor_id: gate.userId,
     action: 'shippo_label_refund',
-    target_type: 'shipping_label_purchases',
-    target_id: purchase.id,
-    details: {
+    entity_type: 'shipping_label_purchases',
+    entity_id: purchase.id,
+    changes: {
       order_id: orderId,
       shippo_refund_id: refundResult.shippoRefundId,
       shippo_status: refundResult.status,

@@ -129,9 +129,9 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
   await supabase.from('admin_audit_log').insert({
     actor_id: gate.userId,
     action: 'shipping_origin_update',
-    target_type: 'shipping_origins',
-    target_id: id,
-    details: { fields_changed: Object.keys(updates) },
+    entity_type: 'shipping_origins',
+    entity_id: id,
+    changes: { fields_changed: Object.keys(updates) },
   });
 
   return NextResponse.json({ ok: true, origin: updated });
@@ -184,9 +184,9 @@ export async function DELETE(req: NextRequest, { params }: RouteParams) {
   await supabase.from('admin_audit_log').insert({
     actor_id: gate.userId,
     action: 'shipping_origin_deactivate',
-    target_type: 'shipping_origins',
-    target_id: id,
-    details: { label: existing.label },
+    entity_type: 'shipping_origins',
+    entity_id: id,
+    changes: { label: existing.label },
   });
 
   return NextResponse.json({ ok: true, deactivated_id: id });

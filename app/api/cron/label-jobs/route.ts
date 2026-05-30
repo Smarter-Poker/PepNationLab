@@ -104,6 +104,7 @@ export async function GET(req: NextRequest) {
           labelFileType: (['PDF', 'PDF_4x6', 'PNG', 'ZPL_203'].includes(String(job.label_file_type))
             ? String(job.label_file_type)
             : 'PDF_4x6') as 'PDF' | 'PDF_4x6' | 'PNG' | 'ZPL_203',
+          labelJobId: jobId,
         });
 
         if (!result.ok) {
@@ -118,9 +119,9 @@ export async function GET(req: NextRequest) {
             await supabase.from('admin_audit_log').insert({
               actor_id: null,
               action: 'label_job_permanently_failed',
-              target_type: 'label_jobs',
-              target_id: jobId,
-              details: { order_id: orderId, error: msg, attempts: nextAttempts },
+              entity_type: 'label_jobs',
+              entity_id: jobId,
+              changes: { order_id: orderId, error: msg, attempts: nextAttempts },
             });
             permanentlyFailed++;
           } else {

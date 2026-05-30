@@ -160,9 +160,9 @@ export async function POST(req: NextRequest) {
   await supabase.from('admin_audit_log').insert({
     actor_id: gate.userId,
     action: 'shipping_origin_create',
-    target_type: 'shipping_origins',
-    target_id: inserted.id,
-    details: { label, is_default: isDefault, shippo_validated: !!shippoAddressId },
+    entity_type: 'shipping_origins',
+    entity_id: inserted.id,
+    changes: { label, is_default: isDefault, shippo_validated: !!shippoAddressId },
   });
 
   return NextResponse.json(

@@ -95,9 +95,9 @@ export async function GET(req: NextRequest) {
           await supabase.from('admin_audit_log').insert({
             actor_id: null,
             action: 'shippo_reconcile_variance',
-            target_type: 'agent_profiles',
-            target_id: agentId === 'platform' ? null : agentId,
-            details: {
+            entity_type: 'agent_profiles',
+            entity_id: agentId === 'platform' ? null : agentId,
+            changes: {
               window_start: windowStart,
               agent_id: agentId,
               paid_to_shippo_cents: chargedCents,

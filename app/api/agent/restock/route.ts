@@ -138,49 +138,55 @@ export async function POST(request: Request) {
       const dbProduct = dbProducts.find(p => p.id === cartItem.id);
       if (!dbProduct) continue;
 
+      // NOTE: base_cost and admin_bulk_price in the DB are per-10-vial-pack prices.
+      // cartItem.quantity is individual VIALS (sourced from agent_inventory.stock_count
+      // and order_items.quantity, both of which count vials). Divide all pack prices
+      // by 10 to convert to per-vial before multiplying by vial quantity.
       const baseCost = Number(dbProduct.base_cost);
       let costPrice = 0;
       let superAgentCost = null;
 
       if (superAgentProfile) {
-        // Sub-Agent
-        const saMultiplier = superAgentOverrides[dbProduct.id] ?? tierMultipliers[superAgentProfile.tier || 'tier_3'] ?? 7.0;
-        superAgentCost = baseCost * saMultiplier;
+        // Sub-Agent — super agent owes admin their tier cost per vial
+        const saMultiplier = superAgentOverrides[dbProduct.id] ?? tierMultipliers[superAgentProfile.tier || 'tier_3'] ?? 1.7;
+        superAgentCost = baseCost * saMultiplier / 10; // per-vial
 
         if (dbProduct.admin_bulk_price !== null && cartItem.quantity >= (dbProduct.admin_bulk_threshold ?? 100)) {
-          superAgentCost = Number(dbProduct.admin_bulk_price);
+          // admin_bulk_price is a per-pack price; divide by 10 for per-vial
+          superAgentCost = Number(dbProduct.admin_bulk_price) / 10;
         }
-        
+
         const saConfig = superAgentBaselines[dbProduct.id];
         if (saConfig) {
            if (saConfig.bulk_baseline_cost !== null && cartItem.quantity >= saConfig.bulk_threshold) {
-               costPrice = saConfig.bulk_baseline_cost;
+               costPrice = saConfig.bulk_baseline_cost / 10; // super_agent_pricing stores pack cost
            } else {
-               costPrice = saConfig.baseline_cost;
+               costPrice = saConfig.baseline_cost / 10; // same
            }
         } else {
            costPrice = superAgentCost;
         }
       } else {
-        // Standard Agent
-        const agentMultiplier = agentOverrides[dbProduct.id] ?? tierMultipliers[agentTier] ?? 7.0;
-        costPrice = baseCost * agentMultiplier;
+        // Standard Agent — pay base_cost * tier_mult per vial
+        const agentMultiplier = agentOverrides[dbProduct.id] ?? tierMultipliers[agentTier] ?? 1.7;
+        costPrice = baseCost * agentMultiplier / 10; // per-vial
 
         if (dbProduct.admin_bulk_price !== null && cartItem.quantity >= (dbProduct.admin_bulk_threshold ?? 100)) {
-          costPrice = Number(dbProduct.admin_bulk_price);
+          // admin_bulk_price is per-pack; divide by 10 for per-vial bulk cost
+          costPrice = Number(dbProduct.admin_bulk_price) / 10;
         }
       }
 
-      subtotal += costPrice * cartItem.quantity;
+      subtotal += costPrice * cartItem.quantity; // per-vial cost × vials
       totalWeightOz += (Number(dbProduct.weight_oz) || 0.5) * cartItem.quantity;
 
       computedItems.push({
         product_id: dbProduct.id,
         product_name: dbProduct.name,
-        quantity: cartItem.quantity,
-        unit_retail_price: costPrice, // They pay exactly cost price
-        unit_cost_price: costPrice,
-        unit_super_agent_cost: superAgentCost
+        quantity: cartItem.quantity,         // # of individual vials
+        unit_retail_price: costPrice,        // per-vial (agents pay cost price)
+        unit_cost_price: costPrice,          // per-vial cost to PNL/super-agent
+        unit_super_agent_cost: superAgentCost // per-vial cost the super-agent owes admin
       });
     }
 

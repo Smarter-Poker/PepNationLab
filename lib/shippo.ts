@@ -129,6 +129,8 @@ export interface BuyLabelInput {
   originId?: string | null;
   /** Optional label file type (`PDF`, `PDF_4x6`, `PNG`, `ZPL_203`). */
   labelFileType?: 'PDF' | 'PDF_4x6' | 'PNG' | 'ZPL_203';
+  /** Optional label_jobs.id FK — set by the cron so webhook can update ledger row. */
+  labelJobId?: string | null;
 }
 
 export interface BuyLabelOk {
@@ -641,6 +643,7 @@ export async function buyLabel(input: BuyLabelInput): Promise<BuyLabelResult> {
     parcel_template: resolved.parcel.template || null,
     paid_by: 'platform',
     mode: key.mode,
+    label_job_id: input.labelJobId ?? null,
   });
   if (ledgerErr) {
     return {

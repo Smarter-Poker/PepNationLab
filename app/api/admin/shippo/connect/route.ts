@@ -96,9 +96,9 @@ export async function POST(req: NextRequest) {
   await supabase.from('admin_audit_log').insert({
     actor_id: gate.userId,
     action: 'shippo_connect',
-    target_type: 'platform_shippo_credentials',
-    target_id: inserted.id,
-    details: { mode, last4: lastFour(apiKey), webhook_secret_set: !!webhookSecret },
+    entity_type: 'platform_shippo_credentials',
+    entity_id: inserted.id,
+    changes: { mode, last4: lastFour(apiKey), webhook_secret_set: !!webhookSecret },
   });
 
   return NextResponse.json({

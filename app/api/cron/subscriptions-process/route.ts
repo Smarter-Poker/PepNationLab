@@ -174,6 +174,24 @@ async function processOne(
     apById.set(String(ap.id), ap);
   }
 
+  // Fetch agent tier + multipliers so we can compute the correct per-pack
+  // cost (what the agent owes PNL) as unit_cost_price.
+  // Subscriptions use a PACK unit model: quantity = # of 10-vial packs,
+  // unit_retail_price = per-pack retail, unit_cost_price = per-pack agent cost.
+  const { data: agentProfile } = await service
+    .from('profiles')
+    .select('tier')
+    .eq('id', sub.agent_id)
+    .maybeSingle();
+  const agentTier: string = agentProfile?.tier ?? 'tier_3';
+
+  const { data: tierRow } = await service
+    .from('pricing_tiers')
+    .select('multiplier')
+    .eq('tier_name', agentTier)
+    .maybeSingle();
+  const globalMult: number = tierRow?.multiplier != null ? Number(tierRow.multiplier) : 1.7;
+
   // Recompute totals from current retail prices.
   let subtotal = 0;
   const orderItems: Array<{
@@ -191,7 +209,22 @@ async function processOne(
     const prod = productById.get(String(ap.product_id));
     const qty = Number(snap.quantity);
     const unitPrice = Number(ap.retail_price ?? 0);
-    const cost = Number(prod?.base_cost ?? 0);
+    const baseCost = Number(prod?.base_cost ?? 0);
+
+    // Resolve per-product tier multiplier override if one exists.
+    const { data: overrideRow } = await service
+      .from('product_tier_overrides')
+      .select('custom_multiplier')
+      .eq('product_id', ap.product_id)
+      .eq('tier_name', agentTier)
+      .maybeSingle();
+    const effectiveMult: number = overrideRow?.custom_multiplier != null
+      ? Number(overrideRow.custom_multiplier)
+      : globalMult;
+
+    // unit_cost_price = per-pack agent cost (what agent pays PNL for this pack)
+    const agentCostPack = Math.round(baseCost * effectiveMult * 100) / 100;
+
     subtotal += unitPrice * qty;
     orderItems.push({
       agent_product_id: ap.id,
@@ -199,7 +232,7 @@ async function processOne(
       product_name: ap.custom_name || prod?.name || 'Item',
       quantity: qty,
       unit_retail_price: unitPrice,
-      unit_cost_price: cost,
+      unit_cost_price: agentCostPack,   // base_cost × tier_mult (per pack)
       unit_super_agent_cost: null,
     });
   }

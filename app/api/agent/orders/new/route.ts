@@ -64,10 +64,16 @@ export async function POST(req: NextRequest) {
       if (!ap) return NextResponse.json({ error: 'One Or More Items Are Not In Your Catalog.' }, { status: 400 });
 
       // retail_price is stored as a 10-pack price; divide by 10 for per-vial unit price.
+      // Quantity is the number of individual vials (consistent with storefront orders model).
       const unitRetail = (Number(ap.retail_price) || 0) / 10;
       computedSubtotal += unitRetail * qty;
-      const unitCost = await computeAgentCost(supabase, ap.product_id, tier);
-      const unitSuperAgentCost = parentAgentId ? await computeSubAgentBaselineCost(supabase, ap.product_id, parentAgentId) : null;
+      // computeAgentCost / computeSubAgentBaselineCost return per-10-vial-pack costs.
+      // Divide by 10 to get per-vial cost, consistent with the per-vial unit_retail_price
+      // and per-vial quantity stored in order_items (same model as orders/route.ts).
+      const unitCost = (await computeAgentCost(supabase, ap.product_id, tier)) / 10;
+      const unitSuperAgentCost = parentAgentId
+        ? (await computeSubAgentBaselineCost(supabase, ap.product_id, parentAgentId)) / 10
+        : null;
       orderItems.push({ product_id: ap.product_id, product_name: ap.product_name, agent_product_id: ap.id, quantity: qty, unit_retail_price: unitRetail, unit_cost_price: unitCost, unit_super_agent_cost: unitSuperAgentCost });
     }
 

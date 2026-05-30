@@ -55,9 +55,9 @@ export async function DELETE(req: NextRequest) {
   await supabase.from('admin_audit_log').insert({
     actor_id: gate.userId,
     action: 'shippo_disconnect',
-    target_type: 'platform_shippo_credentials',
-    target_id: active.id,
-    details: { mode: active.mode, last4: active.api_key_last4 },
+    entity_type: 'platform_shippo_credentials',
+    entity_id: active.id,
+    changes: { mode: active.mode, last4: active.api_key_last4 },
   });
 
   return NextResponse.json({ ok: true, disconnected_id: active.id });
