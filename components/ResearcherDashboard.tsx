@@ -33,6 +33,7 @@ interface ResearcherDashboardProps {
   userEmail: string;
   agentId: string | null;
   agentName: string | null;
+  agentSlug: string | null;
   profile: {
     full_name: string | null;
     role: string;
@@ -66,8 +67,49 @@ const STATUS_COLORS: Record<string, string> = {
   cancelled: 'rgba(255,255,255,0.25)',
 };
 
-export default function ResearcherDashboard({ userId, userName, userEmail, agentId, agentName, profile }: ResearcherDashboardProps) {
-  const [tab, setTab] = useState<'overview' | 'orders' | 'messages' | 'favorites' | 'account'>('overview');
+const IP = { width: 18, height: 18, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const };
+
+type TabKey = 'overview' | 'orders' | 'messages' | 'favorites' | 'account';
+
+const MENU_ITEMS: { id: TabKey; label: string; icon: React.ReactNode }[] = [
+  {
+    id: 'overview',
+    label: 'Overview',
+    icon: <svg {...IP}><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>,
+  },
+  {
+    id: 'orders',
+    label: 'My Orders',
+    icon: <svg {...IP}><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>,
+  },
+  {
+    id: 'messages',
+    label: 'Messages',
+    icon: <svg {...IP}><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>,
+  },
+  {
+    id: 'favorites',
+    label: 'Favorites',
+    icon: <svg {...IP}><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>,
+  },
+  {
+    id: 'account',
+    label: 'Account',
+    icon: <svg {...IP}><circle cx="12" cy="8" r="4"/><path d="M6 20v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/></svg>,
+  },
+];
+
+function Spinner() {
+  return (
+    <div style={{ display: 'flex', justifyContent: 'center', padding: 40 }}>
+      <div style={{ width: 24, height: 24, borderRadius: '50%', border: '2px solid rgba(192,184,168,0.2)', borderTopColor: 'var(--teal)', animation: 'spin 0.8s linear infinite' }} />
+    </div>
+  );
+}
+
+export default function ResearcherDashboard({ userId, userName, userEmail, agentId, agentName, agentSlug, profile }: ResearcherDashboardProps) {
+  const [tab, setTab] = useState<TabKey>('overview');
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [orders, setOrders] = useState<Order[]>([]);
   const [favorites, setFavorites] = useState<Favorite[]>([]);
   const [loadingOrders, setLoadingOrders] = useState(false);
@@ -83,6 +125,7 @@ export default function ResearcherDashboard({ userId, userName, userEmail, agent
   useEffect(() => {
     if (tab === 'orders' && orders.length === 0) fetchOrders();
     if (tab === 'favorites' && favorites.length === 0) fetchFavorites();
+    setSidebarOpen(false);
   }, [tab]);
 
   async function fetchOrders() {
@@ -136,331 +179,517 @@ export default function ResearcherDashboard({ userId, userName, userEmail, agent
   const totalSpent = orders.reduce((s, o) => o.status !== 'cancelled' ? s + Number(o.total) : s, 0);
   const deliveredCount = orders.filter(o => o.status === 'delivered').length;
   const activeOrders = orders.filter(o => !['delivered', 'cancelled'].includes(o.status));
-
-  const tabs = [
-    { key: 'overview' as const, label: 'Overview', icon: '📊' },
-    { key: 'orders' as const, label: 'Orders', icon: '📦' },
-    { key: 'messages' as const, label: 'Messages', icon: '💬' },
-    { key: 'favorites' as const, label: 'Favorites', icon: '⭐' },
-    { key: 'account' as const, label: 'Account', icon: '⚙️' },
-  ];
+  const currentTab = MENU_ITEMS.find(m => m.id === tab);
 
   return (
-    <div>
-      {/* Tabs */}
-      <div style={{ display: 'flex', gap: 4, marginBottom: 'var(--space-6)', flexWrap: 'wrap' }}>
-        {tabs.map(t => (
-          <button key={t.key} onClick={() => setTab(t.key)}
-            style={{
-              padding: '8px 16px', borderRadius: 10, cursor: 'pointer',
-              fontSize: '0.82rem', fontWeight: tab === t.key ? 700 : 500,
-              background: tab === t.key ? 'rgba(192,184,168,0.08)' : 'rgba(255,255,255,0.02)',
-              color: tab === t.key ? 'var(--teal)' : 'rgba(255,255,255,0.4)',
-              border: tab === t.key ? '1px solid rgba(192,184,168,0.15)' : '1px solid rgba(255,255,255,0.04)',
-              transition: 'all 0.15s',
-            }}>
-            {t.icon} {t.label}
-          </button>
-        ))}
-      </div>
+    <div style={{ display: 'flex', minHeight: 'calc(100vh - 60px)', position: 'relative' }}>
 
-      {/* OVERVIEW TAB */}
-      {tab === 'overview' && (
-        <div>
-          {/* Stats cards */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 'var(--space-4)', marginBottom: 'var(--space-6)' }}>
-            {[
-              { label: 'Account Type', value: profile.account_type === 'credit' ? 'Credit' : 'Prepaid', icon: '🏷️', color: 'var(--teal)' },
-              { label: profile.account_type === 'credit' ? 'Credit Limit' : 'Balance', value: `$${(profile.account_type === 'credit' ? profile.credit_limit : profile.prepaid_balance).toFixed(2)}`, icon: '💳', color: 'var(--teal)' },
-              { label: 'Total Orders', value: orders.length.toString(), icon: '📦', color: '#63B3ED' },
-              { label: 'Total Spent', value: `$${totalSpent.toFixed(2)}`, icon: '💰', color: '#F6AD55' },
-            ].map((s, i) => (
-              <div key={i} className="card-metal" style={{ padding: 'var(--space-4)' }}>
-                <div style={{ fontSize: '1.3rem', marginBottom: 6 }}>{s.icon}</div>
-                <div style={{ fontSize: '1.2rem', fontWeight: 800, color: s.color, fontFamily: 'var(--font-brand)' }}>{s.value}</div>
-                <div style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.35)', marginTop: 3 }}>{s.label}</div>
-              </div>
-            ))}
-          </div>
-
-          {/* Active orders + quick actions */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-6)' }}>
-            <div className="card-metal" style={{ padding: 'var(--space-5)' }}>
-              <h3 style={{ fontSize: '0.9rem', color: '#fff', marginBottom: 'var(--space-4)' }}>Active Orders</h3>
-              {activeOrders.length > 0 ? (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                  {activeOrders.slice(0, 5).map(o => (
-                    <div key={o.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 12px', background: 'rgba(255,255,255,0.02)', borderRadius: 8, border: '1px solid rgba(255,255,255,0.04)' }}>
-                      <div>
-                        <div style={{ fontSize: '0.78rem', color: '#fff', fontWeight: 600 }}>#{o.id.slice(0, 8)}</div>
-                        <div style={{ fontSize: '0.68rem', color: 'rgba(255,255,255,0.3)' }}>${Number(o.total).toFixed(2)} • {new Date(o.created_at).toLocaleDateString()}</div>
-                      </div>
-                      <span style={{ fontSize: '0.65rem', fontWeight: 700, color: STATUS_COLORS[o.status], background: `${STATUS_COLORS[o.status]}15`, padding: '2px 8px', borderRadius: 4 }}>
-                        {STATUS_LABELS[o.status] || o.status}
-                      </span>
-                    </div>
-                  ))}
-                  {activeOrders.length > 5 && <div style={{ fontSize: '0.72rem', color: 'var(--teal)', textAlign: 'center', cursor: 'pointer' }} onClick={() => setTab('orders')}>View All →</div>}
-                </div>
-              ) : (
-                <div style={{ textAlign: 'center', padding: 20, color: 'rgba(255,255,255,0.2)', fontSize: '0.78rem' }}>No Active Orders</div>
-              )}
-            </div>
-
-            <div className="card-metal" style={{ padding: 'var(--space-5)' }}>
-              <h3 style={{ fontSize: '0.9rem', color: '#fff', marginBottom: 'var(--space-4)' }}>Quick Actions</h3>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                {[
-                  { label: 'Browse Research Catalog', href: '/products', icon: '🔬', color: 'var(--teal)' },
-                  { label: 'View All Orders', action: () => setTab('orders'), icon: '📦', color: '#63B3ED' },
-                  { label: 'Message Your Agent', action: () => setTab('messages'), icon: '💬', color: '#F6AD55' },
-                  { label: 'My Favorites', action: () => setTab('favorites'), icon: '⭐', color: '#C084FC' },
-                ].map((a, i) => (
-                  <button key={i} onClick={a.action || undefined}
-                    {...(a.href ? {} : {})}
-                    style={{
-                      display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px',
-                      background: 'rgba(255,255,255,0.02)', borderRadius: 8, border: '1px solid rgba(255,255,255,0.04)',
-                      cursor: 'pointer', textAlign: 'left', color: '#fff', fontSize: '0.82rem', fontWeight: 600,
-                      transition: 'background 0.15s',
-                    }}
-                    onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.04)'}
-                    onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.02)'}
-                  >
-                    <span style={{ fontSize: '1.1rem' }}>{a.icon}</span>
-                    <span>{a.label}</span>
-                    {a.href && <a href={a.href} style={{ position: 'absolute', inset: 0 }} />}
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
+      {/* ── Mobile sidebar backdrop ── */}
+      {sidebarOpen && (
+        <div
+          onClick={() => setSidebarOpen(false)}
+          style={{
+            position: 'fixed', inset: 0, background: 'rgba(5,10,15,0.7)',
+            backdropFilter: 'blur(4px)', WebkitBackdropFilter: 'blur(4px)',
+            zIndex: 49,
+          }}
+        />
       )}
 
-      {/* ORDERS TAB */}
-      {tab === 'orders' && (
-        <div>
-          {loadingOrders ? (
-            <div style={{ display: 'flex', justifyContent: 'center', padding: 40 }}>
-              <div style={{ width: 24, height: 24, borderRadius: '50%', border: '2px solid rgba(192,184,168,0.2)', borderTopColor: 'var(--teal)', animation: 'spin 0.8s linear infinite' }} />
+      {/* ── Sidebar ── */}
+      <aside style={{
+        width: 220,
+        flexShrink: 0,
+        background: 'var(--black-2)',
+        borderRight: '1px solid rgba(192,184,168,0.1)',
+        display: 'flex',
+        flexDirection: 'column',
+        position: 'fixed',
+        top: 60,
+        left: 0,
+        bottom: 0,
+        zIndex: 50,
+        overflow: 'hidden',
+        transform: sidebarOpen ? 'translateX(0)' : undefined,
+        transition: 'transform 0.25s cubic-bezier(0.4,0,0.2,1)',
+      }}
+      className="researcher-sidebar"
+      >
+        {/* Sidebar header — name + role */}
+        <div style={{
+          padding: '16px 16px 12px',
+          borderBottom: '1px solid rgba(192,184,168,0.08)',
+        }}>
+          <div style={{ fontSize: '0.78rem', color: 'rgba(255,255,255,0.35)', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 4 }}>Researcher</div>
+          <div style={{ fontSize: '0.9rem', fontWeight: 700, color: '#fff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{userName}</div>
+          {agentName && (
+            <div style={{ fontSize: '0.7rem', color: 'var(--teal)', marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              Agent: {agentName}
             </div>
-          ) : orders.length === 0 ? (
-            <div className="card-metal" style={{ textAlign: 'center', padding: 40 }}>
-              <div style={{ fontSize: '2rem', marginBottom: 12 }}>📦</div>
-              <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.9rem', fontWeight: 600 }}>No Orders Yet</div>
-              <a href="/products" style={{ display: 'inline-block', marginTop: 12, fontSize: '0.82rem', color: 'var(--teal)', fontWeight: 600 }}>Browse Catalog →</a>
-            </div>
-          ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              {orders.map(o => (
-                <div key={o.id} className="card-metal" style={{ overflow: 'hidden' }}>
-                  <button onClick={() => setExpandedOrder(expandedOrder === o.id ? null : o.id)}
-                    style={{
-                      width: '100%', textAlign: 'left', background: 'none', border: 'none', cursor: 'pointer',
-                      padding: 'var(--space-4)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', color: '#fff',
-                    }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                      <div style={{ width: 40, height: 40, borderRadius: 10, background: `${STATUS_COLORS[o.status]}15`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.1rem' }}>
-                        {o.status === 'delivered' ? '✅' : o.status === 'shipped' ? '🚚' : o.status === 'cancelled' ? '❌' : '📦'}
-                      </div>
-                      <div>
-                        <div style={{ fontSize: '0.85rem', fontWeight: 600 }}>Order #{o.id.slice(0, 8)}</div>
-                        <div style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.3)' }}>
-                          {new Date(o.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                          {' • '}{o.order_items?.length || 0} items • {o.payment_method?.toUpperCase()}
-                        </div>
-                      </div>
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                      <span style={{ fontSize: '0.92rem', fontWeight: 700, color: 'var(--teal)' }}>${Number(o.total).toFixed(2)}</span>
-                      <span style={{ fontSize: '0.65rem', fontWeight: 700, color: STATUS_COLORS[o.status], background: `${STATUS_COLORS[o.status]}15`, padding: '2px 8px', borderRadius: 4 }}>
-                        {STATUS_LABELS[o.status] || o.status}
-                      </span>
-                      <span style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.3)', transition: 'transform 0.2s', transform: expandedOrder === o.id ? 'rotate(180deg)' : 'rotate(0deg)' }}>▼</span>
-                    </div>
-                  </button>
+          )}
+        </div>
 
-                  {expandedOrder === o.id && (
-                    <div style={{ padding: '0 var(--space-4) var(--space-4)', borderTop: '1px solid rgba(255,255,255,0.04)' }}>
-                      {/* Items */}
-                      <div style={{ marginTop: 12 }}>
-                        <div style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.3)', fontWeight: 700, marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Items</div>
-                        {o.order_items?.map(item => (
-                          <div key={item.id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', padding: '4px 0', borderBottom: '1px solid rgba(255,255,255,0.02)' }}>
-                            <span style={{ color: 'rgba(255,255,255,0.7)' }}>{item.product_name} <span style={{ color: 'var(--teal)' }}>×{item.quantity}</span></span>
-                            <span style={{ color: '#fff', fontWeight: 600 }}>${(item.unit_retail_price * item.quantity).toFixed(2)}</span>
-                          </div>
-                        ))}
-                      </div>
+        {/* Nav items */}
+        <div style={{ flex: 1, overflowY: 'auto', padding: '8px 0' }}>
+          {MENU_ITEMS.map(item => (
+            <button
+              key={item.id}
+              onClick={() => setTab(item.id)}
+              style={{
+                width: '100%',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 10,
+                padding: '10px 16px',
+                background: tab === item.id ? 'rgba(0,196,188,0.08)' : 'none',
+                border: 'none',
+                borderLeft: tab === item.id ? '3px solid var(--teal)' : '3px solid transparent',
+                color: tab === item.id ? 'var(--teal)' : 'rgba(255,255,255,0.5)',
+                fontSize: '0.83rem',
+                fontWeight: tab === item.id ? 700 : 500,
+                cursor: 'pointer',
+                textAlign: 'left',
+                transition: 'all 0.15s',
+              }}
+            >
+              <span style={{ flexShrink: 0, opacity: tab === item.id ? 1 : 0.6 }}>{item.icon}</span>
+              {item.label}
+            </button>
+          ))}
+        </div>
 
-                      {/* Totals */}
-                      <div style={{ marginTop: 12, paddingTop: 8, borderTop: '1px solid rgba(255,255,255,0.04)', display: 'flex', flexDirection: 'column', gap: 4 }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem', color: 'rgba(255,255,255,0.4)' }}>
-                          <span>Subtotal</span><span>${Number(o.subtotal).toFixed(2)}</span>
-                        </div>
-                        {Number(o.discount_amount) > 0 && (
-                          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem', color: '#68D391' }}>
-                            <span>Discount {o.coupon_code ? `(${o.coupon_code})` : ''}</span><span>-${Number(o.discount_amount).toFixed(2)}</span>
-                          </div>
-                        )}
-                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem', color: 'rgba(255,255,255,0.4)' }}>
-                          <span>Shipping</span><span>${Number(o.shipping_cost).toFixed(2)}</span>
-                        </div>
-                      </div>
+        {/* Bottom actions */}
+        <div style={{ padding: '12px 16px', borderTop: '1px solid rgba(192,184,168,0.08)', flexShrink: 0 }}>
+          {agentSlug && (
+            <a
+              href={`/${agentSlug}`}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 8,
+                padding: '9px 12px', borderRadius: 8,
+                background: 'rgba(0,196,188,0.08)',
+                border: '1px solid rgba(0,196,188,0.15)',
+                color: 'var(--teal)', fontSize: '0.78rem', fontWeight: 600,
+                textDecoration: 'none', marginBottom: 8,
+                transition: 'background 0.15s',
+              }}
+            >
+              <svg {...IP}><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+              Browse Store
+            </a>
+          )}
+          <form action="/api/auth/signout" method="POST">
+            <button type="submit" style={{
+              width: '100%', display: 'flex', alignItems: 'center', gap: 8,
+              padding: '9px 12px', borderRadius: 8,
+              background: 'none', border: '1px solid rgba(252,129,129,0.15)',
+              color: '#FC8181', fontSize: '0.78rem', fontWeight: 600,
+              cursor: 'pointer', transition: 'background 0.15s',
+            }}>
+              <svg {...IP} stroke="#FC8181"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+              Sign Out
+            </button>
+          </form>
+        </div>
+      </aside>
 
-                      {/* Tracking */}
-                      {o.tracking_number && (
-                        <div style={{ marginTop: 12, padding: '8px 12px', background: 'rgba(0,153,255,0.06)', borderRadius: 8, border: '1px solid rgba(0,153,255,0.15)', display: 'flex', alignItems: 'center', gap: 8 }}>
-                          <span style={{ fontSize: '1rem' }}>🚚</span>
+      {/* ── Main content area ── */}
+      <main style={{ flex: 1, marginLeft: 220, minWidth: 0 }} className="researcher-main">
+
+        {/* Mobile top bar */}
+        <div style={{
+          display: 'none',
+          alignItems: 'center',
+          gap: 12,
+          padding: '12px 16px',
+          background: 'var(--black-2)',
+          borderBottom: '1px solid rgba(192,184,168,0.08)',
+          position: 'sticky',
+          top: 60,
+          zIndex: 10,
+        }} className="researcher-mobile-bar">
+          <button
+            onClick={() => setSidebarOpen(o => !o)}
+            style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--teal)', padding: 4, display: 'flex' }}
+          >
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+              {sidebarOpen
+                ? <path d="M18 6L6 18M6 6l12 12" />
+                : <path d="M3 7h18M3 12h18M3 17h18" />}
+            </svg>
+          </button>
+          <span style={{ fontFamily: 'var(--font-brand)', fontSize: '0.85rem', fontWeight: 800, color: 'var(--nav-title)', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+            {currentTab?.label ?? 'Dashboard'}
+          </span>
+        </div>
+
+        <div style={{ padding: 'var(--space-6)' }}>
+
+          {/* Page heading */}
+          <div style={{ marginBottom: 'var(--space-6)' }}>
+            <h1 style={{ fontSize: '1.4rem', fontWeight: 800, marginBottom: 4 }}>
+              {tab === 'overview' ? <>Welcome Back, <span style={{ color: 'var(--teal)' }}>{userName}</span></> : currentTab?.label}
+            </h1>
+            {tab === 'overview' && (
+              <p style={{ color: 'var(--grey-400)', fontSize: '0.82rem', margin: 0 }}>
+                Researcher Dashboard — Research Use Only
+              </p>
+            )}
+          </div>
+
+          {/* ── OVERVIEW TAB ── */}
+          {tab === 'overview' && (
+            <div>
+              {/* Stats cards */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 'var(--space-4)', marginBottom: 'var(--space-6)' }}>
+                {[
+                  {
+                    label: 'Account Type',
+                    value: profile.account_type === 'credit' ? 'Credit' : 'Prepaid',
+                    icon: <svg {...IP}><path d="M20 12V22H4V12"/><path d="M22 7H2v5h20V7z"/><path d="M12 22V7"/><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/></svg>,
+                    color: 'var(--teal)',
+                  },
+                  {
+                    label: profile.account_type === 'credit' ? 'Credit Limit' : 'Balance',
+                    value: `$${(profile.account_type === 'credit' ? profile.credit_limit : profile.prepaid_balance).toFixed(2)}`,
+                    icon: <svg {...IP}><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>,
+                    color: 'var(--teal)',
+                  },
+                  {
+                    label: 'Total Orders',
+                    value: orders.length.toString(),
+                    icon: <svg {...IP}><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>,
+                    color: '#63B3ED',
+                  },
+                  {
+                    label: 'Total Spent',
+                    value: `$${totalSpent.toFixed(2)}`,
+                    icon: <svg {...IP}><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>,
+                    color: '#F6AD55',
+                  },
+                ].map((s, i) => (
+                  <div key={i} className="card-metal" style={{ padding: 'var(--space-4)' }}>
+                    <div style={{ color: s.color, marginBottom: 8, opacity: 0.8 }}>{s.icon}</div>
+                    <div style={{ fontSize: '1.2rem', fontWeight: 800, color: s.color, fontFamily: 'var(--font-brand)' }}>{s.value}</div>
+                    <div style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.35)', marginTop: 3 }}>{s.label}</div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Active orders + quick actions */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-6)' }} className="overview-grid">
+                <div className="card-metal" style={{ padding: 'var(--space-5)' }}>
+                  <h3 style={{ fontSize: '0.85rem', color: 'var(--silver)', fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 'var(--space-4)' }}>Active Orders</h3>
+                  {activeOrders.length > 0 ? (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                      {activeOrders.slice(0, 5).map(o => (
+                        <div key={o.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 12px', background: 'rgba(255,255,255,0.02)', borderRadius: 8, border: '1px solid rgba(255,255,255,0.04)' }}>
                           <div>
-                            <div style={{ fontSize: '0.68rem', color: 'rgba(255,255,255,0.3)' }}>Tracking Number</div>
-                            <div style={{ fontSize: '0.82rem', color: '#63B3ED', fontWeight: 700, fontFamily: 'monospace' }}>{o.tracking_number}</div>
+                            <div style={{ fontSize: '0.78rem', color: '#fff', fontWeight: 600 }}>#{o.id.slice(0, 8)}</div>
+                            <div style={{ fontSize: '0.68rem', color: 'rgba(255,255,255,0.3)' }}>${Number(o.total).toFixed(2)} — {new Date(o.created_at).toLocaleDateString()}</div>
+                          </div>
+                          <span style={{ fontSize: '0.65rem', fontWeight: 700, color: STATUS_COLORS[o.status], background: `${STATUS_COLORS[o.status]}15`, padding: '2px 8px', borderRadius: 4 }}>
+                            {STATUS_LABELS[o.status] || o.status}
+                          </span>
+                        </div>
+                      ))}
+                      {activeOrders.length > 5 && (
+                        <div style={{ fontSize: '0.72rem', color: 'var(--teal)', textAlign: 'center', cursor: 'pointer' }} onClick={() => setTab('orders')}>View All</div>
+                      )}
+                    </div>
+                  ) : (
+                    <div style={{ textAlign: 'center', padding: 20, color: 'rgba(255,255,255,0.2)', fontSize: '0.78rem' }}>No Active Orders</div>
+                  )}
+                </div>
+
+                <div className="card-metal" style={{ padding: 'var(--space-5)' }}>
+                  <h3 style={{ fontSize: '0.85rem', color: 'var(--silver)', fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 'var(--space-4)' }}>Quick Actions</h3>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    {[
+                      {
+                        label: 'Browse Research Catalog',
+                        href: agentSlug ? `/${agentSlug}` : '/products',
+                        icon: <svg {...IP}><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>,
+                        color: 'var(--teal)',
+                      },
+                      {
+                        label: 'View All Orders',
+                        action: () => setTab('orders'),
+                        icon: <svg {...IP}><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>,
+                        color: '#63B3ED',
+                      },
+                      {
+                        label: 'Message Your Agent',
+                        action: () => setTab('messages'),
+                        icon: <svg {...IP}><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>,
+                        color: '#F6AD55',
+                      },
+                      {
+                        label: 'My Favorites',
+                        action: () => setTab('favorites'),
+                        icon: <svg {...IP}><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>,
+                        color: '#C084FC',
+                      },
+                    ].map((a, i) => (
+                      <button key={i}
+                        onClick={a.action}
+                        style={{
+                          display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px',
+                          background: 'rgba(255,255,255,0.02)', borderRadius: 8, border: '1px solid rgba(255,255,255,0.04)',
+                          cursor: 'pointer', textAlign: 'left', color: a.color, fontSize: '0.82rem', fontWeight: 600,
+                          transition: 'background 0.15s', position: 'relative',
+                        }}
+                        onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.04)'}
+                        onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.02)'}
+                      >
+                        <span style={{ flexShrink: 0 }}>{a.icon}</span>
+                        <span>{a.label}</span>
+                        {a.href && <a href={a.href} style={{ position: 'absolute', inset: 0 }} aria-label={a.label} />}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ── ORDERS TAB ── */}
+          {tab === 'orders' && (
+            <div>
+              {loadingOrders ? <Spinner /> : orders.length === 0 ? (
+                <div className="card-metal" style={{ textAlign: 'center', padding: 48 }}>
+                  <div style={{ marginBottom: 12, display: 'flex', justifyContent: 'center', opacity: 0.3 }}>
+                    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+                  </div>
+                  <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.9rem', fontWeight: 600, marginBottom: 12 }}>No Orders Yet</div>
+                  <a href={agentSlug ? `/${agentSlug}` : '/products'} style={{ display: 'inline-block', fontSize: '0.82rem', color: 'var(--teal)', fontWeight: 600 }}>Browse Catalog</a>
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  {orders.map(o => (
+                    <div key={o.id} className="card-metal" style={{ overflow: 'hidden' }}>
+                      <button onClick={() => setExpandedOrder(expandedOrder === o.id ? null : o.id)}
+                        style={{ width: '100%', textAlign: 'left', background: 'none', border: 'none', cursor: 'pointer', padding: 'var(--space-4)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', color: '#fff' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                          <div style={{ width: 36, height: 36, borderRadius: 8, background: `${STATUS_COLORS[o.status]}15`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: STATUS_COLORS[o.status] }}>
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+                          </div>
+                          <div>
+                            <div style={{ fontSize: '0.85rem', fontWeight: 600 }}>Order #{o.id.slice(0, 8)}</div>
+                            <div style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.3)' }}>
+                              {new Date(o.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                              {' — '}{o.order_items?.length || 0} items — {o.payment_method?.toUpperCase()}
+                            </div>
+                          </div>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                          <span style={{ fontSize: '0.92rem', fontWeight: 700, color: 'var(--teal)' }}>${Number(o.total).toFixed(2)}</span>
+                          <span style={{ fontSize: '0.65rem', fontWeight: 700, color: STATUS_COLORS[o.status], background: `${STATUS_COLORS[o.status]}15`, padding: '2px 8px', borderRadius: 4 }}>
+                            {STATUS_LABELS[o.status] || o.status}
+                          </span>
+                          <span style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.3)', transition: 'transform 0.2s', transform: expandedOrder === o.id ? 'rotate(180deg)' : 'rotate(0deg)', display: 'inline-block' }}>▼</span>
+                        </div>
+                      </button>
+
+                      {expandedOrder === o.id && (
+                        <div style={{ padding: '0 var(--space-4) var(--space-4)', borderTop: '1px solid rgba(255,255,255,0.04)' }}>
+                          <div style={{ marginTop: 12 }}>
+                            <div style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.3)', fontWeight: 700, marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Items</div>
+                            {o.order_items?.map(item => (
+                              <div key={item.id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', padding: '4px 0', borderBottom: '1px solid rgba(255,255,255,0.02)' }}>
+                                <span style={{ color: 'rgba(255,255,255,0.7)' }}>{item.product_name} <span style={{ color: 'var(--teal)' }}>x{item.quantity}</span></span>
+                                <span style={{ color: '#fff', fontWeight: 600 }}>${(item.unit_retail_price * item.quantity).toFixed(2)}</span>
+                              </div>
+                            ))}
+                          </div>
+
+                          <div style={{ marginTop: 12, paddingTop: 8, borderTop: '1px solid rgba(255,255,255,0.04)', display: 'flex', flexDirection: 'column', gap: 4 }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem', color: 'rgba(255,255,255,0.4)' }}>
+                              <span>Subtotal</span><span>${Number(o.subtotal).toFixed(2)}</span>
+                            </div>
+                            {Number(o.discount_amount) > 0 && (
+                              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem', color: '#68D391' }}>
+                                <span>Discount {o.coupon_code ? `(${o.coupon_code})` : ''}</span><span>-${Number(o.discount_amount).toFixed(2)}</span>
+                              </div>
+                            )}
+                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem', color: 'rgba(255,255,255,0.4)' }}>
+                              <span>Shipping</span><span>${Number(o.shipping_cost).toFixed(2)}</span>
+                            </div>
+                          </div>
+
+                          {o.tracking_number && (
+                            <div style={{ marginTop: 12, padding: '8px 12px', background: 'rgba(0,153,255,0.06)', borderRadius: 8, border: '1px solid rgba(0,153,255,0.15)', display: 'flex', alignItems: 'center', gap: 8 }}>
+                              <svg {...IP} stroke="#63B3ED"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+                              <div>
+                                <div style={{ fontSize: '0.68rem', color: 'rgba(255,255,255,0.3)' }}>Tracking Number</div>
+                                <div style={{ fontSize: '0.82rem', color: '#63B3ED', fontWeight: 700, fontFamily: 'monospace' }}>{o.tracking_number}</div>
+                              </div>
+                            </div>
+                          )}
+
+                          <div style={{ marginTop: 12 }}>
+                            <a href={agentSlug ? `/${agentSlug}` : '/products'} style={{
+                              display: 'inline-flex', alignItems: 'center', gap: 6, padding: '6px 14px',
+                              background: 'rgba(192,184,168,0.08)', border: '1px solid rgba(192,184,168,0.15)',
+                              borderRadius: 8, color: 'var(--teal)', fontSize: '0.75rem', fontWeight: 600, textDecoration: 'none',
+                            }}>
+                              Re-Order
+                            </a>
                           </div>
                         </div>
                       )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
 
-                      {/* Re-order button */}
-                      <div style={{ marginTop: 12 }}>
-                        <a href="/products" style={{
-                          display: 'inline-flex', alignItems: 'center', gap: 6, padding: '6px 14px',
-                          background: 'rgba(192,184,168,0.08)', border: '1px solid rgba(192,184,168,0.15)',
-                          borderRadius: 8, color: 'var(--teal)', fontSize: '0.75rem', fontWeight: 600,
-                          textDecoration: 'none',
-                        }}>
-                          🔄 Re-Order
-                        </a>
+          {/* ── MESSAGES TAB ── */}
+          {tab === 'messages' && (
+            <div>
+              {agentId ? (
+                <div className="card-metal" style={{ overflow: 'hidden' }}>
+                  <div style={{ padding: '12px 16px', borderBottom: '1px solid rgba(255,255,255,0.04)', background: 'rgba(255,255,255,0.01)' }}>
+                    <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#fff', display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <svg {...IP}><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                      Chat With {agentName || 'Your Agent'}
+                    </div>
+                  </div>
+                  <Messaging selfId={userId} counterpartId={agentId} counterpartName={agentName || 'Agent'} />
+                </div>
+              ) : (
+                <div className="card-metal" style={{ textAlign: 'center', padding: 48 }}>
+                  <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 12, opacity: 0.3 }}>
+                    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                  </div>
+                  <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.9rem' }}>No Agent Assigned</div>
+                  <div style={{ color: 'rgba(255,255,255,0.25)', fontSize: '0.78rem', marginTop: 6 }}>Contact support if you need assistance.</div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* ── FAVORITES TAB ── */}
+          {tab === 'favorites' && (
+            <div>
+              {loadingFavs ? <Spinner /> : favorites.length === 0 ? (
+                <div className="card-metal" style={{ textAlign: 'center', padding: 48 }}>
+                  <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 12, opacity: 0.3 }}>
+                    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                  </div>
+                  <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.9rem', fontWeight: 600, marginBottom: 12 }}>No Favorites Yet</div>
+                  <a href={agentSlug ? `/${agentSlug}` : '/products'} style={{ display: 'inline-block', fontSize: '0.82rem', color: 'var(--teal)', fontWeight: 600 }}>Browse Catalog</a>
+                </div>
+              ) : (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 'var(--space-4)' }}>
+                  {favorites.map(f => f.products && (
+                    <div key={f.product_id} className="card-metal" style={{ padding: 'var(--space-4)' }}>
+                      {f.products.image_url && (
+                        <div style={{ height: 120, borderRadius: 8, overflow: 'hidden', marginBottom: 10, background: 'rgba(255,255,255,0.03)' }}>
+                          <img src={f.products.image_url} alt={f.products.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        </div>
+                      )}
+                      <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#fff', marginBottom: 4 }}>{f.products.name}</div>
+                      {f.products.category && <div style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.3)', marginBottom: 6 }}>{f.products.category}</div>}
+                      <div style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--teal)', marginBottom: 8 }}>${Number(f.products.base_price).toFixed(2)}</div>
+                      <div style={{ display: 'flex', gap: 6 }}>
+                        <a href={agentSlug ? `/${agentSlug}` : '/products'} style={{ flex: 1, textAlign: 'center', padding: '5px 10px', background: 'rgba(192,184,168,0.08)', border: '1px solid rgba(192,184,168,0.15)', borderRadius: 6, color: 'var(--teal)', fontSize: '0.72rem', fontWeight: 600, textDecoration: 'none' }}>View In Store</a>
+                        <button onClick={() => removeFavorite(f.product_id)} style={{ padding: '5px 10px', background: 'rgba(252,129,129,0.08)', border: '1px solid rgba(252,129,129,0.15)', borderRadius: 6, color: '#FC8181', fontSize: '0.72rem', fontWeight: 600, cursor: 'pointer' }}>Remove</button>
                       </div>
                     </div>
-                  )}
+                  ))}
                 </div>
-              ))}
+              )}
             </div>
           )}
-        </div>
-      )}
 
-      {/* MESSAGES TAB */}
-      {tab === 'messages' && (
-        <div>
-          {agentId ? (
-            <div className="card-metal" style={{ overflow: 'hidden' }}>
-              <div style={{ padding: '12px 16px', borderBottom: '1px solid rgba(255,255,255,0.04)', background: 'rgba(255,255,255,0.01)' }}>
-                <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#fff' }}>💬 Chat With {agentName || 'Your Agent'}</div>
-              </div>
-              <Messaging selfId={userId} counterpartId={agentId} counterpartName={agentName || 'Agent'} />
-            </div>
-          ) : (
-            <div className="card-metal" style={{ textAlign: 'center', padding: 40 }}>
-              <div style={{ fontSize: '2rem', marginBottom: 12 }}>💬</div>
-              <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.9rem' }}>No Agent Assigned</div>
-              <div style={{ color: 'rgba(255,255,255,0.25)', fontSize: '0.78rem', marginTop: 6 }}>Contact support if you need assistance.</div>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* FAVORITES TAB */}
-      {tab === 'favorites' && (
-        <div>
-          {loadingFavs ? (
-            <div style={{ display: 'flex', justifyContent: 'center', padding: 40 }}>
-              <div style={{ width: 24, height: 24, borderRadius: '50%', border: '2px solid rgba(192,184,168,0.2)', borderTopColor: 'var(--teal)', animation: 'spin 0.8s linear infinite' }} />
-            </div>
-          ) : favorites.length === 0 ? (
-            <div className="card-metal" style={{ textAlign: 'center', padding: 40 }}>
-              <div style={{ fontSize: '2rem', marginBottom: 12 }}>⭐</div>
-              <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.9rem', fontWeight: 600 }}>No Favorites Yet</div>
-              <a href="/products" style={{ display: 'inline-block', marginTop: 12, fontSize: '0.82rem', color: 'var(--teal)', fontWeight: 600 }}>Browse Catalog →</a>
-            </div>
-          ) : (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 'var(--space-4)' }}>
-              {favorites.map(f => f.products && (
-                <div key={f.product_id} className="card-metal" style={{ padding: 'var(--space-4)', position: 'relative' }}>
-                  {f.products.image_url && (
-                    <div style={{ height: 120, borderRadius: 8, overflow: 'hidden', marginBottom: 10, background: 'rgba(255,255,255,0.03)' }}>
-                      <img src={f.products.image_url} alt={f.products.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                    </div>
-                  )}
-                  <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#fff', marginBottom: 4 }}>{f.products.name}</div>
-                  {f.products.category && <div style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.3)', marginBottom: 6 }}>{f.products.category}</div>}
-                  <div style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--teal)', marginBottom: 8 }}>${Number(f.products.base_price).toFixed(2)}</div>
-                  <div style={{ display: 'flex', gap: 6 }}>
-                    <a href="/products" style={{
-                      flex: 1, textAlign: 'center', padding: '5px 10px', background: 'rgba(192,184,168,0.08)',
-                      border: '1px solid rgba(192,184,168,0.15)', borderRadius: 6, color: 'var(--teal)',
-                      fontSize: '0.72rem', fontWeight: 600, textDecoration: 'none',
-                    }}>View In Store</a>
-                    <button onClick={() => removeFavorite(f.product_id)} style={{
-                      padding: '5px 10px', background: 'rgba(252,129,129,0.08)', border: '1px solid rgba(252,129,129,0.15)',
-                      borderRadius: 6, color: '#FC8181', fontSize: '0.72rem', fontWeight: 600, cursor: 'pointer',
-                    }}>Remove</button>
+          {/* ── ACCOUNT TAB ── */}
+          {tab === 'account' && (
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-6)' }} className="account-grid">
+              <div className="card-metal" style={{ padding: 'var(--space-6)' }}>
+                <h3 style={{ fontSize: '0.85rem', color: 'var(--silver)', fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 'var(--space-5)' }}>Profile Settings</h3>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
+                  <div>
+                    <label style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.4)', display: 'block', marginBottom: 4 }}>Full Name</label>
+                    <input type="text" value={fullName} onChange={e => setFullName(e.target.value)} className="form-input" />
                   </div>
+                  <div>
+                    <label style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.4)', display: 'block', marginBottom: 4 }}>Email</label>
+                    <input type="email" value={userEmail} disabled className="form-input" style={{ opacity: 0.5 }} />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.4)', display: 'block', marginBottom: 4 }}>Phone</label>
+                    <input type="tel" value={phone} onChange={e => setPhone(e.target.value)} className="form-input" placeholder="(555) 123-4567" />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.4)', display: 'block', marginBottom: 4 }}>New Password</label>
+                    <input type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} className="form-input" placeholder="Leave blank to keep current" />
+                  </div>
+                  <button onClick={saveProfile} disabled={saving} className="btn btn-primary" style={{ justifyContent: 'center' }}>
+                    {saving ? 'Saving...' : 'Save Changes'}
+                  </button>
                 </div>
-              ))}
+              </div>
+
+              <div className="card-metal" style={{ padding: 'var(--space-6)' }}>
+                <h3 style={{ fontSize: '0.85rem', color: 'var(--silver)', fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 'var(--space-5)' }}>Account Info</h3>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                  {[
+                    { label: 'Account Type', value: profile.account_type === 'credit' ? 'Credit' : 'Prepaid' },
+                    { label: 'Tier', value: profile.tier ? `Tier ${profile.tier.replace('tier_', '')}` : 'Standard' },
+                    { label: profile.account_type === 'credit' ? 'Credit Limit' : 'Prepaid Balance', value: `$${(profile.account_type === 'credit' ? profile.credit_limit : profile.prepaid_balance).toFixed(2)}` },
+                    { label: 'Disclaimer', value: profile.disclaimer_v1_accepted ? 'Accepted' : 'Pending' },
+                    { label: 'Total Orders', value: `${orders.length}` },
+                    { label: 'Delivered', value: `${deliveredCount}` },
+                    { label: 'Total Spent', value: `$${totalSpent.toFixed(2)}` },
+                  ].map((item, i) => (
+                    <div key={i} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem', padding: '6px 0', borderBottom: '1px solid rgba(255,255,255,0.03)' }}>
+                      <span style={{ color: 'rgba(255,255,255,0.4)' }}>{item.label}</span>
+                      <span style={{ color: '#fff', fontWeight: 600 }}>{item.value}</span>
+                    </div>
+                  ))}
+                </div>
+
+                {agentName && (
+                  <div style={{ marginTop: 'var(--space-5)', padding: '12px 14px', background: 'rgba(192,184,168,0.04)', borderRadius: 10, border: '1px solid rgba(192,184,168,0.1)' }}>
+                    <div style={{ fontSize: '0.68rem', color: 'rgba(255,255,255,0.3)', marginBottom: 4 }}>Your Agent</div>
+                    <div style={{ fontSize: '0.85rem', color: 'var(--teal)', fontWeight: 700 }}>{agentName}</div>
+                  </div>
+                )}
+              </div>
             </div>
           )}
+
         </div>
-      )}
+      </main>
 
-      {/* ACCOUNT TAB */}
-      {tab === 'account' && (
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-6)' }}>
-          <div className="card-metal" style={{ padding: 'var(--space-6)' }}>
-            <h3 style={{ fontSize: '0.92rem', color: '#fff', marginBottom: 'var(--space-5)' }}>Profile Settings</h3>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
-              <div>
-                <label style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.4)', display: 'block', marginBottom: 4 }}>Full Name</label>
-                <input type="text" value={fullName} onChange={e => setFullName(e.target.value)} className="form-input" />
-              </div>
-              <div>
-                <label style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.4)', display: 'block', marginBottom: 4 }}>Email</label>
-                <input type="email" value={userEmail} disabled className="form-input" style={{ opacity: 0.5 }} />
-              </div>
-              <div>
-                <label style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.4)', display: 'block', marginBottom: 4 }}>Phone</label>
-                <input type="tel" value={phone} onChange={e => setPhone(e.target.value)} className="form-input" placeholder="(555) 123-4567" />
-              </div>
-              <div>
-                <label style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.4)', display: 'block', marginBottom: 4 }}>New Password</label>
-                <input type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} className="form-input" placeholder="Leave blank to keep current" />
-              </div>
-              <button onClick={saveProfile} disabled={saving} className="btn btn-primary" style={{ justifyContent: 'center' }}>
-                {saving ? 'Saving...' : 'Save Changes'}
-              </button>
-            </div>
-          </div>
+      <style>{`
+        @keyframes spin { to { transform: rotate(360deg); } }
 
-          <div className="card-metal" style={{ padding: 'var(--space-6)' }}>
-            <h3 style={{ fontSize: '0.92rem', color: '#fff', marginBottom: 'var(--space-5)' }}>Account Info</h3>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-              {[
-                { label: 'Account Type', value: profile.account_type === 'credit' ? 'Credit' : 'Prepaid' },
-                { label: 'Tier', value: profile.tier ? `Tier ${profile.tier.replace('tier_', '')}` : 'Standard' },
-                { label: profile.account_type === 'credit' ? 'Credit Limit' : 'Prepaid Balance', value: `$${(profile.account_type === 'credit' ? profile.credit_limit : profile.prepaid_balance).toFixed(2)}` },
-                { label: 'Disclaimer', value: profile.disclaimer_v1_accepted ? 'Accepted ✅' : 'Pending ⚠️' },
-                { label: 'Total Orders', value: `${orders.length}` },
-                { label: 'Delivered', value: `${deliveredCount}` },
-                { label: 'Total Spent', value: `$${totalSpent.toFixed(2)}` },
-              ].map((item, i) => (
-                <div key={i} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem', padding: '6px 0', borderBottom: '1px solid rgba(255,255,255,0.03)' }}>
-                  <span style={{ color: 'rgba(255,255,255,0.4)' }}>{item.label}</span>
-                  <span style={{ color: '#fff', fontWeight: 600 }}>{item.value}</span>
-                </div>
-              ))}
-            </div>
+        /* Desktop: sidebar always visible */
+        .researcher-sidebar {
+          transform: translateX(0) !important;
+        }
 
-            {agentName && (
-              <div style={{ marginTop: 'var(--space-5)', padding: '12px 14px', background: 'rgba(192,184,168,0.04)', borderRadius: 10, border: '1px solid rgba(192,184,168,0.1)' }}>
-                <div style={{ fontSize: '0.68rem', color: 'rgba(255,255,255,0.3)', marginBottom: 4 }}>Your Agent</div>
-                <div style={{ fontSize: '0.85rem', color: 'var(--teal)', fontWeight: 700 }}>{agentName}</div>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+        /* Mobile: sidebar hidden by default, shown via state */
+        @media (max-width: 768px) {
+          .researcher-sidebar {
+            transform: translateX(-100%);
+          }
+          .researcher-main {
+            margin-left: 0 !important;
+          }
+          .researcher-mobile-bar {
+            display: flex !important;
+          }
+          .overview-grid {
+            grid-template-columns: 1fr !important;
+          }
+          .account-grid {
+            grid-template-columns: 1fr !important;
+          }
+        }
+      `}</style>
     </div>
   );
 }
