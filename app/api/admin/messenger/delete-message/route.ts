@@ -49,6 +49,12 @@ export async function POST(req: NextRequest) {
   }
 
   // Auto-resolve associated report if provided.
+  // Audit7 fix: validate the report actually belongs to this message before
+  // resolving it. A misplaced reportId (admin client bug, manual API call,
+  // copy/paste from another row) would otherwise silently mark an unrelated
+  // report as "Message Deleted For Everyone" -- a data-integrity issue in the
+  // moderation audit trail. Add the message_id predicate so the UPDATE is a
+  // no-op if the (reportId, messageId) pair does not match.
   if (reportId) {
     await svc
       .from('messenger_reports')
@@ -58,7 +64,8 @@ export async function POST(req: NextRequest) {
         resolved_at: new Date().toISOString(),
         resolution_note: 'Message Deleted For Everyone',
       })
-      .eq('id', reportId);
+      .eq('id', reportId)
+      .eq('message_id', messageId);
   }
 
   // Audit6 fix: when an admin deletes a message that previously triggered an
