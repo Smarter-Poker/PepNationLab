@@ -107,6 +107,164 @@ function Spinner() {
   );
 }
 
+// ── Brushed-steel overview menu components ───────────────────────────────────────────
+
+function MenuButton({ onClick, icon, title, subtitle }: {
+  onClick: () => void;
+  icon: React.ReactNode;
+  title: string;
+  subtitle: string;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 16,
+        width: '100%',
+        padding: '14px 16px',
+        background: 'linear-gradient(180deg, #1e2233 0%, #181c2a 50%, #141820 100%)',
+        border: '1px solid rgba(255,255,255,0.07)',
+        borderRadius: 10,
+        cursor: 'pointer',
+        textAlign: 'left',
+        boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.06), 0 2px 8px rgba(0,0,0,0.5)',
+        transition: 'background 0.15s, transform 0.1s, box-shadow 0.1s',
+        WebkitTapHighlightColor: 'transparent',
+      }}
+      onMouseEnter={e => {
+        e.currentTarget.style.background = 'linear-gradient(180deg, #252840 0%, #1e2235 50%, #191d30 100%)';
+        e.currentTarget.style.boxShadow = 'inset 0 1px 0 rgba(255,255,255,0.1), 0 4px 16px rgba(0,0,0,0.6)';
+      }}
+      onMouseLeave={e => {
+        e.currentTarget.style.background = 'linear-gradient(180deg, #1e2233 0%, #181c2a 50%, #141820 100%)';
+        e.currentTarget.style.boxShadow = 'inset 0 1px 0 rgba(255,255,255,0.06), 0 2px 8px rgba(0,0,0,0.5)';
+      }}
+      onMouseDown={e => { e.currentTarget.style.transform = 'scale(0.98)'; }}
+      onMouseUp={e => { e.currentTarget.style.transform = 'scale(1)'; }}
+      onTouchStart={e => {
+        e.currentTarget.style.background = 'linear-gradient(180deg, #252840 0%, #1e2235 50%, #191d30 100%)';
+        e.currentTarget.style.transform = 'scale(0.98)';
+      }}
+      onTouchEnd={e => {
+        e.currentTarget.style.background = 'linear-gradient(180deg, #1e2233 0%, #181c2a 50%, #141820 100%)';
+        e.currentTarget.style.transform = 'scale(1)';
+      }}
+    >
+      <div style={{
+        flexShrink: 0, width: 60, height: 60,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        background: 'linear-gradient(180deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.01) 100%)',
+        borderRadius: 10, border: '1px solid rgba(255,255,255,0.06)',
+      }}>
+        {icon}
+      </div>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{
+          fontSize: '1rem', fontWeight: 800, color: '#d8d0c4',
+          letterSpacing: '0.05em', fontFamily: 'var(--font-brand, system-ui)',
+          marginBottom: 4, textShadow: '0 1px 3px rgba(0,0,0,0.8)',
+        }}>{title}</div>
+        <div style={{
+          fontSize: '0.68rem', color: 'rgba(192,184,168,0.55)',
+          letterSpacing: '0.04em', lineHeight: 1.4, fontWeight: 500,
+        }}>{subtitle}</div>
+      </div>
+      <div style={{ flexShrink: 0, color: 'rgba(192,184,168,0.3)', fontSize: '1.1rem', fontWeight: 300 }}>›</div>
+    </button>
+  );
+}
+
+function StorefrontIcon() {
+  return (
+    <svg viewBox="0 0 56 56" width="44" height="44" fill="none">
+      <defs>
+        <linearGradient id="si1" x1="28" y1="0" x2="28" y2="56" gradientUnits="userSpaceOnUse">
+          <stop stopColor="#e0d8cc"/>
+          <stop offset="0.5" stopColor="#a8a098"/>
+          <stop offset="1" stopColor="#706860"/>
+        </linearGradient>
+      </defs>
+      <path d="M10 28h36v20a2 2 0 0 1-2 2H12a2 2 0 0 1-2-2V28z" stroke="url(#si1)" strokeWidth="2" fill="rgba(255,255,255,0.04)"/>
+      <path d="M10 28l4-10h28l4 10" stroke="url(#si1)" strokeWidth="2" strokeLinejoin="round" fill="rgba(255,255,255,0.04)"/>
+      <path d="M28 8v16M22 14l6-6 6 6" stroke="url(#si1)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+    </svg>
+  );
+}
+
+function OrdersIcon() {
+  return (
+    <svg viewBox="0 0 56 56" width="44" height="44" fill="none">
+      <defs>
+        <linearGradient id="oi1" x1="28" y1="0" x2="28" y2="56" gradientUnits="userSpaceOnUse">
+          <stop stopColor="#e0d8cc"/>
+          <stop offset="0.5" stopColor="#a8a098"/>
+          <stop offset="1" stopColor="#706860"/>
+        </linearGradient>
+      </defs>
+      <rect x="12" y="10" width="32" height="40" rx="3" stroke="url(#oi1)" strokeWidth="2" fill="rgba(255,255,255,0.04)"/>
+      <rect x="21" y="6" width="14" height="8" rx="3" stroke="url(#oi1)" strokeWidth="2" fill="rgba(255,255,255,0.04)"/>
+      <line x1="20" y1="24" x2="36" y2="24" stroke="url(#oi1)" strokeWidth="2" strokeLinecap="round"/>
+      <line x1="20" y1="31" x2="36" y2="31" stroke="url(#oi1)" strokeWidth="2" strokeLinecap="round"/>
+      <line x1="20" y1="38" x2="30" y2="38" stroke="url(#oi1)" strokeWidth="2" strokeLinecap="round"/>
+    </svg>
+  );
+}
+
+function MessageIcon() {
+  return (
+    <svg viewBox="0 0 56 56" width="44" height="44" fill="none">
+      <defs>
+        <radialGradient id="mi1" cx="28" cy="24" r="22" gradientUnits="userSpaceOnUse">
+          <stop stopColor="#d8d0c4"/>
+          <stop offset="1" stopColor="#706860"/>
+        </radialGradient>
+      </defs>
+      <circle cx="28" cy="24" r="16" stroke="url(#mi1)" strokeWidth="2" fill="rgba(255,255,255,0.04)"/>
+      <path d="M24 38 l-3 8 l7-5" stroke="url(#mi1)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
+      <path d="M20 22 q2-3 4-1 q2-4 4 0 q2-4 4-1 q2-3 4-1" stroke="url(#mi1)" strokeWidth="2" strokeLinecap="round" fill="none"/>
+    </svg>
+  );
+}
+
+function FavoritesIcon() {
+  return (
+    <svg viewBox="0 0 56 56" width="44" height="44" fill="none">
+      <defs>
+        <linearGradient id="fi1" x1="28" y1="10" x2="28" y2="50" gradientUnits="userSpaceOnUse">
+          <stop stopColor="#e0d8cc"/>
+          <stop offset="0.5" stopColor="#a8a098"/>
+          <stop offset="1" stopColor="#686058"/>
+        </linearGradient>
+      </defs>
+      <path d="M28 46 C28 46 8 34 8 20a12 12 0 0 1 20-9 12 12 0 0 1 20 9c0 14-20 26-20 26z"
+        fill="url(#fi1)" stroke="rgba(255,255,255,0.12)" strokeWidth="1"/>
+      <path d="M20 18 q-2 5 0 10" stroke="rgba(255,255,255,0.25)" strokeWidth="1.5" strokeLinecap="round"/>
+    </svg>
+  );
+}
+
+function SettingsIcon() {
+  return (
+    <svg viewBox="0 0 56 56" width="44" height="44" fill="none">
+      <defs>
+        <linearGradient id="gi1" x1="28" y1="0" x2="28" y2="56" gradientUnits="userSpaceOnUse">
+          <stop stopColor="#e0d8cc"/>
+          <stop offset="0.5" stopColor="#a8a098"/>
+          <stop offset="1" stopColor="#706860"/>
+        </linearGradient>
+      </defs>
+      <path d="M28 8v5M28 43v5M8 28h5M43 28h5 M14.5 14.5l3.5 3.5M38 38l3.5 3.5 M41.5 14.5l-3.5 3.5M18 38l-3.5 3.5"
+        stroke="url(#gi1)" strokeWidth="2.5" strokeLinecap="round"/>
+      <circle cx="28" cy="28" r="10" stroke="url(#gi1)" strokeWidth="2.5" fill="rgba(255,255,255,0.04)"/>
+      <circle cx="28" cy="28" r="4" fill="url(#gi1)"/>
+    </svg>
+  );
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+
 export default function ResearcherDashboard({ userId, userName, userEmail, agentId, agentName, agentSlug, profile }: ResearcherDashboardProps) {
   const [tab, setTab] = useState<TabKey>('overview');
   const [sidebarOpen, setSidebarOpen] = useState(false);
