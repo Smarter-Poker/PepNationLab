@@ -65,6 +65,7 @@ export async function POST(req: NextRequest) {
       unit_cost_price?: number;
       unit_super_agent_cost?: number;
     }
+    let totalCogs = 0;
     const items = (order.order_items as OrderItem[]) || [];
 
     let billedAgentTier: AgentTier = 'tier_3';

@@ -78,7 +78,14 @@ export default function ShippingDashboard() {
     }
   }, []);
 
-  useEffect(() => { void fetchOrders(); }, [fetchOrders]);
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      await fetchOrders();
+      if (cancelled) return; /* component unmounted before fetch completed */
+    })();
+    return () => { cancelled = true; };
+  }, [fetchOrders]);
 
   const filteredOrders = statusFilter === 'all'
     ? orders
