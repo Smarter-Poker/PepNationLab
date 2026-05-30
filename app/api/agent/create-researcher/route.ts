@@ -82,27 +82,40 @@ export async function POST(req: NextRequest) {
 
   const newUserId = authData.user.id;
 
-  // UPDATE (not upsert/insert) — trigger already created the row.
-  // createAdminClient() truly bypasses RLS so this always succeeds.
-  const { error: profileError } = await admin
+  // UPSERT (not just UPDATE) — guarantees the profile is written even if the
+  // handle_new_user trigger races with this call and the row doesn't exist yet.
+  // createAdminClient() bypasses RLS so this always succeeds regardless of policies.
+  const { data: upsertedRows, error: profileError } = await admin
     .from('profiles')
-    .update({
+    .upsert({
+      id: newUserId,
+      email: internalEmail,
       username: usernameClean,
       full_name,
       role: 'researcher',
-      referring_agent_id: user.id,
+      referring_agent_id: user.id,   // ← Always the creating agent's UUID
       disclaimer_v1_accepted: false,
       is_active: true,
-      must_change_password: true,   // Researcher must change temp password on first login
+      must_change_password: true,
       updated_at: new Date().toISOString(),
-    })
-    .eq('id', newUserId);
+    }, { onConflict: 'id' })
+    .select('id, referring_agent_id');
 
   if (profileError) {
-    console.error('[create-researcher] profile update error:', profileError);
+    console.error('[create-researcher] profile upsert error:', profileError);
     await admin.auth.admin.deleteUser(newUserId);
     return NextResponse.json(
       { error: `Profile Setup Failed: ${profileError.message}` },
+      { status: 500 }
+    );
+  }
+
+  // Sanity-check: verify referring_agent_id was actually written
+  if (!upsertedRows?.[0]?.referring_agent_id) {
+    console.error('[create-researcher] referring_agent_id not set after upsert — rolling back');
+    await admin.auth.admin.deleteUser(newUserId);
+    return NextResponse.json(
+      { error: 'Profile Setup Failed: Could Not Link Researcher To Agent' },
       { status: 500 }
     );
   }

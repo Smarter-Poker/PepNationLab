@@ -175,7 +175,10 @@ export function AdminLayoutClient({
         style={{
           flex: 1,
           minWidth: 0,
-          overflow: 'hidden',
+          overflowX: 'hidden',
+          overflowY: 'auto',
+          /* -webkit-overflow-scrolling for iOS momentum scroll on admin pages */
+          WebkitOverflowScrolling: 'touch' as const,
         }}
       >
         {/* Admin top bar — desktop shows breadcrumb + bell; on mobile shows hamburger */}
