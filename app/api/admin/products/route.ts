@@ -131,6 +131,13 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
+  // If base_cost changed, cascade the new price to all agent_products for this product.
+  // DB triggers handle this automatically, but we also call the RPC here as belt-and-suspenders
+  // (e.g. if triggers are temporarily disabled during a bulk import).
+  if ('base_cost' in raw) {
+    await supabase.rpc('recalculate_agent_product_prices', { p_product_id: id }).catch(() => null);
+  }
+
   return NextResponse.json({ success: true });
 }
 

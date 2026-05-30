@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
 import { requireAgent } from '@/lib/admin-auth';
-import { computeAgentCost, type AgentTier } from '@/lib/pricing';
 
 export async function POST(req: NextRequest) {
   try {
@@ -24,58 +23,32 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Resolve the agent's tier so we can compute their wholesale cost per SKU.
-    const { data: agentProfile, error: profileError } = await supabase
-      .from('profiles')
-      .select('tier')
-      .eq('id', agentId)
-      .single();
-
-    if (profileError || !agentProfile) {
-      return NextResponse.json({ error: 'Agent Profile Not Found.' }, { status: 404 });
-    }
-
-    const tier = (agentProfile.tier as AgentTier | null) ?? 'tier_3';
-
-    const { data: agentProducts, error: fetchError } = await supabase
+    // Store margin_percent on every agent_product for this agent.
+    // The DB trigger (trg_recalc_on_margin) will automatically recompute
+    // retail_price = base_cost × tier_multiplier × (1 + margin_percent/100)
+    // for each row when margin_percent changes.
+    // We also call the RPC directly as belt-and-suspenders.
+    const { error: updateError } = await supabase
       .from('agent_products')
-      .select('id, product_id')
+      .update({ margin_percent: marginPercent })
       .eq('agent_id', agentId);
 
-    if (fetchError || !agentProducts) {
-      return NextResponse.json({ error: 'Failed To Fetch Products.' }, { status: 500 });
+    if (updateError) {
+      return NextResponse.json({ error: 'Failed To Update Margin.' }, { status: 500 });
     }
 
-    // Compute each agent's wholesale cost (base_cost × tier multiplier or
-    // per-product override) and apply the requested margin on top.
-    // NOTE: agentCost = base_cost × multiplier = 10-vial cost (retail_price is
-    // stored as the 10-pack price; storefront divides by 10 for per-vial display).
-    const updates = await Promise.all(
-      agentProducts
-        .filter(ap => ap.product_id)
-        .map(async ap => {
-          const agentCost = await computeAgentCost(supabase, ap.product_id as string, tier);
-          // Apply margin to the 10-vial cost — no extra ×10 needed.
-          const retailPrice = parseFloat((agentCost * (1 + marginPercent / 100)).toFixed(2));
-          return { id: ap.id, retail_price: retailPrice };
-        })
-    );
+    // Belt-and-suspenders: call the RPC in case triggers aren't active
+    try {
+      await supabase.rpc('recalculate_agent_product_prices', { p_agent_id: agentId });
+    } catch { /* non-critical: triggers handle recomputation */ }
 
-    const results = await Promise.all(
-      updates.map(update =>
-        supabase
-          .from('agent_products')
-          .update({ retail_price: update.retail_price })
-          .eq('id', update.id)
-      )
-    );
+    // Return updated product count for the toast message
+    const { count } = await supabase
+      .from('agent_products')
+      .select('*', { count: 'exact', head: true })
+      .eq('agent_id', agentId);
 
-    const hasError = results.some(res => res.error);
-    if (hasError) {
-      return NextResponse.json({ error: 'Failed To Update Some Products.' }, { status: 500 });
-    }
-
-    return NextResponse.json({ success: true, updated: updates.length });
+    return NextResponse.json({ success: true, updated: count ?? 0 });
   } catch (error) {
     console.error('Bulk Margin API Error:', error);
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });

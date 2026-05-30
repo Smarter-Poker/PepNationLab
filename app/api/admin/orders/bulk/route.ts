@@ -8,7 +8,6 @@ import {
   type BulkAction,
   type OrderStatus,
 } from '@/lib/order-states';
-import { purchaseLabelForOrder } from '@/lib/shippo';
 import { enqueueOrderPush } from '@/lib/push-enqueue';
 import { enqueueWebhook, fetchOrderForWebhook, type WebhookEventType } from '@/lib/webhook-dispatch';
 
@@ -62,12 +61,13 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: ordersErr.message }, { status: 500 });
   }
 
-  const orderMap = new Map<string, any>();
-  for (const o of orders || []) orderMap.set(o.id, o);
+  const orderMap = new Map<string, Record<string, unknown>>();
+  for (const o of orders || []) orderMap.set(o.id as string, o as Record<string, unknown>);
 
   const succeeded: string[] = [];
   const failed: Array<{ id: string; reason: string }> = [];
   const labels: Array<{ order_id: string; label_url: string }> = [];
+  const jobIds: string[] = [];
 
   if (action !== 'generate_labels') {
     const target = bulkActionToStatus(action);
@@ -86,12 +86,12 @@ export async function POST(req: NextRequest) {
         failed.push({ id, reason: `Cannot Move From ${current} To ${target}.` });
         continue;
       }
-      const updates: Record<string, any> = {
+      const updates: Record<string, string | boolean> = {
         status: target,
         updated_at: new Date().toISOString(),
       };
       if (target === 'approved_ship' || target === 'approved_pickup') {
-        updates.agent_approved_at = new Date().toISOString();
+        (updates as Record<string, string>).agent_approved_at = new Date().toISOString();
       }
       const { error: upErr } = await supabase.from('orders').update(updates).eq('id', id);
       if (upErr) {
@@ -102,7 +102,9 @@ export async function POST(req: NextRequest) {
 
       // Push notification (fire-and-forget) for bulk transitions.
       try {
-        if (order.buyer_id) {
+        const buyerId = typeof order.buyer_id === 'string' ? order.buyer_id : null;
+        const trackingNum = typeof order.tracking_number === 'string' ? order.tracking_number : null;
+        if (buyerId) {
           let event: BulkPushEvent | null = null;
           if (target === 'approved_ship' || target === 'approved_pickup') {
             event = 'order_approved';
@@ -114,10 +116,10 @@ export async function POST(req: NextRequest) {
           if (event) {
             try {
               await enqueueOrderPush(supabase, {
-                userId: order.buyer_id,
+                userId: buyerId,
                 orderId: id,
                 event,
-                tracking: order.tracking_number ?? null,
+                tracking: trackingNum,
               });
             } catch { /* push must not block bulk response */ }
           }
@@ -157,6 +159,9 @@ export async function POST(req: NextRequest) {
   }
 
   // ---- generate_labels ---------------------------------------------------
+  // Bulk-insert label_jobs rows instead of calling Shippo synchronously.
+  // The label-jobs cron (every 5 min) will drain and process them.
+  // Returns job_ids so the UI can poll /api/cron/label-jobs status.
   for (const id of ids) {
     const order = orderMap.get(id);
     if (!order) {
@@ -171,32 +176,43 @@ export async function POST(req: NextRequest) {
       failed.push({ id, reason: 'Order Has No Assigned Agent.' });
       continue;
     }
-    if (order.fulfillment_method !== 'ship') {
+    if ((order.fulfillment_method as string) !== 'ship') {
       failed.push({ id, reason: 'Order Is Not A Shipping Order.' });
       continue;
     }
 
-    // Key resolution now happens inside purchaseLabelForOrder -> getActiveKey.
-    // Falls through platform_shippo_credentials -> SHIPPO_PLATFORM_TOKEN env
-    // -> legacy per-agent key. Bulk loop no longer pre-checks per-agent keys.
+    // Idempotent: call the server-side RPC which checks for an existing active job.
+    const { data: job, error: enqueueErr } = await supabase
+      .rpc('shippo_enqueue_label_job', {
+        p_order_id: id,
+        p_preferred_service_level: null,
+        p_origin_id: null,
+      })
+      .single();
 
-    const result = await purchaseLabelForOrder(supabase, {
-      orderId: id,
-      agentId: order.agent_id,
-    });
-    if (!result.ok) {
-      failed.push({ id, reason: result.error });
+    if (enqueueErr || !job) {
+      failed.push({ id, reason: enqueueErr?.message ?? 'Enqueue Failed.' });
       continue;
     }
+
     succeeded.push(id);
-    labels.push({ order_id: id, label_url: result.labelUrl });
+    jobIds.push((job as { id: string }).id);
   }
+
+  await supabase.from('admin_audit_log').insert({
+    actor_id: gate.userId,
+    action: 'bulk_generate_labels',
+    target_type: 'orders',
+    target_id: null,
+    details: { order_ids: succeeded, job_ids: jobIds, failed_count: failed.length },
+  });
 
   return NextResponse.json({
     processed: ids.length,
-    succeeded: succeeded.length,
-    succeeded_ids: succeeded,
+    queued: succeeded.length,
+    queued_ids: succeeded,
+    job_ids: jobIds,
     failed,
-    labels,
+    note: 'Label Jobs Queued. Labels Will Be Generated Within 5 Minutes By The Background Processor.',
   });
 }

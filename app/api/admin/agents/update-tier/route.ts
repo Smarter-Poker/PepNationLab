@@ -49,5 +49,10 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
+  // Cascade new tier pricing to all of this agent's products immediately.
+  // DB trigger on profiles.tier handles this, but we also call the RPC directly
+  // so the catalog reflects the new cost on the very next page load.
+  await supabase.rpc('recalculate_agent_product_prices', { p_agent_id: agentId }).catch(() => null);
+
   return NextResponse.json({ success: true, tier });
 }

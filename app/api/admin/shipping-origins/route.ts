@@ -26,7 +26,7 @@ export const dynamic = 'force-dynamic';
 // ---------------------------------------------------------------------------
 // GET — list
 // ---------------------------------------------------------------------------
-export async function GET(_req: NextRequest) {
+export async function GET() {
   const gate = await requireAdmin();
   if (!gate.ok) return gate.response;
 

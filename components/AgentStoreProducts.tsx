@@ -133,16 +133,23 @@ export default function AgentStoreProducts({ agentId }: { agentId: string }) {
   // Edit
   function handleEdit(p: AgentProduct) {
     setEditingId(p.id);
+    // Pre-fill margin_percent from product data (back-computed if available, else default 50)
+    const existingMargin = (p as any).margin_percent != null
+      ? Number((p as any).margin_percent)
+      : p.agent_cost != null && p.agent_cost > 0 && p.retail_price > 0
+        ? Math.round((p.retail_price / p.agent_cost - 1) * 100)
+        : 50;
     setEditForm({
       id: p.id,
       custom_name: p.custom_name ?? '',
       custom_description: p.custom_description ?? '',
       custom_image_url: p.custom_image_url ?? '',
       retail_price: p.retail_price,
+      margin_percent: existingMargin,
       is_visible: p.is_visible,
       is_on_sale: p.is_on_sale,
       sale_price: p.sale_price,
-    });
+    } as any);
   }
 
   async function handleSave(e: React.FormEvent) {
@@ -355,16 +362,33 @@ export default function AgentStoreProducts({ agentId }: { agentId: string }) {
                     >
                       {isEditing ? (
                         <form onSubmit={handleSave} style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
-                          <div className="grid-2" style={{ gap: 'var(--space-3)' }}>
+                          <div className="grid-2" style={{ gap: 'var(--space-3)', alignItems: 'flex-start' }}>
                             <div className="form-group" style={{ marginBottom: 0 }}>
                               <label className="form-label" style={{ fontSize: '0.75rem' }}>Custom Name</label>
                               <input type="text" className="form-input" placeholder={p.products.name} value={editForm.custom_name || ''} onChange={e => setEditForm({ ...editForm, custom_name: e.target.value })} />
                             </div>
                             <div className="form-group" style={{ marginBottom: 0 }}>
-                              <label className="form-label" style={{ fontSize: '0.75rem' }}>Your Sale Price To Customers ($)
-                                <span style={{ fontWeight: 400, color: 'var(--grey-400)', marginLeft: 6 }}>(per 10-vial pack)</span>
+                              <label className="form-label" style={{ fontSize: '0.75rem' }}>
+                                Your Markup
+                                <span style={{ fontWeight: 400, color: 'var(--grey-400)', marginLeft: 6 }}>(%)</span>
                               </label>
-                              <input type="number" step="0.01" className="form-input" required value={editForm.retail_price || ''} onChange={e => setEditForm({ ...editForm, retail_price: Number(e.target.value) })} />
+                              <input
+                                type="number"
+                                step="1"
+                                min="0"
+                                className="form-input"
+                                placeholder="e.g. 50 for 50% markup"
+                                value={(editForm as any).margin_percent ?? 50}
+                                onChange={e => setEditForm({ ...editForm, margin_percent: Number(e.target.value) } as any)}
+                              />
+                              {/* Show computed sale price read-only */}
+                              {p.agent_cost != null && (editForm as any).margin_percent != null && (
+                                <p style={{ fontSize: '0.68rem', color: 'var(--grey-400)', marginTop: 4, marginBottom: 0 }}>
+                                  Sale price: <strong style={{ color: 'var(--teal)' }}>
+                                    ${(p.agent_cost * (1 + Number((editForm as any).margin_percent) / 100)).toFixed(2)}
+                                  </strong> per 10-vial pack
+                                </p>
+                              )}
                             </div>
                           </div>
                           <div className="form-group" style={{ marginBottom: 0 }}>

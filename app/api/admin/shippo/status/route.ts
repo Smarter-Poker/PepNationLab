@@ -10,14 +10,13 @@
  * Guards: admin role only (no MFA needed for a read).
  */
 
-import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 import { requireAdmin } from '@/lib/admin-auth';
 import { createServiceClient } from '@/lib/supabase/server';
 
 export const dynamic = 'force-dynamic';
 
-export async function GET(_req: NextRequest) {
+export async function GET() {
   const gate = await requireAdmin();
   if (!gate.ok) return gate.response;
 

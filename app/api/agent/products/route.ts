@@ -84,7 +84,17 @@ export async function PATCH(req: NextRequest) {
   if (!gate.ok) return gate.response;
 
   const body = await req.json().catch(() => ({}));
-  const { id, custom_name, custom_description, custom_image_url, retail_price, is_visible, is_on_sale, sale_price } = body;
+  const {
+    id,
+    custom_name,
+    custom_description,
+    custom_image_url,
+    retail_price,
+    margin_percent,
+    is_visible,
+    is_on_sale,
+    sale_price,
+  } = body;
 
   if (!id) {
     return NextResponse.json({ error: 'Missing agent_product id' }, { status: 400 });
@@ -95,7 +105,7 @@ export async function PATCH(req: NextRequest) {
   // Ensure this agent_product belongs to this user
   const { data: check } = await supabase
     .from('agent_products')
-    .select('id, retail_price')
+    .select('id, retail_price, margin_percent, product_id, agent_id')
     .eq('id', id)
     .eq('agent_id', gate.user.id)
     .single();
@@ -104,20 +114,70 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized or not found' }, { status: 403 });
   }
 
-  const newRetailPrice = retail_price !== undefined ? Number(retail_price) : check.retail_price;
+  // Determine what margin_percent to store.
+  // Priority: explicit margin_percent > back-computed from retail_price > existing.
+  let resolvedMarginPercent: number | undefined;
+
+  if (margin_percent !== undefined && Number.isFinite(Number(margin_percent))) {
+    // Agent directly set their markup %
+    resolvedMarginPercent = Number(margin_percent);
+  } else if (retail_price !== undefined) {
+    // Legacy path: agent entered a dollar price — back-compute the markup so
+    // future auto-recalculations preserve their intent.
+    const agentCostData = await supabase
+      .from('agent_products')
+      .select('product_id, agent_id')
+      .eq('id', id)
+      .single();
+    if (agentCostData.data) {
+      const { data: priceData } = await supabase
+        .from('products')
+        .select('base_cost')
+        .eq('id', agentCostData.data.product_id)
+        .single();
+      const { data: tierData } = await supabase
+        .from('profiles')
+        .select('tier')
+        .eq('id', agentCostData.data.agent_id)
+        .single();
+      if (priceData?.base_cost && tierData?.tier) {
+        const { data: multData } = await supabase
+          .from('pricing_tiers')
+          .select('multiplier')
+          .eq('tier_name', tierData.tier)
+          .single();
+        const agentCost = Number(priceData.base_cost) * (Number(multData?.multiplier) || 1.7);
+        if (agentCost > 0) {
+          resolvedMarginPercent = Math.round((Number(retail_price) / agentCost - 1) * 100 * 100) / 100;
+        }
+      }
+    }
+  }
+
+  const updatePayload: Record<string, unknown> = {
+    custom_name: custom_name !== undefined ? (custom_name || null) : undefined,
+    custom_description: custom_description !== undefined ? (custom_description || null) : undefined,
+    custom_image_url: custom_image_url !== undefined ? (custom_image_url || null) : undefined,
+    is_visible: is_visible ?? true,
+    is_on_sale: is_on_sale ?? false,
+    sale_price: sale_price ?? null,
+    updated_at: new Date().toISOString(),
+  };
+
+  // Remove undefined entries so we don't accidentally null out fields we didn't touch
+  Object.keys(updatePayload).forEach(k => updatePayload[k] === undefined && delete updatePayload[k]);
+
+  // If margin_percent resolved, store it. DB trigger will auto-update retail_price.
+  // Otherwise store retail_price directly (and trigger won't fire on this change).
+  if (resolvedMarginPercent !== undefined) {
+    updatePayload.margin_percent = resolvedMarginPercent;
+  } else if (retail_price !== undefined) {
+    updatePayload.retail_price = Number(retail_price);
+  }
 
   const { error } = await supabase
     .from('agent_products')
-    .update({
-      custom_name: custom_name || null,
-      custom_description: custom_description || null,
-      custom_image_url: custom_image_url || null,
-      retail_price: newRetailPrice,
-      is_visible: is_visible ?? true,
-      is_on_sale: is_on_sale ?? false,
-      sale_price: sale_price ?? null,
-      updated_at: new Date().toISOString()
-    })
+    .update(updatePayload)
     .eq('id', id);
 
   if (error) {

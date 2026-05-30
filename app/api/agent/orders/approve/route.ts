@@ -187,6 +187,15 @@ export async function POST(req: NextRequest) {
       } catch { /* push failures must not break the order */ }
     }
 
+    // Auto-enqueue label job for shipping orders — fire-and-forget, idempotent server-side.
+    if (newStatus === 'approved_ship') {
+      void (async () => {
+        try {
+          await supabase.rpc('shippo_enqueue_label_job', { p_order_id: orderId });
+        } catch { /* enqueue failures must not break order approval */ }
+      })();
+    }
+
     // Fire-and-forget webhook: order.approved
     void (async () => {
       try {

@@ -59,7 +59,7 @@ export async function GET(req: NextRequest) {
     const { data: jobs, error: fetchErr } = await supabase
       .from('label_jobs')
       .select('id, order_id, agent_id, service_level_token, origin_id, label_file_type, attempts')
-      .eq('status', 'pending')
+      .in('status', ['pending', 'queued'])
       .lt('attempts', MAX_ATTEMPTS)
       .order('created_at', { ascending: true })
       .limit(BATCH_LIMIT);
