@@ -11,6 +11,7 @@ interface ProductInfo {
   inventory_count: number;
   unit_size: string | null;
   unit_measure: string | null;
+  base_cost?: number | null;
 }
 
 interface AgentProduct {
@@ -26,6 +27,10 @@ interface AgentProduct {
   sale_price: number | null;
   sort_order: number;
   products: ProductInfo;
+  /** Your cost price from PNL (base_cost × tier multiplier, per 10 vials) */
+  agent_cost: number | null;
+  /** The agent’s current tier key, e.g. ‘tier_1’ */
+  agent_tier: string | null;
 }
 
 type FilterMode = 'all' | 'active' | 'hidden';
@@ -220,7 +225,26 @@ export default function AgentStoreProducts({ agentId }: { agentId: string }) {
               Toggle products on/off, reorder them, set custom prices and descriptions.
             </p>
           </div>
-          <div style={{ display: 'flex', gap: 4, background: 'var(--surface-2)', borderRadius: 'var(--radius-md)', padding: 3 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            {/* Tier badge — sourced from API */}
+            {products.length > 0 && products[0].agent_tier && (
+              <span style={{
+                fontSize: '0.7rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em',
+                padding: '4px 10px', borderRadius: 20,
+                background: products[0].agent_tier === 'tier_1'
+                  ? 'rgba(104,211,145,0.15)' : products[0].agent_tier === 'tier_2'
+                  ? 'rgba(99,179,237,0.15)' : 'rgba(246,173,85,0.15)',
+                color: products[0].agent_tier === 'tier_1'
+                  ? '#68D391' : products[0].agent_tier === 'tier_2'
+                  ? '#63B3ED' : '#F6AD55',
+                border: `1px solid ${products[0].agent_tier === 'tier_1'
+                  ? 'rgba(104,211,145,0.35)' : products[0].agent_tier === 'tier_2'
+                  ? 'rgba(99,179,237,0.35)' : 'rgba(246,173,85,0.35)'}`,
+              }}>
+                {products[0].agent_tier.replace('_', ' ').toUpperCase()}
+              </span>
+            )}
+            <div style={{ display: 'flex', gap: 4, background: 'var(--surface-2)', borderRadius: 'var(--radius-md)', padding: 3 }}>
             {([['all', `All (${products.length})`], ['active', `Active (${activeCount})`], ['hidden', `Hidden (${hiddenCount})`]] as [FilterMode, string][]).map(([key, label]) => (
               <button
                 key={key}
@@ -235,6 +259,7 @@ export default function AgentStoreProducts({ agentId }: { agentId: string }) {
                 {label}
               </button>
             ))}
+            </div>
           </div>
         </div>
       </div>
@@ -322,7 +347,9 @@ export default function AgentStoreProducts({ agentId }: { agentId: string }) {
                               <input type="text" className="form-input" placeholder={p.products.name} value={editForm.custom_name || ''} onChange={e => setEditForm({ ...editForm, custom_name: e.target.value })} />
                             </div>
                             <div className="form-group" style={{ marginBottom: 0 }}>
-                              <label className="form-label" style={{ fontSize: '0.75rem' }}>Retail Price ($)</label>
+                              <label className="form-label" style={{ fontSize: '0.75rem' }}>Your Sale Price To Customers ($)
+                                <span style={{ fontWeight: 400, color: 'var(--grey-400)', marginLeft: 6 }}>(per 10-vial pack)</span>
+                              </label>
                               <input type="number" step="0.01" className="form-input" required value={editForm.retail_price || ''} onChange={e => setEditForm({ ...editForm, retail_price: Number(e.target.value) })} />
                             </div>
                           </div>
@@ -383,14 +410,39 @@ export default function AgentStoreProducts({ agentId }: { agentId: string }) {
                               <span style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--white)' }}>{displayName}</span>
                               {sizeLabel && <span style={{ fontSize: '0.7rem', color: 'var(--grey-400)', background: 'var(--surface-3)', padding: '1px 6px', borderRadius: 4 }}>{sizeLabel}</span>}
                             </div>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                              <span style={{ fontSize: '0.82rem', color: 'var(--teal)', fontWeight: 700 }}>${Number(p.retail_price).toFixed(2)}</span>
-                              {p.is_on_sale && p.sale_price && (
-                                <span style={{ fontSize: '0.72rem', color: '#F56565', fontWeight: 700, background: 'rgba(245,101,101,0.1)', padding: '1px 6px', borderRadius: 4 }}>
-                                  Sale ${Number(p.sale_price).toFixed(2)}
+                          {/* Pricing: Your Cost (tier price) → Sale Price with margin hint */}
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                            {p.agent_cost != null && (
+                              <>
+                                <span style={{ fontSize: '0.7rem', color: 'var(--grey-500)', fontWeight: 500 }}>Cost:</span>
+                                <span style={{ fontSize: '0.82rem', color: '#68D391', fontWeight: 700 }}>
+                                  ${Number(p.agent_cost).toFixed(2)}
                                 </span>
-                              )}
-                            </div>
+                                <span style={{ fontSize: '0.65rem', color: 'var(--grey-600)' }}>→</span>
+                              </>
+                            )}
+                            <span style={{ fontSize: '0.7rem', color: 'var(--grey-500)', fontWeight: 500 }}>Sale:</span>
+                            <span style={{ fontSize: '0.82rem', color: 'var(--teal)', fontWeight: 700 }}>
+                              ${Number(p.retail_price).toFixed(2)}
+                            </span>
+                            {p.is_on_sale && p.sale_price && (
+                              <span style={{ fontSize: '0.7rem', color: '#F56565', fontWeight: 700, background: 'rgba(245,101,101,0.10)', padding: '2px 6px', borderRadius: 4 }}>
+                                On Sale ${Number(p.sale_price).toFixed(2)}
+                              </span>
+                            )}
+                            {/* Margin indicator */}
+                            {p.agent_cost != null && p.agent_cost > 0 && p.retail_price > 0 && (
+                              <span style={{
+                                fontSize: '0.65rem', fontWeight: 700,
+                                padding: '1px 5px', borderRadius: 4,
+                                background: 'rgba(255,255,255,0.04)',
+                                color: (p.retail_price / p.agent_cost - 1) >= 0.15
+                                  ? 'var(--teal)' : '#F6AD55',
+                              }}>
+                                +{Math.round((p.retail_price / p.agent_cost - 1) * 100)}%
+                              </span>
+                            )}
+                          </div>
                           </div>
 
                           {/* Toggle Switch */}
