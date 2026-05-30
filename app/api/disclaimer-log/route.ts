@@ -1,11 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient, createServiceClient } from '@/lib/supabase/server';
 import { rateLimit, getClientIp } from '@/lib/rate-limit';
+import { assertSameOrigin } from '@/lib/csrf';
 
 const VALID_LAYERS = ['site_entry', 'registration', 'add_to_cart', 'checkout'] as const;
 type DisclaimerLayer = (typeof VALID_LAYERS)[number];
 
 export async function POST(req: NextRequest) {
+  const csrf = assertSameOrigin(req);
+  if (csrf) return csrf;
+
   const callerIp = getClientIp(req);
   const limited = await rateLimit({
     key: 'disclaimer_log',

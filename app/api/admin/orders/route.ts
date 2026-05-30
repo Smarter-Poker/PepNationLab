@@ -4,6 +4,7 @@ import { requireOrdersAccess } from '@/lib/admin-auth';
 import { canTransition, type OrderStatus } from '@/lib/order-states';
 import { enqueueOrderPush } from '@/lib/push-enqueue';
 import { enqueueWebhook, fetchOrderForWebhook, type WebhookEventType } from '@/lib/webhook-dispatch';
+import { assertSameOrigin } from '@/lib/csrf';
 
 type OrderPushEvent = 'order_approved' | 'order_shipped' | 'order_delivered';
 
@@ -54,6 +55,9 @@ export async function GET(req: NextRequest) {
 
 // POST: Process / Update an order state
 export async function POST(req: NextRequest) {
+  const csrf = assertSameOrigin(req);
+  if (csrf) return csrf;
+
   const gate = await requireOrdersAccess();
   if (!gate.ok) return gate.response;
 

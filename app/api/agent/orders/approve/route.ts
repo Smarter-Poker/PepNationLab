@@ -5,8 +5,12 @@ import { pickOne } from '@/lib/relations';
 import { computeAgentCost, type AgentTier } from '@/lib/pricing';
 import { enqueueOrderPush } from '@/lib/push-enqueue';
 import { enqueueWebhook, fetchOrderForWebhook } from '@/lib/webhook-dispatch';
+import { assertSameOrigin } from '@/lib/csrf';
 
 export async function POST(req: NextRequest) {
+  const csrf = assertSameOrigin(req);
+  if (csrf) return csrf;
+
   try {
     const gate = await requireAgent();
     if (!gate.ok) return gate.response;

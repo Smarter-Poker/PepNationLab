@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
 import { requireAgent } from '@/lib/admin-auth';
+import { assertSameOrigin } from '@/lib/csrf';
 
 /**
  * POST /api/agent/storefront-slug
@@ -10,6 +11,9 @@ import { requireAgent } from '@/lib/admin-auth';
  * the database CHECK denylist (reserved words like admin/api/login/etc).
  */
 export async function POST(req: NextRequest) {
+  const csrf = assertSameOrigin(req);
+  if (csrf) return csrf;
+
   const gate = await requireAgent();
   if (!gate.ok) return gate.response;
 

@@ -1,10 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
 import { requireAgent } from '@/lib/admin-auth';
+import { assertSameOrigin } from '@/lib/csrf';
 
 // PUT /api/agent/products/reorder
 // Bulk update sort_order for an agent's products
 export async function PUT(req: NextRequest) {
+  const csrf = assertSameOrigin(req);
+  if (csrf) return csrf;
+
   const gate = await requireAgent();
   if (!gate.ok) return gate.response;
 

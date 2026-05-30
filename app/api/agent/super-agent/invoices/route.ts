@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
 import { requireAgent } from '@/lib/admin-auth';
 import { computeSubAgentBaselineCost } from '@/lib/pricing';
+import { assertSameOrigin } from '@/lib/csrf';
 
 function addDays(dateStr: string, days: number): string {
   const d = new Date(`${dateStr}T00:00:00Z`);
@@ -45,6 +46,9 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
+  const csrf = assertSameOrigin(req);
+  if (csrf) return csrf;
+
   try {
     const gate = await requireAgent();
     if (!gate.ok) return gate.response;

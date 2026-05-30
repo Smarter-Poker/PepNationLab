@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
 import { sanitizeUsername } from '@/lib/usernames';
 import { rateLimit, getClientIp } from '@/lib/rate-limit';
+import { assertSameOrigin } from '@/lib/csrf';
 
 /**
  * POST /api/storefront/register
@@ -17,6 +18,9 @@ import { rateLimit, getClientIp } from '@/lib/rate-limit';
  */
 
 export async function POST(req: NextRequest) {
+  const csrf = assertSameOrigin(req);
+  if (csrf) return csrf;
+
   const ip = getClientIp(req);
   const limited = await rateLimit({
     key: 'storefront_register',

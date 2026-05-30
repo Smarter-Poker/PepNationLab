@@ -30,7 +30,6 @@ interface ProductRow {
   slug: string | null;
   category: string | null;
   image_url: string | null;
-  base_cost: number | string | null;
   is_active: boolean | null;
   is_banned: boolean | null;
 }
@@ -131,7 +130,7 @@ export async function GET(req: NextRequest) {
   // 3) Resolve product rows — filter active, non-banned, not the seed.
   const { data: productsRaw } = await supabase
     .from('products')
-    .select('id, name, slug, category, image_url, base_cost, is_active, is_banned')
+    .select('id, name, slug, category, image_url, is_active, is_banned')
     .in('id', candidateIds);
   const productMap = new Map<string, ProductRow>();
   for (const p of (productsRaw ?? []) as ProductRow[]) {
@@ -172,7 +171,6 @@ export async function GET(req: NextRequest) {
     slug: string | null;
     category: string | null;
     image_url: string | null;
-    base_cost: number;
     retail_price?: number;
   }> = [];
   for (const cid of candidateIds) {
@@ -186,7 +184,6 @@ export async function GET(req: NextRequest) {
       slug: p.slug,
       category: p.category,
       image_url: p.image_url,
-      base_cost: Number(p.base_cost ?? 0),
       ...(agentPriceMap.has(cid) ? { retail_price: agentPriceMap.get(cid)! } : {}),
     });
   }

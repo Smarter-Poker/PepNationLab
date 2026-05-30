@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
 import { requireAgent } from '@/lib/admin-auth';
+import { assertSameOrigin } from '@/lib/csrf';
 
 // GET: Fetch the agent's current inventory levels for all active products
 export async function GET(req: NextRequest) {
@@ -47,6 +48,9 @@ export async function GET(req: NextRequest) {
 
 // POST: Update inventory count for a specific product
 export async function POST(req: NextRequest) {
+  const csrf = assertSameOrigin(req);
+  if (csrf) return csrf;
+
   try {
     const gate = await requireAgent();
     if (!gate.ok) return gate.response;

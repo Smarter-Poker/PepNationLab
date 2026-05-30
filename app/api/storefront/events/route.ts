@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
 import { rateLimit } from '@/lib/rate-limit';
 import { z } from 'zod';
+import { assertSameOrigin } from '@/lib/csrf';
 
 export const dynamic = 'force-dynamic';
 
@@ -18,6 +19,9 @@ const EventSchema = z.object({
 });
 
 export async function POST(req: NextRequest) {
+  const csrf = assertSameOrigin(req);
+  if (csrf) return csrf;
+
   const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
   const limited = await rateLimit({
     key: 'storefront_events',

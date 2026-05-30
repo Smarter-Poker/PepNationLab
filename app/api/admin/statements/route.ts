@@ -14,6 +14,7 @@ import { requireAdmin } from '@/lib/admin-auth';
  */
 
 import { computeStatement, persistStatement } from '@/lib/statements';
+import { assertSameOrigin } from '@/lib/csrf';
 
 // GET: list all statements with agent info
 export async function GET(req: NextRequest) {
@@ -41,6 +42,9 @@ export async function GET(req: NextRequest) {
 
 // POST: generate a statement or mark one paid
 export async function POST(req: NextRequest) {
+  const csrf = assertSameOrigin(req);
+  if (csrf) return csrf;
+
   const gate = await requireAdmin();
   if (!gate.ok) return gate.response;
 

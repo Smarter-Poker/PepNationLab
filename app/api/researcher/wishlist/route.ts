@@ -22,7 +22,7 @@ export async function GET(_req: NextRequest) {
 
   const { data, error } = await service
     .from('researcher_favorites')
-    .select('product_id, created_at, products:product_id(id, name, image_url, category, base_cost, in_stock, unit_size, unit_measure, is_active, is_banned)')
+    .select('product_id, created_at, products:product_id(id, name, image_url, category, in_stock, unit_size, unit_measure, is_active, is_banned)')
     .eq('user_id', user.id)
     .order('created_at', { ascending: false });
 
@@ -36,7 +36,6 @@ export async function GET(_req: NextRequest) {
       name: string;
       image_url: string | null;
       category: string | null;
-      base_cost: number | null;
       in_stock: boolean | null;
       unit_size: string | null;
       unit_measure: string | null;
@@ -68,7 +67,6 @@ export async function GET(_req: NextRequest) {
       name: r.products!.name,
       image_url: r.products!.image_url,
       category: r.products!.category,
-      base_cost: r.products!.base_cost,
       in_stock: r.products!.in_stock,
       unit_size: r.products!.unit_size,
       unit_measure: r.products!.unit_measure,

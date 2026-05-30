@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
 import { sanitizeUsername, validateUsername } from '@/lib/usernames';
 import { rateLimit, getClientIp } from '@/lib/rate-limit';
+import { assertSameOrigin } from '@/lib/csrf';
 
 /**
  * Redeem an agent invitation token.
@@ -47,6 +48,9 @@ function randomSuffix(): string {
 }
 
 export async function POST(req: NextRequest) {
+  const csrf = assertSameOrigin(req);
+  if (csrf) return csrf;
+
   // Rate-limit BEFORE doing any DB work.
   const ip = getClientIp({ headers: req.headers });
   const rl = await rateLimit({

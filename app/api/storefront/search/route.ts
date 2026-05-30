@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
 import { rateLimit, getClientIp } from '@/lib/rate-limit';
+import { assertSameOrigin } from '@/lib/csrf';
 
 /**
  * POST /api/storefront/search
@@ -91,6 +92,9 @@ const SORT_OPTIONS: ReadonlySet<SortKey> = new Set<SortKey>([
 ]);
 
 export async function POST(req: NextRequest) {
+  const csrf = assertSameOrigin(req);
+  if (csrf) return csrf;
+
   const ip = getClientIp(req);
   const limited = await rateLimit({
     key: 'storefront_search',

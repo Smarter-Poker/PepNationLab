@@ -1,5 +1,6 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { createClient, createServiceClient } from '@/lib/supabase/server';
+import { assertSameOrigin } from '@/lib/csrf';
 
 export async function GET() {
   const supabase = await createClient();
@@ -52,7 +53,10 @@ export async function GET() {
   return NextResponse.json({ data: orders });
 }
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
+  const csrf = assertSameOrigin(request);
+  if (csrf) return csrf;
+
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 

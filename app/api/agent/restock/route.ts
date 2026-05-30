@@ -1,7 +1,8 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { createClient, createServiceClient } from '@/lib/supabase/server';
 import { requireAgent } from '@/lib/admin-auth';
 import { z } from 'zod';
+import { assertSameOrigin } from '@/lib/csrf';
 
 const CheckoutSchema = z.object({
   items: z.array(z.object({
@@ -19,7 +20,10 @@ const CheckoutSchema = z.object({
   }).optional(),
 });
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
+  const csrf = assertSameOrigin(request);
+  if (csrf) return csrf;
+
   try {
     const supabase = await createClient();
     const serviceSupabase = await createServiceClient();

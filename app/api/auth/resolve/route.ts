@@ -1,12 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
 import { rateLimit, getClientIp } from '@/lib/rate-limit';
+import { assertSameOrigin } from '@/lib/csrf';
 
 // POST /api/auth/resolve
 // Takes a username, returns the auth email for that user.
 // Called by the login form before signInWithPassword.
 // Uses service role so it can query profiles regardless of RLS.
 export async function POST(req: NextRequest) {
+  const csrf = assertSameOrigin(req);
+  if (csrf) return csrf;
+
   const ip = getClientIp(req);
   const limited = await rateLimit({
     key: 'auth_resolve',

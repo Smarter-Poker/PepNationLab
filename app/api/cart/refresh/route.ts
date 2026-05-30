@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
+import { assertSameOrigin } from '@/lib/csrf';
 
 /**
  * Re-resolves cart items against the live catalog. Returns, per requested
@@ -12,6 +13,9 @@ import { createServiceClient } from '@/lib/supabase/server';
  * the storefront), and we never reveal cost prices.
  */
 export async function POST(req: NextRequest) {
+  const csrf = assertSameOrigin(req);
+  if (csrf) return csrf;
+
   try {
     const body = await req.json();
 

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
+import { assertSameOrigin } from '@/lib/csrf';
 
 /**
  * Returns the real shipping rate from the DB for a given total weight.
@@ -10,6 +11,9 @@ import { createServiceClient } from '@/lib/supabase/server';
  * Falls back to $12.00 if no rate row matches (same fallback as orders API).
  */
 export async function POST(req: NextRequest) {
+  const csrf = assertSameOrigin(req);
+  if (csrf) return csrf;
+
   try {
     const body = await req.json().catch(() => ({}));
     const weightOz = Number(body?.weightOz) || 0;
