@@ -6,7 +6,6 @@ import Navbar from '@/components/Navbar';
 import { toast } from 'sonner';
 import Link from 'next/link';
 import AgentCoupons from '@/components/AgentCoupons';
-import AgentMessages from '@/components/AgentMessages';
 import AgentStoreProducts from '@/components/AgentStoreProducts';
 import AgentSales from '@/components/AgentSales';
 import AgentSubAgents from '@/components/AgentSubAgents';
@@ -16,11 +15,8 @@ import AgentOverview from '@/components/AgentOverview';
 import AgentStorefrontConfig from '@/components/AgentStorefrontConfig';
 import AgentOrders from '@/components/AgentOrders';
 import AgentLedger from '@/components/AgentLedger';
-import AgentSubscriptions from '@/components/AgentSubscriptions';
 import AgentBundles from '@/components/AgentBundles';
-import AgentCommissions from '@/components/AgentCommissions';
 import AgentSetupChecklist from '@/components/AgentSetupChecklist';
-import AgentWebhooks from '@/components/AgentWebhooks';
 import MessageBell from '@/components/MessageBell';
 import { sanitizeUsername } from '@/lib/usernames';
 import { useTheme } from '@/components/ThemeProvider';
@@ -113,9 +109,7 @@ export default function AgentDashboardClient({
   const [applePayHandle, setApplePayHandle] = useState(agentProfile?.payment_handles?.apple_pay ?? '');
 
   const handlesEmpty = !!agentProfile && (!agentProfile.payment_handles || Object.keys(agentProfile.payment_handles || {}).every((k) => !(agentProfile.payment_handles as any)[k]));
-  const [activeTab, setActiveTab] = useState<'Overview' | 'Sales & Carts' | 'Researchers' | 'My Sub-Agents' | 'Orders' | 'Store Products' | 'Research Bundles' | 'Inventory' | 'Accounting' | 'Commissions' | 'Subscriptions' | 'Coupons' | 'Messages' | 'Webhooks' | 'Storefront Config' | 'Settings'>(
-    (initialAgentProfile && (!initialAgentProfile.payment_handles || Object.keys(initialAgentProfile.payment_handles).every((k) => !initialAgentProfile.payment_handles![k]))) ? 'Storefront Config' : 'Overview'
-  );
+  const [activeTab, setActiveTab] = useState<'Overview' | 'Sales & Carts' | 'Researchers' | 'My Sub-Agents' | 'Orders' | 'Store Products' | 'Research Bundles' | 'Inventory' | 'Accounting' | 'Coupons' | 'Storefront Config' | 'Settings'>((initialAgentProfile && (!initialAgentProfile.payment_handles || Object.keys(initialAgentProfile.payment_handles).every((k) => !initialAgentProfile.payment_handles![k]))) ? 'Storefront Config' : 'Overview');
 
   const [volumePricingEnabled, setVolumePricingEnabled] = useState<boolean>(agentProfile?.volume_pricing_enabled !== false);
 
@@ -232,7 +226,7 @@ export default function AgentDashboardClient({
     const applePay = setupApplePay.trim();
     // Require at least one payment method at setup; agents add more later in Settings
     if (!zelle && !cashapp && !venmo && !applePay) {
-      setError('At Least One Payment Method Is Required (Zelle, Cash App, Venmo, Or Apple Pay).');
+      setError('At Least One Payment Method Is Required (Zelle, Cash App, Venmo, Or Apple Cash).');
       return;
     }
 
@@ -398,19 +392,19 @@ export default function AgentDashboardClient({
               </p>
               <div className="form-group">
                 <label className="form-label">Zelle Handle / Email</label>
-                <input type="text" className="form-input" value={setupZelle} onChange={(e) => setSetupZelle(e.target.value)} required />
+                <input type="text" className="form-input" value={setupZelle} onChange={(e) => setSetupZelle(e.target.value)} />
               </div>
               <div className="form-group">
                 <label className="form-label">Cash App Handle ($)</label>
-                <input type="text" className="form-input" value={setupCashApp} onChange={(e) => setSetupCashApp(e.target.value)} required />
+                <input type="text" className="form-input" value={setupCashApp} onChange={(e) => setSetupCashApp(e.target.value)} />
               </div>
               <div className="form-group">
                 <label className="form-label">Venmo Handle (@)</label>
-                <input type="text" className="form-input" value={setupVenmo} onChange={(e) => setSetupVenmo(e.target.value)} required />
+                <input type="text" className="form-input" value={setupVenmo} onChange={(e) => setSetupVenmo(e.target.value)} />
               </div>
               <div className="form-group">
-                <label className="form-label">Apple Pay (Phone / Email)</label>
-                <input type="text" className="form-input" value={setupApplePay} onChange={(e) => setSetupApplePay(e.target.value)} required />
+                <label className="form-label">Apple Cash (Phone / Email)</label>
+                <input type="text" className="form-input" value={setupApplePay} onChange={(e) => setSetupApplePay(e.target.value)} />
               </div>
             </div>
 
@@ -469,16 +463,12 @@ export default function AgentDashboardClient({
     { id: 'Orders', label: 'Orders & Fulfillment', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z" /><line x1="3" y1="6" x2="21" y2="6" /><path d="M16 10a4 4 0 0 1-8 0" /></svg> },
     { id: 'Inventory', label: 'Inventory Management', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" /><polyline points="3.27 6.96 12 12.01 20.73 6.96" /><line x1="12" y1="22.08" x2="12" y2="12" /></svg> },
     { id: 'Accounting', label: 'Accounting', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" /></svg> },
-    { id: 'Commissions', label: 'Commissions', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="1" x2="12" y2="23" /><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" /></svg> },
-    { id: 'Subscriptions', label: 'Subscriptions', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><polyline points="12 8 12 12 14 14" /></svg> },
     { id: 'Sales & Carts', label: 'Sales & Carts', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17" /><polyline points="16 7 22 7 22 13" /></svg> },
     { id: 'Researchers', label: 'Researchers', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /></svg> },
     ...(userProfile.is_super_agent ? [{ id: 'My Sub-Agents', label: 'My Sub-Agents', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /></svg> }] : []),
     { id: 'Coupons', label: 'Coupons', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z" /><line x1="7" y1="7" x2="7.01" y2="7" /></svg> },
     { id: 'Store Products', label: 'Store Products', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /><line x1="16" y1="13" x2="8" y2="13" /><line x1="16" y1="17" x2="8" y2="17" /></svg> },
     { id: 'Research Bundles', label: 'Bundles', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" /><polyline points="3.27 6.96 12 12.01 20.73 6.96" /><line x1="12" y1="22.08" x2="12" y2="12" /></svg> },
-    { id: 'Messages', label: 'Messages', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" /><polyline points="22,6 12,13 2,6" /></svg> },
-    { id: 'Webhooks', label: 'Webhooks', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg> },
     { id: 'Storefront Config', label: 'Storefront Configure', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" /></svg> },
     { id: 'Settings', label: 'Account Settings', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /></svg> },
   ];
@@ -545,17 +535,15 @@ export default function AgentDashboardClient({
               </button>
             );
           })}
-        </div>
+          {/* ── Additional Action Links (merged into same scroll view) ── */}
+          <div style={{ height: 1, background: 'rgba(255,255,255,0.05)', margin: 'var(--space-4) 0' }} />
 
-        <div style={{ padding: 'var(--space-4)', display: 'flex', flexDirection: 'column', gap: 2, flexShrink: 0, paddingBottom: 'max(var(--space-4), env(safe-area-inset-bottom, 16px))' }}>
-
-          {/* ── Copy Storefront Link ── */}
           {agentProfile && (
             <>
               <button
                 className="sidebar-nav-item"
                 onClick={() => { copyStorefrontLink(); setIsMobileMenuOpen(false); }}
-                style={{ width: '100%', background: 'transparent', border: 'none', textAlign: 'left' }}
+                style={{ width: '100%', background: 'transparent', border: 'none', textAlign: 'left', borderLeft: '3px solid transparent' }}
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -573,7 +561,7 @@ export default function AgentDashboardClient({
                 target="_blank"
                 rel="noopener noreferrer"
                 className="sidebar-nav-item"
-                style={{ display: 'block', textDecoration: 'none' }}
+                style={{ display: 'block', textDecoration: 'none', borderLeft: '3px solid transparent' }}
                 onClick={() => setIsMobileMenuOpen(false)}
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
@@ -586,7 +574,7 @@ export default function AgentDashboardClient({
                 </div>
               </a>
 
-              <div style={{ height: 1, background: 'rgba(255,255,255,0.07)', margin: 'var(--space-2) 0' }} />
+              <div style={{ height: 1, background: 'rgba(255,255,255,0.05)', margin: 'var(--space-2) 0' }} />
             </>
           )}
 
@@ -594,7 +582,7 @@ export default function AgentDashboardClient({
           <button 
             className="sidebar-nav-item" 
             onClick={() => { setActiveTab('Storefront Config' as any); setIsMobileMenuOpen(false); }}
-            style={{ width: '100%', background: 'transparent', border: 'none', textAlign: 'left' }}
+            style={{ width: '100%', background: 'transparent', border: 'none', textAlign: 'left', borderLeft: '3px solid transparent' }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" /><rect x="3" y="14" width="7" height="7" /><rect x="14" y="14" width="3" height="3" /><rect x="19" y="14" width="2" height="2" /><rect x="14" y="19" width="2" height="2" /><rect x="19" y="19" width="2" height="2" />
@@ -616,7 +604,7 @@ export default function AgentDashboardClient({
                 Notification.requestPermission();
               }
             }}
-            style={{ width: '100%', background: 'transparent', border: 'none', textAlign: 'left' }}
+            style={{ width: '100%', background: 'transparent', border: 'none', textAlign: 'left', borderLeft: '3px solid transparent' }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -628,7 +616,7 @@ export default function AgentDashboardClient({
           </button>
 
           {/* ── Account Security ── */}
-          <Link href="/account/security" className="sidebar-nav-item" style={{ display: 'block', textDecoration: 'none' }} onClick={() => setIsMobileMenuOpen(false)}>
+          <Link href="/account/security" className="sidebar-nav-item" style={{ display: 'block', textDecoration: 'none', borderLeft: '3px solid transparent' }} onClick={() => setIsMobileMenuOpen(false)}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
@@ -640,7 +628,7 @@ export default function AgentDashboardClient({
 
           {/* ── Sign Out ── */}
           <form action="/api/auth/signout" method="post">
-            <button type="submit" className="sidebar-nav-item" style={{ width: '100%', background: 'transparent', border: 'none', color: 'var(--red)' }}>
+            <button type="submit" className="sidebar-nav-item" style={{ width: '100%', background: 'transparent', border: 'none', color: 'var(--red)', borderLeft: '3px solid transparent', paddingBottom: 'max(var(--space-8), env(safe-area-inset-bottom, 32px))' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
@@ -719,17 +707,6 @@ export default function AgentDashboardClient({
         {activeTab === 'Accounting' && (
           <div style={{ animation: 'fadeIn 0.3s ease-out' }}>
             <AgentLedger agentId={userProfile.id} />
-          </div>
-        )}
-
-        {/* TAB: Subscriptions */}
-        {activeTab === 'Subscriptions' && (
-          <AgentSubscriptions agentId={userProfile.id} />
-        )}
-
-        {activeTab === 'Commissions' && (
-          <div style={{ animation: 'fadeIn 0.3s ease-out' }}>
-            <AgentCommissions />
           </div>
         )}
 
@@ -1078,16 +1055,6 @@ export default function AgentDashboardClient({
         {/* TAB: Discount Coupons */}
         {activeTab === 'Coupons' && <AgentCoupons agentId={userProfile.id} />}
 
-        {activeTab === 'Messages' && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-8)' }}>
-            <AgentInbox agentId={userProfile.id} />
-            <AgentMessages agentId={userProfile.id} researchers={researcherList} />
-          </div>
-        )}
-
-        {activeTab === 'Webhooks' && (
-          <AgentWebhooks />
-        )}
 
         {/* TAB: Storefront Configuration */}
         {activeTab === 'Storefront Config' && (
