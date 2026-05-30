@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
 import { assertCronAuth, claimCronRun, finishCronRun } from '@/lib/cron';
+import { notifyCartReminder } from '@/lib/notify';
 
 /**
  * Abandoned cart recovery cron.
@@ -96,6 +97,9 @@ export async function GET(req: Request) {
         skipped++;
         continue;
       }
+
+      // In-app notification — shows in bell immediately via Realtime
+      void notifyCartReminder(supabase, candidate.id, itemCount, cartValue).catch(() => { /* best-effort */ });
 
       await supabase.from('abandoned_cart_reminders').insert({
         user_id: candidate.id,

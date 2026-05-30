@@ -698,9 +698,11 @@ export default function AgentStorefrontGrid({ products, inventoryMap, primaryCol
         }
         .sf-toolbar-search .sf-search-clear {
           position: absolute; right: 8px; top: 50%; transform: translateY(-50%);
-          width: 20px; height: 20px; border-radius: 50%;
-          background: rgba(255,255,255,0.08); border: none; color: var(--silver);
-          cursor: pointer; display: flex; align-items: center; justify-content: center;
+          width: 22px; height: 22px; min-width: 22px; min-height: 22px;
+          aspect-ratio: 1; border-radius: 50%; padding: 0; box-sizing: border-box;
+          background: rgba(255,255,255,0.10); border: 1px solid rgba(255,255,255,0.15);
+          color: var(--silver); cursor: pointer;
+          display: flex; align-items: center; justify-content: center;
         }
         @media (min-width: 640px) {
           .sf-toolbar { flex-direction: row; flex-wrap: nowrap; padding: 14px; }
@@ -713,7 +715,8 @@ export default function AgentStorefrontGrid({ products, inventoryMap, primaryCol
         .sf-wishlist-btn {
           position: absolute; top: 10px; right: 10px;
           width: 34px; height: 34px; min-width: 34px; min-height: 34px;
-          max-width: 34px; max-height: 34px; border-radius: 50%;
+          max-width: 34px; max-height: 34px;
+          aspect-ratio: 1; border-radius: 50%; padding: 0;
           display: flex; align-items: center; justify-content: center;
           cursor: pointer; z-index: 5; flex-shrink: 0;
           backdrop-filter: blur(6px); transition: transform 0.15s ease;
@@ -1329,7 +1332,16 @@ export default function AgentStorefrontGrid({ products, inventoryMap, primaryCol
                     Checkout
                   </button>
                   <button
-                    onClick={() => { setCartItems({}); setShowCartFloat(false); }}
+                    onClick={() => setShowCartFloat(false)}
+                    style={{
+                      display: 'block', width: '100%', textAlign: 'center', padding: '9px',
+                      background: 'transparent', color: 'var(--silver)', borderRadius: 'var(--radius-md)',
+                      fontWeight: 600, fontSize: '0.82rem', border: '1px solid rgba(255,255,255,0.15)', cursor: 'pointer'
+                    }}
+                  >
+                    Keep Shopping
+                  </button>
+                  <button onClick={() => { setCartItems({}); setShowCartFloat(false); }}
                     style={{
                       display: 'block', width: '100%', textAlign: 'center', padding: '8px',
                       background: 'transparent', color: 'var(--grey-400)', borderRadius: 'var(--radius-md)',
@@ -1753,8 +1765,25 @@ export default function AgentStorefrontGrid({ products, inventoryMap, primaryCol
                         background: 'var(--surface-2)', zIndex: 10,
                         boxShadow: '0 8px 32px rgba(0,0,0,0.5)'
                       }}>
-                        <div style={{ padding: '8px 16px', background: 'rgba(255,255,255,0.04)', fontSize: '0.75rem', fontWeight: 600, color: 'var(--silver)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                        <div style={{ padding: '8px 16px', background: 'rgba(255,255,255,0.04)', fontSize: '0.75rem', fontWeight: 600, color: 'var(--silver)', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                           Bulk Volume Discounts
+                          <button
+                            type="button"
+                            onClick={() => setShowBulkPricing(false)}
+                            aria-label="Close bulk pricing"
+                            style={{
+                              width: 26, height: 26, minWidth: 26, minHeight: 26,
+                              borderRadius: '50%', padding: 0, boxSizing: 'border-box',
+                              background: 'rgba(255,255,255,0.08)',
+                              border: '1px solid rgba(255,255,255,0.18)',
+                              color: 'var(--silver)', cursor: 'pointer',
+                              display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+                            }}
+                          >
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                              <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+                            </svg>
+                          </button>
                         </div>
                         {(() => {
                           const selVId2 = selectedVariants[detailProduct.name] || detailProduct.defaultVariantId;
@@ -1814,6 +1843,7 @@ export default function AgentStorefrontGrid({ products, inventoryMap, primaryCol
                           [vId]: (prev[vId] || 0) + pendingQty,
                         }));
                         setDetailProduct(null);
+                        setShowBulkPricing(false); // close bulk pricing when item added
                         setPendingQty(isStorefrontOwner ? 10 : 1); // Reset to default for next open
                         setShowCartFloat(true);
                       }}

@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { requireAdmin } from '@/lib/admin-auth';
 import { createServiceClient } from '@/lib/supabase/server';
 import { assertSameOrigin } from '@/lib/csrf';
+import { notifyTaxExemption } from '@/lib/notify';
 
 export async function GET(req: NextRequest) {
   const gate = await requireAdmin();
@@ -128,6 +129,15 @@ export async function PATCH(req: NextRequest) {
     body: bodyMap[action],
     type: 'notification',
   }).then(() => {}, () => {});
+
+  // In-app notification — shows in bell immediately
+  void notifyTaxExemption(
+    service,
+    existing.user_id,
+    action as 'approve' | 'reject' | 'expire',
+    existing.state_code,
+    rejected_reason ?? undefined,
+  ).catch(() => { /* best-effort */ });
 
   return NextResponse.json({ success: true });
 }

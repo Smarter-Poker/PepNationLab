@@ -441,10 +441,18 @@ function CartDrawer() {
           </h3>
           <button 
             onClick={() => setIsCartOpen(false)}
-            style={{ background: 'none', border: 'none', color: 'var(--silver)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+            style={{
+              width: 36, height: 36, minWidth: 36, minHeight: 36,
+              borderRadius: '50%', padding: 0, boxSizing: 'border-box',
+              background: 'rgba(255,255,255,0.06)',
+              border: '1px solid rgba(255,255,255,0.18)',
+              color: 'var(--silver)', cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              flexShrink: 0,
+            }}
             aria-label="Close Cart"
           >
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
               <line x1="18" y1="6" x2="6" y2="18" />
               <line x1="6" y1="6" x2="18" y2="18" />
             </svg>
@@ -542,22 +550,29 @@ function CartDrawer() {
               </strong>
             </div>
 
-            <div style={{ display: 'flex', gap: 'var(--space-3)' }}>
-              <button 
-                onClick={clearCart} 
-                className="btn btn-secondary" 
-                style={{ flexBasis: '35%', justifyContent: 'center', fontSize: '0.8rem', padding: '10px 0' }}
-              >
-                Clear Cart
-              </button>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
               <Link 
                 href="/checkout" 
                 onClick={() => setIsCartOpen(false)}
                 className="btn btn-primary" 
-                style={{ flexGrow: 1, justifyContent: 'center', fontSize: '0.82rem', padding: '10px 0' }}
+                style={{ width: '100%', justifyContent: 'center', fontSize: '0.88rem', padding: '12px 0' }}
               >
                 Proceed To Checkout
               </Link>
+              <button 
+                onClick={() => setIsCartOpen(false)} 
+                className="btn btn-secondary" 
+                style={{ width: '100%', justifyContent: 'center', fontSize: '0.82rem', padding: '10px 0' }}
+              >
+                Keep Shopping
+              </button>
+              <button 
+                onClick={clearCart} 
+                className="btn btn-secondary" 
+                style={{ width: '100%', justifyContent: 'center', fontSize: '0.78rem', padding: '8px 0', opacity: 0.7 }}
+              >
+                Clear Cart
+              </button>
             </div>
           </div>
         )}

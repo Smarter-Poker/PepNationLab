@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
 import { requireAgent } from '@/lib/admin-auth';
 import { assertSameOrigin } from '@/lib/csrf';
+import { notifyPromotedToAgent, notifyPromotionSuccess } from '@/lib/notify';
 
 /**
  * POST /api/agent/promote-subagent
@@ -122,6 +123,12 @@ export async function POST(req: NextRequest) {
         { status: 500 }
       );
     }
+
+    // Fire-and-forget: notify both the new sub-agent AND the super-agent
+    void Promise.all([
+      notifyPromotedToAgent(admin, researcherId, defaultSlug, superAgentProfile.full_name || 'Your Super Agent'),
+      notifyPromotionSuccess(admin, superAgentId, researcherProfile.full_name || 'Researcher', defaultSlug),
+    ]).catch(() => { /* best-effort */ });
 
     return NextResponse.json({
       success: true,

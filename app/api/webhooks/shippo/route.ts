@@ -28,6 +28,8 @@ import { createServiceClient } from '@/lib/supabase/server';
 import { safeCompare } from '@/lib/shippo-crypto';
 import { canTransition, type OrderStatus } from '@/lib/order-states';
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { notifyOrderDelivered } from '@/lib/notify';
+import { shortOrderId } from '@/lib/push-enqueue';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -280,14 +282,16 @@ async function handleTrackUpdated(
         .neq('status', 'delivered');
 
       if (order.buyer_id) {
-        try {
-          const { enqueueOrderPush } = await import('@/lib/push-enqueue');
-          await enqueueOrderPush(supabase, {
-            userId: order.buyer_id,
-            orderId: order.id,
-            event: 'order_delivered',
-          });
-        } catch { /* non-blocking */ }
+        void (async () => {
+          try {
+            const { enqueueOrderPush } = await import('@/lib/push-enqueue');
+            const short = shortOrderId(order.id);
+            // In-app notification — shows in bell immediately
+            await notifyOrderDelivered(supabase, order.buyer_id, order.id, short);
+            // Web push
+            await enqueueOrderPush(supabase, { userId: order.buyer_id, orderId: order.id, event: 'order_delivered' });
+          } catch { /* non-blocking */ }
+        })();
       }
     }
   } else if (inTransitStatuses.includes(status) && currentStatus === 'shipped') {

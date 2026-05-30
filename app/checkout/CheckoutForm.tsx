@@ -808,6 +808,16 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
             .address-city-grid {
               grid-template-columns: 1fr 1fr !important;
             }
+            .coupon-row {
+              flex-direction: column !important;
+            }
+            .coupon-row input {
+              width: 100% !important;
+            }
+            .coupon-row button {
+              width: 100% !important;
+              padding: 10px !important;
+            }
           }
           @media (max-width: 400px) {
             .address-city-grid {
@@ -985,7 +995,7 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
                         />
                       </div>
 
-                      <div className="grid-2">
+                      <div className="grid-2" style={{ alignItems: 'start' }}>
                         <div className="form-group">
                           <label className="form-label">Street Address</label>
                           <input
@@ -1008,7 +1018,7 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
                         </div>
                       </div>
 
-                      <div className="address-city-grid" style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', gap: 'var(--space-4)' }}>
+                      <div className="address-city-grid" style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', gap: 'var(--space-4)', alignItems: 'start' }}>
                         <div className="form-group">
                           <label className="form-label">City</label>
                           <input
@@ -1289,7 +1299,7 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
                   </button>
                 </div>
               ) : (
-                <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
+                <div className="coupon-row" style={{ display: 'flex', gap: 'var(--space-2)' }}>
                   <input
                     type="text"
                     className="form-input"

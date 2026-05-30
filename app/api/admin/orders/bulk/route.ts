@@ -8,8 +8,9 @@ import {
   type BulkAction,
   type OrderStatus,
 } from '@/lib/order-states';
-import { enqueueOrderPush } from '@/lib/push-enqueue';
+import { enqueueOrderPush, shortOrderId } from '@/lib/push-enqueue';
 import { enqueueWebhook, fetchOrderForWebhook, type WebhookEventType } from '@/lib/webhook-dispatch';
+import { notifyAdminOrderStatusChange } from '@/lib/notify';
 
 type BulkPushEvent = 'order_approved' | 'order_shipped' | 'order_delivered';
 
@@ -100,31 +101,26 @@ export async function POST(req: NextRequest) {
       }
       succeeded.push(id);
 
-      // Push notification (fire-and-forget) for bulk transitions.
-      try {
-        const buyerId = typeof order.buyer_id === 'string' ? order.buyer_id : null;
-        const trackingNum = typeof order.tracking_number === 'string' ? order.tracking_number : null;
-        if (buyerId) {
-          let event: BulkPushEvent | null = null;
-          if (target === 'approved_ship' || target === 'approved_pickup') {
-            event = 'order_approved';
-          } else if (target === 'shipped') {
-            event = 'order_shipped';
-          } else if (target === 'delivered') {
-            event = 'order_delivered';
+      // In-app + push notifications (fire-and-forget) for bulk transitions.
+      void (async () => {
+        try {
+          const buyerId = typeof order.buyer_id === 'string' ? order.buyer_id : null;
+          const trackingNum = typeof order.tracking_number === 'string' ? order.tracking_number : null;
+          if (buyerId) {
+            const short = shortOrderId(id);
+            // In-app notification — shows in bell immediately via Realtime
+            await notifyAdminOrderStatusChange(supabase, buyerId, id, short, target, trackingNum);
+            // Web push
+            let event: BulkPushEvent | null = null;
+            if (target === 'approved_ship' || target === 'approved_pickup') event = 'order_approved';
+            else if (target === 'shipped') event = 'order_shipped';
+            else if (target === 'delivered') event = 'order_delivered';
+            if (event) {
+              await enqueueOrderPush(supabase, { userId: buyerId, orderId: id, event, tracking: trackingNum });
+            }
           }
-          if (event) {
-            try {
-              await enqueueOrderPush(supabase, {
-                userId: buyerId,
-                orderId: id,
-                event,
-                tracking: trackingNum,
-              });
-            } catch { /* push must not block bulk response */ }
-          }
-        }
-      } catch { /* never block bulk response on push */ }
+        } catch { /* notifications must not block bulk response */ }
+      })();
 
       // Fire-and-forget webhook for bulk admin transitions.
       void (async () => {

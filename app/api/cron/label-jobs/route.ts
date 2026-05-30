@@ -23,8 +23,9 @@ import type { NextRequest } from 'next/server';
 import { assertCronAuth, claimCronRun, finishCronRun } from '@/lib/cron';
 import { buyLabel } from '@/lib/shippo';
 import { createServiceClient } from '@/lib/supabase/server';
-import { enqueueOrderPush } from '@/lib/push-enqueue';
+import { enqueueOrderPush, shortOrderId } from '@/lib/push-enqueue';
 import { enqueueWebhook, fetchOrderForWebhook } from '@/lib/webhook-dispatch';
+import { notifyOrderShipped } from '@/lib/notify';
 
 export const dynamic = 'force-dynamic';
 
@@ -183,14 +184,15 @@ export async function GET(req: NextRequest) {
           .maybeSingle();
 
         if (orderRow?.buyer_id) {
-          try {
-            await enqueueOrderPush(supabase, {
-              userId: orderRow.buyer_id,
-              orderId,
-              event: 'order_shipped',
-              tracking: result.trackingNumber,
-            });
-          } catch { /* non-blocking */ }
+          void (async () => {
+            try {
+              const short = shortOrderId(orderId);
+              // In-app notification — shows in bell immediately
+              await notifyOrderShipped(supabase, orderRow.buyer_id, orderId, short, result.trackingNumber ?? undefined);
+              // Web push
+              await enqueueOrderPush(supabase, { userId: orderRow.buyer_id, orderId, event: 'order_shipped', tracking: result.trackingNumber });
+            } catch { /* non-blocking */ }
+          })();
         }
 
         void (async () => {

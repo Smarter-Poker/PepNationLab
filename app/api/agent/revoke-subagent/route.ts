@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
 import { requireAgent } from '@/lib/admin-auth';
 import { assertSameOrigin } from '@/lib/csrf';
+import { notifyRoleRevoked } from '@/lib/notify';
 
 // POST: Super-agent demotes one of their sub-agents back to 'researcher'.
 // Keeps referring_agent_id intact so downline sales attribution is preserved.
@@ -96,6 +97,13 @@ export async function POST(req: NextRequest) {
       target_name: target.full_name ?? null,
     },
   });
+
+  // Fetch super-agent name for the notification
+  const { data: callerFullProfile } = await supabase.from('profiles').select('full_name').eq('id', callerId).maybeSingle();
+  const superAgentName = callerFullProfile?.full_name || 'Your Super Agent';
+
+  // Fire-and-forget: notify the demoted user
+  void notifyRoleRevoked(supabase, subAgentId, superAgentName).catch(() => { /* best-effort */ });
 
   return NextResponse.json({ success: true });
 }

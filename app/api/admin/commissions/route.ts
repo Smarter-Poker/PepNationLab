@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
 import { requireAdmin } from '@/lib/admin-auth';
 import { assertSameOrigin } from '@/lib/csrf';
+import { notifyCommissionPayout } from '@/lib/notify';
 
 /** GET: List commissions | POST: Approve/Pay/Create payout */
 export async function GET(req: NextRequest) {
@@ -113,6 +114,9 @@ export async function POST(req: NextRequest) {
       body: `Your commission payout of $${totalAmount.toFixed(2)} has been processed via ${paymentMethod || 'transfer'}${referenceNumber ? ` (Ref: ${referenceNumber})` : ''}.`,
       type: 'notification',
     });
+
+    // In-app notification — shows in bell immediately via Realtime
+    void notifyCommissionPayout(service, agentId, totalAmount, paymentMethod || 'transfer').catch(() => { /* best-effort */ });
 
     await service.from('admin_audit_log').insert({
       actor_id: gate.userId,

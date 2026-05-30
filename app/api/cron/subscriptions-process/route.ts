@@ -3,6 +3,7 @@ import { createServiceClient } from '@/lib/supabase/server';
 import { assertCronAuth, claimCronRun, finishCronRun } from '@/lib/cron';
 import { shortOrderId } from '@/lib/push-enqueue';
 import { enqueueWebhook } from '@/lib/webhook-dispatch';
+import { notifySubscriptionOrder, notifySubscriptionPaused } from '@/lib/notify';
 
 export const dynamic = 'force-dynamic';
 
@@ -374,6 +375,8 @@ async function pauseWithReason(
       recipient_id: sub.researcher_id,
       body: `Your Auto-Replenish Subscription Was Paused: ${reason}. Visit Your Account To Update It.`,
     });
+    // In-app notification — shows in bell immediately
+    await notifySubscriptionPaused(service, sub.researcher_id, reason);
   } catch {
     /* notification best effort */
   }
@@ -420,6 +423,8 @@ async function notifyResearcher(
       recipient_id: sub.researcher_id,
       body,
     });
+    // In-app notification — shows in bell immediately via Realtime
+    await notifySubscriptionOrder(service, sub.researcher_id, short, total);
   } catch {
     /* swallow */
   }

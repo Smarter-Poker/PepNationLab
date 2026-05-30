@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
 import { assertCronAuth, claimCronRun, finishCronRun } from '@/lib/cron';
+import { notifyReferralReward } from '@/lib/notify';
 
 export const dynamic = 'force-dynamic';
 
@@ -144,6 +145,8 @@ export async function GET(req: NextRequest) {
               type: 'notification',
             },
           ]);
+          // In-app notification — shows in bell immediately via Realtime
+          await notifyReferralReward(service, ref.referrer_id, ref.referee_id, referrerAmount, refereeAmount);
         } catch {
           // notifications must not break the loop
         }
