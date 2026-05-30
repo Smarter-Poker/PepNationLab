@@ -5,6 +5,7 @@ import { isIP } from 'node:net';
 import { createServiceClient } from '@/lib/supabase/server';
 import { assertSameOrigin } from '@/lib/csrf';
 import { requireSession } from '@/lib/messenger/server';
+import { messengerRateLimit, messengerRateLimitResponse } from '@/lib/messengerRateLimit';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -96,6 +97,9 @@ export async function POST(req: NextRequest) {
 
   const { user, error } = await requireSession();
   if (error) return NextResponse.json({ error }, { status: 401 });
+
+  const limited = await messengerRateLimit('read', user.id);
+  if (!limited.allowed) return messengerRateLimitResponse(limited);
   void user;
 
   const body = (await req.json().catch(() => ({}))) as { url?: string };

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
 import { assertSameOrigin } from '@/lib/csrf';
 import { requireSession, getParticipant } from '@/lib/messenger/server';
+import { messengerRateLimit, messengerRateLimitResponse } from '@/lib/messengerRateLimit';
 import { SendMessageSchema } from '@/lib/messenger/schemas';
 import { sanitizeMessageText } from '@/lib/messenger/sanitize';
 import { hasAdminMention, recordAdminMention } from '@/lib/messenger/admin-mentions';
@@ -15,6 +16,9 @@ export async function POST(req: NextRequest) {
 
   const { user, error } = await requireSession();
   if (error) return NextResponse.json({ error }, { status: 401 });
+
+  const limited = await messengerRateLimit('send', user.id);
+  if (!limited.allowed) return messengerRateLimitResponse(limited);
 
   const body = await req.json().catch(() => ({}));
   const parsed = SendMessageSchema.safeParse(body);

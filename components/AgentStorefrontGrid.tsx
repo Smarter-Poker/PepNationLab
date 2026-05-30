@@ -1018,11 +1018,16 @@ export default function AgentStorefrontGrid({ products, inventoryMap, primaryCol
                       className="sf-wishlist-btn"
                       style={{
                         background: wished ? 'rgba(229,62,62,0.20)' : 'rgba(0,0,0,0.55)',
-                        border: `1px solid ${wished ? 'rgba(229,62,62,0.50)' : 'rgba(255,255,255,0.15)'}`,
-                        color: wished ? '#FF5A6E' : 'var(--silver)',
+                        border: `1px solid ${wished ? 'rgba(229,62,62,0.50)' : 'rgba(255,255,255,0.20)'}`,
                       }}
                     >
-                      <Heart size={16} fill={wished ? '#FF5A6E' : 'none'} aria-hidden="true" />
+                      <Heart
+                        size={17}
+                        stroke={wished ? '#FF5A6E' : 'rgba(220,220,220,0.9)'}
+                        fill={wished ? '#FF5A6E' : 'none'}
+                        strokeWidth={2}
+                        aria-hidden="true"
+                      />
                     </button>
                   );
                 })()}
@@ -1347,9 +1352,30 @@ export default function AgentStorefrontGrid({ products, inventoryMap, primaryCol
               onClick={e => e.stopPropagation()}
               className="sf-modal-sheet"
             >
-              {/* Drag handle for bottom-sheet affordance on mobile */}
-              <div className="sf-modal-drag-bar" aria-hidden="true" />
-              {/* Modal Header Image */}
+              {/* Top bar: drag handle (centered) + close button (right) */}
+              <div style={{
+                display: 'flex', alignItems: 'center', padding: '12px 14px 8px', flexShrink: 0,
+              }}>
+                <div style={{ flex: 1 }} />
+                <div style={{ width: 44, height: 4, borderRadius: 2, background: 'rgba(255,255,255,0.18)' }} aria-hidden="true" />
+                <div style={{ flex: 1, display: 'flex', justifyContent: 'flex-end' }}>
+                  <button
+                    onClick={() => setDetailProduct(null)}
+                    aria-label="Close"
+                    style={{
+                      width: 30, height: 30, minWidth: 30, minHeight: 30,
+                      borderRadius: '50%', padding: 0,
+                      background: 'rgba(255,255,255,0.10)',
+                      border: '1px solid rgba(255,255,255,0.25)',
+                      cursor: 'pointer', display: 'flex', alignItems: 'center',
+                      justifyContent: 'center', boxSizing: 'border-box', flexShrink: 0,
+                    }}
+                  >
+                    <X size={14} stroke="#ffffff" strokeWidth={2.5} aria-hidden="true" />
+                  </button>
+                </div>
+              </div>
+              {/* Modal Header Image — no close button inside, border-radius won't clip anything */}
               <div
                 className="sf-modal-img"
                 style={{ background: `radial-gradient(circle at 50% 50%, ${primaryColor}20 0%, var(--black) 100%)` }}
@@ -1362,18 +1388,6 @@ export default function AgentStorefrontGrid({ products, inventoryMap, primaryCol
                   style={{ width: '100%', height: '100%', objectFit: 'contain', objectPosition: 'center', padding: '16px', transition: 'transform 0.4s ease' }}
                   onError={e => { (e.target as HTMLImageElement).style.opacity = '0.3'; }}
                 />
-                <button
-                  onClick={() => setDetailProduct(null)}
-                  style={{
-                    position: 'absolute', top: 16, right: 16, width: 36, height: 36,
-                    borderRadius: '50%', background: 'rgba(0,0,0,0.6)', border: '1px solid rgba(255,255,255,0.2)',
-                    color: 'var(--white)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    fontSize: '1.2rem', fontWeight: 700, backdropFilter: 'blur(4px)'
-                  }}
-                  aria-label="Close"
-                >
-                  <X size={18} aria-hidden="true" />
-                </button>
                 <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 60, background: 'linear-gradient(transparent, var(--surface-2))' }} />
               </div>
 
@@ -1492,11 +1506,17 @@ export default function AgentStorefrontGrid({ products, inventoryMap, primaryCol
                   const rawPrice = (activeV as any).is_on_sale && (activeV as any).sale_price
                     ? (activeV as any).sale_price
                     : activeV.retail_price;
-                  const basePrice = rawPrice / 10;
+                  const basePrice = rawPrice / 10;   // retail per-vial price
+
+                  // Agent cost price — admin-configured tier price (e.g. $52 for 10 vials).
+                  // Falls back to retail base price when cost_price isn't set on this variant.
+                  const agentCostPerVial = isStorefrontOwner && (activeV as any).cost_price != null
+                    ? Number((activeV as any).cost_price) / 10
+                    : basePrice;
 
                   // ── AGENT SELF-BUY PRICING RULE ─────────────────────────────────
-                  // Agent direct (tier) pricing requires MINIMUM 10 vials in increments
-                  // of 10. Below 10 vials the standard retail dynamic pricing applies.
+                  // Agent direct (tier) pricing applies at 10+ vials using cost_price.
+                  // Below 10 vials the standard retail dynamic pricing applies.
                   // This is enforced here (display) AND server-side (API).
                   const agentQualifiesForDiscount = isStorefrontOwner && qty >= 10;
 
@@ -1523,6 +1543,9 @@ export default function AgentStorefrontGrid({ products, inventoryMap, primaryCol
                         ];
 
                   const getUnitPrice = (q: number) => {
+                    // Agent self-buy at 10+ vials → use admin-configured cost price (tier price)
+                    if (isStorefrontOwner && q >= 10) return agentCostPerVial;
+                    // Below 10 (agent) or all quantities (researcher) → retail + tiered markup
                     const t = tiers.find(t => q >= t.min && q <= t.max);
                     return t ? parseFloat((basePrice * (1 + t.pct / 100)).toFixed(2)) : basePrice;
                   };

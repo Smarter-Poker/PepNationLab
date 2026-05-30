@@ -176,15 +176,9 @@ export async function POST(req: NextRequest) {
       continue;
     }
 
-    const { data: ap } = await supabase
-      .from('agent_profiles')
-      .select('shippo_api_key')
-      .eq('id', order.agent_id)
-      .maybeSingle();
-    if (!ap?.shippo_api_key) {
-      failed.push({ id, reason: 'Agent Has No Shippo API Key Configured.' });
-      continue;
-    }
+    // Key resolution now happens inside purchaseLabelForOrder -> getActiveKey.
+    // Falls through platform_shippo_credentials -> SHIPPO_PLATFORM_TOKEN env
+    // -> legacy per-agent key. Bulk loop no longer pre-checks per-agent keys.
 
     const result = await purchaseLabelForOrder(supabase, {
       orderId: id,
