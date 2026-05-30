@@ -1507,3 +1507,25 @@ html[data-theme="light"] .messenger-back-btn {
   border-color: rgba(0,0,0,0.08) !important;
 }
 
+/* ---- Message action button — always visible on touch devices ---- */
+/* On touch screens there is no hover state, so we make the ⋯ button
+   fully visible at all times so users know they can tap to edit/delete */
+@media (hover: none) {
+  .msg-action-btn {
+    opacity: 0.6 !important;
+  }
+  .msg-action-btn:active {
+    opacity: 1 !important;
+    background: var(--surface-3, #1D2D3E) !important;
+  }
+}
+
+/* On desktop, show fully on hover (the inline style handles this via the
+   hovered state, but ensure focus-visible also shows it for keyboard nav) */
+.msg-action-btn:focus-visible {
+  opacity: 1 !important;
+  outline: 2px solid var(--teal, #00C4BC);
+  outline-offset: 2px;
+}
+
+

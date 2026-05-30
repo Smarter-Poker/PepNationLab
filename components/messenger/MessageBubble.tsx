@@ -1,6 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
-import { Reply, Smile, Pencil, Trash2, Check, X, Download, Pin, Bookmark, Tag, MessageSquare, Flag, Bell } from 'lucide-react';
+import { Reply, Smile, Pencil, Trash2, Check, X, Download, Pin, Bookmark, Tag, MessageSquare, Flag, Bell, MoreHorizontal } from 'lucide-react';
 import type { Message, Reaction, ParticipantRole } from '@/lib/messenger/types';
 import type { MessageLabelValue } from '@/lib/messenger/schemas';
 import ReactionPopover from './ReactionPopover';
@@ -88,6 +88,7 @@ export default function MessageBubble({
   const [lightbox, setLightbox] = useState(false);
   const [labelsOpen, setLabelsOpen] = useState(false);
   const [expiryTick, setExpiryTick] = useState(0);
+  const [hovered, setHovered] = useState(false);
   const failed = (message.metadata as { failed?: boolean })?.failed === true;
   const pending = message.id.startsWith('temp-');
   const meta = (message.media_metadata ?? {}) as { filename?: string; size?: number; durationSec?: number; contentType?: string };
@@ -242,8 +243,41 @@ export default function MessageBubble({
       data-msg-id={message.id}
       style={{ alignSelf: isOwn ? 'flex-end' : 'flex-start', maxWidth: '70%',
         display: 'flex', flexDirection: 'column', gap: 2, position: 'relative' }}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
       onContextMenu={(e) => { e.preventDefault(); if (editing || confirmDelete) return; setMenuOpen((v) => !v); }}
     >
+      {/* ── Visible action trigger button ── */}
+      {showActionMenu && !message.is_deleted && (
+        <button
+          type="button"
+          aria-label="Message Actions"
+          title="Message Actions"
+          onClick={(e) => { e.stopPropagation(); setMenuOpen(v => !v); }}
+          style={{
+            position: 'absolute',
+            top: -14,
+            // Own messages: button on the left. Others: button on the right.
+            ...(isOwn ? { left: -36 } : { right: -36 }),
+            background: menuOpen ? 'var(--surface-3, #1D2D3E)' : 'var(--surface-2, #162230)',
+            border: '1px solid var(--surface-3, #1D2D3E)',
+            borderRadius: 6,
+            color: 'var(--white, #FFFFFF)',
+            cursor: 'pointer',
+            padding: '3px 5px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 10,
+            // Desktop: show on hover. Mobile: always slightly visible.
+            opacity: menuOpen ? 1 : hovered ? 1 : 0.25,
+            transition: 'opacity 0.15s, background 0.15s',
+          }}
+          className="msg-action-btn"
+        >
+          <MoreHorizontal size={14} />
+        </button>
+      )}
       {(isPinned || isBookmarked || currentLabels.length > 0) && (
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, alignSelf: isOwn ? 'flex-end' : 'flex-start', padding: '0 4px' }}>
           {isPinned && (

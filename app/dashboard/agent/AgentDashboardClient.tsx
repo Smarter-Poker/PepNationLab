@@ -798,8 +798,9 @@ export default function AgentDashboardClient({
                     <div className="form-group">
                       <label className="form-label">Username</label>
                       <input type="text" className="form-input" placeholder="E.g. jsmith"
-                        value={crUsername} onChange={e => setCrUsername(sanitizeUsername(e.target.value))}
+                        value={crUsername} onChange={e => setCrUsername(e.target.value.replace(/[^a-zA-Z0-9_]/g, ''))}
                         required autoCapitalize="none" spellCheck={false} />
+                      <p style={{ fontSize: '0.72rem', color: 'var(--grey-500)', marginTop: 4 }}>Login Is Case-Insensitive — Displayed Exactly As Entered.</p>
                     </div>
                     <div className="form-group">
                       <label className="form-label">Temporary Password</label>

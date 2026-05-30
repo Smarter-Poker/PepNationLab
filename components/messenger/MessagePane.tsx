@@ -160,6 +160,16 @@ export default function MessagePane({ userId, activeCall, setActiveCall }: Props
       setPushBanner('hidden');
       return;
     }
+
+    // Check the dismiss flag FIRST — if the user dismissed, hide regardless
+    // of permission state. Previously the denied check ran before this,
+    // causing the "dismissed" banner to reappear on every conversation switch.
+    const dismissed = window.sessionStorage.getItem(PUSH_DISMISS_KEY) === '1';
+    if (dismissed) {
+      setPushBanner('hidden');
+      return;
+    }
+
     if (Notification.permission === 'denied') {
       setPushBanner('denied');
       return;
@@ -170,11 +180,6 @@ export default function MessagePane({ userId, activeCall, setActiveCall }: Props
     }
     // permission === 'default'
     let cancelled = false;
-    const dismissed = window.sessionStorage.getItem(PUSH_DISMISS_KEY) === '1';
-    if (dismissed) {
-      setPushBanner('hidden');
-      return;
-    }
     (async () => {
       try {
         const res = await fetch('/api/messenger/notification-prefs', {
@@ -197,6 +202,7 @@ export default function MessagePane({ userId, activeCall, setActiveCall }: Props
       cancelled = true;
     };
   }, [activeId]);
+
 
   const handleAllowPush = useCallback(async () => {
     try {
