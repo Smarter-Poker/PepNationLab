@@ -32,21 +32,38 @@ function sortContacts(rows: ContactRow[]): ContactRow[] {
 
 // Audit12: every non-admin caller should always have at least the platform
 // admin(s) in their contact list. Returns active admin profiles excluding
-// the caller (defense in depth -- the caller cannot be in this set anyway
-// because the caller is non-admin in every branch that uses this helper).
+// the caller.
 async function loadAdminContacts(
   svc: ReturnType<typeof createServiceClient> extends Promise<infer T> ? T : never,
   excludeId: string,
 ): Promise<ContactRow[]> {
-  const { data } = await svc
+  const { data, error } = await svc
     .from('profiles')
     .select('id, full_name, username, email, role')
     .eq('role', 'admin')
     .eq('is_active', true)
     .neq('id', excludeId)
     .limit(50);
+  if (error) {
+    // Audit13: surface this in server logs so a silently failing query is
+    // not the reason the picker stays empty.
+    console.error('[list-contacts] loadAdminContacts failed', error);
+    return [];
+  }
   return (data ?? []) as ContactRow[];
 }
+
+// Audit13: every response uses these headers so no intermediate cache can
+// serve a stale contact list (Vercel's default `cache-control: max-age=0,
+// must-revalidate` allows the browser to hold a cached copy until a
+// revalidation round-trip; we want zero cache).
+function freshJson(body: unknown): NextResponse {
+  const res = NextResponse.json(body);
+  res.headers.set('Cache-Control', 'private, no-store, max-age=0');
+  return res;
+}
+
+const AUDIT_TAG = 'audit13';
 
 export async function POST(req: NextRequest) {
   const csrf = assertSameOrigin(req);
@@ -66,18 +83,21 @@ export async function POST(req: NextRequest) {
     .eq('id', user.id)
     .maybeSingle();
 
-  if (!me) return NextResponse.json({ contacts: [] });
+  if (!me) return freshJson({ contacts: [], _audit: AUDIT_TAG, _branch: 'no_profile' });
 
   const SELECT = 'id, full_name, username, email, role';
   const selectActive = (q: ReturnType<typeof svc.from>) => q.select(SELECT).eq('is_active', true).neq('id', me.id);
 
   if (me.role === 'admin') {
     const { data } = await selectActive(svc.from('profiles')).limit(200);
-    return NextResponse.json({ contacts: sortContacts((data ?? []) as ContactRow[]) });
+    return freshJson({
+      contacts: sortContacts((data ?? []) as ContactRow[]),
+      _audit: AUDIT_TAG,
+      _branch: 'admin',
+    });
   }
 
   if (me.role === 'super_agent') {
-    // Step 1: my agents (parent_agent_id = me) AND my sub-agents (also parent_agent_id = me).
     const { data: directDownline } = await selectActive(svc.from('profiles'))
       .eq('parent_agent_id', me.id)
       .limit(200);
@@ -90,11 +110,15 @@ export async function POST(req: NextRequest) {
         .limit(500);
       researcherRows = (researchers ?? []) as ContactRow[];
     }
-    // Audit12: always include platform admin(s).
     const admins = await loadAdminContacts(svc, me.id);
     const byId = new Map<string, ContactRow>();
     for (const r of [...downlineRows, ...researcherRows, ...admins]) byId.set(r.id, r);
-    return NextResponse.json({ contacts: sortContacts(Array.from(byId.values())) });
+    return freshJson({
+      contacts: sortContacts(Array.from(byId.values())),
+      _audit: AUDIT_TAG,
+      _branch: 'super_agent',
+      _adminCount: admins.length,
+    });
   }
 
   if (me.role === 'agent') {
@@ -115,10 +139,14 @@ export async function POST(req: NextRequest) {
         .maybeSingle();
       if (parent) byId.set(parent.id, parent as ContactRow);
     }
-    // Audit12: always include platform admin(s).
     const admins = await loadAdminContacts(svc, me.id);
     for (const a of admins) byId.set(a.id, a);
-    return NextResponse.json({ contacts: sortContacts(Array.from(byId.values())) });
+    return freshJson({
+      contacts: sortContacts(Array.from(byId.values())),
+      _audit: AUDIT_TAG,
+      _branch: 'agent',
+      _adminCount: admins.length,
+    });
   }
 
   if (me.role === 'researcher') {
@@ -132,17 +160,24 @@ export async function POST(req: NextRequest) {
         .maybeSingle();
       if (agent) byId.set(agent.id, agent as ContactRow);
     }
-    // Audit12: researchers always get the admin(s) as a contact even if the
-    // referring_agent_id is NULL (deactivated upstream agent) -- so they can
-    // always reach platform support.
     const admins = await loadAdminContacts(svc, me.id);
     for (const a of admins) byId.set(a.id, a);
-    return NextResponse.json({ contacts: sortContacts(Array.from(byId.values())) });
+    return freshJson({
+      contacts: sortContacts(Array.from(byId.values())),
+      _audit: AUDIT_TAG,
+      _branch: 'researcher',
+      _adminCount: admins.length,
+    });
   }
 
-  // Unknown role -- still expose the platform admin(s) so the caller is
-  // not entirely contactless. (Defensive; the production role enum is
-  // admin/super_agent/agent/researcher/shipping.)
+  // Unknown role (e.g. shipping) -- still expose the platform admin(s) so the
+  // caller is not entirely contactless.
   const admins = await loadAdminContacts(svc, me.id);
-  return NextResponse.json({ contacts: sortContacts(admins) });
+  return freshJson({
+    contacts: sortContacts(admins),
+    _audit: AUDIT_TAG,
+    _branch: 'fallback',
+    _role: String(me.role ?? 'unknown'),
+    _adminCount: admins.length,
+  });
 }

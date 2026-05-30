@@ -29,10 +29,13 @@ export default function NewConversationDialog({ selfId, onClose }: Props) {
     let cancelled = false;
     (async () => {
       try {
+        // Audit13: force a fresh fetch on every dialog mount so the browser
+        // never serves a stale empty contact list cached by an earlier deploy.
         const res = await fetch('/api/messenger/list-contacts', {
           method: 'POST',
           headers: { 'content-type': 'application/json' },
           body: '{}',
+          cache: 'no-store',
         });
         if (!res.ok) {
           toast('Could Not Load Contacts');
