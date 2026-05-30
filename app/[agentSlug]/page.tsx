@@ -79,12 +79,14 @@ export default async function AgentStorefrontPage({ params }: Props) {
         unit_measure,
         weight_oz,
         inventory_count,
-        low_stock_threshold
+        low_stock_threshold,
+        base_cost
       )
     `)
     .eq('agent_id', agent.id)
     .eq('is_visible', true)
     .order('sort_order');
+
 
   const { data: { user } } = await supabase.auth.getUser();
 
@@ -175,6 +177,28 @@ export default async function AgentStorefrontPage({ params }: Props) {
     initialWishlistIds = (favRows ?? []).map(r => r.product_id);
   }
 
+  // If the viewer is the storefront owner (agent self-buy), fetch their tier
+  // multiplier so we can compute cost_price per product for the correct display.
+  let viewerTierMultiplier = 1.0;
+  if (isStorefrontOwner && userProfile?.tier) {
+    const { data: tierRow } = await supabase
+      .from('pricing_tiers')
+      .select('multiplier')
+      .eq('tier_name', userProfile.tier)
+      .maybeSingle();
+    viewerTierMultiplier = tierRow?.multiplier != null ? Number(tierRow.multiplier) : 1.0;
+  }
+
+  // Augment each product with cost_price (= base_cost × viewer tier multiplier)
+  // so AgentStorefrontGrid can show the agent their direct tier price on self-buy.
+  const productsWithCost = (products ?? []).map(p => {
+    const baseCost = (p.products as any)?.base_cost;
+    const costPrice = baseCost != null && viewerTierMultiplier > 0
+      ? Number(baseCost) * viewerTierMultiplier
+      : null;
+    return { ...p, cost_price: costPrice };
+  });
+
   const primaryColor = agent.primary_color ?? '#00C4BC';
   const displayName = agent.display_name;
 
@@ -258,7 +282,7 @@ export default async function AgentStorefrontPage({ params }: Props) {
         <div style={{ maxWidth: 960, margin: '0 auto', padding: '0 8px' }}>
           <Suspense fallback={null}>
             <AgentStorefrontGrid
-              products={products as any}
+              products={productsWithCost as any}
               inventoryMap={Object.fromEntries(inventoryMap)}
               primaryColor={primaryColor}
               agentSlug={agentSlug}
