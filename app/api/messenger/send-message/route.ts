@@ -64,21 +64,27 @@ export async function POST(req: NextRequest) {
   if (parsed.data.replyToId) {
     const { data: parent } = await svc
       .from('messenger_messages')
-      .select('conversation_id')
+      .select('conversation_id, is_deleted')
       .eq('id', parsed.data.replyToId)
       .maybeSingle();
     if (!parent || parent.conversation_id !== parsed.data.conversationId) {
       return NextResponse.json({ error: 'Invalid Reply Target' }, { status: 400 });
     }
+    if (parent.is_deleted) {
+      return NextResponse.json({ error: 'Reply Target Deleted' }, { status: 410 });
+    }
   }
   if (parsed.data.threadParentId) {
     const { data: thread } = await svc
       .from('messenger_messages')
-      .select('conversation_id')
+      .select('conversation_id, is_deleted')
       .eq('id', parsed.data.threadParentId)
       .maybeSingle();
     if (!thread || thread.conversation_id !== parsed.data.conversationId) {
       return NextResponse.json({ error: 'Invalid Thread Parent' }, { status: 400 });
+    }
+    if (thread.is_deleted) {
+      return NextResponse.json({ error: 'Thread Parent Deleted' }, { status: 410 });
     }
   }
 
@@ -109,15 +115,23 @@ export async function POST(req: NextRequest) {
   // it even when no admin is a participant in this conversation. We use the
   // sanitized text so clients can't bypass HTML sanitization by mention-only.
   // Insert failure here is non-fatal - the user message is already persisted.
+  // Audit5 fix: use upsert(ignoreDuplicates) so a client retry that re-sends
+  // the same message with @admin doesn't create duplicate mention rows. The
+  // UNIQUE(message_id) partial index added in audit5 backs the dedupe.
   if (cleanText && ADMIN_MENTION_RE.test(cleanText)) {
     try {
-      await svc.from('messenger_admin_messages').insert({
-        message_id: (inserted as { id: string }).id,
-        conversation_id: parsed.data.conversationId,
-        sender_id: user.id,
-        message_text: cleanText.slice(0, 500),
-        status: 'unread',
-      });
+      await svc
+        .from('messenger_admin_messages')
+        .upsert(
+          {
+            message_id: (inserted as { id: string }).id,
+            conversation_id: parsed.data.conversationId,
+            sender_id: user.id,
+            message_text: cleanText.slice(0, 500),
+            status: 'unread',
+          },
+          { onConflict: 'message_id', ignoreDuplicates: true },
+        );
     } catch {
       // non-fatal
     }

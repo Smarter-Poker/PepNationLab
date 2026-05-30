@@ -323,6 +323,17 @@ export const ListAdminMentionsSchema = z.object({
 });
 export type ListAdminMentionsInput = z.infer<typeof ListAdminMentionsSchema>;
 
+// Audit5 fix: admin moderation surface had no way to flip an @admin mention
+// from `unread` -> `read` / `resolved`, so the AdminMessengerClient's docstring
+// noted the route was missing. Add it now so admins can clear the unread
+// counter from the inbox.
+export const ResolveAdminMentionSchema = z.object({
+  mentionId: z.string().uuid(),
+  status: z.enum(['read', 'resolved']),
+  note: z.string().max(500).optional(),
+});
+export type ResolveAdminMentionInput = z.infer<typeof ResolveAdminMentionSchema>;
+
 // Phase 14: notifications - notification_preferences upsert
 //
 // The platform-wide rule is "zero email" -- lib/email.ts is a no-op shim --

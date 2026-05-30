@@ -58,16 +58,22 @@ export async function GET(req: NextRequest) {
       continue;
     }
 
-    // Validate reply target still belongs to the same conversation.
+    // Validate reply target still belongs to the same conversation AND has
+    // not been soft-deleted in the meantime. Audit5 fix: drop reply_to_id
+    // if the parent message is deleted rather than send a broken reply.
     let replyToId: string | null = row.reply_to_id;
     if (replyToId) {
       const { data: parent } = await svc
         .from('messenger_messages')
-        .select('conversation_id')
+        .select('conversation_id, is_deleted')
         .eq('id', replyToId)
         .maybeSingle();
-      if (!parent || parent.conversation_id !== row.conversation_id) {
-        replyToId = null; // Drop dangling reply rather than fail the entire send.
+      if (
+        !parent ||
+        parent.conversation_id !== row.conversation_id ||
+        parent.is_deleted === true
+      ) {
+        replyToId = null; // Drop dangling/deleted reply rather than fail the send.
       }
     }
 
