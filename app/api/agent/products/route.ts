@@ -57,7 +57,7 @@ export async function GET(req: NextRequest) {
     });
   }
 
-  // ── Augment each product with agent_cost ───────────────────────────────────
+  // ── Augment each product with agent_cost ────────────────────────────────────────────────────
   // agent_cost = base_cost × effective_multiplier (per-product override wins
   // over global tier multiplier). This is what the agent pays PNL per 10 vials.
   const augmented = (data ?? []).map(ap => {
@@ -70,6 +70,9 @@ export async function GET(req: NextRequest) {
       ...ap,
       agent_cost: baseCost > 0 ? agentCost : null,
       agent_tier: tier,
+      // Diagnostic fields — surfaced in catalog UI to help spot wrong base_cost or overrides
+      base_cost_raw: baseCost > 0 ? baseCost : null,
+      effective_multiplier: effectiveMultiplier,
     };
   });
 

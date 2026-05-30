@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { NextResponse, type NextRequest } from 'next/server';
 import { createClient, createServiceClient } from '@/lib/supabase/server';
 
 /**
@@ -117,4 +117,66 @@ export async function requireAgent(): Promise<
   }
 
   return { ok: true, user: { id: user.id } };
+}
+
+/**
+ * Guards high-sensitivity admin endpoints (Shippo connect / rotate /
+ * disconnect) by verifying that the authenticated admin completed an MFA
+ * challenge within the last `windowMs` milliseconds.
+ *
+ * The Supabase `auth.mfa_amr_claims` view lists every authenticated method
+ * for the current JWT. We look for a TOTP or webauthn entry whose timestamp
+ * is within the window.
+ *
+ * @param req     The incoming Next.js request (used only for context here).
+ * @param windowMs  Maximum age of the MFA assertion in milliseconds (default 5 min).
+ * @returns null when MFA is recent enough, NextResponse 403 otherwise.
+ */
+export async function assertMfaRecent(
+  _req: NextRequest,
+  windowMs: number = 5 * 60 * 1000,
+): Promise<NextResponse | null> {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    return NextResponse.json(
+      { error: 'Unauthorized. Please Sign In.' },
+      { status: 401 },
+    );
+  }
+
+  // Retrieve AMR (Authentication Method Reference) claims from the session.
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) {
+    return NextResponse.json(
+      { error: 'No Active Session.' },
+      { status: 401 },
+    );
+  }
+
+  // The AMR array is embedded in the JWT. Each entry has { method, timestamp }.
+  // We look for a MFA method (totp, webauthn, recovery) within the window.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const amr: Array<{ method: string; timestamp: number }> = (session as any).user?.amr ?? [];
+  if (!Array.isArray(amr) || amr.length === 0) {
+    return NextResponse.json(
+      { error: 'Multi-Factor Authentication Required For This Action.' },
+      { status: 403 },
+    );
+  }
+
+  const mfaMethods = new Set(['totp', 'webauthn', 'recovery_code']);
+  const cutoffSec = (Date.now() - windowMs) / 1000;
+  const recentMfa = amr.some(
+    (entry) => mfaMethods.has(entry.method) && entry.timestamp >= cutoffSec,
+  );
+
+  if (!recentMfa) {
+    return NextResponse.json(
+      { error: 'Recent Multi-Factor Authentication Required. Please Re-Authenticate.' },
+      { status: 403 },
+    );
+  }
+
+  return null;
 }

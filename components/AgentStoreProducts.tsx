@@ -31,6 +31,10 @@ interface AgentProduct {
   agent_cost: number | null;
   /** The agent’s current tier key, e.g. ‘tier_1’ */
   agent_tier: string | null;
+  /** Raw base_cost from the products table — for diagnostic display */
+  base_cost_raw: number | null;
+  /** The multiplier that was applied (global or per-product override) */
+  effective_multiplier: number | null;
 }
 
 type FilterMode = 'all' | 'active' | 'hidden';
@@ -57,7 +61,17 @@ export default function AgentStoreProducts({ agentId }: { agentId: string }) {
       const res = await fetch('/api/agent/products');
       const json = await res.json();
       if (res.ok) {
-        const sorted = (json.data || []).sort((a: AgentProduct, b: AgentProduct) => (a.sort_order ?? 999) - (b.sort_order ?? 999));
+        const sorted = (json.data || []).sort((a: AgentProduct, b: AgentProduct) => {
+          // Primary: canonical product name A→Z
+          const nameA = (a.products?.name || '').toLowerCase().trim();
+          const nameB = (b.products?.name || '').toLowerCase().trim();
+          if (nameA < nameB) return -1;
+          if (nameA > nameB) return 1;
+          // Secondary: unit_size numerically smallest→largest (e.g. 10mg before 50mg before 500mg)
+          const sizeA = parseFloat(a.products?.unit_size || '0') || 0;
+          const sizeB = parseFloat(b.products?.unit_size || '0') || 0;
+          return sizeA - sizeB;
+        });
         setProducts(sorted);
         // Auto-expand all categories on first load
         const cats = new Set(sorted.map((p: AgentProduct) => p.products?.category || 'Other'));
@@ -418,6 +432,12 @@ export default function AgentStoreProducts({ agentId }: { agentId: string }) {
                                 <span style={{ fontSize: '0.82rem', color: '#68D391', fontWeight: 700 }}>
                                   ${Number(p.agent_cost).toFixed(2)}
                                 </span>
+                                {/* Diagnostic: show the formula so wrong base_cost is instantly visible */}
+                                {p.base_cost_raw != null && p.effective_multiplier != null && (
+                                  <span style={{ fontSize: '0.6rem', color: 'var(--grey-600)', fontStyle: 'italic' }}>
+                                    (${Number(p.base_cost_raw).toFixed(2)}×{Number(p.effective_multiplier).toFixed(2)})
+                                  </span>
+                                )}
                                 <span style={{ fontSize: '0.65rem', color: 'var(--grey-600)' }}>→</span>
                               </>
                             )}

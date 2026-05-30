@@ -51,6 +51,14 @@
     {
       "path": "/api/messenger/cron/expire-messages",
       "schedule": "*/5 * * * *"
+    },
+    {
+      "path": "/api/cron/label-jobs",
+      "schedule": "*/5 * * * *"
+    },
+    {
+      "path": "/api/cron/shippo-reconcile",
+      "schedule": "0 22 * * 0"
     }
   ]
 }

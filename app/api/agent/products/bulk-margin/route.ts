@@ -46,18 +46,17 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Failed To Fetch Products.' }, { status: 500 });
     }
 
-    // Compute each agent's wholesale cost (base_cost * tier multiplier or
+    // Compute each agent's wholesale cost (base_cost × tier multiplier or
     // per-product override) and apply the requested margin on top.
+    // NOTE: agentCost = base_cost × multiplier = 10-vial cost (retail_price is
+    // stored as the 10-pack price; storefront divides by 10 for per-vial display).
     const updates = await Promise.all(
       agentProducts
         .filter(ap => ap.product_id)
         .map(async ap => {
           const agentCost = await computeAgentCost(supabase, ap.product_id as string, tier);
-          // retail_price is stored as a 10-pack price (DB convention: base_cost * 10).
-          // The storefront grid divides by 10 for per-vial display.
-          // We must store agentCost * margin * 10 so the grid shows the correct price.
-          const perVialRetail = agentCost * (1 + marginPercent / 100);
-          const retailPrice = parseFloat((perVialRetail * 10).toFixed(2));
+          // Apply margin to the 10-vial cost — no extra ×10 needed.
+          const retailPrice = parseFloat((agentCost * (1 + marginPercent / 100)).toFixed(2));
           return { id: ap.id, retail_price: retailPrice };
         })
     );
