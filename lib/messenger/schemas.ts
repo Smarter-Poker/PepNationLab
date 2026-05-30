@@ -310,7 +310,16 @@ export const SetReminderSchema = z
     conversationId: z.string().uuid().optional(),
     remindAt: z.string().datetime(),
     note: z.string().max(500).optional(),
-  });
+  })
+  // Audit7 fix: reject orphan reminders (no message AND no conversation).
+  // The reminder route previously accepted this shape and inserted a row
+  // with both bindings null -- it could never be acted on because the UI
+  // surfaces reminders by conversation/message, but it would still show in
+  // list-reminders and clutter the user's pending queue.
+  .refine(
+    (v) => Boolean(v.messageId) || Boolean(v.conversationId),
+    { message: 'Reminder Must Bind To A Message Or Conversation' },
+  );
 export type SetReminderInput = z.infer<typeof SetReminderSchema>;
 
 export const CancelReminderSchema = z.object({

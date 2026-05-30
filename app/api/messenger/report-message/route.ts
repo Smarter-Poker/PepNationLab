@@ -55,6 +55,17 @@ export async function POST(req: NextRequest) {
     .maybeSingle();
 
   if (insErr) {
+    // Audit7 fix: surface duplicate-report (UNIQUE(message_id, reporter_id))
+    // as a clean 409 rather than a 500. The DB unique constraint added in
+    // messenger_audit7_phase12_reports_unique stops the same user from
+    // submitting two reports against the same message; reflect that at the
+    // API boundary so the client can show "Already Reported".
+    if ((insErr as { code?: string }).code === '23505') {
+      return NextResponse.json(
+        { error: 'Already Reported' },
+        { status: 409 },
+      );
+    }
     return NextResponse.json({ error: insErr.message }, { status: 500 });
   }
 

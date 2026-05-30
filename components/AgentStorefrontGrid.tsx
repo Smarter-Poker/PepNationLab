@@ -667,107 +667,157 @@ export default function AgentStorefrontGrid({ products, inventoryMap, primaryCol
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column' }}>
+      <style dangerouslySetInnerHTML={{__html: `
+        .sf-toolbar {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          grid-template-areas:
+            "search search"
+            "cat    sort"
+            "more   reset";
+          gap: 8px;
+          padding: 10px;
+          background: rgba(255,255,255,0.03);
+          border-radius: var(--radius-lg);
+          border: 1px solid rgba(255,255,255,0.06);
+          margin-bottom: 10px;
+        }
+        .sf-toolbar-search  { grid-area: search; position: relative; }
+        .sf-toolbar-cat     { grid-area: cat; }
+        .sf-toolbar-sort    { grid-area: sort; }
+        .sf-toolbar-more    { grid-area: more; }
+        .sf-toolbar-reset   { grid-area: reset; }
+        .sf-toolbar select, .sf-toolbar .sf-filter-btn {
+          width: 100%; padding: 8px 10px; font-size: 0.8rem;
+          background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.1);
+          border-radius: var(--radius-md); color: var(--white); cursor: pointer;
+          appearance: auto;
+        }
+        .sf-toolbar-search input {
+          width: 100%; padding: 8px 10px 8px 32px;
+          background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.1);
+          border-radius: var(--radius-md); color: var(--white); font-size: 0.85rem; outline: none;
+          box-sizing: border-box;
+        }
+        .sf-toolbar-search .sf-search-icon {
+          position: absolute; left: 10px; top: 50%; transform: translateY(-50%);
+          color: var(--grey-400); pointer-events: none; display: flex;
+        }
+        .sf-toolbar-search .sf-search-clear {
+          position: absolute; right: 8px; top: 50%; transform: translateY(-50%);
+          width: 20px; height: 20px; border-radius: 50%;
+          background: rgba(255,255,255,0.08); border: none; color: var(--silver);
+          cursor: pointer; display: flex; align-items: center; justify-content: center;
+        }
+        .sf-filter-btn {
+          padding: 8px 10px; background: rgba(0,0,0,0.4);
+          border: 1px solid rgba(255,255,255,0.1); border-radius: var(--radius-md);
+          color: var(--white); font-size: 0.8rem; cursor: pointer;
+          display: inline-flex; align-items: center; gap: 5px; font-weight: 600;
+          white-space: nowrap; justify-content: center;
+        }
+        .sf-reset-btn {
+          padding: 8px 10px; background: transparent;
+          border: 1px solid rgba(255,255,255,0.1); border-radius: var(--radius-md);
+          color: var(--silver); font-size: 0.78rem; cursor: pointer;
+          display: inline-flex; align-items: center; gap: 5px; width: 100%;
+          justify-content: center;
+        }
+        @media (min-width: 640px) {
+          .sf-toolbar {
+            display: flex; flex-wrap: wrap; gap: 10px; padding: 14px;
+            grid-template-columns: unset; grid-template-areas: unset;
+          }
+          .sf-toolbar-search  { flex: 1 1 240px; grid-area: unset; }
+          .sf-toolbar-cat     { flex: 0 0 auto; grid-area: unset; }
+          .sf-toolbar-sort    { flex: 0 0 auto; grid-area: unset; }
+          .sf-toolbar-more    { flex: 0 0 auto; grid-area: unset; }
+          .sf-toolbar-reset   { flex: 0 0 auto; grid-area: unset; }
+          .sf-toolbar select  { width: auto; min-width: 160px; padding: 9px 12px; font-size: 0.85rem; }
+          .sf-filter-btn, .sf-reset-btn { width: auto; padding: 9px 12px; justify-content: flex-start; }
+        }
+      `}} />
 
       {/* Faceted Search & Filter Toolbar */}
-      <div className="storefront-toolbar" style={{
-        display: 'flex', flexWrap: 'wrap', gap: 'var(--space-3)', alignItems: 'center',
-        padding: 'var(--space-4)', background: 'rgba(255,255,255,0.03)',
-        borderRadius: 'var(--radius-lg)', border: '1px solid rgba(255,255,255,0.06)',
-        marginBottom: 'var(--space-3)'
-      }}>
-        <div style={{ flex: '1 1 240px', minWidth: 0, position: 'relative' }}>
-          <Search size={16} aria-hidden="true" style={{
-            position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)',
-            color: 'var(--grey-400)', pointerEvents: 'none',
-          }} />
+      <div className="sf-toolbar">
+        {/* Search */}
+        <div className="sf-toolbar-search">
+          <span className="sf-search-icon">
+            <Search size={14} aria-hidden="true" />
+          </span>
           <input
             type="text"
             aria-label="Search Products"
             placeholder="Search Products"
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
-            style={{
-              width: '100%', padding: '10px 12px 10px 36px',
-              background: 'rgba(0,0,0,0.4)', border: '1px solid rgba(255,255,255,0.1)',
-              borderRadius: 'var(--radius-md)', color: 'var(--white)', fontSize: '0.9rem', outline: 'none'
-            }}
           />
           {searchQuery && (
             <button
               type="button"
               aria-label="Clear Search"
+              className="sf-search-clear"
               onClick={() => setSearchQuery('')}
-              style={{
-                position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)',
-                width: 24, height: 24, borderRadius: '50%',
-                background: 'rgba(255,255,255,0.08)', border: 'none', color: 'var(--silver)',
-                cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center'
-              }}
             >
-              <X size={12} aria-hidden="true" />
+              <X size={11} aria-hidden="true" />
             </button>
           )}
         </div>
-        <select
-          aria-label="Filter By Category"
-          value={filterCategory}
-          onChange={e => setFilterCategory(e.target.value)}
-          style={{ padding: '10px 14px', background: 'rgba(0,0,0,0.4)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 'var(--radius-md)', color: 'var(--white)', fontSize: '0.85rem', cursor: 'pointer', minWidth: 200 }}
-        >
-          <option value="all">All Categories ({categoryCounts['all'] ?? 0})</option>
-          {categories.map(c => (
-            <option key={c} value={c}>
-              {c} ({categoryCounts[c] ?? 0})
-            </option>
-          ))}
-          <option value="on_sale">On Sale ({categoryCounts['on_sale'] ?? 0})</option>
-        </select>
-        <select
-          aria-label="Sort Products"
-          value={sortBy}
-          onChange={e => setSortBy(e.target.value as typeof sortBy)}
-          style={{ padding: '10px 14px', background: 'rgba(0,0,0,0.4)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 'var(--radius-md)', color: 'var(--white)', fontSize: '0.85rem', cursor: 'pointer', minWidth: 180 }}
-        >
-          <option value="popular">Popularity (Default)</option>
-          <option value="price_low">Price (Low To High)</option>
-          <option value="price_high">Price (High To Low)</option>
-          <option value="newest">Newest</option>
-          <option value="name_asc">Name (A-Z)</option>
-          <option value="name_desc">Name (Z-A)</option>
-        </select>
-        <button
-          type="button"
-          aria-expanded={showFilterPanel}
-          aria-controls="storefront-filter-panel"
-          onClick={() => setShowFilterPanel(prev => !prev)}
-          style={{
-            padding: '10px 14px',
-            background: showFilterPanel ? `${primaryColor}20` : 'rgba(0,0,0,0.4)',
-            border: `1px solid ${showFilterPanel ? `${primaryColor}55` : 'rgba(255,255,255,0.1)'}`,
-            borderRadius: 'var(--radius-md)',
-            color: showFilterPanel ? primaryColor : 'var(--white)',
-            fontSize: '0.85rem', cursor: 'pointer',
-            display: 'inline-flex', alignItems: 'center', gap: 6, fontWeight: 600,
-          }}
-        >
-          <SlidersHorizontal size={14} aria-hidden="true" />
-          More Filters
-        </button>
-        {hasActiveFilters && (
+
+        {/* Category */}
+        <div className="sf-toolbar-cat">
+          <select
+            aria-label="Filter By Category"
+            value={filterCategory}
+            onChange={e => setFilterCategory(e.target.value)}
+          >
+            <option value="all">All Categories ({categoryCounts['all'] ?? 0})</option>
+            {categories.map(c => (
+              <option key={c} value={c}>{c} ({categoryCounts[c] ?? 0})</option>
+            ))}
+            <option value="on_sale">On Sale ({categoryCounts['on_sale'] ?? 0})</option>
+          </select>
+        </div>
+
+        {/* Sort */}
+        <div className="sf-toolbar-sort">
+          <select
+            aria-label="Sort Products"
+            value={sortBy}
+            onChange={e => setSortBy(e.target.value as typeof sortBy)}
+          >
+            <option value="popular">Popularity (Default)</option>
+            <option value="price_low">Price: Low → High</option>
+            <option value="price_high">Price: High → Low</option>
+            <option value="newest">Newest</option>
+            <option value="name_asc">Name A–Z</option>
+            <option value="name_desc">Name Z–A</option>
+          </select>
+        </div>
+
+        {/* More Filters */}
+        <div className="sf-toolbar-more">
           <button
             type="button"
-            aria-label="Reset Filters"
-            onClick={resetFilters}
-            style={{
-              padding: '10px 14px', background: 'transparent',
-              border: '1px solid rgba(255,255,255,0.1)', borderRadius: 'var(--radius-md)',
-              color: 'var(--silver)', fontSize: '0.82rem', cursor: 'pointer',
-              display: 'inline-flex', alignItems: 'center', gap: 6,
-            }}
+            className="sf-filter-btn"
+            aria-expanded={showFilterPanel}
+            aria-controls="storefront-filter-panel"
+            onClick={() => setShowFilterPanel(prev => !prev)}
+            style={showFilterPanel ? { background: `${primaryColor}20`, border: `1px solid ${primaryColor}55`, color: primaryColor } : {}}
           >
-            <RotateCcw size={14} aria-hidden="true" />
-            Reset Filters
+            <SlidersHorizontal size={13} aria-hidden="true" />
+            More Filters
           </button>
+        </div>
+
+        {/* Reset */}
+        {hasActiveFilters && (
+          <div className="sf-toolbar-reset">
+            <button type="button" className="sf-reset-btn" aria-label="Reset Filters" onClick={resetFilters}>
+              <RotateCcw size={13} aria-hidden="true" />
+              Reset
+            </button>
+          </div>
         )}
       </div>
 

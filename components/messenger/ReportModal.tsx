@@ -45,6 +45,11 @@ export default function ReportModal({ message, onClose }: Props) {
       if (!res.ok) {
         const json = (await res.json().catch(() => ({}))) as { error?: string };
         toast(json.error ?? 'Could Not Submit Report');
+        // Audit7 fix: 409 means the user already reported this message
+        // (unique constraint on (message_id, reporter_id)). Close the modal
+        // because there's nothing actionable to do here -- their original
+        // report is already in the moderator queue.
+        if (res.status === 409) onClose();
         return;
       }
       toast('Report Submitted');

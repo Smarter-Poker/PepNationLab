@@ -180,83 +180,82 @@ export default async function AgentStorefrontPage({ params }: Props) {
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--black)' }}>
+      <style dangerouslySetInnerHTML={{__html: `
+        .sf-nav { height: 56px; background: var(--black-2); border-bottom: 1px solid rgba(192,184,168,0.2); display: flex; align-items: center; justify-content: space-between; padding: 0 12px; position: sticky; top: 0; z-index: 50; gap: 8px; }
+        .sf-nav-brand { display: flex; align-items: center; gap: 8px; min-width: 0; flex: 1; }
+        .sf-nav-brand-text { min-width: 0; }
+        .sf-nav-brand-name { font-family: var(--font-brand); font-size: 0.82rem; font-weight: 800; color: #C0B8A8; letter-spacing: 0.04em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .sf-nav-brand-sub { font-size: 0.62rem; color: var(--grey-400); white-space: nowrap; }
+        .sf-nav-actions { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+        .sf-nav-back { display: flex; align-items: center; justify-content: center; width: 30px; height: 30px; border-radius: 8px; background: rgba(255,255,255,0.07); color: var(--silver); text-decoration: none; flex-shrink: 0; border: 1px solid rgba(255,255,255,0.1); }
+        .sf-btn-dash { padding: 6px 10px; font-size: 0.72rem; font-weight: 600; color: var(--silver); background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.12); border-radius: 8px; text-decoration: none; white-space: nowrap; }
+        .sf-btn-cart { padding: 6px 10px; font-size: 0.72rem; font-weight: 700; color: #fff; border: none; border-radius: 8px; text-decoration: none; white-space: nowrap; display: flex; align-items: center; gap: 4px; }
+        .sf-hero { padding: 12px 12px 4px; text-align: center; }
+        .sf-hero h1 { font-size: 1.3rem; color: var(--white); margin-bottom: 6px; }
+        .sf-hero p { font-size: 0.85rem; }
+        @media (min-width: 600px) {
+          .sf-nav { height: 64px; padding: 0 24px; }
+          .sf-btn-dash { padding: 8px 14px; font-size: 0.8rem; }
+          .sf-btn-cart { padding: 8px 14px; font-size: 0.8rem; }
+          .sf-hero { padding: 24px 24px 8px; }
+          .sf-hero h1 { font-size: 1.6rem; }
+        }
+      `}} />
+
       {/* Agent branded navbar */}
-      <nav style={{
-        height: 64,
-        background: 'var(--black-2)',
-        borderBottom: '1px solid rgba(192,184,168,0.2)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        padding: '0 var(--space-6)',
-        position: 'sticky',
-        top: 0,
-        zIndex: 50
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
+      <nav className="sf-nav">
+        {/* Back button */}
+        <Link href="/dashboard" className="sf-nav-back" aria-label="Back to Dashboard">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+        </Link>
+
+        <div className="sf-nav-brand">
           {agent.logo_url ? (
-            <img src={agent.logo_url} alt={displayName} style={{ height: 36, borderRadius: 6 }} />
+            <img src={agent.logo_url} alt={displayName} style={{ height: 28, borderRadius: 5, flexShrink: 0 }} />
           ) : null}
-          <div>
-            <div style={{ fontFamily: 'var(--font-brand)', fontSize: '0.9rem', fontWeight: 800, color: '#C0B8A8', letterSpacing: '0.05em' }}>
-              {displayName}
-            </div>
-            <div style={{ fontSize: '0.7rem', color: 'var(--grey-400)' }}>
-              Powered By <span style={{ color: '#C0B8A8' }}>Pep Nation Lab</span>
-            </div>
+          <div className="sf-nav-brand-text">
+            <div className="sf-nav-brand-name">{displayName}</div>
+            <div className="sf-nav-brand-sub">Powered By <span style={{ color: '#C0B8A8' }}>Pep Nation Lab</span></div>
           </div>
         </div>
-        <div style={{ display: 'flex', gap: 'var(--space-3)' }}>
-          <Link href="/dashboard" className="btn btn-secondary btn-sm">My Dashboard</Link>
+
+        <div className="sf-nav-actions">
+          <Link href="/dashboard" className="sf-btn-dash">Dashboard</Link>
           <Link
             href={`/checkout?agent=${encodeURIComponent(agentSlug)}`}
-            className="btn btn-sm"
-            style={{ background: primaryColor, color: '#fff', fontWeight: 700, border: 'none' }}
+            className="sf-btn-cart"
+            style={{ background: primaryColor }}
           >
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
             Checkout
           </Link>
         </div>
       </nav>
 
-      <section style={{
-        padding: 'var(--space-6) var(--space-6) var(--space-2)',
-        textAlign: 'center',
-        background: `radial-gradient(ellipse at 50% 0%, ${primaryColor}10 0%, transparent 70%)`
-      }}>
-        <div className="container" style={{ maxWidth: 640 }}>
-          <h1 style={{ marginBottom: 'var(--space-3)', color: 'var(--white)', fontSize: '1.6rem' }}>
+      <section
+        className="sf-hero"
+        style={{ background: `radial-gradient(ellipse at 50% 0%, ${primaryColor}10 0%, transparent 70%)` }}
+      >
+        <div style={{ maxWidth: 640, margin: '0 auto' }}>
+          <h1 style={{ marginBottom: 6, color: 'var(--white)' }}>
             {displayName}&apos;s Research Store
           </h1>
           {agent.tagline && (
-            <p style={{ fontSize: '1rem', color: 'var(--silver-light)', marginBottom: 'var(--space-4)', maxWidth: 500, margin: '0 auto var(--space-4)' }}>
+            <p style={{ fontSize: '0.88rem', color: 'var(--silver-light)', marginBottom: 4, maxWidth: 500, margin: '0 auto 4px' }}>
               {agent.tagline}
             </p>
           )}
           {agent.bio && (
-            <p style={{ fontSize: '0.9rem', color: 'var(--grey-400)', maxWidth: 500, margin: '0 auto var(--space-4)', lineHeight: 1.7 }}>
+            <p style={{ fontSize: '0.82rem', color: 'var(--grey-400)', maxWidth: 500, margin: '0 auto', lineHeight: 1.6 }}>
               {agent.bio}
             </p>
           )}
-
-          {/* Research-only warning */}
-          <div style={{
-            display: 'inline-flex', alignItems: 'center', gap: 'var(--space-2)',
-            background: 'rgba(229,62,62,0.06)', border: '1px solid rgba(229,62,62,0.2)',
-            borderRadius: 'var(--radius-md)', padding: 'var(--space-2) var(--space-4)',
-            fontSize: '0.78rem', color: 'var(--grey-400)'
-          }}>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--red)" strokeWidth="2">
-              <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
-              <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
-            </svg>
-            <strong style={{ color: 'var(--red)' }}>Research Use Only</strong> Not For Human Consumption
-          </div>
         </div>
       </section>
 
       {/* Products */}
-      <section className="section" style={{ paddingTop: 'var(--space-2)' }}>
-        <div className="container">
+      <section style={{ paddingTop: 8, paddingBottom: 24 }}>
+        <div style={{ maxWidth: 960, margin: '0 auto', padding: '0 8px' }}>
           <Suspense fallback={null}>
             <AgentStorefrontGrid
               products={products as any}
@@ -279,14 +278,15 @@ export default async function AgentStorefrontPage({ params }: Props) {
         padding: 'var(--space-6)',
         textAlign: 'center',
         borderTop: '1px solid rgba(255,255,255,0.04)',
-        marginTop: 'var(--space-12)'
+        marginTop: 'var(--space-6)'
       }}>
         <p style={{ fontSize: '0.75rem', color: 'var(--grey-600)' }}>
           Powered By{' '}
           <Link href="/" style={{ color: 'var(--teal)' }}>Pep Nation Lab</Link>
-          {' '}— Research Use Only. Not For Human Consumption.
+          {' '}— Research Grade Peptides &amp; Authorized Laboratory Diluents.
         </p>
       </footer>
+
     </div>
   );
 }
