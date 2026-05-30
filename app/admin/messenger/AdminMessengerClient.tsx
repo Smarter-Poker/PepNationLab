@@ -271,15 +271,46 @@ export default function AdminMessengerClient() {
     }
   }, [status]);
 
-  // Phase 13: admin mention actions. "Mark Read" / "Mark Resolved" both PATCH
-  // status by re-using the delete-message route only for the Delete path.
-  // Marking read/resolved goes through a fresh fetch directly to the table via
-  // the existing list endpoint; we can't write from the browser to the admin
-  // mention status without a dedicated route. For Phase 13 scope, we ship the
-  // Delete + tab; the Mark buttons are wired so the network call returns 404
-  // until a follow-up phase adds the resolve route. Surfaces the action and
-  // does not crash if the route does not exist - the user sees a toast and the
-  // row remains visible.
+  // Audit5 fix: previously this client had Mark Read / Mark Resolved buttons
+  // stubbed out because no resolve route existed. The route now lives at
+  // /api/admin/messenger/resolve-mention and is wired here.
+  const handleMentionResolve = useCallback(async (
+    row: MentionRow,
+    nextStatus: 'read' | 'resolved',
+  ) => {
+    setMentionBusy((cur) => ({ ...cur, [row.id]: true }));
+    try {
+      const res = await fetch('/api/admin/messenger/resolve-mention', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ mentionId: row.id, status: nextStatus }),
+      });
+      if (!res.ok) {
+        const json = (await res.json().catch(() => ({}))) as { error?: string };
+        toast(json.error ?? 'Could Not Update Mention');
+        return;
+      }
+      // Drop the row from view if it no longer matches the active filter,
+      // otherwise update the status in place.
+      if (mentionStatus === 'all' || mentionStatus === nextStatus) {
+        setMentions((cur) =>
+          cur.map((m) => (m.id === row.id ? { ...m, status: nextStatus } : m)),
+        );
+      } else {
+        setMentions((cur) => cur.filter((m) => m.id !== row.id));
+      }
+      toast(nextStatus === 'resolved' ? 'Mention Resolved' : 'Mention Marked Read');
+    } catch {
+      toast('Network Error');
+    } finally {
+      setMentionBusy((cur) => {
+        const next = { ...cur };
+        delete next[row.id];
+        return next;
+      });
+    }
+  }, [mentionStatus]);
+
   const handleMentionDelete = useCallback(async (row: MentionRow) => {
     if (!row.message) return;
     if (!window.confirm('Delete This Message For Everyone?')) return;
@@ -663,6 +694,26 @@ export default function AdminMessengerClient() {
                     </div>
 
                     <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', flexWrap: 'wrap' }}>
+                      {row.status === 'unread' && (
+                        <button
+                          type="button"
+                          onClick={() => handleMentionResolve(row, 'read')}
+                          disabled={isBusy}
+                          style={btnSecondary(isBusy)}
+                        >
+                          Mark Read
+                        </button>
+                      )}
+                      {row.status !== 'resolved' && (
+                        <button
+                          type="button"
+                          onClick={() => handleMentionResolve(row, 'resolved')}
+                          disabled={isBusy}
+                          style={btnPrimary(isBusy)}
+                        >
+                          Mark Resolved
+                        </button>
+                      )}
                       {!msgDeleted && row.message && (
                         <button
                           type="button"
@@ -672,6 +723,11 @@ export default function AdminMessengerClient() {
                         >
                           Delete For Everyone
                         </button>
+                      )}
+                      {row.status === 'resolved' && row.resolved_at && (
+                        <div style={{ color: 'var(--grey-400, #A8B4C0)', fontSize: '0.78rem', alignSelf: 'center' }}>
+                          Resolved {formatDateTime(row.resolved_at)}
+                        </div>
                       )}
                     </div>
                   </div>
