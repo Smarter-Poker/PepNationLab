@@ -111,12 +111,27 @@ export async function POST(req: NextRequest) {
     // Verify caller is a Super Agent
     const { data: superAgentProfile } = await supabase
       .from('profiles')
-      .select('is_super_agent')
+      .select('is_super_agent, tier')
       .eq('id', superAgentId)
       .single();
 
     if (!superAgentProfile?.is_super_agent) {
       return NextResponse.json({ error: 'Only Super Agents can configure baseline pricing' }, { status: 403 });
+    }
+
+    // ── Server-side baseline_cost floor ────────────────────────────────────────
+    // A super-agent cannot price sub-agents below their own wholesale cost
+    // (which would mean selling at a loss). computeAgentCost returns the
+    // per-10-vial-pack cost; baseline_cost is also per-10-vial-pack.
+    const { computeAgentCost } = await import('@/lib/pricing');
+    const ownCostPer10 = await computeAgentCost(supabase as any, product_id, (superAgentProfile.tier as 'tier_1' | 'tier_2' | 'tier_3') ?? 'tier_3');
+    if (ownCostPer10 > 0 && baseline_cost < ownCostPer10) {
+      return NextResponse.json(
+        {
+          error: `Baseline cost ($${(baseline_cost / 10).toFixed(2)}/vial) cannot be below your own wholesale cost ($${(ownCostPer10 / 10).toFixed(2)}/vial).`,
+        },
+        { status: 422 }
+      );
     }
 
     const { error } = await supabase

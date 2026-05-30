@@ -123,8 +123,9 @@ export default function AgentSubscriptions({ agentId }: { agentId: string }) {
               const color = STATUS_COLORS[s.status] ?? 'var(--grey-400)';
               const r = researchers[s.researcher_id];
               const items = Array.isArray(s.items_snapshot) ? s.items_snapshot : [];
+              // unit_retail_price is stored as per-10-vial-pack price; divide by 10 for per-vial.
               const total = items.reduce(
-                (sum, it) => sum + Number(it.unit_retail_price ?? 0) * Number(it.quantity ?? 0),
+                (sum, it) => sum + (Number(it.unit_retail_price ?? 0) / 10) * Number(it.quantity ?? 0),
                 0
               );
               return (

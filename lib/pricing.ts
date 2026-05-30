@@ -25,7 +25,10 @@ async function getDefaultTierMultiplier(supabase: ServiceClient, tier: AgentTier
   const hit = getCached<number>(key);
   if (hit !== undefined) return hit;
   const { data } = await supabase.from('pricing_tiers').select('multiplier').eq('tier_name', tier).maybeSingle();
-  const multiplier = data?.multiplier != null ? Number(data.multiplier) : 7.0;
+  // Safety fallback: 1.7 = tier_3 (highest standard multiplier).
+  // 7.0 was a placeholder left from initial development and would charge
+  // agents 7× wholesale cost if the DB row is missing — catastrophic.
+  const multiplier = data?.multiplier != null ? Number(data.multiplier) : 1.7;
   return setCache(key, multiplier);
 }
 

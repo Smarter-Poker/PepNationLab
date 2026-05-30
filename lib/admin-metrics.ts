@@ -195,7 +195,8 @@ export async function fetchAdminMetrics(adminUserId: string): Promise<DashboardM
     if (!row.product_name) continue;
     const existing = skuMap.get(row.product_name) || { quantity: 0, revenue: 0 };
     existing.quantity += Number(row.quantity) || 0;
-    existing.revenue += (Number(row.quantity) || 0) * (Number(row.unit_retail_price) || 0);
+    // unit_retail_price is stored as per-10-vial-pack price; divide by 10 for per-vial revenue.
+    existing.revenue += (Number(row.quantity) || 0) * ((Number(row.unit_retail_price) || 0) / 10);
     skuMap.set(row.product_name, existing);
   }
   const topSkus = Array.from(skuMap.entries())

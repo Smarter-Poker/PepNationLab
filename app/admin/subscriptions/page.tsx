@@ -152,7 +152,7 @@ export default async function AdminSubscriptionsPage(
                     const r = profileMap[String(s.researcher_id)];
                     const a = profileMap[String(s.agent_id)];
                     const items = Array.isArray(s.items_snapshot) ? s.items_snapshot as Array<{ quantity: number; unit_retail_price: number | string }> : [];
-                    const total = items.reduce((sum, it) => sum + Number(it.unit_retail_price ?? 0) * Number(it.quantity ?? 0), 0);
+                    const total = items.reduce((sum, it) => sum + (Number(it.unit_retail_price ?? 0) / 10) * Number(it.quantity ?? 0), 0);
                     return (
                       <tr key={s.id} style={{ borderTop: '1px solid rgba(255,255,255,0.04)' }}>
                         <td style={{ padding: 'var(--space-2)', fontSize: '0.85rem', color: 'var(--silver)' }}>

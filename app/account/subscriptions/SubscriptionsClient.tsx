@@ -127,8 +127,9 @@ export default function SubscriptionsClient({ initialSubscriptions }: { initialS
       {subs.map((sub) => {
         const color = STATUS_COLORS[sub.status] ?? 'var(--grey-400)';
         const itemCount = Array.isArray(sub.items_snapshot) ? sub.items_snapshot.length : 0;
+        // unit_retail_price is stored as per-10-vial-pack price; divide by 10 for per-vial.
         const total = (Array.isArray(sub.items_snapshot) ? sub.items_snapshot : [])
-          .reduce((sum, it) => sum + Number(it.unit_retail_price ?? 0) * Number(it.quantity ?? 0), 0);
+          .reduce((sum, it) => sum + (Number(it.unit_retail_price ?? 0) / 10) * Number(it.quantity ?? 0), 0);
         return (
           <div key={sub.id} className="card-metal" style={{ padding: 'var(--space-5)' }}>
             <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'flex-start', gap: 'var(--space-3)', marginBottom: 'var(--space-3)' }}>

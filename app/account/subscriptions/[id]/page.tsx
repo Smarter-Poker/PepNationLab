@@ -90,7 +90,10 @@ export default async function SubscriptionDetailPage({ params }: { params: Promi
   }
 
   const items: SnapshotItem[] = Array.isArray(sub.items_snapshot) ? sub.items_snapshot as SnapshotItem[] : [];
-  const total = items.reduce((sum, it) => sum + Number(it.unit_retail_price ?? 0) * Number(it.quantity ?? 0), 0);
+  // unit_retail_price in the snapshot is stored as a per-10-vial-pack price
+  // (ap.retail_price from the catalog). Divide by 10 for per-vial display,
+  // matching the per-vial price the cron uses when creating order_items.
+  const total = items.reduce((sum, it) => sum + (Number(it.unit_retail_price ?? 0) / 10) * Number(it.quantity ?? 0), 0);
   const statusColor = STATUS_COLORS[sub.status] ?? 'var(--grey-400)';
   const addr = (sub.shipping_address ?? {}) as Record<string, string | undefined>;
 
@@ -169,11 +172,11 @@ export default async function SubscriptionDetailPage({ params }: { params: Promi
                   <div style={{ fontSize: '0.88rem', color: 'var(--silver)', fontWeight: 600 }}>{it.product_name}</div>
                   <div style={{ fontSize: '0.76rem', color: 'var(--grey-400)' }}>
                     Quantity: <span style={{ color: 'var(--teal)' }}>{it.quantity}</span>
-                    {' · '}Unit: ${Number(it.unit_retail_price ?? 0).toFixed(2)}
+                    {' · '}Unit: ${(Number(it.unit_retail_price ?? 0) / 10).toFixed(2)}/vial
                   </div>
                 </div>
                 <div style={{ fontSize: '0.92rem', color: 'var(--silver)', fontWeight: 700, fontFamily: 'var(--font-brand)' }}>
-                  ${(Number(it.unit_retail_price ?? 0) * Number(it.quantity ?? 0)).toFixed(2)}
+                  ${((Number(it.unit_retail_price ?? 0) / 10) * Number(it.quantity ?? 0)).toFixed(2)}
                 </div>
               </div>
             ))}
