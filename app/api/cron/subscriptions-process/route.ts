@@ -222,8 +222,12 @@ async function processOne(
       ? Number(overrideRow.custom_multiplier)
       : globalMult;
 
-    // unit_cost_price = per-pack agent cost (what agent pays PNL for this pack)
-    const agentCostPack = Math.round(baseCost * effectiveMult * 100) / 100;
+    // unit_cost_price = per-VIAL agent cost (what agent pays PNL per vial).
+    // base_cost in the DB is a per-10-vial-pack price; divide by 10 to get
+    // per-vial cost. The agent/orders/approve route multiplies unit_cost_price
+    // by quantity (vials) to compute totalCogs — so this MUST be per-vial.
+    // Storing the per-pack value would inflate COGS by 10×.
+    const agentCostPerVial = Math.round((baseCost * effectiveMult / 10) * 100) / 100;
 
     subtotal += unitPrice * qty;
     orderItems.push({
@@ -232,7 +236,7 @@ async function processOne(
       product_name: ap.custom_name || prod?.name || 'Item',
       quantity: qty,
       unit_retail_price: unitPrice,
-      unit_cost_price: agentCostPack,   // base_cost × tier_mult (per pack)
+      unit_cost_price: agentCostPerVial,   // per-vial cost (base_cost × mult ÷ 10)
       unit_super_agent_cost: null,
     });
   }

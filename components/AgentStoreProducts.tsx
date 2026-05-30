@@ -130,7 +130,8 @@ export default function AgentStoreProducts({ agentId }: { agentId: string }) {
   // Edit
   function handleEdit(p: AgentProduct) {
     setEditingId(p.id);
-    // Pre-fill margin_percent from product data (back-computed if available, else default 50)
+    // Pre-fill with the product's current retail_price (per-10-unit stored value)
+    // and back-compute markup % for the helper field.
     const existingMargin = (p as any).margin_percent != null
       ? Number((p as any).margin_percent)
       : p.agent_cost != null && p.agent_cost > 0 && p.retail_price > 0
@@ -141,7 +142,7 @@ export default function AgentStoreProducts({ agentId }: { agentId: string }) {
       custom_name: p.custom_name ?? '',
       custom_description: p.custom_description ?? '',
       custom_image_url: p.custom_image_url ?? '',
-      retail_price: p.retail_price,
+      retail_price: p.retail_price,   // stored as per-10-unit; displayed ÷10
       margin_percent: existingMargin,
       is_visible: p.is_visible,
       is_on_sale: p.is_on_sale,
@@ -152,6 +153,17 @@ export default function AgentStoreProducts({ agentId }: { agentId: string }) {
   async function handleSave(e: React.FormEvent) {
     e.preventDefault();
     if (!editingId) return;
+
+    // ── Hard rule: listed price can never be below agent cost ──────────────
+    // retail_price and agent_cost are both stored as per-10-unit values.
+    const listedPrice = Number((editForm as any).retail_price);
+    const currentProduct = products.find(p => p.id === editingId);
+    const agentCostPer10 = currentProduct?.agent_cost ?? 0;
+    if (agentCostPer10 > 0 && listedPrice < agentCostPer10) {
+      alert(`Listed price cannot be below your cost ($${(agentCostPer10 / 10).toFixed(2)} / Vial). Please increase your price.`);
+      return;
+    }
+
     setSaving(true);
     try {
       const res = await fetch('/api/agent/products', {
@@ -332,15 +344,55 @@ export default function AgentStoreProducts({ agentId }: { agentId: string }) {
               >
                 {isEditing ? (
                   <form onSubmit={handleSave} style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
+                    {/* Row 1 — Custom Name (full width) */}
+                    <div className="form-group" style={{ marginBottom: 0 }}>
+                      <label className="form-label" style={{ fontSize: '0.75rem' }}>Custom Name</label>
+                      <input type="text" className="form-input"
+                        placeholder={p.products.name}
+                        value={editForm.custom_name || ''}
+                        onChange={e => setEditForm({ ...editForm, custom_name: e.target.value })} />
+                    </div>
+
+                    {/* Row 2 — Listed Price + Markup % helper (aligned bottom) */}
                     <div style={{ display: 'flex', gap: 'var(--space-3)', alignItems: 'flex-end' }}>
+                      {/* Primary: direct dollar price entry */}
                       <div className="form-group" style={{ marginBottom: 0, flex: 1 }}>
-                        <label className="form-label" style={{ fontSize: '0.75rem' }}>Custom Name</label>
-                        <input type="text" className="form-input" placeholder={p.products.name} value={editForm.custom_name || ''} onChange={e => setEditForm({ ...editForm, custom_name: e.target.value })} />
-                      </div>
-                      <div className="form-group" style={{ marginBottom: 0, flex: '0 0 160px' }}>
                         <label className="form-label" style={{ fontSize: '0.75rem' }}>
-                          Your Markup
-                          <span style={{ fontWeight: 400, color: 'var(--grey-400)', marginLeft: 6 }}>(%)</span>
+                          Listed Price
+                          <span style={{ fontWeight: 400, color: 'var(--grey-400)', marginLeft: 6, fontSize: '0.68rem' }}>$ / Vial</span>
+                        </label>
+                        <div style={{ position: 'relative' }}>
+                          <span style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--teal)', fontWeight: 700, fontSize: '0.9rem', pointerEvents: 'none' }}>$</span>
+                          <input
+                            type="number"
+                            step="0.01"
+                            min={p.agent_cost != null ? (p.agent_cost / 10).toFixed(2) : '0'}
+                            className="form-input"
+                            style={{ paddingLeft: 26 }}
+                            placeholder={(Number(editForm.retail_price) / 10).toFixed(2)}
+                            value={Number((editForm as any).retail_price) > 0 ? (Number((editForm as any).retail_price) / 10).toFixed(2) : ''}
+                            onChange={e => {
+                              const perVial = parseFloat(e.target.value) || 0;
+                              const per10 = perVial * 10;
+                              const newMargin = p.agent_cost && p.agent_cost > 0
+                                ? Math.round((per10 / p.agent_cost - 1) * 100)
+                                : (editForm as any).margin_percent ?? 50;
+                              setEditForm({ ...editForm, retail_price: per10, margin_percent: newMargin } as any);
+                            }}
+                          />
+                        </div>
+                        {p.agent_cost != null && p.agent_cost > 0 && (
+                          <p style={{ fontSize: '0.68rem', color: 'var(--grey-500)', marginTop: 3, marginBottom: 0 }}>
+                            Min: <strong style={{ color: 'var(--grey-400)' }}>${(p.agent_cost / 10).toFixed(2)} / Vial</strong> (your cost)
+                          </p>
+                        )}
+                      </div>
+
+                      {/* Helper: markup % recalculates price live */}
+                      <div className="form-group" style={{ marginBottom: 0, flex: '0 0 130px' }}>
+                        <label className="form-label" style={{ fontSize: '0.75rem' }}>
+                          Markup
+                          <span style={{ fontWeight: 400, color: 'var(--grey-400)', marginLeft: 5, fontSize: '0.68rem' }}>%</span>
                         </label>
                         <input
                           type="number"
@@ -349,15 +401,14 @@ export default function AgentStoreProducts({ agentId }: { agentId: string }) {
                           className="form-input"
                           placeholder="e.g. 50"
                           value={(editForm as any).margin_percent ?? 50}
-                          onChange={e => setEditForm({ ...editForm, margin_percent: Number(e.target.value) } as any)}
+                          onChange={e => {
+                            const pct = Number(e.target.value);
+                            const newPrice = p.agent_cost != null && p.agent_cost > 0
+                              ? p.agent_cost * (1 + pct / 100)
+                              : (editForm as any).retail_price;
+                            setEditForm({ ...editForm, margin_percent: pct, retail_price: newPrice } as any);
+                          }}
                         />
-                        {p.agent_cost != null && (editForm as any).margin_percent != null && (
-                          <p style={{ fontSize: '0.68rem', color: 'var(--grey-400)', marginTop: 4, marginBottom: 0 }}>
-                            Your Sale Price: <strong style={{ color: 'var(--teal)' }}>
-                              ${(p.agent_cost / 10 * (1 + Number((editForm as any).margin_percent) / 100)).toFixed(2)}
-                            </strong> / Vial
-                          </p>
-                        )}
                       </div>
                     </div>
                     <div className="form-group" style={{ marginBottom: 0 }}>
@@ -498,27 +549,68 @@ export default function AgentStoreProducts({ agentId }: { agentId: string }) {
                     >
                       {isEditing ? (
                         <form onSubmit={handleSave} style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
+                          {/* Row 1 — Custom Name (full width) */}
+                          <div className="form-group" style={{ marginBottom: 0 }}>
+                            <label className="form-label" style={{ fontSize: '0.75rem' }}>Custom Name</label>
+                            <input type="text" className="form-input"
+                              placeholder={p.products.name}
+                              value={editForm.custom_name || ''}
+                              onChange={e => setEditForm({ ...editForm, custom_name: e.target.value })} />
+                          </div>
+
+                          {/* Row 2 — Listed Price + Markup % helper */}
                           <div style={{ display: 'flex', gap: 'var(--space-3)', alignItems: 'flex-end' }}>
                             <div className="form-group" style={{ marginBottom: 0, flex: 1 }}>
-                              <label className="form-label" style={{ fontSize: '0.75rem' }}>Custom Name</label>
-                              <input type="text" className="form-input" placeholder={p.products.name} value={editForm.custom_name || ''} onChange={e => setEditForm({ ...editForm, custom_name: e.target.value })} />
-                            </div>
-                            <div className="form-group" style={{ marginBottom: 0, flex: '0 0 160px' }}>
                               <label className="form-label" style={{ fontSize: '0.75rem' }}>
-                                Your Markup
-                                <span style={{ fontWeight: 400, color: 'var(--grey-400)', marginLeft: 6 }}>(%)</span>
+                                Listed Price
+                                <span style={{ fontWeight: 400, color: 'var(--grey-400)', marginLeft: 6, fontSize: '0.68rem' }}>$ / Vial</span>
                               </label>
-                              <input type="number" step="1" min="0" className="form-input" placeholder="e.g. 50"
-                                value={(editForm as any).margin_percent ?? 50}
-                                onChange={e => setEditForm({ ...editForm, margin_percent: Number(e.target.value) } as any)}
-                              />
-                              {p.agent_cost != null && (editForm as any).margin_percent != null && (
-                                <p style={{ fontSize: '0.68rem', color: 'var(--grey-400)', marginTop: 4, marginBottom: 0 }}>
-                                  Your Sale Price: <strong style={{ color: 'var(--teal)' }}>
-                                    ${(p.agent_cost / 10 * (1 + Number((editForm as any).margin_percent) / 100)).toFixed(2)}
-                                  </strong> / Vial
+                              <div style={{ position: 'relative' }}>
+                                <span style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--teal)', fontWeight: 700, fontSize: '0.9rem', pointerEvents: 'none' }}>$</span>
+                                <input
+                                  type="number"
+                                  step="0.01"
+                                  min={p.agent_cost != null ? (p.agent_cost / 10).toFixed(2) : '0'}
+                                  className="form-input"
+                                  style={{ paddingLeft: 26 }}
+                                  placeholder={(Number(editForm.retail_price) / 10).toFixed(2)}
+                                  value={Number((editForm as any).retail_price) > 0 ? (Number((editForm as any).retail_price) / 10).toFixed(2) : ''}
+                                  onChange={e => {
+                                    const perVial = parseFloat(e.target.value) || 0;
+                                    const per10 = perVial * 10;
+                                    const newMargin = p.agent_cost && p.agent_cost > 0
+                                      ? Math.round((per10 / p.agent_cost - 1) * 100)
+                                      : (editForm as any).margin_percent ?? 50;
+                                    setEditForm({ ...editForm, retail_price: per10, margin_percent: newMargin } as any);
+                                  }}
+                                />
+                              </div>
+                              {p.agent_cost != null && p.agent_cost > 0 && (
+                                <p style={{ fontSize: '0.68rem', color: 'var(--grey-500)', marginTop: 3, marginBottom: 0 }}>
+                                  Min: <strong style={{ color: 'var(--grey-400)' }}>${(p.agent_cost / 10).toFixed(2)} / Vial</strong> (your cost)
                                 </p>
                               )}
+                            </div>
+                            <div className="form-group" style={{ marginBottom: 0, flex: '0 0 130px' }}>
+                              <label className="form-label" style={{ fontSize: '0.75rem' }}>
+                                Markup
+                                <span style={{ fontWeight: 400, color: 'var(--grey-400)', marginLeft: 5, fontSize: '0.68rem' }}>%</span>
+                              </label>
+                              <input
+                                type="number"
+                                step="1"
+                                min="0"
+                                className="form-input"
+                                placeholder="e.g. 50"
+                                value={(editForm as any).margin_percent ?? 50}
+                                onChange={e => {
+                                  const pct = Number(e.target.value);
+                                  const newPrice = p.agent_cost != null && p.agent_cost > 0
+                                    ? p.agent_cost * (1 + pct / 100)
+                                    : (editForm as any).retail_price;
+                                  setEditForm({ ...editForm, margin_percent: pct, retail_price: newPrice } as any);
+                                }}
+                              />
                             </div>
                           </div>
                           <div className="form-group" style={{ marginBottom: 0 }}>

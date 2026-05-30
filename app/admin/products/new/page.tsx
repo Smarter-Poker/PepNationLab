@@ -72,6 +72,14 @@ export default function NewProductPage() {
     setError('');
     setLoading(true);
 
+    // Validate base_cost > 0 before any network call
+    const parsedBaseCost = parseFloat(form.base_cost);
+    if (!form.base_cost || isNaN(parsedBaseCost) || parsedBaseCost <= 0) {
+      setError('Base Cost Must Be Greater Than $0.00');
+      setLoading(false);
+      return;
+    }
+
     const supabase = createClient();
     let finalImageUrl = form.image_url;
 
@@ -239,7 +247,7 @@ export default function NewProductPage() {
                   position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)',
                   color: 'var(--teal)', fontFamily: 'var(--font-brand)', fontWeight: 700, fontSize: '0.9rem'
                 }}>$</span>
-                <input id="base_cost" type="number" step="0.01" min="0" required
+                <input id="base_cost" type="number" step="0.01" min="0.01" required
                   className="form-input" placeholder="0.00"
                   value={form.base_cost} onChange={e => set('base_cost', e.target.value)}
                   style={{ paddingLeft: 28 }} />
