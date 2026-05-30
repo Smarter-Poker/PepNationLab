@@ -17,45 +17,55 @@ export default function AgentOverview({
   onNavigate,
 }: AgentOverviewProps) {
   /*
-   * Layout math:
-   *   background-size: auto 130%  →  image rendered at 130% of container height.
-   *   Container shows top (100 / 130) = 76.9% of the image.
-   *   The 6 nav rows occupy the top 77% of the image → they fill the screen exactly.
-   *   The "Share Your Storefront" section (77-100%) is clipped off by overflow:hidden.
+   * Image: agent-dashboard-nav.jpg — 576 × 1024 px (portrait, 9:16)
    *
-   * Click zone positions must be scaled by 1.3 to convert image-% → container-%:
-   *   image top T%  →  container top = T × 1.3 %
-   *   image height H%  →  container height = H × 1.3 %
+   * Layout strategy:
+   *  • Mobile  (≤480 px wide): background-size:cover fills height, image fills
+   *    edge-to-edge. Vertical image % === container % because height is the
+   *    cover dimension.
+   *  • Desktop (>480 px): panel is capped at 480 px max-width and centered,
+   *    background-size:cover still fills by width at that size, showing ~98 %
+   *    of the image height — all 6 rows visible.
+   *
+   * Click zone calibration (measured from 576×1024 source):
+   *   border top:  ~12 px  (1.2 %)
+   *   each button: ~158 px (15.4 %)
+   *   each gap:    ~10 px  (1.0 %)
+   *
+   *   Row 1  top:  1.2 %   Row 2  top: 17.6 %
+   *   Row 3  top: 34.0 %   Row 4  top: 50.5 %
+   *   Row 5  top: 66.9 %   Row 6  top: 83.3 %
+   *   Each row height: 15.4 %
    */
   const cardZones = [
     {
       id: 'storefront',
-      top: '1.3%', height: '14.3%',
+      top: '1.2%', height: '15.4%',
       action: () => window.open(storefrontUrl, '_blank', 'noopener,noreferrer'),
     },
     {
       id: 'researchers',
-      top: '18.2%', height: '14.3%',
+      top: '17.6%', height: '15.4%',
       action: () => onNavigate?.('Researchers'),
     },
     {
       id: 'inventory',
-      top: '35.1%', height: '14.3%',
+      top: '34.0%', height: '15.4%',
       action: () => onNavigate?.('Inventory'),
     },
     {
       id: 'products',
-      top: '52.0%', height: '14.3%',
+      top: '50.5%', height: '15.4%',
       action: () => onNavigate?.('Store Products'),
     },
     {
       id: 'sales',
-      top: '68.9%', height: '14.3%',
+      top: '66.9%', height: '15.4%',
       action: () => onNavigate?.('Sales & Carts'),
     },
     {
       id: 'orders',
-      top: '85.8%', height: '14.3%',
+      top: '83.3%', height: '15.4%',
       action: () => onNavigate?.('Orders'),
     },
   ];
@@ -63,56 +73,66 @@ export default function AgentOverview({
   return (
     <>
       <style dangerouslySetInnerHTML={{__html: `
+        /* ── Outer wrapper — expands full width so the panel can center ── */
+        .dash-hero-wrap {
+          width: 100%;
+          display: flex;
+          justify-content: center;
+          background: var(--black);
+          min-height: calc(100dvh - 64px);
+        }
+
+        /* ── Hero panel ── */
         .dash-hero {
           position: relative;
           width: 100%;
-          /* Full viewport height minus the top nav bar (64 px) */
+          max-width: 480px;          /* portrait panel width on desktop   */
           height: calc(100dvh - 64px);
-          min-height: 350px;
+          min-height: 500px;
           overflow: hidden;
 
-          /*
-           * Background image at 130% of container height, top-anchored.
-           * This shows only the top 77 % (= 100/130) of the image —
-           * exactly the 6 nav-row cards — and clips the rest.
-           */
           background-image: url('/images/agent-dashboard-nav.jpg');
           background-repeat: no-repeat;
           background-position: top center;
-          background-size: auto 130%;
+          background-size: cover;    /* fills by height on mobile ✓        */
         }
 
+        /* ── Click zones ── */
         .dash-zone {
           position: absolute;
+          left: 3%;
+          width: 94%;
           cursor: pointer;
-          border-radius: 4px;
+          border-radius: 6px;
           transition: background 0.15s ease;
           z-index: 2;
         }
-        .dash-zone:hover  { background: rgba(255, 255, 255, 0.04); }
-        .dash-zone:active { background: rgba(255, 255, 255, 0.08); }
+        .dash-zone:hover  { background: rgba(255, 255, 255, 0.05); }
+        .dash-zone:active { background: rgba(255, 255, 255, 0.10); }
+
+        /* Touch devices — remove hover flicker */
+        @media (hover: none) {
+          .dash-zone:hover { background: transparent; }
+        }
       `}} />
 
-      <div className="dash-hero">
-        {cardZones.map((zone) => (
-          <div
-            key={zone.id}
-            className="dash-zone"
-            onClick={zone.action}
-            role="button"
-            tabIndex={0}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' || e.key === ' ') zone.action();
-            }}
-            aria-label={zone.id}
-            style={{
-              top: zone.top,
-              left: '2%',
-              width: '96%',
-              height: zone.height,
-            }}
-          />
-        ))}
+      <div className="dash-hero-wrap">
+        <div className="dash-hero">
+          {cardZones.map((zone) => (
+            <div
+              key={zone.id}
+              className="dash-zone"
+              onClick={zone.action}
+              role="button"
+              tabIndex={0}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') zone.action();
+              }}
+              aria-label={zone.id}
+              style={{ top: zone.top, height: zone.height }}
+            />
+          ))}
+        </div>
       </div>
     </>
   );
