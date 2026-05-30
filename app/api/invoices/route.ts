@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient, createServiceClient } from '@/lib/supabase/server';
 import { assertSameOrigin } from '@/lib/csrf';
+import { notify } from '@/lib/notify';
 
 /** GET: List invoices | PATCH: Update invoice status */
 export async function GET(req: NextRequest) {
@@ -97,6 +98,27 @@ export async function PATCH(req: NextRequest) {
       body: `Your invoice "${invoice.subject}" has been marked as ${status}${invoice.invoice_amount ? ` ($${Number(invoice.invoice_amount).toFixed(2)})` : ''}.`,
       type: 'notification',
     });
+
+    // In-app notification — shows in bell immediately
+    const titleMap: Record<string, string> = {
+      paid:      `Invoice Marked Paid`,
+      overdue:   `Invoice Overdue`,
+      cancelled: `Invoice Cancelled`,
+      pending:   `Invoice Updated`,
+    };
+    const bodyMap: Record<string, string> = {
+      paid:      `Your invoice "${invoice.subject}"${invoice.invoice_amount ? ` ($${Number(invoice.invoice_amount).toFixed(2)})` : ''} has been marked as paid.`,
+      overdue:   `Your invoice "${invoice.subject}"${invoice.invoice_amount ? ` ($${Number(invoice.invoice_amount).toFixed(2)})` : ''} is now overdue. Please make payment promptly.`,
+      cancelled: `Your invoice "${invoice.subject}" has been cancelled.`,
+      pending:   `Your invoice "${invoice.subject}" status has been updated.`,
+    };
+    void notify(service, {
+      userId: invoice.receiver_id,
+      type: status === 'overdue' ? 'payment_reminder' : 'invoice',
+      title: titleMap[status] ?? 'Invoice Updated',
+      body: bodyMap[status] ?? `Your invoice has been marked as ${status}.`,
+      url: '/dashboard/agent?tab=statements',
+    }).catch(() => { /* best-effort */ });
   }
 
   return NextResponse.json({ success: true });

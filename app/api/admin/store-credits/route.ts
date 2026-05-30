@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { createServiceClient } from '@/lib/supabase/server';
 import { requireAdmin } from '@/lib/admin-auth';
 import { assertSameOrigin } from '@/lib/csrf';
+import { notifyBalanceRecharge } from '@/lib/notify';
 
 const GrantSchema = z.object({
   user_id: z.string().uuid(),
@@ -99,6 +100,14 @@ export async function POST(req: NextRequest) {
       expires_at: parsed.data.expires_at ?? null,
     },
   });
+
+  // In-app notification — shows in bell immediately
+  void notifyBalanceRecharge(
+    service,
+    parsed.data.user_id,
+    parsed.data.amount,
+    parsed.data.description ?? undefined,
+  ).catch(() => { /* best-effort */ });
 
   return NextResponse.json({ success: true, id: inserted.id, balance_after: Number(inserted.balance_after) });
 }

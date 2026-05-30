@@ -6,7 +6,7 @@ import { computeAgentCost, type AgentTier } from '@/lib/pricing';
 import { enqueueOrderPush, shortOrderId } from '@/lib/push-enqueue';
 import { enqueueWebhook, fetchOrderForWebhook } from '@/lib/webhook-dispatch';
 import { assertSameOrigin } from '@/lib/csrf';
-import { notifyOrderApproved } from '@/lib/notify';
+import { notifyOrderApproved, notifyCommissionEarned } from '@/lib/notify';
 
 export async function POST(req: NextRequest) {
   const csrf = assertSameOrigin(req);
@@ -230,6 +230,25 @@ export async function POST(req: NextRequest) {
           const short = shortOrderId(orderId);
           await notifyOrderApproved(supabase, order.buyer_id, orderId, short);
           await enqueueOrderPush(supabase, { userId: order.buyer_id, orderId, event: 'order_approved' });
+        } catch { /* notification failures must not break the order */ }
+      })();
+    }
+
+    // Notify the agent that a commission was earned (DB trigger auto-creates the row).
+    // This fires for any order where agent_id ≠ buyer_id (self-buys are excluded by the trigger).
+    if ((newStatus === 'approved_ship' || newStatus === 'approved_pickup') && order.agent_id && order.agent_id !== order.buyer_id) {
+      void (async () => {
+        try {
+          // Look up the commission amount that the DB trigger just created
+          const { data: comm } = await supabase
+            .from('agent_commissions')
+            .select('commission_amount')
+            .eq('order_id', orderId)
+            .maybeSingle();
+          if (comm?.commission_amount) {
+            const fmt = `$${Number(comm.commission_amount).toFixed(2)}`;
+            await notifyCommissionEarned(supabase, order.agent_id, fmt, orderId);
+          }
         } catch { /* notification failures must not break the order */ }
       })();
     }

@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import AdminMessageBell from '@/components/AdminMessageBell';
+import Navbar from '@/components/Navbar';
 
 const ICON_PROPS = {
   width: 16,
@@ -64,7 +65,11 @@ export function AdminLayoutClient({
   }, [sidebarOpen]);
 
   return (
-    <div style={{ minHeight: '100dvh', background: 'var(--black)', display: 'flex', paddingTop: 60 }}>
+    <>
+      {/* ── Global site header — same as every other page ── */}
+      <Navbar />
+
+      <div style={{ minHeight: '100dvh', background: 'var(--black)', display: 'flex', paddingTop: 60 }}>
 
       {/* ── Mobile sidebar backdrop ── */}
       {sidebarOpen && (
@@ -249,5 +254,6 @@ export function AdminLayoutClient({
         }
       `}</style>
     </div>
+    </>
   );
 }
