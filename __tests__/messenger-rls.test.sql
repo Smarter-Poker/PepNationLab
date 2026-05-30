@@ -10,15 +10,15 @@
 --   * Behavioral RLS testing (does the policy actually deny the wrong user
 --     under live auth?) requires a Node harness that signs JWTs for fake
 --     personas and round-trips them through Supabase Auth. That harness is
---     deferred — see scripts/messenger/README.md.
+--     deferred -- see scripts/messenger/README.md.
 --
 --   * The structural test below verifies the shape of every policy on every
 --     messenger_* table: RLS is on, SELECT + INSERT policies exist, UPDATE
 --     policies carry a WITH CHECK, and the only `USING (true)` clause is on
---     `messenger_link_previews` (intentional — link metadata is a shared
+--     `messenger_link_previews` (intentional -- link metadata is a shared
 --     cross-user cache, vetted by Audit 8).
 --
--- The script is read-only and idempotent — it can be re-run any time.
+-- The script is read-only and idempotent -- it can be re-run any time.
 -- ============================================================================
 
 WITH expected_tables AS (
@@ -45,7 +45,6 @@ WITH expected_tables AS (
     'messenger_themes'
   ]) AS tablename
 ),
--- ─── Check 1: every expected table exists ────────────────────────────────
 check_exists AS (
   SELECT
     'exists:' || e.tablename AS check_name,
@@ -57,7 +56,6 @@ check_exists AS (
     'Table ' || e.tablename || ' should exist in public schema' AS notes
   FROM expected_tables e
 ),
--- ─── Check 2: RLS is enabled on every messenger_* table ───────────────────
 check_rls AS (
   SELECT
     'rls_enabled:' || e.tablename AS check_name,
@@ -71,7 +69,6 @@ check_rls AS (
     'RLS must be enabled on ' || e.tablename AS notes
   FROM expected_tables e
 ),
--- ─── Check 3: SELECT policy exists (either standalone or via ALL) ─────────
 check_select_policy AS (
   SELECT
     'select_policy:' || e.tablename AS check_name,
@@ -84,7 +81,6 @@ check_select_policy AS (
     'SELECT (or ALL) policy required on ' || e.tablename AS notes
   FROM expected_tables e
 ),
--- ─── Check 4: INSERT policy exists (either standalone or via ALL) ─────────
 check_insert_policy AS (
   SELECT
     'insert_policy:' || e.tablename AS check_name,
@@ -97,7 +93,6 @@ check_insert_policy AS (
     'INSERT (or ALL) policy required on ' || e.tablename AS notes
   FROM expected_tables e
 ),
--- ─── Check 5: every INSERT/UPDATE/ALL policy carries WITH CHECK ───────────
 check_with_check AS (
   SELECT
     'with_check:' || p.tablename || ':' || p.policyname AS check_name,
@@ -110,15 +105,13 @@ check_with_check AS (
     AND p.tablename LIKE 'messenger_%'
     AND p.cmd IN ('INSERT', 'UPDATE', 'ALL')
 ),
--- ─── Check 6: only known-justified USING (true) clauses exist ─────────────
--- The only one allowed: messenger_link_previews SELECT (shared cache).
 check_using_true AS (
   SELECT
     'using_true:' || p.tablename || ':' || p.policyname AS check_name,
     (p.tablename = 'messenger_link_previews' AND p.cmd = 'SELECT')
       AS pass,
     'USING (true) clause on ' || p.tablename
-      || ' policy ' || p.policyname || ' must be justified — only '
+      || ' policy ' || p.policyname || ' must be justified -- only '
       || 'messenger_link_previews SELECT is whitelisted (Audit 8)'
       AS notes
   FROM pg_policies p
@@ -126,7 +119,6 @@ check_using_true AS (
     AND p.tablename LIKE 'messenger_%'
     AND (p.qual = 'true' OR p.qual = '(true)')
 ),
--- ─── Aggregate ────────────────────────────────────────────────────────────
 all_checks AS (
   SELECT * FROM check_exists
   UNION ALL SELECT * FROM check_rls

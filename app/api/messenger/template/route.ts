@@ -70,8 +70,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ template: updated });
   }
 
-  // Audit3 fix: 'use' bumps usage_count so list-templates can sort by
-  // most-used. Service role write, scoped to the caller's templates.
   if (parsed.data.action === 'use') {
     const { data: existingUse } = await svc
       .from('messenger_templates')
@@ -91,7 +89,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: true, usage_count: nextCount });
   }
 
-  // delete
   const { data: existing } = await svc
     .from('messenger_templates')
     .select('id, user_id')

@@ -27,10 +27,6 @@ export async function POST(req: NextRequest) {
   const svc = await createServiceClient();
   const ids = Array.from(new Set([user.id, ...parsed.data.participantIds]));
 
-  // Phase 9: enforce hierarchy on every invitee. Direct conversations and
-  // groups both go through this gate. Self is always allowed (filtered by
-  // the helper). Returns 403 with the offending user ID on first failure.
-  // Phase 12: additionally reject if a block exists in either direction.
   for (const targetId of parsed.data.participantIds) {
     if (targetId === user.id) continue;
     const allowed = await canInvite(user.id, targetId);

@@ -32,8 +32,6 @@ export async function POST(req: NextRequest) {
     if (!parsed.success) {
       return NextResponse.json({ error: 'Invalid Body', details: parsed.error.flatten() }, { status: 400 });
     }
-    // RLS already constrains to sender_id = self, but double-check ownership
-    // before touching the row so we can surface a clean 403.
     const { data: existing } = await svc
       .from('messenger_scheduled')
       .select('id, sender_id, status')
@@ -54,7 +52,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: true });
   }
 
-  // create (default)
   const parsed = ScheduleMessageCreateSchema.safeParse(body);
   if (!parsed.success) {
     return NextResponse.json({ error: 'Invalid Body', details: parsed.error.flatten() }, { status: 400 });
@@ -72,7 +69,7 @@ export async function POST(req: NextRequest) {
   const t = Date.parse(parsed.data.scheduledAt);
   if (Number.isNaN(t)) return NextResponse.json({ error: 'Invalid scheduledAt' }, { status: 400 });
   const minMs = Date.now() + 30_000;
-  const maxMs = Date.now() + 60 * 60 * 24 * 90 * 1000; // 90 days
+  const maxMs = Date.now() + 60 * 60 * 24 * 90 * 1000;
   if (t < minMs) {
     return NextResponse.json({ error: 'scheduledAt Must Be At Least Thirty Seconds In The Future' }, { status: 400 });
   }

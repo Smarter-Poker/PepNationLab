@@ -37,17 +37,14 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  // Phase 10: expiry timer. Optional ISO datetime; must be in the future and
-  // within a sane window (5 minutes to 30 days) so callers can't set a 100-year
-  // expiry or a past one that immediately evicts the row.
   let expiresAt: string | null = null;
   if (parsed.data.expiresAt) {
     const t = Date.parse(parsed.data.expiresAt);
     if (Number.isNaN(t)) {
       return NextResponse.json({ error: 'Invalid expiresAt' }, { status: 400 });
     }
-    const minMs = Date.now() + 60_000; // 1 minute minimum
-    const maxMs = Date.now() + 60 * 60 * 24 * 30 * 1000; // 30 day maximum
+    const minMs = Date.now() + 60_000;
+    const maxMs = Date.now() + 60 * 60 * 24 * 30 * 1000;
     if (t < minMs) {
       return NextResponse.json({ error: 'expiresAt Must Be At Least One Minute In The Future' }, { status: 400 });
     }
@@ -111,9 +108,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: insErr?.message ?? 'Insert Failed' }, { status: 500 });
   }
 
-  // Phase 13 / Audit6: @admin detection is shared with thread-reply and the
-  // scheduled-message cron via lib/messenger/admin-mentions. Use the sanitized
-  // text so clients can't bypass HTML sanitization by mention-only.
   if (cleanText && hasAdminMention(cleanText)) {
     await recordAdminMention(svc, {
       messageId: (inserted as { id: string }).id,
