@@ -11,6 +11,19 @@ export async function GET(req: NextRequest) {
     const supabase = await createServiceClient();
     const superAgentId = gate.user.id;
 
+    // Only super-agents may view or configure sub-agent pricing.
+    // Regular agents calling this endpoint would receive admin_cost
+    // (base_cost × multiplier) for all products — a wholesale cost leak.
+    const { data: superAgentCheck } = await supabase
+      .from('profiles')
+      .select('is_super_agent')
+      .eq('id', superAgentId)
+      .single();
+
+    if (!superAgentCheck?.is_super_agent) {
+      return NextResponse.json({ error: 'Only Super Agents Can Access Pricing Configuration' }, { status: 403 });
+    }
+
     const { data: pricing, error: pricingError } = await supabase
       .from('super_agent_pricing')
       .select('product_id, baseline_cost, bulk_baseline_cost, bulk_threshold')

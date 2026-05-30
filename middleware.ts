@@ -189,6 +189,18 @@ export default async function proxy(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
+  // ─── Admin Path Role Enforcement ─────────────────────────────────────────
+  // Only admin users may access /admin/* pages. A non-admin (researcher,
+  // agent, super_agent) who navigates directly to an admin URL gets
+  // redirected to their own dashboard. API routes already enforce
+  // requireAdmin() but this layer prevents non-admins from even seeing the
+  // admin UI shell.
+  if (pathname.startsWith('/admin') && profile?.role !== 'admin') {
+    const url = request.nextUrl.clone();
+    url.pathname = '/dashboard';
+    return NextResponse.redirect(url);
+  }
+
   // ─── MFA Enforcement (super_agent only) ────────────────────────────────────
   // Admin (business owner) is intentionally exempt — only super_agent accounts
   // require a verified TOTP factor. Removing 'admin' here prevents the owner

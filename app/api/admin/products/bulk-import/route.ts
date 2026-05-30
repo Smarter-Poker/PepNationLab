@@ -274,8 +274,8 @@ export async function POST(req: NextRequest) {
     if (!category) errors.push('category Is Required');
     if (!baseCostRaw) {
       errors.push('base_cost Is Required');
-    } else if (baseCost === undefined || baseCost < 0) {
-      errors.push('base_cost Must Be A Non-Negative Number');
+    } else if (baseCost === undefined || baseCost <= 0) {
+      errors.push('base_cost Must Be A Positive Number (greater than zero)');
     }
     if (
       weightOzRaw !== undefined &&
