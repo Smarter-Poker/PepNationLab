@@ -16,10 +16,14 @@ import { NextResponse } from 'next/server';
 import { rateLimit, getClientIp } from '@/lib/rate-limit';
 import { validateAddress, type AddressInput } from '@/lib/shippo';
 import { createClient } from '@/lib/supabase/server';
+import { assertSameOrigin } from '@/lib/csrf';
 
 export const dynamic = 'force-dynamic';
 
 export async function POST(req: NextRequest) {
+  const csrf = assertSameOrigin(req);
+  if (csrf) return csrf;
+
   // Rate limit
   const ip = getClientIp(req);
   const rl = await rateLimit({

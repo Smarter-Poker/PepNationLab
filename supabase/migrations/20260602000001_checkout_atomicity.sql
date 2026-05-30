@@ -228,3 +228,44 @@ ALTER TABLE public.store_credits
 ALTER TABLE public.store_credits
   ADD CONSTRAINT store_credits_type_check
   CHECK (type IN ('issue','redeem','expire','adjustment','release'));
+
+-- ── 7. OPEN ANON INSERT ON agent_storefront_events ───────────────────────────
+-- The existing `WITH CHECK (true)` policy allows any unauthenticated user to
+-- insert telemetry rows with arbitrary agent_id, poisoning analytics dashboards.
+-- Tighten to require authentication AND that agent_slug maps to a real agent.
+DROP POLICY IF EXISTS "Anyone can insert storefront events" ON public.agent_storefront_events;
+
+CREATE POLICY "Authenticated users can insert storefront events"
+  ON public.agent_storefront_events
+  FOR INSERT
+  TO authenticated
+  WITH CHECK (
+    agent_id IN (
+      SELECT id FROM public.agent_profiles WHERE is_active = true
+    )
+  );
+
+-- ── 8. RMA ITEMS POLICY — REQUIRE AUTH CHAIN ──────────────────────────────────
+-- The existing SELECT policy only checks EXISTS(rma_requests.id = rma_items.rma_id)
+-- without verifying the caller is actually the buyer, agent, or admin. Any
+-- authenticated user who guesses/knows an rma_id can read all its items.
+DROP POLICY IF EXISTS "RMA items follow parent" ON public.rma_items;
+
+CREATE POLICY "RMA items follow parent rma access"
+  ON public.rma_items
+  FOR SELECT
+  USING (
+    EXISTS (
+      SELECT 1 FROM public.rma_requests r
+      WHERE r.id = rma_items.rma_id
+        AND (
+          r.requester_id = auth.uid()
+          OR EXISTS (
+            SELECT 1 FROM public.orders o
+            WHERE o.id = r.order_id
+              AND (o.buyer_id = auth.uid() OR o.agent_id = auth.uid())
+          )
+          OR public.is_admin()
+        )
+    )
+  );
