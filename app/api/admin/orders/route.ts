@@ -123,6 +123,20 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
+  // Write audit log entry (fire-and-forget — must not block admin response).
+  void supabase.from('admin_audit_log').insert({
+    actor_id: gate.userId,
+    action: 'order_status_updated',
+    entity_type: 'order',
+    entity_id: id,
+    changes: {
+      from: currentStatus,
+      to: status,
+      ...(tracking_number !== undefined ? { tracking_number } : {}),
+      ...(agent_approval_notes !== undefined ? { agent_approval_notes } : {}),
+    },
+  });
+
   // Push notification (fire-and-forget — must never break the admin write).
   try {
     const { data: orderRow } = await supabase
