@@ -335,8 +335,11 @@ export async function POST(request: NextRequest) {
       } else if (agentCustomRetail[dbProduct.id]) {
         retailPrice = agentCustomRetail[dbProduct.id];
       } else {
-        const retailMultiplier = tierMultipliers['tier_3'] ?? 7.0;
-        retailPrice = baseCost * retailMultiplier;
+        // NOTE: base_cost in `products` is the per-10-vial pack cost.
+        // All prices stored in order_items are PER-VIAL (quantity = # of vials).
+        // We divide by 10 here to convert pack cost → per-vial.
+        const retailMultiplier = tierMultipliers['tier_3'] ?? 1.7;
+        retailPrice = baseCost * retailMultiplier / 10;
       }
 
       const itemQty = Number(cartItem.quantity) || 1;
@@ -357,11 +360,12 @@ export async function POST(request: NextRequest) {
         if (superAgentProfile) {
           // This is a Sub-Agent.
           // Super Agent Cost (What Super Agent owes Admin):
-          const saMultiplier = superAgentOverrides[dbProduct.id] ?? tierMultipliers[superAgentProfile.tier || 'tier_3'] ?? 7.0;
+          // NOTE: base_cost is per-10-vial pack. Divide by 10 → per-vial cost.
+          const saMultiplier = superAgentOverrides[dbProduct.id] ?? tierMultipliers[superAgentProfile.tier || 'tier_3'] ?? 1.7;
           superAgentCost = applyBulkPrice(
-            baseCost * saMultiplier,
+            baseCost * saMultiplier / 10,
             itemQty,
-            dbProduct.admin_bulk_price,
+            dbProduct.admin_bulk_price != null ? dbProduct.admin_bulk_price / 10 : null,
             dbProduct.admin_bulk_threshold
           );
 
@@ -380,11 +384,12 @@ export async function POST(request: NextRequest) {
         } else {
           // Standard Agent (or Super Agent buying directly).
           // Agent Cost = Admin Base Cost * Agent Tier Multiplier
-          const agentMultiplier = agentOverrides[dbProduct.id] ?? tierMultipliers[agentTier] ?? 7.0;
+          // NOTE: base_cost is per-10-vial pack. Divide by 10 → per-vial cost.
+          const agentMultiplier = agentOverrides[dbProduct.id] ?? tierMultipliers[agentTier] ?? 1.7;
           costPrice = applyBulkPrice(
-            baseCost * agentMultiplier,
+            baseCost * agentMultiplier / 10,
             itemQty,
-            dbProduct.admin_bulk_price,
+            dbProduct.admin_bulk_price != null ? dbProduct.admin_bulk_price / 10 : null,
             dbProduct.admin_bulk_threshold
           );
         }
@@ -398,9 +403,9 @@ export async function POST(request: NextRequest) {
           // Qualifies for agent direct pricing — pay their tier cost.
           retailPrice = costPrice;
         } else {
-          // Below minimum: charge standard retail (tier_3 markup).
-          const retailMultiplier = tierMultipliers['tier_3'] ?? 7.0;
-          retailPrice = baseCost * retailMultiplier;
+          // Below minimum: charge standard retail (tier_3 markup) per-vial.
+          const retailMultiplier = tierMultipliers['tier_3'] ?? 1.7;
+          retailPrice = baseCost * retailMultiplier / 10;
           // costPrice remains the tier cost for accounting (commission calcs),
           // but the buyer pays retail.
           costPrice = retailPrice;

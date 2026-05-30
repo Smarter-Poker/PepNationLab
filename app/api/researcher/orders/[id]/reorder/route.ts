@@ -138,14 +138,16 @@ export async function POST(
       continue;
     }
 
-    const retailPrice = apMatch ? apMatch.price : baseCost;
+    // NOTE: retail_price / base_cost in DB are per-10-vial-pack, but order
+    // quantity is number of individual vials. Divide by 10 → per-vial unit.
+    const retailPrice = apMatch ? apMatch.price / 10 : baseCost / 10;
     computed.push({
       agent_product_id: apMatch ? apMatch.agent_product_id : null,
       product_id: it.product_id,
       product_name: product.name,
       quantity: it.quantity,
       unit_retail_price: retailPrice,
-      unit_cost_price: baseCost,
+      unit_cost_price: baseCost / 10,
     });
   }
 

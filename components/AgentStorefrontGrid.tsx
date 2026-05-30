@@ -1253,6 +1253,12 @@ export default function AgentStorefrontGrid({ products, inventoryMap, primaryCol
                           const item = products.find(p => p.id === vId);
                           if (!item) return null;
                           const perVial = item.retail_price / 10;
+                          // For agent self-buy: use the tier cost per vial (cost_price / 10)
+                          // so the checkout subtotal shows the correct tier price, not retail.
+                          // cost_price is injected by the storefront page = base_cost × tier_mult.
+                          const costPerVial = isStorefrontOwner && (item as any).cost_price != null
+                            ? Number((item as any).cost_price) / 10
+                            : perVial;
                           const sizeLabel = item.products?.unit_size
                             ? `(${item.products.unit_size}${item.products.unit_measure || ''})`
                             : '';
@@ -1265,9 +1271,9 @@ export default function AgentStorefrontGrid({ products, inventoryMap, primaryCol
                             quantity: qty,
                             // retailPrice = public markup price (shown as strikethrough for agent self-buy)
                             retailPrice: perVial,
-                            // costPrice = same as retail here; server-side API computes the real tier price.
-                            // For checkout display, agentSelfBuy flag tells CheckoutForm to show "Agent Direct Pricing".
-                            costPrice: perVial,
+                            // costPrice = agent tier cost per vial for self-buy, else same as retail.
+                            // CheckoutForm uses this for subtotal display and discount calculation.
+                            costPrice: costPerVial,
                             // Use actual product weight; fall back to 0.5 oz if not set.
                             // weight_oz is fetched from products table via the storefront page query.
                             weightOz: Number(item.products?.weight_oz) || 0.5,
