@@ -56,6 +56,11 @@ const PUBLIC_ROUTES = [
   // Public read-only endpoint that hands the VAPID public key to the browser
   // so PushManager.subscribe() can encrypt with it.
   '/api/push/vapid-public-key',
+  // Public readiness probe — pings DB + cron_runs and renders /status.
+  '/api/status',
+  '/status',
+  // Storefront analytics telemetry — public, rate-limited per IP in the route.
+  '/api/storefront/events',
 ];
 
 // Dynamic route check — agent storefronts are public
