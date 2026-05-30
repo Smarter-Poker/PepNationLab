@@ -21,6 +21,10 @@ const PUBLIC_ROUTES = [
   '/api/auth/resolve',
   '/api/auth/signout',
   '/api/auth/change-password',
+  // Called immediately after signInWithPassword on storefront login.
+  // The session cookie may not be propagated yet at this point (incognito,
+  // mobile race condition) — the route handler validates the userId itself.
+  '/api/auth/verify-agent-access',
   // Liveness probe — must be reachable for monitoring.
   '/api/health',
   // Layer 1 (site_entry) disclaimer log is hit by anonymous visitors before login.
