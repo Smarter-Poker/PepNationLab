@@ -12,9 +12,6 @@ const VALID_EVENTS = [
   'order.shipped',
   'order.delivered',
   'order.cancelled',
-  'order.refunded',
-  'rma.created',
-  'rma.resolved',
   'subscription.run',
   'price.changed',
 ] as const;

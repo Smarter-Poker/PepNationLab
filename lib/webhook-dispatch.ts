@@ -7,9 +7,6 @@ export type WebhookEventType =
   | 'order.shipped'
   | 'order.delivered'
   | 'order.cancelled'
-  | 'order.refunded'
-  | 'rma.created'
-  | 'rma.resolved'
   | 'subscription.run'
   | 'price.changed'
   | 'webhook.test';
