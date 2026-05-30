@@ -167,6 +167,24 @@ export default function MessengerShell({ userId }: Props) {
           return '[Media]';
       }
     }
+    // Audit7 fix: cap the sender-name cache so it cannot grow unbounded across
+    // a long-lived browser session. The Map preserves insertion order so we
+    // can drop the oldest entries when we cross the soft limit. 500 entries
+    // is more than any single user will realistically meet inside one tab.
+    const SENDER_CACHE_MAX = 500;
+    function trimSenderCache() {
+      const cache = senderNameCacheRef.current;
+      if (cache.size <= SENDER_CACHE_MAX) return;
+      // Drop the oldest 100 entries in one shot so we don't run the trim
+      // logic on every single insert.
+      const overflow = cache.size - (SENDER_CACHE_MAX - 100);
+      const it = cache.keys();
+      for (let i = 0; i < overflow; i += 1) {
+        const next = it.next();
+        if (next.done) break;
+        cache.delete(next.value);
+      }
+    }
     async function resolveSenderName(m: IncomingMessageNotification): Promise<string> {
       const cached = senderNameCacheRef.current.get(m.sender_id);
       if (cached) return cached;
@@ -178,6 +196,7 @@ export default function MessengerShell({ userId }: Props) {
         });
         if (!res.ok) {
           senderNameCacheRef.current.set(m.sender_id, 'Someone');
+          trimSenderCache();
           return 'Someone';
         }
         const json = (await res.json()) as {
@@ -191,9 +210,11 @@ export default function MessengerShell({ userId }: Props) {
             'Someone';
           senderNameCacheRef.current.set(p.user_id, name);
         });
+        trimSenderCache();
         return senderNameCacheRef.current.get(m.sender_id) ?? 'Someone';
       } catch {
         senderNameCacheRef.current.set(m.sender_id, 'Someone');
+        trimSenderCache();
         return 'Someone';
       }
     }
