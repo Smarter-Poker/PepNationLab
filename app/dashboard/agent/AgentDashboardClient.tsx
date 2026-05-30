@@ -106,7 +106,7 @@ export default function AgentDashboardClient({
   const [zelleHandle, setZelleHandle] = useState(agentProfile?.payment_handles?.zelle ?? '');
   const [cashappHandle, setCashappHandle] = useState(agentProfile?.payment_handles?.cashapp ?? '');
   const [venmoHandle, setVenmoHandle] = useState(agentProfile?.payment_handles?.venmo ?? '');
-  const [applePayHandle, setApplePayHandle] = useState(agentProfile?.payment_handles?.apple_pay ?? '');
+  const [applePayHandle, setApplePayHandle] = useState(agentProfile?.payment_handles?.apple_cash ?? agentProfile?.payment_handles?.apple_pay ?? '');
 
   const handlesEmpty = !!agentProfile && (!agentProfile.payment_handles || Object.keys(agentProfile.payment_handles || {}).every((k) => !(agentProfile.payment_handles as any)[k]));
   const [activeTab, setActiveTab] = useState<'Overview' | 'Sales & Carts' | 'Researchers' | 'My Sub-Agents' | 'Orders' | 'Store Products' | 'Research Bundles' | 'Inventory' | 'Accounting' | 'Coupons' | 'Storefront Config' | 'Settings'>((initialAgentProfile && (!initialAgentProfile.payment_handles || Object.keys(initialAgentProfile.payment_handles).every((k) => !initialAgentProfile.payment_handles![k]))) ? 'Storefront Config' : 'Overview');
@@ -217,9 +217,8 @@ export default function AgentDashboardClient({
       return;
     }
 
-    // Block submit until ALL payment handles are filled in. The storefront
-    // needs at least one offline payment instruction shown to researchers,
-    // and we require all four so the agent has full coverage on day one.
+    // Block submit until AT LEAST ONE payment handle is filled in. The storefront
+    // needs at least one offline payment instruction shown to researchers.
     const zelle = setupZelle.trim();
     const cashapp = setupCashApp.trim();
     const venmo = setupVenmo.trim();
@@ -256,7 +255,7 @@ export default function AgentDashboardClient({
             zelle,
             cashapp,
             venmo,
-            apple_pay: applePay,
+            apple_cash: applePay,
           },
           warehouse_address: {
             name: whName,
@@ -285,7 +284,7 @@ export default function AgentDashboardClient({
       setZelleHandle(data.payment_handles?.zelle ?? '');
       setCashappHandle(data.payment_handles?.cashapp ?? '');
       setVenmoHandle(data.payment_handles?.venmo ?? '');
-      setApplePayHandle(data.payment_handles?.apple_pay ?? '');
+      setApplePayHandle(data.payment_handles?.apple_cash ?? data.payment_handles?.apple_pay ?? '');
       setSuccess('Your Storefront White-Label Profile Has Been Successfully Activated!');
     } catch (err: any) {
       setError(err.message ?? 'An Error Occurred During Setup.');
@@ -388,7 +387,7 @@ export default function AgentDashboardClient({
             <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: 'var(--space-4)', marginTop: 'var(--space-2)' }}>
               <h4 style={{ color: 'var(--teal)', fontSize: '0.95rem', marginBottom: 'var(--space-2)' }}>Payment Handles</h4>
               <p style={{ fontSize: '0.78rem', color: 'var(--grey-400)', marginBottom: 'var(--space-3)' }}>
-                Shown To Researchers After Checkout. All Four Are Required.
+                Shown To Researchers After Checkout. At Least One Is Required.
               </p>
               <div className="form-group">
                 <label className="form-label">Zelle Handle / Email</label>
@@ -1137,6 +1136,9 @@ export default function AgentDashboardClient({
               <PaymentMethodsPanel
                 agentId={userProfile.id}
                 initialHandles={agentProfile.payment_handles as Record<string, string> | null}
+                onSaveSuccess={(newHandles) => {
+                  setAgentProfile(prev => prev ? { ...prev, payment_handles: newHandles } : prev);
+                }}
               />
             )}
 

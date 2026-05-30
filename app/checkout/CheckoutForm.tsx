@@ -256,10 +256,6 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
   const [couponError, setCouponError] = useState('');
   const [couponLoading, setCouponLoading] = useState(false);
 
-  // Store credit state
-  const [storeCreditBalance, setStoreCreditBalance] = useState(0);
-  const [useAllCredit, setUseAllCredit] = useState(false);
-  const [creditInput, setCreditInput] = useState('');
 
   // Tax quote — re-fetched whenever subtotal, shipping, or shipping state change.
   const [taxQuote, setTaxQuote] = useState<{
@@ -269,21 +265,6 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
     exempt: boolean;
     exemptionId: string | null;
   }>({ taxAmount: 0, rate: 0, jurisdiction: null, exempt: false, exemptionId: null });
-
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const res = await fetch('/api/researcher/store-credit/balance');
-        if (!res.ok) return;
-        const json = await res.json();
-        if (!cancelled) setStoreCreditBalance(Number(json.balance) || 0);
-      } catch {
-        // Non-blocking — checkout proceeds without credit info.
-      }
-    })();
-    return () => { cancelled = true; };
-  }, []);
 
   // Compute standard weight and shipping fee on client for preview
   const totalWeightOz = cart.reduce((acc, item) => acc + (item.weightOz ?? 0.5) * item.quantity, 0);
@@ -390,12 +371,7 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
   const discount = appliedCoupon?.discount ?? 0;
   const subtotalAfterDiscount = Math.max(0, cartSubtotal - discount) + shippingCost + (taxQuote.taxAmount || 0);
 
-  // Cap requested credit at the available balance AND at the remaining due.
-  const requestedCredit = useAllCredit
-    ? Math.min(storeCreditBalance, subtotalAfterDiscount)
-    : Math.max(0, Math.min(Number(creditInput) || 0, storeCreditBalance, subtotalAfterDiscount));
-  const creditRedeemed = Math.round(requestedCredit * 100) / 100;
-  const grandTotal = Math.max(0, subtotalAfterDiscount - creditRedeemed);
+  const grandTotal = Math.max(0, subtotalAfterDiscount);
 
   const handleNextStep = () => {
     setError(null);
@@ -548,7 +524,7 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
           // Zero these out client-side regardless of state (server also enforces this).
           couponCode: isAgentSelfBuy ? null : (appliedCoupon?.code ?? null),
           idempotencyKey: getIdempotencyKey(),
-          creditRedeemed: isAgentSelfBuy ? 0 : creditRedeemed,
+
           // Closed-loop: tells server which agent's catalog to validate against
           agentSlug: agentSlug ?? null,
         })
@@ -1363,40 +1339,6 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
             </div>
             )}
 
-            {/* Store Credit — HIDDEN for agent self-buy: agents cannot apply discounts on their own orders */}
-            {!isAgentSelfBuy && storeCreditBalance > 0 && (
-              <div style={{ padding: 'var(--space-3)', background: 'var(--surface-2)', borderRadius: 'var(--radius-md)', border: 'var(--border-subtle)', marginBottom: 'var(--space-3)' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.82rem', marginBottom: 'var(--space-2)' }}>
-                  <span style={{ color: 'var(--silver)' }}>Available Store Credit</span>
-                  <strong style={{ color: 'var(--teal)' }}>${storeCreditBalance.toFixed(2)}</strong>
-                </div>
-                <label style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', fontSize: '0.78rem', color: 'var(--grey-300)', cursor: 'pointer', marginBottom: 'var(--space-2)' }}>
-                  <input
-                    type="checkbox"
-                    checked={useAllCredit}
-                    onChange={(e) => {
-                      setUseAllCredit(e.target.checked);
-                      if (e.target.checked) setCreditInput('');
-                    }}
-                  />
-                  Use All Available Credit
-                </label>
-                {!useAllCredit && (
-                  <input
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    max={Math.min(storeCreditBalance, subtotalAfterDiscount)}
-                    placeholder={`Custom Amount (Max $${Math.min(storeCreditBalance, subtotalAfterDiscount).toFixed(2)})`}
-                    value={creditInput}
-                    onChange={(e) => setCreditInput(e.target.value)}
-                    className="form-input"
-                    style={{ fontSize: '0.82rem' }}
-                  />
-                )}
-              </div>
-            )}
-
             <div style={{ borderTop: '1px solid rgba(255, 255, 255, 0.05)', paddingTop: 'var(--space-3)', display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem' }}>
                 <span style={{ color: 'var(--grey-400)' }}>{isAgentSelfBuy ? 'Agent Direct Subtotal' : 'Items Subtotal'}</span>
@@ -1414,13 +1356,6 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem' }}>
                   <span style={{ color: '#68D391' }}>Coupon Discount</span>
                   <strong style={{ color: '#68D391' }}>-${discount.toFixed(2)}</strong>
-                </div>
-              )}
-
-              {creditRedeemed > 0 && (
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem' }}>
-                  <span style={{ color: 'var(--teal)' }}>Store Credit Applied</span>
-                  <strong style={{ color: 'var(--teal)' }}>-${creditRedeemed.toFixed(2)}</strong>
                 </div>
               )}
 

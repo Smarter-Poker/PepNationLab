@@ -229,12 +229,12 @@ export default function EditProductPage() {
           </h3>
 
           <div className="grid-2" style={{ gap: 'var(--space-4)', marginBottom: 'var(--space-4)', alignItems: 'start' }}>
-            <div className="form-group">
+            <div className="form-group" style={{ marginBottom: 0 }}>
               <label className="form-label" htmlFor="name">Product Name</label>
               <input id="name" type="text" className="form-input" placeholder="e.g. BPC-157"
                 value={form.name} onChange={e => set('name', e.target.value)} required />
             </div>
-            <div className="form-group">
+            <div className="form-group" style={{ marginBottom: 0 }}>
               <label className="form-label" htmlFor="sku">SKU</label>
               <input id="sku" type="text" className="form-input" placeholder="e.g. BPC-157-5MG"
                 value={form.sku} onChange={e => set('sku', e.target.value)} />

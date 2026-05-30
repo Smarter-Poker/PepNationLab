@@ -75,11 +75,13 @@ interface PaymentMethodsPanelProps {
   agentId: string;
   /** Current payment_handles JSON from agent_profiles row */
   initialHandles: Record<string, string> | null;
+  onSaveSuccess?: (newHandles: Record<string, string>) => void;
 }
 
 export default function PaymentMethodsPanel({
   agentId,
   initialHandles,
+  onSaveSuccess,
 }: PaymentMethodsPanelProps) {
   // Build initial state from existing handles — a key present and non-empty = enabled
   const buildInitial = () => {
@@ -154,9 +156,14 @@ export default function PaymentMethodsPanel({
         .update({ payment_handles: handles })
         .eq('id', agentId);
 
-      if (error) throw new Error(error.message);
-
-      toast.success('Payment Methods Saved Successfully');
+      if (error) {
+        toast.error(`Save Failed: ${error.message}`);
+      } else {
+        toast.success('Payment Methods Updated');
+        if (onSaveSuccess) {
+          onSaveSuccess(handles);
+        }
+      }
     } catch (err: any) {
       toast.error(err.message ?? 'Failed To Save Payment Methods');
     } finally {

@@ -56,7 +56,7 @@ export function AdminLayoutClient({
   return (
     <>
       {/* ── Global site header — hamburger wired to admin sidebar ── */}
-      <Navbar onMenuClick={() => setSidebarOpen(o => !o)} />
+      <Navbar onMenuClick={() => setSidebarOpen(o => !o)} isOpen={sidebarOpen} />
 
       <div style={{ minHeight: '100dvh', background: 'var(--black)', display: 'flex', paddingTop: 60 }}>
 

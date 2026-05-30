@@ -59,31 +59,7 @@ export async function computeTaxQuote(
   const jurisdiction = rule.jurisdiction || `US-${stateCode}`;
   const baseRate = Math.max(0, Math.min(0.5, Number(rule.base_rate) || 0));
 
-  // Exemption check — only meaningful if a buyer id is supplied.
-  if (input.buyerId) {
-    const today = new Date().toISOString().slice(0, 10);
-    const { data: exemption } = await supabase
-      .from('tax_exemptions')
-      .select('id, status, expires_at, state_code')
-      .eq('user_id', input.buyerId)
-      .eq('state_code', stateCode)
-      .eq('status', 'approved')
-      .maybeSingle();
 
-    if (exemption) {
-      const notExpired = !exemption.expires_at || exemption.expires_at >= today;
-      if (notExpired) {
-        return {
-          taxableAmount: 0,
-          rate: baseRate,
-          taxAmount: 0,
-          jurisdiction,
-          exempt: true,
-          exemptionId: exemption.id,
-        };
-      }
-    }
-  }
 
   let taxableAmount = 0;
   switch (rule.applies_to) {

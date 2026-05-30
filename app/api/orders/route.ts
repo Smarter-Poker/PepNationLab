@@ -5,7 +5,7 @@ import { applyBulkPrice } from '@/lib/pricing';
 import { assertSameOrigin } from '@/lib/csrf';
 import { rateLimit } from '@/lib/rate-limit';
 import { computeTaxQuote } from '@/lib/tax';
-import { enqueueWebhook, fetchOrderForWebhook } from '@/lib/webhook-dispatch';
+
 import { enqueuePush, shortOrderId } from '@/lib/push-enqueue';
 import { notifyOrderPlaced, notify } from '@/lib/notify';
 
@@ -29,7 +29,7 @@ const CheckoutSchema = z.object({
   couponCode: z.string().optional().nullable(),
   idempotencyKey: z.string().uuid().optional().nullable(),
   wholesale: z.boolean().optional(),
-  creditRedeemed: z.number().min(0).optional(),
+
   /** Which agent storefront initiated this checkout — used for closed-loop catalog validation */
   agentSlug: z.string().regex(/^[a-zA-Z0-9_-]+$/).optional().nullable(),
 });
@@ -77,7 +77,7 @@ export async function POST(request: NextRequest) {
       couponCode,
       idempotencyKey,
       wholesale: explicitWholesale,
-      creditRedeemed: requestedCredit,
+
       agentSlug,
     } = validation.data;
 
@@ -561,67 +561,7 @@ export async function POST(request: NextRequest) {
 
     const grossTotal = Math.max(0, subtotal - discountAmount) + shippingCost + taxAmount;
 
-    // ── STEP C: STORE CREDIT PRE-DEDUCTION ───────────────────────────────────
-    // Store credit is deducted BEFORE the order insert to eliminate the
-    // double-spend window. Previously, deduction happened after order+items
-    // were committed, meaning two concurrent requests could both read the same
-    // balance, both pass the check, both commit orders, then the second
-    // redeem_store_credit call would fail — requiring a manual rollback.
-    // By deducting first, the order never exists without a matching deduction.
-    // If the order insert subsequently fails, release_store_credit restores it.
-    let creditRedeemed = 0;
-
-    // HARD RULE: Agents CANNOT apply store credit to their own self-buy orders.
-    if (isAgentSelfBuy && requestedCredit && requestedCredit > 0) {
-      if (inventoryReserved) await serviceSupabase.rpc('release_inventory', { p_items: inventoryItems });
-      if (appliedCouponId) await serviceSupabase.rpc('unreedeem_coupon', { p_coupon_id: appliedCouponId });
-      return NextResponse.json(
-        { error: 'Store Credit Cannot Be Applied To Agent Self-Buy Orders.' },
-        { status: 403 }
-      );
-    }
-
-    if (requestedCredit && requestedCredit > 0) {
-      const { data: balanceRow, error: balanceErr } = await serviceSupabase
-        .from('store_credit_balances')
-        .select('balance')
-        .eq('user_id', user.id)
-        .maybeSingle();
-      if (balanceErr) {
-        if (inventoryReserved) await serviceSupabase.rpc('release_inventory', { p_items: inventoryItems });
-        if (appliedCouponId) await serviceSupabase.rpc('unreedeem_coupon', { p_coupon_id: appliedCouponId });
-        return NextResponse.json({ error: 'Failed To Verify Store Credit Balance.' }, { status: 500 });
-      }
-      const available = Number(balanceRow?.balance ?? 0);
-      if (available < requestedCredit) {
-        if (inventoryReserved) await serviceSupabase.rpc('release_inventory', { p_items: inventoryItems });
-        if (appliedCouponId) await serviceSupabase.rpc('unreedeem_coupon', { p_coupon_id: appliedCouponId });
-        return NextResponse.json(
-          { error: `Insufficient Store Credit (Have $${available.toFixed(2)}, Need $${requestedCredit.toFixed(2)}).` },
-          { status: 422 }
-        );
-      }
-      creditRedeemed = Math.min(requestedCredit, grossTotal);
-      creditRedeemed = Math.round(creditRedeemed * 100) / 100;
-
-      // Pre-deduct credit NOW (before order insert). Compensating release on failure.
-      const { error: preDeductErr } = await serviceSupabase.rpc('redeem_store_credit', {
-        p_user_id: user.id,
-        p_amount: creditRedeemed,
-        p_order_id: null, // order not created yet — back-filled after insert
-        p_description: 'Order Credit Redemption (pre-authorised)',
-      });
-      if (preDeductErr) {
-        if (inventoryReserved) await serviceSupabase.rpc('release_inventory', { p_items: inventoryItems });
-        if (appliedCouponId) await serviceSupabase.rpc('unreedeem_coupon', { p_coupon_id: appliedCouponId });
-        return NextResponse.json(
-          { error: 'Store Credit Redemption Failed. Please Try Again.' },
-          { status: 422 }
-        );
-      }
-    }
-
-    const total = Math.max(0, grossTotal - creditRedeemed);
+    const total = Math.max(0, grossTotal);
 
     // Record the Layer 4 (checkout) disclaimer audit row BEFORE the order
     // insert. If the audit fails we refuse to place the order — research-only
@@ -680,7 +620,7 @@ export async function POST(request: NextRequest) {
         tax_amount: taxAmount,
         tax_jurisdiction: taxJurisdiction,
         tax_exemption_id: taxExemptionId,
-        credits_redeemed: creditRedeemed,
+
         idempotency_key: idempotencyKey ?? null,
       })
       .select('id, total')
@@ -699,13 +639,7 @@ export async function POST(request: NextRequest) {
           // Replay: release the pre-reserved resources since the replayed order
           // already owns them from the original request.
           await serviceSupabase.rpc('release_inventory', { p_items: inventoryItems });
-          if (creditRedeemed > 0) {
-            await serviceSupabase.rpc('release_store_credit', {
-              p_user_id: user.id, p_amount: creditRedeemed,
-              p_order_id: existing.id,
-              p_description: 'Duplicate request — credit restored (idempotency replay)',
-            });
-          }
+
           if (appliedCouponId) await serviceSupabase.rpc('unreedeem_coupon', { p_coupon_id: appliedCouponId });
           return NextResponse.json({
             success: true,
@@ -717,13 +651,7 @@ export async function POST(request: NextRequest) {
       }
       // Order insert failed: roll back all pre-committed resources.
       await serviceSupabase.rpc('release_inventory', { p_items: inventoryItems });
-      if (creditRedeemed > 0) {
-        await serviceSupabase.rpc('release_store_credit', {
-          p_user_id: user.id, p_amount: creditRedeemed,
-          p_order_id: null,
-          p_description: 'Order creation failed — credit restored',
-        });
-      }
+
       if (appliedCouponId) await serviceSupabase.rpc('unreedeem_coupon', { p_coupon_id: appliedCouponId });
       console.error('Database Order Write Error:', orderError);
       return NextResponse.json({ error: 'Failed To Save Order Transaction.' }, { status: 500 });
@@ -768,28 +696,11 @@ export async function POST(request: NextRequest) {
       await serviceSupabase.from('orders').delete().eq('id', order.id);
       await serviceSupabase.rpc('release_inventory', { p_items: inventoryItems });
       if (appliedCouponId) await serviceSupabase.rpc('unreedeem_coupon', { p_coupon_id: appliedCouponId });
-      if (creditRedeemed > 0) {
-        await serviceSupabase.rpc('release_store_credit', {
-          p_user_id: user.id, p_amount: creditRedeemed,
-          p_order_id: order.id,
-          p_description: `Order creation failed — credit restored (${order.id.slice(0, 8)})`,
-        });
-      }
+
       return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
     }
 
-    // Store credit was pre-deducted in Step C above. Back-fill the order_id on
-    // the store_credits row now that we have it, so the audit trail is complete.
-    if (creditRedeemed > 0) {
-      void serviceSupabase
-        .from('store_credits')
-        .update({ source_order_id: order.id })
-        .eq('user_id', user.id)
-        .is('source_order_id', null)
-        .eq('type', 'redeem')
-        .order('created_at', { ascending: false })
-        .limit(1);
-    }
+
 
     // Checkout disclaimer audit row was recorded above, prior to the order
     // insert, so a successful order implies a complete four-layer trail.
@@ -817,21 +728,6 @@ export async function POST(request: NextRequest) {
       } catch {
         // Best-effort attribution; never bubble up.
       }
-    })();
-
-    // Fire-and-forget webhook: order.created. Never blocks the response.
-    void (async () => {
-      try {
-        const orderPayload = await fetchOrderForWebhook(serviceSupabase, order.id);
-        if (orderPayload) {
-          await enqueueWebhook(serviceSupabase, {
-            event: 'order.created',
-            agentId: (orderPayload as { agent_id?: string | null }).agent_id ?? null,
-            payload: { order: orderPayload },
-            relatedOrderId: order.id,
-          });
-        }
-      } catch { /* webhook errors must not block the order */ }
     })();
 
     // Fire-and-forget: in-app + push notifications for new order.

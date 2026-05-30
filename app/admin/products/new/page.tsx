@@ -170,12 +170,12 @@ export default function NewProductPage() {
           </h3>
 
           <div className="grid-2" style={{ gap: 'var(--space-4)', marginBottom: 'var(--space-4)' }}>
-            <div className="form-group">
+            <div className="form-group" style={{ marginBottom: 0 }}>
               <label className="form-label" htmlFor="name">Product Name</label>
               <input id="name" type="text" className="form-input" placeholder="E.g. BPC-157"
                 value={form.name} onChange={e => set('name', e.target.value)} required />
             </div>
-            <div className="form-group">
+            <div className="form-group" style={{ marginBottom: 0 }}>
               <label className="form-label" htmlFor="sku">SKU</label>
               <input id="sku" type="text" className="form-input" placeholder="E.g. BPC-157-5MG"
                 value={form.sku} onChange={e => set('sku', e.target.value)} />
@@ -256,12 +256,12 @@ export default function NewProductPage() {
 
             {/* Unit */}
             <div className="grid-2" style={{ gap: 'var(--space-3)', alignSelf: 'start' }}>
-              <div className="form-group">
+              <div className="form-group" style={{ marginBottom: 0 }}>
                 <label className="form-label" htmlFor="unit_size">Unit Size</label>
                 <input id="unit_size" type="text" className="form-input" placeholder="E.g. 5"
                   value={form.unit_size} onChange={e => set('unit_size', e.target.value)} />
               </div>
-              <div className="form-group">
+              <div className="form-group" style={{ marginBottom: 0 }}>
                 <label className="form-label" htmlFor="unit_measure">Unit</label>
                 <select id="unit_measure" className="form-input" value={form.unit_measure}
                   onChange={e => set('unit_measure', e.target.value)}>
@@ -279,12 +279,12 @@ export default function NewProductPage() {
               Bulk Wholesale Pricing
             </h4>
             <div className="grid-2" style={{ gap: 'var(--space-4)' }}>
-              <div className="form-group">
+              <div className="form-group" style={{ marginBottom: 0 }}>
                 <label className="form-label" htmlFor="admin_bulk_threshold">Threshold (Vials)</label>
                 <input id="admin_bulk_threshold" type="number" min="1" className="form-input" placeholder="e.g. 100"
                   value={form.admin_bulk_threshold} onChange={e => set('admin_bulk_threshold', e.target.value)} />
               </div>
-              <div className="form-group">
+              <div className="form-group" style={{ marginBottom: 0 }}>
                 <label className="form-label" htmlFor="admin_bulk_price">Bulk Unit Cost ($)</label>
                 <div style={{ position: 'relative' }}>
                   <span style={{
@@ -372,13 +372,13 @@ export default function NewProductPage() {
           </div>
 
           <div className="grid-3" style={{ gap: 'var(--space-4)' }}>
-            <div className="form-group">
+            <div className="form-group" style={{ marginBottom: 0 }}>
               <label className="form-label" htmlFor="inventory_count">Units In Stock</label>
               <input id="inventory_count" type="number" min="0" className="form-input"
                 placeholder="0" value={form.inventory_count}
                 onChange={e => set('inventory_count', e.target.value)} />
             </div>
-            <div className="form-group">
+            <div className="form-group" style={{ marginBottom: 0 }}>
               <label className="form-label" htmlFor="low_stock_threshold">
                 Low Stock Alert
                 <span style={{ fontSize: '0.7rem', color: 'var(--grey-400)', fontWeight: 400, marginLeft: 6 }}>
@@ -389,7 +389,7 @@ export default function NewProductPage() {
                 placeholder="5" value={form.low_stock_threshold}
                 onChange={e => set('low_stock_threshold', e.target.value)} />
             </div>
-            <div className="form-group">
+            <div className="form-group" style={{ marginBottom: 0 }}>
               <label className="form-label" htmlFor="backorder_days">Backorder Days</label>
               <input id="backorder_days" type="number" min="1" className="form-input"
                 placeholder="14" value={form.backorder_days}
