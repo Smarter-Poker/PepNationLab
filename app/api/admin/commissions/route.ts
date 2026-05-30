@@ -8,6 +8,7 @@ export async function GET(req: NextRequest) {
   const gate = await requireAdmin();
   if (!gate.ok) return gate.response;
 
+  const service = await createServiceClient();
   const url = new URL(req.url);
   const status = url.searchParams.get('status');
   const agentId = url.searchParams.get('agentId');
@@ -59,6 +60,7 @@ export async function POST(req: NextRequest) {
   const gate = await requireAdmin();
   if (!gate.ok) return gate.response;
 
+  const service = await createServiceClient();
   const body = await req.json().catch(() => ({}));
   const { action } = body;
 
@@ -94,10 +96,10 @@ export async function POST(req: NextRequest) {
       notes: notes || null,
       status: 'completed',
       completed_at: new Date().toISOString(),
-      created_by: user.id,
+      created_by: gate.userId,
     }).select().single();
 
-    if (payoutError) return NextResponse.json({ error: payoutError.message }, { status: 500 });
+    if (payoutError) return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
 
     const commIds = approvedComms.map(c => c.id);
     await service.from('agent_commissions')
@@ -105,7 +107,7 @@ export async function POST(req: NextRequest) {
       .in('id', commIds);
 
     await service.from('internal_messages').insert({
-      sender_id: user.id,
+      sender_id: gate.userId,
       receiver_id: agentId,
       subject: `Commission Payout: $${totalAmount.toFixed(2)}`,
       body: `Your commission payout of $${totalAmount.toFixed(2)} has been processed via ${paymentMethod || 'transfer'}${referenceNumber ? ` (Ref: ${referenceNumber})` : ''}.`,
@@ -113,7 +115,7 @@ export async function POST(req: NextRequest) {
     });
 
     await service.from('admin_audit_log').insert({
-      actor_id: user.id,
+      actor_id: gate.userId,
       action: 'commission_payout',
       entity_type: 'payout_record',
       entity_id: payout.id,
@@ -133,7 +135,7 @@ export async function POST(req: NextRequest) {
     const { error } = await service.from('profiles').update({ commission_rate: numRate }).eq('id', agentId);
     if (error) return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
     await service.from('admin_audit_log').insert({
-      actor_id: user.id,
+      actor_id: gate.userId,
       action: 'commission_rate_update',
       entity_type: 'profile',
       entity_id: agentId,
