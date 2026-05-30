@@ -66,6 +66,11 @@ const PUBLIC_ROUTES = [
   '/status',
   // Storefront analytics telemetry — public, rate-limited per IP in the route.
   '/api/storefront/events',
+  // Shippo M1 storefront quote + address validation — public, rate-limited per
+  // IP inside the route handlers. Anonymous storefront checkout calls these
+  // before login to surface live rates and validate the shipping address.
+  '/api/shipping/quote',
+  '/api/shipping/validate-address',
 ];
 
 // Dynamic route check — agent storefronts are public
@@ -198,13 +203,14 @@ export default async function proxy(request: NextRequest) {
 
     if (!isMfaExempt) {
       // getAuthenticatorAssuranceLevel returns { currentLevel, nextLevel }.
-      // nextLevel === 'aal2' when the user has at least one verified factor;
-      // currentLevel === 'aal2' when the current session was elevated. We
-      // require nextLevel to be 'aal2' as the minimum bar — i.e. the user
-      // has a factor enrolled at all.
+      // currentLevel === 'aal2' means the current session was MFA-challenged.
+      // nextLevel === 'aal2' only means a factor exists — it does NOT confirm
+      // that this session went through the MFA challenge. We require currentLevel
+      // to be 'aal2' so sessions that bypassed the challenge (e.g. programmatic
+      // tokens) are blocked even if the account has MFA enrolled.
       const { data: aal } =
         await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
-      const hasVerifiedFactor = aal?.nextLevel === 'aal2';
+      const hasVerifiedFactor = aal?.currentLevel === 'aal2';
 
       if (!hasVerifiedFactor) {
         if (pathname.startsWith('/api/')) {

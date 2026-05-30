@@ -158,9 +158,8 @@ export async function persistStatement(
     };
   }
 
-  // If we found a non-paid row and the caller didn't pass force=true, we
-  // still let the upsert proceed (it refreshes totals for the same week).
-  void options.force;
+  // If we found a non-paid row, always let the upsert proceed so totals
+  // are refreshed for the same week (regardless of force flag).
 
   const { data: statement, error: upsertError } = await supabase
     .from('weekly_statements')

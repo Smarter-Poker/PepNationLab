@@ -48,6 +48,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Target User Not Found' }, { status: 404 });
   }
 
+  if (target.role === 'admin') {
+    return NextResponse.json({ error: 'Cannot Impersonate Another Admin' }, { status: 403 });
+  }
+
   await service
     .from('impersonation_sessions')
     .update({ ended_at: new Date().toISOString() })

@@ -11,7 +11,7 @@ export async function GET(_req: NextRequest) {
   const service = await createServiceClient();
   const { data, error } = await service
     .from('researcher_favorites')
-    .select('product_id, created_at, products:product_id(id, name, base_cost, image_url, category, is_active)')
+    .select('product_id, created_at, products:product_id(id, name, image_url, category, is_active)')
     .eq('user_id', user.id)
     .order('created_at', { ascending: false });
 

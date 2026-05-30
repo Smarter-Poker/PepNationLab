@@ -654,24 +654,30 @@ export async function buyLabel(input: BuyLabelInput): Promise<BuyLabelResult> {
     };
   }
 
-  const nextStatus: OrderStatus = canTransition(resolved.order.status, 'shipped', 'admin')
-    ? 'shipped'
-    : resolved.order.status;
+  const didTransition = canTransition(resolved.order.status, 'shipped', 'admin');
+  const nextStatus: OrderStatus = didTransition ? 'shipped' : resolved.order.status;
+  // Only stamp shipped_at when we actually moved the order to 'shipped'.
+  // Otherwise we'd write a ship timestamp on an order still in
+  // approved_ship / approved_pickup / cancelled, which contradicts the
+  // state-machine and breaks reconciliation variance reports.
+  const orderUpdate: Record<string, unknown> = {
+    tracking_number: trackingNumber,
+    label_url: labelUrl,
+    carrier: chosen.carrier,
+    service_level: chosen.serviceLevelToken,
+    label_cost_cents: labelCostCents,
+    agent_charged_cents: labelCostCents,
+    shipping_paid_by: 'platform',
+    shipping_origin_id: resolved.origin.id,
+    status: nextStatus,
+    updated_at: new Date().toISOString(),
+  };
+  if (didTransition) {
+    orderUpdate.shipped_at = new Date().toISOString();
+  }
   const { error: updErr } = await admin
     .from('orders')
-    .update({
-      tracking_number: trackingNumber,
-      label_url: labelUrl,
-      carrier: chosen.carrier,
-      service_level: chosen.serviceLevelToken,
-      label_cost_cents: labelCostCents,
-      agent_charged_cents: labelCostCents,
-      shipping_paid_by: 'platform',
-      shipping_origin_id: resolved.origin.id,
-      shipped_at: new Date().toISOString(),
-      status: nextStatus,
-      updated_at: new Date().toISOString(),
-    })
+    .update(orderUpdate)
     .eq('id', input.orderId);
 
   if (updErr) {

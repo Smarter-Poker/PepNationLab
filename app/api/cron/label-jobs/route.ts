@@ -61,6 +61,7 @@ export async function GET(req: NextRequest) {
       .select('id, order_id, agent_id, service_level_token, preferred_service_level, origin_id, label_file_type, attempts')
       .in('status', ['pending', 'queued'])
       .lt('attempts', MAX_ATTEMPTS)
+      .lte('next_attempt_at', new Date().toISOString())
       .order('created_at', { ascending: true })
       .limit(BATCH_LIMIT);
 
@@ -68,10 +69,30 @@ export async function GET(req: NextRequest) {
       errorNote = `fetch_failed: ${fetchErr.message}`.slice(0, 300);
     } else {
       for (const job of (jobs ?? [])) {
-        processed++;
         const jobId = job.id as string;
         const orderId = job.order_id as string;
         const attempts = (job.attempts as number) || 0;
+
+        // Atomic claim. A parallel cron tick (Vercel sometimes double-fires
+        // a single schedule slot, plus the same job can be visible in
+        // overlapping batches) must lose the race here, NOT after we've
+        // already paid Shippo. The UPDATE … WHERE status IN ('pending',
+        // 'queued') AND attempts<MAX_ATTEMPTS RETURNING id is the only
+        // ownership signal. The status='processing' value is whitelisted by
+        // the label_jobs CHECK constraint in migration 002.
+        const { data: claimedRows } = await supabase
+          .from('label_jobs')
+          .update({ status: 'processing', attempts: attempts + 1 })
+          .eq('id', jobId)
+          .in('status', ['pending', 'queued'])
+          .lt('attempts', MAX_ATTEMPTS)
+          .select('id');
+        if (!claimedRows || claimedRows.length === 0) {
+          // Lost the race — another worker is handling this row.
+          continue;
+        }
+
+        processed++;
 
         // Resolve agent_id: prefer job row, fall back to the order's agent_id.
         let agentId = typeof job.agent_id === 'string' ? job.agent_id : null;
@@ -88,7 +109,6 @@ export async function GET(req: NextRequest) {
           await supabase.from('label_jobs').update({
             status: 'failed',
             last_error: 'no_agent_id',
-            attempts: attempts + 1,
           }).eq('id', jobId);
           permanentlyFailed++;
           continue;
@@ -109,41 +129,49 @@ export async function GET(req: NextRequest) {
 
         if (!result.ok) {
           const msg = result.error.slice(0, 300);
-          const nextAttempts = attempts + 1;
-          if (nextAttempts >= MAX_ATTEMPTS) {
+          // attempts was already incremented by the atomic claim above; the
+          // post-claim value is `attempts + 1`.
+          const newAttempts = attempts + 1;
+          if (newAttempts >= MAX_ATTEMPTS) {
             await supabase.from('label_jobs').update({
               status: 'failed',
               last_error: msg,
-              attempts: nextAttempts,
             }).eq('id', jobId);
             await supabase.from('admin_audit_log').insert({
               actor_id: null,
               action: 'label_job_permanently_failed',
               entity_type: 'label_jobs',
               entity_id: jobId,
-              changes: { order_id: orderId, error: msg, attempts: nextAttempts },
+              changes: { order_id: orderId, error: msg, attempts: newAttempts },
             });
             permanentlyFailed++;
           } else {
+            // Back-off: 5^attempt minutes. attempt=1→5min, 2→25min, 3→125min.
+            // Flip back to 'queued' with next_attempt_at in the future so the
+            // cron's lte filter skips this row until the backoff window expires.
+            const backoffMinutes = Math.pow(5, newAttempts);
+            const nextAt = new Date(Date.now() + backoffMinutes * 60 * 1000).toISOString();
             await supabase.from('label_jobs').update({
+              status: 'queued',
               last_error: msg,
-              attempts: nextAttempts,
+              next_attempt_at: nextAt,
             }).eq('id', jobId);
           }
           failed++;
           continue;
         }
 
-        // Success — update job row.
+        // Success — update job row. Guard against a webhook racing us to
+        // mark the same row succeeded (the webhook also updates label_jobs
+        // by id, see app/api/webhooks/shippo/route.ts:handleTransaction).
         await supabase.from('label_jobs').update({
           status: 'succeeded',
           shippo_transaction_id: result.shippoTransactionId,
           label_url: result.labelUrl,
           tracking_number: result.trackingNumber,
           agent_charged_cents: result.labelCostCents,
-          attempts: attempts + 1,
           completed_at: new Date().toISOString(),
-        }).eq('id', jobId);
+        }).eq('id', jobId).neq('status', 'succeeded');
 
         succeeded++;
 

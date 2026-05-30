@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
 import { requireAgent } from '@/lib/admin-auth';
+import { assertSameOrigin } from '@/lib/csrf';
 import { randomUUID } from 'crypto';
 
 interface Bundle {
@@ -30,6 +31,9 @@ export async function GET(req: NextRequest) {
 
 // POST /api/agent/bundles — Create a new bundle
 export async function POST(req: NextRequest) {
+  const csrf = assertSameOrigin(req);
+  if (csrf) return csrf;
+
   const gate = await requireAgent();
   if (!gate.ok) return gate.response;
 
@@ -77,6 +81,9 @@ export async function POST(req: NextRequest) {
 
 // PATCH /api/agent/bundles — Toggle a bundle on/off
 export async function PATCH(req: NextRequest) {
+  const csrf = assertSameOrigin(req);
+  if (csrf) return csrf;
+
   const gate = await requireAgent();
   if (!gate.ok) return gate.response;
 
@@ -114,6 +121,9 @@ export async function PATCH(req: NextRequest) {
 
 // DELETE /api/agent/bundles — Delete a bundle
 export async function DELETE(req: NextRequest) {
+  const csrf = assertSameOrigin(req);
+  if (csrf) return csrf;
+
   const gate = await requireAgent();
   if (!gate.ok) return gate.response;
 

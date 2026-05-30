@@ -68,11 +68,11 @@ export async function POST(req: NextRequest) {
     let totalCogs = 0;
     const items = (order.order_items as OrderItem[]) || [];
 
+    // Always fetch the billed agent's tier — used by the computeAgentCost fallback
+    // regardless of whether this is a direct or sub-agent order.
     let billedAgentTier: AgentTier = 'tier_3';
-    if (!isSubAgentOrder) {
-      const { data: billedProfile } = await supabase.from('profiles').select('tier').eq('id', primaryBilledAgentId).maybeSingle();
-      billedAgentTier = (billedProfile?.tier as AgentTier | null) ?? 'tier_3';
-    }
+    const { data: billedProfile } = await supabase.from('profiles').select('tier').eq('id', primaryBilledAgentId).maybeSingle();
+    billedAgentTier = (billedProfile?.tier as AgentTier | null) ?? 'tier_3';
 
     for (const item of items) {
       const qty = Number(item.quantity) || 0;
@@ -124,10 +124,19 @@ export async function POST(req: NextRequest) {
         if (Array.isArray(links) && links.some((l) => l?.statement_id)) continue;
         const ship = Number((o as { shipping_cost?: unknown }).shipping_cost) || 0;
         const its = ((o as { order_items?: unknown }).order_items ?? []) as Array<{ quantity: number; unit_cost_price: number | null; unit_super_agent_cost: number | null; }>;
+        // For sub-agent orders (agent_id !== primaryBilledAgentId), use
+        // unit_super_agent_cost (the super-agent's cost) not unit_cost_price
+        // (the sub-agent's cost). Using the wrong column understates in-flight
+        // COGS and can allow approvals past the credit limit.
+        const isSubOrder = (o as { agent_id?: string | null }).agent_id !== primaryBilledAgentId;
         let orderCogs = 0;
         for (const it of its) {
           const qty = Number(it.quantity) || 0;
-          const cost = Number(it.unit_cost_price);
+          const superCost = Number(it.unit_super_agent_cost);
+          const agentCost = Number(it.unit_cost_price);
+          const cost = isSubOrder
+            ? (Number.isFinite(superCost) && superCost > 0 ? superCost : agentCost)
+            : agentCost;
           orderCogs += (Number.isFinite(cost) && cost > 0 ? cost : 0) * qty;
         }
         inFlight += orderCogs + ship;

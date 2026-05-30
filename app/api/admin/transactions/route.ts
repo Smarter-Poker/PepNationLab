@@ -1,6 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
 import { requireAdmin } from '@/lib/admin-auth';
+import { assertSameOrigin } from '@/lib/csrf';
+
+const VALID_TRANSACTION_TYPES = [
+  'commission', 'withdrawal', 'adjustment', 'order_charge', 'restock_charge',
+  'credit', 'bonus', 'refund', 'payout', 'deposit', 'manual_adjustment',
+] as const;
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 // GET: Fetch transaction ledger for an agent (or all agents)
 export async function GET(req: NextRequest) {
@@ -10,7 +18,14 @@ export async function GET(req: NextRequest) {
   const supabase = await createServiceClient();
   const { searchParams } = req.nextUrl;
   const agentId = searchParams.get('agent_id');
-  const limit = parseInt(searchParams.get('limit') ?? '100', 10);
+  // Cap limit to prevent unbounded data dumps
+  const rawLimit = parseInt(searchParams.get('limit') ?? '100', 10);
+  const limit = Math.min(isNaN(rawLimit) ? 100 : rawLimit, 500);
+
+  // Validate agentId as UUID if provided
+  if (agentId && !UUID_RE.test(agentId)) {
+    return NextResponse.json({ error: 'Invalid agent_id format' }, { status: 400 });
+  }
 
   let query = supabase
     .from('balance_transactions')
@@ -43,8 +58,11 @@ export async function GET(req: NextRequest) {
   return NextResponse.json({ data });
 }
 
-// POST: Log a manual transaction (called internally by other APIs)
+// POST: Log a manual transaction (admin-initiated ledger entry)
 export async function POST(req: NextRequest) {
+  const csrf = assertSameOrigin(req);
+  if (csrf) return csrf;
+
   const gate = await requireAdmin();
   if (!gate.ok) return gate.response;
 
@@ -55,30 +73,59 @@ export async function POST(req: NextRequest) {
     agent_id,
     type,
     amount,
-    balance_before,
-    balance_after,
     description,
     reference_id,
     reference_type,
-    created_by,
   } = body;
 
-  if (!agent_id || !type || amount === undefined || !description) {
-    return NextResponse.json({ error: 'Missing Required Fields' }, { status: 400 });
+  // Input validation
+  if (!agent_id || !UUID_RE.test(agent_id)) {
+    return NextResponse.json({ error: 'Missing or invalid agent_id (must be UUID)' }, { status: 400 });
   }
+  if (!type || !VALID_TRANSACTION_TYPES.includes(type)) {
+    return NextResponse.json({
+      error: `Invalid type. Must be one of: ${VALID_TRANSACTION_TYPES.join(', ')}`,
+    }, { status: 400 });
+  }
+  const parsedAmount = Number(amount);
+  if (!Number.isFinite(parsedAmount) || parsedAmount <= 0) {
+    return NextResponse.json({ error: 'amount must be a positive number' }, { status: 400 });
+  }
+  if (!description || typeof description !== 'string' || description.trim().length === 0) {
+    return NextResponse.json({ error: 'description is required' }, { status: 400 });
+  }
+
+  // Fetch current agent balance server-side — NEVER trust caller-supplied balance values.
+  // Using balance_before/balance_after from the request body would allow fraudulent
+  // ledger entries with arbitrary balance snapshots.
+  const { data: agentProfile, error: profileErr } = await supabase
+    .from('profiles')
+    .select('prepaid_balance')
+    .eq('id', agent_id)
+    .maybeSingle();
+
+  if (profileErr || !agentProfile) {
+    return NextResponse.json({ error: 'Agent not found' }, { status: 404 });
+  }
+
+  const balanceBefore = Number(agentProfile.prepaid_balance) || 0;
+  // Note: this route logs the transaction but does NOT change the balance.
+  // Balance changes are performed by the deduct_prepaid_balance / credit_balance RPCs.
+  // The balance_before/after here are informational snapshots at the time of logging.
+  const balanceAfter = balanceBefore;
 
   const { data, error } = await supabase
     .from('balance_transactions')
     .insert({
       agent_id,
       type,
-      amount: Math.abs(Number(amount)),
-      balance_before: Number(balance_before ?? 0),
-      balance_after: Number(balance_after ?? 0),
-      description,
+      amount: parsedAmount,
+      balance_before: balanceBefore,
+      balance_after: balanceAfter,
+      description: description.trim(),
       reference_id: reference_id ?? null,
       reference_type: reference_type ?? null,
-      created_by: created_by ?? null,
+      created_by: gate.userId, // always set to the authenticated admin — never caller-supplied
     })
     .select('id')
     .single();

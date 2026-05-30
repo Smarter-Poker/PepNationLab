@@ -1,23 +1,27 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient, createServiceClient } from '@/lib/supabase/server';
+import { createServiceClient } from '@/lib/supabase/server';
+import { requireAgent } from '@/lib/admin-auth';
+import { assertSameOrigin } from '@/lib/csrf';
 
 /**
  * Agents can reset passwords for their own researchers and sub-agents.
  * Validates that the target user's referring_agent_id matches the caller.
  */
 export async function POST(req: NextRequest) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
+  const csrf = assertSameOrigin(req);
+  if (csrf) return csrf;
 
-  // Verify caller is an agent
+  const gate = await requireAgent();
+  if (!gate.ok) return gate.response;
+
   const serviceSupabase = await createServiceClient();
+
+  // Verify caller is an agent/super-agent/admin (requireAgent already checks agent/super_agent)
+  // so we only need to also allow admin role
   const { data: callerProfile } = await serviceSupabase
     .from('profiles')
     .select('id, role')
-    .eq('id', user.id)
+    .eq('id', gate.user.id)
     .single();
 
   if (!callerProfile || !['agent', 'super_agent', 'admin'].includes(callerProfile.role)) {
@@ -30,8 +34,8 @@ export async function POST(req: NextRequest) {
   if (!userId || !newPassword) {
     return NextResponse.json({ error: 'Missing Required Fields' }, { status: 400 });
   }
-  if (newPassword.length < 8) {
-    return NextResponse.json({ error: 'Password Must Be At Least 8 Characters' }, { status: 400 });
+  if (typeof newPassword !== 'string' || newPassword.length < 12) {
+    return NextResponse.json({ error: 'Password Must Be At Least 12 Characters' }, { status: 400 });
   }
 
   // Verify the target user belongs to this agent (referring_agent_id = caller)
@@ -41,12 +45,14 @@ export async function POST(req: NextRequest) {
     .eq('id', userId)
     .single();
 
-  if (!targetProfile) {
+  // Guard: target must be a researcher or sub-agent — NEVER an admin or another agent
+  // at a different branch. The referring_agent_id check enforces ownership.
+  if (!targetProfile || !['researcher', 'agent'].includes(targetProfile.role)) {
     return NextResponse.json({ error: 'User Not Found' }, { status: 404 });
   }
 
   // Agent can only reset passwords for users referred by them
-  if (targetProfile.referring_agent_id !== user.id) {
+  if (targetProfile.referring_agent_id !== gate.user.id) {
     return NextResponse.json({ error: 'You Can Only Reset Passwords For Your Own Researchers And Sub-Agents' }, { status: 403 });
   }
 

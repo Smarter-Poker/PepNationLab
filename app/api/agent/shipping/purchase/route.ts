@@ -14,12 +14,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
 import { requireAgent } from '@/lib/admin-auth';
+import { assertSameOrigin } from '@/lib/csrf';
 import { pickOne } from '@/lib/relations';
 import { purchaseLabelForOrder } from '@/lib/shippo';
 import { enqueueOrderPush } from '@/lib/push-enqueue';
 import { enqueueWebhook, fetchOrderForWebhook } from '@/lib/webhook-dispatch';
 
 export async function POST(req: NextRequest) {
+  const csrf = assertSameOrigin(req);
+  if (csrf) return csrf;
+
   try {
     const gate = await requireAgent();
     if (!gate.ok) return gate.response;

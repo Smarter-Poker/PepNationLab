@@ -425,18 +425,42 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // Validate and atomically redeem a coupon code via SECURITY DEFINER RPC.
-    // The RPC increments uses_count + checks expiry, limits, and min subtotal
-    // in a single transaction so two concurrent uses of the last redemption
-    // cannot both succeed.
+    // ── STEP A: ATOMIC INVENTORY RESERVATION ─────────────────────────────────
+    // The advisory stock check above gives user-friendly error messages.
+    // This call atomically reserves the stock using SELECT FOR UPDATE inside
+    // a SECURITY DEFINER RPC, eliminating the TOCTOU race where two concurrent
+    // requests both read the same inventory_count and both pass the check.
+    // If reservation fails (stock was depleted by a concurrent request), we
+    // get a DB exception and return a 422 — no order row is ever written.
+    const inventoryItems = computedItems.map(item => ({
+      product_id: item.product_id,
+      quantity: item.quantity,
+    }));
+    const { error: reserveErr } = await serviceSupabase
+      .rpc('reserve_inventory', { p_items: inventoryItems });
+    if (reserveErr) {
+      const isStock = /Insufficient inventory/i.test(reserveErr.message);
+      return NextResponse.json(
+        { error: isStock ? reserveErr.message : 'Failed To Reserve Inventory. Please Try Again.' },
+        { status: 422 }
+      );
+    }
+    // inventoryReserved = true: all rollback paths below must call release_inventory.
+    let inventoryReserved = true;
+
+    // ── STEP B: COUPON REDEMPTION ─────────────────────────────────────────────
+    // redeem_coupon increments uses_count atomically. IMPORTANT: any rollback
+    // path after this point must call unreedeem_coupon(appliedCouponId) to
+    // prevent a permanent count leak if the order never commits.
     let discountAmount = 0;
     let appliedCouponCode: string | null = null;
     let appliedCouponId: string | null = null;
     const trimmedCouponCode = couponCode ? String(couponCode).trim().toUpperCase() : '';
 
     // HARD RULE: Agents CANNOT use coupons on their own self-buy orders.
-    // Agent pricing is already the discounted tier cost — no stacking allowed.
     if (isAgentSelfBuy && trimmedCouponCode) {
+      // Rollback: release the inventory reservation.
+      await serviceSupabase.rpc('release_inventory', { p_items: inventoryItems });
       return NextResponse.json(
         { error: 'Coupon Codes Cannot Be Applied To Agent Self-Buy Orders.' },
         { status: 403 }
@@ -446,6 +470,7 @@ export async function POST(request: NextRequest) {
     if (trimmedCouponCode) {
       const couponAgentId = profile.referring_agent_id ?? agentProfile?.id ?? null;
       if (!couponAgentId) {
+        await serviceSupabase.rpc('release_inventory', { p_items: inventoryItems });
         return NextResponse.json(
           { error: 'Coupon Codes Are Only Valid For Orders Placed Through A Referring Agent.' },
           { status: 400 }
@@ -460,6 +485,7 @@ export async function POST(request: NextRequest) {
 
       if (redeemError) {
         console.error('Coupon RPC Failed:', redeemError);
+        await serviceSupabase.rpc('release_inventory', { p_items: inventoryItems });
         return NextResponse.json(
           { error: 'Coupon Invalid Or Limit Reached' },
           { status: 422 }
@@ -468,6 +494,7 @@ export async function POST(request: NextRequest) {
 
       const row = Array.isArray(redeem) ? redeem[0] : redeem;
       if (!row?.coupon_id) {
+        await serviceSupabase.rpc('release_inventory', { p_items: inventoryItems });
         return NextResponse.json(
           { error: 'Coupon Invalid Or Limit Reached' },
           { status: 422 }
@@ -531,12 +558,20 @@ export async function POST(request: NextRequest) {
 
     const grossTotal = Math.max(0, subtotal - discountAmount) + shippingCost + taxAmount;
 
-    // Validate requested store credit against the server-side balance view.
-    // Cap at the order gross so a researcher can never go negative via credit.
+    // ── STEP C: STORE CREDIT PRE-DEDUCTION ───────────────────────────────────
+    // Store credit is deducted BEFORE the order insert to eliminate the
+    // double-spend window. Previously, deduction happened after order+items
+    // were committed, meaning two concurrent requests could both read the same
+    // balance, both pass the check, both commit orders, then the second
+    // redeem_store_credit call would fail — requiring a manual rollback.
+    // By deducting first, the order never exists without a matching deduction.
+    // If the order insert subsequently fails, release_store_credit restores it.
     let creditRedeemed = 0;
 
     // HARD RULE: Agents CANNOT apply store credit to their own self-buy orders.
     if (isAgentSelfBuy && requestedCredit && requestedCredit > 0) {
+      if (inventoryReserved) await serviceSupabase.rpc('release_inventory', { p_items: inventoryItems });
+      if (appliedCouponId) await serviceSupabase.rpc('unreedeem_coupon', { p_coupon_id: appliedCouponId });
       return NextResponse.json(
         { error: 'Store Credit Cannot Be Applied To Agent Self-Buy Orders.' },
         { status: 403 }
@@ -550,18 +585,37 @@ export async function POST(request: NextRequest) {
         .eq('user_id', user.id)
         .maybeSingle();
       if (balanceErr) {
+        if (inventoryReserved) await serviceSupabase.rpc('release_inventory', { p_items: inventoryItems });
+        if (appliedCouponId) await serviceSupabase.rpc('unreedeem_coupon', { p_coupon_id: appliedCouponId });
         return NextResponse.json({ error: 'Failed To Verify Store Credit Balance.' }, { status: 500 });
       }
       const available = Number(balanceRow?.balance ?? 0);
       if (available < requestedCredit) {
+        if (inventoryReserved) await serviceSupabase.rpc('release_inventory', { p_items: inventoryItems });
+        if (appliedCouponId) await serviceSupabase.rpc('unreedeem_coupon', { p_coupon_id: appliedCouponId });
         return NextResponse.json(
           { error: `Insufficient Store Credit (Have $${available.toFixed(2)}, Need $${requestedCredit.toFixed(2)}).` },
           { status: 422 }
         );
       }
       creditRedeemed = Math.min(requestedCredit, grossTotal);
-      // Round to two decimals to avoid float-vs-numeric drift on the DB row.
       creditRedeemed = Math.round(creditRedeemed * 100) / 100;
+
+      // Pre-deduct credit NOW (before order insert). Compensating release on failure.
+      const { error: preDeductErr } = await serviceSupabase.rpc('redeem_store_credit', {
+        p_user_id: user.id,
+        p_amount: creditRedeemed,
+        p_order_id: null, // order not created yet — back-filled after insert
+        p_description: 'Order Credit Redemption (pre-authorised)',
+      });
+      if (preDeductErr) {
+        if (inventoryReserved) await serviceSupabase.rpc('release_inventory', { p_items: inventoryItems });
+        if (appliedCouponId) await serviceSupabase.rpc('unreedeem_coupon', { p_coupon_id: appliedCouponId });
+        return NextResponse.json(
+          { error: 'Store Credit Redemption Failed. Please Try Again.' },
+          { status: 422 }
+        );
+      }
     }
 
     const total = Math.max(0, grossTotal - creditRedeemed);
@@ -630,9 +684,7 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (orderError || !order) {
-      // 23505 = unique_violation. With the unique partial index on
-      // orders.idempotency_key this means a parallel request already
-      // committed; return the prior order as a replay.
+      // 23505 = unique_violation — idempotency key replay.
       if (orderError && (orderError as any).code === '23505' && idempotencyKey) {
         const { data: existing } = await serviceSupabase
           .from('orders')
@@ -641,6 +693,17 @@ export async function POST(request: NextRequest) {
           .eq('buyer_id', user.id)
           .maybeSingle();
         if (existing) {
+          // Replay: release the pre-reserved resources since the replayed order
+          // already owns them from the original request.
+          await serviceSupabase.rpc('release_inventory', { p_items: inventoryItems });
+          if (creditRedeemed > 0) {
+            await serviceSupabase.rpc('release_store_credit', {
+              p_user_id: user.id, p_amount: creditRedeemed,
+              p_order_id: existing.id,
+              p_description: 'Duplicate request — credit restored (idempotency replay)',
+            });
+          }
+          if (appliedCouponId) await serviceSupabase.rpc('unreedeem_coupon', { p_coupon_id: appliedCouponId });
           return NextResponse.json({
             success: true,
             orderId: existing.id,
@@ -649,6 +712,16 @@ export async function POST(request: NextRequest) {
           });
         }
       }
+      // Order insert failed: roll back all pre-committed resources.
+      await serviceSupabase.rpc('release_inventory', { p_items: inventoryItems });
+      if (creditRedeemed > 0) {
+        await serviceSupabase.rpc('release_store_credit', {
+          p_user_id: user.id, p_amount: creditRedeemed,
+          p_order_id: null,
+          p_description: 'Order creation failed — credit restored',
+        });
+      }
+      if (appliedCouponId) await serviceSupabase.rpc('unreedeem_coupon', { p_coupon_id: appliedCouponId });
       console.error('Database Order Write Error:', orderError);
       return NextResponse.json({ error: 'Failed To Save Order Transaction.' }, { status: 500 });
     }
@@ -684,35 +757,35 @@ export async function POST(request: NextRequest) {
       .insert(itemsToInsert);
 
     if (itemsError) {
+      // Items insert failed: roll back order + all pre-committed resources.
+      // Inventory was pre-reserved — release it so stock is not permanently lost.
+      // Coupon was pre-incremented — unreedeem so the count is not permanently burned.
+      // Store credit was pre-deducted — release so balance is restored.
       console.error('Database Order Items Write Error:', JSON.stringify(itemsError));
-      console.error('Items payload attempted:', JSON.stringify(itemsToInsert));
       await serviceSupabase.from('orders').delete().eq('id', order.id);
+      await serviceSupabase.rpc('release_inventory', { p_items: inventoryItems });
+      if (appliedCouponId) await serviceSupabase.rpc('unreedeem_coupon', { p_coupon_id: appliedCouponId });
+      if (creditRedeemed > 0) {
+        await serviceSupabase.rpc('release_store_credit', {
+          p_user_id: user.id, p_amount: creditRedeemed,
+          p_order_id: order.id,
+          p_description: `Order creation failed — credit restored (${order.id.slice(0, 8)})`,
+        });
+      }
       return NextResponse.json({ error: `Failed To Save Checkout Order Line Items. (${itemsError.code}: ${itemsError.message})` }, { status: 500 });
     }
 
-    // Coupon usage was incremented atomically by the redeem_coupon RPC before
-    // the order insert; no JS-side increment needed.
-    void appliedCouponId;
-
-    // Atomically debit the buyer's store credit if any was applied. If this
-    // fails we roll back the order so the ledger and the credit balance never
-    // disagree.
+    // Store credit was pre-deducted in Step C above. Back-fill the order_id on
+    // the store_credits row now that we have it, so the audit trail is complete.
     if (creditRedeemed > 0) {
-      const { error: redeemErr } = await serviceSupabase.rpc('redeem_store_credit', {
-        p_user_id: user.id,
-        p_amount: creditRedeemed,
-        p_order_id: order.id,
-        p_description: `Order Credit Redemption (${order.id.slice(0, 8)})`,
-      });
-      if (redeemErr) {
-        await serviceSupabase.from('order_items').delete().eq('order_id', order.id);
-        await serviceSupabase.from('orders').delete().eq('id', order.id);
-        console.error('Store Credit Redemption Failed:', redeemErr);
-        return NextResponse.json(
-          { error: 'Store Credit Redemption Failed. No Charge Has Been Made.' },
-          { status: 422 }
-        );
-      }
+      void serviceSupabase
+        .from('store_credits')
+        .update({ source_order_id: order.id })
+        .eq('user_id', user.id)
+        .is('source_order_id', null)
+        .eq('type', 'redeem')
+        .order('created_at', { ascending: false })
+        .limit(1);
     }
 
     // Checkout disclaimer audit row was recorded above, prior to the order

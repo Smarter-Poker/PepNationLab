@@ -26,20 +26,23 @@ export async function POST(req: NextRequest) {
   if (fetchError || !invoice) return NextResponse.json({ error: 'Invoice Not Found' }, { status: 404 });
   if (invoice.invoice_status === 'paid') return NextResponse.json({ error: 'Invoice Already Paid' }, { status: 400 });
 
-  // Mark invoice as overdue
-  await service.from('internal_messages')
-    .update({ invoice_status: 'overdue' })
-    .eq('id', invoiceMessageId);
-
-  // Send reminder message
+  // Send reminder message FIRST — if this fails, status remains unchanged (no orphan)
   const { error: sendError } = await service.from('internal_messages').insert({
     sender_id: user.id,
     receiver_id: invoice.receiver_id,
     subject: `⚠️ Payment Reminder — ${invoice.subject}`,
-    body: `This is a reminder that your invoice "${invoice.subject}" ($${Number(invoice.invoice_amount || 0).toFixed(2)}) is overdue.\n\nPlease remit payment as soon as possible to avoid any service interruptions.`,
+    body: `This is a reminder that your invoice "${invoice.subject}" ($${Number(invoice.invoice_amount || 0).toFixed(2)}) is overdue.
+
+Please remit payment as soon as possible to avoid any service interruptions.`,
     type: 'payment_reminder',
   });
 
   if (sendError) return NextResponse.json({ error: sendError.message }, { status: 500 });
+
+  // Mark invoice as overdue only after the message has been delivered successfully
+  await service.from('internal_messages')
+    .update({ invoice_status: 'overdue' })
+    .eq('id', invoiceMessageId);
+
   return NextResponse.json({ success: true });
 }

@@ -66,28 +66,61 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Order Not Found.' }, { status: 404 });
   }
 
+  // Refuse to reprint for terminal states. A reprint on a cancelled order
+  // would charge Shippo for a label that will never ship; on a delivered
+  // order it would refund the only valid label and re-buy it for no reason.
+  const currentStatus = String(order.status ?? '');
+  if (currentStatus === 'cancelled' || currentStatus === 'delivered') {
+    return NextResponse.json(
+      { error: 'Order Is In A Terminal State And Cannot Be Reprinted.' },
+      { status: 422 },
+    );
+  }
+
   // Find the active label purchase.
   const { data: purchase } = await supabase
     .from('shipping_label_purchases')
-    .select('id, shippo_transaction_id, label_amount_cents, label_cost_cents')
+    .select('id, shippo_transaction_id, label_amount_cents, label_cost_cents, created_at')
     .eq('order_id', orderId)
     .eq('refunded', false)
     .maybeSingle();
 
-  // Step 1: Refund the existing label (if any).
+  // Step 1: Refund the existing label (if any). We must NOT proceed to step
+  // 2 if either (a) Shippo rejects the refund or (b) our ledger write fails
+  // — otherwise we double-charge the platform card and leave the old
+  // purchase un-refunded in our books.
   if (purchase?.shippo_transaction_id) {
+    if (purchase.created_at) {
+      const ageMs = Date.now() - new Date(purchase.created_at).getTime();
+      const ninetyDaysMs = 90 * 24 * 60 * 60 * 1000;
+      if (ageMs > ninetyDaysMs) {
+        return NextResponse.json(
+          { error: 'Existing Label Is Past The 90-Day Refund Window — Cannot Reprint.' },
+          { status: 422 },
+        );
+      }
+    }
     const refundResult = await refundLabel(purchase.shippo_transaction_id);
-    // Coalesce: label_amount_cents is NULL until webhook fires; RPC raises on NULL.
+    if (!refundResult.ok) {
+      return NextResponse.json(
+        { error: 'Shippo Refund Of Existing Label Was Rejected.' },
+        { status: 502 },
+      );
+    }
     const refundAmountCents: number = purchase.label_amount_cents ?? purchase.label_cost_cents ?? 0;
-    if (refundResult.ok || refundResult.status === 'QUEUED') {
-      // Mark the old purchase as refunded via RPC.
-      await supabase.rpc('shippo_record_refund', {
-        p_label_purchase_id: purchase.id,
-        p_refund_amount_cents: refundAmountCents,
-        p_shippo_refund_id: refundResult.shippoRefundId ?? null,
-        p_reason: `Reprint: ${reason}`,
-        p_initiated_by: gate.userId,
-      });
+    const { error: refundRpcErr } = await supabase.rpc('shippo_record_refund', {
+      p_label_purchase_id: purchase.id,
+      p_refund_amount_cents: refundAmountCents,
+      p_shippo_refund_id: refundResult.shippoRefundId ?? null,
+      p_reason: `Reprint: ${reason}`,
+      p_initiated_by: gate.userId,
+    });
+    if (refundRpcErr) {
+      console.error('[shippo-reprint] refund ledger RPC failed', refundRpcErr.message);
+      return NextResponse.json(
+        { error: 'Refund Ledger Write Failed — Reprint Aborted.' },
+        { status: 500 },
+      );
     }
   }
 
@@ -100,8 +133,9 @@ export async function POST(req: NextRequest) {
   });
 
   if (!labelResult.ok) {
+    console.error('[shippo-reprint] buyLabel failed', labelResult.error);
     return NextResponse.json(
-      { error: `Replacement Label Failed: ${labelResult.error}` },
+      { error: 'Replacement Label Purchase Failed.' },
       { status: 502 },
     );
   }

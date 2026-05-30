@@ -40,22 +40,31 @@ export async function GET(req: NextRequest) {
   let mode: 'concurrent' | 'plain' | 'none' = 'none';
   let lastError: string | null = null;
 
-  // Try concurrent refresh first.
-  const { error: concurrentErr } = await supabase.rpc('refresh_recommendation_views');
-  if (!concurrentErr) {
-    mode = 'concurrent';
-  } else {
-    lastError = concurrentErr.message;
-    // Fall back to plain (non-concurrent) refresh.
-    const { error: plainErr } = await supabase.rpc(
-      'refresh_recommendation_views_plain'
-    );
-    if (!plainErr) {
-      mode = 'plain';
-      lastError = null;
+  try {
+    // Try concurrent refresh first.
+    const { error: concurrentErr } = await supabase.rpc('refresh_recommendation_views');
+    if (!concurrentErr) {
+      mode = 'concurrent';
     } else {
-      lastError = `${lastError}; plain: ${plainErr.message}`;
+      lastError = concurrentErr.message;
+      // Fall back to plain (non-concurrent) refresh.
+      const { error: plainErr } = await supabase.rpc(
+        'refresh_recommendation_views_plain'
+      );
+      if (!plainErr) {
+        mode = 'plain';
+        lastError = null;
+      } else {
+        lastError = `${lastError}; plain: ${plainErr.message}`;
+      }
     }
+  } catch (err) {
+    // An unhandled JS exception (env var missing, network error, etc.) must
+    // still settle the cron_run row — otherwise it stays 'running' forever
+    // and blocks all future daily runs until manually deleted from the DB.
+    const msg = err instanceof Error ? err.message : 'unexpected exception';
+    await finishCronRun(claim.id, 'failed', msg);
+    return NextResponse.json({ ok: false, error: msg }, { status: 500 });
   }
 
   if (mode === 'none') {
@@ -69,3 +78,4 @@ export async function GET(req: NextRequest) {
   await finishCronRun(claim.id, 'succeeded', `refreshed mode=${mode}`);
   return NextResponse.json({ ok: true, mode, partition });
 }
+

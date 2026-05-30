@@ -61,7 +61,6 @@ export async function fetchAdminMetrics(adminUserId: string): Promise<DashboardM
     newResearchersRes,
     activeAgentsRes,
     sparklineRes,
-    topSkusRes,
     auditLogRes,
   ] = await Promise.all([
     supabase
@@ -126,17 +125,31 @@ export async function fetchAdminMetrics(adminUserId: string): Promise<DashboardM
       .neq('status', 'cancelled')
       .order('created_at', { ascending: true }),
     supabase
-      .from('order_items')
-      .select('product_name, quantity, unit_retail_price, orders!inner(created_at, status, is_wholesale_restock)')
-      .gte('orders.created_at', days30Ago)
-      .neq('orders.status', 'cancelled')
-      .eq('orders.is_wholesale_restock', false),
-    supabase
       .from('admin_audit_log')
       .select('id, action, entity_type, entity_id, created_at, actor_id, profiles!admin_audit_log_actor_id_fkey(full_name, email)')
       .order('created_at', { ascending: false })
       .limit(15),
   ]);
+
+  // Two-step topSkus query: fetch qualifying order IDs first, then get order_items
+  // for those orders. This avoids relying on PostgREST embedded resource filters
+  // (.gte('orders.created_at', ...)) which are version-dependent and may be
+  // silently ignored — returning all-time data instead of the last 30 days.
+  const { data: recentOrderRows } = await supabase
+    .from('orders')
+    .select('id')
+    .gte('created_at', days30Ago)
+    .neq('status', 'cancelled')
+    .eq('is_wholesale_restock', false);
+  const recentOrderIds = (recentOrderRows ?? []).map((r: { id: string }) => r.id);
+  let topSkusData: any[] = [];
+  if (recentOrderIds.length > 0) {
+    const { data: skuRows } = await supabase
+      .from('order_items')
+      .select('product_name, quantity, unit_retail_price')
+      .in('order_id', recentOrderIds);
+    topSkusData = skuRows ?? [];
+  }
 
   const sumTotal = (rows: { total: number | string | null }[] | null | undefined): number => {
     if (!rows || rows.length === 0) return 0;
@@ -148,7 +161,10 @@ export async function fetchAdminMetrics(adminUserId: string): Promise<DashboardM
   const gmvPrior7 = sumTotal(gmvPrior7Res.data);
 
   const lowStockList = (lowStockListRes.data || []).filter(
-    (p: any) => Number(p.inventory_count) <= Number(p.low_stock_threshold ?? 0)
+    // Use a sensible default threshold of 10 for products without one configured.
+    // Defaulting to 0 would mean products with null threshold never appear as low-stock
+    // even when down to a single unit.
+    (p: any) => Number(p.inventory_count) <= Number(p.low_stock_threshold ?? 10)
   );
 
   const unpaidStatementsTotal = (unpaidStatementsRes.data || []).reduce(
@@ -173,9 +189,9 @@ export async function fetchAdminMetrics(adminUserId: string): Promise<DashboardM
     revenue: Math.round(revenue * 100) / 100,
   }));
 
-  // Aggregate top SKUs
+  // Aggregate top SKUs from the two-step query above
   const skuMap = new Map<string, { quantity: number; revenue: number }>();
-  for (const row of (topSkusRes.data || []) as any[]) {
+  for (const row of topSkusData) {
     if (!row.product_name) continue;
     const existing = skuMap.get(row.product_name) || { quantity: 0, revenue: 0 };
     existing.quantity += Number(row.quantity) || 0;
