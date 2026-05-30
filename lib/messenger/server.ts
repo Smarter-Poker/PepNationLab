@@ -33,18 +33,41 @@ export interface ParticipantRow {
   role: ParticipantRole;
 }
 
+/**
+ * Audit14: this lookup was previously a direct `svc.from('messenger_participants')
+ * .select(...).eq(...).maybeSingle()` call. createServiceClient passes the
+ * user's cookies through @supabase/ssr, so the request ran as the
+ * authenticated user (under RLS), not as service_role. The destructure
+ * threw away `error`, so any RLS/config issue silently produced null and
+ * the calling route returned 403 -- which is exactly what send-message did
+ * for legitimate participants.
+ *
+ * Route through a SECURITY DEFINER RPC (`fn_messenger_get_participant`)
+ * that bypasses RLS unambiguously. Log non-no-rows errors so we never
+ * silently swallow another failure here.
+ */
 export async function getParticipant(
   conversationId: string,
   userId: string,
 ): Promise<ParticipantRow | null> {
   const svc = await createServiceClient();
-  const { data } = await svc
-    .from('messenger_participants')
-    .select('id, role')
-    .eq('conversation_id', conversationId)
-    .eq('user_id', userId)
-    .maybeSingle();
-  return (data as ParticipantRow | null) ?? null;
+  const { data, error } = await svc.rpc('fn_messenger_get_participant', {
+    p_conv_id: conversationId,
+    p_user_id: userId,
+  });
+  if (error) {
+    console.error('[messenger] getParticipant rpc failed', {
+      conversationId,
+      userId,
+      code: (error as { code?: string }).code,
+      message: error.message,
+    });
+    return null;
+  }
+  // RPC returns a setof row; supabase-js surfaces it as an array.
+  const row = Array.isArray(data) ? data[0] : data;
+  if (!row) return null;
+  return { id: row.id, role: row.role as ParticipantRole };
 }
 
 export async function isAdminUser(userId: string): Promise<boolean> {
