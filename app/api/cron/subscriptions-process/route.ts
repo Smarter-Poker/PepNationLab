@@ -372,7 +372,7 @@ async function pauseWithReason(
   try {
     await service.from('internal_messages').insert({
       sender_id: sub.agent_id,
-      recipient_id: sub.researcher_id,
+      receiver_id: sub.researcher_id,
       body: `Your Auto-Replenish Subscription Was Paused: ${reason}. Visit Your Account To Update It.`,
     });
     // In-app notification — shows in bell immediately
@@ -420,7 +420,7 @@ async function notifyResearcher(
   try {
     await service.from('internal_messages').insert({
       sender_id: sub.agent_id,
-      recipient_id: sub.researcher_id,
+      receiver_id: sub.researcher_id,
       body,
     });
     // In-app notification — shows in bell immediately via Realtime

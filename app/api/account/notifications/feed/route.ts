@@ -28,8 +28,8 @@ export async function GET() {
   const { count: msgCount } = await supabase
     .from('internal_messages')
     .select('id', { count: 'exact', head: true })
-    .eq('recipient_id', user.id)
-    .is('read_at', null);
+    .eq('receiver_id', user.id)
+    .eq('is_read', false);
 
   const totalUnread = (unreadCount ?? 0) + (msgCount ?? 0);
 

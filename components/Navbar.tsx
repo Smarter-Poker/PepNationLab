@@ -385,7 +385,7 @@ export default function Navbar({ onMenuClick }: { onMenuClick?: () => void } = {
               {/* Messenger / Notification Bell */}
               <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                 <MessageBell onViewAll={() => router.push('/messenger')} />
-                {role !== 'researcher' && <NavbarNotificationBell />}
+                <NavbarNotificationBell />
               </div>
 
               {/* Messenger exception: show Agent Dashboard btn instead of messenger icon */}
