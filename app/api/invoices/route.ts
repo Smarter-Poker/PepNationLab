@@ -54,6 +54,29 @@ export async function PATCH(req: NextRequest) {
   const validStatuses = ['pending', 'paid', 'overdue', 'cancelled'];
   if (!validStatuses.includes(status)) return NextResponse.json({ error: 'Invalid status' }, { status: 400 });
 
+  // B-06: Enforce invoice state machine — fetch current status first
+  const { data: current, error: fetchErr } = await service
+    .from('internal_messages')
+    .select('invoice_status')
+    .eq('id', messageId)
+    .in('type', ['invoice', 'credit_memo'])
+    .single();
+  if (fetchErr || !current) return NextResponse.json({ error: 'Invoice not found' }, { status: 404 });
+
+  const currentStatus = current.invoice_status as string;
+  // Define allowed transitions: paid invoices can only be cancelled (reversal).
+  // Cancelled invoices cannot be re-opened to paid/overdue.
+  const BLOCKED: Record<string, string[]> = {
+    paid: ['pending', 'overdue'],        // can't re-open a settled invoice
+    cancelled: ['paid', 'overdue'],      // can't re-open a cancelled invoice to financial states
+  };
+  if (BLOCKED[currentStatus]?.includes(status)) {
+    return NextResponse.json(
+      { error: `Cannot transition invoice from '${currentStatus}' to '${status}'.` },
+      { status: 422 }
+    );
+  }
+
   // Update the invoice
   const { data: invoice, error: updateError } = await service
     .from('internal_messages')

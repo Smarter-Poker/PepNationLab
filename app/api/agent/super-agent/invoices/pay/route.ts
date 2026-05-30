@@ -24,7 +24,7 @@ export async function POST(req: NextRequest) {
     // Verify the caller is the super_agent for this invoice, or an admin
     const { data: invoice, error: invoiceError } = await supabase
       .from('sub_agent_invoices')
-      .select('id, super_agent_id')
+      .select('id, super_agent_id, status')
       .eq('id', invoice_id)
       .single();
 
@@ -35,6 +35,14 @@ export async function POST(req: NextRequest) {
     // Only the super_agent who issued the invoice can mark it paid
     if (invoice.super_agent_id !== superAgentId) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
+    // B-07: Only open invoices can be marked paid — prevent re-paying settled/cancelled invoices
+    if (invoice.status !== 'open') {
+      return NextResponse.json(
+        { error: `Invoice cannot be marked paid (current status: ${invoice.status}).` },
+        { status: 422 }
+      );
     }
 
     // Update the invoice status

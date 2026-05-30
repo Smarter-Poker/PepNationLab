@@ -111,6 +111,18 @@ export default function AgentStorefrontConfig({
 
       // 2) Everything else updates inline (RLS allows the owner to update
       //    their own agent_profiles row).
+
+      // Fetch the current payment_handles so we can MERGE the 4 legacy
+      // keys without overwriting the new keys (paypal, google_wallet, wise,
+      // chime, apple_cash) that PaymentMethodsPanel manages.
+      const supabaseFetch = createClient();
+      const { data: current } = await supabaseFetch
+        .from('agent_profiles')
+        .select('payment_handles')
+        .eq('id', agentId)
+        .single();
+      const existingHandles: Record<string, string> = (current?.payment_handles as any) ?? {};
+
       const updatePayload: Record<string, any> = {
         display_name: displayName.trim(),
         logo_url: logoUrl.trim() || null,
@@ -119,6 +131,7 @@ export default function AgentStorefrontConfig({
         primary_color: primaryColor,
         volume_pricing_enabled: volumePricingEnabled,
         payment_handles: {
+          ...existingHandles,
           zelle: zelleHandle.trim(),
           cashapp: cashappHandle.trim(),
           venmo: venmoHandle.trim(),

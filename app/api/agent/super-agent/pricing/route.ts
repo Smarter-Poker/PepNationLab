@@ -125,13 +125,43 @@ export async function POST(req: NextRequest) {
     // per-10-vial-pack cost; baseline_cost is also per-10-vial-pack.
     const { computeAgentCost } = await import('@/lib/pricing');
     const ownCostPer10 = await computeAgentCost(supabase as any, product_id, (superAgentProfile.tier as 'tier_1' | 'tier_2' | 'tier_3') ?? 'tier_3');
-    if (ownCostPer10 > 0 && baseline_cost < ownCostPer10) {
+    // B-03: If product cost is 0 (broken/missing DB data), reject entirely rather
+    // than silently skipping the floor check — prevents near-zero baseline_cost.
+    if (ownCostPer10 === 0) {
+      return NextResponse.json(
+        { error: 'Product wholesale cost could not be determined. Contact admin.' },
+        { status: 422 }
+      );
+    }
+    if (baseline_cost < ownCostPer10) {
       return NextResponse.json(
         {
           error: `Baseline cost ($${(baseline_cost / 10).toFixed(2)}/vial) cannot be below your own wholesale cost ($${(ownCostPer10 / 10).toFixed(2)}/vial).`,
         },
         { status: 422 }
       );
+    }
+
+    // B-04: Validate bulk_baseline_cost with same cost floor
+    if (typeof bulk_baseline_cost === 'number') {
+      if (bulk_baseline_cost <= 0) {
+        return NextResponse.json({ error: 'bulk_baseline_cost must be greater than zero.' }, { status: 400 });
+      }
+      if (bulk_baseline_cost < ownCostPer10) {
+        return NextResponse.json(
+          {
+            error: `Bulk baseline cost ($${(bulk_baseline_cost / 10).toFixed(2)}/vial) cannot be below your own wholesale cost ($${(ownCostPer10 / 10).toFixed(2)}/vial).`,
+          },
+          { status: 422 }
+        );
+      }
+    }
+
+    // B-05: bulk_threshold must be a positive integer
+    if (bulk_threshold !== undefined && bulk_threshold !== null) {
+      if (!Number.isInteger(bulk_threshold) || bulk_threshold < 1) {
+        return NextResponse.json({ error: 'bulk_threshold must be a positive integer >= 1.' }, { status: 400 });
+      }
     }
 
     const { error } = await supabase
@@ -142,7 +172,7 @@ export async function POST(req: NextRequest) {
           product_id,
           baseline_cost,
           bulk_baseline_cost: typeof bulk_baseline_cost === 'number' ? bulk_baseline_cost : null,
-          bulk_threshold: typeof bulk_threshold === 'number' ? bulk_threshold : 100,
+          bulk_threshold: typeof bulk_threshold === 'number' && Number.isInteger(bulk_threshold) ? bulk_threshold : 100,
           updated_at: new Date().toISOString()
         },
         { onConflict: 'super_agent_id,product_id' }

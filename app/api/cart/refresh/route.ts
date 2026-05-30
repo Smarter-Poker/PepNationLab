@@ -69,9 +69,12 @@ export async function POST(req: NextRequest) {
         id: row.id as string,
         productId: (product?.id ?? row.product_id) as string | null,
         name: product?.name ?? null,
-        retailPrice: Number(row.retail_price) || 0,
+        // retail_price is stored as per-10-vial-pack price in the DB.
+        // Divide by 10 so CartContext receives per-vial prices consistent
+        // with how AgentStorefrontGrid initially sets cart item prices.
+        retailPrice: (Number(row.retail_price) || 0) / 10,
         bulkCostPrice:
-          product?.admin_bulk_price != null ? Number(product.admin_bulk_price) : null,
+          product?.admin_bulk_price != null ? Number(product.admin_bulk_price) / 10 : null,
         bulkThreshold:
           product?.admin_bulk_threshold != null ? Number(product.admin_bulk_threshold) : null,
         available,

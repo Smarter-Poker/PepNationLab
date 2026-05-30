@@ -56,6 +56,14 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     if (!STATUSES.has(body.status)) {
       return NextResponse.json({ error: 'Invalid Status' }, { status: 400 });
     }
+    // B-01: Cancelled subscriptions are terminal — researchers cannot re-activate them.
+    // Only admins can reinstate a cancelled subscription via the admin API.
+    if (gate.subscription!.status === 'cancelled' && body.status !== 'cancelled') {
+      return NextResponse.json(
+        { error: 'Cancelled subscriptions cannot be reactivated. Please create a new subscription.' },
+        { status: 422 }
+      );
+    }
     update.status = body.status;
     if (body.status === 'paused') {
       update.paused_at = new Date().toISOString();

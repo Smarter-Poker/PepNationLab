@@ -190,7 +190,23 @@ export function AdminLayoutClient({
           background: rgba(255,255,255,0.04) !important;
           color: var(--white) !important;
         }
-        /* Hide mobile hamburger on desktop */
+        /* Mobile: sidebar is a fixed drawer, hidden off-screen by default */
+        @media (max-width: 1024px) {
+          .admin-sidebar {
+            position: fixed !important;
+            top: 60px !important;
+            left: 0 !important;
+            height: calc(100dvh - 60px) !important;
+            z-index: 500 !important;
+            transform: translateX(-100%) !important;
+            transition: transform 0.25s ease !important;
+            box-shadow: 4px 0 24px rgba(0,0,0,0.4) !important;
+          }
+          .admin-sidebar.open {
+            transform: translateX(0) !important;
+          }
+        }
+        /* Desktop: sidebar is sticky in the flex row */
         @media (min-width: 1025px) {
           .admin-mobile-menu-btn { display: none !important; }
           .admin-sidebar {

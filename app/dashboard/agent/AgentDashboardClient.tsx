@@ -24,6 +24,7 @@ import AgentWebhooks from '@/components/AgentWebhooks';
 import MessageBell from '@/components/MessageBell';
 import { sanitizeUsername } from '@/lib/usernames';
 import { useTheme } from '@/components/ThemeProvider';
+import PaymentMethodsPanel from '@/components/PaymentMethodsPanel';
 
 
 interface Profile {
@@ -227,8 +228,9 @@ export default function AgentDashboardClient({
     const cashapp = setupCashApp.trim();
     const venmo = setupVenmo.trim();
     const applePay = setupApplePay.trim();
-    if (!zelle || !cashapp || !venmo || !applePay) {
-      setError('All Four Payment Handles Are Required (Zelle, Cash App, Venmo, Apple Pay).');
+    // Require at least one payment method at setup; agents add more later in Settings
+    if (!zelle && !cashapp && !venmo && !applePay) {
+      setError('At Least One Payment Method Is Required (Zelle, Cash App, Venmo, Or Apple Pay).');
       return;
     }
 
@@ -992,8 +994,16 @@ export default function AgentDashboardClient({
               <SettingsPasswordForm />
             </div>
 
+            {/* Payment Methods */}
+            {agentProfile && (
+              <PaymentMethodsPanel
+                agentId={userProfile.id}
+                initialHandles={agentProfile.payment_handles as Record<string, string> | null}
+              />
+            )}
+
             {/* Notification Preferences */}
-            <div className="card-metal" style={{ padding: 'var(--space-6)' }}>
+            <div className="card-metal" style={{ padding: 'var(--space-6)', marginTop: 'var(--space-6)' }}>
               <h4 style={{ marginBottom: 'var(--space-2)', color: 'var(--teal)' }}>Notification Preferences</h4>
               <p style={{ fontSize: '0.82rem', color: 'var(--grey-400)', marginBottom: 'var(--space-4)', marginTop: 0 }}>
                 Manage Push Notifications For New Messages When The Tab Is Hidden.
