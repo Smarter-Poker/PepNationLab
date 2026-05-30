@@ -1040,18 +1040,34 @@ img, video, svg, iframe {
     font-size: 1.1rem !important;
   }
 
-  /* Tables scroll horizontally */
-  table {
-    display: block;
+  /* Tables scroll horizontally — wrap table in overflow-x:auto container.
+     We do NOT set display:block on table itself (breaks colspan/widths).
+     Instead, wrap tables that need horizontal scroll with .table-scroll */
+  .table-scroll {
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
-    white-space: nowrap;
+    max-width: 100%;
   }
 
-  table thead, table tbody, table tr {
+  /* For tables without a .table-scroll wrapper, fall back to block scroll */
+  table:not(.no-mobile-scroll) {
+    max-width: 100%;
+    overflow-x: auto;
+    display: block;
+  }
+  /* Restore table structure inside block-display table */
+  table:not(.no-mobile-scroll) thead,
+  table:not(.no-mobile-scroll) tbody,
+  table:not(.no-mobile-scroll) tfoot {
     display: table;
     width: 100%;
-    table-layout: fixed;
+  }
+  table:not(.no-mobile-scroll) tr {
+    display: table-row;
+  }
+  table:not(.no-mobile-scroll) th,
+  table:not(.no-mobile-scroll) td {
+    display: table-cell;
   }
 
   /* Sidebar — full overlay on mobile */
