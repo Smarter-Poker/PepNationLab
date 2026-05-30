@@ -527,9 +527,9 @@ export default function AgentDashboardClient({
         zIndex: 50,
         display: 'flex',
         flexDirection: 'column',
-        justifyContent: 'space-between'
+        overflow: 'hidden',
       }}>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+        <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 2 }}>
           {MENU_ITEMS.map((item) => (
             <button
               key={item.id}
@@ -545,7 +545,7 @@ export default function AgentDashboardClient({
           ))}
         </div>
 
-        <div style={{ padding: 'var(--space-4)', display: 'flex', flexDirection: 'column', gap: 2 }}>
+        <div style={{ padding: 'var(--space-4)', display: 'flex', flexDirection: 'column', gap: 2, flexShrink: 0, paddingBottom: 'max(var(--space-4), env(safe-area-inset-bottom, 16px))' }}>
 
           {/* ── Copy Storefront Link ── */}
           {agentProfile && (

@@ -95,6 +95,8 @@ export function AdminLayoutClient({
           height: 'calc(100vh - 60px)',
           overflowY: 'auto',
           flexShrink: 0,
+          display: 'flex',
+          flexDirection: 'column',
         }}
       >
         <div style={{ padding: '0 var(--space-4) var(--space-4)' }}>
@@ -131,6 +133,40 @@ export function AdminLayoutClient({
             );
           })}
         </nav>
+
+        {/* ── Sign Out ── */}
+        <div style={{ padding: 'var(--space-3) var(--space-2)', marginTop: 'auto', paddingBottom: 'max(var(--space-4), env(safe-area-inset-bottom, 16px))' }}>
+          <div style={{ height: 1, background: 'rgba(255,255,255,0.07)', marginBottom: 'var(--space-3)' }} />
+          <form action="/api/auth/signout" method="post">
+            <button
+              type="submit"
+              style={{
+                width: '100%',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 'var(--space-3)',
+                padding: '10px 12px',
+                borderRadius: 'var(--radius-md)',
+                background: 'transparent',
+                border: 'none',
+                color: 'var(--red)',
+                fontSize: '0.85rem',
+                cursor: 'pointer',
+                transition: 'background 0.15s',
+                textAlign: 'left',
+              }}
+              onMouseEnter={e => { e.currentTarget.style.background = 'rgba(229,62,62,0.1)'; }}
+              onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                <polyline points="16 17 21 12 16 7" />
+                <line x1="21" y1="12" x2="9" y2="12" />
+              </svg>
+              <span>Sign Out</span>
+            </button>
+          </form>
+        </div>
       </aside>
 
       {/* ── Main content ── */}
