@@ -50,6 +50,17 @@ interface ShippingOrigin {
   is_active: boolean;
   shippo_address_id: string | null;
   created_at: string;
+  assigned_agents?: Array<{ id: string; display_name: string; slug: string }>;
+}
+
+interface AgentWarehouse {
+  id: string;
+  display_name: string;
+  slug: string;
+  warehouse_origin_id: string | null;
+  warehouse_origin: { label: string; name: string; city: string; state: string } | null;
+  uses_legacy_warehouse: boolean;
+  uses_platform_default: boolean;
 }
 
 interface OriginFormData {
@@ -89,8 +100,10 @@ const EMPTY_ORIGIN: OriginFormData = {
 export default function AdminShippingSettingsClient() {
   const [status, setStatus] = useState<ShippoStatus | null>(null);
   const [origins, setOrigins] = useState<ShippingOrigin[]>([]);
+  const [agentWarehouses, setAgentWarehouses] = useState<AgentWarehouse[]>([]);
   const [loading, setLoading] = useState(true);
   const [toast, setToast] = useState<{ msg: string; type: 'ok' | 'err' } | null>(null);
+  const [agentAssignLoading, setAgentAssignLoading] = useState<string | null>(null);
 
   // Connect form state
   const [connectKey, setConnectKey] = useState('');
@@ -145,14 +158,26 @@ export default function AdminShippingSettingsClient() {
     }
   }, []);
 
+  const fetchAgentWarehouses = useCallback(async () => {
+    try {
+      const r = await fetch('/api/admin/agents/warehouse-origins');
+      if (r.ok) {
+        const d = await r.json();
+        setAgentWarehouses(d.agents ?? []);
+      }
+    } catch {
+      /* no-op */
+    }
+  }, []);
+
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      await Promise.all([fetchStatus(), fetchOrigins()]);
+      await Promise.all([fetchStatus(), fetchOrigins(), fetchAgentWarehouses()]);
       if (!cancelled) setLoading(false);
     })();
     return () => { cancelled = true; };
-  }, [fetchStatus, fetchOrigins]);
+  }, [fetchStatus, fetchOrigins, fetchAgentWarehouses]);
 
   // ---------------------------------------------------------------------------
   // Connect / Disconnect / Rotate
@@ -791,6 +816,142 @@ export default function AdminShippingSettingsClient() {
             <strong style={{ color: '#f59e0b' }}> &ldquo;Estimated Shipping&rdquo;</strong> In The Checkout UI.
           </p>
         </div>
+      </section>
+
+      {/* ------------------------------------------------------------------ */}
+      {/* CARD 4.5 — Agent Warehouses                                          */}
+      {/* ------------------------------------------------------------------ */}
+      <section className="card" style={{ marginBottom: 'var(--space-5)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', marginBottom: 'var(--space-4)' }}>
+          <Package size={20} color="var(--teal)" />
+          <h2 style={{ color: 'var(--white)', fontSize: '1.1rem', fontWeight: 700 }}>
+            Agent Warehouses
+          </h2>
+          <span style={{ color: 'var(--silver)', fontSize: '0.8rem' }}>
+            Each Agent Ships From Their Own Warehouse Address
+          </span>
+        </div>
+        <p style={{ color: 'var(--silver)', fontSize: '0.85rem', margin: '0 0 var(--space-4)' }}>
+          Assign A Shipping Origin To Each Agent. Their Storefront Checkout Quotes And Label Purchases
+          Will Use That Warehouse. Agents Without An Assignment Fall Through To The Platform Default.
+        </p>
+        {agentWarehouses.length === 0 ? (
+          <p style={{ color: 'var(--silver)', fontSize: '0.85rem' }}>No Active Agents Found.</p>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
+            {agentWarehouses.map((agent) => (
+              <div
+                key={agent.id}
+                style={{
+                  background: 'var(--surface-2)',
+                  borderRadius: 8,
+                  padding: 'var(--space-3) var(--space-4)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 'var(--space-4)',
+                  flexWrap: 'wrap',
+                }}
+              >
+                <div style={{ flex: '1 1 180px' }}>
+                  <span style={{ color: 'var(--white)', fontWeight: 600, fontSize: '0.9rem' }}>
+                    {agent.display_name}
+                  </span>
+                  <br />
+                  <span style={{ color: 'var(--silver)', fontSize: '0.78rem' }}>@{agent.slug}</span>
+                </div>
+                <div style={{ flex: '1 1 220px' }}>
+                  {agent.warehouse_origin ? (
+                    <span style={{ color: 'var(--teal)', fontSize: '0.85rem' }}>
+                      <Check size={13} style={{ display: 'inline', marginRight: 4 }} />
+                      {agent.warehouse_origin.label} — {agent.warehouse_origin.city}, {agent.warehouse_origin.state}
+                    </span>
+                  ) : agent.uses_legacy_warehouse ? (
+                    <span style={{ color: '#f59e0b', fontSize: '0.85rem' }}>
+                      <AlertTriangle size={13} style={{ display: 'inline', marginRight: 4 }} />
+                      Legacy Address (Migrate To An Origin)
+                    </span>
+                  ) : (
+                    <span style={{ color: '#a0aec0', fontSize: '0.85rem' }}>
+                      Platform Default
+                    </span>
+                  )}
+                </div>
+                <div style={{ display: 'flex', gap: 'var(--space-2)', alignItems: 'center', flex: '0 0 auto' }}>
+                  <select
+                    id={`agent-origin-select-${agent.id}`}
+                    defaultValue={agent.warehouse_origin_id ?? ''}
+                    style={{
+                      background: 'var(--surface-3)',
+                      color: 'var(--white)',
+                      border: '1px solid var(--border)',
+                      borderRadius: 6,
+                      padding: '4px 8px',
+                      fontSize: '0.82rem',
+                    }}
+                  >
+                    <option value="">No Assignment (Platform Default)</option>
+                    {origins.filter((o) => o.is_active).map((o) => (
+                      <option key={o.id} value={o.id}>{o.label} — {o.city}, {o.state}</option>
+                    ))}
+                  </select>
+                  <button
+                    id={`agent-origin-save-${agent.id}`}
+                    disabled={agentAssignLoading === agent.id}
+                    onClick={async () => {
+                      const sel = document.getElementById(`agent-origin-select-${agent.id}`) as HTMLSelectElement | null;
+                      const newOriginId = sel?.value ?? '';
+                      setAgentAssignLoading(agent.id);
+                      try {
+                        if (newOriginId) {
+                          const r = await fetch(`/api/admin/shipping-origins/${newOriginId}/assign-agent`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ agent_id: agent.id }),
+                          });
+                          const d = await r.json();
+                          if (!r.ok) throw new Error(d.error ?? 'Assign Failed');
+                          showToast(`${agent.display_name} Now Ships From ${d.origin_label}.`, 'ok');
+                        } else {
+                          // Clear the assignment — call DELETE on whichever origin they currently have.
+                          if (!agent.warehouse_origin_id) {
+                            showToast('Agent Already Has No Assignment.', 'ok');
+                            return;
+                          }
+                          const r = await fetch(`/api/admin/shipping-origins/${agent.warehouse_origin_id}/assign-agent`, {
+                            method: 'DELETE',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ agent_id: agent.id }),
+                          });
+                          const d = await r.json();
+                          if (!r.ok) throw new Error(d.error ?? 'Unassign Failed');
+                          showToast(`${agent.display_name} Reset To Platform Default.`, 'ok');
+                        }
+                        await fetchAgentWarehouses();
+                      } catch (err) {
+                        showToast(err instanceof Error ? err.message : 'Failed.', 'err');
+                      } finally {
+                        setAgentAssignLoading(null);
+                      }
+                    }}
+                    style={{
+                      background: 'var(--teal)',
+                      color: 'var(--black)',
+                      border: 'none',
+                      borderRadius: 6,
+                      padding: '4px 14px',
+                      fontSize: '0.82rem',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      opacity: agentAssignLoading === agent.id ? 0.6 : 1,
+                    }}
+                  >
+                    {agentAssignLoading === agent.id ? '...' : 'Save'}
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </section>
 
       {/* ------------------------------------------------------------------ */}
