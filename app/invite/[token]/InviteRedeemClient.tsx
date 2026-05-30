@@ -73,8 +73,17 @@ export default function InviteRedeemClient({ token, email, suggestedFullName, in
       // Single-session enforcement — best-effort, never block login
       supabase.auth.signOut({ scope: 'others' }).catch(() => {});
 
-      router.push('/dashboard');
-      router.refresh();
+      // Wait until Supabase confirms the session is readable locally (max 3s).
+      // On mobile incognito the cookie write is async — navigating too soon
+      // means the server request arrives before the cookie exists.
+      for (let i = 0; i < 15; i++) {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.access_token) break;
+        await new Promise(r => setTimeout(r, 200));
+      }
+
+      // Hard navigation ensures that the browser sends the new session cookie to the server
+      window.location.href = '/dashboard';
     } catch {
       setError('Failed To Accept Invitation.');
       setSubmitting(false);

@@ -480,7 +480,7 @@ export default function AgentDashboardClient({
   return (
     <div style={{ minHeight: '100vh', background: 'var(--black)' }}>
       {/* Mobile Top Navbar (Global) */}
-      <Navbar onMenuClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} />
+      <Navbar onMenuClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} title={initialAgentProfile?.display_name || userProfile.full_name || 'AGENT DASHBOARD'} />
 
       {/* Overlay to close menu when clicking outside */}
       {isMobileMenuOpen && (
