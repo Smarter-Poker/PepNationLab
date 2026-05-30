@@ -96,6 +96,9 @@ export default function AgentStorefrontLogin({
         }
       }
 
+      // Single-session enforcement — kick all other sessions for this user
+      await supabase.auth.signOut({ scope: 'others' });
+
       // Access verified — refresh the server component
       router.refresh();
     } catch (err: any) {
@@ -151,6 +154,9 @@ export default function AgentStorefrontLogin({
         setLoading(false);
         return;
       }
+
+      // Single-session enforcement — kick all other sessions for this user
+      await supabase.auth.signOut({ scope: 'others' });
 
       // Auto-login succeeded — refresh to render the storefront catalog.
       router.refresh();

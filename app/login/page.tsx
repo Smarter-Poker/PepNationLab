@@ -53,6 +53,11 @@ function LoginPageInner() {
       return;
     }
 
+    // Single-session enforcement — revoke all other active sessions so only
+    // this new login remains valid. Any other open tab or device will be
+    // signed out on their next request.
+    await supabase.auth.signOut({ scope: 'others' });
+
     const redirectTo = searchParams.get('redirect') ?? '/dashboard';
     router.push(redirectTo);
     router.refresh();

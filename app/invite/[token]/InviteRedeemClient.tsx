@@ -70,6 +70,9 @@ export default function InviteRedeemClient({ token, email, suggestedFullName, in
         return;
       }
 
+      // Single-session enforcement — revoke all other sessions for this user
+      await supabase.auth.signOut({ scope: 'others' });
+
       router.push('/dashboard');
       router.refresh();
     } catch {
