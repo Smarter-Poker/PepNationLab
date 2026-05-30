@@ -25,13 +25,6 @@ interface AgentStorefrontConfigProps {
   setVenmoHandle: (val: string) => void;
   applePayHandle: string;
   setApplePayHandle: (val: string) => void;
-  // Shippo key handling: the parent now passes empty string (raw key is
-  // redacted server-side). The component fetches the real key on demand
-  // when the user clicks "Show Key".
-  shippoApiKey: string;
-  setShippoApiKey: (val: string) => void;
-  shippoKeyPresent?: boolean;
-  shippoKeyLast4?: string | null;
   // Warehouse address (JSONB) — read/write directly to agent_profiles.
   warehouseAddress?: Record<string, any> | null;
   // Vacation mode — flips agent_profiles.is_active.
@@ -53,9 +46,6 @@ export default function AgentStorefrontConfig({
   cashappHandle, setCashappHandle,
   venmoHandle, setVenmoHandle,
   applePayHandle, setApplePayHandle,
-  shippoApiKey, setShippoApiKey,
-  shippoKeyPresent = false,
-  shippoKeyLast4 = null,
   warehouseAddress,
   isActive,
   volumePricingEnabled,
@@ -63,8 +53,6 @@ export default function AgentStorefrontConfig({
   agentId,
 }: AgentStorefrontConfigProps) {
   const [loading, setLoading] = React.useState(false);
-  const [showShippoKey, setShowShippoKey] = React.useState(false);
-  const [loadingKey, setLoadingKey] = React.useState(false);
 
   // Warehouse address local state — mirrors agent_profiles.warehouse_address.
   const [whName, setWhName] = React.useState(warehouseAddress?.name ?? '');
@@ -76,27 +64,6 @@ export default function AgentStorefrontConfig({
 
   // Vacation mode (is_active): true = open, false = paused.
   const [vacationToggle, setVacationToggle] = React.useState<boolean>(isActive !== false);
-
-  async function handleRevealShippoKey() {
-    if (showShippoKey) {
-      // Toggle off — wipe the in-memory key.
-      setShowShippoKey(false);
-      setShippoApiKey('');
-      return;
-    }
-    setLoadingKey(true);
-    try {
-      const res = await fetch('/api/agent/storefront-config/shippo-key', { method: 'GET' });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data?.error || 'Failed To Load Key');
-      setShippoApiKey(data.shippo_api_key || '');
-      setShowShippoKey(true);
-    } catch (err: any) {
-      toast.error(err.message || 'Failed To Reveal Shippo Key');
-    } finally {
-      setLoadingKey(false);
-    }
-  }
 
   async function handleVacationToggle(next: boolean) {
     setVacationToggle(next);

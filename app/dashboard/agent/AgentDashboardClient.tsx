@@ -918,9 +918,6 @@ export default function AgentDashboardClient({
               cashappHandle={cashappHandle} setCashappHandle={setCashappHandle}
               venmoHandle={venmoHandle} setVenmoHandle={setVenmoHandle}
               applePayHandle={applePayHandle} setApplePayHandle={setApplePayHandle}
-              shippoApiKey={shippoApiKey} setShippoApiKey={setShippoApiKey}
-              shippoKeyPresent={agentProfile.shippo_api_key_present ?? false}
-              shippoKeyLast4={agentProfile.shippo_api_key_last4 ?? null}
               warehouseAddress={agentProfile.warehouse_address}
               isActive={agentProfile.is_active}
               volumePricingEnabled={volumePricingEnabled}
