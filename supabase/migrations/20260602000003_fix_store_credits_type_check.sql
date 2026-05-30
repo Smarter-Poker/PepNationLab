@@ -24,8 +24,5 @@ ALTER TABLE public.store_credits
   ADD CONSTRAINT store_credits_type_check
   CHECK (type IN ('issue', 'redeem', 'release', 'expire', 'adjustment', 'refund', 'credit'));
 
--- Also: audit15 re-defined redeem_store_credit with a 3-arg signature that
--- inserted into store_credits WITHOUT the source_order_id field (NULL).
--- The old 4-arg version that wrote source_order_id is still valid. The GRANT
--- below ensures both variants are callable by authenticated users.
-GRANT EXECUTE ON FUNCTION public.redeem_store_credit(UUID, NUMERIC, UUID) TO authenticated;
+-- Note: The 4-arg redeem_store_credit(UUID, NUMERIC, UUID, TEXT) is the
+-- canonical version and is already granted to authenticated via audit_p0_hardening.
