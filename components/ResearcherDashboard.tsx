@@ -494,117 +494,61 @@ export default function ResearcherDashboard({ userId, userName, userEmail, agent
             )}
           </div>
 
-          {/* ── OVERVIEW TAB ── */}
+          {/* ── OVERVIEW TAB — Brushed-Steel Menu ── */}
           {tab === 'overview' && (
-            <div>
-              {/* Stats cards */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 'var(--space-4)', marginBottom: 'var(--space-6)' }}>
-                {[
-                  {
-                    label: 'Account Type',
-                    value: profile.account_type === 'credit' ? 'Credit' : 'Prepaid',
-                    icon: <svg {...IP}><path d="M20 12V22H4V12"/><path d="M22 7H2v5h20V7z"/><path d="M12 22V7"/><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/></svg>,
-                    color: 'var(--teal)',
-                  },
-                  {
-                    label: profile.account_type === 'credit' ? 'Credit Limit' : 'Balance',
-                    value: `$${(profile.account_type === 'credit' ? profile.credit_limit : profile.prepaid_balance).toFixed(2)}`,
-                    icon: <svg {...IP}><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>,
-                    color: 'var(--teal)',
-                  },
-                  {
-                    label: 'Total Orders',
-                    value: orders.length.toString(),
-                    icon: <svg {...IP}><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>,
-                    color: '#63B3ED',
-                  },
-                  {
-                    label: 'Total Spent',
-                    value: `$${totalSpent.toFixed(2)}`,
-                    icon: <svg {...IP}><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>,
-                    color: '#F6AD55',
-                  },
-                ].map((s, i) => (
-                  <div key={i} className="card-metal" style={{ padding: 'var(--space-4)' }}>
-                    <div style={{ color: s.color, marginBottom: 8, opacity: 0.8 }}>{s.icon}</div>
-                    <div style={{ fontSize: '1.2rem', fontWeight: 800, color: s.color, fontFamily: 'var(--font-brand)' }}>{s.value}</div>
-                    <div style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.35)', marginTop: 3 }}>{s.label}</div>
-                  </div>
-                ))}
-              </div>
-
-              {/* Active orders + quick actions */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-6)' }} className="overview-grid">
-                <div className="card-metal" style={{ padding: 'var(--space-5)' }}>
-                  <h3 style={{ fontSize: '0.85rem', color: 'var(--silver)', fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 'var(--space-4)' }}>Active Orders</h3>
-                  {activeOrders.length > 0 ? (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                      {activeOrders.slice(0, 5).map(o => (
-                        <div key={o.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 12px', background: 'rgba(255,255,255,0.02)', borderRadius: 8, border: '1px solid rgba(255,255,255,0.04)' }}>
-                          <div>
-                            <div style={{ fontSize: '0.78rem', color: '#fff', fontWeight: 600 }}>#{o.id.slice(0, 8)}</div>
-                            <div style={{ fontSize: '0.68rem', color: 'rgba(255,255,255,0.3)' }}>${Number(o.total).toFixed(2)} — {new Date(o.created_at).toLocaleDateString()}</div>
-                          </div>
-                          <span style={{ fontSize: '0.65rem', fontWeight: 700, color: STATUS_COLORS[o.status], background: `${STATUS_COLORS[o.status]}15`, padding: '2px 8px', borderRadius: 4 }}>
-                            {STATUS_LABELS[o.status] || o.status}
-                          </span>
-                        </div>
-                      ))}
-                      {activeOrders.length > 5 && (
-                        <div style={{ fontSize: '0.72rem', color: 'var(--teal)', textAlign: 'center', cursor: 'pointer' }} onClick={() => setTab('orders')}>View All</div>
-                      )}
-                    </div>
-                  ) : (
-                    <div style={{ textAlign: 'center', padding: 20, color: 'rgba(255,255,255,0.2)', fontSize: '0.78rem' }}>No Active Orders</div>
-                  )}
-                </div>
-
-                <div className="card-metal" style={{ padding: 'var(--space-5)' }}>
-                  <h3 style={{ fontSize: '0.85rem', color: 'var(--silver)', fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 'var(--space-4)' }}>Quick Actions</h3>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                    {[
-                      {
-                        label: 'Browse Research Catalog',
-                        href: agentSlug ? `/${agentSlug}` : '/products',
-                        icon: <svg {...IP}><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>,
-                        color: 'var(--teal)',
-                      },
-                      {
-                        label: 'View All Orders',
-                        action: () => setTab('orders'),
-                        icon: <svg {...IP}><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>,
-                        color: '#63B3ED',
-                      },
-                      {
-                        label: 'Message Your Agent',
-                        action: () => setTab('messages'),
-                        icon: <svg {...IP}><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>,
-                        color: '#F6AD55',
-                      },
-                      {
-                        label: 'My Favorites',
-                        action: () => setTab('favorites'),
-                        icon: <svg {...IP}><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>,
-                        color: '#C084FC',
-                      },
-                    ].map((a, i) => (
-                      <button key={i}
-                        onClick={a.action}
-                        style={{
-                          display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px',
-                          background: 'rgba(255,255,255,0.02)', borderRadius: 8, border: '1px solid rgba(255,255,255,0.04)',
-                          cursor: 'pointer', textAlign: 'left', color: a.color, fontSize: '0.82rem', fontWeight: 600,
-                          transition: 'background 0.15s', position: 'relative',
-                        }}
-                        onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.04)'}
-                        onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.02)'}
-                      >
-                        <span style={{ flexShrink: 0 }}>{a.icon}</span>
-                        <span>{a.label}</span>
-                        {a.href && <a href={a.href} style={{ position: 'absolute', inset: 0 }} aria-label={a.label} />}
-                      </button>
-                    ))}
-                  </div>
+            <div style={{
+              display: 'flex',
+              justifyContent: 'center',
+              alignItems: 'flex-start',
+              padding: '8px 0 32px',
+            }}>
+              <div style={{
+                width: '100%',
+                maxWidth: 520,
+                borderRadius: 22,
+                padding: 10,
+                background: 'linear-gradient(145deg, #d4cec4 0%, #b0a89e 25%, #8a847c 50%, #b0a89e 75%, #d4cec4 100%)',
+                boxShadow: '0 12px 60px rgba(0,0,0,0.85), inset 0 1px 0 rgba(255,255,255,0.4), inset 0 -1px 0 rgba(0,0,0,0.5)',
+              }}>
+                <div style={{
+                  borderRadius: 14,
+                  background: 'linear-gradient(180deg, #1a1d28 0%, #13151f 50%, #0e1018 100%)',
+                  padding: '14px 12px',
+                  boxShadow: 'inset 0 3px 12px rgba(0,0,0,0.7)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 8,
+                }}>
+                  <MenuButton
+                    onClick={() => { window.location.href = agentSlug ? `/${agentSlug}` : '/products'; }}
+                    icon={<StorefrontIcon />}
+                    title="VISIT STOREFRONT"
+                    subtitle="SEE ALL AVAILABLE PEPTIDES AND PRODUCTS"
+                  />
+                  <MenuButton
+                    onClick={() => setTab('orders')}
+                    icon={<OrdersIcon />}
+                    title="VIEW ALL ORDERS"
+                    subtitle="CHECK ORDERS, TRACKING NUMBERS AND PREVIOUS ORDERS"
+                  />
+                  <MenuButton
+                    onClick={() => setTab('messages')}
+                    icon={<MessageIcon />}
+                    title="MESSAGE YOUR AGENT"
+                    subtitle="SEND PROOF OF PAYMENT OR ASK YOUR AGENT ANY QUESTIONS"
+                  />
+                  <MenuButton
+                    onClick={() => setTab('favorites')}
+                    icon={<FavoritesIcon />}
+                    title="FAVORITES"
+                    subtitle="ALL ITEMS YOU LIKED OR PREVIOUSLY ORDERED"
+                  />
+                  <MenuButton
+                    onClick={() => setTab('account')}
+                    icon={<SettingsIcon />}
+                    title="ACCOUNT SETTINGS"
+                    subtitle="PROFILE SETTINGS AND ACCOUNT INFORMATION"
+                  />
                 </div>
               </div>
             </div>
