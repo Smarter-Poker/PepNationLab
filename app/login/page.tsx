@@ -53,10 +53,10 @@ function LoginPageInner() {
       return;
     }
 
-    // Single-session enforcement — revoke all other active sessions so only
-    // this new login remains valid. Any other open tab or device will be
-    // signed out on their next request.
-    await supabase.auth.signOut({ scope: 'others' });
+    // Single-session enforcement — best-effort, never block login.
+    // Fire-and-forget: if this fails (e.g. incognito cookie timing) the
+    // new session is still valid. Old sessions expire naturally.
+    supabase.auth.signOut({ scope: 'others' }).catch(() => {});
 
     const redirectTo = searchParams.get('redirect') ?? '/dashboard';
     router.push(redirectTo);

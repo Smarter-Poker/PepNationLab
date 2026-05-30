@@ -70,8 +70,8 @@ export default function InviteRedeemClient({ token, email, suggestedFullName, in
         return;
       }
 
-      // Single-session enforcement — revoke all other sessions for this user
-      await supabase.auth.signOut({ scope: 'others' });
+      // Single-session enforcement — best-effort, never block login
+      supabase.auth.signOut({ scope: 'others' }).catch(() => {});
 
       router.push('/dashboard');
       router.refresh();
