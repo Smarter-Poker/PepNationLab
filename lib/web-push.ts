@@ -48,6 +48,7 @@ export interface PushPayload {
   tag?: string;
   icon?: string;
   badge?: string;
+  requireInteraction?: boolean;
 }
 
 export interface PushSendResult {
@@ -78,6 +79,7 @@ export async function sendWebPush(
     tag: payload.tag,
     icon: payload.icon ?? '/logo-mark.svg',
     badge: payload.badge ?? '/logo-mark.svg',
+    requireInteraction: payload.requireInteraction,
   });
 
   try {

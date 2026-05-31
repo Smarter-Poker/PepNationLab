@@ -11,6 +11,7 @@ interface MessageHandlers {
   onDelete?: (id: string) => void;
   onReactionInsert?: (r: Reaction) => void;
   onReactionDelete?: (r: { message_id: string; user_id: string; emoji: string | null }) => void;
+  onPinChange?: () => void;
 }
 
 export function subscribeMessages(
@@ -104,6 +105,19 @@ export function subscribeMessages(
           emoji: payload.old.emoji,
         });
       }
+    }
+  );
+
+  ch.on(
+    'postgres_changes',
+    {
+      event: '*',
+      schema: 'public',
+      table: 'messenger_pins',
+      filter: `conversation_id=eq.${conversationId}`,
+    },
+    () => {
+      handlers.onPinChange?.();
     }
   );
 

@@ -656,6 +656,9 @@ export default function MessagePane({ userId }: Props) {
             };
           });
         },
+        onPinChange: () => {
+          setPinRefreshKey((k) => k + 1);
+        },
       }, userId);
       
       msgChannel = msgSub.channel;

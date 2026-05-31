@@ -1,3 +1,5 @@
+'use client';
+
 import React, { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 
@@ -58,9 +60,12 @@ export default function AgentStatements() {
 
   if (statements.length === 0) {
     return (
-      <div className="metal-frame" style={{ textAlign: 'center' }}>
-        <div className="metal-content" style={{ padding: 'var(--space-6)' }}>
-          <p style={{ color: 'var(--silver-light)' }}>No statements found. Statements are generated weekly for your fulfillment costs.</p>
+      <div className="metal-frame">
+        <div className="metal-content">
+          <h2 className="metal-text" style={{ fontSize: '1.25rem', fontFamily: 'var(--font-brand)', marginBottom: 'var(--space-4)' }}>Admin Statements</h2>
+          <div style={{ padding: 'var(--space-6)', textAlign: 'center' }}>
+            <p style={{ color: 'var(--silver-light)' }}>No statements found. Statements are generated weekly for your fulfillment costs.</p>
+          </div>
         </div>
       </div>
     );

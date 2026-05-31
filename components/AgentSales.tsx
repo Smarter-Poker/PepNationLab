@@ -1,3 +1,5 @@
+'use client';
+
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import AgentOrders from './AgentOrders';
@@ -91,10 +93,11 @@ export default function AgentSales({ orders, setOrders, agentId, userProfile }: 
     
     sortedSales.forEach((s: any) => {
       const d = new Date(s.created_at);
-      const dateStr = `${d.getMonth() + 1}/${d.getDate()}`;
-      if (!grouped[dateStr]) grouped[dateStr] = { date: dateStr, sales: 0, profit: 0 };
-      grouped[dateStr].sales += (Number(s.total) || 0);
-      grouped[dateStr].profit += (Number(s.profit) || 0);
+      const dateKey = `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;
+      const displayDate = `${d.getMonth() + 1}/${d.getDate()}`;
+      if (!grouped[dateKey]) grouped[dateKey] = { date: displayDate, sales: 0, profit: 0 };
+      grouped[dateKey].sales += (Number(s.total) || 0);
+      grouped[dateKey].profit += (Number(s.profit) || 0);
     });
 
     return {
