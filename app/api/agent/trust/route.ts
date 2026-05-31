@@ -15,7 +15,7 @@ export async function PATCH(request: Request) {
     // Get caller's role and ID to verify permissions
     const { data: callerProfile } = await serviceSupabase
       .from('profiles')
-      .select('role, id')
+      .select('role, id, is_super_agent')
       .eq('id', user.id)
       .single();
 
@@ -46,7 +46,7 @@ export async function PATCH(request: Request) {
     if (callerProfile.role === 'admin') {
       // Admins can toggle anyone (usually Super Agents)
       canModify = true;
-    } else if (callerProfile.role === 'super_agent') {
+    } else if (callerProfile.role === 'agent' && callerProfile.is_super_agent) {
       // Super Agents can toggle their direct Sub-Agents and their direct Researchers
       if (
         (targetProfile.role === 'agent' && targetProfile.parent_agent_id === callerProfile.id) ||
@@ -54,7 +54,7 @@ export async function PATCH(request: Request) {
       ) {
         canModify = true;
       }
-    } else if (callerProfile.role === 'agent') {
+    } else if (callerProfile.role === 'agent' && !callerProfile.is_super_agent) {
       // Sub-Agents can toggle their direct Researchers
       if (targetProfile.role === 'researcher' && targetProfile.referring_agent_id === callerProfile.id) {
         canModify = true;
