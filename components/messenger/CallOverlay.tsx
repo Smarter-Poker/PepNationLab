@@ -565,31 +565,49 @@ export default function CallOverlay({ call, selfId, onClose }: Props) {
     };
   }, [call.status]);
 
-  // Guaranteed unmount teardown signaling: broadcasts call_ended
+  // Ref-based trackers to prevent premature teardown signaling on intermediate updates
+  const latestCallRef = useRef(call);
+  const latestCounterpartyIdRef = useRef(counterpartyId);
+
+  useEffect(() => {
+    latestCallRef.current = call;
+  }, [call]);
+
+  useEffect(() => {
+    latestCounterpartyIdRef.current = counterpartyId;
+  }, [counterpartyId]);
+
+  // Guaranteed unmount teardown signaling: broadcasts call_ended on true unmount
   useEffect(() => {
     return () => {
-      if (counterpartyId) {
-        console.log('[CALL] Unmounting CallOverlay — broadcasting call_ended to:', counterpartyId);
+      const cid = latestCounterpartyIdRef.current;
+      const cl = latestCallRef.current;
+      if (cid && cl && cl.status !== 'ended' && cl.status !== 'declined' && cl.status !== 'missed') {
+        console.log('[CALL] Unmounting CallOverlay — broadcasting call_ended to:', cid);
         import('@/lib/messenger/realtime').then(({ broadcastCallSignal }) => {
-          void broadcastCallSignal(counterpartyId, 'call_ended', call);
+          void broadcastCallSignal(cid, 'call_ended', cl);
         }).catch(() => {});
       }
     };
-  }, [counterpartyId, call]);
+  }, []);
 
   useEffect(() => {
     const callId = call.id;
     const handler = () => {
+      const cid = latestCounterpartyIdRef.current;
+      const cl = latestCallRef.current;
+      if (!cl || cl.status === 'ended' || cl.status === 'declined' || cl.status === 'missed') return;
+
       // 1. Unload signaling: broadcast call_ended immediately
-      if (counterpartyId) {
+      if (cid) {
         try {
           const bodyEnded = JSON.stringify({
             type: 'broadcast',
             event: 'call_ended',
-            payload: call,
+            payload: cl,
           });
           const blobEnded = new Blob([bodyEnded], { type: 'application/json' });
-          void navigator.sendBeacon?.(`/api/messenger/call-signal-unload-broadcast?targetId=${counterpartyId}`, blobEnded);
+          void navigator.sendBeacon?.(`/api/messenger/call-signal-unload-broadcast?targetId=${cid}`, blobEnded);
         } catch {}
       }
 
@@ -617,7 +635,7 @@ export default function CallOverlay({ call, selfId, onClose }: Props) {
     };
     window.addEventListener('pagehide', handler);
     return () => window.removeEventListener('pagehide', handler);
-  }, [call.id, call, counterpartyId]);
+  }, [call.id]);
 
   const handleHangUp = async () => {
     if (counterpartyId) {

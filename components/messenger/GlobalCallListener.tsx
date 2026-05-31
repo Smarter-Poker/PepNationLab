@@ -105,7 +105,7 @@ export default function GlobalCallListener() {
 
   const handleAccept = useCallback((call: CallSignalRow) => {
     setIncomingCalls((cur) => cur.filter((x) => x.id !== call.id));
-    setActiveCall(call);
+    setActiveCall({ ...call, status: 'active' });
 
     // Broadcast call_accepted signal back to initiator
     import('@/lib/messenger/realtime').then(({ broadcastCallSignal }) => {
