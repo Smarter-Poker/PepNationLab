@@ -418,6 +418,7 @@ export default function NavbarNotificationBell() {
                       overflow: 'hidden',
                       textOverflow: 'ellipsis',
                       whiteSpace: 'nowrap',
+                      textTransform: 'capitalize',
                     }}>
                       {n.title}
                     </div>
@@ -431,6 +432,7 @@ export default function NavbarNotificationBell() {
                         display: '-webkit-box',
                         WebkitLineClamp: 2,
                         WebkitBoxOrient: 'vertical',
+                        textTransform: 'capitalize',
                       }}>
                         {n.body}
                       </div>

@@ -403,6 +403,7 @@ export default function NotificationCenterClient({ initialPrefs, sessionProfile 
                           color: !n.read_at ? 'var(--white)' : 'rgba(255,255,255,0.65)',
                           fontSize: '0.87rem',
                           fontWeight: !n.read_at ? 600 : 400,
+                          textTransform: 'capitalize',
                         }}>
                           {n.title}
                         </span>
@@ -420,7 +421,7 @@ export default function NotificationCenterClient({ initialPrefs, sessionProfile 
                         </span>
                       </div>
                       {n.body && (
-                        <div style={{ color: SILVER, fontSize: '0.78rem', marginTop: 3, lineHeight: 1.45 }}>
+                        <div style={{ color: SILVER, fontSize: '0.78rem', marginTop: 3, lineHeight: 1.45, textTransform: 'capitalize' }}>
                           {n.body}
                         </div>
                       )}
