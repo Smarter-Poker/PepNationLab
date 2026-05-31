@@ -95,12 +95,16 @@ export default function PinnedBar({ conversationId, selfId, selfRole, refreshKey
     <div
       aria-label="Pinned Messages"
       style={{
+        position: 'absolute',
+        top: 0, left: 0, right: 0, zIndex: 10,
         display: 'flex',
         gap: 8,
         overflowX: 'auto',
-        padding: '8px 12px',
-        background: 'var(--surface-1, #0F1923)',
-        borderBottom: '1px solid var(--surface-3, #1D2D3E)',
+        padding: '10px 16px',
+        background: 'rgba(10, 13, 20, 0.85)',
+        backdropFilter: 'blur(10px)',
+        borderBottom: '2px solid rgba(0, 196, 188, 0.3)',
+        boxShadow: '0 4px 12px rgba(0,0,0,0.5)',
       }}
     >
       {pins.map((row) => {
@@ -115,8 +119,9 @@ export default function PinnedBar({ conversationId, selfId, selfRole, refreshKey
               gap: 6,
               padding: '6px 10px',
               borderRadius: 8,
-              background: 'var(--surface-2, #162230)',
-              border: '1px solid var(--surface-3, #1D2D3E)',
+              background: 'var(--surface-1, #0F1923)',
+              border: '1px solid rgba(255, 255, 255, 0.1)',
+              boxShadow: '0 2px 4px rgba(0,0,0,0.3)',
               maxWidth: 320,
             }}
           >

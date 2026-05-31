@@ -963,11 +963,12 @@ export default function CallOverlay({ call, selfId, onClose, onAccept }: Props &
           // handler when they notice us leave (LiveKit ParticipantDisconnected
           // event), or the 4-hour stale-active cron sweep cleans up.
           //
-          // audit15 fix-16 (S8): if a second tab/device joins with the same
-          // LiveKit identity, the server kicks the older participant with
-          // DisconnectReason.DUPLICATE_IDENTITY. Surface a specific toast
-          // so the kicked tab understands why instead of staring at a
-          // suddenly-black screen.
+          // audit15 fix-16 (S8): when the user opens the same call in a
+          // second tab/device with the same LiveKit identity, the server
+          // kicks the older participant with DisconnectReason.DUPLICATE_IDENTITY.
+          // Without an explicit message, the first tab just goes black and
+          // the user has no idea why. Surface a specific toast so they
+          // know the call moved to their other tab.
           onDisconnected={(reason) => {
             if (reason === DisconnectReason.DUPLICATE_IDENTITY) {
               toast.info('Call Answered On Another Device');

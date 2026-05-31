@@ -468,10 +468,7 @@ export default function MessageBubble({
               display: 'flex', flexWrap: 'wrap', gap: 6, background: 'var(--surface-3, #1D2D3E)', borderRadius: 8, padding: 6,
               boxShadow: '0 4px 12px rgba(0,0,0,0.4)', zIndex: 5 }}
           >
-            <button type="button" onClick={() => { onDelete(message, 'for_me'); setConfirmDelete(false); }} style={confirmBtnText} aria-label="Delete For Me" title="Delete For Me">Delete For Me</button>
-            {isOwn && (
-              <button type="button" onClick={() => { onDelete(message, 'for_everyone'); setConfirmDelete(false); }} style={{ ...confirmBtnText, color: 'var(--red, #E53E3E)' }} aria-label="Delete For Everyone" title="Delete For Everyone">Delete For Everyone</button>
-            )}
+            <button type="button" onClick={() => { onDelete(message, 'for_me'); setConfirmDelete(false); }} style={{ ...confirmBtnText, color: 'var(--red, #E53E3E)' }} aria-label="Delete Message" title="Delete Message">Delete Message</button>
             <button type="button" onClick={() => setConfirmDelete(false)} style={confirmBtnText} aria-label="Cancel" title="Cancel">Cancel</button>
           </div>
         )}

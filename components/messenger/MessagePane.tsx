@@ -1153,14 +1153,15 @@ export default function MessagePane({ userId }: Props) {
           )}
         </div>
       )}
-      <PinnedBar
-        conversationId={activeId}
-        selfId={userId}
-        selfRole={selfRole}
-        refreshKey={pinRefreshKey}
-        onJump={handleJumpToMessage}
-      />
-      <div ref={scrollContainerRef} className="msg-list" onClick={() => setActiveMenuId(null)} style={{ flex: 1, minHeight: 0, overflowY: 'auto', WebkitOverflowScrolling: 'touch', overscrollBehavior: 'contain', padding: 16, display: 'flex', flexDirection: 'column', gap: 0 }}>
+      <div style={{ position: 'relative', flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+        <PinnedBar
+          conversationId={activeId}
+          selfId={userId}
+          selfRole={selfRole}
+          refreshKey={pinRefreshKey}
+          onJump={handleJumpToMessage}
+        />
+        <div ref={scrollContainerRef} className="msg-list" onClick={() => setActiveMenuId(null)} style={{ flex: 1, minHeight: 0, overflowY: 'auto', WebkitOverflowScrolling: 'touch', overscrollBehavior: 'contain', padding: '56px 16px 16px 16px', display: 'flex', flexDirection: 'column', gap: 0 }}>
         {loading && messages.length === 0 ? (
           <div style={{ color: 'var(--grey-400, #A8B4C0)', textAlign: 'center', marginTop: 32 }}>
             Loading Messages
@@ -1265,6 +1266,7 @@ export default function MessagePane({ userId }: Props) {
         <TypingIndicator typingUserIds={typingUserIds} />
         <div ref={messagesEndRef} />
       </div>
+    </div>
       <MessageComposer
         conversationId={activeId}
         selfId={userId}
