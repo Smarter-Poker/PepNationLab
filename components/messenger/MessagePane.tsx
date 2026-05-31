@@ -656,48 +656,57 @@ export default function MessagePane({ userId, activeCall, setActiveCall }: Props
     document.addEventListener('visibilitychange', handleVisibilityChange);
     window.addEventListener('online', handleOnline);
 
-    const { channel: msgChannel, broadcastNewMessage } = subscribeMessages(activeId, {
-      onInsert: (m) => {
-        appendMessage(activeId, m);
-        if (m.sender_id !== userId) {
-          void markConversationRead(activeId, m.id);
-          if (document.visibilityState === 'visible') {
-            playPopSound();
-          }
-        }
-      },
-      onUpdate: (m) => updateMessage(activeId, m),
-      onDelete: (id) => removeMessage(activeId, id),
-      onReactionInsert: (r) => {
-        setReactionsByMsg((prev) => {
-          const arr = prev[r.message_id] ?? [];
-          if (r.user_id === userId) {
-            const withoutTemp = arr.filter(
-              (x) => !(x.user_id === userId && x.emoji === r.emoji && x.id.startsWith('r-')),
-            );
-            if (withoutTemp.some((x) => x.user_id === userId && x.emoji === r.emoji && x.id === r.id)) {
-              return { ...prev, [r.message_id]: withoutTemp };
-            }
-            return { ...prev, [r.message_id]: [...withoutTemp, r] };
-          }
-          if (arr.some((x) => x.user_id === r.user_id && x.emoji === r.emoji)) return prev;
-          return { ...prev, [r.message_id]: [...arr, r] };
-        });
-      },
-      onReactionDelete: (r) => {
-        setReactionsByMsg((prev) => {
-          const arr = prev[r.message_id] ?? [];
-          return {
-            ...prev,
-            [r.message_id]: arr.filter((x) => !(x.user_id === r.user_id && x.emoji === r.emoji)),
-          };
-        });
-      },
-    }, userId);
-    
-    broadcastMessageRef.current = broadcastNewMessage;
+    let msgChannel: any = null;
+    let typingChannel: any = null;
+    let participantsChannel: any = null;
+    let cancelled = false;
 
-    const typing = subscribeTyping(activeId, userId, (e) => {
+    const setupTimer = setTimeout(() => {
+      if (cancelled) return;
+
+      const msgSub = subscribeMessages(activeId, {
+        onInsert: (m) => {
+          appendMessage(activeId, m);
+          if (m.sender_id !== userId) {
+            void markConversationRead(activeId, m.id);
+            if (document.visibilityState === 'visible') {
+              playPopSound();
+            }
+          }
+        },
+        onUpdate: (m) => updateMessage(activeId, m),
+        onDelete: (id) => removeMessage(activeId, id),
+        onReactionInsert: (r) => {
+          setReactionsByMsg((prev) => {
+            const arr = prev[r.message_id] ?? [];
+            if (r.user_id === userId) {
+              const withoutTemp = arr.filter(
+                (x) => !(x.user_id === userId && x.emoji === r.emoji && x.id.startsWith('r-')),
+              );
+              if (withoutTemp.some((x) => x.user_id === userId && x.emoji === r.emoji && x.id === r.id)) {
+                return { ...prev, [r.message_id]: withoutTemp };
+              }
+              return { ...prev, [r.message_id]: [...withoutTemp, r] };
+            }
+            if (arr.some((x) => x.user_id === r.user_id && x.emoji === r.emoji)) return prev;
+            return { ...prev, [r.message_id]: [...arr, r] };
+          });
+        },
+        onReactionDelete: (r) => {
+          setReactionsByMsg((prev) => {
+            const arr = prev[r.message_id] ?? [];
+            return {
+              ...prev,
+              [r.message_id]: arr.filter((x) => !(x.user_id === r.user_id && x.emoji === r.emoji)),
+            };
+          });
+        },
+      }, userId);
+      
+      msgChannel = msgSub.channel;
+      broadcastMessageRef.current = msgSub.broadcastNewMessage;
+
+      const typingSub = subscribeTyping(activeId, userId, (e) => {
       if (e.isTyping) {
         typingExpiryRef.current[e.userId] = Date.now() + TYPING_TTL_MS;
         setTypingUserIds((cur) => (cur.includes(e.userId) ? cur : [...cur, e.userId]));
@@ -705,33 +714,35 @@ export default function MessagePane({ userId, activeCall, setActiveCall }: Props
         delete typingExpiryRef.current[e.userId];
         setTypingUserIds((cur) => cur.filter((u) => u !== e.userId));
       }
-    });
-    broadcastTypingRef.current = typing.broadcast;
+      });
+      typingChannel = typingSub.channel;
+      broadcastTypingRef.current = typingSub.broadcast;
 
-    const participantsChannel = supabase
-      .channel(`participants_watcher:${activeId}`)
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'messenger_participants',
-          filter: `conversation_id=eq.${activeId}`,
-        },
-        (payload: any) => {
-          const row = payload.new as any;
-          if (row && row.user_id) {
-            setParticipantsMap((prev) => ({
-              ...prev,
-              [row.user_id]: {
-                ...prev[row.user_id],
-                last_read_message_id: row.last_read_message_id,
-              },
-            }));
-          }
-        },
-      )
-      .subscribe();
+      participantsChannel = supabase
+        .channel(`participants_watcher:${activeId}`)
+        .on(
+          'postgres_changes',
+          {
+            event: 'UPDATE',
+            schema: 'public',
+            table: 'messenger_participants',
+            filter: `conversation_id=eq.${activeId}`,
+          },
+          (payload: any) => {
+            const row = payload.new as any;
+            if (row && row.user_id) {
+              setParticipantsMap((prev) => ({
+                ...prev,
+                [row.user_id]: {
+                  ...prev[row.user_id],
+                  last_read_message_id: row.last_read_message_id,
+                },
+              }));
+            }
+          },
+        )
+        .subscribe();
+    }, 150);
 
     typingSweeperRef.current = setInterval(() => {
       const now = Date.now();
@@ -745,6 +756,8 @@ export default function MessagePane({ userId, activeCall, setActiveCall }: Props
       }
     }, 1000);
     return () => {
+      cancelled = true;
+      clearTimeout(setupTimer);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       window.removeEventListener('online', handleOnline);
       if (typingSweeperRef.current) clearInterval(typingSweeperRef.current);
@@ -753,9 +766,9 @@ export default function MessagePane({ userId, activeCall, setActiveCall }: Props
       broadcastTypingRef.current = null;
       broadcastMessageRef.current = null;
       setTypingUserIds([]);
-      unsubscribe(msgChannel);
-      unsubscribe(typing.channel);
-      unsubscribe(participantsChannel);
+      if (msgChannel) unsubscribe(msgChannel);
+      if (typingChannel) unsubscribe(typingChannel);
+      if (participantsChannel) unsubscribe(participantsChannel);
     };
   }, [activeId, userId, appendMessage, updateMessage, removeMessage, setReactionsByMsg]);
 

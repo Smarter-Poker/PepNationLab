@@ -296,16 +296,27 @@ export default function MessengerShell({ userId }: Props) {
         // non-fatal
       }
     }
-    const ch = subscribeMyIncomingMessages(userId, (m) => {
-      const isIncoming = m.sender_id !== userId;
-      // 1. Update the sidebar conversation list snippet and bump to top
-      useMessengerStore.getState().updateConversationSnippet(m, isIncoming);
-      // 2. Fire-and-forget OS notification
-      if (isIncoming) {
-        void maybeNotify(m);
-      }
-    });
-    return () => unsubscribe(ch);
+    let cancelled = false;
+    let ch: any = null;
+
+    const setupTimer = setTimeout(() => {
+      if (cancelled) return;
+      ch = subscribeMyIncomingMessages(userId, (m) => {
+        const isIncoming = m.sender_id !== userId;
+        // 1. Update the sidebar conversation list snippet and bump to top
+        useMessengerStore.getState().updateConversationSnippet(m, isIncoming);
+        // 2. Fire-and-forget OS notification
+        if (isIncoming) {
+          void maybeNotify(m);
+        }
+      });
+    }, 150);
+
+    return () => {
+      cancelled = true;
+      clearTimeout(setupTimer);
+      if (ch) unsubscribe(ch);
+    };
   }, [userId]);
 
   // Audit6 fix: when the OS notification click dispatches messenger:open-conv,
