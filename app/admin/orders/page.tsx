@@ -646,8 +646,7 @@ function AdminOrdersPageInner() {
                 onClick={() => handleBulkAction("approve_ship")}
                 disabled={bulkRunning}
                 className="btn-silver"
-                style={{ padding: "6px 12px", fontSize: "0.75rem" }}
-                style={{ fontSize: "0.78rem" }}
+                style={{ padding: "6px 12px", fontSize: "0.78rem" }}
               >
                 Approve (Ship)
               </button>
@@ -656,8 +655,7 @@ function AdminOrdersPageInner() {
                 onClick={() => handleBulkAction("approve_pickup")}
                 disabled={bulkRunning}
                 className="btn-silver"
-                style={{ padding: "6px 12px", fontSize: "0.75rem" }}
-                style={{ fontSize: "0.78rem" }}
+                style={{ padding: "6px 12px", fontSize: "0.78rem" }}
               >
                 Approve (Pickup)
               </button>
@@ -666,8 +664,7 @@ function AdminOrdersPageInner() {
                 onClick={() => handleBulkAction("mark_shipped")}
                 disabled={bulkRunning}
                 className="btn-silver"
-                style={{ padding: "6px 12px", fontSize: "0.75rem" }}
-                style={{ fontSize: "0.78rem" }}
+                style={{ padding: "6px 12px", fontSize: "0.78rem" }}
               >
                 Mark Shipped
               </button>
@@ -676,8 +673,7 @@ function AdminOrdersPageInner() {
                 onClick={() => handleBulkAction("mark_delivered")}
                 disabled={bulkRunning}
                 className="btn-silver"
-                style={{ padding: "6px 12px", fontSize: "0.75rem" }}
-                style={{ fontSize: "0.78rem" }}
+                style={{ padding: "6px 12px", fontSize: "0.78rem" }}
               >
                 Mark Delivered
               </button>
@@ -686,8 +682,7 @@ function AdminOrdersPageInner() {
                 onClick={() => handleBulkAction("generate_labels")}
                 disabled={bulkRunning}
                 className="btn-neon-cyan"
-                style={{ padding: "6px 12px", fontSize: "0.75rem" }}
-                style={{ fontSize: "0.78rem" }}
+                style={{ padding: "6px 12px", fontSize: "0.78rem" }}
               >
                 Generate Labels
               </button>
@@ -696,8 +691,8 @@ function AdminOrdersPageInner() {
                 onClick={() => handleBulkAction("cancel")}
                 disabled={bulkRunning}
                 className="btn-silver"
-                style={{ padding: "6px 12px", fontSize: "0.75rem" }}
                 style={{
+                  padding: "6px 12px",
                   fontSize: "0.78rem",
                   borderColor: "var(--red)",
                   color: "var(--red)",

@@ -7,6 +7,7 @@ import PaymentProofUpload from '@/components/PaymentProofUpload';
 import RecommendationStrip, { type RecommendationItem } from '@/components/RecommendationStrip';
 import ReceiptButton from './ReceiptButton';
 import SubscribeReplenishButton from './SubscribeReplenishButton';
+import ChangePaymentMethod from '@/components/ChangePaymentMethod';
 
 export const dynamic = 'force-dynamic';
 
@@ -410,10 +411,17 @@ export default async function OrderDetailPage(
               <h2 style={{ fontSize: '0.95rem', color: '#F6AD55', marginBottom: 'var(--space-3)' }}>
                 Payment Instructions
               </h2>
-              <p style={{ fontSize: '0.85rem', color: 'var(--silver)', lineHeight: 1.6, marginBottom: 'var(--space-3)' }}>
-                Send <strong style={{ color: 'var(--teal)' }}>${num(order.total).toFixed(2)}</strong> Via{' '}
-                <strong>{PAYMENT_LABELS[order.payment_method] ?? order.payment_method}</strong> To {sellerName}.
-              </p>
+              <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '8px', marginBottom: 'var(--space-3)' }}>
+                <p style={{ fontSize: '0.85rem', color: 'var(--silver)', lineHeight: 1.6, margin: 0 }}>
+                  Send <strong style={{ color: 'var(--teal)' }}>${num(order.total).toFixed(2)}</strong> Via{' '}
+                  <strong>{PAYMENT_LABELS[order.payment_method] ?? order.payment_method}</strong> To {sellerName}.
+                </p>
+                <ChangePaymentMethod 
+                  orderId={order.id} 
+                  currentMethod={order.payment_method} 
+                  availableMethods={Object.keys(paymentHandles).filter(k => paymentHandles[k] && paymentHandles[k].trim().length > 0)} 
+                />
+              </div>
               {handleForMethod ? (
                 <div style={{ padding: 'var(--space-3)', background: 'var(--surface-2)', borderRadius: 'var(--radius-md)', border: 'var(--border-subtle)' }}>
                   <div style={{ fontSize: '0.72rem', color: 'var(--grey-500)', textTransform: 'uppercase', marginBottom: 4 }}>

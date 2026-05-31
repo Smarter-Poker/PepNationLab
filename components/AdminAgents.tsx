@@ -341,7 +341,7 @@ export default function AdminAgents() {
                   <span style={{ fontSize: '0.75rem', color: 'var(--grey-400)', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>Contact Info</span>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 4, alignItems: 'flex-start' }}>
                     {isDefaultEmail ? (
-                      <button onClick={() => openEditModal(agent)} className="btn-silver" style={{ padding: '4px 12px', fontSize: '0.8rem' }} style={{ padding: '2px 6px', fontSize: '0.7rem' }}>
+                      <button onClick={() => openEditModal(agent)} className="btn-silver" style={{ padding: '2px 6px', fontSize: '0.7rem' }}>
                         + Add Email
                       </button>
                     ) : (
@@ -351,7 +351,7 @@ export default function AdminAgents() {
                     {agent.phone ? (
                       <span style={{ fontSize: '0.85rem', color: 'var(--silver)' }}>{agent.phone}</span>
                     ) : (
-                      <button onClick={() => openEditModal(agent)} className="btn-silver" style={{ padding: '4px 12px', fontSize: '0.8rem' }} style={{ padding: '2px 6px', fontSize: '0.7rem', opacity: 0.7 }}>
+                      <button onClick={() => openEditModal(agent)} className="btn-silver" style={{ padding: '2px 6px', fontSize: '0.7rem', opacity: 0.7 }}>
                         + Add Phone
                       </button>
                     )}
@@ -451,8 +451,7 @@ export default function AdminAgents() {
                         toast.error(err.message || 'Failed To Update Super Agent Status');
                       }
                     }}
-                    className="btn-silver" style={{ padding: '4px 12px', fontSize: '0.8rem' }}
-                    style={{ padding: '6px 12px', fontSize: '0.8rem' }}
+                    className="btn-silver" style={{ padding: '6px 12px', fontSize: '0.8rem' }}
                     disabled={agent.parent_agent_id !== null}
                   >
                     {agent.is_super_agent ? 'Revoke Super' : 'Make Super'}

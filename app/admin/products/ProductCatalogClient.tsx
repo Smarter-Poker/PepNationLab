@@ -322,8 +322,7 @@ export default function ProductCatalogClient({
           type="button"
           onClick={() => setShowBulkModal(true)}
           className="btn-silver"
-          style={{ padding: "6px 12px", fontSize: "0.75rem" }}
-          style={{ flex: "0 0 auto" }}
+          style={{ padding: "6px 12px", fontSize: "0.75rem", flex: "0 0 auto" }}
         >
           Bulk Import CSV
         </button>

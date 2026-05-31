@@ -682,11 +682,8 @@ export default function ResearcherDashboard({ userId, userName, userEmail, agent
 
                           <div style={{ marginTop: 24, display: 'flex', justifyContent: 'flex-end', gap: '12px', padding: '0 24px 24px' }}>
                             {o.status === 'pending_customer_payment' && (
-                              <a href={`/orders/${o.id}`} className="pulse-silver" style={{
+                              <a href={`/orders/${o.id}`} className="pulse-cyan btn-neon-cyan" style={{
                                 display: 'inline-flex', alignItems: 'center', gap: 8, padding: '10px 24px',
-                                background: 'linear-gradient(180deg, #F6AD55 0%, #DD6B20 100%)',
-                                color: '#1a1f2e',
-                                border: 'none',
                                 borderRadius: '10px', fontSize: '0.9rem', fontWeight: 800, textDecoration: 'none',
                                 transition: 'transform 0.2s ease',
                               }}>
