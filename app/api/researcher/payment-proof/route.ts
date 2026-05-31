@@ -215,9 +215,9 @@ export async function POST(req: NextRequest) {
           message_type: isImage ? 'image' : 'file',
           media_url: longSigned?.signedUrl ?? null,
           media_metadata: {
-            fileName: file.name || `payment-proof.${EXT_BY_MIME[file.type] || 'bin'}`,
-            mimeType: file.type,
-            sizeBytes: file.size,
+            filename: file.name || `payment-proof.${EXT_BY_MIME[file.type] || 'bin'}`,
+            contentType: file.type,
+            size: file.size,
             orderId,
           },
         });

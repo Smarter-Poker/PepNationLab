@@ -266,134 +266,48 @@ export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
                 key={order.id}
                 onClick={() => setDetailOrder(order)}
                 style={{
-                  background: 'rgba(22, 34, 48, 0.4)',
-                  backdropFilter: 'blur(8px)',
-                  border: '1px solid rgba(255,255,255,0.05)',
-                  borderRadius: 'var(--radius-lg)',
-                  padding: 'var(--space-5)',
-                  display: 'grid',
-                  gridTemplateColumns: '1fr auto',
-                  alignItems: 'center',
-                  gap: 'var(--space-4)',
-                  transition: 'all 0.2s ease',
+                  background: 'rgba(30, 41, 59, 0.5)',
+                  backdropFilter: 'blur(10px)',
+                  border: '1px solid rgba(255,255,255,0.08)',
+                  borderRadius: '16px',
+                  padding: '24px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '16px',
                   cursor: 'pointer',
+                  position: 'relative',
+                  overflow: 'hidden',
+                  transition: 'transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease',
+                  boxShadow: '0 4px 20px rgba(0, 0, 0, 0.15)',
                 }}
                 className="message-card-hover"
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = 'translateY(-2px)';
+                  e.currentTarget.style.boxShadow = '0 8px 30px rgba(0, 0, 0, 0.3)';
+                  e.currentTarget.style.border = '1px solid rgba(255, 255, 255, 0.2)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = 'none';
+                  e.currentTarget.style.boxShadow = '0 4px 20px rgba(0, 0, 0, 0.15)';
+                  e.currentTarget.style.border = '1px solid rgba(255, 255, 255, 0.08)';
+                }}
               >
-                <div>
-                  <div
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 'var(--space-3)',
-                      marginBottom: 'var(--space-2)',
-                    }}
-                  >
-                    <span
-                      style={{
-                        fontSize: '0.72rem',
-                        color: 'var(--grey-400)',
-                        fontFamily: 'var(--font-brand)',
-                      }}
-                    >
+                {/* Header row: Order ID, Date, and Status */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '16px' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                      <span style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--white)', fontFamily: 'var(--font-brand)', letterSpacing: '0.02em' }}>
+                        Order #{order.id.slice(0, 8).toUpperCase()}
+                      </span>
+                      <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'rgba(255,255,255,0.2)' }} />
+                      <span style={{ fontSize: '0.9rem', color: 'var(--grey-400)', fontWeight: 500 }}>
+                        {new Date(order.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                      </span>
+                    </div>
+                    <span style={{ fontSize: '0.85rem', color: 'var(--silver-light)', fontFamily: 'monospace' }}>
                       ID: {order.id}
                     </span>
-                    <span
-                      style={{
-                        width: 4,
-                        height: 4,
-                        borderRadius: '50%',
-                        background: 'rgba(255,255,255,0.2)',
-                      }}
-                    />
-                    <span style={{ fontSize: '0.78rem', color: 'var(--silver)' }}>
-                      {new Date(order.created_at).toLocaleDateString()}
-                    </span>
                   </div>
-
-                  <div style={{ marginBottom: 'var(--space-3)' }}>
-                    <div style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--white)' }}>
-                      {order.buyer_name || 'Anonymous Scientist'}
-                    </div>
-                    <div
-                      style={{
-                        fontSize: '0.78rem',
-                        color: 'var(--grey-400)',
-                        fontFamily: 'var(--font-brand)',
-                      }}
-                    >
-                      {order.buyer_email ? `@${order.buyer_email.split('@')[0]}` : ''}
-                    </div>
-                  </div>
-
-                  <div style={{ display: 'flex', gap: 'var(--space-4)', flexWrap: 'wrap' }}>
-                    <div style={{ fontSize: '0.8rem', color: 'var(--silver-light)' }}>
-                      <span style={{ color: 'var(--grey-400)' }}>Total:</span>{' '}
-                      <strong style={{ color: 'var(--teal)' }}>
-                        ${Number(order.total).toFixed(2)}
-                      </strong>
-                    </div>
-                    <div
-                      style={{
-                        fontSize: '0.8rem',
-                        color: 'var(--silver-light)',
-                        textTransform: 'capitalize',
-                      }}
-                    >
-                      <span style={{ color: 'var(--grey-400)' }}>Method:</span>{' '}
-                      {order.fulfillment_method === 'agent_pickup' ? 'Agent Pickup' : 'Delivery'}
-                    </div>
-                    <div style={{ fontSize: '0.8rem', color: 'var(--silver-light)' }}>
-                      <span style={{ color: 'var(--grey-400)' }}>Payment:</span>{' '}
-                      {PAYMENT_LABEL[order.payment_method] || order.payment_method}
-                    </div>
-                  </div>
-
-                  {order.tracking_number && (
-                    <div
-                      style={{
-                        fontSize: '0.8rem',
-                        color: 'var(--silver-light)',
-                        marginTop: 'var(--space-2)',
-                        display: 'flex',
-                        gap: 'var(--space-3)',
-                        alignItems: 'center',
-                      }}
-                    >
-                      <div>
-                        <span style={{ color: 'var(--grey-400)' }}>Tracking:</span>{' '}
-                        <strong style={{ color: 'var(--teal)' }}>{order.tracking_number}</strong>
-                      </div>
-                      {order.label_url && (
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            window.open(order.label_url!, '_blank');
-                          }}
-                          className="btn btn-secondary btn-sm"
-                          style={{
-                            padding: '2px 8px',
-                            fontSize: '0.7rem',
-                            background: 'rgba(192,184,168,0.1)',
-                            border: '1px solid var(--teal)',
-                            color: 'var(--teal)',
-                          }}
-                        >
-                          Print PDF Label
-                        </button>
-                      )}
-                    </div>
-                  )}
-                </div>
-
-                <div
-                  style={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'flex-end',
-                    gap: 'var(--space-3)',
-                  }}
-                >
                   <span
                     className={`badge ${
                       order.status === 'cancelled'
@@ -404,99 +318,176 @@ export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
                         ? 'badge-teal'
                         : 'badge-silver'
                     }`}
-                    style={{ fontSize: '0.7rem' }}
+                    style={{ fontSize: '0.85rem', padding: '6px 14px', fontWeight: 700, borderRadius: '8px' }}
                   >
-                    {STATUS_LABEL[order.status] ||
-                      order.status
-                        .split('_')
-                        .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-                        .join(' ')}
+                    {STATUS_LABEL[order.status] || order.status.split('_').map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}
                   </span>
+                </div>
 
-                  {canApprove && (
-                    <div
-                      onClick={(e) => e.stopPropagation()}
-                      style={{
-                        display: 'flex',
-                        flexDirection: 'column',
-                        gap: 'var(--space-2)',
-                        alignItems: 'flex-end',
-                      }}
-                    >
-                      {order.fulfillment_method === 'ship' && isPendingApproval && (
-                        <input
-                          type="text"
-                          placeholder="Tracking Number (USPS/UPS)"
-                          className="form-input"
-                          value={trackingNumbers[order.id] || ''}
-                          onChange={(e) =>
-                            setTrackingNumbers((prev) => ({
-                              ...prev,
-                              [order.id]: e.target.value,
-                            }))
-                          }
-                          style={{ padding: '6px 10px', fontSize: '0.75rem', height: 32, width: 220 }}
-                        />
-                      )}
-                      <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
-                        <button
-                          onClick={() => handleUpdateOrderStatus(order.id, 'cancelled')}
-                          className="btn btn-secondary btn-sm"
-                          style={{
-                            border: '1px solid var(--red)',
-                            color: 'var(--red)',
-                            fontSize: '0.75rem',
-                          }}
-                          disabled={loadingOrderId === order.id}
-                        >
-                          Cancel
-                        </button>
-                        
-                        {isPendingPayment && (
-                          <button
-                            onClick={() => handleMarkPaid(order.id)}
-                            className="btn btn-primary btn-sm"
-                            style={{ fontSize: '0.75rem' }}
-                            disabled={loadingOrderId === order.id || buyingLabelId === order.id}
-                          >
-                            {loadingOrderId === order.id ? 'Processing...' : 'Mark As Paid'}
-                          </button>
-                        )}
-                        
-                        {isPendingApproval && (
-                          <span style={{ 
-                            fontSize: '0.75rem', 
-                            color: '#F6AD55', 
-                            border: '1px solid #F6AD5540',
-                            padding: '4px 8px',
-                            borderRadius: 'var(--radius-sm)',
-                            display: 'flex',
-                            alignItems: 'center',
-                            background: 'rgba(246,173,85,0.1)'
-                          }}>
-                            Awaiting Admin Approval
-                          </span>
-                        )}
+                {/* Main Content Grid */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '20px', marginTop: '8px' }}>
+                  
+                  {/* Buyer Info */}
+                  <div style={{ background: 'rgba(0,0,0,0.25)', padding: '16px 20px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.04)' }}>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--grey-400)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '10px', fontWeight: 600 }}>Buyer</div>
+                    <div style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--white)' }}>
+                      {order.buyer_name || 'Anonymous Scientist'}
+                    </div>
+                    <div style={{ fontSize: '0.9rem', color: 'var(--teal)', marginTop: '4px', fontWeight: 500 }}>
+                      {order.buyer_email || 'No Email Provided'}
+                    </div>
+                  </div>
 
-                        {isPendingApproval && order.fulfillment_method === 'ship' && (
-                          <button
-                            onClick={() => handleBuyShippingLabel(order.id)}
-                            className="btn btn-secondary btn-sm"
-                            style={{
-                              border: '1px solid var(--teal)',
-                              color: 'var(--teal)',
-                              fontSize: '0.75rem',
-                              background: 'rgba(192,184,168,0.1)',
-                            }}
-                            disabled={loadingOrderId === order.id || buyingLabelId === order.id}
-                          >
-                            {buyingLabelId === order.id ? 'Generating...' : 'Buy USPS Label (Shippo)'}
-                          </button>
-                        )}
+                  {/* Order Details */}
+                  <div style={{ background: 'rgba(0,0,0,0.25)', padding: '16px 20px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.04)' }}>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--grey-400)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '10px', fontWeight: 600 }}>Details</div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                      <span style={{ fontSize: '0.9rem', color: 'var(--silver)' }}>Method</span>
+                      <span style={{ fontSize: '0.9rem', color: 'var(--white)', fontWeight: 600 }}>
+                        {order.fulfillment_method === 'agent_pickup' ? 'Agent Pickup' : 'Delivery'}
+                      </span>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                      <span style={{ fontSize: '0.9rem', color: 'var(--silver)' }}>Payment</span>
+                      <span style={{ fontSize: '0.9rem', color: 'var(--white)', fontWeight: 600 }}>
+                        {PAYMENT_LABEL[order.payment_method] || order.payment_method}
+                      </span>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '12px', paddingTop: '12px', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+                      <span style={{ fontSize: '0.95rem', color: 'var(--silver)' }}>Total</span>
+                      <strong style={{ fontSize: '1.1rem', color: 'var(--teal)' }}>
+                        ${Number(order.total).toFixed(2)}
+                      </strong>
+                    </div>
+                  </div>
+                  
+                  {/* Tracking / Fulfillment */}
+                  {order.tracking_number && (
+                    <div style={{ background: 'rgba(0,196,188,0.06)', padding: '16px 20px', borderRadius: '12px', border: '1px solid rgba(0,196,188,0.2)' }}>
+                      <div style={{ fontSize: '0.75rem', color: 'var(--teal)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '10px', fontWeight: 700 }}>Tracking</div>
+                      <div style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--white)', fontFamily: 'monospace', marginBottom: '12px', wordBreak: 'break-all' }}>
+                        {order.tracking_number}
                       </div>
+                      {order.label_url && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            window.open(order.label_url!, '_blank');
+                          }}
+                          className="btn btn-secondary"
+                          style={{
+                            padding: '8px 16px',
+                            fontSize: '0.85rem',
+                            background: 'rgba(0,196,188,0.15)',
+                            border: '1px solid var(--teal)',
+                            color: 'var(--teal)',
+                            width: '100%',
+                            display: 'flex',
+                            justifyContent: 'center',
+                            fontWeight: 600
+                          }}
+                        >
+                          Print PDF Label
+                        </button>
+                      )}
                     </div>
                   )}
+
                 </div>
+
+                {/* Actions row */}
+                {canApprove && (
+                  <div
+                    onClick={(e) => e.stopPropagation()}
+                    style={{
+                      marginTop: '8px',
+                      paddingTop: '20px',
+                      borderTop: '1px solid rgba(255,255,255,0.06)',
+                      display: 'flex',
+                      flexWrap: 'wrap',
+                      gap: '12px',
+                      alignItems: 'center',
+                      justifyContent: 'flex-end',
+                    }}
+                  >
+                    {order.fulfillment_method === 'ship' && isPendingApproval && (
+                      <input
+                        type="text"
+                        placeholder="Tracking Number (USPS/UPS)"
+                        className="form-input"
+                        value={trackingNumbers[order.id] || ''}
+                        onChange={(e) =>
+                          setTrackingNumbers((prev) => ({
+                            ...prev,
+                            [order.id]: e.target.value,
+                          }))
+                        }
+                        style={{ padding: '10px 16px', fontSize: '0.95rem', height: 44, width: '100%', maxWidth: 300, borderRadius: '8px', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)' }}
+                      />
+                    )}
+                    
+                    <button
+                      onClick={() => handleUpdateOrderStatus(order.id, 'cancelled')}
+                      className="btn btn-secondary"
+                      style={{
+                        border: '1px solid rgba(252,129,129,0.4)',
+                        color: 'var(--red)',
+                        background: 'rgba(252,129,129,0.08)',
+                        fontSize: '0.9rem',
+                        padding: '10px 20px',
+                        fontWeight: 600
+                      }}
+                      disabled={loadingOrderId === order.id}
+                    >
+                      Cancel
+                    </button>
+                    
+                    {isPendingPayment && (
+                      <button
+                        onClick={() => handleMarkPaid(order.id)}
+                        className="btn btn-primary"
+                        style={{ fontSize: '0.9rem', padding: '10px 24px', fontWeight: 700 }}
+                        disabled={loadingOrderId === order.id || buyingLabelId === order.id}
+                      >
+                        {loadingOrderId === order.id ? 'Processing...' : 'Mark As Paid'}
+                      </button>
+                    )}
+                    
+                    {isPendingApproval && (
+                      <span style={{ 
+                        fontSize: '0.9rem', 
+                        color: '#F6AD55', 
+                        border: '1px solid rgba(246,173,85,0.4)',
+                        padding: '10px 20px',
+                        borderRadius: '8px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        background: 'rgba(246,173,85,0.12)',
+                        fontWeight: 700
+                      }}>
+                        Awaiting Admin Approval
+                      </span>
+                    )}
+
+                    {isPendingApproval && order.fulfillment_method === 'ship' && (
+                      <button
+                        onClick={() => handleBuyShippingLabel(order.id)}
+                        className="btn btn-primary"
+                        style={{
+                          fontSize: '0.9rem',
+                          padding: '10px 24px',
+                          fontWeight: 700,
+                          background: 'linear-gradient(135deg, #00C4BC 0%, #0099FF 100%)',
+                          border: 'none',
+                          boxShadow: '0 4px 15px rgba(0, 196, 188, 0.3)'
+                        }}
+                        disabled={loadingOrderId === order.id || buyingLabelId === order.id}
+                      >
+                        {buyingLabelId === order.id ? 'Generating...' : 'Buy USPS Label (Shippo)'}
+                      </button>
+                    )}
+                  </div>
+                )}
               </div>
             );
           })}
@@ -546,8 +537,8 @@ export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
             alignItems: 'center',
             justifyContent: 'center',
             zIndex: 1000,
-            padding: 'var(--space-4)',
-            backdropFilter: 'blur(6px)',
+            padding: 'var(--space-6)',
+            backdropFilter: 'blur(8px)',
           }}
         >
           <div
@@ -555,10 +546,14 @@ export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
             className="agent-order-modal card-metal"
             style={{
               width: '100%',
-              maxWidth: 760,
-              maxHeight: '92vh',
+              maxWidth: 820,
+              maxHeight: '90vh',
               overflowY: 'auto',
-              padding: 'var(--space-6)',
+              padding: 'var(--space-8)',
+              background: 'linear-gradient(180deg, #162230 0%, #0d1520 100%)',
+              border: '1px solid rgba(255,255,255,0.1)',
+              boxShadow: '0 20px 50px rgba(0,0,0,0.5)',
+              borderRadius: '24px',
             }}
           >
             <div
@@ -574,33 +569,37 @@ export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
                 display: 'flex',
                 justifyContent: 'space-between',
                 alignItems: 'flex-start',
-                marginBottom: 'var(--space-5)',
+                marginBottom: 'var(--space-6)',
                 gap: 'var(--space-4)',
+                borderBottom: '1px solid rgba(255,255,255,0.06)',
+                paddingBottom: 'var(--space-4)'
               }}
             >
               <div>
                 <h2
                   style={{
-                    fontSize: '1.2rem',
+                    fontSize: '1.4rem',
                     color: 'var(--white)',
-                    marginBottom: 4,
+                    marginBottom: 8,
                     fontFamily: 'var(--font-brand)',
                     letterSpacing: '0.05em',
                     textTransform: 'uppercase',
+                    fontWeight: 800
                   }}
                 >
                   Order Detail
                 </h2>
                 <div
                   style={{
-                    fontSize: '0.75rem',
+                    fontSize: '0.9rem',
                     color: 'var(--grey-400)',
-                    fontFamily: 'var(--font-brand)',
+                    fontFamily: 'monospace',
+                    marginBottom: 4
                   }}
                 >
                   ID: {detailOrder.id}
                 </div>
-                <div style={{ fontSize: '0.78rem', color: 'var(--grey-400)', marginTop: 4 }}>
+                <div style={{ fontSize: '0.9rem', color: 'var(--grey-400)' }}>
                   Placed {new Date(detailOrder.created_at).toLocaleString()}
                 </div>
               </div>
@@ -614,9 +613,9 @@ export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
                     ? 'badge-teal'
                     : 'badge-silver'
                 }`}
-                style={{ fontSize: '0.72rem' }}
+                style={{ fontSize: '0.85rem', padding: '6px 14px', borderRadius: '8px', fontWeight: 700 }}
               >
-                {STATUS_LABEL[detailOrder.status] || detailOrder.status}
+                {STATUS_LABEL[detailOrder.status] || detailOrder.status.split('_').map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}
               </span>
             </div>
 
@@ -624,38 +623,40 @@ export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
               style={{
                 display: 'grid',
                 gridTemplateColumns: '1fr 1fr',
-                gap: 'var(--space-4)',
-                marginBottom: 'var(--space-5)',
+                gap: 'var(--space-5)',
+                marginBottom: 'var(--space-6)',
               }}
             >
               <div
                 style={{
-                  background: 'rgba(192,184,168,0.04)',
-                  border: '1px solid rgba(192,184,168,0.12)',
-                  borderRadius: 'var(--radius-md)',
-                  padding: 'var(--space-4)',
+                  background: 'rgba(0,0,0,0.2)',
+                  border: '1px solid rgba(255,255,255,0.05)',
+                  borderRadius: '16px',
+                  padding: 'var(--space-5)',
                 }}
               >
                 <div
                   style={{
-                    fontSize: '0.7rem',
+                    fontSize: '0.8rem',
                     color: 'var(--grey-400)',
                     textTransform: 'uppercase',
-                    letterSpacing: '0.06em',
-                    marginBottom: 6,
+                    letterSpacing: '0.08em',
+                    marginBottom: 8,
+                    fontWeight: 700
                   }}
                 >
                   Buyer
                 </div>
-                <div style={{ fontSize: '0.95rem', color: 'var(--white)', fontWeight: 600 }}>
+                <div style={{ fontSize: '1.1rem', color: 'var(--white)', fontWeight: 700 }}>
                   {detailOrder.buyer_name || 'Anonymous Scientist'}
                 </div>
                 <div
                   style={{
-                    fontSize: '0.8rem',
-                    color: 'var(--silver)',
-                    marginTop: 4,
+                    fontSize: '0.9rem',
+                    color: 'var(--teal)',
+                    marginTop: 6,
                     wordBreak: 'break-all',
+                    fontWeight: 500
                   }}
                 >
                   {detailOrder.buyer_email || 'No Email Provided'}
@@ -663,37 +664,39 @@ export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
               </div>
               <div
                 style={{
-                  background: 'rgba(192,184,168,0.04)',
-                  border: '1px solid rgba(192,184,168,0.12)',
-                  borderRadius: 'var(--radius-md)',
-                  padding: 'var(--space-4)',
+                  background: 'rgba(0,0,0,0.2)',
+                  border: '1px solid rgba(255,255,255,0.05)',
+                  borderRadius: '16px',
+                  padding: 'var(--space-5)',
                 }}
               >
                 <div
                   style={{
-                    fontSize: '0.7rem',
+                    fontSize: '0.8rem',
                     color: 'var(--grey-400)',
                     textTransform: 'uppercase',
-                    letterSpacing: '0.06em',
-                    marginBottom: 6,
+                    letterSpacing: '0.08em',
+                    marginBottom: 8,
+                    fontWeight: 700
                   }}
                 >
                   Shipping Address
                 </div>
-                <div style={{ fontSize: '0.82rem', color: 'var(--silver)' }}>
+                <div style={{ fontSize: '0.95rem', color: 'var(--silver)', lineHeight: 1.5 }}>
                   {formatAddress(detailOrder.shipping_address)}
                 </div>
               </div>
             </div>
 
-            <div style={{ marginBottom: 'var(--space-5)' }}>
+            <div style={{ marginBottom: 'var(--space-6)' }}>
               <div
                 style={{
-                  fontSize: '0.78rem',
-                  color: 'var(--grey-400)',
+                  fontSize: '0.85rem',
+                  color: 'var(--teal)',
                   textTransform: 'uppercase',
-                  letterSpacing: '0.06em',
-                  marginBottom: 'var(--space-3)',
+                  letterSpacing: '0.08em',
+                  marginBottom: 'var(--space-4)',
+                  fontWeight: 700
                 }}
               >
                 Line Items
@@ -701,71 +704,79 @@ export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
               {detailLoading ? (
                 <div
                   style={{
-                    padding: 'var(--space-4)',
+                    padding: 'var(--space-6)',
                     textAlign: 'center',
                     color: 'var(--silver)',
+                    background: 'rgba(0,0,0,0.1)',
+                    borderRadius: '12px'
                   }}
                 >
                   Loading Line Items...
                 </div>
               ) : detailError ? (
-                <div className="disclaimer-warning" style={{ padding: 'var(--space-3)' }}>
-                  <p style={{ color: 'var(--red)', fontSize: '0.82rem' }}>{detailError}</p>
+                <div className="disclaimer-warning" style={{ padding: 'var(--space-4)', borderRadius: '12px' }}>
+                  <p style={{ color: 'var(--red)', fontSize: '0.9rem', margin: 0, fontWeight: 500 }}>{detailError}</p>
                 </div>
               ) : detailItems.length === 0 ? (
-                <p style={{ color: 'var(--grey-400)', fontSize: '0.85rem' }}>
-                  No Line Items Found For This Order.
-                </p>
+                <div style={{ padding: 'var(--space-4)', background: 'rgba(0,0,0,0.1)', borderRadius: '12px' }}>
+                  <p style={{ color: 'var(--grey-400)', fontSize: '0.95rem', margin: 0, textAlign: 'center' }}>
+                    No Line Items Found For This Order.
+                  </p>
+                </div>
               ) : (
-                <table
-                  style={{
-                    width: '100%',
-                    fontSize: '0.85rem',
-                    color: 'var(--silver)',
-                    borderCollapse: 'collapse',
-                  }}
-                >
-                  <thead>
-                    <tr
-                      style={{
-                        color: 'var(--grey-400)',
-                        borderBottom: '1px solid rgba(255,255,255,0.08)',
-                      }}
-                    >
-                      <th style={{ textAlign: 'left', padding: '8px 6px' }}>Product</th>
-                      <th style={{ textAlign: 'right', padding: '8px 6px' }}>Quantity</th>
-                      <th style={{ textAlign: 'right', padding: '8px 6px' }}>Unit Price</th>
-                      <th style={{ textAlign: 'right', padding: '8px 6px' }}>Line Total</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {detailItems.map((item) => {
-                      const unit = Number(item.unit_retail_price || 0);
-                      const qty = Number(item.quantity || 0);
-                      return (
-                        <tr
-                          key={item.id}
-                          style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}
-                        >
-                          <td style={{ padding: '8px 6px' }}>{item.product_name}</td>
-                          <td style={{ textAlign: 'right', padding: '8px 6px' }}>{qty}</td>
-                          <td style={{ textAlign: 'right', padding: '8px 6px' }}>
-                            ${unit.toFixed(2)}
-                          </td>
-                          <td
-                            style={{
-                              textAlign: 'right',
-                              padding: '8px 6px',
-                              color: 'var(--teal)',
-                            }}
+                <div style={{ background: 'rgba(0,0,0,0.15)', borderRadius: '16px', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.04)' }}>
+                  <table
+                    style={{
+                      width: '100%',
+                      fontSize: '0.95rem',
+                      color: 'var(--silver)',
+                      borderCollapse: 'collapse',
+                    }}
+                  >
+                    <thead>
+                      <tr
+                        style={{
+                          color: 'var(--grey-400)',
+                          background: 'rgba(0,0,0,0.2)',
+                          borderBottom: '1px solid rgba(255,255,255,0.06)',
+                        }}
+                      >
+                        <th style={{ textAlign: 'left', padding: '12px 16px', fontWeight: 600 }}>Product</th>
+                        <th style={{ textAlign: 'center', padding: '12px 16px', fontWeight: 600 }}>Quantity</th>
+                        <th style={{ textAlign: 'right', padding: '12px 16px', fontWeight: 600 }}>Unit Price</th>
+                        <th style={{ textAlign: 'right', padding: '12px 16px', fontWeight: 600 }}>Line Total</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {detailItems.map((item, idx) => {
+                        const unit = Number(item.unit_retail_price || 0);
+                        const qty = Number(item.quantity || 0);
+                        return (
+                          <tr
+                            key={item.id}
+                            style={{ borderBottom: idx < detailItems.length - 1 ? '1px solid rgba(255,255,255,0.03)' : 'none' }}
                           >
-                            ${(unit * qty).toFixed(2)}
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
+                            <td style={{ padding: '12px 16px', color: 'var(--white)', fontWeight: 500 }}>{item.product_name}</td>
+                            <td style={{ textAlign: 'center', padding: '12px 16px' }}>{qty}</td>
+                            <td style={{ textAlign: 'right', padding: '12px 16px' }}>
+                              ${unit.toFixed(2)}
+                            </td>
+                            <td
+                              style={{
+                                textAlign: 'right',
+                                padding: '12px 16px',
+                                color: 'var(--teal)',
+                                fontWeight: 600
+                              }}
+                            >
+                              ${(unit * qty).toFixed(2)}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
               )}
             </div>
 
@@ -773,29 +784,31 @@ export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
               style={{
                 display: 'grid',
                 gridTemplateColumns: '1fr 1fr',
-                gap: 'var(--space-4)',
-                marginBottom: 'var(--space-5)',
+                gap: 'var(--space-5)',
+                marginBottom: 'var(--space-6)',
               }}
             >
               <div
                 style={{
-                  background: 'rgba(255,255,255,0.02)',
-                  borderRadius: 'var(--radius-md)',
-                  padding: 'var(--space-4)',
+                  background: 'rgba(0,0,0,0.2)',
+                  borderRadius: '16px',
+                  padding: 'var(--space-5)',
+                  border: '1px solid rgba(255,255,255,0.05)',
                 }}
               >
                 <div
                   style={{
-                    fontSize: '0.7rem',
+                    fontSize: '0.8rem',
                     color: 'var(--grey-400)',
                     textTransform: 'uppercase',
-                    letterSpacing: '0.06em',
-                    marginBottom: 6,
+                    letterSpacing: '0.08em',
+                    marginBottom: 10,
+                    fontWeight: 700
                   }}
                 >
                   Payment Method
                 </div>
-                <div style={{ color: 'var(--silver)' }}>
+                <div style={{ color: 'var(--white)', fontSize: '1rem', fontWeight: 600 }}>
                   {PAYMENT_LABEL[detailOrder.payment_method] || detailOrder.payment_method}
                 </div>
 
@@ -805,12 +818,13 @@ export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
                     <>
                       <div
                         style={{
-                          fontSize: '0.7rem',
+                          fontSize: '0.8rem',
                           color: 'var(--grey-400)',
                           textTransform: 'uppercase',
-                          letterSpacing: '0.06em',
-                          marginTop: 'var(--space-3)',
-                          marginBottom: 6,
+                          letterSpacing: '0.08em',
+                          marginTop: 'var(--space-4)',
+                          marginBottom: 8,
+                          fontWeight: 700
                         }}
                       >
                         Tracking Number
@@ -818,11 +832,12 @@ export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
                       <div
                         style={{
                           color: 'var(--teal)',
-                          fontWeight: 600,
+                          fontWeight: 700,
+                          fontSize: '1rem',
                           wordBreak: 'break-all',
                           display: 'flex',
                           alignItems: 'center',
-                          gap: 'var(--space-2)',
+                          gap: 'var(--space-3)',
                           flexWrap: 'wrap',
                         }}
                       >
@@ -830,11 +845,11 @@ export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
                         {ci.carrier !== 'Unknown' && (
                           <span
                             style={{
-                              fontSize: '0.68rem',
-                              fontWeight: 700,
+                              fontSize: '0.75rem',
+                              fontWeight: 800,
                               color: 'var(--white)',
                               background: 'var(--teal)',
-                              padding: '2px 8px',
+                              padding: '4px 10px',
                               borderRadius: 'var(--radius-full)',
                               letterSpacing: '0.05em',
                             }}
@@ -850,10 +865,11 @@ export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
                           rel="noopener noreferrer"
                           style={{
                             display: 'inline-block',
-                            marginTop: 6,
-                            fontSize: '0.78rem',
+                            marginTop: 10,
+                            fontSize: '0.9rem',
                             color: 'var(--teal)',
                             textDecoration: 'underline',
+                            fontWeight: 600
                           }}
                         >
                           Track With {ci.carrier}
@@ -868,11 +884,13 @@ export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
                     href={detailOrder.label_url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="btn btn-secondary btn-sm"
+                    className="btn btn-secondary"
                     style={{
-                      marginTop: 'var(--space-3)',
+                      marginTop: 'var(--space-4)',
                       display: 'inline-block',
-                      fontSize: '0.78rem',
+                      fontSize: '0.85rem',
+                      padding: '8px 16px',
+                      fontWeight: 600
                     }}
                   >
                     Open Shipping Label
@@ -881,12 +899,13 @@ export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
 
                 <div
                   style={{
-                    fontSize: '0.7rem',
+                    fontSize: '0.8rem',
                     color: 'var(--grey-400)',
                     textTransform: 'uppercase',
-                    letterSpacing: '0.06em',
-                    marginTop: 'var(--space-4)',
-                    marginBottom: 6,
+                    letterSpacing: '0.08em',
+                    marginTop: 'var(--space-5)',
+                    marginBottom: 10,
+                    fontWeight: 700
                   }}
                 >
                   Payment Proofs
@@ -896,18 +915,22 @@ export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
 
               <div
                 style={{
-                  background: 'rgba(255,255,255,0.02)',
-                  borderRadius: 'var(--radius-md)',
-                  padding: 'var(--space-4)',
+                  background: 'rgba(0,196,188,0.05)',
+                  borderRadius: '16px',
+                  padding: 'var(--space-5)',
+                  border: '1px solid rgba(0,196,188,0.15)',
+                  display: 'flex',
+                  flexDirection: 'column'
                 }}
               >
                 <div
                   style={{
-                    fontSize: '0.7rem',
-                    color: 'var(--grey-400)',
+                    fontSize: '0.8rem',
+                    color: 'var(--teal)',
                     textTransform: 'uppercase',
-                    letterSpacing: '0.06em',
-                    marginBottom: 'var(--space-3)',
+                    letterSpacing: '0.08em',
+                    marginBottom: 'var(--space-4)',
+                    fontWeight: 700
                   }}
                 >
                   Totals
@@ -916,9 +939,9 @@ export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
                   style={{
                     display: 'flex',
                     justifyContent: 'space-between',
-                    fontSize: '0.85rem',
+                    fontSize: '0.95rem',
                     color: 'var(--silver)',
-                    marginBottom: 4,
+                    marginBottom: 8,
                   }}
                 >
                   <span>Subtotal</span>
@@ -928,9 +951,9 @@ export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
                   style={{
                     display: 'flex',
                     justifyContent: 'space-between',
-                    fontSize: '0.85rem',
+                    fontSize: '0.95rem',
                     color: 'var(--silver)',
-                    marginBottom: 4,
+                    marginBottom: 8,
                   }}
                 >
                   <span>Shipping</span>
@@ -941,45 +964,48 @@ export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
                     style={{
                       display: 'flex',
                       justifyContent: 'space-between',
-                      fontSize: '0.85rem',
+                      fontSize: '0.95rem',
                       color: 'var(--silver)',
-                      marginBottom: 4,
+                      marginBottom: 8,
                     }}
                   >
                     <span>
                       Discount{detailOrder.coupon_code ? ` (${detailOrder.coupon_code})` : ''}
                     </span>
-                    <span style={{ color: 'var(--red)' }}>
+                    <span style={{ color: 'var(--red)', fontWeight: 600 }}>
                       -${Number(detailOrder.discount_amount).toFixed(2)}
                     </span>
                   </div>
                 )}
+                <div style={{ flex: 1 }} />
                 <div
                   style={{
                     display: 'flex',
                     justifyContent: 'space-between',
-                    fontSize: '1rem',
+                    alignItems: 'center',
+                    fontSize: '1.2rem',
                     color: 'var(--white)',
-                    fontWeight: 700,
-                    marginTop: 'var(--space-2)',
-                    borderTop: '1px solid rgba(255,255,255,0.08)',
-                    paddingTop: 'var(--space-2)',
+                    fontWeight: 800,
+                    marginTop: 'var(--space-3)',
+                    borderTop: '1px solid rgba(0,196,188,0.2)',
+                    paddingTop: 'var(--space-4)',
                   }}
                 >
                   <span>Total</span>
-                  <span style={{ color: 'var(--teal)' }}>${Number(detailOrder.total).toFixed(2)}</span>
+                  <span style={{ color: 'var(--teal)', fontSize: '1.4rem' }}>${Number(detailOrder.total).toFixed(2)}</span>
                 </div>
               </div>
             </div>
 
             <div
               className="agent-order-modal-actions"
-              style={{ display: 'flex', justifyContent: 'flex-end', gap: 'var(--space-3)' }}
+              style={{ display: 'flex', justifyContent: 'flex-end', gap: 'var(--space-3)', marginTop: 'var(--space-4)' }}
             >
               <button
                 type="button"
                 className="btn btn-secondary"
                 onClick={() => setDetailOrder(null)}
+                style={{ padding: '10px 24px', fontSize: '0.95rem', fontWeight: 600 }}
               >
                 Close
               </button>
@@ -987,6 +1013,7 @@ export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
                 type="button"
                 className="btn btn-primary"
                 onClick={() => window.print()}
+                style={{ padding: '10px 24px', fontSize: '0.95rem', fontWeight: 600 }}
               >
                 Print Packing Slip
               </button>

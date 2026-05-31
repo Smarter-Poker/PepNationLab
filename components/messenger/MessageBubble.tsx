@@ -162,44 +162,57 @@ export default function MessageBubble({
     }
     if (message.message_type === 'image' && message.media_url) {
       return (
-        <button type="button" onClick={() => setLightbox(true)} aria-label="Open Image"
-          style={{ background: 'transparent', border: 0, padding: 0, cursor: 'zoom-in' }}
-        >
-          <img src={message.media_url} alt="Image" loading="lazy"
-            style={{ maxWidth: 320, maxHeight: 240, borderRadius: 10, display: 'block' }}
-          />
-        </button>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+          {message.text && <span>{message.text}</span>}
+          <button type="button" onClick={() => setLightbox(true)} aria-label="Open Image"
+            style={{ background: 'transparent', border: 0, padding: 0, cursor: 'zoom-in' }}
+          >
+            <img src={message.media_url} alt="Image" loading="lazy"
+              style={{ maxWidth: 320, maxHeight: 240, borderRadius: 10, display: 'block' }}
+            />
+          </button>
+        </div>
       );
     }
     if (message.message_type === 'gif' && message.media_url) {
       return (
-        <img src={message.media_url} alt="Gif" loading="lazy"
-          style={{ maxWidth: 320, maxHeight: 240, borderRadius: 10, display: 'block' }}
-        />
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+          {message.text && <span>{message.text}</span>}
+          <img src={message.media_url} alt="Gif" loading="lazy"
+            style={{ maxWidth: 320, maxHeight: 240, borderRadius: 10, display: 'block' }}
+          />
+        </div>
       );
     }
     if (message.message_type === 'voice' && message.media_url) {
-      return <VoicePlayer src={message.media_url} />;
+      return (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+          {message.text && <span>{message.text}</span>}
+          <VoicePlayer src={message.media_url} />
+        </div>
+      );
     }
     if (message.message_type === 'video' && message.media_url) {
       return (
-        <div style={{ position: 'relative', maxWidth: 320 }}>
-          {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
-          <video
-            src={message.media_url}
-            controls
-            playsInline
-            preload="metadata"
-            aria-label={`Video${meta.filename ? `: ${meta.filename}` : ''}`}
-            style={{
-              maxWidth: '100%',
-              width: 320,
-              borderRadius: 10,
-              display: 'block',
-              background: '#000',
-              aspectRatio: '16 / 9',
-            }}
-          />
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+          {message.text && <span>{message.text}</span>}
+          <div style={{ position: 'relative', maxWidth: 320 }}>
+            {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
+            <video
+              src={message.media_url}
+              controls
+              playsInline
+              preload="metadata"
+              aria-label={`Video${meta.filename ? `: ${meta.filename}` : ''}`}
+              style={{
+                maxWidth: '100%',
+                width: 320,
+                borderRadius: 10,
+                display: 'block',
+                background: '#000',
+                aspectRatio: '16 / 9',
+              }}
+            />
           {meta.filename && (
             <a
               href={safeHref(message.media_url)}
@@ -218,19 +231,23 @@ export default function MessageBubble({
               {meta.size ? <span style={{ opacity: 0.7 }}>({formatSize(meta.size)})</span> : null}
             </a>
           )}
+          </div>
         </div>
       );
     }
     if (message.message_type === 'file' && message.media_url) {
       return (
-        <a href={safeHref(message.media_url)} target="_blank" rel="noopener noreferrer" download={meta.filename ?? true}
-          style={{ display: 'inline-flex', alignItems: 'center', gap: 8, color: isOwn ? '#000' : 'var(--white, #FFFFFF)' }}
-          aria-label={`Download ${meta.filename ?? 'File'}`}
-        >
-          <Download size={16} />
-          <span>{meta.filename ?? 'Download'}</span>
-          {meta.size ? <span style={{ opacity: 0.7, fontSize: '0.78rem' }}>({formatSize(meta.size)})</span> : null}
-        </a>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+          {message.text && <span>{message.text}</span>}
+          <a href={safeHref(message.media_url)} target="_blank" rel="noopener noreferrer" download={meta.filename ?? true}
+            style={{ display: 'inline-flex', alignItems: 'center', gap: 8, color: isOwn ? '#000' : 'var(--white, #FFFFFF)' }}
+            aria-label={`Download ${meta.filename ?? 'File'}`}
+          >
+            <Download size={16} />
+            <span>{meta.filename ?? 'Download'}</span>
+            {meta.size ? <span style={{ opacity: 0.7, fontSize: '0.78rem' }}>({formatSize(meta.size)})</span> : null}
+          </a>
+        </div>
       );
     }
     return <span>{message.text ?? ''}</span>;
@@ -314,8 +331,8 @@ export default function MessageBubble({
         {renderBody()}
         {menuOpen && showActionMenu && (
           <div role="menu" aria-label="Message Actions"
-            style={{ position: 'absolute', top: '-70px', right: isOwn ? 0 : undefined, left: isOwn ? undefined : 0,
-              display: 'flex', gap: 4, background: 'var(--surface-3, #1D2D3E)', borderRadius: 8, padding: 4,
+            style={{ position: 'absolute', bottom: 'calc(100% + 12px)', right: isOwn ? 0 : undefined, left: isOwn ? undefined : 0,
+              display: 'flex', flexWrap: 'wrap', maxWidth: 320, gap: 4, background: 'var(--surface-3, #1D2D3E)', borderRadius: 8, padding: 4,
               boxShadow: '0 4px 12px rgba(0,0,0,0.4)', zIndex: 5 }}
           >
             <button type="button" onClick={() => { onReply(message); setMenuOpen(false); }} style={menuBtn} aria-label="Reply" title="Reply"><Reply size={40} /></button>
@@ -411,8 +428,8 @@ export default function MessageBubble({
         )}
         {confirmDelete && (
           <div role="menu" aria-label="Confirm Delete"
-            style={{ position: 'absolute', top: '-52px', right: isOwn ? 0 : undefined, left: isOwn ? undefined : 0,
-              display: 'flex', gap: 6, background: 'var(--surface-3, #1D2D3E)', borderRadius: 8, padding: 6,
+            style={{ position: 'absolute', bottom: 'calc(100% + 12px)', right: isOwn ? 0 : undefined, left: isOwn ? undefined : 0,
+              display: 'flex', flexWrap: 'wrap', gap: 6, background: 'var(--surface-3, #1D2D3E)', borderRadius: 8, padding: 6,
               boxShadow: '0 4px 12px rgba(0,0,0,0.4)', zIndex: 5 }}
           >
             <button type="button" onClick={() => { onDelete(message, 'for_me'); setConfirmDelete(false); }} style={confirmBtnText} aria-label="Delete For Me" title="Delete For Me">Delete For Me</button>

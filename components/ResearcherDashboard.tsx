@@ -529,75 +529,93 @@ export default function ResearcherDashboard({ userId, userName, userEmail, agent
                   <a href={agentSlug ? `/${agentSlug}` : '/dashboard'} style={{ display: 'inline-block', fontSize: '0.82rem', color: 'var(--teal)', fontWeight: 600 }}>Browse Catalog</a>
                 </div>
               ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                   {orders.map(o => (
-                    <div key={o.id} className="card-metal" style={{ overflow: 'hidden' }}>
+                    <div
+                      key={o.id}
+                      className="card-metal"
+                      style={{
+                        overflow: 'hidden',
+                        borderRadius: '16px',
+                        border: '1px solid rgba(255,255,255,0.06)',
+                        background: 'rgba(20, 28, 40, 0.4)',
+                        backdropFilter: 'blur(10px)',
+                      }}
+                    >
                       <button onClick={() => setExpandedOrder(expandedOrder === o.id ? null : o.id)}
-                        style={{ width: '100%', textAlign: 'left', background: 'none', border: 'none', cursor: 'pointer', padding: 'var(--space-4)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', color: '#fff' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                          <div style={{ width: 36, height: 36, borderRadius: 8, background: `${STATUS_COLORS[o.status]}15`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: STATUS_COLORS[o.status] }}>
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+                        style={{ width: '100%', textAlign: 'left', background: 'none', border: 'none', cursor: 'pointer', padding: 'var(--space-6)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', color: '#fff' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                          <div style={{ width: 48, height: 48, borderRadius: 12, background: `${STATUS_COLORS[o.status] || '#888'}15`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: STATUS_COLORS[o.status] || '#888' }}>
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
                           </div>
                           <div>
-                            <div style={{ fontSize: '0.85rem', fontWeight: 600 }}>Order #{o.id.slice(0, 8)}</div>
-                            <div style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.3)' }}>
+                            <div style={{ fontSize: '1.1rem', fontWeight: 700, fontFamily: 'var(--font-brand)' }}>Order #{o.id.slice(0, 8).toUpperCase()}</div>
+                            <div style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.4)', marginTop: 4, fontWeight: 500 }}>
                               {new Date(o.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                              {' — '}{o.order_items?.length || 0} items — {o.payment_method?.toUpperCase()}
+                              <span style={{ margin: '0 6px', color: 'rgba(255,255,255,0.2)' }}>|</span>
+                              {o.order_items?.length || 0} items
+                              <span style={{ margin: '0 6px', color: 'rgba(255,255,255,0.2)' }}>|</span>
+                              {o.payment_method?.toUpperCase()}
                             </div>
                           </div>
                         </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                          <span style={{ fontSize: '0.92rem', fontWeight: 700, color: 'var(--teal)' }}>${Number(o.total).toFixed(2)}</span>
-                          <span style={{ fontSize: '0.65rem', fontWeight: 700, color: STATUS_COLORS[o.status], background: `${STATUS_COLORS[o.status]}15`, padding: '2px 8px', borderRadius: 4 }}>
-                            {STATUS_LABELS[o.status] || o.status}
-                          </span>
-                          <span style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.3)', transition: 'transform 0.2s', transform: expandedOrder === o.id ? 'rotate(180deg)' : 'rotate(0deg)', display: 'inline-block' }}>▼</span>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6 }}>
+                            <span style={{ fontSize: '1.2rem', fontWeight: 800, color: 'var(--teal)' }}>${Number(o.total).toFixed(2)}</span>
+                            <span style={{ fontSize: '0.75rem', fontWeight: 700, color: STATUS_COLORS[o.status] || '#888', background: `${STATUS_COLORS[o.status] || '#888'}15`, padding: '4px 10px', borderRadius: 6 }}>
+                              {STATUS_LABELS[o.status] || o.status}
+                            </span>
+                          </div>
+                          <span style={{ fontSize: '0.9rem', color: 'rgba(255,255,255,0.3)', transition: 'transform 0.2s', transform: expandedOrder === o.id ? 'rotate(180deg)' : 'rotate(0deg)', display: 'inline-block', marginLeft: 8 }}>▼</span>
                         </div>
                       </button>
 
                       {expandedOrder === o.id && (
-                        <div style={{ padding: '0 var(--space-4) var(--space-4)', borderTop: '1px solid rgba(255,255,255,0.04)' }}>
-                          <div style={{ marginTop: 12 }}>
-                            <div style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.3)', fontWeight: 700, marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Items</div>
+                        <div style={{ padding: '0 var(--space-6) var(--space-6)', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+                          <div style={{ marginTop: 20 }}>
+                            <div style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.4)', fontWeight: 700, marginBottom: 12, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Order Items</div>
                             {o.order_items?.map(item => (
-                              <div key={item.id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', padding: '4px 0', borderBottom: '1px solid rgba(255,255,255,0.02)' }}>
-                                <span style={{ color: 'rgba(255,255,255,0.7)' }}>{item.product_name} <span style={{ color: 'var(--teal)' }}>x{item.quantity}</span></span>
-                                <span style={{ color: '#fff', fontWeight: 600 }}>${(item.unit_retail_price * item.quantity).toFixed(2)}</span>
+                              <div key={item.id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.95rem', padding: '8px 0', borderBottom: '1px solid rgba(255,255,255,0.03)' }}>
+                                <span style={{ color: 'rgba(255,255,255,0.85)' }}>{item.product_name} <span style={{ color: 'var(--teal)', marginLeft: 8, fontWeight: 600 }}>x{item.quantity}</span></span>
+                                <span style={{ color: '#fff', fontWeight: 700 }}>${(item.unit_retail_price * item.quantity).toFixed(2)}</span>
                               </div>
                             ))}
                           </div>
 
-                          <div style={{ marginTop: 12, paddingTop: 8, borderTop: '1px solid rgba(255,255,255,0.04)', display: 'flex', flexDirection: 'column', gap: 4 }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem', color: 'rgba(255,255,255,0.4)' }}>
+                          <div style={{ marginTop: 20, paddingTop: 16, borderTop: '1px solid rgba(255,255,255,0.06)', display: 'flex', flexDirection: 'column', gap: 8, maxWidth: 300, marginLeft: 'auto' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem', color: 'rgba(255,255,255,0.5)' }}>
                               <span>Subtotal</span><span>${Number(o.subtotal).toFixed(2)}</span>
                             </div>
                             {Number(o.discount_amount) > 0 && (
-                              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem', color: '#68D391' }}>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem', color: '#68D391', fontWeight: 600 }}>
                                 <span>Discount {o.coupon_code ? `(${o.coupon_code})` : ''}</span><span>-${Number(o.discount_amount).toFixed(2)}</span>
                               </div>
                             )}
-                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem', color: 'rgba(255,255,255,0.4)' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem', color: 'rgba(255,255,255,0.5)' }}>
                               <span>Shipping</span><span>${Number(o.shipping_cost).toFixed(2)}</span>
                             </div>
                           </div>
 
                           {o.tracking_number && (
-                            <div style={{ marginTop: 12, padding: '8px 12px', background: 'rgba(0,153,255,0.06)', borderRadius: 8, border: '1px solid rgba(0,153,255,0.15)', display: 'flex', alignItems: 'center', gap: 8 }}>
-                              <svg {...IP} stroke="#63B3ED"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+                            <div style={{ marginTop: 24, padding: '16px 20px', background: 'rgba(0,153,255,0.06)', borderRadius: 12, border: '1px solid rgba(0,153,255,0.2)', display: 'flex', alignItems: 'center', gap: 16 }}>
+                              <div style={{ background: 'rgba(0,153,255,0.1)', padding: 8, borderRadius: 8 }}>
+                                <svg {...IP} stroke="#63B3ED" width={24} height={24}><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+                              </div>
                               <div>
-                                <div style={{ fontSize: '0.68rem', color: 'rgba(255,255,255,0.3)' }}>Tracking Number</div>
-                                <div style={{ fontSize: '0.82rem', color: '#63B3ED', fontWeight: 700, fontFamily: 'monospace' }}>{o.tracking_number}</div>
+                                <div style={{ fontSize: '0.75rem', color: '#63B3ED', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Tracking Number</div>
+                                <div style={{ fontSize: '1.1rem', color: '#fff', fontWeight: 700, fontFamily: 'monospace', marginTop: 4 }}>{o.tracking_number}</div>
                               </div>
                             </div>
                           )}
 
-                          <div style={{ marginTop: 12 }}>
+                          <div style={{ marginTop: 24, display: 'flex', justifyContent: 'flex-end' }}>
                             <a href={agentSlug ? `/${agentSlug}` : '/dashboard'} style={{
-                              display: 'inline-flex', alignItems: 'center', gap: 6, padding: '6px 14px',
-                              background: 'rgba(192,184,168,0.08)', border: '1px solid rgba(192,184,168,0.15)',
-                              borderRadius: 8, color: 'var(--teal)', fontSize: '0.75rem', fontWeight: 600, textDecoration: 'none',
+                              display: 'inline-flex', alignItems: 'center', gap: 8, padding: '10px 20px',
+                              background: 'rgba(192,184,168,0.08)', border: '1px solid rgba(192,184,168,0.2)',
+                              borderRadius: 10, color: 'var(--teal)', fontSize: '0.9rem', fontWeight: 700, textDecoration: 'none',
+                              transition: 'all 0.2s ease',
                             }}>
-                              Re-Order
+                              Re-Order Items
                             </a>
                           </div>
                         </div>
