@@ -525,7 +525,7 @@ export default function MessagePane({ userId, activeCall, setActiveCall }: Props
         const json = (await res.json()) as { messages?: Message[]; reactions?: Reaction[] };
         if (cancelled) return;
         const list = json.messages ?? [];
-        setMessages(activeId, list);
+        useMessengerStore.getState().upsertMessages(activeId, list);
         if (list.length < 50) {
           setHasMoreMessages(prev => ({ ...prev, [activeId]: false }));
         } else {
