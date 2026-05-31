@@ -203,7 +203,7 @@ export async function PATCH(req: NextRequest) {
   const activeSalePrice = sale_price !== undefined && sale_price !== null ? Number(sale_price) : Number(check.sale_price);
   const activeIsOnSale = is_on_sale !== undefined ? Boolean(is_on_sale) : Boolean(check.is_on_sale);
 
-  if (activeIsOnSale && activeSalePrice > 0) {
+  if (activeIsOnSale) {
     if (activeSalePrice < agentCostPer10) {
       return NextResponse.json(
         {

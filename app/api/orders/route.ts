@@ -624,6 +624,8 @@ export async function POST(request: NextRequest) {
 
     let initialStatus = 'pending_customer_payment';
     let prepaidDeducted = false;
+    let prepaidDeductedAmount = 0;
+    let prepaidDeductedAgentId: string | null = null;
     let oldBalance = 0;
 
     // --- Helper for Super Agent Credit Check ---
@@ -635,16 +637,19 @@ export async function POST(request: NextRequest) {
         }
         const { data: deductSuccess } = await serviceSupabase.rpc('deduct_prepaid_balance', { agent_id: saProfile.id, amount });
         if (!deductSuccess) return { error: 'Failed to deduct prepaid balance.', status: 500 };
-        return { success: true, prepaidDeducted: true };
+        return { success: true, prepaidDeducted: true, amount, agentId: saProfile.id };
       } else if (saProfile.account_type === 'credit') {
         const { data: statements } = await serviceSupabase.from('weekly_statements').select('total_owed').eq('agent_id', saProfile.id).eq('status', 'pending_payment');
         let currentUnbilled = 0;
         statements?.forEach((s) => (currentUnbilled += Number(s.total_owed) || 0));
 
+        const { data: subAgents } = await serviceSupabase.from('profiles').select('id').eq('parent_agent_id', saProfile.id);
+        const agentIds = [saProfile.id, ...(subAgents?.map((s: { id: string }) => s.id) || [])];
+
         const { data: approvedOrders } = await serviceSupabase
           .from('orders')
           .select('id, shipping_cost, statement_orders(statement_id), order_items(quantity, unit_cost_price, unit_super_agent_cost), agent_id')
-          .eq('agent_id', saProfile.id)
+          .in('agent_id', agentIds)
           .eq('is_wholesale_restock', false)
           .in('status', ['approved_ship', 'approved_pickup', 'in_fulfillment', 'shipped', 'delivered']);
 
@@ -685,6 +690,10 @@ export async function POST(request: NextRequest) {
           const res = await checkSuperAgentCredit(profile, total);
           if (res.error) return NextResponse.json({ error: res.error }, { status: res.status });
           prepaidDeducted = res.prepaidDeducted || false;
+          if (prepaidDeducted) {
+            prepaidDeductedAmount = res.amount || 0;
+            prepaidDeductedAgentId = res.agentId || null;
+          }
           initialStatus = 'approved_ship';
         } else {
           // No Admin Trust -> Wait for manual admin approval
@@ -693,9 +702,19 @@ export async function POST(request: NextRequest) {
       } else if (profile.role === 'agent') {
         if (profile.auto_approve_orders && superAgentProfile) {
           // Super Agent Trusts Sub-Agent -> Auto-Approve & Check Super Agent's Credit
-          const res = await checkSuperAgentCredit(superAgentProfile, total);
+          let wholesaleCogs = 0;
+          for (const item of computedItems) {
+            wholesaleCogs += (item.unit_super_agent_cost !== null ? item.unit_super_agent_cost : item.unit_cost_price) * item.quantity;
+          }
+          wholesaleCogs += shippingCost;
+
+          const res = await checkSuperAgentCredit(superAgentProfile, wholesaleCogs);
           if (res.error) return NextResponse.json({ error: res.error }, { status: res.status });
           prepaidDeducted = res.prepaidDeducted || false;
+          if (prepaidDeducted) {
+            prepaidDeductedAmount = res.amount || 0;
+            prepaidDeductedAgentId = res.agentId || null;
+          }
           initialStatus = 'approved_ship';
         } else {
           // No Super Agent Trust -> Wait for manual super agent approval
@@ -720,6 +739,10 @@ export async function POST(request: NextRequest) {
             const res = await checkSuperAgentCredit(superAgentProfile, retailCogs);
             if (res.error) return NextResponse.json({ error: res.error }, { status: res.status });
             prepaidDeducted = res.prepaidDeducted || false;
+            if (prepaidDeducted) {
+              prepaidDeductedAmount = res.amount || 0;
+              prepaidDeductedAgentId = res.agentId || null;
+            }
             initialStatus = 'approved_ship';
           } else {
             // Super Agent does NOT trust Sub-Agent. Park it at agent_approval_pending
@@ -738,6 +761,10 @@ export async function POST(request: NextRequest) {
           const res = await checkSuperAgentCredit(agentProfile, retailCogs);
           if (res.error) return NextResponse.json({ error: res.error }, { status: res.status });
           prepaidDeducted = res.prepaidDeducted || false;
+          if (prepaidDeducted) {
+            prepaidDeductedAmount = res.amount || 0;
+            prepaidDeductedAgentId = res.agentId || null;
+          }
           initialStatus = 'approved_ship';
         }
       }
@@ -791,8 +818,10 @@ export async function POST(request: NextRequest) {
       }
       // Order insert failed: roll back all pre-committed resources.
       if (inventoryReserved) await serviceSupabase.rpc('release_inventory', inventoryReserveParams);
-
       if (appliedCouponId) await serviceSupabase.rpc('unreedeem_coupon', { p_coupon_id: appliedCouponId });
+      if (prepaidDeducted && prepaidDeductedAmount > 0 && prepaidDeductedAgentId) {
+        await serviceSupabase.rpc('refund_prepaid_balance', { p_agent_id: prepaidDeductedAgentId, p_amount: prepaidDeductedAmount });
+      }
       console.error('Database Order Write Error:', orderError);
       return NextResponse.json({ error: 'Failed To Save Order Transaction.' }, { status: 500 });
     }
@@ -833,6 +862,9 @@ export async function POST(request: NextRequest) {
       await serviceSupabase.from('orders').delete().eq('id', order.id);
       if (inventoryReserved) await serviceSupabase.rpc('release_inventory', inventoryReserveParams);
       if (appliedCouponId) await serviceSupabase.rpc('unreedeem_coupon', { p_coupon_id: appliedCouponId });
+      if (prepaidDeducted && prepaidDeductedAmount > 0 && prepaidDeductedAgentId) {
+        await serviceSupabase.rpc('refund_prepaid_balance', { p_agent_id: prepaidDeductedAgentId, p_amount: prepaidDeductedAmount });
+      }
 
       return NextResponse.json({ error: `An unexpected error occurred: ${itemsError.message || JSON.stringify(itemsError)}` }, { status: 500 });
     }

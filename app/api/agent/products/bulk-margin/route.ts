@@ -27,32 +27,44 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Store margin_percent on every agent_product for this agent.
-    // The DB trigger (trg_recalc_on_margin) will automatically recompute
-    // retail_price = base_cost × tier_multiplier × (1 + margin_percent/100)
-    // for each row when margin_percent changes.
-    // We also call the RPC directly as belt-and-suspenders.
-    const { error: updateError } = await supabase
+    const { data: agentProducts } = await supabase
       .from('agent_products')
-      .update({ margin_percent: marginPercent })
-      .eq('agent_id', agentId);
+      .select('id, product_id, products!inner(base_cost)')
+      .eq('agent_id', agentId)
+      .not('product_id', 'is', null);
 
-    if (updateError) {
-      return NextResponse.json({ error: 'Failed To Update Margin.' }, { status: 500 });
+    if (!agentProducts || agentProducts.length === 0) {
+      return NextResponse.json({ success: true, updated: 0 });
     }
 
-    // Belt-and-suspenders: call the RPC in case triggers aren't active
-    try {
-      await supabase.rpc('recalculate_agent_product_prices', { p_agent_id: agentId });
-    } catch { /* non-critical: triggers handle recomputation */ }
+    const { data: profData } = await supabase.from('profiles').select('tier').eq('id', agentId).single();
+    const tier = profData?.tier || 'tier_3';
 
-    // Return updated product count for the toast message
-    const { count } = await supabase
-      .from('agent_products')
-      .select('*', { count: 'exact', head: true })
-      .eq('agent_id', agentId);
+    const { data: overrides } = await supabase.from('product_tier_overrides').select('product_id, custom_multiplier').eq('tier_name', tier);
+    const overrideMap: Record<string, number> = {};
+    overrides?.forEach(o => { overrideMap[o.product_id as string] = Number(o.custom_multiplier); });
 
-    return NextResponse.json({ success: true, updated: count ?? 0 });
+    const { data: multData } = await supabase.from('pricing_tiers').select('multiplier').eq('tier_name', tier).single();
+    const globalMultiplier = Number(multData?.multiplier) || 1.7;
+
+    let updatedCount = 0;
+    const updates = agentProducts.map(ap => {
+       const baseCost = Number((ap.products as any).base_cost);
+       const effectiveMultiplier = overrideMap[ap.product_id as string] ?? globalMultiplier;
+       const agentCostPer10 = baseCost * effectiveMultiplier;
+       const retailPrice = agentCostPer10 * (1 + marginPercent / 100);
+
+       return supabase
+         .from('agent_products')
+         .update({ margin_percent: marginPercent, retail_price: retailPrice })
+         .eq('id', ap.id)
+         .eq('agent_id', agentId);
+    });
+
+    await Promise.all(updates);
+    updatedCount = updates.length;
+
+    return NextResponse.json({ success: true, updated: updatedCount });
   } catch (error) {
     console.error('Bulk Margin API Error:', error);
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
