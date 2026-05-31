@@ -100,6 +100,26 @@ export default function MessageBubble({
   onLabelToggle, onThread, onReport, onSetReminder,
   activeMenuId, onMenuToggle, readBy = [],
 }: Props) {
+  if (message.message_type === 'system') {
+    return (
+      <div
+        data-msg-id={message.id}
+        style={{
+          display: 'flex',
+          justifyContent: 'center',
+          width: '100%',
+          margin: '12px 0',
+          fontSize: '0.82rem',
+          color: 'var(--grey-400, #A8B4C0)',
+          fontStyle: 'italic',
+          textAlign: 'center',
+        }}
+      >
+        <span>{message.text ?? ''}</span>
+      </div>
+    );
+  }
+
   const isMenuOpen = activeMenuId !== undefined ? activeMenuId === message.id : false;
   const setMenuOpen = (open: boolean) => {
     if (onMenuToggle) onMenuToggle(message.id, open);

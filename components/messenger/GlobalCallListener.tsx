@@ -84,6 +84,7 @@ export default function GlobalCallListener() {
         }, 35000);
 
         setIncomingCalls((cur) => (cur.some((x) => x.id === c.id) ? cur : [...cur, c]));
+        setActiveCall(c);
       },
       onUpdate: (c) => {
         if (c.status !== 'ringing') {

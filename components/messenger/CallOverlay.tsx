@@ -10,6 +10,8 @@ import '@livekit/components-styles';
 import type { CallSignalRow } from '@/lib/messenger/realtime';
 import { useMessengerStore } from '@/stores/messengerStore';
 import { createRingTone } from '@/lib/messenger/ringTone';
+import { Phone, PhoneOff, Video } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface Props {
   call: CallSignalRow;
@@ -17,9 +19,67 @@ interface Props {
   onClose: () => void;
 }
 
+const PULSE_STYLE_ID = 'pnl-pulse-ring';
+function injectPulseRingAnim() {
+  if (typeof document === 'undefined') return;
+  if (document.getElementById(PULSE_STYLE_ID)) return;
+  const style = document.createElement('style');
+  style.id = PULSE_STYLE_ID;
+  style.textContent = `
+    @keyframes pnl-pulse-avatar {
+      0%   { transform: scale(0.96); box-shadow: 0 0 0 0 rgba(0, 196, 188, 0.4); }
+      70%  { transform: scale(1); box-shadow: 0 0 0 24px rgba(0, 196, 188, 0); }
+      100% { transform: scale(0.96); box-shadow: 0 0 0 0 rgba(0, 196, 188, 0); }
+    }
+    .pnl-pulse-avatar-ring {
+      animation: pnl-pulse-avatar 2s infinite ease-in-out;
+    }
+  `;
+  document.head.appendChild(style);
+}
+
 export default function CallOverlay({ call, selfId, onClose }: Props) {
+  // Inject pulsing animation stylesheet on mount
+  useEffect(() => {
+    injectPulseRingAnim();
+  }, []);
   const conversations = useMessengerStore((s) => s.conversations);
   const [counterpartyId, setCounterpartyId] = useState<string | null>(null);
+  const [counterpartyName, setCounterpartyName] = useState<string>('Someone');
+  const [counterpartyAvatar, setCounterpartyAvatar] = useState<string | null>(null);
+
+  // Resolve counterparty name and avatar details
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch('/api/messenger/list-participants', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ conversationId: call.conversation_id }),
+        });
+        if (cancelled || !res.ok) return;
+        const json = (await res.json()) as {
+          participants?: Array<{
+            user_id: string;
+            full_name?: string | null;
+            username?: string | null;
+            avatar_url?: string | null;
+          }>;
+        };
+        const other = (json.participants ?? []).find((p) => p.user_id !== selfId);
+        if (other && !cancelled) {
+          setCounterpartyName(other.full_name ?? other.username ?? 'Someone');
+          setCounterpartyAvatar(other.avatar_url ?? null);
+        }
+      } catch (err) {
+        console.warn('Failed to resolve counterparty profile in CallOverlay:', err);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [call.conversation_id, selfId]);
 
   useEffect(() => {
     // 1. If we are the callee, the counterparty is the initiator
