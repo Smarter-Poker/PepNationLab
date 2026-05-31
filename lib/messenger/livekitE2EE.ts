@@ -1,32 +1,28 @@
 /**
- * audit15 fix-28 (B5): LiveKit end-to-end encryption setup.
+ * audit15 fix-37 (HOTFIX): LiveKit E2EE setup with default-OFF.
  *
- * Both participants in a call independently derive the same key from
- * the call's `livekit_room` UUID (server-generated, only the
- * authenticated participants have access to it via the call row).
- * The shared key fed to LiveKit's ExternalE2EEKeyProvider means even
- * the SFU cannot decrypt media frames.
+ * Originally shipped in fix-28 / fix-30 with default-ON. A production
+ * incident reported that accepting calls instantly crashed both clients
+ * with the root error boundary. Working theory: Turbopack isn't
+ * correctly bundling the `livekit-client/e2ee-worker` subpath import
+ * for `new Worker(new URL(...))`, so the worker script fails to load
+ * asynchronously, and LiveKitRoom throws inside render when it tries
+ * to communicate with the broken worker.
  *
- * Returns null when E2EE is disabled or unsupported — caller should
- * pass `undefined` to LiveKitRoom in that case and rely on standard
- * TLS to the SFU.
+ * Until Worker bundling is validated end-to-end, E2EE is OFF by default.
+ * Set `NEXT_PUBLIC_MESSENGER_CALL_E2EE=on` to re-enable.
  *
- * Disable knob:
- *   NEXT_PUBLIC_MESSENGER_CALL_E2EE=off  → returns null
- *
- * Worker bundling: Next.js + Turbopack support `new Worker(new URL(...))`.
- * The livekit-client package ships a worker at
- * `livekit-client/dist/livekit-client.e2ee.worker.mjs` which is
- * resolvable via the new URL pattern.
+ * When disabled (which is the default now), calls use standard TLS to
+ * the LiveKit SFU — still encrypted in transit, just not end-to-end.
  */
 
-import { ExternalE2EEKeyProvider } from 'livekit-client';
-import type { RoomOptions } from 'livekit-client';
+import type { ExternalE2EEKeyProvider as ExternalE2EEKeyProviderType, RoomOptions } from 'livekit-client';
 
-const E2EE_ENABLED = (process.env.NEXT_PUBLIC_MESSENGER_CALL_E2EE ?? 'on').toLowerCase() !== 'off';
+// audit15 fix-37: default OFF. Opt-in via NEXT_PUBLIC_MESSENGER_CALL_E2EE=on.
+const E2EE_ENABLED = (process.env.NEXT_PUBLIC_MESSENGER_CALL_E2EE ?? 'off').toLowerCase() === 'on';
 
 export interface E2EESetup {
-  keyProvider: ExternalE2EEKeyProvider;
+  keyProvider: ExternalE2EEKeyProviderType;
   worker: Worker;
 }
 
@@ -34,41 +30,58 @@ function browserSupportsE2EE(): boolean {
   if (typeof window === 'undefined') return false;
   if (typeof Worker === 'undefined') return false;
   if (typeof crypto === 'undefined' || !crypto.subtle) return false;
-  // Insertable streams (the underlying API LiveKit uses for E2EE) requires
-  // RTCRtpScriptTransform OR encoded streams. Detect via the presence of
-  // RTCRtpSender / RTCRtpReceiver and one of their advanced surfaces.
   if (typeof RTCRtpSender === 'undefined') return false;
   return true;
 }
 
 /**
  * Create an E2EE setup tied to the supplied call's livekit_room name.
- * Returns null when E2EE is disabled or unsupported.
- *
- * The keyProvider derives an AES key from the room name via PBKDF2-style
- * stretching inside LiveKit. Both peers use the same room name → same key.
+ * Returns null when E2EE is disabled (default) or unsupported.
  */
 export async function createE2EESetup(livekitRoom: string): Promise<E2EESetup | null> {
   if (!E2EE_ENABLED) return null;
   if (!browserSupportsE2EE()) return null;
   if (!livekitRoom || livekitRoom.length < 8) return null;
 
+  // audit15 fix-37: dynamic import so the ExternalE2EEKeyProvider class is
+  // only loaded when E2EE is actually requested. Avoids any chance of a
+  // top-level import side effect crashing the page when E2EE is off.
+  let ExternalE2EEKeyProvider: typeof ExternalE2EEKeyProviderType | undefined;
   try {
-    // Use the official livekit-client e2ee worker.
-    const worker = new Worker(
+    const lk = await import('livekit-client');
+    ExternalE2EEKeyProvider = lk.ExternalE2EEKeyProvider;
+  } catch (err) {
+    console.warn('[messenger.call] livekit-client e2ee provider import failed:', err);
+    return null;
+  }
+  if (!ExternalE2EEKeyProvider) {
+    console.warn('[messenger.call] ExternalE2EEKeyProvider not exported by livekit-client');
+    return null;
+  }
+
+  let worker: Worker | null = null;
+  try {
+    // Note: if Turbopack doesn't bundle this subpath import, the URL will
+    // not resolve at build time and this line will throw synchronously
+    // OR produce a Worker that fails async. The outer try/catch catches
+    // the synchronous case; for the async case we accept the orphan and
+    // fall back to TLS.
+    worker = new Worker(
       new URL('livekit-client/e2ee-worker', import.meta.url),
       { type: 'module' },
     );
+  } catch (err) {
+    console.warn('[messenger.call] E2EE worker construction failed — falling back to TLS only:', err);
+    return null;
+  }
+
+  try {
     const keyProvider = new ExternalE2EEKeyProvider();
-    // The provider expects a passphrase string; livekit_room is a server-
-    // generated UUID and serves as the shared secret here. Both peers
-    // independently arrive at the same key.
     await keyProvider.setKey(`messenger-call:${livekitRoom}`);
     return { keyProvider, worker };
   } catch (err) {
-    // Worker URL didn't resolve, key derivation failed, or browser blocked
-    // the worker. Fall back to TLS-only.
-    console.warn('[messenger.call] E2EE setup failed — falling back to TLS only:', err);
+    console.warn('[messenger.call] E2EE key provider init failed — falling back to TLS only:', err);
+    try { worker.terminate(); } catch {}
     return null;
   }
 }
