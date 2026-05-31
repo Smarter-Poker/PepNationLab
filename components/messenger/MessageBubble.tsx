@@ -190,6 +190,12 @@ export default function MessageBubble({
             style={{ background: 'transparent', border: 0, padding: 0, cursor: 'zoom-in' }}
           >
             <img src={message.media_url} alt="Image" loading="lazy"
+              onLoad={() => {
+                if (isLast) {
+                  const el = document.querySelector('.msg-list');
+                  if (el) el.scrollTop = el.scrollHeight;
+                }
+              }}
               style={{ maxWidth: 320, maxHeight: 240, borderRadius: 10, display: 'block' }}
             />
           </button>
@@ -201,6 +207,12 @@ export default function MessageBubble({
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
           {message.text && <span>{message.text}</span>}
           <img src={message.media_url} alt="Gif" loading="lazy"
+            onLoad={() => {
+              if (isLast) {
+                const el = document.querySelector('.msg-list');
+                if (el) el.scrollTop = el.scrollHeight;
+              }
+            }}
             style={{ maxWidth: 320, maxHeight: 240, borderRadius: 10, display: 'block' }}
           />
         </div>
