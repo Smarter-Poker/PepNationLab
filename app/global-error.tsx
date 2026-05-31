@@ -17,7 +17,7 @@ export default function GlobalError({
   return (
     <html lang="en">
       <body style={{ margin: 0, fontFamily: "-apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', Roboto, sans-serif", background: '#050A0F', color: '#FFFFFF' }}>
-        <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2rem', background: 'radial-gradient(ellipse at 50% 0%, rgba(229,62,62,0.06) 0%, transparent 60%), #050A0F' }}>
+        <div style={{ minHeight: '100dvh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2rem', background: 'radial-gradient(ellipse at 50% 0%, rgba(229,62,62,0.06) 0%, transparent 60%), #050A0F' }}>
           <div style={{ width: '100%', maxWidth: 560, textAlign: 'center' }}>
             <div style={{ width: 64, height: 64, margin: '0 auto 1.5rem', borderRadius: '50%', background: 'rgba(229,62,62,0.12)', border: '2px solid rgba(229,62,62,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#E53E3E" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

@@ -43,7 +43,7 @@ export default async function AgentStorefrontPage({ params }: Props) {
   if (agent.is_active === false) {
     const primaryColor = agent.primary_color ?? '#00C4BC';
     return (
-      <div style={{ minHeight: '100vh', background: 'var(--black)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 'var(--space-6)' }}>
+      <div style={{ minHeight: '100dvh', background: 'var(--black)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 'var(--space-6)' }}>
         <div className="card-metal hover-lift stagger-fade-in" style={{ maxWidth: 480, padding: 'var(--space-8)', textAlign: 'center', border: `1px solid ${primaryColor}30`, animationDelay: '0.1s' }}>
           <h1 className="animated-gradient-text" style={{ color: 'var(--white)', fontSize: '1.4rem', marginBottom: 'var(--space-3)' }}>
             Storefront Paused
@@ -213,7 +213,7 @@ export default async function AgentStorefrontPage({ params }: Props) {
   const displayName = agent.display_name;
 
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--black)' }}>
+    <div style={{ minHeight: '100dvh', background: 'var(--black)' }}>
       <style dangerouslySetInnerHTML={{__html: `
         .sf-nav { height: 60px; background: var(--black-2); border-bottom: 1px solid rgba(192,184,168,0.2); display: flex; align-items: center; justify-content: space-between; padding: 0 12px; position: sticky; top: 0; z-index: 50; gap: 8px; }
         .sf-nav-brand { display: flex; align-items: center; gap: 8px; min-width: 0; flex: 1; }

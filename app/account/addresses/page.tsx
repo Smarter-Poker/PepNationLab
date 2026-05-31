@@ -24,7 +24,7 @@ export default async function AddressesPage() {
     .order('updated_at', { ascending: false });
 
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--black)', padding: 'var(--space-6) var(--space-4)' }}>
+    <div style={{ minHeight: '100dvh', background: 'var(--black)', padding: 'var(--space-6) var(--space-4)' }}>
       <div className="container" style={{ maxWidth: 960 }}>
         <div style={{ marginBottom: 'var(--space-4)' }}>
           <Link href="/account" style={{ fontSize: '0.85rem', color: 'var(--teal)', textDecoration: 'none' }}>

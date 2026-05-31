@@ -101,7 +101,7 @@ export default function ProductsList({
   });
 
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--black)' }}>
+    <div style={{ minHeight: '100dvh', background: 'var(--black)' }}>
       {/* Top Navbar */}
       <nav className="glass-header" style={{
         height: 64,

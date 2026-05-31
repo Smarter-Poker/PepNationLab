@@ -305,7 +305,7 @@ body {
   background-color: var(--black);
   color: var(--white);
   line-height: 1.6;
-  min-height: 100vh;
+  min-height: 100dvh;
   overflow-x: hidden;
   font-feature-settings: normal !important;
   font-variant-numeric: normal !important;
@@ -1059,7 +1059,7 @@ a:hover { color: var(--teal-dark); }
 
 .dashboard-main {
   padding-top: 60px;
-  min-height: 100vh;
+  min-height: 100dvh;
   background: var(--black);
   /* Stretch to fill any remaining vertical space so no background gap appears */
   flex: 1;
@@ -1212,7 +1212,7 @@ html {
 
 body {
   overflow-x: hidden;
-  min-height: 100vh;
+  min-height: 100dvh;
   min-height: 100dvh;
 }
 

@@ -46,7 +46,7 @@ export default async function StatusPage() {
   const overall = report?.status;
 
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--black)', padding: 'var(--space-6) var(--space-4)' }}>
+    <div style={{ minHeight: '100dvh', background: 'var(--black)', padding: 'var(--space-6) var(--space-4)' }}>
       <div className="container" style={{ maxWidth: 720 }}>
         <h1 className="animated-gradient-text" style={{ color: 'var(--white)', fontSize: '1.8rem', fontFamily: 'var(--font-brand)', marginBottom: 'var(--space-4)' }}>
           Pep Nation Lab Status

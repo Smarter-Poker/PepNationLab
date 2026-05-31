@@ -100,7 +100,7 @@ export default async function AdminStorePreviewPage() {
   });
 
   return (
-    <div style={{ padding: 'var(--space-6)', minHeight: '100vh', background: 'var(--black)' }}>
+    <div style={{ padding: 'var(--space-6)', minHeight: '100dvh', background: 'var(--black)' }}>
       <div style={{ marginBottom: 'var(--space-6)' }}>
         <h1 style={{ fontSize: '1.5rem', color: 'var(--white)', fontFamily: 'var(--font-brand)', textTransform: 'uppercase' }}>
           Storefront Preview

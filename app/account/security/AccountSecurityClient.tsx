@@ -173,7 +173,7 @@ export default function AccountSecurityClient({
   );
 
   return (
-    <div style={{ minHeight: '100vh', background: '#050A0F', color: '#FFFFFF' }}>
+    <div style={{ minHeight: '100dvh', background: '#050A0F', color: '#FFFFFF' }}>
       {/* Top bar */}
       <nav
         style={{

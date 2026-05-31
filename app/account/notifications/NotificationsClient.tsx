@@ -231,7 +231,7 @@ export default function NotificationCenterClient({ initialPrefs, sessionProfile 
 
   return (
     <div style={{
-      minHeight: '100vh',
+      minHeight: '100dvh',
       background: 'var(--black)',
       paddingTop: 80,
       paddingBottom: 60,
