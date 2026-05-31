@@ -483,7 +483,7 @@ export default function MessageComposer({ conversationId, selfId, replyTo, onCle
             gap: 12,
             padding: '8px 16px',
             background: 'var(--surface-1, #0F1923)',
-            borderTop: '1px solid var(--surface-2, #162230)',
+            borderTop: '6px solid rgba(255, 255, 255, 0.06)',
           }}
         >
           {/* External Left Icon (Plus button) */}
@@ -517,9 +517,9 @@ export default function MessageComposer({ conversationId, selfId, replyTo, onCle
               alignItems: 'flex-end',
               background: 'rgba(0,0,0,0.4)',
               borderRadius: 24,
-              border: '1px solid rgba(255, 255, 255, 0.08)',
-              padding: '4px 6px',
-              minHeight: 38,
+              border: '4px solid rgba(255, 255, 255, 0.08)',
+              padding: '6px',
+              minHeight: 46,
               boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.6)',
               transition: 'border-color 0.2s',
             }}
@@ -544,13 +544,13 @@ export default function MessageComposer({ conversationId, selfId, replyTo, onCle
               aria-label="Message Body"
               style={{
                 flex: 1, resize: 'none', minHeight: 24, maxHeight: 120,
-                padding: '4px 8px',
+                padding: '5px 8px 0px 8px',
                 background: 'transparent',
                 border: 'none',
                 color: 'var(--white, #FFFFFF)',
                 fontFamily: 'inherit', fontSize: '1rem', outline: 'none',
-                lineHeight: '1.4',
-                marginBottom: 2,
+                lineHeight: '24px',
+                marginBottom: 5,
               }}
             />
             {/* Action buttons inside the right side of the pill */}

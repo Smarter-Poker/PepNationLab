@@ -358,13 +358,13 @@ export default function MessengerShell({ userId }: Props) {
           flexShrink: 0,
           width: 320,
           flexDirection: 'column',
-          borderRight: '4px solid rgba(255, 255, 255, 0.08)',
+          borderRight: '6px solid rgba(255, 255, 255, 0.08)',
           background: '#0a0d14',
           // On mobile this slides out when a conv is active (CSS handles it)
         }}>
           <header style={{
             padding: '12px 14px',
-            borderBottom: '4px solid rgba(255, 255, 255, 0.06)',
+            borderBottom: '6px solid rgba(255, 255, 255, 0.06)',
             display: 'flex',
             flexDirection: 'column',
             gap: 12,
@@ -416,7 +416,7 @@ export default function MessengerShell({ userId }: Props) {
                 padding: '12px 16px',
                 background: '#0f141d',
                 border: 'none',
-                borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
+                borderBottom: '6px solid rgba(255, 255, 255, 0.08)',
                 color: '#00C4BC',
                 cursor: 'pointer',
                 fontSize: '0.9rem',
