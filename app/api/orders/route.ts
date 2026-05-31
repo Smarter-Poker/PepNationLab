@@ -472,7 +472,7 @@ export async function POST(request: NextRequest) {
     const isAgentShip = agentProfile && !isAgentSelfBuy && fulfillmentMethod === 'ship';
     const inventoryReserveParams = {
       p_items: inventoryItems,
-      p_agent_id: isAgentShip ? agentProfile.id : null,
+      p_agent_id: isAgentShip ? agentProfile?.id : null,
       p_is_agent_ship: !!isAgentShip
     };
     const { error: reserveErr } = await serviceSupabase

@@ -50,8 +50,8 @@ export default async function CheckoutPage({ searchParams }: PageProps) {
   // Prefer agentSlug (storefront URL) → then researcher's referring_agent_id.
   let agentPaymentHandles: Record<string, string> = {};
   let minOverallQty = 1;
+  let minOrderQty = 1;
   try {
-    let minOrderQty = 1;
 
     if (agentSlug) {
       const { data: ap } = await supabase

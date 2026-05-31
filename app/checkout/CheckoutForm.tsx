@@ -3,6 +3,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useCart } from '@/components/CartContext';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { US_STATES } from '@/lib/us-states';
 import PaymentProofUpload from '@/components/PaymentProofUpload';
 import { toTitleCase } from '@/lib/categoryImage';
@@ -12,12 +13,12 @@ type PaymentMethodId = 'zelle' | 'cashapp' | 'venmo' | 'paypal' | 'apple_cash' |
 const ALL_PAYMENT_METHODS: { id: PaymentMethodId; name: string; desc: string; icon: React.ReactNode }[] = [
   { id: 'zelle',         name: 'Zelle',           desc: 'Instant Direct Transfer. Fastest Processing.', icon: <img src="/payment-logos/zelle.svg" alt="Zelle" style={{ height: 28, width: 'auto', objectFit: 'contain' }} /> },
   { id: 'cashapp',       name: 'Cash App',        desc: 'Secure Mobile Check. Handled Manually.', icon: <img src="/payment-logos/cashapp.svg" alt="Cash App" style={{ height: 28, width: 'auto', objectFit: 'contain' }} /> },
-  { id: 'venmo',         name: 'Venmo',           desc: 'Social Transfer. Manual Clearance.', icon: <img src="/payment-logos/venmo.svg" alt="Venmo" style={{ height: 20, width: 'auto', objectFit: 'contain' }} /> },
+  { id: 'venmo',         name: 'Venmo',           desc: 'Social Transfer. Manual Clearance.', icon: <img src="/payment-logos/venmo.svg" alt="Venmo" style={{ height: 28, width: 'auto', objectFit: 'contain' }} /> },
   { id: 'paypal',        name: 'PayPal',          desc: 'Email Or @Username.', icon: <img src="/payment-logos/paypal.svg" alt="PayPal" style={{ height: 28, width: 'auto', objectFit: 'contain' }} /> },
-  { id: 'apple_cash',    name: 'Apple Cash',      desc: 'Secure Contactless Flow. Fast Settlement.', icon: <img src="/payment-logos/apple_cash.svg" alt="Apple Cash" style={{ height: 26, width: 'auto', objectFit: 'contain' }} /> },
-  { id: 'google_wallet', name: 'Google Wallet',   desc: 'Gmail Address.', icon: <img src="/payment-logos/google_wallet.svg" alt="Google Wallet" style={{ height: 26, width: 'auto', objectFit: 'contain' }} /> },
+  { id: 'apple_cash',    name: 'Apple Cash',      desc: 'Secure Contactless Flow. Fast Settlement.', icon: <img src="/payment-logos/apple_cash.svg" alt="Apple Cash" style={{ height: 28, width: 'auto', objectFit: 'contain' }} /> },
+  { id: 'google_wallet', name: 'Google Wallet',   desc: 'Gmail Address.', icon: <img src="/payment-logos/google_wallet.svg" alt="Google Wallet" style={{ height: 28, width: 'auto', objectFit: 'contain' }} /> },
   { id: 'wise',          name: 'Wise',            desc: 'Email Or Wise Username.', icon: <img src="/payment-logos/wise.svg" alt="Wise" style={{ height: 28, width: 'auto', objectFit: 'contain' }} /> },
-  { id: 'chime',         name: 'Chime',           desc: 'Chime Username Or Link.', icon: <img src="/payment-logos/chime.svg" alt="Chime" style={{ height: 20, width: 'auto', objectFit: 'contain' }} /> },
+  { id: 'chime',         name: 'Chime',           desc: 'Chime Username Or Link.', icon: <img src="/payment-logos/chime.svg" alt="Chime" style={{ height: 28, width: 'auto', objectFit: 'contain' }} /> },
 ];
 
 interface Profile {
@@ -72,6 +73,7 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
     ? ALL_PAYMENT_METHODS.filter(p => (agentPaymentHandles[p.id] ?? '').trim().length > 0)
     : ALL_PAYMENT_METHODS;
   const { cart: contextCart, cartSubtotal: contextSubtotal, clearCart } = useCart();
+  const router = useRouter();
 
   // The per-agent cart key — ONLY reads this agent's cart, never another agent's.
   // If no agentSlug (admin/direct checkout), reads legacy global key as fallback.
@@ -859,7 +861,8 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
             color: #fff !important;
           }
         `}</style>
-        <div className="premium-panel hover-lift stagger-fade-in" style={{ padding: 'var(--space-6)' }}>
+        <div className="metal-frame hover-lift stagger-fade-in" style={{ width: '100%' }}>
+          <div className="metal-content" style={{ padding: 'var(--space-6)' }}>
           {error && (
             <div style={{ borderLeft: '3px solid var(--red)', background: 'var(--red-bg)', padding: 'var(--space-4)', borderRadius: '0 var(--radius-md) var(--radius-md) 0', marginBottom: 'var(--space-6)', display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
               <svg
@@ -1293,10 +1296,12 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
               </div>
             )}
           </form>
+          </div>
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
-          <div className="premium-panel" style={{ padding: 'var(--space-5)' }}>
+          <div className="metal-frame">
+            <div className="metal-content" style={{ padding: 'var(--space-5)' }}>
             <h3 style={{ fontSize: '0.95rem', color: 'var(--white)', marginBottom: 'var(--space-4)', borderBottom: '1px solid rgba(255, 255, 255, 0.05)', paddingBottom: 'var(--space-2)', letterSpacing: '0.05em', textTransform: 'uppercase' }}>
               Order Inventory
             </h3>
@@ -1426,10 +1431,12 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
                   ${grandTotal.toFixed(2)}
                 </strong>
               </div>
+              </div>
             </div>
           </div>
 
-          <div className="premium-panel" style={{ padding: 'var(--space-4)', display: 'flex', alignItems: 'flex-start', gap: 'var(--space-3)' }}>
+          <div className="metal-frame">
+            <div className="metal-content" style={{ padding: 'var(--space-4)', display: 'flex', alignItems: 'flex-start', gap: 'var(--space-3)' }}>
             <svg
               width="18"
               height="18"
@@ -1448,6 +1455,7 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
               <p style={{ fontSize: '0.7rem', color: 'var(--grey-400)', margin: 0, lineHeight: 1.4 }}>
                 All Catalog Registrations Are Processed With Cryptographic Integrity In Compliance With Private Bio-Science Regulations.
               </p>
+            </div>
             </div>
           </div>
         </div>

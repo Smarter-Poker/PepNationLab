@@ -7,6 +7,7 @@ import { Star, X, Heart, FileText, Search, SlidersHorizontal, RotateCcw, Check }
 import RecommendationStrip, { type RecommendationItem } from './RecommendationStrip';
 import { getProductImage, toTitleCase } from '@/lib/categoryImage';
 import PeptideVialCard from '@/components/PeptideVialCard';
+import { toast } from 'sonner';
 
 interface ProductItem {
   id: string;
@@ -1228,10 +1229,10 @@ export default function AgentStorefrontGrid({
           }}
           style={{
             position: 'fixed',
-            bottom: 'calc(12px + env(safe-area-inset-bottom, 0px))',
-            right: '12px',
-            width: 96,
-            height: 96,
+            bottom: 'calc(24px + env(safe-area-inset-bottom, 0px))',
+            right: '20px',
+            width: 80,
+            height: 80,
             background: 'transparent',
             border: 'none',
             overflow: 'visible',
@@ -1253,10 +1254,10 @@ export default function AgentStorefrontGrid({
           }}
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/cart-icon.png" width={144} height={144} alt="Cart" style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', maxWidth: 'none', objectFit: 'contain' }} />
+          <img src="/cart-icon.png" width={96} height={96} alt="Cart" style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', maxWidth: 'none', objectFit: 'contain' }} />
           {totalCartItems > 0 && (
             <span style={{
-              position: 'absolute', top: -4, right: -4, width: 24, height: 24,
+              position: 'absolute', top: -2, right: -2, width: 24, height: 24,
               borderRadius: '50%', background: '#14B8A6', color: '#FFFFFF',
               fontSize: '0.8rem', fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center',
               boxShadow: '0 2px 4px rgba(0,0,0,0.5), 0 0 0 1.5px rgba(255,255,255,0.3)',
@@ -1581,7 +1582,7 @@ export default function AgentStorefrontGrid({
                 {(() => {
                   const firstVariant = detailProduct.variants[0];
                   const pid = firstVariant?.product_id;
-                  const coaUrl = pid ? coaByProductId[pid] : undefined;
+                  const coaUrl = pid ? coaByProductId?.[pid] : undefined;
                   if (!coaUrl) return null;
                   return (
                     <div style={{ marginBottom: 'var(--space-6)' }}>
