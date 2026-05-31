@@ -579,13 +579,8 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // ── SALES TAX REMOVED ─────────────────────────────
     // Tax calculation has been permanently disabled globally.
-    const taxAmount = 0;
-    const taxJurisdiction: string | null = null;
-    const taxExemptionId: string | null = null;
-
-    const grossTotal = Math.max(0, subtotal - discountAmount) + shippingCost + taxAmount;
+    const grossTotal = Math.max(0, subtotal - discountAmount) + shippingCost;
 
     const total = Math.max(0, grossTotal);
 
@@ -643,9 +638,7 @@ export async function POST(request: NextRequest) {
         discount_amount: discountAmount,
         coupon_code: appliedCouponCode,
         total: total,
-        tax_amount: taxAmount,
-        tax_jurisdiction: taxJurisdiction,
-        tax_exemption_id: taxExemptionId,
+
 
         idempotency_key: idempotencyKey ?? null,
       })

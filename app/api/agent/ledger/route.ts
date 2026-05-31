@@ -19,7 +19,7 @@ export async function GET(req: Request) {
         created_at, 
         total, 
         shipping_cost, 
-        tax_amount,
+
         discount_amount,
         status,
         fulfillment_method,

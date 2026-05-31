@@ -1,29 +1,39 @@
 const { createClient } = require('@supabase/supabase-js');
-const url = 'https://ydsaqnnuwyvtyxgvrnys.supabase.co';
-const key = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inlkc2Fxbm51d3l2dHl4Z3ZybnlzIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3OTM3OTM5MiwiZXhwIjoyMDk0OTU1MzkyfQ.M47pyCSGggSXlepDyiQaqEcU2Q3BjLHjR6p6Zqo6gqI';
+require('dotenv').config({ path: '.env.local' });
+const supabaseUrl = (process.env.NEXT_PUBLIC_SUPABASE_URL || '').trim();
+const supabaseAnonKey = (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '').trim();
+const supabaseServiceKey = (process.env.SUPABASE_SERVICE_ROLE_KEY || '').trim();
 
-const supabase = createClient(url, key);
-
-const convId = '5bd64b85-fb41-4cf1-8fc4-9310862088f1'; // Dummy UUID
-
-const ch = supabase.channel(`conversation:${convId}`);
-
-ch.on('postgres_changes', { event: '*', schema: 'public', table: 'messenger_messages' }, (payload) => {
-  console.log('Change received!', payload);
-});
-
-ch.subscribe((status, err) => {
-  console.log('Subscription status:', status);
-  if (err) console.error(err);
+async function run() {
+  const svc = createClient(supabaseUrl, supabaseServiceKey);
   
-  if (status === 'SUBSCRIBED') {
-    console.log('Successfully connected!');
-    // Trigger an insert manually using REST
-    supabase.from('messenger_messages').insert({
-       conversation_id: convId,
-       sender_id: '1e5e6e8e-d983-4a11-8be5-6f6f1c4e7239', // Need a valid user id
-       text: 'Hello test',
-       message_type: 'text'
-    }).then(res => console.log('Insert result:', res));
-  }
-});
+  // Find a conversation
+  const { data: conv } = await svc.from('messenger_conversations').select('id').limit(1).single();
+  if (!conv) { console.log('no conversation'); return; }
+  const convId = conv.id;
+  console.log('Subscribing to conv', convId);
+
+  const ch = svc.channel(`conversation:${convId}`);
+  ch.on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messenger_messages', filter: `conversation_id=eq.${convId}` }, (payload) => {
+    console.log('REALTIME INSERT', payload);
+  });
+  
+  ch.subscribe(async (status) => {
+    console.log('Status:', status);
+    if (status === 'SUBSCRIBED') {
+      console.log('Inserting message...');
+      await svc.from('messenger_messages').insert({
+        conversation_id: convId,
+        sender_id: '844dca4b-6f01-4779-bc95-bfa1e0809c0c',
+        message_type: 'text',
+        text: 'Hello from test',
+        client_message_id: 'test-123'
+      });
+      setTimeout(() => {
+        console.log('Done wait');
+        process.exit(0);
+      }, 5000);
+    }
+  });
+}
+run();

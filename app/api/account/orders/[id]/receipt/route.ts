@@ -30,7 +30,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
     .select(`
       id, buyer_id, agent_id, status, payment_method, fulfillment_method,
       shipping_address, shipping_cost, subtotal, discount_amount, coupon_code,
-      tax_amount, total, tracking_number, buyer_name, buyer_email,
+      total, tracking_number, buyer_name, buyer_email,
       created_at, agent_approved_at
     `)
     .eq('id', id)

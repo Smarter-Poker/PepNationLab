@@ -1229,7 +1229,9 @@ export default function AgentStorefrontGrid({
       {/* Floating Cart — Bottom Right Corner */}
       <div style={{ position: 'fixed', bottom: 'calc(24px + env(safe-area-inset-bottom, 0px))', right: 24, zIndex: 900 }}>
         {/* Floating Cart Button */}
-        <button
+        <div
+          role="button"
+          tabIndex={0}
           onClick={() => {
             if (totalCartItems === 0) {
               setCartToast(true);
@@ -1255,7 +1257,8 @@ export default function AgentStorefrontGrid({
             cursor: 'pointer',
             transition: 'transform 0.2s, filter 0.2s',
             filter: 'drop-shadow(0 8px 16px rgba(0,0,0,0.8))',
-            WebkitTapHighlightColor: 'transparent'
+            WebkitTapHighlightColor: 'transparent',
+            boxSizing: 'border-box'
           }}
           onMouseEnter={e => { 
             e.currentTarget.style.transform = 'scale(1.05)'; 
@@ -1279,7 +1282,7 @@ export default function AgentStorefrontGrid({
               {totalCartItems}
             </span>
           )}
-        </button>
+        </div>
 
           {/* Cart dropdown */}
           <AnimatePresence>
