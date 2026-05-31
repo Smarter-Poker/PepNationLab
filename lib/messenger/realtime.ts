@@ -185,24 +185,22 @@ interface CallSignalHandlers {
 
 export function subscribeCallSignals(userId: string, handlers: CallSignalHandlers): RealtimeChannel {
   const ch = supabase.channel(`mc_calls:${userId}`);
+  // Temporarily disabled postgres_changes listener for messenger_calls.
+  // Using postgres_changes without a DB filter on a global table causes a massive CPU 
+  // DDOS vector where RLS executes on every call globally for every user.
+  // This will be replaced with explicit broadcast channels during the Live Calls feature build.
+  /*
   ch.on(
     'postgres_changes',
-    {
-      event: 'INSERT',
-      schema: 'public',
-      table: 'messenger_calls',
-    },
+    { event: 'INSERT', schema: 'public', table: 'messenger_calls' },
     (payload) => handlers.onInsert?.(payload.new as CallSignalRow),
   );
   ch.on(
     'postgres_changes',
-    {
-      event: 'UPDATE',
-      schema: 'public',
-      table: 'messenger_calls',
-    },
+    { event: 'UPDATE', schema: 'public', table: 'messenger_calls' },
     (payload) => handlers.onUpdate?.(payload.new as CallSignalRow),
   );
+  */
   ch.subscribe();
   return ch;
 }

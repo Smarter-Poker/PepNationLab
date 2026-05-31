@@ -70,7 +70,7 @@ export async function POST(req: NextRequest) {
       .eq('id', parsed.data.beforeId)
       .maybeSingle();
     if (cursor?.created_at) {
-      query = query.lt('created_at', cursor.created_at);
+      query = query.or(`created_at.lt.${cursor.created_at},and(created_at.eq.${cursor.created_at},id.lt.${parsed.data.beforeId})`);
     }
   }
 

@@ -189,16 +189,21 @@ export async function POST(request: NextRequest) {
       }
 
       let availableStock = Number(dbProduct.inventory_count);
+      let bypassInventoryCheck = false;
       
       // If it's a researcher buying from an agent's store, and they want it shipped,
       // it ships from the agent's local on-hand inventory.
       // If they choose 'agent_pickup', it is fulfilled via a stacked bulk shipment
-      // from main China inventory directly to the agent, so we check main stock instead.
+      // from main China inventory directly to the agent.
       if (agentProfile && !isAgentSelfBuy && fulfillmentMethod === 'ship') {
          availableStock = agentStockMap[cartItem.id] || 0;
+      } else if (fulfillmentMethod === 'agent_pickup') {
+         // Agent pickup orders are pre-ordered in bulk from China, so we don't
+         // want to block checkout if the global system says '0' stock.
+         bypassInventoryCheck = true;
       }
 
-      if (availableStock < qty) {
+      if (!bypassInventoryCheck && availableStock < qty) {
         return NextResponse.json(
           { error: `Insufficient inventory for "${dbProduct.name}". Only ${availableStock} remaining.` },
           { status: 400 }
