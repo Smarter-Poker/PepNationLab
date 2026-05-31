@@ -1179,7 +1179,7 @@ export default function MessagePane({ userId, activeCall, setActiveCall }: Props
 
               if (isBlockedSender && conversationType !== 'direct') {
                 return (
-                  <div key={m.id} ref={isFirst ? topElementRef : null}>
+                  <div key={m.id} ref={index === 0 ? topElementRef : null}>
                     {timestampBanner}
                     <div
                       data-msg-id={m.id}
@@ -1202,7 +1202,7 @@ export default function MessagePane({ userId, activeCall, setActiveCall }: Props
                 );
               }
               return (
-                <div key={m.id} ref={isFirst ? topElementRef : null} style={{ 
+                <div key={m.id} ref={index === 0 ? topElementRef : null} style={{ 
                   display: 'flex', 
                   flexDirection: 'column', 
                   width: '100%',
