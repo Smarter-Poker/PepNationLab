@@ -12,56 +12,56 @@ export const PAYMENT_METHODS = [
     key: 'zelle',
     label: 'Zelle',
     placeholder: 'Phone Number Or Email',
-    icon: <img src="/payment-logos/zelle.svg" alt="Zelle" style={{ height: 28, width: 'auto', objectFit: 'contain' }} />,
+    icon: <img src="/payment-logos/zelle.svg" alt="Zelle" style={{ height: 20, width: 60, objectFit: 'contain' }} />,
     color: '#6B35C4',
   },
   {
     key: 'cashapp',
     label: 'Cash App',
     placeholder: '$Cashtag (E.g. $YourName)',
-    icon: <img src="/payment-logos/cashapp.svg" alt="Cash App" style={{ height: 28, width: 'auto', objectFit: 'contain' }} />,
+    icon: <img src="/payment-logos/cashapp.svg" alt="Cash App" style={{ height: 20, width: 60, objectFit: 'contain' }} />,
     color: '#00D632',
   },
   {
     key: 'venmo',
     label: 'Venmo',
     placeholder: '@Username (E.g. @YourName)',
-    icon: <img src="/payment-logos/venmo.svg" alt="Venmo" style={{ height: 28, width: 'auto', objectFit: 'contain' }} />,
+    icon: <img src="/payment-logos/venmo.svg" alt="Venmo" style={{ height: 20, width: 60, objectFit: 'contain' }} />,
     color: '#3D95CE',
   },
   {
     key: 'paypal',
     label: 'PayPal',
     placeholder: 'Email Or @Username',
-    icon: <img src="/payment-logos/paypal.svg" alt="PayPal" style={{ height: 28, width: 'auto', objectFit: 'contain' }} />,
+    icon: <img src="/payment-logos/paypal.svg" alt="PayPal" style={{ height: 20, width: 60, objectFit: 'contain' }} />,
     color: '#003087',
   },
   {
     key: 'apple_cash',
     label: 'Apple Cash',
     placeholder: 'Phone Number Or Apple ID Email',
-    icon: <img src="/payment-logos/apple_cash.svg" alt="Apple Cash" style={{ height: 28, width: 'auto', objectFit: 'contain' }} />,
+    icon: <img src="/payment-logos/apple_cash.svg" alt="Apple Cash" style={{ height: 20, width: 60, objectFit: 'contain' }} />,
     color: '#E0E0E0',
   },
   {
     key: 'google_wallet',
     label: 'Google Wallet',
     placeholder: 'Gmail Address',
-    icon: <img src="/payment-logos/google_wallet.svg" alt="Google Wallet" style={{ height: 28, width: 'auto', objectFit: 'contain' }} />,
+    icon: <img src="/payment-logos/google_wallet.svg" alt="Google Wallet" style={{ height: 20, width: 60, objectFit: 'contain' }} />,
     color: '#4285F4',
   },
   {
     key: 'wise',
     label: 'Wise',
     placeholder: 'Email Or Wise Username',
-    icon: <img src="/payment-logos/wise.svg" alt="Wise" style={{ height: 28, width: 'auto', objectFit: 'contain' }} />,
+    icon: <img src="/payment-logos/wise.svg" alt="Wise" style={{ height: 20, width: 60, objectFit: 'contain' }} />,
     color: '#9FE870',
   },
   {
     key: 'chime',
     label: 'Chime',
     placeholder: 'Chime Username Or Link',
-    icon: <img src="/payment-logos/chime.svg" alt="Chime" style={{ height: 28, width: 'auto', objectFit: 'contain' }} />,
+    icon: <img src="/payment-logos/chime.svg" alt="Chime" style={{ height: 20, width: 60, objectFit: 'contain' }} />,
     color: '#3ABA78',
   },
 ] as const;
@@ -191,8 +191,8 @@ export default function PaymentMethodsPanel({
             fontSize: '0.72rem',
             fontWeight: 700,
             color: 'var(--teal)',
-            background: 'rgba(192,184,168,0.1)',
-            border: '1px solid rgba(192,184,168,0.25)',
+            background: 'rgba(0,196,188,0.1)',
+            border: '1px solid rgba(0,196,188,0.25)',
             borderRadius: 'var(--radius-full)',
             padding: '3px 10px',
             whiteSpace: 'nowrap',
@@ -217,14 +217,14 @@ export default function PaymentMethodsPanel({
             <div
               key={method.key}
               style={{
-                borderRadius: 'var(--radius-lg)',
+                borderRadius: 'var(--radius-md)',
                 border: state.enabled
-                  ? `1px solid rgba(192,184,168,0.4)`
+                  ? `1px solid rgba(0,196,188,0.4)`
                   : '1px solid rgba(255,255,255,0.08)',
                 background: state.enabled
-                  ? 'rgba(192,184,168,0.06)'
+                  ? 'rgba(0,196,188,0.06)'
                   : 'var(--surface-3)',
-                boxShadow: state.enabled ? 'inset 0 1px 1px rgba(0,0,0,0.2)' : 'none',
+                boxShadow: state.enabled ? 'inset 0 1px 4px rgba(0,0,0,0.4)' : 'none',
                 overflow: 'hidden',
                 transition: 'all 0.2s ease',
               }}
@@ -320,11 +320,12 @@ export default function PaymentMethodsPanel({
                     onChange={e => setHandle(method.key, e.target.value)}
                     onClick={e => e.stopPropagation()}
                     style={{
-                      background: 'rgba(255,255,255,0.05)',
-                      boxShadow: 'inset 0 1px 1px rgba(0,0,0,0.2)',
+                      background: 'var(--surface-2)',
+                      border: '1px solid',
                       borderColor: hasError
                         ? 'var(--red)'
-                        : 'rgba(192,184,168,0.4)',
+                        : 'rgba(0,196,188,0.4)',
+                      boxShadow: 'inset 0 1px 4px rgba(0,0,0,0.4)',
                     }}
                     autoComplete="off"
                     aria-label={`${method.label} Contact Info`}

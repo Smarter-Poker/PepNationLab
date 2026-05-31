@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import {
   subscribeMyParticipants,
@@ -40,6 +40,8 @@ interface MessengerConversationSummary {
  * badge.
  */
 export default function MessageBell({ onViewAll, dropUp }: { onViewAll: () => void; dropUp?: boolean }) {
+  const pathname = usePathname();
+  const isMessengerActive = pathname?.startsWith('/messenger');
   const [unreadCount, setUnreadCount] = useState(0);
   const [messages, setMessages] = useState<InboxMessage[]>([]);
   const [open, setOpen] = useState(false);
@@ -238,7 +240,7 @@ export default function MessageBell({ onViewAll, dropUp }: { onViewAll: () => vo
         onMouseLeave={e => { if (!open) e.currentTarget.style.background = 'none'; }}
       >
         <img src="/images/messenger-icon.png" alt="Messages" width={42} height={42} style={{ transition: 'opacity 0.2s', display: 'block' }} />
-        {unreadCount > 0 && (
+        {unreadCount > 0 && !isMessengerActive && (
           <span style={{
             position: 'absolute', top: 2, right: 2,
             background: '#E53E3E',

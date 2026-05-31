@@ -230,6 +230,12 @@ export default function MessengerShell({ userId }: Props) {
       try {
         // Skip if user is actively looking at this conversation.
         const hidden = typeof document !== 'undefined' && document.visibilityState !== 'visible';
+        
+        // If the user is physically looking at the messenger app (any conversation), 
+        // we NEVER push OS notifications because it's intrusive.
+        const isMessengerActive = typeof window !== 'undefined' && window.location.pathname.startsWith('/messenger');
+        if (isMessengerActive && !hidden) return;
+
         const lookingAtThisConv =
           activeIdRef.current === m.conversation_id && !hidden;
         if (lookingAtThisConv) return;

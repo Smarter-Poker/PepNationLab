@@ -29,11 +29,7 @@ export async function POST(req: NextRequest) {
   if (!participant) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
   // Audit11: explicit p_caller_id so the SECURITY DEFINER RPC works when
-  // called via the service-role client (auth.uid() returns NULL under
-  // service-role JWT, and the RPC has a service_role / postgres bypass
-  // that trusts p_caller_id). The RPC returns predictable error codes:
-  //   42501 unauthorized / not_a_participant
-  //   22023 message_not_in_conversation
+  // called via the service-role client.
   const svc = await createServiceClient();
   const { data: prefs } = await svc
     .from('notification_preferences')
@@ -41,9 +37,7 @@ export async function POST(req: NextRequest) {
     .eq('user_id', user.id)
     .single();
 
-  if (prefs && prefs.send_read_receipts === false) {
-    return NextResponse.json({ ok: true });
-  }
+  const updateReadId = prefs?.send_read_receipts !== false;
 
   const { error: rpcErr } = await svc.rpc('fn_messenger_mark_read', {
     p_caller_id: user.id,
@@ -62,6 +56,15 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
     return NextResponse.json({ error: msg || 'Mark Read Failed' }, { status: 500 });
+  }
+
+  // Audit15: If the user disabled read receipts, wipe the last_read_message_id 
+  // so the sender doesn't see it, but we preserve last_read_at and unread_count=0.
+  if (!updateReadId) {
+    await svc.from('messenger_participants')
+      .update({ last_read_message_id: null })
+      .eq('conversation_id', parsed.data.conversationId)
+      .eq('user_id', user.id);
   }
 
   // Also clear any 'new_message' bell notifications for this user
