@@ -27,7 +27,7 @@ export async function GET(req: NextRequest) {
       .update({ status: 'missed', ended_at: nowIso })
       .eq('status', 'ringing')
       .lt('started_at', ringingCutoff)
-      .select('id'),
+      .select('id, conversation_id, initiator_id, call_type'),
     svc
       .from('messenger_calls')
       .update({ status: 'ended', ended_at: nowIso })
@@ -39,8 +39,27 @@ export async function GET(req: NextRequest) {
   if (missedRes.error) return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
   if (staleRes.error) return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
 
+  if (missedRes.data && missedRes.data.length > 0) {
+    const messagesToInsert = missedRes.data.map(call => {
+      const typeStr = call.call_type === 'video' ? 'Video' : 'Voice';
+      return {
+        conversation_id: call.conversation_id,
+        sender_id: call.initiator_id,
+        message_type: 'system',
+        text: `📞 Missed ${typeStr} Call`,
+        status: 'sent',
+        metadata: { call_id: call.id, status: 'missed_timeout' }
+      };
+    });
+    
+    if (messagesToInsert.length > 0) {
+      await svc.from('messenger_messages').insert(messagesToInsert);
+    }
+  }
+
   return NextResponse.json({
     marked_missed: (missedRes.data ?? []).length,
     closed_stale_active: (staleRes.data ?? []).length,
   });
 }
+

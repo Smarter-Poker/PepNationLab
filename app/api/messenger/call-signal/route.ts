@@ -163,6 +163,18 @@ export async function POST(req: NextRequest) {
         .maybeSingle();
       return NextResponse.json({ call: current, alreadyResolved: true });
     }
+    
+    // Insert Missed Call system message
+    const typeStr = updated.call_type === 'video' ? 'Video' : 'Voice';
+    await svc.from('messenger_messages').insert({
+      conversation_id: updated.conversation_id,
+      sender_id: updated.initiator_id,
+      message_type: 'system',
+      text: `📞 Missed ${typeStr} Call`,
+      status: 'sent',
+      metadata: { call_id: updated.id, status: 'declined' }
+    });
+
     return NextResponse.json({ call: updated });
   }
 
@@ -189,5 +201,38 @@ export async function POST(req: NextRequest) {
     .select('*')
     .maybeSingle();
   if (upErr) return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
+  
+  if (updated) {
+    const typeStr = updated.call_type === 'video' ? 'Video' : 'Voice';
+    
+    if (callIsActive && updated.answered_at) {
+       const start = new Date(updated.answered_at).getTime();
+       const end = new Date(updated.ended_at!).getTime();
+       const diffSecs = Math.max(0, Math.floor((end - start) / 1000));
+       const mins = Math.floor(diffSecs / 60);
+       const secs = diffSecs % 60;
+       const durationStr = mins > 0 ? `${mins}m ${secs}s` : `${secs}s`;
+
+       await svc.from('messenger_messages').insert({
+         conversation_id: updated.conversation_id,
+         sender_id: updated.initiator_id,
+         message_type: 'system',
+         text: `📞 ${typeStr} Call Ended (${durationStr})`,
+         status: 'sent',
+         metadata: { call_id: updated.id, status: 'ended', duration: diffSecs }
+       });
+    } else {
+       await svc.from('messenger_messages').insert({
+         conversation_id: updated.conversation_id,
+         sender_id: updated.initiator_id,
+         message_type: 'system',
+         text: `📞 Missed ${typeStr} Call`,
+         status: 'sent',
+         metadata: { call_id: updated.id, status: 'ended_before_answer' }
+       });
+    }
+  }
+
   return NextResponse.json({ call: updated });
 }
+
