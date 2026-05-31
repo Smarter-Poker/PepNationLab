@@ -135,7 +135,13 @@ export default function AgentStorefrontConfig({
 
   return (
     <div style={{ maxWidth: 800 }}>
-      <div className="card-metal" style={{ padding: 'var(--space-8)' }}>
+      <div className="card-metal" style={{
+        padding: 'var(--space-8)',
+        border: '2px solid rgba(192,184,168,0.4)',
+        boxShadow: '0 12px 40px rgba(0,0,0,0.6), inset 0 1px 2px rgba(255,255,255,0.1)',
+        borderRadius: '12px',
+        background: 'linear-gradient(180deg, var(--surface-1) 0%, var(--surface-2) 100%)'
+      }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 'var(--space-6)' }}>
           <div>
             <h3 style={{ fontSize: '1.2rem', marginBottom: 'var(--space-2)' }}>Storefront Setup</h3>
@@ -312,15 +318,15 @@ export default function AgentStorefrontConfig({
             <input type="text" className="form-input" value={whStreet2} onChange={(e) => setWhStreet2(e.target.value)} />
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', gap: 'var(--space-3)' }}>
-            <div className="form-group">
+            <div className="form-group" style={{ marginTop: 0 }}>
               <label className="form-label">City</label>
               <input type="text" className="form-input" value={whCity} onChange={(e) => setWhCity(e.target.value)} />
             </div>
-            <div className="form-group">
+            <div className="form-group" style={{ marginTop: 0 }}>
               <label className="form-label">State</label>
               <input type="text" className="form-input" maxLength={2} value={whState} onChange={(e) => setWhState(e.target.value.toUpperCase())} />
             </div>
-            <div className="form-group">
+            <div className="form-group" style={{ marginTop: 0 }}>
               <label className="form-label">Zip</label>
               <input type="text" className="form-input" maxLength={10} value={whZip} onChange={(e) => setWhZip(e.target.value)} />
             </div>
@@ -344,7 +350,25 @@ export default function AgentStorefrontConfig({
           </div>
 
           <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 'var(--space-4)' }}>
-            <button type="submit" className="btn btn-primary btn-lg" disabled={loading}>
+            <button
+              type="submit"
+              disabled={loading}
+              style={{
+                minWidth: 160,
+                background: 'linear-gradient(180deg, rgba(0,196,188,1) 0%, rgba(0,140,135,1) 100%)',
+                border: '1px solid #00C4BC',
+                boxShadow: '0 4px 12px rgba(0,196,188,0.3), inset 0 1px 0 rgba(255,255,255,0.3)',
+                color: '#fff',
+                textShadow: '0 1px 2px rgba(0,0,0,0.2)',
+                fontWeight: 600,
+                borderRadius: '8px',
+                padding: '10px 24px',
+                transition: 'all 0.2s ease',
+                cursor: loading ? 'not-allowed' : 'pointer',
+                opacity: loading ? 0.7 : 1,
+                fontSize: '1rem'
+              }}
+            >
               {loading ? 'Saving Changes...' : 'Save Configuration'}
             </button>
           </div>
@@ -428,7 +452,13 @@ function PricingConfig({ agentId }: { agentId: string }) {
   });
 
   return (
-    <div className="card-metal" style={{ padding: 'var(--space-8)', marginTop: 'var(--space-6)' }}>
+    <div className="card-metal" style={{
+      padding: 'var(--space-8)', marginTop: 'var(--space-6)',
+      border: '2px solid rgba(192,184,168,0.4)',
+      boxShadow: '0 12px 40px rgba(0,0,0,0.6), inset 0 1px 2px rgba(255,255,255,0.1)',
+      borderRadius: '12px',
+      background: 'linear-gradient(180deg, var(--surface-1) 0%, var(--surface-2) 100%)'
+    }}>
       <h3 style={{ fontSize: '1.2rem', marginBottom: 'var(--space-2)' }}>Pricing & Discounts</h3>
       <p style={{ color: 'var(--grey-400)', fontSize: '0.9rem', marginBottom: 'var(--space-6)' }}>
         Configure quantity-based pricing and bulk volume discounts for your storefront.

@@ -12,56 +12,56 @@ export const PAYMENT_METHODS = [
     key: 'zelle',
     label: 'Zelle',
     placeholder: 'Phone Number Or Email',
-    icon: '💳',
+    icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" width="20" height="20"><path d="M5 5h14L5 19h14"/></svg>,
     color: '#6B35C4',
   },
   {
     key: 'cashapp',
     label: 'Cash App',
     placeholder: '$Cashtag (E.g. $YourName)',
-    icon: '💚',
-    color: '#00C244',
+    icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="20" height="20"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>,
+    color: '#00D632',
   },
   {
     key: 'venmo',
     label: 'Venmo',
     placeholder: '@Username (E.g. @YourName)',
-    icon: '💙',
+    icon: <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20"><path d="M13 3l-6 13h5l4.5-9.5A3.5 3.5 0 0 0 13 3z"/></svg>,
     color: '#3D95CE',
   },
   {
     key: 'paypal',
     label: 'PayPal',
     placeholder: 'Email Or @Username',
-    icon: '🅿️',
+    icon: <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20"><path d="M7 4h7a5 5 0 0 1 0 10H9v6H5V4zm4 6v-2h-2v2h2z"/></svg>,
     color: '#003087',
   },
   {
     key: 'apple_cash',
     label: 'Apple Cash',
     placeholder: 'Phone Number Or Apple ID Email',
-    icon: '🍎',
-    color: '#555555',
+    icon: <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20"><path d="M12 2C11 2 10 3 10 4s1 2 2 2 2-1 2-2-1-2-2-2zm-1 5a5.5 5.5 0 0 0-4 4.5c-.5 3 .5 6.5 2.5 9.5 1 1.5 2.5 2.5 4 2.5.5 0 1-.5 1.5-.5s1 .5 1.5.5c1.5 0 3-1 4-2.5 2-3 3-6.5 2.5-9.5A5.5 5.5 0 0 0 19 7c-1.5 0-2.5.5-3.5 1C14.5 7.5 13.5 7 12 7c-1 0-2 0-3 .5z"/></svg>,
+    color: '#E0E0E0',
   },
   {
     key: 'google_wallet',
     label: 'Google Wallet',
     placeholder: 'Gmail Address',
-    icon: '🔵',
+    icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="20" height="20"><rect x="3" y="4" width="18" height="16" rx="2" ry="2"/><line x1="3" y1="10" x2="21" y2="10"/><path d="M16 14h.01"/></svg>,
     color: '#4285F4',
   },
   {
     key: 'wise',
     label: 'Wise',
     placeholder: 'Email Or Wise Username',
-    icon: '🌍',
-    color: '#37517E',
+    icon: <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20"><path d="M2 12l5-9h6l-5 9h-4zm15-9l-5 9h-4l5-9h4z"/></svg>,
+    color: '#9FE870',
   },
   {
     key: 'chime',
     label: 'Chime',
     placeholder: 'Chime Username Or Link',
-    icon: '🟢',
+    icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="20" height="20"><circle cx="12" cy="12" r="10"/><path d="M15 9a4 4 0 0 0-6 0v6a4 4 0 0 0 6 0"/></svg>,
     color: '#3ABA78',
   },
 ] as const;
@@ -174,7 +174,13 @@ export default function PaymentMethodsPanel({
   const enabledCount = PAYMENT_METHODS.filter(m => methods[m.key].enabled).length;
 
   return (
-    <div className="card-metal" style={{ padding: 'var(--space-6)', marginTop: 'var(--space-6)' }}>
+    <div className="card-metal" style={{
+      padding: 'var(--space-6)', marginTop: 'var(--space-6)',
+      border: '2px solid rgba(192,184,168,0.4)',
+      boxShadow: '0 12px 40px rgba(0,0,0,0.6), inset 0 1px 2px rgba(255,255,255,0.1)',
+      borderRadius: '12px',
+      background: 'linear-gradient(180deg, var(--surface-1) 0%, var(--surface-2) 100%)'
+    }}>
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 'var(--space-2)', gap: 'var(--space-4)', flexWrap: 'wrap' }}>
         <div>
           <h4 style={{ color: 'var(--teal)', marginBottom: 'var(--space-1)' }}>
@@ -202,8 +208,14 @@ export default function PaymentMethodsPanel({
       </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)', marginTop: 'var(--space-5)' }}>
-        {PAYMENT_METHODS.map((method) => {
-          const state = methods[method.key];
+        {PAYMENT_METHODS
+          .map(m => ({ ...m, state: methods[m.key] }))
+          .sort((a, b) => {
+            if (a.state.enabled === b.state.enabled) return 0;
+            return a.state.enabled ? -1 : 1;
+          })
+          .map((method) => {
+          const state = method.state;
           const hasError = !!errors[method.key];
 
           return (
@@ -342,8 +354,20 @@ export default function PaymentMethodsPanel({
         <button
           onClick={handleSave}
           disabled={saving}
-          className="btn btn-primary"
-          style={{ minWidth: 160 }}
+          style={{
+            minWidth: 160,
+            background: 'linear-gradient(180deg, rgba(0,196,188,1) 0%, rgba(0,140,135,1) 100%)',
+            border: '1px solid #00C4BC',
+            boxShadow: '0 4px 12px rgba(0,196,188,0.3), inset 0 1px 0 rgba(255,255,255,0.3)',
+            color: '#fff',
+            textShadow: '0 1px 2px rgba(0,0,0,0.2)',
+            fontWeight: 600,
+            borderRadius: '8px',
+            padding: '10px 24px',
+            transition: 'all 0.2s ease',
+            cursor: saving ? 'not-allowed' : 'pointer',
+            opacity: saving ? 0.7 : 1,
+          }}
         >
           {saving ? 'Saving...' : 'Save Payment Methods'}
         </button>
