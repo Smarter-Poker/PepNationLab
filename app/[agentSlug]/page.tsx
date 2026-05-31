@@ -247,7 +247,6 @@ export default async function AgentStorefrontPage({ params }: Props) {
           ) : null}
           <div className="sf-nav-brand-text">
             <div className="sf-nav-brand-name">{displayName}</div>
-            <div className="sf-nav-brand-sub">Powered By <span style={{ color: '#C0B8A8' }}>Pep Nation Lab</span></div>
           </div>
         </div>
 

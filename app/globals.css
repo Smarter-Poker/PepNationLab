@@ -169,17 +169,20 @@
   height: 32px;
   padding: 0;
   color: var(--grey-400, #A8B4C0);
+  background: linear-gradient(145deg, var(--surface-2, #162230), var(--surface-3, #1D2D3E));
+  border: 1px solid rgba(255, 255, 255, 0.03);
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 2px 2px 5px rgba(0,0,0,0.3), -1px -1px 3px rgba(255,255,255,0.03);
 }
 .premium-btn:hover {
   color: var(--teal, #00C4BC);
-  background: var(--surface-3, #1D2D3E);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.2), inset 0 1px 1px rgba(255,255,255,0.05);
-  transform: translateY(-1px);
+  background: linear-gradient(145deg, var(--surface-3, #1D2D3E), var(--surface-2, #162230));
+  box-shadow: inset 1px 1px 4px rgba(0,0,0,0.5), inset -1px -1px 2px rgba(255,255,255,0.02);
+  transform: translateY(1px);
 }
 
 /* ============================================

@@ -104,13 +104,17 @@ export default function MessageComposer({ conversationId, selfId, replyTo, onCle
   }, [closeAllPopovers]);
 
   useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
+    const handleClickOutside = (e: MouseEvent | TouchEvent) => {
       if (composerRef.current && !composerRef.current.contains(e.target as Node)) {
         closeAllPopovers();
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener('touchstart', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('touchstart', handleClickOutside);
+    };
   }, [closeAllPopovers]);
 
   const adminMention = useMemo(() => ADMIN_MENTION_RE.test(text), [text]);
@@ -446,7 +450,7 @@ export default function MessageComposer({ conversationId, selfId, replyTo, onCle
               onClick={() => togglePopover(setShowAttach)}
               style={{
                 background: 'linear-gradient(145deg, var(--surface-2, #162230), var(--surface-3, #1D2D3E))',
-                border: '1px solid var(--surface-3, #1D2D3E)',
+                border: '1px solid rgba(255, 255, 255, 0.03)',
                 borderRadius: '50%',
                 width: 32,
                 height: 32,
@@ -455,7 +459,7 @@ export default function MessageComposer({ conversationId, selfId, replyTo, onCle
                 justifyContent: 'center',
                 cursor: 'pointer',
                 color: 'var(--grey-400, #A8B4C0)',
-                boxShadow: '0 4px 12px rgba(0,0,0,0.2), inset 0 1px 1px rgba(255,255,255,0.05)',
+                boxShadow: '2px 2px 5px rgba(0,0,0,0.3), -1px -1px 3px rgba(255,255,255,0.03)',
                 transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
               }}
               onMouseEnter={(e) => { e.currentTarget.style.transform = 'scale(1.05)'; e.currentTarget.style.color = 'var(--white)'; }}
@@ -486,13 +490,17 @@ export default function MessageComposer({ conversationId, selfId, replyTo, onCle
           >
             <textarea
               ref={inputRef}
+              id="message-composer-input"
+              name="message_composer_input"
+              autoComplete="off"
+              spellCheck="true"
               value={text}
               onChange={(e) => { setText(e.target.value.slice(0, MAX_LEN)); pulseTyping(); }}
               onKeyDown={(e) => {
                 if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); void handleSendText(); }
               }}
               onFocus={() => closeAllPopovers()}
-              placeholder="Type a message..."
+              placeholder="Message"
               maxLength={MAX_LEN}
               rows={1}
               aria-label="Message Body"

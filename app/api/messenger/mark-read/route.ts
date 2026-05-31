@@ -86,7 +86,7 @@ export async function POST(req: NextRequest) {
         payload: { participant: updatedParticipant },
       }),
       sendBroadcast({
-        topic: `user:${user.id}`,
+        topic: `user_unread:${user.id}`,
         event: 'participant_updated',
         payload: { participant: updatedParticipant },
       })

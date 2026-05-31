@@ -1024,9 +1024,9 @@ export default function MessagePane({ userId, activeCall, setActiveCall }: Props
               );
             })
         )}
+        <TypingIndicator typingUserIds={typingUserIds} />
         <div ref={messagesEndRef} />
       </div>
-      <TypingIndicator typingUserIds={typingUserIds} />
       <MessageComposer
         conversationId={activeId}
         selfId={userId}

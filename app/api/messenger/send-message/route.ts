@@ -194,7 +194,7 @@ export async function POST(req: NextRequest) {
           });
           // Broadcast to the user's personal channel (for bell/unread updates)
           await sendBroadcast({
-            topic: `user:${p.user_id}`,
+            topic: `user_notify:${p.user_id}`,
             event: 'new_message_notify',
             payload: { message: inserted },
           });

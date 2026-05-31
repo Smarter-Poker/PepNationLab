@@ -81,7 +81,9 @@ export function subscribeTyping(
   selfId: string,
   onEvent: (e: TypingEvent) => void,
 ): { channel: RealtimeChannel; broadcast: (isTyping: boolean) => void } {
-  const ch = supabase.channel(`mt:${conversationId}`);
+  const ch = supabase.channel(`mt:${conversationId}`, {
+    config: { broadcast: { ack: false, self: false } },
+  });
   ch.on('broadcast', { event: 'typing' }, (payload) => {
     if (payload.payload && payload.payload.userId !== selfId) {
       onEvent({ userId: payload.payload.userId, isTyping: !!payload.payload.isTyping, at: payload.payload.at });
@@ -181,7 +183,7 @@ export function subscribeMyParticipants(
   userId: string,
   onChange: MyParticipantsHandler,
 ): RealtimeChannel {
-  const ch = supabase.channel(`user:${userId}`);
+  const ch = supabase.channel(`user_unread:${userId}`);
   ch.on(
     'broadcast',
     { event: 'participant_updated' },
@@ -208,7 +210,7 @@ export function subscribeMyIncomingMessages(
   onInsert: (m: IncomingMessageNotification) => void,
   allowConversationIds?: Set<string>,
 ): RealtimeChannel {
-  const ch = supabase.channel(`user:${userId}`);
+  const ch = supabase.channel(`user_notify:${userId}`);
   ch.on(
     'broadcast',
     { event: 'new_message_notify' },
