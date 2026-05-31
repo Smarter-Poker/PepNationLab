@@ -1014,7 +1014,7 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
                         />
                       </div>
 
-                      <div className="grid-2" style={{ alignItems: 'start' }}>
+                      <div className="grid-2" style={{ alignItems: 'flex-end' }}>
                         <div className="form-group" style={{ marginTop: 0 }}>
                           <label className="form-label">Street Address</label>
                           <input
@@ -1026,7 +1026,7 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
                           />
                         </div>
                         <div className="form-group" style={{ marginTop: 0 }}>
-                          <label className="form-label">Suite Or Apartment</label>
+                          <label className="form-label" style={{ whiteSpace: 'nowrap' }}>Suite Or Apartment</label>
                           <input
                             type="text"
                             className="form-input premium-input"
@@ -1037,7 +1037,7 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
                         </div>
                       </div>
 
-                      <div className="address-city-grid">
+                      <div className="address-city-grid" style={{ alignItems: 'flex-end' }}>
                         <div className="form-group" style={{ marginTop: 0 }}>
                           <label className="form-label">City</label>
                           <input

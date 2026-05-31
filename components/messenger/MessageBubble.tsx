@@ -182,12 +182,15 @@ export default function MessageBubble({
         </div>
       );
     }
+    const isOptimistic = message.id.startsWith('temp-');
+    const opacityStyle = isOptimistic ? { opacity: 0.6, filter: 'grayscale(50%)' } : {};
+
     if (message.message_type === 'image' && message.media_url) {
       return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
           {message.text && <span>{message.text}</span>}
-          <button type="button" onClick={() => setLightbox(true)} aria-label="Open Image"
-            style={{ background: 'transparent', border: 0, padding: 0, cursor: 'zoom-in' }}
+          <button type="button" onClick={() => !isOptimistic && setLightbox(true)} aria-label="Open Image"
+            style={{ background: 'transparent', border: 0, padding: 0, cursor: isOptimistic ? 'default' : 'zoom-in', ...opacityStyle }}
           >
             <img src={message.media_url} alt="Image" loading="lazy"
               onLoad={() => {
@@ -196,7 +199,7 @@ export default function MessageBubble({
                   if (el) el.scrollTop = el.scrollHeight;
                 }
               }}
-              style={{ maxWidth: 320, maxHeight: 240, borderRadius: 10, display: 'block' }}
+              style={{ maxWidth: 320, maxHeight: 240, borderRadius: 10, display: 'block', objectFit: 'cover' }}
             />
           </button>
         </div>
@@ -213,14 +216,14 @@ export default function MessageBubble({
                 if (el) el.scrollTop = el.scrollHeight;
               }
             }}
-            style={{ maxWidth: 320, maxHeight: 240, borderRadius: 10, display: 'block' }}
+            style={{ maxWidth: 320, maxHeight: 240, borderRadius: 10, display: 'block', ...opacityStyle }}
           />
         </div>
       );
     }
     if (message.message_type === 'voice' && message.media_url) {
       return (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6, ...opacityStyle }}>
           {message.text && <span>{message.text}</span>}
           <VoicePlayer src={message.media_url} />
         </div>
@@ -230,11 +233,11 @@ export default function MessageBubble({
       return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
           {message.text && <span>{message.text}</span>}
-          <div style={{ position: 'relative', maxWidth: 320 }}>
+          <div style={{ position: 'relative', maxWidth: 320, ...opacityStyle }}>
             {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
             <video
               src={message.media_url}
-              controls
+              controls={!isOptimistic}
               playsInline
               preload="metadata"
               aria-label={`Video${meta.filename ? `: ${meta.filename}` : ''}`}

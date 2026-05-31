@@ -290,27 +290,46 @@ export default function MessageComposer({ conversationId, selfId, replyTo, onCle
   };
 
   const uploadAndSend = async (blob: Blob, contentType: string, messageType: MessageType, metadata: Record<string, unknown>) => {
-    setSending(true);
-    const sig = await getSignedUpload(contentType, blob.size);
-    if (!sig) { toast('Upload Sign Failed'); setSending(false); return; }
-    const ok = await putBlob(sig.uploadUrl, blob, contentType);
-    if (!ok) { toast('Upload Failed'); setSending(false); return; }
+    const localUrl = URL.createObjectURL(blob);
     const expiresAt =
       pendingExpirySeconds === null
         ? undefined
         : new Date(Date.now() + pendingExpirySeconds * 1000).toISOString();
+    
     const optimistic = buildOptimistic({
       message_type: messageType,
-      media_url: sig.publicUrl,
+      media_url: localUrl,
       media_metadata: metadata,
       expires_at: expiresAt ?? null,
     }, crypto.randomUUID());
+    
+    appendMessage(conversationId, optimistic);
+    setSending(true);
+
+    const sig = await getSignedUpload(contentType, blob.size);
+    if (!sig) { 
+      toast('Upload Sign Failed'); 
+      updateMessage(conversationId, { ...optimistic, metadata: { ...optimistic.metadata, failed: true } });
+      setSending(false); 
+      return; 
+    }
+    const ok = await putBlob(sig.uploadUrl, blob, contentType);
+    if (!ok) { 
+      toast('Upload Failed'); 
+      updateMessage(conversationId, { ...optimistic, metadata: { ...optimistic.metadata, failed: true } });
+      setSending(false); 
+      return; 
+    }
+    
     await sendOptimistic(optimistic, {
       mediaUrl: sig.publicUrl,
       mediaMetadata: metadata,
       messageType,
       expiresAt,
     });
+    
+    // Revoke blob URL after a short delay to ensure image has loaded
+    setTimeout(() => URL.revokeObjectURL(localUrl), 5000);
   };
 
   const handleImage = async (file: File) => {

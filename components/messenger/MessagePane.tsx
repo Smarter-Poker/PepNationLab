@@ -97,6 +97,58 @@ async function markConversationRead(conversationId: string, lastReadMessageId: s
 
 type PushBannerState = 'hidden' | 'default' | 'denied';
 
+function playPopSound() {
+  if (typeof window === 'undefined') return;
+  try {
+    if (navigator.vibrate) navigator.vibrate(20);
+    const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
+    if (!AudioContext) return;
+    const ctx = new AudioContext();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(800, ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(300, ctx.currentTime + 0.1);
+    
+    gain.gain.setValueAtTime(0, ctx.currentTime);
+    gain.gain.linearRampToValueAtTime(0.1, ctx.currentTime + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.1);
+    
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    
+    osc.start();
+    osc.stop(ctx.currentTime + 0.1);
+  } catch {
+    // Ignore autoplay or audio context errors
+  }
+}
+
+function formatMessageTimestamp(dateStr: string): string {
+  const date = new Date(dateStr);
+  const now = new Date();
+  const timeString = date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }).toUpperCase();
+  
+  const isToday = date.getDate() === now.getDate() && date.getMonth() === now.getMonth() && date.getFullYear() === now.getFullYear();
+  if (isToday) return `TODAY AT ${timeString}`;
+  
+  const yesterday = new Date(now);
+  yesterday.setDate(now.getDate() - 1);
+  const isYesterday = date.getDate() === yesterday.getDate() && date.getMonth() === yesterday.getMonth() && date.getFullYear() === yesterday.getFullYear();
+  if (isYesterday) return `YESTERDAY AT ${timeString}`;
+  
+  const diffTime = Math.abs(now.getTime() - date.getTime());
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  if (diffDays < 7) {
+    const weekday = date.toLocaleDateString('en-US', { weekday: 'long' }).toUpperCase();
+    return `${weekday} AT ${timeString}`;
+  }
+  
+  const dateString = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: date.getFullYear() !== now.getFullYear() ? 'numeric' : undefined }).toUpperCase();
+  return `${dateString} AT ${timeString}`;
+}
+
 export default function MessagePane({ userId, activeCall, setActiveCall }: Props) {
   const activeId = useMessengerStore((s) => s.activeConversationId);
   const messagesByConv = useMessengerStore((s) => s.messages);
@@ -516,11 +568,60 @@ export default function MessagePane({ userId, activeCall, setActiveCall }: Props
   useEffect(() => {
     if (!activeId) return;
 
+    const handleSync = async () => {
+      try {
+        const res = await fetch('/api/messenger/get-messages', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ conversationId: activeId, limit: 50 }),
+        });
+        if (!res.ok) return;
+        const json = (await res.json()) as { messages?: Message[]; reactions?: Reaction[] };
+        const list = json.messages ?? [];
+        if (list.length > 0) {
+          const store = useMessengerStore.getState();
+          store.upsertMessages(activeId, list);
+          
+          const map: Record<string, Reaction[]> = {};
+          (json.reactions ?? []).forEach((r) => {
+            (map[r.message_id] ??= []).push(r);
+          });
+          setReactionsByMsg(prev => {
+            const next = { ...prev };
+            Object.keys(map).forEach(k => {
+               const existing = next[k] || [];
+               const newReactions = map[k].filter(nr => !existing.some(e => e.id === nr.id));
+               next[k] = [...existing, ...newReactions];
+            });
+            return next;
+          });
+          
+          const finalLastId = list.length > 0 ? list[0].id : null;
+          if (finalLastId) void markConversationRead(activeId, finalLastId);
+        }
+      } catch (err) {
+        console.warn('Background sync failed:', err);
+      }
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') handleSync();
+    };
+    const handleOnline = () => {
+      handleSync();
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('online', handleOnline);
+
     const { channel: msgChannel, broadcastNewMessage } = subscribeMessages(activeId, {
       onInsert: (m) => {
         appendMessage(activeId, m);
         if (m.sender_id !== userId) {
           void markConversationRead(activeId, m.id);
+          if (document.visibilityState === 'visible') {
+            playPopSound();
+          }
         }
       },
       onUpdate: (m) => updateMessage(activeId, m),
@@ -601,8 +702,9 @@ export default function MessagePane({ userId, activeCall, setActiveCall }: Props
         setTypingUserIds((cur) => cur.filter((u) => !stale.includes(u)));
       }
     }, 1000);
-
     return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('online', handleOnline);
       if (typingSweeperRef.current) clearInterval(typingSweeperRef.current);
       typingSweeperRef.current = null;
       typingExpiryRef.current = {};
@@ -613,7 +715,7 @@ export default function MessagePane({ userId, activeCall, setActiveCall }: Props
       unsubscribe(typing.channel);
       unsubscribe(participantsChannel);
     };
-  }, [activeId, userId, appendMessage, updateMessage, removeMessage]);
+  }, [activeId, userId, appendMessage, updateMessage, removeMessage, setReactionsByMsg]);
 
   useEffect(() => {
     if (!activeId) return;
@@ -1063,9 +1165,7 @@ export default function MessagePane({ userId, activeCall, setActiveCall }: Props
 
               let timestampBanner = null;
               if (isFirst) {
-                const date = new Date(m.created_at);
-                const format = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: 'numeric' });
-                const timeString = format.format(date).toUpperCase().replace(',', ' AT');
+                const timeString = formatMessageTimestamp(m.created_at);
                 timestampBanner = (
                   <div style={{ textAlign: 'center', color: 'rgba(168,180,192,0.45)', fontSize: '0.68rem', fontWeight: 600, margin: '24px 0 16px 0', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
                     {timeString}

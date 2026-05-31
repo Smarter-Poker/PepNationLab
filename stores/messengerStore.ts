@@ -14,6 +14,7 @@ interface MessengerState {
   setMessages: (convId: string, msgs: Message[]) => void;
   appendMessage: (convId: string, msg: Message) => void;
   prependMessages: (convId: string, msgs: Message[]) => void;
+  upsertMessages: (convId: string, msgs: Message[]) => void;
   updateMessage: (convId: string, msg: Message) => void;
   removeMessage: (convId: string, msgId: string) => void;
   setLoadingConversations: (loading: boolean) => void;
@@ -46,6 +47,14 @@ export const useMessengerStore = create<MessengerState>((set, get) => ({
       const newMsgs = msgs.filter((newMsg) => !currentList.some((existing) => existing.id === newMsg.id));
       if (newMsgs.length === 0) return s;
       return { messages: { ...s.messages, [convId]: [...newMsgs, ...currentList] } };
+    }),
+  upsertMessages: (convId, msgs) =>
+    set((s) => {
+      const currentList = s.messages[convId] ?? [];
+      const map = new Map(currentList.map(m => [m.id, m]));
+      msgs.forEach(m => map.set(m.id, m));
+      const sorted = Array.from(map.values()).sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+      return { messages: { ...s.messages, [convId]: sorted } };
     }),
   updateMessage: (convId, msg) =>
     set((s) => ({
