@@ -163,6 +163,24 @@
 }
 
 /* ============================================
+   PREMIUM BUTTON STYLES (MESSENGER)
+   ============================================ */
+.premium-btn {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  color: var(--grey-400, #A8B4C0);
+  border-radius: 50%;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.premium-btn:hover {
+  color: var(--teal, #00C4BC);
+  background: var(--surface-3, #1D2D3E);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2), inset 0 1px 1px rgba(255,255,255,0.05);
+  transform: translateY(-1px);
+}
+
+/* ============================================
    LIGHT MODE — html[data-theme="light"]
    Warm off-white palette, dark charcoal text,
    same sand/teal accent (#C0B8A8).

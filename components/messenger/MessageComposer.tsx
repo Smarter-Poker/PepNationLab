@@ -83,6 +83,34 @@ export default function MessageComposer({ conversationId, selfId, replyTo, onCle
   const broadcastRef = useRef<((isTyping: boolean) => void) | null>(null);
   const lastSentAtRef = useRef(0);
   const stopTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const composerRef = useRef<HTMLDivElement>(null);
+
+  const closeAllPopovers = useCallback(() => {
+    setShowEmoji(false);
+    setShowAttach(false);
+    setShowGif(false);
+    setShowTemplates(false);
+    setShowScheduled(false);
+    setShowExpiry(false);
+    setShowScheduleInput(false);
+  }, []);
+
+  const togglePopover = useCallback((setter: React.Dispatch<React.SetStateAction<boolean>>) => {
+    setter(prev => {
+      if (!prev) closeAllPopovers();
+      return !prev;
+    });
+  }, [closeAllPopovers]);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (composerRef.current && !composerRef.current.contains(e.target as Node)) {
+        closeAllPopovers();
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [closeAllPopovers]);
 
   const adminMention = useMemo(() => ADMIN_MENTION_RE.test(text), [text]);
 
@@ -333,6 +361,7 @@ export default function MessageComposer({ conversationId, selfId, replyTo, onCle
 
   return (
     <div
+      ref={composerRef}
       className="msg-composer"
       style={{
         borderTop: '1px solid var(--surface-3, #1D2D3E)',
@@ -416,7 +445,7 @@ export default function MessageComposer({ conversationId, selfId, replyTo, onCle
           <div style={{ display: 'flex', alignItems: 'center', paddingBottom: 6 }}>
             <button
               type="button"
-              onClick={() => setShowAttach((v) => !v)}
+              onClick={() => togglePopover(setShowAttach)}
               style={{
                 background: 'var(--surface-3, #1D2D3E)',
                 border: 'none',
@@ -428,8 +457,11 @@ export default function MessageComposer({ conversationId, selfId, replyTo, onCle
                 justifyContent: 'center',
                 cursor: 'pointer',
                 color: 'var(--grey-400, #A8B4C0)',
-                transition: 'background 0.2s, color 0.2s',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.2), inset 0 1px 1px rgba(255,255,255,0.05)',
+                transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
               }}
+              onMouseEnter={(e) => { e.currentTarget.style.transform = 'scale(1.05)'; e.currentTarget.style.color = 'var(--white)'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.color = 'var(--grey-400, #A8B4C0)'; }}
               aria-label="Add Media"
               title="Add Media"
             >
@@ -461,7 +493,7 @@ export default function MessageComposer({ conversationId, selfId, replyTo, onCle
               onKeyDown={(e) => {
                 if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); void handleSendText(); }
               }}
-              placeholder="iMessage"
+              placeholder="Message..."
               maxLength={MAX_LEN}
               rows={1}
               aria-label="Message Body"
@@ -480,14 +512,14 @@ export default function MessageComposer({ conversationId, selfId, replyTo, onCle
             <div style={{ display: 'flex', alignItems: 'center', gap: 4, paddingBottom: 2 }}>
               {!text.trim() && (
                 <>
-                  <button type="button" onClick={() => setShowEmoji((v) => !v)} className="composer-icon-btn" aria-label="Insert Emoji" title="Insert Emoji" style={{ width: 28, height: 28, padding: 0 }}>
-                    <Smile size={18} color="var(--grey-400, #A8B4C0)" />
+                  <button type="button" onClick={() => togglePopover(setShowEmoji)} className="composer-icon-btn premium-btn" aria-label="Insert Emoji" title="Insert Emoji">
+                    <Smile size={18} />
                   </button>
-                  <button type="button" onClick={() => setShowScheduleInput((v) => !v)} className="composer-icon-btn" aria-label="Schedule Send" title="Schedule Send" style={{ width: 28, height: 28, padding: 0 }}>
-                    <Calendar size={18} color="var(--grey-400, #A8B4C0)" />
+                  <button type="button" onClick={() => togglePopover(setShowScheduleInput)} className="composer-icon-btn premium-btn" aria-label="Schedule Send" title="Schedule Send">
+                    <Calendar size={18} />
                   </button>
-                  <button type="button" onClick={() => setShowExpiry((v) => !v)} className="composer-icon-btn" aria-label="Set Expiry" title="Set Expiry" style={{ width: 28, height: 28, padding: 0 }}>
-                    <Clock size={18} color="var(--grey-400, #A8B4C0)" />
+                  <button type="button" onClick={() => togglePopover(setShowExpiry)} className="composer-icon-btn premium-btn" aria-label="Set Expiry" title="Set Expiry">
+                    <Clock size={18} />
                   </button>
                 </>
               )}
@@ -648,5 +680,5 @@ const iconBtn: React.CSSProperties = {
   justifyContent: 'center',
   cursor: 'pointer',
   color: 'var(--grey-400, #A8B4C0)',
-  transition: 'background 0.2s, color 0.2s',
+  transition: 'all 0.2s',
 };
