@@ -140,6 +140,7 @@ export default function MessagePane({ userId, activeCall, setActiveCall }: Props
 
   const typingExpiryRef = useRef<Record<string, number>>({});
   const typingSweeperRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const broadcastTypingRef = useRef<((isTyping: boolean) => void) | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = useCallback((behavior: ScrollBehavior = 'auto') => {
@@ -445,6 +446,7 @@ export default function MessagePane({ userId, activeCall, setActiveCall }: Props
         setTypingUserIds((cur) => cur.filter((u) => u !== e.userId));
       }
     });
+    broadcastTypingRef.current = typing.broadcast;
 
     typingSweeperRef.current = setInterval(() => {
       const now = Date.now();
@@ -462,6 +464,7 @@ export default function MessagePane({ userId, activeCall, setActiveCall }: Props
       if (typingSweeperRef.current) clearInterval(typingSweeperRef.current);
       typingSweeperRef.current = null;
       typingExpiryRef.current = {};
+      broadcastTypingRef.current = null;
       setTypingUserIds([]);
       unsubscribe(msgCh);
       unsubscribe(typing.channel);
@@ -1049,6 +1052,7 @@ export default function MessagePane({ userId, activeCall, setActiveCall }: Props
         selfId={userId}
         replyTo={replyTo}
         onClearReply={() => setReplyTo(null)}
+        onTyping={(isTyping) => broadcastTypingRef.current?.(isTyping)}
       />
       {infoOpen && currentConv && (
         <GroupInfoDrawer

@@ -799,59 +799,47 @@ export default function AgentStorefrontGrid({ products, inventoryMap, primaryCol
         }
       `}} />
 
-      {/* Search and Category Filter Card */}
-      <div className="stagger-fade-in" style={{ marginBottom: 'var(--space-8)', animationDelay: '0.1s' }}>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--space-4)', alignItems: 'center', justifyContent: 'space-between' }}>
-          
-          {/* Categories filter tabs */}
-          <div style={{ display: 'flex', gap: 'var(--space-3)', flexWrap: 'wrap' }}>
-            {['all', ...categories, 'on_sale'].map(cat => {
-              const label = cat === 'all' ? `All Categories (${categoryCounts['all'] ?? 0})` : cat === 'on_sale' ? `On Sale (${categoryCounts['on_sale'] ?? 0})` : `${cat} (${categoryCounts[cat] ?? 0})`;
-              return (
-                <div key={cat} className="metal-frame hover-lift" style={{ borderRadius: 'var(--radius-full)' }}>
-                  <button
-                    onClick={() => setFilterCategory(cat)}
-                    className="metal-content"
-                    style={{
-                      padding: '8px 20px',
-                      borderRadius: 'calc(var(--radius-full) - 3px)',
-                      border: 'none',
-                      background: filterCategory === cat ? 'linear-gradient(180deg, rgba(192,184,168,0.15) 0%, rgba(192,184,168,0.05) 100%)' : 'var(--surface-3)',
-                      color: filterCategory === cat ? 'var(--teal)' : 'var(--silver)',
-                      fontSize: '0.85rem',
-                      fontWeight: 700,
-                      cursor: 'pointer',
-                      transition: 'all 0.15s',
-                      display: 'block',
-                      whiteSpace: 'nowrap'
-                    }}
-                  >
-                    {label}
-                  </button>
-                </div>
-              );
-            })}
-          </div>
-
-          {/* Search Input */}
-          <div className="metal-frame hover-lift" style={{ width: '100%', maxWidth: 300, borderRadius: 'var(--radius-full)' }}>
-            <div className="metal-content" style={{ position: 'relative', padding: 0, borderRadius: 'calc(var(--radius-full) - 3px)', display: 'flex', alignItems: 'center' }}>
-              <input
-                type="text"
-                placeholder="Search Compounds..."
-                value={searchQuery}
-                onChange={e => setSearchQuery(e.target.value)}
-                className="form-input"
-                style={{ margin: 0, padding: '10px 16px 10px 40px', background: 'transparent', border: 'none', borderRadius: 'calc(var(--radius-full) - 3px)', width: '100%', color: 'var(--white)', outline: 'none' }}
-              />
-              <Search 
-                size={18} 
-                color={searchQuery ? "var(--teal)" : "var(--grey-400)"}
-                style={{ position: 'absolute', left: 14, pointerEvents: 'none', transition: 'stroke 0.2s' }}
-              />
-            </div>
-          </div>
+      {/* Faceted Search & Filter Toolbar */}
+      <div className="sf-toolbar glass-header">
+        {/* Search */}
+        <div className="sf-toolbar-search">
+          <span className="sf-search-icon">
+            <Search size={14} aria-hidden="true" />
+          </span>
+          <input
+            type="text"
+            aria-label="Search Products"
+            placeholder="Search Products"
+            value={searchQuery}
+            onChange={e => setSearchQuery(e.target.value)}
+          />
+          {searchQuery && (
+            <button
+              type="button"
+              aria-label="Clear Search"
+              className="sf-search-clear"
+              onClick={() => setSearchQuery('')}
+            >
+              <X size={11} aria-hidden="true" />
+            </button>
+          )}
         </div>
+
+        {/* Category */}
+        <div className="sf-toolbar-cat">
+          <select
+            aria-label="Filter By Category"
+            value={filterCategory}
+            onChange={e => setFilterCategory(e.target.value)}
+          >
+            <option value="all">All Categories ({categoryCounts['all'] ?? 0})</option>
+            {categories.map(c => (
+              <option key={c} value={c}>{c} ({categoryCounts[c] ?? 0})</option>
+            ))}
+            <option value="on_sale">On Sale ({categoryCounts['on_sale'] ?? 0})</option>
+          </select>
+        </div>
+
       </div>
 
 
@@ -1199,7 +1187,7 @@ export default function AgentStorefrontGrid({ products, inventoryMap, primaryCol
           }}
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/shopping-cart-correct.png" width={72} height={72} alt="Cart" style={{ objectFit: 'contain' }} />
+          <img src="/shopping-cart-v5.png" width={72} height={72} alt="Cart" style={{ objectFit: 'contain' }} />
           {totalCartItems > 0 && (
             <span style={{
               position: 'absolute', top: -4, right: -4, width: 22, height: 22,
