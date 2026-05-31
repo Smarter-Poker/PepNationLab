@@ -132,7 +132,7 @@ export async function POST(request: NextRequest) {
         superAgentProfile = sap;
       }
     } else if (profile.referring_agent_id) {
-      const { data: ap } = await serviceSupabase.from('profiles').select('id, tier, parent_agent_id, auto_approve_orders').eq('id', profile.referring_agent_id).single();
+      const { data: ap } = await serviceSupabase.from('profiles').select('id, role, tier, parent_agent_id, auto_approve_orders').eq('id', profile.referring_agent_id).single();
       agentProfile = ap;
       if (ap?.parent_agent_id) {
         const { data: sap } = await serviceSupabase.from('profiles').select('id, tier, account_type, prepaid_balance, credit_limit, auto_approve_orders').eq('id', ap.parent_agent_id).single();
@@ -710,21 +710,10 @@ export async function POST(request: NextRequest) {
           // It's a Sub-Agent. Does the Super Agent trust the Sub-Agent?
           if (agentProfile.auto_approve_orders && superAgentProfile) {
             // Cascade -> Auto-Approve Sub-Agent too! Check Super Agent's Credit.
-            const costOfGoods = 0; // Retail orders deduct cost of goods from Super Agent.
-            // Wait, for retail orders, the total is the RETAIL price. The Super Agent is NOT charged the retail price.
-            // They are charged the COGS! But we don't know the exact COGS right here until we iterate.
-            // Oh boy, the checkout API DOES calculate Super Agent COGS for retail orders right here...
-            // Let's compute it.
             let retailCogs = 0;
-            for (const item of cartItems) {
-              const p = dbProducts.find(p => p.id === item.productId);
-              if (p) {
-                const isSub = true;
-                const sc = Number(p.super_agent_cost_price);
-                const ac = Number(p.cost_price);
-                const cost = isSub ? (Number.isFinite(sc) && sc > 0 ? sc : ac) : ac;
-                retailCogs += cost * item.quantity;
-              }
+            for (const item of computedItems) {
+              const cost = item.unit_super_agent_cost !== null ? item.unit_super_agent_cost : item.unit_cost_price;
+              retailCogs += cost * item.quantity;
             }
             retailCogs += shippingCost;
             
@@ -741,12 +730,8 @@ export async function POST(request: NextRequest) {
           // Wait, if it's a Super Agent's researcher, the Super Agent trusts them!
           // We must check Super Agent's credit for the COGS.
           let retailCogs = 0;
-          for (const item of cartItems) {
-            const p = dbProducts.find(p => p.id === item.productId);
-            if (p) {
-               const cost = Number(p.cost_price) || 0;
-               retailCogs += cost * item.quantity;
-            }
+          for (const item of computedItems) {
+             retailCogs += item.unit_cost_price * item.quantity;
           }
           retailCogs += shippingCost;
           

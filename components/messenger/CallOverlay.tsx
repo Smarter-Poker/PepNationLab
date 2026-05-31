@@ -34,6 +34,134 @@ function injectPulseRingAnim() {
     .pnl-pulse-avatar-ring {
       animation: pnl-pulse-avatar 2s infinite ease-in-out;
     }
+    @keyframes pnl-pulse-glow {
+      0%, 100% { opacity: 0.6; transform: scale(1); }
+      50% { opacity: 0.9; transform: scale(1.05); }
+    }
+    .pnl-ringing-bg {
+      background: radial-gradient(circle at center, #0B1E30 0%, #03080F 100%);
+      position: absolute;
+      inset: 0;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+    .pnl-ringing-glow {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 500px;
+      height: 500px;
+      margin-left: -250px;
+      margin-top: -250px;
+      background: radial-gradient(circle, rgba(0, 196, 188, 0.15) 0%, rgba(0, 0, 0, 0) 70%);
+      animation: pnl-pulse-glow 4s infinite ease-in-out;
+      pointer-events: none;
+    }
+    .pnl-ringing-card {
+      position: relative;
+      z-index: 10;
+      background: rgba(22, 34, 48, 0.6);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 24px;
+      padding: 48px 40px;
+      width: 90%;
+      max-width: 420px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
+      text-align: center;
+    }
+    .pnl-btn-action {
+      width: 68px;
+      height: 68px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      border: none;
+      outline: none;
+    }
+    .pnl-btn-action:hover {
+      transform: scale(1.1) translateY(-3px);
+      box-shadow: 0 12px 24px rgba(0,0,0,0.4);
+    }
+    .pnl-btn-action:active {
+      transform: scale(0.95) translateY(0);
+    }
+    .pnl-btn-decline {
+      background: #E53E3E;
+      color: white;
+    }
+    .pnl-btn-decline:hover {
+      background: #F56565;
+      box-shadow: 0 0 24px rgba(229, 62, 62, 0.5);
+    }
+    .pnl-btn-accept {
+      background: #00C4BC;
+      color: black;
+    }
+    .pnl-btn-accept:hover {
+      background: #00e0d7;
+      box-shadow: 0 0 24px rgba(0, 196, 188, 0.5);
+    }
+    .pnl-ringing-status {
+      font-size: 0.85rem;
+      color: #00C4BC;
+      margin-bottom: 24px;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      font-weight: 700;
+    }
+    .pnl-ringing-name {
+      font-size: 1.8rem;
+      font-weight: 700;
+      color: white;
+      margin-bottom: 8px;
+      text-align: center;
+    }
+    .pnl-avatar-placeholder {
+      width: 120px;
+      height: 120px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #00C4BC 0%, #0B1E30 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2.5rem;
+      font-weight: 700;
+      color: white;
+      margin-bottom: 32px;
+      border: 4px solid rgba(255, 255, 255, 0.15);
+    }
+    .pnl-avatar-img {
+      width: 120px;
+      height: 120px;
+      border-radius: 50%;
+      object-fit: cover;
+      margin-bottom: 32px;
+      border: 4px solid rgba(255, 255, 255, 0.15);
+    }
+    .pnl-action-container {
+      display: flex;
+      gap: 40px;
+      justify-content: center;
+      margin-top: 24px;
+    }
+    .pnl-action-label {
+      font-size: 0.8rem;
+      color: rgba(255, 255, 255, 0.6);
+      margin-top: 10px;
+      text-align: center;
+      font-weight: 600;
+    }
   `;
   document.head.appendChild(style);
 }
@@ -43,10 +171,12 @@ export default function CallOverlay({ call, selfId, onClose }: Props) {
   useEffect(() => {
     injectPulseRingAnim();
   }, []);
+
   const conversations = useMessengerStore((s) => s.conversations);
   const [counterpartyId, setCounterpartyId] = useState<string | null>(null);
   const [counterpartyName, setCounterpartyName] = useState<string>('Someone');
   const [counterpartyAvatar, setCounterpartyAvatar] = useState<string | null>(null);
+  const [isSignaling, setIsSignaling] = useState(false);
 
   // Resolve counterparty name and avatar details
   useEffect(() => {
@@ -158,11 +288,11 @@ export default function CallOverlay({ call, selfId, onClose }: Props) {
     };
   }, [call.id, onClose]);
 
-  // Outgoing synthesized beep-beep ringtone effect for the initiator
+  // Outgoing and incoming synthesized beep-beep ringtone effect for both parties
   useEffect(() => {
-    if (call.initiator_id !== selfId || call.status !== 'ringing') return;
+    if (call.status !== 'ringing') return;
 
-    console.log('[CALL] Playing synthesized outgoing ringtone...');
+    console.log('[CALL] Playing synthesized ringtone...');
     const ring = createRingTone();
     if (ring) {
       ring.start();
@@ -170,11 +300,11 @@ export default function CallOverlay({ call, selfId, onClose }: Props) {
 
     return () => {
       if (ring) {
-        console.log('[CALL] Stopping synthesized outgoing ringtone');
+        console.log('[CALL] Stopping synthesized ringtone');
         ring.stop();
       }
     };
-  }, [call.initiator_id, call.status, selfId]);
+  }, [call.status]);
 
   // Guaranteed unmount teardown signaling: broadcasts call_ended
   useEffect(() => {
@@ -230,7 +360,54 @@ export default function CallOverlay({ call, selfId, onClose }: Props) {
     return () => window.removeEventListener('pagehide', handler);
   }, [call.id, call, counterpartyId]);
 
+  const handleAction = async (action: 'accept' | 'decline' | 'hangup') => {
+    if (isSignaling) return;
+    setIsSignaling(true);
+    try {
+      const res = await fetch('/api/messenger/call-signal', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ action, callId: call.id }),
+      });
+      if (!res.ok) {
+        const json = await res.json().catch(() => ({}));
+        toast.error(json.error || `Could not ${action} call`);
+        if (action !== 'accept') onClose();
+      } else {
+        if (action === 'decline' || action === 'hangup') {
+          if (counterpartyId) {
+            const { broadcastCallSignal } = await import('@/lib/messenger/realtime');
+            void broadcastCallSignal(
+              counterpartyId,
+              action === 'decline' ? 'call_declined' : 'call_ended',
+              call
+            );
+          }
+          onClose();
+        } else if (action === 'accept') {
+          if (counterpartyId) {
+            const { broadcastCallSignal } = await import('@/lib/messenger/realtime');
+            void broadcastCallSignal(counterpartyId, 'call_accepted', call);
+          }
+        }
+      }
+    } catch {
+      toast.error('Network Error');
+    } finally {
+      setIsSignaling(false);
+    }
+  };
+
   const isVideo = call.call_type === 'video';
+  const isInitiator = call.initiator_id === selfId;
+  const initials = counterpartyName
+    ? counterpartyName
+        .split(' ')
+        .map((n) => n[0])
+        .join('')
+        .slice(0, 2)
+        .toUpperCase()
+    : '?';
 
   return (
     <div
@@ -247,8 +424,8 @@ export default function CallOverlay({ call, selfId, onClose }: Props) {
       aria-label={isVideo ? 'Video Call' : 'Voice Call'}
     >
       {error && (
-        <div style={{ color: 'var(--white, #FFFFFF)', padding: 24, textAlign: 'center' }}>
-          <p>{error}</p>
+        <div style={{ color: 'var(--white, #FFFFFF)', padding: 24, textAlign: 'center', margin: 'auto' }}>
+          <p style={{ fontSize: '1.2rem', marginBottom: 16 }}>{error}</p>
           <button
             type="button"
             onClick={onClose}
@@ -256,11 +433,13 @@ export default function CallOverlay({ call, selfId, onClose }: Props) {
               background: 'var(--teal, #00C4BC)',
               color: '#000',
               border: 0,
-              padding: '8px 16px',
+              padding: '12px 24px',
               borderRadius: 8,
               cursor: 'pointer',
-              marginTop: 12,
               fontWeight: 600,
+              fontSize: '1rem',
+              boxShadow: '0 4px 12px rgba(0, 196, 188, 0.3)',
+              transition: 'all 0.2s',
             }}
             aria-label="Close"
             title="Close"
@@ -269,7 +448,82 @@ export default function CallOverlay({ call, selfId, onClose }: Props) {
           </button>
         </div>
       )}
-      {!error && token && url && (
+
+      {!error && call.status === 'ringing' && (
+        <div className="pnl-ringing-bg">
+          <div className="pnl-ringing-glow" />
+          <div className="pnl-ringing-card">
+            <div className="pnl-ringing-status">
+              {isVideo ? 'Incoming Video Call' : 'Incoming Voice Call'}
+            </div>
+
+            <div className="pnl-pulse-avatar-ring" style={{ display: 'inline-block', borderRadius: '50%' }}>
+              {counterpartyAvatar ? (
+                <img
+                  src={counterpartyAvatar}
+                  alt={counterpartyName}
+                  className="pnl-avatar-img"
+                />
+              ) : (
+                <div className="pnl-avatar-placeholder">
+                  {initials}
+                </div>
+              )}
+            </div>
+
+            <div className="pnl-ringing-name">{counterpartyName}</div>
+            <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.95rem', marginBottom: 32 }}>
+              {isInitiator ? 'Calling...' : 'Ringing...'}
+            </div>
+
+            <div className="pnl-action-container">
+              {isInitiator ? (
+                <div>
+                  <button
+                    type="button"
+                    onClick={() => void handleAction('hangup')}
+                    className="pnl-btn-action pnl-btn-decline"
+                    aria-label="Cancel Call"
+                    title="Cancel Call"
+                  >
+                    <PhoneOff size={28} />
+                  </button>
+                  <div className="pnl-action-label">Cancel</div>
+                </div>
+              ) : (
+                <>
+                  <div>
+                    <button
+                      type="button"
+                      onClick={() => void handleAction('decline')}
+                      className="pnl-btn-action pnl-btn-decline"
+                      aria-label="Decline Call"
+                      title="Decline Call"
+                    >
+                      <PhoneOff size={28} />
+                    </button>
+                    <div className="pnl-action-label">Decline</div>
+                  </div>
+                  <div>
+                    <button
+                      type="button"
+                      onClick={() => void handleAction('accept')}
+                      className="pnl-btn-action pnl-btn-accept"
+                      aria-label="Answer Call"
+                      title="Answer Call"
+                    >
+                      <Phone size={28} />
+                    </button>
+                    <div className="pnl-action-label">Answer</div>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {!error && call.status === 'active' && token && url && (
         <LiveKitRoom
           serverUrl={url}
           token={token}
@@ -283,9 +537,32 @@ export default function CallOverlay({ call, selfId, onClose }: Props) {
           <ControlBar />
         </LiveKitRoom>
       )}
-      {!error && !token && (
-        <div style={{ color: 'var(--white, #FFFFFF)', padding: 24, textAlign: 'center' }}>
-          Connecting To Call
+
+      {!error && call.status === 'active' && (!token || !url) && (
+        <div style={{
+          color: 'var(--white, #FFFFFF)',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          flex: 1,
+          background: '#03080F',
+        }}>
+          <div className="pnl-pulse-avatar-ring" style={{
+            width: 80,
+            height: 80,
+            borderRadius: '50%',
+            background: 'rgba(0, 196, 188, 0.1)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            marginBottom: 24,
+          }}>
+            <Phone size={32} style={{ color: '#00C4BC' }} />
+          </div>
+          <div style={{ fontSize: '1.2rem', fontWeight: 600, letterSpacing: '0.05em' }}>
+            CONNECTING TO CONFERENCE...
+          </div>
         </div>
       )}
     </div>

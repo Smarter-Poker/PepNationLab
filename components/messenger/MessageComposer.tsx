@@ -491,8 +491,6 @@ export default function MessageComposer({ conversationId, selfId, replyTo, onCle
               type="button"
               onClick={() => togglePopover(setShowAttach)}
               style={{
-                background: 'linear-gradient(145deg, var(--surface-2, #162230), var(--surface-3, #1D2D3E))',
-                border: '1px solid rgba(255, 255, 255, 0.03)',
                 borderRadius: '50%',
                 width: 32,
                 height: 32,
