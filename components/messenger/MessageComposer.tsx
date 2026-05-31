@@ -24,7 +24,7 @@ interface Props {
 
 const MAX_LEN = 2000;
 const TYPING_THROTTLE_MS = 1500;
-const TYPING_STOP_MS = 4000;
+const TYPING_STOP_MS = 15000;
 const ADMIN_MENTION_RE = /(^|\s)@admin(\s|$|[.,!?;:])/i;
 
 interface UploadResult { uploadUrl: string; publicUrl: string; path: string }

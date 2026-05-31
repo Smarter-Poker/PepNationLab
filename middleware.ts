@@ -201,6 +201,11 @@ export default async function proxy(request: NextRequest) {
   // Helper to preserve cookies on redirect
   const redirectWithCookies = (url: URL) => {
     const redirectResponse = NextResponse.redirect(url);
+    console.log('[redirectWithCookies] setting cookies:', response.cookies.getAll());
+    // Only copy cookies that were newly set during this request phase.
+    // Copying request.cookies to the redirect response forces Next.js to
+    // emit duplicate Set-Cookie headers for everything, often overriding
+    // the max-age back to Session if options aren't perfectly preserved.
     response.cookies.getAll().forEach((cookie) => {
       redirectResponse.cookies.set(cookie.name, cookie.value);
     });

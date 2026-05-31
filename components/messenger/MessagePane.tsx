@@ -31,7 +31,8 @@ interface Props {
   setActiveCall: (c: CallSignalRow | null) => void;
 }
 
-const TYPING_TTL_MS = 5000;
+const BATCH_SIZE = 50;
+const TYPING_TTL_MS = 16000;
 const PUSH_DISMISS_KEY = 'messenger:push-opt-in-dismissed';
 
 const THEME_BACKGROUND: Record<ThemeValue, string> = {
