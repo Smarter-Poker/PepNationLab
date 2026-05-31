@@ -150,7 +150,7 @@ export default function ProductsList({
               color: 'var(--white)'
             }}
           >
-            <img src="/nav-icons/cart.png" width={105} height={105} alt="Cart" style={{ objectFit: 'contain', display: 'block' }} />
+            <img src="/nav-icons/cart.png" width={158} height={158} alt="Cart" style={{ objectFit: 'contain', display: 'block' }} />
             {cartCount > 0 && (
               <span style={{
                 background: 'var(--teal)',

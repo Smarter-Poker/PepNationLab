@@ -297,7 +297,7 @@ export default async function AgentStorefrontPage({ params }: Props) {
             href={`/checkout?agent=${encodeURIComponent(agentSlug)}`}
             style={{ display: 'flex', background: 'none' }}
           >
-            <img src="/nav-icons/cart.png" width={105} height={105} alt="Cart" style={{ objectFit: 'contain', display: 'block' }} />
+            <img src="/nav-icons/cart.png" width={158} height={158} alt="Cart" style={{ objectFit: 'contain', display: 'block' }} />
           </Link>
         </div>
       </nav>
