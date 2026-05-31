@@ -1235,6 +1235,7 @@ export default function AgentStorefrontGrid({
           <div
             role="button"
             tabIndex={0}
+            className="floating-cart-wrapper"
             onClick={() => {
               if (totalCartItems === 0) {
                 setCartToast(true);
@@ -1243,34 +1244,13 @@ export default function AgentStorefrontGrid({
                 setShowCartFloat(!showCartFloat);
               }
             }}
-            style={{
-              position: 'absolute',
-              bottom: 0,
-              right: 0,
-              width: 160,
-              height: 160,
-              padding: 0,
-              margin: 0,
-              background: 'transparent',
-              border: 'none',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              zIndex: 100,
-              cursor: 'pointer',
-              transition: 'transform 0.2s, filter 0.2s',
-              filter: 'drop-shadow(0 8px 16px rgba(0,0,0,0.8))',
-              WebkitTapHighlightColor: 'transparent',
-              pointerEvents: 'auto',
-              boxSizing: 'border-box'
-            }}
             onMouseEnter={e => { 
               e.currentTarget.style.transform = 'scale(1.05)'; 
               e.currentTarget.style.filter = 'drop-shadow(0 12px 24px rgba(0,0,0,0.9)) brightness(1.2)';
             }}
             onMouseLeave={e => { 
-              e.currentTarget.style.transform = 'scale(1)'; 
-              e.currentTarget.style.filter = 'drop-shadow(0 8px 16px rgba(0,0,0,0.8))';
+              e.currentTarget.style.transform = ''; 
+              e.currentTarget.style.filter = '';
             }}
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}

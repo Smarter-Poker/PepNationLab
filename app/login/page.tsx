@@ -67,6 +67,7 @@ function LoginPageInner() {
     // means the server request arrives before the cookie exists.
     for (let i = 0; i < 15; i++) {
       const { data: { session } } = await supabase.auth.getSession();
+      console.log('Session access_token:', session?.access_token);
       if (session?.access_token) break;
       await new Promise(r => setTimeout(r, 200));
     }

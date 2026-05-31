@@ -2016,3 +2016,34 @@ html[data-theme="light"] .messenger-back-btn {
 .stagger-3 { animation-delay: 300ms; }
 .stagger-4 { animation-delay: 400ms; }
 .stagger-5 { animation-delay: 500ms; }
+
+/* Custom Float Cart Positioning */
+.floating-cart-wrapper {
+  position: absolute;
+  bottom: -5px;
+  right: -15px;
+  width: 160px;
+  height: 160px;
+  padding: 0;
+  margin: 0;
+  background: transparent;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  cursor: pointer;
+  transition: transform 0.2s, filter 0.2s;
+  filter: drop-shadow(0 8px 16px rgba(0,0,0,0.8));
+  -webkit-tap-highlight-color: transparent;
+  pointer-events: auto;
+  box-sizing: border-box;
+}
+
+@media (max-width: 768px) {
+  .floating-cart-wrapper {
+    bottom: -20px;
+    right: -30px;
+    transform: scale(0.9);
+  }
+}

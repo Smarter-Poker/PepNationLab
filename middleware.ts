@@ -198,15 +198,6 @@ export default async function proxy(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  // Helper to preserve cookies on redirect
-  const redirectWithCookies = (url: URL) => {
-    const redirectResponse = NextResponse.redirect(url);
-    response.cookies.getAll().forEach((cookie) => {
-      redirectResponse.cookies.set(cookie.name, cookie.value);
-    });
-    return redirectResponse;
-  };
-
   if (!user) {
     if (pathname.startsWith('/api/')) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -217,7 +208,7 @@ export default async function proxy(request: NextRequest) {
     const url = request.nextUrl.clone();
     url.pathname = '/login';
     url.searchParams.set('redirect', pathname);
-    return redirectWithCookies(url);
+    return NextResponse.redirect(url);
   }
 
   // Check the user's is_active flag — deactivated accounts get signed out.
@@ -235,7 +226,7 @@ export default async function proxy(request: NextRequest) {
     const url = request.nextUrl.clone();
     url.pathname = '/login';
     url.searchParams.set('error', 'account_disabled');
-    return redirectWithCookies(url);
+    return NextResponse.redirect(url);
   }
 
   // ─── Must-change-password enforcement (researcher first login) ────────────
@@ -248,14 +239,14 @@ export default async function proxy(request: NextRequest) {
     const url = request.nextUrl.clone();
     url.pathname = '/account/change-password';
     url.search = '';
-    return redirectWithCookies(url);
+    return NextResponse.redirect(url);
   }
 
   // Already-logged-in users land on /login → bounce to their dashboard
   if (pathname === '/login') {
     const url = request.nextUrl.clone();
     url.pathname = profile?.role === 'admin' ? '/admin' : '/dashboard';
-    return redirectWithCookies(url);
+    return NextResponse.redirect(url);
   }
 
   // ─── Admin Path Role Enforcement ─────────────────────────────────────────
@@ -267,7 +258,7 @@ export default async function proxy(request: NextRequest) {
   if (pathname.startsWith('/admin') && profile?.role !== 'admin') {
     const url = request.nextUrl.clone();
     url.pathname = '/dashboard';
-    return redirectWithCookies(url);
+    return NextResponse.redirect(url);
   }
 
   // ─── MFA Enforcement (super_agent only) ────────────────────────────────────
