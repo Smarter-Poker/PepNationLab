@@ -152,10 +152,8 @@ export default function ProductsList({
               color: 'var(--white)'
             }}
           >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--teal)" strokeWidth="2">
-              <circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/>
-              <path d="M1 1h4l2.68 13.39a2 2 0 002 1.61h9.72a2 2 0 002-1.61L23 6H6"/>
-            </svg>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/shopping-cart.png" width={18} height={18} alt="Cart" style={{ objectFit: 'contain', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.5))' }} />
             <span style={{ fontSize: '0.82rem', fontWeight: 600 }}>Cart</span>
             {cartCount > 0 && (
               <span style={{
@@ -280,7 +278,7 @@ export default function ProductsList({
         {/* Products Grid */}
         {filteredProducts.length > 0 ? (
           <div className="grid-3">
-            {filteredProducts.map(product => {
+            {filteredProducts.map((product, i) => {
               const { costPrice, retailPrice, bulkCostPrice, bulkThreshold } = getProductPrices(product);
               const isLowStock = product.in_stock && product.inventory_count <= product.low_stock_threshold && product.inventory_count > 0;
               
@@ -290,7 +288,7 @@ export default function ProductsList({
               const isBackordered = !product.in_stock || product.inventory_count === 0;
 
               return (
-                <div key={product.id} className="product-card" style={{ display: 'flex', flexDirection: 'column' }}>
+                <div key={product.id} className="product-card card-metal hover-lift stagger-fade-in" style={{ display: 'flex', flexDirection: 'column', animationDelay: `${0.1 + i * 0.05}s` }}>
 
                   {/* Decorative skeuomorphic header area */}
                   <div style={{
@@ -394,7 +392,7 @@ export default function ProductsList({
                         }}
                         disabled={isBackordered}
                         aria-disabled={isBackordered}
-                        className={`btn ${isBackordered ? 'btn-secondary' : 'btn-primary'} btn-sm`}
+                        className={`btn ${isBackordered ? 'btn-secondary' : 'btn-neon-cyan'} btn-sm`}
                         style={{ display: 'flex', alignItems: 'center', gap: 6, opacity: isBackordered ? 0.6 : 1, cursor: isBackordered ? 'not-allowed' : 'pointer' }}
                       >
                         {isBackordered ? (

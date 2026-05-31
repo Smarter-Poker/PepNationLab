@@ -949,7 +949,7 @@ export default function AgentStorefrontGrid({ products, inventoryMap, primaryCol
 
       {/* Empty State */}
       {filteredProducts.length === 0 && (
-        <div className="card-metal" style={{
+        <div className="card-metal hover-lift stagger-fade-in" style={{
           textAlign: 'center', padding: 'var(--space-8) var(--space-6)',
           background: 'rgba(255,255,255,0.02)',
           border: '1px solid rgba(255,255,255,0.06)',
@@ -998,7 +998,7 @@ export default function AgentStorefrontGrid({ products, inventoryMap, primaryCol
 
           return (
             <motion.div
-              key={group.name} className="card-metal message-card-hover" variants={itemVariants}
+              key={group.name} className="card-metal hover-lift stagger-fade-in" variants={itemVariants}
               style={{
                 display: 'flex', flexDirection: 'column', overflow: 'hidden', padding: 0,
                 background: 'linear-gradient(180deg, var(--surface-2) 0%, rgba(10, 16, 24, 0.8) 100%)',
@@ -1177,10 +1177,8 @@ export default function AgentStorefrontGrid({ products, inventoryMap, primaryCol
           onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.1)'; }}
           onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)'; }}
         >
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--white)" strokeWidth="2.5">
-            <circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/>
-            <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>
-          </svg>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/shopping-cart.png" width={24} height={24} alt="Cart" style={{ objectFit: 'contain', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.5))' }} />
           {totalCartItems > 0 && (
             <span style={{
               position: 'absolute', top: -4, right: -4, width: 22, height: 22,
