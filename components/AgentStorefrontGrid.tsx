@@ -1151,6 +1151,7 @@ export default function AgentStorefrontGrid({ products, inventoryMap, primaryCol
       </motion.div>
       {/* Floating Cart — Bottom Right Corner */}
       <div style={{ position: 'fixed', bottom: 'calc(24px + env(safe-area-inset-bottom, 0px))', right: 24, zIndex: 900 }}>
+        {/* Floating Cart Button */}
         <button
           onClick={() => {
             if (totalCartItems === 0) {
@@ -1161,19 +1162,32 @@ export default function AgentStorefrontGrid({ products, inventoryMap, primaryCol
             }
           }}
           style={{
-            width: 56, height: 56, borderRadius: '50%',
-            background: totalCartItems > 0 ? primaryColor : 'var(--surface-2)',
-            border: totalCartItems > 0 ? 'none' : '1px solid rgba(255,255,255,0.15)',
+            position: 'fixed',
+            bottom: 'var(--space-6)',
+            right: 'var(--space-6)',
+            width: 80,
+            height: 80,
+            background: 'transparent',
+            border: 'none',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 100,
             cursor: 'pointer',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            boxShadow: totalCartItems > 0 ? `0 4px 20px ${primaryColor}60` : '0 4px 20px rgba(0,0,0,0.4)',
-            position: 'relative', transition: 'transform 0.2s ease'
+            transition: 'transform 0.2s, filter 0.2s',
+            filter: 'drop-shadow(0 8px 16px rgba(0,0,0,0.8))'
           }}
-          onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.1)'; }}
-          onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)'; }}
+          onMouseEnter={e => { 
+            e.currentTarget.style.transform = 'scale(1.1)'; 
+            e.currentTarget.style.filter = 'drop-shadow(0 12px 24px rgba(0,0,0,0.9)) brightness(1.2)';
+          }}
+          onMouseLeave={e => { 
+            e.currentTarget.style.transform = 'scale(1)'; 
+            e.currentTarget.style.filter = 'drop-shadow(0 8px 16px rgba(0,0,0,0.8))';
+          }}
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/shopping-cart-v3.png" width={24} height={24} alt="Cart" style={{ objectFit: 'contain', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.5))' }} />
+          <img src="/shopping-cart-v3.png" width={72} height={72} alt="Cart" style={{ objectFit: 'contain' }} />
           {totalCartItems > 0 && (
             <span style={{
               position: 'absolute', top: -4, right: -4, width: 22, height: 22,
@@ -1629,8 +1643,8 @@ export default function AgentStorefrontGrid({ products, inventoryMap, primaryCol
                           {isStorefrontOwner && (
                             <div style={{
                               fontSize: '0.68rem', fontWeight: 700, letterSpacing: '0.06em',
-                              textTransform: 'uppercase', color: '#F6AD55',
-                              background: 'rgba(246,173,85,0.10)', border: '1px solid rgba(246,173,85,0.30)',
+                              textTransform: 'uppercase', color: '#68D391',
+                              background: 'rgba(104,211,145,0.10)', border: '1px solid rgba(104,211,145,0.30)',
                               borderRadius: 'var(--radius-full)', padding: '2px 10px',
                               display: 'inline-block', marginBottom: 8
                             }}>
@@ -1718,7 +1732,7 @@ export default function AgentStorefrontGrid({ products, inventoryMap, primaryCol
                               }}>
                                 <span style={{ fontSize: '0.85rem', color: isActive ? 'var(--white)' : 'var(--grey-400)', fontWeight: isActive ? 600 : 400 }}>
                                   {t.label ?? (t.max === Infinity ? `${t.min}+ vials` : `${t.min}–${t.max} vials`)}
-                                  {t.pct > 0 && <span style={{ color: '#F6AD55', marginLeft: 8, fontSize: '0.75rem' }}>+{t.pct}%</span>}
+                                  {t.pct > 0 && <span style={{ color: '#68D391', marginLeft: 8, fontSize: '0.75rem' }}>+{t.pct}%</span>}
                                   {t.pct === 0 && !isStorefrontOwner && <span style={{ color: 'var(--teal)', marginLeft: 8, fontSize: '0.75rem' }}>Best Price</span>}
                                 </span>
                                 <span style={{ fontSize: '0.95rem', fontWeight: 700, fontFamily: 'var(--font-brand)', color: isActive ? primaryColor : 'var(--grey-300)' }}>

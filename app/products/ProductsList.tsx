@@ -195,56 +195,59 @@ export default function ProductsList({
         </div>
 
         {/* Search and Category Filter Card */}
-        <div className="metal-frame hover-lift stagger-fade-in" style={{ marginBottom: 'var(--space-8)', animationDelay: '0.1s' }}>
-          <div className="metal-content" style={{ padding: 'var(--space-5)' }}>
+        <div className="stagger-fade-in" style={{ marginBottom: 'var(--space-8)', animationDelay: '0.1s' }}>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--space-4)', alignItems: 'center', justifyContent: 'space-between' }}>
             
             {/* Categories filter tabs */}
-            <div style={{ display: 'flex', gap: 'var(--space-2)', flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', gap: 'var(--space-3)', flexWrap: 'wrap' }}>
               {categories.map(cat => (
-                <button
-                  key={cat}
-                  onClick={() => setActiveCategory(cat)}
-                  style={{
-                    padding: '8px 16px',
-                    borderRadius: 'var(--radius-md)',
-                    border: activeCategory === cat ? '1px solid var(--teal)' : '1px solid rgba(255,255,255,0.06)',
-                    background: activeCategory === cat ? 'rgba(192,184,168,0.1)' : 'var(--surface-3)',
-                    color: activeCategory === cat ? 'var(--teal)' : 'var(--silver)',
-                    fontSize: '0.82rem',
-                    fontWeight: 600,
-                    cursor: 'pointer',
-                    transition: 'all 0.15s'
-                  }}
-                >
-                  {cat}
-                </button>
+                <div key={cat} className="metal-frame hover-lift" style={{ borderRadius: 'var(--radius-full)' }}>
+                  <button
+                    onClick={() => setActiveCategory(cat)}
+                    className="metal-content"
+                    style={{
+                      padding: '8px 20px',
+                      borderRadius: 'calc(var(--radius-full) - 3px)',
+                      border: 'none',
+                      background: activeCategory === cat ? 'linear-gradient(180deg, rgba(192,184,168,0.15) 0%, rgba(192,184,168,0.05) 100%)' : 'var(--surface-3)',
+                      color: activeCategory === cat ? 'var(--teal)' : 'var(--silver)',
+                      fontSize: '0.85rem',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      transition: 'all 0.15s',
+                      display: 'block'
+                    }}
+                  >
+                    {cat}
+                  </button>
+                </div>
               ))}
             </div>
 
             {/* Search Input */}
-            <div style={{ position: 'relative', width: '100%', maxWidth: 300 }}>
-              <input
-                type="text"
-                placeholder="Search Compounds By Name..."
-                value={searchQuery}
-                onChange={e => setSearchQuery(e.target.value)}
-                className="form-input"
-                style={{ margin: 0, paddingLeft: 'var(--space-8)' }}
-              />
-              <svg 
-                width="16" 
-                height="16" 
-                viewBox="0 0 24 24" 
-                fill="none" 
-                stroke="var(--grey-400)" 
-                strokeWidth="2" 
-                style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }}
-              >
-                <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-              </svg>
+            <div className="metal-frame hover-lift" style={{ width: '100%', maxWidth: 300, borderRadius: 'var(--radius-full)' }}>
+              <div className="metal-content" style={{ position: 'relative', padding: 0, borderRadius: 'calc(var(--radius-full) - 3px)', display: 'flex', alignItems: 'center' }}>
+                <input
+                  type="text"
+                  placeholder="Search Compounds By Name..."
+                  value={searchQuery}
+                  onChange={e => setSearchQuery(e.target.value)}
+                  className="form-input"
+                  style={{ margin: 0, padding: '10px 16px 10px 40px', background: 'transparent', border: 'none', borderRadius: 'calc(var(--radius-full) - 3px)', width: '100%' }}
+                />
+                <svg 
+                  width="18" 
+                  height="18" 
+                  viewBox="0 0 24 24" 
+                  fill="none" 
+                  stroke={searchQuery ? "var(--teal)" : "var(--grey-400)"}
+                  strokeWidth="2.5" 
+                  style={{ position: 'absolute', left: 14, pointerEvents: 'none', transition: 'stroke 0.2s' }}
+                >
+                  <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                </svg>
+              </div>
             </div>
-          </div>
           </div>
         </div>
 
