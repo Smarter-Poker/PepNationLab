@@ -231,10 +231,10 @@ export default async function AgentStorefrontPage({ params }: Props) {
           box-shadow: 0 0 0 1.5px #C0B8A8, inset 0 1px 1px rgba(255,255,255,0.3), 0 4px 12px rgba(0,0,0,0.6);
         }
         .sf-nav-back { display: flex; align-items: center; justify-content: center; width: 34px; height: 34px; flex-shrink: 0; }
-        .sf-btn-dash { padding: 6px 12px; font-size: 0.75rem; font-weight: 700; white-space: nowrap; }
+        .sf-btn-dash { display: flex; align-items: center; justify-content: center; width: 88px; height: 34px; font-size: 0.75rem; font-weight: 700; white-space: nowrap; }
         
         .sf-btn-cart { 
-          padding: 6px 14px; font-size: 0.75rem; font-weight: 800; color: #fff; border-radius: 8px; text-decoration: none; white-space: nowrap; display: flex; align-items: center; gap: 6px;
+          display: flex; align-items: center; justify-content: center; width: 88px; height: 34px; font-size: 0.75rem; font-weight: 800; color: #fff; border-radius: 8px; text-decoration: none; white-space: nowrap;
           box-shadow: 0 0 0 1.5px #C0B8A8, inset 0 2px 4px rgba(255,255,255,0.25), 0 4px 12px rgba(0,0,0,0.5);
           transition: transform 0.15s, box-shadow 0.15s;
         }
@@ -250,8 +250,7 @@ export default async function AgentStorefrontPage({ params }: Props) {
           .sf-nav { height: 68px; padding: 0 24px; gap: 12px; }
           .sf-nav-brand-name { font-size: 1rem; }
           .sf-nav-back { width: 38px; height: 38px; }
-          .sf-btn-dash { padding: 8px 16px; font-size: 0.85rem; }
-          .sf-btn-cart { padding: 8px 18px; font-size: 0.85rem; gap: 8px; }
+          .sf-btn-dash, .sf-btn-cart { width: 104px; height: 38px; font-size: 0.85rem; padding: 0; }
           .sf-hero { padding: 24px 24px 8px; }
           .sf-hero h1 { font-size: 1.6rem; }
         }
@@ -261,7 +260,8 @@ export default async function AgentStorefrontPage({ params }: Props) {
       <nav className="sf-nav glass-header" style={{ background: 'rgba(10, 16, 24, 0.85)' }}>
         {/* Back button */}
         <Link href="/dashboard" className="sf-nav-back" aria-label="Back to Dashboard">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/back-arrow.png" width={16} height={16} alt="Back" style={{ objectFit: 'contain' }} />
         </Link>
 
         <div className="sf-nav-brand">
@@ -280,8 +280,6 @@ export default async function AgentStorefrontPage({ params }: Props) {
             className="sf-btn-cart"
             style={{ background: primaryColor }}
           >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/cart-icon.png" width={24} height={24} alt="Cart" style={{ objectFit: 'contain' }} />
             Checkout
           </Link>
         </div>
