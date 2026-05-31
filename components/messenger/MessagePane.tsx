@@ -1117,7 +1117,7 @@ export default function MessagePane({ userId }: Props) {
             className="hover-lift"
             style={{ background: 'transparent', border: 'none', padding: 0, cursor: 'pointer', display: 'flex', alignItems: 'center' }}
           >
-            <img src="/messenger-icons/reminders-icon.jpg" alt="Reminders" style={{ width: 36, height: 36, borderRadius: 8, objectFit: 'cover' }} />
+            <img src="/messenger-icons/reminders-icon.jpg" alt="Reminders" style={{ width: 48, height: 48, objectFit: 'contain', mixBlendMode: 'lighten', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.5))' }} />
           </button>
           <button
             type="button"
@@ -1127,7 +1127,7 @@ export default function MessagePane({ userId }: Props) {
             className="hover-lift"
             style={{ background: 'transparent', border: 'none', padding: 0, cursor: 'pointer', display: 'flex', alignItems: 'center' }}
           >
-            <img src="/messenger-icons/info-icon.jpg" alt="Info" style={{ width: 36, height: 36, borderRadius: 8, objectFit: 'cover' }} />
+            <img src="/messenger-icons/info-icon.jpg" alt="Info" style={{ width: 48, height: 48, objectFit: 'contain', mixBlendMode: 'lighten', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.5))' }} />
           </button>
         </div>
       </header>
