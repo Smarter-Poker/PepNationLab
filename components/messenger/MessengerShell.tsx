@@ -4,6 +4,7 @@ import { ArrowLeft } from 'lucide-react';
 import ConversationList from './ConversationList';
 import MessagePane from './MessagePane';
 import SearchBar from './SearchBar';
+import NewConversationDialog from './NewConversationDialog';
 import { useMessengerStore } from '@/stores/messengerStore';
 import {
   subscribeMyIncomingMessages,
@@ -26,6 +27,8 @@ export default function MessengerShell({ userId }: Props) {
   const setActive = useMessengerStore((s) => s.setActive);
   const activeId = useMessengerStore((s) => s.activeConversationId);
   const conversations = useMessengerStore((s) => s.conversations);
+
+  const [composeOpen, setComposeOpen] = useState(false);
 
   // Phase 14: cache the caller's notification preferences in a ref so the
   // Realtime onInsert callback doesn't have to refetch on every message.
@@ -367,7 +370,23 @@ export default function MessengerShell({ userId }: Props) {
             gap: 12,
             flexShrink: 0,
           }}>
-            <div style={{ fontWeight: 800, fontSize: '1.1rem', color: 'var(--white, #FFFFFF)', fontFamily: 'var(--font-brand)', letterSpacing: '0.02em' }}>Messenger</div>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '0px' }}>
+              <button
+                type="button"
+                onClick={() => setComposeOpen(true)}
+                className="hover-lift"
+                aria-label="Start A New Conversation"
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  padding: 0,
+                  cursor: 'pointer',
+                  display: 'inline-flex',
+                }}
+              >
+                <img src="/messenger-icons/compose-icon.png" alt="Compose" style={{ height: 80, objectFit: 'contain' }} />
+              </button>
+            </div>
             <SearchBar />
           </header>
           <ConversationList selfId={userId} />
@@ -416,6 +435,7 @@ export default function MessengerShell({ userId }: Props) {
           <MessagePane key={activeId || 'empty'} userId={userId} />
         </div>
       </div>
+      {composeOpen && <NewConversationDialog selfId={userId} onClose={() => setComposeOpen(false)} />}
     </div>
     </>
   );

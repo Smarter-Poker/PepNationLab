@@ -2,7 +2,6 @@
 import { useEffect, useState } from 'react';
 import { useMessengerStore } from '@/stores/messengerStore';
 import ConversationItem from './ConversationItem';
-import NewConversationDialog from './NewConversationDialog';
 import { MessageSquare, PenSquare } from 'lucide-react';
 
 interface Props {
@@ -16,8 +15,6 @@ export default function ConversationList({ selfId }: Props) {
   const setConversations = useMessengerStore((s) => s.setConversations);
   const setLoading = useMessengerStore((s) => s.setLoadingConversations);
   const loading = useMessengerStore((s) => s.loadingConversations);
-
-  const [composeOpen, setComposeOpen] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -45,31 +42,6 @@ export default function ConversationList({ selfId }: Props) {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0 }}>
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'flex-end',
-          padding: '2px 4px',
-          borderBottom: '1px solid rgba(255, 255, 255, 0.06)',
-          background: 'rgba(0,0,0,0.15)',
-        }}
-      >
-        <button
-          type="button"
-          onClick={() => setComposeOpen(true)}
-          className="hover-lift"
-          aria-label="Start A New Conversation"
-          style={{
-            background: 'transparent',
-            border: 'none',
-            padding: 0,
-            cursor: 'pointer',
-            display: 'inline-flex',
-          }}
-        >
-          <img src="/messenger-icons/compose-icon.png" alt="Compose" style={{ height: 80, objectFit: 'contain' }} />
-        </button>
-      </div>
       <div style={{ flex: 1, overflowY: 'auto', minHeight: 0 }}>
         {loading && conversations.length === 0 ? (
           <div style={{ padding: 24, color: 'var(--grey-400, #A8B4C0)', fontSize: '0.9rem' }}>
@@ -103,7 +75,6 @@ export default function ConversationList({ selfId }: Props) {
           ))
         )}
       </div>
-      {composeOpen && <NewConversationDialog selfId={selfId} onClose={() => setComposeOpen(false)} />}
     </div>
   );
 }
