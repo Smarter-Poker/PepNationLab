@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import type { CallSignalRow } from '@/lib/messenger/realtime';
 import { useMessengerStore } from '@/stores/messengerStore';
+import { createClient } from '@/lib/supabase/client';
 
 interface Props {
   conversationId: string;
@@ -70,14 +71,36 @@ export default function CallButton({ conversationId, onCallStarted }: Props) {
       const json = (await res.json()) as { call: CallSignalRow };
 
       // Broadcast calling signal directly to counterparty
+      let targetUserIds: string[] = [];
       if (counterpartyId) {
-        import('@/lib/messenger/realtime').then(({ broadcastCallSignal }) => {
-          void broadcastCallSignal(counterpartyId, 'incoming_call', json.call);
-        }).catch(err => {
-          console.warn('Failed to broadcast incoming call signal:', err);
-        });
+        targetUserIds = [counterpartyId];
       } else {
-        console.warn('No counterpartyId found in conversation list — falling back');
+        try {
+          const partRes = await fetch('/api/messenger/list-participants', {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({ conversationId }),
+          });
+          if (partRes.ok) {
+            const partJson = await partRes.json();
+            const supabase = createClient();
+            const currentUserId = (await supabase.auth.getSession()).data.session?.user?.id;
+            targetUserIds = (partJson.participants ?? [])
+              .map((p: any) => p.user_id)
+              .filter((id: string) => id !== currentUserId);
+          }
+        } catch (err) {
+          console.warn('Failed to fetch participants for call broadcast:', err);
+        }
+      }
+
+      if (targetUserIds.length > 0) {
+        const { broadcastCallSignal } = await import('@/lib/messenger/realtime');
+        for (const tid of targetUserIds) {
+          void broadcastCallSignal(tid, 'incoming_call', json.call);
+        }
+      } else {
+        console.warn('No counterpartyId found in conversation list or participant query');
       }
 
       onCallStarted(json.call);

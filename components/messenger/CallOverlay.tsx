@@ -3,15 +3,17 @@ import { useEffect, useState, useRef } from 'react';
 import {
   LiveKitRoom,
   RoomAudioRenderer,
-  ControlBar,
-  VideoConference,
+  useTracks,
+  VideoTrack,
+  useLocalParticipant,
 } from '@livekit/components-react';
 import '@livekit/components-styles';
 import type { CallSignalRow } from '@/lib/messenger/realtime';
 import { useMessengerStore } from '@/stores/messengerStore';
 import { createRingTone } from '@/lib/messenger/ringTone';
-import { Phone, PhoneOff, Video } from 'lucide-react';
+import { Phone, PhoneOff, Video, VideoOff, Mic, MicOff, Camera } from 'lucide-react';
 import { toast } from 'sonner';
+import { Track } from 'livekit-client';
 
 interface Props {
   call: CallSignalRow;
@@ -164,6 +166,263 @@ function injectPulseRingAnim() {
     }
   `;
   document.head.appendChild(style);
+}
+
+interface FaceTimeCallViewProps {
+  isVideo: boolean;
+  onHangUp: () => void;
+}
+
+function FaceTimeCallView({ isVideo, onHangUp }: FaceTimeCallViewProps) {
+  const { localParticipant } = useLocalParticipant();
+
+  const trackReferences = useTracks(
+    [
+      { source: Track.Source.Camera, withPlaceholder: false },
+      { source: Track.Source.ScreenShare, withPlaceholder: false },
+    ],
+    { onlySubscribed: false }
+  ) as Array<import('@livekit/components-react').TrackReference>;
+
+  const localVideoTrack = trackReferences.find((t) => t.participant.isLocal);
+  const remoteVideoTrack = trackReferences.find((t) => !t.participant.isLocal);
+
+  const [isMuted, setIsMuted] = useState(false);
+  const [isCamDisabled, setIsCamDisabled] = useState(!isVideo);
+  const [facingMode, setFacingMode] = useState<'user' | 'environment'>('user');
+
+  useEffect(() => {
+    setIsMuted(!localParticipant.isMicrophoneEnabled);
+    setIsCamDisabled(!localParticipant.isCameraEnabled);
+  }, [localParticipant.isMicrophoneEnabled, localParticipant.isCameraEnabled]);
+
+  const toggleMute = async () => {
+    try {
+      const current = localParticipant.isMicrophoneEnabled;
+      await localParticipant.setMicrophoneEnabled(!current);
+      setIsMuted(current);
+    } catch (err) {
+      console.warn('Failed to toggle microphone:', err);
+    }
+  };
+
+  const toggleCamera = async () => {
+    try {
+      const current = localParticipant.isCameraEnabled;
+      await localParticipant.setCameraEnabled(!current);
+      setIsCamDisabled(current);
+    } catch (err) {
+      console.warn('Failed to toggle camera:', err);
+    }
+  };
+
+  const flipCamera = async () => {
+    if (!localParticipant.isCameraEnabled) return;
+    const nextMode = facingMode === 'user' ? 'environment' : 'user';
+    setFacingMode(nextMode);
+
+    try {
+      const devices = await navigator.mediaDevices.enumerateDevices();
+      const videoDevices = devices.filter((d) => d.kind === 'videoinput');
+      if (videoDevices.length > 1) {
+        const currentId = localParticipant.videoTrackPublications.values().next().value?.track?.mediaStreamTrack?.getSettings().deviceId;
+        const currentIndex = videoDevices.findIndex((d) => d.deviceId === currentId);
+        const nextIndex = (currentIndex + 1) % videoDevices.length;
+        const nextDevice = videoDevices[nextIndex];
+        if (nextDevice) {
+          await localParticipant.setCameraEnabled(false);
+          await new Promise((r) => setTimeout(r, 100));
+          await localParticipant.setCameraEnabled(true, { deviceId: nextDevice.deviceId });
+        }
+      } else {
+        toast.info('Only one camera detected');
+      }
+    } catch (err) {
+      console.warn('Failed to switch camera device:', err);
+    }
+  };
+
+  return (
+    <div style={{ position: 'relative', width: '100%', height: '100%', overflow: 'hidden', background: '#000' }}>
+      {/* 1. REMOTE VIDEO (Full Screen) */}
+      <div style={{ width: '100%', height: '100%' }}>
+        {isVideo && remoteVideoTrack ? (
+          <VideoTrack
+            trackRef={remoteVideoTrack}
+            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+          />
+        ) : (
+          <div style={{
+            width: '100%',
+            height: '100%',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            background: 'radial-gradient(circle at center, #0B1E30 0%, #03080F 100%)',
+            flexDirection: 'column'
+          }}>
+            <div className="pnl-pulse-avatar-ring" style={{
+              width: 120,
+              height: 120,
+              borderRadius: '50%',
+              background: 'rgba(255, 255, 255, 0.05)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: '2.5rem',
+              fontWeight: 700,
+              color: '#00C4BC',
+              marginBottom: 20,
+              border: '2px solid rgba(0, 196, 188, 0.2)'
+            }}>
+              <Phone size={48} />
+            </div>
+            <div style={{ color: 'rgba(255,255,255,0.7)', fontSize: '1.1rem', fontWeight: 600, letterSpacing: '0.05em' }}>
+              {isVideo ? 'WAITING FOR COMPANION VIDEO...' : 'VOICE CONNECTION ACTIVE'}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* 2. LOCAL VIDEO (Floating Picture-in-Picture) */}
+      {isVideo && localVideoTrack && localParticipant.isCameraEnabled && (
+        <div style={{
+          position: 'absolute',
+          top: 24,
+          right: 24,
+          width: 110,
+          height: 165,
+          borderRadius: 16,
+          overflow: 'hidden',
+          boxShadow: '0 12px 24px rgba(0,0,0,0.5)',
+          border: '2px solid rgba(255, 255, 255, 0.15)',
+          zIndex: 100,
+          background: '#0B1E30',
+          transition: 'all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)'
+        }}>
+          <VideoTrack
+            trackRef={localVideoTrack}
+            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+          />
+        </div>
+      )}
+
+      {/* 3. CONTROL OVERLAY (FaceTime-like floating bar) */}
+      <div style={{
+        position: 'absolute',
+        bottom: 40,
+        left: '50%',
+        transform: 'translateX(-50%)',
+        background: 'rgba(11, 30, 48, 0.65)',
+        backdropFilter: 'blur(20px)',
+        WebkitBackdropFilter: 'blur(20px)',
+        padding: '16px 28px',
+        borderRadius: 40,
+        display: 'flex',
+        alignItems: 'center',
+        gap: 20,
+        zIndex: 200,
+        border: '1px solid rgba(255,255,255,0.08)',
+        boxShadow: '0 20px 50px rgba(0,0,0,0.5)'
+      }}>
+        {/* Mute Mic Button */}
+        <button
+          type="button"
+          onClick={toggleMute}
+          style={{
+            background: isMuted ? '#E53E3E' : 'rgba(255,255,255,0.08)',
+            color: 'white',
+            border: 'none',
+            borderRadius: '50%',
+            width: 52,
+            height: 52,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            cursor: 'pointer',
+            transition: 'all 0.2s',
+            outline: 'none'
+          }}
+          title={isMuted ? 'Unmute microphone' : 'Mute microphone'}
+        >
+          {isMuted ? <MicOff size={22} /> : <Mic size={22} />}
+        </button>
+
+        {/* Camera Toggle Button */}
+        {isVideo && (
+          <button
+            type="button"
+            onClick={toggleCamera}
+            style={{
+              background: isCamDisabled ? '#E53E3E' : 'rgba(255,255,255,0.08)',
+              color: 'white',
+              border: 'none',
+              borderRadius: '50%',
+              width: 52,
+              height: 52,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+              transition: 'all 0.2s',
+              outline: 'none'
+            }}
+            title={isCamDisabled ? 'Turn Camera On' : 'Turn Camera Off'}
+          >
+            {isCamDisabled ? <VideoOff size={22} /> : <Video size={22} />}
+          </button>
+        )}
+
+        {/* Flip Camera Button */}
+        {isVideo && !isCamDisabled && (
+          <button
+            type="button"
+            onClick={flipCamera}
+            style={{
+              background: 'rgba(255,255,255,0.08)',
+              color: 'white',
+              border: 'none',
+              borderRadius: '50%',
+              width: 52,
+              height: 52,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+              transition: 'all 0.2s',
+              outline: 'none'
+            }}
+            title="Flip Camera"
+          >
+            <Camera size={22} />
+          </button>
+        )}
+
+        {/* Hang Up Button */}
+        <button
+          type="button"
+          onClick={onHangUp}
+          style={{
+            background: '#E53E3E',
+            color: 'white',
+            border: 'none',
+            borderRadius: '50%',
+            width: 52,
+            height: 52,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            cursor: 'pointer',
+            transition: 'all 0.2s',
+            outline: 'none'
+          }}
+          title="Hang Up"
+        >
+          <PhoneOff size={22} />
+        </button>
+      </div>
+    </div>
+  );
 }
 
 export default function CallOverlay({ call, selfId, onClose }: Props) {
@@ -360,6 +619,29 @@ export default function CallOverlay({ call, selfId, onClose }: Props) {
     return () => window.removeEventListener('pagehide', handler);
   }, [call.id, call, counterpartyId]);
 
+  const handleHangUp = async () => {
+    if (counterpartyId) {
+      try {
+        const { broadcastCallSignal } = await import('@/lib/messenger/realtime');
+        void broadcastCallSignal(counterpartyId, 'call_ended', call);
+      } catch (e) {
+        console.warn('Failed to broadcast call ended:', e);
+      }
+    }
+
+    try {
+      await fetch('/api/messenger/call-signal', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ action: 'hangup', callId: call.id }),
+      });
+    } catch (err) {
+      console.warn('Failed to update DB on call end:', err);
+    }
+
+    onClose();
+  };
+
   const handleAction = async (action: 'accept' | 'decline' | 'hangup') => {
     if (isSignaling) return;
     setIsSignaling(true);
@@ -481,7 +763,7 @@ export default function CallOverlay({ call, selfId, onClose }: Props) {
                 <div>
                   <button
                     type="button"
-                    onClick={() => void handleAction('hangup')}
+                    onClick={handleHangUp}
                     className="pnl-btn-action pnl-btn-decline"
                     aria-label="Cancel Call"
                     title="Cancel Call"
@@ -530,11 +812,11 @@ export default function CallOverlay({ call, selfId, onClose }: Props) {
           connect={true}
           video={isVideo}
           audio={true}
-          onDisconnected={onClose}
+          onDisconnected={handleHangUp}
           style={{ flex: 1, background: '#000' }}
         >
-          {isVideo ? <VideoConference /> : <RoomAudioRenderer />}
-          <ControlBar />
+          <RoomAudioRenderer />
+          <FaceTimeCallView isVideo={isVideo} onHangUp={handleHangUp} />
         </LiveKitRoom>
       )}
 

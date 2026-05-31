@@ -24,6 +24,9 @@ export function createRingTone(): RingTone | null {
     try {
       audioContext = new AudioContextClass();
       isPlaying = true;
+      if (audioContext.state === 'suspended') {
+        void audioContext.resume();
+      }
 
       // Soft beep-beep pattern
       const playBeep = () => {
