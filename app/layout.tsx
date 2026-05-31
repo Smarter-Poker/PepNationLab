@@ -7,6 +7,7 @@ import SiteDisclaimerGate from "@/components/SiteDisclaimerGate";
 import StaleBrowserBanner from "@/components/StaleBrowserBanner";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { Toaster } from "sonner";
+import GlobalCallListener from "@/components/messenger/GlobalCallListener";
 
 export const viewport: Viewport = {
   themeColor: [
@@ -90,6 +91,7 @@ export default function RootLayout({
           <Toaster theme="dark" position="bottom-right" richColors />
           <ImpersonationBanner />
           <PwaInstallPrompt />
+          <GlobalCallListener />
         </ThemeProvider>
       </body>
     </html>

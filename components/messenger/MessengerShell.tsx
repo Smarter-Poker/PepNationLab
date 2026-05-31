@@ -4,14 +4,10 @@ import { ArrowLeft } from 'lucide-react';
 import ConversationList from './ConversationList';
 import MessagePane from './MessagePane';
 import SearchBar from './SearchBar';
-import IncomingCallToast from './IncomingCallToast';
-import CallOverlay from './CallOverlay';
 import { useMessengerStore } from '@/stores/messengerStore';
 import {
-  subscribeCallSignals,
   subscribeMyIncomingMessages,
   unsubscribe,
-  type CallSignalRow,
   type IncomingMessageNotification,
 } from '@/lib/messenger/realtime';
 
@@ -30,8 +26,6 @@ export default function MessengerShell({ userId }: Props) {
   const setActive = useMessengerStore((s) => s.setActive);
   const activeId = useMessengerStore((s) => s.activeConversationId);
   const conversations = useMessengerStore((s) => s.conversations);
-  const [incomingCalls, setIncomingCalls] = useState<CallSignalRow[]>([]);
-  const [activeCall, setActiveCall] = useState<CallSignalRow | null>(null);
 
   // Phase 14: cache the caller's notification preferences in a ref so the
   // Realtime onInsert callback doesn't have to refetch on every message.
@@ -123,54 +117,6 @@ export default function MessengerShell({ userId }: Props) {
     };
   }, [userId]);
 
-  const activeCallRef = useRef<CallSignalRow | null>(null);
-  useEffect(() => {
-    activeCallRef.current = activeCall;
-  }, [activeCall]);
-
-  // Phase 11: subscribe to call signals across every conversation the user
-  // participates in. Uses high-performance Realtime Broadcast Channels.
-  useEffect(() => {
-    const ch = subscribeCallSignals(userId, {
-      onInsert: (c) => {
-        if (c.status !== 'ringing') return;
-        if (c.initiator_id === userId) return;
-        if (activeCallRef.current) {
-          console.log('[REALTIME] Call signal ignored — already in an active call');
-          return;
-        }
-
-        // Tab Claim Check
-        const roomName = c.livekit_room;
-        const claimKey = `call_claim_${roomName}`;
-        const existingClaim = localStorage.getItem(claimKey);
-        const now = Date.now();
-        if (existingClaim && (now - parseInt(existingClaim, 10)) < 30000) {
-          console.log('[REALTIME] Call signal ignored — already claimed by another tab:', roomName);
-          return;
-        }
-        localStorage.setItem(claimKey, now.toString());
-        setTimeout(() => {
-          try { localStorage.removeItem(claimKey); } catch {}
-        }, 35000);
-
-        setIncomingCalls((cur) => (cur.some((x) => x.id === c.id) ? cur : [...cur, c]));
-      },
-      onUpdate: (c) => {
-        // remove from incoming whenever status leaves 'ringing'
-        if (c.status !== 'ringing') {
-          setIncomingCalls((cur) => cur.filter((x) => x.id !== c.id));
-        }
-        // if the call we are in just ended for everyone, dismiss the overlay
-        setActiveCall((cur) => {
-          if (!cur || cur.id !== c.id) return cur;
-          if (c.status === 'ended' || c.status === 'declined' || c.status === 'missed') return null;
-          return { ...cur, status: c.status };
-        });
-      },
-    });
-    return () => unsubscribe(ch);
-  }, [userId]);
 
   // Phase 14: cross-conversation incoming-message subscription. Fires a
   // browser Notification only when the tab is hidden OR the message belongs
@@ -374,32 +320,6 @@ export default function MessengerShell({ userId }: Props) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const handleAccept = useCallback(
-    (call: CallSignalRow) => {
-      setIncomingCalls((cur) => cur.filter((x) => x.id !== call.id));
-      setActive(call.conversation_id);
-      setActiveCall(call);
-
-      // Broadcast accepted signal back to initiator
-      import('@/lib/messenger/realtime').then(({ broadcastCallSignal }) => {
-        void broadcastCallSignal(call.initiator_id, 'call_accepted', call);
-      }).catch(err => {
-        console.warn('Failed to broadcast call accepted signal:', err);
-      });
-    },
-    [setActive],
-  );
-
-  const handleDecline = useCallback((call: CallSignalRow) => {
-    setIncomingCalls((cur) => cur.filter((x) => x.id !== call.id));
-
-    // Broadcast declined signal back to initiator
-    import('@/lib/messenger/realtime').then(({ broadcastCallSignal }) => {
-      void broadcastCallSignal(call.initiator_id, 'call_declined', call);
-    }).catch(err => {
-      console.warn('Failed to broadcast call declined signal:', err);
-    });
-  }, []);
 
   return (
     <>
@@ -489,27 +409,10 @@ export default function MessengerShell({ userId }: Props) {
               All Conversations
             </button>
           )}
-          <MessagePane key={activeId || 'empty'} userId={userId} activeCall={activeCall} setActiveCall={setActiveCall} />
+          <MessagePane key={activeId || 'empty'} userId={userId} />
         </div>
       </div>
 
-      {/* Incoming call toasts — absolutely positioned so they don't affect layout */}
-      {incomingCalls.map((c, idx) => (
-        <IncomingCallToast
-          key={c.id}
-          call={c}
-          onAccept={() => handleAccept(c)}
-          onDecline={() => handleDecline(c)}
-          stackIndex={idx}
-        />
-      ))}
-      {activeCall && (
-        <CallOverlay
-          call={activeCall}
-          selfId={userId}
-          onClose={() => setActiveCall(null)}
-        />
-      )}
     </>
   );
 }

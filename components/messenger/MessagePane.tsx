@@ -4,7 +4,7 @@ import { useMessengerStore } from '@/stores/messengerStore';
 import { enablePush } from '@/lib/push-client';
 import type { ConversationListItem, Message, Reaction, ParticipantRole } from '@/lib/messenger/types';
 import type { MessageLabelValue, ThemeValue } from '@/lib/messenger/schemas';
-import type { CallSignalRow } from '@/lib/messenger/realtime';
+
 import { MessageCircle, Info, Bell, BellOff, X } from 'lucide-react';
 import MessageBubble from './MessageBubble';
 import MessageComposer from './MessageComposer';
@@ -27,8 +27,6 @@ import type { RealtimeChannel } from '@supabase/supabase-js';
 
 interface Props {
   userId: string;
-  activeCall: CallSignalRow | null;
-  setActiveCall: (c: CallSignalRow | null) => void;
 }
 
 const BATCH_SIZE = 50;
@@ -188,7 +186,7 @@ function formatMessageTimestamp(dateStr: string): string {
 }
 
 
-export default function MessagePane({ userId, activeCall, setActiveCall }: Props) {
+export default function MessagePane({ userId }: Props) {
   const activeId = useMessengerStore((s) => s.activeConversationId);
   const messagesByConv = useMessengerStore((s) => s.messages);
   const setMessages = useMessengerStore((s) => s.setMessages);
@@ -230,8 +228,6 @@ export default function MessagePane({ userId, activeCall, setActiveCall }: Props
   // Phase 14: push opt-in banner state
   const [pushBanner, setPushBanner] = useState<PushBannerState>('hidden');
 
-  // activeCall is hoisted to MessengerShell so IncomingCallToast accept-handlers can set it.
-  void activeCall;
 
   const typingExpiryRef = useRef<Record<string, number>>({});
   const typingSweeperRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -1105,7 +1101,9 @@ export default function MessagePane({ userId, activeCall, setActiveCall }: Props
         <div style={{ display: 'inline-flex', gap: 6, alignItems: 'center', flexShrink: 0 }}>
           <CallButton
             conversationId={activeId}
-            onCallStarted={(c) => setActiveCall(c)}
+            onCallStarted={(c) => {
+              window.dispatchEvent(new CustomEvent('messenger:start-call', { detail: c }));
+            }}
           />
           <button
             type="button"

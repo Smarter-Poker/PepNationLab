@@ -19,8 +19,46 @@ interface Props {
 
 export default function CallOverlay({ call, selfId, onClose }: Props) {
   const conversations = useMessengerStore((s) => s.conversations);
-  const activeConv = conversations.find((c) => c.conversation_id === call.conversation_id);
-  const counterpartyId = activeConv?.counterparty_id;
+  const [counterpartyId, setCounterpartyId] = useState<string | null>(null);
+
+  useEffect(() => {
+    // 1. If we are the callee, the counterparty is the initiator
+    if (call.initiator_id !== selfId) {
+      setCounterpartyId(call.initiator_id);
+      return;
+    }
+
+    // 2. If we are the initiator, check if we can resolve it from Zustand store
+    const activeConv = conversations.find((c) => c.conversation_id === call.conversation_id);
+    if (activeConv?.counterparty_id) {
+      setCounterpartyId(activeConv.counterparty_id);
+      return;
+    }
+
+    // 3. Fallback: fetch participants from the API to get the other participant
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch('/api/messenger/list-participants', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ conversationId: call.conversation_id }),
+        });
+        if (cancelled || !res.ok) return;
+        const json = (await res.json()) as { participants?: Array<{ user_id: string }> };
+        const other = (json.participants ?? []).find((p) => p.user_id !== selfId);
+        if (other && !cancelled) {
+          setCounterpartyId(other.user_id);
+        }
+      } catch (err) {
+        console.warn('Failed to resolve counterparty in CallOverlay:', err);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [call.initiator_id, call.conversation_id, selfId, conversations]);
 
   const [token, setToken] = useState<string | null>(null);
   const [url, setUrl] = useState<string | null>(null);

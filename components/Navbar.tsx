@@ -7,9 +7,6 @@ import { useRouter, usePathname } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import NavbarNotificationBell from '@/components/NavbarNotificationBell';
 import MessageBell from '@/components/MessageBell';
-import { subscribeCallSignals, type CallSignalRow } from '@/lib/messenger/realtime';
-import IncomingCallToast from './messenger/IncomingCallToast';
-import CallOverlay from './messenger/CallOverlay';
 
 /* ─────────────────────────────────────────────
    Page title resolution — maps route prefixes
@@ -116,12 +113,6 @@ export default function Navbar({ onMenuClick, isOpen, title }: { onMenuClick?: (
   const [agentSlug, setAgentSlug] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const [incomingCalls, setIncomingCalls] = useState<CallSignalRow[]>([]);
-  const [activeCall, setActiveCall] = useState<CallSignalRow | null>(null);
-  const activeCallRef = useRef<CallSignalRow | null>(null);
-  useEffect(() => {
-    activeCallRef.current = activeCall;
-  }, [activeCall]);
 
   const role = profile?.role ?? 'researcher';
   const displayName = profile?.full_name || user?.email?.split('@')[0] || '';
@@ -215,82 +206,6 @@ export default function Navbar({ onMenuClick, isOpen, title }: { onMenuClick?: (
     return () => subscription.unsubscribe();
   }, []);
 
-  // Phase 11: Subscribe to call signals globally on any storefront/dashboard page
-  useEffect(() => {
-    if (!user?.id) {
-      setIncomingCalls([]);
-      setActiveCall(null);
-      return;
-    }
-
-    const ch = subscribeCallSignals(user.id, {
-      onInsert: (c) => {
-        if (c.status !== 'ringing') return;
-        if (c.initiator_id === user.id) return;
-        if (activeCallRef.current) {
-          console.log('[GLOBAL CALL] Ignored signal — already active in a call');
-          return;
-        }
-
-        // Tab Claim Check
-        const roomName = c.livekit_room;
-        const claimKey = `call_claim_${roomName}`;
-        const existingClaim = localStorage.getItem(claimKey);
-        const now = Date.now();
-        if (existingClaim && (now - parseInt(existingClaim, 10)) < 30000) {
-          console.log('[GLOBAL CALL] Ignored signal — claimed by another tab:', roomName);
-          return;
-        }
-        localStorage.setItem(claimKey, now.toString());
-        setTimeout(() => {
-          try { localStorage.removeItem(claimKey); } catch {}
-        }, 35000);
-
-        setIncomingCalls((cur) => (cur.some((x) => x.id === c.id) ? cur : [...cur, c]));
-      },
-      onUpdate: (c) => {
-        if (c.status !== 'ringing') {
-          setIncomingCalls((cur) => cur.filter((x) => x.id !== c.id));
-        }
-        setActiveCall((cur) => {
-          if (!cur || cur.id !== c.id) return cur;
-          if (c.status === 'ended' || c.status === 'declined' || c.status === 'missed') return null;
-          return { ...cur, status: c.status };
-        });
-      },
-    });
-
-    return () => {
-      const { unsubscribe } = require('@/lib/messenger/realtime');
-      void unsubscribe(ch);
-    };
-  }, [user?.id]);
-
-  const handleAccept = useCallback(
-    (call: CallSignalRow) => {
-      setIncomingCalls((cur) => cur.filter((x) => x.id !== call.id));
-      setActiveCall(call);
-
-      // Broadcast accepted signal back to initiator
-      import('@/lib/messenger/realtime').then(({ broadcastCallSignal }) => {
-        void broadcastCallSignal(call.initiator_id, 'call_accepted', call);
-      }).catch(err => {
-        console.warn('Failed to broadcast global call accepted signal:', err);
-      });
-    },
-    [],
-  );
-
-  const handleDecline = useCallback((call: CallSignalRow) => {
-    setIncomingCalls((cur) => cur.filter((x) => x.id !== call.id));
-
-    // Broadcast declined signal back to initiator
-    import('@/lib/messenger/realtime').then(({ broadcastCallSignal }) => {
-      void broadcastCallSignal(call.initiator_id, 'call_declined', call);
-    }).catch(err => {
-      console.warn('Failed to broadcast global call declined signal:', err);
-    });
-  }, []);
 
   const handleSignOut = async () => {
     const supabase = createClient();
@@ -655,23 +570,6 @@ export default function Navbar({ onMenuClick, isOpen, title }: { onMenuClick?: (
       </div>
       )} {/* end !onMenuClick drawer panel */}
 
-      {/* Global incoming call toasts */}
-      {incomingCalls.map((c, idx) => (
-        <IncomingCallToast
-          key={c.id}
-          call={c}
-          onAccept={() => handleAccept(c)}
-          onDecline={() => handleDecline(c)}
-          stackIndex={idx}
-        />
-      ))}
-      {activeCall && (
-        <CallOverlay
-          call={activeCall}
-          selfId={user?.id || ''}
-          onClose={() => setActiveCall(null)}
-        />
-      )}
 
       <style>{`
         .pnl-navbar { }
