@@ -1171,20 +1171,31 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
                         boxShadow: paymentMethod === p.id ? 'var(--shadow-teal-sm)' : 'none',
                         transition: 'all 0.25s ease'
                       }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
                           <input
                             type="radio"
                             name="paymentMethod"
                             checked={paymentMethod === p.id}
                             onChange={() => setPaymentMethod(p.id)}
-                            style={{ accentColor: 'var(--teal)' }}
+                            style={{ accentColor: 'var(--teal)', flexShrink: 0 }}
                           />
-                          <span style={{ fontSize: '1.2rem', lineHeight: 1 }}>{p.icon}</span>
-                          <strong style={{ color: 'var(--white)', fontSize: '0.95rem' }}>{p.name}</strong>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)', flex: 1 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 64, height: 48, flexShrink: 0 }}>
+                              {p.icon}
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', flexWrap: 'wrap' }}>
+                              <strong style={{ color: 'var(--white)', fontSize: '1.05rem', fontFamily: 'var(--font-brand)', margin: 0, padding: 0, lineHeight: 1 }}>{p.name}</strong>
+                              {agentPaymentHandles?.[p.id] && (
+                                <>
+                                  <span style={{ color: 'rgba(255,255,255,0.2)', fontSize: '1rem', lineHeight: 1 }}>-</span>
+                                  <span style={{ fontSize: '0.95rem', color: 'var(--silver)', lineHeight: 1, fontFamily: 'monospace' }}>
+                                    {agentPaymentHandles[p.id]}
+                                  </span>
+                                </>
+                              )}
+                            </div>
+                          </div>
                         </div>
-                        <span style={{ fontSize: '0.78rem', color: 'var(--grey-400)', paddingLeft: 42 }}>
-                          {p.desc}
-                        </span>
                       </label>
                     ))}
                   </div>

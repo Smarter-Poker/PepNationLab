@@ -283,7 +283,7 @@ export default function MessageBubble({
       data-msg-id={message.id}
       style={{ alignSelf: isOwn ? 'flex-end' : 'flex-start', maxWidth: '65%',
         display: 'flex', alignItems: 'flex-end', gap: 8, position: 'relative',
-        marginBottom: isLast ? 24 : 4 }}
+        marginBottom: isLast ? 24 : 12 }}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       onContextMenu={(e) => { e.preventDefault(); if (editing || confirmDelete) return; setMenuOpen(!isMenuOpen); }}

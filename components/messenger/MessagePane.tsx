@@ -142,8 +142,10 @@ export default function MessagePane({ userId, activeCall, setActiveCall }: Props
   const typingSweeperRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  const scrollToBottom = useCallback(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'auto' });
+  const scrollToBottom = useCallback((behavior: ScrollBehavior = 'auto') => {
+    setTimeout(() => {
+      messagesEndRef.current?.scrollIntoView({ behavior });
+    }, 50);
   }, []);
 
   // Scroll to bottom when messages load or change
