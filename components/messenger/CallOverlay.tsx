@@ -300,9 +300,6 @@ function FaceTimeCallView({ isVideo, onHangUp, startedAtMs, isE2EE }: FaceTimeCa
       await el.requestPictureInPicture();
     } catch (err) { captureCallError(err, 'overlay', { stage_detail: 'pip' }); }
   };
-  // audit15 fix-30: Bluetooth/AirPods routing tooltip. The Web platform
-  // has no API to control audio output device routing; the user must
-  // change it in their OS. Surface clear guidance instead of nothing.
   const showAudioRoutingHint = () => {
     const ua = navigator.userAgent;
     let detail = 'Tap Your Device Speaker / Bluetooth Icon To Switch.';
@@ -360,7 +357,6 @@ function FaceTimeCallView({ isVideo, onHangUp, startedAtMs, isE2EE }: FaceTimeCa
 
   return (
     <div style={{ position: 'relative', width: '100%', height: '100%', overflow: 'hidden', background: '#000' }}>
-      {/* audit15 fix-30: switch between 1:1 FaceTime layout and group grid */}
       {isGroup ? (
         <CallGridView />
       ) : (
@@ -427,7 +423,6 @@ function FaceTimeCallView({ isVideo, onHangUp, startedAtMs, isE2EE }: FaceTimeCa
           {formatCallDuration(elapsedMs)}
           <SignalBars quality={worstQuality} />
         </span>
-        {/* audit15 fix-30: E2EE indicator when LiveKit's e2ee worker is active. */}
         {isE2EE && (
           <span className="pnl-e2ee-pill" title="End-To-End Encrypted">End-To-End Encrypted</span>
         )}
@@ -559,7 +554,6 @@ function FaceTimeCallView({ isVideo, onHangUp, startedAtMs, isE2EE }: FaceTimeCa
           </button>
         )}
 
-        {/* audit15 fix-30: Bluetooth / audio output routing hint. */}
         <button
           type="button" onClick={showAudioRoutingHint}
           style={{
@@ -607,28 +601,49 @@ export default function CallOverlay({ call, selfId, onClose, onAccept }: Props &
     activeStartedAtRef.current = Number.isFinite(fromServer) ? fromServer : Date.now();
   }
 
-  // audit15 fix-30: per-call E2EE setup. Both peers derive the same key
-  // from the shared `livekit_room` UUID.
+  // audit15 fix-36 (audit): per-call E2EE setup with ref-based cleanup.
+  // The previous version (fix-30) had the cleanup function close over the
+  // `e2ee` state from render scope, but `setE2ee(setup)` runs inside the
+  // async IIFE AFTER the effect's setup wires the cleanup closure. The
+  // closure therefore captured the initial `e2ee = null` value and the
+  // worker.terminate() call was never reached — leaking one Worker
+  // (~2-3 MB) per call until tab close.
+  //
+  // Now `e2eeRef.current` tracks the actual setup the IIFE created. The
+  // state mirror still exists to drive a re-render so LiveKitRoom picks
+  // up the options. Cleanup terminates via ref, killing the actual current
+  // worker regardless of when the async resolved relative to the cleanup.
+  // Race: if `cancelled` flips to true AFTER setup completes but BEFORE
+  // setE2ee fires, we terminate the orphan inline.
   const [e2ee, setE2ee] = useState<E2EESetup | null>(null);
+  const e2eeRef = useRef<E2EESetup | null>(null);
   useEffect(() => {
     let cancelled = false;
     (async () => {
       const setup = await createE2EESetup(call.livekit_room);
-      if (!cancelled) {
-        setE2ee(setup);
-        if (setup) {
-          captureCallEvent('E2EE enabled for call', 'overlay', 'info', { call_id: call.id });
+      if (cancelled) {
+        // Race: effect already torn down. Kill the orphan inline so its
+        // Worker doesn't leak.
+        if (setup?.worker) {
+          try { setup.worker.terminate(); } catch {}
         }
+        return;
+      }
+      e2eeRef.current = setup;
+      setE2ee(setup);
+      if (setup) {
+        captureCallEvent('E2EE enabled for call', 'overlay', 'info', { call_id: call.id });
       }
     })();
     return () => {
       cancelled = true;
-      if (e2ee?.worker) {
-        try { e2ee.worker.terminate(); } catch {}
+      const cur = e2eeRef.current;
+      if (cur?.worker) {
+        try { cur.worker.terminate(); } catch {}
       }
+      e2eeRef.current = null;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [call.livekit_room]);
+  }, [call.livekit_room, call.id]);
 
   useEffect(() => {
     let cancelled = false;
@@ -899,7 +914,6 @@ export default function CallOverlay({ call, selfId, onClose, onAccept }: Props &
     ? counterpartyName.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase()
     : '?';
 
-  // audit15 fix-30: build the LiveKitRoom options once per setup.
   const livekitOptions = asRoomOptions(e2ee);
 
   return (
