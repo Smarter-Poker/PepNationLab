@@ -12,13 +12,13 @@ import GifPicker from './GifPicker';
 import TemplatesMenu from './TemplatesMenu';
 import ScheduledMessageList from './ScheduledMessageList';
 import ExpiryPicker from './ExpiryPicker';
-import { subscribeTyping, unsubscribe } from '@/lib/messenger/realtime';
 
 interface Props {
   conversationId: string;
   selfId: string;
   replyTo: Message | null;
   onClearReply: () => void;
+  onTyping?: (isTyping: boolean) => void;
 }
 
 const MAX_LEN = 2000;
@@ -58,7 +58,7 @@ function formatExpirySummary(seconds: number | null): string {
   return `Expires In ${Math.round(seconds / 86_400)} Days`;
 }
 
-export default function MessageComposer({ conversationId, selfId, replyTo, onClearReply }: Props) {
+export default function MessageComposer({ conversationId, selfId, replyTo, onClearReply, onTyping }: Props) {
   const [text, setText] = useState('');
   const [sending, setSending] = useState(false);
   const [showEmoji, setShowEmoji] = useState(false);
@@ -115,38 +115,34 @@ export default function MessageComposer({ conversationId, selfId, replyTo, onCle
   const adminMention = useMemo(() => ADMIN_MENTION_RE.test(text), [text]);
 
   useEffect(() => {
-    const { channel, broadcast } = subscribeTyping(conversationId, selfId, () => {});
-    broadcastRef.current = broadcast;
     return () => {
       if (stopTimerRef.current) clearTimeout(stopTimerRef.current);
       stopTimerRef.current = null;
-      broadcast(false);
-      unsubscribe(channel);
-      broadcastRef.current = null;
+      onTyping?.(false);
     };
-  }, [conversationId, selfId]);
+  }, [onTyping]);
 
   const stopTypingNow = useCallback(() => {
     if (stopTimerRef.current) clearTimeout(stopTimerRef.current);
     stopTimerRef.current = null;
     lastSentAtRef.current = 0;
-    broadcastRef.current?.(false);
-  }, []);
+    onTyping?.(false);
+  }, [onTyping]);
 
   useEffect(() => { if (voiceMode || showGif || showAttach) stopTypingNow(); }, [voiceMode, showGif, showAttach, stopTypingNow]);
 
   const pulseTyping = useCallback(() => {
     const now = Date.now();
     if (now - lastSentAtRef.current > TYPING_THROTTLE_MS) {
-      broadcastRef.current?.(true);
+      onTyping?.(true);
       lastSentAtRef.current = now;
     }
     if (stopTimerRef.current) clearTimeout(stopTimerRef.current);
     stopTimerRef.current = setTimeout(() => {
-      broadcastRef.current?.(false);
+      onTyping?.(false);
       lastSentAtRef.current = 0;
     }, TYPING_STOP_MS);
-  }, []);
+  }, [onTyping]);
 
   const insertAtCursor = (chunk: string) => {
     const el = inputRef.current;
