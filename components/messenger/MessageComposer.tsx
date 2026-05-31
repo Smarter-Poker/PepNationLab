@@ -24,7 +24,7 @@ interface Props {
 
 const MAX_LEN = 2000;
 const TYPING_THROTTLE_MS = 1500;
-const TYPING_STOP_MS = 3000;
+const TYPING_STOP_MS = 4000;
 const ADMIN_MENTION_RE = /(^|\s)@admin(\s|$|[.,!?;:])/i;
 
 interface UploadResult { uploadUrl: string; publicUrl: string; path: string }
@@ -119,35 +119,41 @@ export default function MessageComposer({ conversationId, selfId, replyTo, onCle
 
   const adminMention = useMemo(() => ADMIN_MENTION_RE.test(text), [text]);
 
+  const onTypingRef = useRef(onTyping);
+  useEffect(() => {
+    onTypingRef.current = onTyping;
+  }, [onTyping]);
+
   useEffect(() => {
     return () => {
       if (stopTimerRef.current) clearTimeout(stopTimerRef.current);
       stopTimerRef.current = null;
-      onTyping?.(false);
+      onTypingRef.current?.(false);
     };
-  }, [onTyping]);
+  }, []);
 
   const stopTypingNow = useCallback(() => {
     if (stopTimerRef.current) clearTimeout(stopTimerRef.current);
     stopTimerRef.current = null;
     lastSentAtRef.current = 0;
-    onTyping?.(false);
-  }, [onTyping]);
+    onTypingRef.current?.(false);
+  }, []);
 
   useEffect(() => { if (voiceMode || showGif || showAttach) stopTypingNow(); }, [voiceMode, showGif, showAttach, stopTypingNow]);
 
   const pulseTyping = useCallback(() => {
     const now = Date.now();
     if (now - lastSentAtRef.current > TYPING_THROTTLE_MS) {
-      onTyping?.(true);
+      onTypingRef.current?.(true);
       lastSentAtRef.current = now;
     }
     if (stopTimerRef.current) clearTimeout(stopTimerRef.current);
     stopTimerRef.current = setTimeout(() => {
-      onTyping?.(false);
+      onTypingRef.current?.(false);
       lastSentAtRef.current = 0;
     }, TYPING_STOP_MS);
-  }, [onTyping]);
+  }, []);
+
 
   const insertAtCursor = (chunk: string) => {
     const el = inputRef.current;

@@ -10,10 +10,15 @@ async function run() {
   if (error) { console.error(error); return; }
   
   const token = session.access_token;
+  const refresh = session.refresh_token;
 
+  // Let's pass the token in both places, just in case
   const res = await fetch('http://localhost:3000/api/messenger/list-participants', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+    headers: { 
+      'Content-Type': 'application/json', 
+      'Authorization': `Bearer ${token}` 
+    },
     body: JSON.stringify({ conversationId: '5a28149d-b225-4339-9bc2-99ca19484d94' })
   });
   console.log(res.status, await res.text());
