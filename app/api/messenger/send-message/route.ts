@@ -220,7 +220,7 @@ export async function POST(req: NextRequest) {
 
   // Broadcast the message payload to the conversation channel
   await sendBroadcast({
-    topic: `chat:${parsed.data.conversationId}`,
+    topic: `conversation:${parsed.data.conversationId}`,
     event: 'new_message',
     payload: { message: inserted },
   });

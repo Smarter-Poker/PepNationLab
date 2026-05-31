@@ -36,6 +36,17 @@ export function subscribeMessages(
   );
 
   ch.on(
+    'broadcast',
+    { event: 'new_message' },
+    (payload) => {
+      const newMsg = payload.payload?.message as Message;
+      if (newMsg && newMsg.sender_id !== selfId) {
+        handlers.onInsert?.(newMsg);
+      }
+    }
+  );
+
+  ch.on(
     'postgres_changes',
     {
       event: 'UPDATE',

@@ -11,9 +11,9 @@ async function run() {
 
   const convId = '5a28149d-b225-4339-9bc2-99ca19484d94';
   
-  const ch = svcUser.channel(`conversation:${convId}`);
-  ch.on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messenger_messages', filter: `conversation_id=eq.${convId}` }, (payload) => {
-    console.log('RECEIVED INSERT', payload);
+  const ch = svcUser.channel(`my_test_channel`);
+  ch.on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messenger_messages' }, (payload) => {
+    console.log('RECEIVED INSERT NO FILTER', payload);
     process.exit(0);
   });
 

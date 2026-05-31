@@ -167,32 +167,38 @@ export default function NavbarNotificationBell() {
       .on(
         'postgres_changes',
         {
-          event: 'INSERT',
+          event: '*',
           schema: 'public',
           table: 'notifications',
           filter: `user_id=eq.${userId}`,
         },
         (payload) => {
-          const newItem = payload.new as NotifItem;
-          // Prepend new notification to list
-          setItems(prev => [newItem, ...prev].slice(0, 20));
-          setUnread(prev => prev + 1);
-          // Ring the bell
-          setRinging(true);
-          setTimeout(() => setRinging(false), 800);
-          // Play subtle audio feedback (non-blocking)
-          try {
-            const ctx = new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
-            const osc = ctx.createOscillator();
-            const gain = ctx.createGain();
-            osc.connect(gain);
-            gain.connect(ctx.destination);
-            osc.frequency.value = 880;
-            gain.gain.setValueAtTime(0.08, ctx.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4);
-            osc.start();
-            osc.stop(ctx.currentTime + 0.4);
-          } catch { /* audio not available */ }
+          if (payload.eventType === 'INSERT') {
+            const newItem = payload.new as NotifItem;
+            setItems(prev => [newItem, ...prev].slice(0, 20));
+            setUnread(prev => prev + 1);
+            setRinging(true);
+            setTimeout(() => setRinging(false), 800);
+            try {
+              const ctx = new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
+              const osc = ctx.createOscillator();
+              const gain = ctx.createGain();
+              osc.connect(gain);
+              gain.connect(ctx.destination);
+              osc.frequency.value = 880;
+              gain.gain.setValueAtTime(0.08, ctx.currentTime);
+              gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4);
+              osc.start();
+              osc.stop(ctx.currentTime + 0.4);
+            } catch { /* audio not available */ }
+          } else if (payload.eventType === 'UPDATE') {
+            const updatedItem = payload.new as NotifItem;
+            setItems(prev => prev.map(n => n.id === updatedItem.id ? updatedItem : n));
+            // Only decrement if it changed from unread to read
+            if (payload.old && (payload.old as any).read_at === null && updatedItem.read_at !== null) {
+              setUnread(prev => Math.max(0, prev - 1));
+            }
+          }
         }
       )
       .subscribe();

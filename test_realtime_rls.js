@@ -9,28 +9,21 @@ async function run() {
   const { data: { session }, error } = await svcUser.auth.signInWithPassword({ email: 'danny@pepnationlab.com', password: 'TestPassword123!' });
   if (error) { console.error('Login err', error); return; }
 
-  const convId = '5a28149d-b225-4339-9bc2-99ca19484d94';
-  
-  const ch = svcUser.channel(`conversation:${convId}`);
-  ch.on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messenger_messages', filter: `conversation_id=eq.${convId}` }, (payload) => {
-    console.log('RECEIVED INSERT', payload);
+  const ch = svcUser.channel(`rls_channel`);
+  ch.on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'test_realtime_rls' }, (payload) => {
+    console.log('RLS RECEIVED INSERT', payload);
     process.exit(0);
   });
 
   ch.subscribe(async (s) => {
-    console.log('Subscribed:', s);
+    console.log('Subscribed rls:', s);
     if (s === 'SUBSCRIBED') {
       const svcAdmin = createClient(supabaseUrl, supabaseServiceKey);
       await new Promise(r => setTimeout(r, 1000));
-      console.log('Inserting message as admin');
-      await svcAdmin.from('messenger_messages').insert({
-        conversation_id: convId,
-        sender_id: '2db791ef-00fe-43b5-af40-e8c07c93fe1f', // send as Anna
-        content: 'test realtime insert ' + Date.now(),
-        is_read: false
-      });
+      console.log('Inserting into test_realtime_rls for Danny');
+      await svcAdmin.from('test_realtime_rls').insert({ user_id: session.user.id });
       setTimeout(() => {
-        console.log('Timeout waiting for insert broadcast');
+        console.log('Timeout waiting for rls broadcast');
         process.exit(1);
       }, 5000);
     }
