@@ -185,6 +185,7 @@ export default function MessagePane({ userId, activeCall, setActiveCall }: Props
   const setLoading = useMessengerStore((s) => s.setLoadingMessages);
   const loadingByConv = useMessengerStore((s) => s.loadingMessages);
   const appendMessage = useMessengerStore((s) => s.appendMessage);
+  const upsertMessages = useMessengerStore((s) => s.upsertMessages);
   const updateMessage = useMessengerStore((s) => s.updateMessage);
   const removeMessage = useMessengerStore((s) => s.removeMessage);
   const conversations = useMessengerStore((s) => s.conversations);
@@ -865,16 +866,16 @@ export default function MessagePane({ userId, activeCall, setActiveCall }: Props
         if (!res.ok) {
           const json = (await res.json().catch(() => ({}))) as { error?: string };
           toast(json.error ?? 'Delete Failed');
-          if (scope === 'for_me') appendMessage(m.conversation_id, snapshot);
+          if (scope === 'for_me') upsertMessages(m.conversation_id, [snapshot]);
           else updateMessage(m.conversation_id, snapshot);
         }
       } catch {
         toast('Network Error');
-        if (scope === 'for_me') appendMessage(m.conversation_id, snapshot);
+        if (scope === 'for_me') upsertMessages(m.conversation_id, [snapshot]);
         else updateMessage(m.conversation_id, snapshot);
       }
     },
-    [appendMessage, removeMessage, updateMessage],
+    [upsertMessages, removeMessage, updateMessage],
   );
 
   const handlePinToggle = useCallback(

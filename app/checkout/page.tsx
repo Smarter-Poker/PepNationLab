@@ -51,10 +51,12 @@ export default async function CheckoutPage({ searchParams }: PageProps) {
   let agentPaymentHandles: Record<string, string> = {};
   let minOverallQty = 1;
   try {
+    let minOrderQty = 1;
+
     if (agentSlug) {
       const { data: ap } = await supabase
         .from('agent_profiles')
-        .select('payment_handles, min_overall_qty')
+        .select('payment_handles, min_overall_qty, min_order_qty')
         .ilike('slug', agentSlug)
         .single();
       if (ap?.payment_handles) {
@@ -63,10 +65,13 @@ export default async function CheckoutPage({ searchParams }: PageProps) {
       if (ap?.min_overall_qty) {
         minOverallQty = ap.min_overall_qty;
       }
+      if (ap?.min_order_qty) {
+        minOrderQty = ap.min_order_qty;
+      }
     } else if (profile.referring_agent_id) {
       const { data: ap } = await supabase
         .from('agent_profiles')
-        .select('payment_handles, min_overall_qty')
+        .select('payment_handles, min_overall_qty, min_order_qty')
         .eq('id', profile.referring_agent_id)
         .single();
       if (ap?.payment_handles) {
@@ -74,6 +79,9 @@ export default async function CheckoutPage({ searchParams }: PageProps) {
       }
       if (ap?.min_overall_qty) {
         minOverallQty = ap.min_overall_qty;
+      }
+      if (ap?.min_order_qty) {
+        minOrderQty = ap.min_order_qty;
       }
     }
   } catch {
@@ -88,6 +96,7 @@ export default async function CheckoutPage({ searchParams }: PageProps) {
       agentSlug={agentSlug}
       agentPaymentHandles={agentPaymentHandles}
       minOverallQty={minOverallQty}
+      minOrderQty={minOrderQty}
     />
   );
 }

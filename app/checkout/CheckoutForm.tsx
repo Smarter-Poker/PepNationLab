@@ -37,6 +37,7 @@ interface CheckoutFormProps {
   agentPaymentHandles?: Record<string, string>;
   /** Overall minimum items required to checkout from this agent */
   minOverallQty?: number;
+  minOrderQty?: number;
 }
 
 interface SavedAddress {
@@ -52,7 +53,7 @@ interface SavedAddress {
   is_default: boolean;
 }
 
-export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, agentSlug, agentPaymentHandles, minOverallQty = 1 }: CheckoutFormProps) {
+export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, agentSlug, agentPaymentHandles, minOverallQty = 1, minOrderQty = 1 }: CheckoutFormProps) {
   // Agent buying from their own store → show tier-discounted pricing.
   // Cross-check: only treat as self-buy when the agentSlug in the URL
   // matches the agent's OWN store. If an agent visits another agent's
@@ -351,6 +352,12 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
     if (step === 1) {
       if (!meetsOverallMin) {
         setError(`This storefront requires a minimum overall order of ${minOverallQty} items. Please add more items to proceed.`);
+        return;
+      }
+      
+      const violatingItem = cart.find(item => item.quantity < minOrderQty);
+      if (violatingItem) {
+        setError(`This storefront requires a minimum of ${minOrderQty} per peptide. "${violatingItem.name}" has only ${violatingItem.quantity}.`);
         return;
       }
       if (fulfillmentMethod === 'ship') {
