@@ -4,8 +4,16 @@ import { requireAgent } from '@/lib/admin-auth';
 import { assertSameOrigin } from '@/lib/csrf';
 import { notifyRoleRevoked } from '@/lib/notify';
 
-// POST: Super-agent demotes one of their sub-agents back to 'researcher'.
-// Keeps referring_agent_id intact so downline sales attribution is preserved.
+/**
+ * POST /api/agent/revoke-subagent
+ *
+ * SACA: A parent agent or super-agent demotes one of their sub-agents
+ * back to 'researcher'. Clears the full set of SACA fields together so
+ * the CHECK constraints stay satisfied. Sub-agents themselves cannot
+ * revoke (no-nested rule).
+ *
+ * Body: { subAgentId: UUID }
+ */
 export async function POST(req: NextRequest) {
   const csrf = assertSameOrigin(req);
   if (csrf) return csrf;
@@ -18,92 +26,107 @@ export async function POST(req: NextRequest) {
   const { subAgentId } = body as { subAgentId?: string };
 
   if (!subAgentId || typeof subAgentId !== 'string') {
-    return NextResponse.json({ error: 'Missing Sub Agent Id' }, { status: 400 });
+    return NextResponse.json({ error: 'Missing Sub-Agent Id.' }, { status: 400 });
   }
-
   if (subAgentId === callerId) {
-    return NextResponse.json({ error: 'You Cannot Revoke Yourself' }, { status: 400 });
+    return NextResponse.json({ error: 'You Cannot Revoke Yourself.' }, { status: 400 });
   }
 
   const supabase = await createServiceClient();
 
-  // Confirm the caller is a super_agent
-  const { data: callerProfile, error: callerErr } = await supabase
+  // Caller must not be a sub-agent themselves (no nested revocation)
+  const { data: callerProfile } = await supabase
     .from('profiles')
-    .select('id, is_super_agent, role')
+    .select('id, is_super_agent, is_sub_agent, role, full_name')
     .eq('id', callerId)
     .maybeSingle();
 
-  if (callerErr || !callerProfile) {
-    return NextResponse.json({ error: 'Caller Profile Not Found' }, { status: 404 });
+  if (!callerProfile) {
+    return NextResponse.json({ error: 'Caller Profile Not Found.' }, { status: 404 });
   }
-  if (!callerProfile.is_super_agent) {
+  if (callerProfile.is_sub_agent === true) {
     return NextResponse.json(
-      { error: 'Only Super Agents Can Revoke Sub Agent Privileges' },
-      { status: 403 }
+      { error: 'Sub-Agents Cannot Revoke Other Sub-Agents.' },
+      { status: 403 },
+    );
+  }
+  if (!(callerProfile.role === 'agent' || callerProfile.role === 'super_agent' || callerProfile.is_super_agent === true)) {
+    return NextResponse.json(
+      { error: 'Only Agents And Super-Agents Can Revoke Sub-Agents.' },
+      { status: 403 },
     );
   }
 
-  // Confirm the target is currently a sub_agent owned by the caller
-  const { data: target, error: targetErr } = await supabase
+  // Target must be a sub-agent in caller's downline
+  const { data: target } = await supabase
     .from('profiles')
-    .select('id, role, parent_agent_id, full_name')
+    .select('id, role, parent_agent_id, is_sub_agent, commission_pct, full_name')
     .eq('id', subAgentId)
     .maybeSingle();
 
-  if (targetErr || !target) {
-    return NextResponse.json({ error: 'Sub Agent Not Found' }, { status: 404 });
+  if (!target) {
+    return NextResponse.json({ error: 'Sub-Agent Not Found.' }, { status: 404 });
   }
   if (target.parent_agent_id !== callerId) {
     return NextResponse.json(
-      { error: 'You Can Only Revoke Sub Agents In Your Downline' },
-      { status: 403 }
+      { error: 'You Can Only Revoke Sub-Agents In Your Downline.' },
+      { status: 403 },
     );
   }
-  if (target.role !== 'agent') {
+  if (target.is_sub_agent !== true) {
     return NextResponse.json(
-      { error: 'Target Profile Is Not An Active Sub Agent' },
-      { status: 409 }
+      { error: 'Target Profile Is Not An Active Sub-Agent.' },
+      { status: 409 },
     );
   }
 
-  // Demote: role -> researcher, clear parent_agent_id and tier.
-  // referring_agent_id is intentionally retained for downline sales attribution.
+  // Demote — clear ALL the SACA fields together in one UPDATE so the
+  // CHECK constraints stay satisfied:
+  //   profiles_sub_agent_must_have_parent     (NOT is_sub_agent OR parent IS NOT NULL)
+  //   profiles_sub_agent_must_have_commission (NOT is_sub_agent OR commission_pct IS NOT NULL ...)
+  // referring_agent_id is intentionally retained for sales attribution
+  // back to the demoted user's original referring agent. tier is cleared
+  // because the demoted user no longer has agent-side pricing. Any settled
+  // commission stays on prepaid_balance — sub-agents earned it before demotion.
+  const now = new Date().toISOString();
   const { error: updateErr } = await supabase
     .from('profiles')
     .update({
       role: 'researcher',
+      is_sub_agent: false,
       parent_agent_id: null,
+      commission_pct: null,
+      commission_active_since: null,
+      created_by_agent_id: null,
       tier: null,
-      updated_at: new Date().toISOString(),
+      updated_at: now,
     })
     .eq('id', subAgentId)
-    .eq('parent_agent_id', callerId);
+    .eq('parent_agent_id', callerId)
+    .eq('is_sub_agent', true);
 
   if (updateErr) {
-    return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
+    console.error('[revoke-subagent] update error:', updateErr);
+    return NextResponse.json({ error: 'Revoke Failed. Please Try Again.' }, { status: 500 });
   }
 
-  // Audit log
   await supabase.from('admin_audit_log').insert({
     actor_id: callerId,
-    action: 'subagent_revoke',
-    entity_type: 'profile',
+    action: 'sub_agent_revoke',
+    entity_type: 'profiles',
     entity_id: subAgentId,
     changes: {
-      from: 'agent',
-      to: 'researcher',
+      previous_role: target.role,
+      new_role: 'researcher',
+      previous_is_sub_agent: target.is_sub_agent,
+      previous_commission_pct: target.commission_pct == null ? null : Number(target.commission_pct),
       revoked_by: callerId,
       target_name: target.full_name ?? null,
     },
   });
 
-  // Fetch super-agent name for the notification
-  const { data: callerFullProfile } = await supabase.from('profiles').select('full_name').eq('id', callerId).maybeSingle();
-  const superAgentName = callerFullProfile?.full_name || 'Your Super Agent';
-
-  // Fire-and-forget: notify the demoted user
-  void notifyRoleRevoked(supabase, subAgentId, superAgentName).catch(() => { /* best-effort */ });
+  void notifyRoleRevoked(supabase, subAgentId, callerProfile.full_name || 'Your Agent')
+    .catch(() => { /* best-effort */ });
 
   return NextResponse.json({ success: true });
 }

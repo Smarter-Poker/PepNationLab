@@ -28,6 +28,11 @@ export default function AgentStorefrontLogin({
   const [error, setError] = useState<string | null>(errorMessage || null);
   const [success, setSuccess] = useState<string | null>(null);
   const [referralCode, setReferralCode] = useState<string>('');
+  // SACA Phase 3: optional sub-agent tag picked up from ?sa=<uuid> in the URL.
+  // When present, the register POST sends it as `subAgentId` so the server
+  // can stamp profiles.referring_sub_agent_id on signup. Every order the
+  // researcher places afterward attributes commission to that sub-agent.
+  const [subAgentId, setSubAgentId] = useState<string>('');
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -36,6 +41,13 @@ export default function AgentStorefrontLogin({
       const ref = params.get('ref');
       if (ref && /^[A-Za-z0-9]{1,32}$/.test(ref)) {
         setReferralCode(ref.toUpperCase());
+        setMode('register');
+      }
+      // SACA Phase 3: optional sub-agent referral tag. Format: ?sa=<uuid>.
+      // Server validates the UUID is an actual sub-agent under this slug.
+      const sa = params.get('sa');
+      if (sa && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(sa)) {
+        setSubAgentId(sa.toLowerCase());
         setMode('register');
       }
     } catch {
@@ -143,6 +155,8 @@ export default function AgentStorefrontLogin({
 
       // Public storefront register endpoint resolves the agent by slug
       // and ties the new researcher to that agent's referring_agent_id.
+      // SACA Phase 3: if a sub-agent tag was picked up from ?sa=, pass it
+      // along; the server validates ownership before stamping the tag.
       const res = await fetch('/api/storefront/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -152,6 +166,7 @@ export default function AgentStorefrontLogin({
           password: password.trim(),
           fullName: fullName.trim(),
           referralCode: referralCode || undefined,
+          subAgentId: subAgentId || undefined,
         }),
       });
       const data = await res.json();

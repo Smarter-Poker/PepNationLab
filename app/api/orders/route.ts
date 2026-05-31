@@ -116,6 +116,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Researcher Profile Not Found.' }, { status: 404 });
     }
 
+    // SACA: sub-agents are role='agent' + is_sub_agent=true. They sell on
+    // the parent's storefront at parent's prices — NOT at wholesale cost —
+    // and earn commission as digital credits on the weekly settlement.
+    // So they must NOT be treated as agent self-buy (which would give them
+    // wholesale pricing on top of commission, a double-discount the spec
+    // explicitly rejects). Route them through the referring_agent_id path
+    // so their parent becomes agentProfile and they pay parent's retail.
+    const isSubAgent = (profile as { is_sub_agent?: boolean | null }).is_sub_agent === true;
+
     // --- DETERMINE AGENT OF RECORD ---
     let agentProfile = null;
     let superAgentProfile = null;
@@ -124,7 +133,7 @@ export async function POST(request: NextRequest) {
     // NOTE: Admins are intentionally excluded from isAgentSelfBuy.
     // Admins don't have agent_profiles rows, so the tier-pricing path would
     // fail or fall back to tier_3 (retail). Admins buy at standard pricing.
-    if (profile.role === 'agent' || profile.role === 'super_agent') {
+    if ((profile.role === 'agent' || profile.role === 'super_agent') && !isSubAgent) {
       agentProfile = profile;
       isAgentSelfBuy = true;
       if (profile.parent_agent_id) {
@@ -211,7 +220,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // ── CLOSED-LOOP RESEARCHER OWNERSHIP + CATALOG GUARD ──────────────────────
+    // ── CLOSED-LOOP RESEARCHER OWNERSHIP + CATALOG GUARD ────────────────────
     // HARD RULE: A researcher can ONLY place orders through the agent who
     // created their account. No cross-agent access. Ever.
     if (agentSlug) {
@@ -280,7 +289,7 @@ export async function POST(request: NextRequest) {
         );
       }
     }
-    // ──────────────────────────────────────────────────────────────────────────
+    // ───────────────────────────────────────────────────────────────────
 
     // 1. Fetch Admin Default Multipliers (Tier 3 is standard retail)
     const { data: tiers } = await serviceSupabase.from('pricing_tiers').select('tier_name, multiplier');
@@ -466,7 +475,7 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // ── STEP A: ATOMIC INVENTORY RESERVATION ─────────────────────────────────
+    // ── STEP A: ATOMIC INVENTORY RESERVATION ────────────────────────────────
     // The advisory stock check above gives user-friendly error messages.
     // This call atomically reserves the stock using SELECT FOR UPDATE inside
     // a SECURITY DEFINER RPC, eliminating the TOCTOU race where two concurrent
@@ -497,7 +506,7 @@ export async function POST(request: NextRequest) {
       inventoryReserved = true;
     }
 
-    // ── STEP B: COUPON REDEMPTION ─────────────────────────────────────────────
+    // ── STEP B: COUPON REDEMPTION ────────────────────────────────────────
     // redeem_coupon increments uses_count atomically. IMPORTANT: any rollback
     // path after this point must call unreedeem_coupon(appliedCouponId) to
     // prevent a permanent count leak if the order never commits.
@@ -506,13 +515,16 @@ export async function POST(request: NextRequest) {
     let appliedCouponId: string | null = null;
     const trimmedCouponCode = couponCode ? String(couponCode).trim().toUpperCase() : '';
 
-    // HARD RULE: Agents CANNOT use coupons on their own self-buy orders.
-    // SACA spec: this also covers sub-agents — they're role=agent + is_sub_agent.
-    if (isAgentSelfBuy && trimmedCouponCode) {
+    // HARD RULE: Agents AND Sub-Agents CANNOT use coupons on self-buys.
+    // SACA spec: sub-agents earn commission as digital credits weekly, so
+    // they cannot also stack a coupon discount at checkout. The isSubAgent
+    // half of this guard handles SACA sub-agents (who now correctly fall
+    // out of isAgentSelfBuy because they buy at parent's retail).
+    if ((isAgentSelfBuy || isSubAgent) && trimmedCouponCode) {
       // Rollback: release the inventory reservation.
       if (inventoryReserved) await serviceSupabase.rpc('release_inventory', inventoryReserveParams);
       return NextResponse.json(
-        { error: 'Coupon Codes Cannot Be Applied To Agent Self-Buy Orders.' },
+        { error: 'Coupon Codes Cannot Be Applied To Agent Or Sub-Agent Self-Buy Orders.' },
         { status: 403 }
       );
     }
@@ -619,9 +631,12 @@ export async function POST(request: NextRequest) {
     // Wholesale restock flag must be set explicitly by the caller — we never
     // imply it from buyer role. A plain agent buying through their own
     // storefront is a retail self-buy, not a wholesale replenishment.
+    // SACA: sub-agents do not have a storefront to restock; they cannot
+    // flip this flag even if their client sets wholesale=true.
     const isWholesaleRestock =
       explicitWholesale === true &&
-      (profile.role === 'agent' || profile.role === 'super_agent');
+      (profile.role === 'agent' || profile.role === 'super_agent') &&
+      !isSubAgent;
 
     let initialStatus = 'pending_customer_payment';
     let prepaidDeducted = false;
@@ -870,7 +885,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: `An unexpected error occurred: ${itemsError.message || JSON.stringify(itemsError)}` }, { status: 500 });
     }
 
-    // ── SACA Phase 4: Sub-Agent Commission Accrual ───────────────────────────
+    // ── SACA Phase 4: Sub-Agent Commission Accrual ────────────────────────────
     // After the order + items are committed, resolve the effective sub-agent
     // referral and stamp it on the order, then call the SECDEF RPC to write
     // a pending ledger row. Failures are logged but never roll back the order
@@ -879,9 +894,11 @@ export async function POST(request: NextRequest) {
     // path if the order is later cancelled before shipping.
     try {
       let effectiveReferringSubAgentId: string | null = null;
-      if ((profile as { is_sub_agent?: boolean | null }).is_sub_agent === true) {
+      if (isSubAgent) {
         // Self-buy by a sub-agent. Per spec, sub-agents earn commission on
         // their own purchases too (credited at the weekly settlement).
+        // They paid parent's retail at checkout; the commission % is the
+        // "discount" they get as digital credits next week.
         effectiveReferringSubAgentId = user.id;
       } else {
         const referringSub = (profile as { referring_sub_agent_id?: string | null }).referring_sub_agent_id;
