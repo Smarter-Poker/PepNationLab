@@ -423,15 +423,15 @@ export default function AgentDashboardClient({
 
               <div className="form-group">
                 <label className="form-label">Storefront URL Slug</label>
-                <div style={{ display: 'flex', alignItems: 'center', height: 46, background: 'var(--surface-3)', borderRadius: 'var(--radius-md)', border: '1px solid rgba(255,255,255,0.1)', paddingLeft: 'var(--space-3)' }}>
-                  <span style={{ fontSize: '0.85rem', color: 'var(--grey-400)', userSelect: 'none' }}>pepnationlab.com/</span>
+                <div style={{ display: 'flex', alignItems: 'center', height: 46, background: 'var(--surface-3)', borderRadius: 'var(--radius-md)', border: '1px solid rgba(255,255,255,0.1)', paddingLeft: 'var(--space-3)', overflow: 'hidden' }}>
+                  <span style={{ fontSize: '0.85rem', color: 'var(--grey-400)', userSelect: 'none', flexShrink: 0 }}>pepnationlab.com/</span>
                   <input
                     type="text"
                     className="form-input"
                     placeholder="E.g. bioscience"
                     value={setupSlug}
                     onChange={(e) => setSetupSlug(e.target.value)}
-                    style={{ background: 'transparent', border: 'none', boxShadow: 'none', height: '100%', paddingTop: 0, paddingBottom: 0 }}
+                    style={{ background: 'transparent', border: 'none', boxShadow: 'none', height: '100%', paddingTop: 0, paddingBottom: 0, flex: 1, minWidth: 0 }}
                     required
                   />
                 </div>
