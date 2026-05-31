@@ -15,12 +15,24 @@ export async function PATCH(request: Request) {
     // Get caller's role and ID to verify permissions
     const { data: callerProfile } = await serviceSupabase
       .from('profiles')
-      .select('role, id, is_super_agent')
+      .select('role, id, is_super_agent, is_sub_agent')
       .eq('id', user.id)
       .single();
 
     if (!callerProfile) {
       return NextResponse.json({ error: 'Caller profile not found' }, { status: 404 });
+    }
+
+    // SACA: sub-agents cannot toggle trust on anyone (or on themselves). The
+    // existing canModify branches happen to fail safe for sub-agents (their
+    // tagged researchers point referring_agent_id at the parent, not them),
+    // but we reject explicitly so the audit log shows a deliberate refusal
+    // instead of silently passing through to a 403 "you don't have permission".
+    if ((callerProfile as { is_sub_agent?: boolean | null }).is_sub_agent === true) {
+      return NextResponse.json(
+        { error: 'Sub-Agents Cannot Modify Trust Settings. Ask Your Agent.' },
+        { status: 403 }
+      );
     }
 
     const { targetUserId, auto_approve_orders } = await request.json();

@@ -27,7 +27,7 @@ export default async function CheckoutPage({ searchParams }: PageProps) {
   // Get profile
   const { data: profile } = await supabase
     .from('profiles')
-    .select('full_name, role, tier, referring_agent_id')
+    .select('full_name, role, tier, referring_agent_id, is_sub_agent')
     .eq('id', user.id)
     .single();
 
