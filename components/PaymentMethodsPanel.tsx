@@ -269,8 +269,8 @@ export default function PaymentMethodsPanel({
                       {method.label}
                     </span>
                     {state.enabled && state.handle.trim() && (
-                      <span style={{ fontSize: '0.85rem', color: 'var(--teal)', fontFamily: 'monospace' }}>
-                        - {state.handle}
+                      <span style={{ fontSize: '0.92rem', color: 'var(--white)', fontWeight: 400 }}>
+                        — {state.handle}
                       </span>
                     )}
                     {state.enabled && !state.handle.trim() && (
