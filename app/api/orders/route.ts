@@ -697,7 +697,7 @@ export async function POST(request: NextRequest) {
       await serviceSupabase.rpc('release_inventory', { p_items: inventoryItems });
       if (appliedCouponId) await serviceSupabase.rpc('unreedeem_coupon', { p_coupon_id: appliedCouponId });
 
-      return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
+      return NextResponse.json({ error: `An unexpected error occurred: ${itemsError.message || JSON.stringify(itemsError)}` }, { status: 500 });
     }
 
 
