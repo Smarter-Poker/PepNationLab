@@ -245,7 +245,7 @@ export default function NavbarNotificationBell() {
         <img
           src="/images/notification-bell.png"
           alt="Notifications"
-          width={50} height={50}
+          width={42} height={42}
           style={{ transition: 'opacity 0.2s', display: 'block' }}
         />
 
