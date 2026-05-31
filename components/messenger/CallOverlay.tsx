@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import {
   LiveKitRoom,
   RoomAudioRenderer,
@@ -7,14 +7,16 @@ import {
   VideoTrack,
   useLocalParticipant,
   useRemoteParticipants,
+  useConnectionState,
+  useIsSpeaking,
 } from '@livekit/components-react';
 import '@livekit/components-styles';
 import type { CallSignalRow } from '@/lib/messenger/realtime';
 import { useMessengerStore } from '@/stores/messengerStore';
 import { createRingTone } from '@/lib/messenger/ringTone';
-import { Phone, PhoneOff, Video, VideoOff, Mic, MicOff, Camera } from 'lucide-react';
+import { Phone, PhoneOff, Video, VideoOff, Mic, MicOff, Camera, ScreenShare, ScreenShareOff, Pause, Play, Maximize2 } from 'lucide-react';
 import { toast } from 'sonner';
-import { Track, DisconnectReason } from 'livekit-client';
+import { Track, DisconnectReason, ConnectionState, ConnectionQuality } from 'livekit-client';
 
 interface Props {
   call: CallSignalRow;
@@ -34,152 +36,101 @@ function injectPulseRingAnim() {
       70%  { transform: scale(1); box-shadow: 0 0 0 24px rgba(0, 196, 188, 0); }
       100% { transform: scale(0.96); box-shadow: 0 0 0 0 rgba(0, 196, 188, 0); }
     }
-    .pnl-pulse-avatar-ring {
-      animation: pnl-pulse-avatar 2s infinite ease-in-out;
-    }
+    .pnl-pulse-avatar-ring { animation: pnl-pulse-avatar 2s infinite ease-in-out; }
     @keyframes pnl-pulse-glow {
       0%, 100% { opacity: 0.6; transform: scale(1); }
       50% { opacity: 0.9; transform: scale(1.05); }
     }
+    @keyframes pnl-speaker-pulse {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(0, 196, 188, 0.6); }
+      50% { box-shadow: 0 0 0 18px rgba(0, 196, 188, 0); }
+    }
+    .pnl-speaker-active { animation: pnl-speaker-pulse 1.2s infinite ease-in-out; }
     .pnl-ringing-bg {
       background: radial-gradient(circle at center, #0B1E30 0%, #03080F 100%);
-      position: absolute;
-      inset: 0;
-      overflow: hidden;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
+      position: absolute; inset: 0; overflow: hidden;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
     }
     .pnl-ringing-glow {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      width: 500px;
-      height: 500px;
-      margin-left: -250px;
-      margin-top: -250px;
+      position: absolute; top: 50%; left: 50%; width: 500px; height: 500px;
+      margin-left: -250px; margin-top: -250px;
       background: radial-gradient(circle, rgba(0, 196, 188, 0.15) 0%, rgba(0, 0, 0, 0) 70%);
-      animation: pnl-pulse-glow 4s infinite ease-in-out;
-      pointer-events: none;
+      animation: pnl-pulse-glow 4s infinite ease-in-out; pointer-events: none;
     }
     .pnl-ringing-card {
-      position: relative;
-      z-index: 10;
+      position: relative; z-index: 10;
       background: rgba(22, 34, 48, 0.6);
-      backdrop-filter: blur(20px);
-      -webkit-backdrop-filter: blur(20px);
+      backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
       border: 1px solid rgba(255, 255, 255, 0.08);
-      border-radius: 24px;
-      padding: 48px 40px;
-      width: 90%;
-      max-width: 420px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
-      text-align: center;
+      border-radius: 24px; padding: 48px 40px; width: 90%; max-width: 420px;
+      display: flex; flex-direction: column; align-items: center;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6); text-align: center;
     }
     .pnl-btn-action {
-      width: 68px;
-      height: 68px;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-      border: none;
-      outline: none;
+      width: 68px; height: 68px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      border: none; outline: none;
     }
-    .pnl-btn-action:hover {
-      transform: scale(1.1) translateY(-3px);
-      box-shadow: 0 12px 24px rgba(0,0,0,0.4);
-    }
-    .pnl-btn-action:active {
-      transform: scale(0.95) translateY(0);
-    }
-    .pnl-btn-decline {
-      background: #E53E3E;
-      color: white;
-    }
-    .pnl-btn-decline:hover {
-      background: #F56565;
-      box-shadow: 0 0 24px rgba(229, 62, 62, 0.5);
-    }
-    .pnl-btn-accept {
-      background: #00C4BC;
-      color: black;
-    }
-    .pnl-btn-accept:hover {
-      background: #00e0d7;
-      box-shadow: 0 0 24px rgba(0, 196, 188, 0.5);
-    }
+    .pnl-btn-action:hover { transform: scale(1.1) translateY(-3px); box-shadow: 0 12px 24px rgba(0,0,0,0.4); }
+    .pnl-btn-action:active { transform: scale(0.95) translateY(0); }
+    .pnl-btn-action:focus-visible { outline: 3px solid #00C4BC; outline-offset: 4px; }
+    .pnl-btn-decline { background: #E53E3E; color: white; }
+    .pnl-btn-decline:hover { background: #F56565; box-shadow: 0 0 24px rgba(229, 62, 62, 0.5); }
+    .pnl-btn-accept { background: #00C4BC; color: black; }
+    .pnl-btn-accept:hover { background: #00e0d7; box-shadow: 0 0 24px rgba(0, 196, 188, 0.5); }
     .pnl-ringing-status {
-      font-size: 0.85rem;
-      color: #00C4BC;
-      margin-bottom: 24px;
-      letter-spacing: 0.15em;
-      text-transform: uppercase;
-      font-weight: 700;
+      font-size: 0.85rem; color: #00C4BC; margin-bottom: 24px;
+      letter-spacing: 0.15em; text-transform: uppercase; font-weight: 700;
     }
-    .pnl-ringing-name {
-      font-size: 1.8rem;
-      font-weight: 700;
-      color: white;
-      margin-bottom: 8px;
-      text-align: center;
-    }
+    .pnl-ringing-name { font-size: 1.8rem; font-weight: 700; color: white; margin-bottom: 8px; text-align: center; }
     .pnl-avatar-placeholder {
-      width: 120px;
-      height: 120px;
-      border-radius: 50%;
+      width: 120px; height: 120px; border-radius: 50%;
       background: linear-gradient(135deg, #00C4BC 0%, #0B1E30 100%);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 2.5rem;
-      font-weight: 700;
-      color: white;
-      margin-bottom: 32px;
-      border: 4px solid rgba(255, 255, 255, 0.15);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 2.5rem; font-weight: 700; color: white;
+      margin-bottom: 32px; border: 4px solid rgba(255, 255, 255, 0.15);
     }
     .pnl-avatar-img {
-      width: 120px;
-      height: 120px;
-      border-radius: 50%;
-      object-fit: cover;
-      margin-bottom: 32px;
+      width: 120px; height: 120px; border-radius: 50%;
+      object-fit: cover; margin-bottom: 32px;
       border: 4px solid rgba(255, 255, 255, 0.15);
     }
-    .pnl-action-container {
-      display: flex;
-      gap: 40px;
-      justify-content: center;
-      margin-top: 24px;
-    }
-    .pnl-action-label {
-      font-size: 0.8rem;
-      color: rgba(255, 255, 255, 0.6);
-      margin-top: 10px;
-      text-align: center;
-      font-weight: 600;
-    }
+    .pnl-action-container { display: flex; gap: 40px; justify-content: center; margin-top: 24px; }
+    .pnl-action-label { font-size: 0.8rem; color: rgba(255, 255, 255, 0.6); margin-top: 10px; text-align: center; font-weight: 600; }
     .pnl-call-timer {
-      font-size: 0.85rem;
-      color: rgba(255, 255, 255, 0.85);
-      font-variant-numeric: tabular-nums;
-      letter-spacing: 0.05em;
-      padding: 4px 12px;
-      background: rgba(0, 0, 0, 0.4);
-      border-radius: 999px;
-      border: 1px solid rgba(255, 255, 255, 0.08);
+      font-size: 0.85rem; color: rgba(255, 255, 255, 0.85);
+      font-variant-numeric: tabular-nums; letter-spacing: 0.05em;
+      padding: 4px 12px; background: rgba(0, 0, 0, 0.4);
+      border-radius: 999px; border: 1px solid rgba(255, 255, 255, 0.08);
     }
+    .pnl-reconnect-pill {
+      font-size: 0.78rem; color: #FFB020;
+      font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;
+      padding: 6px 14px; background: rgba(255, 176, 32, 0.15);
+      border-radius: 999px; border: 1px solid rgba(255, 176, 32, 0.4);
+      display: inline-flex; align-items: center; gap: 8px;
+    }
+    .pnl-reconnect-dot {
+      width: 6px; height: 6px; border-radius: 50%; background: #FFB020;
+      animation: pnl-pulse-glow 1.2s infinite ease-in-out;
+    }
+    .pnl-signal-bar {
+      display: inline-block; width: 3px; margin-right: 2px;
+      background: currentColor; border-radius: 1px; vertical-align: bottom;
+    }
+    .pnl-hold-overlay {
+      position: absolute; inset: 0; z-index: 250;
+      background: rgba(0, 0, 0, 0.75); backdrop-filter: blur(8px);
+      display: flex; align-items: center; justify-content: center;
+      flex-direction: column; color: white;
+    }
+    .pnl-hold-overlay h3 { font-size: 2rem; font-weight: 800; letter-spacing: 0.1em; margin-bottom: 8px; }
+    .pnl-hold-overlay p { color: rgba(255, 255, 255, 0.7); margin-bottom: 24px; }
   `;
   document.head.appendChild(style);
 }
 
-// audit15 fix-5: format milliseconds into mm:ss / h:mm:ss for the in-call timer.
 function formatCallDuration(ms: number): string {
   const total = Math.max(0, Math.floor(ms / 1000));
   const h = Math.floor(total / 3600);
@@ -189,21 +140,52 @@ function formatCallDuration(ms: number): string {
   return h > 0 ? `${h}:${pad(m)}:${pad(s)}` : `${pad(m)}:${pad(s)}`;
 }
 
+const ALONE_HANGUP_GRACE_MS = 15_000;
+
+// audit15 fix-23 (B1): 4-bar signal-strength meter derived from LiveKit's
+// ConnectionQuality enum. Color shifts from teal (excellent) → amber (poor)
+// → red (lost) so a glance at the timer tells you whether to switch
+// networks before the call drops.
+function SignalBars({ quality }: { quality: ConnectionQuality | undefined }) {
+  const filled =
+    quality === ConnectionQuality.Excellent ? 4 :
+    quality === ConnectionQuality.Good ? 3 :
+    quality === ConnectionQuality.Poor ? 2 :
+    quality === ConnectionQuality.Lost ? 0 :
+    1;
+  const color =
+    quality === ConnectionQuality.Lost ? '#E53E3E' :
+    quality === ConnectionQuality.Poor ? '#FFB020' :
+    '#00C4BC';
+  return (
+    <span style={{ display: 'inline-flex', alignItems: 'flex-end', gap: 0, color, marginLeft: 8 }} aria-label={`Connection Quality: ${quality ?? 'Unknown'}`}>
+      {[1, 2, 3, 4].map((i) => (
+        <span
+          key={i}
+          className="pnl-signal-bar"
+          style={{
+            height: 4 + i * 2,
+            opacity: i <= filled ? 1 : 0.25,
+          }}
+        />
+      ))}
+    </span>
+  );
+}
+
 interface FaceTimeCallViewProps {
   isVideo: boolean;
   onHangUp: () => void;
   startedAtMs: number;
 }
 
-// audit15 fix-13 (S6): how long to wait alone in the room before declaring
-// the peer permanently gone and auto-hanging-up. LiveKit's own server-side
-// participant timeout is ~30s of total silence; we use a shorter local
-// grace because ParticipantDisconnected fires sooner on a clean leave.
-const ALONE_HANGUP_GRACE_MS = 15_000;
-
 function FaceTimeCallView({ isVideo, onHangUp, startedAtMs }: FaceTimeCallViewProps) {
   const { localParticipant } = useLocalParticipant();
   const remoteParticipants = useRemoteParticipants();
+  const connectionState = useConnectionState();
+  // Active-speaker pulse — use the first remote (1:1 happy path).
+  const speakerCandidate = remoteParticipants[0];
+  const remoteIsSpeaking = useIsSpeaking(speakerCandidate);
 
   const trackReferences = useTracks(
     [
@@ -213,59 +195,58 @@ function FaceTimeCallView({ isVideo, onHangUp, startedAtMs }: FaceTimeCallViewPr
     { onlySubscribed: false }
   ) as Array<import('@livekit/components-react').TrackReference>;
 
-  const localVideoTrack = trackReferences.find((t) => t.participant.isLocal);
-  const remoteVideoTrack = trackReferences.find((t) => !t.participant.isLocal);
+  const localCamTrack = trackReferences.find((t) => t.participant.isLocal && t.source === Track.Source.Camera);
+  const remoteVideoTrack = trackReferences.find(
+    (t) => !t.participant.isLocal && (t.source === Track.Source.Camera || t.source === Track.Source.ScreenShare),
+  );
 
   const [isMuted, setIsMuted] = useState(false);
   const [isCamDisabled, setIsCamDisabled] = useState(!isVideo);
+  const [isScreenSharing, setIsScreenSharing] = useState(false);
+  const [isOnHold, setIsOnHold] = useState(false);
+  // remember pre-hold state so resume restores
+  const preHoldRef = useRef<{ mic: boolean; cam: boolean } | null>(null);
   const [facingMode, setFacingMode] = useState<'user' | 'environment'>('user');
 
-  // audit15 fix-5: tick the call-duration label once per second.
+  // Tick the call-duration label once per second.
   const [, forceTimerTick] = useState(0);
   useEffect(() => {
     const id = setInterval(() => forceTimerTick((n) => (n + 1) | 0), 1000);
     return () => clearInterval(id);
+  }, []);
+  // audit15 fix-23 (B1): force a re-tick on visibility change so the timer
+  // snaps to the correct elapsed value when the tab returns to foreground
+  // (browsers throttle setInterval to 1Hz or worse when backgrounded).
+  useEffect(() => {
+    const onVis = () => {
+      if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
+        forceTimerTick((n) => (n + 1) | 0);
+      }
+    };
+    document.addEventListener('visibilitychange', onVis);
+    return () => document.removeEventListener('visibilitychange', onVis);
   }, []);
   const elapsedMs = Date.now() - startedAtMs;
 
   useEffect(() => {
     setIsMuted(!localParticipant.isMicrophoneEnabled);
     setIsCamDisabled(!localParticipant.isCameraEnabled);
-  }, [localParticipant.isMicrophoneEnabled, localParticipant.isCameraEnabled]);
+    setIsScreenSharing(localParticipant.isScreenShareEnabled);
+  }, [localParticipant.isMicrophoneEnabled, localParticipant.isCameraEnabled, localParticipant.isScreenShareEnabled]);
 
-  // audit15 fix-13 (S6): auto-hangup grace window when alone in the room.
-  // We can't put `onHangUp` in the dep array directly without re-running
-  // the effect every render (CallOverlay's handleHangUp is recreated each
-  // render), so park it in a ref and read from the ref inside the timer.
+  // Auto-hangup grace window when alone in the room.
   const onHangUpRef = useRef(onHangUp);
-  useEffect(() => {
-    onHangUpRef.current = onHangUp;
-  }, [onHangUp]);
-
+  useEffect(() => { onHangUpRef.current = onHangUp; }, [onHangUp]);
   const hasSeenRemoteRef = useRef(false);
   useEffect(() => {
-    if (remoteParticipants.length > 0) {
-      hasSeenRemoteRef.current = true;
-    }
+    if (remoteParticipants.length > 0) hasSeenRemoteRef.current = true;
   }, [remoteParticipants.length]);
-
   useEffect(() => {
-    // Only arm the timer after at least one remote has joined. The initial
-    // "waiting for companion" window (caller in the room while answerer
-    // is still fetching their token) must not trigger auto-hangup.
     if (!hasSeenRemoteRef.current) return;
     if (remoteParticipants.length > 0) return;
-
-    console.log('[CALL] Remote left room — arming auto-hangup grace timer');
     const t = setTimeout(() => {
-      console.log('[CALL] Grace expired with no remote participants — auto-hangup');
-      try {
-        onHangUpRef.current();
-      } catch (err) {
-        console.warn('[CALL] auto-hangup handler threw:', err);
-      }
+      try { onHangUpRef.current(); } catch (err) { console.warn('[CALL] auto-hangup threw:', err); }
     }, ALONE_HANGUP_GRACE_MS);
-
     return () => clearTimeout(t);
   }, [remoteParticipants.length]);
 
@@ -274,18 +255,63 @@ function FaceTimeCallView({ isVideo, onHangUp, startedAtMs }: FaceTimeCallViewPr
       const current = localParticipant.isMicrophoneEnabled;
       await localParticipant.setMicrophoneEnabled(!current);
       setIsMuted(current);
-    } catch (err) {
-      console.warn('Failed to toggle microphone:', err);
-    }
+    } catch (err) { console.warn('Failed to toggle microphone:', err); }
   };
-
   const toggleCamera = async () => {
     try {
       const current = localParticipant.isCameraEnabled;
       await localParticipant.setCameraEnabled(!current);
       setIsCamDisabled(current);
+    } catch (err) { console.warn('Failed to toggle camera:', err); }
+  };
+  // audit15 fix-23 (B1): screen-share toggle.
+  const toggleScreenShare = async () => {
+    try {
+      const next = !localParticipant.isScreenShareEnabled;
+      await localParticipant.setScreenShareEnabled(next);
+      setIsScreenSharing(next);
     } catch (err) {
-      console.warn('Failed to toggle camera:', err);
+      console.warn('Failed to toggle screen share:', err);
+      toast.error('Could Not Share Screen');
+    }
+  };
+  // audit15 fix-23 (B1): Hold mutes everything locally. We do NOT broadcast
+  // hold state to the peer (would require a Supabase DataChannel or extra
+  // RPC); the peer simply sees a frozen video / silent mic and the user
+  // sees a clear "On Hold" overlay so they know the call is paused.
+  const toggleHold = async () => {
+    if (!isOnHold) {
+      preHoldRef.current = {
+        mic: localParticipant.isMicrophoneEnabled,
+        cam: localParticipant.isCameraEnabled,
+      };
+      try {
+        await localParticipant.setMicrophoneEnabled(false);
+        if (isVideo) await localParticipant.setCameraEnabled(false);
+      } catch (err) { console.warn('Hold failed:', err); }
+      setIsOnHold(true);
+    } else {
+      const prior = preHoldRef.current;
+      try {
+        await localParticipant.setMicrophoneEnabled(prior?.mic ?? true);
+        if (isVideo) await localParticipant.setCameraEnabled(prior?.cam ?? true);
+      } catch (err) { console.warn('Resume failed:', err); }
+      setIsOnHold(false);
+      preHoldRef.current = null;
+    }
+  };
+  // audit15 fix-23 (B1): Picture-in-Picture for local camera tile.
+  const requestPip = async () => {
+    if (typeof document === 'undefined' || !document.pictureInPictureEnabled) {
+      toast.info('Picture-In-Picture Not Supported In This Browser');
+      return;
+    }
+    try {
+      const el = document.querySelector<HTMLVideoElement>('video[data-pnl-local-video="true"]');
+      if (!el) return;
+      await el.requestPictureInPicture();
+    } catch (err) {
+      console.warn('PIP failed:', err);
     }
   };
 
@@ -293,7 +319,6 @@ function FaceTimeCallView({ isVideo, onHangUp, startedAtMs }: FaceTimeCallViewPr
     if (!localParticipant.isCameraEnabled) return;
     const nextMode = facingMode === 'user' ? 'environment' : 'user';
     setFacingMode(nextMode);
-
     try {
       const devices = await navigator.mediaDevices.enumerateDevices();
       const videoDevices = devices.filter((d) => d.kind === 'videoinput');
@@ -308,46 +333,59 @@ function FaceTimeCallView({ isVideo, onHangUp, startedAtMs }: FaceTimeCallViewPr
           await localParticipant.setCameraEnabled(true, { deviceId: nextDevice.deviceId });
         }
       } else {
-        toast.info('Only one camera detected');
+        toast.info('Only One Camera Detected');
       }
-    } catch (err) {
-      console.warn('Failed to switch camera device:', err);
-    }
+    } catch (err) { console.warn('Failed to switch camera:', err); }
   };
+
+  const isReconnecting =
+    connectionState === ConnectionState.Reconnecting ||
+    connectionState === ConnectionState.SignalReconnecting;
+
+  // Best-of-both signal quality: worst of local + remote so the bars reflect
+  // the more degraded leg of the connection.
+  const localQuality = localParticipant.connectionQuality;
+  const remoteQuality = speakerCandidate?.connectionQuality;
+  const worstQuality = (() => {
+    const rank = (q: ConnectionQuality | undefined) => {
+      if (q === ConnectionQuality.Lost) return 0;
+      if (q === ConnectionQuality.Poor) return 1;
+      if (q === ConnectionQuality.Good) return 2;
+      if (q === ConnectionQuality.Excellent) return 3;
+      return 2;
+    };
+    return rank(localQuality) < rank(remoteQuality) ? localQuality : remoteQuality;
+  })();
 
   return (
     <div style={{ position: 'relative', width: '100%', height: '100%', overflow: 'hidden', background: '#000' }}>
-      {/* 1. REMOTE VIDEO (Full Screen) */}
       <div style={{ width: '100%', height: '100%' }}>
         {isVideo && remoteVideoTrack ? (
           <VideoTrack
             trackRef={remoteVideoTrack}
-            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+            style={{
+              width: '100%', height: '100%', objectFit: 'cover',
+              transition: 'box-shadow 0.3s',
+              boxShadow: remoteIsSpeaking ? 'inset 0 0 0 4px rgba(0, 196, 188, 0.6)' : 'none',
+            }}
           />
         ) : (
           <div style={{
-            width: '100%',
-            height: '100%',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
+            width: '100%', height: '100%',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
             background: 'radial-gradient(circle at center, #0B1E30 0%, #03080F 100%)',
             flexDirection: 'column'
           }}>
-            <div className="pnl-pulse-avatar-ring" style={{
-              width: 120,
-              height: 120,
-              borderRadius: '50%',
-              background: 'rgba(255, 255, 255, 0.05)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: '2.5rem',
-              fontWeight: 700,
-              color: '#00C4BC',
-              marginBottom: 20,
-              border: '2px solid rgba(0, 196, 188, 0.2)'
-            }}>
+            <div
+              className={remoteIsSpeaking ? 'pnl-speaker-active' : 'pnl-pulse-avatar-ring'}
+              style={{
+                width: 120, height: 120, borderRadius: '50%',
+                background: 'rgba(255, 255, 255, 0.05)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: '2.5rem', fontWeight: 700, color: '#00C4BC',
+                marginBottom: 20, border: '2px solid rgba(0, 196, 188, 0.2)'
+              }}
+            >
               <Phone size={48} />
             </div>
             <div style={{ color: 'rgba(255,255,255,0.7)', fontSize: '1.1rem', fontWeight: 600, letterSpacing: '0.05em' }}>
@@ -357,152 +395,189 @@ function FaceTimeCallView({ isVideo, onHangUp, startedAtMs }: FaceTimeCallViewPr
         )}
       </div>
 
-      {/* 2. LOCAL VIDEO (Floating Picture-in-Picture) */}
-      {isVideo && localVideoTrack && localParticipant.isCameraEnabled && (
+      {isVideo && localCamTrack && localParticipant.isCameraEnabled && (
         <div style={{
-          position: 'absolute',
-          top: 24,
-          right: 24,
-          width: 110,
-          height: 165,
-          borderRadius: 16,
-          overflow: 'hidden',
+          position: 'absolute', top: 24, right: 24, width: 110, height: 165,
+          borderRadius: 16, overflow: 'hidden',
           boxShadow: '0 12px 24px rgba(0,0,0,0.5)',
           border: '2px solid rgba(255, 255, 255, 0.15)',
-          zIndex: 100,
-          background: '#0B1E30',
-          transition: 'all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)'
+          zIndex: 100, background: '#0B1E30',
         }}>
           <VideoTrack
-            trackRef={localVideoTrack}
+            trackRef={localCamTrack}
             style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+            // Tag the video element so requestPip can find it.
+            // @ts-expect-error custom data attr forwarded to underlying <video>
+            data-pnl-local-video="true"
           />
         </div>
       )}
 
-      {/* audit15 fix-5: in-call timer chip, top-center */}
+      {/* Timer + signal bars + reconnect pill, top-center stack */}
       <div style={{
-        position: 'absolute',
-        top: 24,
-        left: '50%',
-        transform: 'translateX(-50%)',
-        zIndex: 150,
+        position: 'absolute', top: 24, left: '50%',
+        transform: 'translateX(-50%)', zIndex: 150,
+        display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8,
       }}>
-        <span className="pnl-call-timer" aria-label="Call Duration" title="Call Duration">
+        <span className="pnl-call-timer" aria-label="Call Duration" aria-live="off">
           {formatCallDuration(elapsedMs)}
+          <SignalBars quality={worstQuality} />
         </span>
+        {isReconnecting && (
+          <span className="pnl-reconnect-pill" role="status" aria-live="assertive">
+            <span className="pnl-reconnect-dot" />
+            Reconnecting...
+          </span>
+        )}
       </div>
 
-      {/* 3. CONTROL OVERLAY (FaceTime-like floating bar) */}
+      {/* Hold overlay (z-index above everything except the control bar) */}
+      {isOnHold && (
+        <div className="pnl-hold-overlay" role="status" aria-live="polite">
+          <Pause size={48} style={{ color: '#FFB020', marginBottom: 12 }} />
+          <h3>On Hold</h3>
+          <p>Microphone And Camera Paused</p>
+          <button
+            type="button"
+            onClick={toggleHold}
+            style={{
+              background: '#00C4BC', color: '#000',
+              border: 0, padding: '12px 24px', borderRadius: 8,
+              cursor: 'pointer', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 8,
+            }}
+          >
+            <Play size={18} /> Resume
+          </button>
+        </div>
+      )}
+
+      {/* Floating control bar */}
       <div style={{
-        position: 'absolute',
-        bottom: 40,
-        left: '50%',
+        position: 'absolute', bottom: 40, left: '50%',
         transform: 'translateX(-50%)',
         background: 'rgba(11, 30, 48, 0.65)',
-        backdropFilter: 'blur(20px)',
-        WebkitBackdropFilter: 'blur(20px)',
-        padding: '16px 28px',
-        borderRadius: 40,
-        display: 'flex',
-        alignItems: 'center',
-        gap: 20,
+        backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)',
+        padding: '16px 28px', borderRadius: 40,
+        display: 'flex', alignItems: 'center', gap: 16,
         zIndex: 200,
         border: '1px solid rgba(255,255,255,0.08)',
         boxShadow: '0 20px 50px rgba(0,0,0,0.5)'
       }}>
-        {/* Mute Mic Button */}
         <button
           type="button"
           onClick={toggleMute}
           style={{
             background: isMuted ? '#E53E3E' : 'rgba(255,255,255,0.08)',
-            color: 'white',
-            border: 'none',
-            borderRadius: '50%',
-            width: 52,
-            height: 52,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            cursor: 'pointer',
-            transition: 'all 0.2s',
-            outline: 'none'
+            color: 'white', border: 'none', borderRadius: '50%',
+            width: 52, height: 52,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            cursor: 'pointer', transition: 'all 0.2s', outline: 'none'
           }}
-          title={isMuted ? 'Unmute microphone' : 'Mute microphone'}
+          title={isMuted ? 'Unmute Microphone' : 'Mute Microphone'}
+          aria-label={isMuted ? 'Unmute Microphone' : 'Mute Microphone'}
         >
           {isMuted ? <MicOff size={22} /> : <Mic size={22} />}
         </button>
 
-        {/* Camera Toggle Button */}
         {isVideo && (
           <button
             type="button"
             onClick={toggleCamera}
             style={{
               background: isCamDisabled ? '#E53E3E' : 'rgba(255,255,255,0.08)',
-              color: 'white',
-              border: 'none',
-              borderRadius: '50%',
-              width: 52,
-              height: 52,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              cursor: 'pointer',
-              transition: 'all 0.2s',
-              outline: 'none'
+              color: 'white', border: 'none', borderRadius: '50%',
+              width: 52, height: 52,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              cursor: 'pointer', transition: 'all 0.2s', outline: 'none'
             }}
             title={isCamDisabled ? 'Turn Camera On' : 'Turn Camera Off'}
+            aria-label={isCamDisabled ? 'Turn Camera On' : 'Turn Camera Off'}
           >
             {isCamDisabled ? <VideoOff size={22} /> : <Video size={22} />}
           </button>
         )}
 
-        {/* Flip Camera Button */}
         {isVideo && !isCamDisabled && (
           <button
             type="button"
             onClick={flipCamera}
             style={{
-              background: 'rgba(255,255,255,0.08)',
-              color: 'white',
-              border: 'none',
-              borderRadius: '50%',
-              width: 52,
-              height: 52,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              cursor: 'pointer',
-              transition: 'all 0.2s',
-              outline: 'none'
+              background: 'rgba(255,255,255,0.08)', color: 'white',
+              border: 'none', borderRadius: '50%', width: 52, height: 52,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              cursor: 'pointer', transition: 'all 0.2s', outline: 'none'
             }}
             title="Flip Camera"
+            aria-label="Flip Camera"
           >
             <Camera size={22} />
           </button>
         )}
 
-        {/* Hang Up Button */}
+        {/* audit15 fix-23 (B1): screen share */}
+        <button
+          type="button"
+          onClick={toggleScreenShare}
+          style={{
+            background: isScreenSharing ? '#00C4BC' : 'rgba(255,255,255,0.08)',
+            color: isScreenSharing ? '#000' : 'white',
+            border: 'none', borderRadius: '50%',
+            width: 52, height: 52,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            cursor: 'pointer', transition: 'all 0.2s', outline: 'none'
+          }}
+          title={isScreenSharing ? 'Stop Sharing Screen' : 'Share Screen'}
+          aria-label={isScreenSharing ? 'Stop Sharing Screen' : 'Share Screen'}
+        >
+          {isScreenSharing ? <ScreenShareOff size={22} /> : <ScreenShare size={22} />}
+        </button>
+
+        {/* audit15 fix-23 (B1): Hold */}
+        <button
+          type="button"
+          onClick={toggleHold}
+          style={{
+            background: isOnHold ? '#FFB020' : 'rgba(255,255,255,0.08)',
+            color: isOnHold ? '#000' : 'white',
+            border: 'none', borderRadius: '50%', width: 52, height: 52,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            cursor: 'pointer', transition: 'all 0.2s', outline: 'none'
+          }}
+          title={isOnHold ? 'Resume Call' : 'Hold Call'}
+          aria-label={isOnHold ? 'Resume Call' : 'Hold Call'}
+        >
+          {isOnHold ? <Play size={22} /> : <Pause size={22} />}
+        </button>
+
+        {/* audit15 fix-23 (B1): PIP — only show in video mode where a video el exists */}
+        {isVideo && (
+          <button
+            type="button"
+            onClick={requestPip}
+            style={{
+              background: 'rgba(255,255,255,0.08)', color: 'white',
+              border: 'none', borderRadius: '50%', width: 52, height: 52,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              cursor: 'pointer', transition: 'all 0.2s', outline: 'none'
+            }}
+            title="Picture-In-Picture"
+            aria-label="Picture-In-Picture"
+          >
+            <Maximize2 size={22} />
+          </button>
+        )}
+
         <button
           type="button"
           onClick={onHangUp}
           style={{
-            background: '#E53E3E',
-            color: 'white',
-            border: 'none',
-            borderRadius: '50%',
-            width: 52,
-            height: 52,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            cursor: 'pointer',
-            transition: 'all 0.2s',
-            outline: 'none'
+            background: '#E53E3E', color: 'white',
+            border: 'none', borderRadius: '50%', width: 52, height: 52,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            cursor: 'pointer', transition: 'all 0.2s', outline: 'none'
           }}
           title="Hang Up"
+          aria-label="Hang Up"
         >
           <PhoneOff size={22} />
         </button>
@@ -512,37 +587,23 @@ function FaceTimeCallView({ isVideo, onHangUp, startedAtMs }: FaceTimeCallViewPr
 }
 
 export default function CallOverlay({ call, selfId, onClose, onAccept }: Props & { onAccept?: () => void }) {
-  // Inject pulsing animation stylesheet on mount
-  useEffect(() => {
-    injectPulseRingAnim();
-  }, []);
+  useEffect(() => { injectPulseRingAnim(); }, []);
 
   const conversations = useMessengerStore((s) => s.conversations);
   const [counterpartyId, setCounterpartyId] = useState<string | null>(null);
   const [counterpartyName, setCounterpartyName] = useState<string>('Someone');
   const [counterpartyAvatar, setCounterpartyAvatar] = useState<string | null>(null);
   const [isSignaling, setIsSignaling] = useState(false);
-
-  // audit15: gate the unmount-broadcasts-call_ended effect on an explicit
-  // user action. Without this, any spurious React unmount (e.g. parent
-  // re-render after accept) broadcasts call_ended and tears down the caller.
   const userClosedRef = useRef(false);
 
-  // audit15 fix-5: anchor the in-call timer to the moment status flipped to
-  // 'active'. Captured once via ref so the displayed elapsed time doesn't
-  // jitter when the parent passes a fresh `call` object on every realtime
-  // update (which would otherwise reset Date.now() arithmetic).
   const activeStartedAtRef = useRef<number | null>(null);
   if (call.status === 'active' && activeStartedAtRef.current === null) {
-    // Prefer the server's answered_at if the row carries one; fall back to
-    // local clock so the timer starts immediately even before the answered_at
-    // value arrives via realtime.
     const anyCall = call as CallSignalRow & { answered_at?: string | null };
     const fromServer = anyCall.answered_at ? Date.parse(anyCall.answered_at) : NaN;
     activeStartedAtRef.current = Number.isFinite(fromServer) ? fromServer : Date.now();
   }
 
-  // Resolve counterparty name and avatar details
+  // Resolve counterparty profile (name + avatar)
   useEffect(() => {
     let cancelled = false;
     (async () => {
@@ -555,10 +616,8 @@ export default function CallOverlay({ call, selfId, onClose, onAccept }: Props &
         if (cancelled || !res.ok) return;
         const json = (await res.json()) as {
           participants?: Array<{
-            user_id: string;
-            full_name?: string | null;
-            username?: string | null;
-            avatar_url?: string | null;
+            user_id: string; full_name?: string | null;
+            username?: string | null; avatar_url?: string | null;
           }>;
         };
         const other = (json.participants ?? []).find((p) => p.user_id !== selfId);
@@ -570,26 +629,13 @@ export default function CallOverlay({ call, selfId, onClose, onAccept }: Props &
         console.warn('Failed to resolve counterparty profile in CallOverlay:', err);
       }
     })();
-    return () => {
-      cancelled = true;
-    };
+    return () => { cancelled = true; };
   }, [call.conversation_id, selfId]);
 
   useEffect(() => {
-    // 1. If we are the callee, the counterparty is the initiator
-    if (call.initiator_id !== selfId) {
-      setCounterpartyId(call.initiator_id);
-      return;
-    }
-
-    // 2. If we are the initiator, check if we can resolve it from Zustand store
+    if (call.initiator_id !== selfId) { setCounterpartyId(call.initiator_id); return; }
     const activeConv = conversations.find((c) => c.conversation_id === call.conversation_id);
-    if (activeConv?.counterparty_id) {
-      setCounterpartyId(activeConv.counterparty_id);
-      return;
-    }
-
-    // 3. Fallback: fetch participants from the API to get the other participant
+    if (activeConv?.counterparty_id) { setCounterpartyId(activeConv.counterparty_id); return; }
     let cancelled = false;
     (async () => {
       try {
@@ -601,98 +647,109 @@ export default function CallOverlay({ call, selfId, onClose, onAccept }: Props &
         if (cancelled || !res.ok) return;
         const json = (await res.json()) as { participants?: Array<{ user_id: string }> };
         const other = (json.participants ?? []).find((p) => p.user_id !== selfId);
-        if (other && !cancelled) {
-          setCounterpartyId(other.user_id);
-        }
+        if (other && !cancelled) setCounterpartyId(other.user_id);
       } catch (err) {
         console.warn('Failed to resolve counterparty in CallOverlay:', err);
       }
     })();
-
-    return () => {
-      cancelled = true;
-    };
+    return () => { cancelled = true; };
   }, [call.initiator_id, call.conversation_id, selfId, conversations]);
 
   const [token, setToken] = useState<string | null>(null);
   const [url, setUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const res = await fetch('/api/messenger/livekit-token', {
-          method: 'POST',
-          headers: { 'content-type': 'application/json' },
-          body: JSON.stringify({ callId: call.id }),
-        });
-        if (cancelled) return;
-        if (res.status === 503) {
-          setError('Calls Not Configured');
-          return;
-        }
-        if (res.status === 410) {
-          onClose();
-          return;
-        }
-        if (!res.ok) {
-          setError('Could Not Join Call');
-          return;
-        }
-        const json = (await res.json()) as { token: string; url: string };
-        setToken(json.token);
-        setUrl(json.url);
-      } catch {
-        if (!cancelled) setError('Network Error');
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
+  const fetchToken = useCallback(async (signal?: AbortSignal): Promise<boolean> => {
+    try {
+      const res = await fetch('/api/messenger/livekit-token', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ callId: call.id }),
+        signal,
+      });
+      if (res.status === 503) { setError('Calls Not Configured'); return false; }
+      if (res.status === 410) { onClose(); return false; }
+      if (!res.ok) { setError('Could Not Join Call'); return false; }
+      const json = (await res.json()) as { token: string; url: string };
+      setToken(json.token);
+      setUrl(json.url);
+      return true;
+    } catch (err) {
+      if ((err as { name?: string } | null)?.name === 'AbortError') return false;
+      setError('Network Error');
+      return false;
+    }
   }, [call.id, onClose]);
 
-  // Outgoing and incoming synthesized beep-beep ringtone effect for both parties
   useEffect(() => {
-    if (call.status !== 'ringing') return;
+    const ctrl = new AbortController();
+    void fetchToken(ctrl.signal);
+    return () => ctrl.abort();
+  }, [fetchToken]);
 
-    console.log('[CALL] Playing synthesized ringtone...');
-    const ring = createRingTone();
-    if (ring) {
-      ring.start();
-    }
+  // audit15 fix-23 (B1): token auto-refresh at T-5min. Token TTL is 6h
+  // (fix-14). Refresh 5 minutes before expiry so the LiveKitRoom handshake
+  // happens before the credential actually dies. Background loop runs only
+  // while the call is active.
+  useEffect(() => {
+    if (call.status !== 'active') return;
+    // 6h TTL minus 5min safety margin = 5h 55m = 21300 seconds = 21_300_000 ms.
+    const REFRESH_MS = (6 * 60 - 5) * 60 * 1000;
+    const id = setInterval(() => { void fetchToken(); }, REFRESH_MS);
+    return () => clearInterval(id);
+  }, [call.status, fetchToken]);
 
+  // audit15 fix-23 (B1): wake-lock during active calls so the screen
+  // doesn't sleep on mobile. Released on unmount or status change.
+  useEffect(() => {
+    if (call.status !== 'active') return;
+    let released = false;
+    let sentinel: WakeLockSentinel | null = null;
+    const requestLock = async () => {
+      try {
+        const nav = navigator as Navigator & { wakeLock?: { request(type: 'screen'): Promise<WakeLockSentinel> } };
+        if (!nav.wakeLock?.request) return;
+        sentinel = await nav.wakeLock.request('screen');
+      } catch (err) {
+        console.warn('[CALL] wake lock request failed:', err);
+      }
+    };
+    void requestLock();
+    const onVis = () => {
+      if (!released && document.visibilityState === 'visible' && !sentinel) void requestLock();
+    };
+    document.addEventListener('visibilitychange', onVis);
     return () => {
-      if (ring) {
-        console.log('[CALL] Stopping synthesized ringtone');
-        ring.stop();
+      released = true;
+      document.removeEventListener('visibilitychange', onVis);
+      if (sentinel) {
+        sentinel.release().catch(() => {});
+        sentinel = null;
       }
     };
   }, [call.status]);
 
-  // Ref-based trackers to prevent premature teardown signaling on intermediate updates
+  // Ringtone (uses shared gesture-unlocked AudioContext from fix-11)
+  useEffect(() => {
+    if (call.status !== 'ringing') return;
+    const ring = createRingTone();
+    if (ring) ring.start();
+    return () => { if (ring) ring.stop(); };
+  }, [call.status]);
+
+  // Refs for the unmount + pagehide cleanup
   const latestCallRef = useRef(call);
   const latestCounterpartyIdRef = useRef(counterpartyId);
+  useEffect(() => { latestCallRef.current = call; }, [call]);
+  useEffect(() => { latestCounterpartyIdRef.current = counterpartyId; }, [counterpartyId]);
 
-  useEffect(() => {
-    latestCallRef.current = call;
-  }, [call]);
-
-  useEffect(() => {
-    latestCounterpartyIdRef.current = counterpartyId;
-  }, [counterpartyId]);
-
-  // audit15: broadcast call_ended ONLY when the user explicitly closed the
-  // overlay (hangup / decline). Previously this fired on every unmount,
-  // including spurious re-mounts from parent re-renders right after accept,
-  // which tore down the caller's side and produced "call failed immediately".
+  // Broadcast on user-closed unmount only
   useEffect(() => {
     return () => {
       if (!userClosedRef.current) return;
       const cid = latestCounterpartyIdRef.current;
       const cl = latestCallRef.current;
       if (cid && cl && cl.status !== 'ended' && cl.status !== 'declined' && cl.status !== 'missed') {
-        console.log('[CALL] Unmounting CallOverlay (user-closed) — broadcasting call_ended to:', cid);
         import('@/lib/messenger/realtime').then(({ broadcastCallSignal }) => {
           void broadcastCallSignal(cid, 'call_ended', cl);
         }).catch(() => {});
@@ -700,46 +757,33 @@ export default function CallOverlay({ call, selfId, onClose, onAccept }: Props &
     };
   }, []);
 
+  // pagehide cleanup
   useEffect(() => {
     const callId = call.id;
     const handler = () => {
       const cid = latestCounterpartyIdRef.current;
       const cl = latestCallRef.current;
       if (!cl || cl.status === 'ended' || cl.status === 'declined' || cl.status === 'missed') return;
-
-      // 1. Unload signaling: broadcast call_ended immediately
       if (cid) {
         try {
-          const bodyEnded = JSON.stringify({
-            type: 'broadcast',
-            event: 'call_ended',
-            payload: cl,
-          });
+          const bodyEnded = JSON.stringify({ type: 'broadcast', event: 'call_ended', payload: cl });
           const blobEnded = new Blob([bodyEnded], { type: 'application/json' });
           void navigator.sendBeacon?.(`/api/messenger/call-signal-unload-broadcast?targetId=${cid}`, blobEnded);
         } catch {}
       }
-
-      // 2. Unload database cleanup
       const body = JSON.stringify({ action: 'hangup', callId });
       let sent = false;
       try {
         const blob = new Blob([body], { type: 'application/json' });
         sent = Boolean(navigator.sendBeacon?.('/api/messenger/call-signal', blob));
-      } catch {
-        sent = false;
-      }
+      } catch { sent = false; }
       if (!sent) {
         try {
           void fetch('/api/messenger/call-signal', {
-            method: 'POST',
-            headers: { 'content-type': 'application/json' },
-            body,
-            keepalive: true,
+            method: 'POST', headers: { 'content-type': 'application/json' },
+            body, keepalive: true,
           });
-        } catch {
-          // best effort -- nothing else to do once the page is unloading
-        }
+        } catch {}
       }
     };
     window.addEventListener('pagehide', handler);
@@ -752,40 +796,27 @@ export default function CallOverlay({ call, selfId, onClose, onAccept }: Props &
       try {
         const { broadcastCallSignal } = await import('@/lib/messenger/realtime');
         void broadcastCallSignal(counterpartyId, 'call_ended', call);
-      } catch (e) {
-        console.warn('Failed to broadcast call ended:', e);
-      }
+      } catch (e) { console.warn('Failed to broadcast call ended:', e); }
     }
-
     try {
       await fetch('/api/messenger/call-signal', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ action: 'hangup', callId: call.id }),
       });
-    } catch (err) {
-      console.warn('Failed to update DB on call end:', err);
-    }
-
+    } catch (err) { console.warn('Failed to update DB on call end:', err); }
     onClose();
   };
 
   const handleAction = async (action: 'accept' | 'decline' | 'hangup') => {
     if (isSignaling) return;
     setIsSignaling(true);
-
-    // audit15: claim ownership of the accept BEFORE the HTTP call fires.
-    // Supabase Realtime delivers the postgres_changes UPDATE faster than the
-    // HTTP response returns, so the "another tab answered" guard in
-    // GlobalCallListener.onUpdate fires first and unmounts the overlay if
-    // this flag is not already set.
     if (action === 'accept') {
       try { sessionStorage.setItem('answered_call_' + call.id, 'true'); } catch {}
     }
     if (action === 'decline' || action === 'hangup') {
       userClosedRef.current = true;
     }
-
     try {
       const res = await fetch('/api/messenger/call-signal', {
         method: 'POST',
@@ -808,9 +839,8 @@ export default function CallOverlay({ call, selfId, onClose, onAccept }: Props &
           }
           onClose();
         } else if (action === 'accept') {
-          if (onAccept) {
-            onAccept();
-          } else if (counterpartyId) {
+          if (onAccept) onAccept();
+          else if (counterpartyId) {
             const { broadcastCallSignal } = await import('@/lib/messenger/realtime');
             void broadcastCallSignal(counterpartyId, 'call_accepted', call);
           }
@@ -823,26 +853,47 @@ export default function CallOverlay({ call, selfId, onClose, onAccept }: Props &
     }
   };
 
+  // audit15 fix-23 (B1): focus management. On mount in 'ringing' state,
+  // focus the Answer button (callee) or the Cancel button (initiator) so
+  // keyboard / screen reader users land on the most useful control.
+  const ringingPrimaryRef = useRef<HTMLButtonElement | null>(null);
+  useEffect(() => {
+    if (call.status !== 'ringing') return;
+    const t = setTimeout(() => ringingPrimaryRef.current?.focus(), 50);
+    return () => clearTimeout(t);
+  }, [call.status]);
+
+  // audit15 fix-23 (B1): keyboard shortcuts on ringing screen.
+  // Enter = accept (callee only), Esc = decline (callee) or cancel (initiator).
+  useEffect(() => {
+    if (call.status !== 'ringing') return;
+    const isInit = call.initiator_id === selfId;
+    const onKey = (ev: KeyboardEvent) => {
+      if (ev.key === 'Enter' && !isInit) {
+        ev.preventDefault();
+        void handleAction('accept');
+      } else if (ev.key === 'Escape') {
+        ev.preventDefault();
+        if (isInit) void handleHangUp();
+        else void handleAction('decline');
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [call.status, call.initiator_id, selfId]);
+
   const isVideo = call.call_type === 'video';
   const isInitiator = call.initiator_id === selfId;
   const initials = counterpartyName
-    ? counterpartyName
-        .split(' ')
-        .map((n) => n[0])
-        .join('')
-        .slice(0, 2)
-        .toUpperCase()
+    ? counterpartyName.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase()
     : '?';
 
   return (
     <div
       style={{
-        position: 'fixed',
-        inset: 0,
-        background: '#000',
-        display: 'flex',
-        flexDirection: 'column',
-        zIndex: 2000,
+        position: 'fixed', inset: 0, background: '#000',
+        display: 'flex', flexDirection: 'column', zIndex: 2000,
       }}
       role="dialog"
       aria-modal="true"
@@ -850,19 +901,27 @@ export default function CallOverlay({ call, selfId, onClose, onAccept }: Props &
     >
       {error && (
         <div style={{ color: 'var(--white, #FFFFFF)', padding: 24, textAlign: 'center', margin: 'auto' }}>
-          <p style={{ fontSize: '1.2rem', marginBottom: 16 }}>{error}</p>
+          <p style={{ fontSize: '1.2rem', marginBottom: 16 }} aria-live="assertive">{error}</p>
+          {/* audit15 fix-23 (B1): permission-help link gives the user a recovery path. */}
+          {/permission|denied/i.test(error) && (
+            <p style={{ fontSize: '0.9rem', color: 'rgba(255,255,255,0.6)', marginBottom: 16 }}>
+              <a
+                href="/help/messenger-call-permissions"
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{ color: '#00C4BC', textDecoration: 'underline' }}
+              >
+                How To Enable Microphone And Camera
+              </a>
+            </p>
+          )}
           <button
             type="button"
             onClick={onClose}
             style={{
-              background: 'var(--teal, #00C4BC)',
-              color: '#000',
-              border: 0,
-              padding: '12px 24px',
-              borderRadius: 8,
-              cursor: 'pointer',
-              fontWeight: 600,
-              fontSize: '1rem',
+              background: 'var(--teal, #00C4BC)', color: '#000',
+              border: 0, padding: '12px 24px', borderRadius: 8,
+              cursor: 'pointer', fontWeight: 600, fontSize: '1rem',
               boxShadow: '0 4px 12px rgba(0, 196, 188, 0.3)',
               transition: 'all 0.2s',
             }}
@@ -878,38 +937,30 @@ export default function CallOverlay({ call, selfId, onClose, onAccept }: Props &
         <div className="pnl-ringing-bg">
           <div className="pnl-ringing-glow" />
           <div className="pnl-ringing-card">
-            <div className="pnl-ringing-status">
+            <div className="pnl-ringing-status" aria-live="polite">
               {isVideo ? 'Incoming Video Call' : 'Incoming Voice Call'}
             </div>
-
             <div className="pnl-pulse-avatar-ring" style={{ display: 'inline-block', borderRadius: '50%' }}>
               {counterpartyAvatar ? (
-                <img
-                  src={counterpartyAvatar}
-                  alt={counterpartyName}
-                  className="pnl-avatar-img"
-                />
+                <img src={counterpartyAvatar} alt={counterpartyName} className="pnl-avatar-img" />
               ) : (
-                <div className="pnl-avatar-placeholder">
-                  {initials}
-                </div>
+                <div className="pnl-avatar-placeholder">{initials}</div>
               )}
             </div>
-
             <div className="pnl-ringing-name">{counterpartyName}</div>
-            <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.95rem', marginBottom: 32 }}>
+            <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.95rem', marginBottom: 32 }} aria-live="polite">
               {isInitiator ? 'Calling...' : 'Ringing...'}
             </div>
-
             <div className="pnl-action-container">
               {isInitiator ? (
                 <div>
                   <button
+                    ref={ringingPrimaryRef}
                     type="button"
                     onClick={handleHangUp}
                     className="pnl-btn-action pnl-btn-decline"
                     aria-label="Cancel Call"
-                    title="Cancel Call"
+                    title="Cancel Call (Esc)"
                   >
                     <PhoneOff size={28} />
                   </button>
@@ -923,7 +974,7 @@ export default function CallOverlay({ call, selfId, onClose, onAccept }: Props &
                       onClick={() => void handleAction('decline')}
                       className="pnl-btn-action pnl-btn-decline"
                       aria-label="Decline Call"
-                      title="Decline Call"
+                      title="Decline Call (Esc)"
                     >
                       <PhoneOff size={28} />
                     </button>
@@ -931,11 +982,12 @@ export default function CallOverlay({ call, selfId, onClose, onAccept }: Props &
                   </div>
                   <div>
                     <button
+                      ref={ringingPrimaryRef}
                       type="button"
                       onClick={() => void handleAction('accept')}
                       className="pnl-btn-action pnl-btn-accept"
                       aria-label="Answer Call"
-                      title="Answer Call"
+                      title="Answer Call (Enter)"
                     >
                       <Phone size={28} />
                     </button>
@@ -955,33 +1007,17 @@ export default function CallOverlay({ call, selfId, onClose, onAccept }: Props &
           connect={true}
           video={isVideo}
           audio={true}
-          // audit15 fix-4: route a LiveKit disconnect to LOCAL teardown only.
-          // Previously this called handleHangUp, which broadcasts call_ended
-          // to the peer and POSTs hangup — turning a transient network drop
-          // into a force-end of the call for the OTHER party, who was
-          // perfectly healthy. The peer either has their own disconnect
-          // handler when they notice us leave (LiveKit ParticipantDisconnected
-          // event), or the 4-hour stale-active cron sweep cleans up.
-          //
-          // audit15 fix-16 (S8): when the user opens the same call in a
-          // second tab/device with the same LiveKit identity, the server
-          // kicks the older participant with DisconnectReason.DUPLICATE_IDENTITY.
-          // Without an explicit message, the first tab just goes black and
-          // the user has no idea why. Surface a specific toast so they
-          // know the call moved to their other tab.
           onDisconnected={(reason) => {
             if (reason === DisconnectReason.DUPLICATE_IDENTITY) {
               toast.info('Call Answered On Another Device');
             }
             onClose();
           }}
-          // audit15 fix-6: surface mic/cam permission failures as a toast
-          // instead of letting the user stare at a black screen wondering
-          // why nothing's happening.
           onError={(err) => {
             console.warn('[CALL] LiveKitRoom error:', err);
             const msg = err?.message || '';
             if (/permission|denied|notallowed/i.test(msg)) {
+              setError('Microphone Or Camera Permission Denied');
               toast.error('Microphone Or Camera Permission Denied');
             } else if (/notfound/i.test(msg)) {
               toast.error('No Microphone Or Camera Found');
@@ -1003,26 +1039,19 @@ export default function CallOverlay({ call, selfId, onClose, onAccept }: Props &
       {!error && call.status === 'active' && (!token || !url) && (
         <div style={{
           color: 'var(--white, #FFFFFF)',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          flex: 1,
-          background: '#03080F',
+          display: 'flex', flexDirection: 'column',
+          alignItems: 'center', justifyContent: 'center',
+          flex: 1, background: '#03080F',
         }}>
           <div className="pnl-pulse-avatar-ring" style={{
-            width: 80,
-            height: 80,
-            borderRadius: '50%',
+            width: 80, height: 80, borderRadius: '50%',
             background: 'rgba(0, 196, 188, 0.1)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
             marginBottom: 24,
           }}>
             <Phone size={32} style={{ color: '#00C4BC' }} />
           </div>
-          <div style={{ fontSize: '1.2rem', fontWeight: 600, letterSpacing: '0.05em' }}>
+          <div style={{ fontSize: '1.2rem', fontWeight: 600, letterSpacing: '0.05em' }} aria-live="polite">
             CONNECTING TO CONFERENCE...
           </div>
         </div>
