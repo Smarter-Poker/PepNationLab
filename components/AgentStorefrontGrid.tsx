@@ -430,8 +430,9 @@ export default function AgentStorefrontGrid({ products, inventoryMap, primaryCol
   const [showBulkPricing, setShowBulkPricing] = useState(false);
   // Modal-only quantity input — does NOT touch cartItems until "Add To Cart" is pressed.
   // Agent self-buy: minimum 10 vials, increments of 10 (enforced here + server-side).
-  const selfBuyStep = 1;   // agents can buy any quantity; tiered pricing applies below 10
-  const selfBuyMin  = 1;   // minimum 1 vial; agent direct price unlocks at 10+
+  const selfBuyStep = 1;   // agents can buy any quantity; tiered pricing applies below 10  // Enforce per-peptide minimum using min_order_qty (defaults to 1). Agent direct price unlocks at 10+
+  const selfBuyMin  = agent.min_order_qty ?? 1;
+  const overallMin  = agent.min_overall_qty ?? 1;
 
   // ─── Recommendations ("Researchers Also Bought") ────────────────────────
   // When the product detail modal opens, fetch a strip of related products
@@ -1322,6 +1323,11 @@ export default function AgentStorefrontGrid({ products, inventoryMap, primaryCol
                         })
                         .filter(Boolean);
 
+                      if (totalCartItems < overallMin) {
+                        toast.error(`Order Minimum Not Met: This storefront requires an overall minimum order of ${overallMin} items. You currently have ${totalCartItems}.`);
+                        return;
+                      }
+                      
                       try {
                         // Write to a per-agent scoped cart key so Agent A's cart
                         // can NEVER contaminate Agent B's checkout. Closed-loop isolation.

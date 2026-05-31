@@ -29,7 +29,9 @@ export default async function AgentStorefrontPage({ params }: Props) {
       qr_code_url,
       qr_code_data,
       is_active,
-      volume_pricing_enabled
+      volume_pricing_enabled,
+      min_order_qty,
+      min_overall_qty
     `)
     .ilike('slug', agentSlug)
     .single();

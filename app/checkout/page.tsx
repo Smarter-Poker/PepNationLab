@@ -49,24 +49,31 @@ export default async function CheckoutPage({ searchParams }: PageProps) {
   // handles this specific agent has configured (not hardcoded platform handles).
   // Prefer agentSlug (storefront URL) → then researcher's referring_agent_id.
   let agentPaymentHandles: Record<string, string> = {};
+  let minOverallQty = 1;
   try {
     if (agentSlug) {
       const { data: ap } = await supabase
         .from('agent_profiles')
-        .select('payment_handles')
+        .select('payment_handles, min_overall_qty')
         .ilike('slug', agentSlug)
         .single();
       if (ap?.payment_handles) {
         agentPaymentHandles = ap.payment_handles as Record<string, string>;
       }
+      if (ap?.min_overall_qty) {
+        minOverallQty = ap.min_overall_qty;
+      }
     } else if (profile.referring_agent_id) {
       const { data: ap } = await supabase
         .from('agent_profiles')
-        .select('payment_handles')
+        .select('payment_handles, min_overall_qty')
         .eq('id', profile.referring_agent_id)
         .single();
       if (ap?.payment_handles) {
         agentPaymentHandles = ap.payment_handles as Record<string, string>;
+      }
+      if (ap?.min_overall_qty) {
+        minOverallQty = ap.min_overall_qty;
       }
     }
   } catch {
@@ -80,6 +87,7 @@ export default async function CheckoutPage({ searchParams }: PageProps) {
       tierMultipliers={tierMultipliers}
       agentSlug={agentSlug}
       agentPaymentHandles={agentPaymentHandles}
+      minOverallQty={minOverallQty}
     />
   );
 }

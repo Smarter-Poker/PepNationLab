@@ -13,6 +13,7 @@ interface MessengerState {
   setActive: (id: string | null) => void;
   setMessages: (convId: string, msgs: Message[]) => void;
   appendMessage: (convId: string, msg: Message) => void;
+  prependMessages: (convId: string, msgs: Message[]) => void;
   updateMessage: (convId: string, msg: Message) => void;
   removeMessage: (convId: string, msgId: string) => void;
   setLoadingConversations: (loading: boolean) => void;
@@ -38,6 +39,13 @@ export const useMessengerStore = create<MessengerState>((set, get) => ({
       const list = s.messages[convId] ?? [];
       if (list.some(m => m.id === msg.id || (msg.client_message_id && m.client_message_id === msg.client_message_id))) return s;
       return { messages: { ...s.messages, [convId]: [...list, msg] } };
+    }),
+  prependMessages: (convId, msgs) =>
+    set((s) => {
+      const currentList = s.messages[convId] ?? [];
+      const newMsgs = msgs.filter((newMsg) => !currentList.some((existing) => existing.id === newMsg.id));
+      if (newMsgs.length === 0) return s;
+      return { messages: { ...s.messages, [convId]: [...newMsgs, ...currentList] } };
     }),
   updateMessage: (convId, msg) =>
     set((s) => ({

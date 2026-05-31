@@ -379,6 +379,7 @@ function PricingConfig({ agentId }: { agentId: string }) {
   // Dynamic pricing (small-order surcharges)
   const [enableDynamic, setEnableDynamic] = React.useState(true);
   const [minOrderQty, setMinOrderQty] = React.useState(1);
+  const [minOverallQty, setMinOverallQty] = React.useState(1);
   const [dynamicTiers, setDynamicTiers] = React.useState([
     { min_qty: 1, max_qty: 2, surcharge_percent: 20 },
     { min_qty: 3, max_qty: 5, surcharge_percent: 15 },
@@ -398,13 +399,14 @@ function PricingConfig({ agentId }: { agentId: string }) {
     (async () => {
       const { data } = await supabase
         .from('agent_profiles')
-        .select('enable_dynamic_pricing, dynamic_pricing_tiers, min_order_qty, enable_bulk_discounts, bulk_discount_tiers')
+        .select('enable_dynamic_pricing, dynamic_pricing_tiers, min_order_qty, min_overall_qty, enable_bulk_discounts, bulk_discount_tiers')
         .eq('id', agentId)
         .single();
       if (data) {
         if (data.enable_dynamic_pricing != null) setEnableDynamic(data.enable_dynamic_pricing);
         if (data.dynamic_pricing_tiers) setDynamicTiers(data.dynamic_pricing_tiers as any);
         if (data.min_order_qty != null) setMinOrderQty(data.min_order_qty);
+        if (data.min_overall_qty != null) setMinOverallQty(data.min_overall_qty);
         if (data.enable_bulk_discounts != null) setEnableBulk(data.enable_bulk_discounts);
         if (data.bulk_discount_tiers) setBulkTiers(data.bulk_discount_tiers as any);
       }
@@ -420,6 +422,7 @@ function PricingConfig({ agentId }: { agentId: string }) {
         enable_dynamic_pricing: enableDynamic,
         dynamic_pricing_tiers: dynamicTiers,
         min_order_qty: minOrderQty,
+        min_overall_qty: minOverallQty,
         enable_bulk_discounts: enableBulk,
         bulk_discount_tiers: bulkTiers,
       })
@@ -462,10 +465,18 @@ function PricingConfig({ agentId }: { agentId: string }) {
 
         {enableDynamic && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', marginBottom: 'var(--space-2)' }}>
-              <span style={{ fontSize: '0.82rem', color: 'var(--grey-400)' }}>Minimum Order Qty:</span>
-              <input type="number" min={1} className="form-input" style={{ width: 70, padding: '4px 8px', height: 32 }}
-                value={minOrderQty} onChange={e => setMinOrderQty(Number(e.target.value) || 1)} />
+            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)', marginBottom: 'var(--space-2)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+                <span style={{ fontSize: '0.82rem', color: 'var(--grey-400)' }}>Per-Peptide Minimum Qty:</span>
+                <input type="number" min={1} className="form-input" style={{ width: 70, padding: '4px 8px', height: 32 }}
+                  value={minOrderQty} onChange={e => setMinOrderQty(Number(e.target.value) || 1)} />
+              </div>
+              <div style={{ width: 1, height: 24, background: 'rgba(255,255,255,0.1)' }} />
+              <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+                <span style={{ fontSize: '0.82rem', color: 'var(--grey-400)' }}>Overall Order Minimum Qty:</span>
+                <input type="number" min={1} className="form-input" style={{ width: 70, padding: '4px 8px', height: 32 }}
+                  value={minOverallQty} onChange={e => setMinOverallQty(Number(e.target.value) || 1)} />
+              </div>
             </div>
             {dynamicTiers.map((tier, i) => (
               <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', fontSize: '0.85rem' }}>

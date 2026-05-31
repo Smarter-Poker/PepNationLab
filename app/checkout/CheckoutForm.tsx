@@ -35,6 +35,8 @@ interface CheckoutFormProps {
   agentSlug?: string | null;
   /** Payment handles configured by the agent (from agent_profiles.payment_handles) */
   agentPaymentHandles?: Record<string, string>;
+  /** Overall minimum items required to checkout from this agent */
+  minOverallQty?: number;
 }
 
 interface SavedAddress {
@@ -50,7 +52,7 @@ interface SavedAddress {
   is_default: boolean;
 }
 
-export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, agentSlug, agentPaymentHandles }: CheckoutFormProps) {
+export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, agentSlug, agentPaymentHandles, minOverallQty = 1 }: CheckoutFormProps) {
   // Agent buying from their own store → show tier-discounted pricing.
   // Cross-check: only treat as self-buy when the agentSlug in the URL
   // matches the agent's OWN store. If an agent visits another agent's
@@ -102,14 +104,15 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
       }
     } catch { /* non-blocking */ }
     setStorefrontLoaded(true);
-  // storefrontCartKey is stable (derived from prop) — safe dep
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Use storefront cart if present, otherwise fall back to CartContext
   const cart = storefrontCart.length > 0 ? storefrontCart : contextCart;
+  const totalCartQty = cart.reduce((sum, item) => sum + item.quantity, 0);
+  const meetsOverallMin = totalCartQty >= minOverallQty;
+
   // Always use costPrice for subtotal — for agent self-buy this IS their tier price.
-  // For researchers, costPrice === retailPrice (set identically in AgentStorefrontGrid).
   const cartSubtotal = storefrontCart.length > 0
     ? storefrontCart.reduce((sum, item) => sum + item.costPrice * item.quantity, 0)
     : contextSubtotal;
@@ -124,9 +127,6 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
 
   const clearAllCarts = () => {
     clearCart();
-    // Remove BOTH per-agent cart keys: the checkout staging key and the
-    // live grid state key. This prevents ghost cart reload if user navigates
-    // back to the storefront after a successful order.
     try { localStorage.removeItem(storefrontCartKey); } catch { /* ok */ }
     try { if (agentSlug) localStorage.removeItem(`cart_${agentSlug}`); } catch { /* ok */ }
     setStorefrontCart([]);
@@ -137,22 +137,13 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
   const [error, setError] = useState<string | null>(null);
   const [orderSuccess, setOrderSuccess] = useState<string | null>(null);
   const [serverTotal, setServerTotal] = useState<number | null>(null);
-  // Tracks if server adjusted the total — shown as warning on success screen.
   const [totalAdjusted, setTotalAdjusted] = useState(false);
 
-  // Cart staleness: warn if cart was saved to localStorage more than 24h ago.
-  // cartSavedAt comes from the _savedAt timestamp written by AgentStorefrontGrid.
-  // If null (legacy cart or no storefront path), we never show the warning.
   const cartIsStale = cartSavedAt !== null && (Date.now() - cartSavedAt) > 24 * 60 * 60 * 1000;
 
-  // Idempotency key persists across renders to prevent double-submit.
-  // RESET after a successful order so that a subsequent visit to checkout
-  // (e.g. back-navigation edge case) generates a fresh key.
   const idempotencyKeyRef = useRef<string | null>(null);
   const submittedRef = useRef<boolean>(false);
 
-  // Live shipping rate from DB — replaces hardcoded brackets so the preview
-  // always matches what the server will charge (including admin rate changes).
   const [liveShippingRate, setLiveShippingRate] = useState<number | null>(null);
   const shippingFetchAbortRef = useRef<AbortController | null>(null);
 
@@ -171,7 +162,6 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
     idempotencyKeyRef.current = null;
   };
 
-  // Form State
   const [fullName, setFullName] = useState(userProfile.full_name ?? '');
   const [street, setStreet] = useState('');
   const [suite, setSuite] = useState('');
@@ -183,13 +173,11 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
   const [fulfillmentMethod, setFulfillmentMethod] = useState<'ship' | 'agent_pickup'>('ship');
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethodId>(availablePaymentMethods[0]?.id ?? 'zelle');
 
-  // Saved addresses
   const [savedAddresses, setSavedAddresses] = useState<SavedAddress[]>([]);
   const [selectedAddressId, setSelectedAddressId] = useState<string>('new');
   const [saveAddress, setSaveAddress] = useState<boolean>(true);
   const [savedAddressesLoading, setSavedAddressesLoading] = useState<boolean>(true);
 
-  // Fetch saved addresses on mount + autofill default on first load.
   useEffect(() => {
     let cancelled = false;
     (async () => {
@@ -211,7 +199,6 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
           setSaveAddress(false);
         }
       } catch {
-        // Non-blocking — checkout still works without saved addresses.
       } finally {
         if (!cancelled) setSavedAddressesLoading(false);
       }
@@ -219,7 +206,7 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
     return () => {
       cancelled = true;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   function pickSavedAddress(id: string) {
@@ -245,19 +232,16 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
     setSaveAddress(false);
   }
 
-  // Disclaimers checkboxes
   const [disclaimer1, setDisclaimer1] = useState(false);
   const [disclaimer2, setDisclaimer2] = useState(false);
   const [disclaimer3, setDisclaimer3] = useState(false);
 
-  // Coupon state
   const [couponInput, setCouponInput] = useState('');
   const [appliedCoupon, setAppliedCoupon] = useState<{ code: string; discount: number } | null>(null);
   const [couponError, setCouponError] = useState('');
   const [couponLoading, setCouponLoading] = useState(false);
 
 
-  // Tax quote — re-fetched whenever subtotal, shipping, or shipping state change.
   const [taxQuote, setTaxQuote] = useState<{
     taxAmount: number;
     rate: number;
@@ -266,11 +250,8 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
     exemptionId: string | null;
   }>({ taxAmount: 0, rate: 0, jurisdiction: null, exempt: false, exemptionId: null });
 
-  // Compute standard weight and shipping fee on client for preview
   const totalWeightOz = cart.reduce((acc, item) => acc + (item.weightOz ?? 0.5) * item.quantity, 0);
 
-  // Fetch live shipping rate from DB whenever weight or fulfillment changes.
-  // This replaces the hardcoded bracket table so preview always matches charge.
   useEffect(() => {
     if (shippingFetchAbortRef.current) shippingFetchAbortRef.current.abort();
     const ctrl = new AbortController();
@@ -291,8 +272,6 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
         const json = await res.json();
         setLiveShippingRate(Number(json.rate) || 0);
       } catch {
-        // Network error — fall back to hardcoded bracket as safety net.
-        // (fulfillmentMethod is guaranteed to be 'ship' here due to the early return above)
         const fallback = totalWeightOz <= 1 ? 8 : totalWeightOz <= 4 ? 12 : totalWeightOz <= 8 ? 16 : totalWeightOz <= 16 ? 20 : 28;
         setLiveShippingRate(fallback);
       }
@@ -301,9 +280,6 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [totalWeightOz, fulfillmentMethod]);
 
-  // Fetch the tax quote whenever destination state, subtotal, fulfillment,
-  // or coupon discount change. Soft-fails to zero tax so checkout never blocks.
-  // Declared BEFORE the conditional early return so hook order stays stable.
   useEffect(() => {
     let cancelled = false;
     const shippingState = fulfillmentMethod === 'ship' ? (state || '').trim().toUpperCase() : '';
@@ -352,13 +328,10 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cartSubtotal, fulfillmentMethod, state, totalWeightOz, appliedCoupon?.discount]);
 
-  // Don't render until we know which cart source to use (avoids flash of empty cart)
   if (!storefrontLoaded) return null;
 
   const calculateShippingCost = () => {
     if (fulfillmentMethod === 'agent_pickup') return 0;
-    // Prefer the live DB rate (fetched asynchronously). Fall back to the
-    // hardcoded bracket only while the async fetch is still in-flight.
     if (liveShippingRate !== null) return liveShippingRate;
     if (totalWeightOz <= 1.0) return 8.00;
     if (totalWeightOz <= 4.0) return 12.00;
@@ -381,19 +354,16 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
           setError('All Shipping Fields Are Required For Delivery.');
           return;
         }
-        // Phone validation — require a plausible 10-digit US number.
         const digitsOnly = phone.replace(/\D/g, '');
         if (phone.trim() && digitsOnly.length < 10) {
           setError('Please Enter A Valid 10-Digit Phone Number For Shipping Updates.');
           return;
         }
-        // Zip code must be 5 digits.
         if (!/^\d{5}(-\d{4})?$/.test(zip.trim())) {
           setError('Please Enter A Valid 5-Digit ZIP Code.');
           return;
         }
       }
-      // Per-item quantity cap — client-side guard before server.
       const overLimit = cart.find(item => item.quantity > 10_000);
       if (overLimit) {
         setError(`Quantity for "${overLimit.name}" exceeds the maximum allowed (10,000 per item). Please reduce the quantity.`);
@@ -452,8 +422,6 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
       return;
     }
 
-    // AGENT SELF-BUY RULE: Minimum 10 vials per item, increments of 10.
-    // Enforce client-side before sending to server (server also enforces this).
     if (isAgentSelfBuy && storefrontCart.length > 0) {
       const belowMin = storefrontCart.find(item => item.quantity < 10);
       if (belowMin) {
@@ -462,16 +430,12 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
       }
     }
 
-    // Guard against double-submit BEFORE issuing the fetch. A React state
-    // update would race with a fast double-tap; a ref is synchronous.
     if (submittedRef.current) return;
     submittedRef.current = true;
 
     setLoading(true);
 
     try {
-      // Persist the new address first if the user opted in. Non-blocking on
-      // failure — checkout should still proceed even if the address save fails.
       if (
         fulfillmentMethod === 'ship'
         && selectedAddressId === 'new'
@@ -498,7 +462,6 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
             }),
           });
         } catch {
-          // Swallow — we'll still attempt the order.
         }
       }
 
@@ -520,12 +483,8 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
           } : null,
           fulfillmentMethod,
           paymentMethod,
-          // HARD RULE: agent self-buy orders NEVER get coupon codes or store credits.
-          // Zero these out client-side regardless of state (server also enforces this).
           couponCode: isAgentSelfBuy ? null : (appliedCoupon?.code ?? null),
           idempotencyKey: getIdempotencyKey(),
-
-          // Closed-loop: tells server which agent's catalog to validate against
           agentSlug: agentSlug ?? null,
         })
       });
@@ -539,18 +498,13 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
       if (typeof data.total === 'number') {
         const srv = Number(data.total);
         setServerTotal(srv);
-        // Flag if server total differs from client estimate by more than 1 cent.
-        // This can happen if shipping rates or tax changed since cart was loaded.
         setTotalAdjusted(Math.abs(srv - grandTotal) > 0.01);
       }
       setOrderSuccess(data.orderId);
       clearAllCarts();
-      // Reset idempotency key so a future order from the same session
-      // generates a fresh key and doesn't replay this order.
       resetIdempotencyKey();
       submittedRef.current = false;
     } catch (err: any) {
-      // Allow the user to retry after an error.
       submittedRef.current = false;
       setError(err.message ?? 'An Error Occurred While Processing Order.');
     } finally {
@@ -558,7 +512,6 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
     }
   };
 
-  // Get payment handles text — uses the agent's actual configured handle, not hardcoded admin handles.
   const getPaymentDetails = () => {
     const handle = (agentPaymentHandles?.[paymentMethod] ?? '').trim();
     const noHandle = 'Contact Your Agent For Handle';
@@ -640,7 +593,6 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
     return (
       <div className="container-sm section" style={{ display: 'flex', justifyContent: 'center', padding: 'var(--space-10) var(--space-4)' }}>
         <div className="card-metal stagger-fade-in" style={{ width: '100%', maxWidth: 640, padding: 'var(--space-8)', border: '2px solid var(--teal)', boxShadow: '0 0 30px rgba(192, 184, 168, 0.2)' }}>
-          {/* Success Header */}
           <div style={{ textAlign: 'center', marginBottom: 'var(--space-6)' }}>
             <div style={{
               display: 'inline-flex',
@@ -663,7 +615,6 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
             <p style={{ color: 'var(--silver)', fontSize: '0.95rem' }}>Your Research Order Has Been Registered And Is Awaiting Offline Payment.</p>
           </div>
 
-          {/* Server total mismatch warning — shown if shipping/tax changed between cart load and order submit */}
           {totalAdjusted && serverTotal !== null && (
             <div style={{ background: 'rgba(245, 158, 11, 0.08)', border: '1px solid rgba(245, 158, 11, 0.4)', borderRadius: 'var(--radius-md)', padding: 'var(--space-4)', marginBottom: 'var(--space-4)', display: 'flex', gap: 12, alignItems: 'flex-start' }}>
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#F59E0B" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, marginTop: 2 }}>
@@ -699,7 +650,6 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
             </div>
           </div>
 
-          {/* Instructions Box */}
           <div style={{ background: 'rgba(192, 184, 168, 0.04)', border: '1px dashed var(--teal)', borderRadius: 'var(--radius-lg)', padding: 'var(--space-5)', marginBottom: 'var(--space-8)' }}>
             <h3 style={{ fontSize: '1rem', color: 'var(--teal)', marginBottom: 'var(--space-3)', textTransform: 'uppercase', letterSpacing: '0.05em', fontFamily: 'var(--font-brand)', display: 'flex', alignItems: 'center', gap: 8 }}>
               <svg
@@ -725,10 +675,8 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
             </p>
           </div>
 
-          {/* Payment Proof Upload */}
           <PaymentProofUpload orderId={orderSuccess} />
 
-          {/* Warning disclaimer */}
           <div style={{ borderLeft: '3px solid var(--red)', background: 'var(--red-bg)', padding: 'var(--space-4)', borderRadius: '0 var(--radius-md) var(--radius-md) 0', marginBottom: 'var(--space-6)' }}>
             <h4 style={{ color: 'var(--red)', fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 4, fontFamily: 'var(--font-brand)' }}>Strict Legal Reminder</h4>
             <p style={{ color: 'var(--silver-light)', fontSize: '0.78rem', margin: 0, lineHeight: 1.5 }}>
@@ -736,7 +684,6 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
             </p>
           </div>
 
-          {/* Action Button */}
           <div style={{ textAlign: 'center' }}>
             <a href={agentSlug ? `/${agentSlug}` : '/dashboard'} className="btn btn-primary" style={{ minWidth: 200, display: 'inline-block', lineHeight: '42px', textDecoration: 'none' }}>
               Return To Catalog
@@ -748,7 +695,14 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
   }
 
   return (
-    <div className="container section" style={{ maxWidth: 1000 }}>
+    <div className="checkout-container page-transition" style={{ padding: 'var(--space-6)', maxWidth: 1200, margin: '0 auto', paddingBottom: '100px' }}>
+      
+      {!meetsOverallMin && totalCartQty > 0 && (
+        <div style={{ background: 'rgba(239, 68, 68, 0.1)', border: '1px solid #ef4444', padding: 'var(--space-4)', borderRadius: 'var(--radius-md)', marginBottom: 'var(--space-4)', color: '#fca5a5', textAlign: 'center' }}>
+          <strong>Order Minimum Not Met:</strong> This storefront requires an overall minimum order of {minOverallQty} items. You currently have {totalCartQty} item{totalCartQty !== 1 ? 's' : ''} in your cart. Please go back to the store and add more items before checking out.
+        </div>
+      )}
+
       {/* Stale cart warning — shown if the cart is older than 24 hours */}
       {cartIsStale && (
         <div style={{ background: 'rgba(245, 158, 11, 0.07)', border: '1px solid rgba(245, 158, 11, 0.35)', borderRadius: 'var(--radius-md)', padding: 'var(--space-3) var(--space-4)', marginBottom: 'var(--space-5)', display: 'flex', gap: 10, alignItems: 'center' }}>
@@ -892,7 +846,6 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
             color: #fff !important;
           }
         `}</style>
-        {/* Main Form Area */}
         <div className="premium-panel hover-lift stagger-fade-in" style={{ padding: 'var(--space-6)' }}>
           {error && (
             <div style={{ borderLeft: '3px solid var(--red)', background: 'var(--red-bg)', padding: 'var(--space-4)', borderRadius: '0 var(--radius-md) var(--radius-md) 0', marginBottom: 'var(--space-6)', display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
@@ -916,7 +869,6 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
           )}
 
           <form onSubmit={handleSubmit}>
-            {/* STEP 1: Fulfillment & Address */}
             {step === 1 && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
                 <div>
@@ -1171,15 +1123,23 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
                   </div>
                 )}
 
-                <div className="step-buttons right">
-                  <button type="button" onClick={handleNextStep} className="btn premium-action-btn" style={{ minWidth: 150 }}>
-                    Continue To Payment
+                <div className="step-buttons">
+                  <button type="button" onClick={() => router.push(agentSlug ? `/${agentSlug}` : '/')} className="btn panel-btn">
+                    Back to Store
+                  </button>
+                  <button 
+                    type="button" 
+                    onClick={handleNextStep} 
+                    className="btn premium-action-btn" 
+                    style={{ minWidth: 150, opacity: meetsOverallMin ? 1 : 0.5, cursor: meetsOverallMin ? 'pointer' : 'not-allowed' }}
+                    disabled={!meetsOverallMin}
+                  >
+                    Continue to Payment
                   </button>
                 </div>
               </div>
             )}
 
-            {/* STEP 2: Payment Details */}
             {step === 2 && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
                 <div>
@@ -1252,7 +1212,6 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
               </div>
             )}
 
-            {/* STEP 3: Disclaimers & Submit */}
             {step === 3 && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
                 <div>
@@ -1323,9 +1282,7 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
           </form>
         </div>
 
-        {/* Sidebar Summary Area */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
-          {/* Order Summary */}
           <div className="premium-panel" style={{ padding: 'var(--space-5)' }}>
             <h3 style={{ fontSize: '0.95rem', color: 'var(--white)', marginBottom: 'var(--space-4)', borderBottom: '1px solid rgba(255, 255, 255, 0.05)', paddingBottom: 'var(--space-2)', letterSpacing: '0.05em', textTransform: 'uppercase' }}>
               Order Inventory
@@ -1356,7 +1313,6 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
               })}
             </div>
 
-            {/* Coupon — HIDDEN for agent self-buy: agents cannot use coupons on their own orders */}
             {!isAgentSelfBuy && (
             <div style={{ borderTop: '1px solid rgba(255, 255, 255, 0.05)', paddingTop: 'var(--space-3)', marginBottom: 'var(--space-3)' }}>
               {appliedCoupon ? (
@@ -1460,7 +1416,6 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
             </div>
           </div>
 
-          {/* Secure Card Shield */}
           <div className="premium-panel" style={{ padding: 'var(--space-4)', display: 'flex', alignItems: 'flex-start', gap: 'var(--space-3)' }}>
             <svg
               width="18"
