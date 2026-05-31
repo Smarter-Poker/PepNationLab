@@ -47,8 +47,6 @@ export async function POST(req: NextRequest) {
     prepaid_balance,
     slug,
     display_name,
-    tagline,
-    bio,
     account_role = 'agent',
     parent_agent_id,
   } = body;
@@ -149,8 +147,6 @@ export async function POST(req: NextRequest) {
       id: userId,
       slug,
       display_name,
-      tagline: tagline || null,
-      bio: bio || null,
       qr_code_data: qrCodeData,
       is_active: true,
     });

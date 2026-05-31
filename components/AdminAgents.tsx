@@ -37,8 +37,6 @@ export default function AdminAgents() {
     prepaid_balance: '',
     slug: '',
     display_name: '',
-    tagline: '',
-    bio: '',
     account_role: 'agent',
     parent_agent_id: '',
   });
@@ -160,8 +158,6 @@ export default function AdminAgents() {
         prepaid_balance: '',
         slug: '',
         display_name: '',
-        tagline: '',
-        bio: '',
         account_role: 'agent',
         parent_agent_id: '',
       });

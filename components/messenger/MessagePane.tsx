@@ -919,7 +919,7 @@ export default function MessagePane({ userId, activeCall, setActiveCall }: Props
         refreshKey={pinRefreshKey}
         onJump={handleJumpToMessage}
       />
-      <div className="msg-list" style={{ flex: 1, minHeight: 0, overflowY: 'auto', WebkitOverflowScrolling: 'touch', overscrollBehavior: 'contain', padding: 16, display: 'flex', flexDirection: 'column', gap: 8 }}>
+      <div className="msg-list" onClick={() => setActiveMenuId(null)} style={{ flex: 1, minHeight: 0, overflowY: 'auto', WebkitOverflowScrolling: 'touch', overscrollBehavior: 'contain', padding: 16, display: 'flex', flexDirection: 'column', gap: 8 }}>
         {loading && messages.length === 0 ? (
           <div style={{ color: 'var(--grey-400, #A8B4C0)', textAlign: 'center', marginTop: 32 }}>
             Loading Messages

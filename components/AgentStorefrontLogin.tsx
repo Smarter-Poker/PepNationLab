@@ -9,7 +9,6 @@ interface Props {
   displayName: string;
   primaryColor: string;
   logoUrl?: string | null;
-  tagline?: string | null;
   errorMessage?: string | null;
 }
 
@@ -18,7 +17,6 @@ export default function AgentStorefrontLogin({
   displayName,
   primaryColor,
   logoUrl,
-  tagline,
   errorMessage
 }: Props) {
   const router = useRouter();
@@ -210,9 +208,6 @@ export default function AgentStorefrontLogin({
           <h2 style={{ color: 'var(--white)', fontSize: '1.4rem', fontFamily: 'var(--font-brand)', marginBottom: 'var(--space-1)' }}>
             {displayName}
           </h2>
-          {tagline && (
-            <p style={{ color: 'var(--silver)', fontSize: '0.85rem' }}>{tagline}</p>
-          )}
         </div>
 
 

@@ -518,16 +518,16 @@ export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
                     {isPendingPayment && (
                       <button
                         onClick={(e) => { e.stopPropagation(); handleMarkPaid(order.id); }}
-                        className="btn btn-primary"
+                        className="btn btn-primary pulse-primary"
                         style={{ 
                           fontSize: '0.9rem', 
                           padding: '10px 24px', 
                           fontWeight: 700,
-                          background: 'linear-gradient(180deg, #c8c2b8 0%, #a09890 100%)',
-                          color: '#1a1f2e',
+                          background: 'linear-gradient(180deg, #00C4BC 0%, #0099FF 100%)',
+                          color: '#fff',
                           border: 'none',
-                          boxShadow: '0 4px 15px rgba(200, 194, 184, 0.3), inset 0 1px 0 rgba(255,255,255,0.4), inset 0 -2px 0 rgba(0,0,0,0.2)',
                           borderRadius: '10px',
+                          textShadow: '0 1px 2px rgba(0,0,0,0.3)',
                           display: 'flex',
                           alignItems: 'center',
                           gap: '8px'

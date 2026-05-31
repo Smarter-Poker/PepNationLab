@@ -12,8 +12,6 @@ interface AgentProfile {
   id: string;
   slug: string;
   display_name: string;
-  tagline: string | null;
-  bio: string | null;
   qr_code_url: string | null;
   logo_url: string | null;
 }
@@ -80,8 +78,6 @@ function ResearchersAdminPageInner() {
   const [formCreditLimit, setFormCreditLimit] = useState('');
   const [formSlug, setFormSlug] = useState('');
   const [formDisplayName, setFormDisplayName] = useState('');
-  const [formTagline, setFormTagline] = useState('');
-  const [formBio, setFormBio] = useState('');
 
   // Balance adjustment
   const [balanceDelta, setBalanceDelta] = useState('');
@@ -169,8 +165,6 @@ function ResearchersAdminPageInner() {
     setFormCreditLimit('');
     setFormSlug((profile.full_name || '').toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9\-]/g, ''));
     setFormDisplayName(profile.full_name || '');
-    setFormTagline('');
-    setFormBio('');
   }
 
   function openEditModal(profile: Profile) {
@@ -185,8 +179,6 @@ function ResearchersAdminPageInner() {
     const ap = Array.isArray(profile.agent_profiles) ? profile.agent_profiles[0] : profile.agent_profiles;
     setFormSlug(ap?.slug || '');
     setFormDisplayName(ap?.display_name || profile.full_name || '');
-    setFormTagline(ap?.tagline || '');
-    setFormBio(ap?.bio || '');
   }
 
   function openBalanceModal(profile: Profile) {
@@ -235,8 +227,6 @@ function ResearchersAdminPageInner() {
         credit_limit: formAccountType === 'credit' ? Number(formCreditLimit) : null,
         slug: formSlug,
         display_name: formDisplayName,
-        tagline: formTagline,
-        bio: formBio,
       };
       const res = await fetch('/api/admin/researchers', {
         method: 'POST',
@@ -850,16 +840,6 @@ function ResearchersAdminPageInner() {
                       <input type="text" className="form-input" placeholder="E.g. orlando-peps" value={formSlug}
                         onChange={e => setFormSlug(e.target.value.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9\-]/g, ''))} required />
                     </div>
-                  </div>
-                  <div className="form-group">
-                    <label className="form-label">Tagline</label>
-                    <input type="text" className="form-input" placeholder="E.g. Elite Research Peptides Delivered Direct"
-                      value={formTagline} onChange={e => setFormTagline(e.target.value)} />
-                  </div>
-                  <div className="form-group">
-                    <label className="form-label">Agent Bio</label>
-                    <textarea className="form-input" rows={3} placeholder="Brief storefront description..."
-                      value={formBio} onChange={e => setFormBio(e.target.value)} style={{ resize: 'vertical' }} />
                   </div>
                 </>
               )}
