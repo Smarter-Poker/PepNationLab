@@ -197,6 +197,10 @@ export default function MessageComposer({ conversationId, selfId, replyTo, onCle
     // + the 23505 replay path in send-message use this to dedup retries.
     const clientMessageId = optimistic.client_message_id!;
     try {
+      if (typeof navigator !== 'undefined' && navigator.vibrate) {
+        navigator.vibrate(10); // subtle click on send
+      }
+
       const body: Record<string, unknown> = {
         conversationId,
         messageType: payload.messageType,
@@ -239,6 +243,10 @@ export default function MessageComposer({ conversationId, selfId, replyTo, onCle
   const handleSendText = useCallback(async () => {
     const trimmed = text.trim();
     if (!trimmed || sending) return;
+    if (typeof navigator !== 'undefined' && !navigator.onLine) {
+      toast('You are offline');
+      return;
+    }
     stopTypingNow();
     const expiresAt =
       pendingExpirySeconds === null
@@ -290,6 +298,10 @@ export default function MessageComposer({ conversationId, selfId, replyTo, onCle
   };
 
   const uploadAndSend = async (blob: Blob, contentType: string, messageType: MessageType, metadata: Record<string, unknown>) => {
+    if (typeof navigator !== 'undefined' && !navigator.onLine) {
+      toast('You are offline');
+      return;
+    }
     const localUrl = URL.createObjectURL(blob);
     const expiresAt =
       pendingExpirySeconds === null

@@ -30,9 +30,6 @@ export function subscribeMessages(
     },
     (payload) => {
       const newMsg = payload.new as Message;
-      // Skip optimistic local messages
-      if (newMsg.sender_id === selfId) return;
-      
       handlers.onInsert?.(newMsg);
     }
   );

@@ -84,7 +84,11 @@ function reminderPreviewFromMessage(m: Message): string {
   }
 }
 
+const markReadThrottle: Record<string, number> = {};
 async function markConversationRead(conversationId: string, lastReadMessageId: string) {
+  const now = Date.now();
+  if (markReadThrottle[conversationId] && now - markReadThrottle[conversationId] < 3000) return;
+  markReadThrottle[conversationId] = now;
   try {
     await fetch('/api/messenger/mark-read', {
       method: 'POST',

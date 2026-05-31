@@ -21,6 +21,9 @@ export default function VoiceRecorder({ onComplete, onCancel }: Props) {
   const stopTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const stop = (commit: boolean) => {
+    if (typeof navigator !== 'undefined' && navigator.vibrate) {
+      navigator.vibrate([10, 30, 10]); // double click for stop
+    }
     const rec = recRef.current;
     if (rec && rec.state !== 'inactive') {
       rec.onstop = () => {
@@ -37,8 +40,15 @@ export default function VoiceRecorder({ onComplete, onCancel }: Props) {
   };
 
   const start = async () => {
+    if (typeof navigator !== 'undefined' && !navigator.onLine) {
+      setError('You are offline');
+      return;
+    }
     setError(null);
     try {
+      if (typeof navigator !== 'undefined' && navigator.vibrate) {
+        navigator.vibrate(15); // single click for start
+      }
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       const mime = MediaRecorder.isTypeSupported('audio/webm;codecs=opus') ? 'audio/webm;codecs=opus' : 'audio/webm';
       const rec = new MediaRecorder(stream, { mimeType: mime });

@@ -35,6 +35,9 @@ export default function ReactionPopover({ onPick, onClose }: Props) {
           key={e}
           type="button"
           onClick={() => {
+            if (typeof navigator !== 'undefined' && navigator.vibrate) {
+              navigator.vibrate([15, 50, 15]); // distinct double tap for reactions
+            }
             onPick(e);
             onClose();
           }}

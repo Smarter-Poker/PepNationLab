@@ -1314,7 +1314,46 @@ export default function AgentStorefrontGrid({
                             display: 'flex', alignItems: 'center', justifyContent: 'center',
                             flexShrink: 0, touchAction: 'manipulation'
                           }}>-</button>
-                          <span style={{ color: 'var(--white)', fontWeight: 700, fontSize: '0.8rem', minWidth: 20, textAlign: 'center' }}>{qty}</span>
+                          <input
+                            type="number"
+                            min="0"
+                            value={qty || ''}
+                            onChange={(e) => {
+                              const val = parseInt(e.target.value, 10);
+                              setCartItems(prev => {
+                                const next = { ...prev };
+                                if (isNaN(val)) {
+                                  // allow empty state while typing, or set to 0. 
+                                  // For simplicity, we just delete if they clear it or type 0.
+                                  if (e.target.value === '') {
+                                    // Hack: temporary state can be tricky with a single dict, but we will let them type it and fix on blur
+                                  }
+                                  return next;
+                                }
+                                if (val <= 0) {
+                                  delete next[variantId];
+                                } else {
+                                  next[variantId] = val;
+                                }
+                                return next;
+                              });
+                            }}
+                            onBlur={(e) => {
+                              if (e.target.value === '' || parseInt(e.target.value, 10) <= 0) {
+                                setCartItems(prev => {
+                                  const next = { ...prev };
+                                  delete next[variantId];
+                                  return next;
+                                });
+                              }
+                            }}
+                            style={{ 
+                              color: 'var(--white)', fontWeight: 700, fontSize: '0.8rem', 
+                              width: 40, textAlign: 'center', background: 'transparent',
+                              border: '1px solid rgba(255,255,255,0.2)', borderRadius: 4, padding: '2px',
+                              appearance: 'textfield', outline: 'none'
+                            }}
+                          />
                           <button onClick={() => addToCart(variantId)} style={{
                             width: 36, height: 36, borderRadius: '50%', border: 'none',
                             background: primaryColor, color: 'var(--white)', cursor: 'pointer', fontSize: '0.85rem',

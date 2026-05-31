@@ -286,7 +286,7 @@ export default async function AgentStorefrontPage({ params }: Props) {
             className="sf-btn-cart"
             style={{ background: primaryColor }}
           >
-            Checkout
+            Cart
           </Link>
         </div>
       </nav>
