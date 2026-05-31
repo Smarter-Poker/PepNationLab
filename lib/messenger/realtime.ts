@@ -9,6 +9,8 @@ interface MessageHandlers {
   onInsert?: (m: Message) => void;
   onUpdate?: (m: Message) => void;
   onDelete?: (id: string) => void;
+  onReactionInsert?: (r: Reaction) => void;
+  onReactionDelete?: (r: { message_id: string; user_id: string; emoji: string | null }) => void;
 }
 
 export function subscribeMessages(conversationId: string, handlers: MessageHandlers): { channel: RealtimeChannel; broadcastNewMessage: (m: Message) => void } {
@@ -38,6 +40,30 @@ export function subscribeMessages(conversationId: string, handlers: MessageHandl
       handlers.onInsert?.((payload.payload as any).message as Message);
     } else if (payload.payload) {
       handlers.onInsert?.(payload.payload as Message); // Fallback for local broadcast
+    }
+  });
+  ch.on('broadcast', { event: 'update_message' }, (payload) => {
+    if (payload.payload && (payload.payload as any).message) {
+      handlers.onUpdate?.((payload.payload as any).message as Message);
+    }
+  });
+  ch.on('broadcast', { event: 'delete_message' }, (payload) => {
+    if (payload.payload && (payload.payload as any).messageId) {
+      handlers.onDelete?.((payload.payload as any).messageId as string);
+    }
+  });
+  ch.on('broadcast', { event: 'reaction_added' }, (payload) => {
+    if (payload.payload && (payload.payload as any).reaction) {
+      handlers.onReactionInsert?.((payload.payload as any).reaction as Reaction);
+    }
+  });
+  ch.on('broadcast', { event: 'reaction_removed' }, (payload) => {
+    if (payload.payload && (payload.payload as any).message_id) {
+      handlers.onReactionDelete?.({
+        message_id: (payload.payload as any).message_id,
+        user_id: (payload.payload as any).user_id,
+        emoji: (payload.payload as any).emoji,
+      });
     }
   });
   ch.subscribe();

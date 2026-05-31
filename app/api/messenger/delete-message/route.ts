@@ -4,6 +4,7 @@ import { assertSameOrigin } from '@/lib/csrf';
 import { requireSession, getParticipant } from '@/lib/messenger/server';
 import { messengerRateLimit, messengerRateLimitResponse } from '@/lib/messengerRateLimit';
 import { DeleteMessageSchema } from '@/lib/messenger/schemas';
+import { sendBroadcast } from '@/lib/messenger/broadcast';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -70,7 +71,7 @@ export async function POST(req: NextRequest) {
     participant.role === 'admin';
   if (!allowed) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
-  const { error: updErr } = await svc
+  const { data: updated, error: updErr } = await svc
     .from('messenger_messages')
     .update({
       is_deleted: true,
@@ -80,8 +81,16 @@ export async function POST(req: NextRequest) {
       media_metadata: {},
       updated_at: new Date().toISOString(),
     })
-    .eq('id', parsed.data.messageId);
-  if (updErr) return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
+    .eq('id', parsed.data.messageId)
+    .select('*')
+    .single();
+  if (updErr || !updated) return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
+
+  await sendBroadcast({
+    topic: `chat:${msg.conversation_id}`,
+    event: 'delete_message',
+    payload: { messageId: parsed.data.messageId, message: updated },
+  });
 
   return NextResponse.json({ ok: true });
 }

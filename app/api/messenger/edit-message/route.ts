@@ -5,6 +5,7 @@ import { requireSession, getParticipant } from '@/lib/messenger/server';
 import { messengerRateLimit, messengerRateLimitResponse } from '@/lib/messengerRateLimit';
 import { EditMessageSchema } from '@/lib/messenger/schemas';
 import { sanitizeMessageText } from '@/lib/messenger/sanitize';
+import { sendBroadcast } from '@/lib/messenger/broadcast';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -70,6 +71,12 @@ export async function POST(req: NextRequest) {
     message_id: parsed.data.messageId,
     previous_text: existing.text ?? null,
     edited_by: user.id,
+  });
+
+  await sendBroadcast({
+    topic: `chat:${existing.conversation_id}`,
+    event: 'update_message',
+    payload: { message: updated },
   });
 
   return NextResponse.json({ message: updated });

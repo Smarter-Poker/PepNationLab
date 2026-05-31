@@ -436,6 +436,31 @@ export default function MessagePane({ userId, activeCall, setActiveCall }: Props
       },
       onUpdate: (m) => updateMessage(activeId, m),
       onDelete: (id) => removeMessage(activeId, id),
+      onReactionInsert: (r) => {
+        setReactionsByMsg((prev) => {
+          const arr = prev[r.message_id] ?? [];
+          if (r.user_id === userId) {
+            const withoutTemp = arr.filter(
+              (x) => !(x.user_id === userId && x.emoji === r.emoji && x.id.startsWith('r-')),
+            );
+            if (withoutTemp.some((x) => x.user_id === userId && x.emoji === r.emoji && x.id === r.id)) {
+              return { ...prev, [r.message_id]: withoutTemp };
+            }
+            return { ...prev, [r.message_id]: [...withoutTemp, r] };
+          }
+          if (arr.some((x) => x.user_id === r.user_id && x.emoji === r.emoji)) return prev;
+          return { ...prev, [r.message_id]: [...arr, r] };
+        });
+      },
+      onReactionDelete: (r) => {
+        setReactionsByMsg((prev) => {
+          const arr = prev[r.message_id] ?? [];
+          return {
+            ...prev,
+            [r.message_id]: arr.filter((x) => !(x.user_id === r.user_id && x.emoji === r.emoji)),
+          };
+        });
+      },
     });
     
     broadcastMessageRef.current = broadcastNewMessage;
@@ -483,56 +508,7 @@ export default function MessagePane({ userId, activeCall, setActiveCall }: Props
     );
   }, [activeId, conversations, setConversations]);
 
-  const messageIds = (messagesByConv[activeId ?? ''] ?? []).map((m) => m.id);
-  const messageIdsKey = messageIds.join('|');
-  const reactionChannelRef = useRef<RealtimeChannel | null>(null);
-
-  useEffect(() => {
-    if (!activeId) return;
-    if (messageIds.length === 0) {
-      if (reactionChannelRef.current) {
-        unsubscribe(reactionChannelRef.current);
-        reactionChannelRef.current = null;
-      }
-      return;
-    }
-    const channelHint = stableKey(messageIds);
-    const ch = subscribeReactions(messageIds, {
-      onInsert: (r) => {
-        setReactionsByMsg((prev) => {
-          const arr = prev[r.message_id] ?? [];
-          if (r.user_id === userId) {
-            const withoutTemp = arr.filter(
-              (x) => !(x.user_id === userId && x.emoji === r.emoji && x.id.startsWith('r-')),
-            );
-            if (withoutTemp.some((x) => x.user_id === userId && x.emoji === r.emoji && x.id === r.id)) {
-              return { ...prev, [r.message_id]: withoutTemp };
-            }
-            return { ...prev, [r.message_id]: [...withoutTemp, r] };
-          }
-          if (arr.some((x) => x.user_id === r.user_id && x.emoji === r.emoji)) return prev;
-          return { ...prev, [r.message_id]: [...arr, r] };
-        });
-      },
-      onDelete: (r) => {
-        setReactionsByMsg((prev) => {
-          const arr = prev[r.message_id] ?? [];
-          return {
-            ...prev,
-            [r.message_id]: arr.filter((x) => !(x.user_id === r.user_id && x.emoji === r.emoji)),
-          };
-        });
-      },
-    }, channelHint);
-    reactionChannelRef.current = ch;
-    return () => {
-      if (reactionChannelRef.current) {
-        unsubscribe(reactionChannelRef.current);
-        reactionChannelRef.current = null;
-      }
-    };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeId, messageIdsKey, userId]);
+  // Removed separate subscribeReactions in favor of subscribeMessages broadcast
 
   const handleReact = useCallback(
     async (m: Message, emoji: string, action: 'add' | 'remove') => {
