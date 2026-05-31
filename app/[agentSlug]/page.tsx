@@ -233,7 +233,7 @@ export default async function AgentStorefrontPage({ params }: Props) {
           border-color: #DCD4C4;
           box-shadow: inset 0 1px 1px rgba(255,255,255,0.3), 0 4px 12px rgba(0,0,0,0.6);
         }
-        .sf-nav-back { display: flex; align-items: center; justify-content: center; width: 34px; height: 34px; flex-shrink: 0; background: transparent; border: none; transition: transform 0.15s, filter 0.15s; }
+        .sf-nav-back { display: flex; align-items: center; justify-content: center; flex-shrink: 0; background: transparent; border: none; transition: transform 0.15s, filter 0.15s; }
         .sf-nav-back:hover { transform: scale(1.05); filter: drop-shadow(0 2px 6px rgba(0,0,0,0.5)); }
         
         .sf-btn-cart { 
@@ -254,7 +254,6 @@ export default async function AgentStorefrontPage({ params }: Props) {
         @media (min-width: 600px) {
           .sf-nav { height: 68px; padding: 0 24px; gap: 12px; }
           .sf-nav-brand-name { font-size: 1rem; }
-          .sf-nav-back { width: 38px; height: 38px; }
           .sf-btn-dash, .sf-btn-cart { width: 104px; height: 38px; font-size: 0.85rem; padding: 0; }
           .sf-hero { padding: 24px 24px 8px; }
           .sf-hero h1 { font-size: 1.6rem; }
@@ -266,7 +265,7 @@ export default async function AgentStorefrontPage({ params }: Props) {
         {/* Back button */}
         <Link href="/dashboard" className="sf-nav-back" aria-label="Back to Dashboard">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/back-arrow.png" width={28} height={28} alt="Back" style={{ objectFit: 'contain' }} />
+          <img src="/back-arrow.png" width={42} height={42} alt="Back" style={{ objectFit: 'contain' }} />
         </Link>
 
         <div className="sf-nav-brand">

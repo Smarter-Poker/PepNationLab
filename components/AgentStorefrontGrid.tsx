@@ -1175,8 +1175,8 @@ export default function AgentStorefrontGrid({ products, inventoryMap, primaryCol
           }}
           style={{
             position: 'fixed',
-            bottom: '-16px',
-            right: '-16px',
+            bottom: 'env(safe-area-inset-bottom, 0px)',
+            right: '4px',
             width: 80,
             height: 80,
             background: 'transparent',
