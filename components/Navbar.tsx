@@ -359,14 +359,19 @@ export default function Navbar({ onMenuClick, isOpen, title }: { onMenuClick?: (
                 <NavbarNotificationBell />
               </div>
 
-              {/* Messenger exception: show Agent Dashboard btn instead of messenger icon */}
-              {isMessenger ? (
-                <Link href={dashLink} className="btn btn-ghost btn-sm" style={{ fontSize: '0.78rem', padding: '6px 10px' }}>
-                  {dashLabel}
-                </Link>
-              ) : null}
-
-
+              <Link href={dashLink} aria-label={dashLabel} style={{ display: 'flex', alignItems: 'center', padding: 8, transition: 'transform 0.2s', background: 'none' }} onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.05)'} onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}>
+                <img 
+                  src={
+                    role === 'admin' ? '/nav-icons/admin-dashboard.png' :
+                    role.includes('agent') ? '/nav-icons/agent-dashboard.png' :
+                    '/nav-icons/dashboard.png'
+                  } 
+                  alt={dashLabel} 
+                  width={42} 
+                  height={42} 
+                  style={{ objectFit: 'contain', display: 'block' }} 
+                />
+              </Link>
               <div
                 style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', cursor: 'pointer' }}
                 onClick={() => setDrawerOpen(o => !o)}

@@ -150,9 +150,7 @@ export default function ProductsList({
               color: 'var(--white)'
             }}
           >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/cart-icon.png" width={18} height={18} alt="Cart" style={{ objectFit: 'contain', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.5))' }} />
-            <span style={{ fontSize: '0.82rem', fontWeight: 600 }}>Cart</span>
+            <img src="/nav-icons/cart.png" width={42} height={42} alt="Cart" style={{ objectFit: 'contain', display: 'block' }} />
             {cartCount > 0 && (
               <span style={{
                 background: 'var(--teal)',

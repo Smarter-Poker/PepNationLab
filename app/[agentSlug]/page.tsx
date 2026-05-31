@@ -275,7 +275,7 @@ export default async function AgentStorefrontPage({ params }: Props) {
             <img src={agent.logo_url} alt={displayName} style={{ height: 28, borderRadius: 5, flexShrink: 0 }} />
           ) : null}
           <div className="sf-nav-brand-text">
-            <div className="sf-nav-brand-name">{displayName}</div>
+            <div className="sf-nav-brand-name">Pep Nation&apos;s Research Store</div>
           </div>
         </div>
 

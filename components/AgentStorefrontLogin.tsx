@@ -218,7 +218,7 @@ export default function AgentStorefrontLogin({
       }}>
         <div style={{ textAlign: 'center', marginBottom: 'var(--space-6)' }}>
           <h2 style={{ color: 'var(--white)', fontSize: '1.4rem', fontFamily: 'var(--font-brand)', marginBottom: 'var(--space-1)' }}>
-            {displayName}
+            Pep Nation&apos;s Research Store
           </h2>
         </div>
 
