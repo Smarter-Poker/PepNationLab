@@ -297,7 +297,7 @@ export default async function AgentStorefrontPage({ params }: Props) {
       >
         <div style={{ maxWidth: 640, margin: '0 auto' }}>
           <h1 className="animated-gradient-text" style={{ marginBottom: 6, color: 'var(--white)' }}>
-            {displayName}&apos;s Research Store
+            Pep Nation&apos;s Research Store
           </h1>
         </div>
       </section>
