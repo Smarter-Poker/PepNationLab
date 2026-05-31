@@ -26,6 +26,7 @@ interface Profile {
   role: string;
   tier: string | null;
   referring_agent_id: string | null;
+  is_sub_agent?: boolean | null;
 }
 
 interface CheckoutFormProps {
@@ -61,8 +62,17 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
   // storefront, isAgentSelfBuy must be false so UI/rules are correct.
   // We start with the role check and refine via agentSlug match below.
   const isAgentByRole = userProfile.role === 'agent' || userProfile.role === 'super_agent';
+  // SACA: sub-agents have role='agent' but pay PARENT'S RETAIL on self-buy
+  // (commission credited weekly, no checkout discount). They must NOT be
+  // treated as agent self-buy or the UI would show a fake wholesale discount,
+  // the 10-vial minimum would block legitimate small orders, and the coupon
+  // UI gating would mis-label them as "Agent Direct Subtotal".
+  const isSubAgent = userProfile.is_sub_agent === true;
   // Admins are intentionally excluded: they don't have agent_profiles rows.
-  const isAgentSelfBuy = isAgentByRole;
+  const isAgentSelfBuy = isAgentByRole && !isSubAgent;
+  // Coupons are blocked both for legit agent self-buys AND for sub-agents
+  // (sub-agents earn commission as digital credits weekly — no checkout stack).
+  const couponDisabled = isAgentSelfBuy || isSubAgent;
 
   // Derive available payment methods from what the agent has actually configured.
   // If agentPaymentHandles has no non-empty values, fall back to all methods.
@@ -459,7 +469,7 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
           } : null,
           fulfillmentMethod,
           paymentMethod,
-          couponCode: isAgentSelfBuy ? null : (appliedCoupon?.code || null),
+          couponCode: couponDisabled ? null : (appliedCoupon?.code || null),
           idempotencyKey: getIdempotencyKey(),
           agentSlug: agentSlug || null,
         })
@@ -1272,7 +1282,7 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
               })}
             </div>
 
-            {!isAgentSelfBuy && (
+            {!couponDisabled && (
             <div style={{ borderTop: '1px solid rgba(255, 255, 255, 0.05)', paddingTop: 'var(--space-3)', marginBottom: 'var(--space-3)' }}>
               {appliedCoupon ? (
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(104,211,145,0.08)', border: '1px solid rgba(104,211,145,0.3)', borderRadius: 'var(--radius-md)', padding: 'var(--space-2) var(--space-3)' }}>
