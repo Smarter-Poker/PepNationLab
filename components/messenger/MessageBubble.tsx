@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { Reply, Smile, Pencil, Trash2, Check, X, Download, Pin, Bookmark, Tag, MessageSquare, Flag, Bell, MoreHorizontal } from 'lucide-react';
 import type { Message, Reaction, ParticipantRole } from '@/lib/messenger/types';
 import type { MessageLabelValue } from '@/lib/messenger/schemas';
@@ -132,6 +132,32 @@ export default function MessageBubble({
   const [labelsOpen, setLabelsOpen] = useState(false);
   const [expiryTick, setExpiryTick] = useState(0);
   const [hovered, setHovered] = useState(false);
+  const touchTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const openedViaTouchRef = useRef<number>(0);
+
+  useEffect(() => {
+    return () => {
+      if (touchTimerRef.current) clearTimeout(touchTimerRef.current);
+    };
+  }, []);
+
+  const handleTouchStart = () => {
+    if (touchTimerRef.current) clearTimeout(touchTimerRef.current);
+    touchTimerRef.current = setTimeout(() => {
+      if (editing || confirmDelete) return;
+      openedViaTouchRef.current = Date.now();
+      setMenuOpen(!isMenuOpen);
+      if (navigator.vibrate) navigator.vibrate(50);
+    }, 500); // 500ms for mobile long press
+  };
+
+  const cancelTouch = () => {
+    if (touchTimerRef.current) {
+      clearTimeout(touchTimerRef.current);
+      touchTimerRef.current = null;
+    }
+  };
+
   const failed = (message.metadata as { failed?: boolean })?.failed === true;
   const pending = message.id.startsWith('temp-');
   const meta = (message.media_metadata ?? {}) as { filename?: string; size?: number; durationSec?: number; contentType?: string };
@@ -349,19 +375,30 @@ export default function MessageBubble({
       data-msg-id={message.id}
       style={{ alignSelf: isOwn ? 'flex-end' : 'flex-start', maxWidth: '65%',
         display: 'flex', alignItems: 'flex-end', gap: 8, position: 'relative',
-        marginBottom: isLast ? 24 : 12 }}
+        marginBottom: isLast ? 24 : 12,
+        WebkitTouchCallout: 'none' // Prevents native iOS popup on long-press
+      }}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
-      onContextMenu={(e) => { e.preventDefault(); if (editing || confirmDelete) return; setMenuOpen(!isMenuOpen); }}
+      onTouchStart={handleTouchStart}
+      onTouchMove={cancelTouch}
+      onTouchEnd={cancelTouch}
+      onTouchCancel={cancelTouch}
+      onContextMenu={(e) => { 
+        e.preventDefault(); 
+        if (editing || confirmDelete) return; 
+        if (Date.now() - openedViaTouchRef.current < 1000) return; // Prevent native double-fire on mobile
+        setMenuOpen(!isMenuOpen); 
+      }}
     >
       {!isOwn && (
         <div style={{ width: 28, flexShrink: 0, opacity: isLast ? 1 : 0 }}>
           {isLast && <Avatar avatarUrl={senderAvatarUrl ?? undefined} name={senderName ?? ''} size={28} />}
         </div>
       )}
+
       <div style={{ display: 'flex', flexDirection: 'column', gap: 2, position: 'relative', flex: 1, minWidth: 0, maxWidth: '100%' }}>
       {/* ── Visible action trigger button ── */}
-      {/* The 3 dots are hidden per user request, replaced by long-press (onContextMenu) */}
       {(isPinned || currentLabels.length > 0) && (
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, alignSelf: isOwn ? 'flex-end' : 'flex-start', padding: '0 4px' }}>
           {isPinned && (
@@ -386,93 +423,102 @@ export default function MessageBubble({
         }}
       >
         {renderBody()}
-        {isMenuOpen && showActionMenu && (
-          <div role="menu" aria-label="Message Actions"
-            style={{ position: 'absolute', bottom: 'calc(100% + 12px)', right: isOwn ? 0 : undefined, left: isOwn ? undefined : 0,
-              display: 'flex', flexWrap: 'nowrap', overflowX: 'auto', maxWidth: 'calc(100vw - 32px)', gap: 4, background: 'var(--surface-3, #1D2D3E)', borderRadius: 8, padding: 4,
-              boxShadow: '0 4px 12px rgba(0,0,0,0.4)', zIndex: 5 }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <button type="button" onClick={() => { onReply(message); setMenuOpen(false); }} style={menuBtn} aria-label="Reply" title="Reply"><Reply size={40} /></button>
-            <button type="button" onClick={() => { setMenuOpen(false); setPopoverOpen(true); }} style={menuBtn} aria-label="React" title="React"><Smile size={40} /></button>
-            {canRemind && (
-              <button
-                type="button"
-                onClick={() => { onSetReminder?.(message); setMenuOpen(false); }}
-                style={menuBtn}
-                aria-label="Remind Me"
-                title="Remind Me"
-              >
-                <Bell size={40} />
-              </button>
-            )}
-            {canPin && (
-              <button
-                type="button"
-                onClick={() => { onPinToggle?.(message, isPinned ? 'unpin' : 'pin'); setMenuOpen(false); }}
-                style={menuBtn}
-                aria-label={isPinned ? 'Unpin Message' : 'Pin Message'}
-                title={isPinned ? 'Unpin Message' : 'Pin Message'}
-              >
-                <Pin size={40} />
-              </button>
-            )}
-            {canLabel && (
-              <button
-                type="button"
-                onClick={() => { setMenuOpen(false); setLabelsOpen(true); }}
-                style={menuBtn}
-                aria-label="Labels"
-                title="Labels"
-              >
-                <Tag size={40} />
-              </button>
-            )}
-            {canThread && (
-              <button
-                type="button"
-                onClick={() => { onThread?.(message); setMenuOpen(false); }}
-                style={menuBtn}
-                aria-label="Reply In Thread"
-                title="Reply In Thread"
-              >
-                <MessageSquare size={40} />
-              </button>
-            )}
-            {isOwn && message.message_type === 'text' && (
-              <button type="button" onClick={() => { setMenuOpen(false); setEditing(true); }} style={menuBtn} aria-label="Edit" title="Edit"><Pencil size={40} /></button>
-            )}
-            <button type="button" onClick={() => { setMenuOpen(false); setConfirmDelete(true); }} style={menuBtn} aria-label="Delete" title="Delete"><Trash2 size={40} /></button>
-          </div>
-        )}
-        {popoverOpen && (
-          <ReactionPopover
-            onPick={(emoji) => { const had = grouped[emoji]?.mine === true; onReact(message, emoji, had ? 'remove' : 'add'); }}
-            onClose={() => setPopoverOpen(false)}
-          />
-        )}
-        {labelsOpen && onLabelToggle && (
-          <LabelsMenu
-            messageId={message.id}
-            currentLabels={currentLabels}
-            onToggle={(label, action) => {
-              try { onLabelToggle(message, label, action); }
-              catch { toast('Could Not Update Label'); }
-            }}
-            onClose={() => setLabelsOpen(false)}
-          />
-        )}
-        {confirmDelete && (
-          <div role="menu" aria-label="Confirm Delete"
-            style={{ position: 'absolute', bottom: 'calc(100% + 12px)', right: isOwn ? 0 : undefined, left: isOwn ? undefined : 0,
-              display: 'flex', flexWrap: 'wrap', gap: 6, background: 'var(--surface-3, #1D2D3E)', borderRadius: 8, padding: 6,
-              boxShadow: '0 4px 12px rgba(0,0,0,0.4)', zIndex: 5 }}
-          >
-            <button type="button" onClick={() => { onDelete(message, 'for_me'); setConfirmDelete(false); }} style={{ ...confirmBtnText, color: 'var(--red, #E53E3E)' }} aria-label="Delete Message" title="Delete Message">Delete Message</button>
-            <button type="button" onClick={() => setConfirmDelete(false)} style={confirmBtnText} aria-label="Cancel" title="Cancel">Cancel</button>
-          </div>
-        )}
       </div>
+
+      {isMenuOpen && showActionMenu && (
+        <div role="menu" aria-label="Message Actions"
+          style={{ 
+            alignSelf: isOwn ? 'flex-end' : 'flex-start',
+            marginTop: 4,
+            display: 'flex', flexWrap: 'nowrap', overflowX: 'auto', maxWidth: 'calc(100vw - 32px)', gap: 4, background: 'var(--surface-3, #1D2D3E)', borderRadius: 8, padding: 4,
+            boxShadow: '0 4px 12px rgba(0,0,0,0.4)',
+            zIndex: 50, position: 'relative'
+          }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <button type="button" onClick={() => { onReply(message); setMenuOpen(false); }} style={menuBtn} aria-label="Reply" title="Reply"><Reply size={24} /></button>
+          <button type="button" onClick={() => { setMenuOpen(false); setPopoverOpen(true); }} style={menuBtn} aria-label="React" title="React"><Smile size={24} /></button>
+          {canRemind && (
+            <button
+              type="button"
+              onClick={() => { onSetReminder?.(message); setMenuOpen(false); }}
+              style={menuBtn}
+              aria-label="Remind Me"
+              title="Remind Me"
+            >
+              <Bell size={24} />
+            </button>
+          )}
+          {canPin && (
+            <button
+              type="button"
+              onClick={() => { onPinToggle?.(message, isPinned ? 'unpin' : 'pin'); setMenuOpen(false); }}
+              style={menuBtn}
+              aria-label={isPinned ? 'Unpin Message' : 'Pin Message'}
+              title={isPinned ? 'Unpin Message' : 'Pin Message'}
+            >
+              <Pin size={24} />
+            </button>
+          )}
+          {canLabel && (
+            <button
+              type="button"
+              onClick={() => { setMenuOpen(false); setLabelsOpen(true); }}
+              style={menuBtn}
+              aria-label="Labels"
+              title="Labels"
+            >
+              <Tag size={24} />
+            </button>
+          )}
+          {canThread && (
+            <button
+              type="button"
+              onClick={() => { onThread?.(message); setMenuOpen(false); }}
+              style={menuBtn}
+              aria-label="Reply In Thread"
+              title="Reply In Thread"
+            >
+              <MessageSquare size={24} />
+            </button>
+          )}
+          {isOwn && message.message_type === 'text' && (
+            <button type="button" onClick={() => { setMenuOpen(false); setEditing(true); }} style={menuBtn} aria-label="Edit" title="Edit"><Pencil size={24} /></button>
+          )}
+          <button type="button" onClick={() => { setMenuOpen(false); setConfirmDelete(true); }} style={menuBtn} aria-label="Delete" title="Delete"><Trash2 size={24} /></button>
+        </div>
+      )}
+      {popoverOpen && (
+        <ReactionPopover
+          onReact={(emoji) => { onReact(message, emoji, 'add'); setPopoverOpen(false); }}
+          onClose={() => setPopoverOpen(false)}
+        />
+      )}
+      {labelsOpen && onLabelToggle && (
+        <LabelsMenu
+          messageId={message.id}
+          currentLabels={currentLabels}
+          onToggle={(label, action) => {
+            try { onLabelToggle(message, label, action); }
+            catch { toast('Could Not Update Label'); }
+          }}
+          onClose={() => setLabelsOpen(false)}
+        />
+      )}
+      {confirmDelete && (
+        <div role="menu" aria-label="Confirm Delete"
+          style={{ 
+            marginTop: 6,
+            alignSelf: isOwn ? 'flex-end' : 'flex-start',
+            display: 'flex', flexWrap: 'wrap', gap: 6, background: 'var(--surface-3, #1D2D3E)', borderRadius: 8, padding: 6,
+            boxShadow: '0 4px 12px rgba(0,0,0,0.4)',
+            zIndex: 50, position: 'relative'
+          }}
+        >
+          <button type="button" onClick={() => { onDelete(message, 'for_me'); setConfirmDelete(false); }} style={{ ...confirmBtnText, color: 'var(--red, #E53E3E)' }} aria-label="Delete Message" title="Delete Message">Delete Message</button>
+          <button type="button" onClick={() => setConfirmDelete(false)} style={confirmBtnText} aria-label="Cancel" title="Cancel">Cancel</button>
+        </div>
+      )}
 
       {url && message.message_type === 'text' && !message.is_deleted && <LinkPreview url={url} />}
 

@@ -92,7 +92,9 @@ function AdminOrdersPageInner() {
   const [error, setError] = useState("");
   const [searchQuery, setSearchQuery] = useState(searchParams.get("q") ?? "");
   const [statusFilter, setStatusFilter] = useState<string>(
-    searchParams.get("status") ?? "approved_ship",
+    // Default to "all" so the fulfillment center shows every order on landing
+    // instead of an empty list (most orders are not in approved_ship state).
+    searchParams.get("status") ?? "all",
   );
   const [dateFrom, setDateFrom] = useState<string>(
     searchParams.get("from") ?? "",

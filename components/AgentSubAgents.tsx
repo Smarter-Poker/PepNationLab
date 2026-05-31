@@ -155,7 +155,16 @@ export default function AgentSubAgents({ agentId }: { agentId?: string }) {
       if (!res.ok) throw new Error(json.error || 'Failed To Revoke Sub-Agent');
       setRevokeTarget(null);
       await fetchData();
-      toast.success('Sub-Agent Revoked');
+      // SACA: surface how many researcher tags were detached so the parent
+      // knows their downline didn't quietly lose attribution.
+      const detached = typeof json?.detached_researcher_count === 'number'
+        ? json.detached_researcher_count
+        : 0;
+      toast.success(
+        detached > 0
+          ? `Sub-Agent Revoked. ${detached} Tagged Researcher${detached === 1 ? '' : 's'} Detached.`
+          : 'Sub-Agent Revoked.'
+      );
     } catch (err: any) {
       toast.error(err.message || 'Failed To Revoke Sub-Agent');
     } finally {

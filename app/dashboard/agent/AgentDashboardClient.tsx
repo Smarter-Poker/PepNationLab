@@ -22,8 +22,7 @@ import { sanitizeUsername } from '@/lib/usernames';
 import { useTheme } from '@/components/ThemeProvider';
 import PaymentMethodsPanel from '@/components/PaymentMethodsPanel';
 import AvatarUpload from '@/components/AvatarUpload';
-import AgentStatements from '@/components/AgentStatements';
-import AgentSubInvoices from '@/components/AgentSubInvoices';
+
 
 interface Profile {
   id: string;
@@ -112,7 +111,7 @@ export default function AgentDashboardClient({
   const tabParam = searchParams.get('tab') as any;
   
   const defaultTab = (initialAgentProfile && (!initialAgentProfile.payment_handles || Object.keys(initialAgentProfile.payment_handles).every((k) => !initialAgentProfile.payment_handles![k]))) ? 'Storefront Config' : 'Overview';
-  const [activeTab, setActiveTabState] = useState<'Overview' | 'Sales & Accounting' | 'Sales & Carts' | 'Accounting' | 'Orders' | 'Researchers' | 'My Sub-Agents' | 'Store Products' | 'Research Bundles' | 'Inventory' | 'Statements' | 'Sub-Agent Invoices' | 'Coupons' | 'Storefront Config' | 'Settings'>(tabParam || defaultTab);
+  const [activeTab, setActiveTabState] = useState<'Overview' | 'Sales & Accounting' | 'Orders' | 'Researchers' | 'My Sub-Agents' | 'Store Products' | 'Research Bundles' | 'Inventory' | 'Coupons' | 'Storefront Config' | 'Settings'>(tabParam || defaultTab);
 
   const setActiveTab = (tab: typeof activeTab) => {
     setActiveTabState(tab);
@@ -783,7 +782,7 @@ export default function AgentDashboardClient({
         )}
 
         {activeTab === 'Sales & Accounting' && (
-          <AgentSales orders={orders} setOrders={setOrders} agentId={userProfile.id} />
+          <AgentSales orders={orders} setOrders={setOrders} agentId={userProfile.id} userProfile={userProfile} />
         )}
 
         {/* TAB 2: Referred Researchers */}

@@ -76,12 +76,12 @@ export default function AgentSales({ orders, setOrders, agentId, userProfile }: 
 
   const formatCurrency = (val: number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(Number(val) || 0);
 
-  const { liveCarts, sales } = data || { liveCarts: [], sales: [] };
-
   // KPI Calculations
   const metrics = useMemo(() => {
+    const s = orders || [];
+
     // Only count non-cancelled items that are at least pending or approved.
-    const validSales = sales.filter((s: any) => s.status !== 'cancelled');
+    const validSales = s.filter((o: any) => o.status !== 'cancelled');
     const totalSales = validSales.reduce((sum: number, s: any) => sum + (Number(s.total) || 0), 0);
     const totalProfit = validSales.reduce((sum: number, s: any) => sum + (Number(s.profit) || 0), 0);
     const totalOrders = validSales.length;
@@ -106,7 +106,9 @@ export default function AgentSales({ orders, setOrders, agentId, userProfile }: 
       totalOrders,
       chartData: Object.values(grouped),
     };
-  }, [sales]);
+  }, [orders]);
+
+  const { liveCarts } = data || { liveCarts: [] };
 
   if (loading) return <div style={{ padding: 'var(--space-6)', color: 'var(--silver)' }}>Loading Live Sales Data...</div>;
   if (error) return <div style={{ padding: 'var(--space-6)', color: 'var(--red)' }}>Error: {error}</div>;

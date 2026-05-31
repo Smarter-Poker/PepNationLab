@@ -21,6 +21,17 @@ export default function AdminAgents() {
   const [newPassword, setNewPassword] = useState('');
   const [passwordSaving, setPasswordSaving] = useState(false);
 
+  // Modal State — Edit Account Details
+  const [editingAccountAgent, setEditingAccountAgent] = useState<any | null>(null);
+  const [accountForm, setAccountForm] = useState({
+    full_name: '',
+    is_active: true,
+    account_type: 'prepaid',
+    credit_limit: '',
+    prepaid_balance: '',
+  });
+  const [accountSaving, setAccountSaving] = useState(false);
+
   // Inline Tier Editing
   const [tierEditing, setTierEditing] = useState<Set<string>>(new Set());
   const [tierSaving, setTierSaving] = useState<Set<string>>(new Set());
@@ -235,6 +246,43 @@ export default function AdminAgents() {
       toast.error(err.message || 'Failed To Update Contact Info');
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const openEditAccountModal = (agent: any) => {
+    setEditingAccountAgent(agent);
+    setAccountForm({
+      full_name: agent.full_name || '',
+      is_active: agent.is_active,
+      account_type: agent.account_type || 'prepaid',
+      credit_limit: agent.credit_limit !== null ? String(agent.credit_limit) : '',
+      prepaid_balance: agent.prepaid_balance !== null ? String(agent.prepaid_balance) : '0',
+    });
+  };
+
+  const handleSaveAccount = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingAccountAgent) return;
+    setAccountSaving(true);
+    try {
+      const res = await fetch('/api/admin/agents/update-agent', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: editingAccountAgent.id,
+          ...accountForm
+        })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to update agent');
+      
+      toast.success('Agent Details Updated Successfully');
+      setEditingAccountAgent(null);
+      fetchAgents();
+    } catch (err: any) {
+      toast.error(err.message);
+    } finally {
+      setAccountSaving(false);
     }
   };
 
@@ -477,10 +525,18 @@ export default function AdminAgents() {
                 </div>
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', minWidth: '120px' }}>
-                  <span style={{ fontSize: '0.75rem', color: 'var(--grey-400)', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>Balance</span>
-                  <span style={{ fontSize: '1.1rem', fontWeight: 800, color: Number(agent.prepaid_balance) < 0 ? 'var(--red)' : 'var(--green)' }}>
-                    {formatCurrency(agent.prepaid_balance)}
+                  <span style={{ fontSize: '0.75rem', color: 'var(--grey-400)', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>
+                    {agent.account_type === 'credit' ? 'Credit Limit' : 'Prepaid Bal.'}
                   </span>
+                  {agent.account_type === 'credit' ? (
+                    <span style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--green)' }}>
+                      {agent.credit_limit ? formatCurrency(agent.credit_limit) : '$0.00'}
+                    </span>
+                  ) : (
+                    <span style={{ fontSize: '1.1rem', fontWeight: 800, color: Number(agent.prepaid_balance) < 0 ? 'var(--red)' : 'var(--green)' }}>
+                      {formatCurrency(agent.prepaid_balance)}
+                    </span>
+                  )}
                 </div>
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', minWidth: '120px' }}>
@@ -495,6 +551,9 @@ export default function AdminAgents() {
                 </div>
 
                 <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end', flexWrap: 'wrap', flex: '1 1 150px' }}>
+                  <button onClick={() => openEditAccountModal(agent)} className="btn-silver" style={{ padding: '6px 12px', fontSize: '0.8rem' }}>
+                    Edit Details
+                  </button>
                   <button 
                     onClick={async () => {
                       try {
@@ -635,6 +694,90 @@ export default function AdminAgents() {
                   <button type="button" className="btn-silver" style={{ padding: '4px 12px', fontSize: '0.8rem' }} onClick={() => { setPasswordAgent(null); setNewPassword(''); }} disabled={passwordSaving}>Cancel</button>
                   <button type="submit" className="btn-neon-cyan" style={{ padding: '4px 12px', fontSize: '0.8rem' }} disabled={passwordSaving || newPassword.length < 8}>
                     {passwordSaving ? 'Saving...' : 'Update Password'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Account Settings Modal */}
+      {editingAccountAgent && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+          background: 'rgba(0,0,0,0.8)', zIndex: 1000,
+          display: 'flex', alignItems: 'center', justifyContent: 'center'
+        }}>
+          <div className="metal-frame" style={{ width: '100%', maxWidth: 450 }}>
+            <div className="metal-content" style={{ padding: 'var(--space-6)' }}>
+              <h3 className="metal-text" style={{ marginTop: 0, marginBottom: 'var(--space-4)', color: '#fff', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                Edit Agent Details
+              </h3>
+              <form onSubmit={handleSaveAccount}>
+                <div className="form-group" style={{ marginBottom: 'var(--space-4)' }}>
+                  <label className="form-label">Full Name</label>
+                  <input 
+                    type="text" 
+                    className="form-input" 
+                    value={accountForm.full_name} 
+                    onChange={e => setAccountForm(prev => ({ ...prev, full_name: e.target.value }))} 
+                    required
+                  />
+                </div>
+                
+                <div className="form-group" style={{ marginBottom: 'var(--space-4)' }}>
+                  <label className="form-label">Account Status</label>
+                  <select 
+                    className="form-input"
+                    value={accountForm.is_active ? 'active' : 'inactive'}
+                    onChange={e => setAccountForm(prev => ({ ...prev, is_active: e.target.value === 'active' }))}
+                  >
+                    <option value="active">Active (Can Login & Sell)</option>
+                    <option value="inactive">Inactive (Suspended)</option>
+                  </select>
+                </div>
+
+                <div className="form-group" style={{ marginBottom: 'var(--space-4)' }}>
+                  <label className="form-label">Account Billing Type</label>
+                  <select 
+                    className="form-input"
+                    value={accountForm.account_type}
+                    onChange={e => setAccountForm(prev => ({ ...prev, account_type: e.target.value }))}
+                  >
+                    <option value="prepaid">Prepaid Balance</option>
+                    <option value="credit">Line of Credit</option>
+                  </select>
+                </div>
+
+                {accountForm.account_type === 'prepaid' ? (
+                  <div className="form-group" style={{ marginBottom: 'var(--space-6)' }}>
+                    <label className="form-label">Prepaid Balance ($)</label>
+                    <input 
+                      type="number" step="0.01"
+                      className="form-input" 
+                      value={accountForm.prepaid_balance} 
+                      onChange={e => setAccountForm(prev => ({ ...prev, prepaid_balance: e.target.value }))} 
+                    />
+                  </div>
+                ) : (
+                  <div className="form-group" style={{ marginBottom: 'var(--space-6)' }}>
+                    <label className="form-label">Credit Limit ($)</label>
+                    <input 
+                      type="number" step="0.01"
+                      className="form-input" 
+                      value={accountForm.credit_limit} 
+                      onChange={e => setAccountForm(prev => ({ ...prev, credit_limit: e.target.value }))} 
+                    />
+                  </div>
+                )}
+
+                <div style={{ display: 'flex', gap: 'var(--space-3)', justifyContent: 'flex-end' }}>
+                  <button type="button" className="btn-silver" onClick={() => setEditingAccountAgent(null)} disabled={accountSaving}>
+                    Cancel
+                  </button>
+                  <button type="submit" className="btn-neon-cyan" disabled={accountSaving}>
+                    {accountSaving ? 'Saving...' : 'Save Changes'}
                   </button>
                 </div>
               </form>

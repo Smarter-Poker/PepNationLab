@@ -120,8 +120,15 @@ export default function AgentSubInvoices({ isSuperAgent }: { isSuperAgent: boole
                 </td>
                 {isSuperAgent && (
                   <td style={{ padding: 'var(--space-3)', color: 'var(--silver)' }}>
-                    {inv.profiles?.full_name || 'Unknown'} <br />
-                    <span style={{ fontSize: '0.8em', opacity: 0.7 }}>{inv.profiles?.email}</span>
+                    {(() => {
+                      const p = Array.isArray(inv.profiles) ? inv.profiles[0] : inv.profiles;
+                      return (
+                        <>
+                          {p?.full_name || 'Unknown'} <br />
+                          <span style={{ fontSize: '0.8em', opacity: 0.7 }}>{p?.email}</span>
+                        </>
+                      );
+                    })()}
                   </td>
                 )}
                 <td style={{ padding: 'var(--space-3)', color: 'var(--white)' }}>

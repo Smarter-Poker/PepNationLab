@@ -126,7 +126,6 @@ export async function POST(req: NextRequest) {
       .select('id, shipping_cost, order_items(product_id, quantity, unit_super_agent_cost, unit_cost_price)')
       .eq('agent_id', sub_agent_id)
       .neq('status', 'cancelled')
-      .eq('is_wholesale_restock', false)
       .gte('created_at', rangeStart)
       .lt('created_at', rangeEndExclusive);
 

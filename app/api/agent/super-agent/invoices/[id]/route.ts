@@ -51,7 +51,6 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ id: string
       .select('id, created_at, shipping_cost, order_items(product_name, quantity, unit_super_agent_cost, unit_cost_price)')
       .eq('agent_id', invoice.sub_agent_id)
       .neq('status', 'cancelled')
-      .eq('is_wholesale_restock', false)
       .gte('created_at', rangeStart)
       .lt('created_at', rangeEndExclusive);
 
