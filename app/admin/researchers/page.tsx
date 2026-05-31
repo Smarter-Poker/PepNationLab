@@ -393,7 +393,7 @@ function ResearchersAdminPageInner() {
         {/* Create New Agent Button */}
         <button
           onClick={openCreateAgentModal}
-          className="btn btn-primary"
+          className="btn-neon-cyan"
           style={{ display: 'flex', alignItems: 'center', gap: 8 }}
         >
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -522,7 +522,7 @@ function ResearchersAdminPageInner() {
         <button
           type="button"
           onClick={resetResearcherFilters}
-          className="btn btn-secondary btn-sm"
+          className="btn-silver btn-sm"
           style={{ fontSize: '0.78rem' }}
         >
           Reset
@@ -539,23 +539,25 @@ function ResearchersAdminPageInner() {
           <p style={{ color: 'var(--red)', fontSize: '0.9rem' }}>{error}</p>
         </div>
       ) : filteredProfiles.length === 0 ? (
-        <div className="card-metal" style={{ textAlign: 'center', padding: 'var(--space-12) 0' }}>
-          <p style={{ color: 'var(--grey-400)', fontSize: '0.88rem' }}>No Matching Profiles Found</p>
+        <div className="metal-frame">
+          <div className="metal-content" style={{ textAlign: 'center', padding: 'var(--space-12) 0' }}>
+            <p style={{ color: 'var(--grey-400)', fontSize: '0.88rem' }}>No Matching Profiles Found</p>
+          </div>
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
           {paginatedProfiles.map(profile => {
             const ap = Array.isArray(profile.agent_profiles) ? profile.agent_profiles[0] : profile.agent_profiles;
             return (
-              <div key={profile.id} className="card-metal" style={{
-                padding: 'var(--space-5)',
-                display: 'flex',
-                flexWrap: 'wrap',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                gap: 'var(--space-4)',
-                opacity: profile.is_active ? 1 : 0.6,
-              }}>
+              <div key={profile.id} className="metal-frame" style={{ opacity: profile.is_active ? 1 : 0.6 }}>
+                <div className="metal-content" style={{
+                  padding: 'var(--space-5)',
+                  display: 'flex',
+                  flexWrap: 'wrap',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  gap: 'var(--space-4)',
+                }}>
                 {/* Avatar + Info */}
                 <div style={{ display: 'flex', gap: 'var(--space-4)', alignItems: 'center' }}>
                   <div style={{
@@ -636,27 +638,28 @@ function ResearchersAdminPageInner() {
                     />
 
                     {profile.role === 'researcher' ? (
-                      <button onClick={() => openUpgradeModal(profile)} className="btn btn-primary" style={{ padding: 'var(--space-2) var(--space-4)', fontSize: '0.78rem' }}>
+                      <button onClick={() => openUpgradeModal(profile)} className="btn-neon-cyan" style={{ padding: 'var(--space-2) var(--space-4)', fontSize: '0.78rem' }}>
                         Upgrade To Agent
                       </button>
                     ) : (profile.role === 'agent' || profile.role === 'super_agent') ? (
                       <>
-                        <button onClick={() => openEditModal(profile)} className="btn btn-secondary" style={{ padding: 'var(--space-2) var(--space-4)', fontSize: '0.78rem' }}>
+                        <button onClick={() => openEditModal(profile)} className="btn-silver" style={{ padding: 'var(--space-2) var(--space-4)', fontSize: '0.78rem' }}>
                           Configure
                         </button>
                         {profile.account_type === 'prepaid' && (
-                          <button onClick={() => openBalanceModal(profile)} className="btn btn-secondary" style={{ padding: 'var(--space-2) var(--space-4)', fontSize: '0.78rem', borderColor: '#68D391', color: '#68D391' }}>
+                          <button onClick={() => openBalanceModal(profile)} className="btn-silver" style={{ padding: 'var(--space-2) var(--space-4)', fontSize: '0.78rem', borderColor: '#68D391', color: '#68D391' }}>
                             Adjust Balance
                           </button>
                         )}
                         {ap?.slug && (
-                          <button onClick={() => openQrModal(profile)} className="btn btn-secondary" style={{ padding: 'var(--space-2) var(--space-4)', fontSize: '0.78rem', borderColor: 'var(--teal)', color: 'var(--teal)' }}>
+                          <button onClick={() => openQrModal(profile)} className="btn-silver" style={{ padding: 'var(--space-2) var(--space-4)', fontSize: '0.78rem', borderColor: 'var(--teal)', color: 'var(--teal)' }}>
                             QR Code
                           </button>
                         )}
                       </>
                     ) : null}
                   </div>
+                </div>
                 </div>
               </div>
             );
@@ -668,8 +671,9 @@ function ResearchersAdminPageInner() {
       {/* CREATE NEW AGENT MODAL */}
       {modalMode === 'create_agent' && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.88)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100, padding: 'var(--space-4)' }}>
-          <div className="card-metal" style={{ width: '100%', maxWidth: 580, padding: 'var(--space-6)', maxHeight: '92vh', overflowY: 'auto' }}>
-            <h2 style={{ fontSize: '1.2rem', marginBottom: 'var(--space-2)' }}>Create New Agent</h2>
+          <div className="metal-frame" style={{ width: '100%', maxWidth: 580, maxHeight: '92vh', overflowY: 'auto' }}>
+            <div className="metal-content" style={{ padding: 'var(--space-6)' }}>
+              <h2 style={{ fontSize: '1.2rem', marginBottom: 'var(--space-2)' }}>Create New Agent</h2>
             <p style={{ fontSize: '0.8rem', color: 'var(--grey-400)', marginBottom: 'var(--space-6)' }}>
               Creates A Supabase Auth Account + Agent Profile Directly. No Registration Required.
             </p>
@@ -759,12 +763,13 @@ function ResearchersAdminPageInner() {
               </label>
 
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 'var(--space-3)' }}>
-                <button type="button" className="btn btn-secondary" onClick={closeModal} disabled={submitting}>Cancel</button>
-                <button type="submit" className="btn btn-primary" disabled={submitting}>
+                <button type="button" className="btn-silver" onClick={closeModal} disabled={submitting}>Cancel</button>
+                <button type="submit" className="btn-neon-cyan" disabled={submitting}>
                   {submitting ? 'Creating Agent...' : 'Create Agent Account'}
                 </button>
               </div>
             </form>
+            </div>
           </div>
         </div>
       )}
@@ -772,8 +777,9 @@ function ResearchersAdminPageInner() {
       {/* UPGRADE / CONFIGURE MODAL */}
       {(modalMode === 'upgrade' || modalMode === 'edit') && selectedProfile && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.88)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100, padding: 'var(--space-4)' }}>
-          <div className="card-metal" style={{ width: '100%', maxWidth: 540, padding: 'var(--space-6)', maxHeight: '90vh', overflowY: 'auto' }}>
-            <h2 style={{ fontSize: '1.2rem', marginBottom: 'var(--space-2)' }}>
+          <div className="metal-frame" style={{ width: '100%', maxWidth: 540, maxHeight: '90vh', overflowY: 'auto' }}>
+            <div className="metal-content" style={{ padding: 'var(--space-6)' }}>
+              <h2 style={{ fontSize: '1.2rem', marginBottom: 'var(--space-2)' }}>
               {modalMode === 'upgrade' ? 'Upgrade User To Agent' : 'Configure Agent Profile'}
             </h2>
             <p style={{ fontSize: '0.8rem', color: 'var(--grey-400)', marginBottom: 'var(--space-6)' }}>
@@ -837,12 +843,13 @@ function ResearchersAdminPageInner() {
                 </>
               )}
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 'var(--space-3)', marginTop: 'var(--space-6)' }}>
-                <button type="button" className="btn btn-secondary" onClick={closeModal} disabled={submitting}>Cancel</button>
-                <button type="submit" className="btn btn-primary" disabled={submitting}>
+                <button type="button" className="btn-silver" onClick={closeModal} disabled={submitting}>Cancel</button>
+                <button type="submit" className="btn-neon-cyan" disabled={submitting}>
                   {submitting ? 'Processing...' : modalMode === 'upgrade' ? 'Complete Upgrade' : 'Save Changes'}
                 </button>
               </div>
             </form>
+            </div>
           </div>
         </div>
       )}
@@ -850,8 +857,9 @@ function ResearchersAdminPageInner() {
       {/* BALANCE ADJUSTMENT MODAL */}
       {modalMode === 'balance' && selectedProfile && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.88)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100, padding: 'var(--space-4)' }}>
-          <div className="card-metal" style={{ width: '100%', maxWidth: 400, padding: 'var(--space-6)' }}>
-            <h2 style={{ fontSize: '1.2rem', marginBottom: 'var(--space-2)' }}>Adjust Prepaid Balance</h2>
+          <div className="metal-frame" style={{ width: '100%', maxWidth: 400 }}>
+            <div className="metal-content" style={{ padding: 'var(--space-6)' }}>
+              <h2 style={{ fontSize: '1.2rem', marginBottom: 'var(--space-2)' }}>Adjust Prepaid Balance</h2>
             <p style={{ fontSize: '0.8rem', color: 'var(--grey-400)', marginBottom: 'var(--space-4)' }}>
               {selectedProfile.full_name}{selectedProfile.username ? ` (@${selectedProfile.username})` : ''}
             </p>
@@ -901,13 +909,14 @@ function ResearchersAdminPageInner() {
                   value={balanceDelta} onChange={e => setBalanceDelta(e.target.value)} required />
               </div>
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 'var(--space-3)' }}>
-                <button type="button" className="btn btn-secondary" onClick={closeModal} disabled={submitting}>Close</button>
-                <button type="submit" className="btn btn-primary" disabled={submitting}
+                <button type="button" className="btn-silver" onClick={closeModal} disabled={submitting}>Close</button>
+                <button type="submit" className="btn-neon-cyan" disabled={submitting}
                   style={{ background: balanceType === 'add' ? undefined : 'var(--red)', borderColor: balanceType === 'add' ? undefined : 'var(--red)' }}>
                   {submitting ? 'Updating...' : balanceType === 'add' ? 'Add To Balance' : 'Deduct From Balance'}
                 </button>
               </div>
             </form>
+            </div>
           </div>
         </div>
       )}
@@ -915,8 +924,9 @@ function ResearchersAdminPageInner() {
       {/* QR CODE MODAL */}
       {modalMode === 'qr' && selectedProfile && resolvedAgentProfile && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.88)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100, padding: 'var(--space-4)' }}>
-          <div className="card-metal" style={{ width: '100%', maxWidth: 420, padding: 'var(--space-6)', textAlign: 'center' }}>
-            <h2 style={{ fontSize: '1.2rem', marginBottom: 'var(--space-2)' }}>Storefront QR Code</h2>
+          <div className="metal-frame" style={{ width: '100%', maxWidth: 420 }}>
+            <div className="metal-content" style={{ padding: 'var(--space-6)', textAlign: 'center' }}>
+              <h2 style={{ fontSize: '1.2rem', marginBottom: 'var(--space-2)' }}>Storefront QR Code</h2>
             <p style={{ fontSize: '0.8rem', color: 'var(--grey-400)', marginBottom: 'var(--space-6)' }}>
               {resolvedAgentProfile.display_name} (@{resolvedAgentProfile.slug})
             </p>
@@ -928,13 +938,14 @@ function ResearchersAdminPageInner() {
               <p style={{ color: 'var(--red)', fontSize: '0.85rem', marginBottom: 'var(--space-6)' }}>No QR Code Generated Yet</p>
             )}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
-              <a href={resolvedAgentProfile.qr_code_url || '#'} download={`${resolvedAgentProfile.slug}-qr.png`} target="_blank" rel="noreferrer" className="btn btn-primary" style={{ width: '100%', justifyContent: 'center' }}>
+              <a href={resolvedAgentProfile.qr_code_url || '#'} download={`${resolvedAgentProfile.slug}-qr.png`} target="_blank" rel="noreferrer" className="btn-neon-cyan" style={{ width: '100%', justifyContent: 'center' }}>
                 Download QR Code
               </a>
-              <a href={`/${resolvedAgentProfile.slug}`} target="_blank" rel="noreferrer" className="btn btn-secondary" style={{ width: '100%', justifyContent: 'center' }}>
+              <a href={`/${resolvedAgentProfile.slug}`} target="_blank" rel="noreferrer" className="btn-silver" style={{ width: '100%', justifyContent: 'center' }}>
                 Visit Storefront
               </a>
-              <button type="button" className="btn btn-secondary" onClick={closeModal}>Close</button>
+              <button type="button" className="btn-silver" onClick={closeModal}>Close</button>
+            </div>
             </div>
           </div>
         </div>
