@@ -17,6 +17,9 @@ export function createRingTone(): RingTone | null {
   let audioContext: AudioContext | null = null;
   let isPlaying = false;
   let ringInterval: ReturnType<typeof setInterval> | null = null;
+  
+  // Need to track oscillators to stop them mid-beep if hung up
+  let activeOscillators: OscillatorNode[] = [];
 
   const start = () => {
     if (isPlaying) return;
@@ -56,6 +59,8 @@ export function createRingTone(): RingTone | null {
       const osc2 = ctx.createOscillator();
       const gain = ctx.createGain();
       
+      activeOscillators.push(osc1, osc2);
+      
       osc1.connect(gain);
       osc2.connect(gain);
       gain.connect(ctx.destination);
@@ -75,11 +80,23 @@ export function createRingTone(): RingTone | null {
       osc2.start(startTime);
       osc1.stop(startTime + duration);
       osc2.stop(startTime + duration);
+      
+      // Cleanup finished oscillators
+      osc1.onended = () => {
+          activeOscillators = activeOscillators.filter(o => o !== osc1 && o !== osc2);
+      };
   };
 
   const stop = () => {
     if (!isPlaying && !ringInterval && !audioContext) return; // Already stopped
     isPlaying = false;
+    
+    // Stop any currently playing oscillators immediately
+    activeOscillators.forEach(osc => {
+        try { osc.stop(); } catch(e) {}
+    });
+    activeOscillators = [];
+    
     if (ringInterval) {
       clearInterval(ringInterval);
       ringInterval = null;
