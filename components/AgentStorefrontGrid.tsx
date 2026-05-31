@@ -1244,6 +1244,8 @@ export default function AgentStorefrontGrid({
             right: 20,
             width: 160,
             height: 160,
+            padding: 0,
+            margin: 0,
             background: 'transparent',
             border: 'none',
             display: 'flex',
@@ -1252,7 +1254,8 @@ export default function AgentStorefrontGrid({
             zIndex: 100,
             cursor: 'pointer',
             transition: 'transform 0.2s, filter 0.2s',
-            filter: 'drop-shadow(0 8px 16px rgba(0,0,0,0.8))'
+            filter: 'drop-shadow(0 8px 16px rgba(0,0,0,0.8))',
+            WebkitTapHighlightColor: 'transparent'
           }}
           onMouseEnter={e => { 
             e.currentTarget.style.transform = 'scale(1.05)'; 
