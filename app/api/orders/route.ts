@@ -190,7 +190,11 @@ export async function POST(request: NextRequest) {
 
       let availableStock = Number(dbProduct.inventory_count);
       
-      if (agentProfile && !isAgentSelfBuy) {
+      // If it's a researcher buying from an agent's store, and they want it shipped,
+      // it ships from the agent's local on-hand inventory.
+      // If they choose 'agent_pickup', it is fulfilled via a stacked bulk shipment
+      // from main China inventory directly to the agent, so we check main stock instead.
+      if (agentProfile && !isAgentSelfBuy && fulfillmentMethod === 'ship') {
          availableStock = agentStockMap[cartItem.id] || 0;
       }
 
