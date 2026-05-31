@@ -64,6 +64,16 @@ export async function POST(req: NextRequest) {
     const { error: toggleError } = await supabase.from('profiles').update({ is_active, updated_at: new Date().toISOString() }).eq('id', id);
     if (toggleError) return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
     await supabase.from('agent_profiles').update({ is_active: !!is_active }).eq('id', id);
+
+    // Audit log: account (de)activation is a sensitive admin action.
+    void supabase.from('admin_audit_log').insert({
+      actor_id: gate.userId,
+      action: 'account_active_toggled',
+      entity_type: 'profile',
+      entity_id: id,
+      changes: { is_active: !!is_active },
+    });
+
     return NextResponse.json({ success: true });
   }
 

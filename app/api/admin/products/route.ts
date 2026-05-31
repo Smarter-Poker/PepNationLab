@@ -75,7 +75,7 @@ export async function POST(req: NextRequest) {
       category: category || 'Other',
       description: description || null,
       image_url: image_url || null,
-      base_cost,
+      base_cost: parsedBaseCost,
       unit_size: unit_size || null,
       unit_measure: unit_measure || 'mg',
       // in_stock is managed by DB trigger (sync_product_stock_status) — derived from inventory_count
@@ -112,9 +112,11 @@ export async function PATCH(req: NextRequest) {
   }
 
   // Whitelist only the fields admins are permitted to update.
-  // Prevents callers from patching is_banned, slug, or other protected columns.
+  // Deliberately EXCLUDES slug (derived from name on create; editing it breaks
+  // storefront URLs and can collide with the unique index) and is_banned
+  // (banning is a separate deliberate action, never a generic field patch).
   const ALLOWED_FIELDS = [
-    'name', 'sku', 'category', 'description', 'image_url', 'slug', 'is_banned',
+    'name', 'sku', 'category', 'description', 'image_url',
     'base_cost', 'unit_size', 'unit_measure',
     'inventory_count', 'low_stock_threshold', 'backorder_days',
     'is_active', 'admin_bulk_price', 'admin_bulk_threshold'

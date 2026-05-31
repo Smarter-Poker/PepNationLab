@@ -79,7 +79,7 @@ export default function AgentSales() {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: 'var(--space-4)' }}>
         
         {/* Total Sales */}
-        <div className="metal-frame" style={{ padding: '1px' }}>
+        <div className="metal-frame">
           <div className="metal-content" style={{ padding: 'var(--space-6)', textAlign: 'center', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
             <div style={{ fontSize: '0.85rem', color: 'var(--grey-400)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '8px', fontWeight: 600 }}>Total Revenue</div>
             <div style={{ fontSize: '2.5rem', fontWeight: 800, color: 'var(--white)', fontFamily: 'var(--font-brand)', textShadow: '0 0 10px rgba(255,255,255,0.2)' }}>
@@ -89,7 +89,7 @@ export default function AgentSales() {
         </div>
 
         {/* Total Profit */}
-        <div className="metal-frame" style={{ padding: '1px' }}>
+        <div className="metal-frame">
           <div className="metal-content" style={{ padding: 'var(--space-6)', textAlign: 'center', display: 'flex', flexDirection: 'column', justifyContent: 'center', position: 'relative', overflow: 'hidden' }}>
             <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(circle at center, rgba(0, 255, 157, 0.05) 0%, transparent 70%)', pointerEvents: 'none' }} />
             <div style={{ fontSize: '0.85rem', color: 'var(--grey-400)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '8px', fontWeight: 600 }}>Total Profit</div>
@@ -100,7 +100,7 @@ export default function AgentSales() {
         </div>
 
         {/* Total Orders */}
-        <div className="metal-frame" style={{ padding: '1px' }}>
+        <div className="metal-frame">
           <div className="metal-content" style={{ padding: 'var(--space-6)', textAlign: 'center', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
             <div style={{ fontSize: '0.85rem', color: 'var(--grey-400)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '8px', fontWeight: 600 }}>Completed Orders</div>
             <div style={{ fontSize: '2.5rem', fontWeight: 800, color: '#00E5FF', fontFamily: 'var(--font-brand)', textShadow: '0 0 10px rgba(0,229,255,0.2)' }}>
@@ -112,7 +112,7 @@ export default function AgentSales() {
       </div>
 
       {/* 2. MIDDLE SECTION: CHARTS & RECENT TRANSACTIONS */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: 'var(--space-8)', alignItems: 'start' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-8)' }}>
         
         {/* Left: Sales & Profit Chart */}
         <div className="metal-frame" style={{ flex: 1, minWidth: 0 }}>
@@ -163,8 +163,8 @@ export default function AgentSales() {
 
         {/* Right: Recent Transactions List */}
         <div className="metal-frame" style={{ flex: 1, minWidth: 0 }}>
-          <div className="metal-content" style={{ maxHeight: '430px', overflowY: 'auto' }}>
-            <h2 className="metal-text" style={{ fontSize: '1.25rem', marginBottom: 'var(--space-4)', fontFamily: 'var(--font-brand)', position: 'sticky', top: 0, background: 'var(--black-2)', zIndex: 10, paddingBottom: 'var(--space-2)' }}>
+          <div className="metal-content">
+            <h2 className="metal-text" style={{ fontSize: '1.25rem', marginBottom: 'var(--space-4)', fontFamily: 'var(--font-brand)' }}>
               Completed Sales & Profit
             </h2>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
