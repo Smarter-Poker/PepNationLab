@@ -25,6 +25,9 @@ export default function AdminAgents() {
   const [tierEditing, setTierEditing] = useState<Set<string>>(new Set());
   const [tierSaving, setTierSaving] = useState<Set<string>>(new Set());
 
+  // Trust Toggle
+  const [togglingTrust, setTogglingTrust] = useState<string | null>(null);
+
   // Modal State — Create Agent
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [createForm, setCreateForm] = useState({
@@ -235,6 +238,27 @@ export default function AdminAgents() {
     }
   };
 
+  const handleToggleTrust = async (targetUserId: string, currentStatus: boolean) => {
+    setTogglingTrust(targetUserId);
+    try {
+      const res = await fetch('/api/agent/trust', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ targetUserId, auto_approve_orders: !currentStatus })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to update auto-approve setting');
+      
+      toast.success(data.auto_approve_orders ? 'Auto-Approve Enabled' : 'Auto-Approve Disabled');
+      
+      setAgents(prev => prev.map(a => a.id === targetUserId ? { ...a, auto_approve_orders: data.auto_approve_orders } : a));
+    } catch (err: any) {
+      toast.error(err.message);
+    } finally {
+      setTogglingTrust(null);
+    }
+  };
+
   // Availability indicator component
   const AvailabilityIndicator = ({ status }: { status: 'idle' | 'checking' | 'available' | 'taken' }) => {
     if (status === 'idle') return null;
@@ -322,6 +346,41 @@ export default function AdminAgents() {
                       {agent.is_active ? 'Active' : 'Inactive'}
                     </span>
                   </div>
+                  
+                  {agent.is_super_agent && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: 8 }}>
+                      <span style={{ fontSize: '0.7rem', color: 'var(--grey-400)', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>Auto Approve</span>
+                      <label style={{ position: 'relative', display: 'inline-block', width: '30px', height: '16px' }}>
+                        <input 
+                          type="checkbox" 
+                          checked={!!agent.auto_approve_orders}
+                          onChange={() => handleToggleTrust(agent.id, !!agent.auto_approve_orders)}
+                          disabled={togglingTrust === agent.id}
+                          style={{ opacity: 0, width: 0, height: 0 }} 
+                        />
+                        <span style={{
+                          position: 'absolute',
+                          cursor: togglingTrust === agent.id ? 'not-allowed' : 'pointer',
+                          top: 0, left: 0, right: 0, bottom: 0,
+                          backgroundColor: agent.auto_approve_orders ? 'var(--teal)' : 'var(--grey-500)',
+                          transition: '.4s',
+                          borderRadius: '16px',
+                          opacity: togglingTrust === agent.id ? 0.5 : 1
+                        }}>
+                          <span style={{
+                            position: 'absolute',
+                            height: '10px',
+                            width: '10px',
+                            left: agent.auto_approve_orders ? '17px' : '3px',
+                            bottom: '3px',
+                            backgroundColor: 'white',
+                            transition: '.4s',
+                            borderRadius: '50%'
+                          }} />
+                        </span>
+                      </label>
+                    </div>
+                  )}
                 </div>
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', minWidth: '150px' }}>

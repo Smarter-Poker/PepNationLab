@@ -53,7 +53,7 @@ export default async function AgentDashboardPage() {
   // 5. Fetch referred researchers
   const { data: researchersData } = await supabase
     .from('profiles')
-    .select('id, email, username, full_name, role, created_at')
+    .select('id, email, username, full_name, role, created_at, auto_approve_orders')
     .eq('referring_agent_id', user.id)
     .order('created_at', { ascending: false });
 
@@ -62,7 +62,8 @@ export default async function AgentDashboardPage() {
     email: r.email,
     username: r.username,
     full_name: r.full_name,
-    created_at: r.created_at
+    created_at: r.created_at,
+    auto_approve_orders: !!r.auto_approve_orders
   }));
 
   // 5.5. Fetch Sub-Agents (if this user is a Super Agent)

@@ -108,7 +108,7 @@ export async function POST(request: NextRequest) {
     // Get researcher profile
     const { data: profile, error: profileError } = await serviceSupabase
       .from('profiles')
-      .select('id, referring_agent_id, role, tier, parent_agent_id, account_type, prepaid_balance, credit_limit')
+      .select('id, referring_agent_id, role, tier, parent_agent_id, account_type, prepaid_balance, credit_limit, auto_approve_orders')
       .eq('id', user.id)
       .single();
 
@@ -128,14 +128,14 @@ export async function POST(request: NextRequest) {
       agentProfile = profile;
       isAgentSelfBuy = true;
       if (profile.parent_agent_id) {
-        const { data: sap } = await serviceSupabase.from('profiles').select('id, tier, account_type, prepaid_balance, credit_limit').eq('id', profile.parent_agent_id).single();
+        const { data: sap } = await serviceSupabase.from('profiles').select('id, tier, account_type, prepaid_balance, credit_limit, auto_approve_orders').eq('id', profile.parent_agent_id).single();
         superAgentProfile = sap;
       }
     } else if (profile.referring_agent_id) {
-      const { data: ap } = await serviceSupabase.from('profiles').select('id, tier, parent_agent_id').eq('id', profile.referring_agent_id).single();
+      const { data: ap } = await serviceSupabase.from('profiles').select('id, tier, parent_agent_id, auto_approve_orders').eq('id', profile.referring_agent_id).single();
       agentProfile = ap;
       if (ap?.parent_agent_id) {
-        const { data: sap } = await serviceSupabase.from('profiles').select('id, tier, account_type, prepaid_balance, credit_limit').eq('id', ap.parent_agent_id).single();
+        const { data: sap } = await serviceSupabase.from('profiles').select('id, tier, account_type, prepaid_balance, credit_limit, auto_approve_orders').eq('id', ap.parent_agent_id).single();
         superAgentProfile = sap;
       }
     }
@@ -626,66 +626,135 @@ export async function POST(request: NextRequest) {
     let prepaidDeducted = false;
     let oldBalance = 0;
 
-    // --- Two-Step Approval & Credit Line Enforcement Logic ---
+    // --- Helper for Super Agent Credit Check ---
+    const checkSuperAgentCredit = async (saProfile: any, amount: number) => {
+      if (saProfile.account_type === 'prepaid') {
+        const bal = Number(saProfile.prepaid_balance) || 0;
+        if (bal < amount) {
+          return { error: `Insufficient Prepaid Balance. Requires $${amount.toFixed(2)}, but balance is $${bal.toFixed(2)}. Please recharge your account.`, status: 402 };
+        }
+        const { data: deductSuccess } = await serviceSupabase.rpc('deduct_prepaid_balance', { agent_id: saProfile.id, amount });
+        if (!deductSuccess) return { error: 'Failed to deduct prepaid balance.', status: 500 };
+        return { success: true, prepaidDeducted: true };
+      } else if (saProfile.account_type === 'credit') {
+        const { data: statements } = await serviceSupabase.from('weekly_statements').select('total_owed').eq('agent_id', saProfile.id).eq('status', 'pending_payment');
+        let currentUnbilled = 0;
+        statements?.forEach((s) => (currentUnbilled += Number(s.total_owed) || 0));
+
+        const { data: approvedOrders } = await serviceSupabase
+          .from('orders')
+          .select('id, shipping_cost, statement_orders(statement_id), order_items(quantity, unit_cost_price, unit_super_agent_cost), agent_id')
+          .eq('agent_id', saProfile.id)
+          .eq('is_wholesale_restock', false)
+          .in('status', ['approved_ship', 'approved_pickup', 'in_fulfillment', 'shipped', 'delivered']);
+
+        let inFlight = 0;
+        for (const o of approvedOrders ?? []) {
+          const links = (o.statement_orders as unknown) as Array<{ statement_id: string | null }> | null;
+          if (Array.isArray(links) && links.some((l) => l?.statement_id)) continue;
+          const ship = Number((o as { shipping_cost?: unknown }).shipping_cost) || 0;
+          const its = ((o as { order_items?: unknown }).order_items ?? []) as Array<{ quantity: number; unit_cost_price: number | null; unit_super_agent_cost: number | null; }>;
+          let orderCogs = 0;
+          for (const it of its) {
+            const qty = Number(it.quantity) || 0;
+            const superCost = Number(it.unit_super_agent_cost);
+            const agentCost = Number(it.unit_cost_price);
+            const isSubOrder = (o as { agent_id?: string | null }).agent_id !== saProfile.id;
+            const cost = isSubOrder ? (Number.isFinite(superCost) && superCost > 0 ? superCost : agentCost) : agentCost;
+            orderCogs += (Number.isFinite(cost) && cost > 0 ? cost : 0) * qty;
+          }
+          inFlight += orderCogs + ship;
+        }
+
+        const creditLimit = Number(saProfile.credit_limit) || 0;
+        const projected = currentUnbilled + inFlight + amount;
+        if (projected > creditLimit) {
+          return { error: `Credit Limit Exceeded. Your order of $${amount.toFixed(2)} pushes your balance to $${projected.toFixed(2)} (Limit: $${creditLimit.toFixed(2)}). Please pay your pending weekly statements.`, status: 403 };
+        }
+        return { success: true, prepaidDeducted: false };
+      } else {
+        return { error: 'Your account is not configured for wholesale credit or prepaid. Please contact admin.', status: 403 };
+      }
+    };
+
+    // --- Two-Step Approval & Cascading Auto-Approve Logic ---
     if (isWholesaleRestock) {
       if (profile.role === 'super_agent') {
-        // Super Agent Restock: Check credit/prepaid limit immediately.
-        if (profile.account_type === 'prepaid') {
-          oldBalance = Number(profile.prepaid_balance) || 0;
-          if (oldBalance < total) {
-            return NextResponse.json({
-              error: `Insufficient Prepaid Balance. Requires $${total.toFixed(2)}, but balance is $${oldBalance.toFixed(2)}. Please recharge your account.`
-            }, { status: 402 });
-          }
-          const { data: deductSuccess } = await serviceSupabase.rpc('deduct_prepaid_balance', { agent_id: profile.id, amount: total });
-          if (!deductSuccess) return NextResponse.json({ error: 'Failed to deduct prepaid balance.' }, { status: 500 });
-          prepaidDeducted = true;
-          initialStatus = 'approved_ship'; // Skip manual approval
-        } else if (profile.account_type === 'credit') {
-          // Check outstanding debt + in-flight
-          const { data: statements } = await serviceSupabase.from('weekly_statements').select('total_owed').eq('agent_id', profile.id).eq('status', 'pending_payment');
-          let currentUnbilled = 0;
-          statements?.forEach((s) => (currentUnbilled += Number(s.total_owed) || 0));
-
-          const { data: approvedOrders } = await serviceSupabase
-            .from('orders')
-            .select('id, shipping_cost, statement_orders(statement_id), order_items(quantity, unit_cost_price, unit_super_agent_cost), agent_id')
-            .eq('agent_id', profile.id)
-            .eq('is_wholesale_restock', false)
-            .in('status', ['approved_ship', 'approved_pickup', 'in_fulfillment', 'shipped', 'delivered']);
-
-          let inFlight = 0;
-          for (const o of approvedOrders ?? []) {
-            const links = (o.statement_orders as unknown) as Array<{ statement_id: string | null }> | null;
-            if (Array.isArray(links) && links.some((l) => l?.statement_id)) continue;
-            const ship = Number((o as { shipping_cost?: unknown }).shipping_cost) || 0;
-            const its = ((o as { order_items?: unknown }).order_items ?? []) as Array<{ quantity: number; unit_cost_price: number | null; unit_super_agent_cost: number | null; }>;
-            let orderCogs = 0;
-            for (const it of its) {
-              const qty = Number(it.quantity) || 0;
-              const superCost = Number(it.unit_super_agent_cost);
-              const agentCost = Number(it.unit_cost_price);
-              const isSubOrder = (o as { agent_id?: string | null }).agent_id !== profile.id;
-              const cost = isSubOrder ? (Number.isFinite(superCost) && superCost > 0 ? superCost : agentCost) : agentCost;
-              orderCogs += (Number.isFinite(cost) && cost > 0 ? cost : 0) * qty;
-            }
-            inFlight += orderCogs + ship;
-          }
-
-          const creditLimit = Number(profile.credit_limit) || 0;
-          const projected = currentUnbilled + inFlight + total;
-          if (projected > creditLimit) {
-            return NextResponse.json({
-              error: `Credit Limit Exceeded. Your order of $${total.toFixed(2)} pushes your balance to $${projected.toFixed(2)} (Limit: $${creditLimit.toFixed(2)}). Please pay your pending weekly statements.`
-            }, { status: 403 });
-          }
-          initialStatus = 'approved_ship'; // Skip manual approval
+        if (profile.auto_approve_orders) {
+          // Admin Trusts Super Agent -> Auto-Approve & Check Credit
+          const res = await checkSuperAgentCredit(profile, total);
+          if (res.error) return NextResponse.json({ error: res.error }, { status: res.status });
+          prepaidDeducted = res.prepaidDeducted || false;
+          initialStatus = 'approved_ship';
         } else {
-          return NextResponse.json({ error: 'Your account is not configured for wholesale credit or prepaid. Please contact admin.' }, { status: 403 });
+          // No Admin Trust -> Wait for manual admin approval
+          initialStatus = 'pending_customer_payment';
         }
       } else if (profile.role === 'agent') {
-        // Sub-Agent Restock: Must be approved by Super Agent.
-        initialStatus = 'agent_approval_pending';
+        if (profile.auto_approve_orders && superAgentProfile) {
+          // Super Agent Trusts Sub-Agent -> Auto-Approve & Check Super Agent's Credit
+          const res = await checkSuperAgentCredit(superAgentProfile, total);
+          if (res.error) return NextResponse.json({ error: res.error }, { status: res.status });
+          prepaidDeducted = res.prepaidDeducted || false;
+          initialStatus = 'approved_ship';
+        } else {
+          // No Super Agent Trust -> Wait for manual super agent approval
+          initialStatus = 'agent_approval_pending';
+        }
+      }
+    } else {
+      // Retail Orders (Researchers)
+      if (profile.auto_approve_orders) {
+        // Agent Trusts Researcher -> Auto-Approve Researcher payment
+        if (agentProfile && agentProfile.role === 'agent') {
+          // It's a Sub-Agent. Does the Super Agent trust the Sub-Agent?
+          if (agentProfile.auto_approve_orders && superAgentProfile) {
+            // Cascade -> Auto-Approve Sub-Agent too! Check Super Agent's Credit.
+            const costOfGoods = 0; // Retail orders deduct cost of goods from Super Agent.
+            // Wait, for retail orders, the total is the RETAIL price. The Super Agent is NOT charged the retail price.
+            // They are charged the COGS! But we don't know the exact COGS right here until we iterate.
+            // Oh boy, the checkout API DOES calculate Super Agent COGS for retail orders right here...
+            // Let's compute it.
+            let retailCogs = 0;
+            for (const item of cartItems) {
+              const p = dbProducts.find(p => p.id === item.productId);
+              if (p) {
+                const isSub = true;
+                const sc = Number(p.super_agent_cost_price);
+                const ac = Number(p.cost_price);
+                const cost = isSub ? (Number.isFinite(sc) && sc > 0 ? sc : ac) : ac;
+                retailCogs += cost * item.quantity;
+              }
+            }
+            retailCogs += shippingCost;
+            
+            const res = await checkSuperAgentCredit(superAgentProfile, retailCogs);
+            if (res.error) return NextResponse.json({ error: res.error }, { status: res.status });
+            prepaidDeducted = res.prepaidDeducted || false;
+            initialStatus = 'approved_ship';
+          } else {
+            // Super Agent does NOT trust Sub-Agent. Park it at agent_approval_pending
+            initialStatus = 'agent_approval_pending';
+          }
+        } else if (agentProfile && agentProfile.role === 'super_agent') {
+          // It's a Super Agent.
+          // Wait, if it's a Super Agent's researcher, the Super Agent trusts them!
+          // We must check Super Agent's credit for the COGS.
+          let retailCogs = 0;
+          for (const item of cartItems) {
+            const p = dbProducts.find(p => p.id === item.productId);
+            if (p) {
+               const cost = Number(p.cost_price) || 0;
+               retailCogs += cost * item.quantity;
+            }
+          }
+          retailCogs += shippingCost;
+          
+          const res = await checkSuperAgentCredit(agentProfile, retailCogs);
+          if (res.error) return NextResponse.json({ error: res.error }, { status: res.status });
+          prepaidDeducted = res.prepaidDeducted || false;
+          initialStatus = 'approved_ship';
+        }
       }
     }
 

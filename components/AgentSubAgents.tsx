@@ -47,6 +47,9 @@ export default function AgentSubAgents({ agentId }: { agentId?: string }) {
   const [revokeTarget, setRevokeTarget] = useState<{ id: string; name: string } | null>(null);
   const [revoking, setRevoking] = useState(false);
 
+  // Trust Toggle State
+  const [togglingTrust, setTogglingTrust] = useState<string | null>(null);
+
   const fetchData = async () => {
     try {
       setLoading(true);
@@ -157,6 +160,27 @@ export default function AgentSubAgents({ agentId }: { agentId?: string }) {
       toast.error(err.message || 'Failed To Revoke Sub-Agent');
     } finally {
       setRevoking(false);
+    }
+  };
+
+  const handleToggleTrust = async (targetUserId: string, currentStatus: boolean) => {
+    setTogglingTrust(targetUserId);
+    try {
+      const res = await fetch('/api/agent/trust', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ targetUserId, auto_approve_orders: !currentStatus })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to update auto-approve setting');
+      
+      toast.success(data.auto_approve_orders ? 'Auto-Approve Enabled' : 'Auto-Approve Disabled');
+      
+      setSubAgents(prev => prev.map(a => a.id === targetUserId ? { ...a, auto_approve_orders: data.auto_approve_orders } : a));
+    } catch (err: any) {
+      toast.error(err.message);
+    } finally {
+      setTogglingTrust(null);
     }
   };
 
@@ -375,6 +399,40 @@ export default function AgentSubAgents({ agentId }: { agentId?: string }) {
                     <span style={{ color: agent.is_active ? '#00FF9D' : '#FFAAAA', fontSize: '0.85rem', fontWeight: 600 }}>
                       {agent.is_active ? 'Active' : 'Inactive'}
                     </span>
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', minWidth: '100px' }}>
+                    <span style={{ fontSize: '0.75rem', color: 'var(--grey-400)', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>Auto-Approve</span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <label style={{ position: 'relative', display: 'inline-block', width: '36px', height: '20px' }}>
+                        <input 
+                          type="checkbox" 
+                          checked={!!agent.auto_approve_orders}
+                          onChange={() => handleToggleTrust(agent.id, !!agent.auto_approve_orders)}
+                          disabled={togglingTrust === agent.id}
+                          style={{ opacity: 0, width: 0, height: 0 }} 
+                        />
+                        <span style={{
+                          position: 'absolute',
+                          cursor: togglingTrust === agent.id ? 'not-allowed' : 'pointer',
+                          top: 0, left: 0, right: 0, bottom: 0,
+                          backgroundColor: agent.auto_approve_orders ? 'var(--teal)' : 'var(--grey-500)',
+                          transition: '.4s',
+                          borderRadius: '20px',
+                          opacity: togglingTrust === agent.id ? 0.5 : 1
+                        }}>
+                          <span style={{
+                            position: 'absolute',
+                            height: '14px',
+                            width: '14px',
+                            left: agent.auto_approve_orders ? '19px' : '3px',
+                            bottom: '3px',
+                            backgroundColor: 'white',
+                            transition: '.4s',
+                            borderRadius: '50%'
+                          }} />
+                        </span>
+                      </label>
+                    </div>
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', minWidth: '120px' }}>
                     <span style={{ fontSize: '0.75rem', color: 'var(--grey-400)', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>Storefront</span>

@@ -60,6 +60,7 @@ interface Researcher {
   username: string | null;
   full_name: string | null;
   created_at: string;
+  auto_approve_orders?: boolean;
 }
 
 interface Order {
@@ -164,6 +165,7 @@ export default function AgentDashboardClient({
   const [crError, setCrError] = useState('');
   const [crSuccess, setCrSuccess] = useState('');
   const [researcherList, setResearcherList] = useState<Researcher[]>(initialResearchers);
+  const [togglingTrust, setTogglingTrust] = useState<string | null>(null);
 
   // Reset Password Modal State (for researchers & sub-agents)
   const [resetPwUser, setResetPwUser] = useState<{ id: string; name: string; username: string } | null>(null);
@@ -173,6 +175,29 @@ export default function AgentDashboardClient({
   // Promote Sub-Agent Modal State
   const [promoteResearcher, setPromoteResearcher] = useState<Researcher | null>(null);
   const [promoteLoading, setPromoteLoading] = useState(false);
+
+  const handleToggleTrust = async (targetUserId: string, currentStatus: boolean, isSubAgent: boolean = false) => {
+    setTogglingTrust(targetUserId);
+    try {
+      const res = await fetch('/api/agent/trust', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ targetUserId, auto_approve_orders: !currentStatus })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to update auto-approve setting');
+      
+      toast.success(data.auto_approve_orders ? 'Auto-Approve Enabled' : 'Auto-Approve Disabled');
+      
+      if (!isSubAgent) {
+        setResearcherList(prev => prev.map(r => r.id === targetUserId ? { ...r, auto_approve_orders: data.auto_approve_orders } : r));
+      }
+    } catch (err: any) {
+      toast.error(err.message);
+    } finally {
+      setTogglingTrust(null);
+    }
+  };
 
   async function handleCreateResearcher(e: React.FormEvent) {
     e.preventDefault();
@@ -1116,6 +1141,7 @@ export default function AgentDashboardClient({
                         <th style={{ padding: 'var(--space-3) 0', fontWeight: 600 }}>Credentials</th>
                         <th style={{ padding: 'var(--space-3) 0', fontWeight: 600 }}>Created</th>
                         <th style={{ padding: 'var(--space-3) 0', fontWeight: 600 }}>Status</th>
+                        <th style={{ padding: 'var(--space-3) 0', fontWeight: 600 }}>Auto Approve</th>
                         {userProfile.is_super_agent && (
                           <th style={{ padding: 'var(--space-3) 0', fontWeight: 600, textAlign: 'right' }}>Actions</th>
                         )}
@@ -1139,6 +1165,44 @@ export default function AgentDashboardClient({
                           <td style={{ padding: 'var(--space-3) 0' }}>{new Date(res.created_at).toLocaleDateString()}</td>
                           <td style={{ padding: 'var(--space-3) 0' }}>
                             <span className="badge badge-teal" style={{ fontSize: '0.65rem' }}>Active</span>
+                          </td>
+                          <td style={{ padding: 'var(--space-3) 0' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                              <label style={{
+                                position: 'relative',
+                                display: 'inline-block',
+                                width: '36px',
+                                height: '20px'
+                              }}>
+                                <input 
+                                  type="checkbox" 
+                                  checked={!!res.auto_approve_orders}
+                                  onChange={() => handleToggleTrust(res.id, !!res.auto_approve_orders)}
+                                  disabled={togglingTrust === res.id}
+                                  style={{ opacity: 0, width: 0, height: 0 }} 
+                                />
+                                <span style={{
+                                  position: 'absolute',
+                                  cursor: togglingTrust === res.id ? 'not-allowed' : 'pointer',
+                                  top: 0, left: 0, right: 0, bottom: 0,
+                                  backgroundColor: res.auto_approve_orders ? 'var(--teal)' : 'var(--grey-500)',
+                                  transition: '.4s',
+                                  borderRadius: '20px',
+                                  opacity: togglingTrust === res.id ? 0.5 : 1
+                                }}>
+                                  <span style={{
+                                    position: 'absolute',
+                                    height: '14px',
+                                    width: '14px',
+                                    left: res.auto_approve_orders ? '19px' : '3px',
+                                    bottom: '3px',
+                                    backgroundColor: 'white',
+                                    transition: '.4s',
+                                    borderRadius: '50%'
+                                  }} />
+                                </span>
+                              </label>
+                            </div>
                           </td>
                           {userProfile.is_super_agent && (
                             <td style={{ padding: 'var(--space-3) 0', textAlign: 'right' }}>
