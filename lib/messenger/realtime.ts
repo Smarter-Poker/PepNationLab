@@ -226,11 +226,27 @@ export function subscribeMyParticipants(
 ): RealtimeChannel {
   const ch = supabase.channel(`user_unread:${userId}`);
   ch.on(
-    'broadcast',
-    { event: 'participant_updated' },
+    'postgres_changes',
+    {
+      event: 'UPDATE',
+      schema: 'public',
+      table: 'messenger_participants',
+      filter: `user_id=eq.${userId}`,
+    },
     (payload) => {
-      const row = payload.payload.participant as ParticipantUnreadRow;
-      if (row) onChange(row, 'UPDATE');
+      onChange(payload.new as ParticipantUnreadRow, 'UPDATE');
+    },
+  );
+  ch.on(
+    'postgres_changes',
+    {
+      event: 'INSERT',
+      schema: 'public',
+      table: 'messenger_participants',
+      filter: `user_id=eq.${userId}`,
+    },
+    (payload) => {
+      onChange(payload.new as ParticipantUnreadRow, 'INSERT');
     },
   );
   ch.subscribe();
@@ -253,10 +269,14 @@ export function subscribeMyIncomingMessages(
 ): RealtimeChannel {
   const ch = supabase.channel(`user_notify:${userId}`);
   ch.on(
-    'broadcast',
-    { event: 'new_message_notify' },
+    'postgres_changes',
+    {
+      event: 'INSERT',
+      schema: 'public',
+      table: 'messenger_messages',
+    },
     (payload) => {
-      const m = payload.payload.message as IncomingMessageNotification & { sender_id: string };
+      const m = payload.new as IncomingMessageNotification & { sender_id: string };
       if (!m) return;
       if (allowConversationIds && !allowConversationIds.has(m.conversation_id)) return;
       onInsert(m);
