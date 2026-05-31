@@ -18,18 +18,18 @@ interface Props {
   selfRole?: ParticipantRole | null;
   conversationType?: 'direct' | 'group' | 'announcement';
   isPinned?: boolean;
-  isBookmarked?: boolean;
   currentLabels?: MessageLabelValue[];
   onReply: (m: Message) => void;
   onReact: (m: Message, emoji: string, action: 'add' | 'remove') => void;
   onEdit: (m: Message, nextText: string) => Promise<boolean>;
   onDelete: (m: Message, scope: 'for_me' | 'for_everyone') => void;
   onPinToggle?: (m: Message, action: 'pin' | 'unpin') => void;
-  onBookmarkToggle?: (m: Message, action: 'add' | 'remove') => void;
   onLabelToggle?: (m: Message, label: MessageLabelValue, action: 'add' | 'remove') => void;
   onThread?: (m: Message) => void;
   onReport?: (m: Message) => void;
   onSetReminder?: (m: Message) => void;
+  activeMenuId?: string | null;
+  onMenuToggle?: (id: string, open: boolean) => void;
 }
 
 const URL_RE = /https?:\/\/[^\s<>]+/i;
@@ -76,11 +76,15 @@ function formatExpiry(iso: string | null): string | null {
 export default function MessageBubble({
   message, isOwn, reactions, selfId,
   selfRole = null, conversationType,
-  isPinned = false, isBookmarked = false, currentLabels = [],
+  isPinned = false, currentLabels = [],
   onReply, onReact, onEdit, onDelete,
-  onPinToggle, onBookmarkToggle, onLabelToggle, onThread, onReport, onSetReminder,
+  onPinToggle, onLabelToggle, onThread, onReport, onSetReminder,
+  activeMenuId, onMenuToggle,
 }: Props) {
-  const [menuOpen, setMenuOpen] = useState(false);
+  const isMenuOpen = activeMenuId !== undefined ? activeMenuId === message.id : false;
+  const setMenuOpen = (open: boolean) => {
+    if (onMenuToggle) onMenuToggle(message.id, open);
+  };
   const [popoverOpen, setPopoverOpen] = useState(false);
   const [editing, setEditing] = useState(false);
   const [editText, setEditText] = useState(message.text ?? '');
@@ -262,7 +266,7 @@ export default function MessageBubble({
         display: 'flex', flexDirection: 'column', gap: 2, position: 'relative' }}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
-      onContextMenu={(e) => { e.preventDefault(); if (editing || confirmDelete) return; setMenuOpen((v) => !v); }}
+      onContextMenu={(e) => { e.preventDefault(); if (editing || confirmDelete) return; setMenuOpen(!isMenuOpen); }}
     >
       {/* ── Visible action trigger button ── */}
       {showActionMenu && !message.is_deleted && (
@@ -270,13 +274,13 @@ export default function MessageBubble({
           type="button"
           aria-label="Message Actions"
           title="Message Actions"
-          onClick={(e) => { e.stopPropagation(); setMenuOpen(v => !v); }}
+          onClick={(e) => { e.stopPropagation(); setMenuOpen(!isMenuOpen); }}
           style={{
             position: 'absolute',
             top: -24,
             // Own messages: button on the left. Others: button on the right.
             ...(isOwn ? { left: -50 } : { right: -50 }),
-            background: menuOpen ? 'var(--surface-3, #1D2D3E)' : 'var(--surface-2, #162230)',
+            background: isMenuOpen ? 'var(--surface-3, #1D2D3E)' : 'var(--surface-2, #162230)',
             border: '1px solid var(--surface-3, #1D2D3E)',
             borderRadius: 6,
             color: 'var(--white, #FFFFFF)',
@@ -287,7 +291,7 @@ export default function MessageBubble({
             justifyContent: 'center',
             zIndex: 10,
             // Desktop: show on hover. Mobile: always slightly visible.
-            opacity: menuOpen ? 1 : hovered ? 1 : 0.25,
+            opacity: isMenuOpen ? 1 : hovered ? 1 : 0.25,
             transition: 'opacity 0.15s, background 0.15s',
           }}
           className="msg-action-btn"
@@ -295,18 +299,12 @@ export default function MessageBubble({
           <MoreHorizontal size={35} />
         </button>
       )}
-      {(isPinned || isBookmarked || currentLabels.length > 0) && (
+      {(isPinned || currentLabels.length > 0) && (
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, alignSelf: isOwn ? 'flex-end' : 'flex-start', padding: '0 4px' }}>
           {isPinned && (
             <span style={badgeStyle} aria-label="Pinned">
               <Pin size={10} aria-hidden="true" />
               Pinned
-            </span>
-          )}
-          {isBookmarked && (
-            <span style={badgeStyle} aria-label="Bookmarked">
-              <Bookmark size={10} aria-hidden="true" />
-              Saved
             </span>
           )}
           {currentLabels.map((label) => (
@@ -329,11 +327,12 @@ export default function MessageBubble({
         }}
       >
         {renderBody()}
-        {menuOpen && showActionMenu && (
+        {isMenuOpen && showActionMenu && (
           <div role="menu" aria-label="Message Actions"
             style={{ position: 'absolute', bottom: 'calc(100% + 12px)', right: isOwn ? 0 : undefined, left: isOwn ? undefined : 0,
-              display: 'flex', flexWrap: 'wrap', maxWidth: 320, gap: 4, background: 'var(--surface-3, #1D2D3E)', borderRadius: 8, padding: 4,
+              display: 'flex', flexWrap: 'nowrap', overflowX: 'auto', maxWidth: 'calc(100vw - 32px)', gap: 4, background: 'var(--surface-3, #1D2D3E)', borderRadius: 8, padding: 4,
               boxShadow: '0 4px 12px rgba(0,0,0,0.4)', zIndex: 5 }}
+            onClick={(e) => e.stopPropagation()}
           >
             <button type="button" onClick={() => { onReply(message); setMenuOpen(false); }} style={menuBtn} aria-label="Reply" title="Reply"><Reply size={40} /></button>
             <button type="button" onClick={() => { setMenuOpen(false); setPopoverOpen(true); }} style={menuBtn} aria-label="React" title="React"><Smile size={40} /></button>
@@ -368,17 +367,6 @@ export default function MessageBubble({
                 title={isPinned ? 'Unpin Message' : 'Pin Message'}
               >
                 <Pin size={40} />
-              </button>
-            )}
-            {canBookmark && (
-              <button
-                type="button"
-                onClick={() => { onBookmarkToggle?.(message, isBookmarked ? 'remove' : 'add'); setMenuOpen(false); }}
-                style={menuBtn}
-                aria-label={isBookmarked ? 'Remove Bookmark' : 'Bookmark'}
-                title={isBookmarked ? 'Remove Bookmark' : 'Bookmark'}
-              >
-                <Bookmark size={40} />
               </button>
             )}
             {canLabel && (

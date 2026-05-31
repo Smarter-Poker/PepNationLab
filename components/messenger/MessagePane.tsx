@@ -1,17 +1,17 @@
 'use client';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useMessengerStore } from '@/stores/messengerStore';
+import { enablePush } from '@/lib/push-client';
 import type { ConversationListItem, Message, Reaction, ParticipantRole } from '@/lib/messenger/types';
 import type { MessageLabelValue, ThemeValue } from '@/lib/messenger/schemas';
 import type { CallSignalRow } from '@/lib/messenger/realtime';
-import { MessageCircle, Info, Bell, BellOff } from 'lucide-react';
+import { MessageCircle, Info, Bell, BellOff, X } from 'lucide-react';
 import MessageBubble from './MessageBubble';
 import MessageComposer from './MessageComposer';
 import TypingIndicator from './TypingIndicator';
 import GroupInfoDrawer from './GroupInfoDrawer';
 import PinnedBar from './PinnedBar';
 import ThreadDrawer from './ThreadDrawer';
-import BookmarksDrawer from './BookmarksDrawer';
 import CallButton from './CallButton';
 import ReportModal from './ReportModal';
 import BlockList from './BlockList';
@@ -117,10 +117,9 @@ export default function MessagePane({ userId, activeCall, setActiveCall }: Props
   const [selfRole, setSelfRole] = useState<ParticipantRole | null>(null);
   const [pinRefreshKey, setPinRefreshKey] = useState(0);
   const [pinnedIds, setPinnedIds] = useState<Set<string>>(new Set());
-  const [bookmarkedIds, setBookmarkedIds] = useState<Set<string>>(new Set());
   const [labelsByMsg, setLabelsByMsg] = useState<Record<string, MessageLabelValue[]>>({});
   const [threadParentId, setThreadParentId] = useState<string | null>(null);
-  const [bookmarksOpen, setBookmarksOpen] = useState(false);
+  const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
   const [themeValue, setThemeValue] = useState<ThemeValue>('default');
   // Phase 12: blocks + report modal
   const [blockedIds, setBlockedIds] = useState<Set<string>>(new Set());
@@ -145,10 +144,10 @@ export default function MessagePane({ userId, activeCall, setActiveCall }: Props
     setReplyTo(null);
     setInfoOpen(false);
     setThreadParentId(null);
-    setBookmarksOpen(false);
     setReportTarget(null);
     setRemindersOpen(false);
     setReminderSeed(null);
+    setActiveMenuId(null);
   }, [activeId]);
 
   // Phase 14: decide whether to show the push opt-in banner. Visible only
@@ -207,7 +206,19 @@ export default function MessagePane({ userId, activeCall, setActiveCall }: Props
   const handleAllowPush = useCallback(async () => {
     try {
       if (typeof Notification === 'undefined') return;
-      const result = await Notification.requestPermission();
+      
+      const pushRes = await enablePush();
+      if (!pushRes.ok) {
+        if (pushRes.error?.includes('Permission')) {
+           setPushBanner('denied');
+           return;
+        }
+        toast(`Push Failed: ${pushRes.error}`);
+        // Fallback: still request permission so at least they can get notifications locally if server fails?
+        // Actually, enablePush() already requests permission.
+      }
+
+      const result = Notification.permission;
       if (result === 'granted') {
         const res = await fetch('/api/messenger/notification-prefs', {
           method: 'POST',
@@ -230,6 +241,8 @@ export default function MessagePane({ userId, activeCall, setActiveCall }: Props
           setPushBanner('hidden');
         } else {
           toast('Could Not Save Preference');
+          // Even if saving preference failed, hide it because it's annoying to keep seeing it.
+          setPushBanner('hidden');
         }
       } else if (result === 'denied') {
         setPushBanner('denied');
@@ -320,19 +333,14 @@ export default function MessagePane({ userId, activeCall, setActiveCall }: Props
     return () => { cancelled = true; };
   }, [activeId, userId]);
 
-  // Resolve pins, bookmarks, labels for the loaded messages.
-  const loadPinsBookmarksLabels = useCallback(async (conversationId: string, messageIds: string[]) => {
+  // Resolve pins, labels for the loaded messages.
+  const loadPinsLabels = useCallback(async (conversationId: string, messageIds: string[]) => {
     try {
       const reqs: Promise<Response>[] = [
         fetch('/api/messenger/list-pins', {
           method: 'POST',
           headers: { 'content-type': 'application/json' },
           body: JSON.stringify({ conversationId }),
-        }),
-        fetch('/api/messenger/list-bookmarks', {
-          method: 'POST',
-          headers: { 'content-type': 'application/json' },
-          body: '{}',
         }),
       ];
       if (messageIds.length > 0) {
@@ -344,14 +352,10 @@ export default function MessagePane({ userId, activeCall, setActiveCall }: Props
           }),
         );
       }
-      const [pinsRes, bksRes, labelsRes] = await Promise.all(reqs);
+      const [pinsRes, labelsRes] = await Promise.all(reqs);
       if (pinsRes.ok) {
         const json = (await pinsRes.json()) as { pins?: Array<{ message_id: string }> };
         setPinnedIds(new Set((json.pins ?? []).map((p) => p.message_id)));
-      }
-      if (bksRes.ok) {
-        const json = (await bksRes.json()) as { bookmarks?: Array<{ message_id: string }> };
-        setBookmarkedIds(new Set((json.bookmarks ?? []).map((b) => b.message_id)));
       }
       if (labelsRes && labelsRes.ok) {
         const json = (await labelsRes.json()) as { labels?: Array<{ message_id: string; label: MessageLabelValue }> };
@@ -391,7 +395,7 @@ export default function MessagePane({ userId, activeCall, setActiveCall }: Props
         setReactionsByMsg(map);
         const lastId = list.length > 0 ? list[list.length - 1].id : null;
         if (lastId) void markConversationRead(activeId, lastId);
-        void loadPinsBookmarksLabels(activeId, list.map((m) => m.id));
+        void loadPinsLabels(activeId, list.map((m) => m.id));
       } finally {
         if (!cancelled) setLoading(activeId, false);
       }
@@ -399,7 +403,7 @@ export default function MessagePane({ userId, activeCall, setActiveCall }: Props
     return () => {
       cancelled = true;
     };
-  }, [activeId, messagesByConv, setMessages, setLoading, loadPinsBookmarksLabels]);
+  }, [activeId, messagesByConv, setMessages, setLoading, loadPinsLabels]);
 
   useEffect(() => {
     if (!activeId) return;
@@ -666,44 +670,6 @@ export default function MessagePane({ userId, activeCall, setActiveCall }: Props
     [activeId, pinnedIds],
   );
 
-  const handleBookmarkToggle = useCallback(
-    async (m: Message, action: 'add' | 'remove') => {
-      const wasBookmarked = bookmarkedIds.has(m.id);
-      setBookmarkedIds((cur) => {
-        const next = new Set(cur);
-        if (action === 'add') next.add(m.id);
-        else next.delete(m.id);
-        return next;
-      });
-      try {
-        const res = await fetch('/api/messenger/bookmark-message', {
-          method: 'POST',
-          headers: { 'content-type': 'application/json' },
-          body: JSON.stringify({ messageId: m.id, action }),
-        });
-        if (!res.ok) {
-          const json = (await res.json().catch(() => ({}))) as { error?: string };
-          toast(json.error ?? 'Could Not Update Bookmark');
-          setBookmarkedIds((cur) => {
-            const next = new Set(cur);
-            if (wasBookmarked) next.add(m.id);
-            else next.delete(m.id);
-            return next;
-          });
-        }
-      } catch {
-        toast('Network Error');
-        setBookmarkedIds((cur) => {
-          const next = new Set(cur);
-          if (wasBookmarked) next.add(m.id);
-          else next.delete(m.id);
-          return next;
-        });
-      }
-    },
-    [bookmarkedIds],
-  );
-
   const handleLabelToggle = useCallback(
     async (m: Message, label: MessageLabelValue, action: 'add' | 'remove') => {
       const had = (labelsByMsg[m.id] ?? []).includes(label);
@@ -752,29 +718,8 @@ export default function MessagePane({ userId, activeCall, setActiveCall }: Props
     }
   }, []);
 
-  // Audit3 fix: pending jump survives the activeId switch. The messages
-  // effect re-fires when activeId changes; once messages render we look for
-  // a pending jump and execute it. Replaces the fragile 800ms setTimeout
-  // race that silently failed on slow networks.
   const [pendingJumpMessageId, setPendingJumpMessageId] = useState<string | null>(null);
 
-  const handleJumpAcrossConv = useCallback(
-    (conversationId: string, messageId: string) => {
-      setBookmarksOpen(false);
-      if (conversationId !== activeId) {
-        setPendingJumpMessageId(messageId);
-        setActive(conversationId);
-      } else {
-        handleJumpToMessage(messageId);
-      }
-    },
-    [activeId, setActive, handleJumpToMessage],
-  );
-
-  // Audit3 fix: consume the pending cross-conv jump once messages for the
-  // new activeId have actually rendered into the DOM. Polls 100ms up to ~5s
-  // so it tolerates slow networks much better than the previous fixed
-  // 800ms setTimeout race.
   useEffect(() => {
     if (!pendingJumpMessageId || !activeId) return;
     let attempts = 0;
@@ -795,8 +740,6 @@ export default function MessagePane({ userId, activeCall, setActiveCall }: Props
     return () => clearInterval(interval);
   }, [pendingJumpMessageId, activeId, handleJumpToMessage]);
 
-  // Phase 13: opens the reminders drawer in create-mode pre-populated with the
-  // message reference + preview snippet.
   const handleSetReminder = useCallback(
     (m: Message) => {
       setReminderSeed({
@@ -834,10 +777,10 @@ export default function MessagePane({ userId, activeCall, setActiveCall }: Props
   const currentConv = conversations.find((c) => c.conversation_id === activeId);
   const headerLabel = resolveConversationLabel(currentConv);
   const conversationType = currentConv?.type;
-  const isDirectConv = conversationType === 'direct';
 
   return (
     <div
+      onClick={() => setActiveMenuId(null)}
       style={{
         flex: 1,
         minHeight: 0,
@@ -881,22 +824,13 @@ export default function MessagePane({ userId, activeCall, setActiveCall }: Props
           />
           <button
             type="button"
-            onClick={() => { setReminderSeed(null); setRemindersOpen(true); }}
+            onClick={(e) => { e.stopPropagation(); setReminderSeed(null); setRemindersOpen(true); }}
             aria-label="Open Reminders"
             className="msg-header-action"
             style={headerBtn}
           >
             <Bell size={12} aria-hidden="true" />
             <span className="msg-header-action-label">Reminders</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => setBookmarksOpen(true)}
-            aria-label="Open Bookmarks"
-            className="msg-header-action"
-            style={headerBtn}
-          >
-            <span className="msg-header-action-label">Bookmarks</span>
           </button>
           <button
             type="button"
@@ -997,15 +931,13 @@ export default function MessagePane({ userId, activeCall, setActiveCall }: Props
         ) : (
           messages
             .filter((m) => {
-              // Phase 12: in direct conversations, fully hide messages from blocked
-              // senders. In groups we keep a placeholder so context flow is
-              // preserved -- handled below.
+              const isDirectConv = conversationType === 'direct';
               if (!isDirectConv) return true;
               return !blockedIds.has(m.sender_id);
             })
             .map((m) => {
               const isBlockedSender = blockedIds.has(m.sender_id) && m.sender_id !== userId;
-              if (isBlockedSender && !isDirectConv) {
+              if (isBlockedSender && conversationType !== 'direct') {
                 return (
                   <div
                     key={m.id}
@@ -1036,18 +968,18 @@ export default function MessagePane({ userId, activeCall, setActiveCall }: Props
                   selfRole={selfRole}
                   conversationType={conversationType}
                   isPinned={pinnedIds.has(m.id)}
-                  isBookmarked={bookmarkedIds.has(m.id)}
                   currentLabels={labelsByMsg[m.id] ?? []}
                   onReply={setReplyTo}
                   onReact={handleReact}
                   onEdit={handleEdit}
                   onDelete={handleDelete}
                   onPinToggle={handlePinToggle}
-                  onBookmarkToggle={handleBookmarkToggle}
                   onLabelToggle={handleLabelToggle}
                   onThread={(parent) => setThreadParentId(parent.id)}
                   onReport={(msg) => setReportTarget(msg)}
                   onSetReminder={handleSetReminder}
+                  activeMenuId={activeMenuId}
+                  onMenuToggle={(id, open) => setActiveMenuId(open ? id : null)}
                 />
               );
             })
@@ -1067,7 +999,6 @@ export default function MessagePane({ userId, activeCall, setActiveCall }: Props
           onClose={() => setInfoOpen(false)}
           currentTheme={themeValue}
           onThemeChange={(next) => setThemeValue(next)}
-          onOpenBookmarks={() => { setInfoOpen(false); setBookmarksOpen(true); }}
           onOpenBlockList={() => { setInfoOpen(false); setBlockListOpen(true); }}
         />
       )}
@@ -1076,12 +1007,6 @@ export default function MessagePane({ userId, activeCall, setActiveCall }: Props
           threadParentId={threadParentId}
           selfId={userId}
           onClose={() => setThreadParentId(null)}
-        />
-      )}
-      {bookmarksOpen && (
-        <BookmarksDrawer
-          onClose={() => setBookmarksOpen(false)}
-          onJump={handleJumpAcrossConv}
         />
       )}
       {reportTarget && (

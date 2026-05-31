@@ -430,7 +430,7 @@ export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
                     )}
                     
                     <button
-                      onClick={() => handleUpdateOrderStatus(order.id, 'cancelled')}
+                      onClick={(e) => { e.stopPropagation(); handleUpdateOrderStatus(order.id, 'cancelled'); }}
                       className="btn btn-secondary"
                       style={{
                         border: '1px solid rgba(252,129,129,0.4)',
@@ -453,7 +453,7 @@ export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
                     
                     {isPendingPayment && (
                       <button
-                        onClick={() => handleMarkPaid(order.id)}
+                        onClick={(e) => { e.stopPropagation(); handleMarkPaid(order.id); }}
                         className="btn btn-primary"
                         style={{ 
                           fontSize: '0.9rem', 
@@ -494,7 +494,7 @@ export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
 
                     {isPendingApproval && order.fulfillment_method === 'ship' && (
                       <button
-                        onClick={() => handleBuyShippingLabel(order.id)}
+                        onClick={(e) => { e.stopPropagation(); handleBuyShippingLabel(order.id); }}
                         className="btn btn-primary"
                         style={{
                           fontSize: '0.9rem',
