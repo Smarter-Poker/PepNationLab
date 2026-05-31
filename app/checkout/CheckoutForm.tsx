@@ -825,40 +825,18 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
               grid-template-columns: 1fr !important;
             }
           }
-          .premium-panel {
-            background: linear-gradient(180deg, rgba(20,25,30,0.8) 0%, rgba(10,15,20,0.9) 100%);
-            border: 1px solid transparent;
-            box-shadow: 0 0 0 1.5px #C0B8A8, inset 0 0 0 1px rgba(0,0,0,0.5), 0 8px 24px rgba(0,0,0,0.6);
-            border-radius: 16px;
-          }
           .premium-input {
-            background: rgba(255, 255, 255, 0.05) !important;
-            border: 1px solid rgba(192, 184, 168, 0.4) !important;
-            border-radius: 8px !important;
-            color: var(--white) !important;
-            box-shadow: inset 0 1px 1px rgba(0,0,0,0.2) !important;
-            transition: all 0.2s ease !important;
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: var(--white);
+            border-radius: 8px;
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3);
+            transition: all 0.2s ease;
           }
           .premium-input:focus {
-            border-color: #C0B8A8 !important;
-            background: rgba(255, 255, 255, 0.08) !important;
-            box-shadow: inset 0 1px 1px rgba(0,0,0,0.3), 0 0 8px rgba(192, 184, 168, 0.3) !important;
-            outline: none !important;
-          }
-          .premium-action-btn {
-            background: linear-gradient(180deg, #3A3A3A 0%, #1A1A1A 100%) !important;
-            border: 1px solid #C0B8A8 !important;
-            box-shadow: inset 0 1px 1px rgba(255,255,255,0.2), 0 4px 12px rgba(0,0,0,0.5) !important;
-            color: #C0B8A8 !important;
-            text-shadow: 0 1px 2px rgba(0,0,0,0.8) !important;
-            border-radius: 8px !important;
-            transition: transform 0.15s, filter 0.15s, background 0.15s !important;
-          }
-          .premium-action-btn:hover {
-            transform: scale(1.02) !important;
-            background: linear-gradient(180deg, #444 0%, #222 100%) !important;
-            filter: drop-shadow(0 2px 8px rgba(192, 184, 168, 0.3)) !important;
-            color: #fff !important;
+            border-color: rgba(255, 255, 255, 0.3);
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3), 0 0 0 3px rgba(255, 255, 255, 0.05);
+            background: rgba(0, 0, 0, 0.6);
           }
         `}</style>
         <div className="metal-frame hover-lift stagger-fade-in" style={{ width: '100%' }}>
@@ -1140,13 +1118,13 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
                 )}
 
                 <div className="step-buttons">
-                  <button type="button" onClick={() => router.push(agentSlug ? `/${agentSlug}` : '/')} className="btn panel-btn">
+                  <button type="button" onClick={() => router.push(agentSlug ? `/${agentSlug}` : '/')} className="btn-neon-cyan" style={{ minWidth: 200, padding: '12px' }}>
                     Back to Store
                   </button>
                   <button 
                     type="button" 
                     onClick={handleNextStep} 
-                    className="btn premium-action-btn" 
+                    className="btn-neon-cyan" 
                     style={{ minWidth: 150, opacity: meetsOverallMin ? 1 : 0.5, cursor: meetsOverallMin ? 'pointer' : 'not-allowed' }}
                     disabled={!meetsOverallMin}
                   >
@@ -1218,10 +1196,10 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
                 </div>
 
                 <div className="step-buttons">
-                  <button type="button" onClick={handlePrevStep} className="btn premium-action-btn" style={{ minWidth: 150 }}>
+                  <button type="button" onClick={handlePrevStep} className="btn" style={{ minWidth: 150, background: 'rgba(255,255,255,0.05)', color: 'var(--white)' }}>
                     Back
                   </button>
-                  <button type="button" onClick={handleNextStep} className="btn premium-action-btn" style={{ minWidth: 150 }}>
+                  <button type="button" onClick={handleNextStep} className="btn-neon-cyan" style={{ minWidth: 150 }}>
                     Continue To Terms
                   </button>
                 </div>
@@ -1282,10 +1260,10 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
                 </div>
 
                 <div className="step-buttons">
-                  <button type="button" onClick={handlePrevStep} className="btn premium-action-btn" style={{ minWidth: 150 }} disabled={loading}>
+                  <button type="button" onClick={handlePrevStep} className="btn" style={{ minWidth: 150, background: 'rgba(255,255,255,0.05)', color: 'var(--white)' }} disabled={loading}>
                     Back
                   </button>
-                  <button type="submit" className="btn premium-action-btn" style={{ minWidth: 180, display: 'flex', alignItems: 'center', justifyContent: 'center' }} disabled={loading}>
+                  <button type="submit" className="btn-neon-cyan" style={{ minWidth: 180, display: 'flex', alignItems: 'center', justifyContent: 'center' }} disabled={loading}>
                     {loading ? (
                       <span style={{ display: 'inline-block', width: 16, height: 16, border: '2px solid #fff', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
                     ) : (
@@ -1360,7 +1338,7 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
                     type="button"
                     onClick={applyCoupon}
                     disabled={couponLoading}
-                    className="btn premium-action-btn"
+                    className="btn-neon-cyan"
                     style={{ fontSize: '0.78rem', padding: '0 var(--space-4)' }}
                   >
                     {couponLoading ? 'Checking' : 'Apply'}
