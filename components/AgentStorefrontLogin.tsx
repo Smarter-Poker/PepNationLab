@@ -103,17 +103,24 @@ export default function AgentStorefrontLogin({
       // Single-session enforcement — best-effort, never block login
       supabase.auth.signOut({ scope: 'others' }).catch(() => {});
 
-      // Wait until Supabase confirms the session is readable locally (max 3s).
-      // On mobile incognito the cookie write is async — navigating too soon
-      // means the server request arrives before the cookie exists.
-      for (let i = 0; i < 15; i++) {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session?.access_token) break;
-        await new Promise(r => setTimeout(r, 200));
+      // Wait until Supabase confirms the session is readable in cookies (max 3s).
+      // On mobile incognito the cookie write is async.
+      let cookieFound = false;
+      for (let i = 0; i < 20; i++) {
+        if (document.cookie.includes('sb-') && document.cookie.includes('-auth-token')) {
+          cookieFound = true;
+          break;
+        }
+        await new Promise(r => setTimeout(r, 150));
       }
 
-      // Hard navigation — forces browser to re-send all cookies to the server
-      window.location.replace(window.location.pathname);
+      if (!cookieFound) {
+        // Fallback sleep just in case cookie name differs
+        await new Promise(r => setTimeout(r, 1000));
+      }
+
+      // Refresh the router to load the storefront
+      router.refresh();
     } catch (err: any) {
       setError(err.message || 'Sign In Failed. Please Try Again.');
       setLoading(false);
@@ -171,17 +178,22 @@ export default function AgentStorefrontLogin({
       // Single-session enforcement — best-effort, never block login
       supabase.auth.signOut({ scope: 'others' }).catch(() => {});
 
-      // Wait until Supabase confirms the session is readable locally (max 3s).
-      // On mobile incognito the cookie write is async — navigating too soon
-      // means the server request arrives before the cookie exists.
-      for (let i = 0; i < 15; i++) {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session?.access_token) break;
-        await new Promise(r => setTimeout(r, 200));
+      // Wait until Supabase confirms the session is readable in cookies (max 3s).
+      let cookieFound = false;
+      for (let i = 0; i < 20; i++) {
+        if (document.cookie.includes('sb-') && document.cookie.includes('-auth-token')) {
+          cookieFound = true;
+          break;
+        }
+        await new Promise(r => setTimeout(r, 150));
       }
 
-      // Force full navigation so the new auth cookie is sent to the server
-      window.location.replace(window.location.pathname);
+      if (!cookieFound) {
+        await new Promise(r => setTimeout(r, 1000));
+      }
+
+      // Refresh the router to load the storefront
+      router.refresh();
     } catch (err: any) {
       setError(err.message || 'Network Error');
       setLoading(false);

@@ -21,9 +21,9 @@ import {
   subscribeMessages,
   subscribeTyping,
   unsubscribe,
+  supabase,
 } from '@/lib/messenger/realtime';
 import type { RealtimeChannel } from '@supabase/supabase-js';
-import { createClient } from '@/lib/supabase/client';
 
 interface Props {
   userId: string;
@@ -179,7 +179,6 @@ function formatMessageTimestamp(dateStr: string): string {
   return `${dateString} AT ${timeString}`;
 }
 
-const supabase = createClient();
 
 export default function MessagePane({ userId, activeCall, setActiveCall }: Props) {
   const activeId = useMessengerStore((s) => s.activeConversationId);

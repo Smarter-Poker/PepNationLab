@@ -1254,7 +1254,7 @@ export default function AgentStorefrontGrid({
           }}
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/cart-icon.png" width={96} height={96} alt="Cart" style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', maxWidth: 'none', objectFit: 'contain' }} />
+          <img src="/cart-icon.png" width={80} height={80} alt="Cart" style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block' }} />
           {totalCartItems > 0 && (
             <span style={{
               position: 'absolute', top: -2, right: -2, width: 24, height: 24,

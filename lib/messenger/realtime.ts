@@ -3,7 +3,7 @@ import { createClient } from '@/lib/supabase/client';
 import type { Message, Reaction, Participant } from './types';
 import type { RealtimeChannel } from '@supabase/supabase-js';
 
-const supabase = createClient();
+export const supabase = createClient();
 
 interface MessageHandlers {
   onInsert?: (m: Message) => void;
