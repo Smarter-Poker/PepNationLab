@@ -151,7 +151,7 @@ export default function ProductsList({
             }}
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/shopping-cart-v2.png" width={18} height={18} alt="Cart" style={{ objectFit: 'contain', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.5))' }} />
+            <img src="/shopping-cart-v3.png" width={18} height={18} alt="Cart" style={{ objectFit: 'contain', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.5))' }} />
             <span style={{ fontSize: '0.82rem', fontWeight: 600 }}>Cart</span>
             {cartCount > 0 && (
               <span style={{
@@ -195,7 +195,8 @@ export default function ProductsList({
         </div>
 
         {/* Search and Category Filter Card */}
-        <div className="card-metal hover-lift stagger-fade-in" style={{ padding: 'var(--space-5)', marginBottom: 'var(--space-8)', animationDelay: '0.1s' }}>
+        <div className="metal-frame hover-lift stagger-fade-in" style={{ marginBottom: 'var(--space-8)', animationDelay: '0.1s' }}>
+          <div className="metal-content" style={{ padding: 'var(--space-5)' }}>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--space-4)', alignItems: 'center', justifyContent: 'space-between' }}>
             
             {/* Categories filter tabs */}
@@ -244,6 +245,7 @@ export default function ProductsList({
               </svg>
             </div>
           </div>
+          </div>
         </div>
 
         {/* Warning Banner */}
@@ -286,7 +288,8 @@ export default function ProductsList({
               const isBackordered = !product.in_stock || product.inventory_count === 0;
 
               return (
-                <div key={product.id} className="product-card card-metal hover-lift stagger-fade-in" style={{ display: 'flex', flexDirection: 'column', animationDelay: `${0.1 + i * 0.05}s` }}>
+                <div key={product.id} className="product-card metal-frame hover-lift stagger-fade-in" style={{ animationDelay: `${0.1 + i * 0.05}s` }}>
+                  <div className="metal-content" style={{ display: 'flex', flexDirection: 'column', height: '100%', padding: 0 }}>
 
                   {/* Decorative skeuomorphic header area */}
                   <div style={{
@@ -406,15 +409,18 @@ export default function ProductsList({
                       </button>
                     </div>
                   </div>
+                  </div>
                 </div>
               );
             })}
           </div>
         ) : (
-          <div className="card-metal hover-lift stagger-fade-in" style={{ padding: 'var(--space-12)', textAlign: 'center' }}>
+          <div className="metal-frame hover-lift stagger-fade-in">
+            <div className="metal-content" style={{ padding: 'var(--space-12)', textAlign: 'center' }}>
             <p style={{ color: 'var(--grey-400)', margin: 0 }}>
               No Compounds Found Matching Your Filters.
             </p>
+            </div>
           </div>
         )}
 

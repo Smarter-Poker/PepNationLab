@@ -949,12 +949,11 @@ export default function AgentStorefrontGrid({ products, inventoryMap, primaryCol
 
       {/* Empty State */}
       {filteredProducts.length === 0 && (
-        <div className="card-metal hover-lift stagger-fade-in" style={{
-          textAlign: 'center', padding: 'var(--space-8) var(--space-6)',
-        }}>
-          <h3 style={{ color: 'var(--white)', fontSize: '1.05rem', marginBottom: 'var(--space-3)' }}>
-            No Products Match Your Filters
-          </h3>
+        <div className="metal-frame hover-lift stagger-fade-in">
+          <div className="metal-content" style={{ textAlign: 'center', padding: 'var(--space-8) var(--space-6)' }}>
+            <h3 style={{ color: 'var(--white)', fontSize: '1.05rem', marginBottom: 'var(--space-3)' }}>
+              No Products Match Your Filters
+            </h3>
           <p style={{ color: 'var(--grey-400)', fontSize: '0.9rem', marginBottom: 'var(--space-4)' }}>
             Try Widening Your Price Range, Clearing The Search, Or Resetting All Filters.
           </p>
@@ -971,6 +970,7 @@ export default function AgentStorefrontGrid({ products, inventoryMap, primaryCol
             <RotateCcw size={14} aria-hidden="true" />
             Reset Filters
           </button>
+          </div>
         </div>
       )}
 
@@ -995,9 +995,8 @@ export default function AgentStorefrontGrid({ products, inventoryMap, primaryCol
 
           return (
             <motion.div
-              key={group.name} className="card-metal hover-lift stagger-fade-in" variants={itemVariants}
+              key={group.name} className="metal-frame hover-lift stagger-fade-in" variants={itemVariants}
               style={{
-                display: 'flex', flexDirection: 'column', overflow: 'hidden', padding: 0,
                 cursor: 'pointer'
               }}
               onClick={() => {
@@ -1010,6 +1009,7 @@ export default function AgentStorefrontGrid({ products, inventoryMap, primaryCol
                 setPendingQty(existingQty ?? (isStorefrontOwner ? 10 : 1));
               }}
             >
+              <div className="metal-content" style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden', padding: 0 }}>
               {/* Product Image */}
               <div style={{
                 height: 220,
@@ -1144,6 +1144,7 @@ export default function AgentStorefrontGrid({ products, inventoryMap, primaryCol
                   })()}
                 </div>
               </div>
+              </div>
             </motion.div>
           );
         })}
@@ -1172,7 +1173,7 @@ export default function AgentStorefrontGrid({ products, inventoryMap, primaryCol
           onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)'; }}
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/shopping-cart-v2.png" width={24} height={24} alt="Cart" style={{ objectFit: 'contain', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.5))' }} />
+          <img src="/shopping-cart-v3.png" width={24} height={24} alt="Cart" style={{ objectFit: 'contain', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.5))' }} />
           {totalCartItems > 0 && (
             <span style={{
               position: 'absolute', top: -4, right: -4, width: 22, height: 22,

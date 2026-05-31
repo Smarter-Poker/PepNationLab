@@ -149,7 +149,7 @@ export default function MessagePane({ userId, activeCall, setActiveCall }: Props
   // Scroll to bottom when messages load or change
   useEffect(() => {
     scrollToBottom();
-  }, [messages, scrollToBottom]);
+  }, [activeId, messagesByConv, scrollToBottom]);
 
   useEffect(() => {
     setReplyTo(null);

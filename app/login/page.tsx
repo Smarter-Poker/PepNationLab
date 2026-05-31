@@ -161,7 +161,7 @@ function LoginPageInner() {
           )}
 
           <form onSubmit={handleLogin}>
-            <div className="form-group">
+            <div className="form-group stagger-fade-in stagger-1">
               <label className="form-label" htmlFor="identifier">Username</label>
               <input
                 id="identifier"
@@ -177,7 +177,7 @@ function LoginPageInner() {
               />
             </div>
 
-            <div className="form-group">
+            <div className="form-group stagger-fade-in stagger-2">
               <label className="form-label" htmlFor="password">Password</label>
               <input
                 id="password"
@@ -203,12 +203,11 @@ function LoginPageInner() {
 
             <button
               type="submit"
-              id="login-submit"
-              className="btn btn-primary"
-              disabled={loading}
-              style={{ width: '100%', justifyContent: 'center', opacity: loading ? 0.7 : 1 }}
+              className="btn btn-primary stagger-fade-in stagger-3 hover-lift"
+              style={{ width: '100%', justifyContent: 'center' }}
+              disabled={loading || !identifier || !password}
             >
-              {loading ? 'Signing In...' : 'Sign In'}
+              {loading ? 'Authenticating...' : 'Sign In To Laboratory'}
             </button>
           </form>
 
