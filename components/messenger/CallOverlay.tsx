@@ -6,6 +6,7 @@ import {
   useTracks,
   VideoTrack,
   useLocalParticipant,
+  useRemoteParticipants,
 } from '@livekit/components-react';
 import '@livekit/components-styles';
 import type { CallSignalRow } from '@/lib/messenger/realtime';
@@ -194,8 +195,15 @@ interface FaceTimeCallViewProps {
   startedAtMs: number;
 }
 
+// audit15 fix-13 (S6): how long to wait alone in the room before declaring
+// the peer permanently gone and auto-hanging-up. LiveKit's own server-side
+// participant timeout is ~30s of total silence; we use a shorter local
+// grace because ParticipantDisconnected fires sooner on a clean leave.
+const ALONE_HANGUP_GRACE_MS = 15_000;
+
 function FaceTimeCallView({ isVideo, onHangUp, startedAtMs }: FaceTimeCallViewProps) {
   const { localParticipant } = useLocalParticipant();
+  const remoteParticipants = useRemoteParticipants();
 
   const trackReferences = useTracks(
     [
@@ -224,6 +232,42 @@ function FaceTimeCallView({ isVideo, onHangUp, startedAtMs }: FaceTimeCallViewPr
     setIsMuted(!localParticipant.isMicrophoneEnabled);
     setIsCamDisabled(!localParticipant.isCameraEnabled);
   }, [localParticipant.isMicrophoneEnabled, localParticipant.isCameraEnabled]);
+
+  // audit15 fix-13 (S6): auto-hangup grace window when alone in the room.
+  // We can't put `onHangUp` in the dep array directly without re-running
+  // the effect every render (CallOverlay's handleHangUp is recreated each
+  // render), so park it in a ref and read from the ref inside the timer.
+  const onHangUpRef = useRef(onHangUp);
+  useEffect(() => {
+    onHangUpRef.current = onHangUp;
+  }, [onHangUp]);
+
+  const hasSeenRemoteRef = useRef(false);
+  useEffect(() => {
+    if (remoteParticipants.length > 0) {
+      hasSeenRemoteRef.current = true;
+    }
+  }, [remoteParticipants.length]);
+
+  useEffect(() => {
+    // Only arm the timer after at least one remote has joined. The initial
+    // "waiting for companion" window (caller in the room while answerer
+    // is still fetching their token) must not trigger auto-hangup.
+    if (!hasSeenRemoteRef.current) return;
+    if (remoteParticipants.length > 0) return;
+
+    console.log('[CALL] Remote left room — arming auto-hangup grace timer');
+    const t = setTimeout(() => {
+      console.log('[CALL] Grace expired with no remote participants — auto-hangup');
+      try {
+        onHangUpRef.current();
+      } catch (err) {
+        console.warn('[CALL] auto-hangup handler threw:', err);
+      }
+    }, ALONE_HANGUP_GRACE_MS);
+
+    return () => clearTimeout(t);
+  }, [remoteParticipants.length]);
 
   const toggleMute = async () => {
     try {
