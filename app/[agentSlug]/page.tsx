@@ -259,7 +259,7 @@ export default async function AgentStorefrontPage({ params }: Props) {
             style={{ background: primaryColor }}
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/shopping-cart-v3.png" width={13} height={13} alt="Cart" style={{ objectFit: 'contain', marginRight: 4 }} />
+            <img src="/cart-icon.png" width={13} height={13} alt="Cart" style={{ objectFit: 'contain', marginRight: 4 }} />
             Checkout
           </Link>
         </div>
