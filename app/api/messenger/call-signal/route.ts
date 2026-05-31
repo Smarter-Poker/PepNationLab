@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
 import { assertSameOrigin } from '@/lib/csrf';
-import { requireSession, getParticipant, isBlockedEither } from '@/lib/messenger/server';
+import { requireSession, getParticipant, isBlockedEither, broadcastCallSignalServer } from '@/lib/messenger/server';
 import { messengerRateLimit, messengerRateLimitResponse } from '@/lib/messengerRateLimit';
 import { StartCallSchema } from '@/lib/messenger/schemas';
 import { z } from 'zod';
@@ -101,7 +101,15 @@ export async function POST(req: NextRequest) {
       })
       .select('*')
       .maybeSingle();
-    if (insErr) return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
+    if (insErr || !inserted) return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
+    
+    // Broadcast the incoming call signal
+    if (others) {
+      for (const p of others) {
+        void broadcastCallSignalServer(p.user_id, 'incoming_call', inserted);
+      }
+    }
+
     return NextResponse.json({ call: inserted });
   }
 

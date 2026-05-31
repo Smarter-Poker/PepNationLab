@@ -504,7 +504,7 @@ export default function MessageComposer({ conversationId, selfId, replyTo, onCle
               aria-label="Add Media"
               title="Add Media"
             >
-              <img src="/messenger-icons/add-media-icon.jpg" alt="Add Media" style={{ width: 48, height: 48, objectFit: 'contain', mixBlendMode: 'lighten', transform: 'scale(1.6)', filter: 'contrast(1.6)' }} />
+              <img src="/messenger-icons/add-media-icon.jpg" alt="Add Media" style={{ width: 48, height: 48, objectFit: 'contain', mixBlendMode: 'screen', transform: 'scale(1.6)' }} />
             </button>
           </div>
 
@@ -557,13 +557,10 @@ export default function MessageComposer({ conversationId, selfId, replyTo, onCle
               {!text.trim() && (
                 <>
                   <button type="button" onClick={() => togglePopover(setShowEmoji)} className="hover-lift" style={{ background: 'transparent', border: 'none', padding: 0, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }} aria-label="Insert Emoji" title="Insert Emoji">
-                    <img src="/messenger-icons/emoji-icon.jpg" alt="Emoji" style={{ width: 48, height: 48, objectFit: 'contain', mixBlendMode: 'lighten', transform: 'scale(1.6)', filter: 'contrast(1.6)' }} />
+                    <img src="/messenger-icons/emoji-icon.jpg" alt="Emoji" style={{ width: 48, height: 48, objectFit: 'contain', mixBlendMode: 'screen', transform: 'scale(1.6)' }} />
                   </button>
                   <button type="button" onClick={() => togglePopover(setShowScheduleInput)} className="hover-lift" style={{ background: 'transparent', border: 'none', padding: 0, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }} aria-label="Schedule Send" title="Schedule Send">
-                    <img src="/messenger-icons/calendar-icon.jpg" alt="Schedule" style={{ width: 48, height: 48, objectFit: 'contain', mixBlendMode: 'lighten', filter: 'contrast(1.6)' }} />
-                  </button>
-                  <button type="button" onClick={() => togglePopover(setShowExpiry)} className="composer-icon-btn premium-btn" aria-label="Set Expiry" title="Set Expiry">
-                    <Clock size={18} />
+                    <img src="/messenger-icons/calendar-icon.jpg" alt="Schedule" style={{ width: 48, height: 48, objectFit: 'contain', mixBlendMode: 'screen' }} />
                   </button>
                 </>
               )}

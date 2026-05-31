@@ -62,27 +62,15 @@ export default function GlobalCallListener() {
     console.log('[GLOBAL CALL] Subscribing user to call signals:', user.id);
     const ch = subscribeCallSignals(user.id, {
       onInsert: (c) => {
-        if (c.status !== 'ringing') return;
+        console.log('[GLOBAL CALL] received incoming_call:', c);
         if (c.initiator_id === user.id) return;
+
         if (activeCallRef.current) {
           console.log('[GLOBAL CALL] Ignored signal — already active in a call');
           return;
         }
 
-        // Tab Claim Coordination to prevent multiple tabs from ringing simultaneously
-        const roomName = c.livekit_room;
-        const claimKey = `call_claim_${roomName}`;
-        const existingClaim = localStorage.getItem(claimKey);
-        const now = Date.now();
-        if (existingClaim && (now - parseInt(existingClaim, 10)) < 30000) {
-          console.log('[GLOBAL CALL] Ignored signal — claimed by another tab:', roomName);
-          return;
-        }
-        localStorage.setItem(claimKey, now.toString());
-        setTimeout(() => {
-          try { localStorage.removeItem(claimKey); } catch {}
-        }, 35000);
-
+        // Add to incoming calls
         setIncomingCalls((cur) => (cur.some((x) => x.id === c.id) ? cur : [...cur, c]));
         setActiveCall(c);
       },
@@ -93,6 +81,17 @@ export default function GlobalCallListener() {
         setActiveCall((cur) => {
           if (!cur || cur.id !== c.id) return cur;
           if (c.status === 'ended' || c.status === 'declined' || c.status === 'missed') return null;
+          
+          // If the call transitioned to active, but THIS tab did not click "Answer",
+          // then another tab answered it. We should hide the overlay on this tab!
+          if (c.status === 'active' && c.initiator_id !== user.id) {
+            const answeredHere = sessionStorage.getItem(`answered_call_${c.id}`);
+            if (!answeredHere) {
+               console.log('[GLOBAL CALL] Another tab answered this call, hiding overlay in this tab.');
+               return null;
+            }
+          }
+          
           return { ...cur, status: c.status };
         });
       },
@@ -104,6 +103,9 @@ export default function GlobalCallListener() {
   }, [user?.id]);
 
   const handleAccept = useCallback((call: CallSignalRow) => {
+    // Mark this tab as the one that answered the call!
+    sessionStorage.setItem(`answered_call_${call.id}`, 'true');
+    
     setIncomingCalls((cur) => cur.filter((x) => x.id !== call.id));
     setActiveCall({ ...call, status: 'active' });
 
