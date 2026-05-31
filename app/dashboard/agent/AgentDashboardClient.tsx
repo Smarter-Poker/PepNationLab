@@ -15,7 +15,6 @@ import AgentInbox from '@/components/AgentInbox';
 import AgentOverview from '@/components/AgentOverview';
 import AgentStorefrontConfig from '@/components/AgentStorefrontConfig';
 import AgentOrders from '@/components/AgentOrders';
-import AgentLedger from '@/components/AgentLedger';
 import AgentBundles from '@/components/AgentBundles';
 import AgentSetupChecklist from '@/components/AgentSetupChecklist';
 import MessageBell from '@/components/MessageBell';
@@ -728,12 +727,6 @@ export default function AgentDashboardClient({
             onOpenConfig={() => { setActiveTab('Storefront Config'); setIsMobileMenuOpen(false); }}
           />
 
-        {/* Sales & Live Carts Tab */}
-        {activeTab === 'Sales & Carts' && (
-          <div style={{ animation: 'fadeIn 0.3s ease-out' }}>
-            <AgentSales />
-          </div>
-        )}
 
         {/* My Sub-Agents Tab */}
         {activeTab === 'My Sub-Agents' && (
@@ -763,12 +756,6 @@ export default function AgentDashboardClient({
           </div>
         )}
 
-        {/* TAB: Accounting */}
-        {activeTab === 'Accounting' && (
-          <div style={{ animation: 'fadeIn 0.3s ease-out' }}>
-            <AgentLedger agentId={userProfile.id} />
-          </div>
-        )}
 
         {/* TAB: Admin Statements */}
         {activeTab === 'Statements' && (
@@ -809,6 +796,10 @@ export default function AgentDashboardClient({
               onNavigate={(tab) => { setActiveTab(tab as any); setIsMobileMenuOpen(false); }}
             />
           </div>
+        )}
+
+        {activeTab === 'Sales & Accounting' && (
+          <AgentSales orders={orders} setOrders={setOrders} />
         )}
 
         {/* TAB 2: Referred Researchers */}
@@ -1231,12 +1222,6 @@ export default function AgentDashboardClient({
           </div>
         )}
 
-        {/* TAB 3: Referred Orders */}
-        {activeTab === 'Orders' && (
-          <div style={{ animation: 'fadeIn 0.3s ease-out' }}>
-            <AgentOrders orders={orders} setOrders={setOrders} />
-          </div>
-        )}
 
         {/* TAB: Discount Coupons */}
         {activeTab === 'Coupons' && <AgentCoupons agentId={userProfile.id} />}

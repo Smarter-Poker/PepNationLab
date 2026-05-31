@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import AgentOrders from './AgentOrders';
 
 const STATUS_LABELS: Record<string, string> = {
   pending_customer_payment: 'Pending Payment',
@@ -12,7 +13,7 @@ const STATUS_LABELS: Record<string, string> = {
   cancelled: 'Cancelled',
 };
 
-export default function AgentSales() {
+export default function AgentSales({ orders, setOrders }: { orders: any[], setOrders: any }) {
   const [data, setData] = useState<{ liveCarts: any[]; sales: any[] } | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -161,53 +162,9 @@ export default function AgentSales() {
           </div>
         </div>
 
-        {/* Right: Recent Transactions List */}
-        <div className="metal-frame" style={{ flex: 1, minWidth: 0 }}>
-          <div className="metal-content">
-            <h2 className="metal-text" style={{ fontSize: '1.25rem', marginBottom: 'var(--space-4)', fontFamily: 'var(--font-brand)' }}>
-              Completed Sales & Profit
-            </h2>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
-              {sales.length === 0 ? (
-                <div className="metal-embossed-panel" style={{ textAlign: 'center', padding: 'var(--space-6)', opacity: 0.5 }}>No Sales Recorded Yet.</div>
-              ) : (
-                [...sales].reverse().slice(0, 50).map((sale: any) => (
-                  <div 
-                    key={sale.id}
-                    className="metal-embossed-panel"
-                    style={{
-                      display: 'flex',
-                      flexDirection: 'column',
-                      gap: '8px',
-                      padding: '12px'
-                    }}
-                  >
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '8px' }}>
-                      <div style={{ display: 'flex', flexDirection: 'column' }}>
-                        <span style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--white)' }}>{sale.buyer_name}</span>
-                        <span style={{ fontSize: '0.75rem', color: 'var(--grey-400)' }}>Order: {sale.id.split('-')[0]} • {new Date(sale.created_at).toLocaleDateString()}</span>
-                      </div>
-                      <div style={{ textAlign: 'right' }}>
-                        <span className="badge-metal" style={{ fontSize: '0.7rem', padding: '2px 6px', color: sale.status === 'cancelled' ? '#FFAAAA' : '#00FF9D' }}>
-                          {STATUS_LABELS[sale.status] || sale.status.replace(/_/g, ' ')}
-                        </span>
-                      </div>
-                    </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <div style={{ display: 'flex', flexDirection: 'column' }}>
-                        <span style={{ fontSize: '0.7rem', color: 'var(--grey-400)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Order Total</span>
-                        <span style={{ fontSize: '0.95rem', color: 'var(--white)', fontWeight: 600 }}>{formatCurrency(sale.total)}</span>
-                      </div>
-                      <div style={{ display: 'flex', flexDirection: 'column', textAlign: 'right' }}>
-                        <span style={{ fontSize: '0.7rem', color: '#00FF9D', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Your Profit</span>
-                        <span style={{ fontSize: '1.05rem', color: '#00FF9D', fontWeight: 800 }}>{formatCurrency(sale.profit)}</span>
-                      </div>
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-          </div>
+        {/* Right: Interactive Orders Manager */}
+        <div style={{ flex: 1, minWidth: 0, marginTop: 'var(--space-6)' }}>
+          <AgentOrders orders={orders} setOrders={setOrders} />
         </div>
       </div>
 
