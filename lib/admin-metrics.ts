@@ -82,8 +82,10 @@ export async function fetchAdminMetrics(adminUserId: string): Promise<DashboardM
       .lt('created_at', days7Ago)
       .eq('is_wholesale_restock', false)
       .not('status', 'in', `(${NON_GMV_STATUSES.join(',')})`),
-    supabase.from('orders').select('id', { count: 'exact', head: true }).eq('status', 'pending_customer_payment'),
-    supabase.from('orders').select('id', { count: 'exact', head: true }).eq('status', 'agent_approval_pending'),
+    // Only count pending_customer_payment and agent_approval_pending for direct orders (where admin is responsible),
+    // because external agent orders are filtered out in the admin orders view.
+    supabase.from('orders').select('id', { count: 'exact', head: true }).eq('status', 'pending_customer_payment').or(`agent_id.is.null,agent_id.eq.${adminUserId}`),
+    supabase.from('orders').select('id', { count: 'exact', head: true }).eq('status', 'agent_approval_pending').or(`agent_id.is.null,agent_id.eq.${adminUserId}`),
     supabase.from('orders').select('id', { count: 'exact', head: true }).eq('status', 'approved_ship'),
     supabase.from('orders').select('id', { count: 'exact', head: true }).eq('status', 'in_fulfillment'),
     supabase
