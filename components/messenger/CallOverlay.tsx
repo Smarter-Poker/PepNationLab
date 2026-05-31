@@ -14,7 +14,7 @@ import { useMessengerStore } from '@/stores/messengerStore';
 import { createRingTone } from '@/lib/messenger/ringTone';
 import { Phone, PhoneOff, Video, VideoOff, Mic, MicOff, Camera } from 'lucide-react';
 import { toast } from 'sonner';
-import { Track } from 'livekit-client';
+import { Track, DisconnectReason } from 'livekit-client';
 
 interface Props {
   call: CallSignalRow;
@@ -962,7 +962,18 @@ export default function CallOverlay({ call, selfId, onClose, onAccept }: Props &
           // perfectly healthy. The peer either has their own disconnect
           // handler when they notice us leave (LiveKit ParticipantDisconnected
           // event), or the 4-hour stale-active cron sweep cleans up.
-          onDisconnected={onClose}
+          //
+          // audit15 fix-16 (S8): if a second tab/device joins with the same
+          // LiveKit identity, the server kicks the older participant with
+          // DisconnectReason.DUPLICATE_IDENTITY. Surface a specific toast
+          // so the kicked tab understands why instead of staring at a
+          // suddenly-black screen.
+          onDisconnected={(reason) => {
+            if (reason === DisconnectReason.DUPLICATE_IDENTITY) {
+              toast.info('Call Answered On Another Device');
+            }
+            onClose();
+          }}
           // audit15 fix-6: surface mic/cam permission failures as a toast
           // instead of letting the user stare at a black screen wondering
           // why nothing's happening.
