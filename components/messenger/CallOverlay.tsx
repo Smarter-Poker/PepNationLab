@@ -164,16 +164,37 @@ function injectPulseRingAnim() {
       text-align: center;
       font-weight: 600;
     }
+    .pnl-call-timer {
+      font-size: 0.85rem;
+      color: rgba(255, 255, 255, 0.85);
+      font-variant-numeric: tabular-nums;
+      letter-spacing: 0.05em;
+      padding: 4px 12px;
+      background: rgba(0, 0, 0, 0.4);
+      border-radius: 999px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
   `;
   document.head.appendChild(style);
+}
+
+// audit15 fix-5: format milliseconds into mm:ss / h:mm:ss for the in-call timer.
+function formatCallDuration(ms: number): string {
+  const total = Math.max(0, Math.floor(ms / 1000));
+  const h = Math.floor(total / 3600);
+  const m = Math.floor((total % 3600) / 60);
+  const s = total % 60;
+  const pad = (n: number) => n.toString().padStart(2, '0');
+  return h > 0 ? `${h}:${pad(m)}:${pad(s)}` : `${pad(m)}:${pad(s)}`;
 }
 
 interface FaceTimeCallViewProps {
   isVideo: boolean;
   onHangUp: () => void;
+  startedAtMs: number;
 }
 
-function FaceTimeCallView({ isVideo, onHangUp }: FaceTimeCallViewProps) {
+function FaceTimeCallView({ isVideo, onHangUp, startedAtMs }: FaceTimeCallViewProps) {
   const { localParticipant } = useLocalParticipant();
 
   const trackReferences = useTracks(
@@ -191,13 +212,20 @@ function FaceTimeCallView({ isVideo, onHangUp }: FaceTimeCallViewProps) {
   const [isCamDisabled, setIsCamDisabled] = useState(!isVideo);
   const [facingMode, setFacingMode] = useState<'user' | 'environment'>('user');
 
+  // audit15 fix-5: tick the call-duration label once per second.
+  const [, forceTimerTick] = useState(0);
+  useEffect(() => {
+    const id = setInterval(() => forceTimerTick((n) => (n + 1) | 0), 1000);
+    return () => clearInterval(id);
+  }, []);
+  const elapsedMs = Date.now() - startedAtMs;
+
   useEffect(() => {
     setIsMuted(!localParticipant.isMicrophoneEnabled);
     setIsCamDisabled(!localParticipant.isCameraEnabled);
   }, [localParticipant.isMicrophoneEnabled, localParticipant.isCameraEnabled]);
 
   const toggleMute = async () => {
-    import('@/lib/messenger/haptics').then(h => h.vibrateLight());
     try {
       const current = localParticipant.isMicrophoneEnabled;
       await localParticipant.setMicrophoneEnabled(!current);
@@ -208,7 +236,6 @@ function FaceTimeCallView({ isVideo, onHangUp }: FaceTimeCallViewProps) {
   };
 
   const toggleCamera = async () => {
-    import('@/lib/messenger/haptics').then(h => h.vibrateLight());
     try {
       const current = localParticipant.isCameraEnabled;
       await localParticipant.setCameraEnabled(!current);
@@ -219,7 +246,6 @@ function FaceTimeCallView({ isVideo, onHangUp }: FaceTimeCallViewProps) {
   };
 
   const flipCamera = async () => {
-    import('@/lib/messenger/haptics').then(h => h.vibrateMedium());
     if (!localParticipant.isCameraEnabled) return;
     const nextMode = facingMode === 'user' ? 'environment' : 'user';
     setFacingMode(nextMode);
@@ -228,11 +254,7 @@ function FaceTimeCallView({ isVideo, onHangUp }: FaceTimeCallViewProps) {
       const devices = await navigator.mediaDevices.enumerateDevices();
       const videoDevices = devices.filter((d) => d.kind === 'videoinput');
       if (videoDevices.length > 1) {
-        // Safer way to get device ID
-        const publications = Array.from(localParticipant.videoTrackPublications.values());
-        const activeTrack = publications.find(p => p.track)?.track;
-        const currentId = activeTrack?.mediaStreamTrack?.getSettings()?.deviceId;
-        
+        const currentId = localParticipant.videoTrackPublications.values().next().value?.track?.mediaStreamTrack?.getSettings().deviceId;
         const currentIndex = videoDevices.findIndex((d) => d.deviceId === currentId);
         const nextIndex = (currentIndex + 1) % videoDevices.length;
         const nextDevice = videoDevices[nextIndex];
@@ -313,6 +335,19 @@ function FaceTimeCallView({ isVideo, onHangUp }: FaceTimeCallViewProps) {
           />
         </div>
       )}
+
+      {/* audit15 fix-5: in-call timer chip, top-center */}
+      <div style={{
+        position: 'absolute',
+        top: 24,
+        left: '50%',
+        transform: 'translateX(-50%)',
+        zIndex: 150,
+      }}>
+        <span className="pnl-call-timer" aria-label="Call Duration" title="Call Duration">
+          {formatCallDuration(elapsedMs)}
+        </span>
+      </div>
 
       {/* 3. CONTROL OVERLAY (FaceTime-like floating bar) */}
       <div style={{
@@ -448,6 +483,20 @@ export default function CallOverlay({ call, selfId, onClose, onAccept }: Props &
   // user action. Without this, any spurious React unmount (e.g. parent
   // re-render after accept) broadcasts call_ended and tears down the caller.
   const userClosedRef = useRef(false);
+
+  // audit15 fix-5: anchor the in-call timer to the moment status flipped to
+  // 'active'. Captured once via ref so the displayed elapsed time doesn't
+  // jitter when the parent passes a fresh `call` object on every realtime
+  // update (which would otherwise reset Date.now() arithmetic).
+  const activeStartedAtRef = useRef<number | null>(null);
+  if (call.status === 'active' && activeStartedAtRef.current === null) {
+    // Prefer the server's answered_at if the row carries one; fall back to
+    // local clock so the timer starts immediately even before the answered_at
+    // value arrives via realtime.
+    const anyCall = call as CallSignalRow & { answered_at?: string | null };
+    const fromServer = anyCall.answered_at ? Date.parse(anyCall.answered_at) : NaN;
+    activeStartedAtRef.current = Number.isFinite(fromServer) ? fromServer : Date.now();
+  }
 
   // Resolve counterparty name and avatar details
   useEffect(() => {
@@ -654,11 +703,6 @@ export default function CallOverlay({ call, selfId, onClose, onAccept }: Props &
   }, [call.id]);
 
   const handleHangUp = async () => {
-    import('@/lib/messenger/haptics').then(h => {
-      h.initHaptics();
-      h.vibrateHeavy();
-      h.playCallEndedSound();
-    });
     userClosedRef.current = true;
     if (counterpartyId) {
       try {
@@ -683,10 +727,6 @@ export default function CallOverlay({ call, selfId, onClose, onAccept }: Props &
   };
 
   const handleAction = async (action: 'accept' | 'decline' | 'hangup') => {
-    import('@/lib/messenger/haptics').then(h => {
-      h.initHaptics();
-      h.vibrateMedium();
-    });
     if (isSignaling) return;
     setIsSignaling(true);
 
@@ -871,11 +911,36 @@ export default function CallOverlay({ call, selfId, onClose, onAccept }: Props &
           connect={true}
           video={isVideo}
           audio={true}
-          onDisconnected={handleHangUp}
+          // audit15 fix-4: route a LiveKit disconnect to LOCAL teardown only.
+          // Previously this called handleHangUp, which broadcasts call_ended
+          // to the peer and POSTs hangup — turning a transient network drop
+          // into a force-end of the call for the OTHER party, who was
+          // perfectly healthy. The peer either has their own disconnect
+          // handler when they notice us leave (LiveKit ParticipantDisconnected
+          // event), or the 4-hour stale-active cron sweep cleans up.
+          onDisconnected={onClose}
+          // audit15 fix-6: surface mic/cam permission failures as a toast
+          // instead of letting the user stare at a black screen wondering
+          // why nothing's happening.
+          onError={(err) => {
+            console.warn('[CALL] LiveKitRoom error:', err);
+            const msg = err?.message || '';
+            if (/permission|denied|notallowed/i.test(msg)) {
+              toast.error('Microphone Or Camera Permission Denied');
+            } else if (/notfound/i.test(msg)) {
+              toast.error('No Microphone Or Camera Found');
+            } else {
+              toast.error('Call Connection Error');
+            }
+          }}
           style={{ flex: 1, background: '#000' }}
         >
           <RoomAudioRenderer />
-          <FaceTimeCallView isVideo={isVideo} onHangUp={handleHangUp} />
+          <FaceTimeCallView
+            isVideo={isVideo}
+            onHangUp={handleHangUp}
+            startedAtMs={activeStartedAtRef.current ?? Date.now()}
+          />
         </LiveKitRoom>
       )}
 
