@@ -11,7 +11,6 @@ interface MessageHandlers {
   onDelete?: (id: string) => void;
   onReactionInsert?: (r: Reaction) => void;
   onReactionDelete?: (r: { message_id: string; user_id: string; emoji: string | null }) => void;
-  onPinChange?: () => void;
 }
 
 export function subscribeMessages(
@@ -43,28 +42,6 @@ export function subscribeMessages(
       const newMsg = payload.payload?.message as Message;
       if (newMsg && newMsg.sender_id !== selfId) {
         handlers.onInsert?.(newMsg);
-      }
-    }
-  );
-
-  ch.on(
-    'broadcast',
-    { event: 'delete_message_for_me' },
-    (payload) => {
-      const { messageId, userId } = payload.payload || {};
-      if (messageId && userId === selfId) {
-        handlers.onDelete?.(messageId);
-      }
-    }
-  );
-
-  ch.on(
-    'broadcast',
-    { event: 'delete_message' },
-    (payload) => {
-      const updatedMsg = payload.payload?.message as Message;
-      if (updatedMsg) {
-        handlers.onUpdate?.(updatedMsg);
       }
     }
   );
@@ -127,19 +104,6 @@ export function subscribeMessages(
           emoji: payload.old.emoji,
         });
       }
-    }
-  );
-
-  ch.on(
-    'postgres_changes',
-    {
-      event: '*',
-      schema: 'public',
-      table: 'messenger_pins',
-      filter: `conversation_id=eq.${conversationId}`,
-    },
-    () => {
-      handlers.onPinChange?.();
     }
   );
 
@@ -229,7 +193,13 @@ interface CallSignalHandlers {
 
 export function subscribeCallSignals(userId: string, handlers: CallSignalHandlers): RealtimeChannel {
   console.log('[REALTIME] subscribeCallSignals called for user:', userId);
-  const ch = supabase.channel(`call-signal:${userId}`);
+  // audit15 fix-32 (B8): private:true so realtime.messages RLS policies
+  // (fix-31) actually enforce. Only this user can subscribe to their own
+  // call-signal:<userId> topic; only peers with a shared conversation can
+  // broadcast to it.
+  const ch = supabase.channel(`call-signal:${userId}`, {
+    config: { private: true },
+  });
 
   ch.on('broadcast', { event: 'incoming_call' }, (payload) => {
     console.log('[REALTIME] received incoming_call broadcast:', payload);
@@ -260,9 +230,6 @@ export function subscribeCallSignals(userId: string, handlers: CallSignalHandler
   });
 
   // audit15 fix-22 (B4): filter INSERT to skip the user's own outgoing calls.
-  // Pushes the filter to the Realtime layer so the WAL stream doesn't deliver
-  // our own initiator-rows back to us. The client-side guard remains as a
-  // belt-and-suspenders check.
   ch.on(
     'postgres_changes',
     {
@@ -280,9 +247,6 @@ export function subscribeCallSignals(userId: string, handlers: CallSignalHandler
     }
   );
 
-  // UPDATE stays unfiltered: we need updates for calls where the user is
-  // either initiator OR callee, and postgres_changes filters can't express
-  // OR. RLS gates the WAL stream to conversations the user participates in.
   ch.on(
     'postgres_changes',
     {
@@ -355,7 +319,12 @@ function getOrCreateChannel(targetUserId: string): PoolEntry {
     return existing;
   }
   evictIfFull();
-  const channel = supabase.channel(`call-signal:${targetUserId}`);
+  // audit15 fix-32 (B8): private:true so the send is governed by the
+  // INSERT policy on realtime.messages (the sender must share a
+  // conversation with the target user).
+  const channel = supabase.channel(`call-signal:${targetUserId}`, {
+    config: { private: true },
+  });
   const subscribed = new Promise<void>((resolve, reject) => {
     const timeout = setTimeout(() => reject(new Error('Channel subscription timeout')), 5000);
     channel.subscribe((status) => {
