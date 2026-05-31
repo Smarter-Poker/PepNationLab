@@ -7,14 +7,27 @@ import { notifyPromotedToAgent, notifyPromotionSuccess } from '@/lib/notify';
 /**
  * POST /api/agent/promote-subagent
  *
- * Promotes a researcher in the super agent's downline to a sub-agent.
+ * SACA Phase 2: Promotes a researcher in the caller's downline into a sub-agent.
  *
- * Rules enforced:
- * - Caller must be a Super Agent (is_super_agent = true)
- * - Target researcher's referring_agent_id must equal the super agent's ID
- * - referring_agent_id is PRESERVED after promotion (attribution + storefront access)
- * - parent_agent_id is set to the super agent so the sub-agent appears in their downline
- * - An agent_profiles row is created for the new sub-agent so they have their own storefront
+ * New model (2026-05-30):
+ *  - Sub-agents do NOT get their own storefront. They sell on the parent's
+ *    storefront at the parent's prices. No agent_profiles row is created.
+ *  - Sub-agent has a commission_pct (0-40), set at promote time, changeable
+ *    later via PATCH /api/agent/sub-agents/[id]/commission-rate.
+ *  - Sub-agent has a payment model (credit or prepaid) and credit_limit set
+ *    by the parent — virtual cap, parent's own admin credit is the real ceiling.
+ *  - Sub-agent's referring_agent_id is preserved (storefront access tag).
+ *  - parent_agent_id is set to the caller so the sub-agent appears in the
+ *    caller's downline.
+ *  - Sub-agents cannot have sub-agents (DB trigger enforces, route checks too).
+ *
+ * Body:
+ *   {
+ *     researcherId: UUID,
+ *     commissionPct: number (0..40 inclusive),
+ *     paymentModel: 'credit' | 'prepaid',
+ *     creditLimit?: number (required when paymentModel='credit', >= 0)
+ *   }
  */
 export async function POST(req: NextRequest) {
   const csrf = assertSameOrigin(req);
@@ -24,120 +37,160 @@ export async function POST(req: NextRequest) {
     const gate = await requireAgent();
     if (!gate.ok) return gate.response;
 
-    // Use admin client to bypass RLS for all operations
     const admin = createAdminClient();
-    const superAgentId = gate.user.id;
+    const callerId = gate.user.id;
 
-    // Verify caller is actually a Super Agent
-    const { data: superAgentProfile } = await admin
+    const { data: callerProfile } = await admin
       .from('profiles')
-      .select('is_super_agent, full_name, username')
-      .eq('id', superAgentId)
+      .select('role, is_super_agent, is_sub_agent, full_name, username')
+      .eq('id', callerId)
       .single();
 
-    if (!superAgentProfile?.is_super_agent) {
-      return NextResponse.json({ error: 'Only Super Agents can promote Sub-Agents' }, { status: 403 });
+    if (!callerProfile) {
+      return NextResponse.json({ error: 'Caller Profile Not Found' }, { status: 404 });
+    }
+    if (callerProfile.is_sub_agent === true) {
+      return NextResponse.json(
+        { error: 'Sub-Agents Cannot Promote Or Create Sub-Agents.' },
+        { status: 403 },
+      );
+    }
+    if (!(callerProfile.role === 'agent' || callerProfile.role === 'super_agent' || callerProfile.is_super_agent === true)) {
+      return NextResponse.json(
+        { error: 'Only Agents And Super-Agents Can Promote Sub-Agents.' },
+        { status: 403 },
+      );
     }
 
-    const body = await req.json();
-    const { researcherId } = body;
+    const body = await req.json().catch(() => ({}));
+    const researcherId: unknown = body?.researcherId;
+    const commissionPctRaw: unknown = body?.commissionPct;
+    const paymentModel: unknown = body?.paymentModel;
+    const creditLimitRaw: unknown = body?.creditLimit;
 
-    if (!researcherId) {
-      return NextResponse.json({ error: 'Researcher ID is required' }, { status: 400 });
+    if (typeof researcherId !== 'string' || researcherId.length === 0) {
+      return NextResponse.json({ error: 'researcherId Is Required.' }, { status: 400 });
+    }
+    const commissionPct = Number(commissionPctRaw);
+    if (!Number.isFinite(commissionPct) || commissionPct < 0 || commissionPct > 40) {
+      return NextResponse.json(
+        { error: 'commissionPct Must Be Between 0 And 40 Inclusive.' },
+        { status: 400 },
+      );
+    }
+    if (paymentModel !== 'credit' && paymentModel !== 'prepaid') {
+      return NextResponse.json(
+        { error: 'paymentModel Must Be Either "credit" Or "prepaid".' },
+        { status: 400 },
+      );
+    }
+    let creditLimit: number | null = null;
+    if (paymentModel === 'credit') {
+      creditLimit = Number(creditLimitRaw);
+      if (!Number.isFinite(creditLimit) || creditLimit < 0) {
+        return NextResponse.json(
+          { error: 'creditLimit Must Be A Non-Negative Number When paymentModel Is "credit".' },
+          { status: 400 },
+        );
+      }
     }
 
-    // Fetch the researcher's full profile
     const { data: researcherProfile } = await admin
       .from('profiles')
-      .select('role, referring_agent_id, full_name, username, email')
+      .select('role, referring_agent_id, full_name, username, email, is_sub_agent')
       .eq('id', researcherId)
       .single();
 
     if (!researcherProfile) {
-      return NextResponse.json({ error: 'Researcher not found' }, { status: 404 });
+      return NextResponse.json({ error: 'Researcher Not Found.' }, { status: 404 });
     }
-
-    // Security: researcher MUST belong to this super agent
-    if (researcherProfile.referring_agent_id !== superAgentId) {
+    if (researcherProfile.referring_agent_id !== callerId) {
       return NextResponse.json(
-        { error: 'Researcher does not belong to your downline' },
-        { status: 403 }
+        { error: 'Researcher Does Not Belong To Your Downline.' },
+        { status: 403 },
+      );
+    }
+    if (researcherProfile.role !== 'researcher') {
+      return NextResponse.json(
+        { error: 'Only Researcher Accounts Can Be Promoted To Sub-Agent.' },
+        { status: 400 },
+      );
+    }
+    if (researcherProfile.is_sub_agent === true) {
+      return NextResponse.json(
+        { error: 'User Is Already A Sub-Agent.' },
+        { status: 400 },
       );
     }
 
-    if (['agent', 'super_agent', 'admin'].includes(researcherProfile.role)) {
-      return NextResponse.json(
-        { error: 'User is already an Agent, Super Agent, or Admin' },
-        { status: 400 }
-      );
+    const now = new Date().toISOString();
+    const updatePayload: Record<string, unknown> = {
+      role: 'agent',
+      is_sub_agent: true,
+      parent_agent_id: callerId,
+      created_by_agent_id: callerId,
+      commission_pct: commissionPct,
+      commission_active_since: now,
+      account_type: paymentModel,
+      updated_at: now,
+    };
+    if (paymentModel === 'credit') {
+      updatePayload.credit_limit = creditLimit;
+    } else {
+      updatePayload.credit_limit = 0;
     }
 
-    // ── Step 1: Promote researcher → sub-agent ────────────────────────────────
-    // IMPORTANT: referring_agent_id is PRESERVED. It keeps the attribution link
-    // back to the super agent who created them. parent_agent_id marks the
-    // organizational hierarchy. A sub-agent's storefront access still works
-    // because isSubAgent = role==='agent' && parent_agent_id === agent.id.
     const { error: updateError } = await admin
       .from('profiles')
-      .update({
-        role: 'agent',
-        parent_agent_id: superAgentId,
-        // referring_agent_id intentionally NOT changed — preserved for attribution
-        updated_at: new Date().toISOString(),
-      })
+      .update(updatePayload)
       .eq('id', researcherId);
 
     if (updateError) {
       console.error('[promote-subagent] profiles update error:', updateError);
-      return NextResponse.json({ error: 'Promotion failed. Please try again.' }, { status: 500 });
-    }
-
-    // ── Step 2: Create agent_profiles row for the new sub-agent ───────────────
-    // Without this row the sub-agent cannot have their own storefront or products.
-    // Use the researcher's username as their default slug (sanitized).
-    const defaultSlug = (researcherProfile.username || researcherProfile.email?.split('@')[0] || researcherId.slice(0, 8))
-      .toLowerCase()
-      .replace(/[^a-z0-9-]/g, '-')
-      .replace(/-+/g, '-')
-      .slice(0, 50);
-
-    const { error: agentProfileError } = await admin
-      .from('agent_profiles')
-      .upsert({
-        id: researcherId,
-        slug: defaultSlug,
-        display_name: researcherProfile.full_name || defaultSlug,
-        is_active: true,
-      }, { onConflict: 'id' });
-
-    if (agentProfileError) {
-      console.error('[promote-subagent] agent_profiles upsert error:', agentProfileError);
-      // Roll back the promotion so the DB stays consistent
-      await admin.from('profiles').update({
-        role: 'researcher',
-        parent_agent_id: null,
-        updated_at: new Date().toISOString(),
-      }).eq('id', researcherId);
+      const isCheck = /check_violation|constraint/i.test(String(updateError.message));
       return NextResponse.json(
-        { error: 'Could not create agent storefront profile. Promotion rolled back.' },
-        { status: 500 }
+        {
+          error: isCheck
+            ? 'Promotion Rejected By Database Constraint.'
+            : 'Promotion Failed. Please Try Again.',
+        },
+        { status: isCheck ? 400 : 500 },
       );
     }
 
-    // Fire-and-forget: notify both the new sub-agent AND the super-agent
+    await admin.from('admin_audit_log').insert({
+      actor_id: callerId,
+      action: 'sub_agent_promote',
+      entity_type: 'profiles',
+      entity_id: researcherId,
+      changes: {
+        previous_role: researcherProfile.role,
+        new_role: 'agent',
+        is_sub_agent: true,
+        commission_pct: commissionPct,
+        commission_active_since: now,
+        parent_agent_id: callerId,
+        account_type: paymentModel,
+        credit_limit: paymentModel === 'credit' ? creditLimit : 0,
+      },
+    });
+
     void Promise.all([
-      notifyPromotedToAgent(admin, researcherId, defaultSlug, superAgentProfile.full_name || 'Your Super Agent'),
-      notifyPromotionSuccess(admin, superAgentId, researcherProfile.full_name || 'Researcher', defaultSlug),
+      notifyPromotedToAgent(admin, researcherId, '', callerProfile.full_name || 'Your Agent'),
+      notifyPromotionSuccess(admin, callerId, researcherProfile.full_name || 'Researcher', ''),
     ]).catch(() => { /* best-effort */ });
 
     return NextResponse.json({
       success: true,
-      agentSlug: defaultSlug,
-      message: `${researcherProfile.full_name || 'Researcher'} has been promoted to Sub-Agent. Their storefront slug is /${defaultSlug}.`,
+      sub_agent_id: researcherId,
+      commission_pct: commissionPct,
+      account_type: paymentModel,
+      credit_limit: paymentModel === 'credit' ? creditLimit : 0,
+      message: `${researcherProfile.full_name || 'Researcher'} Has Been Promoted To Sub-Agent At ${commissionPct}% Commission.`,
     });
 
   } catch (error) {
     console.error('[promote-subagent] unexpected error:', error);
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+    return NextResponse.json({ error: 'Internal Server Error.' }, { status: 500 });
   }
 }
