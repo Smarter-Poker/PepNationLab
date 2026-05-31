@@ -409,6 +409,15 @@ export default function AgentSubAgents({ agentId }: { agentId?: string }) {
                       {agent.is_active ? 'Active' : 'Inactive'}
                     </span>
                   </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', minWidth: '120px' }}>
+                    <span style={{ fontSize: '0.75rem', color: 'var(--grey-400)', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>Pending Commission</span>
+                    <span style={{ color: 'var(--teal)', fontSize: '0.95rem', fontWeight: 700, fontFamily: 'monospace' }}>
+                      {formatCurrency(agent.pending_commission ?? 0)}
+                    </span>
+                    <span style={{ fontSize: '0.7rem', color: 'var(--grey-400)' }}>
+                      {agent.commission_pct ?? 0}% Rate
+                    </span>
+                  </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', minWidth: '100px' }}>
                     <span style={{ fontSize: '0.75rem', color: 'var(--grey-400)', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>Auto-Approve</span>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
