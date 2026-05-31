@@ -129,7 +129,7 @@ export async function POST(req: NextRequest) {
           title: 'Order Ready For Approval',
           body: `Order #${shortId} ($${totalStr}) — Payment verified by agent. Ready for fulfillment approval.`,
           type: 'system',
-          url: `/admin/orders/${orderId}`,
+          url: '/admin/orders',
         }));
 
         await svc.from('notifications').insert(notifications);

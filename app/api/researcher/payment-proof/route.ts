@@ -197,7 +197,7 @@ export async function POST(req: NextRequest) {
           title: 'Payment Proof Received (Direct Order)',
           body: `A direct customer submitted a payment proof for Order #${shortId}. Review and mark as paid.`,
           type: 'system',
-          url: `/admin/orders/${orderId}`,
+          url: '/admin/orders',
         }));
         await service.from('notifications').insert(payload);
       }
@@ -228,7 +228,7 @@ export async function POST(req: NextRequest) {
           title: 'Payment Proof Received',
           body: `Your researcher submitted a payment proof for Order #${shortId}. Review and mark as paid.`,
           type: 'system',
-          url: `/dashboard/agent/orders/${orderId}`,
+          url: '/dashboard?tab=Orders',
         });
       }
     }

@@ -272,10 +272,10 @@ export async function POST(req: NextRequest) {
 
     if (!name) errors.push('name Is Required');
     if (!category) errors.push('category Is Required');
-    if (!baseCostRaw) {
+    if (!baseCostRaw && baseCostRaw !== '0') {
       errors.push('base_cost Is Required');
-    } else if (baseCost === undefined || baseCost <= 0) {
-      errors.push('base_cost Must Be A Positive Number (greater than zero)');
+    } else if (baseCost === undefined || baseCost < 0) {
+      errors.push('base_cost Must Be A Positive Number Or Zero');
     }
     if (
       weightOzRaw !== undefined &&

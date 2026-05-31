@@ -150,7 +150,7 @@ export async function POST(req: NextRequest) {
         // super_agent_pricing baseline. Never reuse unit_cost_price — that
         // is the sub-agent's resale cost, not what the super-agent is owed.
         const stored = Number(item.unit_super_agent_cost);
-        if (Number.isFinite(stored) && stored > 0) {
+        if (Number.isFinite(stored) && stored >= 0) {
           totalCogs += stored * qty;
         } else if (item.product_id) {
           const recomputed = await computeSubAgentBaselineCost(

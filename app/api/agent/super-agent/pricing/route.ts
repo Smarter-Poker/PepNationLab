@@ -101,9 +101,9 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const { product_id, baseline_cost, bulk_baseline_cost, bulk_threshold } = body;
 
-    if (!product_id || typeof baseline_cost !== 'number' || baseline_cost <= 0) {
+    if (!product_id || typeof baseline_cost !== 'number' || baseline_cost < 0) {
       return NextResponse.json(
-        { error: 'product_id is required and baseline_cost must be a positive number greater than zero.' },
+        { error: 'product_id is required and baseline_cost must be a positive number or zero.' },
         { status: 400 }
       );
     }
@@ -125,9 +125,9 @@ export async function POST(req: NextRequest) {
     // per-10-vial-pack cost; baseline_cost is also per-10-vial-pack.
     const { computeAgentCost } = await import('@/lib/pricing');
     const ownCostPer10 = await computeAgentCost(supabase as any, product_id, (superAgentProfile.tier as 'tier_1' | 'tier_2' | 'tier_3') ?? 'tier_3');
-    // B-03: If product cost is 0 (broken/missing DB data), reject entirely rather
-    // than silently skipping the floor check — prevents near-zero baseline_cost.
-    if (ownCostPer10 === 0) {
+    // Allow zero-cost items as explicitly requested.
+    // Ensure that if ownCostPer10 is exactly 0, they can set baseline_cost >= 0.
+    if (ownCostPer10 === undefined || ownCostPer10 === null) {
       return NextResponse.json(
         { error: 'Product wholesale cost could not be determined. Contact admin.' },
         { status: 422 }
@@ -144,8 +144,8 @@ export async function POST(req: NextRequest) {
 
     // B-04: Validate bulk_baseline_cost with same cost floor
     if (typeof bulk_baseline_cost === 'number') {
-      if (bulk_baseline_cost <= 0) {
-        return NextResponse.json({ error: 'bulk_baseline_cost must be greater than zero.' }, { status: 400 });
+      if (bulk_baseline_cost < 0) {
+        return NextResponse.json({ error: 'bulk_baseline_cost must be greater than or equal to zero.' }, { status: 400 });
       }
       if (bulk_baseline_cost < ownCostPer10) {
         return NextResponse.json(

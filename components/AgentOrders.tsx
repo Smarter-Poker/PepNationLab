@@ -266,32 +266,35 @@ export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
                 key={order.id}
                 onClick={() => setDetailOrder(order)}
                 style={{
-                  background: 'rgba(30, 41, 59, 0.5)',
-                  backdropFilter: 'blur(10px)',
-                  border: '1px solid rgba(255,255,255,0.08)',
-                  borderRadius: '16px',
-                  padding: '24px',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '16px',
+                  padding: '3px', // Thick brushed nickel border
+                  borderRadius: '18px',
+                  background: 'linear-gradient(145deg, #c8c2b8 0%, #a09890 30%, #8a847c 50%, #a09890 70%, #c8c2b8 100%)',
+                  boxShadow: '0 8px 30px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.35), inset 0 -1px 0 rgba(0,0,0,0.4)',
                   cursor: 'pointer',
                   position: 'relative',
-                  overflow: 'hidden',
-                  transition: 'transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease',
-                  boxShadow: '0 4px 20px rgba(0, 0, 0, 0.15)',
+                  transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+                  marginBottom: '16px',
                 }}
                 className="message-card-hover"
                 onMouseEnter={(e) => {
                   e.currentTarget.style.transform = 'translateY(-2px)';
-                  e.currentTarget.style.boxShadow = '0 8px 30px rgba(0, 0, 0, 0.3)';
-                  e.currentTarget.style.border = '1px solid rgba(255, 255, 255, 0.2)';
+                  e.currentTarget.style.boxShadow = '0 12px 40px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255,255,255,0.4), inset 0 -1px 0 rgba(0,0,0,0.4)';
                 }}
                 onMouseLeave={(e) => {
                   e.currentTarget.style.transform = 'none';
-                  e.currentTarget.style.boxShadow = '0 4px 20px rgba(0, 0, 0, 0.15)';
-                  e.currentTarget.style.border = '1px solid rgba(255, 255, 255, 0.08)';
+                  e.currentTarget.style.boxShadow = '0 8px 30px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.35), inset 0 -1px 0 rgba(0,0,0,0.4)';
                 }}
               >
+                <div style={{
+                  background: 'linear-gradient(180deg, #1a1f2e 0%, #141820 40%, #111520 100%)',
+                  borderRadius: '15px',
+                  padding: '24px',
+                  boxShadow: 'inset 0 2px 8px rgba(0,0,0,0.6)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '16px',
+                  height: '100%',
+                }}>
                 {/* Header row: Order ID, Date, and Status */}
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '16px' }}>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
@@ -432,13 +435,19 @@ export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
                       style={{
                         border: '1px solid rgba(252,129,129,0.4)',
                         color: 'var(--red)',
-                        background: 'rgba(252,129,129,0.08)',
+                        background: 'linear-gradient(180deg, rgba(252,129,129,0.1) 0%, rgba(252,129,129,0.05) 100%)',
                         fontSize: '0.9rem',
                         padding: '10px 20px',
-                        fontWeight: 600
+                        fontWeight: 700,
+                        borderRadius: '10px',
+                        boxShadow: '0 4px 15px rgba(252, 129, 129, 0.1), inset 0 1px 0 rgba(255,255,255,0.05)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px'
                       }}
                       disabled={loadingOrderId === order.id}
                     >
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
                       Cancel
                     </button>
                     
@@ -446,9 +455,22 @@ export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
                       <button
                         onClick={() => handleMarkPaid(order.id)}
                         className="btn btn-primary"
-                        style={{ fontSize: '0.9rem', padding: '10px 24px', fontWeight: 700 }}
+                        style={{ 
+                          fontSize: '0.9rem', 
+                          padding: '10px 24px', 
+                          fontWeight: 700,
+                          background: 'linear-gradient(180deg, #c8c2b8 0%, #a09890 100%)',
+                          color: '#1a1f2e',
+                          border: 'none',
+                          boxShadow: '0 4px 15px rgba(200, 194, 184, 0.3), inset 0 1px 0 rgba(255,255,255,0.4), inset 0 -2px 0 rgba(0,0,0,0.2)',
+                          borderRadius: '10px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '8px'
+                        }}
                         disabled={loadingOrderId === order.id || buyingLabelId === order.id}
                       >
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
                         {loadingOrderId === order.id ? 'Processing...' : 'Mark As Paid'}
                       </button>
                     )}
@@ -459,10 +481,11 @@ export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
                         color: '#F6AD55', 
                         border: '1px solid rgba(246,173,85,0.4)',
                         padding: '10px 20px',
-                        borderRadius: '8px',
+                        borderRadius: '10px',
                         display: 'flex',
                         alignItems: 'center',
-                        background: 'rgba(246,173,85,0.12)',
+                        background: 'linear-gradient(180deg, rgba(246,173,85,0.15) 0%, rgba(246,173,85,0.05) 100%)',
+                        boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.05)',
                         fontWeight: 700
                       }}>
                         Awaiting Admin Approval
@@ -477,18 +500,26 @@ export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
                           fontSize: '0.9rem',
                           padding: '10px 24px',
                           fontWeight: 700,
-                          background: 'linear-gradient(135deg, #00C4BC 0%, #0099FF 100%)',
+                          background: 'linear-gradient(180deg, #00C4BC 0%, #0099FF 100%)',
+                          color: '#fff',
                           border: 'none',
-                          boxShadow: '0 4px 15px rgba(0, 196, 188, 0.3)'
+                          boxShadow: '0 4px 15px rgba(0, 196, 188, 0.4), inset 0 1px 0 rgba(255,255,255,0.4), inset 0 -2px 0 rgba(0,0,0,0.2)',
+                          borderRadius: '10px',
+                          textShadow: '0 1px 2px rgba(0,0,0,0.3)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '8px'
                         }}
                         disabled={loadingOrderId === order.id || buyingLabelId === order.id}
                       >
-                        {buyingLabelId === order.id ? 'Generating...' : 'Buy USPS Label (Shippo)'}
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="3" width="15" height="13"></rect><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon><circle cx="5.5" cy="18.5" r="2.5"></circle><circle cx="18.5" cy="18.5" r="2.5"></circle></svg>
+                        {buyingLabelId === order.id ? 'Generating...' : 'Buy USPS Label'}
                       </button>
                     )}
                   </div>
                 )}
               </div>
+            </div>
             );
           })}
         </div>

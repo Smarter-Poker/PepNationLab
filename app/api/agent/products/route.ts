@@ -143,7 +143,7 @@ export async function PATCH(req: NextRequest) {
       .select('tier')
       .eq('id', gate.user.id)
       .single();
-    if (prodData?.base_cost && profData?.tier) {
+    if (prodData?.base_cost != null && profData?.tier) {
       // Check for per-product override first (mirrors GET handler logic).
       const { data: overrideData } = await supabase
         .from('product_tier_overrides')
@@ -177,7 +177,7 @@ export async function PATCH(req: NextRequest) {
     resolvedRetailPrice = Number(retail_price);
 
     // ── Server-side retail price floor ───────────────────────────────────
-    if (agentCostPer10 > 0 && resolvedRetailPrice < agentCostPer10) {
+    if (resolvedRetailPrice < agentCostPer10) {
       return NextResponse.json(
         {
           error: `Listed price ($${(resolvedRetailPrice / 10).toFixed(2)}/vial) cannot be below your cost ($${(agentCostPer10 / 10).toFixed(2)}/vial).`,
@@ -196,7 +196,7 @@ export async function PATCH(req: NextRequest) {
   }
 
   // ── Server-side sale price floor ─────────────────────────────────────────
-  if (is_on_sale && sale_price != null && agentCostPer10 > 0) {
+  if (is_on_sale && sale_price != null) {
     const salePricePer10 = Number(sale_price);
     if (salePricePer10 < agentCostPer10) {
       return NextResponse.json(

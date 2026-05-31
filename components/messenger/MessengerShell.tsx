@@ -57,7 +57,14 @@ export default function MessengerShell({ userId }: Props) {
       if (c.is_muted) next.add(c.conversation_id);
     });
     mutedConvIdsRef.current = next;
-  }, [conversations]);
+
+    // Auto-open first conversation on desktop if none selected
+    if (!activeId && conversations.length > 0) {
+      if (typeof window !== 'undefined' && window.innerWidth > 768) {
+        setActive(conversations[0].conversation_id);
+      }
+    }
+  }, [conversations, activeId, setActive]);
 
   useEffect(() => {
     let cancelled = false;

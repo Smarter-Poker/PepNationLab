@@ -159,7 +159,7 @@ export default function AgentStoreProducts({ agentId }: { agentId: string }) {
     const listedPrice = Number((editForm as any).retail_price);
     const currentProduct = products.find(p => p.id === editingId);
     const agentCostPer10 = currentProduct?.agent_cost ?? 0;
-    if (agentCostPer10 > 0 && listedPrice < agentCostPer10) {
+    if (listedPrice < agentCostPer10) {
       alert(`Listed price cannot be below your cost ($${(agentCostPer10 / 10).toFixed(2)} / Vial). Please increase your price.`);
       return;
     }
@@ -381,7 +381,7 @@ export default function AgentStoreProducts({ agentId }: { agentId: string }) {
                             }}
                           />
                         </div>
-                        {p.agent_cost != null && p.agent_cost > 0 && (
+                        {p.agent_cost != null && p.agent_cost >= 0 && (
                           <p style={{ fontSize: '0.68rem', color: 'var(--grey-500)', marginTop: 3, marginBottom: 0 }}>
                             Min: <strong style={{ color: 'var(--grey-400)' }}>${(p.agent_cost / 10).toFixed(2)} / Vial</strong> (your cost)
                           </p>

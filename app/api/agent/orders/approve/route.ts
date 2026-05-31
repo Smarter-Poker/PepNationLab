@@ -94,12 +94,12 @@ export async function POST(req: NextRequest) {
         const stored = Number(item.unit_super_agent_cost);
         // unit_super_agent_cost is stored per-vial (since orders/route.ts fix).
         // The computeAgentCost fallback returns per-10-vial pack, so divide by 10.
-        if (Number.isFinite(stored) && stored > 0) totalCogs += stored * qty;
+        if (Number.isFinite(stored) && stored >= 0) totalCogs += stored * qty;
         else if (item.product_id) totalCogs += (await computeAgentCost(supabase, item.product_id, billedAgentTier) / 10) * qty;
       } else {
         const stored = Number(item.unit_cost_price);
         // unit_cost_price is stored per-vial (since orders/route.ts fix).
-        if (Number.isFinite(stored) && stored > 0) totalCogs += stored * qty;
+        if (Number.isFinite(stored) && stored >= 0) totalCogs += stored * qty;
         else if (item.product_id) totalCogs += (await computeAgentCost(supabase, item.product_id, billedAgentTier) / 10) * qty;
       }
     }

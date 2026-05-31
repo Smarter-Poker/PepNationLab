@@ -533,15 +533,28 @@ export default function ResearcherDashboard({ userId, userName, userEmail, agent
                   {orders.map(o => (
                     <div
                       key={o.id}
-                      className="card-metal"
                       style={{
-                        overflow: 'hidden',
-                        borderRadius: '16px',
-                        border: '1px solid rgba(255,255,255,0.06)',
-                        background: 'rgba(20, 28, 40, 0.4)',
-                        backdropFilter: 'blur(10px)',
+                        padding: '3px',
+                        borderRadius: '18px',
+                        background: 'linear-gradient(145deg, #c8c2b8 0%, #a09890 30%, #8a847c 50%, #a09890 70%, #c8c2b8 100%)',
+                        boxShadow: '0 8px 30px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.35), inset 0 -1px 0 rgba(0,0,0,0.4)',
+                        transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.transform = 'translateY(-2px)';
+                        e.currentTarget.style.boxShadow = '0 12px 40px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255,255,255,0.4), inset 0 -1px 0 rgba(0,0,0,0.4)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.transform = 'none';
+                        e.currentTarget.style.boxShadow = '0 8px 30px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.35), inset 0 -1px 0 rgba(0,0,0,0.4)';
                       }}
                     >
+                      <div style={{
+                        background: 'linear-gradient(180deg, #1a1f2e 0%, #141820 40%, #111520 100%)',
+                        borderRadius: '15px',
+                        boxShadow: 'inset 0 2px 8px rgba(0,0,0,0.6)',
+                        overflow: 'hidden'
+                      }}>
                       <button onClick={() => setExpandedOrder(expandedOrder === o.id ? null : o.id)}
                         style={{ width: '100%', textAlign: 'left', background: 'none', border: 'none', cursor: 'pointer', padding: 'var(--space-6)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', color: '#fff' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
@@ -608,18 +621,23 @@ export default function ResearcherDashboard({ userId, userName, userEmail, agent
                             </div>
                           )}
 
-                          <div style={{ marginTop: 24, display: 'flex', justifyContent: 'flex-end' }}>
+                          <div style={{ marginTop: 24, display: 'flex', justifyContent: 'flex-end', padding: '0 24px 24px' }}>
                             <a href={agentSlug ? `/${agentSlug}` : '/dashboard'} style={{
-                              display: 'inline-flex', alignItems: 'center', gap: 8, padding: '10px 20px',
-                              background: 'rgba(192,184,168,0.08)', border: '1px solid rgba(192,184,168,0.2)',
-                              borderRadius: 10, color: 'var(--teal)', fontSize: '0.9rem', fontWeight: 700, textDecoration: 'none',
-                              transition: 'all 0.2s ease',
+                              display: 'inline-flex', alignItems: 'center', gap: 8, padding: '10px 24px',
+                              background: 'linear-gradient(180deg, #c8c2b8 0%, #a09890 100%)',
+                              color: '#1a1f2e',
+                              border: 'none',
+                              boxShadow: '0 4px 15px rgba(200, 194, 184, 0.3), inset 0 1px 0 rgba(255,255,255,0.4), inset 0 -2px 0 rgba(0,0,0,0.2)',
+                              borderRadius: '10px', fontSize: '0.9rem', fontWeight: 800, textDecoration: 'none',
+                              transition: 'transform 0.2s ease',
                             }}>
+                              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
                               Re-Order Items
                             </a>
                           </div>
                         </div>
                       )}
+                      </div>
                     </div>
                   ))}
                 </div>

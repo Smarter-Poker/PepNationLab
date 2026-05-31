@@ -139,7 +139,7 @@ export async function GET(req: Request) {
             // super_agent_pricing row; never reuse unit_cost_price (the
             // sub-agent's cost — the customer-side margin we do not bill).
             const stored = Number(item.unit_super_agent_cost);
-            if (Number.isFinite(stored) && stored > 0) {
+            if (Number.isFinite(stored) && stored >= 0) {
               totalCogs += stored * qty;
             } else if (item.product_id && subAgent.parent_agent_id) {
               const recomputed = await computeSubAgentBaselineCost(

@@ -114,10 +114,10 @@ export default function EditProductPage() {
     setError('');
     setSaving(true);
 
-    // Validate base_cost > 0 before any network call
+    // Validate base_cost >= 0 before any network call
     const parsedBaseCost = parseFloat(form.base_cost);
-    if (!form.base_cost || isNaN(parsedBaseCost) || parsedBaseCost <= 0) {
-      setError('Base Cost Must Be Greater Than $0.00');
+    if (!form.base_cost || isNaN(parsedBaseCost) || parsedBaseCost < 0) {
+      setError('Base Cost Must Be Positive Or Zero');
       setSaving(false);
       return;
     }
@@ -306,7 +306,7 @@ export default function EditProductPage() {
                   position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)',
                   color: 'var(--teal)', fontFamily: 'var(--font-brand)', fontWeight: 700, fontSize: '0.9rem'
                 }}>$</span>
-                <input id="base_cost" type="number" step="0.01" min="0.01" required
+                <input id="base_cost" type="number" step="0.01" min="0" required
                   className="form-input" placeholder="0.00"
                   value={form.base_cost} onChange={e => set('base_cost', e.target.value)}
                   style={{ paddingLeft: 28 }} />
