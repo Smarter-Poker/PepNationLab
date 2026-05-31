@@ -293,6 +293,7 @@ export default function AgentStorefrontConfig({
                 <input type="text" className="form-input" value={primaryColor} onChange={(e) => setPrimaryColor(e.target.value)} pattern="^#+([a-fA-F0-9]{6}|[a-fA-F0-9]{3})$" style={{ height: '100%', margin: 0 }} />
               </div>
             </div>
+          </div>
           <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 'var(--space-4)' }}>
             <button
               type="button"
@@ -312,6 +313,7 @@ export default function AgentStorefrontConfig({
           </div>
         </div>
       </div>
+    </div>
 
       {/* ── Pricing & Discounts Configuration ── */}
       <PricingConfig agentId={agentId} />
