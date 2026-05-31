@@ -900,7 +900,7 @@ export default function AgentDashboardClient({
                           value={crPassword}
                           onChange={e => setCrPassword(e.target.value)}
                           required
-                          placeholder="At Least 6 Characters"
+                          placeholder="At Least 8 Characters"
                           style={{
                             width: '100%', boxSizing: 'border-box',
                             background: 'linear-gradient(180deg, #0a0c14 0%, #0d1018 100%)',
@@ -917,7 +917,7 @@ export default function AgentDashboardClient({
                           onBlur={e => { e.currentTarget.style.border = '1px solid #2a3045'; }}
                         />
                         <p style={{ fontSize: '0.76rem', color: '#5a6a7a', marginTop: 6, marginBottom: 22 }}>
-                          You Set This — Tell Them Directly. No Automatic Emails.
+                          You Set This And Tell Them Directly. No Automatic Emails Are Sent.
                         </p>
                       </div>
 
