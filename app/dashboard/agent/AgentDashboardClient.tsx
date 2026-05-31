@@ -22,7 +22,7 @@ import MessageBell from '@/components/MessageBell';
 import { sanitizeUsername } from '@/lib/usernames';
 import { useTheme } from '@/components/ThemeProvider';
 import PaymentMethodsPanel from '@/components/PaymentMethodsPanel';
-
+import AvatarUpload from '@/components/AvatarUpload';
 
 interface Profile {
   id: string;
@@ -31,6 +31,7 @@ interface Profile {
   role: string;
   tier: string | null;
   is_super_agent?: boolean;
+  avatar_url?: string | null;
 }
 
 interface AgentProfile {
@@ -1105,6 +1106,18 @@ export default function AgentDashboardClient({
         {activeTab === 'Settings' && (
           <div style={{ animation: 'fadeIn 0.3s ease-out', maxWidth: 600 }}>
             <h2 style={{ fontFamily: 'var(--font-brand)', marginBottom: 'var(--space-6)', fontSize: '1.3rem' }}>Account Settings</h2>
+
+            {/* Profile Picture Upload */}
+            <div className="card-metal hover-lift" style={{ padding: 'var(--space-6)', marginBottom: 'var(--space-6)' }}>
+              <h4 style={{ marginBottom: 'var(--space-2)', color: 'var(--teal)' }}>Profile Picture</h4>
+              <p style={{ fontSize: '0.82rem', color: 'var(--grey-400)', marginBottom: 'var(--space-5)', marginTop: 0 }}>
+                Upload a profile picture to show in Messenger instead of a generic initial.
+              </p>
+              <AvatarUpload 
+                currentAvatarUrl={userProfile.avatar_url ?? null} 
+                name={userProfile.full_name ?? userProfile.email?.split('@')[0] ?? 'Agent'} 
+              />
+            </div>
 
             {/* Account Info */}
             <div className="card-metal hover-lift" style={{ padding: 'var(--space-6)', marginBottom: 'var(--space-6)' }}>

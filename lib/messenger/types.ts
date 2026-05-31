@@ -86,4 +86,5 @@ export interface ConversationListItem {
   counterparty_full_name?: string | null;
   counterparty_username?: string | null;
   counterparty_role?: string | null;
+  counterparty_avatar_url?: string | null;
 }

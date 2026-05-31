@@ -86,7 +86,9 @@ const BORDER  = '1px solid rgba(255,255,255,0.08)';
 /* ══════════════════════════════════════════════════════════════════════════════
    Notification Center Page
 ══════════════════════════════════════════════════════════════════════════════ */
-export default function NotificationCenterClient({ initialPrefs }: { initialPrefs: Prefs }) {
+import AvatarUpload from '@/components/AvatarUpload';
+
+export default function NotificationCenterClient({ initialPrefs, sessionProfile }: { initialPrefs: Prefs, sessionProfile: any }) {
   const [activeTab, setActiveTab] = useState<'notifications' | 'settings'>('notifications');
 
   /* ── Notifications state ──────────────────────────────────────────────── */
@@ -459,6 +461,20 @@ export default function NotificationCenterClient({ initialPrefs }: { initialPref
         {/* ══ SETTINGS TAB ═══════════════════════════════════════════════════ */}
         {activeTab === 'settings' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+
+            {/* Profile Picture Upload */}
+            <section style={{ background: SURFACE, border: BORDER, borderRadius: 14, padding: '20px 22px' }}>
+              <h2 style={{ fontSize: '1rem', color: 'var(--white)', fontWeight: 700, margin: '0 0 4px' }}>
+                Profile Picture
+              </h2>
+              <p style={{ color: SILVER, fontSize: '0.78rem', marginBottom: 18, marginTop: 4 }}>
+                Upload an avatar or logo to appear in Messenger instead of a generic initial.
+              </p>
+              <AvatarUpload 
+                currentAvatarUrl={sessionProfile?.avatar_url ?? null} 
+                name={sessionProfile?.full_name ?? sessionProfile?.username ?? sessionProfile?.email ?? 'User'} 
+              />
+            </section>
 
             {/* In-app event prefs */}
             <section style={{ background: SURFACE, border: BORDER, borderRadius: 14, padding: '20px 22px' }}>

@@ -1227,62 +1227,64 @@ export default function AgentStorefrontGrid({
         })}
       </motion.div>
       {/* Floating Cart — Bottom Right Corner */}
-      <div style={{ position: 'fixed', bottom: 'calc(24px + env(safe-area-inset-bottom, 0px))', right: 24, zIndex: 900 }}>
-        {/* Floating Cart Button */}
-        <div
-          role="button"
-          tabIndex={0}
-          onClick={() => {
-            if (totalCartItems === 0) {
-              setCartToast(true);
-              setTimeout(() => setCartToast(false), 2500);
-            } else {
-              setShowCartFloat(!showCartFloat);
-            }
-          }}
-          style={{
-            position: 'fixed',
-            bottom: 'env(safe-area-inset-bottom, 20px)',
-            right: 20,
-            width: 160,
-            height: 160,
-            padding: 0,
-            margin: 0,
-            background: 'transparent',
-            border: 'none',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 100,
-            cursor: 'pointer',
-            transition: 'transform 0.2s, filter 0.2s',
-            filter: 'drop-shadow(0 8px 16px rgba(0,0,0,0.8))',
-            WebkitTapHighlightColor: 'transparent',
-            boxSizing: 'border-box'
-          }}
-          onMouseEnter={e => { 
-            e.currentTarget.style.transform = 'scale(1.05)'; 
-            e.currentTarget.style.filter = 'drop-shadow(0 12px 24px rgba(0,0,0,0.9)) brightness(1.2)';
-          }}
-          onMouseLeave={e => { 
-            e.currentTarget.style.transform = 'scale(1)'; 
-            e.currentTarget.style.filter = 'drop-shadow(0 8px 16px rgba(0,0,0,0.8))';
-          }}
-        >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/cart-icon.png" width={160} height={160} alt="Cart" style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block' }} />
-          {totalCartItems > 0 && (
-            <span style={{
-              position: 'absolute', top: '38%', left: '47%', transform: 'translate(-50%, -50%)', width: 24, height: 24,
-              borderRadius: '50%', background: '#14B8A6', color: '#FFFFFF',
-              fontSize: '0.8rem', fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center',
-              boxShadow: '0 2px 4px rgba(0,0,0,0.5), 0 0 0 1.5px rgba(255,255,255,0.3)',
-              zIndex: 10
-            }}>
-              {totalCartItems}
-            </span>
-          )}
-        </div>
+      {typeof document !== 'undefined' && createPortal(
+        <div style={{ position: 'fixed', bottom: 'env(safe-area-inset-bottom, 0px)', right: 0, zIndex: 9999, pointerEvents: 'none' }}>
+          {/* Floating Cart Button */}
+          <div
+            role="button"
+            tabIndex={0}
+            onClick={() => {
+              if (totalCartItems === 0) {
+                setCartToast(true);
+                setTimeout(() => setCartToast(false), 2500);
+              } else {
+                setShowCartFloat(!showCartFloat);
+              }
+            }}
+            style={{
+              position: 'absolute',
+              bottom: 0,
+              right: 0,
+              width: 160,
+              height: 160,
+              padding: 0,
+              margin: 0,
+              background: 'transparent',
+              border: 'none',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              zIndex: 100,
+              cursor: 'pointer',
+              transition: 'transform 0.2s, filter 0.2s',
+              filter: 'drop-shadow(0 8px 16px rgba(0,0,0,0.8))',
+              WebkitTapHighlightColor: 'transparent',
+              pointerEvents: 'auto',
+              boxSizing: 'border-box'
+            }}
+            onMouseEnter={e => { 
+              e.currentTarget.style.transform = 'scale(1.05)'; 
+              e.currentTarget.style.filter = 'drop-shadow(0 12px 24px rgba(0,0,0,0.9)) brightness(1.2)';
+            }}
+            onMouseLeave={e => { 
+              e.currentTarget.style.transform = 'scale(1)'; 
+              e.currentTarget.style.filter = 'drop-shadow(0 8px 16px rgba(0,0,0,0.8))';
+            }}
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/cart-icon.png" width={160} height={160} alt="Cart" style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block' }} />
+            {totalCartItems > 0 && (
+              <span style={{
+                position: 'absolute', top: '38%', left: '47%', transform: 'translate(-50%, -50%)', width: 24, height: 24,
+                borderRadius: '50%', background: '#14B8A6', color: '#FFFFFF',
+                fontSize: '0.8rem', fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                boxShadow: '0 2px 4px rgba(0,0,0,0.5), 0 0 0 1.5px rgba(255,255,255,0.3)',
+                zIndex: 10
+              }}>
+                {totalCartItems}
+              </span>
+            )}
+          </div>
 
           {/* Cart dropdown */}
           <AnimatePresence>
@@ -1296,7 +1298,8 @@ export default function AgentStorefrontGrid({
                   width: 'min(300px, 85vw)',
                   background: 'var(--surface-2)', border: '1px solid rgba(255,255,255,0.1)',
                   borderRadius: 'var(--radius-lg)', boxShadow: '0 16px 48px rgba(0,0,0,0.6)',
-                  overflow: 'hidden'
+                  overflow: 'hidden',
+                  pointerEvents: 'auto'
                 }}
               >
                 <div style={{ padding: '14px 16px', borderBottom: '1px solid rgba(255,255,255,0.06)', fontWeight: 700, color: 'var(--white)', fontSize: '0.9rem' }}>
@@ -1497,7 +1500,6 @@ export default function AgentStorefrontGrid({
               </motion.div>
             )}
           </AnimatePresence>
-          {/* Empty cart toast */}
           {cartToast && (
             <div style={{
               position: 'absolute', bottom: 68, right: 0, width: 240,
@@ -1509,7 +1511,11 @@ export default function AgentStorefrontGrid({
               Your Cart Is Empty
             </div>
           )}
-        </div>
+        </div>,
+        document.body
+      )}
+
+      {/* Full-Screen Certificate Modal */}
 
 
       {/* Product Detail Modal — bottom-sheet on mobile, centered on desktop */}

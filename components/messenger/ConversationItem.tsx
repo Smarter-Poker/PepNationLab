@@ -32,6 +32,10 @@ function resolveLabel(c: ConversationListItem): string {
 export default function ConversationItem({ conversation, active, onClick }: Props) {
   const unread = conversation.unread_count ?? 0;
   const label = resolveLabel(conversation);
+  const avatarToUse = conversation.type === 'direct' 
+    ? (conversation.counterparty_avatar_url || conversation.avatar_url) 
+    : conversation.avatar_url;
+
   return (
     <button
       type="button"
@@ -50,7 +54,7 @@ export default function ConversationItem({ conversation, active, onClick }: Prop
         color: 'var(--white, #FFFFFF)',
       }}
     >
-      <Avatar name={label} avatarUrl={conversation.avatar_url} size={44} />
+      <Avatar name={label} avatarUrl={avatarToUse} size={44} />
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8 }}>
           <span

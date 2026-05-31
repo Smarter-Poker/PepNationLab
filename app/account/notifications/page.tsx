@@ -39,6 +39,12 @@ export default async function NotificationsPage() {
     .eq('user_id', user.id)
     .maybeSingle();
 
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('full_name, username, email, avatar_url')
+    .eq('id', user.id)
+    .maybeSingle();
+
   const prefs: RowPrefs = row
     ? {
         events_order_approved: row.events_order_approved !== false,
@@ -53,5 +59,5 @@ export default async function NotificationsPage() {
       }
     : DEFAULT_PREFS;
 
-  return <NotificationsClient initialPrefs={prefs} />;
+  return <NotificationsClient initialPrefs={prefs} sessionProfile={profile} />;
 }

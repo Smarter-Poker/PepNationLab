@@ -110,11 +110,11 @@ export async function POST(req: NextRequest) {
   // Audit9: drop counterparty role from the response so non-admin viewers
   // don't learn the role of other group/announcement participants.
   const senderIds = Array.from(new Set(visibleMessages.map((m) => m.sender_id)));
-  let senders: Array<{ id: string; full_name: string | null; username: string | null }> = [];
+  let senders: Array<{ id: string; full_name: string | null; username: string | null; avatar_url: string | null }> = [];
   if (senderIds.length > 0) {
     const { data: p } = await svc
       .from('profiles')
-      .select('id, full_name, username')
+      .select('id, full_name, username, avatar_url')
       .in('id', senderIds);
     senders = p ?? [];
   }
