@@ -305,7 +305,21 @@ export default function Navbar({ onMenuClick, isOpen, title }: { onMenuClick?: (
               }}
             >
               <div style={{ width: 36, height: 36, overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <img src="/images/back-arrow-transparent.png" alt="Back" style={{ width: 36, height: 36, transform: 'scale(1.4) translateY(1px)', display: 'block', transition: 'opacity 0.2s' }} onMouseEnter={e => (e.currentTarget.style.opacity = '0.8')} onMouseLeave={e => (e.currentTarget.style.opacity = '1')} />
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ filter: 'drop-shadow(0px 2px 4px rgba(0,0,0,0.5))', transition: 'opacity 0.2s', display: 'block' }} onMouseEnter={e => (e.currentTarget.style.opacity = '0.8')} onMouseLeave={e => (e.currentTarget.style.opacity = '1')}>
+                  <defs>
+                    <linearGradient id="premium-metal-body" x1="0%" y1="0%" x2="0%" y2="100%">
+                      <stop offset="0%" stopColor="#E2E8F0" />
+                      <stop offset="40%" stopColor="#FFFFFF" />
+                      <stop offset="60%" stopColor="#94A3B8" />
+                      <stop offset="100%" stopColor="#64748B" />
+                    </linearGradient>
+                    <linearGradient id="premium-metal-edge" x1="0%" y1="0%" x2="0%" y2="100%">
+                      <stop offset="0%" stopColor="#FFFFFF" />
+                      <stop offset="100%" stopColor="#475569" />
+                    </linearGradient>
+                  </defs>
+                  <path d="M11 5L3 12L11 19V15H21V9H11V5Z" fill="url(#premium-metal-body)" stroke="url(#premium-metal-edge)" strokeWidth="1" strokeLinejoin="round" />
+                </svg>
               </div>
             </button>
 

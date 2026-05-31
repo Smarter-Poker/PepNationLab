@@ -1836,3 +1836,66 @@ html[data-theme="light"] .messenger-back-btn {
 .pulse-silver {
   animation: pulse-glow-silver 2s infinite cubic-bezier(0.66, 0, 0, 1);
 }
+
+/* ============================================
+   DYNAMIC PREMIUM ENHANCEMENTS
+   ============================================ */
+
+/* Hover Lift for Cards and Actionable Panels */
+.hover-lift {
+  transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.3s ease;
+}
+.hover-lift:hover {
+  transform: translateY(-2px) scale(1.01);
+  box-shadow: 0 12px 30px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.4), inset 0 -1px 0 rgba(0,0,0,0.5);
+  z-index: 5;
+}
+
+/* Dynamic Table Rows */
+.table-row-hover {
+  transition: background 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+  position: relative;
+}
+.table-row-hover:hover {
+  background: rgba(255, 255, 255, 0.04) !important;
+  transform: scale(1.002);
+  z-index: 10;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+}
+
+/* Glass Header (Sticky Depth) */
+.glass-header {
+  background: rgba(15, 25, 35, 0.75) !important;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+  position: sticky;
+  top: 0;
+  z-index: 20;
+}
+
+/* Animated Gradient Text (for Hero Headings) */
+@keyframes text-gradient {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+.animated-gradient-text {
+  background: linear-gradient(90deg, #FFFFFF, #A8B4C0, #00C4BC, #A8B4C0, #FFFFFF);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: text-gradient 4s linear infinite;
+  text-shadow: 0 2px 10px rgba(255,255,255,0.1);
+}
+
+/* Staggered Fade Ins for Lists/Grids */
+.stagger-fade-in {
+  opacity: 0;
+  animation: fadeInUp 0.6s ease forwards;
+}
+.stagger-1 { animation-delay: 100ms; }
+.stagger-2 { animation-delay: 200ms; }
+.stagger-3 { animation-delay: 300ms; }
+.stagger-4 { animation-delay: 400ms; }
+.stagger-5 { animation-delay: 500ms; }
