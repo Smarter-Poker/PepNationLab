@@ -64,6 +64,13 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: msg || 'Mark Read Failed' }, { status: 500 });
   }
 
+  // Also clear any 'new_message' bell notifications for this user
+  await svc.from('notifications')
+    .update({ read_at: new Date().toISOString() })
+    .eq('user_id', user.id)
+    .eq('type', 'new_message')
+    .is('read_at', null);
+
   const { data: updatedParticipant } = await svc
     .from('messenger_participants')
     .select('*')

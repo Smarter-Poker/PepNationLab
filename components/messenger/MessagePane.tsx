@@ -140,6 +140,16 @@ export default function MessagePane({ userId, activeCall, setActiveCall }: Props
 
   const typingExpiryRef = useRef<Record<string, number>>({});
   const typingSweeperRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const scrollToBottom = useCallback(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'auto' });
+  }, []);
+
+  // Scroll to bottom when messages load or change
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages, scrollToBottom]);
 
   useEffect(() => {
     setReplyTo(null);
@@ -1029,6 +1039,7 @@ export default function MessagePane({ userId, activeCall, setActiveCall }: Props
               );
             })
         )}
+        <div ref={messagesEndRef} />
       </div>
       <TypingIndicator typingUserIds={typingUserIds} />
       <MessageComposer
