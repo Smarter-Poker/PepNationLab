@@ -17,6 +17,7 @@ interface Props {
   isFirst?: boolean;
   isLast?: boolean;
   senderName?: string | null;
+  senderAvatarUrl?: string | null;
   reactions: Reaction[];
   selfId: string;
   selfRole?: ParticipantRole | null;
@@ -79,11 +80,24 @@ function formatExpiry(iso: string | null): string | null {
 }
 
 export default function MessageBubble({
-  message, isOwn, isFirst = true, isLast = true, senderName, reactions, selfId,
-  selfRole = null, conversationType,
-  isPinned = false, currentLabels = [],
-  onReply, onReact, onEdit, onDelete,
-  onPinToggle, onLabelToggle, onThread, onReport, onSetReminder,
+  message,
+  isOwn,
+  isFirst = false,
+  isLast = false,
+  senderName,
+  senderAvatarUrl,
+  reactions,
+  selfId,
+  selfRole,
+  conversationType,
+  isPinned,
+  currentLabels = [],
+  onReply,
+  onReact,
+  onEdit,
+  onDelete,
+  onPinToggle,
+  onLabelToggle, onThread, onReport, onSetReminder,
   activeMenuId, onMenuToggle, readBy = [],
 }: Props) {
   const isMenuOpen = activeMenuId !== undefined ? activeMenuId === message.id : false;
@@ -335,48 +349,19 @@ export default function MessageBubble({
       data-msg-id={message.id}
       style={{ alignSelf: isOwn ? 'flex-end' : 'flex-start', maxWidth: '65%',
         display: 'flex', alignItems: 'flex-end', gap: 8, position: 'relative',
-        marginBottom: isLast ? 8 : 2 }}
+        marginBottom: isLast ? 24 : 2 }}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       onContextMenu={(e) => { e.preventDefault(); if (editing || confirmDelete) return; setMenuOpen(!isMenuOpen); }}
     >
       {!isOwn && (
         <div style={{ width: 28, flexShrink: 0, opacity: isLast ? 1 : 0 }}>
-          {isLast && <Avatar name={senderName ?? ''} size={28} />}
+          {isLast && <Avatar avatarUrl={senderAvatarUrl ?? undefined} name={senderName ?? ''} size={28} />}
         </div>
       )}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 2, position: 'relative', flex: 1, minWidth: 0, maxWidth: '100%' }}>
       {/* ── Visible action trigger button ── */}
-      {showActionMenu && !message.is_deleted && (
-        <button
-          type="button"
-          aria-label="Message Actions"
-          title="Message Actions"
-          onClick={(e) => { e.stopPropagation(); setMenuOpen(!isMenuOpen); }}
-          style={{
-            position: 'absolute',
-            top: -24,
-            // Own messages: button on the left. Others: button on the right.
-            ...(isOwn ? { left: -50 } : { right: -50 }),
-            background: isMenuOpen ? 'var(--surface-3, #1D2D3E)' : 'var(--surface-2, #162230)',
-            border: '1px solid var(--surface-3, #1D2D3E)',
-            borderRadius: 6,
-            color: 'var(--white, #FFFFFF)',
-            cursor: 'pointer',
-            padding: '3px 5px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 10,
-            // Desktop: show on hover. Mobile: always slightly visible.
-            opacity: isMenuOpen ? 1 : hovered ? 1 : 0.25,
-            transition: 'opacity 0.15s, background 0.15s',
-          }}
-          className="msg-action-btn"
-        >
-          <MoreHorizontal size={35} />
-        </button>
-      )}
+      {/* The 3 dots are hidden per user request, replaced by long-press (onContextMenu) */}
       {(isPinned || currentLabels.length > 0) && (
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, alignSelf: isOwn ? 'flex-end' : 'flex-start', padding: '0 4px' }}>
           {isPinned && (
@@ -419,17 +404,6 @@ export default function MessageBubble({
                 title="Remind Me"
               >
                 <Bell size={40} />
-              </button>
-            )}
-            {canReport && (
-              <button
-                type="button"
-                onClick={() => { onReport?.(message); setMenuOpen(false); }}
-                style={menuBtn}
-                aria-label="Report Message"
-                title="Report Message"
-              >
-                <Flag size={40} />
               </button>
             )}
             {canPin && (

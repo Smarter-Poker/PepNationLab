@@ -982,8 +982,8 @@ export default function MessagePane({ userId, activeCall, setActiveCall }: Props
                         color: 'var(--grey-400, #A8B4C0)',
                         fontStyle: 'italic',
                         fontSize: '0.82rem',
-                        border: '1px dashed var(--surface-3, #1D2D3E)',
-                        marginBottom: isLast ? 8 : 2
+                      border: '1px dashed var(--surface-3, #1D2D3E)',
+                        marginBottom: isLast ? 24 : 2
                       }}
                     >
                       Message Hidden - Blocked User
@@ -1005,6 +1005,7 @@ export default function MessagePane({ userId, activeCall, setActiveCall }: Props
                   isFirst={isFirst}
                   isLast={isLast}
                   senderName={senderName}
+                  senderAvatarUrl={(senderProfile as any).avatar_url}
                   reactions={reactionsByMsg[m.id] ?? []}
                   selfId={userId}
                   selfRole={selfRole}
