@@ -440,7 +440,15 @@ export default function AgentStorefrontGrid({
   const [detailProduct, setDetailProduct] = useState<GroupedProduct | null>(null);
   const [recommendations, setRecommendations] = useState<RecommendationItem[]>([]);
   const [recommendationsLoading, setRecommendationsLoading] = useState(false);
-  const [cartItems, setCartItems] = useState<Record<string, number>>({});
+  const [cartItems, setCartItems] = useState<Record<string, number>>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const saved = localStorage.getItem(`cart_${agentSlug}`);
+        if (saved) return JSON.parse(saved);
+      } catch { /* ignore */ }
+    }
+    return {};
+  });
   const [showCartFloat, setShowCartFloat] = useState(false);
   const [cartToast, setCartToast] = useState(false);
   const [showBulkPricing, setShowBulkPricing] = useState(false);
@@ -482,14 +490,6 @@ export default function AgentStorefrontGrid({
   }, [detailProduct, agentSlug]);
 
   const [pendingQty, setPendingQty] = useState(isStorefrontOwner ? Math.max(10, selfBuyMin) : selfBuyMin);
-
-  // Load cart from localStorage on mount
-  useEffect(() => {
-    try {
-      const saved = localStorage.getItem(`cart_${agentSlug}`);
-      if (saved) setCartItems(JSON.parse(saved));
-    } catch { /* ignore */ }
-  }, [agentSlug]);
 
   // Save cart to localStorage on change
   useEffect(() => {
@@ -1394,8 +1394,6 @@ export default function AgentStorefrontGrid({
                           .filter(k => k.startsWith('pnl_storefront_cart_') && k !== `pnl_storefront_cart_${agentSlug}`)
                           .forEach(k => localStorage.removeItem(k));
                         localStorage.removeItem('pnl_storefront_cart'); // legacy key cleanup
-                        localStorage.removeItem(`cart_${agentSlug}`);
-                        setCartItems({});
                       } catch (e) {
                         console.error('Failed to sync cart:', e);
                       }
@@ -1736,10 +1734,27 @@ export default function AgentStorefrontGrid({
                                 fontSize: '1.1rem', display: 'flex', alignItems: 'center', justifyContent: 'center'
                               }}
                             >-</button>
-                            <span style={{
-                              minWidth: 44, textAlign: 'center', fontSize: '1.2rem', fontWeight: 800,
-                              color: 'var(--white)', fontFamily: 'var(--font-brand)'
-                            }}>{qty}</span>
+                            <input
+                              type="number"
+                              value={qty || ''}
+                              onChange={e => {
+                                const val = parseInt(e.target.value, 10);
+                                if (!isNaN(val)) {
+                                  setPendingQty(Math.max(selfBuyMin, val));
+                                } else if (e.target.value === '') {
+                                  setPendingQty(0); // Temporary state while typing
+                                }
+                              }}
+                              onBlur={() => {
+                                if (qty < selfBuyMin) setPendingQty(selfBuyMin);
+                              }}
+                              style={{
+                                width: 54, textAlign: 'center', fontSize: '1.2rem', fontWeight: 800,
+                                color: 'var(--white)', fontFamily: 'var(--font-brand)',
+                                background: 'transparent', border: '1px solid rgba(255,255,255,0.1)',
+                                borderRadius: '4px', outline: 'none', appearance: 'textfield'
+                              }}
+                            />
                             <button
                               onClick={() => setPendingQty(prev => prev + selfBuyStep)}
                               style={{
