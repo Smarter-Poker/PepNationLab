@@ -445,6 +445,14 @@ export async function POST(request: NextRequest) {
         }
       }
 
+      // Round unit prices to exact cents (2 decimals) to match DB storage
+      // This prevents fractional cent drift in subtotal math vs order_items sums.
+      retailPrice = isFinite(retailPrice) ? Math.round(retailPrice * 100) / 100 : 0;
+      costPrice = isFinite(costPrice) ? Math.round(costPrice * 100) / 100 : 0;
+      if (superAgentCost !== null) {
+        superAgentCost = isFinite(superAgentCost) ? Math.round(superAgentCost * 100) / 100 : null;
+      }
+
       subtotal += retailPrice * itemQty;
       totalWeightOz += (Number(dbProduct.weight_oz) || 0.5) * itemQty;
 
@@ -713,12 +721,9 @@ export async function POST(request: NextRequest) {
       product_id: item.product_id,
       product_name: item.product_name ?? 'Unknown Product',
       quantity: item.quantity,
-      // Guard NaN / undefined — Postgres rejects NaN for NUMERIC columns
-      unit_retail_price: isFinite(item.unit_retail_price) ? Math.round(item.unit_retail_price * 100) / 100 : 0,
-      unit_cost_price: isFinite(item.unit_cost_price) ? Math.round(item.unit_cost_price * 100) / 100 : 0,
-      unit_super_agent_cost: item.unit_super_agent_cost != null && isFinite(item.unit_super_agent_cost)
-        ? Math.round(item.unit_super_agent_cost * 100) / 100
-        : null,
+      unit_retail_price: item.unit_retail_price,
+      unit_cost_price: item.unit_cost_price,
+      unit_super_agent_cost: item.unit_super_agent_cost,
     }));
 
     const { error: itemsError } = await serviceSupabase

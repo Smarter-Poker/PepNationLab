@@ -85,7 +85,7 @@ const PUBLIC_ROUTES = [
 function isPublicDynamicRoute(pathname: string): boolean {
   // Exclude known protected prefixes
   const protectedPrefixes = [
-    '/admin', '/dashboard', '/api', '/orders', '/products',
+    '/admin', '/dashboard', '/api', '/orders', '/products', '/account',
     '/checkout', '/messages', '/messenger', '/register', '/login', '/forgot-password',
     '/become-agent', '/about', '/terms', '/privacy', '/compliance',
     '/disclaimer', '/shipping', '/invite',
@@ -114,8 +114,14 @@ export default async function proxy(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  // Allow public routes through immediately
-  if (PUBLIC_ROUTES.some(route => pathname === route || pathname.startsWith(route + '/'))) {
+  // Already-logged-in users bounce logic must happen before PUBLIC_ROUTES
+  // but we need the session for that. Wait, we don't have the session yet.
+  // Instead, we will handle `/login` bounce after fetching the session.
+  // However, we MUST allow PUBLIC_ROUTES through.
+  // So we remove `/login` from the early exit if they are logged in?
+  // We can just skip the early exit for `/login` and let it hit the session check.
+  const isLoginRoute = pathname === '/login';
+  if (!isLoginRoute && PUBLIC_ROUTES.some(route => pathname === route || pathname.startsWith(route + '/'))) {
     return NextResponse.next({ request });
   }
 
@@ -192,14 +198,26 @@ export default async function proxy(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
+  // Helper to preserve cookies on redirect
+  const redirectWithCookies = (url: URL) => {
+    const redirectResponse = NextResponse.redirect(url);
+    response.cookies.getAll().forEach((cookie) => {
+      redirectResponse.cookies.set(cookie.name, cookie.value);
+    });
+    return redirectResponse;
+  };
+
   if (!user) {
     if (pathname.startsWith('/api/')) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+    if (pathname === '/login') {
+      return response; // Allow unauthenticated user to see login
+    }
     const url = request.nextUrl.clone();
     url.pathname = '/login';
     url.searchParams.set('redirect', pathname);
-    return NextResponse.redirect(url);
+    return redirectWithCookies(url);
   }
 
   // Check the user's is_active flag — deactivated accounts get signed out.
@@ -217,26 +235,27 @@ export default async function proxy(request: NextRequest) {
     const url = request.nextUrl.clone();
     url.pathname = '/login';
     url.searchParams.set('error', 'account_disabled');
-    return NextResponse.redirect(url);
+    return redirectWithCookies(url);
   }
 
   // ─── Must-change-password enforcement (researcher first login) ────────────
   // Researchers created by agents get a temp password and must_change_password=true.
   // Redirect them to /account/change-password until they save or skip.
   if ((profile as any)?.must_change_password === true && pathname !== '/account/change-password') {
-    if (!pathname.startsWith('/api/')) {
-      const url = request.nextUrl.clone();
-      url.pathname = '/account/change-password';
-      url.search = '';
-      return NextResponse.redirect(url);
+    if (pathname.startsWith('/api/')) {
+      return NextResponse.json({ error: 'Must change password' }, { status: 403 });
     }
+    const url = request.nextUrl.clone();
+    url.pathname = '/account/change-password';
+    url.search = '';
+    return redirectWithCookies(url);
   }
 
   // Already-logged-in users land on /login → bounce to their dashboard
   if (pathname === '/login') {
     const url = request.nextUrl.clone();
     url.pathname = profile?.role === 'admin' ? '/admin' : '/dashboard';
-    return NextResponse.redirect(url);
+    return redirectWithCookies(url);
   }
 
   // ─── Admin Path Role Enforcement ─────────────────────────────────────────
@@ -248,7 +267,7 @@ export default async function proxy(request: NextRequest) {
   if (pathname.startsWith('/admin') && profile?.role !== 'admin') {
     const url = request.nextUrl.clone();
     url.pathname = '/dashboard';
-    return NextResponse.redirect(url);
+    return redirectWithCookies(url);
   }
 
   // ─── MFA Enforcement (super_agent only) ────────────────────────────────────
@@ -285,7 +304,7 @@ export default async function proxy(request: NextRequest) {
         const url = request.nextUrl.clone();
         url.pathname = '/account/security';
         url.search = '?reason=mfa_required';
-        return NextResponse.redirect(url);
+        return redirectWithCookies(url);
       }
     }
   }

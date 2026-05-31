@@ -704,8 +704,19 @@ export default function AgentStorefrontGrid({
     maxWeight !== weightBounds.max;
 
   const addToCart = useCallback((variantId: string) => {
-    setCartItems(prev => ({ ...prev, [variantId]: (prev[variantId] || 0) + 1 }));
-  }, []);
+    const item = products.find(p => p.id === variantId);
+    if (!item) return;
+    const maxQty = item.products?.inventory_count || 0;
+    
+    setCartItems(prev => {
+      const currentQty = prev[variantId] || 0;
+      if (currentQty >= maxQty) {
+        toast.error(`Maximum available stock (${maxQty}) reached.`);
+        return prev;
+      }
+      return { ...prev, [variantId]: currentQty + 1 };
+    });
+  }, [products]);
 
   const totalCartItems = Object.values(cartItems).reduce((sum, qty) => sum + qty, 0);
 
@@ -1329,10 +1340,19 @@ export default function AgentStorefrontGrid({
                                   }
                                   return next;
                                 }
-                                if (val <= 0) {
+                                const prodItem = products.find(p => p.id === variantId);
+                                const maxQty = prodItem?.products?.inventory_count || 0;
+                                
+                                let boundedVal = val;
+                                if (val > maxQty) {
+                                  toast.error(`Maximum available stock is ${maxQty}.`);
+                                  boundedVal = maxQty;
+                                }
+
+                                if (boundedVal <= 0) {
                                   delete next[variantId];
                                 } else {
-                                  next[variantId] = val;
+                                  next[variantId] = boundedVal;
                                 }
                                 return next;
                               });

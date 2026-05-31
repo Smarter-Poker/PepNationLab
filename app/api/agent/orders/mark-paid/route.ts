@@ -3,6 +3,7 @@ import { createServiceClient } from '@/lib/supabase/server';
 import { requireAgent } from '@/lib/admin-auth';
 import { isAgentAncestorOf } from '@/lib/agent-auth';
 import { assertSameOrigin } from '@/lib/csrf';
+import { notifyOrderApproved } from '@/lib/notify';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -136,6 +137,17 @@ export async function POST(req: NextRequest) {
       }
     } catch (err) {
       console.error('[mark-paid] admin notification error:', err);
+    }
+  } else {
+    // If it's an agent pickup, it goes straight to approved_pickup.
+    // We must notify the buyer that it's approved since the admin won't do it.
+    try {
+      if (order.buyer_id) {
+        const shortId = orderId.slice(0, 8).toUpperCase();
+        await notifyOrderApproved(svc, order.buyer_id, orderId, shortId);
+      }
+    } catch (err) {
+      console.error('[mark-paid] buyer pickup approval notification error:', err);
     }
   }
 

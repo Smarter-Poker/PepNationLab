@@ -33,13 +33,30 @@ export async function POST(req: NextRequest) {
   // per-participant flags (archived, etc.) without an extra round trip.
   // Other participants' settings are not sensitive (per-participant prefs),
   // but we still scrub them out before returning so only the caller sees their own.
-  const { data, error: qErr } = await svc
+  const { data: partsData, error: qErr } = await svc
     .from('messenger_participants')
-    .select('id, user_id, role, joined_at, last_read_message_id, settings, profile:profiles!messenger_participants_user_id_fkey(full_name, username, role, email)')
+    .select('id, user_id, role, joined_at, last_read_message_id, settings')
     .eq('conversation_id', parsed.data.conversationId)
     .order('joined_at', { ascending: true });
 
   if (qErr) return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
+
+  const participants = partsData ?? [];
+  const userIds = participants.map((p) => p.user_id);
+  
+  let profilesMap: Record<string, any> = {};
+  if (userIds.length > 0) {
+    const { data: profs } = await svc
+      .from('profiles')
+      .select('id, full_name, username, role, email')
+      .in('id', userIds);
+      
+    if (profs) {
+      profs.forEach((p) => {
+        profilesMap[p.id] = p;
+      });
+    }
+  }
 
   type Row = {
     id: string;
@@ -48,21 +65,24 @@ export async function POST(req: NextRequest) {
     joined_at: string;
     last_read_message_id: string | null;
     settings: Record<string, unknown> | null;
-    profile: { full_name: string | null; username: string | null; role: string | null; email: string | null } | null;
   };
-  const flat = ((data ?? []) as unknown as Row[]).map((r) => ({
-    id: r.id,
-    user_id: r.user_id,
-    role: r.role,
-    joined_at: r.joined_at,
-    // Only return settings for the caller's own participant row.
-    settings: r.user_id === user.id ? (r.settings ?? {}) : null,
-    full_name: r.profile?.full_name ?? null,
-    username: r.profile?.username ?? null,
-    profile_role: r.profile?.role ?? null,
-    email: r.profile?.email ?? null,
-    last_read_message_id: r.last_read_message_id,
-  }));
+  
+  const flat = (participants as unknown as Row[]).map((r) => {
+    const profile = profilesMap[r.user_id] || null;
+    return {
+      id: r.id,
+      user_id: r.user_id,
+      role: r.role,
+      joined_at: r.joined_at,
+      // Only return settings for the caller's own participant row.
+      settings: r.user_id === user.id ? (r.settings ?? {}) : null,
+      full_name: profile?.full_name ?? null,
+      username: profile?.username ?? null,
+      profile_role: profile?.role ?? null,
+      email: profile?.email ?? null,
+      last_read_message_id: r.last_read_message_id,
+    };
+  });
 
   return NextResponse.json({ participants: flat });
 }

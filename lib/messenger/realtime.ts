@@ -18,6 +18,7 @@ export function subscribeMessages(
   handlers: MessageHandlers,
   selfId: string,
 ): { channel: RealtimeChannel; broadcastNewMessage: (m: Message) => void } {
+  console.log('[REALTIME] subscribeMessages called for conv:', conversationId);
   const ch = supabase.channel(`conversation:${conversationId}`);
 
   ch.on(

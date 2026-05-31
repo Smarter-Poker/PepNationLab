@@ -28,14 +28,12 @@ export async function createClient() {
 }
 
 export async function createServiceClient() {
-  const cookieStore = await cookies();
-
   return createServerClient(
     (process.env.NEXT_PUBLIC_SUPABASE_URL || '').trim(),
     (process.env.SUPABASE_SERVICE_ROLE_KEY || '').trim(),
     {
       cookies: {
-        getAll() { return cookieStore.getAll(); },
+        getAll() { return []; },
         setAll() { /* service role — no cookie setting needed */ },
       },
     }

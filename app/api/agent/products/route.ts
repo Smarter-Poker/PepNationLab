@@ -116,7 +116,7 @@ export async function PATCH(req: NextRequest) {
   // Ensure this agent_product belongs to this user
   const { data: check } = await supabase
     .from('agent_products')
-    .select('id, retail_price, margin_percent, product_id, agent_id')
+    .select('id, retail_price, margin_percent, product_id, agent_id, sale_price, is_on_sale')
     .eq('id', id)
     .eq('agent_id', gate.user.id)
     .single();
@@ -175,33 +175,39 @@ export async function PATCH(req: NextRequest) {
 
   if (retail_price !== undefined && Number.isFinite(Number(retail_price))) {
     resolvedRetailPrice = Number(retail_price);
-
-    // ── Server-side retail price floor ───────────────────────────────────
-    if (resolvedRetailPrice < agentCostPer10) {
-      return NextResponse.json(
-        {
-          error: `Listed price ($${(resolvedRetailPrice / 10).toFixed(2)}/vial) cannot be below your cost ($${(agentCostPer10 / 10).toFixed(2)}/vial).`,
-        },
-        { status: 422 }
-      );
-    }
-
-    // Back-compute margin_percent to keep the DB column consistent.
-    if (agentCostPer10 > 0) {
-      resolvedMarginPercent = Math.round((resolvedRetailPrice / agentCostPer10 - 1) * 100 * 100) / 100;
-    }
   } else if (margin_percent !== undefined && Number.isFinite(Number(margin_percent))) {
     // Markup-% only path — DB trigger will recalculate retail_price.
     resolvedMarginPercent = Number(margin_percent);
+    if (agentCostPer10 > 0) {
+      resolvedRetailPrice = agentCostPer10 * (1 + resolvedMarginPercent / 100);
+    }
+  }
+
+  // ── Server-side retail price floor ───────────────────────────────────
+  // Enforced whether they submitted a flat dollar amount or a margin percent
+  if (resolvedRetailPrice !== undefined && resolvedRetailPrice < agentCostPer10) {
+    return NextResponse.json(
+      {
+        error: `Listed price ($${(resolvedRetailPrice / 10).toFixed(2)}/vial) cannot be below your cost ($${(agentCostPer10 / 10).toFixed(2)}/vial).`,
+      },
+      { status: 422 }
+    );
+  }
+
+  // Back-compute margin_percent if they sent a hard retail_price
+  if (retail_price !== undefined && Number.isFinite(Number(retail_price)) && agentCostPer10 > 0) {
+    resolvedMarginPercent = Math.round((resolvedRetailPrice! / agentCostPer10 - 1) * 100 * 100) / 100;
   }
 
   // ── Server-side sale price floor ─────────────────────────────────────────
-  if (is_on_sale && sale_price != null) {
-    const salePricePer10 = Number(sale_price);
-    if (salePricePer10 < agentCostPer10) {
+  const activeSalePrice = sale_price !== undefined && sale_price !== null ? Number(sale_price) : Number(check.sale_price);
+  const activeIsOnSale = is_on_sale !== undefined ? Boolean(is_on_sale) : Boolean(check.is_on_sale);
+
+  if (activeIsOnSale && activeSalePrice > 0) {
+    if (activeSalePrice < agentCostPer10) {
       return NextResponse.json(
         {
-          error: `Sale price ($${(salePricePer10 / 10).toFixed(2)}/vial) cannot be below your cost ($${(agentCostPer10 / 10).toFixed(2)}/vial).`,
+          error: `Sale price ($${(activeSalePrice / 10).toFixed(2)}/vial) cannot be below your cost ($${(agentCostPer10 / 10).toFixed(2)}/vial).`,
         },
         { status: 422 }
       );

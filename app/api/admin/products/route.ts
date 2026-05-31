@@ -18,6 +18,8 @@ export async function GET(req: NextRequest) {
     const { data, error } = await supabase
       .from('products')
       .select('id, name, slug, category, base_cost, is_active, is_banned')
+      .eq('is_banned', false)
+      .eq('is_active', true)
       .order('name', { ascending: true });
 
     if (error) {
@@ -112,7 +114,7 @@ export async function PATCH(req: NextRequest) {
   // Whitelist only the fields admins are permitted to update.
   // Prevents callers from patching is_banned, slug, or other protected columns.
   const ALLOWED_FIELDS = [
-    'name', 'sku', 'category', 'description', 'image_url',
+    'name', 'sku', 'category', 'description', 'image_url', 'slug', 'is_banned',
     'base_cost', 'unit_size', 'unit_measure',
     'inventory_count', 'low_stock_threshold', 'backorder_days',
     'is_active', 'admin_bulk_price', 'admin_bulk_threshold'
