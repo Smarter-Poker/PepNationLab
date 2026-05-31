@@ -29,14 +29,42 @@ export async function GET() {
   }
 
   // Parent profile (read-only display)
-  let parent: { id: string; full_name: string | null; username: string | null } | null = null;
+  let parent: {
+    id: string;
+    full_name: string | null;
+    username: string | null;
+    email: string | null;
+    storefront_slug: string | null;
+  } | null = null;
+  let share_link: string | null = null;
   if (profile.parent_agent_id) {
     const { data: p } = await admin
       .from('profiles')
-      .select('id, full_name, username')
+      .select('id, full_name, username, email')
       .eq('id', profile.parent_agent_id)
       .single();
-    if (p) parent = { id: p.id as string, full_name: (p.full_name as string | null) ?? null, username: (p.username as string | null) ?? null };
+    if (p) {
+      const { data: ap } = await admin
+        .from('agent_profiles')
+        .select('slug')
+        .eq('id', profile.parent_agent_id)
+        .maybeSingle();
+      const slug = (ap as { slug?: string | null } | null)?.slug ?? null;
+      parent = {
+        id: p.id as string,
+        full_name: (p.full_name as string | null) ?? null,
+        username: (p.username as string | null) ?? null,
+        email: (p.email as string | null) ?? null,
+        storefront_slug: slug,
+      };
+      // SACA share link: researcher signs up under parent's storefront with
+      // ?sa=<sub-agent-id> URL param so create-researcher / storefront-register
+      // can stamp referring_sub_agent_id at signup. Only valid if parent owns
+      // an agent_profiles row.
+      if (slug) {
+        share_link = `/${slug}?sa=${profile.id}`;
+      }
+    }
   }
 
   // Aggregate commission totals from the ledger
@@ -88,6 +116,7 @@ export async function GET() {
       prepaid_balance: profile.prepaid_balance,
       parent,
     },
+    share_link,
     pending_commission: Math.round(pending_commission * 100) / 100,
     lifetime_commission: Math.round(lifetime_commission * 100) / 100,
     recent_settlements: settlements ?? [],
