@@ -117,7 +117,7 @@ export async function PATCH(req: NextRequest) {
       type: status === 'overdue' ? 'payment_reminder' : 'invoice',
       title: titleMap[status] ?? 'Invoice Updated',
       body: bodyMap[status] ?? `Your invoice has been marked as ${status}.`,
-      url: '/dashboard/agent?tab=statements',
+      url: '/dashboard?tab=Accounting',
     }).catch(() => { /* best-effort */ });
   }
 

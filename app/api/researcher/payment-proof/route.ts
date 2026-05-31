@@ -223,13 +223,29 @@ export async function POST(req: NextRequest) {
         });
 
         // Also drop an in-app notification for the agent
-        await service.from('notifications').insert({
-          user_id: order.agent_id,
-          title: 'Payment Proof Received',
-          body: `Your researcher submitted a payment proof for Order #${shortId}. Review and mark as paid.`,
-          type: 'system',
-          url: '/dashboard?tab=Orders',
-        });
+        const notificationsToInsert = [
+          {
+            user_id: order.agent_id,
+            title: 'Payment Proof Received',
+            body: `Your researcher submitted a payment proof for Order #${shortId}. Review and mark as paid.`,
+            type: 'system',
+            url: '/dashboard?tab=Orders',
+          }
+        ];
+
+        // If the agent has a parent (super agent), notify them too so they can oversee it
+        const { data: agentProf } = await service.from('profiles').select('parent_id').eq('id', order.agent_id).maybeSingle();
+        if (agentProf?.parent_id) {
+          notificationsToInsert.push({
+            user_id: agentProf.parent_id,
+            title: 'Sub-Agent Payment Proof Received',
+            body: `A researcher for your sub-agent submitted a payment proof for Order #${shortId}.`,
+            type: 'system',
+            url: '/dashboard?tab=Orders',
+          });
+        }
+
+        await service.from('notifications').insert(notificationsToInsert);
       }
     }
   } catch (err) {

@@ -746,7 +746,7 @@ export async function POST(request: NextRequest) {
           userId: agentProfile.id,
           title: `New Order #${short}`,
           body: `${buyerName} Placed A New Order. Tap To Review.`,
-          url: `/dashboard/agent?tab=orders`,
+          url: '/dashboard?tab=Orders',
           event: 'order_new',
           relatedOrderId: order.id,
           tag: `new-order-${order.id}`,
