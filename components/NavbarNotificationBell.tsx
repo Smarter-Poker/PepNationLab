@@ -193,11 +193,14 @@ export default function NavbarNotificationBell() {
             } catch { /* audio not available */ }
           } else if (payload.eventType === 'UPDATE') {
             const updatedItem = payload.new as NotifItem;
-            setItems(prev => prev.map(n => n.id === updatedItem.id ? updatedItem : n));
-            // Only decrement if it changed from unread to read
-            if (payload.old && (payload.old as any).read_at === null && updatedItem.read_at !== null) {
-              setUnread(prev => Math.max(0, prev - 1));
-            }
+            setItems(prev => {
+              const oldItem = prev.find(n => n.id === updatedItem.id);
+              const wasUnread = oldItem ? !oldItem.read_at : (payload.old && (payload.old as any).read_at === null);
+              if (wasUnread && updatedItem.read_at !== null) {
+                setUnread(u => Math.max(0, u - 1));
+              }
+              return prev.map(n => n.id === updatedItem.id ? updatedItem : n);
+            });
           }
         }
       )
