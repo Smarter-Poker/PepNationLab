@@ -14,7 +14,9 @@ interface MessageHandlers {
 }
 
 export function subscribeMessages(conversationId: string, handlers: MessageHandlers): { channel: RealtimeChannel; broadcastNewMessage: (m: Message) => void } {
-  const ch = supabase.channel(`chat:${conversationId}`);
+  const ch = supabase.channel(`chat:${conversationId}`, {
+    config: { broadcast: { ack: false, self: false } },
+  });
   ch.on('broadcast', { event: 'new_message' }, (payload) => {
     if (payload.payload && (payload.payload as any).message) {
       handlers.onInsert?.((payload.payload as any).message as Message);

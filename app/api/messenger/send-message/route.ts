@@ -163,10 +163,10 @@ export async function POST(req: NextRequest) {
       .maybeSingle();
     const senderName = senderProfile?.full_name || 'Someone';
 
-    // Get all OTHER participants in this conversation
+    // Get all OTHER participants in this conversation (fetched after insert so unread_count is updated by trigger)
     const { data: participants } = await svc
       .from('messenger_participants')
-      .select('user_id')
+      .select('*')
       .eq('conversation_id', parsed.data.conversationId)
       .neq('user_id', user.id);
 
@@ -180,7 +180,7 @@ export async function POST(req: NextRequest) {
 
       // Enqueue in-app notification + push for each recipient
       await Promise.all(
-        participants.map(async (p: { user_id: string }) => {
+        participants.map(async (p: any) => {
           // In-app notification (shows in bell immediately via Realtime)
           await notifyNewMessage(svc, p.user_id, senderName, rawBody);
           // Web push (background, requires subscription + permission)
@@ -192,11 +192,17 @@ export async function POST(req: NextRequest) {
             event: 'message',
             tag,
           });
-          // Broadcast to the user's personal channel (for bell/unread updates)
+          // Broadcast to the user's personal channel (for OS notifications)
           await sendBroadcast({
             topic: `user_notify:${p.user_id}`,
             event: 'new_message_notify',
             payload: { message: inserted },
+          });
+          // Broadcast to the user's unread channel (for the red badge)
+          await sendBroadcast({
+            topic: `user_unread:${p.user_id}`,
+            event: 'participant_updated',
+            payload: { participant: p },
           });
         })
       );

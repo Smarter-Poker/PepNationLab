@@ -213,22 +213,45 @@ export default async function AgentStorefrontPage({ params }: Props) {
   return (
     <div style={{ minHeight: '100vh', background: 'var(--black)' }}>
       <style dangerouslySetInnerHTML={{__html: `
-        .sf-nav { height: 56px; background: var(--black-2); border-bottom: 1px solid rgba(192,184,168,0.2); display: flex; align-items: center; justify-content: space-between; padding: 0 12px; position: sticky; top: 0; z-index: 50; gap: 8px; }
+        .sf-nav { height: 60px; background: var(--black-2); border-bottom: 1px solid rgba(192,184,168,0.2); display: flex; align-items: center; justify-content: space-between; padding: 0 12px; position: sticky; top: 0; z-index: 50; gap: 8px; }
         .sf-nav-brand { display: flex; align-items: center; gap: 8px; min-width: 0; flex: 1; }
         .sf-nav-brand-text { min-width: 0; }
-        .sf-nav-brand-name { font-family: var(--font-brand); font-size: 0.82rem; font-weight: 800; color: #C0B8A8; letter-spacing: 0.04em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .sf-nav-brand-name { font-family: var(--font-brand); font-size: 0.85rem; font-weight: 800; color: #C0B8A8; letter-spacing: 0.04em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .sf-nav-brand-sub { font-size: 0.62rem; color: var(--grey-400); white-space: nowrap; }
-        .sf-nav-actions { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
-        .sf-nav-back { display: flex; align-items: center; justify-content: center; width: 30px; height: 30px; border-radius: 8px; background: rgba(255,255,255,0.07); color: var(--silver); text-decoration: none; flex-shrink: 0; border: 1px solid rgba(255,255,255,0.1); }
-        .sf-btn-dash { padding: 6px 10px; font-size: 0.72rem; font-weight: 600; color: var(--silver); background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.12); border-radius: 8px; text-decoration: none; white-space: nowrap; }
-        .sf-btn-cart { padding: 6px 10px; font-size: 0.72rem; font-weight: 700; color: #fff; border: none; border-radius: 8px; text-decoration: none; white-space: nowrap; display: flex; align-items: center; gap: 4px; }
+        .sf-nav-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+        
+        .sf-nav-back, .sf-btn-dash {
+          background: linear-gradient(180deg, rgba(40,45,50,0.8) 0%, rgba(15,20,25,0.9) 100%);
+          border-radius: 8px; color: var(--white); text-decoration: none;
+          box-shadow: 0 0 0 1px #C0B8A8, inset 0 1px 1px rgba(255,255,255,0.2), 0 2px 8px rgba(0,0,0,0.5);
+          transition: transform 0.15s, box-shadow 0.15s;
+        }
+        .sf-nav-back:hover, .sf-btn-dash:hover {
+          transform: translateY(-1px);
+          box-shadow: 0 0 0 1.5px #C0B8A8, inset 0 1px 1px rgba(255,255,255,0.3), 0 4px 12px rgba(0,0,0,0.6);
+        }
+        .sf-nav-back { display: flex; align-items: center; justify-content: center; width: 34px; height: 34px; flex-shrink: 0; }
+        .sf-btn-dash { padding: 6px 12px; font-size: 0.75rem; font-weight: 700; white-space: nowrap; }
+        
+        .sf-btn-cart { 
+          padding: 6px 14px; font-size: 0.75rem; font-weight: 800; color: #fff; border-radius: 8px; text-decoration: none; white-space: nowrap; display: flex; align-items: center; gap: 6px;
+          box-shadow: 0 0 0 1.5px #C0B8A8, inset 0 2px 4px rgba(255,255,255,0.25), 0 4px 12px rgba(0,0,0,0.5);
+          transition: transform 0.15s, box-shadow 0.15s;
+        }
+        .sf-btn-cart:hover {
+          transform: translateY(-1px);
+          box-shadow: 0 0 0 2px #C0B8A8, inset 0 2px 6px rgba(255,255,255,0.35), 0 6px 16px rgba(0,0,0,0.6);
+        }
+
         .sf-hero { padding: 12px 12px 4px; text-align: center; }
         .sf-hero h1 { font-size: 1.3rem; color: var(--white); margin-bottom: 6px; }
         .sf-hero p { font-size: 0.85rem; }
         @media (min-width: 600px) {
-          .sf-nav { height: 64px; padding: 0 24px; }
-          .sf-btn-dash { padding: 8px 14px; font-size: 0.8rem; }
-          .sf-btn-cart { padding: 8px 14px; font-size: 0.8rem; }
+          .sf-nav { height: 68px; padding: 0 24px; gap: 12px; }
+          .sf-nav-brand-name { font-size: 1rem; }
+          .sf-nav-back { width: 38px; height: 38px; }
+          .sf-btn-dash { padding: 8px 16px; font-size: 0.85rem; }
+          .sf-btn-cart { padding: 8px 18px; font-size: 0.85rem; gap: 8px; }
           .sf-hero { padding: 24px 24px 8px; }
           .sf-hero h1 { font-size: 1.6rem; }
         }
@@ -258,7 +281,7 @@ export default async function AgentStorefrontPage({ params }: Props) {
             style={{ background: primaryColor }}
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/cart-icon.png" width={13} height={13} alt="Cart" style={{ objectFit: 'contain', marginRight: 4 }} />
+            <img src="/cart-icon.png" width={24} height={24} alt="Cart" style={{ objectFit: 'contain' }} />
             Checkout
           </Link>
         </div>
