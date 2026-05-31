@@ -317,6 +317,8 @@ export default async function AgentStorefrontPage({ params }: Props) {
               volumePricingEnabled={(agent as any).volume_pricing_enabled !== false}
               isStorefrontOwner={isStorefrontOwner}
               viewerTier={(userProfile as any)?.tier ?? 'tier_3'}
+              minOrderQty={agent.min_order_qty ?? 1}
+              minOverallQty={agent.min_overall_qty ?? 1}
             />
           </Suspense>
         </div>

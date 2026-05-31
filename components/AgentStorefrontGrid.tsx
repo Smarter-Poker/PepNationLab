@@ -121,6 +121,8 @@ interface Props {
   isStorefrontOwner?: boolean;
   /** The viewer's pricing tier — used to compute agent-direct cost for self-buy. */
   viewerTier?: string;
+  minOrderQty?: number;
+  minOverallQty?: number;
 }
 
 const containerVariants: Variants = {
@@ -233,7 +235,21 @@ function pickDefaultVariant(variants: ProductItem[]): string {
   return variants[variants.length - 1]?.id ?? variants[0]?.id ?? '';
 }
 
-export default function AgentStorefrontGrid({ products, inventoryMap, primaryColor, agentSlug, bundles = [], initialWishlistIds = [], agentId = null, coaByProductId = {}, volumePricingEnabled = true, isStorefrontOwner = false, viewerTier = 'tier_3' }: Props) {
+export default function AgentStorefrontGrid({
+  products,
+  inventoryMap,
+  primaryColor,
+  agentSlug,
+  bundles = [],
+  initialWishlistIds = [],
+  agentId = null,
+  coaByProductId,
+  volumePricingEnabled,
+  isStorefrontOwner,
+  viewerTier,
+  minOrderQty = 1,
+  minOverallQty = 1,
+}: Props) {
   const [wishlist, setWishlist] = useState<Set<string>>(() => new Set(initialWishlistIds));
   const toggleWishlist = useCallback(async (productId: string) => {
     if (!productId) return;
@@ -431,8 +447,8 @@ export default function AgentStorefrontGrid({ products, inventoryMap, primaryCol
   // Modal-only quantity input — does NOT touch cartItems until "Add To Cart" is pressed.
   // Agent self-buy: minimum 10 vials, increments of 10 (enforced here + server-side).
   const selfBuyStep = 1;   // agents can buy any quantity; tiered pricing applies below 10  // Enforce per-peptide minimum using min_order_qty (defaults to 1). Agent direct price unlocks at 10+
-  const selfBuyMin  = agent.min_order_qty ?? 1;
-  const overallMin  = agent.min_overall_qty ?? 1;
+  const selfBuyMin  = minOrderQty ?? 1;
+  const overallMin  = minOverallQty ?? 1;
 
   // ─── Recommendations ("Researchers Also Bought") ────────────────────────
   // When the product detail modal opens, fetch a strip of related products
