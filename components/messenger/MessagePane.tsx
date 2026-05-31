@@ -426,6 +426,8 @@ export default function MessagePane({ userId, activeCall, setActiveCall }: Props
         const lastId = list.length > 0 ? list[list.length - 1].id : null;
         if (lastId) void markConversationRead(activeId, lastId);
         void loadPinsLabels(activeId, list.map((m) => m.id));
+      } catch (err) {
+        console.warn('Failed to load messages:', err);
       } finally {
         if (!cancelled) setLoading(activeId, false);
       }
@@ -487,6 +489,31 @@ export default function MessagePane({ userId, activeCall, setActiveCall }: Props
     });
     broadcastTypingRef.current = typing.broadcast;
 
+    const participantsChannel = supabase
+      .channel(`participants_watcher:${activeId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'messenger_participants',
+          filter: `conversation_id=eq.${activeId}`,
+        },
+        (payload) => {
+          const row = payload.new as any;
+          if (row && row.user_id) {
+            setParticipantsMap((prev) => ({
+              ...prev,
+              [row.user_id]: {
+                ...prev[row.user_id],
+                last_read_message_id: row.last_read_message_id,
+              },
+            }));
+          }
+        },
+      )
+      .subscribe();
+
     typingSweeperRef.current = setInterval(() => {
       const now = Date.now();
       const stale: string[] = [];
@@ -508,6 +535,7 @@ export default function MessagePane({ userId, activeCall, setActiveCall }: Props
       setTypingUserIds([]);
       unsubscribe(msgChannel);
       unsubscribe(typing.channel);
+      unsubscribe(participantsChannel);
     };
   }, [activeId, userId, appendMessage, updateMessage, removeMessage]);
 
