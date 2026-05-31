@@ -30,7 +30,7 @@ function resolveTitle(pathname: string, role: string): string {
   if (pathname.startsWith('/admin/settings')) return 'Admin Settings';
   if (pathname.startsWith('/admin/audit'))    return 'Audit Log';
   if (pathname.startsWith('/admin/push'))     return 'Push Notifications';
-  if (pathname.startsWith('/admin/messages')) return 'Admin Messages';
+  if (pathname.startsWith('/admin/moderation')) return 'Message Moderation';
   if (pathname.startsWith('/admin/messenger')) return 'Messenger';
   if (pathname.startsWith('/admin/subscriptions')) return 'Subscriptions';
   if (pathname.startsWith('/admin/tax-rules')) return 'Tax Rules';
