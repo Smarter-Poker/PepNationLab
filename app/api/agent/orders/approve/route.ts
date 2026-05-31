@@ -228,6 +228,26 @@ export async function POST(req: NextRequest) {
         await notifyOrderApproved(supabase, order.buyer_id, orderId, short);
         await enqueueOrderPush(supabase, { userId: order.buyer_id, orderId, event: 'order_approved' });
       } catch { /* notification failures must not break the order */ }
+
+      // Notify Admins that order is ready
+      try {
+        const { data: admins } = await supabase.from('profiles').select('id').eq('role', 'admin');
+        if (admins && admins.length > 0) {
+          const short = shortOrderId(orderId);
+          const totalStr = Number(totalOwed).toFixed(2);
+          const fulfillmentMsg = newStatus === 'approved_pickup' ? 'Ready for Agent Pickup' : 'Ready for Shipping';
+          const notifications = admins.map((admin) => ({
+            user_id: admin.id,
+            title: 'Order Ready For Fulfillment',
+            body: `Order #${short} ($${totalStr}) — Agent Approved. ${fulfillmentMsg}.`,
+            type: 'system',
+            url: `/admin/orders?status=${newStatus}`,
+          }));
+          await supabase.from('notifications').insert(notifications);
+        }
+      } catch (err) {
+        console.error('Failed to notify admins of approval', err);
+      }
     }
 
     // Notify the agent that a commission was earned (DB trigger auto-creates the row).

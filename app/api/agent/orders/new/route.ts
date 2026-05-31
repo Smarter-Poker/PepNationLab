@@ -141,6 +141,26 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: message }, { status: 422 });
     }
 
+    // Notify Admins that the manual order is approved and ready
+    try {
+      const { data: admins } = await supabase.from('profiles').select('id').eq('role', 'admin');
+      if (admins && admins.length > 0) {
+        const short = newOrder.id.slice(0, 8).toUpperCase();
+        const totalStr = Number(computedTotal).toFixed(2);
+        const fulfillmentMsg = approvedStatus === 'approved_pickup' ? 'Ready for Agent Pickup' : 'Ready for Shipping';
+        const notifications = admins.map((admin) => ({
+          user_id: admin.id,
+          title: 'Manual Order Ready',
+          body: `Order #${short} ($${totalStr}) — Agent Created & Approved. ${fulfillmentMsg}.`,
+          type: 'system',
+          url: `/admin/orders?status=${approvedStatus}`,
+        }));
+        await supabase.from('notifications').insert(notifications);
+      }
+    } catch (err) {
+      console.error('Failed to notify admins of manual order', err);
+    }
+
     return NextResponse.json({ success: true, orderId: newOrder.id });
   } catch (error) {
     console.error('Manual Order API Error:', error);
