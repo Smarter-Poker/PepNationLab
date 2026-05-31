@@ -813,6 +813,15 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
 
       <div className="checkout-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: 'var(--space-8)' }}>
         <style>{`
+          .step-buttons {
+            display: flex;
+            justify-content: space-between;
+            margin-top: var(--space-4);
+            gap: 10px;
+          }
+          .step-buttons.right {
+            justify-content: flex-end;
+          }
           @media (max-width: 768px) {
             .checkout-grid {
               grid-template-columns: 1fr !important;
@@ -835,6 +844,13 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
             .coupon-row button {
               width: 100% !important;
               padding: 10px !important;
+            }
+            .step-buttons {
+              flex-direction: column-reverse;
+            }
+            .step-buttons button {
+              width: 100% !important;
+              min-width: unset !important;
             }
           }
           @media (max-width: 400px) {
@@ -1122,7 +1138,7 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
                   </div>
                 )}
 
-                <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 'var(--space-4)' }}>
+                <div className="step-buttons right">
                   <button type="button" onClick={handleNextStep} className="btn btn-primary" style={{ minWidth: 150 }}>
                     Continue To Payment
                   </button>
@@ -1181,7 +1197,7 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
                   </p>
                 </div>
 
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 'var(--space-4)' }}>
+                <div className="step-buttons">
                   <button type="button" onClick={handlePrevStep} className="btn btn-secondary" style={{ minWidth: 150 }}>
                     Back
                   </button>
@@ -1246,7 +1262,7 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
                   </p>
                 </div>
 
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 'var(--space-4)' }}>
+                <div className="step-buttons">
                   <button type="button" onClick={handlePrevStep} className="btn btn-secondary" style={{ minWidth: 150 }} disabled={loading}>
                     Back
                   </button>

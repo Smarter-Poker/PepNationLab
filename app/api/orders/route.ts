@@ -16,7 +16,7 @@ const CheckoutSchema = z.object({
     quantity: z.number().int().min(1)
   })).min(1, 'Cart cannot be empty.'),
   fulfillmentMethod: z.enum(['ship', 'agent_pickup']),
-  paymentMethod: z.enum(['zelle', 'cashapp', 'venmo', 'apple_pay']),
+  paymentMethod: z.enum(['zelle', 'cashapp', 'venmo', 'apple_pay', 'apple_cash', 'paypal', 'google_wallet', 'wise', 'chime']),
   shippingAddress: z.object({
     fullName: z.string().min(1),
     street: z.string().min(1),

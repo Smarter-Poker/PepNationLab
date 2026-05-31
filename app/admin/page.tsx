@@ -227,125 +227,133 @@ export default async function AdminDashboard() {
       </div>
 
       <div className="grid-2" style={{ marginBottom: 'var(--space-8)' }}>
-        <div className="card-metal" style={{ padding: 'var(--space-6)' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-5)' }}>
-            <h3 style={{ fontSize: '1rem', margin: 0 }}>Sales Last 30 Days</h3>
-            <Link href="/admin/sales" style={{ fontSize: '0.8rem', color: 'var(--teal)', textDecoration: 'none' }}>View Sales</Link>
-          </div>
-          <AdminOverviewSparkline data={metrics.sparkline} />
-        </div>
-
-        <div className="card-metal" style={{ padding: 'var(--space-6)' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-5)' }}>
-            <h3 style={{ fontSize: '1rem', margin: 0 }}>Low Stock Items</h3>
-            <Link href="/admin/products" style={{ fontSize: '0.8rem', color: 'var(--teal)', textDecoration: 'none' }}>Manage Products</Link>
-          </div>
-          {metrics.lowStockList.length === 0 ? (
-            <p style={{ fontSize: '0.85rem', color: 'var(--grey-400)', textAlign: 'center', padding: 'var(--space-6) 0' }}>
-              No Items At Or Below Low Stock Threshold
-            </p>
-          ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
-              {metrics.lowStockList.map((p) => (
-                <div
-                  key={p.id}
-                  style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    padding: 'var(--space-3)',
-                    background: 'var(--surface-1)',
-                    borderRadius: 'var(--radius-md)',
-                    border: 'var(--border-subtle)',
-                  }}
-                >
-                  <div>
-                    <div style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--silver)' }}>{p.name}</div>
-                    <div style={{ fontSize: '0.72rem', color: 'var(--grey-400)' }}>Threshold: {p.low_stock_threshold}</div>
-                  </div>
-                  <div style={{ fontSize: '0.85rem', fontWeight: 700, color: p.inventory_count === 0 ? 'var(--red)' : '#F6AD55' }}>
-                    {p.inventory_count} Left
-                  </div>
-                </div>
-              ))}
+        <div className="metal-frame">
+          <div className="metal-content" style={{ padding: 'var(--space-6)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-5)' }}>
+              <h3 style={{ fontSize: '1rem', margin: 0 }}>Sales Last 30 Days</h3>
+              <Link href="/admin/sales" style={{ fontSize: '0.8rem', color: 'var(--teal)', textDecoration: 'none' }}>View Sales</Link>
             </div>
-          )}
-        </div>
-      </div>
-
-      <div className="grid-2" style={{ marginBottom: 'var(--space-8)' }}>
-        <div className="card-metal" style={{ padding: 'var(--space-6)' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-5)' }}>
-            <h3 style={{ fontSize: '1rem', margin: 0 }}>Top SKUs (30 Days)</h3>
-            <Link href="/admin/sales" style={{ fontSize: '0.8rem', color: 'var(--teal)', textDecoration: 'none' }}>Full Sales</Link>
+            <AdminOverviewSparkline data={metrics.sparkline} />
           </div>
-          {metrics.topSkus.length === 0 ? (
-            <p style={{ fontSize: '0.85rem', color: 'var(--grey-400)', textAlign: 'center', padding: 'var(--space-6) 0' }}>
-              No Sales In The Last 30 Days
-            </p>
-          ) : (
-            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-              <thead>
-                <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-                  <th style={{ padding: 'var(--space-2) var(--space-3)', textAlign: 'left', fontSize: '0.7rem', color: 'var(--grey-400)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Product</th>
-                  <th style={{ padding: 'var(--space-2) var(--space-3)', textAlign: 'right', fontSize: '0.7rem', color: 'var(--grey-400)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Qty</th>
-                  <th style={{ padding: 'var(--space-2) var(--space-3)', textAlign: 'right', fontSize: '0.7rem', color: 'var(--grey-400)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Revenue</th>
-                </tr>
-              </thead>
-              <tbody>
-                {metrics.topSkus.map((sku) => (
-                  <tr key={sku.name} style={{ borderBottom: '1px solid rgba(255,255,255,0.03)' }}>
-                    <td style={{ padding: 'var(--space-2) var(--space-3)', fontSize: '0.82rem', color: 'var(--silver)' }}>{sku.name}</td>
-                    <td style={{ padding: 'var(--space-2) var(--space-3)', fontSize: '0.82rem', color: 'var(--white)', textAlign: 'right', fontWeight: 600 }}>{sku.quantity}</td>
-                    <td style={{ padding: 'var(--space-2) var(--space-3)', fontSize: '0.82rem', color: 'var(--teal)', textAlign: 'right', fontWeight: 600 }}>{formatCurrency(sku.revenue)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
         </div>
 
-        <div className="card-metal" style={{ padding: 'var(--space-6)' }}>
-          <h3 style={{ fontSize: '1rem', marginBottom: 'var(--space-5)' }}>Recent Admin Activity</h3>
-          {metrics.auditLog.length === 0 ? (
-            <p style={{ fontSize: '0.85rem', color: 'var(--grey-400)', textAlign: 'center', padding: 'var(--space-6) 0' }}>
-              No Recorded Admin Activity
-            </p>
-          ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)', maxHeight: 380, overflowY: 'auto' }}>
-              {metrics.auditLog.map((entry) => {
-                const actor = entry.actor_name || entry.actor_email || 'System';
-                return (
+        <div className="metal-frame">
+          <div className="metal-content" style={{ padding: 'var(--space-6)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-5)' }}>
+              <h3 style={{ fontSize: '1rem', margin: 0 }}>Low Stock Items</h3>
+              <Link href="/admin/products" style={{ fontSize: '0.8rem', color: 'var(--teal)', textDecoration: 'none' }}>Manage Products</Link>
+            </div>
+            {metrics.lowStockList.length === 0 ? (
+              <p style={{ fontSize: '0.85rem', color: 'var(--grey-400)', textAlign: 'center', padding: 'var(--space-6) 0' }}>
+                No Items At Or Below Low Stock Threshold
+              </p>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
+                {metrics.lowStockList.map((p) => (
                   <div
-                    key={entry.id}
+                    key={p.id}
                     style={{
                       display: 'flex',
-                      gap: 'var(--space-3)',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
                       padding: 'var(--space-3)',
                       background: 'var(--surface-1)',
                       borderRadius: 'var(--radius-md)',
                       border: 'var(--border-subtle)',
                     }}
                   >
-                    <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--teal)', marginTop: 8, flexShrink: 0 }} />
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: '0.82rem', color: 'var(--silver)' }}>
-                        <span style={{ fontWeight: 700, color: 'var(--white)' }}>{actor}</span>
-                        {' '}
-                        <span style={{ color: 'var(--grey-400)' }}>{formatAuditAction(entry.action)}</span>
-                        {entry.entity_type && (
-                          <> <span style={{ color: 'var(--grey-400)' }}>On</span> <span style={{ color: 'var(--silver)' }}>{formatAuditAction(entry.entity_type)}</span></>
-                        )}
-                      </div>
-                      <div style={{ fontSize: '0.7rem', color: 'var(--grey-400)', marginTop: 2 }}>
-                        {timeAgo(entry.created_at)}
-                      </div>
+                    <div>
+                      <div style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--silver)' }}>{p.name}</div>
+                      <div style={{ fontSize: '0.72rem', color: 'var(--grey-400)' }}>Threshold: {p.low_stock_threshold}</div>
+                    </div>
+                    <div style={{ fontSize: '0.85rem', fontWeight: 700, color: p.inventory_count === 0 ? 'var(--red)' : '#F6AD55' }}>
+                      {p.inventory_count} Left
                     </div>
                   </div>
-                );
-              })}
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <div className="grid-2" style={{ marginBottom: 'var(--space-8)' }}>
+        <div className="metal-frame">
+          <div className="metal-content" style={{ padding: 'var(--space-6)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-5)' }}>
+              <h3 style={{ fontSize: '1rem', margin: 0 }}>Top SKUs (30 Days)</h3>
+              <Link href="/admin/sales" style={{ fontSize: '0.8rem', color: 'var(--teal)', textDecoration: 'none' }}>Full Sales</Link>
             </div>
-          )}
+            {metrics.topSkus.length === 0 ? (
+              <p style={{ fontSize: '0.85rem', color: 'var(--grey-400)', textAlign: 'center', padding: 'var(--space-6) 0' }}>
+                No Sales In The Last 30 Days
+              </p>
+            ) : (
+              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                <thead>
+                  <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+                    <th style={{ padding: 'var(--space-2) var(--space-3)', textAlign: 'left', fontSize: '0.7rem', color: 'var(--grey-400)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Product</th>
+                    <th style={{ padding: 'var(--space-2) var(--space-3)', textAlign: 'right', fontSize: '0.7rem', color: 'var(--grey-400)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Qty</th>
+                    <th style={{ padding: 'var(--space-2) var(--space-3)', textAlign: 'right', fontSize: '0.7rem', color: 'var(--grey-400)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Revenue</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {metrics.topSkus.map((sku) => (
+                    <tr key={sku.name} style={{ borderBottom: '1px solid rgba(255,255,255,0.03)' }}>
+                      <td style={{ padding: 'var(--space-2) var(--space-3)', fontSize: '0.82rem', color: 'var(--silver)' }}>{sku.name}</td>
+                      <td style={{ padding: 'var(--space-2) var(--space-3)', fontSize: '0.82rem', color: 'var(--white)', textAlign: 'right', fontWeight: 600 }}>{sku.quantity}</td>
+                      <td style={{ padding: 'var(--space-2) var(--space-3)', fontSize: '0.82rem', color: 'var(--teal)', textAlign: 'right', fontWeight: 600 }}>{formatCurrency(sku.revenue)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+        </div>
+
+        <div className="metal-frame">
+          <div className="metal-content" style={{ padding: 'var(--space-6)' }}>
+            <h3 style={{ fontSize: '1rem', marginBottom: 'var(--space-5)' }}>Recent Admin Activity</h3>
+            {metrics.auditLog.length === 0 ? (
+              <p style={{ fontSize: '0.85rem', color: 'var(--grey-400)', textAlign: 'center', padding: 'var(--space-6) 0' }}>
+                No Recorded Admin Activity
+              </p>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)', maxHeight: 380, overflowY: 'auto' }}>
+                {metrics.auditLog.map((entry) => {
+                  const actor = entry.actor_name || entry.actor_email || 'System';
+                  return (
+                    <div
+                      key={entry.id}
+                      style={{
+                        display: 'flex',
+                        gap: 'var(--space-3)',
+                        padding: 'var(--space-3)',
+                        background: 'var(--surface-1)',
+                        borderRadius: 'var(--radius-md)',
+                        border: 'var(--border-subtle)',
+                      }}
+                    >
+                      <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--teal)', marginTop: 8, flexShrink: 0 }} />
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: '0.82rem', color: 'var(--silver)' }}>
+                          <span style={{ fontWeight: 700, color: 'var(--white)' }}>{actor}</span>
+                          {' '}
+                          <span style={{ color: 'var(--grey-400)' }}>{formatAuditAction(entry.action)}</span>
+                          {entry.entity_type && (
+                            <> <span style={{ color: 'var(--grey-400)' }}>On</span> <span style={{ color: 'var(--silver)' }}>{formatAuditAction(entry.entity_type)}</span></>
+                          )}
+                        </div>
+                        <div style={{ fontSize: '0.7rem', color: 'var(--grey-400)', marginTop: 2 }}>
+                          {timeAgo(entry.created_at)}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
         </div>
       </div>
 

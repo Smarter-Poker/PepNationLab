@@ -223,7 +223,7 @@ export default function AdminCouponsPage() {
         </div>
         <button
           type="button"
-          className="btn btn-primary"
+          className="btn-neon-cyan"
           onClick={openCreate}
           style={{ display: 'flex', alignItems: 'center', gap: 8 }}
         >
@@ -262,15 +262,18 @@ export default function AdminCouponsPage() {
           <p style={{ color: 'var(--red)', fontSize: '0.9rem' }}>{error}</p>
         </div>
       ) : coupons.length === 0 ? (
-        <div className="card-metal" style={{ textAlign: 'center', padding: 'var(--space-12) 0' }}>
-          <p style={{ color: 'var(--grey-400)', fontSize: '0.88rem' }}>
-            No Coupons Found. Click Create Coupon To Add One.
-          </p>
+        <div className="metal-frame">
+          <div className="metal-content" style={{ textAlign: 'center', padding: 'var(--space-12) 0' }}>
+            <p style={{ color: 'var(--grey-400)', fontSize: '0.88rem' }}>
+              No Coupons Found. Click Create Coupon To Add One.
+            </p>
+          </div>
         </div>
       ) : (
-        <div className="card-metal" style={{ padding: 'var(--space-4)' }}>
-          <div className="table-responsive">
-            <table className="data-table" style={{ width: '100%' }}>
+        <div className="metal-frame">
+          <div className="metal-content" style={{ padding: 'var(--space-4)' }}>
+            <div className="table-responsive">
+              <table className="data-table" style={{ width: '100%' }}>
               <thead>
                 <tr>
                   <th>Code</th>
@@ -342,8 +345,8 @@ export default function AdminCouponsPage() {
                         <button
                           type="button"
                           onClick={() => handleToggle(coupon)}
-                          className="btn btn-secondary btn-sm"
-                          style={{ marginRight: 6, fontSize: '0.75rem' }}
+                          className="btn-silver"
+                          style={{ marginRight: 6, padding: '6px 12px', fontSize: '0.75rem' }}
                         >
                           {coupon.is_active ? 'Deactivate' : 'Activate'}
                         </button>
@@ -367,9 +370,10 @@ export default function AdminCouponsPage() {
                   );
                 })}
               </tbody>
-            </table>
+              </table>
+            </div>
+            <Pagination page={safePage} totalPages={totalPages} onPageChange={setPage} />
           </div>
-          <Pagination page={safePage} totalPages={totalPages} onPageChange={setPage} />
         </div>
       )}
 
@@ -387,26 +391,25 @@ export default function AdminCouponsPage() {
             padding: 'var(--space-4)',
           }}
         >
-          <div
-            className="card-metal"
-            style={{
-              width: '100%',
-              maxWidth: 560,
-              padding: 'var(--space-6)',
-              maxHeight: '92vh',
-              overflowY: 'auto',
-            }}
-          >
-            <h2 style={{ fontSize: '1.2rem', marginBottom: 'var(--space-2)' }}>Create Coupon</h2>
-            <p
+          <div className="metal-frame" style={{ width: '100%', maxWidth: 560 }}>
+            <div
+              className="metal-content"
               style={{
-                fontSize: '0.8rem',
-                color: 'var(--grey-400)',
-                marginBottom: 'var(--space-5)',
+                padding: 'var(--space-6)',
+                maxHeight: '92vh',
+                overflowY: 'auto',
               }}
             >
-              Assign A Discount Code To Any Agent. The Code Will Apply To That Agent&apos;s Storefront.
-            </p>
+              <h2 style={{ fontSize: '1.2rem', marginBottom: 'var(--space-2)' }}>Create Coupon</h2>
+              <p
+                style={{
+                  fontSize: '0.8rem',
+                  color: 'var(--grey-400)',
+                  marginBottom: 'var(--space-5)',
+                }}
+              >
+                Assign A Discount Code To Any Agent. The Code Will Apply To That Agent&apos;s Storefront.
+              </p>
 
             {formError && (
               <div
@@ -533,17 +536,18 @@ export default function AdminCouponsPage() {
               >
                 <button
                   type="button"
-                  className="btn btn-secondary"
+                  className="btn-silver"
                   onClick={closeCreate}
                   disabled={submitting}
                 >
                   Cancel
                 </button>
-                <button type="submit" className="btn btn-primary" disabled={submitting}>
+                <button type="submit" className="btn-neon-cyan" disabled={submitting}>
                   {submitting ? 'Creating Coupon...' : 'Create Coupon'}
                 </button>
               </div>
             </form>
+            </div>
           </div>
         </div>
       )}
