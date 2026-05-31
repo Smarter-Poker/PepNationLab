@@ -33,6 +33,8 @@ export default function PromoteSubAgentPage() {
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
+  const [shareLink, setShareLink] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -66,10 +68,23 @@ export default function PromoteSubAgentPage() {
     return v;
   }
 
+  async function copyShareLink() {
+    if (!shareLink) return;
+    try {
+      await navigator.clipboard.writeText(shareLink);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      /* clipboard write blocked; user can copy manually */
+    }
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setSubmitError(null);
     setSuccessMsg(null);
+    setShareLink(null);
+    setCopied(false);
 
     if (!researcherId.trim()) {
       setSubmitError('Researcher Id Is Required.');
@@ -106,6 +121,23 @@ export default function PromoteSubAgentPage() {
         json?.message ||
           `Researcher Promoted Successfully At ${pct}% Commission On A ${paymentModel === 'credit' ? `$${creditLimit}` : 'Prepaid'} ${paymentModel === 'credit' ? 'Credit Line' : 'Account'}.`,
       );
+
+      // Build the absolute share URL the parent will give to the new sub-agent.
+      // The server returns parent_slug + sub_agent_id; we prefix the current
+      // origin so the link works when copied into a chat / SMS / email.
+      if (json?.share_link && typeof json.share_link === 'string') {
+        const origin = typeof window !== 'undefined' ? window.location.origin : '';
+        setShareLink(`${origin}${json.share_link}`);
+      } else if (json?.parent_slug && json?.sub_agent_id) {
+        const origin = typeof window !== 'undefined' ? window.location.origin : '';
+        setShareLink(`${origin}/${json.parent_slug}?sa=${json.sub_agent_id}`);
+      }
+
+      // Remove the just-promoted researcher from the candidate list so they
+      // can't be promoted again accidentally.
+      const promotedId = researcherId.trim();
+      setResearchers((prev) => prev.filter((r) => r.id !== promotedId));
+
       // Reset form for the next promotion
       setResearcherId('');
       setCommissionPct(20);
@@ -128,6 +160,30 @@ export default function PromoteSubAgentPage() {
         Prepaid Balance, And Cap Their Credit. Commission Accrues On Every Order And Settles To
         Their Account As Digital Credits Every Sunday Night.
       </p>
+
+      {/* Share link card — shown only after a successful promotion */}
+      {shareLink && (
+        <div className="card-glass" style={{ padding: '16px', marginBottom: '20px', border: '1px solid #10B981' }}>
+          <div style={{ fontSize: '12px', opacity: 0.85, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '8px', color: '#10B981' }}>
+            Your Sub-Agent&apos;s Invite Link
+          </div>
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+            <input
+              type="text"
+              readOnly
+              value={shareLink}
+              onFocus={(e) => e.currentTarget.select()}
+              style={{ flex: 1, padding: '8px 10px', fontSize: '13px', fontFamily: 'monospace' }}
+            />
+            <button type="button" onClick={copyShareLink} className="btn-secondary" style={{ padding: '8px 14px', whiteSpace: 'nowrap' }}>
+              {copied ? 'Copied' : 'Copy Link'}
+            </button>
+          </div>
+          <div style={{ fontSize: '12px', opacity: 0.75, marginTop: '8px' }}>
+            Give This Link To Your Sub-Agent. Any New Researcher Who Signs Up Through It Gets Tagged To Them, And Every Order That Researcher Places Earns The Sub-Agent A Commission.
+          </div>
+        </div>
+      )}
 
       <div className="card-glass" style={{ padding: '20px', marginBottom: '20px' }}>
         <h2 style={{ fontSize: '20px', marginBottom: '12px' }}>Select A Researcher</h2>

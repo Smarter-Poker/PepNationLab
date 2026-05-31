@@ -28,6 +28,9 @@ import { notifyPromotedToAgent, notifyPromotionSuccess } from '@/lib/notify';
  *     paymentModel: 'credit' | 'prepaid',
  *     creditLimit?: number (required when paymentModel='credit', >= 0)
  *   }
+ *
+ * Response on success also includes parent_slug + share_link so the UI can
+ * render a copyable invite URL the parent gives the sub-agent.
  */
 export async function POST(req: NextRequest) {
   const csrf = assertSameOrigin(req);
@@ -175,6 +178,25 @@ export async function POST(req: NextRequest) {
       },
     });
 
+    // Resolve the parent's storefront slug so the response can carry the
+    // share link the parent will give to the new sub-agent. If the parent
+    // has no agent_profiles row (edge case — should not happen for a real
+    // agent), share_link is null and the UI degrades gracefully.
+    let parentSlug: string | null = null;
+    try {
+      const { data: parentAgent } = await admin
+        .from('agent_profiles')
+        .select('slug')
+        .eq('id', callerId)
+        .maybeSingle();
+      if (parentAgent?.slug && typeof parentAgent.slug === 'string') {
+        parentSlug = parentAgent.slug;
+      }
+    } catch {
+      /* best-effort; share_link stays null */
+    }
+    const shareLink = parentSlug ? `/${parentSlug}?sa=${researcherId}` : null;
+
     void Promise.all([
       notifyPromotedToAgent(admin, researcherId, '', callerProfile.full_name || 'Your Agent'),
       notifyPromotionSuccess(admin, callerId, researcherProfile.full_name || 'Researcher', ''),
@@ -186,6 +208,8 @@ export async function POST(req: NextRequest) {
       commission_pct: commissionPct,
       account_type: paymentModel,
       credit_limit: paymentModel === 'credit' ? creditLimit : 0,
+      parent_slug: parentSlug,
+      share_link: shareLink,
       message: `${researcherProfile.full_name || 'Researcher'} Has Been Promoted To Sub-Agent At ${commissionPct}% Commission.`,
     });
 
