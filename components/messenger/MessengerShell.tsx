@@ -434,7 +434,7 @@ export default function MessengerShell({ userId }: Props) {
               All Conversations
             </button>
           )}
-          <MessagePane userId={userId} activeCall={activeCall} setActiveCall={setActiveCall} />
+          <MessagePane key={activeId || 'empty'} userId={userId} activeCall={activeCall} setActiveCall={setActiveCall} />
         </div>
       </div>
 
