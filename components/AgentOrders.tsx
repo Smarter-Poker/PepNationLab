@@ -272,6 +272,7 @@ export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
             setShowManualOrder(false);
             if (newOrder) {
               setOrders([newOrder, ...orders]);
+              setCurrentPage(1); // Jump to page 1 to see the new order
             }
           }}
         />

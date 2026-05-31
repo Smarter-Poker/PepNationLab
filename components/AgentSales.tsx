@@ -20,9 +20,13 @@ export default function AgentSales({ orders, setOrders, agentId }: { orders: any
   const [error, setError] = useState<string | null>(null);
   const supabase = createClient();
   const isFetching = useRef(false);
+  const needsRefetch = useRef(false);
 
   const fetchSales = async () => {
-    if (isFetching.current) return;
+    if (isFetching.current) {
+      needsRefetch.current = true;
+      return;
+    }
     isFetching.current = true;
     try {
       const res = await fetch('/api/agent/sales');
@@ -37,6 +41,10 @@ export default function AgentSales({ orders, setOrders, agentId }: { orders: any
     } finally {
       setLoading(false);
       isFetching.current = false;
+      if (needsRefetch.current) {
+        needsRefetch.current = false;
+        fetchSales();
+      }
     }
   };
 
