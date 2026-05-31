@@ -3,27 +3,26 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { subscribeCallSignals, unsubscribe, type CallSignalRow } from '@/lib/messenger/realtime';
-import IncomingCallToast from './IncomingCallToast';
+import IncomingCallScreen from './IncomingCallScreen';
 import CallOverlay from './CallOverlay';
 
 /**
- * fix-39: Local error boundary around CallOverlay. Any render crash inside
- * the overlay (LiveKitRoom mount throws, E2EE worker dies, etc.) stays
- * contained here instead of bubbling to app/global-error.tsx. The user
- * sees a contained "Call Could Not Start" panel with a Close button and
- * the rest of the app keeps working. Closing the panel calls onClose so
- * the parent clears activeCall, breaking any crash-on-mount loop.
+ * fix-40 boundary: surfaces the actual error.message so future call-subsystem
+ * crashes are diagnosable instead of opaque. Still contains the crash so the
+ * rest of the app keeps running.
  */
 class CallOverlayErrorBoundary extends React.Component<
   { children: React.ReactNode; onClose: () => void },
-  { hasError: boolean }
+  { hasError: boolean; errorMessage: string | null }
 > {
-  state = { hasError: false };
-  static getDerivedStateFromError() {
-    return { hasError: true };
+  state = { hasError: false, errorMessage: null as string | null };
+  static getDerivedStateFromError(error: Error) {
+    return {
+      hasError: true,
+      errorMessage: (error && (error.message || String(error))) ?? 'Unknown error',
+    };
   }
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    // Best-effort Sentry report. Don't let reporting throw on its own.
     console.error('[CallOverlay] render crash caught by boundary:', error, errorInfo);
     try {
       import('@/lib/messenger/sentryCall').then(({ captureCallError }) => {
@@ -37,7 +36,7 @@ class CallOverlayErrorBoundary extends React.Component<
     }
   }
   handleClose = () => {
-    this.setState({ hasError: false });
+    this.setState({ hasError: false, errorMessage: null });
     try { this.props.onClose(); } catch {}
   };
   render() {
@@ -59,14 +58,30 @@ class CallOverlayErrorBoundary extends React.Component<
             textAlign: 'center',
           }}
         >
-          <div style={{ maxWidth: 360 }}>
+          <div style={{ maxWidth: 380 }}>
             <h2 style={{ marginBottom: 12, fontSize: '1.4rem', fontWeight: 700 }}>
               Call Could Not Start
             </h2>
-            <p style={{ marginBottom: 24, color: 'rgba(255,255,255,0.7)', fontSize: '0.95rem' }}>
+            <p style={{ marginBottom: 16, color: 'rgba(255,255,255,0.7)', fontSize: '0.95rem' }}>
               An Error Occurred While Connecting The Call. Please Close This
               Panel And Try Again.
             </p>
+            {this.state.errorMessage && (
+              <p
+                style={{
+                  marginBottom: 24,
+                  color: 'rgba(255,255,255,0.45)',
+                  fontSize: '0.72rem',
+                  fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace',
+                  wordBreak: 'break-word',
+                  background: 'rgba(255,255,255,0.04)',
+                  padding: '8px 12px',
+                  borderRadius: 6,
+                }}
+              >
+                {this.state.errorMessage}
+              </p>
+            )}
             <button
               type="button"
               onClick={this.handleClose}
@@ -138,11 +153,6 @@ export default function GlobalCallListener() {
     };
   }, []);
 
-  // fix-39: only resume RINGING calls on mount, never auto-mount a call
-  // already in 'active' status. A stale active row (LiveKit died or DB
-  // not swept by cron) was the root cause of the inescapable crash loop:
-  // every refresh re-mounted CallOverlay against a dead room, which
-  // threw synchronously and bubbled to global-error.tsx.
   useEffect(() => {
     if (!user?.id) return;
     let cancelled = false;
@@ -157,8 +167,6 @@ export default function GlobalCallListener() {
         const json = (await res.json()) as { calls?: CallSignalRow[] };
         const calls = json.calls ?? [];
 
-        // Caller refreshed mid-ring -- restore THEIR own outgoing ringing
-        // overlay only. Active calls do NOT auto-resume.
         const myRinging = calls.find(
           (c) => c.initiator_id === user.id && c.status === 'ringing',
         );
@@ -265,17 +273,22 @@ export default function GlobalCallListener() {
 
   if (!user?.id) return null;
 
+  // fix-40: Only the first ringing call gets the full-screen FaceTime-style
+  // takeover. Additional simultaneous incoming calls wait until this one is
+  // resolved (accepted, declined, or auto-missed). When there is an active
+  // call already mounted, never show the incoming screen.
+  const primaryIncoming = !activeCall ? incomingCalls[0] : null;
+
   return (
     <>
-      {incomingCalls.map((c, idx) => (
-        <IncomingCallToast
-          key={c.id}
-          call={c}
-          onAccept={() => handleAccept(c)}
-          onDecline={() => handleDecline(c)}
-          stackIndex={idx}
+      {primaryIncoming && (
+        <IncomingCallScreen
+          key={primaryIncoming.id}
+          call={primaryIncoming}
+          onAccept={() => handleAccept(primaryIncoming)}
+          onDecline={() => handleDecline(primaryIncoming)}
         />
-      ))}
+      )}
       {activeCall && (
         <CallOverlayErrorBoundary onClose={handleClose}>
           <CallOverlay
