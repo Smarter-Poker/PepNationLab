@@ -67,7 +67,7 @@ export default function ConversationList({ selfId }: Props) {
             display: 'inline-flex',
           }}
         >
-          <img src="/messenger-icons/compose-icon.png" alt="Compose" style={{ height: 40, objectFit: 'contain' }} />
+          <img src="/messenger-icons/compose-icon.png" alt="Compose" style={{ height: 80, objectFit: 'contain' }} />
         </button>
       </div>
       <div style={{ flex: 1, overflowY: 'auto', minHeight: 0 }}>
