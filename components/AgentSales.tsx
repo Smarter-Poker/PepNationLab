@@ -2,6 +2,17 @@
 
 import React, { useState, useEffect } from 'react';
 
+const STATUS_LABELS: Record<string, string> = {
+  pending_customer_payment: 'Pending Payment',
+  agent_approval_pending: 'Approval Pending',
+  approved_ship: 'Approved For Shipping',
+  approved_pickup: 'Approved For Pickup',
+  in_fulfillment: 'In Fulfillment',
+  shipped: 'Shipped',
+  delivered: 'Delivered',
+  cancelled: 'Cancelled',
+};
+
 export default function AgentSales() {
   const [data, setData] = useState<{ liveCarts: any[]; sales: any[] } | null>(null);
   const [loading, setLoading] = useState(true);
@@ -119,7 +130,7 @@ export default function AgentSales() {
                     <span style={{ fontSize: '0.75rem', color: 'var(--grey-400)', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>Status</span>
                     <div>
                       <span className="badge-metal" style={{ color: sale.status === 'cancelled' ? '#FFAAAA' : '#00FF9D' }}>
-                        {sale.status.replace(/_/g, ' ')}
+                        {STATUS_LABELS[sale.status] || sale.status.replace(/_/g, ' ')}
                       </span>
                     </div>
                   </div>

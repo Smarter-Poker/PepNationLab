@@ -383,12 +383,27 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
       return;
     }
 
-    if (isAgentSelfBuy && storefrontCart.length > 0) {
-      const belowMin = storefrontCart.find(item => item.quantity < 10);
+    if (isAgentSelfBuy) {
+      const belowMin = cart.find(item => item.quantity < 10);
       if (belowMin) {
         setError(`Agent Direct Pricing Requires A Minimum Of 10 Vials Per Item. "${belowMin.name}" Has Only ${belowMin.quantity}. Please Update Your Cart.`);
         return;
       }
+    }
+
+    if (!meetsOverallMin) {
+      setError(`This storefront requires a minimum overall order of ${minOverallQty} items. Please add more items to proceed.`);
+      return;
+    }
+    const violatingItem = cart.find(item => item.quantity < minOrderQty);
+    if (violatingItem) {
+      setError(`This storefront requires a minimum of ${minOrderQty} per peptide. "${violatingItem.name}" has only ${violatingItem.quantity}.`);
+      return;
+    }
+    const overLimit = cart.find(item => item.quantity > 10_000);
+    if (overLimit) {
+      setError(`Quantity for "${overLimit.name}" exceeds the maximum allowed (10,000 per item). Please reduce the quantity.`);
+      return;
     }
 
     if (submittedRef.current) return;
@@ -444,9 +459,9 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
           } : null,
           fulfillmentMethod,
           paymentMethod,
-          couponCode: isAgentSelfBuy ? null : (appliedCoupon?.code ?? null),
+          couponCode: isAgentSelfBuy ? null : (appliedCoupon?.code || null),
           idempotencyKey: getIdempotencyKey(),
-          agentSlug: agentSlug ?? null,
+          agentSlug: agentSlug || null,
         })
       });
 

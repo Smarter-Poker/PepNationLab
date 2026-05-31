@@ -45,7 +45,7 @@ interface OrderItem {
   id: string;
   product_name: string;
   quantity: number;
-  unit_cost_price: number;
+  unit_retail_price: number;
 }
 
 interface Order {
@@ -73,7 +73,7 @@ export default async function OrdersPage() {
 
   const { data: ordersData } = await supabase
     .from('orders')
-    .select('id, status, created_at, payment_method, fulfillment_method, subtotal, discount_amount, coupon_code, shipping_cost, total, tracking_number, order_items(id, product_name, quantity, unit_cost_price)')
+    .select('id, status, created_at, payment_method, fulfillment_method, subtotal, discount_amount, coupon_code, shipping_cost, total, tracking_number, order_items(id, product_name, quantity, unit_retail_price)')
     .eq('buyer_id', user.id)
     .order('created_at', { ascending: false });
 
@@ -177,7 +177,7 @@ export default async function OrdersPage() {
                             <span style={{ color: 'var(--teal)' }}>x{item.quantity}</span>
                           </span>
                           <span style={{ color: 'var(--grey-300)' }}>
-                            ${(Number(item.unit_cost_price) * item.quantity).toFixed(2)}
+                            ${(Number(item.unit_retail_price) * item.quantity).toFixed(2)}
                           </span>
                         </div>
                       ))}

@@ -368,7 +368,10 @@ export default function AgentDashboardClient({
   const activeResearchersCount = researcherList.length;
   const nonCancelledOrders = orders.filter((o) => o.status !== 'cancelled');
   const activeOrdersCount = nonCancelledOrders.length;
-  const totalRevenue = nonCancelledOrders.reduce((acc, o) => acc + Number(o.total), 0);
+  const collectedStatuses = ['approved_ship', 'approved_pickup', 'in_fulfillment', 'shipped', 'delivered'];
+  const totalRevenue = orders
+    .filter(o => collectedStatuses.includes(o.status))
+    .reduce((acc, o) => acc + Number(o.total), 0);
 
   // If agent has no profile setup yet, show launch storefront screen
   if (!agentProfile) {

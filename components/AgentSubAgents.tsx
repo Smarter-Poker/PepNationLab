@@ -432,6 +432,7 @@ export default function AgentSubAgents({ agentId }: { agentId?: string }) {
                           }} />
                         </span>
                       </label>
+                      {togglingTrust === agent.id && <span style={{ fontSize: '0.7rem', color: 'var(--teal)' }}>Saving...</span>}
                     </div>
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', minWidth: '120px' }}>

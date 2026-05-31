@@ -15,7 +15,7 @@ export default async function CheckoutPage({ searchParams }: PageProps) {
   const params = await searchParams;
   // Sanitize the agentSlug — only allow alphanumeric + hyphens/underscores
   const rawAgent = params.agent ?? null;
-  const agentSlug = rawAgent && /^[a-zA-Z0-9_-]+$/.test(rawAgent) ? rawAgent : null;
+  const agentSlug = typeof rawAgent === 'string' && /^[a-zA-Z0-9_-]+$/.test(rawAgent) ? rawAgent : null;
 
   if (!user) {
     const redirectTarget = agentSlug

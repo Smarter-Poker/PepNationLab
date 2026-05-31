@@ -379,6 +379,7 @@ export default function AdminAgents() {
                           }} />
                         </span>
                       </label>
+                      {togglingTrust === agent.id && <span style={{ fontSize: '0.65rem', color: 'var(--teal)' }}>Saving...</span>}
                     </div>
                   )}
                 </div>
