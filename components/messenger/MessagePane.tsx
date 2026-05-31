@@ -1113,21 +1113,21 @@ export default function MessagePane({ userId }: Props) {
             type="button"
             onClick={(e) => { e.stopPropagation(); setReminderSeed(null); setRemindersOpen(true); }}
             aria-label="Open Reminders"
-            className="msg-header-action hover-lift btn-secondary"
-            style={headerBtn}
+            title="Reminders"
+            className="hover-lift"
+            style={{ background: 'transparent', border: 'none', padding: 0, cursor: 'pointer', display: 'flex', alignItems: 'center' }}
           >
-            <Bell size={12} aria-hidden="true" />
-            <span className="msg-header-action-label">Reminders</span>
+            <img src="/messenger-icons/reminders-icon.jpg" alt="Reminders" style={{ width: 36, height: 36, borderRadius: 8, objectFit: 'cover' }} />
           </button>
           <button
             type="button"
             onClick={() => setInfoOpen(true)}
             aria-label="Conversation Info"
-            className="msg-header-action hover-lift btn-secondary"
-            style={headerBtn}
+            title="Info"
+            className="hover-lift"
+            style={{ background: 'transparent', border: 'none', padding: 0, cursor: 'pointer', display: 'flex', alignItems: 'center' }}
           >
-            <Info size={12} aria-hidden="true" />
-            <span className="msg-header-action-label">Info</span>
+            <img src="/messenger-icons/info-icon.jpg" alt="Info" style={{ width: 36, height: 36, borderRadius: 8, objectFit: 'cover' }} />
           </button>
         </div>
       </header>
