@@ -122,7 +122,7 @@ export default function CallButton({ conversationId, onCallStarted }: Props) {
         className="hover-lift"
         style={iconBtn}
       >
-        <img src="/messenger-icons/phone-icon.jpg" alt="Voice Call" style={{ width: 48, height: 48, objectFit: 'contain', mixBlendMode: 'screen', transform: 'scale(1.6)' }} />
+        <img src="/messenger-icons/phone-icon.png" alt="Voice Call" style={{ width: 48, height: 48, objectFit: 'contain', transform: 'scale(1.6)' }} />
       </button>
       <button
         type="button"
@@ -133,7 +133,7 @@ export default function CallButton({ conversationId, onCallStarted }: Props) {
         className="hover-lift"
         style={iconBtn}
       >
-        <img src="/messenger-icons/video-icon.jpg" alt="Video Call" style={{ width: 48, height: 48, objectFit: 'contain', mixBlendMode: 'screen', transform: 'scale(1.6)' }} />
+        <img src="/messenger-icons/video-icon.png" alt="Video Call" style={{ width: 48, height: 48, objectFit: 'contain', transform: 'scale(1.6)' }} />
       </button>
     </div>
   );
