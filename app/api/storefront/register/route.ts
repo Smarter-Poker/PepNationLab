@@ -11,7 +11,12 @@ import { assertSameOrigin } from '@/lib/csrf';
  * storefront. Resolves the agent by `agent_profiles.slug` (case-insensitive)
  * and ties the new researcher's `referring_agent_id` to that agent.
  *
- * Body: { slug, username, email?, password, fullName }
+ * SACA Phase 3: also accepts optional `subAgentId` (the id of a sub-agent
+ * under the resolved agent). When present and valid, stamps
+ * profiles.referring_sub_agent_id so every order the researcher places
+ * later attributes commission to that sub-agent.
+ *
+ * Body: { slug, username, email?, password, fullName, subAgentId?, referralCode? }
  *
  * Rate limited to 5 requests / IP / hour. Uses Upstash when available
  * (cluster-wide) and falls back to an in-memory ring buffer when not.
@@ -36,7 +41,7 @@ export async function POST(req: NextRequest) {
   }
 
   const body = await req.json().catch(() => ({}));
-  const { slug, username, email, password, fullName, referralCode } = body || {};
+  const { slug, username, email, password, fullName, referralCode, subAgentId } = body || {};
 
   if (!slug || !username || !password || !fullName) {
     return NextResponse.json(
@@ -74,6 +79,32 @@ export async function POST(req: NextRequest) {
       { error: 'Storefront Not Found.' },
       { status: 404 }
     );
+  }
+
+  // SACA Phase 3: optional sub-agent referral tag.
+  // The sub-agent must exist, be flagged is_sub_agent=true, and have
+  // parent_agent_id pointing to the agent who owns this storefront.
+  let resolvedSubAgentId: string | null = null;
+  if (subAgentId && typeof subAgentId === 'string' && subAgentId.trim().length > 0) {
+    const { data: sa } = await supabase
+      .from('profiles')
+      .select('id, is_sub_agent, parent_agent_id')
+      .eq('id', subAgentId.trim())
+      .maybeSingle();
+
+    if (!sa || sa.is_sub_agent !== true) {
+      return NextResponse.json(
+        { error: 'Referral Link Invalid: Sub-Agent Not Found.' },
+        { status: 400 }
+      );
+    }
+    if (sa.parent_agent_id !== agent.id) {
+      return NextResponse.json(
+        { error: 'Referral Link Invalid: Sub-Agent Does Not Sell On This Storefront.' },
+        { status: 400 }
+      );
+    }
+    resolvedSubAgentId = sa.id as string;
   }
 
   // Username uniqueness
@@ -123,6 +154,9 @@ export async function POST(req: NextRequest) {
     disclaimer_accepted_at: nowIso,
     updated_at: nowIso,
   };
+  if (resolvedSubAgentId) {
+    profilePayload.referring_sub_agent_id = resolvedSubAgentId;
+  }
 
   const { error: profileError } = await supabase
     .from('profiles')
@@ -166,6 +200,7 @@ export async function POST(req: NextRequest) {
     userId: newUserId,
     username: usernameClean,
     email: internalEmail,
+    sub_agent_tagged: !!resolvedSubAgentId,
     referralWarning,
   });
 }
