@@ -15,7 +15,15 @@ interface CallRow {
   call_type: 'audio' | 'video';
   status: 'ringing' | 'active' | 'ended' | 'missed' | 'declined';
   livekit_room: string;
+  started_at: string | null;
+  answered_at: string | null;
 }
+
+// fix-39: defensive ceiling — refuse to mint a token if the call has been
+// 'active' for longer than any plausible session length. A stale active
+// row (cron sweep missed, LiveKit room long-dead) would otherwise lure
+// clients into trying to connect to a dead room and crashing on mount.
+const MAX_CALL_LIFETIME_MS = 2 * 60 * 60 * 1000; // 2 hours
 
 export async function POST(req: NextRequest) {
   const csrf = assertSameOrigin(req);
@@ -43,7 +51,7 @@ export async function POST(req: NextRequest) {
   const svc = await createServiceClient();
   const { data: call } = await svc
     .from('messenger_calls')
-    .select('id, conversation_id, initiator_id, call_type, status, livekit_room')
+    .select('id, conversation_id, initiator_id, call_type, status, livekit_room, started_at, answered_at')
     .eq('id', parsed.data.callId)
     .maybeSingle();
   if (!call) return NextResponse.json({ error: 'Call Not Found' }, { status: 404 });
@@ -56,12 +64,27 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Call No Longer Active' }, { status: 410 });
   }
 
-  // Audit10: block-pair gate now applies to direct, group, AND announcement
-  // conversations. A blocked user could otherwise still mint a token for a
-  // group room shared with their blocker (e.g. blocker is the initiator, the
-  // blocked counterpart was added to the group earlier). Iterate all OTHER
-  // participants and refuse if any pairwise block exists between the caller
-  // and any of them.
+  // fix-39: stale-active rejection.
+  const cr = call as CallRow;
+  const anchorIso = cr.answered_at ?? cr.started_at;
+  if (anchorIso) {
+    const anchor = Date.parse(anchorIso);
+    if (Number.isFinite(anchor) && Date.now() - anchor > MAX_CALL_LIFETIME_MS) {
+      // Auto-sweep this stale row so future requests don't trip the same
+      // path. Best-effort — log and ignore failure.
+      try {
+        await svc
+          .from('messenger_calls')
+          .update({ status: 'ended', ended_at: new Date().toISOString() })
+          .eq('id', cr.id)
+          .in('status', ['ringing', 'active']);
+      } catch (err) {
+        console.warn('[livekit-token] failed to sweep stale call', cr.id, err);
+      }
+      return NextResponse.json({ error: 'Call No Longer Active' }, { status: 410 });
+    }
+  }
+
   const { data: others } = await svc
     .from('messenger_participants')
     .select('user_id')
@@ -78,11 +101,6 @@ export async function POST(req: NextRequest) {
     const at = new AccessToken(apiKey, apiSecret, {
       identity: user.id,
       name: user.email ?? user.id,
-      // audit15 fix-14 (S4): 6h TTL covers every plausible call length.
-      // The room itself is single-use per call (livekit_room is a fresh
-      // crypto UUID), so a 6h credential cannot be replayed against any
-      // other call. The previous 1h limit produced an unexpected media
-      // drop at the 60-minute mark for any long session.
       ttl: '6h',
     });
     at.addGrant({

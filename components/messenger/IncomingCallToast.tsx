@@ -8,12 +8,12 @@ interface Props {
   call: CallSignalRow;
   onAccept: () => void;
   onDecline: () => void;
-  // Audit2: stack-offset index so multiple simultaneous rings do not overlap
-  // at the same top/right anchor. Driven by MessengerShell which knows the
-  // queued order.
   stackIndex?: number;
 }
 
+// fix-39: bumped sizes (320 -> 340 min width, 64px tall buttons) and forced
+// safe-area-inset offsets so iOS Safari shows the toast as a real
+// notification card, not the "tiny square" the user reported.
 export default function IncomingCallToast({ call, onAccept, onDecline, stackIndex = 0 }: Props) {
   const [callerName, setCallerName] = useState<string>('Someone');
   const [isBusy, setIsBusy] = useState(false);
@@ -58,12 +58,6 @@ export default function IncomingCallToast({ call, onAccept, onDecline, stackInde
       h.vibrateMedium();
     });
 
-    // audit15: stamp the per-tab "I answered this call" flag BEFORE firing
-    // the HTTP request. Supabase Realtime can deliver the postgres_changes
-    // UPDATE event on this same client before the accept HTTP response
-    // returns; if the flag is not yet set when that update arrives, the
-    // GlobalCallListener "another tab answered" guard fires and tears down
-    // the overlay. Setting it pre-HTTP closes the race.
     if (action === 'accept') {
       try { sessionStorage.setItem('answered_call_' + call.id, 'true'); } catch {}
     }
@@ -90,7 +84,6 @@ export default function IncomingCallToast({ call, onAccept, onDecline, stackInde
       if (success) {
         onAccept();
       } else {
-        // If accept failed (e.g. caller hung up), immediately remove toast locally
         onDecline();
       }
     } else {
@@ -106,50 +99,55 @@ export default function IncomingCallToast({ call, onAccept, onDecline, stackInde
       aria-label="Incoming Call"
       style={{
         position: 'fixed',
-        top: 16 + stackIndex * 112,
-        right: 16,
+        // fix-39: honor iOS safe-area-inset so the toast is not hidden
+        // behind the dynamic island / notch / status bar.
+        top: `calc(env(safe-area-inset-top, 0px) + ${16 + stackIndex * 132}px)`,
+        right: 'calc(env(safe-area-inset-right, 0px) + 16px)',
         background: 'var(--surface-2, #162230)',
         border: '1px solid var(--surface-3, #1D2D3E)',
-        borderRadius: 12,
-        padding: 16,
-        boxShadow: '0 8px 24px rgba(0,0,0,0.4)',
+        borderRadius: 14,
+        padding: 18,
+        boxShadow: '0 12px 32px rgba(0,0,0,0.55)',
         zIndex: 1500,
-        minWidth: 280,
+        minWidth: 340,
+        maxWidth: 'calc(100vw - 32px)',
         color: 'var(--white, #FFFFFF)',
       }}
     >
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
-        {isVideo ? <Video size={18} aria-hidden="true" /> : <Phone size={18} aria-hidden="true" />}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
+        {isVideo ? <Video size={22} aria-hidden="true" /> : <Phone size={22} aria-hidden="true" />}
         <div>
-          <div style={{ fontSize: '0.78rem', color: 'var(--grey-400, #A8B4C0)' }}>
+          <div style={{ fontSize: '0.82rem', color: 'var(--grey-400, #A8B4C0)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
             {isVideo ? 'Incoming Video Call' : 'Incoming Voice Call'}
           </div>
-          <div style={{ fontWeight: 700 }}>{callerName}</div>
+          <div style={{ fontWeight: 700, fontSize: '1.05rem' }}>{callerName}</div>
         </div>
       </div>
-      <div style={{ display: 'flex', gap: 8 }}>
+      <div style={{ display: 'flex', gap: 10 }}>
         <button
           type="button"
           disabled={isBusy}
           onClick={() => void handleAction('accept')}
           style={{
             flex: 1,
+            minHeight: 48,
             background: 'var(--teal, #00C4BC)',
             color: '#000',
             border: 0,
-            padding: '8px 12px',
-            borderRadius: 8,
+            padding: '12px 14px',
+            borderRadius: 10,
             cursor: 'pointer',
             display: 'inline-flex',
             alignItems: 'center',
             justifyContent: 'center',
-            gap: 6,
-            fontWeight: 600,
+            gap: 8,
+            fontWeight: 700,
+            fontSize: '0.95rem',
           }}
           aria-label="Accept"
           title="Accept"
         >
-          <Phone size={14} aria-hidden="true" /> Accept
+          <Phone size={16} aria-hidden="true" /> Accept
         </button>
         <button
           type="button"
@@ -157,22 +155,24 @@ export default function IncomingCallToast({ call, onAccept, onDecline, stackInde
           onClick={() => void handleAction('decline')}
           style={{
             flex: 1,
+            minHeight: 48,
             background: 'var(--red, #E53E3E)',
             color: '#FFFFFF',
             border: 0,
-            padding: '8px 12px',
-            borderRadius: 8,
+            padding: '12px 14px',
+            borderRadius: 10,
             cursor: 'pointer',
             display: 'inline-flex',
             alignItems: 'center',
             justifyContent: 'center',
-            gap: 6,
-            fontWeight: 600,
+            gap: 8,
+            fontWeight: 700,
+            fontSize: '0.95rem',
           }}
           aria-label="Decline"
           title="Decline"
         >
-          <PhoneOff size={14} aria-hidden="true" /> Decline
+          <PhoneOff size={16} aria-hidden="true" /> Decline
         </button>
       </div>
     </div>

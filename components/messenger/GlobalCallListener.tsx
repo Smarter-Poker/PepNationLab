@@ -1,10 +1,95 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { subscribeCallSignals, unsubscribe, type CallSignalRow } from '@/lib/messenger/realtime';
 import IncomingCallToast from './IncomingCallToast';
 import CallOverlay from './CallOverlay';
+
+/**
+ * fix-39: Local error boundary around CallOverlay. Any render crash inside
+ * the overlay (LiveKitRoom mount throws, E2EE worker dies, etc.) stays
+ * contained here instead of bubbling to app/global-error.tsx. The user
+ * sees a contained "Call Could Not Start" panel with a Close button and
+ * the rest of the app keeps working. Closing the panel calls onClose so
+ * the parent clears activeCall, breaking any crash-on-mount loop.
+ */
+class CallOverlayErrorBoundary extends React.Component<
+  { children: React.ReactNode; onClose: () => void },
+  { hasError: boolean }
+> {
+  state = { hasError: false };
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+    // Best-effort Sentry report. Don't let reporting throw on its own.
+    console.error('[CallOverlay] render crash caught by boundary:', error, errorInfo);
+    try {
+      import('@/lib/messenger/sentryCall').then(({ captureCallError }) => {
+        captureCallError(error, 'overlay', {
+          stage_detail: 'render_crash',
+          component_stack: errorInfo.componentStack ?? undefined,
+        });
+      }).catch(() => {});
+    } catch {
+      // Sentry helper missing — fall through silently.
+    }
+  }
+  handleClose = () => {
+    this.setState({ hasError: false });
+    try { this.props.onClose(); } catch {}
+  };
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div
+          role="alertdialog"
+          aria-label="Call Error"
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(3, 8, 15, 0.96)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 2000,
+            color: '#FFFFFF',
+            padding: 24,
+            textAlign: 'center',
+          }}
+        >
+          <div style={{ maxWidth: 360 }}>
+            <h2 style={{ marginBottom: 12, fontSize: '1.4rem', fontWeight: 700 }}>
+              Call Could Not Start
+            </h2>
+            <p style={{ marginBottom: 24, color: 'rgba(255,255,255,0.7)', fontSize: '0.95rem' }}>
+              An Error Occurred While Connecting The Call. Please Close This
+              Panel And Try Again.
+            </p>
+            <button
+              type="button"
+              onClick={this.handleClose}
+              style={{
+                background: '#00C4BC',
+                color: '#000',
+                border: 0,
+                padding: '12px 24px',
+                borderRadius: 8,
+                cursor: 'pointer',
+                fontWeight: 700,
+                fontSize: '1rem',
+              }}
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      );
+    }
+    return <>{this.props.children}</>;
+  }
+}
 
 export default function GlobalCallListener() {
   const [user, setUser] = useState<{ id: string } | null>(null);
@@ -16,7 +101,6 @@ export default function GlobalCallListener() {
     activeCallRef.current = activeCall;
   }, [activeCall]);
 
-  // Fetch active session to check auth status and listen for auth changes
   useEffect(() => {
     const supabase = createClient();
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -40,7 +124,6 @@ export default function GlobalCallListener() {
     };
   }, []);
 
-  // Listen for starting outgoing calls initiated by CallButton
   useEffect(() => {
     const handleStartCall = (e: Event) => {
       const call = (e as CustomEvent<CallSignalRow>).detail;
@@ -55,11 +138,11 @@ export default function GlobalCallListener() {
     };
   }, []);
 
-  // audit15 fix-9: resume any in-flight call when the listener mounts.
-  // Closes the "reload during ring loses toast" gap (S5 from the previous
-  // audit). Runs once whenever the authenticated user resolves; the
-  // fetch is idempotent because IncomingCallToast dedupe (line ~78 below)
-  // skips already-known call ids.
+  // fix-39: only resume RINGING calls on mount, never auto-mount a call
+  // already in 'active' status. A stale active row (LiveKit died or DB
+  // not swept by cron) was the root cause of the inescapable crash loop:
+  // every refresh re-mounted CallOverlay against a dead room, which
+  // threw synchronously and bubbled to global-error.tsx.
   useEffect(() => {
     if (!user?.id) return;
     let cancelled = false;
@@ -74,18 +157,16 @@ export default function GlobalCallListener() {
         const json = (await res.json()) as { calls?: CallSignalRow[] };
         const calls = json.calls ?? [];
 
-        // Mount the most recent active-or-ringing call from THIS user as the
-        // active overlay (caller refreshed their tab mid-call). If the row
-        // is still 'ringing', the overlay shows the calling-out screen;
-        // if 'active' the LiveKitRoom reconnects to the existing room.
-        const myActive = calls.find((c) => c.initiator_id === user.id);
-        if (myActive && !activeCallRef.current) {
-          console.log('[GLOBAL CALL] Resuming my in-flight call after reload:', myActive.id);
-          setActiveCall(myActive);
+        // Caller refreshed mid-ring -- restore THEIR own outgoing ringing
+        // overlay only. Active calls do NOT auto-resume.
+        const myRinging = calls.find(
+          (c) => c.initiator_id === user.id && c.status === 'ringing',
+        );
+        if (myRinging && !activeCallRef.current) {
+          console.log('[GLOBAL CALL] Resuming my outgoing ring after reload:', myRinging.id);
+          setActiveCall(myRinging);
         }
 
-        // For ringing calls TO this user, surface the toast again unless this
-        // tab has already answered (sessionStorage marker present).
         for (const c of calls) {
           if (c.status !== 'ringing') continue;
           if (c.initiator_id === user.id) continue;
@@ -104,7 +185,6 @@ export default function GlobalCallListener() {
     };
   }, [user?.id]);
 
-  // Subscribe to realtime call signals
   useEffect(() => {
     if (!user?.id) return;
 
@@ -119,11 +199,6 @@ export default function GlobalCallListener() {
           return;
         }
 
-        // audit15: ONLY show the toast on incoming; do NOT mount CallOverlay
-        // until the user accepts. Pre-mounting the overlay at status='ringing'
-        // started a livekit-token fetch + an unmount-broadcast cleanup that
-        // both fired spuriously when the realtime UPDATE arrived before the
-        // accept HTTP response (race condition).
         setIncomingCalls((cur) => (cur.some((x) => x.id === c.id) ? cur : [...cur, c]));
       },
       onUpdate: (c) => {
@@ -140,9 +215,7 @@ export default function GlobalCallListener() {
             });
             return null;
           }
-          
-          // If the call transitioned to active, but THIS tab did not click "Answer",
-          // then another tab answered it. We should hide the overlay on this tab!
+
           if (c.status === 'active' && c.initiator_id !== user.id) {
             const answeredHere = sessionStorage.getItem(`answered_call_${c.id}`);
             if (!answeredHere) {
@@ -150,7 +223,7 @@ export default function GlobalCallListener() {
                return null;
             }
           }
-          
+
           return { ...cur, status: c.status };
         });
       },
@@ -162,13 +235,11 @@ export default function GlobalCallListener() {
   }, [user?.id]);
 
   const handleAccept = useCallback((call: CallSignalRow) => {
-    // Mark this tab as the one that answered the call!
     sessionStorage.setItem(`answered_call_${call.id}`, 'true');
-    
+
     setIncomingCalls((cur) => cur.filter((x) => x.id !== call.id));
     setActiveCall({ ...call, status: 'active' });
 
-    // Broadcast call_accepted signal back to initiator
     import('@/lib/messenger/realtime').then(({ broadcastCallSignal }) => {
       void broadcastCallSignal(call.initiator_id, 'call_accepted', call);
     }).catch(err => {
@@ -179,7 +250,6 @@ export default function GlobalCallListener() {
   const handleDecline = useCallback((call: CallSignalRow) => {
     setIncomingCalls((cur) => cur.filter((x) => x.id !== call.id));
 
-    // Broadcast call_declined signal back to initiator
     import('@/lib/messenger/realtime').then(({ broadcastCallSignal }) => {
       void broadcastCallSignal(call.initiator_id, 'call_declined', call);
     }).catch(err => {
@@ -187,8 +257,6 @@ export default function GlobalCallListener() {
     });
   }, []);
 
-  // audit15: memoized so CallOverlay's livekit-token effect (which has
-  // onClose in its dep array) does not re-fire on every parent render.
   const handleClose = useCallback(() => setActiveCall(null), []);
   const handleOverlayAccept = useCallback(() => {
     const cur = activeCallRef.current;
@@ -209,12 +277,14 @@ export default function GlobalCallListener() {
         />
       ))}
       {activeCall && (
-        <CallOverlay
-          call={activeCall}
-          selfId={user.id}
-          onClose={handleClose}
-          onAccept={handleOverlayAccept}
-        />
+        <CallOverlayErrorBoundary onClose={handleClose}>
+          <CallOverlay
+            call={activeCall}
+            selfId={user.id}
+            onClose={handleClose}
+            onAccept={handleOverlayAccept}
+          />
+        </CallOverlayErrorBoundary>
       )}
     </>
   );
