@@ -4,6 +4,7 @@ import { assertSameOrigin } from '@/lib/csrf';
 import { requireSession, getParticipant } from '@/lib/messenger/server';
 import { messengerRateLimit, messengerRateLimitResponse } from '@/lib/messengerRateLimit';
 import { MarkReadSchema } from '@/lib/messenger/schemas';
+import { sendBroadcast } from '@/lib/messenger/broadcast';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -61,6 +62,28 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
     return NextResponse.json({ error: msg || 'Mark Read Failed' }, { status: 500 });
+  }
+
+  const { data: updatedParticipant } = await svc
+    .from('messenger_participants')
+    .select('*')
+    .eq('conversation_id', parsed.data.conversationId)
+    .eq('user_id', user.id)
+    .single();
+
+  if (updatedParticipant) {
+    await Promise.all([
+      sendBroadcast({
+        topic: `chat:${parsed.data.conversationId}`,
+        event: 'participant_updated',
+        payload: { participant: updatedParticipant },
+      }),
+      sendBroadcast({
+        topic: `user:${user.id}`,
+        event: 'participant_updated',
+        payload: { participant: updatedParticipant },
+      })
+    ]);
   }
 
   return NextResponse.json({ ok: true });

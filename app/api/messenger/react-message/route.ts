@@ -4,6 +4,7 @@ import { assertSameOrigin } from '@/lib/csrf';
 import { requireSession, getParticipant } from '@/lib/messenger/server';
 import { messengerRateLimit, messengerRateLimitResponse } from '@/lib/messengerRateLimit';
 import { ReactSchema } from '@/lib/messenger/schemas';
+import { sendBroadcast } from '@/lib/messenger/broadcast';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -53,17 +54,26 @@ export async function POST(req: NextRequest) {
       .maybeSingle();
     if (existing) return NextResponse.json({ ok: true });
 
-    const { error: insErr } = await svc.from('messenger_reactions').insert({
+    const { data: inserted, error: insErr } = await svc.from('messenger_reactions').insert({
       message_id: parsed.data.messageId,
       user_id: user.id,
       reaction_type: 'emoji',
       emoji: parsed.data.emoji,
       gif_url: null,
-    });
+    }).select('*').maybeSingle();
+
     if (insErr) {
       const code = (insErr as { code?: string }).code;
       if (code === '23505') return NextResponse.json({ ok: true });
       return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
+    }
+
+    if (inserted) {
+      await sendBroadcast({
+        topic: `chat:${msg.conversation_id}`,
+        event: 'reaction_added',
+        payload: { reaction: inserted },
+      });
     }
     return NextResponse.json({ ok: true });
   }
@@ -74,6 +84,14 @@ export async function POST(req: NextRequest) {
     .eq('message_id', parsed.data.messageId)
     .eq('user_id', user.id)
     .eq('emoji', parsed.data.emoji);
+
   if (delErr) return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
+
+  await sendBroadcast({
+    topic: `chat:${msg.conversation_id}`,
+    event: 'reaction_removed',
+    payload: { message_id: parsed.data.messageId, user_id: user.id, emoji: parsed.data.emoji },
+  });
+
   return NextResponse.json({ ok: true });
 }

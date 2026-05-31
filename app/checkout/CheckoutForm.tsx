@@ -811,7 +811,7 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
         ))}
       </div>
 
-      <div className="checkout-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: 'var(--space-8)' }}>
+      <div className="checkout-grid">
         <style>{`
           .step-buttons {
             display: flex;
@@ -860,7 +860,7 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
           }
         `}</style>
         {/* Main Form Area */}
-        <div className="card-metal" style={{ padding: 'var(--space-6)' }}>
+        <div className="card-metal hover-lift stagger-fade-in" style={{ padding: 'var(--space-6)' }}>
           {error && (
             <div style={{ borderLeft: '3px solid var(--red)', background: 'var(--red-bg)', padding: 'var(--space-4)', borderRadius: '0 var(--radius-md) var(--radius-md) 0', marginBottom: 'var(--space-6)', display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
               <svg
@@ -890,7 +890,7 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
                   <h3 style={{ color: 'var(--teal)', fontSize: '1.2rem', marginBottom: 'var(--space-4)', borderBottom: '1px solid rgba(255, 255, 255, 0.05)', paddingBottom: 'var(--space-2)' }}>
                     Fulfillment Method
                   </h3>
-                  <div className="fulfillment-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-4)' }}>
+                  <div className="fulfillment-grid">
                     <label style={{
                       display: 'flex',
                       flexDirection: 'column',
@@ -1052,7 +1052,7 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
                         </div>
                       </div>
 
-                      <div className="address-city-grid" style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', gap: 'var(--space-4)', alignItems: 'start' }}>
+                      <div className="address-city-grid">
                         <div className="form-group">
                           <label className="form-label">City</label>
                           <input
@@ -1157,7 +1157,7 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
                     Select Your Preferred Offline Channel To Finalize Cash Settlement. Our Staff Will Release Your Lab Experimentation Order Instantly Upon Verifying Receipt.
                   </p>
 
-                  <div className="payment-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-4)' }}>
+                  <div className="payment-grid">
                     {availablePaymentMethods.map((p) => (
                       <label key={p.id} style={{
                         display: 'flex',
@@ -1282,7 +1282,7 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
         {/* Sidebar Summary Area */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
           {/* Order Summary */}
-          <div className="card-metal" style={{ padding: 'var(--space-5)' }}>
+          <div className="card-metal metal-frame" style={{ padding: 'var(--space-5)' }}>
             <h3 style={{ fontSize: '0.95rem', color: 'var(--white)', marginBottom: 'var(--space-4)', borderBottom: '1px solid rgba(255, 255, 255, 0.05)', paddingBottom: 'var(--space-2)', letterSpacing: '0.05em', textTransform: 'uppercase' }}>
               Order Inventory
             </h3>

@@ -960,7 +960,7 @@ export default function AgentDashboardClient({
             )}
 
 
-            <div className="card-metal" style={{ padding: 'var(--space-6)' }}>
+            <div className="card-metal hover-lift" style={{ padding: 'var(--space-6)' }}>
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', marginBottom: 'var(--space-6)' }}>
                 <h3 style={{ fontSize: '1.1rem', color: 'var(--white)', fontFamily: 'var(--font-brand)', letterSpacing: '0.05em', textTransform: 'uppercase', marginBottom: 6 }}>My Researchers</h3>
                 <p style={{ color: 'var(--grey-400)', fontSize: '0.82rem', marginBottom: 'var(--space-4)' }}>All Researcher Accounts You Have Created</p>
@@ -1107,7 +1107,7 @@ export default function AgentDashboardClient({
             <h2 style={{ fontFamily: 'var(--font-brand)', marginBottom: 'var(--space-6)', fontSize: '1.3rem' }}>Account Settings</h2>
 
             {/* Account Info */}
-            <div className="card-metal" style={{ padding: 'var(--space-6)', marginBottom: 'var(--space-6)' }}>
+            <div className="card-metal hover-lift" style={{ padding: 'var(--space-6)', marginBottom: 'var(--space-6)' }}>
               <h4 style={{ marginBottom: 'var(--space-4)', color: 'var(--teal)' }}>Account Information</h4>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
                 <div>
@@ -1134,13 +1134,13 @@ export default function AgentDashboardClient({
             </div>
 
             {/* Change Password */}
-            <div className="card-metal" style={{ padding: 'var(--space-6)', marginBottom: 'var(--space-6)' }}>
+            <div className="card-metal hover-lift" style={{ padding: 'var(--space-6)', marginBottom: 'var(--space-6)' }}>
               <h4 style={{ marginBottom: 'var(--space-4)', color: 'var(--teal)' }}>Change Password</h4>
               <SettingsPasswordForm />
             </div>
 
             {/* Notification Preferences */}
-            <div className="card-metal" style={{ padding: 'var(--space-6)', marginTop: 'var(--space-6)' }}>
+            <div className="card-metal hover-lift" style={{ padding: 'var(--space-6)', marginTop: 'var(--space-6)' }}>
               <h4 style={{ marginBottom: 'var(--space-2)', color: 'var(--teal)' }}>Notification Preferences</h4>
               <p style={{ fontSize: '0.82rem', color: 'var(--grey-400)', marginBottom: 'var(--space-4)', marginTop: 0 }}>
                 Manage Push Notifications For New Messages When The Tab Is Hidden.
@@ -1408,7 +1408,7 @@ function ThemeToggleCard() {
   const isLight = theme === 'light';
 
   return (
-    <div className="card-metal" style={{ padding: 'var(--space-6)', marginTop: 'var(--space-6)' }}>
+    <div className="card-metal hover-lift" style={{ padding: 'var(--space-6)', marginTop: 'var(--space-6)' }}>
       <h4 style={{ marginBottom: 'var(--space-2)', color: 'var(--teal)' }}>Display Theme</h4>
       <p style={{ fontSize: '0.82rem', color: 'var(--grey-400)', marginBottom: 'var(--space-5)', marginTop: 0 }}>
         Switch Between Dark Mode And Light Mode. Your Preference Is Saved Automatically.

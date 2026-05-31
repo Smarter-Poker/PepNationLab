@@ -8,6 +8,7 @@ import { sanitizeMessageText } from '@/lib/messenger/sanitize';
 import { hasAdminMention, recordAdminMention } from '@/lib/messenger/admin-mentions';
 import { enqueuePush } from '@/lib/push-enqueue';
 import { notifyNewMessage } from '@/lib/notify';
+import { sendBroadcast } from '@/lib/messenger/broadcast';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -191,12 +192,25 @@ export async function POST(req: NextRequest) {
             event: 'message',
             tag,
           });
+          // Broadcast to the user's personal channel (for bell/unread updates)
+          await sendBroadcast({
+            topic: `user:${p.user_id}`,
+            event: 'new_message_notify',
+            payload: { message: inserted },
+          });
         })
       );
     }
   } catch {
     // Never propagate — notifications are best-effort
   }
+
+  // Broadcast the message payload to the conversation channel
+  await sendBroadcast({
+    topic: `chat:${parsed.data.conversationId}`,
+    event: 'new_message',
+    payload: { message: inserted },
+  });
 
   return NextResponse.json({ message: inserted });
 }

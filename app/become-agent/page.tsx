@@ -79,7 +79,7 @@ export default function BecomeAgentPage() {
       <section className="section" style={{ paddingTop: 0 }}>
         <div className="container">
           <div style={{ textAlign: 'center', marginBottom: 'var(--space-8)' }}>
-            <h2 style={{ fontSize: '1.3rem' }}>
+            <h2 className="animated-gradient-text" style={{ fontSize: '1.3rem' }}>
               Why Become <span style={{ color: 'var(--teal)' }}>An Agent</span>
             </h2>
           </div>
@@ -102,7 +102,7 @@ export default function BecomeAgentPage() {
       <section className="section" style={{ paddingTop: 0 }}>
         <div className="container">
           <div style={{ textAlign: 'center', marginBottom: 'var(--space-8)' }}>
-            <h2 style={{ fontSize: '1.3rem', marginBottom: 'var(--space-2)' }}>
+            <h2 className="animated-gradient-text" style={{ fontSize: '1.3rem', marginBottom: 'var(--space-2)' }}>
               Three Pricing <span style={{ color: 'var(--teal)' }}>Tiers</span>
             </h2>
             <p style={{ fontSize: '0.88rem', color: 'var(--grey-400)', maxWidth: 520, margin: '0 auto' }}>
@@ -132,7 +132,7 @@ export default function BecomeAgentPage() {
       <section className="section" style={{ paddingTop: 0 }}>
         <div className="container-sm">
           <div style={{ textAlign: 'center', marginBottom: 'var(--space-8)' }}>
-            <h2 style={{ fontSize: '1.3rem' }}>
+            <h2 className="animated-gradient-text" style={{ fontSize: '1.3rem' }}>
               How It <span style={{ color: 'var(--teal)' }}>Works</span>
             </h2>
           </div>
@@ -173,8 +173,8 @@ export default function BecomeAgentPage() {
       {/* Payment model */}
       <section className="section" style={{ paddingTop: 0 }}>
         <div className="container-sm">
-          <div className="card-glass" style={{ padding: 'var(--space-8)' }}>
-            <h2 style={{ fontSize: '1.2rem', marginBottom: 'var(--space-4)' }}>
+          <div className="card-metal hover-lift stagger-fade-in" style={{ padding: 'var(--space-8)' }}>
+            <h2 className="animated-gradient-text" style={{ fontSize: '1.2rem', marginBottom: 'var(--space-4)' }}>
               Flexible <span style={{ color: 'var(--teal)' }}>Settlement</span>
             </h2>
             <p style={{ fontSize: '0.9rem', color: 'var(--silver)', lineHeight: 1.8, marginBottom: 'var(--space-3)' }}>
@@ -193,7 +193,7 @@ export default function BecomeAgentPage() {
       {/* CTA */}
       <section className="section" style={{ paddingTop: 0 }}>
         <div className="container" style={{ textAlign: 'center' }}>
-          <h2 style={{ fontSize: '1.3rem', marginBottom: 'var(--space-4)' }}>
+          <h2 className="animated-gradient-text" style={{ fontSize: '1.3rem', marginBottom: 'var(--space-4)' }}>
             Ready To <span style={{ color: 'var(--teal)' }}>Apply?</span>
           </h2>
           <p style={{ maxWidth: 520, margin: '0 auto var(--space-6)', fontSize: '0.92rem', color: 'var(--grey-400)' }}>

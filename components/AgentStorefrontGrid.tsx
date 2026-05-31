@@ -800,7 +800,7 @@ export default function AgentStorefrontGrid({ products, inventoryMap, primaryCol
       `}} />
 
       {/* Faceted Search & Filter Toolbar */}
-      <div className="sf-toolbar">
+      <div className="sf-toolbar glass-header">
         {/* Search */}
         <div className="sf-toolbar-search">
           <span className="sf-search-icon">

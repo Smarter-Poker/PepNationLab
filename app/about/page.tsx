@@ -76,8 +76,8 @@ export default function AboutPage() {
       {/* Mission */}
       <section className="section" style={{ paddingTop: 0 }}>
         <div className="container-sm">
-          <div className="card-glass" style={{ padding: 'var(--space-8)' }}>
-            <h2 style={{ marginBottom: 'var(--space-4)', fontSize: '1.3rem' }}>
+          <div className="card-metal hover-lift stagger-fade-in" style={{ padding: 'var(--space-8)' }}>
+            <h2 className="animated-gradient-text" style={{ marginBottom: 'var(--space-4)', fontSize: '1.3rem' }}>
               Our <span style={{ color: 'var(--teal)' }}>Mission</span>
             </h2>
             <p style={{ fontSize: '0.95rem', color: 'var(--silver)', lineHeight: 1.8, marginBottom: 'var(--space-4)' }}>
@@ -98,7 +98,7 @@ export default function AboutPage() {
       <section className="section" style={{ paddingTop: 0 }}>
         <div className="container">
           <div style={{ textAlign: 'center', marginBottom: 'var(--space-8)' }}>
-            <h2 style={{ fontSize: '1.3rem' }}>
+            <h2 className="animated-gradient-text" style={{ fontSize: '1.3rem' }}>
               What We <span style={{ color: 'var(--teal)' }}>Do</span>
             </h2>
           </div>
@@ -121,12 +121,13 @@ export default function AboutPage() {
       {/* Research-only commitment */}
       <section className="section" style={{ paddingTop: 0 }}>
         <div className="container-sm">
-          <div
+          <div className="card-metal hover-lift stagger-fade-in"
             style={{
               background: 'var(--red-bg)',
               border: '1px solid rgba(229,62,62,0.25)',
               borderRadius: 'var(--radius-lg)',
               padding: 'var(--space-8)',
+              animationDelay: '0.2s',
             }}
           >
             <h2 style={{ fontSize: '1.2rem', color: 'var(--red)', marginBottom: 'var(--space-4)', fontFamily: 'var(--font-brand)' }}>
@@ -152,7 +153,7 @@ export default function AboutPage() {
       {/* CTA */}
       <section className="section" style={{ paddingTop: 0 }}>
         <div className="container" style={{ textAlign: 'center' }}>
-          <h2 style={{ fontSize: '1.3rem', marginBottom: 'var(--space-4)' }}>
+          <h2 className="animated-gradient-text" style={{ fontSize: '1.3rem', marginBottom: 'var(--space-4)' }}>
             Ready To <span style={{ color: 'var(--teal)' }}>Get Started?</span>
           </h2>
           <p style={{ maxWidth: 480, margin: '0 auto var(--space-6)', fontSize: '0.92rem', color: 'var(--grey-400)' }}>

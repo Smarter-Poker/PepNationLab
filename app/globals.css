@@ -371,6 +371,22 @@ a:hover { color: var(--teal-dark); }
 .gap-8 { gap: var(--space-8); }
 
 /* ============================================
+   CHECKOUT & FORM GRIDS
+   ============================================ */
+.checkout-grid { display: grid; grid-template-columns: 1fr 340px; gap: var(--space-8); }
+.fulfillment-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-4); }
+.address-city-grid { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: var(--space-4); align-items: start; }
+.payment-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-4); }
+
+@media (max-width: 900px) {
+  .checkout-grid { grid-template-columns: 1fr; }
+}
+@media (max-width: 768px) {
+  .fulfillment-grid, .address-city-grid, .payment-grid { grid-template-columns: 1fr; }
+}
+
+
+/* ============================================
    CARDS
    ============================================ */
 .card {

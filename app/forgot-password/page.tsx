@@ -76,7 +76,7 @@ export default function ForgotPasswordPage() {
           </p>
         </div>
 
-        <div className="card-metal" style={{ padding: 'var(--space-8)' }}>
+        <div className="card-metal hover-lift stagger-fade-in" style={{ padding: 'var(--space-8)', boxShadow: '0 0 40px rgba(104,211,145,0.05)' }}>
           {sent ? (
             <div style={{ textAlign: 'center' }}>
               <div
@@ -98,7 +98,7 @@ export default function ForgotPasswordPage() {
                   <polyline points="22,6 12,13 2,6" />
                 </svg>
               </div>
-              <h2 style={{ fontSize: '1.2rem', marginBottom: 'var(--space-3)' }}>Check Your Email</h2>
+              <h2 className="animated-gradient-text" style={{ fontSize: '1.2rem', marginBottom: 'var(--space-3)' }}>Check Your Email</h2>
               <p style={{ fontSize: '0.85rem', color: 'var(--silver)', lineHeight: 1.7, marginBottom: 'var(--space-6)' }}>
                 If An Account Exists For <strong style={{ color: 'var(--white)' }}>{email.trim()}</strong>,
                 A Password Reset Link Has Been Sent. Please Check Your Inbox And Spam Folder.
@@ -120,7 +120,7 @@ export default function ForgotPasswordPage() {
               }}>
                 <Key size={22} aria-hidden="true" />
               </div>
-              <h2 style={{ fontSize: '1.2rem', marginBottom: 'var(--space-2)', textAlign: 'center' }}>Password Reset</h2>
+              <h2 className="animated-gradient-text" style={{ fontSize: '1.2rem', marginBottom: 'var(--space-2)', textAlign: 'center' }}>Password Reset</h2>
               <p style={{ fontSize: '0.9rem', color: 'var(--grey-300)', lineHeight: 1.6, textAlign: 'center', marginBottom: 'var(--space-6)' }}>
                 Please contact your Research Agent directly if you forgot your password or need it reset.
               </p>

@@ -88,14 +88,16 @@ export default function LegalDocument({
           </p>
         </div>
 
-        {/* Title */}
-        <h1 style={{ fontSize: '2rem', marginBottom: 'var(--space-2)' }}>{title}</h1>
-        <p style={{ fontSize: '0.82rem', color: 'var(--grey-400)', marginBottom: 'var(--space-8)' }}>
-          Last Updated: {lastUpdated}
-        </p>
+        {/* Document Body */}
+        <div className="card-metal hover-lift stagger-fade-in" style={{ padding: 'var(--space-8)' }}>
+          {/* Title */}
+          <h1 className="animated-gradient-text" style={{ fontSize: '2rem', marginBottom: 'var(--space-2)' }}>{title}</h1>
+          <p style={{ fontSize: '0.82rem', color: 'var(--grey-400)', marginBottom: 'var(--space-8)' }}>
+            Last Updated: {lastUpdated}
+          </p>
 
         {/* Intro */}
-        <div className="card-metal" style={{ padding: 'var(--space-6)', marginBottom: 'var(--space-8)' }}>
+        <div className="card-glass" style={{ padding: 'var(--space-6)', marginBottom: 'var(--space-8)' }}>
           {intro.map((para, i) => (
             <p
               key={i}
@@ -159,20 +161,21 @@ export default function LegalDocument({
           ))}
         </div>
 
-        {/* Contact footer */}
-        <div
-          style={{
-            marginTop: 'var(--space-10)',
-            paddingTop: 'var(--space-6)',
-            borderTop: '1px solid rgba(255,255,255,0.06)',
-            fontSize: '0.82rem',
-            color: 'var(--grey-400)',
-          }}
-        >
-          Questions About This Document?{' '}
-          <a href="mailto:research@pepnationlab.com" style={{ color: 'var(--teal)' }}>
-            research@pepnationlab.com
-          </a>
+          {/* Contact footer */}
+          <div
+            style={{
+              marginTop: 'var(--space-10)',
+              paddingTop: 'var(--space-6)',
+              borderTop: '1px solid rgba(255,255,255,0.06)',
+              fontSize: '0.82rem',
+              color: 'var(--grey-400)',
+            }}
+          >
+            Questions About This Document?{' '}
+            <a href="mailto:research@pepnationlab.com" style={{ color: 'var(--teal)' }}>
+              research@pepnationlab.com
+            </a>
+          </div>
         </div>
       </div>
     </section>

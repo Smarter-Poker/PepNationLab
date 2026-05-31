@@ -778,7 +778,7 @@ export default function ResearcherDashboard({ userId, userName, userEmail, agent
           {/* ── ACCOUNT TAB ── */}
           {tab === 'account' && (
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-6)' }} className="account-grid">
-              <div className="card-metal" style={{ padding: 'var(--space-6)' }}>
+              <div className="card-metal hover-lift" style={{ padding: 'var(--space-6)' }}>
                 <h3 style={{ fontSize: '0.85rem', color: 'var(--silver)', fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 'var(--space-5)' }}>Profile Settings</h3>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
                   <div>
