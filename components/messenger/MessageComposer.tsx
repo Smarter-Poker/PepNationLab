@@ -412,18 +412,31 @@ export default function MessageComposer({ conversationId, selfId, replyTo, onCle
             borderTop: '1px solid var(--surface-2, #162230)',
           }}
         >
-          {/* External Left Icons (App integrations like attach, gifs, templates) */}
-          <div style={{ display: 'flex', gap: 12, paddingBottom: 8 }}>
-            <button type="button" onClick={() => setShowAttach((v) => !v)} className="composer-icon-btn" aria-label="Attach" title="Attach">
-              <Paperclip size={22} color="var(--teal, #00C4BC)" />
-            </button>
-            {gifAvailable && (
-              <button type="button" onClick={() => setShowGif((v) => !v)} className="composer-icon-btn" aria-label="Insert Gif" title="Insert Gif">
-                <ImageIcon size={22} color="var(--teal, #00C4BC)" />
-              </button>
-            )}
-            <button type="button" onClick={() => setShowTemplates((v) => !v)} className="composer-icon-btn" aria-label="Templates" title="Templates">
-              <FileText size={22} color="var(--teal, #00C4BC)" />
+          {/* External Left Icon (Plus button) */}
+          <div style={{ display: 'flex', alignItems: 'center', paddingBottom: 6 }}>
+            <button
+              type="button"
+              onClick={() => setShowAttach((v) => !v)}
+              style={{
+                background: 'var(--surface-3, #1D2D3E)',
+                border: 'none',
+                borderRadius: '50%',
+                width: 30,
+                height: 30,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                color: 'var(--grey-400, #A8B4C0)',
+                transition: 'background 0.2s, color 0.2s',
+              }}
+              aria-label="Add Media"
+              title="Add Media"
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="12" y1="5" x2="12" y2="19"></line>
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+              </svg>
             </button>
           </div>
 
@@ -432,12 +445,12 @@ export default function MessageComposer({ conversationId, selfId, replyTo, onCle
             style={{
               flex: 1,
               display: 'flex',
-              alignItems: 'center',
+              alignItems: 'flex-end',
               background: 'var(--surface-2, #162230)',
               borderRadius: 24,
               border: '1px solid var(--surface-3, #1D2D3E)',
-              padding: '6px 12px',
-              minHeight: 40,
+              padding: '4px 6px',
+              minHeight: 38,
               boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.1)',
             }}
           >
@@ -454,64 +467,57 @@ export default function MessageComposer({ conversationId, selfId, replyTo, onCle
               aria-label="Message Body"
               style={{
                 flex: 1, resize: 'none', minHeight: 24, maxHeight: 120,
-                padding: '4px 6px',
+                padding: '4px 8px',
                 background: 'transparent',
                 border: 'none',
                 color: 'var(--white, #FFFFFF)',
                 fontFamily: 'inherit', fontSize: '1rem', outline: 'none',
                 lineHeight: '1.4',
+                marginBottom: 2,
               }}
             />
-            {/* Emoji icon inside the pill on the right */}
-            <button type="button" onClick={() => setShowEmoji((v) => !v)} className="composer-icon-btn" aria-label="Insert Emoji" title="Insert Emoji" style={{ marginLeft: 4, padding: 4 }}>
-              <Smile size={20} color="var(--grey-400, #A8B4C0)" />
-            </button>
-          </div>
-
-          {/* External Right Icons (Send / Voice / Utilities) */}
-          <div style={{ display: 'flex', gap: 12, paddingBottom: 6 }}>
-            {text.trim() || sending ? (
-              <button type="button" onClick={() => void handleSendText()}
-                disabled={!text.trim() || sending}
-                aria-label="Send Message" title="Send Message"
-                style={{
-                  background: 'var(--teal, #00C4BC)',
-                  border: 'none',
-                  borderRadius: '50%',
-                  width: 32,
-                  height: 32,
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  cursor: 'pointer',
-                  color: '#000',
-                  transition: 'transform 0.1s',
-                }}
-              >
-                <Send size={15} style={{ marginLeft: 2 }} />
-              </button>
-            ) : (
-              <>
+            {/* Action buttons inside the right side of the pill */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 4, paddingBottom: 2 }}>
+              {!text.trim() && (
+                <>
+                  <button type="button" onClick={() => setShowEmoji((v) => !v)} className="composer-icon-btn" aria-label="Insert Emoji" title="Insert Emoji" style={{ width: 28, height: 28, padding: 0 }}>
+                    <Smile size={18} color="var(--grey-400, #A8B4C0)" />
+                  </button>
+                  <button type="button" onClick={() => setShowScheduleInput((v) => !v)} className="composer-icon-btn" aria-label="Schedule Send" title="Schedule Send" style={{ width: 28, height: 28, padding: 0 }}>
+                    <Calendar size={18} color="var(--grey-400, #A8B4C0)" />
+                  </button>
+                  <button type="button" onClick={() => setShowExpiry((v) => !v)} className="composer-icon-btn" aria-label="Set Expiry" title="Set Expiry" style={{ width: 28, height: 28, padding: 0 }}>
+                    <Clock size={18} color="var(--grey-400, #A8B4C0)" />
+                  </button>
+                </>
+              )}
+              {text.trim() || sending ? (
                 <button
                   type="button"
-                  onClick={() => setShowScheduleInput((v) => !v)}
-                  className="composer-icon-btn"
-                  aria-label="Schedule Send"
-                  title="Schedule Send"
+                  onClick={() => void handleSendText()}
+                  disabled={!text.trim() || sending}
+                  aria-label="Send Message" title="Send Message"
+                  style={{
+                    background: '#0084FF',
+                    border: 'none',
+                    borderRadius: '50%',
+                    width: 28,
+                    height: 28,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    cursor: 'pointer',
+                    color: '#FFF',
+                    transition: 'transform 0.1s',
+                  }}
                 >
-                  <Calendar size={22} color="var(--teal, #00C4BC)" />
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                    <line x1="12" y1="19" x2="12" y2="5"></line>
+                    <polyline points="5 12 12 5 19 12"></polyline>
+                  </svg>
                 </button>
-                <button
-                  type="button"
-                  onClick={() => setShowExpiry((v) => !v)}
-                  className="composer-icon-btn"
-                  aria-label="Set Expiry"
-                  title="Set Expiry"
-                >
-                  <Clock size={22} color="var(--teal, #00C4BC)" />
-                </button>
-              </>
-            )}
+              ) : null}
+            </div>
           </div>
         </div>
       )}

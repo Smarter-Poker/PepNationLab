@@ -269,7 +269,7 @@ export default function AdminAgents() {
           Manage Agents
         </h1>
         <button
-          className="btn btn-primary"
+          className="btn-neon-cyan"
           onClick={() => setShowCreateModal(true)}
           style={{ display: 'flex', alignItems: 'center', gap: 6 }}
         >
@@ -341,7 +341,7 @@ export default function AdminAgents() {
                   <span style={{ fontSize: '0.75rem', color: 'var(--grey-400)', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>Contact Info</span>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 4, alignItems: 'flex-start' }}>
                     {isDefaultEmail ? (
-                      <button onClick={() => openEditModal(agent)} className="btn btn-secondary btn-sm" style={{ padding: '2px 6px', fontSize: '0.7rem' }}>
+                      <button onClick={() => openEditModal(agent)} className="btn-silver" style={{ padding: '4px 12px', fontSize: '0.8rem' }} style={{ padding: '2px 6px', fontSize: '0.7rem' }}>
                         + Add Email
                       </button>
                     ) : (
@@ -351,7 +351,7 @@ export default function AdminAgents() {
                     {agent.phone ? (
                       <span style={{ fontSize: '0.85rem', color: 'var(--silver)' }}>{agent.phone}</span>
                     ) : (
-                      <button onClick={() => openEditModal(agent)} className="btn btn-secondary btn-sm" style={{ padding: '2px 6px', fontSize: '0.7rem', opacity: 0.7 }}>
+                      <button onClick={() => openEditModal(agent)} className="btn-silver" style={{ padding: '4px 12px', fontSize: '0.8rem' }} style={{ padding: '2px 6px', fontSize: '0.7rem', opacity: 0.7 }}>
                         + Add Phone
                       </button>
                     )}
@@ -451,7 +451,7 @@ export default function AdminAgents() {
                         toast.error(err.message || 'Failed To Update Super Agent Status');
                       }
                     }}
-                    className="btn btn-secondary btn-sm"
+                    className="btn-silver" style={{ padding: '4px 12px', fontSize: '0.8rem' }}
                     style={{ padding: '6px 12px', fontSize: '0.8rem' }}
                     disabled={agent.parent_agent_id !== null}
                   >
@@ -478,43 +478,45 @@ export default function AdminAgents() {
           background: 'rgba(0,0,0,0.8)', zIndex: 1000,
           display: 'flex', alignItems: 'center', justifyContent: 'center'
         }}>
-          <div className="card-metal" style={{ width: '100%', maxWidth: 400, padding: 'var(--space-6)' }}>
-            <h3 style={{ marginTop: 0, marginBottom: 'var(--space-4)', color: 'var(--white)' }}>
-              Edit Contact Info
-            </h3>
-            <p style={{ fontSize: '0.85rem', color: 'var(--silver)', marginBottom: 'var(--space-4)' }}>
-              Updating the email will change the Agent's login credentials.
-            </p>
-            <form onSubmit={handleSaveContact}>
-              <div className="form-group" style={{ marginBottom: 'var(--space-4)' }}>
-                <label className="form-label">Email Address</label>
-                <input 
-                  type="email" 
-                  className="form-input" 
-                  value={editEmail} 
-                  onChange={e => setEditEmail(e.target.value)} 
-                  placeholder={editingAgent.email?.includes('@pepnationlab.com') ? 'Enter real email...' : editingAgent.email}
-                />
-              </div>
-              <div className="form-group" style={{ marginBottom: 'var(--space-6)' }}>
-                <label className="form-label">Phone Number</label>
-                <input 
-                  type="tel" 
-                  className="form-input" 
-                  value={editPhone} 
-                  onChange={e => setEditPhone(e.target.value)} 
-                  placeholder="e.g. 555-0123"
-                />
-              </div>
-              <div style={{ display: 'flex', gap: 'var(--space-3)', justifyContent: 'flex-end' }}>
-                <button type="button" className="btn btn-secondary" onClick={() => setEditingAgent(null)} disabled={isSaving}>
-                  Cancel
-                </button>
-                <button type="submit" className="btn btn-primary" disabled={isSaving}>
-                  {isSaving ? 'Saving...' : 'Save Changes'}
-                </button>
-              </div>
-            </form>
+          <div className="metal-frame" style={{ width: '100%', maxWidth: 400 }}>
+            <div className="metal-content" style={{ padding: 'var(--space-6)' }}>
+              <h3 className="metal-text" style={{ marginTop: 0, marginBottom: 'var(--space-4)', color: '#fff', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                Edit Contact Info
+              </h3>
+              <p style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.4)', marginBottom: 'var(--space-4)' }}>
+                Updating the email will change the Agent's login credentials.
+              </p>
+              <form onSubmit={handleSaveContact}>
+                <div className="form-group" style={{ marginBottom: 'var(--space-4)' }}>
+                  <label className="form-label">Email Address</label>
+                  <input 
+                    type="email" 
+                    className="form-input" 
+                    value={editEmail} 
+                    onChange={e => setEditEmail(e.target.value)} 
+                    placeholder={editingAgent.email?.includes('@pepnationlab.com') ? 'Enter real email...' : editingAgent.email}
+                  />
+                </div>
+                <div className="form-group" style={{ marginBottom: 'var(--space-6)' }}>
+                  <label className="form-label">Phone Number</label>
+                  <input 
+                    type="tel" 
+                    className="form-input" 
+                    value={editPhone} 
+                    onChange={e => setEditPhone(e.target.value)} 
+                    placeholder="e.g. 555-0123"
+                  />
+                </div>
+                <div style={{ display: 'flex', gap: 'var(--space-3)', justifyContent: 'flex-end' }}>
+                  <button type="button" className="btn-silver" onClick={() => setEditingAgent(null)} disabled={isSaving}>
+                    Cancel
+                  </button>
+                  <button type="submit" className="btn-neon-cyan" disabled={isSaving}>
+                    {isSaving ? 'Saving...' : 'Save Changes'}
+                  </button>
+                </div>
+              </form>
+            </div>
           </div>
         </div>
       )}
@@ -526,56 +528,58 @@ export default function AdminAgents() {
           background: 'rgba(0,0,0,0.8)', zIndex: 1000,
           display: 'flex', alignItems: 'center', justifyContent: 'center'
         }}>
-          <div className="card-metal" style={{ width: '100%', maxWidth: 400, padding: 'var(--space-6)' }}>
-            <h3 style={{ marginTop: 0, marginBottom: 'var(--space-4)', color: 'var(--white)' }}>Edit Password</h3>
-            <p style={{ fontSize: '0.85rem', color: 'var(--silver)', marginBottom: 'var(--space-2)' }}>
-              Agent: <strong style={{ color: 'var(--white)' }}>{passwordAgent.full_name}</strong>
-            </p>
-            <p style={{ fontSize: '0.85rem', color: 'var(--silver)', marginBottom: 'var(--space-4)' }}>
-              Username: <strong style={{ color: 'var(--teal)', fontFamily: 'monospace' }}>{passwordAgent.username}</strong>
-            </p>
-            <form onSubmit={async (e) => {
-              e.preventDefault();
-              if (!passwordAgent || !newPassword) return;
-              setPasswordSaving(true);
-              try {
-                const res = await fetch('/api/admin/agents/update-password', {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ userId: passwordAgent.id, newPassword }),
-                });
-                const json = await res.json();
-                if (!res.ok) throw new Error(json.error);
-                toast.success('Password Updated Successfully');
-                setPasswordAgent(null);
-                setNewPassword('');
-              } catch (err: any) {
-                toast.error(err.message || 'Failed To Update Password');
-              } finally {
-                setPasswordSaving(false);
-              }
-            }}>
-              <div className="form-group" style={{ marginBottom: 'var(--space-6)' }}>
-                <label className="form-label">New Password</label>
-                <input
-                  type="text"
-                  className="form-input"
-                  value={newPassword}
-                  onChange={e => setNewPassword(e.target.value)}
-                  placeholder="Minimum 8 Characters"
-                  required
-                  minLength={8}
-                  autoComplete="off"
-                  style={{ width: '100%' }}
-                />
-              </div>
-              <div style={{ display: 'flex', gap: 'var(--space-3)', justifyContent: 'flex-end' }}>
-                <button type="button" className="btn btn-ghost btn-sm" onClick={() => { setPasswordAgent(null); setNewPassword(''); }} disabled={passwordSaving}>Cancel</button>
-                <button type="submit" className="btn btn-primary btn-sm" disabled={passwordSaving || newPassword.length < 8}>
-                  {passwordSaving ? 'Saving...' : 'Update Password'}
-                </button>
-              </div>
-            </form>
+          <div className="metal-frame" style={{ width: '100%', maxWidth: 400 }}>
+            <div className="metal-content" style={{ padding: 'var(--space-6)' }}>
+              <h3 className="metal-text" style={{ marginTop: 0, marginBottom: 'var(--space-4)', color: '#fff', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Edit Password</h3>
+              <p style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.4)', marginBottom: 'var(--space-2)' }}>
+                Agent: <strong style={{ color: '#fff' }}>{passwordAgent.full_name}</strong>
+              </p>
+              <p style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.4)', marginBottom: 'var(--space-4)' }}>
+                Username: <strong style={{ color: '#00E5FF', fontFamily: 'monospace' }}>{passwordAgent.username}</strong>
+              </p>
+              <form onSubmit={async (e) => {
+                e.preventDefault();
+                if (!passwordAgent || !newPassword) return;
+                setPasswordSaving(true);
+                try {
+                  const res = await fetch('/api/admin/agents/update-password', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ userId: passwordAgent.id, newPassword }),
+                  });
+                  const json = await res.json();
+                  if (!res.ok) throw new Error(json.error);
+                  toast.success('Password Updated Successfully');
+                  setPasswordAgent(null);
+                  setNewPassword('');
+                } catch (err: any) {
+                  toast.error(err.message || 'Failed To Update Password');
+                } finally {
+                  setPasswordSaving(false);
+                }
+              }}>
+                <div className="form-group" style={{ marginBottom: 'var(--space-6)' }}>
+                  <label className="form-label">New Password</label>
+                  <input
+                    type="text"
+                    className="form-input"
+                    value={newPassword}
+                    onChange={e => setNewPassword(e.target.value)}
+                    placeholder="Minimum 8 Characters"
+                    required
+                    minLength={8}
+                    autoComplete="off"
+                    style={{ width: '100%' }}
+                  />
+                </div>
+                <div style={{ display: 'flex', gap: 'var(--space-3)', justifyContent: 'flex-end' }}>
+                  <button type="button" className="btn-silver" style={{ padding: '4px 12px', fontSize: '0.8rem' }} onClick={() => { setPasswordAgent(null); setNewPassword(''); }} disabled={passwordSaving}>Cancel</button>
+                  <button type="submit" className="btn-neon-cyan" style={{ padding: '4px 12px', fontSize: '0.8rem' }} disabled={passwordSaving || newPassword.length < 8}>
+                    {passwordSaving ? 'Saving...' : 'Update Password'}
+                  </button>
+                </div>
+              </form>
+            </div>
           </div>
         </div>
       )}
@@ -588,19 +592,19 @@ export default function AdminAgents() {
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           padding: 'var(--space-4)',
         }}>
-          <div className="card-metal" style={{
+          <div className="metal-frame" style={{
             width: '100%',
             maxWidth: 520,
-            padding: 'var(--space-6)',
             maxHeight: '90vh',
             overflowY: 'auto',
           }}>
-            <h3 style={{ marginTop: 0, marginBottom: 'var(--space-2)', color: 'var(--white)' }}>
-              Create New Agent
-            </h3>
-            <p style={{ fontSize: '0.85rem', color: 'var(--silver)', marginBottom: 'var(--space-5)' }}>
-              This will create a new agent account with auth credentials and a storefront.
-            </p>
+            <div className="metal-content" style={{ padding: 'var(--space-6)' }}>
+              <h3 className="metal-text" style={{ marginTop: 0, marginBottom: 'var(--space-2)', color: '#fff', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                Create New Agent
+              </h3>
+              <p style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.4)', marginBottom: 'var(--space-5)' }}>
+                This will create a new agent account with auth credentials and a storefront.
+              </p>
             <form onSubmit={handleCreateAgent}>
               {/* Full Name */}
               <div className="form-group" style={{ marginBottom: 'var(--space-4)' }}>
@@ -779,7 +783,7 @@ export default function AdminAgents() {
               <div style={{ display: 'flex', gap: 'var(--space-3)', justifyContent: 'flex-end' }}>
                 <button
                   type="button"
-                  className="btn btn-secondary"
+                  className="btn-silver"
                   onClick={() => {
                     setShowCreateModal(false);
                     setUsernameStatus('idle');
@@ -791,13 +795,14 @@ export default function AdminAgents() {
                 </button>
                 <button
                   type="submit"
-                  className="btn btn-primary"
+                  className="btn-neon-cyan"
                   disabled={isCreating || usernameStatus === 'taken' || (createForm.account_role !== 'researcher' && slugStatus === 'taken')}
                 >
                   {isCreating ? 'Creating...' : createForm.account_role === 'researcher' ? 'Create Researcher' : 'Create Agent'}
                 </button>
               </div>
             </form>
+            </div>
           </div>
         </div>
       )}

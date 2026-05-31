@@ -227,7 +227,8 @@ export default function AdminProductLots({ productId }: Props) {
   }
 
   return (
-    <div className="card-metal" style={{ padding: 'var(--space-6)' }}>
+    <div className="metal-frame">
+      <div className="metal-content" style={{ padding: 'var(--space-6)' }}>
       <input
         ref={fileInputRef}
         type="file"
@@ -247,9 +248,9 @@ export default function AdminProductLots({ productId }: Props) {
         </div>
         <button
           type="button"
-          className="btn btn-primary"
+          className="btn-neon-cyan"
           onClick={openAddForm}
-          style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: '0.85rem' }}
+          style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: '0.85rem', padding: '6px 12px' }}
         >
           <Plus size={14} aria-hidden="true" /> Add Lot
         </button>
@@ -359,14 +360,14 @@ export default function AdminProductLots({ productId }: Props) {
                         href={lot.coa_public_url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="btn btn-secondary btn-sm"
+                        className="btn-silver"
                         style={{ padding: '6px 10px', fontSize: '0.75rem', display: 'inline-flex', alignItems: 'center', gap: 4 }}
                       >
                         <Download size={12} aria-hidden="true" /> Download COA
                       </a>
                       <button
                         type="button"
-                        className="btn btn-secondary btn-sm"
+                        className="btn-silver"
                         onClick={() => triggerUpload(lot.id)}
                         disabled={uploading}
                         style={{ padding: '6px 10px', fontSize: '0.75rem', display: 'inline-flex', alignItems: 'center', gap: 4 }}
@@ -375,9 +376,9 @@ export default function AdminProductLots({ productId }: Props) {
                       </button>
                       <button
                         type="button"
-                        className="btn btn-ghost btn-sm"
+                        className="btn-silver"
                         onClick={() => deleteCoa(lot)}
-                        style={{ padding: '6px 10px', fontSize: '0.75rem', color: '#FCA5A5' }}
+                        style={{ padding: '6px 10px', fontSize: '0.75rem', color: '#FCA5A5', display: 'inline-flex', alignItems: 'center', gap: 4 }}
                       >
                         Remove COA
                       </button>
@@ -385,7 +386,7 @@ export default function AdminProductLots({ productId }: Props) {
                   ) : (
                     <button
                       type="button"
-                      className="btn btn-secondary btn-sm"
+                      className="btn-silver"
                       onClick={() => triggerUpload(lot.id)}
                       disabled={uploading}
                       style={{ padding: '6px 10px', fontSize: '0.75rem', display: 'inline-flex', alignItems: 'center', gap: 4 }}
@@ -395,7 +396,7 @@ export default function AdminProductLots({ productId }: Props) {
                   )}
                   <button
                     type="button"
-                    className="btn btn-ghost btn-sm"
+                    className="btn-silver"
                     onClick={() => openEditForm(lot)}
                     style={{ padding: '6px 10px', fontSize: '0.75rem', display: 'inline-flex', alignItems: 'center', gap: 4 }}
                   >
@@ -403,7 +404,7 @@ export default function AdminProductLots({ productId }: Props) {
                   </button>
                   <button
                     type="button"
-                    className="btn btn-ghost btn-sm"
+                    className="btn-silver"
                     onClick={() => toggleActive(lot)}
                     style={{ padding: '6px 10px', fontSize: '0.75rem', display: 'inline-flex', alignItems: 'center', gap: 4 }}
                   >
@@ -411,7 +412,7 @@ export default function AdminProductLots({ productId }: Props) {
                   </button>
                   <button
                     type="button"
-                    className="btn btn-ghost btn-sm"
+                    className="btn-silver"
                     onClick={() => deleteLot(lot)}
                     style={{ padding: '6px 10px', fontSize: '0.75rem', color: '#FCA5A5', display: 'inline-flex', alignItems: 'center', gap: 4 }}
                   >
@@ -427,11 +428,12 @@ export default function AdminProductLots({ productId }: Props) {
       {showForm && (
         <div className="modal-overlay" onClick={closeForm}>
           <div
-            className="modal-content"
-            style={{ maxWidth: 560 }}
+            className="metal-frame"
+            style={{ width: '100%', maxWidth: 560, margin: 'var(--space-4)' }}
             onClick={e => e.stopPropagation()}
           >
-            <h3 style={{ marginBottom: 'var(--space-4)', color: 'var(--white)', fontSize: '1.1rem' }}>
+            <div className="metal-content" style={{ padding: 'var(--space-6)' }}>
+            <h3 className="metal-text" style={{ marginBottom: 'var(--space-4)', color: '#fff', fontSize: '1.25rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
               {editingLot ? 'Edit Lot' : 'Add Lot'}
             </h3>
             <form onSubmit={saveLot} style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
@@ -496,18 +498,20 @@ export default function AdminProductLots({ productId }: Props) {
                   onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
                 />
               </div>
-              <div style={{ display: 'flex', gap: 'var(--space-3)', justifyContent: 'flex-end' }}>
-                <button type="button" className="btn btn-ghost" onClick={closeForm} disabled={saving}>
+              <div style={{ display: 'flex', gap: 'var(--space-3)', justifyContent: 'flex-end', marginTop: 'var(--space-4)' }}>
+                <button type="button" className="btn-silver" onClick={closeForm} disabled={saving} style={{ padding: '8px 16px' }}>
                   Cancel
                 </button>
-                <button type="submit" className="btn btn-primary" disabled={saving}>
+                <button type="submit" className="btn-neon-cyan" disabled={saving} style={{ padding: '8px 16px' }}>
                   {saving ? 'Saving...' : editingLot ? 'Save Changes' : 'Create Lot'}
                 </button>
               </div>
             </form>
+            </div>
           </div>
         </div>
       )}
+      </div>
     </div>
   );
 }

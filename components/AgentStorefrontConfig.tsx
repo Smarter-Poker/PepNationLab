@@ -135,17 +135,12 @@ export default function AgentStorefrontConfig({
 
   return (
     <div style={{ maxWidth: 800 }}>
-      <div className="card-metal" style={{
-        padding: 'var(--space-8)',
-        border: '2px solid rgba(192,184,168,0.4)',
-        boxShadow: '0 12px 40px rgba(0,0,0,0.6), inset 0 1px 2px rgba(255,255,255,0.1)',
-        borderRadius: '12px',
-        background: 'linear-gradient(180deg, var(--surface-1) 0%, var(--surface-2) 100%)'
-      }}>
+      <div className="metal-frame">
+        <div className="metal-content" style={{ padding: 'var(--space-8)' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 'var(--space-6)' }}>
           <div>
-            <h3 style={{ fontSize: '1.2rem', marginBottom: 'var(--space-2)' }}>Storefront Setup</h3>
-            <p style={{ color: 'var(--grey-400)', fontSize: '0.9rem' }}>
+            <h3 className="metal-text" style={{ fontSize: '1.25rem', marginBottom: 'var(--space-2)', fontFamily: 'var(--font-brand)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Storefront Setup</h3>
+            <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.9rem' }}>
               Configure Your Public-Facing White-Label Storefront.
             </p>
           </div>
@@ -235,9 +230,9 @@ export default function AgentStorefrontConfig({
             </div>
             <div className="form-group" style={{ marginTop: 0 }}>
               <label className="form-label">URL Slug</label>
-              <div style={{ display: 'flex', alignItems: 'center', background: 'var(--surface-3)', borderRadius: 'var(--radius-md)', border: '1px solid rgba(255,255,255,0.1)', paddingLeft: 'var(--space-3)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', height: 46, background: 'var(--surface-3)', borderRadius: 'var(--radius-md)', border: '1px solid rgba(255,255,255,0.1)', paddingLeft: 'var(--space-3)' }}>
                 <span style={{ fontSize: '0.85rem', color: 'var(--grey-400)' }}>pepnationlab.com/</span>
-                <input type="text" className="form-input" value={slug} onChange={(e) => setSlug(e.target.value)} style={{ background: 'transparent', border: 'none', boxShadow: 'none' }} required />
+                <input type="text" className="form-input" value={slug} onChange={(e) => setSlug(e.target.value)} style={{ background: 'transparent', border: 'none', boxShadow: 'none', height: '100%', paddingTop: 0, paddingBottom: 0 }} required />
               </div>
             </div>
           </div>
@@ -254,8 +249,8 @@ export default function AgentStorefrontConfig({
               ) : null}
               <label
                 style={{
-                  display: 'inline-flex', alignItems: 'center', gap: 6,
-                  padding: '8px 16px', borderRadius: 'var(--radius-md)',
+                  display: 'inline-flex', alignItems: 'center', gap: 6, height: 46,
+                  padding: '0 16px', borderRadius: 'var(--radius-md)',
                   background: 'var(--surface-3)', border: '1px solid rgba(255,255,255,0.1)',
                   cursor: 'pointer', fontSize: '0.85rem', color: 'var(--silver)',
                   transition: 'background 0.2s',
@@ -291,9 +286,9 @@ export default function AgentStorefrontConfig({
             </div>
             <div className="form-group" style={{ marginTop: 0 }}>
               <label className="form-label">Primary Brand Color</label>
-              <div style={{ display: 'flex', gap: 'var(--space-3)' }}>
+              <div style={{ display: 'flex', gap: 'var(--space-3)', height: 46, alignItems: 'center' }}>
                 <input type="color" value={primaryColor} onChange={(e) => setPrimaryColor(e.target.value)} style={{ width: 48, height: 44, padding: 0, border: 'none', borderRadius: 'var(--radius-md)', cursor: 'pointer', background: 'transparent' }} />
-                <input type="text" className="form-input" value={primaryColor} onChange={(e) => setPrimaryColor(e.target.value)} pattern="^#+([a-fA-F0-9]{6}|[a-fA-F0-9]{3})$" />
+                <input type="text" className="form-input" value={primaryColor} onChange={(e) => setPrimaryColor(e.target.value)} pattern="^#+([a-fA-F0-9]{6}|[a-fA-F0-9]{3})$" style={{ height: '100%', margin: 0 }} />
               </div>
             </div>
           </div>
@@ -353,26 +348,20 @@ export default function AgentStorefrontConfig({
             <button
               type="submit"
               disabled={loading}
+              className="btn-neon-cyan"
               style={{
                 minWidth: 160,
-                background: 'linear-gradient(180deg, rgba(0,196,188,1) 0%, rgba(0,140,135,1) 100%)',
-                border: '1px solid #00C4BC',
-                boxShadow: '0 4px 12px rgba(0,196,188,0.3), inset 0 1px 0 rgba(255,255,255,0.3)',
-                color: '#fff',
-                textShadow: '0 1px 2px rgba(0,0,0,0.2)',
-                fontWeight: 600,
-                borderRadius: '8px',
                 padding: '10px 24px',
-                transition: 'all 0.2s ease',
+                fontSize: '1rem',
                 cursor: loading ? 'not-allowed' : 'pointer',
                 opacity: loading ? 0.7 : 1,
-                fontSize: '1rem'
               }}
             >
               {loading ? 'Saving Changes...' : 'Save Configuration'}
             </button>
           </div>
         </form>
+        </div>
       </div>
 
       {/* ── Pricing & Discounts Configuration ── */}
@@ -452,15 +441,10 @@ function PricingConfig({ agentId }: { agentId: string }) {
   });
 
   return (
-    <div className="card-metal" style={{
-      padding: 'var(--space-8)', marginTop: 'var(--space-6)',
-      border: '2px solid rgba(192,184,168,0.4)',
-      boxShadow: '0 12px 40px rgba(0,0,0,0.6), inset 0 1px 2px rgba(255,255,255,0.1)',
-      borderRadius: '12px',
-      background: 'linear-gradient(180deg, var(--surface-1) 0%, var(--surface-2) 100%)'
-    }}>
-      <h3 style={{ fontSize: '1.2rem', marginBottom: 'var(--space-2)' }}>Pricing & Discounts</h3>
-      <p style={{ color: 'var(--grey-400)', fontSize: '0.9rem', marginBottom: 'var(--space-6)' }}>
+    <div className="metal-frame" style={{ marginTop: 'var(--space-6)' }}>
+      <div className="metal-content" style={{ padding: 'var(--space-8)' }}>
+      <h3 className="metal-text" style={{ fontSize: '1.25rem', marginBottom: 'var(--space-2)', fontFamily: 'var(--font-brand)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Pricing & Discounts</h3>
+      <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.9rem', marginBottom: 'var(--space-6)' }}>
         Configure quantity-based pricing and bulk volume discounts for your storefront.
       </p>
 
@@ -539,9 +523,10 @@ function PricingConfig({ agentId }: { agentId: string }) {
       </div>
 
       <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-        <button type="button" onClick={handleSave} className="btn btn-primary" disabled={saving}>
+        <button type="button" onClick={handleSave} className="btn-neon-cyan" disabled={saving} style={{ padding: '8px 24px' }}>
           {saving ? 'Saving...' : 'Save Pricing Config'}
         </button>
+      </div>
       </div>
     </div>
   );

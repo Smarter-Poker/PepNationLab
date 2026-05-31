@@ -111,29 +111,31 @@ export default function AgentAnalytics({ agentId, orders }: { agentId: string, o
   }
 
   return (
-    <div className="card-metal" style={{ padding: 'var(--space-6)', marginBottom: 'var(--space-8)' }}>
-      <h3 style={{ fontSize: '1.1rem', fontFamily: 'var(--font-brand)', color: 'var(--white)', marginBottom: 'var(--space-4)' }}>
-        14-Day Sales Performance
-      </h3>
-      <div style={{ height: 250, width: '100%' }}>
-        <ResponsiveContainer width="100%" height="100%">
-          <AreaChart data={salesData} margin={{ top: 5, right: 5, left: -20, bottom: 5 }}>
-            <defs>
-              <linearGradient id="colorSales" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="var(--teal)" stopOpacity={0.3}/>
-                <stop offset="95%" stopColor="var(--teal)" stopOpacity={0}/>
-              </linearGradient>
-            </defs>
-            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
-            <XAxis dataKey="date" stroke="var(--grey-400)" fontSize={12} tickLine={false} axisLine={false} />
-            <YAxis stroke="var(--grey-400)" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(val) => `$${val}`} />
-            <Tooltip 
-              contentStyle={{ background: 'var(--black-2)', border: '1px solid var(--border-teal)', borderRadius: 8 }}
-              itemStyle={{ color: 'var(--white)' }}
-            />
-            <Area type="monotone" dataKey="sales" stroke="var(--teal)" fillOpacity={1} fill="url(#colorSales)" strokeWidth={3} />
-          </AreaChart>
-        </ResponsiveContainer>
+    <div className="metal-frame" style={{ marginBottom: 'var(--space-8)' }}>
+      <div className="metal-content" style={{ padding: 'var(--space-6)' }}>
+        <h3 className="metal-text" style={{ fontSize: '1.25rem', fontFamily: 'var(--font-brand)', color: '#fff', marginBottom: 'var(--space-4)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+          14-Day Sales Performance
+        </h3>
+        <div style={{ height: 250, width: '100%' }}>
+          <ResponsiveContainer width="100%" height="100%">
+            <AreaChart data={salesData} margin={{ top: 5, right: 5, left: -20, bottom: 5 }}>
+              <defs>
+                <linearGradient id="colorSales" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#00E5FF" stopOpacity={0.3}/>
+                  <stop offset="95%" stopColor="#00E5FF" stopOpacity={0}/>
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
+              <XAxis dataKey="date" stroke="rgba(255,255,255,0.4)" fontSize={12} tickLine={false} axisLine={false} />
+              <YAxis stroke="rgba(255,255,255,0.4)" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(val) => `$${val}`} />
+              <Tooltip 
+                contentStyle={{ background: 'rgba(0,0,0,0.8)', border: '1px solid rgba(0,229,255,0.2)', borderRadius: 8 }}
+                itemStyle={{ color: '#fff' }}
+              />
+              <Area type="monotone" dataKey="sales" stroke="#00E5FF" fillOpacity={1} fill="url(#colorSales)" strokeWidth={3} />
+            </AreaChart>
+          </ResponsiveContainer>
+        </div>
       </div>
     </div>
   );

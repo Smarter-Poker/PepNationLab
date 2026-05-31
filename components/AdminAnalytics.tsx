@@ -205,19 +205,21 @@ export default function AdminAnalytics() {
             change: '', positive: true, icon: '👤',
           },
         ].map((kpi, i) => (
-          <div key={i} className="card-metal" style={{ padding: 'var(--space-4)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-              <span style={{ fontSize: '1.4rem' }}>{kpi.icon}</span>
-              {kpi.change && (
-                <span style={{
-                  fontSize: '0.65rem', fontWeight: 700, padding: '2px 6px', borderRadius: 4,
-                  background: kpi.positive ? 'rgba(72,187,120,0.1)' : 'rgba(229,62,62,0.1)',
-                  color: kpi.positive ? '#48BB78' : '#FC8181',
-                }}>{kpi.change}</span>
-              )}
+          <div key={i} className="metal-frame">
+            <div className="metal-content" style={{ padding: 'var(--space-4)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                <span style={{ fontSize: '1.4rem' }}>{kpi.icon}</span>
+                {kpi.change && (
+                  <span style={{
+                    fontSize: '0.65rem', fontWeight: 700, padding: '2px 6px', borderRadius: 4,
+                    background: kpi.positive ? 'rgba(72,187,120,0.1)' : 'rgba(229,62,62,0.1)',
+                    color: kpi.positive ? '#48BB78' : '#FC8181',
+                  }}>{kpi.change}</span>
+                )}
+              </div>
+              <div className="metal-text" style={{ fontSize: '1.3rem', fontWeight: 800, color: 'var(--teal)', fontFamily: 'var(--font-brand)' }}>{kpi.value}</div>
+              <div style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.4)', marginTop: 4 }}>{kpi.label}</div>
             </div>
-            <div style={{ fontSize: '1.3rem', fontWeight: 800, color: 'var(--teal)', fontFamily: 'var(--font-brand)' }}>{kpi.value}</div>
-            <div style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.4)', marginTop: 4 }}>{kpi.label}</div>
           </div>
         ))}
       </div>
@@ -225,10 +227,11 @@ export default function AdminAnalytics() {
       {/* Charts Grid */}
       <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 'var(--space-6)', marginBottom: 'var(--space-6)' }}>
         {/* Revenue Trend */}
-        <div className="card-metal" style={{ padding: 'var(--space-6)' }}>
-          <h3 style={{ fontSize: '0.92rem', color: '#fff', marginBottom: 'var(--space-4)', fontFamily: 'var(--font-brand)' }}>
-            Revenue Trend
-          </h3>
+        <div className="metal-frame">
+          <div className="metal-content" style={{ padding: 'var(--space-6)' }}>
+            <h3 className="metal-text" style={{ fontSize: '0.92rem', color: '#fff', marginBottom: 'var(--space-4)', fontFamily: 'var(--font-brand)' }}>
+              Revenue Trend
+            </h3>
           <div style={{ height: 260, width: '100%' }}>
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={data.revenueData} margin={{ top: 5, right: 5, left: -20, bottom: 5 }}>
@@ -250,13 +253,15 @@ export default function AdminAnalytics() {
               </AreaChart>
             </ResponsiveContainer>
           </div>
+          </div>
         </div>
 
         {/* Order Status Pie */}
-        <div className="card-metal" style={{ padding: 'var(--space-6)' }}>
-          <h3 style={{ fontSize: '0.92rem', color: '#fff', marginBottom: 'var(--space-4)', fontFamily: 'var(--font-brand)' }}>
-            Order Pipeline
-          </h3>
+        <div className="metal-frame">
+          <div className="metal-content" style={{ padding: 'var(--space-6)' }}>
+            <h3 className="metal-text" style={{ fontSize: '0.92rem', color: '#fff', marginBottom: 'var(--space-4)', fontFamily: 'var(--font-brand)' }}>
+              Order Pipeline
+            </h3>
           {data.ordersByStatus.length > 0 ? (
             <>
               <div style={{ height: 180, width: '100%' }}>
@@ -283,15 +288,17 @@ export default function AdminAnalytics() {
           ) : (
             <div style={{ textAlign: 'center', padding: 40, color: 'rgba(255,255,255,0.25)', fontSize: '0.8rem' }}>No Orders In Range</div>
           )}
+          </div>
         </div>
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-6)' }}>
         {/* Top Products */}
-        <div className="card-metal" style={{ padding: 'var(--space-6)' }}>
-          <h3 style={{ fontSize: '0.92rem', color: '#fff', marginBottom: 'var(--space-4)', fontFamily: 'var(--font-brand)' }}>
-            Top Products (Revenue)
-          </h3>
+        <div className="metal-frame">
+          <div className="metal-content" style={{ padding: 'var(--space-6)' }}>
+            <h3 className="metal-text" style={{ fontSize: '0.92rem', color: '#fff', marginBottom: 'var(--space-4)', fontFamily: 'var(--font-brand)' }}>
+              Top Products (Revenue)
+            </h3>
           {data.topProducts.length > 0 ? (
             <div style={{ height: 240, width: '100%' }}>
               <ResponsiveContainer width="100%" height="100%">
@@ -311,13 +318,15 @@ export default function AdminAnalytics() {
           ) : (
             <div style={{ textAlign: 'center', padding: 40, color: 'rgba(255,255,255,0.25)', fontSize: '0.8rem' }}>No Product Data</div>
           )}
+          </div>
         </div>
 
         {/* Agent Performance */}
-        <div className="card-metal" style={{ padding: 'var(--space-6)' }}>
-          <h3 style={{ fontSize: '0.92rem', color: '#fff', marginBottom: 'var(--space-4)', fontFamily: 'var(--font-brand)' }}>
-            Agent Revenue
-          </h3>
+        <div className="metal-frame">
+          <div className="metal-content" style={{ padding: 'var(--space-6)' }}>
+            <h3 className="metal-text" style={{ fontSize: '0.92rem', color: '#fff', marginBottom: 'var(--space-4)', fontFamily: 'var(--font-brand)' }}>
+              Agent Revenue
+            </h3>
           {data.agentPerformance.length > 0 ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               {data.agentPerformance.map((a, i) => {
@@ -348,6 +357,7 @@ export default function AdminAnalytics() {
           ) : (
             <div style={{ textAlign: 'center', padding: 40, color: 'rgba(255,255,255,0.25)', fontSize: '0.8rem' }}>No Agent Data</div>
           )}
+          </div>
         </div>
       </div>
     </div>

@@ -350,35 +350,37 @@ export default function AgentDashboardClient({
           )}
 
           <form onSubmit={handleCreateProfile} style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
-            <div className="form-group">
-              <label className="form-label">Storefront Display Name</label>
-              <input
-                type="text"
-                className="form-input"
-                placeholder="E.g. Bio-Science Labs"
-                value={setupDisplayName}
-                onChange={(e) => setSetupDisplayName(e.target.value)}
-                required
-              />
-            </div>
-
-            <div className="form-group">
-              <label className="form-label">Storefront URL Slug</label>
-              <div style={{ display: 'flex', alignItems: 'center', background: 'var(--surface-3)', borderRadius: 'var(--radius-md)', border: '1px solid rgba(255,255,255,0.1)', paddingLeft: 'var(--space-3)' }}>
-                <span style={{ fontSize: '0.85rem', color: 'var(--grey-400)', userSelect: 'none' }}>pepnationlab.com/</span>
+            <div className="grid-2">
+              <div className="form-group">
+                <label className="form-label">Storefront Display Name</label>
                 <input
                   type="text"
                   className="form-input"
-                  placeholder="E.g. bioscience"
-                  value={setupSlug}
-                  onChange={(e) => setSetupSlug(e.target.value)}
-                  style={{ background: 'transparent', border: 'none', boxShadow: 'none' }}
+                  placeholder="E.g. Bio-Science Labs"
+                  value={setupDisplayName}
+                  onChange={(e) => setSetupDisplayName(e.target.value)}
                   required
                 />
               </div>
-              <span style={{ fontSize: '0.72rem', color: 'var(--grey-400)' }}>
-                Lowercase Letters, Numbers, And Hyphens Only. No Spaces.
-              </span>
+
+              <div className="form-group">
+                <label className="form-label">Storefront URL Slug</label>
+                <div style={{ display: 'flex', alignItems: 'center', height: 46, background: 'var(--surface-3)', borderRadius: 'var(--radius-md)', border: '1px solid rgba(255,255,255,0.1)', paddingLeft: 'var(--space-3)' }}>
+                  <span style={{ fontSize: '0.85rem', color: 'var(--grey-400)', userSelect: 'none' }}>pepnationlab.com/</span>
+                  <input
+                    type="text"
+                    className="form-input"
+                    placeholder="E.g. bioscience"
+                    value={setupSlug}
+                    onChange={(e) => setSetupSlug(e.target.value)}
+                    style={{ background: 'transparent', border: 'none', boxShadow: 'none', height: '100%', paddingTop: 0, paddingBottom: 0 }}
+                    required
+                  />
+                </div>
+                <span style={{ fontSize: '0.72rem', color: 'var(--grey-400)', position: 'absolute', marginTop: 4 }}>
+                  Lowercase Letters, Numbers, And Hyphens Only. No Spaces.
+                </span>
+              </div>
             </div>
 
             <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: 'var(--space-4)', marginTop: 'var(--space-2)' }}>
@@ -386,21 +388,25 @@ export default function AgentDashboardClient({
               <p style={{ fontSize: '0.78rem', color: 'var(--grey-400)', marginBottom: 'var(--space-3)' }}>
                 Shown To Researchers After Checkout. At Least One Is Required.
               </p>
-              <div className="form-group">
-                <label className="form-label">Zelle Handle / Email</label>
-                <input type="text" className="form-input" value={setupZelle} onChange={(e) => setSetupZelle(e.target.value)} />
+              <div className="grid-2">
+                <div className="form-group" style={{ marginTop: 0 }}>
+                  <label className="form-label">Zelle Handle / Email</label>
+                  <input type="text" className="form-input" value={setupZelle} onChange={(e) => setSetupZelle(e.target.value)} />
+                </div>
+                <div className="form-group" style={{ marginTop: 0 }}>
+                  <label className="form-label">Cash App Handle ($)</label>
+                  <input type="text" className="form-input" value={setupCashApp} onChange={(e) => setSetupCashApp(e.target.value)} />
+                </div>
               </div>
-              <div className="form-group">
-                <label className="form-label">Cash App Handle ($)</label>
-                <input type="text" className="form-input" value={setupCashApp} onChange={(e) => setSetupCashApp(e.target.value)} />
-              </div>
-              <div className="form-group">
-                <label className="form-label">Venmo Handle (@)</label>
-                <input type="text" className="form-input" value={setupVenmo} onChange={(e) => setSetupVenmo(e.target.value)} />
-              </div>
-              <div className="form-group">
-                <label className="form-label">Apple Cash (Phone / Email)</label>
-                <input type="text" className="form-input" value={setupApplePay} onChange={(e) => setSetupApplePay(e.target.value)} />
+              <div className="grid-2">
+                <div className="form-group" style={{ marginTop: 0 }}>
+                  <label className="form-label">Venmo Handle (@)</label>
+                  <input type="text" className="form-input" value={setupVenmo} onChange={(e) => setSetupVenmo(e.target.value)} />
+                </div>
+                <div className="form-group" style={{ marginTop: 0 }}>
+                  <label className="form-label">Apple Cash (Phone / Email)</label>
+                  <input type="text" className="form-input" value={setupApplePay} onChange={(e) => setSetupApplePay(e.target.value)} />
+                </div>
               </div>
             </div>
 
@@ -422,15 +428,15 @@ export default function AgentDashboardClient({
                 <input type="text" className="form-input" value={setupWhStreet2} onChange={(e) => setSetupWhStreet2(e.target.value)} />
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', gap: 'var(--space-3)' }}>
-                <div className="form-group">
+                <div className="form-group" style={{ marginTop: 0 }}>
                   <label className="form-label">City</label>
                   <input type="text" className="form-input" value={setupWhCity} onChange={(e) => setSetupWhCity(e.target.value)} required />
                 </div>
-                <div className="form-group">
+                <div className="form-group" style={{ marginTop: 0 }}>
                   <label className="form-label">State</label>
                   <input type="text" className="form-input" maxLength={2} value={setupWhState} onChange={(e) => setSetupWhState(e.target.value.toUpperCase())} required />
                 </div>
-                <div className="form-group">
+                <div className="form-group" style={{ marginTop: 0 }}>
                   <label className="form-label">Zip</label>
                   <input type="text" className="form-input" maxLength={10} value={setupWhZip} onChange={(e) => setSetupWhZip(e.target.value)} required />
                 </div>

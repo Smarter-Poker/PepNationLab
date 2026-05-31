@@ -304,7 +304,9 @@ export default function Navbar({ onMenuClick, isOpen, title }: { onMenuClick?: (
                 flexShrink: 0,
               }}
             >
-              <img src="/images/back-arrow.jpg" alt="Back" width={36} height={36} style={{ display: 'block', transition: 'opacity 0.2s', objectFit: 'contain', mixBlendMode: 'screen' }} onMouseEnter={e => (e.currentTarget.style.opacity = '0.8')} onMouseLeave={e => (e.currentTarget.style.opacity = '1')} />
+              <div style={{ width: 36, height: 36, overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <img src="/images/back-arrow.jpg" alt="Back" style={{ width: 36, height: 36, transform: 'scale(1.4) translateY(1px)', display: 'block', transition: 'opacity 0.2s', mixBlendMode: 'screen' }} onMouseEnter={e => (e.currentTarget.style.opacity = '0.8')} onMouseLeave={e => (e.currentTarget.style.opacity = '1')} />
+              </div>
             </button>
 
             {/* Vertical divider */}
