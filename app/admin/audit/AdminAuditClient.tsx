@@ -32,9 +32,11 @@ export default function AdminAuditClient({
   const [action, setAction] = useState(initialFilters.action);
   const [busy, setBusy] = useState(false);
   const [hasMore, setHasMore] = useState(initialRows.length >= limit);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   async function load(opts: { reset?: boolean } = {}) {
     setBusy(true);
+    setLoadError(null);
     try {
       const sp = new URLSearchParams();
       if (q) sp.set("q", q);
@@ -44,10 +46,16 @@ export default function AdminAuditClient({
       const res = await fetch(`/api/admin/audit?${sp.toString()}`, {
         cache: "no-store",
       });
+      if (!res.ok) {
+        setLoadError("Could Not Load Audit Entries. Please Try Again.");
+        return;
+      }
       const json = await res.json();
       const next: AuditRow[] = json?.data ?? [];
       setRows(opts.reset ? next : [...rows, ...next]);
       setHasMore(next.length >= limit);
+    } catch {
+      setLoadError("Could Not Load Audit Entries. Please Try Again.");
     } finally {
       setBusy(false);
     }

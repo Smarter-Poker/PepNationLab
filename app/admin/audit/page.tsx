@@ -31,19 +31,57 @@ export default async function AdminAuditPage({
   const sp = await searchParams;
   const limit = 50;
   const service = await createServiceClient();
+  const cleanQ = (sp.q ?? "").replace(/[%,():"'\\]/g, "").trim().slice(0, 60);
   let q = service
     .from("admin_audit_log")
-    .select(
-      "id, actor_id, actor_email, action, target_type, target_id, summary, metadata, created_at",
-    )
+    .select("id, actor_id, action, entity_type, entity_id, changes, created_at")
     .order("created_at", { ascending: false })
     .limit(limit);
 
-  if (sp.q) q = q.ilike("summary", `%${sp.q}%`);
+  if (cleanQ)
+    q = q.or(
+      `action.ilike.%${cleanQ}%,entity_type.ilike.%${cleanQ}%,entity_id.ilike.%${cleanQ}%`,
+    );
   if (sp.action) q = q.eq("action", sp.action);
   if (sp.cursor) q = q.lt("created_at", sp.cursor);
 
-  const { data: rows } = await q;
+  const { data: rawRows } = await q;
+  const baseRows = rawRows ?? [];
+
+  // admin_audit_log stores only actor_id — resolve actor emails in one batch.
+  const actorIds = Array.from(
+    new Set(baseRows.map((r) => r.actor_id).filter(Boolean)),
+  ) as string[];
+  const emailMap: Record<string, string> = {};
+  if (actorIds.length > 0) {
+    const { data: actors } = await service
+      .from("profiles")
+      .select("id, email")
+      .in("id", actorIds);
+    for (const a of actors ?? []) emailMap[a.id] = a.email;
+  }
+
+  const summarize = (changes: unknown): string | null => {
+    if (changes == null) return null;
+    try {
+      const s = JSON.stringify(changes);
+      return s.length > 160 ? `${s.slice(0, 157)}…` : s;
+    } catch {
+      return null;
+    }
+  };
+
+  const rows = baseRows.map((r) => ({
+    id: r.id,
+    actor_id: r.actor_id,
+    actor_email: r.actor_id ? emailMap[r.actor_id] ?? null : null,
+    action: r.action,
+    target_type: r.entity_type,
+    target_id: r.entity_id,
+    summary: summarize(r.changes),
+    metadata: (r.changes as Record<string, unknown> | null) ?? null,
+    created_at: r.created_at,
+  }));
 
   const { data: actions } = await service
     .from("admin_audit_log")
