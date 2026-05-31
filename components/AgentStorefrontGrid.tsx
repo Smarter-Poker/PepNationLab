@@ -1257,7 +1257,7 @@ export default function AgentStorefrontGrid({
           <img src="/cart-icon.png" width={160} height={160} alt="Cart" style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block' }} />
           {totalCartItems > 0 && (
             <span style={{
-              position: 'absolute', top: 50, right: 40, width: 24, height: 24,
+              position: 'absolute', top: 35, right: 25, width: 24, height: 24,
               borderRadius: '50%', background: '#14B8A6', color: '#FFFFFF',
               fontSize: '0.8rem', fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center',
               boxShadow: '0 2px 4px rgba(0,0,0,0.5), 0 0 0 1.5px rgba(255,255,255,0.3)',
