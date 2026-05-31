@@ -121,6 +121,22 @@ export default function AdminAuditClient({
         </button>
       </div>
 
+      {loadError && (
+        <div
+          style={{
+            background: "rgba(229,62,62,0.12)",
+            border: "1px solid rgba(229,62,62,0.4)",
+            color: "var(--danger)",
+            padding: "0.6rem 0.85rem",
+            borderRadius: "var(--radius-md)",
+            marginBottom: "var(--space-4)",
+            fontSize: "0.85rem",
+          }}
+        >
+          {loadError}
+        </div>
+      )}
+
       <div className="metal-frame hover-lift stagger-fade-in">
         <div
           className="metal-content"
