@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient, createServiceClient } from '@/lib/supabase/server';
+import { createClient, createAdminClient } from '@/lib/supabase/server';
 import { z } from 'zod';
 import { applyBulkPrice } from '@/lib/pricing';
 import { assertSameOrigin } from '@/lib/csrf';
@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
   if (csrf) return csrf;
   try {
     const supabase = await createClient();
-    const serviceSupabase = await createServiceClient();
+    const serviceSupabase = createAdminClient();
 
     // Authenticate the user session
     const { data: { user }, error: authError } = await supabase.auth.getUser();
