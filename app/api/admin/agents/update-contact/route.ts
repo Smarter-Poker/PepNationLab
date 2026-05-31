@@ -30,8 +30,16 @@ export async function PATCH(req: NextRequest) {
       return NextResponse.json({ error: 'Cannot Modify Another Admin\'s Contact Info Via This Route' }, { status: 403 });
     }
 
+    // Validate email format before pushing it to auth.users + profiles —
+    // an invalid value would otherwise fail mid-update and leak a provider error.
+    if (email !== undefined && email !== null && email !== '') {
+      if (typeof email !== 'string' || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+        return NextResponse.json({ error: 'Please Enter A Valid Email Address' }, { status: 400 });
+      }
+    }
+
     const updates: { email?: string; phone?: string | null } = {};
-    if (email !== undefined) updates.email = email;
+    if (email) updates.email = String(email).trim().toLowerCase();
     if (phone !== undefined) updates.phone = phone || null;
 
     // 1. Update auth.users if email is provided

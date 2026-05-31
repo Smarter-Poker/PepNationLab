@@ -409,7 +409,7 @@ export default function MessageComposer({ conversationId, selfId, replyTo, onCle
       ref={composerRef}
       className="msg-composer"
       style={{
-        borderTop: '1px solid var(--surface-3, #1D2D3E)',
+        borderTop: '4px solid var(--surface-3, #1D2D3E)',
         padding: 12,
         paddingBottom: 'max(12px, env(safe-area-inset-bottom))',
         background: 'var(--surface-1, #0F1923)',

@@ -357,15 +357,14 @@ export default function MessengerShell({ userId }: Props) {
         <aside className="messenger-sidebar" style={{
           flexShrink: 0,
           width: 320,
-          display: 'flex',
           flexDirection: 'column',
-          borderRight: '1px solid rgba(255, 255, 255, 0.08)',
+          borderRight: '4px solid rgba(255, 255, 255, 0.08)',
           background: '#0a0d14',
           // On mobile this slides out when a conv is active (CSS handles it)
         }}>
           <header style={{
             padding: '12px 14px',
-            borderBottom: '1px solid rgba(255, 255, 255, 0.06)',
+            borderBottom: '4px solid rgba(255, 255, 255, 0.06)',
             display: 'flex',
             flexDirection: 'column',
             gap: 12,

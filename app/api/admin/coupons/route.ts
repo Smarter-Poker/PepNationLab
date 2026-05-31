@@ -81,20 +81,41 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Selected Profile Is Not An Agent' }, { status: 400 });
   }
 
+  // Validate optional numeric fields rather than writing NaN to the DB.
+  let minOrder: number | null = null;
+  if (minOrderAmount !== undefined && minOrderAmount !== null && minOrderAmount !== '') {
+    minOrder = Number(minOrderAmount);
+    if (!Number.isFinite(minOrder) || minOrder < 0) {
+      return NextResponse.json({ error: 'Minimum Order Amount Must Be Zero Or Greater' }, { status: 400 });
+    }
+  }
+
+  let maxUsesVal: number | null = null;
+  if (maxUses !== undefined && maxUses !== null && maxUses !== '') {
+    maxUsesVal = Number(maxUses);
+    if (!Number.isInteger(maxUsesVal) || maxUsesVal < 1) {
+      return NextResponse.json({ error: 'Max Uses Must Be A Whole Number Of At Least One' }, { status: 400 });
+    }
+  }
+
+  // Guard the date parse so a malformed value cannot throw a RangeError (500).
+  let expiresAtIso: string | null = null;
+  if (expiresAt) {
+    const d = new Date(`${expiresAt}T23:59:59`);
+    if (isNaN(d.getTime())) {
+      return NextResponse.json({ error: 'Expiry Date Is Invalid' }, { status: 400 });
+    }
+    expiresAtIso = d.toISOString();
+  }
+
   const insertPayload: Record<string, any> = {
     agent_id: agentId,
     code: normalizedCode,
     discount_type: discountType,
     discount_value: value,
-    min_order_amount:
-      minOrderAmount !== undefined && minOrderAmount !== null && minOrderAmount !== ''
-        ? Number(minOrderAmount)
-        : null,
-    max_uses:
-      maxUses !== undefined && maxUses !== null && maxUses !== ''
-        ? Number(maxUses)
-        : null,
-    expires_at: expiresAt ? new Date(`${expiresAt}T23:59:59`).toISOString() : null,
+    min_order_amount: minOrder,
+    max_uses: maxUsesVal,
+    expires_at: expiresAtIso,
     is_active: true,
   };
 

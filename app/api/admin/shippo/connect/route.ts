@@ -87,8 +87,9 @@ export async function POST(req: NextRequest) {
     .single();
 
   if (insertErr || !inserted) {
+    console.error('Shippo connect insert failed:', insertErr?.message);
     return NextResponse.json(
-      { error: `Database Error: ${insertErr?.message ?? 'insert failed'}` },
+      { error: 'An unexpected error occurred.' },
       { status: 500 },
     );
   }

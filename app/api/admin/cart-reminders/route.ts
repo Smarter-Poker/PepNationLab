@@ -54,7 +54,7 @@ export async function POST(req: NextRequest) {
       messagesToInsert.push({
         sender_id: senderId,
         receiver_id: user.id,
-        subject: 'You left items in your cart!',
+        subject: 'You Left Items In Your Cart',
         body: `Hi ${firstName},\n\nWe noticed you left some research materials in your cart. Your items have been reserved, but inventory is moving fast. Log back in to complete your checkout before they sell out!\n\nBest,\nYour PepNationLab Team`,
       });
 

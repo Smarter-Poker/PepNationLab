@@ -46,8 +46,9 @@ export async function DELETE(req: NextRequest) {
     .eq('id', active.id);
 
   if (updateErr) {
+    console.error('Shippo disconnect update failed:', updateErr.message);
     return NextResponse.json(
-      { error: `Database Error: ${updateErr.message}` },
+      { error: 'An unexpected error occurred.' },
       { status: 500 },
     );
   }
