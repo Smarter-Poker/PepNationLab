@@ -17,6 +17,22 @@ export async function POST(req: NextRequest) {
   const gate = await requireAgent();
   if (!gate.ok) return gate.response;
 
+  // SACA: sub-agents do not own a storefront and cannot change a slug.
+  // Without this gate the UPDATE finds zero rows (sub-agents have no
+  // agent_profiles row) and returns a confusing 500 'unexpected error'.
+  const subAgentCheckClient = await createServiceClient();
+  const { data: subAgentCheck } = await subAgentCheckClient
+    .from('profiles')
+    .select('is_sub_agent')
+    .eq('id', gate.user.id)
+    .maybeSingle();
+  if ((subAgentCheck as { is_sub_agent?: boolean | null } | null)?.is_sub_agent === true) {
+    return NextResponse.json(
+      { error: 'Sub-Agents Do Not Own A Storefront And Cannot Change Slugs.' },
+      { status: 403 },
+    );
+  }
+
   const body = await req.json().catch(() => ({}));
   const raw = typeof body?.slug === 'string' ? body.slug : '';
   const cleanSlug = raw.trim().toLowerCase();

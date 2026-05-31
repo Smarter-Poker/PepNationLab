@@ -37,6 +37,24 @@ export async function POST(req: NextRequest) {
   const gate = await requireAgent();
   if (!gate.ok) return gate.response;
 
+  // SACA: sub-agents have no agent_profiles row to store bundles_config on.
+  // Reject explicitly so the UI surfaces a useful error instead of a silent
+  // no-op or confusing 500.
+  {
+    const svc = await createServiceClient();
+    const { data: caller } = await svc
+      .from('profiles')
+      .select('is_sub_agent')
+      .eq('id', gate.user.id)
+      .maybeSingle();
+    if ((caller as { is_sub_agent?: boolean | null } | null)?.is_sub_agent === true) {
+      return NextResponse.json(
+        { error: 'Sub-Agents Cannot Create Bundles. Bundles Belong To The Storefront-Owning Agent.' },
+        { status: 403 },
+      );
+    }
+  }
+
   const body = await req.json().catch(() => ({}));
   const { name, description, product_ids, discount_percent } = body;
 

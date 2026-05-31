@@ -16,7 +16,7 @@ export default async function AgentDashboardPage() {
   // 2. Fetch user profile
   const { data: profile } = await supabase
     .from('profiles')
-    .select('id, email, full_name, role, tier, is_super_agent')
+    .select('id, email, full_name, role, tier, is_super_agent, is_sub_agent')
     .eq('id', user.id)
     .single();
 
@@ -28,6 +28,17 @@ export default async function AgentDashboardPage() {
   const isAgentOrAbove = ['agent', 'super_agent', 'admin'].includes(profile.role);
   if (!isAgentOrAbove) {
     redirect('/dashboard');
+  }
+
+  // SACA: sub-agents are role='agent' + is_sub_agent=true. They have no
+  // agent_profiles row, no agent_products, no agent_inventory, no storefront
+  // — every query below returns empty for them and the full agent dashboard
+  // exposes config they cannot own. Send them to the dedicated sub-agent
+  // dashboard (already covered by /dashboard but a direct hit on this URL
+  // would bypass that). This is a defense-in-depth complement to the
+  // /dashboard/page.tsx redirect that landed in Round 4.
+  if ((profile as { is_sub_agent?: boolean | null }).is_sub_agent === true) {
+    redirect('/dashboard/sub-agent');
   }
 
   // 4. Fetch agent storefront profile
