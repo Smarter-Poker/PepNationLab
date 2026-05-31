@@ -417,6 +417,16 @@ a:hover { color: var(--teal-dark); }
   padding: var(--space-6);
 }
 
+.card-metal {
+  background: linear-gradient(180deg, rgba(20,25,30,0.8) 0%, rgba(10,15,20,0.9) 100%);
+  border: 1px solid transparent;
+  box-shadow: 0 0 0 1.5px #C0B8A8, inset 0 0 0 1px rgba(0,0,0,0.5), 0 8px 24px rgba(0,0,0,0.6);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border-radius: var(--radius-xl);
+  padding: var(--space-6);
+}
+
 .admin-kpi-card:hover {
   border-color: var(--teal) !important;
   transform: translateY(-2px);

@@ -817,10 +817,10 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
             }
           }
           .premium-panel {
-            background: linear-gradient(145deg, var(--surface-2), var(--surface-1));
-            border: 1px solid rgba(192, 184, 168, 0.4);
-            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
-            border-radius: 12px;
+            background: linear-gradient(180deg, rgba(20,25,30,0.8) 0%, rgba(10,15,20,0.9) 100%);
+            border: 1px solid transparent;
+            box-shadow: 0 0 0 1.5px #C0B8A8, inset 0 0 0 1px rgba(0,0,0,0.5), 0 8px 24px rgba(0,0,0,0.6);
+            border-radius: 16px;
           }
           .premium-input {
             background: rgba(255, 255, 255, 0.05) !important;
@@ -1182,12 +1182,12 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
                             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 64, height: 48, flexShrink: 0 }}>
                               {p.icon}
                             </div>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', flexWrap: 'wrap' }}>
-                              <strong style={{ color: 'var(--white)', fontSize: '1.05rem', fontFamily: 'var(--font-brand)', margin: 0, padding: 0, lineHeight: 1 }}>{p.name}</strong>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', flexWrap: 'nowrap', overflow: 'hidden' }}>
+                              <strong style={{ color: 'var(--white)', fontSize: '1.05rem', fontFamily: 'var(--font-brand)', margin: 0, padding: 0, lineHeight: 1, whiteSpace: 'nowrap' }}>{p.name}</strong>
                               {agentPaymentHandles?.[p.id] && (
                                 <>
                                   <span style={{ color: 'rgba(255,255,255,0.2)', fontSize: '1rem', lineHeight: 1 }}>-</span>
-                                  <span style={{ fontSize: '0.95rem', color: 'var(--silver)', lineHeight: 1, fontFamily: 'monospace' }}>
+                                  <span style={{ fontSize: '0.95rem', color: 'var(--silver)', lineHeight: 1, fontFamily: 'monospace', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                                     {agentPaymentHandles[p.id]}
                                   </span>
                                 </>

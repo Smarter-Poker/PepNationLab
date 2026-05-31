@@ -218,7 +218,7 @@ export async function POST(request: NextRequest) {
       // Resolve the storefront agent from the slug (same table the storefront page uses)
       const { data: storefrontAgent } = await serviceSupabase
         .from('agent_profiles')
-        .select('id, min_overall_qty')
+        .select('id, min_overall_qty, min_order_qty')
         .ilike('slug', agentSlug)
         .single();
 
@@ -239,13 +239,24 @@ export async function POST(request: NextRequest) {
             { status: 403 }
           );
         }
+      }
 
-        // Enforce storefront overall minimum quantity
-        const totalRequestedQty = items.reduce((acc, item) => acc + (Number(item.quantity) || 0), 0);
-        const minQty = Number(storefrontAgent.min_overall_qty) || 1;
-        if (totalRequestedQty < minQty) {
+      // Enforce storefront overall minimum quantity for EVERYONE checking out from this storefront
+      const totalRequestedQty = items.reduce((acc, item) => acc + (Number(item.quantity) || 0), 0);
+      const minQty = Number(storefrontAgent.min_overall_qty) || 1;
+      if (totalRequestedQty < minQty) {
+        return NextResponse.json(
+          { error: `This storefront requires a minimum overall order of ${minQty} items.` },
+          { status: 400 }
+        );
+      }
+
+      // Enforce per-peptide minimum quantity
+      const minPerItem = Number(storefrontAgent.min_order_qty) || 1;
+      for (const item of items) {
+        if ((Number(item.quantity) || 0) < minPerItem) {
           return NextResponse.json(
-            { error: `This storefront requires a minimum overall order of ${minQty} items.` },
+            { error: `This storefront requires a minimum of ${minPerItem} per peptide.` },
             { status: 400 }
           );
         }
