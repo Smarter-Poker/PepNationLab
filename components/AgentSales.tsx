@@ -146,7 +146,7 @@ export default function AgentSales() {
                     <Tooltip 
                       contentStyle={{ backgroundColor: 'rgba(5,10,15,0.95)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', color: '#fff' }}
                       itemStyle={{ color: '#fff' }}
-                      formatter={(value: number) => [formatCurrency(value), '']}
+                      formatter={(value: any) => [formatCurrency(Number(value) || 0), '']}
                     />
                     <Area type="monotone" dataKey="sales" name="Revenue" stroke="#00E5FF" strokeWidth={3} fillOpacity={1} fill="url(#colorSales)" />
                     <Area type="monotone" dataKey="profit" name="Profit" stroke="#00FF9D" strokeWidth={3} fillOpacity={1} fill="url(#colorProfit)" />
