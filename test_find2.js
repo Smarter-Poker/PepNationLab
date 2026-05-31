@@ -5,7 +5,9 @@ const key = process.env.SUPABASE_SERVICE_ROLE_KEY.trim();
 const supabase = createClient(url, key);
 
 async function run() {
-  const { data, error } = await supabase.from('profiles').select('id, full_name, username').limit(5);
-  console.log(data, error);
+  const { data: users, error } = await supabase.auth.admin.listUsers();
+  console.log('Auth users:', users.users.map(u => u.email));
+  const { data: profiles } = await supabase.from('profiles').select('*');
+  console.log('Profiles:', profiles.map(p => ({ id: p.id, username: p.username, email: p.email })));
 }
 run().catch(console.error);

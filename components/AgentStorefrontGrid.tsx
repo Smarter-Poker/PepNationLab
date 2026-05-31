@@ -1231,8 +1231,8 @@ export default function AgentStorefrontGrid({
             position: 'fixed',
             bottom: 'env(safe-area-inset-bottom, 20px)',
             right: 20,
-            width: 280,
-            height: 280,
+            width: 160,
+            height: 160,
             background: 'transparent',
             border: 'none',
             display: 'flex',
@@ -1253,12 +1253,12 @@ export default function AgentStorefrontGrid({
           }}
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/cart-icon.png" width={280} height={280} alt="Cart" style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block' }} />
+          <img src="/cart-icon.png" width={160} height={160} alt="Cart" style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block' }} />
           {totalCartItems > 0 && (
             <span style={{
-              position: 'absolute', top: '38%', left: '47%', transform: 'translate(-50%, -50%)', width: 28, height: 28,
+              position: 'absolute', top: '38%', left: '47%', transform: 'translate(-50%, -50%)', width: 24, height: 24,
               borderRadius: '50%', background: '#14B8A6', color: '#FFFFFF',
-              fontSize: '0.9rem', fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: '0.8rem', fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center',
               boxShadow: '0 2px 4px rgba(0,0,0,0.5), 0 0 0 1.5px rgba(255,255,255,0.3)',
               zIndex: 10
             }}>
