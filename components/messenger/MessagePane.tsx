@@ -84,20 +84,23 @@ function reminderPreviewFromMessage(m: Message): string {
   }
 }
 
-const markReadThrottle: Record<string, number> = {};
+const markReadTimeouts: Record<string, NodeJS.Timeout> = {};
+
 async function markConversationRead(conversationId: string, lastReadMessageId: string) {
-  const now = Date.now();
-  if (markReadThrottle[conversationId] && now - markReadThrottle[conversationId] < 3000) return;
-  markReadThrottle[conversationId] = now;
-  try {
-    await fetch('/api/messenger/mark-read', {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ conversationId, lastReadMessageId }),
-    });
-  } catch {
-    // Best-effort -- the trigger will re-increment when the next message arrives.
+  if (markReadTimeouts[conversationId]) {
+    clearTimeout(markReadTimeouts[conversationId]);
   }
+  markReadTimeouts[conversationId] = setTimeout(async () => {
+    try {
+      await fetch('/api/messenger/mark-read', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ conversationId, lastReadMessageId }),
+      });
+    } catch {
+      // Best-effort
+    }
+  }, 1000); // 1-second debounce
 }
 
 type PushBannerState = 'hidden' | 'default' | 'denied';
@@ -572,7 +575,7 @@ export default function MessagePane({ userId, activeCall, setActiveCall }: Props
           (map[r.message_id] ??= []).push(r);
         });
         setReactionsByMsg(map);
-        const lastId = list.length > 0 ? list[list.length - 1].id : null;
+        const lastId = list.length > 0 ? list[0].id : null;
         if (lastId) void markConversationRead(activeId, lastId);
         void loadPinsLabels(activeId, list.map((m) => m.id));
       } catch (err) {
@@ -638,7 +641,7 @@ export default function MessagePane({ userId, activeCall, setActiveCall }: Props
             return next;
           });
           
-          const finalLastId = list.length > 0 ? list[0].id : null;
+          const finalLastId = list[0]?.id;
           if (finalLastId) void markConversationRead(activeId, finalLastId);
         }
       } catch (err) {

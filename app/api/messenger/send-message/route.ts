@@ -182,7 +182,7 @@ export async function POST(req: NextRequest) {
       await Promise.all(
         participants.map(async (p: any) => {
           // In-app notification (shows in bell immediately via Realtime)
-          await notifyNewMessage(svc, p.user_id, senderName, rawBody);
+          await notifyNewMessage(svc, p.user_id, senderName, rawBody, parsed.data.conversationId);
           // Web push (background, requires subscription + permission)
           await enqueuePush(svc, {
             userId: p.user_id,

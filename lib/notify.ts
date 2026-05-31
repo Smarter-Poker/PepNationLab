@@ -435,12 +435,12 @@ export async function notifyAdminOrderStatusChange(
   });
 }
 
-/** Notify a user they received a new message in the messenger */
 export async function notifyNewMessage(
   supabase: SupabaseClient,
   recipientId: string,
   senderName: string,
   messagePreview: string,
+  conversationId: string,
 ) {
   const preview = messagePreview.length > 80 ? `${messagePreview.slice(0, 77)}…` : messagePreview;
   await notify(supabase, {
@@ -448,6 +448,6 @@ export async function notifyNewMessage(
     type: 'new_message',
     title: `New Message from ${senderName}`,
     body: preview,
-    url: `/dashboard/messages`,
+    url: `/messenger?conv=${conversationId}`,
   });
 }

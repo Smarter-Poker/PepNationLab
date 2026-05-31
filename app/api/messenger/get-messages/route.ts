@@ -58,9 +58,9 @@ export async function POST(req: NextRequest) {
       'id, conversation_id, sender_id, text, message_type, media_url, media_metadata, reply_to_id, thread_parent_id, is_edited, is_deleted, delete_scope, priority, status, labels, expires_at, metadata, created_at, updated_at'
     )
     .eq('conversation_id', parsed.data.conversationId)
-    // Audit9: thread replies belong in the thread drawer, not the main pane.
     .is('thread_parent_id', null)
     .order('created_at', { ascending: false })
+    .order('id', { ascending: false })
     .limit(limit);
 
   if (parsed.data.beforeId) {
