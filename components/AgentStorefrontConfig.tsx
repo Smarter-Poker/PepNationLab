@@ -22,6 +22,7 @@ interface AgentStorefrontConfigProps {
   setVolumePricingEnabled: (val: boolean) => void;
   agentId: string;
   onSaveSuccess?: (updatedData: any) => void;
+  paymentMethodsNode?: React.ReactNode;
 }
 
 export default function AgentStorefrontConfig({
@@ -35,6 +36,7 @@ export default function AgentStorefrontConfig({
   setVolumePricingEnabled,
   agentId,
   onSaveSuccess,
+  paymentMethodsNode,
 }: AgentStorefrontConfigProps) {
   const [loading, setLoading] = React.useState(false);
 
@@ -222,7 +224,7 @@ export default function AgentStorefrontConfig({
           </div>
         </div>
 
-        <form onSubmit={handleUpdateProfile} style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-5)' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-5)' }}>
           <div className="grid-2">
             <div className="form-group" style={{ marginTop: 0 }}>
               <label className="form-label">Display Name</label>
@@ -291,10 +293,35 @@ export default function AgentStorefrontConfig({
                 <input type="text" className="form-input" value={primaryColor} onChange={(e) => setPrimaryColor(e.target.value)} pattern="^#+([a-fA-F0-9]{6}|[a-fA-F0-9]{3})$" style={{ height: '100%', margin: 0 }} />
               </div>
             </div>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 'var(--space-4)' }}>
+            <button
+              type="button"
+              onClick={handleUpdateProfile}
+              disabled={loading}
+              className="btn-neon-cyan"
+              style={{
+                minWidth: 160,
+                padding: '10px 24px',
+                fontSize: '1rem',
+                cursor: loading ? 'not-allowed' : 'pointer',
+                opacity: loading ? 0.7 : 1,
+              }}
+            >
+              {loading ? 'Saving Changes...' : 'Save Configuration'}
+            </button>
           </div>
+        </div>
+      </div>
 
-          <hr style={{ border: 'none', borderTop: '1px solid rgba(255,255,255,0.05)', margin: 'var(--space-4) 0' }} />
+      {/* ── Pricing & Discounts Configuration ── */}
+      <PricingConfig agentId={agentId} />
 
+      {/* ── Payment Methods ── */}
+      {paymentMethodsNode}
+
+      {/* ── Warehouse & Shipping Configuration ── */}
+      <div className="metal-frame" style={{ marginTop: 'var(--space-6)' }}>
+        <div className="metal-content" style={{ padding: 'var(--space-8)' }}>
           <h4 style={{ color: 'var(--teal)', fontSize: '1rem', marginBottom: 'var(--space-2)' }}>Warehouse Address</h4>
           <p style={{ color: 'var(--grey-400)', fontSize: '0.85rem', marginBottom: 'var(--space-4)' }}>
             Used As The Ship-From Address When Buying Shipping Labels.
@@ -346,7 +373,8 @@ export default function AgentStorefrontConfig({
 
           <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 'var(--space-4)' }}>
             <button
-              type="submit"
+              type="button"
+              onClick={handleUpdateProfile}
               disabled={loading}
               className="btn-neon-cyan"
               style={{
@@ -357,15 +385,12 @@ export default function AgentStorefrontConfig({
                 opacity: loading ? 0.7 : 1,
               }}
             >
-              {loading ? 'Saving Changes...' : 'Save Configuration'}
+              {loading ? 'Saving Changes...' : 'Save Warehouse Details'}
             </button>
           </div>
-        </form>
         </div>
       </div>
 
-      {/* ── Pricing & Discounts Configuration ── */}
-      <PricingConfig agentId={agentId} />
     </div>
   );
 }

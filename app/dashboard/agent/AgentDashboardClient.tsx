@@ -1086,18 +1086,18 @@ export default function AgentDashboardClient({
                   setAgentProfile({ ...agentProfile, ...updatedData });
                 }
               }}
+              paymentMethodsNode={
+                agentProfile ? (
+                  <PaymentMethodsPanel
+                    agentId={userProfile.id}
+                    initialHandles={agentProfile.payment_handles as Record<string, string> | null}
+                    onSaveSuccess={(newHandles) => {
+                      setAgentProfile(prev => prev ? { ...prev, payment_handles: newHandles } : prev);
+                    }}
+                  />
+                ) : null
+              }
             />
-
-            {/* Payment Methods */}
-            {agentProfile && (
-              <PaymentMethodsPanel
-                agentId={userProfile.id}
-                initialHandles={agentProfile.payment_handles as Record<string, string> | null}
-                onSaveSuccess={(newHandles) => {
-                  setAgentProfile(prev => prev ? { ...prev, payment_handles: newHandles } : prev);
-                }}
-              />
-            )}
           </div>
         )}
 

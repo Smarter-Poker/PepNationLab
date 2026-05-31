@@ -813,36 +813,38 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
             }
           }
           .premium-panel {
-            background: var(--surface-1);
+            background: linear-gradient(145deg, var(--surface-2), var(--surface-1));
             border: 1px solid rgba(192, 184, 168, 0.4);
-            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.5);
+            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
             border-radius: 12px;
           }
           .premium-input {
-            background: var(--black-2) !important;
+            background: rgba(255, 255, 255, 0.05) !important;
             border: 1px solid rgba(192, 184, 168, 0.4) !important;
             border-radius: 8px !important;
             color: var(--white) !important;
-            box-shadow: inset 0 1px 1px rgba(255,255,255,0.1), 0 4px 12px rgba(0,0,0,0.4) !important;
+            box-shadow: inset 0 1px 1px rgba(0,0,0,0.2) !important;
             transition: all 0.2s ease !important;
           }
           .premium-input:focus {
             border-color: #C0B8A8 !important;
-            box-shadow: inset 0 1px 1px rgba(255,255,255,0.3), 0 4px 12px rgba(0,0,0,0.6) !important;
+            background: rgba(255, 255, 255, 0.08) !important;
+            box-shadow: inset 0 1px 1px rgba(0,0,0,0.3), 0 0 8px rgba(192, 184, 168, 0.3) !important;
             outline: none !important;
           }
           .premium-action-btn {
-            background: linear-gradient(180deg, #2A2A2A 0%, #1A1A1A 100%) !important;
+            background: linear-gradient(180deg, #3A3A3A 0%, #1A1A1A 100%) !important;
             border: 1px solid #C0B8A8 !important;
-            box-shadow: inset 0 1px 1px rgba(255,255,255,0.3), 0 4px 12px rgba(0,0,0,0.6) !important;
+            box-shadow: inset 0 1px 1px rgba(255,255,255,0.2), 0 4px 12px rgba(0,0,0,0.5) !important;
             color: #C0B8A8 !important;
             text-shadow: 0 1px 2px rgba(0,0,0,0.8) !important;
             border-radius: 8px !important;
-            transition: transform 0.15s, filter 0.15s !important;
+            transition: transform 0.15s, filter 0.15s, background 0.15s !important;
           }
           .premium-action-btn:hover {
             transform: scale(1.02) !important;
-            filter: drop-shadow(0 2px 6px rgba(0,0,0,0.5)) !important;
+            background: linear-gradient(180deg, #444 0%, #222 100%) !important;
+            filter: drop-shadow(0 2px 8px rgba(192, 184, 168, 0.3)) !important;
             color: #fff !important;
           }
         `}</style>
