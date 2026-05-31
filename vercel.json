@@ -17,14 +17,6 @@
       "schedule": "0 */6 * * *"
     },
     {
-      "path": "/api/cron/apply-price-changes",
-      "schedule": "0,15,30,45 * * * *"
-    },
-    {
-      "path": "/api/cron/subscriptions-process",
-      "schedule": "5 * * * *"
-    },
-    {
       "path": "/api/cron/referrals-fulfil",
       "schedule": "30 * * * *"
     },
@@ -35,10 +27,6 @@
     {
       "path": "/api/cron/recommendations-refresh",
       "schedule": "0 4 * * *"
-    },
-    {
-      "path": "/api/cron/webhooks-dispatch",
-      "schedule": "*/5 * * * *"
     },
     {
       "path": "/api/messenger/cron/process-scheduled",
