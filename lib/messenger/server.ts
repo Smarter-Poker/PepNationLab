@@ -196,3 +196,32 @@ export function getCronAuth(
   }
   return { ok: true };
 }
+
+export async function broadcastCallSignalServer(
+  targetUserId: string,
+  event: 'incoming_call' | 'call_accepted' | 'call_declined' | 'call_ended',
+  payload: any,
+): Promise<void> {
+  const svc = await createServiceClient();
+  const ch = svc.channel(`call-signal:${targetUserId}`);
+  
+  try {
+    await new Promise<void>((resolve, reject) => {
+      const timeout = setTimeout(() => reject(new Error('timeout')), 3000);
+      ch.subscribe((status) => {
+        if (status === 'SUBSCRIBED') {
+          clearTimeout(timeout);
+          resolve();
+        } else if (status === 'CHANNEL_ERROR') {
+          clearTimeout(timeout);
+          reject(new Error('error'));
+        }
+      });
+    });
+    await ch.send({ type: 'broadcast', event, payload });
+  } catch (err) {
+    console.warn('[SERVER BROADCAST] Failed to broadcast to', targetUserId, err);
+  } finally {
+    void svc.removeChannel(ch);
+  }
+}
