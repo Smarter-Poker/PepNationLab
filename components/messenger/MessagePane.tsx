@@ -1078,7 +1078,7 @@ export default function MessagePane({ userId }: Props) {
           justifyContent: 'space-between',
           padding: '12px 16px',
           borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
-          background: 'linear-gradient(145deg, #111520 0%, #1a1f2e 100%)',
+          background: 'linear-gradient(145deg, #0a0d14 0%, #0f141d 100%)',
           boxShadow: '0 2px 10px rgba(0,0,0,0.5)',
           flexShrink: 0,
           gap: 8,

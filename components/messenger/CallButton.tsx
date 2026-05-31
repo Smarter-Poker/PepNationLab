@@ -1,6 +1,5 @@
 'use client';
 import { useEffect, useState } from 'react';
-import { Phone, Video } from 'lucide-react';
 import { toast } from 'sonner';
 import type { CallSignalRow } from '@/lib/messenger/realtime';
 import { useMessengerStore } from '@/stores/messengerStore';
@@ -12,15 +11,13 @@ interface Props {
 
 const iconBtn: React.CSSProperties = {
   background: 'transparent',
-  border: '1px solid var(--surface-3, #1D2D3E)',
-  borderRadius: 8,
-  width: 32,
-  height: 32,
+  border: 'none',
+  padding: 0,
   display: 'inline-flex',
   alignItems: 'center',
   justifyContent: 'center',
   cursor: 'pointer',
-  color: 'var(--white, #FFFFFF)',
+  transition: 'transform 0.1s',
 };
 
 export default function CallButton({ conversationId, onCallStarted }: Props) {
@@ -99,9 +96,10 @@ export default function CallButton({ conversationId, onCallStarted }: Props) {
         disabled={busy}
         aria-label="Start Voice Call"
         title="Start Voice Call"
+        className="hover-lift"
         style={iconBtn}
       >
-        <Phone size={16} aria-hidden="true" />
+        <img src="/messenger-icons/phone-icon.jpg" alt="Voice Call" style={{ width: 32, height: 32, borderRadius: 6, objectFit: 'cover' }} />
       </button>
       <button
         type="button"
@@ -109,9 +107,10 @@ export default function CallButton({ conversationId, onCallStarted }: Props) {
         disabled={busy}
         aria-label="Start Video Call"
         title="Start Video Call"
+        className="hover-lift"
         style={iconBtn}
       >
-        <Video size={16} aria-hidden="true" />
+        <img src="/messenger-icons/video-icon.jpg" alt="Video Call" style={{ width: 32, height: 32, borderRadius: 6, objectFit: 'cover' }} />
       </button>
     </div>
   );

@@ -338,29 +338,25 @@ export default function MessengerShell({ userId }: Props) {
             - aside: flex-shrink:0, width:320px
             - main:  flex:1 1 0, min-width:0
           ============================================================ */}
+    <div className="metal-frame" style={{ height: 'calc(100vh - 60px)', display: 'flex', flexDirection: 'column' }}>
       <div
-        className={`messenger-shell${activeId ? ' msg-panel-active' : ''}`}
+        className={`messenger-shell metal-content${activeId ? ' msg-panel-active' : ''}`}
         style={{
           display: 'flex',
-          height: '100%',
+          flex: 1,
           overflow: 'hidden',
-          background: 'linear-gradient(180deg, #1a1f2e 0%, #141820 40%, #111520 100%)',
+          padding: 0,
           position: 'relative',
         }}
       >
         {/* ---- Conversation list sidebar ---- */}
-        <aside className="messenger-sidebar card-metal" style={{
+        <aside className="messenger-sidebar" style={{
           flexShrink: 0,
           width: 320,
           display: 'flex',
           flexDirection: 'column',
-          borderRadius: 0, // Reset to fit container if needed, or we can keep it as is
-          borderTop: 'none',
-          borderBottom: 'none',
-          borderLeft: 'none',
           borderRight: '1px solid rgba(255, 255, 255, 0.08)',
-          boxShadow: 'none',
-          background: 'linear-gradient(145deg, #111520 0%, #1a1f2e 100%)',
+          background: '#0a0d14',
           // On mobile this slides out when a conv is active (CSS handles it)
         }}>
           <header style={{
@@ -385,7 +381,7 @@ export default function MessengerShell({ userId }: Props) {
           flexDirection: 'column',
           overflow: 'hidden',
           position: 'relative',
-          background: 'linear-gradient(180deg, #1a1f2e 0%, #141820 40%, #111520 100%)',
+          background: '#0a0d14',
         }}>
           {/* Mobile back button — only visible on mobile when a conv is active */}
           {activeId && (
@@ -399,7 +395,7 @@ export default function MessengerShell({ userId }: Props) {
                 alignItems: 'center',
                 gap: 8,
                 padding: '12px 16px',
-                background: 'linear-gradient(90deg, rgba(26,31,46,0.95) 0%, rgba(20,24,32,0.95) 100%)',
+                background: '#0f141d',
                 border: 'none',
                 borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
                 color: '#00C4BC',
@@ -420,7 +416,7 @@ export default function MessengerShell({ userId }: Props) {
           <MessagePane key={activeId || 'empty'} userId={userId} />
         </div>
       </div>
-
+    </div>
     </>
   );
 }

@@ -500,19 +500,16 @@ export default function MessageComposer({ conversationId, selfId, replyTo, onCle
                 alignItems: 'center',
                 justifyContent: 'center',
                 cursor: 'pointer',
-                color: 'var(--grey-400, #A8B4C0)',
-                boxShadow: '2px 2px 5px rgba(0,0,0,0.3), -1px -1px 3px rgba(255,255,255,0.03)',
-                transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+                background: 'transparent',
+                border: 'none',
+                padding: 0,
+                transition: 'transform 0.1s',
               }}
-              onMouseEnter={(e) => { e.currentTarget.style.transform = 'scale(1.05)'; e.currentTarget.style.color = 'var(--white)'; }}
-              onMouseLeave={(e) => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.color = 'var(--grey-400, #A8B4C0)'; }}
+              className="hover-lift"
               aria-label="Add Media"
               title="Add Media"
             >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <line x1="12" y1="5" x2="12" y2="19"></line>
-                <line x1="5" y1="12" x2="19" y2="12"></line>
-              </svg>
+              <img src="/messenger-icons/add-media-icon.jpg" alt="Add Media" style={{ width: 28, height: 28, borderRadius: '50%', objectFit: 'cover' }} />
             </button>
           </div>
 
@@ -564,11 +561,11 @@ export default function MessageComposer({ conversationId, selfId, replyTo, onCle
             <div style={{ display: 'flex', alignItems: 'center', gap: 4, paddingBottom: 2 }}>
               {!text.trim() && (
                 <>
-                  <button type="button" onClick={() => togglePopover(setShowEmoji)} className="composer-icon-btn premium-btn" aria-label="Insert Emoji" title="Insert Emoji">
-                    <Smile size={18} />
+                  <button type="button" onClick={() => togglePopover(setShowEmoji)} className="hover-lift" style={{ background: 'transparent', border: 'none', padding: 0, cursor: 'pointer' }} aria-label="Insert Emoji" title="Insert Emoji">
+                    <img src="/messenger-icons/emoji-icon.jpg" alt="Emoji" style={{ width: 24, height: 24, borderRadius: '50%', objectFit: 'cover' }} />
                   </button>
-                  <button type="button" onClick={() => togglePopover(setShowScheduleInput)} className="composer-icon-btn premium-btn" aria-label="Schedule Send" title="Schedule Send">
-                    <Calendar size={18} />
+                  <button type="button" onClick={() => togglePopover(setShowScheduleInput)} className="hover-lift" style={{ background: 'transparent', border: 'none', padding: 0, cursor: 'pointer' }} aria-label="Schedule Send" title="Schedule Send">
+                    <img src="/messenger-icons/calendar-icon.jpg" alt="Schedule" style={{ width: 24, height: 24, borderRadius: 6, objectFit: 'cover' }} />
                   </button>
                   <button type="button" onClick={() => togglePopover(setShowExpiry)} className="composer-icon-btn premium-btn" aria-label="Set Expiry" title="Set Expiry">
                     <Clock size={18} />
