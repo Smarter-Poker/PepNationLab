@@ -26,18 +26,24 @@ export default function AttachMenu({ onPickImage, onPickVideo, onPickVoice, onPi
     </button>
   );
   return (
-    <div role="menu" aria-label="Attach"
-      style={{
-        position: 'absolute', bottom: 56, left: 8,
-        background: 'var(--surface-2, #162230)', border: '1px solid var(--surface-3, #1D2D3E)',
-        borderRadius: 10, padding: 6, boxShadow: '0 8px 24px rgba(0,0,0,0.4)',
-        display: 'flex', flexDirection: 'column', gap: 2, zIndex: 50, minWidth: 180,
-      }}
-    >
-      {item('Upload Image', ImageIcon, onPickImage)}
-      {item('Upload Video', Video, onPickVideo)}
-      {item('Record Voice', Mic, onPickVoice)}
-      {item('Upload File', FileText, onPickFile)}
-    </div>
+    <>
+      <div 
+        style={{ position: 'fixed', inset: 0, zIndex: 40 }} 
+        onClick={(e) => { e.stopPropagation(); onClose(); }} 
+      />
+      <div role="menu" aria-label="Attach"
+        style={{
+          position: 'absolute', bottom: 56, left: 8,
+          background: 'var(--surface-2, #162230)', border: '1px solid var(--surface-3, #1D2D3E)',
+          borderRadius: 10, padding: 6, boxShadow: '0 8px 24px rgba(0,0,0,0.4)',
+          display: 'flex', flexDirection: 'column', gap: 2, zIndex: 50, minWidth: 180,
+        }}
+      >
+        {item('Upload Image', ImageIcon, onPickImage)}
+        {item('Upload Video', Video, onPickVideo)}
+        {item('Record Voice', Mic, onPickVoice)}
+        {item('Upload File', FileText, onPickFile)}
+      </div>
+    </>
   );
 }

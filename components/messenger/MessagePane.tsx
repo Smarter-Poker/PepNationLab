@@ -143,10 +143,21 @@ export default function MessagePane({ userId, activeCall, setActiveCall }: Props
   const broadcastMessageRef = useRef<((m: Message) => void) | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+
   const scrollToBottom = useCallback((behavior: ScrollBehavior = 'auto') => {
     setTimeout(() => {
-      messagesEndRef.current?.scrollIntoView({ behavior });
-    }, 50);
+      const container = scrollContainerRef.current;
+      if (container) {
+        if (behavior === 'smooth') {
+          container.scrollTo({ top: container.scrollHeight, behavior: 'smooth' });
+        } else {
+          container.scrollTop = container.scrollHeight;
+        }
+      } else {
+        messagesEndRef.current?.scrollIntoView({ behavior });
+      }
+    }, 100); // Increased timeout slightly to ensure paint is done
   }, []);
 
   // Scroll to bottom when messages load or change
@@ -461,7 +472,7 @@ export default function MessagePane({ userId, activeCall, setActiveCall }: Props
           };
         });
       },
-    });
+    }, userId);
     
     broadcastMessageRef.current = broadcastNewMessage;
 
@@ -920,7 +931,7 @@ export default function MessagePane({ userId, activeCall, setActiveCall }: Props
         refreshKey={pinRefreshKey}
         onJump={handleJumpToMessage}
       />
-      <div className="msg-list" onClick={() => setActiveMenuId(null)} style={{ flex: 1, minHeight: 0, overflowY: 'auto', WebkitOverflowScrolling: 'touch', overscrollBehavior: 'contain', padding: 16, display: 'flex', flexDirection: 'column', gap: 0 }}>
+      <div ref={scrollContainerRef} className="msg-list" onClick={() => setActiveMenuId(null)} style={{ flex: 1, minHeight: 0, overflowY: 'auto', WebkitOverflowScrolling: 'touch', overscrollBehavior: 'contain', padding: 16, display: 'flex', flexDirection: 'column', gap: 0 }}>
         {loading && messages.length === 0 ? (
           <div style={{ color: 'var(--grey-400, #A8B4C0)', textAlign: 'center', marginTop: 32 }}>
             Loading Messages

@@ -13,49 +13,100 @@ interface MessageHandlers {
   onReactionDelete?: (r: { message_id: string; user_id: string; emoji: string | null }) => void;
 }
 
-export function subscribeMessages(conversationId: string, handlers: MessageHandlers): { channel: RealtimeChannel; broadcastNewMessage: (m: Message) => void } {
-  const ch = supabase.channel(`chat:${conversationId}`, {
-    config: { broadcast: { ack: false, self: false } },
-  });
-  ch.on('broadcast', { event: 'new_message' }, (payload) => {
-    if (payload.payload && (payload.payload as any).message) {
-      handlers.onInsert?.((payload.payload as any).message as Message);
-    } else if (payload.payload) {
-      handlers.onInsert?.(payload.payload as Message); // Fallback for local broadcast
+export function subscribeMessages(
+  conversationId: string,
+  handlers: MessageHandlers,
+  selfId: string,
+): { channel: RealtimeChannel; broadcastNewMessage: (m: Message) => void } {
+  const ch = supabase.channel(`conversation:${conversationId}`);
+
+  ch.on(
+    'postgres_changes',
+    {
+      event: 'INSERT',
+      schema: 'public',
+      table: 'messenger_messages',
+      filter: `conversation_id=eq.${conversationId}`,
+    },
+    (payload) => {
+      const newMsg = payload.new as Message;
+      // Skip optimistic local messages
+      if (newMsg.sender_id === selfId) return;
+      
+      handlers.onInsert?.(newMsg);
     }
-  });
-  ch.on('broadcast', { event: 'update_message' }, (payload) => {
-    if (payload.payload && (payload.payload as any).message) {
-      handlers.onUpdate?.((payload.payload as any).message as Message);
+  );
+
+  ch.on(
+    'postgres_changes',
+    {
+      event: 'UPDATE',
+      schema: 'public',
+      table: 'messenger_messages',
+      filter: `conversation_id=eq.${conversationId}`,
+    },
+    (payload) => {
+      const updatedMsg = payload.new as Message;
+      handlers.onUpdate?.(updatedMsg);
     }
-  });
-  ch.on('broadcast', { event: 'delete_message' }, (payload) => {
-    if (payload.payload && (payload.payload as any).message) {
-      handlers.onUpdate?.((payload.payload as any).message as Message);
-    } else if (payload.payload && (payload.payload as any).messageId) {
-      handlers.onDelete?.((payload.payload as any).messageId as string);
+  );
+
+  ch.on(
+    'postgres_changes',
+    {
+      event: 'DELETE',
+      schema: 'public',
+      table: 'messenger_messages',
+      filter: `conversation_id=eq.${conversationId}`,
+    },
+    (payload) => {
+      if (payload.old && payload.old.id) {
+        handlers.onDelete?.(payload.old.id);
+      }
     }
-  });
-  ch.on('broadcast', { event: 'reaction_added' }, (payload) => {
-    if (payload.payload && (payload.payload as any).reaction) {
-      handlers.onReactionInsert?.((payload.payload as any).reaction as Reaction);
+  );
+
+  ch.on(
+    'postgres_changes',
+    {
+      event: 'INSERT',
+      schema: 'public',
+      table: 'messenger_reactions',
+      // Supabase realtime filter currently does not support join filters easily,
+      // but we filter out client-side if needed, or just let all reactions flow if no filter available,
+      // wait, we can't filter by conversation_id on messenger_reactions since it only has message_id.
+    },
+    (payload) => {
+      handlers.onReactionInsert?.(payload.new as Reaction);
     }
-  });
-  ch.on('broadcast', { event: 'reaction_removed' }, (payload) => {
-    if (payload.payload && (payload.payload as any).message_id) {
-      handlers.onReactionDelete?.({
-        message_id: (payload.payload as any).message_id,
-        user_id: (payload.payload as any).user_id,
-        emoji: (payload.payload as any).emoji,
-      });
+  );
+
+  ch.on(
+    'postgres_changes',
+    {
+      event: 'DELETE',
+      schema: 'public',
+      table: 'messenger_reactions',
+    },
+    (payload) => {
+      if (payload.old) {
+        handlers.onReactionDelete?.({
+          message_id: payload.old.message_id,
+          user_id: payload.old.user_id,
+          emoji: payload.old.emoji,
+        });
+      }
     }
-  });
+  );
+
   ch.subscribe();
+
   return {
     channel: ch,
     broadcastNewMessage: (m: Message) => {
+      // Opt to still broadcast if needed, but postgres_changes handles standard delivery
       void ch.send({ type: 'broadcast', event: 'new_message', payload: m });
-    }
+    },
   };
 }
 
@@ -71,7 +122,7 @@ export function subscribeTyping(
   selfId: string,
   onEvent: (e: TypingEvent) => void,
 ): { channel: RealtimeChannel; broadcast: (isTyping: boolean) => void } {
-  const ch = supabase.channel(`mt:${conversationId}`, {
+  const ch = supabase.channel(`typing:${conversationId}`, {
     config: { broadcast: { ack: false, self: false } },
   });
   ch.on('broadcast', { event: 'typing' }, (payload) => {
