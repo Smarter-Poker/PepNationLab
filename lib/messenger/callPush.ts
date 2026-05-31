@@ -110,9 +110,11 @@ export async function sendCallRingPushNow(input: CallRingPushInput): Promise<num
       .eq('is_active', true);
 
     for (const s of (subs ?? []) as Array<{ endpoint: string; p256dh: string; auth: string; user_id: string }>) {
+      // audit15 fix-33: dropped `requireInteraction: true` — lib/web-push.ts
+      // PushPayload doesn't declare it and the field would error TypeScript.
       const result = await sendWebPush(
         { endpoint: s.endpoint, p256dh: s.p256dh, auth: s.auth },
-        { title, body, url, tag, requireInteraction: true },
+        { title, body, url, tag },
       ).catch((err) => ({ ok: false, error: err instanceof Error ? err.message : String(err) }));
       if ((result as { ok: boolean }).ok) sent++;
     }
