@@ -49,7 +49,7 @@ export default function ConversationList({ selfId }: Props) {
         style={{
           display: 'flex',
           justifyContent: 'flex-end',
-          padding: '12px 14px',
+          padding: '2px 4px',
           borderBottom: '1px solid rgba(255, 255, 255, 0.06)',
           background: 'rgba(0,0,0,0.15)',
         }}
