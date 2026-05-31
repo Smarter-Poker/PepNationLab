@@ -32,8 +32,20 @@ export async function POST(req: NextRequest) {
     const safeShipping = Number(shippingCost) || 0;
     const fulfillment = fulfillmentMethod === 'agent_pickup' ? 'agent_pickup' : 'ship';
 
-    const { data: agentProfile, error: agentProfileError } = await supabase.from('profiles').select('tier, parent_agent_id, role').eq('id', agentId).single();
+    const { data: agentProfile, error: agentProfileError } = await supabase.from('profiles').select('tier, parent_agent_id, role, is_sub_agent').eq('id', agentId).single();
     if (agentProfileError || !agentProfile) return NextResponse.json({ error: 'Agent Profile Not Found.' }, { status: 404 });
+
+    // SACA: sub-agents do not own a storefront and therefore cannot create
+    // manual orders. They can only earn commission on orders placed via the
+    // parent's storefront — manual order creation belongs to the storefront
+    // owner. Reject with a clear error instead of silently failing on the
+    // empty agent_products query below.
+    if ((agentProfile as { is_sub_agent?: boolean | null }).is_sub_agent === true) {
+      return NextResponse.json(
+        { error: 'Sub-Agents Cannot Create Manual Orders. Ask Your Agent To Place The Order.' },
+        { status: 403 },
+      );
+    }
 
     const tier = (agentProfile.tier as AgentTier | null) ?? 'tier_3';
     const parentAgentId = agentProfile.parent_agent_id || null;
