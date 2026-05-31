@@ -1,17 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
 import { getCronAuth } from '@/lib/messenger/server';
+import { captureCallError, captureCallEvent, recordCallMetric } from '@/lib/messenger/sentryCall';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-// Audit9: ringing-call timeout (60s -> missed) so the next call slot in the
-// conversation is not wedged forever.
-//
-// Audit10 extension: also sweep 'active' calls older than 4 hours. With the
-// CallOverlay onDisconnected handler now routing only to onClose (no
-// auto-hangup on transient disconnect), a stale 'active' row could otherwise
-// sit forever if both parties closed the tab without sendBeacon firing.
 export async function GET(req: NextRequest) {
   const auth = getCronAuth(req);
   if (!auth.ok) return NextResponse.json({ error: auth.error }, { status: auth.status });
@@ -33,14 +27,17 @@ export async function GET(req: NextRequest) {
       .update({ status: 'ended', ended_at: nowIso })
       .eq('status', 'active')
       .lt('answered_at', activeCutoff)
-      // audit15 fix-15: select the columns we need to compose the system
-      // message + compute duration. Previously only selecting `id` because
-      // the dropped DB trigger handled the message; now the cron has to.
       .select('id, conversation_id, initiator_id, call_type, answered_at, ended_at'),
   ]);
 
-  if (missedRes.error) return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
-  if (staleRes.error) return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
+  if (missedRes.error) {
+    captureCallError(missedRes.error, 'sweep', { branch: 'missed' });
+    return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
+  }
+  if (staleRes.error) {
+    captureCallError(staleRes.error, 'sweep', { branch: 'stale_active' });
+    return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
+  }
 
   if (missedRes.data && missedRes.data.length > 0) {
     const messagesToInsert = missedRes.data.map(call => {
@@ -60,12 +57,6 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  // audit15 fix-15: stale-active rows also get a system message. Duration is
-  // computed from answered_at to the cron's nowIso (we just set ended_at to
-  // nowIso, but the row in `staleRes.data` reflects the UPDATE so ended_at
-  // is the new value). Format matches the route's "Voice/Video Call Ended
-  // (Xm Ys)" pattern used on a user-initiated hangup of an active call so
-  // the chat looks consistent regardless of who closed the row.
   if (staleRes.data && staleRes.data.length > 0) {
     const staleMessages = staleRes.data
       .map((call: { id: string; conversation_id: string; initiator_id: string; call_type: 'audio' | 'video'; answered_at: string | null; ended_at: string | null }) => {
@@ -93,8 +84,30 @@ export async function GET(req: NextRequest) {
     }
   }
 
+  const markedMissed = (missedRes.data ?? []).length;
+  const closedStaleActive = (staleRes.data ?? []).length;
+
+  // audit15 fix-25 (B9): emit Sentry metrics so dashboards can graph
+  // these counts and alerts can fire on spikes. recordCallMetric
+  // emits one event per metric (info level) — even zero values are
+  // useful for confirming the cron is running.
+  recordCallMetric('mark_missed_calls.marked_missed', markedMissed);
+  recordCallMetric('mark_missed_calls.closed_stale_active', closedStaleActive);
+
+  // High-signal alert when stale-active sweeps trigger. A sustained
+  // non-zero rate here means users are losing calls without a clean
+  // hangup — pages don't close cleanly, sendBeacon failing, etc.
+  if (closedStaleActive > 0) {
+    captureCallEvent(
+      `Cron mark-missed-calls swept ${closedStaleActive} stale active calls (>4h old)`,
+      'sweep',
+      closedStaleActive >= 5 ? 'warning' : 'info',
+      { closed_stale_active: closedStaleActive, marked_missed: markedMissed },
+    );
+  }
+
   return NextResponse.json({
-    marked_missed: (missedRes.data ?? []).length,
-    closed_stale_active: (staleRes.data ?? []).length,
+    marked_missed: markedMissed,
+    closed_stale_active: closedStaleActive,
   });
 }
