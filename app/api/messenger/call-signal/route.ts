@@ -4,6 +4,8 @@ import { assertSameOrigin } from '@/lib/csrf';
 import { requireSession, getParticipant, isBlockedEither, broadcastCallSignalServer } from '@/lib/messenger/server';
 import { messengerRateLimit, messengerRateLimitResponse } from '@/lib/messengerRateLimit';
 import { StartCallSchema } from '@/lib/messenger/schemas';
+import { recordCallTelemetry } from '@/lib/messenger/callTelemetry';
+import { enqueueCallRingPush, sendCallRingPushNow } from '@/lib/messenger/callPush';
 import { z } from 'zod';
 import crypto from 'crypto';
 
@@ -37,6 +39,14 @@ function callsConfigured(): boolean {
   );
 }
 
+function ipFrom(req: NextRequest): string | null {
+  return (
+    req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
+    req.headers.get('x-real-ip') ||
+    null
+  );
+}
+
 export async function POST(req: NextRequest) {
   const csrf = assertSameOrigin(req);
   if (csrf) return csrf;
@@ -58,23 +68,34 @@ export async function POST(req: NextRequest) {
   }
 
   const svc = await createServiceClient();
+  const ip = ipFrom(req);
+  const ua = req.headers.get('user-agent');
 
   if (parsed.data.action === 'start') {
     const callerPart = await getParticipant(parsed.data.conversationId, user.id);
     if (!callerPart) return NextResponse.json({ error: 'Not A Participant' }, { status: 403 });
 
-    // Audit10: block-pair gate now covers direct AND group/announcement
-    // conversations. Previous audit3 fix only blocked direct calls; group
-    // calls between users with a one-sided block could still proceed.
+    // Audit10: block-pair gate
     const { data: others } = await svc
       .from('messenger_participants')
       .select('user_id')
       .eq('conversation_id', parsed.data.conversationId)
       .neq('user_id', user.id);
-    for (const row of (others ?? []) as Array<{ user_id: string }>) {
+    const otherList = (others ?? []) as Array<{ user_id: string }>;
+    for (const row of otherList) {
       if (await isBlockedEither(user.id, row.user_id)) {
         return NextResponse.json({ error: 'User Blocked' }, { status: 403 });
       }
+    }
+
+    // audit15 fix-21 (B2): per-pair call_start rate limit. Evaluated per target
+    // so a caller can still call multiple distinct users at the platform
+    // default — only the per-pair burst is throttled. First target that trips
+    // the limiter blocks the start.
+    for (const row of otherList) {
+      const pairKey = `${user.id}:${row.user_id}`;
+      const pairLimited = await messengerRateLimit('call_start', pairKey);
+      if (!pairLimited.allowed) return messengerRateLimitResponse(pairLimited);
     }
 
     const { data: existingCall } = await svc
@@ -102,12 +123,46 @@ export async function POST(req: NextRequest) {
       .select('*')
       .maybeSingle();
     if (insErr || !inserted) return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
-    
-    // Broadcast the incoming call signal
-    if (others) {
-      for (const p of others) {
+
+    // audit15 fix-21 (B6): telemetry — log the start with participant count.
+    void recordCallTelemetry('messenger_call.start', user.id, {
+      call_id: (inserted as CallRow).id,
+      conversation_id: (inserted as CallRow).conversation_id,
+      initiator_id: (inserted as CallRow).initiator_id,
+      call_type: (inserted as CallRow).call_type,
+      participant_count: otherList.length + 1,
+    }, ip, ua);
+
+    // Broadcast the incoming call signal to each target
+    if (otherList.length > 0) {
+      for (const p of otherList) {
         void broadcastCallSignalServer(p.user_id, 'incoming_call', inserted);
       }
+
+      // audit15 fix-21 (B3): web push fanout. Resolve caller's name once,
+      // then both enqueue durable outbox rows AND fire inline so devices
+      // with subscriptions wake up immediately. The cron handles late
+      // delivery for offline devices.
+      const { data: callerProfile } = await svc
+        .from('profiles')
+        .select('full_name, username, email')
+        .eq('id', user.id)
+        .maybeSingle();
+      const callerName =
+        (callerProfile?.full_name && String(callerProfile.full_name).trim()) ||
+        (callerProfile?.username && String(callerProfile.username).trim()) ||
+        (callerProfile?.email && String(callerProfile.email).split('@')[0]) ||
+        'Someone';
+      const targetIds = otherList.map((p) => p.user_id);
+      const pushInput = {
+        callId: (inserted as CallRow).id,
+        callType: (inserted as CallRow).call_type,
+        targetUserIds: targetIds,
+        callerName,
+        conversationId: (inserted as CallRow).conversation_id,
+      };
+      void enqueueCallRingPush(pushInput);
+      void sendCallRingPushNow(pushInput);
     }
 
     return NextResponse.json({ call: inserted });
@@ -148,6 +203,18 @@ export async function POST(req: NextRequest) {
         .maybeSingle();
       return NextResponse.json({ call: current, alreadyAccepted: true });
     }
+
+    // audit15 fix-21 (B6): telemetry — ring_ms = answered_at - started_at.
+    const startedAt = new Date((updated as CallRow).started_at).getTime();
+    const answeredAt = new Date((updated as CallRow).answered_at!).getTime();
+    void recordCallTelemetry('messenger_call.accept', user.id, {
+      call_id: (updated as CallRow).id,
+      conversation_id: (updated as CallRow).conversation_id,
+      initiator_id: (updated as CallRow).initiator_id,
+      call_type: (updated as CallRow).call_type,
+      ring_ms: Math.max(0, answeredAt - startedAt),
+    }, ip, ua);
+
     return NextResponse.json({ call: updated });
   }
 
@@ -171,27 +238,30 @@ export async function POST(req: NextRequest) {
         .maybeSingle();
       return NextResponse.json({ call: current, alreadyResolved: true });
     }
-    
+
     // Insert Missed Call system message
-    const typeStr = updated.call_type === 'video' ? 'Video' : 'Voice';
+    const typeStr = (updated as CallRow).call_type === 'video' ? 'Video' : 'Voice';
     await svc.from('messenger_messages').insert({
-      conversation_id: updated.conversation_id,
-      sender_id: updated.initiator_id,
+      conversation_id: (updated as CallRow).conversation_id,
+      sender_id: (updated as CallRow).initiator_id,
       message_type: 'system',
       text: `Missed ${typeStr} Call`,
       status: 'sent',
-      metadata: { call_id: updated.id, status: 'declined' }
+      metadata: { call_id: (updated as CallRow).id, status: 'declined' }
     });
+
+    void recordCallTelemetry('messenger_call.decline', user.id, {
+      call_id: (updated as CallRow).id,
+      conversation_id: (updated as CallRow).conversation_id,
+      initiator_id: (updated as CallRow).initiator_id,
+      call_type: (updated as CallRow).call_type,
+      reason: 'declined',
+    }, ip, ua);
 
     return NextResponse.json({ call: updated });
   }
 
   // hangup
-  // Audit10: only the initiator OR a participant who has actually joined an
-  // active call may hangup. Other participants (e.g. a group member who never
-  // accepted) cannot kill a call they did not engage with. The check below
-  // accepts the initiator unconditionally, plus any participant during the
-  // 'active' phase. A 'ringing' call may only be hangup'd by the initiator.
   const callerIsInitiator = (call as CallRow).initiator_id === user.id;
   const callIsActive = (call as CallRow).status === 'active';
   const callerCanHangup = callerIsInitiator || callIsActive;
@@ -209,38 +279,55 @@ export async function POST(req: NextRequest) {
     .select('*')
     .maybeSingle();
   if (upErr) return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
-  
+
   if (updated) {
-    const typeStr = updated.call_type === 'video' ? 'Video' : 'Voice';
-    
-    if (callIsActive && updated.answered_at) {
-       const start = new Date(updated.answered_at).getTime();
-       const end = new Date(updated.ended_at!).getTime();
+    const u = updated as CallRow;
+    const typeStr = u.call_type === 'video' ? 'Video' : 'Voice';
+
+    if (callIsActive && u.answered_at) {
+       const start = new Date(u.answered_at).getTime();
+       const end = new Date(u.ended_at!).getTime();
        const diffSecs = Math.max(0, Math.floor((end - start) / 1000));
        const mins = Math.floor(diffSecs / 60);
        const secs = diffSecs % 60;
        const durationStr = mins > 0 ? `${mins}m ${secs}s` : `${secs}s`;
 
        await svc.from('messenger_messages').insert({
-         conversation_id: updated.conversation_id,
-         sender_id: updated.initiator_id,
+         conversation_id: u.conversation_id,
+         sender_id: u.initiator_id,
          message_type: 'system',
          text: `${typeStr} Call Ended (${durationStr})`,
          status: 'sent',
-         metadata: { call_id: updated.id, status: 'ended', duration: diffSecs }
+         metadata: { call_id: u.id, status: 'ended', duration: diffSecs }
        });
+
+       void recordCallTelemetry('messenger_call.hangup', user.id, {
+         call_id: u.id,
+         conversation_id: u.conversation_id,
+         initiator_id: u.initiator_id,
+         call_type: u.call_type,
+         talk_ms: end - start,
+         reason: 'ended',
+       }, ip, ua);
     } else {
        await svc.from('messenger_messages').insert({
-         conversation_id: updated.conversation_id,
-         sender_id: updated.initiator_id,
+         conversation_id: u.conversation_id,
+         sender_id: u.initiator_id,
          message_type: 'system',
          text: `Missed ${typeStr} Call`,
          status: 'sent',
-         metadata: { call_id: updated.id, status: 'ended_before_answer' }
+         metadata: { call_id: u.id, status: 'ended_before_answer' }
        });
+
+       void recordCallTelemetry('messenger_call.hangup', user.id, {
+         call_id: u.id,
+         conversation_id: u.conversation_id,
+         initiator_id: u.initiator_id,
+         call_type: u.call_type,
+         reason: 'ended_before_answer',
+       }, ip, ua);
     }
   }
 
   return NextResponse.json({ call: updated });
 }
-
