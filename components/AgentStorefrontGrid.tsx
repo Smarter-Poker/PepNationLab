@@ -670,27 +670,37 @@ export default function AgentStorefrontGrid({ products, inventoryMap, primaryCol
       <style dangerouslySetInnerHTML={{__html: `
         .sf-toolbar {
           display: flex;
-          gap: 8px;
-          padding: 10px;
-          background: rgba(255,255,255,0.03);
-          border-radius: var(--radius-lg);
-          border: 1px solid rgba(255,255,255,0.06);
-          margin-bottom: 10px;
+          gap: 12px;
+          padding: 12px;
+          background: rgba(15, 20, 25, 0.7);
+          border-radius: 16px;
+          border: 1px solid rgba(255, 255, 255, 0.15);
+          box-shadow: 0 8px 24px rgba(0,0,0,0.6), inset 0 1px 1px rgba(255,255,255,0.08);
+          margin-bottom: 24px;
           flex-direction: column;
         }
-        .sf-toolbar-search  { position: relative; }
-        .sf-toolbar-cat     { }
+        .sf-toolbar-search  { position: relative; flex: 1; }
+        .sf-toolbar-cat     { flex: 0 0 auto; }
         .sf-toolbar select, .sf-toolbar .sf-filter-btn {
-          width: 100%; padding: 8px 10px; font-size: 0.8rem;
-          background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.1);
-          border-radius: var(--radius-md); color: var(--white); cursor: pointer;
+          width: 100%; padding: 10px 14px; font-size: 0.85rem;
+          background: rgba(0,0,0,0.6); 
+          border: 1px solid rgba(255, 255, 255, 0.12);
+          border-radius: 10px; color: var(--white); cursor: pointer;
           appearance: auto;
+          box-shadow: inset 0 2px 6px rgba(0,0,0,0.3);
+          transition: border-color 0.2s;
+        }
+        .sf-toolbar select:hover, .sf-toolbar-search input:hover {
+          border-color: rgba(255, 255, 255, 0.25);
         }
         .sf-toolbar-search input {
-          width: 100%; padding: 8px 10px 8px 32px;
-          background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.1);
-          border-radius: var(--radius-md); color: var(--white); font-size: 0.85rem; outline: none;
+          width: 100%; padding: 10px 14px 10px 38px;
+          background: rgba(0,0,0,0.6); 
+          border: 1px solid rgba(255, 255, 255, 0.12);
+          border-radius: 10px; color: var(--white); font-size: 0.9rem; outline: none;
           box-sizing: border-box;
+          box-shadow: inset 0 2px 6px rgba(0,0,0,0.3);
+          transition: border-color 0.2s;
         }
         .sf-toolbar-search .sf-search-icon {
           position: absolute; left: 10px; top: 50%; transform: translateY(-50%);
@@ -1165,8 +1175,8 @@ export default function AgentStorefrontGrid({ products, inventoryMap, primaryCol
             position: 'fixed',
             bottom: 'var(--space-6)',
             right: 'var(--space-6)',
-            width: 80,
-            height: 80,
+            width: 160,
+            height: 160,
             background: 'transparent',
             border: 'none',
             display: 'flex',
@@ -1178,7 +1188,7 @@ export default function AgentStorefrontGrid({ products, inventoryMap, primaryCol
             filter: 'drop-shadow(0 8px 16px rgba(0,0,0,0.8))'
           }}
           onMouseEnter={e => { 
-            e.currentTarget.style.transform = 'scale(1.1)'; 
+            e.currentTarget.style.transform = 'scale(1.05)'; 
             e.currentTarget.style.filter = 'drop-shadow(0 12px 24px rgba(0,0,0,0.9)) brightness(1.2)';
           }}
           onMouseLeave={e => { 
@@ -1187,12 +1197,13 @@ export default function AgentStorefrontGrid({ products, inventoryMap, primaryCol
           }}
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/cart-icon.png" width={72} height={72} alt="Cart" style={{ objectFit: 'contain' }} />
+          <img src="/cart-icon.png" width={144} height={144} alt="Cart" style={{ objectFit: 'contain' }} />
           {totalCartItems > 0 && (
             <span style={{
-              position: 'absolute', top: -4, right: -4, width: 22, height: 22,
-              borderRadius: '50%', background: 'var(--red)', color: 'var(--white)',
-              fontSize: '0.7rem', fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center'
+              position: 'absolute', top: 16, right: 16, width: 32, height: 32,
+              borderRadius: '50%', background: '#EF4444', color: 'var(--white)',
+              fontSize: '1rem', fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center',
+              boxShadow: '0 4px 8px rgba(0,0,0,0.5), 0 0 0 2px rgba(255,255,255,0.2)'
             }}>
               {totalCartItems}
             </span>
