@@ -19,7 +19,7 @@ export async function POST(req: NextRequest) {
 
     const { data: abandonedCarts, error: fetchError } = await supabase
       .from('profiles')
-      .select('id, full_name, referring_agent_id, cart_state, cart_updated_at')
+      .select('id, full_name, referring_agent_id, cart_state, cart_updated_at, last_cart_reminder_at')
       .not('cart_state', 'is', null)
       .neq('cart_state', '[]')
       .lt('cart_updated_at', twentyFourHoursAgo.toISOString());
@@ -48,6 +48,16 @@ export async function POST(req: NextRequest) {
 
       if (!cartItems || cartItems.length === 0) continue;
 
+      // Throttle: skip anyone already reminded within the last 24h. We track this
+      // on last_cart_reminder_at so we never overwrite cart_updated_at (the real
+      // cart-age signal used to qualify abandoned carts in the first place).
+      if (
+        user.last_cart_reminder_at &&
+        new Date(user.last_cart_reminder_at).getTime() > Date.now() - 24 * 60 * 60 * 1000
+      ) {
+        continue;
+      }
+
       const senderId = user.referring_agent_id || adminId;
       const firstName = user.full_name ? user.full_name.split(' ')[0] : 'Researcher';
 
@@ -69,22 +79,22 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: 'Failed to send reminders' }, { status: 500 });
       }
 
-      // 2. Update the cart_updated_at so we don't spam them immediately again
-      // We bump it to NOW() so they won't get another reminder for 24 hours.
+      // 2. Stamp last_cart_reminder_at (NOT cart_updated_at) so we throttle to
+      // one reminder per 24h without destroying the user's true cart-age signal.
       const { error: updateError } = await supabase
         .from('profiles')
-        .update({ cart_updated_at: new Date().toISOString() })
+        .update({ last_cart_reminder_at: new Date().toISOString() })
         .in('id', profilesToUpdate);
 
       if (updateError) {
-        console.error('Failed to update cart timestamps:', updateError);
+        console.error('Failed to update cart reminder timestamps:', updateError);
       }
     }
 
-    return NextResponse.json({ 
-      success: true, 
-      message: `Sent ${messagesToInsert.length} cart reminders.`, 
-      sentCount: messagesToInsert.length 
+    return NextResponse.json({
+      success: true,
+      message: `Sent ${messagesToInsert.length} cart reminders.`,
+      sentCount: messagesToInsert.length
     });
 
   } catch (error) {

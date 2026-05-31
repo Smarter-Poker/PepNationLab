@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
+import { mapAuditRows } from "@/lib/audit-map";
 import AdminAuditClient from "./AdminAuditClient";
 
 export const dynamic = "force-dynamic";
@@ -61,27 +62,7 @@ export default async function AdminAuditPage({
     for (const a of actors ?? []) emailMap[a.id] = a.email;
   }
 
-  const summarize = (changes: unknown): string | null => {
-    if (changes == null) return null;
-    try {
-      const s = JSON.stringify(changes);
-      return s.length > 160 ? `${s.slice(0, 157)}…` : s;
-    } catch {
-      return null;
-    }
-  };
-
-  const rows = baseRows.map((r) => ({
-    id: r.id,
-    actor_id: r.actor_id,
-    actor_email: r.actor_id ? emailMap[r.actor_id] ?? null : null,
-    action: r.action,
-    target_type: r.entity_type,
-    target_id: r.entity_id,
-    summary: summarize(r.changes),
-    metadata: (r.changes as Record<string, unknown> | null) ?? null,
-    created_at: r.created_at,
-  }));
+  const rows = mapAuditRows(baseRows, emailMap);
 
   const { data: actions } = await service
     .from("admin_audit_log")
