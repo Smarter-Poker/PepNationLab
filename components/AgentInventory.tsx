@@ -166,139 +166,129 @@ export default function AgentInventory({ agentId }: { agentId: string }) {
     <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
       {/* Smart Alerts Banner */}
       {alerts.length > 0 && (
-        <div className="card-metal" style={{ borderLeft: '4px solid var(--orange)', padding: 'var(--space-6)' }}>
-          <h3 style={{ fontSize: '1.2rem', color: 'var(--orange)', marginBottom: 'var(--space-3)', display: 'flex', alignItems: 'center', gap: 8 }}>
-            <AlertTriangle size={20} aria-hidden="true" /> Low Stock Smart Alerts
-          </h3>
-          <p style={{ fontSize: '0.85rem', color: 'var(--grey-300)', marginBottom: 'var(--space-4)' }}>
-            Based on your 30-day run rate and our 10-15 day shipping transit time from China, you are at risk of stocking out of the following items:
-          </p>
-          
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)', marginBottom: 'var(--space-5)' }}>
-            {alerts.map(alert => (
-              <div key={alert.product_id} style={{ background: 'rgba(255,255,255,0.03)', padding: 'var(--space-3)', borderRadius: 8, fontSize: '0.85rem' }}>
-                <strong style={{ color: 'var(--white)' }}>{alert.name}</strong> — {alert.message} 
-                <span style={{ marginLeft: 12, color: 'var(--teal)' }}>(Stock: {alert.current_stock} / Reorder Point: {alert.reorder_point})</span>
-              </div>
-            ))}
-          </div>
-
-          <div style={{ background: 'rgba(192,184,168,0.1)', border: '1px solid var(--teal)', borderRadius: 8, padding: 'var(--space-4)' }}>
-            <h4 style={{ color: 'var(--teal)', marginBottom: 'var(--space-2)' }}>Weekly Suggested Reorder Cart</h4>
-            <ul style={{ margin: '0 0 var(--space-4) 20px', fontSize: '0.85rem', color: 'var(--grey-200)' }}>
-              {suggestedCart.map(item => (
-                <li key={item.id}>{item.quantity}x {item.name}</li>
-              ))}
-            </ul>
+        <div className="metal-frame">
+          <div className="metal-content" style={{ borderLeft: '4px solid var(--orange)' }}>
+            <h3 className="metal-text" style={{ fontSize: '1.2rem', marginBottom: 'var(--space-3)', display: 'flex', alignItems: 'center', gap: 8 }}>
+              <AlertTriangle size={20} color="var(--orange)" aria-hidden="true" /> <span style={{ color: 'var(--orange)' }}>Low Stock Smart Alerts</span>
+            </h3>
+            <p style={{ fontSize: '0.85rem', color: 'var(--grey-300)', marginBottom: 'var(--space-4)' }}>
+              Based on your 30-day run rate and our 10-15 day shipping transit time from China, you are at risk of stocking out of the following items:
+            </p>
             
-            <button className="btn btn-primary" onClick={handleOneClickRestock} disabled={restockStatus.includes('Processing')}>
-              1-Click Checkout Wholesale Cart
-            </button>
-            {restockStatus && (
-              <p style={{ marginTop: 'var(--space-3)', fontSize: '0.85rem', color: restockStatus.includes('Error') ? 'var(--red)' : 'var(--teal)' }}>
-                {restockStatus}
-              </p>
-            )}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)', marginBottom: 'var(--space-5)' }}>
+              {alerts.map(alert => (
+                <div key={alert.product_id} className="metal-embossed-panel" style={{ padding: '12px 16px', fontSize: '0.85rem' }}>
+                  <strong style={{ color: 'var(--white)' }}>{alert.name}</strong> — {alert.message} 
+                  <span style={{ marginLeft: 12, color: '#00E5FF' }}>(Stock: {alert.current_stock} / Reorder Point: {alert.reorder_point})</span>
+                </div>
+              ))}
+            </div>
+
+            <div className="metal-embossed-panel" style={{ border: '1px solid rgba(0, 196, 188, 0.3)' }}>
+              <h4 className="metal-text" style={{ marginBottom: 'var(--space-2)' }}>Weekly Suggested Reorder Cart</h4>
+              <ul style={{ margin: '0 0 var(--space-4) 20px', fontSize: '0.85rem', color: 'var(--grey-200)' }}>
+                {suggestedCart.map(item => (
+                  <li key={item.id}>{item.quantity}x {item.name}</li>
+                ))}
+              </ul>
+              
+              <button className="btn-neon-cyan" onClick={handleOneClickRestock} disabled={restockStatus.includes('Processing')}>
+                1-Click Checkout Wholesale Cart
+              </button>
+              {restockStatus && (
+                <p style={{ marginTop: 'var(--space-3)', fontSize: '0.85rem', color: restockStatus.includes('Error') ? '#FFAAAA' : '#00E5FF' }}>
+                  {restockStatus}
+                </p>
+              )}
+            </div>
           </div>
         </div>
       )}
 
       {/* Main Inventory Table */}
-      <div className="card-metal" style={{ padding: 'var(--space-6)' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-2)' }}>
-          <h3 style={{ fontSize: '1.1rem', color: 'var(--white)', fontFamily: 'var(--font-brand)', textTransform: 'uppercase' }}>
-            Local Inventory Stock
-          </h3>
+      <div className="metal-frame">
+        <div className="metal-content">
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-2)' }}>
+            <h3 className="metal-text" style={{ fontSize: '1.2rem', fontFamily: 'var(--font-brand)', textTransform: 'uppercase' }}>
+              Local Inventory Stock
+            </h3>
+          </div>
+          <p style={{ color: 'var(--grey-400)', fontSize: '0.85rem', marginBottom: 'var(--space-6)' }}>
+            Manage your on-hand stock. When your researchers purchase from your storefront, this inventory will automatically decrement. Products with 0 stock will show as "Out of Stock".
+          </p>
+
+          {error && (
+            <div className="metal-embossed-panel" style={{ border: '1px solid rgba(229,62,62,0.3)', marginBottom: 'var(--space-4)', fontSize: '0.85rem', color: '#FFAAAA' }}>
+              {error}
+            </div>
+          )}
+
+          {inventory.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: 'var(--space-8) 0' }}>
+              <p style={{ color: 'var(--grey-400)' }}>No active products available to track inventory for.</p>
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
+              {inventory.map((item: any) => (
+                <div key={item.id} className="metal-embossed-panel" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', flex: '1 1 200px' }}>
+                    <span style={{ fontSize: '0.75rem', color: 'var(--grey-400)', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>Product Name</span>
+                    <span style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--white)' }}>{item.name}</span>
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', minWidth: '120px' }}>
+                    <span style={{ fontSize: '0.75rem', color: 'var(--grey-400)', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>SKU</span>
+                    <span style={{ fontSize: '0.9rem', color: 'var(--silver)' }}>{item.sku || 'N/A'}</span>
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', minWidth: '150px' }}>
+                    <span style={{ fontSize: '0.75rem', color: 'var(--grey-400)', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>Category</span>
+                    <div>
+                      <span className="badge-metal">{item.category}</span>
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', minWidth: '150px', alignItems: 'flex-end' }}>
+                    <span style={{ fontSize: '0.75rem', color: 'var(--grey-400)', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>Stock Count</span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <button 
+                        className="btn-silver"
+                        style={{ padding: '0', width: '28px', height: '28px' }}
+                        onClick={() => updateStock(item.id, item.stock_count - 1)}
+                        disabled={savingId === item.id || item.stock_count <= 0}
+                      >
+                        -
+                      </button>
+                      <input 
+                        type="number"
+                        value={item.stock_count}
+                        onChange={(e) => setInventory(prev => prev.map(i => i.id === item.id ? { ...i, stock_count: parseInt(e.target.value) || 0 } : i))}
+                        onBlur={(e) => updateStock(item.id, parseInt(e.target.value) || 0)}
+                        disabled={savingId === item.id}
+                        style={{ 
+                          width: 60, 
+                          height: 28, 
+                          textAlign: 'center', 
+                          background: 'linear-gradient(180deg, #0b0f16 0%, #121822 100%)',
+                          border: '1px solid rgba(0,0,0,0.8)',
+                          boxShadow: 'inset 0 2px 10px rgba(0,0,0,0.9)',
+                          color: 'var(--white)',
+                          borderRadius: 6,
+                          fontWeight: 700
+                        }}
+                      />
+                      <button 
+                        className="btn-silver"
+                        style={{ padding: '0', width: '28px', height: '28px' }}
+                        onClick={() => updateStock(item.id, item.stock_count + 1)}
+                        disabled={savingId === item.id}
+                      >
+                        +
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
-        <p style={{ color: 'var(--grey-400)', fontSize: '0.85rem', marginBottom: 'var(--space-6)' }}>
-          Manage your on-hand stock. When your researchers purchase from your storefront, this inventory will automatically decrement. Products with 0 stock will show as "Out of Stock".
-        </p>
-
-        {error && (
-          <div style={{ background: 'rgba(229,62,62,0.1)', border: '1px solid rgba(229,62,62,0.3)', borderRadius: 8, padding: 'var(--space-3)', marginBottom: 'var(--space-4)', fontSize: '0.85rem', color: 'var(--red)' }}>
-            {error}
-          </div>
-        )}
-
-        {inventory.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: 'var(--space-8) 0' }}>
-            <p style={{ color: 'var(--grey-400)' }}>No active products available to track inventory for.</p>
-          </div>
-        ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
-            {inventory.map((item: any) => (
-              <div 
-                key={item.id} 
-                style={{
-                  background: 'linear-gradient(180deg, #0b0f16 0%, #121822 100%)',
-                  borderTop: '1px solid rgba(0,0,0,0.8)',
-                  borderBottom: '1px solid rgba(255,255,255,0.08)',
-                  borderLeft: '1px solid rgba(0,0,0,0.5)',
-                  borderRight: '1px solid rgba(255,255,255,0.03)',
-                  boxShadow: 'inset 0 4px 20px rgba(0,0,0,0.9)',
-                  borderRadius: '16px',
-                  padding: '16px 20px',
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  flexWrap: 'wrap',
-                  gap: '12px'
-                }}
-              >
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', flex: '1 1 200px' }}>
-                  <span style={{ fontSize: '0.75rem', color: 'var(--grey-400)', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>Product Name</span>
-                  <span style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--white)' }}>{item.name}</span>
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', minWidth: '120px' }}>
-                  <span style={{ fontSize: '0.75rem', color: 'var(--grey-400)', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>SKU</span>
-                  <span style={{ fontSize: '0.9rem', color: 'var(--silver)' }}>{item.sku || 'N/A'}</span>
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', minWidth: '150px' }}>
-                  <span style={{ fontSize: '0.75rem', color: 'var(--grey-400)', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>Category</span>
-                  <div>
-                    <span className="badge badge-silver">{item.category}</span>
-                  </div>
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', minWidth: '150px', alignItems: 'flex-end' }}>
-                  <span style={{ fontSize: '0.75rem', color: 'var(--grey-400)', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>Stock Count</span>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <button 
-                      style={{ padding: '0 8px', height: 28, background: 'var(--surface-3)', border: 'none', borderRadius: '6px', color: 'var(--white)', cursor: 'pointer' }}
-                      onClick={() => updateStock(item.id, item.stock_count - 1)}
-                      disabled={savingId === item.id || item.stock_count <= 0}
-                    >
-                      -
-                    </button>
-                    <input 
-                      type="number"
-                      value={item.stock_count}
-                      onChange={(e) => setInventory(prev => prev.map(i => i.id === item.id ? { ...i, stock_count: parseInt(e.target.value) || 0 } : i))}
-                      onBlur={(e) => updateStock(item.id, parseInt(e.target.value) || 0)}
-                      disabled={savingId === item.id}
-                      style={{ 
-                        width: 60, 
-                        height: 28, 
-                        textAlign: 'center', 
-                        background: 'var(--black)',
-                        border: '1px solid var(--surface-3)',
-                        color: 'var(--white)',
-                        borderRadius: 6,
-                        fontWeight: 700
-                      }}
-                    />
-                    <button 
-                      style={{ padding: '0 8px', height: 28, background: 'var(--surface-3)', border: 'none', borderRadius: '6px', color: 'var(--white)', cursor: 'pointer' }}
-                      onClick={() => updateStock(item.id, item.stock_count + 1)}
-                      disabled={savingId === item.id}
-                    >
-                      +
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
       </div>
     </div>
   );

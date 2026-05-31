@@ -156,12 +156,12 @@ export default function AgentBundles({ agentId }: { agentId: string }) {
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
-      {/* Header */}
-      <div className="card-metal" style={{ padding: 'var(--space-6)' }}>
+    <div className="metal-frame">
+      <div className="metal-content" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
+        {/* Header */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 'var(--space-4)' }}>
           <div>
-            <h3 style={{ fontSize: '1.1rem', color: 'var(--white)', marginBottom: 4, fontFamily: 'var(--font-brand)', textTransform: 'uppercase' }}>
+            <h3 className="metal-text" style={{ fontSize: '1.25rem', marginBottom: 4, fontFamily: 'var(--font-brand)', textTransform: 'uppercase' }}>
               Research Bundles
             </h3>
             <p style={{ color: 'var(--grey-400)', fontSize: '0.82rem', margin: 0 }}>
@@ -169,230 +169,223 @@ export default function AgentBundles({ agentId }: { agentId: string }) {
             </p>
           </div>
           <button
-            className="btn btn-primary btn-sm"
+            className="btn-neon-cyan"
             onClick={() => setShowCreate(!showCreate)}
+            style={{ fontSize: '0.85rem' }}
           >
             {showCreate ? 'Cancel' : '+ Create Bundle'}
           </button>
         </div>
-      </div>
 
-      {/* Create Bundle Form */}
-      {showCreate && (
-        <div className="card-metal" style={{ padding: 'var(--space-6)', border: '1px solid rgba(192,184,168,0.2)' }}>
-          <h4 style={{ color: 'var(--teal)', fontSize: '0.95rem', marginBottom: 'var(--space-4)' }}>New Research Bundle</h4>
+        {/* Create Bundle Form */}
+        {showCreate && (
+          <div className="metal-embossed-panel" style={{ padding: 'var(--space-6)' }}>
+            <h4 style={{ color: '#00E5FF', fontSize: '0.95rem', marginBottom: 'var(--space-4)' }}>New Research Bundle</h4>
 
-          {error && (
-            <div style={{ background: 'var(--red-bg)', borderLeft: '3px solid var(--red)', padding: 'var(--space-3)', marginBottom: 'var(--space-4)', borderRadius: '0 4px 4px 0' }}>
-              <p style={{ color: 'var(--red)', fontSize: '0.8rem', margin: 0 }}>{error}</p>
-            </div>
-          )}
-          {success && (
-            <div style={{ background: 'rgba(192,184,168,0.06)', borderLeft: '3px solid var(--teal)', padding: 'var(--space-3)', marginBottom: 'var(--space-4)', borderRadius: '0 4px 4px 0' }}>
-              <p style={{ color: 'var(--teal)', fontSize: '0.8rem', margin: 0 }}>{success}</p>
-            </div>
-          )}
-
-          <form onSubmit={handleCreateBundle} style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
-            <div className="grid-2" style={{ gap: 'var(--space-4)' }}>
-              <div className="form-group" style={{ marginBottom: 0 }}>
-                <label className="form-label">Bundle Name</label>
-                <input
-                  type="text"
-                  className="form-input"
-                  placeholder="e.g. Healing Stack, Weight Loss Pack"
-                  value={bundleName}
-                  onChange={e => setBundleName(e.target.value)}
-                  required
-                />
+            {error && (
+              <div className="metal-embossed-panel" style={{ border: '1px solid rgba(229,62,62,0.3)', marginBottom: 'var(--space-4)', padding: 'var(--space-3)' }}>
+                <p style={{ color: '#FFAAAA', fontSize: '0.8rem', margin: 0 }}>{error}</p>
               </div>
-              <div className="form-group" style={{ marginBottom: 0 }}>
-                <label className="form-label">Bundle Discount (%)</label>
-                <input
-                  type="number"
-                  className="form-input"
-                  value={discountPercent}
-                  onChange={e => setDiscountPercent(Number(e.target.value))}
-                  min={0}
-                  max={90}
-                />
-              </div>
-            </div>
-            <div className="form-group" style={{ marginBottom: 0 }}>
-              <label className="form-label">Description (Optional)</label>
-              <textarea
-                className="form-input"
-                rows={2}
-                placeholder="Describe What This Bundle Targets..."
-                value={bundleDesc}
-                onChange={e => setBundleDesc(e.target.value)}
-              />
-            </div>
-
-            {/* Product Picker */}
-            <div>
-              <label className="form-label" style={{ marginBottom: 'var(--space-3)' }}>
-                Select Products ({selectedProducts.length} Selected)
-              </label>
-              <div style={{
-                maxHeight: 280, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 4,
-                background: 'var(--surface-2)', borderRadius: 'var(--radius-md)', padding: 'var(--space-3)',
-                border: '1px solid rgba(255,255,255,0.06)',
-              }}>
-                {products.map(p => {
-                  const isSelected = selectedProducts.includes(p.product_id);
-                  const displayName = p.custom_name || p.products.name;
-                  const sizeLabel = p.products.unit_size ? `${p.products.unit_size}${p.products.unit_measure || ''}` : '';
-                  return (
-                    <button
-                      key={p.product_id}
-                      type="button"
-                      onClick={() => toggleProductSelection(p.product_id)}
-                      style={{
-                        display: 'flex', alignItems: 'center', gap: 'var(--space-3)',
-                        padding: '8px var(--space-3)', borderRadius: 'var(--radius-sm)',
-                        background: isSelected ? 'rgba(192,184,168,0.1)' : 'transparent',
-                        border: isSelected ? '1px solid rgba(192,184,168,0.3)' : '1px solid transparent',
-                        cursor: 'pointer', transition: 'all 0.15s', width: '100%', textAlign: 'left',
-                      }}
-                    >
-                      <div style={{
-                        width: 18, height: 18, borderRadius: 4, flexShrink: 0,
-                        background: isSelected ? 'var(--teal)' : 'var(--surface-3)',
-                        border: isSelected ? 'none' : '1px solid rgba(255,255,255,0.15)',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      }}>
-                        {isSelected && <Check size={12} color="var(--white)" strokeWidth={3} aria-hidden="true" />}
-                      </div>
-                      <img src={p.products.image_url || '/images/peptide_clear.png'} alt="" style={{ width: 28, height: 28, borderRadius: 4, objectFit: 'cover' }} />
-                      <span style={{ fontSize: '0.82rem', color: 'var(--white)', flex: 1 }}>{displayName}</span>
-                      {sizeLabel && <span style={{ fontSize: '0.68rem', color: 'var(--grey-400)' }}>{sizeLabel}</span>}
-                      <span style={{ fontSize: '0.82rem', color: 'var(--teal)', fontWeight: 600 }}>${Number(p.retail_price).toFixed(2)}</span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Price Preview */}
-            {selectedProducts.length >= 2 && (
-              <div style={{ background: 'var(--surface-3)', borderRadius: 'var(--radius-md)', padding: 'var(--space-4)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div>
-                  <div style={{ fontSize: '0.78rem', color: 'var(--grey-400)', marginBottom: 4 }}>Bundle Price Preview</div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
-                    <span style={{ fontSize: '0.85rem', color: 'var(--grey-400)', textDecoration: 'line-through' }}>
-                      ${products.filter(p => selectedProducts.includes(p.product_id)).reduce((s, p) => s + Number(p.retail_price), 0).toFixed(2)}
-                    </span>
-                    <span style={{ fontSize: '1.2rem', fontWeight: 800, color: 'var(--teal)' }}>
-                      ${(products.filter(p => selectedProducts.includes(p.product_id)).reduce((s, p) => s + Number(p.retail_price), 0) * (1 - discountPercent / 100)).toFixed(2)}
-                    </span>
-                    <span style={{ fontSize: '0.75rem', background: 'rgba(192,184,168,0.15)', color: 'var(--teal)', padding: '2px 8px', borderRadius: 12, fontWeight: 600 }}>
-                      Save {discountPercent}%
-                    </span>
-                  </div>
-                </div>
-                <div style={{ fontSize: '0.78rem', color: 'var(--grey-400)' }}>
-                  {selectedProducts.length} Products
-                </div>
+            )}
+            {success && (
+              <div className="metal-embossed-panel" style={{ border: '1px solid rgba(0,255,157,0.3)', marginBottom: 'var(--space-4)', padding: 'var(--space-3)' }}>
+                <p style={{ color: '#00FF9D', fontSize: '0.8rem', margin: 0 }}>{success}</p>
               </div>
             )}
 
-            <button type="submit" className="btn btn-primary" disabled={saving}>
-              {saving ? 'Creating Bundle...' : 'Create Research Bundle'}
-            </button>
-          </form>
-        </div>
-      )}
-
-      {/* Existing Bundles */}
-      {bundles.length === 0 && !showCreate ? (
-        <div className="card-metal" style={{ padding: 'var(--space-8)', textAlign: 'center' }}>
-          <div style={{ marginBottom: 'var(--space-3)', color: 'var(--grey-500)', display: 'flex', justifyContent: 'center' }}><Package size={32} aria-hidden="true" /></div>
-          <p style={{ color: 'var(--grey-400)', fontSize: '0.9rem', marginBottom: 'var(--space-4)' }}>
-            No Research Bundles Created Yet
-          </p>
-          <p style={{ color: 'var(--grey-400)', fontSize: '0.8rem' }}>
-            Combine 2+ Products Into Discounted Bundles To Increase Average Order Value.
-          </p>
-        </div>
-      ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
-          {bundles.map(bundle => {
-            const bundleProducts = products.filter(p => bundle.product_ids.includes(p.product_id));
-            const originalPrice = getOriginalPrice(bundle);
-            const bundlePrice = getBundlePrice(bundle);
-
-            return (
-              <div key={bundle.id} className="card-metal" style={{ padding: 'var(--space-5)', opacity: bundle.is_active ? 1 : 0.5 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 'var(--space-4)' }}>
-                  <div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', marginBottom: 4 }}>
-                      <h4 style={{ fontSize: '1rem', color: 'var(--white)', margin: 0, fontFamily: 'var(--font-brand)' }}>{bundle.name}</h4>
-                      <span style={{
-                        fontSize: '0.68rem', padding: '2px 8px', borderRadius: 12,
-                        background: bundle.is_active ? 'rgba(192,184,168,0.1)' : 'rgba(255,255,255,0.05)',
-                        color: bundle.is_active ? 'var(--teal)' : 'var(--grey-400)',
-                      }}>
-                        {bundle.is_active ? 'Active' : 'Inactive'}
-                      </span>
-                    </div>
-                    {bundle.description && (
-                      <p style={{ fontSize: '0.82rem', color: 'var(--grey-400)', margin: 0 }}>{bundle.description}</p>
-                    )}
-                  </div>
-                  <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
-                    <button onClick={() => toggleBundle(bundle.id)} className="btn btn-secondary btn-sm" style={{ padding: '4px 10px', fontSize: '0.72rem' }}>
-                      {bundle.is_active ? 'Disable' : 'Enable'}
-                    </button>
-                    <button onClick={() => deleteBundle(bundle.id)} style={{
-                      padding: '4px 10px', fontSize: '0.72rem', background: 'rgba(229,62,62,0.1)',
-                      border: '1px solid rgba(229,62,62,0.3)', borderRadius: 'var(--radius-sm)',
-                      color: 'var(--red)', cursor: 'pointer',
-                    }}>
-                      Delete
-                    </button>
-                  </div>
+            <form onSubmit={handleCreateBundle} style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
+              <div className="grid-2" style={{ gap: 'var(--space-4)' }}>
+                <div className="form-group" style={{ marginBottom: 0 }}>
+                  <label style={{ display: 'block', marginBottom: '8px', color: 'var(--grey-300)', fontSize: '0.85rem' }}>Bundle Name</label>
+                  <input
+                    type="text"
+                    style={{ width: '100%', padding: '10px 14px', background: 'linear-gradient(180deg, #0b0f16 0%, #121822 100%)', border: '1px solid rgba(0,0,0,0.8)', color: 'var(--white)', borderRadius: '6px' }}
+                    placeholder="e.g. Healing Stack, Weight Loss Pack"
+                    value={bundleName}
+                    onChange={e => setBundleName(e.target.value)}
+                    required
+                  />
                 </div>
-
-                {/* Bundle Products */}
-                <div style={{ display: 'flex', gap: 'var(--space-2)', flexWrap: 'wrap', marginBottom: 'var(--space-3)' }}>
-                  {bundleProducts.map(p => (
-                    <div key={p.product_id} style={{
-                      display: 'flex', alignItems: 'center', gap: 6,
-                      background: 'var(--surface-3)', padding: '4px 10px', borderRadius: 'var(--radius-sm)',
-                      fontSize: '0.78rem', color: 'var(--silver)',
-                    }}>
-                      <img src={p.products.image_url || '/images/peptide_clear.png'} alt="" style={{ width: 20, height: 20, borderRadius: 3 }} />
-                      {p.custom_name || p.products.name}
-                    </div>
-                  ))}
-                  {bundle.product_ids.length > bundleProducts.length && (
-                    <span style={{ fontSize: '0.75rem', color: 'var(--grey-400)', padding: '4px 10px' }}>
-                      +{bundle.product_ids.length - bundleProducts.length} Unavailable
-                    </span>
-                  )}
-                </div>
-
-                {/* Pricing */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
-                  <span style={{ fontSize: '0.85rem', color: 'var(--grey-400)', textDecoration: 'line-through' }}>
-                    ${originalPrice.toFixed(2)}
-                  </span>
-                  <span style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--teal)' }}>
-                    ${bundlePrice.toFixed(2)}
-                  </span>
-                  <span style={{ fontSize: '0.72rem', background: 'rgba(192,184,168,0.12)', color: 'var(--teal)', padding: '2px 8px', borderRadius: 12, fontWeight: 600 }}>
-                    {bundle.discount_percent}% Off
-                  </span>
-                  <span style={{ fontSize: '0.75rem', color: 'var(--grey-400)', marginLeft: 'auto' }}>
-                    {bundle.product_ids.length} Products
-                  </span>
+                <div className="form-group" style={{ marginBottom: 0 }}>
+                  <label style={{ display: 'block', marginBottom: '8px', color: 'var(--grey-300)', fontSize: '0.85rem' }}>Bundle Discount (%)</label>
+                  <input
+                    type="number"
+                    style={{ width: '100%', padding: '10px 14px', background: 'linear-gradient(180deg, #0b0f16 0%, #121822 100%)', border: '1px solid rgba(0,0,0,0.8)', color: 'var(--white)', borderRadius: '6px' }}
+                    value={discountPercent}
+                    onChange={e => setDiscountPercent(Number(e.target.value))}
+                    min={0}
+                    max={90}
+                  />
                 </div>
               </div>
-            );
-          })}
-        </div>
-      )}
+              <div className="form-group" style={{ marginBottom: 0 }}>
+                <label style={{ display: 'block', marginBottom: '8px', color: 'var(--grey-300)', fontSize: '0.85rem' }}>Description (Optional)</label>
+                <textarea
+                  style={{ width: '100%', padding: '10px 14px', background: 'linear-gradient(180deg, #0b0f16 0%, #121822 100%)', border: '1px solid rgba(0,0,0,0.8)', color: 'var(--white)', borderRadius: '6px' }}
+                  rows={2}
+                  placeholder="Describe What This Bundle Targets..."
+                  value={bundleDesc}
+                  onChange={e => setBundleDesc(e.target.value)}
+                />
+              </div>
+
+              {/* Product Picker */}
+              <div>
+                <label style={{ display: 'block', marginBottom: '8px', color: 'var(--grey-300)', fontSize: '0.85rem' }}>
+                  Select Products ({selectedProducts.length} Selected)
+                </label>
+                <div style={{
+                  maxHeight: 280, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 4,
+                  background: 'linear-gradient(180deg, #0b0f16 0%, #121822 100%)', borderRadius: '6px', padding: 'var(--space-3)',
+                  border: '1px solid rgba(0,0,0,0.8)', boxShadow: 'inset 0 4px 20px rgba(0,0,0,0.9)'
+                }}>
+                  {products.map(p => {
+                    const isSelected = selectedProducts.includes(p.product_id);
+                    const displayName = p.custom_name || p.products.name;
+                    const sizeLabel = p.products.unit_size ? `${p.products.unit_size}${p.products.unit_measure || ''}` : '';
+                    return (
+                      <button
+                        key={p.product_id}
+                        type="button"
+                        onClick={() => toggleProductSelection(p.product_id)}
+                        style={{
+                          display: 'flex', alignItems: 'center', gap: 'var(--space-3)',
+                          padding: '8px var(--space-3)', borderRadius: '4px',
+                          background: isSelected ? 'rgba(0,229,255,0.1)' : 'transparent',
+                          border: isSelected ? '1px solid rgba(0,229,255,0.3)' : '1px solid transparent',
+                          cursor: 'pointer', transition: 'all 0.15s', width: '100%', textAlign: 'left',
+                        }}
+                      >
+                        <div style={{
+                          width: 18, height: 18, borderRadius: 4, flexShrink: 0,
+                          background: isSelected ? '#00E5FF' : 'rgba(0,0,0,0.5)',
+                          border: isSelected ? 'none' : '1px solid rgba(255,255,255,0.1)',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        }}>
+                          {isSelected && <Check size={12} color="#0b0f16" strokeWidth={3} aria-hidden="true" />}
+                        </div>
+                        <img src={p.products.image_url || '/images/peptide_clear.png'} alt="" style={{ width: 28, height: 28, borderRadius: 4, objectFit: 'cover' }} />
+                        <span style={{ fontSize: '0.82rem', color: 'var(--white)', flex: 1 }}>{displayName}</span>
+                        {sizeLabel && <span style={{ fontSize: '0.68rem', color: 'var(--grey-400)' }}>{sizeLabel}</span>}
+                        <span style={{ fontSize: '0.82rem', color: '#00E5FF', fontWeight: 600 }}>${Number(p.retail_price).toFixed(2)}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Price Preview */}
+              {selectedProducts.length >= 2 && (
+                <div style={{ background: 'rgba(0,0,0,0.3)', borderRadius: '6px', padding: 'var(--space-4)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: '1px solid rgba(255,255,255,0.05)' }}>
+                  <div>
+                    <div style={{ fontSize: '0.78rem', color: 'var(--grey-400)', marginBottom: 4 }}>Bundle Price Preview</div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
+                      <span style={{ fontSize: '0.85rem', color: 'var(--grey-400)', textDecoration: 'line-through' }}>
+                        ${products.filter(p => selectedProducts.includes(p.product_id)).reduce((s, p) => s + Number(p.retail_price), 0).toFixed(2)}
+                      </span>
+                      <span style={{ fontSize: '1.2rem', fontWeight: 800, color: '#00E5FF' }}>
+                        ${(products.filter(p => selectedProducts.includes(p.product_id)).reduce((s, p) => s + Number(p.retail_price), 0) * (1 - discountPercent / 100)).toFixed(2)}
+                      </span>
+                      <span style={{ fontSize: '0.75rem', background: 'rgba(0,229,255,0.15)', color: '#00E5FF', padding: '2px 8px', borderRadius: 12, fontWeight: 600 }}>
+                        Save {discountPercent}%
+                      </span>
+                    </div>
+                  </div>
+                  <div style={{ fontSize: '0.78rem', color: 'var(--grey-400)' }}>
+                    {selectedProducts.length} Products
+                  </div>
+                </div>
+              )}
+
+              <button type="submit" className="btn-neon-cyan" disabled={saving}>
+                {saving ? 'Creating Bundle...' : 'Create Research Bundle'}
+              </button>
+            </form>
+          </div>
+        )}
+
+        {/* Existing Bundles */}
+        {bundles.length === 0 && !showCreate ? (
+          <div className="metal-embossed-panel" style={{ padding: 'var(--space-8)', textAlign: 'center' }}>
+            <div style={{ marginBottom: 'var(--space-3)', color: 'var(--grey-500)', display: 'flex', justifyContent: 'center' }}><Package size={32} aria-hidden="true" /></div>
+            <p style={{ color: 'var(--grey-400)', fontSize: '0.9rem', marginBottom: 'var(--space-4)' }}>
+              No Research Bundles Created Yet
+            </p>
+            <p style={{ color: 'var(--grey-400)', fontSize: '0.8rem' }}>
+              Combine 2+ Products Into Discounted Bundles To Increase Average Order Value.
+            </p>
+          </div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
+            {bundles.map(bundle => {
+              const bundleProducts = products.filter(p => bundle.product_ids.includes(p.product_id));
+              const originalPrice = getOriginalPrice(bundle);
+              const bundlePrice = getBundlePrice(bundle);
+
+              return (
+                <div key={bundle.id} className="metal-embossed-panel" style={{ padding: 'var(--space-5)', opacity: bundle.is_active ? 1 : 0.5 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 'var(--space-4)' }}>
+                    <div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', marginBottom: 4 }}>
+                        <h4 style={{ fontSize: '1rem', color: 'var(--white)', margin: 0, fontFamily: 'var(--font-brand)' }}>{bundle.name}</h4>
+                        <span className="badge-metal" style={{ fontSize: '0.68rem', color: bundle.is_active ? '#00FF9D' : 'var(--grey-400)' }}>
+                          {bundle.is_active ? 'Active' : 'Inactive'}
+                        </span>
+                      </div>
+                      {bundle.description && (
+                        <p style={{ fontSize: '0.82rem', color: 'var(--grey-400)', margin: 0 }}>{bundle.description}</p>
+                      )}
+                    </div>
+                    <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
+                      <button onClick={() => toggleBundle(bundle.id)} className="btn-silver" style={{ padding: '4px 10px', fontSize: '0.72rem' }}>
+                        {bundle.is_active ? 'Disable' : 'Enable'}
+                      </button>
+                      <button onClick={() => deleteBundle(bundle.id)} className="btn-neon-red" style={{ padding: '4px 10px', fontSize: '0.72rem' }}>
+                        Delete
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Bundle Products */}
+                  <div style={{ display: 'flex', gap: 'var(--space-2)', flexWrap: 'wrap', marginBottom: 'var(--space-3)' }}>
+                    {bundleProducts.map(p => (
+                      <div key={p.product_id} style={{
+                        display: 'flex', alignItems: 'center', gap: 6,
+                        background: 'rgba(0,0,0,0.5)', border: '1px solid rgba(255,255,255,0.1)', padding: '4px 10px', borderRadius: '4px',
+                        fontSize: '0.78rem', color: 'var(--silver)',
+                      }}>
+                        <img src={p.products.image_url || '/images/peptide_clear.png'} alt="" style={{ width: 20, height: 20, borderRadius: 3 }} />
+                        {p.custom_name || p.products.name}
+                      </div>
+                    ))}
+                    {bundle.product_ids.length > bundleProducts.length && (
+                      <span style={{ fontSize: '0.75rem', color: 'var(--grey-400)', padding: '4px 10px' }}>
+                        +{bundle.product_ids.length - bundleProducts.length} Unavailable
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Pricing */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
+                    <span style={{ fontSize: '0.85rem', color: 'var(--grey-400)', textDecoration: 'line-through' }}>
+                      ${originalPrice.toFixed(2)}
+                    </span>
+                    <span style={{ fontSize: '1.1rem', fontWeight: 800, color: '#00E5FF' }}>
+                      ${bundlePrice.toFixed(2)}
+                    </span>
+                    <span style={{ fontSize: '0.72rem', background: 'rgba(0,229,255,0.15)', color: '#00E5FF', padding: '2px 8px', borderRadius: 12, fontWeight: 600 }}>
+                      {bundle.discount_percent}% Off
+                    </span>
+                    <span style={{ fontSize: '0.75rem', color: 'var(--grey-400)', marginLeft: 'auto' }}>
+                      {bundle.product_ids.length} Products
+                    </span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

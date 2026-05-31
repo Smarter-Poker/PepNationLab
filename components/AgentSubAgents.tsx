@@ -316,185 +316,174 @@ export default function AgentSubAgents({ agentId }: { agentId?: string }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-8)' }}>
       {/* Sub-Agents List */}
-      <section>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 'var(--space-4)', gap: 'var(--space-4)', flexWrap: 'wrap' }}>
-          <div>
-            <h2 style={{ fontSize: '1.25rem', color: 'var(--white)', fontFamily: 'var(--font-brand)' }}>
-              My Sub-Agents
-            </h2>
-            <p style={{ color: 'var(--grey-400)', fontSize: '0.85rem', marginTop: 4 }}>
-              Agents You Have Promoted. They Bill Their Downline Directly, And You Collect Their Balances.
-            </p>
+      <div className="metal-frame">
+        <div className="metal-content">
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 'var(--space-4)', gap: 'var(--space-4)', flexWrap: 'wrap' }}>
+            <div>
+              <h2 className="metal-text" style={{ fontSize: '1.25rem', fontFamily: 'var(--font-brand)' }}>
+                My Sub-Agents
+              </h2>
+              <p style={{ color: 'var(--grey-400)', fontSize: '0.85rem', marginTop: 4 }}>
+                Agents You Have Promoted. They Bill Their Downline Directly, And You Collect Their Balances.
+              </p>
+            </div>
+            <button
+              className="btn-neon-cyan"
+              onClick={() => {
+                fetchPricing();
+                setShowPricingModal(true);
+              }}
+            >
+              Manage Baseline Pricing
+            </button>
           </div>
-          <button
-            className="btn btn-primary btn-sm"
-            onClick={() => {
-              fetchPricing();
-              setShowPricingModal(true);
-            }}
-          >
-            Manage Baseline Pricing
-          </button>
-        </div>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
-          {subAgents.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: 'var(--space-6)', opacity: 0.5 }}>No Sub-Agents Found.</div>
-          ) : (
-            subAgents.map(agent => (
-              <div 
-                key={agent.id}
-                style={{
-                  background: 'linear-gradient(180deg, #0b0f16 0%, #121822 100%)',
-                  borderTop: '1px solid rgba(0,0,0,0.8)',
-                  borderBottom: '1px solid rgba(255,255,255,0.08)',
-                  borderLeft: '1px solid rgba(0,0,0,0.5)',
-                  borderRight: '1px solid rgba(255,255,255,0.03)',
-                  boxShadow: 'inset 0 4px 20px rgba(0,0,0,0.9)',
-                  borderRadius: '16px',
-                  padding: '16px 20px',
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  flexWrap: 'wrap',
-                  gap: '12px'
-                }}
-              >
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', flex: '1 1 200px' }}>
-                  <span style={{ fontSize: '0.75rem', color: 'var(--grey-400)', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>Agent Name</span>
-                  <span style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--white)' }}>{agent.full_name || 'Anonymous'}</span>
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', minWidth: '150px' }}>
-                  <span style={{ fontSize: '0.75rem', color: 'var(--grey-400)', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>Credentials</span>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                    <span style={{ fontFamily: 'monospace', fontSize: '0.82rem', color: 'var(--teal)' }}>{agent.username || agent.email}</span>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
+            {subAgents.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: 'var(--space-6)', opacity: 0.5 }}>No Sub-Agents Found.</div>
+            ) : (
+              subAgents.map(agent => (
+                <div 
+                  key={agent.id}
+                  className="metal-embossed-panel"
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    flexWrap: 'wrap',
+                    gap: '12px'
+                  }}
+                >
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', flex: '1 1 200px' }}>
+                    <span style={{ fontSize: '0.75rem', color: 'var(--grey-400)', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>Agent Name</span>
+                    <span style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--white)' }}>{agent.full_name || 'Anonymous'}</span>
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', minWidth: '150px' }}>
+                    <span style={{ fontSize: '0.75rem', color: 'var(--grey-400)', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>Credentials</span>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                      <span style={{ fontFamily: 'monospace', fontSize: '0.82rem', color: '#00E5FF' }}>{agent.username || agent.email}</span>
+                      <button
+                        onClick={() => setResetPwUser({ id: agent.id, name: agent.full_name || 'Sub-Agent', username: agent.username || agent.email })}
+                        style={{ fontSize: '0.7rem', color: 'var(--grey-400)', background: 'none', border: 'none', cursor: 'pointer', padding: 0, textDecoration: 'underline', textAlign: 'left' }}
+                      >
+                        Edit Password
+                      </button>
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', minWidth: '100px' }}>
+                    <span style={{ fontSize: '0.75rem', color: 'var(--grey-400)', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>Status</span>
+                    <span style={{ color: agent.is_active ? '#00FF9D' : '#FFAAAA', fontSize: '0.85rem', fontWeight: 600 }}>
+                      {agent.is_active ? 'Active' : 'Inactive'}
+                    </span>
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', minWidth: '120px' }}>
+                    <span style={{ fontSize: '0.75rem', color: 'var(--grey-400)', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>Storefront</span>
+                    {(() => {
+                      const ap = pickOne<{ slug: string | null }>(agent.agent_profiles);
+                      return ap?.slug ? (
+                        <a href={`/${ap.slug}`} target="_blank" rel="noopener noreferrer" style={{ color: '#00E5FF', textDecoration: 'none', fontWeight: 600 }}>
+                          /{ap.slug}
+                        </a>
+                      ) : (
+                        <span style={{ color: 'var(--grey-400)', fontSize: '0.85rem' }}>No Storefront</span>
+                      );
+                    })()}
+                  </div>
+                  <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end', flexWrap: 'wrap', flex: '1 1 auto' }}>
                     <button
-                      onClick={() => setResetPwUser({ id: agent.id, name: agent.full_name || 'Sub-Agent', username: agent.username || agent.email })}
-                      style={{ fontSize: '0.7rem', color: 'var(--grey-400)', background: 'none', border: 'none', cursor: 'pointer', padding: 0, textDecoration: 'underline', textAlign: 'left' }}
+                      className="btn-silver"
+                      onClick={() => handleGenerateInvoice(agent.id)}
                     >
-                      Edit Password
+                      Generate Weekly Invoice
+                    </button>
+                    <button
+                      type="button"
+                      className="btn-neon-red"
+                      onClick={() => setRevokeTarget({ id: agent.id, name: agent.full_name || agent.username || 'Sub-Agent' })}
+                    >
+                      Revoke
                     </button>
                   </div>
                 </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', minWidth: '100px' }}>
-                  <span style={{ fontSize: '0.75rem', color: 'var(--grey-400)', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>Status</span>
-                  <span style={{ color: agent.is_active ? 'var(--green)' : 'var(--red)', fontSize: '0.85rem', fontWeight: 600 }}>
-                    {agent.is_active ? 'Active' : 'Inactive'}
-                  </span>
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', minWidth: '120px' }}>
-                  <span style={{ fontSize: '0.75rem', color: 'var(--grey-400)', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>Storefront</span>
-                  {(() => {
-                    const ap = pickOne<{ slug: string | null }>(agent.agent_profiles);
-                    return ap?.slug ? (
-                      <a href={`/${ap.slug}`} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--teal)', textDecoration: 'none', fontWeight: 600 }}>
-                        /{ap.slug}
-                      </a>
-                    ) : (
-                      <span style={{ color: 'var(--grey-400)', fontSize: '0.85rem' }}>No Storefront</span>
-                    );
-                  })()}
-                </div>
-                <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end', flexWrap: 'wrap', flex: '1 1 auto' }}>
-                  <button
-                    className="btn btn-secondary btn-sm"
-                    onClick={() => handleGenerateInvoice(agent.id)}
-                  >
-                    Generate Weekly Invoice
-                  </button>
-                  <button
-                    type="button"
-                    className="btn btn-secondary btn-sm"
-                    style={{ border: '1px solid var(--red)', color: 'var(--red)' }}
-                    onClick={() => setRevokeTarget({ id: agent.id, name: agent.full_name || agent.username || 'Sub-Agent' })}
-                  >
-                    Revoke
-                  </button>
-                </div>
-              </div>
-            ))
-          )}
+              ))
+            )}
+          </div>
         </div>
-      </section>
+      </div>
 
       {/* Invoices */}
-      <section>
-        <h2 style={{ fontSize: '1.25rem', color: 'var(--white)', marginBottom: 'var(--space-4)', fontFamily: 'var(--font-brand)' }}>
-          Sub-Agent Invoices
-        </h2>
-        {invoices.length === 0 ? (
-          <div className="card-metal" style={{ padding: 'var(--space-8)', textAlign: 'center', opacity: 0.7 }}>
-            <p>No Invoices Generated Yet. Click Generate Below An Agent To Bill Them For This Week.</p>
-          </div>
-        ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
-            {invoices.map(inv => (
-              <div 
-                key={inv.id}
-                style={{
-                  background: 'linear-gradient(180deg, #0b0f16 0%, #121822 100%)',
-                  borderTop: '1px solid rgba(0,0,0,0.8)',
-                  borderBottom: '1px solid rgba(255,255,255,0.08)',
-                  borderLeft: '1px solid rgba(0,0,0,0.5)',
-                  borderRight: '1px solid rgba(255,255,255,0.03)',
-                  boxShadow: 'inset 0 4px 20px rgba(0,0,0,0.9)',
-                  borderRadius: '16px',
-                  padding: '16px 20px',
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  flexWrap: 'wrap',
-                  gap: '12px'
-                }}
-              >
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', flex: '1 1 150px' }}>
-                  <span style={{ fontSize: '0.75rem', color: 'var(--grey-400)', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>Sub-Agent</span>
-                  <span style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--white)' }}>{inv.profiles?.full_name || 'Anonymous'}</span>
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', minWidth: '120px' }}>
-                  <span style={{ fontSize: '0.75rem', color: 'var(--grey-400)', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>Week Start</span>
-                  <span style={{ fontSize: '0.9rem', color: 'var(--silver)' }}>{new Date(inv.week_start).toLocaleDateString()}</span>
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', minWidth: '120px' }}>
-                  <span style={{ fontSize: '0.75rem', color: 'var(--teal)', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>Total Owed</span>
-                  <span style={{ fontSize: '1.1rem', color: 'var(--teal)', fontWeight: 800 }}>{formatCurrency(inv.total_owed)}</span>
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', justifyContent: 'flex-end', flex: '1 1 auto' }}>
-                  <span className={`badge ${inv.status === 'paid' ? 'badge-teal' : 'badge-gold'}`} style={{ marginRight: '8px' }}>
-                    {inv.status}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => downloadInvoice(inv.id, 'pdf')}
-                    className="btn btn-secondary btn-sm"
-                    style={{ padding: '4px 12px', fontSize: '0.8rem' }}
-                  >
-                    Download PDF
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => downloadInvoice(inv.id, 'csv')}
-                    className="btn btn-secondary btn-sm"
-                    style={{ padding: '4px 12px', fontSize: '0.8rem' }}
-                  >
-                    Download CSV
-                  </button>
-                  {inv.status !== 'paid' && (
+      <div className="metal-frame">
+        <div className="metal-content">
+          <h2 className="metal-text" style={{ fontSize: '1.25rem', marginBottom: 'var(--space-4)', fontFamily: 'var(--font-brand)' }}>
+            Sub-Agent Invoices
+          </h2>
+          {invoices.length === 0 ? (
+            <div className="metal-embossed-panel" style={{ padding: 'var(--space-8)', textAlign: 'center', opacity: 0.7 }}>
+              <p>No Invoices Generated Yet. Click Generate Below An Agent To Bill Them For This Week.</p>
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
+              {invoices.map(inv => (
+                <div 
+                  key={inv.id}
+                  className="metal-embossed-panel"
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    flexWrap: 'wrap',
+                    gap: '12px'
+                  }}
+                >
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', flex: '1 1 150px' }}>
+                    <span style={{ fontSize: '0.75rem', color: 'var(--grey-400)', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>Sub-Agent</span>
+                    <span style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--white)' }}>{inv.profiles?.full_name || 'Anonymous'}</span>
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', minWidth: '120px' }}>
+                    <span style={{ fontSize: '0.75rem', color: 'var(--grey-400)', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>Week Start</span>
+                    <span style={{ fontSize: '0.9rem', color: 'var(--silver)' }}>{new Date(inv.week_start).toLocaleDateString()}</span>
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', minWidth: '120px' }}>
+                    <span style={{ fontSize: '0.75rem', color: '#00E5FF', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>Total Owed</span>
+                    <span style={{ fontSize: '1.1rem', color: '#00E5FF', fontWeight: 800 }}>{formatCurrency(inv.total_owed)}</span>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', justifyContent: 'flex-end', flex: '1 1 auto' }}>
+                    <span className="badge-metal" style={{ marginRight: '8px', color: inv.status === 'paid' ? '#00FF9D' : 'var(--gold)' }}>
+                      {inv.status}
+                    </span>
                     <button
                       type="button"
-                      onClick={() => handleMarkPaid(inv.id)}
-                      className="btn btn-primary btn-sm"
+                      onClick={() => downloadInvoice(inv.id, 'pdf')}
+                      className="btn-silver"
                       style={{ padding: '4px 12px', fontSize: '0.8rem' }}
                     >
-                      Mark Paid
+                      Download PDF
                     </button>
-                  )}
+                    <button
+                      type="button"
+                      onClick={() => downloadInvoice(inv.id, 'csv')}
+                      className="btn-silver"
+                      style={{ padding: '4px 12px', fontSize: '0.8rem' }}
+                    >
+                      Download CSV
+                    </button>
+                    {inv.status !== 'paid' && (
+                      <button
+                        type="button"
+                        onClick={() => handleMarkPaid(inv.id)}
+                        className="btn-neon-cyan"
+                        style={{ padding: '4px 12px', fontSize: '0.8rem' }}
+                      >
+                        Mark Paid
+                      </button>
+                    )}
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </section>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
 
       {/* Pricing Modal */}
       <AnimatePresence>
@@ -515,96 +504,95 @@ export default function AgentSubAgents({ agentId }: { agentId?: string }) {
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.95, opacity: 0, y: 20 }}
               onClick={e => e.stopPropagation()} 
-              className="card-metal"
+              className="metal-frame"
               style={{
-                padding: 'var(--space-7)', maxWidth: 850, width: '100%',
+                maxWidth: 850, width: '100%',
                 maxHeight: '90vh', overflowY: 'auto',
               }}
             >
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-5)' }}>
-                <div>
-                  <h3 style={{ fontSize: '1.3rem', fontFamily: 'var(--font-brand)', color: 'var(--white)', letterSpacing: '0.05em', textTransform: 'uppercase' }}>Baseline Pricing (Applies To All Sub-Agents)</h3>
-                  <p style={{ fontSize: '0.85rem', color: 'var(--grey-400)', marginTop: 4 }}>
-                    Set The Fixed Wholesale Cost That Your Sub-Agents Will Pay You For Each Product. These Rules Apply Globally Across All Sub-Agents.
-                  </p>
+              <div className="metal-content" style={{ padding: 'var(--space-7)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-5)' }}>
+                  <div>
+                    <h3 className="metal-text" style={{ fontSize: '1.3rem', fontFamily: 'var(--font-brand)', letterSpacing: '0.05em', textTransform: 'uppercase' }}>Baseline Pricing (Applies To All Sub-Agents)</h3>
+                    <p style={{ fontSize: '0.85rem', color: 'var(--grey-400)', marginTop: 4 }}>
+                      Set The Fixed Wholesale Cost That Your Sub-Agents Will Pay You For Each Product. These Rules Apply Globally Across All Sub-Agents.
+                    </p>
+                  </div>
+                  <button onClick={() => setShowPricingModal(false)} className="btn-silver">Close</button>
                 </div>
-                <button onClick={() => setShowPricingModal(false)} className="btn btn-secondary">Close</button>
-              </div>
 
-            {loadingPricing ? (
-              <div style={{ textAlign: 'center', padding: 'var(--space-8)' }}>Loading Products...</div>
-            ) : (
-              <table className="data-table" style={{ width: '100%', fontSize: '0.85rem' }}>
-                <thead>
-                  <tr>
-                    <th>Product</th>
-                    <th>Your Cost (Admin)</th>
-                    <th>Sub-Agent Cost (Baseline)</th>
-                    <th>Bulk Threshold (Qty)</th>
-                    <th>Bulk Sub-Agent Cost</th>
-                    <th style={{ textAlign: 'right' }}>Save</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {products.map(prod => {
-                    const yourCost = Number(prod.admin_cost).toFixed(2);
-                    const costVal = costInputs[prod.id] ?? '';
-                    const bulkThreshVal = bulkThreshInputs[prod.id] ?? '100';
-                    const bulkCostVal = bulkCostInputs[prod.id] ?? '';
-                    return (
-                      <tr key={prod.id}>
-                        <td style={{ fontWeight: 'bold' }}>{prod.name}</td>
-                        <td style={{ color: 'var(--grey-400)' }}>${yourCost}</td>
-                        <td>
-                          <input
-                            type="number"
-                            className="form-input"
-                            style={{ width: 120, padding: '6px 12px' }}
-                            value={costVal}
-                            onChange={e => setCostInputs(prev => ({ ...prev, [prod.id]: e.target.value }))}
-                            placeholder="Set Cost..."
-                            step="0.01"
-                          />
-                        </td>
-                        <td>
-                          <input
-                            type="number"
-                            className="form-input"
-                            style={{ width: 80, padding: '6px' }}
-                            value={bulkThreshVal}
-                            onChange={e => setBulkThreshInputs(prev => ({ ...prev, [prod.id]: e.target.value }))}
-                            placeholder="100"
-                            min="1"
-                          />
-                        </td>
-                        <td>
-                          <input
-                            type="number"
-                            className="form-input"
-                            style={{ width: 100, padding: '6px' }}
-                            value={bulkCostVal}
-                            onChange={e => setBulkCostInputs(prev => ({ ...prev, [prod.id]: e.target.value }))}
-                            placeholder="Optional"
-                            step="0.01"
-                            min="0"
-                          />
-                        </td>
-                        <td style={{ textAlign: 'right' }}>
-                          <button
-                            className="btn btn-primary btn-sm"
-                            onClick={() => {
-                              if (costVal) handleSavePricing(prod.id, costVal, bulkCostVal, bulkThreshVal);
-                            }}
-                          >
-                            Save
-                          </button>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            )}
+              {loadingPricing ? (
+                <div style={{ textAlign: 'center', padding: 'var(--space-8)' }}>Loading Products...</div>
+              ) : (
+                <table className="data-table" style={{ width: '100%', fontSize: '0.85rem' }}>
+                  <thead>
+                    <tr>
+                      <th>Product</th>
+                      <th>Your Cost (Admin)</th>
+                      <th>Sub-Agent Cost (Baseline)</th>
+                      <th>Bulk Threshold (Qty)</th>
+                      <th>Bulk Sub-Agent Cost</th>
+                      <th style={{ textAlign: 'right' }}>Save</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {products.map(prod => {
+                      const yourCost = Number(prod.admin_cost).toFixed(2);
+                      const costVal = costInputs[prod.id] ?? '';
+                      const bulkThreshVal = bulkThreshInputs[prod.id] ?? '100';
+                      const bulkCostVal = bulkCostInputs[prod.id] ?? '';
+                      return (
+                        <tr key={prod.id}>
+                          <td style={{ fontWeight: 'bold' }}>{prod.name}</td>
+                          <td style={{ color: 'var(--grey-400)' }}>${yourCost}</td>
+                          <td>
+                            <input
+                              type="number"
+                              style={{ width: 120, padding: '6px 12px', background: 'linear-gradient(180deg, #0b0f16 0%, #121822 100%)', border: '1px solid rgba(0,0,0,0.8)', color: 'var(--white)', borderRadius: '6px' }}
+                              value={costVal}
+                              onChange={e => setCostInputs(prev => ({ ...prev, [prod.id]: e.target.value }))}
+                              placeholder="Set Cost..."
+                              step="0.01"
+                            />
+                          </td>
+                          <td>
+                            <input
+                              type="number"
+                              style={{ width: 80, padding: '6px', background: 'linear-gradient(180deg, #0b0f16 0%, #121822 100%)', border: '1px solid rgba(0,0,0,0.8)', color: 'var(--white)', borderRadius: '6px' }}
+                              value={bulkThreshVal}
+                              onChange={e => setBulkThreshInputs(prev => ({ ...prev, [prod.id]: e.target.value }))}
+                              placeholder="100"
+                              min="1"
+                            />
+                          </td>
+                          <td>
+                            <input
+                              type="number"
+                              style={{ width: 100, padding: '6px', background: 'linear-gradient(180deg, #0b0f16 0%, #121822 100%)', border: '1px solid rgba(0,0,0,0.8)', color: 'var(--white)', borderRadius: '6px' }}
+                              value={bulkCostVal}
+                              onChange={e => setBulkCostInputs(prev => ({ ...prev, [prod.id]: e.target.value }))}
+                              placeholder="Optional"
+                              step="0.01"
+                              min="0"
+                            />
+                          </td>
+                          <td style={{ textAlign: 'right' }}>
+                            <button
+                              className="btn-neon-cyan"
+                              onClick={() => {
+                                if (costVal) handleSavePricing(prod.id, costVal, bulkCostVal, bulkThreshVal);
+                              }}
+                            >
+                              Save
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              )}
+              </div>
             </motion.div>
           </motion.div>
         )}
@@ -617,56 +605,57 @@ export default function AgentSubAgents({ agentId }: { agentId?: string }) {
           background: 'rgba(0,0,0,0.8)', zIndex: 1100,
           display: 'flex', alignItems: 'center', justifyContent: 'center'
         }}>
-          <div className="card-metal" style={{ width: '100%', maxWidth: 400, padding: 'var(--space-6)' }}>
-            <h3 style={{ marginTop: 0, marginBottom: 'var(--space-4)', color: 'var(--white)' }}>Reset Sub-Agent Password</h3>
-            <p style={{ fontSize: '0.85rem', color: 'var(--silver)', marginBottom: 'var(--space-2)' }}>
-              Agent: <strong style={{ color: 'var(--white)' }}>{resetPwUser.name}</strong>
-            </p>
-            <p style={{ fontSize: '0.85rem', color: 'var(--silver)', marginBottom: 'var(--space-4)' }}>
-              Username: <strong style={{ color: 'var(--teal)', fontFamily: 'monospace' }}>{resetPwUser.username}</strong>
-            </p>
-            <form onSubmit={async (e) => {
-              e.preventDefault();
-              if (!resetPwUser || !resetPwValue) return;
-              setResetPwSaving(true);
-              try {
-                const res = await fetch('/api/agent/update-password', {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ userId: resetPwUser.id, newPassword: resetPwValue }),
-                });
-                const json = await res.json();
-                if (!res.ok) throw new Error(json.error);
-                toast.success('Password Updated Successfully');
-                setResetPwUser(null);
-                setResetPwValue('');
-              } catch (err: any) {
-                toast.error(err.message || 'Failed To Update Password');
-              } finally {
-                setResetPwSaving(false);
-              }
-            }}>
-              <div className="form-group" style={{ marginBottom: 'var(--space-6)' }}>
-                <label className="form-label">New Password</label>
-                <input
-                  type="text"
-                  className="form-input"
-                  value={resetPwValue}
-                  onChange={e => setResetPwValue(e.target.value)}
-                  placeholder="Minimum 8 Characters"
-                  required
-                  minLength={8}
-                  autoComplete="off"
-                  style={{ width: '100%' }}
-                />
-              </div>
-              <div style={{ display: 'flex', gap: 'var(--space-3)', justifyContent: 'flex-end' }}>
-                <button type="button" className="btn btn-ghost btn-sm" onClick={() => { setResetPwUser(null); setResetPwValue(''); }} disabled={resetPwSaving}>Cancel</button>
-                <button type="submit" className="btn btn-primary btn-sm" disabled={resetPwSaving || resetPwValue.length < 8}>
-                  {resetPwSaving ? 'Saving...' : 'Update Password'}
-                </button>
-              </div>
-            </form>
+          <div className="metal-frame" style={{ width: '100%', maxWidth: 400 }}>
+            <div className="metal-content" style={{ padding: 'var(--space-6)' }}>
+              <h3 className="metal-text" style={{ marginTop: 0, marginBottom: 'var(--space-4)' }}>Reset Sub-Agent Password</h3>
+              <p style={{ fontSize: '0.85rem', color: 'var(--silver)', marginBottom: 'var(--space-2)' }}>
+                Agent: <strong style={{ color: 'var(--white)' }}>{resetPwUser.name}</strong>
+              </p>
+              <p style={{ fontSize: '0.85rem', color: 'var(--silver)', marginBottom: 'var(--space-4)' }}>
+                Username: <strong style={{ color: '#00E5FF', fontFamily: 'monospace' }}>{resetPwUser.username}</strong>
+              </p>
+              <form onSubmit={async (e) => {
+                e.preventDefault();
+                if (!resetPwUser || !resetPwValue) return;
+                setResetPwSaving(true);
+                try {
+                  const res = await fetch('/api/agent/update-password', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ userId: resetPwUser.id, newPassword: resetPwValue }),
+                  });
+                  const json = await res.json();
+                  if (!res.ok) throw new Error(json.error);
+                  toast.success('Password Updated Successfully');
+                  setResetPwUser(null);
+                  setResetPwValue('');
+                } catch (err: any) {
+                  toast.error(err.message || 'Failed To Update Password');
+                } finally {
+                  setResetPwSaving(false);
+                }
+              }}>
+                <div style={{ marginBottom: 'var(--space-6)' }}>
+                  <label style={{ display: 'block', marginBottom: '8px', color: 'var(--grey-300)', fontSize: '0.85rem' }}>New Password</label>
+                  <input
+                    type="text"
+                    style={{ width: '100%', padding: '10px 14px', background: 'linear-gradient(180deg, #0b0f16 0%, #121822 100%)', border: '1px solid rgba(0,0,0,0.8)', color: 'var(--white)', borderRadius: '6px' }}
+                    value={resetPwValue}
+                    onChange={e => setResetPwValue(e.target.value)}
+                    placeholder="Minimum 8 Characters"
+                    required
+                    minLength={8}
+                    autoComplete="off"
+                  />
+                </div>
+                <div style={{ display: 'flex', gap: 'var(--space-3)', justifyContent: 'flex-end' }}>
+                  <button type="button" className="btn-silver" onClick={() => { setResetPwUser(null); setResetPwValue(''); }} disabled={resetPwSaving}>Cancel</button>
+                  <button type="submit" className="btn-neon-cyan" disabled={resetPwSaving || resetPwValue.length < 8}>
+                    {resetPwSaving ? 'Saving...' : 'Update Password'}
+                  </button>
+                </div>
+              </form>
+            </div>
           </div>
         </div>
       )}
@@ -679,34 +668,35 @@ export default function AgentSubAgents({ agentId }: { agentId?: string }) {
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           padding: 'var(--space-4)',
         }}>
-          <div className="card-metal" style={{ width: '100%', maxWidth: 440, padding: 'var(--space-6)' }}>
-            <h3 style={{ marginTop: 0, marginBottom: 'var(--space-3)', color: 'var(--white)' }}>
-              Revoke Agent Privileges For {revokeTarget.name}?
-            </h3>
-            <p style={{ fontSize: '0.88rem', color: 'var(--silver)', marginBottom: 'var(--space-3)' }}>
-              This Will Demote The Sub-Agent To A Researcher Account. They Will Lose Storefront Access And Pricing Tier But Will Remain In Your Downline For Sales Attribution.
-            </p>
-            <p style={{ fontSize: '0.82rem', color: 'var(--grey-400)', marginBottom: 'var(--space-5)' }}>
-              This Action Is Logged. You Can Re-Promote Them Later.
-            </p>
-            <div style={{ display: 'flex', gap: 'var(--space-3)', justifyContent: 'flex-end' }}>
-              <button
-                type="button"
-                className="btn btn-ghost btn-sm"
-                onClick={() => setRevokeTarget(null)}
-                disabled={revoking}
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                className="btn btn-secondary btn-sm"
-                style={{ border: '1px solid var(--red)', color: 'var(--red)' }}
-                onClick={handleRevoke}
-                disabled={revoking}
-              >
-                {revoking ? 'Revoking...' : 'Confirm Revoke'}
-              </button>
+          <div className="metal-frame" style={{ width: '100%', maxWidth: 440 }}>
+            <div className="metal-content" style={{ padding: 'var(--space-6)' }}>
+              <h3 className="metal-text" style={{ marginTop: 0, marginBottom: 'var(--space-3)' }}>
+                Revoke Agent Privileges For {revokeTarget.name}?
+              </h3>
+              <p style={{ fontSize: '0.88rem', color: 'var(--silver)', marginBottom: 'var(--space-3)' }}>
+                This Will Demote The Sub-Agent To A Researcher Account. They Will Lose Storefront Access And Pricing Tier But Will Remain In Your Downline For Sales Attribution.
+              </p>
+              <p style={{ fontSize: '0.82rem', color: 'var(--grey-400)', marginBottom: 'var(--space-5)' }}>
+                This Action Is Logged. You Can Re-Promote Them Later.
+              </p>
+              <div style={{ display: 'flex', gap: 'var(--space-3)', justifyContent: 'flex-end' }}>
+                <button
+                  type="button"
+                  className="btn-silver"
+                  onClick={() => setRevokeTarget(null)}
+                  disabled={revoking}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  className="btn-neon-red"
+                  onClick={handleRevoke}
+                  disabled={revoking}
+                >
+                  {revoking ? 'Revoking...' : 'Confirm Revoke'}
+                </button>
+              </div>
             </div>
           </div>
         </div>

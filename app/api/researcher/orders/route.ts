@@ -14,7 +14,7 @@ export async function GET(_req: NextRequest) {
       id, status, total, subtotal, shipping_cost, discount_amount, coupon_code,
       fulfillment_method, payment_method, tracking_number, shipping_address,
       created_at,
-      order_items(id, product_name, quantity, unit_retail_price)
+      order_items(id, product_id, product_name, quantity, unit_retail_price)
     `)
     .eq('buyer_id', user.id)
     .order('created_at', { ascending: false })

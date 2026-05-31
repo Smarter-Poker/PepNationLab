@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { motion, AnimatePresence } from 'framer-motion';
 import Messaging from '@/components/Messaging';
+import { useCart } from '@/components/CartContext';
 import { toast } from 'sonner';
 
 interface Order {
@@ -19,7 +20,7 @@ interface Order {
   tracking_number: string | null;
   shipping_address: any;
   created_at: string;
-  order_items: { id: string; product_name: string; quantity: number; unit_retail_price: number }[];
+  order_items: { id: string; product_id?: string; product_name: string; quantity: number; unit_retail_price: number }[];
 }
 
 interface Favorite {
@@ -274,6 +275,7 @@ export default function ResearcherDashboard({ userId, userName, userEmail, agent
   const [loadingOrders, setLoadingOrders] = useState(false);
   const [loadingFavs, setLoadingFavs] = useState(false);
   const [expandedOrder, setExpandedOrder] = useState<string | null>(null);
+  const { addToCart } = useCart();
 
   // Account settings
   const [fullName, setFullName] = useState(profile.full_name || '');
@@ -306,6 +308,27 @@ export default function ResearcherDashboard({ userId, userName, userEmail, agent
     } catch { /* ok */ }
     setLoadingFavs(false);
   }
+
+  const handleReorder = (e: React.MouseEvent, items: any[]) => {
+    e.preventDefault();
+    e.stopPropagation();
+    let added = 0;
+    items.forEach(item => {
+      if (!item.product_id) return;
+      addToCart({
+        id: item.product_id,
+        name: item.product_name,
+        sku: '',
+        retailPrice: Number(item.unit_retail_price),
+        costPrice: Number(item.unit_retail_price),
+        weightOz: 0
+      }, item.quantity);
+      added++;
+    });
+    if (added === 0) {
+      toast.error('Could not reorder: Product IDs missing.');
+    }
+  };
 
   async function removeFavorite(productId: string) {
     try {
@@ -657,18 +680,32 @@ export default function ResearcherDashboard({ userId, userName, userEmail, agent
                             </div>
                           )}
 
-                          <div style={{ marginTop: 24, display: 'flex', justifyContent: 'flex-end', padding: '0 24px 24px' }}>
-                            <a href={agentSlug ? `/${agentSlug}` : '/dashboard'} className="pulse-silver" style={{
+                          <div style={{ marginTop: 24, display: 'flex', justifyContent: 'flex-end', gap: '12px', padding: '0 24px 24px' }}>
+                            {o.status === 'pending_customer_payment' && (
+                              <a href={`/orders/${o.id}`} className="pulse-silver" style={{
+                                display: 'inline-flex', alignItems: 'center', gap: 8, padding: '10px 24px',
+                                background: 'linear-gradient(180deg, #F6AD55 0%, #DD6B20 100%)',
+                                color: '#1a1f2e',
+                                border: 'none',
+                                borderRadius: '10px', fontSize: '0.9rem', fontWeight: 800, textDecoration: 'none',
+                                transition: 'transform 0.2s ease',
+                              }}>
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+                                Upload Proof / Change Payment
+                              </a>
+                            )}
+                            <button onClick={(e) => handleReorder(e, o.order_items)} className="pulse-silver" style={{
                               display: 'inline-flex', alignItems: 'center', gap: 8, padding: '10px 24px',
                               background: 'linear-gradient(180deg, #c8c2b8 0%, #a09890 100%)',
                               color: '#1a1f2e',
                               border: 'none',
+                              cursor: 'pointer',
                               borderRadius: '10px', fontSize: '0.9rem', fontWeight: 800, textDecoration: 'none',
                               transition: 'transform 0.2s ease',
                             }}>
                               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
                               Re-Order Items
-                            </a>
+                            </button>
                           </div>
                         </div>
                           </motion.div>
