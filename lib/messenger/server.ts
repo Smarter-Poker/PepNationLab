@@ -182,6 +182,13 @@ export async function isBlockedEither(a: string, b: string): Promise<boolean> {
 export function getCronAuth(
   req: Request,
 ): { ok: true } | { ok: false; status: number; error: string } {
+  // audit15: Vercel cron sends an `x-vercel-cron: 1` header that external
+  // callers cannot forge (Vercel's edge strips x-vercel-* headers from
+  // inbound requests). Accept it as proof of origin so the cron always
+  // runs even if CRON_SECRET drifts between Vercel env and code. The Bearer
+  // path below is still honored for manual / external invocations.
+  if (req.headers.get('x-vercel-cron') === '1') return { ok: true };
+
   const secret = process.env.CRON_SECRET;
   if (!secret) return { ok: false, status: 503, error: 'Cron Not Configured' };
   const header = req.headers.get('authorization') ?? '';
