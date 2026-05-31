@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import { subscribeCallSignals, type CallSignalRow } from '@/lib/messenger/realtime';
+import { subscribeCallSignals, unsubscribe, type CallSignalRow } from '@/lib/messenger/realtime';
 import IncomingCallToast from './IncomingCallToast';
 import CallOverlay from './CallOverlay';
 
@@ -98,7 +98,6 @@ export default function GlobalCallListener() {
     });
 
     return () => {
-      const { unsubscribe } = require('@/lib/messenger/realtime');
       void unsubscribe(ch);
     };
   }, [user?.id]);
