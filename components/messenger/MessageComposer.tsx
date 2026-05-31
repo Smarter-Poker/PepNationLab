@@ -12,6 +12,7 @@ import GifPicker from './GifPicker';
 import TemplatesMenu from './TemplatesMenu';
 import ScheduledMessageList from './ScheduledMessageList';
 import ExpiryPicker from './ExpiryPicker';
+import { vibrateLight, vibrateMedium, playSendSound } from '@/lib/messenger/haptics';
 
 interface Props {
   conversationId: string;
@@ -97,6 +98,7 @@ export default function MessageComposer({ conversationId, selfId, replyTo, onCle
   }, []);
 
   const togglePopover = useCallback((setter: React.Dispatch<React.SetStateAction<boolean>>) => {
+    vibrateLight();
     setter(prev => {
       if (!prev) closeAllPopovers();
       return !prev;
@@ -203,9 +205,8 @@ export default function MessageComposer({ conversationId, selfId, replyTo, onCle
     // + the 23505 replay path in send-message use this to dedup retries.
     const clientMessageId = optimistic.client_message_id!;
     try {
-      if (typeof navigator !== 'undefined' && navigator.vibrate) {
-        navigator.vibrate(10); // subtle click on send
-      }
+      playSendSound();
+      vibrateMedium();
 
       const body: Record<string, unknown> = {
         conversationId,
@@ -567,7 +568,7 @@ export default function MessageComposer({ conversationId, selfId, replyTo, onCle
               {text.trim() || sending ? (
                 <button
                   type="button"
-                  onClick={() => void handleSendText()}
+                  onClick={() => { vibrateMedium(); void handleSendText(); }}
                   disabled={!text.trim() || sending}
                   aria-label="Send Message" title="Send Message"
                   className="btn btn-primary"

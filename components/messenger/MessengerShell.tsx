@@ -11,6 +11,7 @@ import {
   unsubscribe,
   type IncomingMessageNotification,
 } from '@/lib/messenger/realtime';
+import { vibrateLight } from '@/lib/messenger/haptics';
 
 interface Props {
   userId: string;
@@ -370,10 +371,10 @@ export default function MessengerShell({ userId }: Props) {
             gap: 12,
             flexShrink: 0,
           }}>
-            <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '0px' }}>
+            <div style={{ display: 'flex', justifyContent: 'center', padding: '0px' }}>
               <button
                 type="button"
-                onClick={() => setComposeOpen(true)}
+                onClick={() => { vibrateLight(); setComposeOpen(true); }}
                 className="hover-lift"
                 aria-label="Start A New Conversation"
                 style={{
@@ -407,7 +408,7 @@ export default function MessengerShell({ userId }: Props) {
               <button
               type="button"
               className="messenger-back-btn hover-lift"
-              onClick={() => setActive(null)}
+              onClick={() => { vibrateLight(); setActive(null); }}
               aria-label="Back To Conversations"
               style={{
                 display: 'none', // shown via CSS on mobile

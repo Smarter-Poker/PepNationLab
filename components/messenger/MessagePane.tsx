@@ -23,6 +23,7 @@ import {
   unsubscribe,
   supabase,
 } from '@/lib/messenger/realtime';
+import { playPopSound, initHaptics } from '@/lib/messenger/haptics';
 import type { RealtimeChannel } from '@supabase/supabase-js';
 
 interface Props {
@@ -104,61 +105,14 @@ async function markConversationRead(conversationId: string, lastReadMessageId: s
 
 type PushBannerState = 'hidden' | 'default' | 'denied';
 
-let globalAudioCtx: AudioContext | null = null;
-let audioInitDone = false;
-
-function initAudio() {
-  if (typeof window === 'undefined' || audioInitDone) return;
-  try {
-    const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
-    if (AudioContextClass) {
-      globalAudioCtx = new AudioContextClass();
-    }
-    audioInitDone = true;
-  } catch {
-    // Ignore
-  }
-}
-
 if (typeof document !== 'undefined') {
   const handleInteraction = () => {
-    initAudio();
-    if (globalAudioCtx && globalAudioCtx.state === 'suspended') {
-      globalAudioCtx.resume().catch(() => {});
-    }
+    initHaptics();
     document.removeEventListener('pointerdown', handleInteraction);
     document.removeEventListener('keydown', handleInteraction);
   };
   document.addEventListener('pointerdown', handleInteraction);
   document.addEventListener('keydown', handleInteraction);
-}
-
-function playPopSound() {
-  if (typeof window === 'undefined') return;
-  try {
-    if (navigator.vibrate) navigator.vibrate(20);
-    if (!globalAudioCtx) return;
-    if (globalAudioCtx.state === 'suspended') return;
-    
-    const osc = globalAudioCtx.createOscillator();
-    const gain = globalAudioCtx.createGain();
-    
-    osc.type = 'sine';
-    osc.frequency.setValueAtTime(800, globalAudioCtx.currentTime);
-    osc.frequency.exponentialRampToValueAtTime(300, globalAudioCtx.currentTime + 0.1);
-    
-    gain.gain.setValueAtTime(0, globalAudioCtx.currentTime);
-    gain.gain.linearRampToValueAtTime(0.1, globalAudioCtx.currentTime + 0.02);
-    gain.gain.exponentialRampToValueAtTime(0.01, globalAudioCtx.currentTime + 0.1);
-    
-    osc.connect(gain);
-    gain.connect(globalAudioCtx.destination);
-    
-    osc.start();
-    osc.stop(globalAudioCtx.currentTime + 0.1);
-  } catch {
-    // Ignore autoplay or audio context errors
-  }
 }
 
 function formatMessageTimestamp(dateStr: string): string {
