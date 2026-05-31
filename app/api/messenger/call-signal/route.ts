@@ -178,7 +178,7 @@ export async function POST(req: NextRequest) {
       conversation_id: updated.conversation_id,
       sender_id: updated.initiator_id,
       message_type: 'system',
-      text: `📞 Missed ${typeStr} Call`,
+      text: `Missed ${typeStr} Call`,
       status: 'sent',
       metadata: { call_id: updated.id, status: 'declined' }
     });
@@ -225,7 +225,7 @@ export async function POST(req: NextRequest) {
          conversation_id: updated.conversation_id,
          sender_id: updated.initiator_id,
          message_type: 'system',
-         text: `📞 ${typeStr} Call Ended (${durationStr})`,
+         text: `${typeStr} Call Ended (${durationStr})`,
          status: 'sent',
          metadata: { call_id: updated.id, status: 'ended', duration: diffSecs }
        });
@@ -234,7 +234,7 @@ export async function POST(req: NextRequest) {
          conversation_id: updated.conversation_id,
          sender_id: updated.initiator_id,
          message_type: 'system',
-         text: `📞 Missed ${typeStr} Call`,
+         text: `Missed ${typeStr} Call`,
          status: 'sent',
          metadata: { call_id: updated.id, status: 'ended_before_answer' }
        });
