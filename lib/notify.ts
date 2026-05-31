@@ -310,32 +310,7 @@ export async function notifyReferralReward(
   ]);
 }
 
-/** Notify user of a tax exemption status change */
-export async function notifyTaxExemption(
-  supabase: SupabaseClient,
-  userId: string,
-  action: 'approve' | 'reject' | 'expire',
-  stateCode: string,
-  rejectedReason?: string,
-) {
-  const titles = {
-    approve: `Tax Exemption Approved — ${stateCode}`,
-    reject: `Tax Exemption Rejected — ${stateCode}`,
-    expire: `Tax Exemption Expired — ${stateCode}`,
-  };
-  const bodies = {
-    approve: `Your tax exemption certificate for ${stateCode} is approved. Future orders to that state will be tax-exempt.`,
-    reject: `Your tax exemption for ${stateCode} was rejected. Reason: ${rejectedReason ?? 'Not specified.'}`,
-    expire: `Your tax exemption for ${stateCode} has expired. Please submit a renewed certificate.`,
-  };
-  await notify(supabase, {
-    userId,
-    type: 'system',
-    title: titles[action],
-    body: bodies[action],
-    url: `/account/tax-exemptions`,
-  });
-}
+
 
 /** Notify agent of a prepaid balance recharge or store credit grant */
 export async function notifyBalanceRecharge(
@@ -400,25 +375,7 @@ export async function notifyRoleRevoked(
   });
 }
 
-/** Notify admin when any user submits a tax exemption for review */
-export async function notifyAdminTaxSubmission(
-  supabase: SupabaseClient,
-  adminIds: string[],
-  userName: string,
-  stateCode: string,
-) {
-  await Promise.all(
-    adminIds.map(adminId =>
-      notify(supabase, {
-        userId: adminId,
-        type: 'system',
-        title: `Tax Exemption Submitted — ${stateCode}`,
-        body: `${userName} submitted a tax exemption certificate for ${stateCode}. Review required.`,
-        url: `/admin/tax-exemptions`,
-      })
-    )
-  );
-}
+
 
 /** Notify agent their auto-subscription order was created */
 export async function notifySubscriptionOrder(

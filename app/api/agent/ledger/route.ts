@@ -54,9 +54,8 @@ export async function GET(req: Request) {
       // The agent collects the total from the customer
       const collected = Number(order.total);
       
-      // The agent owes the Admin/SuperAgent the COGS + Shipping + Tax
-      // Tax MUST be remitted back to the Admin so they can pay the state.
-      const owed = cogs + Number(order.shipping_cost || 0) + Number(order.tax_amount || 0);
+      // The agent owes the Admin/SuperAgent the COGS + Shipping
+      const owed = cogs + Number(order.shipping_cost || 0);
 
       const profit = collected - owed;
 

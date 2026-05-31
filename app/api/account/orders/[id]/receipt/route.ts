@@ -150,7 +150,7 @@ ${order.tracking_number ? `<div class="muted">Tracking: ${escape(order.tracking_
   <div class="row"><span>Subtotal</span><span>${money(Number(order.subtotal))}</span></div>
   ${Number(order.discount_amount) > 0 ? `<div class="row"><span>Discount${order.coupon_code ? ' (' + escape(order.coupon_code) + ')' : ''}</span><span>- ${money(Number(order.discount_amount))}</span></div>` : ''}
   <div class="row"><span>Shipping</span><span>${money(Number(order.shipping_cost))}</span></div>
-  ${Number(order.tax_amount) > 0 ? `<div class="row"><span>Tax</span><span>${money(Number(order.tax_amount))}</span></div>` : ''}
+
   <div class="row grand"><span>Total</span><span>${money(Number(order.total))}</span></div>
   <div class="row muted"><span>Payment Method</span><span>${escape(order.payment_method.replace(/_/g, ' '))}</span></div>
   <div class="row muted"><span>Fulfillment</span><span>${escape((order.fulfillment_method || 'shipping').replace(/_/g, ' '))}</span></div>

@@ -4,7 +4,7 @@ import { z } from 'zod';
 import { applyBulkPrice } from '@/lib/pricing';
 import { assertSameOrigin } from '@/lib/csrf';
 import { rateLimit } from '@/lib/rate-limit';
-import { computeTaxQuote } from '@/lib/tax';
+
 
 import { enqueuePush, shortOrderId } from '@/lib/push-enqueue';
 import { notifyOrderPlaced, notify } from '@/lib/notify';
@@ -579,31 +579,11 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // ── SALES TAX (PER DESTINATION STATE) ─────────────────────────────
-    // Look up the active tax rule for the buyer's shipping state and
-    // apply any approved exemption certificate they have on file. Pickup
-    // orders without a shipping address default to zero tax. Failures
-    // here never block checkout — we fall back to a zero quote.
-    let taxAmount = 0;
-    let taxJurisdiction: string | null = null;
-    let taxExemptionId: string | null = null;
-    try {
-      const stateForTax =
-        fulfillmentMethod === 'ship' && shippingAddress?.state
-          ? shippingAddress.state
-          : null;
-      const quote = await computeTaxQuote(serviceSupabase, {
-        buyerId: user.id,
-        subtotal: Math.max(0, subtotal - discountAmount),
-        shipping: shippingCost,
-        shippingState: stateForTax,
-      });
-      taxAmount = Number.isFinite(quote.taxAmount) ? quote.taxAmount : 0;
-      taxJurisdiction = quote.jurisdiction;
-      taxExemptionId = quote.exemptionId;
-    } catch (taxErr) {
-      console.error('Tax Quote Failed (defaulting to 0):', taxErr);
-    }
+    // ── SALES TAX REMOVED ─────────────────────────────
+    // Tax calculation has been permanently disabled globally.
+    const taxAmount = 0;
+    const taxJurisdiction: string | null = null;
+    const taxExemptionId: string | null = null;
 
     const grossTotal = Math.max(0, subtotal - discountAmount) + shippingCost + taxAmount;
 

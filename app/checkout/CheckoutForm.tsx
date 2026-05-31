@@ -245,13 +245,7 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
   const [couponLoading, setCouponLoading] = useState(false);
 
 
-  const [taxQuote, setTaxQuote] = useState<{
-    taxAmount: number;
-    rate: number;
-    jurisdiction: string | null;
-    exempt: boolean;
-    exemptionId: string | null;
-  }>({ taxAmount: 0, rate: 0, jurisdiction: null, exempt: false, exemptionId: null });
+
 
   const totalWeightOz = cart.reduce((acc, item) => acc + (item.weightOz ?? 0.5) * item.quantity, 0);
 
@@ -283,53 +277,7 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [totalWeightOz, fulfillmentMethod]);
 
-  useEffect(() => {
-    let cancelled = false;
-    const shippingState = fulfillmentMethod === 'ship' ? (state || '').trim().toUpperCase() : '';
-    if (!shippingState || shippingState.length !== 2) {
-      setTaxQuote({ taxAmount: 0, rate: 0, jurisdiction: null, exempt: false, exemptionId: null });
-      return;
-    }
-    const liveShipping = fulfillmentMethod === 'ship' ? (
-      totalWeightOz <= 1 ? 8 :
-      totalWeightOz <= 4 ? 12 :
-      totalWeightOz <= 8 ? 16 :
-      totalWeightOz <= 16 ? 20 : 28
-    ) : 0;
-    const payload = {
-      subtotal: Math.max(0, cartSubtotal - (appliedCoupon?.discount ?? 0)),
-      shipping: liveShipping,
-      shippingState,
-    };
-    const ctrl = new AbortController();
-    (async () => {
-      try {
-        const res = await fetch('/api/checkout/tax-quote', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload),
-          signal: ctrl.signal,
-        });
-        if (!res.ok) throw new Error('tax quote failed');
-        const json = await res.json();
-        const q = json?.data;
-        if (cancelled || !q) return;
-        setTaxQuote({
-          taxAmount: Number(q.taxAmount) || 0,
-          rate: Number(q.rate) || 0,
-          jurisdiction: q.jurisdiction ?? null,
-          exempt: Boolean(q.exempt),
-          exemptionId: q.exemptionId ?? null,
-        });
-      } catch {
-        if (!cancelled) {
-          setTaxQuote({ taxAmount: 0, rate: 0, jurisdiction: null, exempt: false, exemptionId: null });
-        }
-      }
-    })();
-    return () => { cancelled = true; ctrl.abort(); };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [cartSubtotal, fulfillmentMethod, state, totalWeightOz, appliedCoupon?.discount]);
+
 
   if (!storefrontLoaded) return null;
 
@@ -345,7 +293,7 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
 
   const shippingCost = calculateShippingCost();
   const discount = appliedCoupon?.discount ?? 0;
-  const subtotalAfterDiscount = Math.max(0, cartSubtotal - discount) + shippingCost + (taxQuote.taxAmount || 0);
+  const subtotalAfterDiscount = Math.max(0, cartSubtotal - discount) + shippingCost;
 
   const grandTotal = Math.max(0, subtotalAfterDiscount);
 
@@ -637,7 +585,7 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
               <div>
                 <p style={{ color: '#F59E0B', fontWeight: 700, fontSize: '0.88rem', margin: '0 0 4px' }}>Total Was Adjusted</p>
                 <p style={{ color: 'var(--silver-light)', fontSize: '0.82rem', margin: 0, lineHeight: 1.5 }}>
-                  Your Confirmed Order Total Is <strong style={{ color: '#F59E0B' }}>${serverTotal.toFixed(2)}</strong>. Shipping Rates Or Tax May Have Updated Since Your Cart Was Loaded. Please Send Exactly <strong style={{ color: '#F59E0B' }}>${serverTotal.toFixed(2)}</strong> To The Payment Handle Below.
+                  Your Confirmed Order Total Is <strong style={{ color: '#F59E0B' }}>${serverTotal.toFixed(2)}</strong>. Shipping Rates May Have Updated Since Your Cart Was Loaded. Please Send Exactly <strong style={{ color: '#F59E0B' }}>${serverTotal.toFixed(2)}</strong> To The Payment Handle Below.
                 </p>
               </div>
             </div>
@@ -1386,22 +1334,7 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
                 </div>
               )}
 
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem' }}>
-                <span style={{ color: 'var(--grey-400)' }}>
-                  {taxQuote.exempt ? 'Tax (Exempt)' : taxQuote.jurisdiction ? `Tax (${taxQuote.jurisdiction})` : 'Tax'}
-                </span>
-                {taxQuote.exempt ? (
-                  <strong style={{ color: 'var(--teal)' }}>$0.00</strong>
-                ) : (
-                  <strong style={{ color: 'var(--white)' }}>${(taxQuote.taxAmount || 0).toFixed(2)}</strong>
-                )}
-              </div>
 
-              {taxQuote.exempt && (
-                <div style={{ fontSize: '0.7rem', color: 'var(--teal)', textAlign: 'right', marginTop: -4 }}>
-                  Tax-Exempt Certificate Applied
-                </div>
-              )}
 
               <div style={{ borderTop: '1px solid rgba(255, 255, 255, 0.05)', paddingTop: 'var(--space-3)', display: 'flex', justifyContent: 'space-between', fontSize: '1.05rem', marginTop: 'var(--space-1)' }}>
                 <span style={{ color: 'var(--white)', fontWeight: 600 }}>Total Due</span>
