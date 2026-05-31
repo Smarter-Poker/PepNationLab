@@ -1,5 +1,5 @@
 /**
- * PHONE RING TONE - Soft beep-beep sound for outgoing calls
+ * PHONE RING TONE - Sound effect generator
  * Uses Web Audio API to create a gentle, pleasant ring tone
  */
 
@@ -28,49 +28,53 @@ export function createRingTone(): RingTone | null {
         void audioContext.resume();
       }
 
-      // Soft beep-beep pattern
+      // Telephone-style ringing
       const playBeep = () => {
         if (!isPlaying || !audioContext) return;
 
         try {
-          // First beep
-          const osc1 = audioContext.createOscillator();
-          const gain1 = audioContext.createGain();
-          osc1.connect(gain1);
-          gain1.connect(audioContext.destination);
-
-          osc1.type = 'sine';
-          osc1.frequency.value = 800; // Higher, softer pitch
-          gain1.gain.value = 0.15; // Quiet volume
-
-          osc1.start(audioContext.currentTime);
-          gain1.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.15);
-          osc1.stop(audioContext.currentTime + 0.15);
-
-          // Second beep (after short pause)
-          const osc2 = audioContext.createOscillator();
-          const gain2 = audioContext.createGain();
-          osc2.connect(gain2);
-          gain2.connect(audioContext.destination);
-
-          osc2.type = 'sine';
-          osc2.frequency.value = 800;
-          gain2.gain.setValueAtTime(0.15, audioContext.currentTime + 0.25);
-
-          osc2.start(audioContext.currentTime + 0.25);
-          gain2.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.4);
-          osc2.stop(audioContext.currentTime + 0.4);
+          // Double UK/European style ring: 400Hz + 450Hz mixed
+          // Beep 1 (0.4s)
+          playDualTone(audioContext, 400, 450, audioContext.currentTime, 0.4);
+          // Beep 2 (0.4s), starts after 0.2s pause
+          playDualTone(audioContext, 400, 450, audioContext.currentTime + 0.6, 0.4);
         } catch (innerErr) {
           console.warn('Oscillator build error:', innerErr);
         }
       };
 
       playBeep();
-      ringInterval = setInterval(playBeep, 2000); // Repeat every 2 seconds
+      ringInterval = setInterval(playBeep, 3000); // Repeat every 3 seconds
 
     } catch (e) {
       console.warn('Ring tone error:', e);
     }
+  };
+  
+  const playDualTone = (ctx: AudioContext, freq1: number, freq2: number, startTime: number, duration: number) => {
+      const osc1 = ctx.createOscillator();
+      const osc2 = ctx.createOscillator();
+      const gain = ctx.createGain();
+      
+      osc1.connect(gain);
+      osc2.connect(gain);
+      gain.connect(ctx.destination);
+      
+      osc1.type = 'sine';
+      osc2.type = 'sine';
+      osc1.frequency.value = freq1;
+      osc2.frequency.value = freq2;
+      
+      // Envelopes for smooth attack and release
+      gain.gain.setValueAtTime(0, startTime);
+      gain.gain.linearRampToValueAtTime(0.15, startTime + 0.05); // Attack
+      gain.gain.setValueAtTime(0.15, startTime + duration - 0.05); // Sustain
+      gain.gain.linearRampToValueAtTime(0, startTime + duration); // Release
+      
+      osc1.start(startTime);
+      osc2.start(startTime);
+      osc1.stop(startTime + duration);
+      osc2.stop(startTime + duration);
   };
 
   const stop = () => {
