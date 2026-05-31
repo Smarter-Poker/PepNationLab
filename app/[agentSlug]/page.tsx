@@ -23,11 +23,9 @@ export default async function AgentStorefrontPage({ params }: Props) {
       id,
       slug,
       display_name,
-      tagline,
       logo_url,
       primary_color,
       secondary_color,
-      bio,
       qr_code_url,
       qr_code_data,
       is_active,
@@ -320,7 +318,7 @@ export async function generateMetadata({ params }: Props) {
   const supabase = await createClient();
   const { data: agent } = await supabase
     .from('agent_profiles')
-    .select('display_name, tagline')
+    .select('display_name')
     .ilike('slug', agentSlug)
     .single();
 

@@ -71,9 +71,20 @@ export async function GET(req: NextRequest) {
       .update({ status: 'fired', fired_at: nowIso })
       .in('id', toFire)
       .eq('status', 'pending')
-      .select('id');
+      .select('id, user_id, message_id');
     if (upErr) return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
     firedCount = (fired ?? []).length;
+
+    if (fired && fired.length > 0) {
+      const notificationsToInsert = fired.map((r) => ({
+        user_id: r.user_id,
+        title: 'Message Reminder',
+        body: 'You asked to be reminded about a message in the messenger.',
+        type: 'system',
+        url: `/messenger`,
+      }));
+      await svc.from('notifications').insert(notificationsToInsert);
+    }
   }
 
   return NextResponse.json({

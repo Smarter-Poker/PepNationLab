@@ -33,7 +33,7 @@ export default async function AgentDashboardPage() {
   // 4. Fetch agent storefront profile
   const { data: agentProfileRaw } = await supabase
     .from('agent_profiles')
-    .select('id, slug, display_name, tagline, logo_url, primary_color, secondary_color, bio, qr_code_url, qr_code_data, payment_handles, warehouse_address, is_active, shippo_api_key')
+    .select('id, slug, display_name, logo_url, primary_color, secondary_color, qr_code_url, qr_code_data, payment_handles, warehouse_address, is_active, shippo_api_key')
     .eq('id', user.id)
     .maybeSingle();
 

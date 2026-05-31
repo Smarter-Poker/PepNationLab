@@ -11,7 +11,7 @@ export const metadata: Metadata = {
 const BENEFITS = [
   {
     title: 'Your Own Branded Storefront',
-    body: 'Operate a white-label storefront at pepnationlab.com/yourname, with your display name, tagline, colors, and bio.',
+    body: 'Operate a white-label storefront at pepnationlab.com/yourname, with your display name and colors.',
   },
   {
     title: 'Wholesale Tier Pricing',

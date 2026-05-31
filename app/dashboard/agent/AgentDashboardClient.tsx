@@ -37,11 +37,9 @@ interface AgentProfile {
   id: string;
   slug: string;
   display_name: string;
-  tagline: string | null;
   logo_url: string | null;
   primary_color: string | null;
   secondary_color: string | null;
-  bio: string | null;
   qr_code_url: string | null;
   qr_code_data?: string | null;
   payment_handles: Record<string, any> | null;

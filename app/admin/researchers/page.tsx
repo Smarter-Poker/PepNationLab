@@ -93,7 +93,6 @@ function ResearchersAdminPageInner() {
   const [newPrepaidBalance, setNewPrepaidBalance] = useState('');
   const [newSlug, setNewSlug] = useState('');
   const [newDisplayName, setNewDisplayName] = useState('');
-  const [newTagline, setNewTagline] = useState('');
 
   useEffect(() => {
     fetchProfiles();
@@ -197,7 +196,7 @@ function ResearchersAdminPageInner() {
     setNewName(''); setNewUsername(''); setNewPassword('');
     setNewTier('tier_2'); setNewAccountType('prepaid');
     setNewCreditLimit(''); setNewPrepaidBalance('');
-    setNewSlug(''); setNewDisplayName(''); setNewTagline('');
+    setNewSlug(''); setNewDisplayName('');
   }
 
   function openQrModal(profile: Profile) {
@@ -300,7 +299,6 @@ function ResearchersAdminPageInner() {
           prepaid_balance: newAccountType === 'prepaid' ? Number(newPrepaidBalance) : 0,
           slug: newSlug,
           display_name: newDisplayName,
-          tagline: newTagline,
         }),
       });
       const json = await res.json();
@@ -753,11 +751,6 @@ function ResearchersAdminPageInner() {
                   <input type="text" className="form-input" placeholder="E.g. orlando-peps" value={newSlug}
                     onChange={e => setNewSlug(e.target.value.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9\-]/g, ''))} required />
                 </div>
-              </div>
-              <div className="form-group" style={{ marginBottom: 'var(--space-5)' }}>
-                <label className="form-label">Tagline — Optional</label>
-                <input type="text" className="form-input" placeholder="E.g. Elite Research Peptides Delivered Direct" value={newTagline}
-                  onChange={e => setNewTagline(e.target.value)} />
               </div>
 
               <label style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', cursor: 'pointer', fontSize: '0.85rem', color: 'var(--silver)', marginBottom: 'var(--space-6)' }}>
