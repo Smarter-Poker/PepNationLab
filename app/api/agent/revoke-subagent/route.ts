@@ -80,6 +80,29 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  // SACA 2026-05-31: clear referring_sub_agent_id on any researchers that
+  // were tagged to this sub-agent BEFORE flipping is_sub_agent=false. If we
+  // skipped this step, those researcher rows would carry a dangling tag
+  // pointing to a profile where is_sub_agent=false, violating the
+  // trg_enforce_referring_sub_agent_is_sub_agent trigger on any future
+  // researcher UPDATE and breaking SACA accrual on future orders.
+  // Past orders keep orders.referring_sub_agent_id snapshotted at order time
+  // and the existing ledger rows stay intact — already-settled commission
+  // is permanent.
+  const { data: clearedTags, error: clearTagsErr } = await supabase
+    .from('profiles')
+    .update({ referring_sub_agent_id: null, updated_at: new Date().toISOString() })
+    .eq('referring_sub_agent_id', subAgentId)
+    .select('id');
+  if (clearTagsErr) {
+    console.error('[revoke-subagent] clear referring_sub_agent_id error:', clearTagsErr);
+    return NextResponse.json(
+      { error: 'Revoke Blocked: Could Not Detach Tagged Researchers.' },
+      { status: 500 },
+    );
+  }
+  const detachedCount = (clearedTags ?? []).length;
+
   // Demote — clear ALL the SACA fields together in one UPDATE so the
   // CHECK constraints stay satisfied:
   //   profiles_sub_agent_must_have_parent     (NOT is_sub_agent OR parent IS NOT NULL)
@@ -88,12 +111,15 @@ export async function POST(req: NextRequest) {
   // back to the demoted user's original referring agent. tier is cleared
   // because the demoted user no longer has agent-side pricing. Any settled
   // commission stays on prepaid_balance — sub-agents earned it before demotion.
+  // referring_sub_agent_id on the demoted profile itself is also cleared
+  // (a researcher should not be tagged to a no-longer-sub-agent).
   const now = new Date().toISOString();
   const { error: updateErr } = await supabase
     .from('profiles')
     .update({
       role: 'researcher',
       is_sub_agent: false,
+      referring_sub_agent_id: null,
       parent_agent_id: null,
       commission_pct: null,
       commission_active_since: null,
@@ -122,11 +148,12 @@ export async function POST(req: NextRequest) {
       previous_commission_pct: target.commission_pct == null ? null : Number(target.commission_pct),
       revoked_by: callerId,
       target_name: target.full_name ?? null,
+      detached_researcher_count: detachedCount,
     },
   });
 
   void notifyRoleRevoked(supabase, subAgentId, callerProfile.full_name || 'Your Agent')
     .catch(() => { /* best-effort */ });
 
-  return NextResponse.json({ success: true });
+  return NextResponse.json({ success: true, detached_researcher_count: detachedCount });
 }

@@ -33,7 +33,7 @@ export default function AgentSales({ orders, setOrders, agentId, userProfile }: 
     }
     isFetching.current = true;
     try {
-      const res = await fetch('/api/agent/sales');
+      const res = await fetch(`/api/agent/sales?t=${Date.now()}`, { cache: 'no-store' });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || 'Failed to fetch sales data');
       setData(json.data);
@@ -74,7 +74,7 @@ export default function AgentSales({ orders, setOrders, agentId, userProfile }: 
     };
   }, [agentId]);
 
-  const formatCurrency = (val: number) => `$${(Number(val) || 0).toFixed(2)}`;
+  const formatCurrency = (val: number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(Number(val) || 0);
 
   const { liveCarts, sales } = data || { liveCarts: [], sales: [] };
 

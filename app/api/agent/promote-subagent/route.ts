@@ -135,6 +135,11 @@ export async function POST(req: NextRequest) {
       commission_pct: commissionPct,
       commission_active_since: now,
       account_type: paymentModel,
+      // SACA 2026-05-31: clear any prior referring_sub_agent_id tag on the
+      // researcher being promoted. A sub-agent cannot itself be tagged to
+      // another sub-agent (no nested sub-agents), and an existing tag from
+      // when they were a researcher would now be inconsistent.
+      referring_sub_agent_id: null,
       updated_at: now,
     };
     if (paymentModel === 'credit') {

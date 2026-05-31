@@ -54,6 +54,13 @@ export async function POST(req: NextRequest) {
       if (code === '23505') return NextResponse.json({ ok: true });
       return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
     }
+
+    await sendBroadcast({
+      topic: `chat:${msg.conversation_id}`,
+      event: 'delete_message_for_me',
+      payload: { messageId: parsed.data.messageId, userId: user.id },
+    });
+
     return NextResponse.json({ ok: true });
   }
 

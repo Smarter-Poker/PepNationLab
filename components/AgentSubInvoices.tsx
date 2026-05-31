@@ -30,7 +30,7 @@ export default function AgentSubInvoices({ isSuperAgent }: { isSuperAgent: boole
 
   async function fetchInvoices() {
     try {
-      const res = await fetch('/api/agent/super-agent/invoices');
+      const res = await fetch(`/api/agent/super-agent/invoices?t=${Date.now()}`, { cache: 'no-store' });
       if (!res.ok) throw new Error('Failed to load invoices');
       const data = await res.json();
       setInvoices(data.data || []);
@@ -124,14 +124,17 @@ export default function AgentSubInvoices({ isSuperAgent }: { isSuperAgent: boole
                     <span style={{ fontSize: '0.8em', opacity: 0.7 }}>{inv.profiles?.email}</span>
                   </td>
                 )}
-                <td style={{ padding: 'var(--space-3)', color: 'var(--white)', textAlign: 'right' }}>
-                  ${Number(inv.total_cogs || 0).toFixed(2)}
+                <td style={{ padding: 'var(--space-3)', color: 'var(--white)' }}>
+                  {new Date(inv.created_at).toLocaleDateString()}
                 </td>
                 <td style={{ padding: 'var(--space-3)', color: 'var(--white)', textAlign: 'right' }}>
-                  ${Number(inv.total_shipping || 0).toFixed(2)}
+                  {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(Number(inv.total_cogs || 0))}
+                </td>
+                <td style={{ padding: 'var(--space-3)', color: 'var(--white)', textAlign: 'right' }}>
+                  {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(Number(inv.total_shipping || 0))}
                 </td>
                 <td style={{ padding: 'var(--space-3)', color: 'var(--teal)', textAlign: 'right', fontWeight: 'bold' }}>
-                  ${Number(inv.total_owed || 0).toFixed(2)}
+                  {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(Number(inv.total_owed || 0))}
                 </td>
                 <td style={{ padding: 'var(--space-3)', textAlign: 'center' }}>
                   <span style={{

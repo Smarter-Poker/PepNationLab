@@ -79,7 +79,7 @@ export async function POST(req: NextRequest) {
 
   const { data: me } = await svc
     .from('profiles')
-    .select('id, role, parent_agent_id, referring_agent_id')
+    .select('id, role, parent_agent_id, referring_agent_id, is_sub_agent, referring_sub_agent_id')
     .eq('id', user.id)
     .maybeSingle();
 
@@ -122,9 +122,18 @@ export async function POST(req: NextRequest) {
   }
 
   if (me.role === 'agent') {
-    const { data: researchers } = await selectActive(svc.from('profiles'))
-      .eq('referring_agent_id', me.id)
-      .limit(500);
+    const meIsSubAgent = (me as { is_sub_agent?: boolean | null }).is_sub_agent === true;
+    // Regular agents and super-agents-as-agents own researchers via referring_agent_id.
+    // Sub-agents do not own any researchers via referring_agent_id (those rows point
+    // to the sub-agent's parent), so for sub-agent callers we instead fetch the
+    // researchers that were tagged to them via referring_sub_agent_id — that is
+    // the SACA commission link and represents the customers the sub-agent created.
+    const researcherQuery = meIsSubAgent
+      ? selectActive(svc.from('profiles')).eq('referring_sub_agent_id', me.id)
+      : selectActive(svc.from('profiles')).eq('referring_agent_id', me.id);
+    const { data: researchers } = await researcherQuery.limit(500);
+    // Sub-agents cannot have nested sub-agents, but the no-op query is cheap
+    // and keeps the code path identical for both branches.
     const { data: subAgents } = await selectActive(svc.from('profiles'))
       .eq('parent_agent_id', me.id)
       .limit(200);
@@ -159,6 +168,20 @@ export async function POST(req: NextRequest) {
         .eq('is_active', true)
         .maybeSingle();
       if (agent) byId.set(agent.id, agent as ContactRow);
+    }
+    // SACA: if the researcher was created by a sub-agent, expose that
+    // sub-agent as a contact too — the researcher already had the
+    // sub-agent as their salesperson when they signed up, so a messenger
+    // conversation between them is the natural support channel.
+    const meSubAgentTag = (me as { referring_sub_agent_id?: string | null }).referring_sub_agent_id;
+    if (meSubAgentTag) {
+      const { data: subAgent } = await svc
+        .from('profiles')
+        .select(SELECT)
+        .eq('id', meSubAgentTag)
+        .eq('is_active', true)
+        .maybeSingle();
+      if (subAgent) byId.set(subAgent.id, subAgent as ContactRow);
     }
     const admins = await loadAdminContacts(svc, me.id);
     for (const a of admins) byId.set(a.id, a);

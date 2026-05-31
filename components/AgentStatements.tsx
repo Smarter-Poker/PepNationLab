@@ -21,7 +21,7 @@ export default function AgentStatements() {
 
   const fetchStatements = async () => {
     try {
-      const res = await fetch('/api/agent/statements');
+      const res = await fetch(`/api/agent/statements?t=${Date.now()}`, { cache: 'no-store' });
       if (!res.ok) throw new Error('Failed to load statements');
       const json = await res.json();
       if (json.error) throw new Error(json.error);
@@ -105,9 +105,9 @@ export default function AgentStatements() {
                     </div>
                   </td>
                   <td>{orderCount}</td>
-                  <td>${Number(stmt.total_cogs).toFixed(2)}</td>
-                  <td>${Number(stmt.total_shipping).toFixed(2)}</td>
-                  <td style={{ color: 'var(--gold)', fontWeight: 600 }}>${Number(stmt.total_owed).toFixed(2)}</td>
+                  <td>{new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(Number(stmt.total_cogs) || 0)}</td>
+                  <td>{new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(Number(stmt.total_shipping) || 0)}</td>
+                  <td style={{ color: 'var(--gold)', fontWeight: 600 }}>{new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(Number(stmt.total_owed) || 0)}</td>
                   <td>
                     {stmt.status === 'paid' ? (
                       <span className="badge badge-teal">Paid</span>

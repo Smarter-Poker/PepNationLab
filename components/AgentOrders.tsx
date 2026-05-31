@@ -90,6 +90,17 @@ export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
   const [detailLoading, setDetailLoading] = useState(false);
   const [detailError, setDetailError] = useState('');
 
+  // Keep detailOrder synchronized with the parent orders array so the modal updates optimistically
+  // or when WebSockets push new status changes (e.g. customer pays while modal is open).
+  useEffect(() => {
+    if (detailOrder) {
+      const updatedOrder = orders.find(o => o.id === detailOrder.id);
+      if (updatedOrder && JSON.stringify(updatedOrder) !== JSON.stringify(detailOrder)) {
+        setDetailOrder(updatedOrder);
+      }
+    }
+  }, [orders, detailOrder]);
+
   useEffect(() => {
     if (!detailOrder) {
       setDetailItems([]);
@@ -102,7 +113,7 @@ export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
       setDetailError('');
       try {
         const res = await fetch(
-          `/api/agent/orders/items?orderId=${encodeURIComponent(detailOrder.id)}`
+          `/api/agent/orders/items?orderId=${encodeURIComponent(detailOrder.id)}&t=${Date.now()}`
         );
         const json = await res.json();
         if (!res.ok) throw new Error(json.error || 'Failed To Load Line Items');
@@ -221,27 +232,14 @@ export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
   );
 
   return (
-    <div style={{
-      padding: '3px',
-      borderRadius: '24px',
-      background: 'linear-gradient(145deg, #c8c2b8 0%, #a09890 30%, #8a847c 50%, #a09890 70%, #c8c2b8 100%)',
-      boxShadow: '0 8px 30px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.35), inset 0 -1px 0 rgba(0,0,0,0.4)',
-      marginBottom: 'var(--space-6)',
-    }}>
-      <div style={{
-        background: 'linear-gradient(180deg, #1a1f2e 0%, #141820 40%, #111520 100%)',
-        borderRadius: '21px',
-        padding: 'var(--space-6)',
-        boxShadow: 'inset 0 2px 10px rgba(0,0,0,0.6)',
-      }}>
+    <div className="metal-frame" style={{ marginBottom: 'var(--space-6)' }}>
+      <div className="metal-content">
       <h3
+        className="metal-text"
         style={{
-          fontSize: '1.1rem',
-          color: 'var(--white)',
-          marginBottom: 'var(--space-4)',
+          fontSize: '1.25rem',
+          marginBottom: 'var(--space-6)',
           fontFamily: 'var(--font-brand)',
-          letterSpacing: '0.05em',
-          textTransform: 'uppercase',
         }}
       >
         Completed Sales & Profit
@@ -445,7 +443,7 @@ export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '12px', paddingTop: '12px', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
                       <span style={{ fontSize: '0.95rem', color: 'var(--silver)' }}>Total</span>
                       <strong style={{ fontSize: '1.1rem', color: 'var(--teal)' }}>
-                        ${Number(order.total).toFixed(2)}
+                        {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(Number(order.total) || 0)}
                       </strong>
                     </div>
                   </div>
@@ -944,7 +942,7 @@ export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
                             <td style={{ padding: '12px 16px', color: 'var(--white)', fontWeight: 500 }}>{item.product_name}</td>
                             <td style={{ textAlign: 'center', padding: '12px 16px' }}>{qty}</td>
                             <td style={{ textAlign: 'right', padding: '12px 16px' }}>
-                              ${unit.toFixed(2)}
+                              {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(Number(unit) || 0)}
                             </td>
                             <td
                               style={{
@@ -954,7 +952,7 @@ export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
                                 fontWeight: 600
                               }}
                             >
-                              ${(unit * qty).toFixed(2)}
+                              {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(Number(unit * qty) || 0)}
                             </td>
                           </tr>
                         );
@@ -1130,7 +1128,7 @@ export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
                   }}
                 >
                   <span>Subtotal</span>
-                  <span>${Number(detailOrder.subtotal || detailSubtotal).toFixed(2)}</span>
+                  <span>{new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(Number(detailOrder.subtotal || detailSubtotal) || 0)}</span>
                 </div>
                 <div
                   style={{
@@ -1142,7 +1140,7 @@ export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
                   }}
                 >
                   <span>Shipping</span>
-                  <span>${Number(detailOrder.shipping_cost || 0).toFixed(2)}</span>
+                  <span>{new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(Number(detailOrder.shipping_cost || 0))}</span>
                 </div>
                 {detailOrder.discount_amount != null && Number(detailOrder.discount_amount) > 0 && (
                   <div
@@ -1158,7 +1156,7 @@ export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
                       Discount{detailOrder.coupon_code ? ` (${detailOrder.coupon_code})` : ''}
                     </span>
                     <span style={{ color: 'var(--red)', fontWeight: 600 }}>
-                      -${Number(detailOrder.discount_amount).toFixed(2)}
+                      -{new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(Number(detailOrder.discount_amount) || 0)}
                     </span>
                   </div>
                 )}
@@ -1177,7 +1175,7 @@ export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
                   }}
                 >
                   <span>Total</span>
-                  <span style={{ color: 'var(--teal)', fontSize: '1.4rem' }}>${Number(detailOrder.total).toFixed(2)}</span>
+                  <span style={{ color: 'var(--teal)', fontSize: '1.4rem' }}>{new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(Number(detailOrder.total) || 0)}</span>
                 </div>
               </div>
             </div>

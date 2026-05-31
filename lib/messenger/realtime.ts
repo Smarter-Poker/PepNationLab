@@ -48,6 +48,28 @@ export function subscribeMessages(
   );
 
   ch.on(
+    'broadcast',
+    { event: 'delete_message_for_me' },
+    (payload) => {
+      const { messageId, userId } = payload.payload || {};
+      if (messageId && userId === selfId) {
+        handlers.onDelete?.(messageId);
+      }
+    }
+  );
+
+  ch.on(
+    'broadcast',
+    { event: 'delete_message' },
+    (payload) => {
+      const updatedMsg = payload.payload?.message as Message;
+      if (updatedMsg) {
+        handlers.onUpdate?.(updatedMsg);
+      }
+    }
+  );
+
+  ch.on(
     'postgres_changes',
     {
       event: 'UPDATE',
