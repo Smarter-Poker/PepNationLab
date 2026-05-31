@@ -151,7 +151,7 @@ export default function ProductsList({
             }}
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/shopping-cart.png" width={18} height={18} alt="Cart" style={{ objectFit: 'contain', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.5))' }} />
+            <img src="/shopping-cart-v2.png" width={18} height={18} alt="Cart" style={{ objectFit: 'contain', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.5))' }} />
             <span style={{ fontSize: '0.82rem', fontWeight: 600 }}>Cart</span>
             {cartCount > 0 && (
               <span style={{

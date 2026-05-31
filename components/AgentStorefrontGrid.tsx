@@ -951,9 +951,6 @@ export default function AgentStorefrontGrid({ products, inventoryMap, primaryCol
       {filteredProducts.length === 0 && (
         <div className="card-metal hover-lift stagger-fade-in" style={{
           textAlign: 'center', padding: 'var(--space-8) var(--space-6)',
-          background: 'rgba(255,255,255,0.02)',
-          border: '1px solid rgba(255,255,255,0.06)',
-          borderRadius: 'var(--radius-lg)',
         }}>
           <h3 style={{ color: 'var(--white)', fontSize: '1.05rem', marginBottom: 'var(--space-3)' }}>
             No Products Match Your Filters
@@ -1001,10 +998,7 @@ export default function AgentStorefrontGrid({ products, inventoryMap, primaryCol
               key={group.name} className="card-metal hover-lift stagger-fade-in" variants={itemVariants}
               style={{
                 display: 'flex', flexDirection: 'column', overflow: 'hidden', padding: 0,
-                background: 'linear-gradient(180deg, var(--surface-2) 0%, rgba(10, 16, 24, 0.8) 100%)',
-                border: '1px solid rgba(255, 255, 255, 0.04)',
-                boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4)',
-                borderRadius: 'var(--radius-lg)', cursor: 'pointer'
+                cursor: 'pointer'
               }}
               onClick={() => {
                 setDetailProduct(group);
@@ -1178,7 +1172,7 @@ export default function AgentStorefrontGrid({ products, inventoryMap, primaryCol
           onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)'; }}
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/shopping-cart.png" width={24} height={24} alt="Cart" style={{ objectFit: 'contain', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.5))' }} />
+          <img src="/shopping-cart-v2.png" width={24} height={24} alt="Cart" style={{ objectFit: 'contain', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.5))' }} />
           {totalCartItems > 0 && (
             <span style={{
               position: 'absolute', top: -4, right: -4, width: 22, height: 22,
