@@ -255,6 +255,11 @@ export function subscribeMyParticipants(
       onChange(payload.new as ParticipantUnreadRow, 'INSERT');
     },
   );
+  ch.on('broadcast', { event: 'participant_updated' }, (payload) => {
+    if (payload.payload?.participant) {
+      onChange(payload.payload.participant as ParticipantUnreadRow, 'UPDATE');
+    }
+  });
   ch.subscribe();
   return ch;
 }
