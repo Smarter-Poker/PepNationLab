@@ -76,6 +76,13 @@ export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
   const [buyingLabelId, setBuyingLabelId] = useState<string | null>(null);
   const [trackingNumbers, setTrackingNumbers] = useState<Record<string, string>>({});
   const [showManualOrder, setShowManualOrder] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+
+  // Pagination Logic
+  const PAGE_SIZE = 25;
+  const totalPages = Math.ceil(orders.length / PAGE_SIZE);
+  const safeCurrentPage = Math.max(1, Math.min(currentPage, totalPages || 1));
+  const paginatedOrders = orders.slice((safeCurrentPage - 1) * PAGE_SIZE, safeCurrentPage * PAGE_SIZE);
 
   // Detail modal state
   const [detailOrder, setDetailOrder] = useState<Order | null>(null);
@@ -270,7 +277,7 @@ export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
         />
       ) : orders.length > 0 ? (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
-          {orders.map((order) => {
+          {paginatedOrders.map((order) => {
             const isPendingPayment = order.status === 'pending_customer_payment';
             const isPendingApproval = order.status === 'agent_approval_pending';
             
@@ -610,6 +617,61 @@ export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
             </div>
             );
           })}
+          
+          {totalPages > 1 && (
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              marginTop: 'var(--space-4)',
+              padding: '12px 24px',
+              borderRadius: '16px',
+              background: 'linear-gradient(145deg, #c8c2b8 0%, #a09890 30%, #8a847c 50%, #a09890 70%, #c8c2b8 100%)',
+              boxShadow: '0 8px 30px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.35), inset 0 -1px 0 rgba(0,0,0,0.4)'
+            }}>
+              <div style={{
+                background: 'linear-gradient(180deg, #1a1f2e 0%, #141820 40%, #111520 100%)',
+                borderRadius: '12px',
+                padding: '8px',
+                width: '100%',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                boxShadow: 'inset 0 2px 10px rgba(0,0,0,0.6)'
+              }}>
+                <button
+                  className="btn btn-secondary btn-sm"
+                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                  disabled={safeCurrentPage === 1}
+                  style={{
+                    opacity: safeCurrentPage === 1 ? 0.5 : 1,
+                    cursor: safeCurrentPage === 1 ? 'not-allowed' : 'pointer'
+                  }}
+                >
+                  &larr; Previous
+                </button>
+                <div style={{
+                  color: 'var(--white)',
+                  fontFamily: 'var(--font-brand)',
+                  fontSize: '0.9rem',
+                  letterSpacing: '0.05em'
+                }}>
+                  PAGE {safeCurrentPage} OF {totalPages}
+                </div>
+                <button
+                  className="btn btn-secondary btn-sm"
+                  onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                  disabled={safeCurrentPage === totalPages}
+                  style={{
+                    opacity: safeCurrentPage === totalPages ? 0.5 : 1,
+                    cursor: safeCurrentPage === totalPages ? 'not-allowed' : 'pointer'
+                  }}
+                >
+                  Next &rarr;
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       ) : (
             <div style={{ 

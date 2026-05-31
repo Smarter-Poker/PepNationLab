@@ -1,6 +1,7 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import AgentOrders from './AgentOrders';
+import { createClient } from '@/lib/supabase/client';
 
 const STATUS_LABELS: Record<string, string> = {
   pending_customer_payment: 'Pending Payment',
@@ -13,12 +14,16 @@ const STATUS_LABELS: Record<string, string> = {
   cancelled: 'Cancelled',
 };
 
-export default function AgentSales({ orders, setOrders }: { orders: any[], setOrders: any }) {
+export default function AgentSales({ orders, setOrders, agentId }: { orders: any[], setOrders: any, agentId: string }) {
   const [data, setData] = useState<{ liveCarts: any[]; sales: any[] } | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const supabase = createClient();
+  const isFetching = useRef(false);
 
   const fetchSales = async () => {
+    if (isFetching.current) return;
+    isFetching.current = true;
     try {
       const res = await fetch('/api/agent/sales');
       const json = await res.json();
@@ -31,14 +36,31 @@ export default function AgentSales({ orders, setOrders }: { orders: any[], setOr
       setError(err.message);
     } finally {
       setLoading(false);
+      isFetching.current = false;
     }
   };
 
   useEffect(() => {
     fetchSales();
-    const interval = setInterval(fetchSales, 30000);
-    return () => clearInterval(interval);
-  }, []);
+
+    const channel = supabase
+      .channel(`agent-sales-${agentId}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'orders', filter: `agent_id=eq.${agentId}` },
+        () => { fetchSales(); }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'profiles', filter: `referring_agent_id=eq.${agentId}` },
+        () => { fetchSales(); }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [agentId]);
 
   const formatCurrency = (val: number) => `$${(Number(val) || 0).toFixed(2)}`;
 

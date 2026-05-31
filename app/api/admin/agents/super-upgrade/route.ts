@@ -23,11 +23,19 @@ export async function POST(req: NextRequest) {
     // Prevent making a sub-agent a super-agent
     const { data: agentProfile } = await supabase
       .from('profiles')
-      .select('parent_agent_id')
+      .select('parent_agent_id, role')
       .eq('id', agentId)
-      .single();
+      .maybeSingle();
 
-    if (is_super_agent && agentProfile?.parent_agent_id) {
+    if (!agentProfile) {
+      return NextResponse.json({ error: 'Agent Not Found' }, { status: 404 });
+    }
+    // Agents and super-agents both store role='agent'; never flip the flag on a
+    // researcher or admin row.
+    if (agentProfile.role !== 'agent') {
+      return NextResponse.json({ error: 'Only Agents Can Be Upgraded To Super Agents' }, { status: 400 });
+    }
+    if (is_super_agent && agentProfile.parent_agent_id) {
       return NextResponse.json({ error: 'Sub-Agents cannot be upgraded to Super Agents' }, { status: 400 });
     }
 

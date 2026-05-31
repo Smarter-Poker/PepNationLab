@@ -799,7 +799,7 @@ export default function AgentDashboardClient({
         )}
 
         {activeTab === 'Sales & Accounting' && (
-          <AgentSales orders={orders} setOrders={setOrders} />
+          <AgentSales orders={orders} setOrders={setOrders} agentId={userProfile.id} />
         )}
 
         {/* TAB 2: Referred Researchers */}

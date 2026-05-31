@@ -62,10 +62,11 @@ export default function SearchBar() {
     <div style={{ position: 'relative', width: '100%' }}>
       <div
         style={{
-          display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px',
-          background: 'rgba(0, 0, 0, 0.4)',
-          border: '1px solid rgba(255, 255, 255, 0.08)', borderRadius: 12,
-          boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.6)',
+          flex: 1,
+          display: 'flex', alignItems: 'center', gap: 8,
+          background: 'var(--surface-1, #0F1923)',
+          padding: '6px 12px',
+          border: '4px solid rgba(255, 255, 255, 0.08)', borderRadius: 16,
           transition: 'all 0.2s',
         }}
         className="hover-lift"
@@ -79,8 +80,11 @@ export default function SearchBar() {
           placeholder="Search Messages"
           aria-label="Search Messages"
           style={{
-            flex: 1, background: 'transparent', color: 'var(--white, #FFFFFF)',
+            flex: 1,
+            background: 'transparent',
+            color: 'var(--white, #FFFFFF)',
             border: 0, outline: 'none', fontSize: '0.9rem',
+            lineHeight: '1.2',
           }}
         />
       </div>

@@ -100,6 +100,17 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Statement ID Required.' }, { status: 400 });
     }
 
+    // Confirm the statement exists before flipping a financial state — an
+    // unknown id would otherwise silently return success with zero rows updated.
+    const { data: existingStmt } = await supabase
+      .from('weekly_statements')
+      .select('id, status, agent_id')
+      .eq('id', statementId)
+      .maybeSingle();
+    if (!existingStmt) {
+      return NextResponse.json({ error: 'Statement Not Found.' }, { status: 404 });
+    }
+
     // Persist the canonical columns (payment_method, payment_reference) and
     // keep admin_notes available for free-form annotations. The legacy
     // `paymentNotes` key is folded into admin_notes if supplied.
@@ -125,6 +136,21 @@ export async function POST(req: NextRequest) {
     if (updateError) {
       return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
     }
+
+    // Audit the financial state change (paying out a weekly statement).
+    void supabase.from('admin_audit_log').insert({
+      actor_id: gate.userId,
+      action: 'statement_marked_paid',
+      entity_type: 'weekly_statement',
+      entity_id: statementId,
+      changes: {
+        from: existingStmt.status,
+        to: 'paid',
+        agent_id: existingStmt.agent_id,
+        payment_method: (updates.payment_method as string) ?? null,
+        payment_reference: (updates.payment_reference as string) ?? null,
+      },
+    });
 
     return NextResponse.json({ success: true });
   }

@@ -9,8 +9,9 @@ export async function GET(req: NextRequest) {
   const supabase = await createServiceClient();
   const orderId = req.nextUrl.searchParams.get('orderId');
 
-  if (!orderId) {
-    return NextResponse.json({ error: 'Missing Order ID Parameter' }, { status: 400 });
+  const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (!orderId || !UUID_RE.test(orderId)) {
+    return NextResponse.json({ error: 'Missing Or Invalid Order ID Parameter' }, { status: 400 });
   }
 
   const { data, error } = await supabase
