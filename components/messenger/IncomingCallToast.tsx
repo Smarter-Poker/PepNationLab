@@ -52,6 +52,17 @@ export default function IncomingCallToast({ call, onAccept, onDecline, stackInde
   const handleAction = async (action: 'accept' | 'decline') => {
     if (isBusy) return;
     setIsBusy(true);
+
+    // audit15: stamp the per-tab "I answered this call" flag BEFORE firing
+    // the HTTP request. Supabase Realtime can deliver the postgres_changes
+    // UPDATE event on this same client before the accept HTTP response
+    // returns; if the flag is not yet set when that update arrives, the
+    // GlobalCallListener "another tab answered" guard fires and tears down
+    // the overlay. Setting it pre-HTTP closes the race.
+    if (action === 'accept') {
+      try { sessionStorage.setItem('answered_call_' + call.id, 'true'); } catch {}
+    }
+
     let success = false;
     try {
       const res = await fetch('/api/messenger/call-signal', {

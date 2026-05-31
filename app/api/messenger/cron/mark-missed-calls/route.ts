@@ -46,7 +46,7 @@ export async function GET(req: NextRequest) {
         conversation_id: call.conversation_id,
         sender_id: call.initiator_id,
         message_type: 'system',
-        text: `📞 Missed ${typeStr} Call`,
+        text: `Missed ${typeStr} Call`,
         status: 'sent',
         metadata: { call_id: call.id, status: 'missed_timeout' }
       };
@@ -62,4 +62,3 @@ export async function GET(req: NextRequest) {
     closed_stale_active: (staleRes.data ?? []).length,
   });
 }
-

@@ -70,9 +70,12 @@ export default function GlobalCallListener() {
           return;
         }
 
-        // Add to incoming calls
+        // audit15: ONLY show the toast on incoming; do NOT mount CallOverlay
+        // until the user accepts. Pre-mounting the overlay at status='ringing'
+        // started a livekit-token fetch + an unmount-broadcast cleanup that
+        // both fired spuriously when the realtime UPDATE arrived before the
+        // accept HTTP response (race condition).
         setIncomingCalls((cur) => (cur.some((x) => x.id === c.id) ? cur : [...cur, c]));
-        setActiveCall(c);
       },
       onUpdate: (c) => {
         if (c.status !== 'ringing') {
@@ -128,6 +131,14 @@ export default function GlobalCallListener() {
     });
   }, []);
 
+  // audit15: memoized so CallOverlay's livekit-token effect (which has
+  // onClose in its dep array) does not re-fire on every parent render.
+  const handleClose = useCallback(() => setActiveCall(null), []);
+  const handleOverlayAccept = useCallback(() => {
+    const cur = activeCallRef.current;
+    if (cur) handleAccept(cur);
+  }, [handleAccept]);
+
   if (!user?.id) return null;
 
   return (
@@ -145,8 +156,8 @@ export default function GlobalCallListener() {
         <CallOverlay
           call={activeCall}
           selfId={user.id}
-          onClose={() => setActiveCall(null)}
-          onAccept={() => handleAccept(activeCall)}
+          onClose={handleClose}
+          onAccept={handleOverlayAccept}
         />
       )}
     </>
