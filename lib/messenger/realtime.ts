@@ -193,13 +193,10 @@ interface CallSignalHandlers {
 
 export function subscribeCallSignals(userId: string, handlers: CallSignalHandlers): RealtimeChannel {
   console.log('[REALTIME] subscribeCallSignals called for user:', userId);
-  // audit15 fix-32 (B8): private:true so realtime.messages RLS policies
-  // (fix-31) actually enforce. Only this user can subscribe to their own
-  // call-signal:<userId> topic; only peers with a shared conversation can
-  // broadcast to it.
-  const ch = supabase.channel(`call-signal:${userId}`, {
-    config: { private: true },
-  });
+  // HOTFIX fix-38: public channel (reverted from `private: true`).
+  // The B8 realtime.messages policies have been dropped; a private
+  // channel would now fail subscribe because no policy matches.
+  const ch = supabase.channel(`call-signal:${userId}`);
 
   ch.on('broadcast', { event: 'incoming_call' }, (payload) => {
     console.log('[REALTIME] received incoming_call broadcast:', payload);
@@ -265,7 +262,8 @@ export function subscribeCallSignals(userId: string, handlers: CallSignalHandler
   return ch;
 }
 
-// audit15 fix-12 (S7): per-target broadcast channel pool.
+// audit15 fix-12 (S7): per-target broadcast channel pool — public channels
+// (HOTFIX fix-38: reverted from private:true).
 const CHANNEL_POOL_MAX = 32;
 const CHANNEL_POOL_IDLE_MS = 60_000;
 
@@ -319,12 +317,8 @@ function getOrCreateChannel(targetUserId: string): PoolEntry {
     return existing;
   }
   evictIfFull();
-  // audit15 fix-32 (B8): private:true so the send is governed by the
-  // INSERT policy on realtime.messages (the sender must share a
-  // conversation with the target user).
-  const channel = supabase.channel(`call-signal:${targetUserId}`, {
-    config: { private: true },
-  });
+  // HOTFIX fix-38: public channel.
+  const channel = supabase.channel(`call-signal:${targetUserId}`);
   const subscribed = new Promise<void>((resolve, reject) => {
     const timeout = setTimeout(() => reject(new Error('Channel subscription timeout')), 5000);
     channel.subscribe((status) => {
