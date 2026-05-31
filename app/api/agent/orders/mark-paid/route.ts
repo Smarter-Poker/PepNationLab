@@ -66,11 +66,10 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // ── 4. Determine next status ────────────────────────────────────────────
-  // Agent pickup = in-stock item fulfilled directly by agent → no admin needed.
-  // Ship = needs China fulfillment → goes to admin for approval.
+  // All orders must go to agent_approval_pending so the agent can approve them
+  // and have their COGS deducted in the approve route.
   const isAgentPickup = order.fulfillment_method === 'agent_pickup';
-  const nextStatus = isAgentPickup ? 'approved_pickup' : 'agent_approval_pending';
+  const nextStatus = 'agent_approval_pending';
 
   // ── 5. Update order status ──────────────────────────────────────────────
   const { error: updateErr } = await svc
@@ -114,41 +113,28 @@ export async function POST(req: NextRequest) {
   }
 
   // ── 7. Notify admins (awaited) ─────────────────────────────────
-  if (!isAgentPickup) {
-    try {
-      const { data: admins } = await svc
-        .from('profiles')
-        .select('id')
-        .eq('role', 'admin');
+  try {
+    const { data: admins } = await svc
+      .from('profiles')
+      .select('id')
+      .eq('role', 'admin');
 
-      if (admins && admins.length > 0) {
-        const shortId = orderId.slice(0, 8).toUpperCase();
-        const totalStr = Number(order.total).toFixed(2);
+    if (admins && admins.length > 0) {
+      const shortId = orderId.slice(0, 8).toUpperCase();
+      const totalStr = Number(order.total).toFixed(2);
 
-        const notifications = admins.map((admin) => ({
-          user_id: admin.id,
-          title: 'Order Ready For Approval',
-          body: `Order #${shortId} ($${totalStr}) — Payment verified by agent. Ready for fulfillment approval.`,
-          type: 'system',
-          url: '/admin/orders',
-        }));
+      const notifications = admins.map((admin) => ({
+        user_id: admin.id,
+        title: 'Order Ready For Approval',
+        body: `Order #${shortId} ($${totalStr}) — Payment verified by agent. Ready for fulfillment approval.`,
+        type: 'system',
+        url: '/admin/orders',
+      }));
 
-        await svc.from('notifications').insert(notifications);
-      }
-    } catch (err) {
-      console.error('[mark-paid] admin notification error:', err);
+      await svc.from('notifications').insert(notifications);
     }
-  } else {
-    // If it's an agent pickup, it goes straight to approved_pickup.
-    // We must notify the buyer that it's approved since the admin won't do it.
-    try {
-      if (order.buyer_id) {
-        const shortId = orderId.slice(0, 8).toUpperCase();
-        await notifyOrderApproved(svc, order.buyer_id, orderId, shortId);
-      }
-    } catch (err) {
-      console.error('[mark-paid] buyer pickup approval notification error:', err);
-    }
+  } catch (err) {
+    console.error('[mark-paid] admin notification error:', err);
   }
 
   return NextResponse.json({
