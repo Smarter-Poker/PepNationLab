@@ -40,32 +40,33 @@ export default function AgentPaymentProofs({ orderId }: { orderId: string }) {
 
   if (loading) {
     return (
-      <div style={{ fontSize: '0.72rem', color: 'var(--grey-400)' }}>Loading Payment Proofs...</div>
+      <div style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.4)', padding: '12px' }}>Loading Payment Proofs...</div>
     );
   }
   if (proofs.length === 0) {
     return (
-      <div style={{ fontSize: '0.72rem', color: 'var(--grey-400)' }}>No Payment Proofs Yet.</div>
+      <div style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.4)', padding: '12px', background: 'rgba(0,0,0,0.2)', border: '1px dashed rgba(255,255,255,0.1)', borderRadius: '6px' }}>No Payment Proofs Yet.</div>
     );
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
       {proofs.map((p) => (
         <div
           key={p.id}
-          style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', fontSize: '0.76rem' }}
+          className="metal-embossed-panel"
+          style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', fontSize: '0.76rem', padding: '8px 12px' }}
         >
-          <span style={{ color: 'var(--silver)' }}>
+          <span style={{ color: 'rgba(255,255,255,0.8)' }}>
             {new Date(p.uploaded_at).toLocaleString()}
           </span>
-          <span style={{ color: 'var(--grey-400)' }}>{(p.size_bytes / 1024).toFixed(1)} KB</span>
+          <span style={{ color: 'rgba(255,255,255,0.4)' }}>{(p.size_bytes / 1024).toFixed(1)} KB</span>
           {p.signed_url && (
             <a
               href={p.signed_url}
               target="_blank"
               rel="noopener noreferrer"
-              style={{ color: 'var(--teal)', textDecoration: 'underline', marginLeft: 'auto' }}
+              style={{ color: '#00E5FF', textDecoration: 'none', marginLeft: 'auto', fontWeight: 600, border: '1px solid rgba(0,229,255,0.3)', padding: '2px 8px', borderRadius: '4px', background: 'rgba(0,229,255,0.1)' }}
             >
               View Proof
             </a>

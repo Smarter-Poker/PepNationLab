@@ -84,6 +84,14 @@ export async function GET(req: NextRequest) {
         url: `/messenger`,
       }));
       await svc.from('notifications').insert(notificationsToInsert);
+
+      const pushOutboxPayload = fired.map((r) => ({
+        recipient_user_id: r.user_id,
+        title: 'Message Reminder',
+        body: 'You asked to be reminded about a message in the messenger.',
+        url: `/messenger`,
+      }));
+      await svc.from('push_outbox').insert(pushOutboxPayload);
     }
   }
 

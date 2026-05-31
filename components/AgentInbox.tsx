@@ -105,41 +105,29 @@ export default function AgentInbox({ agentId }: { agentId: string }) {
   }
 
   return (
-    <div style={{
-      background: '#0a0f1a', borderRadius: 16, overflow: 'hidden',
-      border: '1px solid rgba(255,255,255,0.06)',
-      boxShadow: '0 4px 24px rgba(0,0,0,0.3)',
-    }}>
-      {/* Header */}
-      <div style={{
-        padding: '18px 24px 14px',
-        borderBottom: '1px solid rgba(255,255,255,0.04)',
-        background: 'rgba(255,255,255,0.01)',
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+    <div className="metal-frame">
+      <div className="metal-content" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
+        {/* Header */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 'var(--space-4)' }}>
           <div>
-            <h3 style={{
-              fontSize: '1.1rem', margin: 0, color: '#fff',
+            <h3 className="metal-text" style={{
+              fontSize: '1.25rem', margin: 0,
               fontFamily: 'var(--font-brand)',
-              letterSpacing: '0.04em', fontWeight: 800,
+              letterSpacing: '0.04em', fontWeight: 800, textTransform: 'uppercase'
             }}>
-              INBOX
+              Inbox
             </h3>
-            <p style={{ color: 'rgba(255,255,255,0.35)', fontSize: '0.78rem', margin: '4px 0 0' }}>
+            <p style={{ color: 'rgba(255,255,255,0.35)', fontSize: '0.82rem', margin: '4px 0 0' }}>
               Invoices, Notifications, And Messages
             </p>
           </div>
           <button
             onClick={loadInbox}
+            className="btn-silver"
             style={{
-              background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)',
-              borderRadius: 8, padding: '6px 12px', cursor: 'pointer',
-              color: 'rgba(255,255,255,0.4)', fontSize: '0.75rem', fontWeight: 600,
+              padding: '6px 12px', fontSize: '0.75rem',
               display: 'flex', alignItems: 'center', gap: 6,
-              transition: 'background 0.2s, color 0.2s',
             }}
-            onMouseEnter={e => { e.currentTarget.style.background = 'rgba(192,184,168,0.08)'; e.currentTarget.style.color = 'var(--teal)'; }}
-            onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.04)'; e.currentTarget.style.color = 'rgba(255,255,255,0.4)'; }}
           >
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <polyline points="23 4 23 10 17 10" /><polyline points="1 20 1 14 7 14" />
@@ -148,155 +136,148 @@ export default function AgentInbox({ agentId }: { agentId: string }) {
             Refresh
           </button>
         </div>
-      </div>
 
-      {/* Filter Tabs */}
-      <div style={{
-        display: 'flex', gap: 4, padding: '12px 24px',
-        borderBottom: '1px solid rgba(255,255,255,0.03)',
-        background: 'rgba(255,255,255,0.01)',
-      }}>
-        {filters.map(f => (
-          <button
-            key={f.key}
-            onClick={() => setActiveFilter(f.key)}
-            style={{
-              padding: '6px 14px', borderRadius: 8,
-              border: 'none', cursor: 'pointer',
-              fontSize: '0.75rem', fontWeight: activeFilter === f.key ? 700 : 500,
-              background: activeFilter === f.key ? 'rgba(192,184,168,0.1)' : 'transparent',
-              color: activeFilter === f.key ? 'var(--teal)' : 'rgba(255,255,255,0.35)',
-              transition: 'all 0.15s',
-            }}
-          >
-            {f.label}
-            {counts[f.key] > 0 && (
-              <span style={{
-                marginLeft: 5, fontSize: '0.62rem', fontWeight: 700,
-                background: activeFilter === f.key ? 'rgba(192,184,168,0.2)' : 'rgba(255,255,255,0.05)',
-                padding: '1px 6px', borderRadius: 4,
-              }}>
-                {counts[f.key]}
-              </span>
-            )}
-          </button>
-        ))}
-      </div>
-
-      {error && (
-        <div style={{
-          margin: '16px 24px', background: 'rgba(229,62,62,0.06)',
-          border: '1px solid rgba(229,62,62,0.15)', borderRadius: 10,
-          padding: '10px 14px', fontSize: '0.82rem', color: '#FC8181',
-        }}>
-          {error}
-        </div>
-      )}
-
-      {/* Messages */}
-      <div style={{ maxHeight: 500, overflowY: 'auto' }}>
-        {filtered.length === 0 ? (
-          <div style={{ padding: '48px 24px', textAlign: 'center' }}>
-            <div style={{
-              width: 56, height: 56, borderRadius: '50%',
-              background: 'rgba(255,255,255,0.02)', margin: '0 auto 14px',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-            }}>
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.12)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                <rect x="2" y="4" width="20" height="16" rx="2" />
-                <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
-              </svg>
-            </div>
-            <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.88rem', fontWeight: 600 }}>No Messages</div>
-            <div style={{ color: 'rgba(255,255,255,0.2)', fontSize: '0.75rem', marginTop: 4 }}>
-              {activeFilter === 'all' ? 'Your inbox is empty' : `No ${activeFilter.replace('_', ' ')}s found`}
-            </div>
-          </div>
-        ) : (
-          filtered.map((msg, i) => {
-            const cfg = typeConfig[msg.type] || typeConfig.direct_message;
-            return (
-              <div
-                key={msg.id}
-                style={{
-                  display: 'flex', gap: 14,
-                  padding: '14px 24px',
-                  borderBottom: i < filtered.length - 1 ? '1px solid rgba(255,255,255,0.03)' : 'none',
-                  background: !msg.is_read ? 'rgba(192,184,168,0.02)' : 'transparent',
-                  transition: 'background 0.15s',
-                }}
-                onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.02)')}
-                onMouseLeave={e => (e.currentTarget.style.background = !msg.is_read ? 'rgba(192,184,168,0.02)' : 'transparent')}
-              >
-                {/* Type avatar */}
-                <div style={{
-                  width: 42, height: 42, borderRadius: '50%',
-                  background: cfg.gradient,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: '1rem', flexShrink: 0,
+        {/* Filter Tabs */}
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          {filters.map(f => (
+            <button
+              key={f.key}
+              onClick={() => setActiveFilter(f.key)}
+              style={{
+                padding: '8px 16px', borderRadius: '4px',
+                border: activeFilter === f.key ? '1px solid rgba(0,229,255,0.3)' : '1px solid rgba(255,255,255,0.1)',
+                cursor: 'pointer',
+                fontSize: '0.8rem', fontWeight: activeFilter === f.key ? 700 : 500,
+                background: activeFilter === f.key ? 'rgba(0,229,255,0.1)' : 'rgba(0,0,0,0.5)',
+                color: activeFilter === f.key ? '#00E5FF' : 'rgba(255,255,255,0.4)',
+                transition: 'all 0.15s',
+              }}
+            >
+              {f.label}
+              {counts[f.key] > 0 && (
+                <span style={{
+                  marginLeft: 6, fontSize: '0.65rem', fontWeight: 700,
+                  background: activeFilter === f.key ? 'rgba(0,229,255,0.2)' : 'rgba(255,255,255,0.1)',
+                  padding: '2px 6px', borderRadius: '4px',
                 }}>
-                  {cfg.icon}
-                </div>
+                  {counts[f.key]}
+                </span>
+              )}
+            </button>
+          ))}
+        </div>
 
-                {/* Content */}
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 3 }}>
-                    <span style={{
-                      fontSize: '0.85rem', fontWeight: !msg.is_read ? 700 : 500,
-                      color: !msg.is_read ? cfg.color : 'rgba(255,255,255,0.6)',
-                    }}>
-                      {msg.subject}
-                    </span>
-                    <span style={{
-                      fontSize: '0.68rem', color: 'rgba(255,255,255,0.2)',
-                      fontWeight: 500, flexShrink: 0, marginLeft: 8,
-                    }}>
-                      {timeAgo(msg.created_at)}
-                    </span>
-                  </div>
-                  <div style={{
-                    fontSize: '0.8rem', color: 'rgba(255,255,255,0.4)',
-                    whiteSpace: 'pre-wrap', lineHeight: 1.5,
-                    display: '-webkit-box', WebkitLineClamp: 2,
-                    WebkitBoxOrient: 'vertical' as const, overflow: 'hidden',
-                  }}>
-                    {msg.body}
-                  </div>
-                  <div style={{
-                    display: 'flex', alignItems: 'center', gap: 8,
-                    marginTop: 6, fontSize: '0.7rem', color: 'rgba(255,255,255,0.2)',
-                  }}>
-                    <span>From: {msg.sender_profile?.full_name || msg.sender_profile?.email || 'System'}</span>
-                    {msg.attachment_url && (
-                      <>
-                        <span>·</span>
-                        <a
-                          href={msg.attachment_url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          style={{ color: 'var(--teal)', textDecoration: 'none', fontWeight: 600 }}
-                        >
-                          📎 Attachment
-                        </a>
-                      </>
-                    )}
-                    {!msg.is_read && (
-                      <div style={{
-                        width: 6, height: 6, borderRadius: '50%',
-                        background: 'var(--teal)',
-                        boxShadow: '0 0 4px rgba(192,184,168,0.4)',
-                        marginLeft: 'auto',
-                      }} />
-                    )}
-                  </div>
-                </div>
-              </div>
-            );
-          })
+        {error && (
+          <div className="metal-embossed-panel" style={{ border: '1px solid rgba(229,62,62,0.3)', padding: '10px 14px', fontSize: '0.82rem', color: '#FFAAAA' }}>
+            {error}
+          </div>
         )}
-      </div>
 
-      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+        {/* Messages */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)', maxHeight: 600, overflowY: 'auto' }}>
+          {filtered.length === 0 ? (
+            <div className="metal-embossed-panel" style={{ padding: '48px 24px', textAlign: 'center' }}>
+              <div style={{
+                width: 56, height: 56, borderRadius: '50%',
+                background: 'rgba(255,255,255,0.02)', margin: '0 auto 14px',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                border: '1px solid rgba(255,255,255,0.05)'
+              }}>
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.2)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="2" y="4" width="20" height="16" rx="2" />
+                  <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
+                </svg>
+              </div>
+              <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.88rem', fontWeight: 600 }}>No Messages</div>
+              <div style={{ color: 'rgba(255,255,255,0.2)', fontSize: '0.75rem', marginTop: 4 }}>
+                {activeFilter === 'all' ? 'Your inbox is empty' : `No ${activeFilter.replace('_', ' ')}s found`}
+              </div>
+            </div>
+          ) : (
+            filtered.map((msg, i) => {
+              const cfg = typeConfig[msg.type] || typeConfig.direct_message;
+              return (
+                <div
+                  key={msg.id}
+                  className="metal-embossed-panel"
+                  style={{
+                    display: 'flex', gap: 14,
+                    padding: '16px 20px',
+                    borderLeft: !msg.is_read ? '3px solid #00E5FF' : '1px solid rgba(0,0,0,0.5)',
+                  }}
+                >
+                  {/* Type avatar */}
+                  <div style={{
+                    width: 42, height: 42, borderRadius: '50%',
+                    background: cfg.gradient,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontSize: '1.2rem', flexShrink: 0,
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.5)',
+                    border: '1px solid rgba(255,255,255,0.1)'
+                  }}>
+                    {cfg.icon}
+                  </div>
+
+                  {/* Content */}
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 6 }}>
+                      <span style={{
+                        fontSize: '0.9rem', fontWeight: !msg.is_read ? 700 : 500,
+                        color: !msg.is_read ? '#00E5FF' : 'rgba(255,255,255,0.8)',
+                      }}>
+                        {msg.subject}
+                      </span>
+                      <span style={{
+                        fontSize: '0.7rem', color: 'rgba(255,255,255,0.3)',
+                        fontWeight: 500, flexShrink: 0, marginLeft: 8,
+                      }}>
+                        {timeAgo(msg.created_at)}
+                      </span>
+                    </div>
+                    <div style={{
+                      fontSize: '0.85rem', color: 'rgba(255,255,255,0.5)',
+                      whiteSpace: 'pre-wrap', lineHeight: 1.5,
+                      display: '-webkit-box', WebkitLineClamp: 2,
+                      WebkitBoxOrient: 'vertical' as const, overflow: 'hidden',
+                    }}>
+                      {msg.body}
+                    </div>
+                    <div style={{
+                      display: 'flex', alignItems: 'center', gap: 8,
+                      marginTop: 10, fontSize: '0.75rem', color: 'rgba(255,255,255,0.3)',
+                    }}>
+                      <span>From: {msg.sender_profile?.full_name || msg.sender_profile?.email || 'System'}</span>
+                      {msg.attachment_url && (
+                        <>
+                          <span>·</span>
+                          <a
+                            href={msg.attachment_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            style={{ color: '#00E5FF', textDecoration: 'none', fontWeight: 600 }}
+                          >
+                            📎 Attachment
+                          </a>
+                        </>
+                      )}
+                      {!msg.is_read && (
+                        <div style={{
+                          width: 8, height: 8, borderRadius: '50%',
+                          background: '#00E5FF',
+                          boxShadow: '0 0 8px #00E5FF',
+                          marginLeft: 'auto',
+                        }} />
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </div>
+
+        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      </div>
     </div>
   );
 }

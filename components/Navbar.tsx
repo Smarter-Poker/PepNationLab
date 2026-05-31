@@ -299,7 +299,8 @@ export default function Navbar({ onMenuClick, isOpen, title }: { onMenuClick?: (
                 padding: 4,
                 display: 'flex',
                 alignItems: 'center',
-                borderRadius: 6,
+                justifyContent: 'center',
+                borderRadius: 8,
                 flexShrink: 0,
               }}
             >

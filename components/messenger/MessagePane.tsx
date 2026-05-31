@@ -1010,7 +1010,7 @@ export default function MessagePane({ userId, activeCall, setActiveCall }: Props
                   selfRole={selfRole}
                   conversationType={conversationType}
                   isPinned={pinnedIds.has(m.id)}
-                  currentLabels={labelsByMsg[m.id] ?? []}
+                  currentLabels={Array.from(new Set([...(Array.isArray(m.labels) ? m.labels : []), ...(labelsByMsg[m.id] ?? [])])) as MessageLabelValue[]}
                   onReply={setReplyTo}
                   onReact={handleReact}
                   onEdit={handleEdit}

@@ -113,134 +113,136 @@ export default function AgentManualOrder({ onOrderCreated }: { onOrderCreated: (
   }
 
   return (
-    <div style={{ background: 'var(--surface-2)', borderRadius: 'var(--radius-lg)', padding: 'var(--space-6)', border: '1px solid rgba(255,255,255,0.05)' }}>
-      <h3 style={{ fontSize: '1.2rem', marginBottom: 'var(--space-6)', fontFamily: 'var(--font-brand)' }}>Create Manual Shipment Order</h3>
-      
-      <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
+    <div className="metal-frame">
+      <div className="metal-content" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
+        <h3 className="metal-text" style={{ fontSize: '1.25rem', margin: 0, fontFamily: 'var(--font-brand)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+          Create Manual Shipment Order
+        </h3>
         
-        {/* Customer Details */}
-        <div>
-          <h4 style={{ fontSize: '0.9rem', color: 'var(--teal)', marginBottom: 'var(--space-3)' }}>Customer & Shipping Details</h4>
-          <div className="grid-2" style={{ gap: 'var(--space-4)' }}>
-            <div className="form-group">
-              <label className="form-label">Full Name</label>
-              <input type="text" className="form-input" required value={buyerName} onChange={e => setBuyerName(e.target.value)} />
-            </div>
-            <div className="form-group">
-              <label className="form-label">Email (Optional)</label>
-              <input type="email" className="form-input" value={buyerEmail} onChange={e => setBuyerEmail(e.target.value)} />
-            </div>
-          </div>
+        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
           
-          <div className="form-group" style={{ marginTop: 'var(--space-4)' }}>
-            <label className="form-label">Street Address</label>
-            <input type="text" className="form-input" required value={street} onChange={e => setStreet(e.target.value)} />
-          </div>
-          
-          <div className="grid-3" style={{ gap: 'var(--space-4)', marginTop: 'var(--space-4)' }}>
-            <div className="form-group">
-              <label className="form-label">City</label>
-              <input type="text" className="form-input" required value={city} onChange={e => setCity(e.target.value)} />
+          {/* Customer Details */}
+          <div className="metal-embossed-panel" style={{ padding: '24px' }}>
+            <h4 style={{ fontSize: '1rem', color: '#00E5FF', marginBottom: '20px', fontFamily: 'var(--font-brand)', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid rgba(0,229,255,0.2)', paddingBottom: '10px' }}>Customer & Shipping Details</h4>
+            <div className="grid-2" style={{ gap: 'var(--space-4)' }}>
+              <div className="form-group">
+                <label className="form-label" style={{ color: 'rgba(255,255,255,0.6)' }}>Full Name</label>
+                <input type="text" className="form-input" style={{ background: 'linear-gradient(180deg, #0b0f16 0%, #121822 100%)', border: '1px solid rgba(0,0,0,0.8)', boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.5)', color: '#fff' }} required value={buyerName} onChange={e => setBuyerName(e.target.value)} />
+              </div>
+              <div className="form-group">
+                <label className="form-label" style={{ color: 'rgba(255,255,255,0.6)' }}>Email (Optional)</label>
+                <input type="email" className="form-input" style={{ background: 'linear-gradient(180deg, #0b0f16 0%, #121822 100%)', border: '1px solid rgba(0,0,0,0.8)', boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.5)', color: '#fff' }} value={buyerEmail} onChange={e => setBuyerEmail(e.target.value)} />
+              </div>
             </div>
-            <div className="form-group">
-              <label className="form-label">State</label>
-              <input type="text" className="form-input" required value={state} onChange={e => setState(e.target.value)} />
+            
+            <div className="form-group" style={{ marginTop: 'var(--space-4)' }}>
+              <label className="form-label" style={{ color: 'rgba(255,255,255,0.6)' }}>Street Address</label>
+              <input type="text" className="form-input" style={{ background: 'linear-gradient(180deg, #0b0f16 0%, #121822 100%)', border: '1px solid rgba(0,0,0,0.8)', boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.5)', color: '#fff' }} required value={street} onChange={e => setStreet(e.target.value)} />
             </div>
-            <div className="form-group">
-              <label className="form-label">ZIP Code</label>
-              <input type="text" className="form-input" required value={zip} onChange={e => setZip(e.target.value)} />
+            
+            <div className="grid-3" style={{ gap: 'var(--space-4)', marginTop: 'var(--space-4)' }}>
+              <div className="form-group">
+                <label className="form-label" style={{ color: 'rgba(255,255,255,0.6)' }}>City</label>
+                <input type="text" className="form-input" style={{ background: 'linear-gradient(180deg, #0b0f16 0%, #121822 100%)', border: '1px solid rgba(0,0,0,0.8)', boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.5)', color: '#fff' }} required value={city} onChange={e => setCity(e.target.value)} />
+              </div>
+              <div className="form-group">
+                <label className="form-label" style={{ color: 'rgba(255,255,255,0.6)' }}>State</label>
+                <input type="text" className="form-input" style={{ background: 'linear-gradient(180deg, #0b0f16 0%, #121822 100%)', border: '1px solid rgba(0,0,0,0.8)', boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.5)', color: '#fff' }} required value={state} onChange={e => setState(e.target.value)} />
+              </div>
+              <div className="form-group">
+                <label className="form-label" style={{ color: 'rgba(255,255,255,0.6)' }}>ZIP Code</label>
+                <input type="text" className="form-input" style={{ background: 'linear-gradient(180deg, #0b0f16 0%, #121822 100%)', border: '1px solid rgba(0,0,0,0.8)', boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.5)', color: '#fff' }} required value={zip} onChange={e => setZip(e.target.value)} />
+              </div>
             </div>
-          </div>
-        </div>
-
-        <hr style={{ border: 'none', borderTop: '1px solid rgba(255,255,255,0.05)' }} />
-
-        {/* Order Items */}
-        <div>
-          <h4 style={{ fontSize: '0.9rem', color: 'var(--teal)', marginBottom: 'var(--space-3)' }}>Order Items</h4>
-          
-          <div style={{ display: 'flex', gap: 'var(--space-3)', alignItems: 'flex-end', marginBottom: 'var(--space-4)' }}>
-            <div className="form-group" style={{ flexGrow: 1, marginBottom: 0 }}>
-              <label className="form-label">Select Product</label>
-              <select className="form-input" value={selectedProductId} onChange={e => setSelectedProductId(e.target.value)}>
-                {products.map(p => {
-                  const name = p.custom_name || p.products.name;
-                  const size = p.products.unit_size ? ` (${p.products.unit_size}${p.products.unit_measure})` : '';
-                  return (
-                    <option key={p.product_id} value={p.product_id}>{name}{size} — ${p.retail_price}</option>
-                  );
-                })}
-              </select>
-            </div>
-            <button type="button" onClick={handleAddToCart} className="btn btn-secondary" style={{ height: 42 }}>
-              Add To Cart
-            </button>
           </div>
 
-          {cart.length > 0 ? (
-            <div style={{ background: 'var(--black)', borderRadius: 'var(--radius-md)', padding: 'var(--space-4)' }}>
-              {cart.map((item, i) => (
-                <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-2)', paddingBottom: 'var(--space-2)', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                  <div>
-                    <span style={{ color: 'var(--white)' }}>{item.quantity}x {item.name}</span>
+          {/* Order Items */}
+          <div className="metal-embossed-panel" style={{ padding: '24px' }}>
+            <h4 style={{ fontSize: '1rem', color: '#00E5FF', marginBottom: '20px', fontFamily: 'var(--font-brand)', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid rgba(0,229,255,0.2)', paddingBottom: '10px' }}>Order Items</h4>
+            
+            <div style={{ display: 'flex', gap: 'var(--space-3)', alignItems: 'flex-end', marginBottom: 'var(--space-6)' }}>
+              <div className="form-group" style={{ flexGrow: 1, marginBottom: 0 }}>
+                <label className="form-label" style={{ color: 'rgba(255,255,255,0.6)' }}>Select Product</label>
+                <select className="form-input" style={{ background: 'linear-gradient(180deg, #0b0f16 0%, #121822 100%)', border: '1px solid rgba(0,0,0,0.8)', boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.5)', color: '#fff' }} value={selectedProductId} onChange={e => setSelectedProductId(e.target.value)}>
+                  {products.map(p => {
+                    const name = p.custom_name || p.products.name;
+                    const size = p.products.unit_size ? ` (${p.products.unit_size}${p.products.unit_measure})` : '';
+                    return (
+                      <option key={p.product_id} value={p.product_id}>{name}{size} — ${p.retail_price}</option>
+                    );
+                  })}
+                </select>
+              </div>
+              <button type="button" onClick={handleAddToCart} className="btn-silver" style={{ height: 42, padding: '0 24px', fontSize: '0.85rem' }}>
+                Add To Cart
+              </button>
+            </div>
+
+            {cart.length > 0 ? (
+              <div style={{ background: 'rgba(0,0,0,0.4)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '8px', padding: '16px' }}>
+                {cart.map((item, i) => (
+                  <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', paddingBottom: '12px', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                    <div>
+                      <span style={{ color: '#fff', fontWeight: 600 }}>{item.quantity}x {item.name}</span>
+                    </div>
+                    <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
+                      <span style={{ color: '#00E5FF', fontWeight: 700 }}>${(item.price * item.quantity).toFixed(2)}</span>
+                      <button type="button" onClick={() => handleRemoveFromCart(item.product_id)} className="badge-metal" style={{ background: 'rgba(229,62,62,0.1)', color: '#FC8181', border: '1px solid rgba(229,62,62,0.3)', cursor: 'pointer', padding: '4px 8px', fontSize: '1rem', lineHeight: 1 }}>×</button>
+                    </div>
                   </div>
-                  <div style={{ display: 'flex', gap: 'var(--space-4)', alignItems: 'center' }}>
-                    <span style={{ color: 'var(--teal)' }}>${(item.price * item.quantity).toFixed(2)}</span>
-                    <button type="button" onClick={() => handleRemoveFromCart(item.product_id)} style={{ background: 'none', border: 'none', color: 'var(--red)', cursor: 'pointer', fontSize: '1rem' }}>×</button>
-                  </div>
-                </div>
-              ))}
-              
-              <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 'var(--space-4)' }}>
-                <div style={{ width: 200 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4, fontSize: '0.85rem', color: 'var(--grey-400)' }}>
-                    <span>Subtotal</span>
-                    <span>${subtotal.toFixed(2)}</span>
-                  </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8, fontSize: '0.85rem', color: 'var(--grey-400)' }}>
-                    <span>Shipping</span>
-                    <span>${shippingCost.toFixed(2)}</span>
-                  </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', paddingTop: 8, borderTop: '1px solid rgba(255,255,255,0.1)', fontSize: '1rem', color: 'var(--white)', fontWeight: 'bold' }}>
-                    <span>Total</span>
-                    <span style={{ color: 'var(--teal)' }}>${total.toFixed(2)}</span>
+                ))}
+                
+                <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '16px' }}>
+                  <div style={{ width: 220 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6, fontSize: '0.85rem', color: 'rgba(255,255,255,0.5)' }}>
+                      <span>Subtotal</span>
+                      <span style={{ color: '#fff' }}>${subtotal.toFixed(2)}</span>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12, fontSize: '0.85rem', color: 'rgba(255,255,255,0.5)' }}>
+                      <span>Shipping</span>
+                      <span style={{ color: '#fff' }}>${shippingCost.toFixed(2)}</span>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', paddingTop: 12, borderTop: '1px dashed rgba(255,255,255,0.15)', fontSize: '1.1rem', color: '#fff', fontWeight: 800 }}>
+                      <span>Total</span>
+                      <span style={{ color: '#00E5FF', textShadow: '0 0 10px rgba(0,229,255,0.3)' }}>${total.toFixed(2)}</span>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
-          ) : (
-            <p style={{ fontSize: '0.85rem', color: 'var(--grey-500)', fontStyle: 'italic' }}>Cart Is Empty.</p>
-          )}
-        </div>
-
-        <hr style={{ border: 'none', borderTop: '1px solid rgba(255,255,255,0.05)' }} />
-
-        {/* Payment & Submit */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
-          <div style={{ display: 'flex', gap: 'var(--space-4)' }}>
-            <div className="form-group" style={{ width: 180, marginBottom: 0 }}>
-              <label className="form-label">Payment Received Via</label>
-              <select className="form-input" value={paymentMethod} onChange={e => setPaymentMethod(e.target.value)}>
-                <option value="cashapp">Cash App</option>
-                <option value="venmo">Venmo</option>
-                <option value="apple_pay">Apple Pay</option>
-                <option value="zelle">Zelle</option>
-                <option value="crypto">Crypto</option>
-                <option value="cash">Cash / Offline</option>
-              </select>
-            </div>
-            <div className="form-group" style={{ width: 120, marginBottom: 0 }}>
-              <label className="form-label">Shipping Cost ($)</label>
-              <input type="number" className="form-input" value={shippingCostInput} onChange={e => setShippingCostInput(e.target.value)} />
-            </div>
+            ) : (
+              <div style={{ padding: '32px', textAlign: 'center', background: 'rgba(0,0,0,0.2)', border: '1px dashed rgba(255,255,255,0.1)', borderRadius: '8px' }}>
+                <p style={{ fontSize: '0.9rem', color: 'rgba(255,255,255,0.3)' }}>Cart Is Empty. Add products above.</p>
+              </div>
+            )}
           </div>
-          
-          <button type="submit" className="btn btn-primary" disabled={submitting || cart.length === 0}>
-            {submitting ? 'Creating Order...' : 'Create Order'}
-          </button>
-        </div>
 
-      </form>
+          {/* Payment & Submit */}
+          <div className="metal-embossed-panel" style={{ padding: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: '20px' }}>
+            <div style={{ display: 'flex', gap: 'var(--space-4)', flexWrap: 'wrap' }}>
+              <div className="form-group" style={{ width: 180, marginBottom: 0 }}>
+                <label className="form-label" style={{ color: 'rgba(255,255,255,0.6)' }}>Payment Received Via</label>
+                <select className="form-input" style={{ background: 'linear-gradient(180deg, #0b0f16 0%, #121822 100%)', border: '1px solid rgba(0,0,0,0.8)', boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.5)', color: '#fff' }} value={paymentMethod} onChange={e => setPaymentMethod(e.target.value)}>
+                  <option value="cashapp">Cash App</option>
+                  <option value="venmo">Venmo</option>
+                  <option value="apple_pay">Apple Pay</option>
+                  <option value="zelle">Zelle</option>
+                  <option value="crypto">Crypto</option>
+                  <option value="cash">Cash / Offline</option>
+                </select>
+              </div>
+              <div className="form-group" style={{ width: 120, marginBottom: 0 }}>
+                <label className="form-label" style={{ color: 'rgba(255,255,255,0.6)' }}>Shipping Cost ($)</label>
+                <input type="number" className="form-input" style={{ background: 'linear-gradient(180deg, #0b0f16 0%, #121822 100%)', border: '1px solid rgba(0,0,0,0.8)', boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.5)', color: '#fff' }} value={shippingCostInput} onChange={e => setShippingCostInput(e.target.value)} />
+              </div>
+            </div>
+            
+            <button type="submit" className="btn-neon-cyan" disabled={submitting || cart.length === 0} style={{ padding: '12px 32px', fontSize: '1rem', fontWeight: 800 }}>
+              {submitting ? 'Creating Order...' : 'CREATE ORDER'}
+            </button>
+          </div>
+
+        </form>
+      </div>
     </div>
   );
 }
