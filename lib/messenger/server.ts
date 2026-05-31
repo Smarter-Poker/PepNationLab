@@ -210,8 +210,15 @@ export async function broadcastCallSignalServer(
   payload: any,
 ): Promise<void> {
   const svc = await createServiceClient();
-  const ch = svc.channel(`call-signal:${targetUserId}`);
-  
+  // audit15 fix-34: must match the client-side `private: true` channel
+  // mode from fix-32. Public-channel publishes do not reach private-channel
+  // subscribers in Supabase Realtime — different routing paths. Service
+  // role still bypasses realtime.messages RLS so the insert policy doesn't
+  // reject; this is purely about channel-mode parity.
+  const ch = svc.channel(`call-signal:${targetUserId}`, {
+    config: { private: true },
+  });
+
   try {
     await new Promise<void>((resolve, reject) => {
       const timeout = setTimeout(() => reject(new Error('timeout')), 3000);
