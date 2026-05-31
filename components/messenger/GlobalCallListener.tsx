@@ -55,6 +55,55 @@ export default function GlobalCallListener() {
     };
   }, []);
 
+  // audit15 fix-9: resume any in-flight call when the listener mounts.
+  // Closes the "reload during ring loses toast" gap (S5 from the previous
+  // audit). Runs once whenever the authenticated user resolves; the
+  // fetch is idempotent because IncomingCallToast dedupe (line ~78 below)
+  // skips already-known call ids.
+  useEffect(() => {
+    if (!user?.id) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch('/api/messenger/list-active-calls', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: '{}',
+        });
+        if (cancelled || !res.ok) return;
+        const json = (await res.json()) as { calls?: CallSignalRow[] };
+        const calls = json.calls ?? [];
+
+        // Mount the most recent active-or-ringing call from THIS user as the
+        // active overlay (caller refreshed their tab mid-call). If the row
+        // is still 'ringing', the overlay shows the calling-out screen;
+        // if 'active' the LiveKitRoom reconnects to the existing room.
+        const myActive = calls.find((c) => c.initiator_id === user.id);
+        if (myActive && !activeCallRef.current) {
+          console.log('[GLOBAL CALL] Resuming my in-flight call after reload:', myActive.id);
+          setActiveCall(myActive);
+        }
+
+        // For ringing calls TO this user, surface the toast again unless this
+        // tab has already answered (sessionStorage marker present).
+        for (const c of calls) {
+          if (c.status !== 'ringing') continue;
+          if (c.initiator_id === user.id) continue;
+          const alreadyAnswered = (() => {
+            try { return Boolean(sessionStorage.getItem(`answered_call_${c.id}`)); } catch { return false; }
+          })();
+          if (alreadyAnswered) continue;
+          setIncomingCalls((cur) => (cur.some((x) => x.id === c.id) ? cur : [...cur, c]));
+        }
+      } catch (err) {
+        console.warn('[GLOBAL CALL] Failed to resume in-flight calls:', err);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.id]);
+
   // Subscribe to realtime call signals
   useEffect(() => {
     if (!user?.id) return;
