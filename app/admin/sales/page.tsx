@@ -180,18 +180,19 @@ export default function AdminSalesPage() {
             <div className="metal-frame hover-lift stagger-fade-in" style={{ height: 320, marginBottom: 'var(--space-8)', animationDelay: '0.3s' }}>
               <div className="metal-content" style={{ padding: 'var(--space-6)', height: '100%' }}>
                 <h3 style={{ fontSize: '1.1rem', fontFamily: 'var(--font-brand)', color: 'var(--white)', marginBottom: 'var(--space-4)' }}>Revenue By Agent</h3>
-                <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={data.agents}>
+                <ResponsiveContainer width="100%" height={250}>
+                <BarChart data={data.agents.map((a) => ({ ...a, total_revenue: Number(a.total_revenue) || 0 }))}>
                   <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
-                  <XAxis dataKey="full_name" stroke="var(--grey-500)" fontSize={12} tickLine={false} axisLine={false} />
-                  <YAxis stroke="var(--grey-500)" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(val) => `$${val}`} />
-                  <Tooltip 
-                    contentStyle={{ backgroundColor: 'var(--grey-900)', border: '1px solid var(--grey-800)', borderRadius: 8 }}
+                  <XAxis dataKey="full_name" stroke="#7B8794" fontSize={12} tickLine={false} axisLine={false} />
+                  <YAxis stroke="#7B8794" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(val) => `$${val}`} />
+                  <Tooltip
+                    cursor={{ fill: 'rgba(0,196,188,0.08)' }}
+                    contentStyle={{ backgroundColor: '#0F1923', border: '1px solid #1D2D3E', borderRadius: 8 }}
                     itemStyle={{ color: 'var(--silver)' }}
                     formatter={(value: any) => [`$${Number(value).toFixed(2)}`, 'Revenue']}
                     labelStyle={{ color: 'var(--grey-400)', marginBottom: 4 }}
                   />
-                  <Bar dataKey="total_revenue" fill="var(--teal)" radius={[4, 4, 0, 0]} maxBarSize={60} />
+                  <Bar dataKey="total_revenue" fill="#00C4BC" radius={[4, 4, 0, 0]} maxBarSize={72} isAnimationActive={false} />
                 </BarChart>
                 </ResponsiveContainer>
               </div>
@@ -310,7 +311,7 @@ export default function AdminSalesPage() {
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                             <div style={{ flex: 1, minWidth: 0 }}>
                               <div style={{ fontSize: '0.78rem', color: 'var(--silver)', fontWeight: 600, marginBottom: 2 }}>{tx.description}</div>
-                              <div style={{ fontSize: '0.7rem', color: 'var(--grey-500)' }}>{new Date(tx.created_at).toLocaleString()}</div>
+                              <div suppressHydrationWarning style={{ fontSize: '0.7rem', color: 'var(--grey-500)' }}>{new Date(tx.created_at).toLocaleString()}</div>
                             </div>
                             <div style={{ textAlign: 'right', flexShrink: 0, marginLeft: 'var(--space-3)' }}>
                               <div style={{ fontSize: '0.85rem', fontWeight: 700, color, fontFamily: 'var(--font-brand)' }}>

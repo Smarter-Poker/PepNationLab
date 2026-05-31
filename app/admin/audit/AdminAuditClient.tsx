@@ -220,6 +220,7 @@ export default function AdminAuditClient({
                     style={{ borderBottom: "1px solid rgba(255,255,255,0.04)" }}
                   >
                     <td
+                      suppressHydrationWarning
                       style={{
                         padding: "var(--space-3)",
                         color: "var(--silver)",
