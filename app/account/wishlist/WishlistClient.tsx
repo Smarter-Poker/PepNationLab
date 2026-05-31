@@ -47,7 +47,7 @@ export default function WishlistClient({ initialItems, storefrontSlug }: Props) 
 
   if (items.length === 0) {
     return (
-      <div className="card-metal" style={{ padding: 'var(--space-8)', textAlign: 'center' }}>
+      <div className="card-metal hover-lift stagger-fade-in" style={{ padding: 'var(--space-8)', textAlign: 'center', animationDelay: '0.1s' }}>
         <Heart size={32} aria-hidden="true" style={{ marginBottom: 'var(--space-3)', color: 'var(--silver)' }} />
         <h2 style={{ color: 'var(--white)', fontSize: '1.1rem', marginBottom: 'var(--space-2)' }}>
           Your Wishlist Is Empty
@@ -72,18 +72,19 @@ export default function WishlistClient({ initialItems, storefrontSlug }: Props) 
         gap: 'var(--space-4)',
       }}
     >
-      {items.map(item => {
+      {items.map((item, index) => {
         const displayPrice = item.retail_price ?? item.base_cost ?? 0;
         return (
           <div
             key={item.product_id}
-            className="card-metal"
+            className="card-metal hover-lift stagger-fade-in"
             style={{
               display: 'flex',
               flexDirection: 'column',
               overflow: 'hidden',
               padding: 0,
               borderRadius: 'var(--radius-lg)',
+              animationDelay: `${0.1 + index * 0.1}s`,
             }}
           >
             <div

@@ -239,7 +239,7 @@ export default async function OrderDetailPage(
           <div style={{ marginBottom: 'var(--space-6)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 'var(--space-3)' }}>
               <div>
-                <h1 style={{ fontSize: '1.6rem', marginBottom: 'var(--space-2)' }}>
+                <h1 className="animated-gradient-text" style={{ fontSize: '1.6rem', marginBottom: 'var(--space-2)' }}>
                   Order <span style={{ color: 'var(--teal)', fontFamily: 'var(--font-brand)' }}>#{order.id.slice(0, 8).toUpperCase()}</span>
                 </h1>
                 <p style={{ fontSize: '0.85rem', color: 'var(--grey-400)' }}>
@@ -318,7 +318,7 @@ export default async function OrderDetailPage(
           </div>
 
           {/* Buyer + Shipping */}
-          <div className="card-metal" style={{ padding: 'var(--space-6)', marginBottom: 'var(--space-5)' }}>
+          <div className="card-metal hover-lift stagger-fade-in" style={{ padding: 'var(--space-6)', marginBottom: 'var(--space-5)', animationDelay: '0.1s' }}>
             <h2 style={{ fontSize: '0.95rem', color: 'var(--silver)', marginBottom: 'var(--space-3)' }}>
               Buyer & Shipping
             </h2>
@@ -347,7 +347,7 @@ export default async function OrderDetailPage(
           </div>
 
           {/* Items */}
-          <div className="card-metal" style={{ padding: 'var(--space-6)', marginBottom: 'var(--space-5)' }}>
+          <div className="card-metal hover-lift stagger-fade-in" style={{ padding: 'var(--space-6)', marginBottom: 'var(--space-5)', animationDelay: '0.2s' }}>
             <h2 style={{ fontSize: '0.95rem', color: 'var(--silver)', marginBottom: 'var(--space-4)' }}>
               Items
             </h2>
@@ -396,7 +396,7 @@ export default async function OrderDetailPage(
 
           {/* You May Also Like */}
           {recommendations.length > 0 && (
-            <div className="card-metal" style={{ padding: 'var(--space-6)', marginBottom: 'var(--space-5)' }}>
+            <div className="card-metal hover-lift stagger-fade-in" style={{ padding: 'var(--space-6)', marginBottom: 'var(--space-5)', animationDelay: '0.3s' }}>
               <RecommendationStrip
                 title="You May Also Like"
                 recommendations={recommendations}
@@ -407,7 +407,7 @@ export default async function OrderDetailPage(
 
           {/* Payment Instructions */}
           {order.status === 'pending_customer_payment' && (
-            <div className="card-metal" style={{ padding: 'var(--space-6)', marginBottom: 'var(--space-5)', borderColor: 'rgba(246,173,85,0.3)' }}>
+            <div className="card-metal hover-lift stagger-fade-in" style={{ padding: 'var(--space-6)', marginBottom: 'var(--space-5)', borderColor: 'rgba(246,173,85,0.3)', animationDelay: '0.4s' }}>
               <h2 style={{ fontSize: '0.95rem', color: 'var(--white)', marginBottom: 'var(--space-3)' }}>
                 Payment Instructions
               </h2>
@@ -475,7 +475,7 @@ export default async function OrderDetailPage(
 
           {/* Tracking */}
           {(order.tracking_number || order.label_url) && (
-            <div className="card-metal" style={{ padding: 'var(--space-6)' }}>
+            <div className="card-metal hover-lift stagger-fade-in" style={{ padding: 'var(--space-6)', animationDelay: '0.5s' }}>
               <h2 style={{ fontSize: '0.95rem', color: 'var(--silver)', marginBottom: 'var(--space-3)' }}>
                 Tracking
               </h2>

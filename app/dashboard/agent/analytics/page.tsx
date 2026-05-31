@@ -14,11 +14,12 @@ interface MetricCardProps {
   label: string;
   value: string;
   sub?: string;
+  index?: number;
 }
 
-function MetricCard({ label, value, sub }: MetricCardProps) {
+function MetricCard({ label, value, sub, index = 0 }: MetricCardProps) {
   return (
-    <div className="card-glass" style={{ padding: 'var(--space-4)', borderRadius: 'var(--radius-md)' }}>
+    <div className="card-glass hover-lift stagger-fade-in" style={{ padding: 'var(--space-4)', borderRadius: 'var(--radius-md)', animationDelay: `${0.1 + index * 0.1}s` }}>
       <div style={{ color: 'var(--silver)', fontSize: '0.78rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{label}</div>
       <div style={{ color: 'var(--white)', fontSize: '1.6rem', fontWeight: 800, marginTop: 4 }}>{value}</div>
       {sub && <div style={{ color: 'var(--silver)', fontSize: '0.78rem', marginTop: 2 }}>{sub}</div>}
@@ -97,7 +98,7 @@ export default async function AgentAnalyticsPage() {
           Back To Agent Dashboard
         </Link>
       </div>
-      <h1 style={{ color: 'var(--white)', fontSize: '1.5rem', marginBottom: 'var(--space-2)' }}>
+      <h1 className="animated-gradient-text" style={{ color: 'var(--white)', fontSize: '1.5rem', marginBottom: 'var(--space-2)' }}>
         Storefront Analytics
       </h1>
       <p style={{ color: 'var(--silver)', fontSize: '0.92rem', marginBottom: 'var(--space-5)' }}>
@@ -105,17 +106,17 @@ export default async function AgentAnalyticsPage() {
       </p>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 'var(--space-3)', marginBottom: 'var(--space-6)' }}>
-        <MetricCard label="Pageviews" value={String(metrics.pageviews_30d)} />
-        <MetricCard label="Unique Sessions" value={String(metrics.unique_sessions_30d)} />
-        <MetricCard label="Add To Cart" value={String(metrics.add_to_cart_30d)} />
-        <MetricCard label="Checkouts Started" value={String(metrics.checkout_starts_30d)} />
-        <MetricCard label="Orders Completed" value={String(metrics.orders_30d)} />
-        <MetricCard label="Revenue" value={money(Number(metrics.revenue_cents_30d))} />
-        <MetricCard label="Conversion %" value={`${metrics.conversion_pct_30d ?? 0}%`} sub="Orders / Pageviews" />
+        <MetricCard index={0} label="Pageviews" value={String(metrics.pageviews_30d)} />
+        <MetricCard index={1} label="Unique Sessions" value={String(metrics.unique_sessions_30d)} />
+        <MetricCard index={2} label="Add To Cart" value={String(metrics.add_to_cart_30d)} />
+        <MetricCard index={3} label="Checkouts Started" value={String(metrics.checkout_starts_30d)} />
+        <MetricCard index={4} label="Orders Completed" value={String(metrics.orders_30d)} />
+        <MetricCard index={5} label="Revenue" value={money(Number(metrics.revenue_cents_30d))} />
+        <MetricCard index={6} label="Conversion %" value={`${metrics.conversion_pct_30d ?? 0}%`} sub="Orders / Pageviews" />
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 'var(--space-4)' }}>
-        <div className="card" style={{ padding: 'var(--space-4)' }}>
+        <div className="card-metal hover-lift stagger-fade-in" style={{ padding: 'var(--space-4)', animationDelay: '0.4s' }}>
           <h2 style={{ color: 'var(--white)', fontSize: '1.05rem', marginBottom: 'var(--space-3)' }}>Top Search Terms</h2>
           {(!terms || terms.length === 0) ? (
             <p style={{ color: 'var(--silver)', fontSize: '0.9rem' }}>No Searches Recorded Yet.</p>
@@ -132,7 +133,7 @@ export default async function AgentAnalyticsPage() {
             </table>
           )}
         </div>
-        <div className="card" style={{ padding: 'var(--space-4)' }}>
+        <div className="card-metal hover-lift stagger-fade-in" style={{ padding: 'var(--space-4)', animationDelay: '0.5s' }}>
           <h2 style={{ color: 'var(--white)', fontSize: '1.05rem', marginBottom: 'var(--space-3)' }}>Top Viewed Products</h2>
           {topRanked.length === 0 ? (
             <p style={{ color: 'var(--silver)', fontSize: '0.9rem' }}>No Product Views Yet.</p>

@@ -609,7 +609,7 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
   if (cart.length === 0 && !orderSuccess) {
     return (
       <div className="container-sm section" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '60vh' }}>
-        <div className="card-metal" style={{ width: '100%', maxWidth: 500, textAlign: 'center', padding: 'var(--space-8)' }}>
+        <div className="card-metal hover-lift stagger-fade-in" style={{ width: '100%', maxWidth: 500, textAlign: 'center', padding: 'var(--space-8)' }}>
           <svg
             width="48"
             height="48"
@@ -639,7 +639,7 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
     const payment = getPaymentDetails();
     return (
       <div className="container-sm section" style={{ display: 'flex', justifyContent: 'center', padding: 'var(--space-10) var(--space-4)' }}>
-        <div className="card-metal" style={{ width: '100%', maxWidth: 640, padding: 'var(--space-8)', border: '2px solid var(--teal)', boxShadow: '0 0 30px rgba(192, 184, 168, 0.2)' }}>
+        <div className="card-metal stagger-fade-in" style={{ width: '100%', maxWidth: 640, padding: 'var(--space-8)', border: '2px solid var(--teal)', boxShadow: '0 0 30px rgba(192, 184, 168, 0.2)' }}>
           {/* Success Header */}
           <div style={{ textAlign: 'center', marginBottom: 'var(--space-6)' }}>
             <div style={{
@@ -763,7 +763,7 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
 
       {/* Page Header */}
       <div style={{ marginBottom: 'var(--space-8)', textAlign: 'center' }}>
-        <h1 style={{ fontSize: 'clamp(1.4rem, 5vw, 2.2rem)', color: 'var(--white)', marginBottom: 'var(--space-2)' }}>Secure Order Checkout</h1>
+        <h1 className="animated-gradient-text" style={{ fontSize: 'clamp(1.4rem, 5vw, 2.2rem)', color: 'var(--white)', marginBottom: 'var(--space-2)' }}>Secure Order Checkout</h1>
         <p style={{ color: 'var(--silver)' }}>Complete Your Compliance Steps To Register Your Research Request.</p>
       </div>
 

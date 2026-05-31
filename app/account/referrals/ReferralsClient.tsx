@@ -136,7 +136,7 @@ export default function ReferralsClient({ code, settings, referrals, redeemed, s
   return (
     <div style={{ minHeight: '100vh', background: 'var(--black)', padding: 'var(--space-6) var(--space-4)' }}>
       <div className="container" style={{ maxWidth: 980 }}>
-        <h1 style={{ color: 'var(--white)', fontSize: '1.6rem', fontFamily: 'var(--font-brand)', marginBottom: 'var(--space-2)' }}>
+        <h1 className="animated-gradient-text" style={{ color: 'var(--white)', fontSize: '1.6rem', fontFamily: 'var(--font-brand)', marginBottom: 'var(--space-2)' }}>
           Referrals
         </h1>
         <p style={{ color: 'var(--silver)', fontSize: '0.92rem', marginBottom: 'var(--space-6)' }}>
@@ -325,7 +325,7 @@ export default function ReferralsClient({ code, settings, referrals, redeemed, s
                   {referrals.map((r) => {
                     const color = STATUS_COLORS[r.status] ?? 'var(--grey-400)';
                     return (
-                      <tr key={r.id} style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+                      <tr key={r.id} className="table-row-hover" style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}>
                         <td style={tdStyle}>
                           {r.referee_name || r.referee_email || 'Anonymous'}
                         </td>
@@ -364,7 +364,7 @@ export default function ReferralsClient({ code, settings, referrals, redeemed, s
 function StatCard({ label, value, Icon }: { label: string; value: string; Icon: React.ComponentType<{ size?: number; 'aria-hidden'?: boolean }> }) {
   return (
     <div
-      className="card-metal"
+      className="card-metal hover-lift"
       style={{
         padding: 'var(--space-4)',
         display: 'flex',

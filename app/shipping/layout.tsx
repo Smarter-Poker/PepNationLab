@@ -24,7 +24,7 @@ export default async function ShippingLayout({ children }: { children: React.Rea
   return (
     <div className="admin-layout" style={{ display: 'flex', minHeight: 'calc(100vh - 72px)', background: 'var(--black)' }}>
       {/* Sidebar */}
-      <aside className="card-metal" style={{ 
+      <aside className="card-metal stagger-fade-in" style={{ 
         width: 260, 
         padding: 'var(--space-6)', 
         borderRight: 'var(--border-teal)', 
@@ -34,7 +34,7 @@ export default async function ShippingLayout({ children }: { children: React.Rea
         borderBottom: 'none' 
       }}>
         <div style={{ marginBottom: 'var(--space-8)' }}>
-          <h2 style={{ fontSize: '1.2rem', fontFamily: 'var(--font-brand)', color: 'var(--white)', letterSpacing: '0.05em', marginBottom: 4 }}>
+          <h2 className="animated-gradient-text" style={{ fontSize: '1.2rem', fontFamily: 'var(--font-brand)', color: 'var(--white)', letterSpacing: '0.05em', marginBottom: 4 }}>
             Shipping Portal
           </h2>
           <div style={{ fontSize: '0.8rem', color: 'var(--teal)' }}>Fulfillment Dashboard</div>

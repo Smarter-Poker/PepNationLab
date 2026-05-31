@@ -232,7 +232,7 @@ export default function ShippingDashboard() {
       {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 'var(--space-4)' }}>
         <div>
-          <h1 style={{ fontSize: '1.6rem', fontFamily: 'var(--font-brand)', color: 'var(--white)', textTransform: 'uppercase', letterSpacing: '0.05em', margin: 0 }}>
+          <h1 className="animated-gradient-text" style={{ fontSize: '1.6rem', fontFamily: 'var(--font-brand)', color: 'var(--white)', textTransform: 'uppercase', letterSpacing: '0.05em', margin: 0 }}>
             Fulfillment Center
           </h1>
           <p style={{ color: 'var(--grey-400)', fontSize: '0.82rem', marginTop: 4, margin: 0 }}>
@@ -249,7 +249,7 @@ export default function ShippingDashboard() {
       {/* Daily Summary Stats */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 'var(--space-4)' }}>
         {statCards.map((s, i) => (
-          <div key={i} className="card-metal" style={{ padding: 'var(--space-4)', textAlign: 'center' }}>
+          <div key={i} className="card-metal hover-lift stagger-fade-in" style={{ padding: 'var(--space-4)', textAlign: 'center', animationDelay: `${0.1 + i * 0.1}s` }}>
             <div style={{ color: s.color, display: 'flex', justifyContent: 'center', marginBottom: 4 }}>{s.icon}</div>
             <div style={{ fontSize: '1.6rem', fontWeight: 800, color: s.color, fontFamily: 'var(--font-brand)' }}>{s.value}</div>
             <div style={{ fontSize: '0.68rem', color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase', letterSpacing: '0.05em', marginTop: 2 }}>{s.label}</div>
@@ -260,7 +260,7 @@ export default function ShippingDashboard() {
       {/* Quick Scan + Batch Controls */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-4)' }}>
         {/* Quick Scan */}
-        <div className="card-metal" style={{ padding: 'var(--space-4)', display: 'flex', alignItems: 'center', gap: 10 }}>
+        <div className="card-metal hover-lift stagger-fade-in" style={{ padding: 'var(--space-4)', display: 'flex', alignItems: 'center', gap: 10, animationDelay: '0.5s' }}>
           <Scan size={20} style={{ color: 'var(--teal)', flexShrink: 0 }} />
           <div style={{ flex: 1 }}>
             <div style={{ fontSize: '0.68rem', color: 'rgba(255,255,255,0.3)', marginBottom: 4, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em' }}>Quick Scan</div>
@@ -288,7 +288,7 @@ export default function ShippingDashboard() {
         </div>
 
         {/* Batch Controls */}
-        <div className="card-metal" style={{ padding: 'var(--space-4)', display: 'flex', alignItems: 'center', gap: 10 }}>
+        <div className="card-metal hover-lift stagger-fade-in" style={{ padding: 'var(--space-4)', display: 'flex', alignItems: 'center', gap: 10, animationDelay: '0.6s' }}>
           <Zap size={20} style={{ color: '#F6AD55', flexShrink: 0 }} />
           <div style={{ flex: 1 }}>
             <div style={{ fontSize: '0.68rem', color: 'rgba(255,255,255,0.3)', marginBottom: 4, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em' }}>Batch Actions</div>
@@ -337,7 +337,7 @@ export default function ShippingDashboard() {
       </div>
 
       {/* Order Table */}
-      <div className="card-metal" style={{ padding: 'var(--space-6)' }}>
+      <div className="card-metal stagger-fade-in" style={{ padding: 'var(--space-6)', animationDelay: '0.7s' }}>
         <div className="table-responsive">
           <table className="data-table">
             <thead>
@@ -372,6 +372,7 @@ export default function ShippingDashboard() {
                   filteredOrders.map(order => (
                     <motion.tr
                       key={order.id}
+                      className="table-row-hover"
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, scale: 0.95 }}

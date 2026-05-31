@@ -93,7 +93,7 @@ export default async function WishlistPage() {
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', marginBottom: 'var(--space-2)' }}>
           <Heart size={22} aria-hidden="true" style={{ color: 'var(--teal)' }} />
-          <h1 style={{ color: 'var(--white)', fontSize: '1.6rem', fontFamily: 'var(--font-brand)' }}>
+          <h1 className="animated-gradient-text" style={{ color: 'var(--white)', fontSize: '1.6rem', fontFamily: 'var(--font-brand)' }}>
             Your Wishlist
           </h1>
         </div>

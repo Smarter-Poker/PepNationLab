@@ -135,7 +135,7 @@ export default async function RecentlyViewedPage() {
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', marginBottom: 'var(--space-2)' }}>
           <History size={22} aria-hidden="true" style={{ color: 'var(--teal)' }} />
-          <h1 style={{ color: 'var(--white)', fontSize: '1.6rem', fontFamily: 'var(--font-brand)' }}>
+          <h1 className="animated-gradient-text" style={{ color: 'var(--white)', fontSize: '1.6rem', fontFamily: 'var(--font-brand)' }}>
             Recently Viewed
           </h1>
         </div>
@@ -174,7 +174,7 @@ export default async function RecentlyViewedPage() {
         </div>
 
         {items.length === 0 ? (
-          <div className="card-metal" style={{ padding: 'var(--space-8)', textAlign: 'center' }}>
+          <div className="card-metal hover-lift stagger-fade-in" style={{ padding: 'var(--space-8)', textAlign: 'center', animationDelay: '0.1s' }}>
             <History size={32} aria-hidden="true" style={{ marginBottom: 'var(--space-3)', color: 'var(--silver)' }} />
             <h2 style={{ color: 'var(--white)', fontSize: '1.1rem', marginBottom: 'var(--space-2)' }}>
               Nothing Here Yet
@@ -189,13 +189,14 @@ export default async function RecentlyViewedPage() {
             )}
           </div>
         ) : (
-          <div className="card-metal" style={{ padding: 0, overflow: 'hidden' }}>
+          <div className="card-metal hover-lift stagger-fade-in" style={{ padding: 0, overflow: 'hidden', animationDelay: '0.1s' }}>
             <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
               {items.map((item, idx) => {
                 const price = priceMap.get(item.product_id) ?? item.products!.base_cost ?? 0;
                 return (
                   <li
                     key={item.product_id}
+                    className="table-row-hover"
                     style={{
                       display: 'flex',
                       alignItems: 'center',
@@ -254,7 +255,7 @@ export default async function RecentlyViewedPage() {
         )}
 
         {trending.length > 0 && (
-          <div className="card-metal" style={{ marginTop: 'var(--space-6)', padding: 'var(--space-5) var(--space-5) var(--space-6)' }}>
+          <div className="card-metal hover-lift stagger-fade-in" style={{ marginTop: 'var(--space-6)', padding: 'var(--space-5) var(--space-5) var(--space-6)', animationDelay: '0.2s' }}>
             <h2 style={{ color: 'var(--white)', fontSize: '1.05rem', fontFamily: 'var(--font-brand)', marginBottom: 'var(--space-2)' }}>
               Trending Now
             </h2>

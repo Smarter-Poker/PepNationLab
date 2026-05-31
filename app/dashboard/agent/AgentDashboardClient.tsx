@@ -319,7 +319,7 @@ export default function AgentDashboardClient({
   if (!agentProfile) {
     return (
       <div className="container-sm section" style={{ display: 'flex', justifyContent: 'center' }}>
-        <div className="card-metal" style={{ width: '100%', maxWidth: 550, padding: 'var(--space-8)' }}>
+        <div className="card-metal stagger-fade-in" style={{ width: '100%', maxWidth: 550, padding: 'var(--space-8)' }}>
           <div style={{ textAlign: 'center', marginBottom: 'var(--space-6)' }}>
             <svg
               width="48"
@@ -337,7 +337,7 @@ export default function AgentDashboardClient({
               <path d="M9 15l2-2" />
               <path d="M14 10a2 2 0 1 0-4 0 2 2 0 0 0 4 0z" />
             </svg>
-            <h1 style={{ fontSize: '1.8rem', color: 'var(--teal)', marginBottom: 'var(--space-2)' }}>Launch Storefront</h1>
+            <h1 className="animated-gradient-text" style={{ fontSize: '1.8rem', color: 'var(--teal)', marginBottom: 'var(--space-2)' }}>Launch Storefront</h1>
             <p style={{ color: 'var(--silver-light)', fontSize: '0.9rem' }}>
               Create Your Exclusive White-Label Web Storefront To Refer Researchers And Track Dynamic Orders.
             </p>

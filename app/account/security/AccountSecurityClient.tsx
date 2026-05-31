@@ -261,12 +261,14 @@ export default function AccountSecurityClient({
 
         {/* Factor list */}
         <section
+          className="card-metal hover-lift stagger-fade-in"
           style={{
             background: SURFACE,
             border: '1px solid rgba(255,255,255,0.06)',
             borderRadius: '0.75rem',
             padding: '1.25rem',
             marginBottom: '1.5rem',
+            animationDelay: '0.1s',
           }}
         >
           <h2 style={{ fontSize: '1rem', fontWeight: 600, marginBottom: '1rem' }}>
@@ -284,6 +286,7 @@ export default function AccountSecurityClient({
               {factors.map(f => (
                 <li
                   key={f.id}
+                  className="table-row-hover"
                   style={{
                     display: 'flex',
                     alignItems: 'center',
@@ -333,11 +336,13 @@ export default function AccountSecurityClient({
 
         {/* Enrollment workflow */}
         <section
+          className="card-metal hover-lift stagger-fade-in"
           style={{
             background: SURFACE,
             border: '1px solid rgba(255,255,255,0.06)',
             borderRadius: '0.75rem',
             padding: '1.25rem',
+            animationDelay: '0.2s',
           }}
         >
           <h2 style={{ fontSize: '1rem', fontWeight: 600, marginBottom: '0.5rem' }}>

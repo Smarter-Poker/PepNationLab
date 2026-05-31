@@ -85,7 +85,7 @@ export default async function OrdersPage() {
         <div className="container-sm">
           {/* Header */}
           <div style={{ marginBottom: 'var(--space-8)' }}>
-            <h1 style={{ fontSize: '1.8rem', marginBottom: 'var(--space-2)' }}>
+            <h1 className="animated-gradient-text" style={{ fontSize: '1.8rem', marginBottom: 'var(--space-2)' }}>
               My <span style={{ color: 'var(--teal)' }}>Orders</span>
             </h1>
             <p style={{ fontSize: '0.9rem', color: 'var(--grey-400)' }}>
@@ -94,7 +94,7 @@ export default async function OrdersPage() {
           </div>
 
           {orders.length === 0 ? (
-            <div className="card-metal" style={{ padding: 'var(--space-12)', textAlign: 'center' }}>
+            <div className="card-metal hover-lift stagger-fade-in" style={{ padding: 'var(--space-12)', textAlign: 'center', animationDelay: '0.1s' }}>
               <svg
                 width="44"
                 height="44"
@@ -120,13 +120,13 @@ export default async function OrdersPage() {
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-5)' }}>
-              {orders.map((order) => {
+              {orders.map((order, index) => {
                 const statusColor = STATUS_COLORS[order.status] ?? 'var(--grey-400)';
                 return (
                   <div
                     key={order.id}
-                    className="card-metal"
-                    style={{ padding: 'var(--space-6)' }}
+                    className="card-metal hover-lift stagger-fade-in"
+                    style={{ padding: 'var(--space-6)', animationDelay: `${0.1 + index * 0.1}s` }}
                   >
                     {/* Order header */}
                     <div

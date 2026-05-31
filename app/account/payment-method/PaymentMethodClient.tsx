@@ -39,14 +39,14 @@ export default function PaymentMethodClient({ initial }: { initial: Method | nul
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
-      {OPTIONS.map((opt) => {
+      {OPTIONS.map((opt, index) => {
         const active = selected === opt.id;
         return (
           <button
             key={opt.id}
             disabled={busy}
             onClick={() => save(opt.id)}
-            className="card-glass"
+            className="card-glass hover-lift stagger-fade-in"
             style={{
               textAlign: 'left',
               padding: 'var(--space-4)',
@@ -55,6 +55,7 @@ export default function PaymentMethodClient({ initial }: { initial: Method | nul
               background: active ? 'rgba(0,196,188,0.06)' : 'var(--surface-2)',
               cursor: 'pointer',
               transition: 'all 0.15s',
+              animationDelay: `${0.1 + index * 0.1}s`,
             }}
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
