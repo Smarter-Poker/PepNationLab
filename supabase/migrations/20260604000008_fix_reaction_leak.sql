@@ -1,5 +1,5 @@
 -- Fix realtime reaction leak by adding conversation_id to messenger_reactions
-ALTER TABLE public.messenger_reactions ADD COLUMN conversation_id UUID REFERENCES public.messenger_conversations(id) ON DELETE CASCADE;
+ALTER TABLE public.messenger_reactions ADD COLUMN IF NOT EXISTS conversation_id UUID REFERENCES public.messenger_conversations(id) ON DELETE CASCADE;
 
 -- Backfill existing reactions
 UPDATE public.messenger_reactions mr 
