@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react';
 import { Phone, PhoneOff, Video } from 'lucide-react';
 import type { CallSignalRow } from '@/lib/messenger/realtime';
+import { createRingTone } from '@/lib/messenger/ringTone';
 
 interface Props {
   call: CallSignalRow;
@@ -15,6 +16,21 @@ interface Props {
 
 export default function IncomingCallToast({ call, onAccept, onDecline, stackIndex = 0 }: Props) {
   const [callerName, setCallerName] = useState<string>('Someone');
+
+  // Play incoming ringtone sound
+  useEffect(() => {
+    console.log('[CALL] Playing incoming call ringtone...');
+    const ring = createRingTone();
+    if (ring) {
+      ring.start();
+    }
+    return () => {
+      if (ring) {
+        console.log('[CALL] Stopping incoming call ringtone');
+        ring.stop();
+      }
+    };
+  }, []);
 
   useEffect(() => {
     let cancelled = false;

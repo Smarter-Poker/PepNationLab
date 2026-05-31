@@ -112,30 +112,7 @@ export async function POST(req: NextRequest) {
     console.error('[mark-paid] messenger notification error:', err);
   }
 
-  // ── 7. Notify admins (awaited) ─────────────────────────────────
-  try {
-    const { data: admins } = await svc
-      .from('profiles')
-      .select('id')
-      .eq('role', 'admin');
-
-    if (admins && admins.length > 0) {
-      const shortId = orderId.slice(0, 8).toUpperCase();
-      const totalStr = Number(order.total).toFixed(2);
-
-      const notifications = admins.map((admin) => ({
-        user_id: admin.id,
-        title: 'Order Ready For Approval',
-        body: `Order #${shortId} ($${totalStr}) — Payment verified by agent. Ready for fulfillment approval.`,
-        type: 'system',
-        url: '/admin/orders',
-      }));
-
-      await svc.from('notifications').insert(notifications);
-    }
-  } catch (err) {
-    console.error('[mark-paid] admin notification error:', err);
-  }
+  // ── 7. Admin notification removed (moved to approve/route.ts) ──
 
   return NextResponse.json({
     success: true,
