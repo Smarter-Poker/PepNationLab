@@ -84,7 +84,7 @@ export default function AdminAuditClient({ initialRows, initialFilters, availabl
             <option key={a} value={a}>{a}</option>
           ))}
         </select>
-        <button className="btn btn-primary btn-sm" disabled={busy} onClick={applyFilters}>
+        <button className="btn-neon-cyan" style={{ padding: '6px 12px', fontSize: '0.75rem' }} disabled={busy} onClick={applyFilters}>
           {busy ? 'Loading…' : 'Filter'}
         </button>
       </div>
@@ -135,7 +135,7 @@ export default function AdminAuditClient({ initialRows, initialFilters, availabl
       </div>
       {hasMore && (
         <div style={{ marginTop: 'var(--space-4)', textAlign: 'center' }}>
-          <button className="btn btn-secondary btn-sm" disabled={busy} onClick={() => load()}>
+          <button className="btn-silver" style={{ padding: '6px 12px', fontSize: '0.75rem' }} disabled={busy} onClick={() => load()}>
             {busy ? 'Loading…' : 'Load More'}
           </button>
         </div>
