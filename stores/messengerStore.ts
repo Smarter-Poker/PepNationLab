@@ -17,6 +17,7 @@ interface MessengerState {
   removeMessage: (convId: string, msgId: string) => void;
   setLoadingConversations: (loading: boolean) => void;
   setLoadingMessages: (convId: string, loading: boolean) => void;
+  updateConversationSnippet: (m: { conversation_id: string; text: string | null; message_type: string; created_at: string }, incoming: boolean) => void;
   totalUnread: () => number;
 }
 
@@ -54,5 +55,25 @@ export const useMessengerStore = create<MessengerState>((set, get) => ({
     set((s) => ({
       loadingMessages: { ...s.loadingMessages, [convId]: loading },
     })),
+  updateConversationSnippet: (m, incoming) =>
+    set((s) => {
+      const idx = s.conversations.findIndex((c) => c.conversation_id === m.conversation_id);
+      if (idx === -1) return s;
+      const conv = s.conversations[idx];
+      const isActive = s.activeConversationId === m.conversation_id;
+      
+      const updatedConv = {
+        ...conv,
+        last_message_text: m.text ?? (m.message_type !== 'text' ? `[${m.message_type}]` : 'No Messages Yet'),
+        last_message_type: m.message_type,
+        last_message_at: m.created_at,
+        unread_count: (incoming && !isActive) ? (conv.unread_count ?? 0) + 1 : conv.unread_count,
+      };
+
+      const newList = [...s.conversations];
+      newList.splice(idx, 1);
+      newList.unshift(updatedConv);
+      return { conversations: newList };
+    }),
   totalUnread: () => get().conversations.reduce((sum, c) => sum + (c.unread_count ?? 0), 0),
 }));

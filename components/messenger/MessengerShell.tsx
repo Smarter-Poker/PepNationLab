@@ -291,7 +291,9 @@ export default function MessengerShell({ userId }: Props) {
       }
     }
     const ch = subscribeMyIncomingMessages(userId, (m) => {
-      // Fire-and-forget; maybeNotify is async because of the sender lookup.
+      // 1. Update the sidebar conversation list snippet and bump to top
+      useMessengerStore.getState().updateConversationSnippet(m, true);
+      // 2. Fire-and-forget OS notification
       void maybeNotify(m);
     });
     return () => unsubscribe(ch);

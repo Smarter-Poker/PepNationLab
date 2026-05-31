@@ -220,6 +220,10 @@ export default function MessageComposer({ conversationId, selfId, replyTo, onCle
       const json = (await res.json()) as { message: Message };
       removeMessage(conversationId, optimistic.id);
       appendMessage(conversationId, json.message);
+      
+      // Update sidebar snippet for sent message
+      useMessengerStore.getState().updateConversationSnippet(json.message, false);
+
       setPendingExpirySeconds(null);
       if (broadcastNewMessage) broadcastNewMessage(json.message);
     } catch {
