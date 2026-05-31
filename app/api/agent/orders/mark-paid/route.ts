@@ -76,7 +76,6 @@ export async function POST(req: NextRequest) {
     .from('orders')
     .update({
       status: nextStatus,
-      agent_approved_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     })
     .eq('id', orderId);
