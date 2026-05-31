@@ -259,36 +259,115 @@ export function subscribeCallSignals(userId: string, handlers: CallSignalHandler
   return ch;
 }
 
+// audit15 fix-12 (S7): per-target broadcast channel pool. Each broadcastCallSignal
+// previously built a fresh channel, paid the subscribe handshake, sent one
+// message, then scheduled removeChannel 1.5s later. On a multi-target burst
+// (group accept, rapid hangup+broadcast, multiple peers) this stacked up
+// channels and added handshake latency to the most timing-sensitive signal
+// (call_accepted, which the caller is watching for to transition into the
+// LiveKit room).
+//
+// Pool keeps up to MAX_POOL warm subscribed channels per target user, evicting
+// the least-recently-used and removing entries that haven't been touched in
+// IDLE_MS. The sweep is a single setTimeout per call instead of one per send.
+const CHANNEL_POOL_MAX = 32;
+const CHANNEL_POOL_IDLE_MS = 60_000;
+
+interface PoolEntry {
+  channel: RealtimeChannel;
+  subscribed: Promise<void>;
+  lastUsed: number;
+}
+
+const channelPool = new Map<string, PoolEntry>();
+let sweepHandle: ReturnType<typeof setTimeout> | null = null;
+
+function scheduleSweep() {
+  if (sweepHandle) return;
+  sweepHandle = setTimeout(() => {
+    sweepHandle = null;
+    const now = Date.now();
+    for (const [key, entry] of channelPool.entries()) {
+      if (now - entry.lastUsed > CHANNEL_POOL_IDLE_MS) {
+        try { void supabase.removeChannel(entry.channel); } catch {}
+        channelPool.delete(key);
+      }
+    }
+    if (channelPool.size > 0) scheduleSweep();
+  }, CHANNEL_POOL_IDLE_MS + 1_000);
+}
+
+function evictIfFull() {
+  if (channelPool.size < CHANNEL_POOL_MAX) return;
+  // Drop the LRU entry.
+  let oldestKey: string | null = null;
+  let oldestT = Infinity;
+  for (const [k, e] of channelPool.entries()) {
+    if (e.lastUsed < oldestT) {
+      oldestT = e.lastUsed;
+      oldestKey = k;
+    }
+  }
+  if (oldestKey) {
+    const e = channelPool.get(oldestKey);
+    if (e) {
+      try { void supabase.removeChannel(e.channel); } catch {}
+      channelPool.delete(oldestKey);
+    }
+  }
+}
+
+function getOrCreateChannel(targetUserId: string): PoolEntry {
+  const existing = channelPool.get(targetUserId);
+  if (existing) {
+    existing.lastUsed = Date.now();
+    return existing;
+  }
+  evictIfFull();
+  const channel = supabase.channel(`call-signal:${targetUserId}`);
+  const subscribed = new Promise<void>((resolve, reject) => {
+    const timeout = setTimeout(() => reject(new Error('Channel subscription timeout')), 5000);
+    channel.subscribe((status) => {
+      if (status === 'SUBSCRIBED') {
+        clearTimeout(timeout);
+        resolve();
+      } else if (status === 'CHANNEL_ERROR') {
+        clearTimeout(timeout);
+        reject(new Error('Channel error'));
+      }
+    });
+  });
+  const entry: PoolEntry = { channel, subscribed, lastUsed: Date.now() };
+  channelPool.set(targetUserId, entry);
+  scheduleSweep();
+  return entry;
+}
+
 export async function broadcastCallSignal(
   targetUserId: string,
   event: 'incoming_call' | 'call_accepted' | 'call_declined' | 'call_ended',
   payload: any,
 ): Promise<void> {
   console.log(`[REALTIME] broadcasting event ${event} to target ${targetUserId}`);
-  const ch = supabase.channel(`call-signal:${targetUserId}`);
   try {
-    await new Promise<void>((resolve, reject) => {
-      const timeout = setTimeout(() => reject(new Error('Channel subscription timeout')), 5000);
-      ch.subscribe((status) => {
-        if (status === 'SUBSCRIBED') {
-          clearTimeout(timeout);
-          resolve();
-        } else if (status === 'CHANNEL_ERROR') {
-          clearTimeout(timeout);
-          reject(new Error('Channel error'));
-        }
-      });
-    });
-
-    await ch.send({
+    const entry = getOrCreateChannel(targetUserId);
+    try {
+      await entry.subscribed;
+    } catch (subErr) {
+      // Subscription failed permanently — drop this entry so the next call
+      // can retry from scratch instead of awaiting a rejected promise.
+      try { void supabase.removeChannel(entry.channel); } catch {}
+      channelPool.delete(targetUserId);
+      throw subErr;
+    }
+    entry.lastUsed = Date.now();
+    await entry.channel.send({
       type: 'broadcast',
       event,
       payload,
     });
-  } finally {
-    setTimeout(() => {
-      void supabase.removeChannel(ch);
-    }, 1500);
+  } catch (err) {
+    console.warn(`[REALTIME] broadcastCallSignal failed for ${event}:`, err);
   }
 }
 
