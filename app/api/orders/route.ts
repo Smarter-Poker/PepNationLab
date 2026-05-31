@@ -443,8 +443,14 @@ export async function POST(request: NextRequest) {
       product_id: item.product_id,
       quantity: item.quantity,
     }));
+    const isAgentShip = agentProfile && !isAgentSelfBuy && fulfillmentMethod === 'ship';
+    const inventoryReserveParams = {
+      p_items: inventoryItems,
+      p_agent_id: isAgentShip ? agentProfile.id : null,
+      p_is_agent_ship: !!isAgentShip
+    };
     const { error: reserveErr } = await serviceSupabase
-      .rpc('reserve_inventory', { p_items: inventoryItems });
+      .rpc('reserve_inventory', inventoryReserveParams);
     if (reserveErr) {
       const isStock = /Insufficient inventory/i.test(reserveErr.message);
       return NextResponse.json(
@@ -467,7 +473,7 @@ export async function POST(request: NextRequest) {
     // HARD RULE: Agents CANNOT use coupons on their own self-buy orders.
     if (isAgentSelfBuy && trimmedCouponCode) {
       // Rollback: release the inventory reservation.
-      await serviceSupabase.rpc('release_inventory', { p_items: inventoryItems });
+      await serviceSupabase.rpc('release_inventory', inventoryReserveParams);
       return NextResponse.json(
         { error: 'Coupon Codes Cannot Be Applied To Agent Self-Buy Orders.' },
         { status: 403 }
@@ -477,7 +483,7 @@ export async function POST(request: NextRequest) {
     if (trimmedCouponCode) {
       const couponAgentId = profile.referring_agent_id ?? agentProfile?.id ?? null;
       if (!couponAgentId) {
-        await serviceSupabase.rpc('release_inventory', { p_items: inventoryItems });
+        await serviceSupabase.rpc('release_inventory', inventoryReserveParams);
         return NextResponse.json(
           { error: 'Coupon Codes Are Only Valid For Orders Placed Through A Referring Agent.' },
           { status: 400 }
@@ -492,7 +498,7 @@ export async function POST(request: NextRequest) {
 
       if (redeemError) {
         console.error('Coupon RPC Failed:', redeemError);
-        await serviceSupabase.rpc('release_inventory', { p_items: inventoryItems });
+        await serviceSupabase.rpc('release_inventory', inventoryReserveParams);
         return NextResponse.json(
           { error: 'Coupon Invalid Or Limit Reached' },
           { status: 422 }
@@ -501,7 +507,7 @@ export async function POST(request: NextRequest) {
 
       const row = Array.isArray(redeem) ? redeem[0] : redeem;
       if (!row?.coupon_id) {
-        await serviceSupabase.rpc('release_inventory', { p_items: inventoryItems });
+        await serviceSupabase.rpc('release_inventory', inventoryReserveParams);
         return NextResponse.json(
           { error: 'Coupon Invalid Or Limit Reached' },
           { status: 422 }
@@ -642,7 +648,7 @@ export async function POST(request: NextRequest) {
         if (existing) {
           // Replay: release the pre-reserved resources since the replayed order
           // already owns them from the original request.
-          await serviceSupabase.rpc('release_inventory', { p_items: inventoryItems });
+          await serviceSupabase.rpc('release_inventory', inventoryReserveParams);
 
           if (appliedCouponId) await serviceSupabase.rpc('unreedeem_coupon', { p_coupon_id: appliedCouponId });
           return NextResponse.json({
@@ -654,7 +660,7 @@ export async function POST(request: NextRequest) {
         }
       }
       // Order insert failed: roll back all pre-committed resources.
-      await serviceSupabase.rpc('release_inventory', { p_items: inventoryItems });
+      await serviceSupabase.rpc('release_inventory', inventoryReserveParams);
 
       if (appliedCouponId) await serviceSupabase.rpc('unreedeem_coupon', { p_coupon_id: appliedCouponId });
       console.error('Database Order Write Error:', orderError);
@@ -698,7 +704,7 @@ export async function POST(request: NextRequest) {
       // Store credit was pre-deducted — release so balance is restored.
       console.error('Database Order Items Write Error:', JSON.stringify(itemsError));
       await serviceSupabase.from('orders').delete().eq('id', order.id);
-      await serviceSupabase.rpc('release_inventory', { p_items: inventoryItems });
+      await serviceSupabase.rpc('release_inventory', inventoryReserveParams);
       if (appliedCouponId) await serviceSupabase.rpc('unreedeem_coupon', { p_coupon_id: appliedCouponId });
 
       return NextResponse.json({ error: `An unexpected error occurred: ${itemsError.message || JSON.stringify(itemsError)}` }, { status: 500 });

@@ -97,29 +97,58 @@ async function markConversationRead(conversationId: string, lastReadMessageId: s
 
 type PushBannerState = 'hidden' | 'default' | 'denied';
 
+let globalAudioCtx: AudioContext | null = null;
+let audioInitDone = false;
+
+function initAudio() {
+  if (typeof window === 'undefined' || audioInitDone) return;
+  try {
+    const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+    if (AudioContextClass) {
+      globalAudioCtx = new AudioContextClass();
+    }
+    audioInitDone = true;
+  } catch {
+    // Ignore
+  }
+}
+
+if (typeof document !== 'undefined') {
+  const handleInteraction = () => {
+    initAudio();
+    if (globalAudioCtx && globalAudioCtx.state === 'suspended') {
+      globalAudioCtx.resume().catch(() => {});
+    }
+    document.removeEventListener('pointerdown', handleInteraction);
+    document.removeEventListener('keydown', handleInteraction);
+  };
+  document.addEventListener('pointerdown', handleInteraction);
+  document.addEventListener('keydown', handleInteraction);
+}
+
 function playPopSound() {
   if (typeof window === 'undefined') return;
   try {
     if (navigator.vibrate) navigator.vibrate(20);
-    const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
-    if (!AudioContext) return;
-    const ctx = new AudioContext();
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
+    if (!globalAudioCtx) return;
+    if (globalAudioCtx.state === 'suspended') return;
+    
+    const osc = globalAudioCtx.createOscillator();
+    const gain = globalAudioCtx.createGain();
     
     osc.type = 'sine';
-    osc.frequency.setValueAtTime(800, ctx.currentTime);
-    osc.frequency.exponentialRampToValueAtTime(300, ctx.currentTime + 0.1);
+    osc.frequency.setValueAtTime(800, globalAudioCtx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(300, globalAudioCtx.currentTime + 0.1);
     
-    gain.gain.setValueAtTime(0, ctx.currentTime);
-    gain.gain.linearRampToValueAtTime(0.1, ctx.currentTime + 0.02);
-    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.1);
+    gain.gain.setValueAtTime(0, globalAudioCtx.currentTime);
+    gain.gain.linearRampToValueAtTime(0.1, globalAudioCtx.currentTime + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.01, globalAudioCtx.currentTime + 0.1);
     
     osc.connect(gain);
-    gain.connect(ctx.destination);
+    gain.connect(globalAudioCtx.destination);
     
     osc.start();
-    osc.stop(ctx.currentTime + 0.1);
+    osc.stop(globalAudioCtx.currentTime + 0.1);
   } catch {
     // Ignore autoplay or audio context errors
   }
@@ -564,6 +593,12 @@ export default function MessagePane({ userId, activeCall, setActiveCall }: Props
     
     if (node) observerRef.current.observe(node);
   }, [loadingMore, hasMoreMessages, activeId, messagesByConv, handleLoadMore]);
+
+  useEffect(() => {
+    return () => {
+      if (observerRef.current) observerRef.current.disconnect();
+    };
+  }, []);
 
   useEffect(() => {
     if (!activeId) return;
