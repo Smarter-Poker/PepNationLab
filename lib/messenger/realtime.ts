@@ -265,20 +265,12 @@ export function subscribeMyIncomingMessages(
   allowConversationIds?: Set<string>,
 ): RealtimeChannel {
   const ch = supabase.channel(`user_notify:${userId}`);
-  ch.on(
-    'postgres_changes',
-    {
-      event: 'INSERT',
-      schema: 'public',
-      table: 'messenger_messages',
-    },
-    (payload) => {
-      const m = payload.new as IncomingMessageNotification & { sender_id: string };
-      if (!m) return;
-      if (allowConversationIds && !allowConversationIds.has(m.conversation_id)) return;
-      onInsert(m);
-    },
-  );
+  ch.on('broadcast', { event: 'new_message_notify' }, (payload) => {
+    const m = payload.payload?.message as IncomingMessageNotification & { sender_id: string };
+    if (!m) return;
+    if (allowConversationIds && !allowConversationIds.has(m.conversation_id)) return;
+    onInsert(m);
+  });
   ch.subscribe();
   return ch;
 }
