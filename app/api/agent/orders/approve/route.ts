@@ -167,7 +167,7 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    if (order.agent_id) {
+    if (order.agent_id && order.fulfillment_method === 'ship') {
       for (const item of items) {
         if (!item.product_id) continue;
         const qtyRequired = Number(item.quantity) || 0;
