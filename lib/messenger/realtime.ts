@@ -34,7 +34,11 @@ export function subscribeMessages(conversationId: string, handlers: MessageHandl
     (payload) => handlers.onUpdate?.(payload.new as Message),
   );
   ch.on('broadcast', { event: 'new_message' }, (payload) => {
-    if (payload.payload) handlers.onInsert?.(payload.payload as Message);
+    if (payload.payload && (payload.payload as any).message) {
+      handlers.onInsert?.((payload.payload as any).message as Message);
+    } else if (payload.payload) {
+      handlers.onInsert?.(payload.payload as Message); // Fallback for local broadcast
+    }
   });
   ch.subscribe();
   return {
