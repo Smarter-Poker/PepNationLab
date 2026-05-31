@@ -78,7 +78,12 @@ export async function POST(req: NextRequest) {
     const at = new AccessToken(apiKey, apiSecret, {
       identity: user.id,
       name: user.email ?? user.id,
-      ttl: '1h',
+      // audit15 fix-14 (S4): 6h TTL covers every plausible call length.
+      // The room itself is single-use per call (livekit_room is a fresh
+      // crypto UUID), so a 6h credential cannot be replayed against any
+      // other call. The previous 1h limit produced an unexpected media
+      // drop at the 60-minute mark for any long session.
+      ttl: '6h',
     });
     at.addGrant({
       roomJoin: true,
