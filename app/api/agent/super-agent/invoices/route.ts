@@ -17,24 +17,27 @@ export async function GET(req: NextRequest) {
     if (!gate.ok) return gate.response;
 
     const supabase = await createServiceClient();
-    const superAgentId = gate.user.id;
+    const agentId = gate.user.id;
 
     // Verify caller is a Super Agent
-    const { data: superAgentProfile } = await supabase
+    const { data: profile } = await supabase
       .from('profiles')
       .select('is_super_agent')
-      .eq('id', superAgentId)
+      .eq('id', agentId)
       .single();
 
-    if (!superAgentProfile?.is_super_agent) {
-      return NextResponse.json({ error: 'Only Super Agents can view Sub-Agent invoices' }, { status: 403 });
-    }
-
-    const { data: invoices, error } = await supabase
+    let query = supabase
       .from('sub_agent_invoices')
       .select('*, profiles!sub_agent_invoices_sub_agent_id_fkey(full_name, email)')
-      .eq('super_agent_id', superAgentId)
       .order('week_start', { ascending: false });
+
+    if (profile?.is_super_agent) {
+      query = query.eq('super_agent_id', agentId);
+    } else {
+      query = query.eq('sub_agent_id', agentId);
+    }
+
+    const { data: invoices, error } = await query;
 
     if (error) {
       return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
