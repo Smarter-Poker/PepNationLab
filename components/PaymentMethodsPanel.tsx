@@ -26,7 +26,7 @@ export const PAYMENT_METHODS = [
     key: 'venmo',
     label: 'Venmo',
     placeholder: '@Username (E.g. @YourName)',
-    icon: <img src="/payment-logos/venmo.svg" alt="Venmo" style={{ height: 20, width: 'auto', objectFit: 'contain' }} />,
+    icon: <img src="/payment-logos/venmo.svg" alt="Venmo" style={{ height: 28, width: 'auto', objectFit: 'contain' }} />,
     color: '#3D95CE',
   },
   {
@@ -40,14 +40,14 @@ export const PAYMENT_METHODS = [
     key: 'apple_cash',
     label: 'Apple Cash',
     placeholder: 'Phone Number Or Apple ID Email',
-    icon: <img src="/payment-logos/apple_cash.svg" alt="Apple Cash" style={{ height: 26, width: 'auto', objectFit: 'contain' }} />,
+    icon: <img src="/payment-logos/apple_cash.svg" alt="Apple Cash" style={{ height: 28, width: 'auto', objectFit: 'contain' }} />,
     color: '#E0E0E0',
   },
   {
     key: 'google_wallet',
     label: 'Google Wallet',
     placeholder: 'Gmail Address',
-    icon: <img src="/payment-logos/google_wallet.svg" alt="Google Wallet" style={{ height: 26, width: 'auto', objectFit: 'contain' }} />,
+    icon: <img src="/payment-logos/google_wallet.svg" alt="Google Wallet" style={{ height: 28, width: 'auto', objectFit: 'contain' }} />,
     color: '#4285F4',
   },
   {
@@ -61,7 +61,7 @@ export const PAYMENT_METHODS = [
     key: 'chime',
     label: 'Chime',
     placeholder: 'Chime Username Or Link',
-    icon: <img src="/payment-logos/chime.svg" alt="Chime" style={{ height: 20, width: 'auto', objectFit: 'contain' }} />,
+    icon: <img src="/payment-logos/chime.svg" alt="Chime" style={{ height: 28, width: 'auto', objectFit: 'contain' }} />,
     color: '#3ABA78',
   },
 ] as const;
@@ -174,13 +174,8 @@ export default function PaymentMethodsPanel({
   const enabledCount = PAYMENT_METHODS.filter(m => methods[m.key].enabled).length;
 
   return (
-    <div className="card-metal" style={{
-      padding: 'var(--space-6)', marginTop: 'var(--space-6)',
-      border: '2px solid rgba(192,184,168,0.4)',
-      boxShadow: '0 12px 40px rgba(0,0,0,0.6), inset 0 1px 2px rgba(255,255,255,0.1)',
-      borderRadius: '12px',
-      background: 'linear-gradient(180deg, var(--surface-1) 0%, var(--surface-2) 100%)'
-    }}>
+    <div className="metal-frame" style={{ marginTop: 'var(--space-6)' }}>
+      <div className="metal-content" style={{ padding: 'var(--space-8)' }}>
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 'var(--space-2)', gap: 'var(--space-4)', flexWrap: 'wrap' }}>
         <div>
           <h4 style={{ color: 'var(--teal)', marginBottom: 'var(--space-1)' }}>
@@ -224,11 +219,12 @@ export default function PaymentMethodsPanel({
               style={{
                 borderRadius: 'var(--radius-lg)',
                 border: state.enabled
-                  ? `1px solid rgba(192,184,168,0.35)`
-                  : '1px solid rgba(255,255,255,0.06)',
+                  ? `1px solid rgba(192,184,168,0.4)`
+                  : '1px solid rgba(255,255,255,0.08)',
                 background: state.enabled
-                  ? 'rgba(192,184,168,0.05)'
-                  : 'rgba(255,255,255,0.02)',
+                  ? 'rgba(192,184,168,0.06)'
+                  : 'var(--surface-3)',
+                boxShadow: state.enabled ? 'inset 0 1px 1px rgba(0,0,0,0.2)' : 'none',
                 overflow: 'hidden',
                 transition: 'all 0.2s ease',
               }}
@@ -324,9 +320,11 @@ export default function PaymentMethodsPanel({
                     onChange={e => setHandle(method.key, e.target.value)}
                     onClick={e => e.stopPropagation()}
                     style={{
+                      background: 'rgba(255,255,255,0.05)',
+                      boxShadow: 'inset 0 1px 1px rgba(0,0,0,0.2)',
                       borderColor: hasError
                         ? 'var(--red)'
-                        : 'rgba(192,184,168,0.25)',
+                        : 'rgba(192,184,168,0.4)',
                     }}
                     autoComplete="off"
                     aria-label={`${method.label} Contact Info`}
@@ -348,23 +346,18 @@ export default function PaymentMethodsPanel({
         <button
           onClick={handleSave}
           disabled={saving}
+          className="btn-neon-cyan"
           style={{
             minWidth: 160,
-            background: 'linear-gradient(180deg, rgba(0,196,188,1) 0%, rgba(0,140,135,1) 100%)',
-            border: '1px solid #00C4BC',
-            boxShadow: '0 4px 12px rgba(0,196,188,0.3), inset 0 1px 0 rgba(255,255,255,0.3)',
-            color: '#fff',
-            textShadow: '0 1px 2px rgba(0,0,0,0.2)',
-            fontWeight: 600,
-            borderRadius: '8px',
             padding: '10px 24px',
-            transition: 'all 0.2s ease',
+            fontSize: '1rem',
             cursor: saving ? 'not-allowed' : 'pointer',
             opacity: saving ? 0.7 : 1,
           }}
         >
           {saving ? 'Saving...' : 'Save Payment Methods'}
         </button>
+      </div>
       </div>
     </div>
   );
