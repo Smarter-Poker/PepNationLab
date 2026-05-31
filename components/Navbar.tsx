@@ -478,7 +478,7 @@ export default function Navbar({ onMenuClick, isOpen, title }: { onMenuClick?: (
         {/* Navigation links */}
         <nav style={{ flex: 1, padding: 'var(--space-3) 0' }}>
           {/* Common links */}
-          <DrawerLink href="/" label="Home" onClick={closeDrawer}
+          <DrawerLink href={user ? dashLink : "/"} label="Home" onClick={closeDrawer}
             icon={<svg {...IP}><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>}
           />
           {/* Products link — hidden for researchers (they use their agent's storefront) */}

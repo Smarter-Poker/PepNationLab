@@ -227,7 +227,7 @@ export default async function OrderDetailPage(
   const handleForMethod = paymentHandles?.[order.payment_method] || null;
 
   return (
-    <PageShell>
+    <PageShell hideFooter>
       <section className="section">
         <div className="container-sm">
           <div style={{ marginBottom: 'var(--space-4)' }}>

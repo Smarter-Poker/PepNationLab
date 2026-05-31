@@ -6,14 +6,14 @@ import FooterSection from './FooterSection';
  * and the shared Footer. Used by the informational and legal pages so
  * they stay visually consistent with the homepage.
  */
-export default function PageShell({ children }: { children: React.ReactNode }) {
+export default function PageShell({ children, hideFooter = false }: { children: React.ReactNode; hideFooter?: boolean }) {
   return (
     <>
       <Navbar />
       <main className="page-top-padding">
         {children}
-        <FooterSection />
       </main>
+      {!hideFooter && <FooterSection />}
     </>
   );
 }

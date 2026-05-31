@@ -26,7 +26,7 @@ export const PAYMENT_METHODS = [
     key: 'venmo',
     label: 'Venmo',
     placeholder: '@Username (E.g. @YourName)',
-    icon: <img src="/payment-logos/venmo.svg" alt="Venmo" style={{ height: 32, width: 'auto', objectFit: 'contain', minWidth: 32 }} />,
+    icon: <img src="/payment-logos/venmo.svg" alt="Venmo" style={{ height: 56, width: 'auto', objectFit: 'contain', minWidth: 56 }} />,
     color: '#3D95CE',
   },
   {
@@ -40,14 +40,14 @@ export const PAYMENT_METHODS = [
     key: 'apple_cash',
     label: 'Apple Cash',
     placeholder: 'Phone Number Or Apple ID Email',
-    icon: <img src="/payment-logos/apple_cash.svg" alt="Apple Cash" style={{ height: 32, width: 'auto', objectFit: 'contain', minWidth: 32 }} />,
+    icon: <img src="/payment-logos/apple_cash.svg" alt="Apple Cash" style={{ height: 56, width: 'auto', objectFit: 'contain', minWidth: 56 }} />,
     color: '#E0E0E0',
   },
   {
     key: 'google_wallet',
     label: 'Google Wallet',
     placeholder: 'Gmail Address',
-    icon: <img src="/payment-logos/google_wallet.svg" alt="Google Wallet" style={{ height: 32, width: 'auto', objectFit: 'contain', minWidth: 32 }} />,
+    icon: <img src="/payment-logos/google_wallet.svg" alt="Google Wallet" style={{ height: 56, width: 'auto', objectFit: 'contain', minWidth: 56 }} />,
     color: '#4285F4',
   },
   {
@@ -61,7 +61,7 @@ export const PAYMENT_METHODS = [
     key: 'chime',
     label: 'Chime',
     placeholder: 'Chime Username Or Link',
-    icon: <img src="/payment-logos/chime.svg" alt="Chime" style={{ height: 32, width: 'auto', objectFit: 'contain', minWidth: 32 }} />,
+    icon: <img src="/payment-logos/chime.svg" alt="Chime" style={{ height: 56, width: 'auto', objectFit: 'contain', minWidth: 56 }} />,
     color: '#3ABA78',
   },
 ] as const;
