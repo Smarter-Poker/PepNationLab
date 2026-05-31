@@ -108,7 +108,7 @@ export default function AgentInventory({ agentId }: { agentId: string }) {
     const supabase = createClient();
     const { data: profile, error: profileErr } = await supabase
       .from('agent_profiles')
-      .select('warehouse_address')
+      .select('warehouse_address, display_name')
       .eq('user_id', agentId)
       .maybeSingle();
     if (profileErr) {
@@ -124,20 +124,23 @@ export default function AgentInventory({ agentId }: { agentId: string }) {
 
     setRestockStatus('Processing Wholesale Restock...');
     try {
-      const res = await fetch('/api/agent/restock', {
+      const res = await fetch('/api/orders', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          items: suggestedCart,
+          items: suggestedCart.map(item => ({ id: item.id, quantity: item.quantity })),
           fulfillmentMethod: 'ship',
           paymentMethod: 'zelle',
           shippingAddress: {
+            fullName: profile?.display_name || 'Agent Restock',
             street: wh.street1,
+            suite: wh.street2 || '',
             city: wh.city,
             state: wh.state,
-            zipCode: wh.zip,
-            country: 'US'
-          }
+            zip: wh.zip,
+            phone: ''
+          },
+          wholesale: true
         })
       });
       const json = await res.json();

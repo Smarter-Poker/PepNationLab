@@ -116,7 +116,6 @@ export async function GET(req: Request) {
           .select('id, shipping_cost, order_items(product_id, quantity, unit_super_agent_cost, unit_cost_price)')
           .eq('agent_id', subAgent.id)
           .neq('status', 'cancelled')
-          .eq('is_wholesale_restock', false)
           .gte('created_at', rangeStart)
           .lt('created_at', rangeEndExclusive);
 
