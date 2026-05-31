@@ -11,7 +11,7 @@ interface MessageHandlers {
   onDelete?: (id: string) => void;
 }
 
-export function subscribeMessages(conversationId: string, handlers: MessageHandlers): RealtimeChannel {
+export function subscribeMessages(conversationId: string, handlers: MessageHandlers): { channel: RealtimeChannel; broadcastNewMessage: (m: Message) => void } {
   const ch = supabase.channel(`chat:${conversationId}`);
   ch.on(
     'postgres_changes',
@@ -33,8 +33,16 @@ export function subscribeMessages(conversationId: string, handlers: MessageHandl
     },
     (payload) => handlers.onUpdate?.(payload.new as Message),
   );
+  ch.on('broadcast', { event: 'new_message' }, (payload) => {
+    if (payload.payload) handlers.onInsert?.(payload.payload as Message);
+  });
   ch.subscribe();
-  return ch;
+  return {
+    channel: ch,
+    broadcastNewMessage: (m: Message) => {
+      void ch.send({ type: 'broadcast', event: 'new_message', payload: m });
+    }
+  };
 }
 
 interface ReactionHandlers {
@@ -97,28 +105,17 @@ export function subscribeTyping(
   selfId: string,
   onEvent: (e: TypingEvent) => void,
 ): { channel: RealtimeChannel; broadcast: (isTyping: boolean) => void } {
-  const ch = supabase.channel(`mt:${conversationId}`, {
-    config: { presence: { key: selfId } },
-  });
-  ch.on('presence', { event: 'sync' }, () => {
-    const state = ch.presenceState();
-    for (const key in state) {
-      if (key === selfId) continue; // ignore self
-      const rows = state[key] as any[];
-      if (rows && rows.length > 0) {
-        onEvent({ userId: key, isTyping: !!rows[0].isTyping, at: Date.now() });
-      }
+  const ch = supabase.channel(`mt:${conversationId}`);
+  ch.on('broadcast', { event: 'typing' }, (payload) => {
+    if (payload.payload && payload.payload.userId !== selfId) {
+      onEvent({ userId: payload.payload.userId, isTyping: !!payload.payload.isTyping, at: payload.payload.at });
     }
   });
-  ch.subscribe(async (status) => {
-    if (status === 'SUBSCRIBED') {
-      await ch.track({ isTyping: false });
-    }
-  });
+  ch.subscribe();
   return {
     channel: ch,
     broadcast: (isTyping: boolean) => {
-      void ch.track({ isTyping });
+      void ch.send({ type: 'broadcast', event: 'typing', payload: { userId: selfId, isTyping, at: Date.now() } });
     },
   };
 }

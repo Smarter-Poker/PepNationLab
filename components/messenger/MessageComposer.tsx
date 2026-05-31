@@ -19,6 +19,7 @@ interface Props {
   replyTo: Message | null;
   onClearReply: () => void;
   onTyping?: (isTyping: boolean) => void;
+  broadcastNewMessage?: (m: Message) => void;
 }
 
 const MAX_LEN = 2000;
@@ -58,7 +59,7 @@ function formatExpirySummary(seconds: number | null): string {
   return `Expires In ${Math.round(seconds / 86_400)} Days`;
 }
 
-export default function MessageComposer({ conversationId, selfId, replyTo, onClearReply, onTyping }: Props) {
+export default function MessageComposer({ conversationId, selfId, replyTo, onClearReply, onTyping, broadcastNewMessage }: Props) {
   const [text, setText] = useState('');
   const [sending, setSending] = useState(false);
   const [showEmoji, setShowEmoji] = useState(false);
@@ -216,6 +217,7 @@ export default function MessageComposer({ conversationId, selfId, replyTo, onCle
       removeMessage(conversationId, optimistic.id);
       appendMessage(conversationId, json.message);
       setPendingExpirySeconds(null);
+      if (broadcastNewMessage) broadcastNewMessage(json.message);
     } catch {
       updateMessage(conversationId, { ...optimistic, metadata: { ...optimistic.metadata, failed: true } });
       toast('Network Error');

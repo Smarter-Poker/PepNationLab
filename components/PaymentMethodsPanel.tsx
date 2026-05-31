@@ -12,56 +12,56 @@ export const PAYMENT_METHODS = [
     key: 'zelle',
     label: 'Zelle',
     placeholder: 'Phone Number Or Email',
-    icon: <img src="/payment-logos/zelle.svg" alt="Zelle" style={{ height: 32, width: 'auto', objectFit: 'contain', minWidth: 32 }} />,
+    icon: <img src="/payment-logos/zelle.svg" alt="Zelle" style={{ height: 28, width: 'auto', objectFit: 'contain' }} />,
     color: '#6B35C4',
   },
   {
     key: 'cashapp',
     label: 'Cash App',
     placeholder: '$Cashtag (E.g. $YourName)',
-    icon: <img src="/payment-logos/cashapp.svg" alt="Cash App" style={{ height: 32, width: 'auto', objectFit: 'contain', minWidth: 32 }} />,
+    icon: <img src="/payment-logos/cashapp.svg" alt="Cash App" style={{ height: 28, width: 'auto', objectFit: 'contain' }} />,
     color: '#00D632',
   },
   {
     key: 'venmo',
     label: 'Venmo',
     placeholder: '@Username (E.g. @YourName)',
-    icon: <img src="/payment-logos/venmo.svg" alt="Venmo" style={{ height: 56, width: 'auto', objectFit: 'contain', minWidth: 56 }} />,
+    icon: <img src="/payment-logos/venmo.svg" alt="Venmo" style={{ height: 20, width: 'auto', objectFit: 'contain' }} />,
     color: '#3D95CE',
   },
   {
     key: 'paypal',
     label: 'PayPal',
     placeholder: 'Email Or @Username',
-    icon: <img src="/payment-logos/paypal.svg" alt="PayPal" style={{ height: 32, width: 'auto', objectFit: 'contain', minWidth: 32 }} />,
+    icon: <img src="/payment-logos/paypal.svg" alt="PayPal" style={{ height: 28, width: 'auto', objectFit: 'contain' }} />,
     color: '#003087',
   },
   {
     key: 'apple_cash',
     label: 'Apple Cash',
     placeholder: 'Phone Number Or Apple ID Email',
-    icon: <img src="/payment-logos/apple_cash.svg" alt="Apple Cash" style={{ height: 56, width: 'auto', objectFit: 'contain', minWidth: 56 }} />,
+    icon: <img src="/payment-logos/apple_cash.svg" alt="Apple Cash" style={{ height: 26, width: 'auto', objectFit: 'contain' }} />,
     color: '#E0E0E0',
   },
   {
     key: 'google_wallet',
     label: 'Google Wallet',
     placeholder: 'Gmail Address',
-    icon: <img src="/payment-logos/google_wallet.svg" alt="Google Wallet" style={{ height: 56, width: 'auto', objectFit: 'contain', minWidth: 56 }} />,
+    icon: <img src="/payment-logos/google_wallet.svg" alt="Google Wallet" style={{ height: 26, width: 'auto', objectFit: 'contain' }} />,
     color: '#4285F4',
   },
   {
     key: 'wise',
     label: 'Wise',
     placeholder: 'Email Or Wise Username',
-    icon: <img src="/payment-logos/wise.svg" alt="Wise" style={{ height: 32, width: 'auto', objectFit: 'contain', minWidth: 32 }} />,
+    icon: <img src="/payment-logos/wise.svg" alt="Wise" style={{ height: 28, width: 'auto', objectFit: 'contain' }} />,
     color: '#9FE870',
   },
   {
     key: 'chime',
     label: 'Chime',
     placeholder: 'Chime Username Or Link',
-    icon: <img src="/payment-logos/chime.svg" alt="Chime" style={{ height: 56, width: 'auto', objectFit: 'contain', minWidth: 56 }} />,
+    icon: <img src="/payment-logos/chime.svg" alt="Chime" style={{ height: 20, width: 'auto', objectFit: 'contain' }} />,
     color: '#3ABA78',
   },
 ] as const;
@@ -258,24 +258,25 @@ export default function PaymentMethodsPanel({
                   }}>
                     {method.icon}
                   </div>
-                  <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', flexWrap: 'wrap' }}>
                     <span style={{
                       fontWeight: 600,
                       fontSize: '0.92rem',
                       color: state.enabled ? 'var(--white)' : 'var(--grey-400)',
                       transition: 'color 0.2s',
+                      whiteSpace: 'nowrap'
                     }}>
                       {method.label}
                     </span>
                     {state.enabled && state.handle.trim() && (
-                      <div style={{ fontSize: '0.72rem', color: 'var(--teal)', marginTop: 1 }}>
-                        {state.handle}
-                      </div>
+                      <span style={{ fontSize: '0.85rem', color: 'var(--teal)', fontFamily: 'monospace' }}>
+                        - {state.handle}
+                      </span>
                     )}
                     {state.enabled && !state.handle.trim() && (
-                      <div style={{ fontSize: '0.72rem', color: 'var(--orange)', marginTop: 1 }}>
-                        Contact Info Required
-                      </div>
+                      <span style={{ fontSize: '0.8rem', color: 'var(--orange)' }}>
+                        - Contact Info Required
+                      </span>
                     )}
                   </div>
                 </div>

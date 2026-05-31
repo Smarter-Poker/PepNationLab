@@ -141,6 +141,7 @@ export default function MessagePane({ userId, activeCall, setActiveCall }: Props
   const typingExpiryRef = useRef<Record<string, number>>({});
   const typingSweeperRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const broadcastTypingRef = useRef<((isTyping: boolean) => void) | null>(null);
+  const broadcastMessageRef = useRef<((m: Message) => void) | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = useCallback((behavior: ScrollBehavior = 'auto') => {
@@ -427,7 +428,7 @@ export default function MessagePane({ userId, activeCall, setActiveCall }: Props
   useEffect(() => {
     if (!activeId) return;
 
-    const msgCh = subscribeMessages(activeId, {
+    const { channel: msgChannel, broadcastNewMessage } = subscribeMessages(activeId, {
       onInsert: (m) => {
         if (m.sender_id === userId) return;
         appendMessage(activeId, m);
@@ -436,6 +437,8 @@ export default function MessagePane({ userId, activeCall, setActiveCall }: Props
       onUpdate: (m) => updateMessage(activeId, m),
       onDelete: (id) => removeMessage(activeId, id),
     });
+    
+    broadcastMessageRef.current = broadcastNewMessage;
 
     const typing = subscribeTyping(activeId, userId, (e) => {
       if (e.isTyping) {
@@ -465,8 +468,9 @@ export default function MessagePane({ userId, activeCall, setActiveCall }: Props
       typingSweeperRef.current = null;
       typingExpiryRef.current = {};
       broadcastTypingRef.current = null;
+      broadcastMessageRef.current = null;
       setTypingUserIds([]);
-      unsubscribe(msgCh);
+      unsubscribe(msgChannel);
       unsubscribe(typing.channel);
     };
   }, [activeId, userId, appendMessage, updateMessage, removeMessage]);
@@ -1053,6 +1057,7 @@ export default function MessagePane({ userId, activeCall, setActiveCall }: Props
         replyTo={replyTo}
         onClearReply={() => setReplyTo(null)}
         onTyping={(isTyping) => broadcastTypingRef.current?.(isTyping)}
+        broadcastNewMessage={(m) => broadcastMessageRef.current?.(m)}
       />
       {infoOpen && currentConv && (
         <GroupInfoDrawer
