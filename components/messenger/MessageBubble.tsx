@@ -206,21 +206,52 @@ export default function MessageBubble({
     const opacityStyle = isOptimistic ? { opacity: 0.6, filter: 'grayscale(50%)' } : {};
 
     if (message.message_type === 'image' && message.media_url) {
+      const isProof = currentLabels?.includes('PROOF OF PAYMENT' as any) || message.text?.includes('Payment proof');
+
       return (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-          {message.text && <span>{message.text}</span>}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: isProof ? 8 : 6, padding: isProof ? 2 : 0 }}>
+          {message.text && (
+            <span style={{ 
+              padding: isProof ? '6px 8px 0 8px' : '4px 8px 0 8px', 
+              fontSize: '0.9rem', 
+              lineHeight: 1.5,
+              fontWeight: isProof ? 500 : 400,
+            }}>
+              {message.text}
+            </span>
+          )}
           <button type="button" onClick={() => !isOptimistic && setLightbox(true)} aria-label="Open Image"
-            style={{ background: 'transparent', border: 0, padding: 0, cursor: isOptimistic ? 'default' : 'zoom-in', ...opacityStyle }}
+            style={{ 
+              background: 'transparent', border: 0, padding: isProof ? '0 8px 8px 8px' : 0, 
+              cursor: isOptimistic ? 'default' : 'zoom-in', ...opacityStyle,
+              display: 'flex', justifyContent: isOwn ? 'flex-end' : 'flex-start'
+            }}
           >
-            <img src={message.media_url} alt="Image" loading="lazy"
-              onLoad={() => {
-                if (isLast) {
-                  const el = document.querySelector('.msg-list');
-                  if (el) el.scrollTop = el.scrollHeight;
-                }
-              }}
-              style={{ maxWidth: 320, maxHeight: 240, borderRadius: 10, display: 'block', objectFit: 'cover' }}
-            />
+            <div style={{
+               border: isProof ? '2px solid rgba(255, 255, 255, 0.15)' : 'none',
+               borderRadius: 14,
+               padding: isProof ? 6 : 0,
+               background: isProof ? 'linear-gradient(145deg, var(--surface-2, #162230), var(--surface-1, #0F1923))' : 'transparent',
+               boxShadow: isProof ? '0 4px 16px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.05)' : 'none',
+            }}>
+              <img src={message.media_url} alt="Image" loading="lazy"
+                onLoad={() => {
+                  if (isLast) {
+                    const el = document.querySelector('.msg-list');
+                    if (el) el.scrollTop = el.scrollHeight;
+                  }
+                }}
+                style={{ 
+                  maxWidth: 320, 
+                  maxHeight: isProof ? 450 : 240, 
+                  height: isProof ? 'auto' : undefined,
+                  borderRadius: isProof ? 8 : 10, 
+                  display: 'block', 
+                  objectFit: isProof ? 'contain' : 'cover',
+                  background: isProof ? '#0a0d14' : 'transparent'
+                }}
+              />
+            </div>
           </button>
         </div>
       );
