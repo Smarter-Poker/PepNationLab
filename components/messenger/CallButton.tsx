@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { Phone, Video } from 'lucide-react';
 import { toast } from 'sonner';
 import type { CallSignalRow } from '@/lib/messenger/realtime';
+import { useMessengerStore } from '@/stores/messengerStore';
 
 interface Props {
   conversationId: string;
@@ -47,6 +48,10 @@ export default function CallButton({ conversationId, onCallStarted }: Props) {
 
   if (!available) return null;
 
+  const conversations = useMessengerStore((s) => s.conversations);
+  const activeConv = conversations.find((c) => c.conversation_id === conversationId);
+  const counterpartyId = activeConv?.counterparty_id;
+
   const startCall = async (callType: 'audio' | 'video') => {
     if (busy) return;
     setBusy(true);
@@ -66,6 +71,18 @@ export default function CallButton({ conversationId, onCallStarted }: Props) {
         return;
       }
       const json = (await res.json()) as { call: CallSignalRow };
+
+      // Broadcast calling signal directly to counterparty
+      if (counterpartyId) {
+        import('@/lib/messenger/realtime').then(({ broadcastCallSignal }) => {
+          void broadcastCallSignal(counterpartyId, 'incoming_call', json.call);
+        }).catch(err => {
+          console.warn('Failed to broadcast incoming call signal:', err);
+        });
+      } else {
+        console.warn('No counterpartyId found in conversation list — falling back');
+      }
+
       onCallStarted(json.call);
     } catch {
       toast('Network Error');

@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import {
   LiveKitRoom,
   RoomAudioRenderer,
@@ -8,6 +8,8 @@ import {
 } from '@livekit/components-react';
 import '@livekit/components-styles';
 import type { CallSignalRow } from '@/lib/messenger/realtime';
+import { useMessengerStore } from '@/stores/messengerStore';
+import { createRingTone } from '@/lib/messenger/ringTone';
 
 interface Props {
   call: CallSignalRow;
@@ -16,7 +18,10 @@ interface Props {
 }
 
 export default function CallOverlay({ call, selfId, onClose }: Props) {
-  void selfId;
+  const conversations = useMessengerStore((s) => s.conversations);
+  const activeConv = conversations.find((c) => c.conversation_id === call.conversation_id);
+  const counterpartyId = activeConv?.counterparty_id;
+
   const [token, setToken] = useState<string | null>(null);
   const [url, setUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -55,9 +60,53 @@ export default function CallOverlay({ call, selfId, onClose }: Props) {
     };
   }, [call.id, onClose]);
 
+  // Outgoing synthesized beep-beep ringtone effect for the initiator
+  useEffect(() => {
+    if (call.initiator_id !== selfId || call.status !== 'ringing') return;
+
+    console.log('[CALL] Playing synthesized outgoing ringtone...');
+    const ring = createRingTone();
+    if (ring) {
+      ring.start();
+    }
+
+    return () => {
+      if (ring) {
+        console.log('[CALL] Stopping synthesized outgoing ringtone');
+        ring.stop();
+      }
+    };
+  }, [call.initiator_id, call.status, selfId]);
+
+  // Guaranteed unmount teardown signaling: broadcasts call_ended
+  useEffect(() => {
+    return () => {
+      if (counterpartyId) {
+        console.log('[CALL] Unmounting CallOverlay — broadcasting call_ended to:', counterpartyId);
+        import('@/lib/messenger/realtime').then(({ broadcastCallSignal }) => {
+          void broadcastCallSignal(counterpartyId, 'call_ended', call);
+        }).catch(() => {});
+      }
+    };
+  }, [counterpartyId, call]);
+
   useEffect(() => {
     const callId = call.id;
     const handler = () => {
+      // 1. Unload signaling: broadcast call_ended immediately
+      if (counterpartyId) {
+        try {
+          const bodyEnded = JSON.stringify({
+            type: 'broadcast',
+            event: 'call_ended',
+            payload: call,
+          });
+          const blobEnded = new Blob([bodyEnded], { type: 'application/json' });
+          void navigator.sendBeacon?.(`/api/messenger/call-signal-unload-broadcast?targetId=${counterpartyId}`, blobEnded);
+        } catch {}
+      }
+
+      // 2. Unload database cleanup
       const body = JSON.stringify({ action: 'hangup', callId });
       let sent = false;
       try {
@@ -81,7 +130,7 @@ export default function CallOverlay({ call, selfId, onClose }: Props) {
     };
     window.addEventListener('pagehide', handler);
     return () => window.removeEventListener('pagehide', handler);
-  }, [call.id]);
+  }, [call.id, call, counterpartyId]);
 
   const isVideo = call.call_type === 'video';
 

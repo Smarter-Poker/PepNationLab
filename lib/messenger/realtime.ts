@@ -193,25 +193,72 @@ interface CallSignalHandlers {
 }
 
 export function subscribeCallSignals(userId: string, handlers: CallSignalHandlers): RealtimeChannel {
-  const ch = supabase.channel(`mc_calls:${userId}`);
-  // Temporarily disabled postgres_changes listener for messenger_calls.
-  // Using postgres_changes without a DB filter on a global table causes a massive CPU 
-  // DDOS vector where RLS executes on every call globally for every user.
-  // This will be replaced with explicit broadcast channels during the Live Calls feature build.
-  /*
-  ch.on(
-    'postgres_changes',
-    { event: 'INSERT', schema: 'public', table: 'messenger_calls' },
-    (payload) => handlers.onInsert?.(payload.new as CallSignalRow),
-  );
-  ch.on(
-    'postgres_changes',
-    { event: 'UPDATE', schema: 'public', table: 'messenger_calls' },
-    (payload) => handlers.onUpdate?.(payload.new as CallSignalRow),
-  );
-  */
+  console.log('[REALTIME] subscribeCallSignals called for user:', userId);
+  const ch = supabase.channel(`call-signal:${userId}`);
+
+  ch.on('broadcast', { event: 'incoming_call' }, (payload) => {
+    console.log('[REALTIME] received incoming_call broadcast:', payload);
+    if (payload.payload) {
+      handlers.onInsert?.(payload.payload as CallSignalRow);
+    }
+  });
+
+  ch.on('broadcast', { event: 'call_accepted' }, (payload) => {
+    console.log('[REALTIME] received call_accepted broadcast:', payload);
+    if (payload.payload && handlers.onUpdate) {
+      handlers.onUpdate({ ...payload.payload, status: 'active' } as CallSignalRow);
+    }
+  });
+
+  ch.on('broadcast', { event: 'call_declined' }, (payload) => {
+    console.log('[REALTIME] received call_declined broadcast:', payload);
+    if (payload.payload && handlers.onUpdate) {
+      handlers.onUpdate({ ...payload.payload, status: 'declined' } as CallSignalRow);
+    }
+  });
+
+  ch.on('broadcast', { event: 'call_ended' }, (payload) => {
+    console.log('[REALTIME] received call_ended broadcast:', payload);
+    if (payload.payload && handlers.onUpdate) {
+      handlers.onUpdate({ ...payload.payload, status: 'ended' } as CallSignalRow);
+    }
+  });
+
   ch.subscribe();
   return ch;
+}
+
+export async function broadcastCallSignal(
+  targetUserId: string,
+  event: 'incoming_call' | 'call_accepted' | 'call_declined' | 'call_ended',
+  payload: any,
+): Promise<void> {
+  console.log(`[REALTIME] broadcasting event ${event} to target ${targetUserId}`);
+  const ch = supabase.channel(`call-signal-send:${targetUserId}`);
+  try {
+    await new Promise<void>((resolve, reject) => {
+      const timeout = setTimeout(() => reject(new Error('Channel subscription timeout')), 5000);
+      ch.subscribe((status) => {
+        if (status === 'SUBSCRIBED') {
+          clearTimeout(timeout);
+          resolve();
+        } else if (status === 'CHANNEL_ERROR') {
+          clearTimeout(timeout);
+          reject(new Error('Channel error'));
+        }
+      });
+    });
+
+    await ch.send({
+      type: 'broadcast',
+      event,
+      payload,
+    });
+  } finally {
+    setTimeout(() => {
+      void supabase.removeChannel(ch);
+    }, 1500);
+  }
 }
 
 export interface ParticipantUnreadRow {

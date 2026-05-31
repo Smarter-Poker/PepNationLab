@@ -123,13 +123,37 @@ export default function MessengerShell({ userId }: Props) {
     };
   }, [userId]);
 
+  const activeCallRef = useRef<CallSignalRow | null>(null);
+  useEffect(() => {
+    activeCallRef.current = activeCall;
+  }, [activeCall]);
+
   // Phase 11: subscribe to call signals across every conversation the user
-  // participates in. RLS already filters rows to allowed conversations.
+  // participates in. Uses high-performance Realtime Broadcast Channels.
   useEffect(() => {
     const ch = subscribeCallSignals(userId, {
       onInsert: (c) => {
         if (c.status !== 'ringing') return;
         if (c.initiator_id === userId) return;
+        if (activeCallRef.current) {
+          console.log('[REALTIME] Call signal ignored — already in an active call');
+          return;
+        }
+
+        // Tab Claim Check
+        const roomName = c.livekit_room;
+        const claimKey = `call_claim_${roomName}`;
+        const existingClaim = localStorage.getItem(claimKey);
+        const now = Date.now();
+        if (existingClaim && (now - parseInt(existingClaim, 10)) < 30000) {
+          console.log('[REALTIME] Call signal ignored — already claimed by another tab:', roomName);
+          return;
+        }
+        localStorage.setItem(claimKey, now.toString());
+        setTimeout(() => {
+          try { localStorage.removeItem(claimKey); } catch {}
+        }, 35000);
+
         setIncomingCalls((cur) => (cur.some((x) => x.id === c.id) ? cur : [...cur, c]));
       },
       onUpdate: (c) => {
@@ -355,12 +379,26 @@ export default function MessengerShell({ userId }: Props) {
       setIncomingCalls((cur) => cur.filter((x) => x.id !== call.id));
       setActive(call.conversation_id);
       setActiveCall(call);
+
+      // Broadcast accepted signal back to initiator
+      import('@/lib/messenger/realtime').then(({ broadcastCallSignal }) => {
+        void broadcastCallSignal(call.initiator_id, 'call_accepted', call);
+      }).catch(err => {
+        console.warn('Failed to broadcast call accepted signal:', err);
+      });
     },
     [setActive],
   );
 
   const handleDecline = useCallback((call: CallSignalRow) => {
     setIncomingCalls((cur) => cur.filter((x) => x.id !== call.id));
+
+    // Broadcast declined signal back to initiator
+    import('@/lib/messenger/realtime').then(({ broadcastCallSignal }) => {
+      void broadcastCallSignal(call.initiator_id, 'call_declined', call);
+    }).catch(err => {
+      console.warn('Failed to broadcast call declined signal:', err);
+    });
   }, []);
 
   return (
