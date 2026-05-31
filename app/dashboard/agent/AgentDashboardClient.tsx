@@ -168,6 +168,10 @@ export default function AgentDashboardClient({
   const [resetPwValue, setResetPwValue] = useState('');
   const [resetPwSaving, setResetPwSaving] = useState(false);
 
+  // Promote Sub-Agent Modal State
+  const [promoteResearcher, setPromoteResearcher] = useState<Researcher | null>(null);
+  const [promoteLoading, setPromoteLoading] = useState(false);
+
   async function handleCreateResearcher(e: React.FormEvent) {
     e.preventDefault();
     setCrLoading(true);
@@ -200,6 +204,29 @@ export default function AgentDashboardClient({
       setCrError(err.message || 'Network Error');
     } finally {
       setCrLoading(false);
+    }
+  }
+
+  async function handlePromoteResearcher() {
+    if (!promoteResearcher) return;
+    setPromoteLoading(true);
+    try {
+      const resApi = await fetch('/api/agent/promote-subagent', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ researcherId: promoteResearcher.id })
+      });
+      if (!resApi.ok) {
+        const errData = await resApi.json();
+        throw new Error(errData.error || 'Failed to promote');
+      }
+      toast.success('Researcher successfully promoted to Sub-Agent!');
+      setResearcherList(prev => prev.filter(r => r.id !== promoteResearcher.id));
+      setPromoteResearcher(null);
+    } catch (err: any) {
+      toast.error(err.message);
+    } finally {
+      setPromoteLoading(false);
     }
   }
 
@@ -743,6 +770,97 @@ export default function AgentDashboardClient({
         {/* TAB 2: Referred Researchers */}
         {activeTab === 'Researchers' && (
           <div>
+            {/* Promote Researcher Modal */}
+            {promoteResearcher && (
+              <div
+                onClick={() => setPromoteResearcher(null)}
+                style={{
+                  position: 'fixed', inset: 0,
+                  display: 'flex', alignItems: 'flex-start', justifyContent: 'center',
+                  zIndex: 1000,
+                  padding: '16px 16px 32px',
+                  paddingTop: 'max(16px, env(safe-area-inset-top, 16px))',
+                  background: 'rgba(0,0,0,0.6)',
+                  overflowY: 'auto',
+                }}
+              >
+                {/* Brushed-steel outer frame */}
+                <div
+                  onClick={e => e.stopPropagation()}
+                  style={{
+                    maxWidth: 480, width: '100%',
+                    borderRadius: 20,
+                    padding: 10,
+                    background: 'linear-gradient(145deg, #c8c2b8 0%, #a09890 30%, #8a847c 50%, #a09890 70%, #c8c2b8 100%)',
+                    boxShadow: '0 8px 48px rgba(0,0,0,0.8), inset 0 1px 0 rgba(255,255,255,0.35), inset 0 -1px 0 rgba(0,0,0,0.4)',
+                    flexShrink: 0,
+                  }}
+                >
+                  {/* Inner dark panel */}
+                  <div style={{
+                    borderRadius: 12,
+                    background: 'linear-gradient(180deg, #1a1f2e 0%, #141820 40%, #111520 100%)',
+                    padding: '28px 28px 24px',
+                    boxShadow: 'inset 0 2px 8px rgba(0,0,0,0.6)',
+                    position: 'relative',
+                  }}>
+                    {/* Header row */}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24 }}>
+                      <div>
+                        <h3 style={{
+                          fontSize: '1.45rem', fontWeight: 700, color: '#ffffff',
+                          margin: 0, marginBottom: 6,
+                          textShadow: '0 1px 3px rgba(0,0,0,0.6)',
+                          fontFamily: 'var(--font-brand)',
+                        }}>
+                          Promote To Sub-Agent
+                        </h3>
+                      </div>
+                      {/* X close button */}
+                      <button
+                        type="button"
+                        onClick={() => setPromoteResearcher(null)}
+                        style={{
+                          background: 'none', border: 'none', cursor: 'pointer',
+                          color: '#8a9ab0', fontSize: '1.3rem', fontWeight: 700,
+                          lineHeight: 1, padding: '2px 4px', marginTop: -2,
+                          transition: 'color 0.15s',
+                        }}
+                        onMouseEnter={e => (e.currentTarget.style.color = '#ffffff')}
+                        onMouseLeave={e => (e.currentTarget.style.color = '#8a9ab0')}
+                        aria-label="Close"
+                      >
+                        ✕
+                      </button>
+                    </div>
+
+                    <p style={{ color: '#d0d8e4', fontSize: '0.95rem', marginBottom: 30, lineHeight: 1.5 }}>
+                      Promote This Researcher To A Sub-Agent? They Will Be Able To Set Prices For Their Own Downline.
+                    </p>
+
+                    <div style={{ display: 'flex', gap: 12 }}>
+                      <button
+                        className="btn btn-secondary"
+                        style={{ flex: 1, padding: '15px' }}
+                        onClick={() => setPromoteResearcher(null)}
+                        disabled={promoteLoading}
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        className="btn btn-primary"
+                        style={{ flex: 1, padding: '15px' }}
+                        onClick={handlePromoteResearcher}
+                        disabled={promoteLoading}
+                      >
+                        {promoteLoading ? 'Promoting...' : 'Promote To Sub-Agent'}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Create Researcher Modal */}
             {showCreateResearcher && (
               <div
@@ -1009,27 +1127,9 @@ export default function AgentDashboardClient({
                               <button 
                                 className="btn btn-secondary btn-sm"
                                 style={{ padding: '4px 8px', fontSize: '0.75rem' }}
-                                onClick={async () => {
-                                  if (!confirm('Promote this researcher to a Sub-Agent? They will be able to set prices for their own downline.')) return;
-                                  try {
-                                    const resApi = await fetch('/api/agent/promote-subagent', {
-                                      method: 'POST',
-                                      headers: { 'Content-Type': 'application/json' },
-                                      body: JSON.stringify({ researcherId: res.id })
-                                    });
-                                    if (!resApi.ok) {
-                                      const errData = await resApi.json();
-                                      throw new Error(errData.error || 'Failed to promote');
-                                    }
-                                    alert('Researcher successfully promoted to Sub-Agent!');
-                                    // Remove from this list since they are now a sub-agent
-                                    setResearcherList(prev => prev.filter(r => r.id !== res.id));
-                                  } catch (err: any) {
-                                    alert(err.message);
-                                  }
-                                }}
+                                onClick={() => setPromoteResearcher(res)}
                               >
-                                Promote to Sub-Agent
+                                Promote To Sub-Agent
                               </button>
                             </td>
                           )}
