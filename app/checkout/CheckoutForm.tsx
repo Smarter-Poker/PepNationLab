@@ -858,9 +858,42 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
               grid-template-columns: 1fr !important;
             }
           }
+          .premium-panel {
+            background: linear-gradient(145deg, #1A1A1A 0%, #0D0D0D 100%);
+            border: 1px solid #C0B8A8;
+            box-shadow: inset 0 1px 1px rgba(255,255,255,0.1), 0 4px 12px rgba(0,0,0,0.5);
+            border-radius: 12px;
+          }
+          .premium-input {
+            background: var(--black-2) !important;
+            border: 1px solid rgba(192, 184, 168, 0.4) !important;
+            border-radius: 8px !important;
+            color: var(--white) !important;
+            box-shadow: inset 0 1px 1px rgba(255,255,255,0.1), 0 4px 12px rgba(0,0,0,0.4) !important;
+            transition: all 0.2s ease !important;
+          }
+          .premium-input:focus {
+            border-color: #C0B8A8 !important;
+            box-shadow: inset 0 1px 1px rgba(255,255,255,0.3), 0 4px 12px rgba(0,0,0,0.6) !important;
+            outline: none !important;
+          }
+          .premium-action-btn {
+            background: linear-gradient(180deg, #2A2A2A 0%, #1A1A1A 100%) !important;
+            border: 1px solid #C0B8A8 !important;
+            box-shadow: inset 0 1px 1px rgba(255,255,255,0.3), 0 4px 12px rgba(0,0,0,0.6) !important;
+            color: #C0B8A8 !important;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.8) !important;
+            border-radius: 8px !important;
+            transition: transform 0.15s, filter 0.15s !important;
+          }
+          .premium-action-btn:hover {
+            transform: scale(1.02) !important;
+            filter: drop-shadow(0 2px 6px rgba(0,0,0,0.5)) !important;
+            color: #fff !important;
+          }
         `}</style>
         {/* Main Form Area */}
-        <div className="card-metal hover-lift stagger-fade-in" style={{ padding: 'var(--space-6)' }}>
+        <div className="premium-panel hover-lift stagger-fade-in" style={{ padding: 'var(--space-6)' }}>
           {error && (
             <div style={{ borderLeft: '3px solid var(--red)', background: 'var(--red-bg)', padding: 'var(--space-4)', borderRadius: '0 var(--radius-md) var(--radius-md) 0', marginBottom: 'var(--space-6)', display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
               <svg
@@ -1022,7 +1055,7 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
                         <label className="form-label">Full Name</label>
                         <input
                           type="text"
-                          className="form-input"
+                          className="form-input premium-input"
                           placeholder="First And Last Name"
                           value={fullName}
                           onChange={(e) => setFullName(e.target.value)}
@@ -1034,7 +1067,7 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
                           <label className="form-label">Street Address</label>
                           <input
                             type="text"
-                            className="form-input"
+                            className="form-input premium-input"
                             placeholder="123 Lab Street"
                             value={street}
                             onChange={(e) => setStreet(e.target.value)}
@@ -1044,7 +1077,7 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
                           <label className="form-label">Suite Or Apartment</label>
                           <input
                             type="text"
-                            className="form-input"
+                            className="form-input premium-input"
                             placeholder="Suite 404 (Optional)"
                             value={suite}
                             onChange={(e) => setSuite(e.target.value)}
@@ -1057,7 +1090,7 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
                           <label className="form-label">City</label>
                           <input
                             type="text"
-                            className="form-input"
+                            className="form-input premium-input"
                             placeholder="Science City"
                             value={city}
                             onChange={(e) => setCity(e.target.value)}
@@ -1066,7 +1099,7 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
                         <div className="form-group">
                           <label className="form-label">State</label>
                           <select
-                            className="form-input"
+                            className="form-input premium-input"
                             value={state}
                             onChange={(e) => setState(e.target.value)}
                           >
@@ -1082,7 +1115,7 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
                           <label className="form-label">Zip Code</label>
                           <input
                             type="text"
-                            className="form-input"
+                            className="form-input premium-input"
                             placeholder="90210"
                             value={zip}
                             onChange={(e) => setZip(e.target.value)}
@@ -1094,7 +1127,7 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
                         <label className="form-label">Phone Number</label>
                         <input
                           type="tel"
-                          className="form-input"
+                          className="form-input premium-input"
                           placeholder="123-456-7890 (For Shipping Updates)"
                           value={phone}
                           onChange={(e) => setPhone(e.target.value)}
@@ -1139,7 +1172,7 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
                 )}
 
                 <div className="step-buttons right">
-                  <button type="button" onClick={handleNextStep} className="btn btn-primary" style={{ minWidth: 150 }}>
+                  <button type="button" onClick={handleNextStep} className="btn premium-action-btn" style={{ minWidth: 150 }}>
                     Continue To Payment
                   </button>
                 </div>
@@ -1209,10 +1242,10 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
                 </div>
 
                 <div className="step-buttons">
-                  <button type="button" onClick={handlePrevStep} className="btn btn-secondary" style={{ minWidth: 150 }}>
+                  <button type="button" onClick={handlePrevStep} className="btn premium-action-btn" style={{ minWidth: 150 }}>
                     Back
                   </button>
-                  <button type="button" onClick={handleNextStep} className="btn btn-primary" style={{ minWidth: 150 }}>
+                  <button type="button" onClick={handleNextStep} className="btn premium-action-btn" style={{ minWidth: 150 }}>
                     Continue To Terms
                   </button>
                 </div>
@@ -1274,10 +1307,10 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
                 </div>
 
                 <div className="step-buttons">
-                  <button type="button" onClick={handlePrevStep} className="btn btn-secondary" style={{ minWidth: 150 }} disabled={loading}>
+                  <button type="button" onClick={handlePrevStep} className="btn premium-action-btn" style={{ minWidth: 150 }} disabled={loading}>
                     Back
                   </button>
-                  <button type="submit" className="btn btn-primary" style={{ minWidth: 180, display: 'flex', alignItems: 'center', justifyContent: 'center' }} disabled={loading}>
+                  <button type="submit" className="btn premium-action-btn" style={{ minWidth: 180, display: 'flex', alignItems: 'center', justifyContent: 'center' }} disabled={loading}>
                     {loading ? (
                       <span style={{ display: 'inline-block', width: 16, height: 16, border: '2px solid #fff', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
                     ) : (
@@ -1293,7 +1326,7 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
         {/* Sidebar Summary Area */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
           {/* Order Summary */}
-          <div className="card-metal metal-frame" style={{ padding: 'var(--space-5)' }}>
+          <div className="premium-panel" style={{ padding: 'var(--space-5)' }}>
             <h3 style={{ fontSize: '0.95rem', color: 'var(--white)', marginBottom: 'var(--space-4)', borderBottom: '1px solid rgba(255, 255, 255, 0.05)', paddingBottom: 'var(--space-2)', letterSpacing: '0.05em', textTransform: 'uppercase' }}>
               Order Inventory
             </h3>
@@ -1343,7 +1376,7 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
                 <div className="coupon-row" style={{ display: 'flex', gap: 'var(--space-2)' }}>
                   <input
                     type="text"
-                    className="form-input"
+                    className="form-input premium-input"
                     placeholder="Coupon Code"
                     value={couponInput}
                     onChange={(e) => setCouponInput(e.target.value)}
@@ -1353,7 +1386,7 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
                     type="button"
                     onClick={applyCoupon}
                     disabled={couponLoading}
-                    className="btn btn-secondary"
+                    className="btn premium-action-btn"
                     style={{ fontSize: '0.78rem', padding: '0 var(--space-4)' }}
                   >
                     {couponLoading ? 'Checking' : 'Apply'}
@@ -1428,7 +1461,7 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
           </div>
 
           {/* Secure Card Shield */}
-          <div style={{ background: 'var(--surface-2)', border: '1px solid rgba(255, 255, 255, 0.03)', borderRadius: 'var(--radius-lg)', padding: 'var(--space-4)', display: 'flex', alignItems: 'flex-start', gap: 'var(--space-3)' }}>
+          <div className="premium-panel" style={{ padding: 'var(--space-4)', display: 'flex', alignItems: 'flex-start', gap: 'var(--space-3)' }}>
             <svg
               width="18"
               height="18"
