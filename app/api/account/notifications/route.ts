@@ -11,12 +11,13 @@ const DEFAULT_PREFS = {
   push_events_order: true,
   push_events_messages: true,
   push_events_marketing: false,
+  send_read_receipts: true,
 };
 
 async function getCurrentUserPrefs(supabase: Awaited<ReturnType<typeof createClient>>, userId: string) {
   const { data } = await supabase
     .from('notification_preferences')
-    .select('events_order_approved, events_order_shipped, events_order_delivered, events_payment_reminder, push_enabled, push_events_order, push_events_messages, push_events_marketing, updated_at')
+    .select('events_order_approved, events_order_shipped, events_order_delivered, events_payment_reminder, push_enabled, push_events_order, push_events_messages, push_events_marketing, send_read_receipts, updated_at')
     .eq('user_id', userId)
     .maybeSingle();
   return data;
@@ -70,6 +71,7 @@ export async function PATCH(req: NextRequest) {
   if (typeof body.push_events_order === 'boolean') updates.push_events_order = body.push_events_order;
   if (typeof body.push_events_messages === 'boolean') updates.push_events_messages = body.push_events_messages;
   if (typeof body.push_events_marketing === 'boolean') updates.push_events_marketing = body.push_events_marketing;
+  if (typeof body.send_read_receipts === 'boolean') updates.send_read_receipts = body.send_read_receipts;
 
   if (Object.keys(updates).length === 0) {
     return NextResponse.json({ error: 'No Valid Fields To Update.' }, { status: 400 });

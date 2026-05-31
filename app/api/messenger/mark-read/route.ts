@@ -34,6 +34,16 @@ export async function POST(req: NextRequest) {
   //   42501 unauthorized / not_a_participant
   //   22023 message_not_in_conversation
   const svc = await createServiceClient();
+  const { data: prefs } = await svc
+    .from('notification_preferences')
+    .select('send_read_receipts')
+    .eq('user_id', user.id)
+    .single();
+
+  if (prefs && prefs.send_read_receipts === false) {
+    return NextResponse.json({ ok: true });
+  }
+
   const { error: rpcErr } = await svc.rpc('fn_messenger_mark_read', {
     p_caller_id: user.id,
     p_conv_id: parsed.data.conversationId,

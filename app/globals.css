@@ -644,6 +644,28 @@ a:hover { color: var(--teal-dark); }
 /* ============================================
    UTILITY CLASSES
    ============================================ */
+.composer-icon-btn {
+  background: transparent;
+  border: none;
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--grey-400, #A8B4C0);
+  transition: background 0.2s, color 0.2s, transform 0.1s;
+}
+
+.composer-icon-btn:hover {
+  background: var(--surface-3, #1D2D3E);
+  color: var(--white, #FFFFFF);
+}
+
+.composer-icon-btn:active {
+  transform: scale(0.95);
+}
 .text-teal    { color: var(--teal); }
 .text-silver  { color: var(--silver); }
 .text-white   { color: var(--white); }

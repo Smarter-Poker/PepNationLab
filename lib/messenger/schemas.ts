@@ -346,5 +346,6 @@ export const NotificationPrefsSchema = z.object({
   emailOnMessage: z.boolean().optional(),
   emailOnInvoice: z.boolean().optional(),
   muteAll: z.boolean().optional(),
+  sendReadReceipts: z.boolean().optional(),
 });
 export type NotificationPrefsInput = z.infer<typeof NotificationPrefsSchema>;

@@ -34,6 +34,7 @@ interface Props {
   onSetReminder?: (m: Message) => void;
   activeMenuId?: string | null;
   onMenuToggle?: (id: string, open: boolean) => void;
+  readBy?: { id: string; name: string }[];
 }
 
 const URL_RE = /https?:\/\/[^\s<>]+/i;
@@ -83,7 +84,7 @@ export default function MessageBubble({
   isPinned = false, currentLabels = [],
   onReply, onReact, onEdit, onDelete,
   onPinToggle, onLabelToggle, onThread, onReport, onSetReminder,
-  activeMenuId, onMenuToggle,
+  activeMenuId, onMenuToggle, readBy = [],
 }: Props) {
   const isMenuOpen = activeMenuId !== undefined ? activeMenuId === message.id : false;
   const setMenuOpen = (open: boolean) => {
@@ -265,7 +266,7 @@ export default function MessageBubble({
   return (
     <div
       data-msg-id={message.id}
-      style={{ alignSelf: isOwn ? 'flex-end' : 'flex-start', maxWidth: '75%',
+      style={{ alignSelf: isOwn ? 'flex-end' : 'flex-start', maxWidth: '65%',
         display: 'flex', alignItems: 'flex-end', gap: 8, position: 'relative',
         marginBottom: isLast ? 8 : 2 }}
       onMouseEnter={() => setHovered(true)}
@@ -330,10 +331,10 @@ export default function MessageBubble({
           position: 'relative',
           background: isOwn ? 'linear-gradient(180deg, #0084FF 0%, #0073E6 100%)' : 'var(--surface-3, #1D2D3E)',
           color: '#FFFFFF',
-          padding: isMediaBubble ? 4 : '8px 14px',
+          padding: isMediaBubble ? 4 : '10px 16px',
           borderRadius: isMediaBubble ? 14 : isOwn
-            ? `18px ${isFirst ? '18px' : '4px'} 4px 18px`
-            : `${isFirst ? '18px' : '4px'} 18px 18px 4px`,
+            ? `20px ${isFirst ? '20px' : '4px'} 4px 20px`
+            : `${isFirst ? '20px' : '4px'} 20px 20px 4px`,
           whiteSpace: 'pre-wrap', wordBreak: 'break-word',
           boxShadow: '0 1px 2px rgba(0,0,0,0.1)',
           opacity: pending ? 0.7 : 1,
@@ -466,15 +467,25 @@ export default function MessageBubble({
         </div>
       )}
 
-      <div
-        style={{ fontSize: '0.7rem', color: 'var(--grey-400, #A8B4C0)',
-          alignSelf: isOwn ? 'flex-end' : 'flex-start', padding: '0 6px',
-          marginTop: 2 }}
-      >
-        {failed ? 'Failed To Send' : pending ? 'Sending' : formatTime(message.created_at)}
-        {message.is_edited && !message.is_deleted ? ' (Edited)' : ''}
-        {expiryLabel ? ` (${expiryLabel})` : ''}
-      </div>
+      {(failed || pending || message.is_edited || expiryLabel) && (
+        <div
+          style={{ fontSize: '0.7rem', color: 'var(--grey-400, #A8B4C0)',
+            alignSelf: isOwn ? 'flex-end' : 'flex-start', padding: '0 6px',
+            marginTop: 2 }}
+        >
+          {failed ? 'Failed To Send' : pending ? 'Sending' : ''}
+          {message.is_edited && !message.is_deleted ? ' (Edited)' : ''}
+          {expiryLabel ? ` (${expiryLabel})` : ''}
+        </div>
+      )}
+
+      {isOwn && readBy.length > 0 && isLast && (
+        <div style={{ display: 'flex', alignSelf: 'flex-end', gap: 2, marginTop: 4, paddingRight: 4 }}>
+          {readBy.map(user => (
+             <Avatar key={user.id} name={user.name} size={14} />
+          ))}
+        </div>
+      )}
 
       {lightbox && message.media_url && <ImageLightbox src={message.media_url} onClose={() => setLightbox(false)} />}
       </div>

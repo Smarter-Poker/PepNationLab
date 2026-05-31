@@ -13,6 +13,7 @@ interface RowPrefs {
   push_events_order: boolean;
   push_events_messages: boolean;
   push_events_marketing: boolean;
+  send_read_receipts: boolean;
 }
 
 const DEFAULT_PREFS: RowPrefs = {
@@ -24,6 +25,7 @@ const DEFAULT_PREFS: RowPrefs = {
   push_events_order: true,
   push_events_messages: true,
   push_events_marketing: false,
+  send_read_receipts: true,
 };
 
 export default async function NotificationsPage() {
@@ -33,7 +35,7 @@ export default async function NotificationsPage() {
 
   const { data: row } = await supabase
     .from('notification_preferences')
-    .select('events_order_approved, events_order_shipped, events_order_delivered, events_payment_reminder, push_enabled, push_events_order, push_events_messages, push_events_marketing')
+    .select('events_order_approved, events_order_shipped, events_order_delivered, events_payment_reminder, push_enabled, push_events_order, push_events_messages, push_events_marketing, send_read_receipts')
     .eq('user_id', user.id)
     .maybeSingle();
 
@@ -47,6 +49,7 @@ export default async function NotificationsPage() {
         push_events_order: row.push_events_order !== false,
         push_events_messages: row.push_events_messages !== false,
         push_events_marketing: !!row.push_events_marketing,
+        send_read_receipts: row.send_read_receipts !== false,
       }
     : DEFAULT_PREFS;
 

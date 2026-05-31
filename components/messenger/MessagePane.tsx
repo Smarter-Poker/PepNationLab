@@ -115,7 +115,7 @@ export default function MessagePane({ userId, activeCall, setActiveCall }: Props
   const [typingUserIds, setTypingUserIds] = useState<string[]>([]);
   const [infoOpen, setInfoOpen] = useState(false);
   const [selfRole, setSelfRole] = useState<ParticipantRole | null>(null);
-  const [participantsMap, setParticipantsMap] = useState<Record<string, { full_name?: string | null; username?: string | null }>>({});
+  const [participantsMap, setParticipantsMap] = useState<Record<string, { full_name?: string | null; username?: string | null; last_read_message_id?: string | null }>>({});
   const [pinRefreshKey, setPinRefreshKey] = useState(0);
   const [pinnedIds, setPinnedIds] = useState<Set<string>>(new Set());
   const [labelsByMsg, setLabelsByMsg] = useState<Record<string, MessageLabelValue[]>>({});
@@ -319,12 +319,12 @@ export default function MessagePane({ userId, activeCall, setActiveCall }: Props
         ]);
         if (cancelled) return;
         if (rolesRes.ok) {
-          const json = (await rolesRes.json()) as { participants?: Array<{ user_id: string; role: ParticipantRole; full_name?: string | null; username?: string | null }> };
+          const json = (await rolesRes.json()) as { participants?: Array<{ user_id: string; role: ParticipantRole; full_name?: string | null; username?: string | null; last_read_message_id?: string | null }> };
           const me = json.participants?.find((p) => p.user_id === userId);
           setSelfRole(me?.role ?? null);
-          const map: Record<string, { full_name?: string | null; username?: string | null }> = {};
+          const map: Record<string, { full_name?: string | null; username?: string | null; last_read_message_id?: string | null }> = {};
           json.participants?.forEach(p => {
-             map[p.user_id] = { full_name: p.full_name, username: p.username };
+             map[p.user_id] = { full_name: p.full_name, username: p.username, last_read_message_id: p.last_read_message_id };
           });
           setParticipantsMap(map);
         }
@@ -950,32 +950,52 @@ export default function MessagePane({ userId, activeCall, setActiveCall }: Props
                  senderName = currentConv.counterparty_full_name || currentConv.counterparty_username || 'User';
               }
               const isBlockedSender = blockedIds.has(m.sender_id) && m.sender_id !== userId;
+
+              let timestampBanner = null;
+              if (isFirst) {
+                const date = new Date(m.created_at);
+                const format = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: 'numeric' });
+                const timeString = format.format(date).toUpperCase().replace(',', ' AT');
+                timestampBanner = (
+                  <div style={{ textAlign: 'center', color: 'rgba(168,180,192,0.45)', fontSize: '0.68rem', fontWeight: 600, margin: '24px 0 16px 0', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                    {timeString}
+                  </div>
+                );
+              }
+
+              const readBy = Object.entries(participantsMap)
+                .filter(([uid, data]) => uid !== userId && data.last_read_message_id === m.id)
+                .map(([uid, data]) => ({ id: uid, name: data.full_name || data.username || 'User' }));
+
               if (isBlockedSender && conversationType !== 'direct') {
                 return (
-                  <div
-                    key={m.id}
-                    data-msg-id={m.id}
-                    style={{
-                      alignSelf: 'flex-start',
-                      maxWidth: '70%',
-                      padding: '8px 12px',
-                      borderRadius: 14,
-                      background: 'var(--surface-2, #162230)',
-                      color: 'var(--grey-400, #A8B4C0)',
-                      fontStyle: 'italic',
-                      fontSize: '0.82rem',
-                      border: '1px dashed var(--surface-3, #1D2D3E)',
-                      marginBottom: isLast ? 8 : 2
-                    }}
-                  >
-                    Message Hidden - Blocked User
+                  <div key={m.id}>
+                    {timestampBanner}
+                    <div
+                      data-msg-id={m.id}
+                      style={{
+                        alignSelf: 'flex-start',
+                        maxWidth: '70%',
+                        padding: '8px 12px',
+                        borderRadius: 14,
+                        background: 'var(--surface-2, #162230)',
+                        color: 'var(--grey-400, #A8B4C0)',
+                        fontStyle: 'italic',
+                        fontSize: '0.82rem',
+                        border: '1px dashed var(--surface-3, #1D2D3E)',
+                        marginBottom: isLast ? 8 : 2
+                      }}
+                    >
+                      Message Hidden - Blocked User
+                    </div>
                   </div>
                 );
               }
               return (
-                <MessageBubble
-                  key={m.id}
-                  message={m}
+                <div key={m.id} style={{ display: 'flex', flexDirection: 'column' }}>
+                  {timestampBanner}
+                  <MessageBubble
+                    message={m}
                   isOwn={m.sender_id === userId}
                   isFirst={isFirst}
                   isLast={isLast}
@@ -997,7 +1017,9 @@ export default function MessagePane({ userId, activeCall, setActiveCall }: Props
                   onSetReminder={handleSetReminder}
                   activeMenuId={activeMenuId}
                   onMenuToggle={(id, open) => setActiveMenuId(open ? id : null)}
+                  readBy={readBy}
                 />
+              </div>
               );
             })
         )}

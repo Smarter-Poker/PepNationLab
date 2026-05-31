@@ -22,6 +22,7 @@ export async function GET(req: NextRequest) {
       email_on_invoice: true,
       browser_push: true,
       mute_all: false,
+      send_read_receipts: true,
     },
   });
 }
@@ -43,6 +44,7 @@ export async function PUT(req: NextRequest) {
     email_on_invoice: body.email_on_invoice ?? true,
     browser_push: body.browser_push ?? true,
     mute_all: body.mute_all ?? false,
+    send_read_receipts: body.send_read_receipts ?? true,
     updated_at: new Date().toISOString(),
   }, { onConflict: 'user_id' });
 

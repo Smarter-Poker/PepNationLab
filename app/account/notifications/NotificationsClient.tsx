@@ -30,6 +30,7 @@ interface Prefs {
   push_events_order: boolean;
   push_events_messages: boolean;
   push_events_marketing: boolean;
+  send_read_receipts: boolean;
 }
 
 /* ─── Helpers ──────────────────────────────────────────────────────────────── */
@@ -496,6 +497,36 @@ export default function NotificationCenterClient({ initialPrefs }: { initialPref
                   </div>
                 </label>
               ))}
+            </section>
+
+            {/* Privacy Prefs */}
+            <section style={{ background: SURFACE, border: BORDER, borderRadius: 14, padding: '20px 22px' }}>
+              <h2 style={{ fontSize: '1rem', color: 'var(--white)', fontWeight: 700, margin: '0 0 4px' }}>
+                Privacy
+              </h2>
+              <p style={{ color: SILVER, fontSize: '0.78rem', marginBottom: 18, marginTop: 4 }}>
+                Manage your privacy settings for messaging.
+              </p>
+              <label
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 14,
+                  padding: '10px 0',
+                  cursor: 'pointer',
+                }}
+              >
+                <input
+                  type="checkbox"
+                  checked={prefs.send_read_receipts}
+                  onChange={e => setPrefs(p => ({ ...p, send_read_receipts: e.target.checked }))}
+                  style={{ width: 17, height: 17, accentColor: TEAL, cursor: 'pointer' }}
+                />
+                <div>
+                  <div style={{ color: 'var(--white)', fontSize: '0.85rem', fontWeight: 500 }}>Send Read Receipts</div>
+                  <div style={{ color: SILVER, fontSize: '0.72rem' }}>Allow others to see when you have read their messages.</div>
+                </div>
+              </label>
             </section>
 
             {/* Browser push */}
