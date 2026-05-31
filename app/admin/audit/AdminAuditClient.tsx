@@ -113,7 +113,7 @@ export default function AdminAuditClient({
         </button>
       </div>
 
-      <div className="metal-frame">
+      <div className="metal-frame hover-lift stagger-fade-in">
         <div
           className="metal-content"
           style={{ padding: 0, overflowX: "auto" }}
@@ -192,6 +192,7 @@ export default function AdminAuditClient({
                 rows.map((r) => (
                   <tr
                     key={r.id}
+                    className="table-row-hover"
                     style={{ borderBottom: "1px solid rgba(255,255,255,0.04)" }}
                   >
                     <td

@@ -150,7 +150,7 @@ export default function NewProductPage() {
           </svg>
           Products
         </Link>
-        <h1 style={{ fontSize: '1.4rem' }}>
+        <h1 className="animated-gradient-text" style={{ fontSize: '1.4rem' }}>
           Add New Product
         </h1>
       </div>
@@ -164,7 +164,7 @@ export default function NewProductPage() {
       <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
 
         {/* ── Product Information ── */}
-        <div className="metal-frame">
+        <div className="metal-frame hover-lift stagger-fade-in" style={{ animationDelay: '0.1s' }}>
           <div className="metal-content" style={{ padding: 'var(--space-6)' }}>
             <h3 style={{ fontSize: '0.95rem', marginBottom: 'var(--space-5)', color: 'var(--silver)' }}>
               Product Information
@@ -230,7 +230,7 @@ export default function NewProductPage() {
         </div>
 
         {/* ── Pricing ── */}
-        <div className="metal-frame">
+        <div className="metal-frame hover-lift stagger-fade-in" style={{ animationDelay: '0.2s' }}>
           <div className="metal-content" style={{ padding: 'var(--space-6)' }}>
             <h3 style={{ fontSize: '0.95rem', marginBottom: 'var(--space-5)', color: 'var(--silver)' }}>
               Pricing
@@ -343,7 +343,7 @@ export default function NewProductPage() {
         </div>
 
         {/* ── Inventory & Shipping ── */}
-        <div className="metal-frame">
+        <div className="metal-frame hover-lift stagger-fade-in" style={{ animationDelay: '0.3s' }}>
           <div className="metal-content" style={{ padding: 'var(--space-6)' }}>
             <h3 style={{ fontSize: '0.95rem', marginBottom: 'var(--space-5)', color: 'var(--silver)' }}>
               Inventory & Shipping
@@ -410,7 +410,7 @@ export default function NewProductPage() {
         </div>
 
         {/* ── Visibility ── */}
-        <div className="metal-frame">
+        <div className="metal-frame hover-lift stagger-fade-in" style={{ animationDelay: '0.4s' }}>
           <div className="metal-content" style={{ padding: 'var(--space-5)' }}>
             <label style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', cursor: 'pointer', fontSize: '0.9rem', color: 'var(--silver)' }}>
               <input

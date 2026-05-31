@@ -111,7 +111,7 @@ export default function PricingTiersPage() {
     <div style={{ padding: "var(--space-8)" }}>
       {/* Header */}
       <div style={{ marginBottom: "var(--space-8)" }}>
-        <h1 style={{ fontSize: "1.6rem", marginBottom: "var(--space-2)" }}>
+        <h1 className="animated-gradient-text" style={{ fontSize: "1.6rem", marginBottom: "var(--space-2)" }}>
           Pricing Multiplier Tiers
         </h1>
         <p style={{ fontSize: "0.85rem", color: "var(--grey-400)" }}>
@@ -165,7 +165,7 @@ export default function PricingTiersPage() {
               }}
             >
               {tiers.map((tier) => (
-                <div key={tier.tier_name} className="metal-frame">
+                <div key={tier.tier_name} className="metal-frame hover-lift stagger-fade-in">
                   <div
                     className="metal-content"
                     style={{ padding: "var(--space-6)" }}
@@ -290,7 +290,7 @@ export default function PricingTiersPage() {
           }}
         >
           {/* Dynamic Preview Configurator */}
-          <div className="metal-frame">
+          <div className="metal-frame hover-lift stagger-fade-in" style={{ animationDelay: '0.1s' }}>
             <div
               className="metal-content"
               style={{ padding: "var(--space-6)" }}
@@ -333,8 +333,8 @@ export default function PricingTiersPage() {
 
           {/* Pricing Rules Legal Card */}
           <div
-            className="metal-frame"
-            style={{ borderColor: "rgba(192,184,168,0.15)" }}
+            className="metal-frame hover-lift stagger-fade-in"
+            style={{ borderColor: "rgba(192,184,168,0.15)", animationDelay: '0.2s' }}
           >
             <div
               className="metal-content"

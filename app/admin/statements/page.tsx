@@ -223,7 +223,7 @@ export default function AdminStatementsPage() {
         }}
       >
         <div>
-          <h1 style={{ fontSize: "1.6rem", marginBottom: "var(--space-2)" }}>
+          <h1 className="animated-gradient-text" style={{ fontSize: "1.6rem", marginBottom: "var(--space-2)" }}>
             Weekly Statements
           </h1>
           <p style={{ fontSize: "0.85rem", color: "var(--grey-400)" }}>
@@ -284,7 +284,7 @@ export default function AdminStatementsPage() {
               <p style={{ color: "var(--red)", fontSize: "0.9rem" }}>{error}</p>
             </div>
           ) : statements.length === 0 ? (
-            <div className="metal-frame">
+            <div className="metal-frame hover-lift stagger-fade-in" style={{ animationDelay: '0.1s' }}>
               <div
                 className="metal-content"
                 style={{ textAlign: "center", padding: "var(--space-12) 0" }}
@@ -302,11 +302,11 @@ export default function AdminStatementsPage() {
                 gap: "var(--space-4)",
               }}
             >
-              {statements.map((s) => {
+              {statements.map((s, index) => {
                 const statusColor =
                   STATUS_COLORS[s.status] ?? "var(--grey-400)";
                 return (
-                  <div key={s.id} className="metal-frame">
+                  <div key={s.id} className="metal-frame hover-lift stagger-fade-in" style={{ animationDelay: `${0.1 + Math.min(index, 5) * 0.1}s` }}>
                     <div
                       className="metal-content"
                       style={{ padding: "var(--space-5)" }}
@@ -477,7 +477,7 @@ export default function AdminStatementsPage() {
         </div>
 
         {/* Generate panel */}
-        <div className="metal-frame">
+        <div className="metal-frame hover-lift stagger-fade-in" style={{ animationDelay: '0.2s' }}>
           <div className="metal-content" style={{ padding: "var(--space-6)" }}>
             <h3
               style={{

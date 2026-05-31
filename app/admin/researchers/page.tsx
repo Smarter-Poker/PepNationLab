@@ -383,7 +383,7 @@ function ResearchersAdminPageInner() {
       {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-8)' }}>
         <div>
-          <h1 style={{ fontSize: '1.6rem', marginBottom: 'var(--space-2)' }}>
+          <h1 className="animated-gradient-text" style={{ fontSize: '1.6rem', marginBottom: 'var(--space-2)' }}>
             Researchers & Agents
           </h1>
           <p style={{ fontSize: '0.85rem', color: 'var(--grey-400)' }}>
@@ -539,17 +539,17 @@ function ResearchersAdminPageInner() {
           <p style={{ color: 'var(--red)', fontSize: '0.9rem' }}>{error}</p>
         </div>
       ) : filteredProfiles.length === 0 ? (
-        <div className="metal-frame">
+        <div className="metal-frame hover-lift stagger-fade-in" style={{ animationDelay: '0.1s' }}>
           <div className="metal-content" style={{ textAlign: 'center', padding: 'var(--space-12) 0' }}>
             <p style={{ color: 'var(--grey-400)', fontSize: '0.88rem' }}>No Matching Profiles Found</p>
           </div>
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
-          {paginatedProfiles.map(profile => {
+          {paginatedProfiles.map((profile, index) => {
             const ap = Array.isArray(profile.agent_profiles) ? profile.agent_profiles[0] : profile.agent_profiles;
             return (
-              <div key={profile.id} className="metal-frame" style={{ opacity: profile.is_active ? 1 : 0.6 }}>
+              <div key={profile.id} className="metal-frame hover-lift stagger-fade-in" style={{ opacity: profile.is_active ? 1 : 0.6, animationDelay: `${0.1 + Math.min(index, 5) * 0.1}s` }}>
                 <div className="metal-content" style={{
                   padding: 'var(--space-5)',
                   display: 'flex',
@@ -671,7 +671,7 @@ function ResearchersAdminPageInner() {
       {/* CREATE NEW AGENT MODAL */}
       {modalMode === 'create_agent' && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.88)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100, padding: 'var(--space-4)' }}>
-          <div className="metal-frame" style={{ width: '100%', maxWidth: 580, maxHeight: '92vh', overflowY: 'auto' }}>
+          <div className="metal-frame hover-lift stagger-fade-in" style={{ width: '100%', maxWidth: 580, maxHeight: '92vh', overflowY: 'auto' }}>
             <div className="metal-content" style={{ padding: 'var(--space-6)' }}>
               <h2 style={{ fontSize: '1.2rem', marginBottom: 'var(--space-2)' }}>Create New Agent</h2>
             <p style={{ fontSize: '0.8rem', color: 'var(--grey-400)', marginBottom: 'var(--space-6)' }}>
@@ -777,7 +777,7 @@ function ResearchersAdminPageInner() {
       {/* UPGRADE / CONFIGURE MODAL */}
       {(modalMode === 'upgrade' || modalMode === 'edit') && selectedProfile && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.88)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100, padding: 'var(--space-4)' }}>
-          <div className="metal-frame" style={{ width: '100%', maxWidth: 540, maxHeight: '90vh', overflowY: 'auto' }}>
+          <div className="metal-frame hover-lift stagger-fade-in" style={{ width: '100%', maxWidth: 540, maxHeight: '90vh', overflowY: 'auto' }}>
             <div className="metal-content" style={{ padding: 'var(--space-6)' }}>
               <h2 style={{ fontSize: '1.2rem', marginBottom: 'var(--space-2)' }}>
               {modalMode === 'upgrade' ? 'Upgrade User To Agent' : 'Configure Agent Profile'}

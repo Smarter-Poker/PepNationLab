@@ -343,6 +343,7 @@ export default function ProductCatalogClient({
       {/* Bulk Action Bar */}
       {selected.size > 0 && (
         <div
+          className="glass-header"
           style={{
             position: "sticky",
             top: 0,
@@ -390,7 +391,7 @@ export default function ProductCatalogClient({
       )}
 
       {/* Table */}
-      <div className="metal-frame">
+      <div className="metal-frame hover-lift stagger-fade-in">
         <div
           className="metal-content"
           style={{ padding: 0, overflowX: "auto" }}
@@ -447,6 +448,7 @@ export default function ProductCatalogClient({
                       {/* Main product row */}
                       <tr
                         key={p.id}
+                        className="table-row-hover"
                         style={{
                           borderBottom: isExpanded
                             ? "none"
@@ -631,6 +633,7 @@ export default function ProductCatalogClient({
                           return (
                             <tr
                               key={v.id}
+                              className="table-row-hover"
                               style={{
                                 borderBottom:
                                   vi < p.variants.length - 1

@@ -440,7 +440,7 @@ function AdminOrdersPageInner() {
         }}
       >
         <div>
-          <h1 style={{ fontSize: "1.6rem", marginBottom: "var(--space-2)" }}>
+          <h1 className="animated-gradient-text" style={{ fontSize: "1.6rem", marginBottom: "var(--space-2)" }}>
             Order Fulfillment Center
           </h1>
           <p style={{ fontSize: "0.85rem", color: "var(--grey-400)" }}>
@@ -616,6 +616,7 @@ function AdminOrdersPageInner() {
           {/* Sticky Bulk Action Bar (visible when selection is non-empty) */}
           {selectedIds.size > 0 && (
             <div
+              className="glass-header"
               style={{
                 position: "sticky",
                 top: 0,
@@ -800,7 +801,7 @@ function AdminOrdersPageInner() {
               {paginatedOrders.map((order) => (
                 <div
                   key={order.id}
-                  className="metal-frame"
+                  className="metal-frame hover-lift stagger-fade-in"
                   style={{
                     width: "100%",
                     cursor: "pointer",
@@ -920,8 +921,8 @@ function AdminOrdersPageInner() {
         <div>
           {selectedOrder ? (
             <div
-              className="metal-frame"
-              style={{ position: "sticky", top: "var(--space-6)" }}
+              className="metal-frame hover-lift"
+              style={{ position: "sticky", top: "var(--space-6)", zIndex: 10 }}
             >
               <div
                 className="metal-content"

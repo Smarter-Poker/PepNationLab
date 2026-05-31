@@ -70,7 +70,7 @@ export default async function AdminProductsPage() {
         }}
       >
         <div>
-          <h1 style={{ fontSize: "1.6rem", marginBottom: "var(--space-2)" }}>
+          <h1 className="animated-gradient-text" style={{ fontSize: "1.6rem", marginBottom: "var(--space-2)" }}>
             Product Catalog
           </h1>
           <p style={{ fontSize: "0.85rem", color: "var(--grey-400)" }}>

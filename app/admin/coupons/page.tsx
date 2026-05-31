@@ -216,7 +216,7 @@ export default function AdminCouponsPage() {
         }}
       >
         <div>
-          <h1 style={{ fontSize: '1.6rem', marginBottom: 'var(--space-2)' }}>Coupons</h1>
+          <h1 className="animated-gradient-text" style={{ fontSize: '1.6rem', marginBottom: 'var(--space-2)' }}>Coupons</h1>
           <p style={{ fontSize: '0.85rem', color: 'var(--grey-400)' }}>
             Manage Discount Codes Across All Agent Storefronts.
           </p>
@@ -262,7 +262,7 @@ export default function AdminCouponsPage() {
           <p style={{ color: 'var(--red)', fontSize: '0.9rem' }}>{error}</p>
         </div>
       ) : coupons.length === 0 ? (
-        <div className="metal-frame">
+        <div className="metal-frame hover-lift stagger-fade-in" style={{ animationDelay: '0.1s' }}>
           <div className="metal-content" style={{ textAlign: 'center', padding: 'var(--space-12) 0' }}>
             <p style={{ color: 'var(--grey-400)', fontSize: '0.88rem' }}>
               No Coupons Found. Click Create Coupon To Add One.
@@ -270,7 +270,7 @@ export default function AdminCouponsPage() {
           </div>
         </div>
       ) : (
-        <div className="metal-frame">
+        <div className="metal-frame hover-lift stagger-fade-in" style={{ animationDelay: '0.1s' }}>
           <div className="metal-content" style={{ padding: 'var(--space-4)' }}>
             <div className="table-responsive">
               <table className="data-table" style={{ width: '100%' }}>
@@ -294,7 +294,7 @@ export default function AdminCouponsPage() {
                     coupon.expires_at != null &&
                     new Date(coupon.expires_at).getTime() < Date.now();
                   return (
-                    <tr key={coupon.id}>
+                    <tr key={coupon.id} className="table-row-hover">
                       <td
                         style={{
                           fontFamily: 'var(--font-brand)',
@@ -391,7 +391,7 @@ export default function AdminCouponsPage() {
             padding: 'var(--space-4)',
           }}
         >
-          <div className="metal-frame" style={{ width: '100%', maxWidth: 560 }}>
+          <div className="metal-frame hover-lift stagger-fade-in" style={{ width: '100%', maxWidth: 560 }}>
             <div
               className="metal-content"
               style={{

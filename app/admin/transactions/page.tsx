@@ -157,6 +157,7 @@ function AdminTransactionsPageInner() {
       >
         <div>
           <h1
+            className="animated-gradient-text"
             style={{
               fontSize: "2rem",
               color: "var(--white)",
@@ -317,7 +318,7 @@ function AdminTransactionsPageInner() {
         </button>
       </div>
 
-      <div className="metal-frame">
+      <div className="metal-frame hover-lift stagger-fade-in">
         <div
           className="metal-content"
           style={{ padding: 0, overflowX: "auto" }}
@@ -457,6 +458,7 @@ function AdminTransactionsPageInner() {
                   return (
                     <tr
                       key={tx.id}
+                      className="table-row-hover"
                       style={{
                         borderBottom: "1px solid rgba(255,255,255,0.04)",
                       }}

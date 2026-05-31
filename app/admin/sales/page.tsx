@@ -95,7 +95,7 @@ export default function AdminSalesPage() {
       {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-8)', flexWrap: 'wrap', gap: 'var(--space-4)' }}>
         <div>
-          <h1 style={{ fontSize: '1.6rem', marginBottom: 'var(--space-2)' }}>
+          <h1 className="animated-gradient-text" style={{ fontSize: '1.6rem', marginBottom: 'var(--space-2)' }}>
             Sales Overview
           </h1>
           <p style={{ fontSize: '0.85rem', color: 'var(--grey-400)' }}>
@@ -165,8 +165,8 @@ export default function AdminSalesPage() {
               { label: 'Total Orders', value: data.totals.orders, color: 'var(--silver)' },
               { label: 'Active Agents', value: data.agents.length, color: 'var(--silver)' },
               { label: 'Direct Revenue', value: `$${data.direct.revenue.toFixed(2)}`, color: 'var(--grey-400)' },
-            ].map(({ label, value, color }) => (
-              <div key={label} className="metal-frame">
+            ].map(({ label, value, color }, index) => (
+              <div key={label} className="metal-frame hover-lift stagger-fade-in" style={{ animationDelay: `${0.1 + index * 0.1}s` }}>
                 <div className="metal-content" style={{ padding: 'var(--space-5)' }}>
                   <div style={{ fontSize: '1.8rem', fontWeight: 800, fontFamily: 'var(--font-brand)', color, lineHeight: 1 }}>{value}</div>
                   <div style={{ fontSize: '0.78rem', color: 'var(--grey-400)', marginTop: 'var(--space-2)' }}>{label}</div>
@@ -177,7 +177,7 @@ export default function AdminSalesPage() {
 
           {/* Agent Revenue Chart */}
           {data.agents.length > 0 && (
-            <div className="metal-frame" style={{ height: 320, marginBottom: 'var(--space-8)' }}>
+            <div className="metal-frame hover-lift stagger-fade-in" style={{ height: 320, marginBottom: 'var(--space-8)', animationDelay: '0.3s' }}>
               <div className="metal-content" style={{ padding: 'var(--space-6)', height: '100%' }}>
                 <h3 style={{ fontSize: '1.1rem', fontFamily: 'var(--font-brand)', color: 'var(--white)', marginBottom: 'var(--space-4)' }}>Revenue By Agent</h3>
                 <ResponsiveContainer width="100%" height="100%">
@@ -200,7 +200,7 @@ export default function AdminSalesPage() {
 
           <div style={{ display: 'grid', gridTemplateColumns: selectedAgent ? 'repeat(auto-fit, minmax(min(100%, 360px), 1fr))' : '1fr', gap: 'var(--space-6)', alignItems: 'start' }}>
             {/* Agent Table */}
-            <div className="metal-frame" style={{ overflowX: 'auto' }}>
+            <div className="metal-frame hover-lift stagger-fade-in" style={{ overflowX: 'auto', animationDelay: '0.4s' }}>
               <div className="metal-content" style={{ padding: 0 }}>
                 <div style={{ padding: 'var(--space-4) var(--space-5)', borderBottom: '1px solid rgba(255,255,255,0.06)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <h3 style={{ fontSize: '0.95rem', color: 'var(--silver)' }}>Revenue By Agent</h3>
@@ -228,6 +228,7 @@ export default function AdminSalesPage() {
                     return paginated.map((agent, i) => (
                     <tr key={agent.agent_id}
                       onClick={() => loadAgentLedger(agent)}
+                      className="table-row-hover"
                       style={{
                         borderBottom: i < paginated.length - 1 ? '1px solid rgba(255,255,255,0.04)' : 'none',
                         background: selectedAgent?.agent_id === agent.agent_id ? 'rgba(192,184,168,0.04)' : 'transparent',
@@ -280,7 +281,7 @@ export default function AdminSalesPage() {
 
             {/* Transaction Ledger Drawer */}
             {selectedAgent && (
-              <div className="metal-frame" style={{ position: 'sticky', top: 'var(--space-6)' }}>
+              <div className="metal-frame hover-lift stagger-fade-in" style={{ position: 'sticky', top: 'var(--space-6)' }}>
                 <div className="metal-content" style={{ padding: 'var(--space-5)' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-4)' }}>
                   <div>
