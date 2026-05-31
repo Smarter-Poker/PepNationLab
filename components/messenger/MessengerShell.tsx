@@ -344,29 +344,34 @@ export default function MessengerShell({ userId }: Props) {
           display: 'flex',
           height: '100%',
           overflow: 'hidden',
-          background: 'var(--surface-1, #0F1923)',
+          background: 'linear-gradient(180deg, #1a1f2e 0%, #141820 40%, #111520 100%)',
           position: 'relative',
         }}
       >
         {/* ---- Conversation list sidebar ---- */}
-        <aside className="messenger-sidebar" style={{
+        <aside className="messenger-sidebar card-metal" style={{
           flexShrink: 0,
           width: 320,
-          borderRight: '1px solid var(--surface-3, #1D2D3E)',
-          background: 'var(--surface-2, #162230)',
           display: 'flex',
           flexDirection: 'column',
+          borderRadius: 0, // Reset to fit container if needed, or we can keep it as is
+          borderTop: 'none',
+          borderBottom: 'none',
+          borderLeft: 'none',
+          borderRight: '1px solid rgba(255, 255, 255, 0.08)',
+          boxShadow: 'none',
+          background: 'linear-gradient(145deg, #111520 0%, #1a1f2e 100%)',
           // On mobile this slides out when a conv is active (CSS handles it)
         }}>
           <header style={{
-            padding: '10px 12px',
-            borderBottom: '1px solid var(--surface-3, #1D2D3E)',
+            padding: '12px 14px',
+            borderBottom: '1px solid rgba(255, 255, 255, 0.06)',
             display: 'flex',
             flexDirection: 'column',
-            gap: 8,
+            gap: 12,
             flexShrink: 0,
           }}>
-            <div style={{ fontWeight: 700, fontSize: '1rem', color: 'var(--white, #FFFFFF)' }}>Messenger</div>
+            <div style={{ fontWeight: 800, fontSize: '1.1rem', color: 'var(--white, #FFFFFF)', fontFamily: 'var(--font-brand)', letterSpacing: '0.02em' }}>Messenger</div>
             <SearchBar />
           </header>
           <ConversationList selfId={userId} />
@@ -380,29 +385,32 @@ export default function MessengerShell({ userId }: Props) {
           flexDirection: 'column',
           overflow: 'hidden',
           position: 'relative',
+          background: 'linear-gradient(180deg, #1a1f2e 0%, #141820 40%, #111520 100%)',
         }}>
           {/* Mobile back button — only visible on mobile when a conv is active */}
           {activeId && (
-            <button
+              <button
               type="button"
-              className="messenger-back-btn"
+              className="messenger-back-btn hover-lift"
               onClick={() => setActive(null)}
               aria-label="Back To Conversations"
               style={{
                 display: 'none', // shown via CSS on mobile
                 alignItems: 'center',
                 gap: 8,
-                padding: '8px 12px',
-                background: 'var(--surface-2, #162230)',
+                padding: '12px 16px',
+                background: 'linear-gradient(90deg, rgba(26,31,46,0.95) 0%, rgba(20,24,32,0.95) 100%)',
                 border: 'none',
-                borderBottom: '1px solid var(--surface-3, #1D2D3E)',
-                color: 'var(--teal, #00C4BC)',
+                borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
+                color: '#00C4BC',
                 cursor: 'pointer',
-                fontSize: '0.88rem',
-                fontWeight: 600,
+                fontSize: '0.9rem',
+                fontWeight: 700,
                 flexShrink: 0,
                 width: '100%',
                 textAlign: 'left',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.4)',
+                zIndex: 10,
               }}
             >
               <ArrowLeft size={16} aria-hidden="true" />

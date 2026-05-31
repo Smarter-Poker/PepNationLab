@@ -49,29 +49,26 @@ export default function ConversationList({ selfId }: Props) {
         style={{
           display: 'flex',
           justifyContent: 'flex-end',
-          padding: '6px 10px',
-          borderBottom: '1px solid var(--surface-3, #1D2D3E)',
+          padding: '12px 14px',
+          borderBottom: '1px solid rgba(255, 255, 255, 0.06)',
+          background: 'rgba(0,0,0,0.15)',
         }}
       >
         <button
           type="button"
           onClick={() => setComposeOpen(true)}
+          className="btn btn-primary"
           aria-label="Start A New Conversation"
           style={{
             display: 'inline-flex',
             alignItems: 'center',
             gap: 6,
-            padding: '4px 10px',
-            borderRadius: 6,
-            border: '1px solid var(--teal, #00C4BC)',
-            background: 'transparent',
-            color: 'var(--teal, #00C4BC)',
-            cursor: 'pointer',
-            fontWeight: 700,
-            fontSize: '0.78rem',
+            padding: '8px 14px',
+            fontSize: '0.85rem',
+            boxShadow: '0 2px 8px rgba(0,255,255,0.2)',
           }}
         >
-          <PenSquare size={12} aria-hidden="true" />
+          <PenSquare size={14} aria-hidden="true" />
           Compose
         </button>
       </div>

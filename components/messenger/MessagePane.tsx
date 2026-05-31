@@ -1076,19 +1076,23 @@ export default function MessagePane({ userId }: Props) {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          padding: '10px 14px',
-          borderBottom: '1px solid var(--surface-3, #1D2D3E)',
-          background: 'var(--surface-2, #162230)',
+          padding: '12px 16px',
+          borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
+          background: 'linear-gradient(145deg, #111520 0%, #1a1f2e 100%)',
+          boxShadow: '0 2px 10px rgba(0,0,0,0.5)',
           flexShrink: 0,
           gap: 8,
           minWidth: 0,
+          zIndex: 10,
         }}
       >
         <div
           style={{
-            fontWeight: 700,
-            fontSize: '0.95rem',
+            fontWeight: 800,
+            fontSize: '1.05rem',
             color: 'var(--white, #FFFFFF)',
+            fontFamily: 'var(--font-brand)',
+            letterSpacing: '0.01em',
             overflow: 'hidden',
             textOverflow: 'ellipsis',
             whiteSpace: 'nowrap',

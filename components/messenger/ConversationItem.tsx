@@ -39,6 +39,7 @@ export default function ConversationItem({ conversation, active, onClick }: Prop
   return (
     <button
       type="button"
+      className="hover-lift"
       onClick={onClick}
       style={{
         display: 'flex',
@@ -46,12 +47,14 @@ export default function ConversationItem({ conversation, active, onClick }: Prop
         gap: '12px',
         width: '100%',
         padding: '12px 14px',
-        background: active ? 'var(--surface-2, #162230)' : 'transparent',
+        background: active ? 'linear-gradient(90deg, rgba(0,196,188,0.1) 0%, rgba(0,0,0,0) 100%)' : 'transparent',
         border: 0,
-        borderBottom: '1px solid var(--surface-3, #1D2D3E)',
+        borderBottom: '1px solid rgba(255, 255, 255, 0.04)',
+        borderLeft: active ? '3px solid var(--teal)' : '3px solid transparent',
         cursor: 'pointer',
         textAlign: 'left',
         color: 'var(--white, #FFFFFF)',
+        transition: 'all 0.2s',
       }}
     >
       <Avatar name={label} avatarUrl={avatarToUse} size={44} />
@@ -68,7 +71,7 @@ export default function ConversationItem({ conversation, active, onClick }: Prop
           >
             {label}
           </span>
-          <span style={{ fontSize: '0.75rem', color: 'var(--grey-400, #A8B4C0)' }}>
+          <span style={{ fontSize: '0.75rem', color: active ? 'var(--teal)' : 'var(--grey-400, #A8B4C0)', transition: 'color 0.2s' }}>
             {timeAgo(conversation.last_message_at)}
           </span>
         </div>

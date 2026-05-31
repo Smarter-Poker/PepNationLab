@@ -62,10 +62,13 @@ export default function SearchBar() {
     <div style={{ position: 'relative', width: '100%' }}>
       <div
         style={{
-          display: 'flex', alignItems: 'center', gap: 6, padding: '6px 10px',
-          background: 'var(--surface-1, #0F1923)',
-          border: '1px solid var(--surface-3, #1D2D3E)', borderRadius: 8,
+          display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px',
+          background: 'rgba(0, 0, 0, 0.4)',
+          border: '1px solid rgba(255, 255, 255, 0.08)', borderRadius: 12,
+          boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.6)',
+          transition: 'all 0.2s',
         }}
+        className="hover-lift"
       >
         <Search size={14} aria-hidden="true" />
         <input
@@ -77,7 +80,7 @@ export default function SearchBar() {
           aria-label="Search Messages"
           style={{
             flex: 1, background: 'transparent', color: 'var(--white, #FFFFFF)',
-            border: 0, outline: 'none', fontSize: '0.88rem',
+            border: 0, outline: 'none', fontSize: '0.9rem',
           }}
         />
       </div>
