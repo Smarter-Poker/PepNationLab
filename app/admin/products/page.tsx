@@ -1,16 +1,17 @@
-import { createServiceClient } from "@/lib/supabase/server";
+import { createClient, createServiceClient } from "@/lib/supabase/server";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import ProductCatalogClient from "./ProductCatalogClient";
 import type { RawProduct } from "./ProductCatalogClient";
 
 export default async function AdminProductsPage() {
-  const supabase = await createServiceClient();
-
+  const supabaseAuth = await createClient();
   const {
     data: { user },
-  } = await supabase.auth.getUser();
+  } = await supabaseAuth.auth.getUser();
   if (!user) redirect("/login");
+
+  const supabase = await createServiceClient();
 
   const { data: profile } = await supabase
     .from("profiles")

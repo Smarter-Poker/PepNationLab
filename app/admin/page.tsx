@@ -1,4 +1,4 @@
-import { createServiceClient } from '@/lib/supabase/server';
+import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import AdminAnalytics from '@/components/AdminAnalytics';
@@ -29,7 +29,7 @@ function formatAuditAction(action: string): string {
 }
 
 export default async function AdminDashboard() {
-  const supabase = await createServiceClient();
+  const supabase = await createClient();
 
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect('/login');
