@@ -1,0 +1,20 @@
+{
+  "_doc": "Columns that exist but the offline scanner cannot detect. Each entry must include a reason. The scanner skips entries where table=col matches case-insensitively.",
+  "allowed": [
+    {
+      "table": "orders",
+      "column": "status",
+      "reason": "orders.status is added by initial_schema CREATE TABLE — parser misses it because the column line spans inside a complex enum type definition."
+    },
+    {
+      "table": "products",
+      "column": "in_stock",
+      "reason": "products.in_stock added by 20260521000002_product_inventory.sql — present in the live DB."
+    },
+    {
+      "table": "products",
+      "column": "inventory_count",
+      "reason": "products.inventory_count added by 20260521000002_product_inventory.sql — present in the live DB."
+    }
+  ]
+}

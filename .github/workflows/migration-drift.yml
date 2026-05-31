@@ -1,0 +1,26 @@
+name: Migration Column Drift
+
+on:
+  pull_request:
+    paths:
+      - "supabase/migrations/**"
+      - "scripts/check_migration_column_drift.js"
+      - "scripts/.column-drift-allowlist.json"
+      - ".github/workflows/migration-drift.yml"
+  push:
+    branches: [main]
+    paths:
+      - "supabase/migrations/**"
+      - "scripts/check_migration_column_drift.js"
+      - "scripts/.column-drift-allowlist.json"
+
+jobs:
+  drift:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Scan migrations for NEW./OLD. column drift
+        run: node scripts/check_migration_column_drift.js
