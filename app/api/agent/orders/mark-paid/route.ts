@@ -86,44 +86,41 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Failed To Update Order Status. Please Try Again.' }, { status: 500 });
   }
 
-  // ── 6. Messenger notification (fire-and-forget) ─────────────────────────
-  void (async () => {
-    try {
-      if (!order.buyer_id || !order.agent_id) return;
+  // ── 6. Messenger notification (awaited) ─────────────────────────
+  try {
+    if (order.buyer_id && order.agent_id) {
       const conversationId = await findOrCreateDirectConversation(svc, order.buyer_id, order.agent_id);
-      if (!conversationId) return;
+      if (conversationId) {
+        const shortId = orderId.slice(0, 8).toUpperCase();
+        const totalStr = Number(order.total).toFixed(2);
+        const statusMsg = isAgentPickup
+          ? `✅ Payment verified for Order #${shortId} ($${totalStr}). Your order has been approved for pickup — your agent will contact you shortly.`
+          : `✅ Payment verified for Order #${shortId} ($${totalStr}). Your order has been submitted to fulfillment for processing. You will receive a tracking number once shipped.`;
 
-      const shortId = orderId.slice(0, 8).toUpperCase();
-      const totalStr = Number(order.total).toFixed(2);
-      const statusMsg = isAgentPickup
-        ? `✅ Payment verified for Order #${shortId} ($${totalStr}). Your order has been approved for pickup — your agent will contact you shortly.`
-        : `✅ Payment verified for Order #${shortId} ($${totalStr}). Your order has been submitted to fulfillment for processing. You will receive a tracking number once shipped.`;
-
-      // Send as the agent (they are marking it paid)
-      await svc.from('messenger_messages').insert({
-        conversation_id: conversationId,
-        sender_id: callerId,
-        text: statusMsg,
-        message_type: 'text',
-        media_url: null,
-        media_metadata: {},
-      });
-    } catch (err) {
-      console.error('[mark-paid] messenger notification error:', err);
+        // Send as the agent (they are marking it paid)
+        await svc.from('messenger_messages').insert({
+          conversation_id: conversationId,
+          sender_id: callerId,
+          text: statusMsg,
+          message_type: 'text',
+          media_url: null,
+          media_metadata: {},
+        });
+      }
     }
-  })();
+  } catch (err) {
+    console.error('[mark-paid] messenger notification error:', err);
+  }
 
-  // ── 7. Notify admins (fire-and-forget) ─────────────────────────────────
+  // ── 7. Notify admins (awaited) ─────────────────────────────────
   if (!isAgentPickup) {
-    void (async () => {
-      try {
-        const { data: admins } = await svc
-          .from('profiles')
-          .select('id')
-          .eq('role', 'admin');
+    try {
+      const { data: admins } = await svc
+        .from('profiles')
+        .select('id')
+        .eq('role', 'admin');
 
-        if (!admins || admins.length === 0) return;
-
+      if (admins && admins.length > 0) {
         const shortId = orderId.slice(0, 8).toUpperCase();
         const totalStr = Number(order.total).toFixed(2);
 
@@ -131,15 +128,15 @@ export async function POST(req: NextRequest) {
           user_id: admin.id,
           title: 'Order Ready For Approval',
           body: `Order #${shortId} ($${totalStr}) — Payment verified by agent. Ready for fulfillment approval.`,
-          type: 'order',
-          metadata: { orderId, status: 'agent_approval_pending' },
+          type: 'system',
+          url: `/admin/orders/${orderId}`,
         }));
 
         await svc.from('notifications').insert(notifications);
-      } catch (err) {
-        console.error('[mark-paid] admin notification error:', err);
       }
-    })();
+    } catch (err) {
+      console.error('[mark-paid] admin notification error:', err);
+    }
   }
 
   return NextResponse.json({
@@ -150,14 +147,13 @@ export async function POST(req: NextRequest) {
   });
 }
 
-// ── Helper: find or create a direct conversation between two users ──────────
+// ── Helper shared with payment-proof route ─────────────────────────────────────
 async function findOrCreateDirectConversation(
   svc: Awaited<ReturnType<typeof createServiceClient>>,
   userAId: string,
   userBId: string
 ): Promise<string | null> {
   try {
-    // Step 1: Get all conversations where userA is a participant
     const { data: aParticipations } = await svc
       .from('messenger_participants')
       .select('conversation_id')
@@ -168,55 +164,43 @@ async function findOrCreateDirectConversation(
       .filter(Boolean) as string[];
 
     if (aConvoIds.length > 0) {
-      // Step 2: Check if userB is in any of those conversations
-      const { data: sharedPart } = await svc
-        .from('messenger_participants')
-        .select('conversation_id')
-        .eq('user_id', userBId)
-        .in('conversation_id', aConvoIds)
-        .limit(1)
-        .maybeSingle();
+      const { data: sharedDirectConvos } = await svc
+        .from('messenger_conversations')
+        .select('id')
+        .eq('type', 'direct')
+        .in('id', aConvoIds);
 
-      if (sharedPart?.conversation_id) {
-        // Step 3: Verify it's a direct conversation (not a group)
-        const { data: convo } = await svc
-          .from('messenger_conversations')
-          .select('id')
-          .eq('id', sharedPart.conversation_id)
-          .eq('type', 'direct')
+      const sharedDirectIds = (sharedDirectConvos ?? []).map(c => c.id);
+
+      if (sharedDirectIds.length > 0) {
+        const { data: sharedPart } = await svc
+          .from('messenger_participants')
+          .select('conversation_id')
+          .eq('user_id', userBId)
+          .in('conversation_id', sharedDirectIds)
+          .limit(1)
           .maybeSingle();
 
-        if (convo?.id) return convo.id;
+        if (sharedPart?.conversation_id) return sharedPart.conversation_id;
       }
     }
 
-    // No existing direct conversation found — create one
+    // Create a new direct conversation
     const { data: newConvo, error: convoErr } = await svc
       .from('messenger_conversations')
       .insert({ type: 'direct' })
       .select('id')
       .single();
 
-    if (convoErr || !newConvo?.id) {
-      console.error('[findOrCreate] conversation insert failed:', convoErr?.message);
-      return null;
-    }
+    if (convoErr || !newConvo?.id) return null;
 
-    const conversationId = newConvo.id;
-
-    const { error: partErr } = await svc.from('messenger_participants').insert([
-      { conversation_id: conversationId, user_id: userAId },
-      { conversation_id: conversationId, user_id: userBId },
+    await svc.from('messenger_participants').insert([
+      { conversation_id: newConvo.id, user_id: userAId },
+      { conversation_id: newConvo.id, user_id: userBId },
     ]);
 
-    if (partErr) {
-      console.error('[findOrCreate] participant insert failed:', partErr.message);
-      // Conversation was created but participants failed — still return the id
-    }
-
-    return conversationId;
-  } catch (err) {
-    console.error('[findOrCreate] unexpected error:', err);
+    return newConvo.id;
+  } catch {
     return null;
   }
 }

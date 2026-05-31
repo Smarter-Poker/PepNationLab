@@ -101,48 +101,44 @@ export async function POST(req: NextRequest) {
       }
       succeeded.push(id);
 
-      // In-app + push notifications (fire-and-forget) for bulk transitions.
-      void (async () => {
-        try {
-          const buyerId = typeof order.buyer_id === 'string' ? order.buyer_id : null;
-          const trackingNum = typeof order.tracking_number === 'string' ? order.tracking_number : null;
-          if (buyerId) {
-            const short = shortOrderId(id);
-            // In-app notification — shows in bell immediately via Realtime
-            await notifyAdminOrderStatusChange(supabase, buyerId, id, short, target, trackingNum);
-            // Web push
-            let event: BulkPushEvent | null = null;
-            if (target === 'approved_ship' || target === 'approved_pickup') event = 'order_approved';
-            else if (target === 'shipped') event = 'order_shipped';
-            else if (target === 'delivered') event = 'order_delivered';
-            if (event) {
-              await enqueueOrderPush(supabase, { userId: buyerId, orderId: id, event, tracking: trackingNum });
-            }
+      // In-app + push notifications (awaited) for bulk transitions.
+      try {
+        const buyerId = typeof order.buyer_id === 'string' ? order.buyer_id : null;
+        const trackingNum = typeof order.tracking_number === 'string' ? order.tracking_number : null;
+        if (buyerId) {
+          const short = shortOrderId(id);
+          // In-app notification — shows in bell immediately via Realtime
+          await notifyAdminOrderStatusChange(supabase, buyerId, id, short, target, trackingNum);
+          // Web push
+          let event: BulkPushEvent | null = null;
+          if (target === 'approved_ship' || target === 'approved_pickup') event = 'order_approved';
+          else if (target === 'shipped') event = 'order_shipped';
+          else if (target === 'delivered') event = 'order_delivered';
+          if (event) {
+            await enqueueOrderPush(supabase, { userId: buyerId, orderId: id, event, tracking: trackingNum });
           }
-        } catch { /* notifications must not block bulk response */ }
-      })();
+        }
+      } catch { /* notifications must not block bulk response */ }
 
-      // Fire-and-forget webhook for bulk admin transitions.
-      void (async () => {
-        try {
-          let webhookEvent: WebhookEventType | null = null;
-          if (target === 'approved_ship' || target === 'approved_pickup') webhookEvent = 'order.approved';
-          else if (target === 'shipped') webhookEvent = 'order.shipped';
-          else if (target === 'delivered') webhookEvent = 'order.delivered';
-          else if (target === 'cancelled') webhookEvent = 'order.cancelled';
-          if (webhookEvent) {
-            const orderPayload = await fetchOrderForWebhook(supabase, id);
-            if (orderPayload) {
-              await enqueueWebhook(supabase, {
-                event: webhookEvent,
-                agentId: (orderPayload as { agent_id?: string | null }).agent_id ?? null,
-                payload: { order: orderPayload },
-                relatedOrderId: id,
-              });
-            }
+      // Awaited webhook for bulk admin transitions.
+      try {
+        let webhookEvent: WebhookEventType | null = null;
+        if (target === 'approved_ship' || target === 'approved_pickup') webhookEvent = 'order.approved';
+        else if (target === 'shipped') webhookEvent = 'order.shipped';
+        else if (target === 'delivered') webhookEvent = 'order.delivered';
+        else if (target === 'cancelled') webhookEvent = 'order.cancelled';
+        if (webhookEvent) {
+          const orderPayload = await fetchOrderForWebhook(supabase, id);
+          if (orderPayload) {
+            await enqueueWebhook(supabase, {
+              event: webhookEvent,
+              agentId: (orderPayload as { agent_id?: string | null }).agent_id ?? null,
+              payload: { order: orderPayload },
+              relatedOrderId: id,
+            });
           }
-        } catch { /* webhook must not break bulk response */ }
-      })();
+        }
+      } catch { /* webhook must not break bulk response */ }
     }
 
     return NextResponse.json({

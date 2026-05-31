@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createServiceClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/server';
 import { assertSameOrigin } from '@/lib/csrf';
 import { requireSession, getParticipant } from '@/lib/messenger/server';
 import { messengerRateLimit, messengerRateLimitResponse } from '@/lib/messengerRateLimit';
@@ -24,7 +24,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Invalid Body', details: parsed.error.flatten() }, { status: 400 });
   }
 
-  const svc = await createServiceClient();
+  const svc = createAdminClient();
   const { data: msg } = await svc
     .from('messenger_messages')
     .select('id, conversation_id, sender_id, is_deleted')

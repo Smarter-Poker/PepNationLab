@@ -54,19 +54,17 @@ export async function POST(req: NextRequest) {
         console.error('Cancel order update failed:', cancelError.message);
         return NextResponse.json({ error: 'Failed to cancel order. Please try again.' }, { status: 500 });
       }
-      void (async () => {
-        try {
-          const orderPayload = await fetchOrderForWebhook(supabase, orderId);
-          if (orderPayload) {
-            await enqueueWebhook(supabase, {
-              event: 'order.cancelled',
-              agentId: (orderPayload as { agent_id?: string | null }).agent_id ?? null,
-              payload: { order: orderPayload },
-              relatedOrderId: orderId,
-            });
-          }
-        } catch { /* webhook errors must not break the cancel */ }
-      })();
+      try {
+        const orderPayload = await fetchOrderForWebhook(supabase, orderId);
+        if (orderPayload) {
+          await enqueueWebhook(supabase, {
+            event: 'order.cancelled',
+            agentId: (orderPayload as { agent_id?: string | null }).agent_id ?? null,
+            payload: { order: orderPayload },
+            relatedOrderId: orderId,
+          });
+        }
+      } catch { /* webhook errors must not break the cancel */ }
       return NextResponse.json({ success: true, status: 'cancelled' });
     }
 
@@ -223,59 +221,51 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Fire-and-forget in-app + push notification — never blocks order completion.
+    // Awaited in-app + push notification — never blocks order completion.
     if ((newStatus === 'approved_ship' || newStatus === 'approved_pickup') && order.buyer_id) {
-      void (async () => {
-        try {
-          const short = shortOrderId(orderId);
-          await notifyOrderApproved(supabase, order.buyer_id, orderId, short);
-          await enqueueOrderPush(supabase, { userId: order.buyer_id, orderId, event: 'order_approved' });
-        } catch { /* notification failures must not break the order */ }
-      })();
+      try {
+        const short = shortOrderId(orderId);
+        await notifyOrderApproved(supabase, order.buyer_id, orderId, short);
+        await enqueueOrderPush(supabase, { userId: order.buyer_id, orderId, event: 'order_approved' });
+      } catch { /* notification failures must not break the order */ }
     }
 
     // Notify the agent that a commission was earned (DB trigger auto-creates the row).
     // This fires for any order where agent_id ≠ buyer_id (self-buys are excluded by the trigger).
     if ((newStatus === 'approved_ship' || newStatus === 'approved_pickup') && order.agent_id && order.agent_id !== order.buyer_id) {
-      void (async () => {
-        try {
-          // Look up the commission amount that the DB trigger just created
-          const { data: comm } = await supabase
-            .from('agent_commissions')
-            .select('commission_amount')
-            .eq('order_id', orderId)
-            .maybeSingle();
-          if (comm?.commission_amount) {
-            const fmt = `$${Number(comm.commission_amount).toFixed(2)}`;
-            await notifyCommissionEarned(supabase, order.agent_id, fmt, orderId);
-          }
-        } catch { /* notification failures must not break the order */ }
-      })();
-    }
-
-    // Auto-enqueue label job for shipping orders — fire-and-forget, idempotent server-side.
-    if (newStatus === 'approved_ship') {
-      void (async () => {
-        try {
-          await supabase.rpc('shippo_enqueue_label_job', { p_order_id: orderId });
-        } catch { /* enqueue failures must not break order approval */ }
-      })();
-    }
-
-    // Fire-and-forget webhook: order.approved
-    void (async () => {
       try {
-        const orderPayload = await fetchOrderForWebhook(supabase, orderId);
-        if (orderPayload) {
-          await enqueueWebhook(supabase, {
-            event: 'order.approved',
-            agentId: (orderPayload as { agent_id?: string | null }).agent_id ?? null,
-            payload: { order: orderPayload },
-            relatedOrderId: orderId,
-          });
+        // Look up the commission amount that the DB trigger just created
+        const { data: comm } = await supabase
+          .from('agent_commissions')
+          .select('commission_amount')
+          .eq('order_id', orderId)
+          .maybeSingle();
+        if (comm?.commission_amount) {
+          const fmt = `$${Number(comm.commission_amount).toFixed(2)}`;
+          await notifyCommissionEarned(supabase, order.agent_id, fmt, orderId);
         }
-      } catch { /* webhook errors must not break the order */ }
-    })();
+      } catch { /* notification failures must not break the order */ }
+    }
+
+    // Auto-enqueue label job for shipping orders — awaited, idempotent server-side.
+    if (newStatus === 'approved_ship') {
+      try {
+        await supabase.rpc('shippo_enqueue_label_job', { p_order_id: orderId });
+      } catch { /* enqueue failures must not break order approval */ }
+    }
+
+    // Awaited webhook: order.approved
+    try {
+      const orderPayload = await fetchOrderForWebhook(supabase, orderId);
+      if (orderPayload) {
+        await enqueueWebhook(supabase, {
+          event: 'order.approved',
+          agentId: (orderPayload as { agent_id?: string | null }).agent_id ?? null,
+          payload: { order: orderPayload },
+          relatedOrderId: orderId,
+        });
+      }
+    } catch { /* webhook errors must not break the order */ }
 
     return NextResponse.json({ success: true, status: newStatus });
   } catch (error) {

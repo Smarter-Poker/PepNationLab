@@ -184,31 +184,27 @@ export async function GET(req: NextRequest) {
           .maybeSingle();
 
         if (orderRow?.buyer_id) {
-          void (async () => {
-            try {
-              const short = shortOrderId(orderId);
-              // In-app notification — shows in bell immediately
-              await notifyOrderShipped(supabase, orderRow.buyer_id, orderId, short, result.trackingNumber ?? undefined);
-              // Web push
-              await enqueueOrderPush(supabase, { userId: orderRow.buyer_id, orderId, event: 'order_shipped', tracking: result.trackingNumber });
-            } catch { /* non-blocking */ }
-          })();
+          try {
+            const short = shortOrderId(orderId);
+            // In-app notification — shows in bell immediately
+            await notifyOrderShipped(supabase, orderRow.buyer_id, orderId, short, result.trackingNumber ?? undefined);
+            // Web push
+            await enqueueOrderPush(supabase, { userId: orderRow.buyer_id, orderId, event: 'order_shipped', tracking: result.trackingNumber });
+          } catch { /* non-blocking */ }
         }
 
-        void (async () => {
-          try {
-            const orderPayload = await fetchOrderForWebhook(supabase, orderId);
-            if (orderPayload) {
-              await enqueueWebhook(supabase, {
-                event: 'order.shipped',
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                agentId: (orderPayload as any).agent_id ?? null,
-                payload: { order: orderPayload },
-                relatedOrderId: orderId,
-              });
-            }
-          } catch { /* non-blocking */ }
-        })();
+        try {
+          const orderPayload = await fetchOrderForWebhook(supabase, orderId);
+          if (orderPayload) {
+            await enqueueWebhook(supabase, {
+              event: 'order.shipped',
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              agentId: (orderPayload as any).agent_id ?? null,
+              payload: { order: orderPayload },
+              relatedOrderId: orderId,
+            });
+          }
+        } catch { /* non-blocking */ }
       }
     }
   } catch (err: unknown) {

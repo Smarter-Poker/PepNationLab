@@ -62,31 +62,27 @@ export async function POST(req: NextRequest) {
 
     const { trackingNumber, labelUrl } = result;
 
-    // Fire-and-forget in-app + push notification — never blocks shipping.
+    // Awaited in-app + push notification — never blocks shipping.
     if (order.buyer_id) {
-      void (async () => {
-        try {
-          const short = shortOrderId(orderId);
-          await notifyOrderShipped(supabase, order.buyer_id, orderId, short, trackingNumber ?? undefined);
-          await enqueueOrderPush(supabase, { userId: order.buyer_id, orderId, event: 'order_shipped', tracking: trackingNumber });
-        } catch { /* notification failures must not break shipping */ }
-      })();
+      try {
+        const short = shortOrderId(orderId);
+        await notifyOrderShipped(supabase, order.buyer_id, orderId, short, trackingNumber ?? undefined);
+        await enqueueOrderPush(supabase, { userId: order.buyer_id, orderId, event: 'order_shipped', tracking: trackingNumber });
+      } catch { /* notification failures must not break shipping */ }
     }
 
-    // Fire-and-forget webhook: order.shipped
-    void (async () => {
-      try {
-        const orderPayload = await fetchOrderForWebhook(supabase, orderId);
-        if (orderPayload) {
-          await enqueueWebhook(supabase, {
-            event: 'order.shipped',
-            agentId: (orderPayload as { agent_id?: string | null }).agent_id ?? null,
-            payload: { order: orderPayload },
-            relatedOrderId: orderId,
-          });
-        }
-      } catch { /* webhook errors must not break shipping */ }
-    })();
+    // Awaited webhook: order.shipped
+    try {
+      const orderPayload = await fetchOrderForWebhook(supabase, orderId);
+      if (orderPayload) {
+        await enqueueWebhook(supabase, {
+          event: 'order.shipped',
+          agentId: (orderPayload as { agent_id?: string | null }).agent_id ?? null,
+          payload: { order: orderPayload },
+          relatedOrderId: orderId,
+        });
+      }
+    } catch { /* webhook errors must not break shipping */ }
 
     return NextResponse.json({ success: true, trackingNumber, labelUrl });
   } catch (error) {

@@ -124,68 +124,66 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
   }
 
-  // Write audit log entry (fire-and-forget — must not block admin response).
-  void supabase.from('admin_audit_log').insert({
-    actor_id: gate.userId,
-    action: 'order_status_updated',
-    entity_type: 'order',
-    entity_id: id,
-    changes: {
-      from: currentStatus,
-      to: status,
-      ...(tracking_number !== undefined ? { tracking_number } : {}),
-      ...(agent_approval_notes !== undefined ? { agent_approval_notes } : {}),
-    },
-  });
+  // Write audit log entry (awaited).
+  try {
+    await supabase.from('admin_audit_log').insert({
+      actor_id: gate.userId,
+      action: 'order_status_updated',
+      entity_type: 'order',
+      entity_id: id,
+      changes: {
+        from: currentStatus,
+        to: status,
+        ...(tracking_number !== undefined ? { tracking_number } : {}),
+        ...(agent_approval_notes !== undefined ? { agent_approval_notes } : {}),
+      },
+    });
+  } catch { /* ignore audit failure */ }
 
-  // In-app + push notifications (fire-and-forget — must never break the admin write).
-  void (async () => {
-    try {
-      const { data: orderRow } = await supabase
-        .from('orders')
-        .select('buyer_id, tracking_number')
-        .eq('id', id)
-        .maybeSingle();
+  // In-app + push notifications (awaited)
+  try {
+    const { data: orderRow } = await supabase
+      .from('orders')
+      .select('buyer_id, tracking_number')
+      .eq('id', id)
+      .maybeSingle();
 
-      if (orderRow?.buyer_id) {
-        const short = shortOrderId(id);
-        const trk = orderRow.tracking_number || tracking_number || null;
-        // In-app notification — writes to notifications table → shows in bell immediately
-        await notifyAdminOrderStatusChange(supabase, orderRow.buyer_id, id, short, status, trk);
+    if (orderRow?.buyer_id) {
+      const short = shortOrderId(id);
+      const trk = orderRow.tracking_number || tracking_number || null;
+      // In-app notification — writes to notifications table → shows in bell immediately
+      await notifyAdminOrderStatusChange(supabase, orderRow.buyer_id, id, short, status, trk);
 
-        // Web push for supported statuses
-        let event: OrderPushEvent | null = null;
-        if (status === 'approved_ship' || status === 'approved_pickup') event = 'order_approved';
-        else if (status === 'shipped') event = 'order_shipped';
-        else if (status === 'delivered') event = 'order_delivered';
-        if (event) {
-          await enqueueOrderPush(supabase, { userId: orderRow.buyer_id, orderId: id, event, tracking: trk });
-        }
+      // Web push for supported statuses
+      let event: OrderPushEvent | null = null;
+      if (status === 'approved_ship' || status === 'approved_pickup') event = 'order_approved';
+      else if (status === 'shipped') event = 'order_shipped';
+      else if (status === 'delivered') event = 'order_delivered';
+      if (event) {
+        await enqueueOrderPush(supabase, { userId: orderRow.buyer_id, orderId: id, event, tracking: trk });
       }
-    } catch { /* notifications must not break admin response */ }
-  })();
+    }
+  } catch { /* notifications must not break admin response */ }
 
-  // Fire-and-forget webhook for status transitions admins drive.
-  void (async () => {
-    try {
-      let webhookEvent: WebhookEventType | null = null;
-      if (status === 'approved_ship' || status === 'approved_pickup') webhookEvent = 'order.approved';
-      else if (status === 'shipped') webhookEvent = 'order.shipped';
-      else if (status === 'delivered') webhookEvent = 'order.delivered';
-      else if (status === 'cancelled') webhookEvent = 'order.cancelled';
-      if (webhookEvent) {
-        const orderPayload = await fetchOrderForWebhook(supabase, id);
-        if (orderPayload) {
-          await enqueueWebhook(supabase, {
-            event: webhookEvent,
-            agentId: (orderPayload as { agent_id?: string | null }).agent_id ?? null,
-            payload: { order: orderPayload },
-            relatedOrderId: id,
-          });
-        }
+  // Awaited webhook for status transitions admins drive.
+  try {
+    let webhookEvent: WebhookEventType | null = null;
+    if (status === 'approved_ship' || status === 'approved_pickup') webhookEvent = 'order.approved';
+    else if (status === 'shipped') webhookEvent = 'order.shipped';
+    else if (status === 'delivered') webhookEvent = 'order.delivered';
+    else if (status === 'cancelled') webhookEvent = 'order.cancelled';
+    if (webhookEvent) {
+      const orderPayload = await fetchOrderForWebhook(supabase, id);
+      if (orderPayload) {
+        await enqueueWebhook(supabase, {
+          event: webhookEvent,
+          agentId: (orderPayload as { agent_id?: string | null }).agent_id ?? null,
+          payload: { order: orderPayload },
+          relatedOrderId: id,
+        });
       }
-    } catch { /* webhook must not break admin response */ }
-  })();
+    }
+  } catch { /* webhook must not break admin response */ }
 
   return NextResponse.json({ success: true });
 }

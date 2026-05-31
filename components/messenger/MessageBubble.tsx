@@ -256,9 +256,9 @@ export default function MessageBubble({
           onClick={(e) => { e.stopPropagation(); setMenuOpen(v => !v); }}
           style={{
             position: 'absolute',
-            top: -14,
+            top: -24,
             // Own messages: button on the left. Others: button on the right.
-            ...(isOwn ? { left: -36 } : { right: -36 }),
+            ...(isOwn ? { left: -50 } : { right: -50 }),
             background: menuOpen ? 'var(--surface-3, #1D2D3E)' : 'var(--surface-2, #162230)',
             border: '1px solid var(--surface-3, #1D2D3E)',
             borderRadius: 6,
@@ -275,7 +275,7 @@ export default function MessageBubble({
           }}
           className="msg-action-btn"
         >
-          <MoreHorizontal size={14} />
+          <MoreHorizontal size={35} />
         </button>
       )}
       {(isPinned || isBookmarked || currentLabels.length > 0) && (
@@ -314,12 +314,12 @@ export default function MessageBubble({
         {renderBody()}
         {menuOpen && showActionMenu && (
           <div role="menu" aria-label="Message Actions"
-            style={{ position: 'absolute', top: '-44px', right: isOwn ? 0 : undefined, left: isOwn ? undefined : 0,
+            style={{ position: 'absolute', top: '-70px', right: isOwn ? 0 : undefined, left: isOwn ? undefined : 0,
               display: 'flex', gap: 4, background: 'var(--surface-3, #1D2D3E)', borderRadius: 8, padding: 4,
               boxShadow: '0 4px 12px rgba(0,0,0,0.4)', zIndex: 5 }}
           >
-            <button type="button" onClick={() => { onReply(message); setMenuOpen(false); }} style={menuBtn} aria-label="Reply" title="Reply"><Reply size={16} /></button>
-            <button type="button" onClick={() => { setMenuOpen(false); setPopoverOpen(true); }} style={menuBtn} aria-label="React" title="React"><Smile size={16} /></button>
+            <button type="button" onClick={() => { onReply(message); setMenuOpen(false); }} style={menuBtn} aria-label="Reply" title="Reply"><Reply size={40} /></button>
+            <button type="button" onClick={() => { setMenuOpen(false); setPopoverOpen(true); }} style={menuBtn} aria-label="React" title="React"><Smile size={40} /></button>
             {canRemind && (
               <button
                 type="button"
@@ -328,7 +328,7 @@ export default function MessageBubble({
                 aria-label="Remind Me"
                 title="Remind Me"
               >
-                <Bell size={16} />
+                <Bell size={40} />
               </button>
             )}
             {canReport && (
@@ -339,7 +339,7 @@ export default function MessageBubble({
                 aria-label="Report Message"
                 title="Report Message"
               >
-                <Flag size={16} />
+                <Flag size={40} />
               </button>
             )}
             {canPin && (
@@ -350,7 +350,7 @@ export default function MessageBubble({
                 aria-label={isPinned ? 'Unpin Message' : 'Pin Message'}
                 title={isPinned ? 'Unpin Message' : 'Pin Message'}
               >
-                <Pin size={16} />
+                <Pin size={40} />
               </button>
             )}
             {canBookmark && (
@@ -361,7 +361,7 @@ export default function MessageBubble({
                 aria-label={isBookmarked ? 'Remove Bookmark' : 'Bookmark'}
                 title={isBookmarked ? 'Remove Bookmark' : 'Bookmark'}
               >
-                <Bookmark size={16} />
+                <Bookmark size={40} />
               </button>
             )}
             {canLabel && (
@@ -372,7 +372,7 @@ export default function MessageBubble({
                 aria-label="Labels"
                 title="Labels"
               >
-                <Tag size={16} />
+                <Tag size={40} />
               </button>
             )}
             {canThread && (
@@ -383,13 +383,13 @@ export default function MessageBubble({
                 aria-label="Reply In Thread"
                 title="Reply In Thread"
               >
-                <MessageSquare size={16} />
+                <MessageSquare size={40} />
               </button>
             )}
             {isOwn && message.message_type === 'text' && (
-              <button type="button" onClick={() => { setMenuOpen(false); setEditing(true); }} style={menuBtn} aria-label="Edit" title="Edit"><Pencil size={16} /></button>
+              <button type="button" onClick={() => { setMenuOpen(false); setEditing(true); }} style={menuBtn} aria-label="Edit" title="Edit"><Pencil size={40} /></button>
             )}
-            <button type="button" onClick={() => { setMenuOpen(false); setConfirmDelete(true); }} style={menuBtn} aria-label="Delete" title="Delete"><Trash2 size={16} /></button>
+            <button type="button" onClick={() => { setMenuOpen(false); setConfirmDelete(true); }} style={menuBtn} aria-label="Delete" title="Delete"><Trash2 size={40} /></button>
           </div>
         )}
         {popoverOpen && (
@@ -463,7 +463,7 @@ export default function MessageBubble({
 
 const menuBtn: React.CSSProperties = {
   background: 'transparent', border: 0, color: 'var(--white, #FFFFFF)', cursor: 'pointer',
-  padding: 4, borderRadius: 4, display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+  padding: 10, borderRadius: 4, display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
 };
 const confirmBtn: React.CSSProperties = {
   background: 'var(--surface-1, #0F1923)', border: '1px solid var(--surface-3, #1D2D3E)',

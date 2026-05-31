@@ -151,27 +151,25 @@ export async function POST(req: NextRequest) {
     });
   }
 
-  // Fire-and-forget: in-app notification + push to all OTHER conversation participants.
+  // Awaited in-app notification + push to all OTHER conversation participants.
   // Never blocks the response — notification side-effects must not slow sends.
-  void (async () => {
-    try {
-      // Get sender display name
-      const { data: senderProfile } = await svc
-        .from('profiles')
-        .select('full_name')
-        .eq('id', user.id)
-        .maybeSingle();
-      const senderName = senderProfile?.full_name || 'Someone';
+  try {
+    // Get sender display name
+    const { data: senderProfile } = await svc
+      .from('profiles')
+      .select('full_name')
+      .eq('id', user.id)
+      .maybeSingle();
+    const senderName = senderProfile?.full_name || 'Someone';
 
-      // Get all OTHER participants in this conversation
-      const { data: participants } = await svc
-        .from('messenger_participants')
-        .select('user_id')
-        .eq('conversation_id', parsed.data.conversationId)
-        .neq('user_id', user.id);
+    // Get all OTHER participants in this conversation
+    const { data: participants } = await svc
+      .from('messenger_participants')
+      .select('user_id')
+      .eq('conversation_id', parsed.data.conversationId)
+      .neq('user_id', user.id);
 
-      if (!participants || participants.length === 0) return;
-
+    if (participants && participants.length > 0) {
       // Build notification body — truncate long messages
       const isMedia = !cleanText && parsed.data.mediaUrl;
       const rawBody = cleanText ?? (isMedia ? '📎 Media' : 'New Message');
@@ -195,10 +193,10 @@ export async function POST(req: NextRequest) {
           });
         })
       );
-    } catch {
-      // Never propagate — notifications are best-effort
     }
-  })();
+  } catch {
+    // Never propagate — notifications are best-effort
+  }
 
   return NextResponse.json({ message: inserted });
 }

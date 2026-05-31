@@ -705,77 +705,73 @@ export async function POST(request: NextRequest) {
     // Checkout disclaimer audit row was recorded above, prior to the order
     // insert, so a successful order implies a complete four-layer trail.
 
-    // Fire-and-forget abandoned-cart recovery attribution. We never fail the
+    // Awaited abandoned-cart recovery attribution. We never fail the
     // order if this lookup misses or errors — it is purely an analytics signal.
-    void (async () => {
-      try {
-        const fourteenDaysAgo = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString();
-        const { data: openReminder } = await serviceSupabase
+    try {
+      const fourteenDaysAgo = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString();
+      const { data: openReminder } = await serviceSupabase
+        .from('abandoned_cart_reminders')
+        .select('id')
+        .eq('user_id', user.id)
+        .is('recovered_order_id', null)
+        .gt('sent_at', fourteenDaysAgo)
+        .order('sent_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (openReminder?.id) {
+        await serviceSupabase
           .from('abandoned_cart_reminders')
-          .select('id')
-          .eq('user_id', user.id)
-          .is('recovered_order_id', null)
-          .gt('sent_at', fourteenDaysAgo)
-          .order('sent_at', { ascending: false })
-          .limit(1)
-          .maybeSingle();
-        if (openReminder?.id) {
-          await serviceSupabase
-            .from('abandoned_cart_reminders')
-            .update({ recovered_order_id: order.id })
-            .eq('id', openReminder.id);
-        }
-      } catch {
-        // Best-effort attribution; never bubble up.
+          .update({ recovered_order_id: order.id })
+          .eq('id', openReminder.id);
       }
-    })();
+    } catch {
+      // Best-effort attribution; never bubble up.
+    }
 
-    // Fire-and-forget: in-app + push notifications for new order.
-    void (async () => {
-      try {
-        const short = shortOrderId(order.id);
-        // 1. Notify agent when a researcher places an order
-        if (agentProfile && !isAgentSelfBuy) {
-          const { data: buyerProfile } = await serviceSupabase
-            .from('profiles')
-            .select('full_name')
-            .eq('id', user.id)
-            .maybeSingle();
-          const buyerName = buyerProfile?.full_name || 'A Researcher';
-          // In-app notification for agent
-          await notifyOrderPlaced(serviceSupabase, agentProfile.id, order.id, short, buyerName);
-          // Web push for agent
-          await enqueuePush(serviceSupabase, {
-            userId: agentProfile.id,
-            title: `New Order #${short}`,
-            body: `${buyerName} Placed A New Order. Tap To Review.`,
-            url: `/dashboard/agent?tab=orders`,
-            event: 'order_new',
-            relatedOrderId: order.id,
-            tag: `new-order-${order.id}`,
-          });
-        }
-        // 2. In-app + push confirm to researcher
-        await notify(serviceSupabase, {
-          userId: user.id,
-          type: 'order_placed',
-          title: `Order #${short} Placed`,
-          body: 'Your order has been placed. You will be notified when it is approved.',
-          url: `/orders/${order.id}`,
-        });
+    // Awaited in-app + push notifications for new order.
+    try {
+      const short = shortOrderId(order.id);
+      // 1. Notify agent when a researcher places an order
+      if (agentProfile && !isAgentSelfBuy) {
+        const { data: buyerProfile } = await serviceSupabase
+          .from('profiles')
+          .select('full_name')
+          .eq('id', user.id)
+          .maybeSingle();
+        const buyerName = buyerProfile?.full_name || 'A Researcher';
+        // In-app notification for agent
+        await notifyOrderPlaced(serviceSupabase, agentProfile.id, order.id, short, buyerName);
+        // Web push for agent
         await enqueuePush(serviceSupabase, {
-          userId: user.id,
-          title: `Order #${short} Placed`,
-          body: 'Your Order Has Been Placed. You Will Be Notified When It Is Approved.',
-          url: `/orders/${order.id}`,
-          event: 'order_placed',
+          userId: agentProfile.id,
+          title: `New Order #${short}`,
+          body: `${buyerName} Placed A New Order. Tap To Review.`,
+          url: `/dashboard/agent?tab=orders`,
+          event: 'order_new',
           relatedOrderId: order.id,
-          tag: `order-placed-${order.id}`,
+          tag: `new-order-${order.id}`,
         });
-      } catch {
-        // Never propagate — notifications are best-effort
       }
-    })();
+      // 2. In-app + push confirm to researcher
+      await notify(serviceSupabase, {
+        userId: user.id,
+        type: 'order_placed',
+        title: `Order #${short} Placed`,
+        body: 'Your order has been placed. You will be notified when it is approved.',
+        url: `/orders/${order.id}`,
+      });
+      await enqueuePush(serviceSupabase, {
+        userId: user.id,
+        title: `Order #${short} Placed`,
+        body: 'Your Order Has Been Placed. You Will Be Notified When It Is Approved.',
+        url: `/orders/${order.id}`,
+        event: 'order_placed',
+        relatedOrderId: order.id,
+        tag: `order-placed-${order.id}`,
+      });
+    } catch {
+      // Never propagate — notifications are best-effort
+    }
 
     return NextResponse.json({
       success: true,
