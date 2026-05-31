@@ -73,13 +73,23 @@ export async function GET(req: NextRequest) {
       const buyer = pickOne<{ full_name?: string; email?: string }>((o as any).profiles);
       return {
         id: o.id,
+        buyer_id: o.buyer_id,
         status: o.status,
+        fulfillment_method: o.fulfillment_method,
+        payment_method: o.payment_method,
+        shipping_address: o.shipping_address,
+        shipping_cost: o.shipping_cost,
+        subtotal: o.subtotal,
+        total: o.total,
+        discount_amount: o.discount_amount,
+        coupon_code: o.coupon_code,
         created_at: o.created_at,
         buyer_name: buyer?.full_name || buyer?.email || null,
-        subtotal: o.subtotal,
-        discount_amount: o.discount_amount,
-        shipping_cost: o.shipping_cost,
-        total: o.total,
+        buyer_email: buyer?.email || null,
+        tracking_number: o.tracking_number,
+        label_url: o.label_url,
+        agent_id: o.agent_id,
+        is_sub_agent_order: o.is_sub_agent_order,
         profit,
         items: o.order_items
       };

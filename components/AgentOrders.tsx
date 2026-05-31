@@ -237,7 +237,7 @@ export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
           textTransform: 'uppercase',
         }}
       >
-        Referred Order Ledger
+        Completed Sales & Profit
       </h3>
       <div
         style={{

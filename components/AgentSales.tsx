@@ -24,6 +24,9 @@ export default function AgentSales({ orders, setOrders }: { orders: any[], setOr
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || 'Failed to fetch sales data');
       setData(json.data);
+      if (json.data?.sales) {
+        setOrders(json.data.sales);
+      }
     } catch (err: any) {
       setError(err.message);
     } finally {
