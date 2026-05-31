@@ -8,11 +8,15 @@ import VoicePlayer from './VoicePlayer';
 import ImageLightbox from './ImageLightbox';
 import LinkPreview from './LinkPreview';
 import LabelsMenu from './LabelsMenu';
+import Avatar from './Avatar';
 import { toast } from 'sonner';
 
 interface Props {
   message: Message;
   isOwn: boolean;
+  isFirst?: boolean;
+  isLast?: boolean;
+  senderName?: string | null;
   reactions: Reaction[];
   selfId: string;
   selfRole?: ParticipantRole | null;
@@ -74,7 +78,7 @@ function formatExpiry(iso: string | null): string | null {
 }
 
 export default function MessageBubble({
-  message, isOwn, reactions, selfId,
+  message, isOwn, isFirst = true, isLast = true, senderName, reactions, selfId,
   selfRole = null, conversationType,
   isPinned = false, currentLabels = [],
   onReply, onReact, onEdit, onDelete,
@@ -261,12 +265,19 @@ export default function MessageBubble({
   return (
     <div
       data-msg-id={message.id}
-      style={{ alignSelf: isOwn ? 'flex-end' : 'flex-start', maxWidth: '70%',
-        display: 'flex', flexDirection: 'column', gap: 2, position: 'relative' }}
+      style={{ alignSelf: isOwn ? 'flex-end' : 'flex-start', maxWidth: '75%',
+        display: 'flex', alignItems: 'flex-end', gap: 8, position: 'relative',
+        marginBottom: isLast ? 8 : 2 }}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       onContextMenu={(e) => { e.preventDefault(); if (editing || confirmDelete) return; setMenuOpen(!isMenuOpen); }}
     >
+      {!isOwn && (
+        <div style={{ width: 28, flexShrink: 0, opacity: isLast ? 1 : 0 }}>
+          {isLast && <Avatar name={senderName ?? ''} size={28} />}
+        </div>
+      )}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 2, position: 'relative', flex: 1, minWidth: 0, maxWidth: '100%' }}>
       {/* ── Visible action trigger button ── */}
       {showActionMenu && !message.is_deleted && (
         <button
@@ -317,10 +328,14 @@ export default function MessageBubble({
       <div
         style={{
           position: 'relative',
-          background: isOwn ? 'var(--teal, #00C4BC)' : 'var(--surface-2, #162230)',
-          color: isOwn ? '#000' : 'var(--white, #FFFFFF)',
-          padding: isMediaBubble ? 4 : '8px 12px',
-          borderRadius: 14, whiteSpace: 'pre-wrap', wordBreak: 'break-word',
+          background: isOwn ? 'linear-gradient(180deg, #0084FF 0%, #0073E6 100%)' : 'var(--surface-3, #1D2D3E)',
+          color: '#FFFFFF',
+          padding: isMediaBubble ? 4 : '8px 14px',
+          borderRadius: isMediaBubble ? 14 : isOwn
+            ? `18px ${isFirst ? '18px' : '4px'} 4px 18px`
+            : `${isFirst ? '18px' : '4px'} 18px 18px 4px`,
+          whiteSpace: 'pre-wrap', wordBreak: 'break-word',
+          boxShadow: '0 1px 2px rgba(0,0,0,0.1)',
           opacity: pending ? 0.7 : 1,
           border: failed ? '1px solid var(--red, #E53E3E)' : 'none',
         }}
@@ -453,7 +468,8 @@ export default function MessageBubble({
 
       <div
         style={{ fontSize: '0.7rem', color: 'var(--grey-400, #A8B4C0)',
-          alignSelf: isOwn ? 'flex-end' : 'flex-start', padding: '0 6px' }}
+          alignSelf: isOwn ? 'flex-end' : 'flex-start', padding: '0 6px',
+          marginTop: 2 }}
       >
         {failed ? 'Failed To Send' : pending ? 'Sending' : formatTime(message.created_at)}
         {message.is_edited && !message.is_deleted ? ' (Edited)' : ''}
@@ -461,6 +477,7 @@ export default function MessageBubble({
       </div>
 
       {lightbox && message.media_url && <ImageLightbox src={message.media_url} onClose={() => setLightbox(false)} />}
+      </div>
     </div>
   );
 }

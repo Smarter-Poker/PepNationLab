@@ -115,6 +115,7 @@ export default function MessagePane({ userId, activeCall, setActiveCall }: Props
   const [typingUserIds, setTypingUserIds] = useState<string[]>([]);
   const [infoOpen, setInfoOpen] = useState(false);
   const [selfRole, setSelfRole] = useState<ParticipantRole | null>(null);
+  const [participantsMap, setParticipantsMap] = useState<Record<string, { full_name?: string | null; username?: string | null }>>({});
   const [pinRefreshKey, setPinRefreshKey] = useState(0);
   const [pinnedIds, setPinnedIds] = useState<Set<string>>(new Set());
   const [labelsByMsg, setLabelsByMsg] = useState<Record<string, MessageLabelValue[]>>({});
@@ -318,9 +319,14 @@ export default function MessagePane({ userId, activeCall, setActiveCall }: Props
         ]);
         if (cancelled) return;
         if (rolesRes.ok) {
-          const json = (await rolesRes.json()) as { participants?: Array<{ user_id: string; role: ParticipantRole }> };
+          const json = (await rolesRes.json()) as { participants?: Array<{ user_id: string; role: ParticipantRole; full_name?: string | null; username?: string | null }> };
           const me = json.participants?.find((p) => p.user_id === userId);
           setSelfRole(me?.role ?? null);
+          const map: Record<string, { full_name?: string | null; username?: string | null }> = {};
+          json.participants?.forEach(p => {
+             map[p.user_id] = { full_name: p.full_name, username: p.username };
+          });
+          setParticipantsMap(map);
         }
         if (themeRes.ok) {
           const json = (await themeRes.json()) as { themeValue?: ThemeValue | null };
@@ -919,7 +925,7 @@ export default function MessagePane({ userId, activeCall, setActiveCall }: Props
         refreshKey={pinRefreshKey}
         onJump={handleJumpToMessage}
       />
-      <div className="msg-list" onClick={() => setActiveMenuId(null)} style={{ flex: 1, minHeight: 0, overflowY: 'auto', WebkitOverflowScrolling: 'touch', overscrollBehavior: 'contain', padding: 16, display: 'flex', flexDirection: 'column', gap: 8 }}>
+      <div className="msg-list" onClick={() => setActiveMenuId(null)} style={{ flex: 1, minHeight: 0, overflowY: 'auto', WebkitOverflowScrolling: 'touch', overscrollBehavior: 'contain', padding: 16, display: 'flex', flexDirection: 'column', gap: 0 }}>
         {loading && messages.length === 0 ? (
           <div style={{ color: 'var(--grey-400, #A8B4C0)', textAlign: 'center', marginTop: 32 }}>
             Loading Messages
@@ -935,7 +941,14 @@ export default function MessagePane({ userId, activeCall, setActiveCall }: Props
               if (!isDirectConv) return true;
               return !blockedIds.has(m.sender_id);
             })
-            .map((m) => {
+            .map((m, index, arr) => {
+              const isFirst = index === 0 || arr[index - 1].sender_id !== m.sender_id || (new Date(m.created_at).getTime() - new Date(arr[index - 1].created_at).getTime() > 5 * 60 * 1000);
+              const isLast = index === arr.length - 1 || arr[index + 1].sender_id !== m.sender_id || (new Date(arr[index + 1].created_at).getTime() - new Date(m.created_at).getTime() > 5 * 60 * 1000);
+              const senderProfile = participantsMap[m.sender_id] || {};
+              let senderName = senderProfile.full_name || senderProfile.username || 'User';
+              if (conversationType === 'direct' && currentConv && m.sender_id !== userId) {
+                 senderName = currentConv.counterparty_full_name || currentConv.counterparty_username || 'User';
+              }
               const isBlockedSender = blockedIds.has(m.sender_id) && m.sender_id !== userId;
               if (isBlockedSender && conversationType !== 'direct') {
                 return (
@@ -952,6 +965,7 @@ export default function MessagePane({ userId, activeCall, setActiveCall }: Props
                       fontStyle: 'italic',
                       fontSize: '0.82rem',
                       border: '1px dashed var(--surface-3, #1D2D3E)',
+                      marginBottom: isLast ? 8 : 2
                     }}
                   >
                     Message Hidden - Blocked User
@@ -963,6 +977,9 @@ export default function MessagePane({ userId, activeCall, setActiveCall }: Props
                   key={m.id}
                   message={m}
                   isOwn={m.sender_id === userId}
+                  isFirst={isFirst}
+                  isLast={isLast}
+                  senderName={senderName}
                   reactions={reactionsByMsg[m.id] ?? []}
                   selfId={userId}
                   selfRole={selfRole}
