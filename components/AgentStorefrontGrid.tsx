@@ -481,7 +481,7 @@ export default function AgentStorefrontGrid({
     return () => { cancelled = true; };
   }, [detailProduct, agentSlug]);
 
-  const [pendingQty, setPendingQty] = useState(isStorefrontOwner ? 10 : selfBuyMin);
+  const [pendingQty, setPendingQty] = useState(isStorefrontOwner ? Math.max(10, selfBuyMin) : selfBuyMin);
 
   // Load cart from localStorage on mount
   useEffect(() => {
@@ -1071,7 +1071,7 @@ export default function AgentStorefrontGrid({
                 // or restore existing cart qty, or 1 for researchers.
                 const defaultVId = group.defaultVariantId || group.variants[0]?.id;
                 const existingQty = defaultVId ? cartItems[defaultVId] : undefined;
-                setPendingQty(existingQty ?? (isStorefrontOwner ? 10 : selfBuyMin));
+                setPendingQty(existingQty ?? (isStorefrontOwner ? Math.max(10, selfBuyMin) : selfBuyMin));
               }}
             >
               <div className="metal-content" style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden', padding: 0 }}>
@@ -1899,7 +1899,7 @@ export default function AgentStorefrontGrid({
                       const nextGroup = groupByProductId.get(pid);
                       if (nextGroup) {
                         setDetailProduct(nextGroup);
-                        setPendingQty(isStorefrontOwner ? 10 : selfBuyMin);
+                        setPendingQty(isStorefrontOwner ? Math.max(10, selfBuyMin) : selfBuyMin);
                       }
                     }}
                   />
@@ -1924,7 +1924,7 @@ export default function AgentStorefrontGrid({
                         }));
                         setDetailProduct(null);
                         setShowBulkPricing(false); // close bulk pricing when item added
-                        setPendingQty(isStorefrontOwner ? 10 : selfBuyMin); // Reset to default for next open
+                        setPendingQty(isStorefrontOwner ? Math.max(10, selfBuyMin) : selfBuyMin); // Reset to default for next open
                         setShowCartFloat(true);
                       }}
                     >

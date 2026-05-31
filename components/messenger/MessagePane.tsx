@@ -955,6 +955,14 @@ export default function MessagePane({ userId, activeCall, setActiveCall }: Props
         }
       } catch {
         toast('Network Error');
+        setLabelsByMsg((cur) => {
+          const arr = cur[m.id] ?? [];
+          if (had) {
+            if (arr.includes(label)) return cur;
+            return { ...cur, [m.id]: [...arr, label] };
+          }
+          return { ...cur, [m.id]: arr.filter((l) => l !== label) };
+        });
       }
     },
     [labelsByMsg],
