@@ -65,6 +65,13 @@ export default async function AgentDashboardPage() {
     created_at: r.created_at
   }));
 
+  // 5.5. Fetch Sub-Agents (if this user is a Super Agent)
+  const { data: subAgents } = await supabase
+    .from('profiles')
+    .select('id')
+    .eq('parent_agent_id', user.id);
+  const agentIds = [user.id, ...(subAgents || []).map((a: any) => a.id)];
+
   // 6. Fetch referred/assigned orders
   const { data: ordersData } = await supabase
     .from('orders')
@@ -81,9 +88,10 @@ export default async function AgentDashboardPage() {
       created_at,
       tracking_number,
       label_url,
-      profiles!buyer_id(full_name, email)
+      profiles!buyer_id(full_name, email),
+      agent_id
     `)
-    .eq('agent_id', user.id)
+    .in('agent_id', agentIds)
     .order('created_at', { ascending: false });
 
   const orders = (ordersData || []).map((order: any) => {
@@ -109,7 +117,9 @@ export default async function AgentDashboardPage() {
       buyer_name: buyer_name || 'Anonymous Researcher',
       buyer_email: buyer_email || '',
       tracking_number: order.tracking_number,
-      label_url: order.label_url
+      label_url: order.label_url,
+      agent_id: order.agent_id,
+      is_sub_agent_order: order.agent_id !== user.id
     };
   });
 

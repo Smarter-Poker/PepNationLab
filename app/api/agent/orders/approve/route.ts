@@ -68,6 +68,20 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: true, status: 'cancelled' });
     }
 
+    let finalStatus = newStatus;
+    // Sub-Agents cannot bypass Super Agent approval. Their approval transitions
+    // the order to `agent_approval_pending` so the Super Agent can review it.
+    if (order.agent_id === callerId && orderAgentParentId !== null && (newStatus === 'approved_ship' || newStatus === 'approved_pickup')) {
+      finalStatus = 'agent_approval_pending';
+    }
+
+    if (finalStatus === 'agent_approval_pending') {
+      const updatePayload: Record<string, string> = { status: finalStatus, updated_at: new Date().toISOString() };
+      const { error: updateError } = await supabase.from('orders').update(updatePayload).eq('id', orderId);
+      if (updateError) return NextResponse.json({ error: 'Failed to forward order to Super Agent' }, { status: 500 });
+      return NextResponse.json({ success: true, status: finalStatus });
+    }
+
     const primaryBilledAgentId = orderAgentParentId || order.agent_id;
     const isSubAgentOrder = !!orderAgentParentId && primaryBilledAgentId !== order.agent_id;
 
@@ -191,7 +205,7 @@ export async function POST(req: NextRequest) {
       prepaidDeducted = true;
     }
 
-    const updatePayload: Record<string, string> = { status: newStatus, agent_approved_at: new Date().toISOString(), updated_at: new Date().toISOString() };
+    const updatePayload: Record<string, string> = { status: finalStatus, agent_approved_at: new Date().toISOString(), updated_at: new Date().toISOString() };
     if (tracking_number && typeof tracking_number === 'string') updatePayload.tracking_number = tracking_number;
 
     const { error: updateError } = await supabase.from('orders').update(updatePayload).eq('id', orderId);
@@ -222,7 +236,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Awaited in-app + push notification — never blocks order completion.
-    if ((newStatus === 'approved_ship' || newStatus === 'approved_pickup') && order.buyer_id) {
+    if ((finalStatus === 'approved_ship' || finalStatus === 'approved_pickup') && order.buyer_id) {
       try {
         const short = shortOrderId(orderId);
         await notifyOrderApproved(supabase, order.buyer_id, orderId, short);
@@ -235,13 +249,13 @@ export async function POST(req: NextRequest) {
         if (admins && admins.length > 0) {
           const short = shortOrderId(orderId);
           const totalStr = Number(totalOwed).toFixed(2);
-          const fulfillmentMsg = newStatus === 'approved_pickup' ? 'Ready for Agent Pickup' : 'Ready for Shipping';
+          const fulfillmentMsg = finalStatus === 'approved_pickup' ? 'Ready for Agent Pickup' : 'Ready for Shipping';
           const notifications = admins.map((admin) => ({
             user_id: admin.id,
             title: 'Order Ready For Fulfillment',
             body: `Order #${short} ($${totalStr}) — Agent Approved. ${fulfillmentMsg}.`,
             type: 'system',
-            url: `/admin/orders?status=${newStatus}`,
+            url: `/admin/orders?status=${finalStatus}`,
           }));
           await supabase.from('notifications').insert(notifications);
         }
@@ -254,7 +268,7 @@ export async function POST(req: NextRequest) {
     // and there is no commissions tab for them).
 
     // Auto-enqueue label job for shipping orders — awaited, idempotent server-side.
-    if (newStatus === 'approved_ship') {
+    if (finalStatus === 'approved_ship') {
       try {
         await supabase.rpc('shippo_enqueue_label_job', { p_order_id: orderId });
       } catch { /* enqueue failures must not break order approval */ }
@@ -273,7 +287,7 @@ export async function POST(req: NextRequest) {
       }
     } catch { /* webhook errors must not break the order */ }
 
-    return NextResponse.json({ success: true, status: newStatus });
+    return NextResponse.json({ success: true, status: finalStatus });
   } catch (error) {
     console.error('Agent Order Approve API Error:', error);
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });

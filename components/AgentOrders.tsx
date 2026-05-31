@@ -23,6 +23,8 @@ interface Order {
   buyer_email: string;
   tracking_number?: string | null;
   label_url?: string | null;
+  agent_id?: string;
+  is_sub_agent_order?: boolean;
 }
 
 interface OrderItem {
@@ -271,7 +273,20 @@ export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
           {orders.map((order) => {
             const isPendingPayment = order.status === 'pending_customer_payment';
             const isPendingApproval = order.status === 'agent_approval_pending';
-            const canApprove = isPendingPayment || isPendingApproval;
+            
+            let canApprove = false;
+            let approveText = 'Approve Order';
+
+            if (order.is_sub_agent_order) {
+              if (isPendingApproval) {
+                canApprove = true;
+                approveText = 'Approve Sub-Agent Order';
+              }
+            } else {
+              if (isPendingPayment || isPendingApproval) {
+                canApprove = true;
+              }
+            }
 
             return (
               <div
@@ -319,7 +334,7 @@ export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
                         WebkitTextFillColor: 'transparent',
                         textShadow: '0 2px 10px rgba(255,255,255,0.1)'
                       }}>
-                        Order #{order.id.slice(0, 8).toUpperCase()}
+                        {order.is_sub_agent_order ? `Sub-Agent Order #${order.id.slice(0, 8).toUpperCase()}` : `Order #${order.id.slice(0, 8).toUpperCase()}`}
                       </span>
                       <span style={{ fontSize: '0.85rem', color: 'var(--grey-400)', fontWeight: 600 }}>
                         •
@@ -515,7 +530,7 @@ export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
                       Cancel
                     </button>
                     
-                    {isPendingPayment && (
+                    {isPendingPayment && !order.is_sub_agent_order && (
                       <button
                         onClick={(e) => { e.stopPropagation(); handleMarkPaid(order.id); }}
                         className="btn btn-primary pulse-primary"
@@ -539,7 +554,7 @@ export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
                       </button>
                     )}
                     
-                    {isPendingApproval && (
+                    {canApprove && (
                       <button
                         onClick={(e) => { 
                           e.stopPropagation(); 
@@ -562,7 +577,7 @@ export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
                         disabled={loadingOrderId === order.id}
                       >
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                        {loadingOrderId === order.id ? 'Approving...' : 'Approve Order'}
+                        {loadingOrderId === order.id ? 'Approving...' : approveText}
                       </button>
                     )}
 
