@@ -364,7 +364,7 @@ export default function ResearcherDashboard({ userId, userName, userEmail, agent
   const currentTab = MENU_ITEMS.find(m => m.id === tab);
 
   return (
-    <div style={{ display: 'flex', minHeight: 'calc(100vh - 60px)', position: 'relative' }}>
+    <div style={{ display: 'flex', minHeight: 'calc(100dvh - 60px)', position: 'relative' }}>
 
       {/* ── Mobile sidebar backdrop ── */}
       {sidebarOpen && (

@@ -536,7 +536,7 @@ export default function AgentDashboardClient({
   ];
 
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--black)' }}>
+    <div style={{ minHeight: '100dvh', background: 'var(--black)' }}>
       {/* Mobile Top Navbar (Global) */}
       <Navbar onMenuClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} title={initialAgentProfile?.display_name || userProfile.full_name || 'AGENT DASHBOARD'} />
 
@@ -710,7 +710,7 @@ export default function AgentDashboardClient({
         }
       `}} />
 
-      <div className="dashboard-main" style={{ minHeight: '100vh' }}>
+      <div className="dashboard-main" style={{ minHeight: '100dvh' }}>
         <div className="container" style={{ paddingTop: 'var(--space-8)', paddingBottom: activeTab === 'Overview' ? 0 : 'var(--space-12)' }}>
           {/* Status Alerts */}
           {error && (

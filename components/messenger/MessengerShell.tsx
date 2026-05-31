@@ -338,7 +338,7 @@ export default function MessengerShell({ userId }: Props) {
             - aside: flex-shrink:0, width:320px
             - main:  flex:1 1 0, min-width:0
           ============================================================ */}
-    <div className="metal-frame" style={{ height: 'calc(100vh - 60px)', display: 'flex', flexDirection: 'column' }}>
+    <div className="metal-frame" style={{ height: 'calc(100dvh - 60px)', display: 'flex', flexDirection: 'column' }}>
       <div
         className={`messenger-shell metal-content${activeId ? ' msg-panel-active' : ''}`}
         style={{

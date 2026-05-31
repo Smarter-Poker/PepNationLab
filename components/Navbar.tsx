@@ -476,7 +476,7 @@ export default function Navbar({ onMenuClick, isOpen, title }: { onMenuClick?: (
         )}
 
         {/* Navigation links */}
-        <nav style={{ flex: 1, padding: 'var(--space-3) 0' }}>
+        <nav style={{ flex: 1, padding: 'var(--space-3) 0', paddingBottom: 'calc(var(--space-6) + env(safe-area-inset-bottom, 24px))' }}>
           {/* Common links */}
           <DrawerLink href={dashLink} label="Home" onClick={closeDrawer}
             icon={<svg {...IP}><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>}

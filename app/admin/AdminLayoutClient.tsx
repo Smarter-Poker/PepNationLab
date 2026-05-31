@@ -89,7 +89,7 @@ export function AdminLayoutClient({
           position: 'sticky',
           top: 60,
           alignSelf: 'flex-start',
-          height: 'calc(100vh - 60px)',
+          height: 'calc(100dvh - 60px)',
           overflowY: 'auto',
           flexShrink: 0,
           display: 'flex',
