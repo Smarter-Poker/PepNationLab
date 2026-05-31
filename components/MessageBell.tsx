@@ -8,6 +8,7 @@ import {
   unsubscribe,
   type ParticipantUnreadRow,
 } from '@/lib/messenger/realtime';
+import { useMessengerStore } from '@/stores/messengerStore';
 
 interface InboxMessage {
   id: string;
@@ -138,6 +139,7 @@ export default function MessageBell({ onViewAll, dropUp }: { onViewAll: () => vo
               unread: Math.max(0, row.unread_count ?? 0),
               muted: Boolean(row.is_muted),
             });
+            useMessengerStore.getState().setConversationUnread(row.conversation_id, Math.max(0, row.unread_count ?? 0));
           }
           recomputeTotal();
         });

@@ -17,6 +17,7 @@ interface MessengerState {
   removeMessage: (convId: string, msgId: string) => void;
   setLoadingConversations: (loading: boolean) => void;
   setLoadingMessages: (convId: string, loading: boolean) => void;
+  setConversationUnread: (convId: string, unread: number) => void;
   updateConversationSnippet: (m: { conversation_id: string; text: string | null; message_type: string; created_at: string }, incoming: boolean) => void;
   totalUnread: () => number;
 }
@@ -57,6 +58,15 @@ export const useMessengerStore = create<MessengerState>((set, get) => ({
     set((s) => ({
       loadingMessages: { ...s.loadingMessages, [convId]: loading },
     })),
+  setConversationUnread: (convId, unread) =>
+    set((s) => {
+      const idx = s.conversations.findIndex((c) => c.conversation_id === convId);
+      if (idx === -1) return s;
+      if (s.conversations[idx].unread_count === unread) return s;
+      const arr = [...s.conversations];
+      arr[idx] = { ...arr[idx], unread_count: unread };
+      return { conversations: arr };
+    }),
   updateConversationSnippet: (m, incoming) =>
     set((s) => {
       const idx = s.conversations.findIndex((c) => c.conversation_id === m.conversation_id);
