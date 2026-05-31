@@ -64,22 +64,32 @@ export default function AgentSubInvoices({ isSuperAgent }: { isSuperAgent: boole
   }
 
   if (loading) {
-    return <div style={{ color: 'var(--silver)', padding: 'var(--space-4)' }}>Loading invoices...</div>;
+    return (
+      <div className="metal-frame" style={{ textAlign: 'center' }}>
+        <div className="metal-content" style={{ padding: 'var(--space-6)' }}>
+          <div className="spinner" style={{ margin: '0 auto', marginBottom: 'var(--space-4)' }} />
+          <p style={{ color: 'var(--silver-light)' }}>Loading invoices...</p>
+        </div>
+      </div>
+    );
   }
 
   if (invoices.length === 0) {
     return (
-      <div className="card-glass" style={{ padding: 'var(--space-6)', textAlign: 'center', color: 'var(--silver)' }}>
-        No invoices found.
+      <div className="metal-frame" style={{ textAlign: 'center' }}>
+        <div className="metal-content" style={{ padding: 'var(--space-6)' }}>
+          <p style={{ color: 'var(--silver-light)' }}>No invoices found.</p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="card-glass" style={{ padding: 'var(--space-6)' }}>
-      <h2 style={{ marginBottom: 'var(--space-4)' }}>
-        {isSuperAgent ? 'Sub-Agent Invoices' : 'My Invoices (Owed To Super Agent)'}
-      </h2>
+    <div className="metal-frame">
+      <div className="metal-content">
+        <h2 className="metal-text" style={{ fontSize: '1.25rem', fontFamily: 'var(--font-brand)', marginBottom: 'var(--space-4)' }}>
+          {isSuperAgent ? 'Sub-Agent Invoices' : 'My Invoices (Owed To Super Agent)'}
+        </h2>
       <div style={{ overflowX: 'auto' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem' }}>
           <thead>
@@ -158,6 +168,7 @@ export default function AgentSubInvoices({ isSuperAgent }: { isSuperAgent: boole
           </p>
         </div>
       )}
+      </div>
     </div>
   );
 }

@@ -2,6 +2,8 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import AgentOrders from './AgentOrders';
 import { createClient } from '@/lib/supabase/client';
+import AgentStatements from './AgentStatements';
+import AgentSubInvoices from './AgentSubInvoices';
 
 const STATUS_LABELS: Record<string, string> = {
   pending_customer_payment: 'Pending Payment',
@@ -14,7 +16,7 @@ const STATUS_LABELS: Record<string, string> = {
   cancelled: 'Cancelled',
 };
 
-export default function AgentSales({ orders, setOrders, agentId }: { orders: any[], setOrders: any, agentId: string }) {
+export default function AgentSales({ orders, setOrders, agentId, userProfile }: { orders: any[], setOrders: any, agentId: string, userProfile?: any }) {
   const [data, setData] = useState<{ liveCarts: any[]; sales: any[] } | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -198,6 +200,20 @@ export default function AgentSales({ orders, setOrders, agentId }: { orders: any
         {/* Right: Interactive Orders Manager */}
         <div style={{ flex: 1, minWidth: 0, marginTop: 'var(--space-6)' }}>
           <AgentOrders orders={orders} setOrders={setOrders} />
+        </div>
+
+        {/* ACCOUNTING SECTION */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: 'var(--space-4)', marginTop: 'var(--space-6)' }}>
+          {(!userProfile?.tier?.includes('sub-agent')) && (
+            <div style={{ animation: 'fadeIn 0.3s ease-out' }}>
+              <AgentStatements />
+            </div>
+          )}
+          {(userProfile?.is_super_agent || userProfile?.tier?.includes('sub-agent')) && (
+            <div style={{ animation: 'fadeIn 0.3s ease-out' }}>
+              <AgentSubInvoices isSuperAgent={!!userProfile?.is_super_agent} />
+            </div>
+          )}
         </div>
       </div>
 

@@ -37,38 +37,45 @@ export default function AgentStatements() {
 
   if (loading) {
     return (
-      <div className="card-metal p-6" style={{ textAlign: 'center' }}>
-        <div className="spinner" style={{ margin: '0 auto', marginBottom: 'var(--space-4)' }} />
-        <p style={{ color: 'var(--silver-light)' }}>Loading Statements...</p>
+      <div className="metal-frame" style={{ textAlign: 'center' }}>
+        <div className="metal-content" style={{ padding: 'var(--space-6)' }}>
+          <div className="spinner" style={{ margin: '0 auto', marginBottom: 'var(--space-4)' }} />
+          <p style={{ color: 'var(--silver-light)' }}>Loading Statements...</p>
+        </div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="card-metal p-6" style={{ borderLeft: '3px solid var(--red)' }}>
-        <p style={{ color: 'var(--red)' }}>Error: {error}</p>
+      <div className="metal-frame" style={{ borderLeft: '3px solid var(--red)' }}>
+        <div className="metal-content" style={{ padding: 'var(--space-6)' }}>
+          <p style={{ color: 'var(--red)' }}>Error: {error}</p>
+        </div>
       </div>
     );
   }
 
   if (statements.length === 0) {
     return (
-      <div className="card-metal p-6" style={{ textAlign: 'center' }}>
-        <p style={{ color: 'var(--silver-light)' }}>No statements found. Statements are generated weekly for your fulfillment costs.</p>
+      <div className="metal-frame" style={{ textAlign: 'center' }}>
+        <div className="metal-content" style={{ padding: 'var(--space-6)' }}>
+          <p style={{ color: 'var(--silver-light)' }}>No statements found. Statements are generated weekly for your fulfillment costs.</p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="card-metal p-6">
-      <h2 style={{ fontSize: '1.25rem', color: 'var(--teal)', marginBottom: 'var(--space-6)' }}>Admin Statements</h2>
-      <p style={{ color: 'var(--silver-light)', fontSize: '0.9rem', marginBottom: 'var(--space-6)' }}>
-        These statements represent your wholesale cost (COGS) and shipping costs owed to the Admin for fulfillment.
-      </p>
+    <div className="metal-frame">
+      <div className="metal-content">
+        <h2 className="metal-text" style={{ fontSize: '1.25rem', fontFamily: 'var(--font-brand)', marginBottom: 'var(--space-4)' }}>Admin Statements</h2>
+        <p style={{ color: 'var(--silver-light)', fontSize: '0.9rem', marginBottom: 'var(--space-6)' }}>
+          These statements represent your wholesale cost (COGS) and shipping costs owed to the Admin for fulfillment.
+        </p>
 
-      <div style={{ overflowX: 'auto' }}>
-        <table className="table" style={{ minWidth: 600 }}>
+        <div style={{ overflowX: 'auto' }}>
+          <table className="table" style={{ minWidth: 600 }}>
           <thead>
             <tr>
               <th>Week</th>
@@ -109,6 +116,7 @@ export default function AgentStatements() {
           </tbody>
         </table>
       </div>
+    </div>
     </div>
   );
 }

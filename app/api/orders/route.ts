@@ -698,6 +698,16 @@ export async function POST(request: NextRequest) {
       }
     };
 
+    // --- SACA: Sub-Agent Orders Always Require Parent Approval ---
+    // Per spec (2026-05-31): "SUB AGENTS CAN AUTO APPROVE BUT IT STILL NEEDS
+    // APPROVAL FROM THEIR AGENT OR SUPER AGENT." A sub-agent's auto_approve
+    // flag (or a SACA-tagged researcher's auto_approve flag) CANNOT cascade
+    // into approved_ship. The order must park at agent_approval_pending so
+    // the parent agent or super-agent reviews it explicitly.
+    const isSACAOrder =
+      isSubAgent ||
+      ((profile as { referring_sub_agent_id?: string | null }).referring_sub_agent_id != null);
+
     // --- Two-Step Approval & Cascading Auto-Approve Logic ---
     if (isWholesaleRestock) {
       if (profile.role === 'super_agent') {
@@ -739,7 +749,12 @@ export async function POST(request: NextRequest) {
       }
     } else {
       // Retail Orders (Researchers)
-      if (profile.auto_approve_orders) {
+      if (isSACAOrder) {
+        // SACA override: sub-agent-attributed retail orders never auto-approve.
+        // Park at agent_approval_pending for the parent agent / super-agent
+        // to review manually, even if the buyer's auto_approve_orders=true.
+        initialStatus = 'agent_approval_pending';
+      } else if (profile.auto_approve_orders) {
         // Agent Trusts Researcher -> Auto-Approve Researcher payment
         if (agentProfile && agentProfile.role === 'agent') {
           // It's a Sub-Agent. Does the Super Agent trust the Sub-Agent?
