@@ -404,13 +404,18 @@ export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
                     <div style={{ fontSize: '0.75rem', color: 'var(--grey-400)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '10px', fontWeight: 600 }}>Details</div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
                       <span style={{ fontSize: '0.9rem', color: 'var(--silver)' }}>Method</span>
-                      <span style={{ fontSize: '0.9rem', color: 'var(--white)', fontWeight: 600 }}>
-                        {order.fulfillment_method === 'agent_pickup' ? 'Agent Pickup' : 'Delivery'}
+                      <span style={{ fontSize: '0.9rem', color: 'var(--white)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        {order.fulfillment_method === 'agent_pickup' ? (
+                          <><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg> Agent Pickup</>
+                        ) : (
+                          <><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="3" width="15" height="13"></rect><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon><circle cx="5.5" cy="18.5" r="2.5"></circle><circle cx="18.5" cy="18.5" r="2.5"></circle></svg> Delivery</>
+                        )}
                       </span>
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
                       <span style={{ fontSize: '0.9rem', color: 'var(--silver)' }}>Payment</span>
-                      <span style={{ fontSize: '0.9rem', color: 'var(--white)', fontWeight: 600 }}>
+                      <span style={{ fontSize: '0.9rem', color: 'var(--white)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"></rect><line x1="2" y1="10" x2="22" y2="10"></line></svg>
                         {PAYMENT_LABEL[order.payment_method] || order.payment_method}
                       </span>
                     </div>
@@ -554,7 +559,7 @@ export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
                     {isPendingApproval && order.fulfillment_method === 'ship' && (
                       <button
                         onClick={(e) => { e.stopPropagation(); handleBuyShippingLabel(order.id); }}
-                        className="btn btn-primary"
+                        className="btn btn-primary pulse-primary"
                         style={{
                           fontSize: '0.9rem',
                           padding: '10px 24px',
@@ -562,7 +567,6 @@ export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
                           background: 'linear-gradient(180deg, #00C4BC 0%, #0099FF 100%)',
                           color: '#fff',
                           border: 'none',
-                          boxShadow: '0 4px 15px rgba(0, 196, 188, 0.4), inset 0 1px 0 rgba(255,255,255,0.4), inset 0 -2px 0 rgba(0,0,0,0.2)',
                           borderRadius: '10px',
                           textShadow: '0 1px 2px rgba(0,0,0,0.3)',
                           display: 'flex',
@@ -583,35 +587,38 @@ export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
           })}
         </div>
       ) : (
-        <div
-          style={{
-            textAlign: 'center',
-            padding: 'var(--space-10) 0',
-            opacity: 0.6,
-            background: 'rgba(255,255,255,0.02)',
-            borderRadius: 'var(--radius-md)',
-            border: '1px dashed rgba(255,255,255,0.1)',
-          }}
-        >
-          <svg
-            width="40"
-            height="40"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="var(--teal)"
-            strokeWidth="1.5"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            style={{ display: 'block', margin: '0 auto var(--space-3)' }}
-          >
-            <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" />
-            <rect x="8" y="2" width="8" height="4" rx="1" ry="1" />
-          </svg>
-          <h4 style={{ color: 'var(--silver)' }}>No Referred Orders Found</h4>
-          <p style={{ fontSize: '0.78rem', color: 'var(--grey-400)', margin: 0 }}>
-            Client Transaction Registrations Will Sync Dynamically To This Dashboard Panel.
-          </p>
-        </div>
+            <div style={{ 
+              textAlign: 'center', 
+              padding: '80px 20px', 
+              color: 'var(--grey-400)',
+              background: 'linear-gradient(180deg, rgba(11,15,22,0.5) 0%, rgba(18,24,34,0.5) 100%)',
+              borderRadius: '21px',
+              border: '1px solid rgba(255,255,255,0.03)',
+              boxShadow: 'inset 0 4px 20px rgba(0,0,0,0.5)'
+            }}>
+              <div style={{ 
+                marginBottom: 20, 
+                display: 'flex', 
+                justifyContent: 'center', 
+                filter: 'drop-shadow(0 0 20px rgba(0, 196, 188, 0.4))'
+              }}>
+                <svg width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="url(#teal-glow-grad)" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round">
+                  <defs>
+                    <linearGradient id="teal-glow-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+                      <stop offset="0%" stopColor="#00E5FF" />
+                      <stop offset="100%" stopColor="#00C4BC" />
+                    </linearGradient>
+                  </defs>
+                  <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+                  <polyline points="3.27 6.96 12 12.01 20.73 6.96"/>
+                  <line x1="12" y1="22.08" x2="12" y2="12"/>
+                </svg>
+              </div>
+              <div style={{ color: 'rgba(255,255,255,0.8)', fontSize: '1.2rem', fontWeight: 800, marginBottom: 8, letterSpacing: '0.05em' }}>No Pending Ledgers</div>
+              <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.9rem', maxWidth: 400, margin: '0 auto', lineHeight: 1.5 }}>
+                Orders registered by your clients will appear here for you to fulfill and manage.
+              </p>
+            </div>
       )}
 
       {/* Order Detail Modal */}

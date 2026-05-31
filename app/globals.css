@@ -1674,3 +1674,23 @@ html[data-theme="light"] .messenger-back-btn {
     -webkit-overflow-scrolling: touch;
   }
 }
+
+@keyframes pulse-glow-primary {
+  0% { box-shadow: 0 4px 15px rgba(0, 196, 188, 0.4), 0 0 0 0 rgba(0, 196, 188, 0.4); }
+  70% { box-shadow: 0 4px 15px rgba(0, 196, 188, 0.4), 0 0 0 10px rgba(0, 196, 188, 0); }
+  100% { box-shadow: 0 4px 15px rgba(0, 196, 188, 0.4), 0 0 0 0 rgba(0, 196, 188, 0); }
+}
+
+@keyframes pulse-glow-silver {
+  0% { box-shadow: 0 4px 15px rgba(200, 194, 184, 0.3), 0 0 0 0 rgba(200, 194, 184, 0.4); }
+  70% { box-shadow: 0 4px 15px rgba(200, 194, 184, 0.3), 0 0 0 10px rgba(200, 194, 184, 0); }
+  100% { box-shadow: 0 4px 15px rgba(200, 194, 184, 0.3), 0 0 0 0 rgba(200, 194, 184, 0); }
+}
+
+.pulse-primary {
+  animation: pulse-glow-primary 2s infinite cubic-bezier(0.66, 0, 0, 1);
+}
+
+.pulse-silver {
+  animation: pulse-glow-silver 2s infinite cubic-bezier(0.66, 0, 0, 1);
+}

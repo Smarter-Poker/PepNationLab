@@ -303,7 +303,7 @@ export default function Navbar({ onMenuClick, isOpen, title }: { onMenuClick?: (
                 flexShrink: 0,
               }}
             >
-              <img src="/images/back-arrow.png" alt="Back" width={36} height={36} style={{ display: 'block', transition: 'opacity 0.2s' }} onMouseEnter={e => (e.currentTarget.style.opacity = '0.8')} onMouseLeave={e => (e.currentTarget.style.opacity = '1')} />
+              <img src="/images/back-arrow.png" alt="Back" style={{ width: 'auto', height: 26, display: 'block', transition: 'opacity 0.2s', objectFit: 'contain' }} onMouseEnter={e => (e.currentTarget.style.opacity = '0.8')} onMouseLeave={e => (e.currentTarget.style.opacity = '1')} />
             </button>
 
             {/* Vertical divider */}

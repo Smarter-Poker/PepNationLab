@@ -220,6 +220,7 @@ export async function POST(req: NextRequest) {
             size: file.size,
             orderId,
           },
+          labels: [`Order #${shortId}`, 'Proof of Payment'],
         });
 
         // Also drop an in-app notification for the agent

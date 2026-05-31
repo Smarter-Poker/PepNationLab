@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import { motion, AnimatePresence } from 'framer-motion';
 import Messaging from '@/components/Messaging';
 import { toast } from 'sonner';
 
@@ -521,13 +522,40 @@ export default function ResearcherDashboard({ userId, userName, userEmail, agent
           {tab === 'orders' && (
             <div>
               {loadingOrders ? <Spinner /> : orders.length === 0 ? (
-                <div className="card-metal" style={{ textAlign: 'center', padding: 48 }}>
-                  <div style={{ marginBottom: 12, display: 'flex', justifyContent: 'center', opacity: 0.3 }}>
-                    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
-                  </div>
-                  <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.9rem', fontWeight: 600, marginBottom: 12 }}>No Orders Yet</div>
-                  <a href={agentSlug ? `/${agentSlug}` : '/dashboard'} style={{ display: 'inline-block', fontSize: '0.82rem', color: 'var(--teal)', fontWeight: 600 }}>Browse Catalog</a>
-                </div>
+            <div style={{ 
+              textAlign: 'center', 
+              padding: '60px 20px', 
+              color: 'var(--grey-400)',
+              background: 'linear-gradient(180deg, rgba(11,15,22,0.5) 0%, rgba(18,24,34,0.5) 100%)',
+              borderRadius: '21px',
+              border: '1px solid rgba(255,255,255,0.03)',
+              boxShadow: 'inset 0 4px 20px rgba(0,0,0,0.5)',
+              marginTop: '16px'
+            }}>
+              <div style={{ 
+                marginBottom: 20, 
+                display: 'flex', 
+                justifyContent: 'center', 
+                filter: 'drop-shadow(0 0 20px rgba(0, 196, 188, 0.4))'
+              }}>
+                <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="url(#teal-glow-grad)" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round">
+                  <defs>
+                    <linearGradient id="teal-glow-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+                      <stop offset="0%" stopColor="#00E5FF" />
+                      <stop offset="100%" stopColor="#00C4BC" />
+                    </linearGradient>
+                  </defs>
+                  <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+                  <polyline points="3.27 6.96 12 12.01 20.73 6.96"/>
+                  <line x1="12" y1="22.08" x2="12" y2="12"/>
+                </svg>
+              </div>
+              <div style={{ color: 'rgba(255,255,255,0.8)', fontSize: '1.2rem', fontWeight: 800, marginBottom: 8, letterSpacing: '0.05em' }}>No Orders Yet</div>
+              <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.9rem', maxWidth: 400, margin: '0 auto 20px', lineHeight: 1.5 }}>
+                You haven't placed any orders. Start browsing the catalog to find the products you need.
+              </p>
+              <a href={agentSlug ? `/${agentSlug}` : '/dashboard'} style={{ display: 'inline-block', padding: '10px 24px', borderRadius: '8px', background: 'rgba(0,196,188,0.1)', border: '1px solid rgba(0,196,188,0.3)', fontSize: '0.9rem', color: '#00E5FF', fontWeight: 700, textDecoration: 'none' }}>Browse Catalog</a>
+            </div>
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                   {orders.map(o => (
@@ -583,9 +611,17 @@ export default function ResearcherDashboard({ userId, userName, userEmail, agent
                         </div>
                       </button>
 
-                      {expandedOrder === o.id && (
-                        <div style={{ padding: '0 var(--space-6) var(--space-6)', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
-                          <div style={{ marginTop: 20 }}>
+                      <AnimatePresence>
+                        {expandedOrder === o.id && (
+                          <motion.div
+                            initial={{ height: 0, opacity: 0 }}
+                            animate={{ height: 'auto', opacity: 1 }}
+                            exit={{ height: 0, opacity: 0 }}
+                            transition={{ duration: 0.3, ease: 'easeInOut' }}
+                            style={{ overflow: 'hidden' }}
+                          >
+                            <div style={{ padding: '0 var(--space-6) var(--space-6)', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+                              <div style={{ marginTop: 20 }}>
                             <div style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.4)', fontWeight: 700, marginBottom: 12, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Order Items</div>
                             {o.order_items?.map(item => (
                               <div key={item.id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.95rem', padding: '8px 0', borderBottom: '1px solid rgba(255,255,255,0.03)' }}>
@@ -622,12 +658,11 @@ export default function ResearcherDashboard({ userId, userName, userEmail, agent
                           )}
 
                           <div style={{ marginTop: 24, display: 'flex', justifyContent: 'flex-end', padding: '0 24px 24px' }}>
-                            <a href={agentSlug ? `/${agentSlug}` : '/dashboard'} style={{
+                            <a href={agentSlug ? `/${agentSlug}` : '/dashboard'} className="pulse-silver" style={{
                               display: 'inline-flex', alignItems: 'center', gap: 8, padding: '10px 24px',
                               background: 'linear-gradient(180deg, #c8c2b8 0%, #a09890 100%)',
                               color: '#1a1f2e',
                               border: 'none',
-                              boxShadow: '0 4px 15px rgba(200, 194, 184, 0.3), inset 0 1px 0 rgba(255,255,255,0.4), inset 0 -2px 0 rgba(0,0,0,0.2)',
                               borderRadius: '10px', fontSize: '0.9rem', fontWeight: 800, textDecoration: 'none',
                               transition: 'transform 0.2s ease',
                             }}>
@@ -636,7 +671,9 @@ export default function ResearcherDashboard({ userId, userName, userEmail, agent
                             </a>
                           </div>
                         </div>
-                      )}
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
                       </div>
                     </div>
                   ))}

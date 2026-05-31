@@ -101,13 +101,8 @@ export default function AgentDashboardClient({
   const [displayName, setDisplayName] = useState(agentProfile?.display_name ?? '');
   const [slug, setSlug] = useState(agentProfile?.slug ?? '');
   const [logoUrl, setLogoUrl] = useState(agentProfile?.logo_url ?? '');
-  const [tagline, setTagline] = useState(agentProfile?.tagline ?? '');
-  const [bio, setBio] = useState(agentProfile?.bio ?? '');
-  const [primaryColor, setPrimaryColor] = useState(agentProfile?.primary_color ?? '#C0B8A8');
-  const [zelleHandle, setZelleHandle] = useState(agentProfile?.payment_handles?.zelle ?? '');
-  const [cashappHandle, setCashappHandle] = useState(agentProfile?.payment_handles?.cashapp ?? '');
-  const [venmoHandle, setVenmoHandle] = useState(agentProfile?.payment_handles?.venmo ?? '');
-  const [applePayHandle, setApplePayHandle] = useState(agentProfile?.payment_handles?.apple_cash ?? agentProfile?.payment_handles?.apple_pay ?? '');
+  const [primaryColor, setPrimaryColor] = useState(agentProfile?.primary_color ?? '#00C4BC');
+  const [volumePricingEnabled, setVolumePricingEnabled] = useState<boolean>(agentProfile?.volume_pricing_enabled ?? true);
 
   const handlesEmpty = !!agentProfile && (!agentProfile.payment_handles || Object.keys(agentProfile.payment_handles || {}).every((k) => !(agentProfile.payment_handles as any)[k]));
   
@@ -132,12 +127,9 @@ export default function AgentDashboardClient({
     }
   }, [tabParam, defaultTab, activeTab]);
 
-  const [volumePricingEnabled, setVolumePricingEnabled] = useState<boolean>(agentProfile?.volume_pricing_enabled !== false);
-
   // Setup Form State (If no profile exists yet)
   const [setupDisplayName, setSetupDisplayName] = useState('');
   const [setupSlug, setSetupSlug] = useState('');
-  const [setupTagline, setSetupTagline] = useState('');
 
   // Payment handles (required at setup so storefront can show pay-to info)
   const [setupZelle, setSetupZelle] = useState('');
@@ -270,7 +262,6 @@ export default function AgentDashboardClient({
           id: userProfile.id,
           slug: cleanSlug,
           display_name: setupDisplayName.trim(),
-          tagline: setupTagline.trim() || null,
           is_active: true,
           payment_handles: {
             zelle,
@@ -300,12 +291,10 @@ export default function AgentDashboardClient({
 
       setAgentProfile(data);
       setDisplayName(data.display_name);
-      setSlug(data.slug);
-      setTagline(data.tagline ?? '');
-      setZelleHandle(data.payment_handles?.zelle ?? '');
-      setCashappHandle(data.payment_handles?.cashapp ?? '');
-      setVenmoHandle(data.payment_handles?.venmo ?? '');
-      setApplePayHandle(data.payment_handles?.apple_cash ?? data.payment_handles?.apple_pay ?? '');
+      setSlug(data.slug ?? '');
+      setLogoUrl(data.logo_url ?? '');
+      setPrimaryColor(data.primary_color ?? '#00C4BC');
+      setVolumePricingEnabled(data.volume_pricing_enabled ?? true);
       setSuccess('Your Storefront White-Label Profile Has Been Successfully Activated!');
     } catch (err: any) {
       setError(err.message ?? 'An Error Occurred During Setup.');
@@ -392,17 +381,6 @@ export default function AgentDashboardClient({
               <span style={{ fontSize: '0.72rem', color: 'var(--grey-400)' }}>
                 Lowercase Letters, Numbers, And Hyphens Only. No Spaces.
               </span>
-            </div>
-
-            <div className="form-group">
-              <label className="form-label">Storefront Tagline</label>
-              <input
-                type="text"
-                className="form-input"
-                placeholder="E.g. Ultra-Pure Peptides For Lab Experimentation"
-                value={setupTagline}
-                onChange={(e) => setSetupTagline(e.target.value)}
-              />
             </div>
 
             <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: 'var(--space-4)', marginTop: 'var(--space-2)' }}>
@@ -1093,13 +1071,7 @@ export default function AgentDashboardClient({
               displayName={displayName} setDisplayName={setDisplayName}
               slug={slug} setSlug={setSlug}
               logoUrl={logoUrl} setLogoUrl={setLogoUrl}
-              tagline={tagline} setTagline={setTagline}
-              bio={bio} setBio={setBio}
               primaryColor={primaryColor} setPrimaryColor={setPrimaryColor}
-              zelleHandle={zelleHandle} setZelleHandle={setZelleHandle}
-              cashappHandle={cashappHandle} setCashappHandle={setCashappHandle}
-              venmoHandle={venmoHandle} setVenmoHandle={setVenmoHandle}
-              applePayHandle={applePayHandle} setApplePayHandle={setApplePayHandle}
               warehouseAddress={agentProfile?.warehouse_address}
               isActive={agentProfile?.is_active}
               volumePricingEnabled={volumePricingEnabled}
@@ -1111,6 +1083,17 @@ export default function AgentDashboardClient({
                 }
               }}
             />
+
+            {/* Payment Methods */}
+            {agentProfile && (
+              <PaymentMethodsPanel
+                agentId={userProfile.id}
+                initialHandles={agentProfile.payment_handles as Record<string, string> | null}
+                onSaveSuccess={(newHandles) => {
+                  setAgentProfile(prev => prev ? { ...prev, payment_handles: newHandles } : prev);
+                }}
+              />
+            )}
           </div>
         )}
 
@@ -1151,17 +1134,6 @@ export default function AgentDashboardClient({
               <h4 style={{ marginBottom: 'var(--space-4)', color: 'var(--teal)' }}>Change Password</h4>
               <SettingsPasswordForm />
             </div>
-
-            {/* Payment Methods */}
-            {agentProfile && (
-              <PaymentMethodsPanel
-                agentId={userProfile.id}
-                initialHandles={agentProfile.payment_handles as Record<string, string> | null}
-                onSaveSuccess={(newHandles) => {
-                  setAgentProfile(prev => prev ? { ...prev, payment_handles: newHandles } : prev);
-                }}
-              />
-            )}
 
             {/* Notification Preferences */}
             <div className="card-metal" style={{ padding: 'var(--space-6)', marginTop: 'var(--space-6)' }}>

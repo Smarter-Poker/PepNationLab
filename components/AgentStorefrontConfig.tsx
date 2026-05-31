@@ -11,20 +11,8 @@ interface AgentStorefrontConfigProps {
   setSlug: (val: string) => void;
   logoUrl: string;
   setLogoUrl: (val: string) => void;
-  tagline: string;
-  setTagline: (val: string) => void;
-  bio: string;
-  setBio: (val: string) => void;
   primaryColor: string;
   setPrimaryColor: (val: string) => void;
-  zelleHandle: string;
-  setZelleHandle: (val: string) => void;
-  cashappHandle: string;
-  setCashappHandle: (val: string) => void;
-  venmoHandle: string;
-  setVenmoHandle: (val: string) => void;
-  applePayHandle: string;
-  setApplePayHandle: (val: string) => void;
   // Warehouse address (JSONB) — read/write directly to agent_profiles.
   warehouseAddress?: Record<string, any> | null;
   // Vacation mode — flips agent_profiles.is_active.
@@ -40,13 +28,7 @@ export default function AgentStorefrontConfig({
   displayName, setDisplayName,
   slug, setSlug,
   logoUrl, setLogoUrl,
-  tagline, setTagline,
-  bio, setBio,
   primaryColor, setPrimaryColor,
-  zelleHandle, setZelleHandle,
-  cashappHandle, setCashappHandle,
-  venmoHandle, setVenmoHandle,
-  applePayHandle, setApplePayHandle,
   warehouseAddress,
   isActive,
   volumePricingEnabled,
@@ -114,32 +96,12 @@ export default function AgentStorefrontConfig({
       // 2) Everything else updates inline (RLS allows the owner to update
       //    their own agent_profiles row).
 
-      // Fetch the current payment_handles so we can MERGE the 4 legacy
-      // keys without overwriting the new keys (paypal, google_wallet, wise,
-      // chime, apple_cash) that PaymentMethodsPanel manages.
-      const supabaseFetch = createClient();
-      const { data: current } = await supabaseFetch
-        .from('agent_profiles')
-        .select('payment_handles')
-        .eq('id', agentId)
-        .single();
-      const existingHandles: Record<string, string> = (current?.payment_handles as any) ?? {};
-
       const updatePayload: Record<string, any> = {
         display_name: displayName.trim(),
         slug: cleanSlug,
         logo_url: logoUrl.trim() || null,
-        tagline: tagline.trim() || null,
-        bio: bio.trim() || null,
         primary_color: primaryColor,
         volume_pricing_enabled: volumePricingEnabled,
-        payment_handles: {
-          ...existingHandles,
-          zelle: zelleHandle.trim(),
-          cashapp: cashappHandle.trim(),
-          venmo: venmoHandle.trim(),
-          apple_pay: applePayHandle.trim(),
-        },
         warehouse_address: {
           name: whName.trim(),
           street1: whStreet1.trim(),
@@ -261,11 +223,11 @@ export default function AgentStorefrontConfig({
 
         <form onSubmit={handleUpdateProfile} style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-5)' }}>
           <div className="grid-2">
-            <div className="form-group">
+            <div className="form-group" style={{ marginTop: 0 }}>
               <label className="form-label">Display Name</label>
               <input type="text" className="form-input" value={displayName} onChange={(e) => setDisplayName(e.target.value)} required />
             </div>
-            <div className="form-group">
+            <div className="form-group" style={{ marginTop: 0 }}>
               <label className="form-label">URL Slug</label>
               <div style={{ display: 'flex', alignItems: 'center', background: 'var(--surface-3)', borderRadius: 'var(--radius-md)', border: '1px solid rgba(255,255,255,0.1)', paddingLeft: 'var(--space-3)' }}>
                 <span style={{ fontSize: '0.85rem', color: 'var(--grey-400)' }}>pepnationlab.com/</span>
@@ -275,7 +237,7 @@ export default function AgentStorefrontConfig({
           </div>
 
           <div className="grid-2">
-            <div className="form-group">
+            <div className="form-group" style={{ marginTop: 0 }}>
               <label className="form-label">Store Logo</label>
               {logoUrl ? (
                 <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', marginBottom: 'var(--space-2)' }}>
@@ -321,48 +283,12 @@ export default function AgentStorefrontConfig({
                 />
               </label>
             </div>
-            <div className="form-group">
+            <div className="form-group" style={{ marginTop: 0 }}>
               <label className="form-label">Primary Brand Color</label>
               <div style={{ display: 'flex', gap: 'var(--space-3)' }}>
                 <input type="color" value={primaryColor} onChange={(e) => setPrimaryColor(e.target.value)} style={{ width: 48, height: 44, padding: 0, border: 'none', borderRadius: 'var(--radius-md)', cursor: 'pointer', background: 'transparent' }} />
                 <input type="text" className="form-input" value={primaryColor} onChange={(e) => setPrimaryColor(e.target.value)} pattern="^#+([a-fA-F0-9]{6}|[a-fA-F0-9]{3})$" />
               </div>
-            </div>
-          </div>
-
-          <div className="form-group">
-            <label className="form-label">Tagline (Hero Subtitle)</label>
-            <input type="text" className="form-input" value={tagline} onChange={(e) => setTagline(e.target.value)} />
-          </div>
-
-          <div className="form-group">
-            <label className="form-label">About Us / Bio (Footer)</label>
-            <textarea className="form-input" rows={3} value={bio} onChange={(e) => setBio(e.target.value)} />
-          </div>
-
-          <hr style={{ border: 'none', borderTop: '1px solid rgba(255,255,255,0.05)', margin: 'var(--space-4) 0' }} />
-
-          <h4 style={{ color: 'var(--teal)', fontSize: '1rem', marginBottom: 'var(--space-2)' }}>Offline Payment Instructions</h4>
-          <p style={{ color: 'var(--grey-400)', fontSize: '0.85rem', marginBottom: 'var(--space-4)' }}>
-            These Details Will Be Shown To Your Customers After They Complete Their Order, Instructing Them Where To Send Funds.
-          </p>
-
-          <div className="grid-2">
-            <div className="form-group">
-              <label className="form-label">Zelle Handle / Email</label>
-              <input type="text" className="form-input" value={zelleHandle} onChange={(e) => setZelleHandle(e.target.value)} />
-            </div>
-            <div className="form-group">
-              <label className="form-label">Cash App Handle ($)</label>
-              <input type="text" className="form-input" value={cashappHandle} onChange={(e) => setCashappHandle(e.target.value)} />
-            </div>
-            <div className="form-group">
-              <label className="form-label">Venmo Handle (@)</label>
-              <input type="text" className="form-input" value={venmoHandle} onChange={(e) => setVenmoHandle(e.target.value)} />
-            </div>
-            <div className="form-group">
-              <label className="form-label">Apple Pay (Phone / Email)</label>
-              <input type="text" className="form-input" value={applePayHandle} onChange={(e) => setApplePayHandle(e.target.value)} />
             </div>
           </div>
 

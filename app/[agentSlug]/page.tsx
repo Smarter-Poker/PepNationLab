@@ -3,6 +3,7 @@ import { Suspense } from 'react';
 import { createClient } from '@/lib/supabase/server';
 import Link from 'next/link';
 import AgentStorefrontGrid from '@/components/AgentStorefrontGrid';
+import AgentStorefrontLogin from '@/components/AgentStorefrontLogin';
 
 interface Props {
   params: Promise<{ agentSlug: string }>;
@@ -91,16 +92,12 @@ export default async function AgentStorefrontPage({ params }: Props) {
   const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) {
-    // Note: We MUST use dynamic import or just render the client component directly.
-    // The component is already marked 'use client'
-    const AgentStorefrontLogin = (await import('@/components/AgentStorefrontLogin')).default;
     return (
       <AgentStorefrontLogin 
         agentSlug={agentSlug} 
         displayName={agent.display_name} 
         primaryColor={agent.primary_color ?? '#00C4BC'} 
         logoUrl={agent.logo_url} 
-        tagline={agent.tagline} 
       />
     );
   }
@@ -137,14 +134,12 @@ export default async function AgentStorefrontPage({ params }: Props) {
     }
 
     // Not a researcher or no referring agent — show the storefront login form.
-    const AgentStorefrontLogin = (await import('@/components/AgentStorefrontLogin')).default;
     return (
       <AgentStorefrontLogin 
         agentSlug={agentSlug} 
         displayName={agent.display_name} 
         primaryColor={agent.primary_color ?? '#00C4BC'} 
         logoUrl={agent.logo_url} 
-        tagline={agent.tagline}
         errorMessage="This Account Does Not Belong To This Store. Please Sign In With The Credentials Your Agent Gave You, Or Create A New Account."
       />
     );
@@ -279,16 +274,6 @@ export default async function AgentStorefrontPage({ params }: Props) {
           <h1 style={{ marginBottom: 6, color: 'var(--white)' }}>
             {displayName}&apos;s Research Store
           </h1>
-          {agent.tagline && (
-            <p style={{ fontSize: '0.88rem', color: 'var(--silver-light)', marginBottom: 4, maxWidth: 500, margin: '0 auto 4px' }}>
-              {agent.tagline}
-            </p>
-          )}
-          {agent.bio && (
-            <p style={{ fontSize: '0.82rem', color: 'var(--grey-400)', maxWidth: 500, margin: '0 auto', lineHeight: 1.6 }}>
-              {agent.bio}
-            </p>
-          )}
         </div>
       </section>
 
@@ -343,6 +328,6 @@ export async function generateMetadata({ params }: Props) {
 
   return {
     title: `${agent.display_name} | Pep Nation Lab`,
-    description: agent.tagline ?? `Research compounds from ${agent.display_name} — Research use only.`,
+    description: `Research compounds from ${agent.display_name} — Research use only.`,
   };
 }
