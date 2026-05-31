@@ -36,10 +36,10 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
   }
 
-  // Filter out pending_customer_payment orders that belong to an external agent.
+  // Filter out pending_customer_payment and agent_approval_pending orders that belong to an external agent.
   // The Admin should only see them if they are direct (agent_id is null) or if the Admin is the agent.
   let filteredData = (data || []).filter((order: any) => {
-    if (order.status === 'pending_customer_payment') {
+    if (order.status === 'pending_customer_payment' || order.status === 'agent_approval_pending') {
       if (order.agent_id && order.agent_id !== gate.userId) {
         return false;
       }

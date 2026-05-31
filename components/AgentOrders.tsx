@@ -540,20 +540,30 @@ export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
                     )}
                     
                     {isPendingApproval && (
-                      <span style={{ 
-                        fontSize: '0.9rem', 
-                        color: '#F6AD55', 
-                        border: '1px solid rgba(246,173,85,0.4)',
-                        padding: '10px 20px',
-                        borderRadius: '10px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        background: 'linear-gradient(180deg, rgba(246,173,85,0.15) 0%, rgba(246,173,85,0.05) 100%)',
-                        boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.05)',
-                        fontWeight: 700
-                      }}>
-                        Awaiting Admin Approval
-                      </span>
+                      <button
+                        onClick={(e) => { 
+                          e.stopPropagation(); 
+                          handleUpdateOrderStatus(order.id, order.fulfillment_method === 'agent_pickup' ? 'approved_pickup' : 'approved_ship'); 
+                        }}
+                        className="btn btn-primary pulse-primary"
+                        style={{
+                          fontSize: '0.9rem',
+                          padding: '10px 24px',
+                          fontWeight: 700,
+                          background: 'linear-gradient(180deg, #00C4BC 0%, #0099FF 100%)',
+                          color: '#fff',
+                          border: 'none',
+                          borderRadius: '10px',
+                          textShadow: '0 1px 2px rgba(0,0,0,0.3)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '8px'
+                        }}
+                        disabled={loadingOrderId === order.id}
+                      >
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                        {loadingOrderId === order.id ? 'Approving...' : 'Approve Order'}
+                      </button>
                     )}
 
                     {isPendingApproval && order.fulfillment_method === 'ship' && (

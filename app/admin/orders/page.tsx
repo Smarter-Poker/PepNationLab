@@ -92,7 +92,7 @@ function AdminOrdersPageInner() {
   const [error, setError] = useState("");
   const [searchQuery, setSearchQuery] = useState(searchParams.get("q") ?? "");
   const [statusFilter, setStatusFilter] = useState<string>(
-    searchParams.get("status") ?? "agent_approval_pending",
+    searchParams.get("status") ?? "approved_ship",
   );
   const [dateFrom, setDateFrom] = useState<string>(
     searchParams.get("from") ?? "",
