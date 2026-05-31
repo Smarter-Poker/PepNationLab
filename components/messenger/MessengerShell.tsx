@@ -291,10 +291,13 @@ export default function MessengerShell({ userId }: Props) {
       }
     }
     const ch = subscribeMyIncomingMessages(userId, (m) => {
+      const isIncoming = m.sender_id !== userId;
       // 1. Update the sidebar conversation list snippet and bump to top
-      useMessengerStore.getState().updateConversationSnippet(m, true);
+      useMessengerStore.getState().updateConversationSnippet(m, isIncoming);
       // 2. Fire-and-forget OS notification
-      void maybeNotify(m);
+      if (isIncoming) {
+        void maybeNotify(m);
+      }
     });
     return () => unsubscribe(ch);
   }, [userId]);

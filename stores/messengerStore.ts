@@ -33,9 +33,11 @@ export const useMessengerStore = create<MessengerState>((set, get) => ({
   setMessages: (convId, msgs) =>
     set((s) => ({ messages: { ...s.messages, [convId]: msgs } })),
   appendMessage: (convId, msg) =>
-    set((s) => ({
-      messages: { ...s.messages, [convId]: [...(s.messages[convId] ?? []), msg] },
-    })),
+    set((s) => {
+      const list = s.messages[convId] ?? [];
+      if (list.some(m => m.id === msg.id || (msg.client_message_id && m.client_message_id === msg.client_message_id))) return s;
+      return { messages: { ...s.messages, [convId]: [...list, msg] } };
+    }),
   updateMessage: (convId, msg) =>
     set((s) => ({
       messages: {

@@ -54,6 +54,7 @@ export interface Message {
   labels: string[];
   expires_at: string | null;
   metadata: Record<string, unknown>;
+  client_message_id?: string;
   created_at: string;
   updated_at: string;
 }

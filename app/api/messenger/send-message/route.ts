@@ -211,6 +211,13 @@ export async function POST(req: NextRequest) {
     // Never propagate — notifications are best-effort
   }
 
+  // Broadcast to the sender's notify channel so their OTHER devices update the sidebar
+  await sendBroadcast({
+    topic: `user_notify:${user.id}`,
+    event: 'new_message_notify',
+    payload: { message: inserted },
+  });
+
   // Broadcast the message payload to the conversation channel
   await sendBroadcast({
     topic: `chat:${parsed.data.conversationId}`,

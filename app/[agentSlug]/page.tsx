@@ -220,27 +220,32 @@ export default async function AgentStorefrontPage({ params }: Props) {
         .sf-nav-brand-sub { font-size: 0.62rem; color: var(--grey-400); white-space: nowrap; }
         .sf-nav-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
         
-        .sf-nav-back, .sf-btn-dash {
+        .sf-btn-dash {
           background: linear-gradient(180deg, rgba(40,45,50,0.8) 0%, rgba(15,20,25,0.9) 100%);
           border-radius: 8px; color: var(--white); text-decoration: none;
-          box-shadow: 0 0 0 1px #C0B8A8, inset 0 1px 1px rgba(255,255,255,0.2), 0 2px 8px rgba(0,0,0,0.5);
-          transition: transform 0.15s, box-shadow 0.15s;
+          border: 1px solid #C0B8A8;
+          box-shadow: inset 0 1px 1px rgba(255,255,255,0.2), 0 2px 8px rgba(0,0,0,0.5);
+          transition: transform 0.15s, box-shadow 0.15s, border-color 0.15s;
+          display: flex; align-items: center; justify-content: center; width: 88px; height: 34px; font-size: 0.75rem; font-weight: 700; white-space: nowrap;
         }
-        .sf-nav-back:hover, .sf-btn-dash:hover {
+        .sf-btn-dash:hover {
           transform: translateY(-1px);
-          box-shadow: 0 0 0 1.5px #C0B8A8, inset 0 1px 1px rgba(255,255,255,0.3), 0 4px 12px rgba(0,0,0,0.6);
+          border-color: #DCD4C4;
+          box-shadow: inset 0 1px 1px rgba(255,255,255,0.3), 0 4px 12px rgba(0,0,0,0.6);
         }
-        .sf-nav-back { display: flex; align-items: center; justify-content: center; width: 34px; height: 34px; flex-shrink: 0; }
-        .sf-btn-dash { display: flex; align-items: center; justify-content: center; width: 88px; height: 34px; font-size: 0.75rem; font-weight: 700; white-space: nowrap; }
+        .sf-nav-back { display: flex; align-items: center; justify-content: center; width: 34px; height: 34px; flex-shrink: 0; background: transparent; border: none; transition: transform 0.15s, filter 0.15s; }
+        .sf-nav-back:hover { transform: scale(1.05); filter: drop-shadow(0 2px 6px rgba(0,0,0,0.5)); }
         
         .sf-btn-cart { 
           display: flex; align-items: center; justify-content: center; width: 88px; height: 34px; font-size: 0.75rem; font-weight: 800; color: #fff; border-radius: 8px; text-decoration: none; white-space: nowrap;
-          box-shadow: 0 0 0 1.5px #C0B8A8, inset 0 2px 4px rgba(255,255,255,0.25), 0 4px 12px rgba(0,0,0,0.5);
-          transition: transform 0.15s, box-shadow 0.15s;
+          border: 1px solid #C0B8A8;
+          box-shadow: inset 0 2px 4px rgba(255,255,255,0.25), 0 4px 12px rgba(0,0,0,0.5);
+          transition: transform 0.15s, box-shadow 0.15s, border-color 0.15s;
         }
         .sf-btn-cart:hover {
           transform: translateY(-1px);
-          box-shadow: 0 0 0 2px #C0B8A8, inset 0 2px 6px rgba(255,255,255,0.35), 0 6px 16px rgba(0,0,0,0.6);
+          border-color: #DCD4C4;
+          box-shadow: inset 0 2px 6px rgba(255,255,255,0.35), 0 6px 16px rgba(0,0,0,0.6);
         }
 
         .sf-hero { padding: 12px 12px 4px; text-align: center; }
@@ -261,7 +266,7 @@ export default async function AgentStorefrontPage({ params }: Props) {
         {/* Back button */}
         <Link href="/dashboard" className="sf-nav-back" aria-label="Back to Dashboard">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/back-arrow.png" width={16} height={16} alt="Back" style={{ objectFit: 'contain' }} />
+          <img src="/back-arrow.png" width={28} height={28} alt="Back" style={{ objectFit: 'contain' }} />
         </Link>
 
         <div className="sf-nav-brand">

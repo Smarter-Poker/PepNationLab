@@ -57,20 +57,6 @@ export function subscribeMessages(conversationId: string, handlers: MessageHandl
   };
 }
 
-interface ParticipantHandlers {
-  onUpdate?: (p: Participant) => void;
-}
-
-export function subscribeParticipants(userId: string, handlers: ParticipantHandlers): RealtimeChannel {
-  const ch = supabase.channel(`user:${userId}`);
-  ch.on(
-    'broadcast',
-    { event: 'participant_updated' },
-    (payload) => handlers.onUpdate?.(payload.payload.participant as Participant),
-  );
-  ch.subscribe();
-  return ch;
-}
 
 export interface TypingEvent {
   userId: string;
@@ -218,7 +204,7 @@ export function subscribeMyIncomingMessages(
     { event: 'new_message_notify' },
     (payload) => {
       const m = payload.payload.message as IncomingMessageNotification & { sender_id: string };
-      if (!m || m.sender_id === userId) return;
+      if (!m) return;
       if (allowConversationIds && !allowConversationIds.has(m.conversation_id)) return;
       onInsert(m);
     },

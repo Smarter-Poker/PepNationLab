@@ -1181,6 +1181,7 @@ export default function AgentStorefrontGrid({ products, inventoryMap, primaryCol
             height: 80,
             background: 'transparent',
             border: 'none',
+            overflow: 'visible',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',

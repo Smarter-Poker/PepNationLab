@@ -429,9 +429,10 @@ export default function MessagePane({ userId, activeCall, setActiveCall }: Props
 
     const { channel: msgChannel, broadcastNewMessage } = subscribeMessages(activeId, {
       onInsert: (m) => {
-        if (m.sender_id === userId) return;
         appendMessage(activeId, m);
-        void markConversationRead(activeId, m.id);
+        if (m.sender_id !== userId) {
+          void markConversationRead(activeId, m.id);
+        }
       },
       onUpdate: (m) => updateMessage(activeId, m),
       onDelete: (id) => removeMessage(activeId, id),

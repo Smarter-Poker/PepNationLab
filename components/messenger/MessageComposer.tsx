@@ -163,8 +163,9 @@ export default function MessageComposer({ conversationId, selfId, replyTo, onCle
     });
   };
 
-  const buildOptimistic = (overrides: Partial<Message> & { message_type: MessageType }): Message => ({
-    id: `temp-${crypto.randomUUID()}`,
+  const buildOptimistic = (overrides: Partial<Message> & { message_type: MessageType }, clientMessageId: string): Message => ({
+    id: `temp-${clientMessageId}`,
+    client_message_id: clientMessageId,
     conversation_id: conversationId,
     sender_id: selfId,
     text: null,
@@ -194,7 +195,7 @@ export default function MessageComposer({ conversationId, selfId, replyTo, onCle
     // Audit10: stamp a fresh idempotency uuid per send. The server's
     // unique partial index on (conversation_id, sender_id, client_message_id)
     // + the 23505 replay path in send-message use this to dedup retries.
-    const clientMessageId = crypto.randomUUID();
+    const clientMessageId = optimistic.client_message_id!;
     try {
       const body: Record<string, unknown> = {
         conversationId,
@@ -247,7 +248,7 @@ export default function MessageComposer({ conversationId, selfId, replyTo, onCle
       message_type: 'text',
       text: trimmed,
       expires_at: expiresAt ?? null,
-    });
+    }, crypto.randomUUID());
     setText('');
     await sendOptimistic(optimistic, { text: trimmed, messageType: 'text', expiresAt });
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -303,7 +304,7 @@ export default function MessageComposer({ conversationId, selfId, replyTo, onCle
       media_url: sig.publicUrl,
       media_metadata: metadata,
       expires_at: expiresAt ?? null,
-    });
+    }, crypto.randomUUID());
     await sendOptimistic(optimistic, {
       mediaUrl: sig.publicUrl,
       mediaMetadata: metadata,
@@ -361,7 +362,7 @@ export default function MessageComposer({ conversationId, selfId, replyTo, onCle
       message_type: 'gif',
       media_url: gifUrl,
       expires_at: expiresAt ?? null,
-    });
+    }, crypto.randomUUID());
     await sendOptimistic(optimistic, { mediaUrl: gifUrl, messageType: 'gif', expiresAt });
   };
 
