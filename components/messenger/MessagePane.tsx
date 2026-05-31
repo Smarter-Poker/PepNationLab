@@ -258,10 +258,10 @@ export default function MessagePane({ userId, activeCall, setActiveCall }: Props
     }, 100); // Increased timeout slightly to ensure paint is done
   }, []);
 
-  // Scroll to bottom when messages load or change
+  // Scroll to bottom when messages load or change or when someone starts typing
   useEffect(() => {
     scrollToBottom();
-  }, [activeId, messagesByConv, scrollToBottom]);
+  }, [activeId, messagesByConv, typingUserIds, scrollToBottom]);
 
   useEffect(() => {
     setReplyTo(null);
