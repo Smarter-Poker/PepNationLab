@@ -122,7 +122,6 @@ export default function MessageBubble({
   //   - In direct conversations: either participant can pin.
   // Both surfaces are gated by canPin (action menu is hidden if it's false).
   const canPin = Boolean(onPinToggle) && !message.is_deleted;
-  const canBookmark = Boolean(onBookmarkToggle) && !message.is_deleted;
   const canLabel = Boolean(onLabelToggle) && !message.is_deleted;
   const canThread = Boolean(onThread)
     && !message.is_deleted
