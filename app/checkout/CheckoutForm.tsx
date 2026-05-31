@@ -791,7 +791,7 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
               grid-template-columns: 1fr !important;
             }
             .address-city-grid {
-              grid-template-columns: 1fr 1fr !important;
+              grid-template-columns: 2fr 1.2fr 1.2fr !important;
             }
             .coupon-row {
               flex-direction: column !important;
