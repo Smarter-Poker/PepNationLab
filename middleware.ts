@@ -77,6 +77,7 @@ const PUBLIC_ROUTES = [
   // before login to surface live rates and validate the shipping address.
   '/api/shipping/quote',
   '/api/shipping/validate-address',
+  '/api/messenger/call-signal-unload-broadcast',
 ];
 
 // Dynamic route check — agent storefronts are public
