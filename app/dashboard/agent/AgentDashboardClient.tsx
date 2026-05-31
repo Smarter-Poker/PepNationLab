@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/client';
 import Navbar from '@/components/Navbar';
 import { toast } from 'sonner';
 import Link from 'next/link';
+import { useRouter, useSearchParams } from 'next/navigation';
 import AgentCoupons from '@/components/AgentCoupons';
 import AgentStoreProducts from '@/components/AgentStoreProducts';
 import AgentSales from '@/components/AgentSales';
@@ -109,7 +110,20 @@ export default function AgentDashboardClient({
   const [applePayHandle, setApplePayHandle] = useState(agentProfile?.payment_handles?.apple_cash ?? agentProfile?.payment_handles?.apple_pay ?? '');
 
   const handlesEmpty = !!agentProfile && (!agentProfile.payment_handles || Object.keys(agentProfile.payment_handles || {}).every((k) => !(agentProfile.payment_handles as any)[k]));
-  const [activeTab, setActiveTab] = useState<'Overview' | 'Sales & Carts' | 'Researchers' | 'My Sub-Agents' | 'Orders' | 'Store Products' | 'Research Bundles' | 'Inventory' | 'Accounting' | 'Coupons' | 'Storefront Config' | 'Settings'>((initialAgentProfile && (!initialAgentProfile.payment_handles || Object.keys(initialAgentProfile.payment_handles).every((k) => !initialAgentProfile.payment_handles![k]))) ? 'Storefront Config' : 'Overview');
+  
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const tabParam = searchParams.get('tab') as any;
+  
+  const defaultTab = (initialAgentProfile && (!initialAgentProfile.payment_handles || Object.keys(initialAgentProfile.payment_handles).every((k) => !initialAgentProfile.payment_handles![k]))) ? 'Storefront Config' : 'Overview';
+  const [activeTab, setActiveTabState] = useState<'Overview' | 'Sales & Carts' | 'Researchers' | 'My Sub-Agents' | 'Orders' | 'Store Products' | 'Research Bundles' | 'Inventory' | 'Accounting' | 'Coupons' | 'Storefront Config' | 'Settings'>(tabParam || defaultTab);
+
+  const setActiveTab = (tab: typeof activeTab) => {
+    setActiveTabState(tab);
+    const newParams = new URLSearchParams(searchParams.toString());
+    newParams.set('tab', tab);
+    router.replace(`?${newParams.toString()}`, { scroll: false });
+  };
 
   const [volumePricingEnabled, setVolumePricingEnabled] = useState<boolean>(agentProfile?.volume_pricing_enabled !== false);
 

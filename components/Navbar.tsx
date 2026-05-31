@@ -245,10 +245,28 @@ export default function Navbar({ onMenuClick, isOpen, title }: { onMenuClick?: (
     window.location.replace('/');
   };
 
-  // ── True Back Button ───────────────────────────────────────
-  // We unconditionally show the back button (unless on root) and it performs a native browser back.
-  // We use window.location.replace during login to prevent the login screen from
-  // dirtying the history stack, which ensures router.back() works perfectly.
+  // ── Smart Hierarchical Back Button ───────────────────────────────────────
+  // We conditionally use native browser history if available. If the user landed
+  // on a deep link directly (empty history stack), we route them up the app hierarchy.
+  const handleBack = () => {
+    if (window.history.length > 2) {
+      router.back();
+      return;
+    }
+
+    // Fallback: Logical Parent Routes
+    if (pathname.startsWith('/admin/')) {
+      router.push('/admin');
+    } else if (pathname.startsWith('/account/')) {
+      router.push(dashLink);
+    } else if (pathname.match(/^\/[^\/]+\/product\//)) {
+      const slug = pathname.split('/')[1];
+      router.push(`/${slug}/store`);
+    } else {
+      router.push(dashLink);
+    }
+  };
+
   const showBack = pathname !== '/';
 
   return (
@@ -304,7 +322,7 @@ export default function Navbar({ onMenuClick, isOpen, title }: { onMenuClick?: (
         {showBack && (
           <>
             <button
-              onClick={() => router.back()}
+              onClick={handleBack}
               aria-label="Go Back"
               style={{
                 background: 'none',
