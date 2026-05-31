@@ -122,7 +122,7 @@ export default function AgentDashboardClient({
     setActiveTabState(tab);
     const newParams = new URLSearchParams(searchParams.toString());
     newParams.set('tab', tab);
-    router.replace(`?${newParams.toString()}`, { scroll: false });
+    router.push(`?${newParams.toString()}`, { scroll: false });
   };
 
   useEffect(() => {
