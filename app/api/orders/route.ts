@@ -213,7 +213,7 @@ export async function POST(request: NextRequest) {
       // Resolve the storefront agent from the slug (same table the storefront page uses)
       const { data: storefrontAgent } = await serviceSupabase
         .from('agent_profiles')
-        .select('id')
+        .select('id, min_overall_qty')
         .ilike('slug', agentSlug)
         .single();
 
@@ -232,6 +232,16 @@ export async function POST(request: NextRequest) {
           return NextResponse.json(
             { error: 'Your Account Does Not Have Access To This Store.' },
             { status: 403 }
+          );
+        }
+
+        // Enforce storefront overall minimum quantity
+        const totalRequestedQty = items.reduce((acc, item) => acc + (Number(item.quantity) || 0), 0);
+        const minQty = Number(storefrontAgent.min_overall_qty) || 1;
+        if (totalRequestedQty < minQty) {
+          return NextResponse.json(
+            { error: `This storefront requires a minimum overall order of ${minQty} items.` },
+            { status: 400 }
           );
         }
       }

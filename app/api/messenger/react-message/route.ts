@@ -56,6 +56,7 @@ export async function POST(req: NextRequest) {
 
     const { data: inserted, error: insErr } = await svc.from('messenger_reactions').insert({
       message_id: parsed.data.messageId,
+      conversation_id: msg.conversation_id,
       user_id: user.id,
       reaction_type: 'emoji',
       emoji: parsed.data.emoji,

@@ -72,9 +72,7 @@ export function subscribeMessages(
       event: 'INSERT',
       schema: 'public',
       table: 'messenger_reactions',
-      // Supabase realtime filter currently does not support join filters easily,
-      // but we filter out client-side if needed, or just let all reactions flow if no filter available,
-      // wait, we can't filter by conversation_id on messenger_reactions since it only has message_id.
+      filter: `conversation_id=eq.${conversationId}`,
     },
     (payload) => {
       handlers.onReactionInsert?.(payload.new as Reaction);
@@ -87,6 +85,7 @@ export function subscribeMessages(
       event: 'DELETE',
       schema: 'public',
       table: 'messenger_reactions',
+      filter: `conversation_id=eq.${conversationId}`,
     },
     (payload) => {
       if (payload.old) {

@@ -349,6 +349,10 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
   const handleNextStep = () => {
     setError(null);
     if (step === 1) {
+      if (!meetsOverallMin) {
+        setError(`This storefront requires a minimum overall order of ${minOverallQty} items. Please add more items to proceed.`);
+        return;
+      }
       if (fulfillmentMethod === 'ship') {
         if (!fullName.trim() || !street.trim() || !city.trim() || !state.trim() || !zip.trim()) {
           setError('All Shipping Fields Are Required For Delivery.');

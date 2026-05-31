@@ -479,8 +479,44 @@ export default function AgentStorefrontGrid({ products, inventoryMap, primaryCol
   useEffect(() => {
     try {
       localStorage.setItem(`cart_${agentSlug}`, JSON.stringify(cartItems));
+
+      // Continuously sync to the checkout format so the top-header checkout button works
+      const pnlCart = Object.entries(cartItems)
+        .filter(([, qty]) => qty > 0)
+        .map(([vId, qty]) => {
+          const item = products.find(p => p.id === vId);
+          if (!item) return null;
+          const perVial = item.retail_price / 10;
+          const costPerVial = isStorefrontOwner && (item as any).cost_price != null
+            ? Number((item as any).cost_price) / 10
+            : perVial;
+          const sizeLabel = item.products?.unit_size
+            ? `(${item.products.unit_size}${item.products.unit_measure || ''})`
+            : '';
+          return {
+            id: item.product_id,
+            name: `${item.products?.name || 'Product'} ${sizeLabel}`.trim(),
+            agent_product_id: item.id,
+            price: costPerVial,
+            retail_price: perVial,
+            quantity: qty,
+            is_wholesale: false,
+          };
+        }).filter(Boolean);
+
+      localStorage.setItem(`pnl_storefront_cart_${agentSlug}`, JSON.stringify({
+        items: pnlCart,
+        _savedAt: Date.now(),
+      }));
+
+      // Wipe any stale storefront carts from OTHER agents to prevent cross-contamination
+      Object.keys(localStorage)
+        .filter(k => k.startsWith('pnl_storefront_cart_') && k !== `pnl_storefront_cart_${agentSlug}`)
+        .forEach(k => localStorage.removeItem(k));
+      localStorage.removeItem('pnl_storefront_cart');
+
     } catch { /* ignore */ }
-  }, [cartItems, agentSlug]);
+  }, [cartItems, agentSlug, products, isStorefrontOwner]);
 
   // Group products by name
   const grouped = useMemo(() => {
@@ -1176,10 +1212,10 @@ export default function AgentStorefrontGrid({ products, inventoryMap, primaryCol
           }}
           style={{
             position: 'fixed',
-            bottom: 'env(safe-area-inset-bottom, 0px)',
-            right: '4px',
-            width: 80,
-            height: 80,
+            bottom: 'calc(12px + env(safe-area-inset-bottom, 0px))',
+            right: '12px',
+            width: 96,
+            height: 96,
             background: 'transparent',
             border: 'none',
             overflow: 'visible',
