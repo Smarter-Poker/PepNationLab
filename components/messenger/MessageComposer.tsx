@@ -406,93 +406,112 @@ export default function MessageComposer({ conversationId, selfId, replyTo, onCle
           style={{
             display: 'flex',
             alignItems: 'flex-end',
-            gap: 8,
-            padding: '8px',
-            borderRadius: '24px',
-            background: 'var(--surface-2, #162230)',
-            border: '1px solid var(--surface-3, #1D2D3E)',
-            boxShadow: '0 2px 12px rgba(0,0,0,0.2)',
-            transition: 'border-color 0.2s',
+            gap: 12,
+            padding: '8px 16px',
+            background: 'var(--surface-1, #0F1923)',
+            borderTop: '1px solid var(--surface-2, #162230)',
           }}
         >
-          <div style={{ display: 'flex', gap: 4, paddingBottom: 2 }}>
+          {/* External Left Icons (App integrations like attach, gifs, templates) */}
+          <div style={{ display: 'flex', gap: 12, paddingBottom: 8 }}>
             <button type="button" onClick={() => setShowAttach((v) => !v)} className="composer-icon-btn" aria-label="Attach" title="Attach">
-              <Paperclip size={20} />
-            </button>
-            <button type="button" onClick={() => setShowEmoji((v) => !v)} className="composer-icon-btn" aria-label="Insert Emoji" title="Insert Emoji">
-              <Smile size={20} />
+              <Paperclip size={22} color="var(--teal, #00C4BC)" />
             </button>
             {gifAvailable && (
               <button type="button" onClick={() => setShowGif((v) => !v)} className="composer-icon-btn" aria-label="Insert Gif" title="Insert Gif">
-                <ImageIcon size={20} />
+                <ImageIcon size={22} color="var(--teal, #00C4BC)" />
               </button>
             )}
             <button type="button" onClick={() => setShowTemplates((v) => !v)} className="composer-icon-btn" aria-label="Templates" title="Templates">
-              <FileText size={20} />
+              <FileText size={22} color="var(--teal, #00C4BC)" />
             </button>
           </div>
 
-          <textarea
-            ref={inputRef}
-            value={text}
-            onChange={(e) => { setText(e.target.value.slice(0, MAX_LEN)); pulseTyping(); }}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); void handleSendText(); }
-            }}
-            placeholder="iMessage"
-            maxLength={MAX_LEN}
-            rows={1}
-            aria-label="Message Body"
+          {/* iMessage Style Pill */}
+          <div
             style={{
-              flex: 1, resize: 'none', minHeight: 24, maxHeight: 120,
-              padding: '6px 4px',
-              background: 'transparent',
-              border: 'none',
-              color: 'var(--white, #FFFFFF)',
-              fontFamily: 'inherit', fontSize: '1rem', outline: 'none',
-              lineHeight: '1.4',
+              flex: 1,
+              display: 'flex',
+              alignItems: 'center',
+              background: 'var(--surface-2, #162230)',
+              borderRadius: 24,
+              border: '1px solid var(--surface-3, #1D2D3E)',
+              padding: '6px 12px',
+              minHeight: 40,
+              boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.1)',
             }}
-          />
-
-          <div style={{ display: 'flex', gap: 4, paddingBottom: 2 }}>
-            <button
-              type="button"
-              onClick={() => setShowScheduleInput((v) => !v)}
-              className="composer-icon-btn"
-              aria-label="Schedule Send"
-              title="Schedule Send"
-            >
-              <Calendar size={18} />
-            </button>
-            <button
-              type="button"
-              onClick={() => setShowExpiry((v) => !v)}
-              className="composer-icon-btn"
-              aria-label="Set Expiry"
-              title="Set Expiry"
-            >
-              <Clock size={18} />
-            </button>
-            <button type="button" onClick={() => void handleSendText()}
-              disabled={!text.trim() || sending}
-              aria-label="Send Message" title="Send Message"
-              style={{
-                background: text.trim() && !sending ? 'var(--teal, #00C4BC)' : 'var(--surface-3, #1D2D3E)',
-                border: 'none',
-                borderRadius: '50%',
-                width: 34,
-                height: 34,
-                display: 'inline-flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                cursor: text.trim() && !sending ? 'pointer' : 'default',
-                color: text.trim() && !sending ? '#000' : 'var(--grey-400, #A8B4C0)',
-                transition: 'background 0.2s, transform 0.1s',
-                transform: text.trim() && !sending ? 'scale(1.05)' : 'scale(1)',
+          >
+            <textarea
+              ref={inputRef}
+              value={text}
+              onChange={(e) => { setText(e.target.value.slice(0, MAX_LEN)); pulseTyping(); }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); void handleSendText(); }
               }}
-            >
-              <Send size={16} style={{ marginLeft: 2 }} />
+              placeholder="iMessage"
+              maxLength={MAX_LEN}
+              rows={1}
+              aria-label="Message Body"
+              style={{
+                flex: 1, resize: 'none', minHeight: 24, maxHeight: 120,
+                padding: '4px 6px',
+                background: 'transparent',
+                border: 'none',
+                color: 'var(--white, #FFFFFF)',
+                fontFamily: 'inherit', fontSize: '1rem', outline: 'none',
+                lineHeight: '1.4',
+              }}
+            />
+            {/* Emoji icon inside the pill on the right */}
+            <button type="button" onClick={() => setShowEmoji((v) => !v)} className="composer-icon-btn" aria-label="Insert Emoji" title="Insert Emoji" style={{ marginLeft: 4, padding: 4 }}>
+              <Smile size={20} color="var(--grey-400, #A8B4C0)" />
             </button>
+          </div>
+
+          {/* External Right Icons (Send / Voice / Utilities) */}
+          <div style={{ display: 'flex', gap: 12, paddingBottom: 6 }}>
+            {text.trim() || sending ? (
+              <button type="button" onClick={() => void handleSendText()}
+                disabled={!text.trim() || sending}
+                aria-label="Send Message" title="Send Message"
+                style={{
+                  background: 'var(--teal, #00C4BC)',
+                  border: 'none',
+                  borderRadius: '50%',
+                  width: 32,
+                  height: 32,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer',
+                  color: '#000',
+                  transition: 'transform 0.1s',
+                }}
+              >
+                <Send size={15} style={{ marginLeft: 2 }} />
+              </button>
+            ) : (
+              <>
+                <button
+                  type="button"
+                  onClick={() => setShowScheduleInput((v) => !v)}
+                  className="composer-icon-btn"
+                  aria-label="Schedule Send"
+                  title="Schedule Send"
+                >
+                  <Calendar size={22} color="var(--teal, #00C4BC)" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowExpiry((v) => !v)}
+                  className="composer-icon-btn"
+                  aria-label="Set Expiry"
+                  title="Set Expiry"
+                >
+                  <Clock size={22} color="var(--teal, #00C4BC)" />
+                </button>
+              </>
+            )}
           </div>
         </div>
       )}

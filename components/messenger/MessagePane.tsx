@@ -992,7 +992,12 @@ export default function MessagePane({ userId, activeCall, setActiveCall }: Props
                 );
               }
               return (
-                <div key={m.id} style={{ display: 'flex', flexDirection: 'column' }}>
+                <div key={m.id} style={{ 
+                  display: 'flex', 
+                  flexDirection: 'column', 
+                  width: '100%',
+                  alignItems: m.sender_id === userId ? 'flex-end' : 'flex-start' 
+                }}>
                   {timestampBanner}
                   <MessageBubble
                     message={m}

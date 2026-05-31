@@ -121,31 +121,52 @@ export default function AgentLedger({ agentId }: { agentId: string }) {
         {ledgerData?.transactions?.length === 0 ? (
           <p style={{ color: 'var(--grey-400)' }}>No Transactions Found For Your Downline.</p>
         ) : (
-          <div className="table-responsive">
-            <table className="data-table" style={{ width: '100%', fontSize: '0.85rem' }}>
-              <thead>
-                <tr>
-                  <th>Date</th>
-                  <th>Customer</th>
-                  <th>Status</th>
-                  <th style={{ textAlign: 'right' }}>Collected (Retail)</th>
-                  <th style={{ textAlign: 'right' }}>Owed (Cost)</th>
-                  <th style={{ textAlign: 'right' }}>Profit</th>
-                </tr>
-              </thead>
-              <tbody>
-                {ledgerData.transactions.map((tx: any) => (
-                  <tr key={tx.id}>
-                    <td>{new Date(tx.date).toLocaleDateString()}</td>
-                    <td style={{ fontWeight: 'bold' }}>{tx.customer}</td>
-                    <td><span className="badge badge-teal">{tx.status.replaceAll('_', ' ')}</span></td>
-                    <td style={{ textAlign: 'right', color: 'var(--white)' }}>{formatCurrency(tx.collected)}</td>
-                    <td style={{ textAlign: 'right', color: 'var(--red)' }}>{formatCurrency(tx.owed)}</td>
-                    <td style={{ textAlign: 'right', color: 'var(--teal)', fontWeight: 'bold' }}>{formatCurrency(tx.profit)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
+            {ledgerData.transactions.map((tx: any) => (
+              <div 
+                key={tx.id} 
+                style={{
+                  background: 'linear-gradient(180deg, #0b0f16 0%, #121822 100%)',
+                  borderTop: '1px solid rgba(0,0,0,0.8)',
+                  borderBottom: '1px solid rgba(255,255,255,0.08)',
+                  borderLeft: '1px solid rgba(0,0,0,0.5)',
+                  borderRight: '1px solid rgba(255,255,255,0.03)',
+                  boxShadow: 'inset 0 4px 20px rgba(0,0,0,0.9)',
+                  borderRadius: '16px',
+                  padding: '16px 20px',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  flexWrap: 'wrap',
+                  gap: '12px'
+                }}
+              >
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', minWidth: '120px' }}>
+                  <span style={{ fontSize: '0.75rem', color: 'var(--grey-400)', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>Date</span>
+                  <span style={{ fontSize: '0.9rem', color: 'var(--silver)' }}>{new Date(tx.date).toLocaleDateString()}</span>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', minWidth: '150px' }}>
+                  <span style={{ fontSize: '0.75rem', color: 'var(--grey-400)', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>Customer</span>
+                  <span style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--white)' }}>{tx.customer}</span>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', minWidth: '120px' }}>
+                  <span style={{ fontSize: '0.75rem', color: 'var(--grey-400)', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>Status</span>
+                  <div><span className="badge badge-teal">{tx.status.replaceAll('_', ' ')}</span></div>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', minWidth: '100px', textAlign: 'right' }}>
+                  <span style={{ fontSize: '0.75rem', color: 'var(--grey-400)', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>Collected</span>
+                  <span style={{ fontSize: '0.95rem', color: 'var(--white)', fontWeight: 600 }}>{formatCurrency(tx.collected)}</span>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', minWidth: '100px', textAlign: 'right' }}>
+                  <span style={{ fontSize: '0.75rem', color: 'var(--grey-400)', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>Owed</span>
+                  <span style={{ fontSize: '0.95rem', color: 'var(--red)', fontWeight: 600 }}>{formatCurrency(tx.owed)}</span>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', minWidth: '100px', textAlign: 'right' }}>
+                  <span style={{ fontSize: '0.75rem', color: 'var(--teal)', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 700 }}>Profit</span>
+                  <span style={{ fontSize: '1.1rem', color: 'var(--teal)', fontWeight: 800 }}>{formatCurrency(tx.profit)}</span>
+                </div>
+              </div>
+            ))}
           </div>
         )}
       </div>

@@ -225,72 +225,79 @@ export default function AgentInventory({ agentId }: { agentId: string }) {
             <p style={{ color: 'var(--grey-400)' }}>No active products available to track inventory for.</p>
           </div>
         ) : (
-          <table className="data-table" style={{ width: '100%', fontSize: '0.85rem' }}>
-            <thead>
-              <tr>
-                <th>Product Name</th>
-                <th>SKU</th>
-                <th>Category</th>
-                <th style={{ width: 150 }}>Stock Count</th>
-              </tr>
-            </thead>
-            <tbody>
-              {inventory.map(item => (
-                <tr key={item.id}>
-                  <td style={{ fontWeight: 600 }}>{item.name}</td>
-                  <td style={{ color: 'var(--grey-400)' }}>{item.sku || 'N/A'}</td>
-                  <td>
-                    <span style={{ 
-                      background: 'rgba(255,255,255,0.05)', 
-                      padding: '2px 8px', 
-                      borderRadius: 4,
-                      fontSize: '0.75rem',
-                      textTransform: 'uppercase',
-                      letterSpacing: '0.05em'
-                    }}>
-                      {item.category}
-                    </span>
-                  </td>
-                  <td>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <button 
-                        className="btn btn-sm"
-                        style={{ padding: '0 8px', height: 28, background: 'var(--surface-3)', border: 'none' }}
-                        onClick={() => updateStock(item.id, item.stock_count - 1)}
-                        disabled={savingId === item.id || item.stock_count <= 0}
-                      >
-                        -
-                      </button>
-                      <input 
-                        type="number"
-                        value={item.stock_count}
-                        onChange={(e) => setInventory(prev => prev.map(i => i.id === item.id ? { ...i, stock_count: parseInt(e.target.value) || 0 } : i))}
-                        onBlur={(e) => updateStock(item.id, parseInt(e.target.value) || 0)}
-                        disabled={savingId === item.id}
-                        style={{ 
-                          width: 60, 
-                          height: 28, 
-                          textAlign: 'center', 
-                          background: 'var(--black)',
-                          border: '1px solid var(--surface-3)',
-                          color: 'var(--white)',
-                          borderRadius: 4
-                        }}
-                      />
-                      <button 
-                        className="btn btn-sm"
-                        style={{ padding: '0 8px', height: 28, background: 'var(--surface-3)', border: 'none' }}
-                        onClick={() => updateStock(item.id, item.stock_count + 1)}
-                        disabled={savingId === item.id}
-                      >
-                        +
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
+            {inventory.map((item: any) => (
+              <div 
+                key={item.id} 
+                style={{
+                  background: 'linear-gradient(180deg, #0b0f16 0%, #121822 100%)',
+                  borderTop: '1px solid rgba(0,0,0,0.8)',
+                  borderBottom: '1px solid rgba(255,255,255,0.08)',
+                  borderLeft: '1px solid rgba(0,0,0,0.5)',
+                  borderRight: '1px solid rgba(255,255,255,0.03)',
+                  boxShadow: 'inset 0 4px 20px rgba(0,0,0,0.9)',
+                  borderRadius: '16px',
+                  padding: '16px 20px',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  flexWrap: 'wrap',
+                  gap: '12px'
+                }}
+              >
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', flex: '1 1 200px' }}>
+                  <span style={{ fontSize: '0.75rem', color: 'var(--grey-400)', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>Product Name</span>
+                  <span style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--white)' }}>{item.name}</span>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', minWidth: '120px' }}>
+                  <span style={{ fontSize: '0.75rem', color: 'var(--grey-400)', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>SKU</span>
+                  <span style={{ fontSize: '0.9rem', color: 'var(--silver)' }}>{item.sku || 'N/A'}</span>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', minWidth: '150px' }}>
+                  <span style={{ fontSize: '0.75rem', color: 'var(--grey-400)', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>Category</span>
+                  <div>
+                    <span className="badge badge-silver">{item.category}</span>
+                  </div>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', minWidth: '150px', alignItems: 'flex-end' }}>
+                  <span style={{ fontSize: '0.75rem', color: 'var(--grey-400)', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>Stock Count</span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <button 
+                      style={{ padding: '0 8px', height: 28, background: 'var(--surface-3)', border: 'none', borderRadius: '6px', color: 'var(--white)', cursor: 'pointer' }}
+                      onClick={() => updateStock(item.id, item.stock_count - 1)}
+                      disabled={savingId === item.id || item.stock_count <= 0}
+                    >
+                      -
+                    </button>
+                    <input 
+                      type="number"
+                      value={item.stock_count}
+                      onChange={(e) => setInventory(prev => prev.map(i => i.id === item.id ? { ...i, stock_count: parseInt(e.target.value) || 0 } : i))}
+                      onBlur={(e) => updateStock(item.id, parseInt(e.target.value) || 0)}
+                      disabled={savingId === item.id}
+                      style={{ 
+                        width: 60, 
+                        height: 28, 
+                        textAlign: 'center', 
+                        background: 'var(--black)',
+                        border: '1px solid var(--surface-3)',
+                        color: 'var(--white)',
+                        borderRadius: 6,
+                        fontWeight: 700
+                      }}
+                    />
+                    <button 
+                      style={{ padding: '0 8px', height: 28, background: 'var(--surface-3)', border: 'none', borderRadius: '6px', color: 'var(--white)', cursor: 'pointer' }}
+                      onClick={() => updateStock(item.id, item.stock_count + 1)}
+                      disabled={savingId === item.id}
+                    >
+                      +
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
         )}
       </div>
     </div>

@@ -84,49 +84,60 @@ export default function AgentSales() {
         <h2 style={{ fontSize: '1.25rem', color: 'var(--white)', marginBottom: 'var(--space-4)', fontFamily: 'var(--font-brand)' }}>
           Completed Sales & Profit
         </h2>
-        <div className="table-responsive">
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>Date</th>
-                <th>Buyer</th>
-                <th>Order ID</th>
-                <th>Status</th>
-                <th style={{ textAlign: 'right' }}>Order Total</th>
-                <th style={{ textAlign: 'right', color: 'var(--green)' }}>Your Profit</th>
-              </tr>
-            </thead>
-            <tbody>
-              {sales.length === 0 ? (
-                <tr>
-                  <td colSpan={6} style={{ textAlign: 'center', opacity: 0.5 }}>No Sales Recorded Yet.</td>
-                </tr>
-              ) : (
-                sales.map((sale: any) => (
-                  <tr key={sale.id}>
-                    <td>{new Date(sale.created_at).toLocaleDateString()}</td>
-                    <td>{sale.buyer_name}</td>
-                    <td style={{ fontSize: '0.8rem', color: 'var(--silver)' }}>{sale.id.split('-')[0]}</td>
-                    <td>
-                      <span style={{
-                        padding: '2px 8px',
-                        borderRadius: 12,
-                        fontSize: '0.75rem',
-                        background: sale.status === 'cancelled' ? 'rgba(245,101,101,0.1)' : 'rgba(192,184,168,0.1)',
-                        color: sale.status === 'cancelled' ? 'var(--red)' : 'var(--teal)'
-                      }}>
-                        {sale.status.replace(/_/g, ' ')}
-                      </span>
-                    </td>
-                    <td style={{ textAlign: 'right', fontWeight: 'bold' }}>{formatCurrency(sale.total)}</td>
-                    <td style={{ textAlign: 'right', fontWeight: 'bold', color: 'var(--green)' }}>
-                      {formatCurrency(sale.profit)}
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
+          {sales.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: 'var(--space-6)', opacity: 0.5 }}>No Sales Recorded Yet.</div>
+          ) : (
+            sales.map((sale: any) => (
+              <div 
+                key={sale.id}
+                style={{
+                  background: 'linear-gradient(180deg, #0b0f16 0%, #121822 100%)',
+                  borderTop: '1px solid rgba(0,0,0,0.8)',
+                  borderBottom: '1px solid rgba(255,255,255,0.08)',
+                  borderLeft: '1px solid rgba(0,0,0,0.5)',
+                  borderRight: '1px solid rgba(255,255,255,0.03)',
+                  boxShadow: 'inset 0 4px 20px rgba(0,0,0,0.9)',
+                  borderRadius: '16px',
+                  padding: '16px 20px',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  flexWrap: 'wrap',
+                  gap: '12px'
+                }}
+              >
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', minWidth: '100px' }}>
+                  <span style={{ fontSize: '0.75rem', color: 'var(--grey-400)', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>Date</span>
+                  <span style={{ fontSize: '0.9rem', color: 'var(--silver)' }}>{new Date(sale.created_at).toLocaleDateString()}</span>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', flex: '1 1 150px' }}>
+                  <span style={{ fontSize: '0.75rem', color: 'var(--grey-400)', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>Buyer</span>
+                  <span style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--white)' }}>{sale.buyer_name}</span>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', minWidth: '100px' }}>
+                  <span style={{ fontSize: '0.75rem', color: 'var(--grey-400)', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>Order ID</span>
+                  <span style={{ fontSize: '0.9rem', color: 'var(--silver)' }}>{sale.id.split('-')[0]}</span>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', minWidth: '120px' }}>
+                  <span style={{ fontSize: '0.75rem', color: 'var(--grey-400)', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>Status</span>
+                  <div>
+                    <span className={`badge ${sale.status === 'cancelled' ? 'badge-red' : 'badge-teal'}`}>
+                      {sale.status.replace(/_/g, ' ')}
+                    </span>
+                  </div>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', minWidth: '100px', textAlign: 'right' }}>
+                  <span style={{ fontSize: '0.75rem', color: 'var(--grey-400)', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>Order Total</span>
+                  <span style={{ fontSize: '1rem', color: 'var(--white)', fontWeight: 700 }}>{formatCurrency(sale.total)}</span>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', minWidth: '100px', textAlign: 'right' }}>
+                  <span style={{ fontSize: '0.75rem', color: 'var(--green)', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>Your Profit</span>
+                  <span style={{ fontSize: '1.1rem', color: 'var(--green)', fontWeight: 800 }}>{formatCurrency(sale.profit)}</span>
+                </div>
+              </div>
+            ))
+          )}
         </div>
       </section>
     </div>

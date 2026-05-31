@@ -89,7 +89,7 @@ export default function AdminAuditClient({ initialRows, initialFilters, availabl
         </button>
       </div>
 
-      <div className="card" style={{ padding: 0, overflowX: 'auto' }}>
+      <div className="card-metal" style={{ padding: 0, overflowX: 'auto' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
           <thead>
             <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}>

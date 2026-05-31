@@ -277,179 +277,198 @@ export default function AdminAgents() {
         </button>
       </div>
 
-      <div className="table-responsive">
-        <table className="data-table">
-          <thead>
-            <tr>
-              <th>Agent ID</th>
-              <th>Name</th>
-              <th>Credentials</th>
-              <th>Contact Info</th>
-              <th>Tier</th>
-              <th>Type</th>
-              <th>Hierarchy</th>
-              <th style={{ textAlign: 'right' }}>Balance</th>
-              <th>Storefront</th>
-              <th>Status</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {agents.length === 0 ? (
-              <tr>
-                <td colSpan={11} style={{ textAlign: 'center', opacity: 0.5 }}>No agents found.</td>
-              </tr>
-            ) : (
-              agents.map(agent => {
-                const isDefaultEmail = agent.email?.includes('@pepnationlab.com');
-                return (
-                  <tr key={agent.id}>
-                    <td style={{ fontSize: '0.8rem', color: 'var(--silver)' }}>{agent.id.split('-')[0]}</td>
-                    <td style={{ fontWeight: 'bold' }}>{agent.full_name}</td>
-                    <td>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                        <span style={{ fontFamily: 'monospace', fontSize: '0.82rem', color: 'var(--teal)' }}>{agent.username || '—'}</span>
-                        <button
-                          onClick={() => { setPasswordAgent(agent); setNewPassword(''); }}
-                          style={{ fontSize: '0.7rem', color: 'var(--grey-400)', background: 'none', border: 'none', cursor: 'pointer', padding: 0, textDecoration: 'underline', textAlign: 'left' }}
-                        >
-                          Edit Password
-                        </button>
-                      </div>
-                    </td>
-                    <td>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: 4, alignItems: 'flex-start' }}>
-                        {isDefaultEmail ? (
-                          <button onClick={() => openEditModal(agent)} className="btn btn-secondary btn-sm" style={{ padding: '2px 6px', fontSize: '0.7rem' }}>
-                            + Add Email
-                          </button>
-                        ) : (
-                          <span style={{ fontSize: '0.85rem' }}>{agent.email}</span>
-                        )}
-                        
-                        {agent.phone ? (
-                          <span style={{ fontSize: '0.8rem', color: 'var(--silver)' }}>{agent.phone}</span>
-                        ) : (
-                          <button onClick={() => openEditModal(agent)} className="btn btn-secondary btn-sm" style={{ padding: '2px 6px', fontSize: '0.7rem', opacity: 0.7 }}>
-                            + Add Phone
-                          </button>
-                        )}
-                        
-                        {(!isDefaultEmail || agent.phone) && (
-                          <button onClick={() => openEditModal(agent)} style={{ fontSize: '0.7rem', color: 'var(--teal)', background: 'none', border: 'none', cursor: 'pointer', padding: 0, textDecoration: 'underline', marginTop: 2 }}>
-                            Edit
-                          </button>
-                        )}
-                      </div>
-                    </td>
-                    <td>
-                      {/* Inline tier editor — click badge to change */}
-                      {tierEditing.has(agent.id) ? (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                          <select
-                            autoFocus
-                            defaultValue={agent.tier || 'tier_3'}
-                            disabled={tierSaving.has(agent.id)}
-                            onChange={e => handleTierChange(agent.id, e.target.value)}
-                            onBlur={() => setTierEditing(prev => { const n = new Set(prev); n.delete(agent.id); return n; })}
-                            style={{
-                              background: 'var(--surface-3)', color: 'var(--white)',
-                              border: '1px solid rgba(255,255,255,0.15)', borderRadius: 6,
-                              padding: '3px 6px', fontSize: '0.75rem', cursor: 'pointer',
-                            }}
-                          >
-                            <option value="tier_1">Tier 1 — Best Price</option>
-                            <option value="tier_2">Tier 2 — Mid Price</option>
-                            <option value="tier_3">Tier 3 — Standard</option>
-                          </select>
-                          {tierSaving.has(agent.id) && (
-                            <span style={{ fontSize: '0.68rem', color: 'var(--teal)' }}>Saving…</span>
-                          )}
-                        </div>
-                      ) : (
-                        <button
-                          onClick={() => setTierEditing(prev => new Set([...prev, agent.id]))}
-                          title="Click to change tier"
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
+        {agents.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: 'var(--space-6)', opacity: 0.5 }}>No agents found.</div>
+        ) : (
+          agents.map(agent => {
+            const isDefaultEmail = agent.email?.includes('@pepnationlab.com');
+            return (
+              <div 
+                key={agent.id}
+                style={{
+                  background: 'linear-gradient(180deg, #0b0f16 0%, #121822 100%)',
+                  borderTop: '1px solid rgba(0,0,0,0.8)',
+                  borderBottom: '1px solid rgba(255,255,255,0.08)',
+                  borderLeft: '1px solid rgba(0,0,0,0.5)',
+                  borderRight: '1px solid rgba(255,255,255,0.03)',
+                  boxShadow: 'inset 0 4px 20px rgba(0,0,0,0.9)',
+                  borderRadius: '16px',
+                  padding: '16px 20px',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  flexWrap: 'wrap',
+                  gap: '16px'
+                }}
+              >
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', flex: '1 1 200px' }}>
+                  <span style={{ fontSize: '0.75rem', color: 'var(--grey-400)', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>Agent</span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--white)' }}>{agent.full_name}</span>
+                    <span style={{ fontSize: '0.7rem', color: 'var(--silver)', background: 'rgba(255,255,255,0.05)', padding: '2px 6px', borderRadius: '4px' }}>
+                      ID: {agent.id.split('-')[0]}
+                    </span>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 4 }}>
+                    {agent.is_super_agent ? (
+                      <span className="badge badge-teal" style={{ fontSize: '0.65rem' }}>SUPER AGENT</span>
+                    ) : agent.parent_agent_id ? (
+                      <span className="badge badge-silver" style={{ fontSize: '0.65rem' }}>Sub-Agent</span>
+                    ) : (
+                      <span className="badge" style={{ fontSize: '0.65rem', background: 'rgba(255,255,255,0.05)' }}>Standard</span>
+                    )}
+                    <span style={{ color: agent.is_active ? 'var(--green)' : 'var(--red)', fontSize: '0.75rem', fontWeight: 600 }}>
+                      {agent.is_active ? 'Active' : 'Inactive'}
+                    </span>
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', minWidth: '150px' }}>
+                  <span style={{ fontSize: '0.75rem', color: 'var(--grey-400)', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>Credentials</span>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                    <span style={{ fontFamily: 'monospace', fontSize: '0.85rem', color: 'var(--teal)' }}>{agent.username || '—'}</span>
+                    <button
+                      onClick={() => { setPasswordAgent(agent); setNewPassword(''); }}
+                      style={{ fontSize: '0.75rem', color: 'var(--grey-400)', background: 'none', border: 'none', cursor: 'pointer', padding: 0, textDecoration: 'underline', textAlign: 'left' }}
+                    >
+                      Edit Password
+                    </button>
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', minWidth: '180px' }}>
+                  <span style={{ fontSize: '0.75rem', color: 'var(--grey-400)', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>Contact Info</span>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 4, alignItems: 'flex-start' }}>
+                    {isDefaultEmail ? (
+                      <button onClick={() => openEditModal(agent)} className="btn btn-secondary btn-sm" style={{ padding: '2px 6px', fontSize: '0.7rem' }}>
+                        + Add Email
+                      </button>
+                    ) : (
+                      <span style={{ fontSize: '0.85rem', color: 'var(--silver)' }}>{agent.email}</span>
+                    )}
+                    
+                    {agent.phone ? (
+                      <span style={{ fontSize: '0.85rem', color: 'var(--silver)' }}>{agent.phone}</span>
+                    ) : (
+                      <button onClick={() => openEditModal(agent)} className="btn btn-secondary btn-sm" style={{ padding: '2px 6px', fontSize: '0.7rem', opacity: 0.7 }}>
+                        + Add Phone
+                      </button>
+                    )}
+                    
+                    {(!isDefaultEmail || agent.phone) && (
+                      <button onClick={() => openEditModal(agent)} style={{ fontSize: '0.75rem', color: 'var(--teal)', background: 'none', border: 'none', cursor: 'pointer', padding: 0, textDecoration: 'underline', marginTop: 2 }}>
+                        Edit
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', minWidth: '130px' }}>
+                  <span style={{ fontSize: '0.75rem', color: 'var(--grey-400)', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>Tier & Type</span>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6, alignItems: 'flex-start' }}>
+                    {/* Inline tier editor */}
+                    {tierEditing.has(agent.id) ? (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                        <select
+                          autoFocus
+                          defaultValue={agent.tier || 'tier_3'}
+                          disabled={tierSaving.has(agent.id)}
+                          onChange={e => handleTierChange(agent.id, e.target.value)}
+                          onBlur={() => setTierEditing(prev => { const n = new Set(prev); n.delete(agent.id); return n; })}
                           style={{
-                            background: 'none', border: 'none', cursor: 'pointer', padding: 0,
-                            display: 'flex', alignItems: 'center', gap: 5,
+                            background: 'var(--surface-3)', color: 'var(--white)',
+                            border: '1px solid rgba(255,255,255,0.15)', borderRadius: 6,
+                            padding: '3px 6px', fontSize: '0.75rem', cursor: 'pointer',
                           }}
                         >
-                          <span style={{
-                            padding: '3px 10px', borderRadius: 12, fontSize: '0.75rem', fontWeight: 700,
-                            background: tierStyle(agent.tier || 'tier_3').bg,
-                            color: tierStyle(agent.tier || 'tier_3').color,
-                            border: tierStyle(agent.tier || 'tier_3').border,
-                          }}>
-                            {(agent.tier || 'tier_3').replace('_', ' ').toUpperCase()}
-                          </span>
-                          <span style={{ fontSize: '0.65rem', color: 'var(--grey-500)', lineHeight: 1 }}>✎</span>
-                        </button>
-                      )}
-                    </td>
-                    <td>{agent.account_type === 'prepaid' ? 'Prepaid' : 'Credit'}</td>
-                    <td>
-                      {agent.is_super_agent ? (
-                        <span style={{ color: 'var(--teal)', fontWeight: 'bold', fontSize: '0.8rem' }}>SUPER AGENT</span>
-                      ) : agent.parent_agent_id ? (
-                        <span style={{ color: 'var(--silver)', fontSize: '0.8rem' }}>Sub-Agent</span>
-                      ) : (
-                        <span style={{ color: 'var(--grey-400)', fontSize: '0.8rem' }}>Standard</span>
-                      )}
-                    </td>
-                    <td style={{ textAlign: 'right', fontWeight: 'bold', color: Number(agent.prepaid_balance) < 0 ? 'var(--red)' : 'var(--green)' }}>
-                      {formatCurrency(agent.prepaid_balance)}
-                    </td>
-                    <td>
-                      {agent.agent_profiles?.[0]?.slug ? (
-                        <a href={`/${agent.agent_profiles[0].slug}`} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--teal)', textDecoration: 'none' }}>
-                          /{agent.agent_profiles[0].slug}
-                        </a>
-                      ) : (
-                        <span style={{ color: 'var(--grey-400)', fontSize: '0.8rem' }}>No storefront</span>
-                      )}
-                    </td>
-                    <td>
-                      <span style={{ color: agent.is_active ? 'var(--green)' : 'var(--red)', fontSize: '0.8rem' }}>
-                        {agent.is_active ? 'Active' : 'Inactive'}
-                      </span>
-                    </td>
-                    <td>
-                      <button 
-                        onClick={async () => {
-                          try {
-                            const res = await fetch('/api/admin/agents/super-upgrade', {
-                              method: 'POST',
-                              headers: { 'Content-Type': 'application/json' },
-                              body: JSON.stringify({ agentId: agent.id, is_super_agent: !agent.is_super_agent })
-                            });
-                            const json = await res.json();
-                            if (!res.ok) throw new Error(json.error);
-                            toast.success(agent.is_super_agent ? 'Super Agent Status Revoked' : 'Promoted To Super Agent');
-                            fetchAgents(); // refresh
-                          } catch (err: any) {
-                            toast.error(err.message || 'Failed To Update Super Agent Status');
-                          }
-                        }}
-                        className="btn btn-secondary btn-sm"
-                        style={{ padding: '4px 8px', fontSize: '0.75rem' }}
-                        disabled={agent.parent_agent_id !== null}
-                      >
-                        {agent.is_super_agent ? 'Revoke Super' : 'Make Super'}
-                      </button>
-                      <div style={{ marginTop: 6 }}>
-                        <ViewAsButton
-                          targetUserId={agent.id}
-                          targetLabel={agent.full_name ?? agent.email}
-                        />
+                          <option value="tier_1">Tier 1</option>
+                          <option value="tier_2">Tier 2</option>
+                          <option value="tier_3">Tier 3</option>
+                        </select>
+                        {tierSaving.has(agent.id) && (
+                          <span style={{ fontSize: '0.68rem', color: 'var(--teal)' }}>Saving…</span>
+                        )}
                       </div>
-                    </td>
-                  </tr>
-                );
-              })
-            )}
-          </tbody>
-        </table>
+                    ) : (
+                      <button
+                        onClick={() => setTierEditing(prev => new Set([...prev, agent.id]))}
+                        title="Click to change tier"
+                        style={{
+                          background: 'none', border: 'none', cursor: 'pointer', padding: 0,
+                          display: 'flex', alignItems: 'center', gap: 5,
+                        }}
+                      >
+                        <span style={{
+                          padding: '3px 10px', borderRadius: 12, fontSize: '0.75rem', fontWeight: 700,
+                          background: tierStyle(agent.tier || 'tier_3').bg,
+                          color: tierStyle(agent.tier || 'tier_3').color,
+                          border: tierStyle(agent.tier || 'tier_3').border,
+                        }}>
+                          {(agent.tier || 'tier_3').replace('_', ' ').toUpperCase()}
+                        </span>
+                        <span style={{ fontSize: '0.65rem', color: 'var(--grey-500)', lineHeight: 1 }}>✎</span>
+                      </button>
+                    )}
+                    <span style={{ fontSize: '0.8rem', color: 'var(--silver)' }}>
+                      {agent.account_type === 'prepaid' ? 'Prepaid' : 'Credit'}
+                    </span>
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', minWidth: '120px' }}>
+                  <span style={{ fontSize: '0.75rem', color: 'var(--grey-400)', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>Balance</span>
+                  <span style={{ fontSize: '1.1rem', fontWeight: 800, color: Number(agent.prepaid_balance) < 0 ? 'var(--red)' : 'var(--green)' }}>
+                    {formatCurrency(agent.prepaid_balance)}
+                  </span>
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', minWidth: '120px' }}>
+                  <span style={{ fontSize: '0.75rem', color: 'var(--grey-400)', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>Storefront</span>
+                  {agent.agent_profiles?.[0]?.slug ? (
+                    <a href={`/${agent.agent_profiles[0].slug}`} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--teal)', textDecoration: 'none', fontWeight: 600, fontSize: '0.9rem' }}>
+                      /{agent.agent_profiles[0].slug}
+                    </a>
+                  ) : (
+                    <span style={{ color: 'var(--grey-400)', fontSize: '0.85rem' }}>No storefront</span>
+                  )}
+                </div>
+
+                <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end', flexWrap: 'wrap', flex: '1 1 150px' }}>
+                  <button 
+                    onClick={async () => {
+                      try {
+                        const res = await fetch('/api/admin/agents/super-upgrade', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ agentId: agent.id, is_super_agent: !agent.is_super_agent })
+                        });
+                        const json = await res.json();
+                        if (!res.ok) throw new Error(json.error);
+                        toast.success(agent.is_super_agent ? 'Super Agent Status Revoked' : 'Promoted To Super Agent');
+                        fetchAgents(); // refresh
+                      } catch (err: any) {
+                        toast.error(err.message || 'Failed To Update Super Agent Status');
+                      }
+                    }}
+                    className="btn btn-secondary btn-sm"
+                    style={{ padding: '6px 12px', fontSize: '0.8rem' }}
+                    disabled={agent.parent_agent_id !== null}
+                  >
+                    {agent.is_super_agent ? 'Revoke Super' : 'Make Super'}
+                  </button>
+                  <div style={{ display: 'inline-block' }}>
+                    <ViewAsButton
+                      targetUserId={agent.id}
+                      targetLabel={agent.full_name ?? agent.email}
+                    />
+                  </div>
+                </div>
+
+              </div>
+            );
+          })
+        )}
       </div>
 
       {/* Edit Contact Modal */}

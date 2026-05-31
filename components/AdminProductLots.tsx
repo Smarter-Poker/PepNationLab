@@ -262,159 +262,165 @@ export default function AdminProductLots({ productId }: Props) {
           No Lots Recorded Yet. Use Add Lot To Register The First Batch.
         </p>
       ) : (
-        <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.82rem' }}>
-            <thead>
-              <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.08)', textAlign: 'left', color: 'var(--grey-400)' }}>
-                <th style={{ padding: '8px 6px' }}>Lot Number</th>
-                <th style={{ padding: '8px 6px' }}>Supplier</th>
-                <th style={{ padding: '8px 6px' }}>Manufactured</th>
-                <th style={{ padding: '8px 6px' }}>Received</th>
-                <th style={{ padding: '8px 6px' }}>Expires</th>
-                <th style={{ padding: '8px 6px' }}>COA</th>
-                <th style={{ padding: '8px 6px' }}>Status</th>
-                <th style={{ padding: '8px 6px', textAlign: 'right' }}>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {lots.map(lot => {
-                const xClass = expiryClass(lot.expires_at);
-                const rowBg =
-                  xClass === 'expired'
-                    ? 'rgba(229,62,62,0.08)'
-                    : xClass === 'soon'
-                      ? 'rgba(246,173,85,0.08)'
-                      : 'transparent';
-                const rowColor =
-                  xClass === 'expired'
-                    ? '#FCA5A5'
-                    : xClass === 'soon'
-                      ? '#FBBF77'
-                      : 'var(--silver)';
-                return (
-                  <tr
-                    key={lot.id}
-                    style={{
-                      borderBottom: '1px solid rgba(255,255,255,0.04)',
-                      background: rowBg,
-                      color: rowColor,
-                    }}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
+          {lots.map(lot => {
+            const xClass = expiryClass(lot.expires_at);
+            const rowBg =
+              xClass === 'expired'
+                ? 'rgba(229,62,62,0.08)'
+                : xClass === 'soon'
+                  ? 'rgba(246,173,85,0.08)'
+                  : 'rgba(0,0,0,0.2)';
+            const rowColor =
+              xClass === 'expired'
+                ? '#FCA5A5'
+                : xClass === 'soon'
+                  ? '#FBBF77'
+                  : 'var(--silver)';
+            return (
+              <div
+                key={lot.id}
+                style={{
+                  background: rowBg,
+                  borderTop: '1px solid rgba(0,0,0,0.5)',
+                  borderBottom: '1px solid rgba(255,255,255,0.05)',
+                  borderLeft: '1px solid rgba(0,0,0,0.3)',
+                  borderRight: '1px solid rgba(255,255,255,0.02)',
+                  boxShadow: 'inset 0 2px 10px rgba(0,0,0,0.5)',
+                  borderRadius: '12px',
+                  padding: '16px 20px',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  flexWrap: 'wrap',
+                  gap: '16px',
+                  color: rowColor
+                }}
+              >
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', minWidth: '150px' }}>
+                  <span style={{ fontSize: '0.75rem', color: 'var(--grey-500)', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>Lot Number</span>
+                  <span style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--white)' }}>{lot.lot_number}</span>
+                  {lot.supplier && <span style={{ fontSize: '0.8rem', color: 'var(--silver)' }}>{lot.supplier}</span>}
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', minWidth: '120px' }}>
+                  <span style={{ fontSize: '0.75rem', color: 'var(--grey-500)', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>Dates</span>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', fontSize: '0.8rem' }}>
+                    <span>Mfg: {lot.manufactured_at ?? '—'}</span>
+                    <span>Rcv: {lot.received_at}</span>
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', minWidth: '130px' }}>
+                  <span style={{ fontSize: '0.75rem', color: 'var(--grey-500)', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>Expires</span>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', alignItems: 'flex-start' }}>
+                    <span style={{ fontSize: '0.9rem', fontWeight: 600 }}>{lot.expires_at ?? '—'}</span>
+                    {xClass === 'expired' && (
+                      <span className="badge" style={{ background: 'rgba(229,62,62,0.2)', color: '#FCA5A5', fontSize: '0.65rem' }}>Expired</span>
+                    )}
+                    {xClass === 'soon' && (
+                      <span className="badge" style={{ background: 'rgba(246,173,85,0.2)', color: '#FBBF77', fontSize: '0.65rem' }}>Expiring Soon</span>
+                    )}
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', minWidth: '100px' }}>
+                  <span style={{ fontSize: '0.75rem', color: 'var(--grey-500)', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>COA</span>
+                  {lot.coa_public_url ? (
+                    <span style={{
+                      display: 'inline-flex', alignItems: 'center', gap: 4,
+                      padding: '2px 8px', borderRadius: 4,
+                      background: 'rgba(0,196,188,0.15)', color: 'var(--teal)',
+                      fontSize: '0.72rem', fontWeight: 700,
+                    }}>
+                      <FileText size={11} aria-hidden="true" /> Attached
+                    </span>
+                  ) : (
+                    <span style={{ color: 'var(--grey-500)', fontSize: '0.8rem' }}>None</span>
+                  )}
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', minWidth: '80px' }}>
+                  <span style={{ fontSize: '0.75rem', color: 'var(--grey-500)', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>Status</span>
+                  <span style={{
+                    padding: '2px 8px', borderRadius: 4, fontSize: '0.72rem', fontWeight: 700,
+                    background: lot.is_active ? 'rgba(34,197,94,0.15)' : 'rgba(168,180,192,0.15)',
+                    color: lot.is_active ? '#86EFAC' : 'var(--silver)',
+                    display: 'inline-block', width: 'fit-content'
+                  }}>
+                    {lot.is_active ? 'Active' : 'Inactive'}
+                  </span>
+                </div>
+
+                <div style={{ display: 'flex', gap: '6px', justifyContent: 'flex-end', flexWrap: 'wrap', flex: '1 1 200px' }}>
+                  {lot.coa_public_url ? (
+                    <>
+                      <a
+                        href={lot.coa_public_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="btn btn-secondary btn-sm"
+                        style={{ padding: '6px 10px', fontSize: '0.75rem', display: 'inline-flex', alignItems: 'center', gap: 4 }}
+                      >
+                        <Download size={12} aria-hidden="true" /> Download COA
+                      </a>
+                      <button
+                        type="button"
+                        className="btn btn-secondary btn-sm"
+                        onClick={() => triggerUpload(lot.id)}
+                        disabled={uploading}
+                        style={{ padding: '6px 10px', fontSize: '0.75rem', display: 'inline-flex', alignItems: 'center', gap: 4 }}
+                      >
+                        <Upload size={12} aria-hidden="true" /> Replace COA
+                      </button>
+                      <button
+                        type="button"
+                        className="btn btn-ghost btn-sm"
+                        onClick={() => deleteCoa(lot)}
+                        style={{ padding: '6px 10px', fontSize: '0.75rem', color: '#FCA5A5' }}
+                      >
+                        Remove COA
+                      </button>
+                    </>
+                  ) : (
+                    <button
+                      type="button"
+                      className="btn btn-secondary btn-sm"
+                      onClick={() => triggerUpload(lot.id)}
+                      disabled={uploading}
+                      style={{ padding: '6px 10px', fontSize: '0.75rem', display: 'inline-flex', alignItems: 'center', gap: 4 }}
+                    >
+                      <Upload size={12} aria-hidden="true" /> Upload COA
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    className="btn btn-ghost btn-sm"
+                    onClick={() => openEditForm(lot)}
+                    style={{ padding: '6px 10px', fontSize: '0.75rem', display: 'inline-flex', alignItems: 'center', gap: 4 }}
                   >
-                    <td style={{ padding: '10px 6px', fontWeight: 600 }}>{lot.lot_number}</td>
-                    <td style={{ padding: '10px 6px' }}>{lot.supplier ?? '—'}</td>
-                    <td style={{ padding: '10px 6px' }}>{lot.manufactured_at ?? '—'}</td>
-                    <td style={{ padding: '10px 6px' }}>{lot.received_at}</td>
-                    <td style={{ padding: '10px 6px' }}>
-                      {lot.expires_at ?? '—'}
-                      {xClass === 'expired' && (
-                        <span style={{
-                          marginLeft: 8, padding: '2px 8px', borderRadius: 4,
-                          background: 'rgba(229,62,62,0.2)', color: '#FCA5A5',
-                          fontSize: '0.7rem', fontWeight: 700,
-                        }}>Expired</span>
-                      )}
-                      {xClass === 'soon' && (
-                        <span style={{
-                          marginLeft: 8, padding: '2px 8px', borderRadius: 4,
-                          background: 'rgba(246,173,85,0.2)', color: '#FBBF77',
-                          fontSize: '0.7rem', fontWeight: 700,
-                        }}>Expiring Soon</span>
-                      )}
-                    </td>
-                    <td style={{ padding: '10px 6px' }}>
-                      {lot.coa_public_url ? (
-                        <span style={{
-                          display: 'inline-flex', alignItems: 'center', gap: 4,
-                          padding: '2px 8px', borderRadius: 4,
-                          background: 'rgba(0,196,188,0.15)', color: 'var(--teal)',
-                          fontSize: '0.72rem', fontWeight: 700,
-                        }}>
-                          <FileText size={11} aria-hidden="true" /> Attached
-                        </span>
-                      ) : (
-                        <span style={{ color: 'var(--grey-400)', fontSize: '0.72rem' }}>None</span>
-                      )}
-                    </td>
-                    <td style={{ padding: '10px 6px' }}>
-                      <span style={{
-                        padding: '2px 8px', borderRadius: 4, fontSize: '0.72rem', fontWeight: 700,
-                        background: lot.is_active ? 'rgba(34,197,94,0.15)' : 'rgba(168,180,192,0.15)',
-                        color: lot.is_active ? '#86EFAC' : 'var(--silver)',
-                      }}>
-                        {lot.is_active ? 'Active' : 'Inactive'}
-                      </span>
-                    </td>
-                    <td style={{ padding: '10px 6px', textAlign: 'right', whiteSpace: 'nowrap' }}>
-                      {lot.coa_public_url ? (
-                        <>
-                          <a
-                            href={lot.coa_public_url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="btn btn-ghost"
-                            style={{ padding: '4px 8px', fontSize: '0.72rem', display: 'inline-flex', alignItems: 'center', gap: 4 }}
-                          >
-                            <Download size={11} aria-hidden="true" /> Download COA
-                          </a>
-                          <button
-                            type="button"
-                            className="btn btn-ghost"
-                            onClick={() => triggerUpload(lot.id)}
-                            disabled={uploading}
-                            style={{ padding: '4px 8px', fontSize: '0.72rem', display: 'inline-flex', alignItems: 'center', gap: 4, marginLeft: 4 }}
-                          >
-                            <Upload size={11} aria-hidden="true" /> Replace COA
-                          </button>
-                          <button
-                            type="button"
-                            className="btn btn-ghost"
-                            onClick={() => deleteCoa(lot)}
-                            style={{ padding: '4px 8px', fontSize: '0.72rem', color: '#FCA5A5', marginLeft: 4 }}
-                          >
-                            Remove COA
-                          </button>
-                        </>
-                      ) : (
-                        <button
-                          type="button"
-                          className="btn btn-ghost"
-                          onClick={() => triggerUpload(lot.id)}
-                          disabled={uploading}
-                          style={{ padding: '4px 8px', fontSize: '0.72rem', display: 'inline-flex', alignItems: 'center', gap: 4 }}
-                        >
-                          <Upload size={11} aria-hidden="true" /> Upload COA
-                        </button>
-                      )}
-                      <button
-                        type="button"
-                        className="btn btn-ghost"
-                        onClick={() => openEditForm(lot)}
-                        style={{ padding: '4px 8px', fontSize: '0.72rem', display: 'inline-flex', alignItems: 'center', gap: 4, marginLeft: 4 }}
-                      >
-                        <Edit3 size={11} aria-hidden="true" /> Edit
-                      </button>
-                      <button
-                        type="button"
-                        className="btn btn-ghost"
-                        onClick={() => toggleActive(lot)}
-                        style={{ padding: '4px 8px', fontSize: '0.72rem', display: 'inline-flex', alignItems: 'center', gap: 4, marginLeft: 4 }}
-                      >
-                        <Power size={11} aria-hidden="true" /> {lot.is_active ? 'Deactivate' : 'Activate'}
-                      </button>
-                      <button
-                        type="button"
-                        className="btn btn-ghost"
-                        onClick={() => deleteLot(lot)}
-                        style={{ padding: '4px 8px', fontSize: '0.72rem', color: '#FCA5A5', display: 'inline-flex', alignItems: 'center', gap: 4, marginLeft: 4 }}
-                      >
-                        <Trash2 size={11} aria-hidden="true" /> Delete
-                      </button>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+                    <Edit3 size={12} aria-hidden="true" /> Edit
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-ghost btn-sm"
+                    onClick={() => toggleActive(lot)}
+                    style={{ padding: '6px 10px', fontSize: '0.75rem', display: 'inline-flex', alignItems: 'center', gap: 4 }}
+                  >
+                    <Power size={12} aria-hidden="true" /> {lot.is_active ? 'Deactivate' : 'Activate'}
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-ghost btn-sm"
+                    onClick={() => deleteLot(lot)}
+                    style={{ padding: '6px 10px', fontSize: '0.75rem', color: '#FCA5A5', display: 'inline-flex', alignItems: 'center', gap: 4 }}
+                  >
+                    <Trash2 size={12} aria-hidden="true" /> Delete
+                  </button>
+                </div>
+              </div>
+            );
+          })}
         </div>
       )}
 

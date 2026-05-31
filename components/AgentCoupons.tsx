@@ -154,13 +154,10 @@ export default function AgentCoupons({ agentId }: { agentId: string }) {
         Create Discount Codes Your Referred Researchers Can Redeem At Checkout.
       </p>
 
-      {/* Create form */}
       <form
         onSubmit={handleCreate}
+        className="card-metal"
         style={{
-          background: 'var(--surface-2)',
-          border: '1px solid rgba(255,255,255,0.05)',
-          borderRadius: 'var(--radius-lg)',
           padding: 'var(--space-5)',
           marginBottom: 'var(--space-6)',
         }}
@@ -283,15 +280,13 @@ export default function AgentCoupons({ agentId }: { agentId: string }) {
             return (
               <div
                 key={c.id}
+                className="card-metal"
                 style={{
                   display: 'flex',
                   justifyContent: 'space-between',
                   alignItems: 'center',
                   flexWrap: 'wrap',
                   gap: 'var(--space-3)',
-                  background: 'var(--surface-2)',
-                  border: '1px solid rgba(255,255,255,0.05)',
-                  borderRadius: 'var(--radius-md)',
                   padding: 'var(--space-4)',
                   opacity: c.is_active && !expired ? 1 : 0.6,
                 }}

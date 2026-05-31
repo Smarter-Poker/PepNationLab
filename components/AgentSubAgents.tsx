@@ -337,76 +337,83 @@ export default function AgentSubAgents({ agentId }: { agentId?: string }) {
           </button>
         </div>
 
-        <div className="table-responsive">
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>Agent Name</th>
-                <th>Credentials</th>
-                <th>Status</th>
-                <th>Storefront</th>
-                <th style={{ textAlign: 'right' }}>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {subAgents.length === 0 ? (
-                <tr>
-                  <td colSpan={5} style={{ textAlign: 'center', opacity: 0.5 }}>No Sub-Agents Found.</td>
-                </tr>
-              ) : (
-                subAgents.map(agent => (
-                  <tr key={agent.id}>
-                    <td style={{ fontWeight: 'bold' }}>{agent.full_name || 'Anonymous'}</td>
-                    <td>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                        <span style={{ fontFamily: 'monospace', fontSize: '0.82rem', color: 'var(--teal)' }}>{agent.username || agent.email}</span>
-                        <button
-                          onClick={() => setResetPwUser({ id: agent.id, name: agent.full_name || 'Sub-Agent', username: agent.username || agent.email })}
-                          style={{ fontSize: '0.7rem', color: 'var(--grey-400)', background: 'none', border: 'none', cursor: 'pointer', padding: 0, textDecoration: 'underline', textAlign: 'left' }}
-                        >
-                          Edit Password
-                        </button>
-                      </div>
-                    </td>
-                    <td>
-                      <span style={{ color: agent.is_active ? 'var(--green)' : 'var(--red)', fontSize: '0.8rem' }}>
-                        {agent.is_active ? 'Active' : 'Inactive'}
-                      </span>
-                    </td>
-                    <td>
-                      {(() => {
-                        const ap = pickOne<{ slug: string | null }>(agent.agent_profiles);
-                        return ap?.slug ? (
-                          <a href={`/${ap.slug}`} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--teal)', textDecoration: 'none' }}>
-                            /{ap.slug}
-                          </a>
-                        ) : (
-                          <span style={{ color: 'var(--grey-400)', fontSize: '0.8rem' }}>No Storefront</span>
-
-                        );
-                      })()}
-                    </td>
-                    <td style={{ textAlign: 'right', display: 'flex', gap: '8px', justifyContent: 'flex-end', flexWrap: 'wrap' }}>
-                      <button
-                        className="btn btn-secondary btn-sm"
-                        onClick={() => handleGenerateInvoice(agent.id)}
-                      >
-                        Generate Weekly Invoice
-                      </button>
-                      <button
-                        type="button"
-                        className="btn btn-secondary btn-sm"
-                        style={{ border: '1px solid var(--red)', color: 'var(--red)' }}
-                        onClick={() => setRevokeTarget({ id: agent.id, name: agent.full_name || agent.username || 'Sub-Agent' })}
-                      >
-                        Revoke
-                      </button>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
+          {subAgents.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: 'var(--space-6)', opacity: 0.5 }}>No Sub-Agents Found.</div>
+          ) : (
+            subAgents.map(agent => (
+              <div 
+                key={agent.id}
+                style={{
+                  background: 'linear-gradient(180deg, #0b0f16 0%, #121822 100%)',
+                  borderTop: '1px solid rgba(0,0,0,0.8)',
+                  borderBottom: '1px solid rgba(255,255,255,0.08)',
+                  borderLeft: '1px solid rgba(0,0,0,0.5)',
+                  borderRight: '1px solid rgba(255,255,255,0.03)',
+                  boxShadow: 'inset 0 4px 20px rgba(0,0,0,0.9)',
+                  borderRadius: '16px',
+                  padding: '16px 20px',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  flexWrap: 'wrap',
+                  gap: '12px'
+                }}
+              >
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', flex: '1 1 200px' }}>
+                  <span style={{ fontSize: '0.75rem', color: 'var(--grey-400)', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>Agent Name</span>
+                  <span style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--white)' }}>{agent.full_name || 'Anonymous'}</span>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', minWidth: '150px' }}>
+                  <span style={{ fontSize: '0.75rem', color: 'var(--grey-400)', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>Credentials</span>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                    <span style={{ fontFamily: 'monospace', fontSize: '0.82rem', color: 'var(--teal)' }}>{agent.username || agent.email}</span>
+                    <button
+                      onClick={() => setResetPwUser({ id: agent.id, name: agent.full_name || 'Sub-Agent', username: agent.username || agent.email })}
+                      style={{ fontSize: '0.7rem', color: 'var(--grey-400)', background: 'none', border: 'none', cursor: 'pointer', padding: 0, textDecoration: 'underline', textAlign: 'left' }}
+                    >
+                      Edit Password
+                    </button>
+                  </div>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', minWidth: '100px' }}>
+                  <span style={{ fontSize: '0.75rem', color: 'var(--grey-400)', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>Status</span>
+                  <span style={{ color: agent.is_active ? 'var(--green)' : 'var(--red)', fontSize: '0.85rem', fontWeight: 600 }}>
+                    {agent.is_active ? 'Active' : 'Inactive'}
+                  </span>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', minWidth: '120px' }}>
+                  <span style={{ fontSize: '0.75rem', color: 'var(--grey-400)', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>Storefront</span>
+                  {(() => {
+                    const ap = pickOne<{ slug: string | null }>(agent.agent_profiles);
+                    return ap?.slug ? (
+                      <a href={`/${ap.slug}`} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--teal)', textDecoration: 'none', fontWeight: 600 }}>
+                        /{ap.slug}
+                      </a>
+                    ) : (
+                      <span style={{ color: 'var(--grey-400)', fontSize: '0.85rem' }}>No Storefront</span>
+                    );
+                  })()}
+                </div>
+                <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end', flexWrap: 'wrap', flex: '1 1 auto' }}>
+                  <button
+                    className="btn btn-secondary btn-sm"
+                    onClick={() => handleGenerateInvoice(agent.id)}
+                  >
+                    Generate Weekly Invoice
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-secondary btn-sm"
+                    style={{ border: '1px solid var(--red)', color: 'var(--red)' }}
+                    onClick={() => setRevokeTarget({ id: agent.id, name: agent.full_name || agent.username || 'Sub-Agent' })}
+                  >
+                    Revoke
+                  </button>
+                </div>
+              </div>
+            ))
+          )}
         </div>
       </section>
 
@@ -420,59 +427,71 @@ export default function AgentSubAgents({ agentId }: { agentId?: string }) {
             <p>No Invoices Generated Yet. Click Generate Below An Agent To Bill Them For This Week.</p>
           </div>
         ) : (
-          <div className="table-responsive">
-            <table className="data-table">
-              <thead>
-                <tr>
-                  <th>Sub-Agent</th>
-                  <th>Week Start</th>
-                  <th>Total Owed</th>
-                  <th>Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                {invoices.map(inv => (
-                  <tr key={inv.id}>
-                    <td style={{ fontWeight: 'bold' }}>{inv.profiles?.full_name || 'Anonymous'}</td>
-                    <td>{new Date(inv.week_start).toLocaleDateString()}</td>
-                    <td style={{ color: 'var(--teal)', fontWeight: 'bold' }}>{formatCurrency(inv.total_owed)}</td>
-                    <td>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                        <span className={`badge ${inv.status === 'paid' ? 'badge-teal' : 'badge-gold'}`}>
-                          {inv.status}
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() => downloadInvoice(inv.id, 'pdf')}
-                          className="btn btn-secondary btn-sm"
-                          style={{ padding: '2px 8px', fontSize: '0.75rem' }}
-                        >
-                          Download PDF
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => downloadInvoice(inv.id, 'csv')}
-                          className="btn btn-secondary btn-sm"
-                          style={{ padding: '2px 8px', fontSize: '0.75rem' }}
-                        >
-                          Download CSV
-                        </button>
-                        {inv.status !== 'paid' && (
-                          <button
-                            type="button"
-                            onClick={() => handleMarkPaid(inv.id)}
-                            className="btn btn-primary btn-sm"
-                            style={{ padding: '2px 8px', fontSize: '0.75rem' }}
-                          >
-                            Mark Paid
-                          </button>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
+            {invoices.map(inv => (
+              <div 
+                key={inv.id}
+                style={{
+                  background: 'linear-gradient(180deg, #0b0f16 0%, #121822 100%)',
+                  borderTop: '1px solid rgba(0,0,0,0.8)',
+                  borderBottom: '1px solid rgba(255,255,255,0.08)',
+                  borderLeft: '1px solid rgba(0,0,0,0.5)',
+                  borderRight: '1px solid rgba(255,255,255,0.03)',
+                  boxShadow: 'inset 0 4px 20px rgba(0,0,0,0.9)',
+                  borderRadius: '16px',
+                  padding: '16px 20px',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  flexWrap: 'wrap',
+                  gap: '12px'
+                }}
+              >
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', flex: '1 1 150px' }}>
+                  <span style={{ fontSize: '0.75rem', color: 'var(--grey-400)', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>Sub-Agent</span>
+                  <span style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--white)' }}>{inv.profiles?.full_name || 'Anonymous'}</span>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', minWidth: '120px' }}>
+                  <span style={{ fontSize: '0.75rem', color: 'var(--grey-400)', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>Week Start</span>
+                  <span style={{ fontSize: '0.9rem', color: 'var(--silver)' }}>{new Date(inv.week_start).toLocaleDateString()}</span>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', minWidth: '120px' }}>
+                  <span style={{ fontSize: '0.75rem', color: 'var(--teal)', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>Total Owed</span>
+                  <span style={{ fontSize: '1.1rem', color: 'var(--teal)', fontWeight: 800 }}>{formatCurrency(inv.total_owed)}</span>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', justifyContent: 'flex-end', flex: '1 1 auto' }}>
+                  <span className={`badge ${inv.status === 'paid' ? 'badge-teal' : 'badge-gold'}`} style={{ marginRight: '8px' }}>
+                    {inv.status}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => downloadInvoice(inv.id, 'pdf')}
+                    className="btn btn-secondary btn-sm"
+                    style={{ padding: '4px 12px', fontSize: '0.8rem' }}
+                  >
+                    Download PDF
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => downloadInvoice(inv.id, 'csv')}
+                    className="btn btn-secondary btn-sm"
+                    style={{ padding: '4px 12px', fontSize: '0.8rem' }}
+                  >
+                    Download CSV
+                  </button>
+                  {inv.status !== 'paid' && (
+                    <button
+                      type="button"
+                      onClick={() => handleMarkPaid(inv.id)}
+                      className="btn btn-primary btn-sm"
+                      style={{ padding: '4px 12px', fontSize: '0.8rem' }}
+                    >
+                      Mark Paid
+                    </button>
+                  )}
+                </div>
+              </div>
+            ))}
           </div>
         )}
       </section>
