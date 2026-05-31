@@ -476,7 +476,7 @@ export async function POST(request: NextRequest) {
       p_is_agent_ship: !!isAgentShip
     };
     let inventoryReserved = false;
-    if (fulfillmentMethod !== 'pickup') {
+    if (fulfillmentMethod !== 'agent_pickup') {
       const { error: reserveErr } = await serviceSupabase
         .rpc('reserve_inventory', inventoryReserveParams);
       if (reserveErr) {
