@@ -131,6 +131,10 @@ export default function MessagePane({ userId, activeCall, setActiveCall }: Props
     | { messageId?: string; conversationId?: string; preview?: string }
     | null
   >(null);
+  const prependMessages = useMessengerStore((s) => s.prependMessages);
+  const [hasMoreMessages, setHasMoreMessages] = useState<Record<string, boolean>>({});
+  const [loadingMore, setLoadingMore] = useState(false);
+
   // Phase 14: push opt-in banner state
   const [pushBanner, setPushBanner] = useState<PushBannerState>('hidden');
 
@@ -142,8 +146,10 @@ export default function MessagePane({ userId, activeCall, setActiveCall }: Props
   const broadcastTypingRef = useRef<((isTyping: boolean) => void) | null>(null);
   const broadcastMessageRef = useRef<((m: Message) => void) | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+  
+  // Offline sync observer
+  const wasOfflineRef = useRef(false);
 
   const scrollToBottom = useCallback((behavior: ScrollBehavior = 'auto') => {
     setTimeout(() => {
@@ -400,6 +406,56 @@ export default function MessagePane({ userId, activeCall, setActiveCall }: Props
     }
   }, []);
 
+  const handleLoadMore = useCallback(async () => {
+    const messages = messagesByConv[activeId ?? ''] ?? [];
+    if (!activeId || loadingMore || hasMoreMessages[activeId] === false || messages.length === 0) return;
+    setLoadingMore(true);
+    const firstMessageId = messages[0].id;
+    
+    const container = scrollContainerRef.current;
+    const oldScrollHeight = container?.scrollHeight ?? 0;
+    
+    try {
+      const res = await fetch('/api/messenger/get-messages', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ conversationId: activeId, beforeId: firstMessageId, limit: 50 }),
+      });
+      if (!res.ok) return;
+      const json = (await res.json()) as { messages?: Message[]; reactions?: Reaction[] };
+      const list = json.messages ?? [];
+      if (list.length < 50) {
+        setHasMoreMessages(prev => ({ ...prev, [activeId]: false }));
+      }
+      if (list.length > 0) {
+        prependMessages(activeId, list);
+        const map: Record<string, Reaction[]> = {};
+        (json.reactions ?? []).forEach((r) => {
+          (map[r.message_id] ??= []).push(r);
+        });
+        setReactionsByMsg(prev => {
+          const next = { ...prev };
+          Object.keys(map).forEach(k => {
+             next[k] = [...(next[k]||[]), ...map[k]];
+          });
+          return next;
+        });
+        void loadPinsLabels(activeId, list.map((m) => m.id));
+        
+        setTimeout(() => {
+           if (container) {
+             const newScrollHeight = container.scrollHeight;
+             container.scrollTop = newScrollHeight - oldScrollHeight;
+           }
+        }, 0);
+      }
+    } catch (err) {
+      console.warn('Failed to load more messages:', err);
+    } finally {
+      setLoadingMore(false);
+    }
+  }, [activeId, loadingMore, hasMoreMessages, messagesByConv, prependMessages, loadPinsLabels]);
+
   useEffect(() => {
     if (!activeId) return;
     if (messagesByConv[activeId]) return;
@@ -418,6 +474,11 @@ export default function MessagePane({ userId, activeCall, setActiveCall }: Props
         if (cancelled) return;
         const list = json.messages ?? [];
         setMessages(activeId, list);
+        if (list.length < 50) {
+          setHasMoreMessages(prev => ({ ...prev, [activeId]: false }));
+        } else {
+          setHasMoreMessages(prev => ({ ...prev, [activeId]: true }));
+        }
         const map: Record<string, Reaction[]> = {};
         (json.reactions ?? []).forEach((r) => {
           (map[r.message_id] ??= []).push(r);
@@ -436,6 +497,21 @@ export default function MessagePane({ userId, activeCall, setActiveCall }: Props
       cancelled = true;
     };
   }, [activeId, messagesByConv, setMessages, setLoading, loadPinsLabels]);
+
+  const observerRef = useRef<IntersectionObserver | null>(null);
+  const topElementRef = useCallback((node: HTMLDivElement | null) => {
+    const messages = messagesByConv[activeId ?? ''] ?? [];
+    if (loadingMore) return;
+    if (observerRef.current) observerRef.current.disconnect();
+    
+    observerRef.current = new IntersectionObserver(entries => {
+      if (entries[0].isIntersecting && activeId && hasMoreMessages[activeId] && messages.length > 0) {
+        handleLoadMore();
+      }
+    });
+    
+    if (node) observerRef.current.observe(node);
+  }, [loadingMore, hasMoreMessages, activeId, messagesByConv, handleLoadMore]);
 
   useEffect(() => {
     if (!activeId) return;
@@ -1003,7 +1079,7 @@ export default function MessagePane({ userId, activeCall, setActiveCall }: Props
 
               if (isBlockedSender && conversationType !== 'direct') {
                 return (
-                  <div key={m.id}>
+                  <div key={m.id} ref={isFirst ? topElementRef : null}>
                     {timestampBanner}
                     <div
                       data-msg-id={m.id}
@@ -1026,7 +1102,7 @@ export default function MessagePane({ userId, activeCall, setActiveCall }: Props
                 );
               }
               return (
-                <div key={m.id} style={{ 
+                <div key={m.id} ref={isFirst ? topElementRef : null} style={{ 
                   display: 'flex', 
                   flexDirection: 'column', 
                   width: '100%',
