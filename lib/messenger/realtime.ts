@@ -14,11 +14,25 @@ interface MessageHandlers {
 export function subscribeMessages(conversationId: string, handlers: MessageHandlers): RealtimeChannel {
   const ch = supabase.channel(`chat:${conversationId}`);
   ch.on(
-    'broadcast',
-    { event: 'new_message' },
-    (payload) => handlers.onInsert?.(payload.payload.message as Message),
+    'postgres_changes',
+    {
+      event: 'INSERT',
+      schema: 'public',
+      table: 'messenger_messages',
+      filter: `conversation_id=eq.${conversationId}`
+    },
+    (payload) => handlers.onInsert?.(payload.new as Message),
   );
-  // We can add onUpdate and onDelete here later if we implement broadcast for them.
+  ch.on(
+    'postgres_changes',
+    {
+      event: 'UPDATE',
+      schema: 'public',
+      table: 'messenger_messages',
+      filter: `conversation_id=eq.${conversationId}`
+    },
+    (payload) => handlers.onUpdate?.(payload.new as Message),
+  );
   ch.subscribe();
   return ch;
 }
@@ -28,12 +42,6 @@ interface ReactionHandlers {
   onDelete?: (r: { message_id: string; user_id: string; emoji: string | null }) => void;
 }
 
-// Audit10 fix: `messenger_reactions` has no `conversation_id` column, so the
-// previous `filter: conversation_id=eq.<convId>` was an invalid filter that
-// Realtime silently dropped, breaking reaction delivery for everyone. We now
-// subscribe at the table level with no postgres_changes filter and let the
-// caller-side `messageIdSet` discard rows we do not care about. RLS on
-// messenger_reactions already restricts which rows the channel can see.
 export function subscribeReactions(
   messageIds: string[],
   handlers: ReactionHandlers,
@@ -41,21 +49,21 @@ export function subscribeReactions(
 ): RealtimeChannel | null {
   if (messageIds.length === 0) return null;
   const suffix = channelHint && channelHint.length > 0 ? channelHint : messageIds[0];
-  const ch = supabase.channel(`chat:${suffix}`);
+  const ch = supabase.channel(`reactions:${suffix}`);
   const messageIdSet = new Set(messageIds);
   ch.on(
-    'broadcast',
-    { event: 'reaction_added' },
+    'postgres_changes',
+    { event: 'INSERT', schema: 'public', table: 'messenger_reactions' },
     (payload) => {
-      const row = payload.payload.reaction as Reaction;
+      const row = payload.new as Reaction;
       if (row && messageIdSet.has(row.message_id)) handlers.onInsert?.(row);
     },
   );
   ch.on(
-    'broadcast',
-    { event: 'reaction_removed' },
+    'postgres_changes',
+    { event: 'DELETE', schema: 'public', table: 'messenger_reactions' },
     (payload) => {
-      const old = payload.payload as { message_id: string; user_id: string; emoji: string | null };
+      const old = payload.old as { message_id: string; user_id: string; emoji: string | null };
       if (old && messageIdSet.has(old.message_id)) handlers.onDelete?.(old);
     },
   );
@@ -90,21 +98,27 @@ export function subscribeTyping(
   onEvent: (e: TypingEvent) => void,
 ): { channel: RealtimeChannel; broadcast: (isTyping: boolean) => void } {
   const ch = supabase.channel(`mt:${conversationId}`, {
-    config: { broadcast: { self: false } },
+    config: { presence: { key: selfId } },
   });
-  ch.on('broadcast', { event: 'typing' }, (payload) => {
-    const data = payload.payload as TypingEvent;
-    if (data?.userId && data.userId !== selfId) onEvent(data);
+  ch.on('presence', { event: 'sync' }, () => {
+    const state = ch.presenceState();
+    for (const key in state) {
+      if (key === selfId) continue; // ignore self
+      const rows = state[key] as any[];
+      if (rows && rows.length > 0) {
+        onEvent({ userId: key, isTyping: !!rows[0].isTyping, at: Date.now() });
+      }
+    }
   });
-  ch.subscribe();
+  ch.subscribe(async (status) => {
+    if (status === 'SUBSCRIBED') {
+      await ch.track({ isTyping: false });
+    }
+  });
   return {
     channel: ch,
     broadcast: (isTyping: boolean) => {
-      void ch.send({
-        type: 'broadcast',
-        event: 'typing',
-        payload: { userId: selfId, isTyping, at: Date.now() } satisfies TypingEvent,
-      });
+      void ch.track({ isTyping });
     },
   };
 }
