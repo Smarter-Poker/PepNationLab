@@ -76,8 +76,15 @@ export async function POST(req: NextRequest) {
 
   let appliedCount = 0;
   if (isImmediate) {
-    const { data: applied } = await service.rpc('apply_due_price_changes');
-    appliedCount = typeof applied === 'number' ? applied : 0;
+    const { data: applied, error: applyErr } = await service.rpc('apply_due_price_changes');
+    if (applyErr) {
+      // The change is already persisted in scheduled_price_changes; the cron
+      // will apply it on the next run. Log the immediate-apply failure rather
+      // than masking it as a clean success.
+      console.error('apply_due_price_changes failed (products bulk-price):', applyErr.message);
+    } else {
+      appliedCount = typeof applied === 'number' ? applied : 0;
+    }
   }
 
   await service.from('admin_audit_log').insert({

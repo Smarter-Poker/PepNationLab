@@ -67,10 +67,12 @@ export async function GET(req: NextRequest) {
     referee: r.referee_id ? profileMap[String(r.referee_id)] ?? null : null,
   }));
 
-  // Aggregate stats (independent of the page).
+  // Aggregate stats (independent of the page). Safety-valve cap against an
+  // unbounded full-table scan; a no-op at current scale.
   const { data: stats } = await service
     .from('researcher_referrals')
-    .select('status, referrer_reward_amount, referee_reward_amount');
+    .select('status, referrer_reward_amount, referee_reward_amount')
+    .limit(50000);
 
   const summary = {
     total: 0,

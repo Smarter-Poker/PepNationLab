@@ -401,7 +401,9 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const payload = validParsed.map((v) => v.data);
+  // Stamp updated_at so the update path doesn't leave a stale timestamp.
+  const nowIso = new Date().toISOString();
+  const payload = validParsed.map((v) => ({ ...v.data, updated_at: nowIso }));
 
   const { data: upserted, error: upsertErr } = await supabase
     .from('products')

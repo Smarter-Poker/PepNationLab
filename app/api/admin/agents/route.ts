@@ -18,7 +18,8 @@ export async function GET(req: NextRequest) {
     .from('profiles')
     .select('*, auto_approve_orders, agent_profiles(slug, is_active)')
     .in('role', ['agent', 'super_agent'])
-    .order('created_at', { ascending: false });
+    .order('created_at', { ascending: false })
+    .limit(2000);
 
   if (error) {
     return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
@@ -64,6 +65,21 @@ export async function POST(req: NextRequest) {
   }
   if (password.length < 8) {
     return NextResponse.json({ error: 'Password Must Be At Least 8 Characters' }, { status: 400 });
+  }
+
+  // Reject negative / non-numeric money values rather than silently coercing
+  // them to null/0 later when building the profile row.
+  if (!isResearcher && account_type === 'credit' && credit_limit !== undefined && credit_limit !== null && credit_limit !== '') {
+    const cl = Number(credit_limit);
+    if (!Number.isFinite(cl) || cl < 0) {
+      return NextResponse.json({ error: 'Credit Limit Must Be Zero Or Greater' }, { status: 400 });
+    }
+  }
+  if (!isResearcher && account_type === 'prepaid' && prepaid_balance !== undefined && prepaid_balance !== null && prepaid_balance !== '') {
+    const pb = Number(prepaid_balance);
+    if (!Number.isFinite(pb) || pb < 0) {
+      return NextResponse.json({ error: 'Prepaid Balance Must Be Zero Or Greater' }, { status: 400 });
+    }
   }
 
   const usernameClean = sanitizeUsername(username);

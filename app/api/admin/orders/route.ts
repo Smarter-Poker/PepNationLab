@@ -27,8 +27,9 @@ export async function GET(req: NextRequest) {
     dbQuery = dbQuery.eq('status', status);
   }
 
-  // Sort by created_at desc
-  dbQuery = dbQuery.order('created_at', { ascending: false });
+  // Sort by created_at desc. Safety-valve cap against an unbounded full-table
+  // fetch (search/filter below run in memory over the returned rows).
+  dbQuery = dbQuery.order('created_at', { ascending: false }).limit(5000);
 
   const { data, error } = await dbQuery;
 

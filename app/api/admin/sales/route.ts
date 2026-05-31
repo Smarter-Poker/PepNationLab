@@ -37,7 +37,12 @@ export async function GET(req: NextRequest) {
         tier
       )
     `)
-    .neq('status', 'cancelled');
+    .neq('status', 'cancelled')
+    .order('created_at', { ascending: false })
+    // Safety valve against an unbounded full-table fetch (this aggregates in JS).
+    // A no-op at current scale; revisit with a SQL GROUP BY aggregate / RPC if
+    // the order volume ever approaches this bound.
+    .limit(50000);
 
   if (fromDate) {
     query = query.gte('created_at', fromDate);
