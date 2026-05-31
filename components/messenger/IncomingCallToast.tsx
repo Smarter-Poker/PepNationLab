@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { Phone, PhoneOff, Video } from 'lucide-react';
 import type { CallSignalRow } from '@/lib/messenger/realtime';
 import { createRingTone } from '@/lib/messenger/ringTone';
+import { toast } from 'sonner';
 
 interface Props {
   call: CallSignalRow;
@@ -64,17 +65,32 @@ export default function IncomingCallToast({ call, onAccept, onDecline, stackInde
   }, [call.conversation_id, call.initiator_id]);
 
   const handleAction = async (action: 'accept' | 'decline') => {
+    let success = false;
     try {
-      await fetch('/api/messenger/call-signal', {
+      const res = await fetch('/api/messenger/call-signal', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ action, callId: call.id }),
       });
+      success = res.ok;
+      if (!res.ok) {
+        const json = await res.json().catch(() => ({}));
+        toast.error(json.error || `Could not ${action} call`);
+      }
     } catch {
-      // best effort -- proceed with UI update
+      toast.error('Network Error');
     }
-    if (action === 'accept') onAccept();
-    else onDecline();
+
+    if (action === 'accept') {
+      if (success) {
+        onAccept();
+      } else {
+        // If accept failed (e.g. caller hung up), immediately remove toast locally
+        onDecline();
+      }
+    } else {
+      onDecline();
+    }
   };
 
   const isVideo = call.call_type === 'video';
