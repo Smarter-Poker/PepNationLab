@@ -6,12 +6,13 @@
  * stay tiny and so the limits live in exactly one place.
  *
  * Buckets follow the Phase 15 plan:
- *   - send    : 30 / minute  (send-message, thread-reply, schedule-message)
- *   - react   : 60 / minute  (react-message)
- *   - read    : 120 / minute (get-conversations, get-messages, list-*)
- *   - upload  : 10 / minute  (upload-media)
- *   - default : 60 / minute  (state-mutating writes that aren't sends/reacts)
- *   - admin   : 200 / minute (admin moderation routes — privileged)
+ *   - send       : 30 / minute  (send-message, thread-reply, schedule-message)
+ *   - react      : 60 / minute  (react-message)
+ *   - read       : 120 / minute (get-conversations, get-messages, list-*)
+ *   - upload     : 10 / minute  (upload-media)
+ *   - default    : 60 / minute  (state-mutating writes that aren't sends/reacts)
+ *   - admin      : 200 / minute (admin moderation routes — privileged)
+ *   - call_start : 5 / minute   (per-pair start-call throttle; audit15 fix-18)
  *
  * Cron routes deliberately do NOT pass through the limiter — they are
  * system-internal and already gated by Bearer CRON_SECRET.
@@ -38,7 +39,8 @@ export type MessengerBucket =
   | 'read'
   | 'upload'
   | 'default'
-  | 'admin';
+  | 'admin'
+  | 'call_start';
 
 interface BucketConfig {
   /** Stable bucket key sent to `lib/rate-limit`. */
@@ -56,6 +58,10 @@ const BUCKETS: Record<MessengerBucket, BucketConfig> = {
   upload: { key: 'messenger_upload', limit: 10, windowSeconds: 60 },
   default: { key: 'messenger_default', limit: 60, windowSeconds: 60 },
   admin: { key: 'messenger_admin', limit: 200, windowSeconds: 60 },
+  // audit15 fix-18 (B2): per-pair burst guard. Callers pass identifier as
+  // `${callerId}:${targetId}` so a single user can still call many distinct
+  // targets at the higher `default` rate — only the pairwise burst is gated.
+  call_start: { key: 'messenger_call_start', limit: 5, windowSeconds: 60 },
 };
 
 /**
