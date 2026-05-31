@@ -15,26 +15,6 @@ interface MessageHandlers {
 
 export function subscribeMessages(conversationId: string, handlers: MessageHandlers): { channel: RealtimeChannel; broadcastNewMessage: (m: Message) => void } {
   const ch = supabase.channel(`chat:${conversationId}`);
-  ch.on(
-    'postgres_changes',
-    {
-      event: 'INSERT',
-      schema: 'public',
-      table: 'messenger_messages',
-      filter: `conversation_id=eq.${conversationId}`
-    },
-    (payload) => handlers.onInsert?.(payload.new as Message),
-  );
-  ch.on(
-    'postgres_changes',
-    {
-      event: 'UPDATE',
-      schema: 'public',
-      table: 'messenger_messages',
-      filter: `conversation_id=eq.${conversationId}`
-    },
-    (payload) => handlers.onUpdate?.(payload.new as Message),
-  );
   ch.on('broadcast', { event: 'new_message' }, (payload) => {
     if (payload.payload && (payload.payload as any).message) {
       handlers.onInsert?.((payload.payload as any).message as Message);
@@ -73,40 +53,6 @@ export function subscribeMessages(conversationId: string, handlers: MessageHandl
       void ch.send({ type: 'broadcast', event: 'new_message', payload: m });
     }
   };
-}
-
-interface ReactionHandlers {
-  onInsert?: (r: Reaction) => void;
-  onDelete?: (r: { message_id: string; user_id: string; emoji: string | null }) => void;
-}
-
-export function subscribeReactions(
-  messageIds: string[],
-  handlers: ReactionHandlers,
-  channelHint?: string,
-): RealtimeChannel | null {
-  if (messageIds.length === 0) return null;
-  const suffix = channelHint && channelHint.length > 0 ? channelHint : messageIds[0];
-  const ch = supabase.channel(`reactions:${suffix}`);
-  const messageIdSet = new Set(messageIds);
-  ch.on(
-    'postgres_changes',
-    { event: 'INSERT', schema: 'public', table: 'messenger_reactions' },
-    (payload) => {
-      const row = payload.new as Reaction;
-      if (row && messageIdSet.has(row.message_id)) handlers.onInsert?.(row);
-    },
-  );
-  ch.on(
-    'postgres_changes',
-    { event: 'DELETE', schema: 'public', table: 'messenger_reactions' },
-    (payload) => {
-      const old = payload.old as { message_id: string; user_id: string; emoji: string | null };
-      if (old && messageIdSet.has(old.message_id)) handlers.onDelete?.(old);
-    },
-  );
-  ch.subscribe();
-  return ch;
 }
 
 interface ParticipantHandlers {
@@ -262,7 +208,7 @@ export function subscribeMyIncomingMessages(
   onInsert: (m: IncomingMessageNotification) => void,
   allowConversationIds?: Set<string>,
 ): RealtimeChannel {
-  const ch = supabase.channel(`user_notify:${userId}`);
+  const ch = supabase.channel(`user:${userId}`);
   ch.on(
     'broadcast',
     { event: 'new_message_notify' },

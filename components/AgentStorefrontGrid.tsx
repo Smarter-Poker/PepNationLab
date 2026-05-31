@@ -672,10 +672,11 @@ export default function AgentStorefrontGrid({ products, inventoryMap, primaryCol
           display: flex;
           gap: 12px;
           padding: 12px;
-          background: rgba(15, 20, 25, 0.7);
+          background: linear-gradient(180deg, rgba(20,25,30,0.8) 0%, rgba(10,15,20,0.9) 100%);
           border-radius: 16px;
-          border: 1px solid rgba(255, 255, 255, 0.15);
-          box-shadow: 0 8px 24px rgba(0,0,0,0.6), inset 0 1px 1px rgba(255,255,255,0.08);
+          border: 2px solid transparent;
+          background-clip: padding-box;
+          box-shadow: 0 0 0 1.5px #C0B8A8, inset 0 0 0 1px rgba(0,0,0,0.5), 0 8px 24px rgba(0,0,0,0.6);
           margin-bottom: 24px;
           flex-direction: column;
         }
@@ -684,23 +685,24 @@ export default function AgentStorefrontGrid({ products, inventoryMap, primaryCol
         .sf-toolbar select, .sf-toolbar .sf-filter-btn {
           width: 100%; padding: 10px 14px; font-size: 0.85rem;
           background: rgba(0,0,0,0.6); 
-          border: 1px solid rgba(255, 255, 255, 0.12);
+          border: 1px solid transparent;
           border-radius: 10px; color: var(--white); cursor: pointer;
           appearance: auto;
-          box-shadow: inset 0 2px 6px rgba(0,0,0,0.3);
-          transition: border-color 0.2s;
+          box-shadow: 0 0 0 1px rgba(255,255,255,0.15), inset 0 2px 6px rgba(0,0,0,0.3);
+          transition: box-shadow 0.2s, background 0.2s;
         }
         .sf-toolbar select:hover, .sf-toolbar-search input:hover {
-          border-color: rgba(255, 255, 255, 0.25);
+          box-shadow: 0 0 0 1.5px #C0B8A8, inset 0 2px 6px rgba(0,0,0,0.3);
+          background: rgba(0,0,0,0.8);
         }
         .sf-toolbar-search input {
           width: 100%; padding: 10px 14px 10px 38px;
           background: rgba(0,0,0,0.6); 
-          border: 1px solid rgba(255, 255, 255, 0.12);
+          border: 1px solid transparent;
           border-radius: 10px; color: var(--white); font-size: 0.9rem; outline: none;
           box-sizing: border-box;
-          box-shadow: inset 0 2px 6px rgba(0,0,0,0.3);
-          transition: border-color 0.2s;
+          box-shadow: 0 0 0 1px rgba(255,255,255,0.15), inset 0 2px 6px rgba(0,0,0,0.3);
+          transition: box-shadow 0.2s, background 0.2s;
         }
         .sf-toolbar-search .sf-search-icon {
           position: absolute; left: 10px; top: 50%; transform: translateY(-50%);
@@ -1173,8 +1175,8 @@ export default function AgentStorefrontGrid({ products, inventoryMap, primaryCol
           }}
           style={{
             position: 'fixed',
-            bottom: 'var(--space-6)',
-            right: 'var(--space-6)',
+            bottom: 'max(12px, env(safe-area-inset-bottom, 12px))',
+            right: '16px',
             width: 80,
             height: 80,
             background: 'transparent',
@@ -1200,10 +1202,10 @@ export default function AgentStorefrontGrid({ products, inventoryMap, primaryCol
           <img src="/cart-icon.png" width={144} height={144} alt="Cart" style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', maxWidth: 'none', objectFit: 'contain' }} />
           {totalCartItems > 0 && (
             <span style={{
-              position: 'absolute', top: 0, right: 0, width: 16, height: 16,
+              position: 'absolute', top: -8, right: -8, width: 32, height: 32,
               borderRadius: '50%', background: '#14B8A6', color: '#FFFFFF',
-              fontSize: '0.65rem', fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center',
-              boxShadow: '0 2px 4px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.2)',
+              fontSize: '1rem', fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center',
+              boxShadow: '0 2px 4px rgba(0,0,0,0.5), 0 0 0 1.5px rgba(255,255,255,0.3)',
               zIndex: 10
             }}>
               {totalCartItems}
