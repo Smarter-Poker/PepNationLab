@@ -407,7 +407,7 @@ export default async function OrderDetailPage(
 
           {/* Payment Instructions */}
           {order.status === 'pending_customer_payment' && (
-            <div className="card-metal hover-lift stagger-fade-in" style={{ padding: 'var(--space-6)', marginBottom: 'var(--space-5)', borderColor: 'rgba(246,173,85,0.3)', animationDelay: '0.4s' }}>
+            <div className="card-metal hover-lift stagger-fade-in" style={{ padding: 'var(--space-6)', marginBottom: 'var(--space-5)', animationDelay: '0.4s' }}>
               <h2 style={{ fontSize: '0.95rem', color: 'var(--white)', marginBottom: 'var(--space-3)' }}>
                 Payment Instructions
               </h2>

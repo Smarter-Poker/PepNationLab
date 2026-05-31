@@ -438,7 +438,6 @@ export default function Navbar({ onMenuClick, isOpen, title }: { onMenuClick?: (
           willChange: 'transform',
         }}
       >
-        {/* Drawer header */}
         <div style={{
           display: 'flex',
           alignItems: 'center',
@@ -447,7 +446,7 @@ export default function Navbar({ onMenuClick, isOpen, title }: { onMenuClick?: (
           borderBottom: '1px solid rgba(255,255,255,0.06)',
           minHeight: 64,
         }}>
-          <Link href="/" onClick={closeDrawer} style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', textDecoration: 'none' }}>
+          <Link href={dashLink} onClick={closeDrawer} style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', textDecoration: 'none' }}>
             <Image src="/logo-mark.svg" alt="Pep Nation Lab" width={32} height={32} priority />
             <span style={{ fontFamily: 'var(--font-brand)', fontSize: '0.95rem', fontWeight: 800, color: 'var(--teal)', letterSpacing: '0.08em' }}>
               PEP NATION LAB
@@ -478,7 +477,7 @@ export default function Navbar({ onMenuClick, isOpen, title }: { onMenuClick?: (
         {/* Navigation links */}
         <nav style={{ flex: 1, padding: 'var(--space-3) 0' }}>
           {/* Common links */}
-          <DrawerLink href={user ? dashLink : "/"} label="Home" onClick={closeDrawer}
+          <DrawerLink href={dashLink} label="Home" onClick={closeDrawer}
             icon={<svg {...IP}><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>}
           />
           {/* Products link — hidden for researchers (they use their agent's storefront) */}
