@@ -19,7 +19,6 @@ import RemindersList from './RemindersList';
 import { toast } from 'sonner';
 import {
   subscribeMessages,
-  subscribeReactions,
   subscribeTyping,
   unsubscribe,
 } from '@/lib/messenger/realtime';
