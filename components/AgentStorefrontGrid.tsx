@@ -1175,8 +1175,8 @@ export default function AgentStorefrontGrid({ products, inventoryMap, primaryCol
             position: 'fixed',
             bottom: 'var(--space-6)',
             right: 'var(--space-6)',
-            width: 160,
-            height: 160,
+            width: 80,
+            height: 80,
             background: 'transparent',
             border: 'none',
             display: 'flex',
@@ -1197,13 +1197,14 @@ export default function AgentStorefrontGrid({ products, inventoryMap, primaryCol
           }}
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/cart-icon.png" width={144} height={144} alt="Cart" style={{ objectFit: 'contain' }} />
+          <img src="/cart-icon.png" width={144} height={144} alt="Cart" style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', maxWidth: 'none', objectFit: 'contain' }} />
           {totalCartItems > 0 && (
             <span style={{
-              position: 'absolute', top: 16, right: 16, width: 32, height: 32,
-              borderRadius: '50%', background: '#EF4444', color: 'var(--white)',
-              fontSize: '1rem', fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center',
-              boxShadow: '0 4px 8px rgba(0,0,0,0.5), 0 0 0 2px rgba(255,255,255,0.2)'
+              position: 'absolute', top: 0, right: 0, width: 16, height: 16,
+              borderRadius: '50%', background: '#14B8A6', color: '#FFFFFF',
+              fontSize: '0.65rem', fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center',
+              boxShadow: '0 2px 4px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.2)',
+              zIndex: 10
             }}>
               {totalCartItems}
             </span>
