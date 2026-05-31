@@ -7,7 +7,7 @@
 - Local:         http://localhost:3001
 - Network:       http://10.1.10.29:3001
 - Environments: .env.local
-✓ Ready in 323ms
+✓ Ready in 316ms
 ⚠ `eslint` configuration in next.config.ts is no longer supported. See more info here: https://nextjs.org/docs/app/api-reference/cli/next#next-lint-options
 ⚠ Invalid next.config.ts options detected: 
 ⚠     Unrecognized key(s) in object: 'eslint'

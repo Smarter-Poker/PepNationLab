@@ -7,17 +7,18 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 async function run() {
   const { data, error } = await supabase.auth.signInWithPassword({
-    email: 'savagebrands@pepnationlab.com',
-    password: 'Pepnation123!'
+    email: 'danny@pepnationlab.com',
+    password: 'TestPassword123!'
   });
   
   if (error) { console.error("Login failed:", error.message); return; }
   
   const cookieString = `sb-${new URL(SUPABASE_URL).hostname.split('.')[0]}-auth-token=${encodeURIComponent(JSON.stringify([data.session.access_token, data.session.refresh_token, null, null, null]))}`;
   
-  console.log("Fetching /dashboard/agent...");
-  const res = await fetch('http://localhost:3000/dashboard/agent', {
-    headers: { 'Cookie': cookieString, 'User-Agent': 'curl/8.7.1' }
+  console.log("Fetching https://pepnationlab.com/admin ...");
+  const res = await fetch('https://pepnationlab.com/admin', {
+    headers: { 'Cookie': cookieString, 'User-Agent': 'curl/8.7.1' },
+    redirect: 'follow'
   });
   
   const text = await res.text();
@@ -25,16 +26,8 @@ async function run() {
   
   if (text.includes('Unexpected error') || text.includes('Error:') || res.status === 500) {
     console.log("Error found!");
-    // Log out next.js hydration errors or server errors from the HTML payload if available
-    const scriptMatch = text.match(/<script id="__NEXT_DATA__" type="application\/json">([\s\S]*?)<\/script>/);
-    if (scriptMatch) {
-      const data = JSON.parse(scriptMatch[1]);
-      console.log("Next data err:", data.err || "No err in next data");
-    }
     const errMatch = text.match(/<h2[^>]*>([^<]*)<\/h2>/i);
     if (errMatch) console.log("H2 Error:", errMatch[1]);
-    const pMatch = text.match(/<p[^>]*>([^<]*)<\/p>/i);
-    if (pMatch) console.log("P Error:", pMatch[1]);
   } else {
     console.log("Page loaded successfully.");
   }
