@@ -1066,9 +1066,9 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
                 )}
 
                 <div className="step-buttons">
-                  <button type="button" onClick={() => router.push(agentSlug ? `/${agentSlug}` : '/')} className="btn-neon-cyan" style={{ minWidth: 200, padding: '12px' }}>
+                  <Link href={agentSlug ? `/${agentSlug}` : '/'} className="btn-neon-cyan" style={{ minWidth: 200, padding: '12px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', textDecoration: 'none' }}>
                     Back to Store
-                  </button>
+                  </Link>
                   <button 
                     type="button" 
                     onClick={handleNextStep} 

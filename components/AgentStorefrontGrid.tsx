@@ -513,11 +513,12 @@ export default function AgentStorefrontGrid({
           return {
             id: item.product_id,
             name: `${item.products?.name || 'Product'} ${sizeLabel}`.trim(),
-            agent_product_id: item.id,
-            price: costPerVial,
-            retail_price: perVial,
+            sku: item.product_id,
             quantity: qty,
-            is_wholesale: false,
+            retailPrice: perVial,
+            costPrice: costPerVial,
+            weightOz: Number(item.products?.weight_oz) || 0.5,
+            agentSelfBuy: isStorefrontOwner,
           };
         }).filter(Boolean);
 
