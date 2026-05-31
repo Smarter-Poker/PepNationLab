@@ -23,6 +23,7 @@ import {
   unsubscribe,
 } from '@/lib/messenger/realtime';
 import type { RealtimeChannel } from '@supabase/supabase-js';
+import { createClient } from '@/lib/supabase/client';
 
 interface Props {
   userId: string;
@@ -177,6 +178,8 @@ function formatMessageTimestamp(dateStr: string): string {
   const dateString = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: date.getFullYear() !== now.getFullYear() ? 'numeric' : undefined }).toUpperCase();
   return `${dateString} AT ${timeString}`;
 }
+
+const supabase = createClient();
 
 export default function MessagePane({ userId, activeCall, setActiveCall }: Props) {
   const activeId = useMessengerStore((s) => s.activeConversationId);
@@ -712,7 +715,7 @@ export default function MessagePane({ userId, activeCall, setActiveCall }: Props
           table: 'messenger_participants',
           filter: `conversation_id=eq.${activeId}`,
         },
-        (payload) => {
+        (payload: any) => {
           const row = payload.new as any;
           if (row && row.user_id) {
             setParticipantsMap((prev) => ({
