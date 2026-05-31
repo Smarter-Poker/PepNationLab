@@ -212,7 +212,19 @@ export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
   );
 
   return (
-    <div className="card-metal" style={{ padding: 'var(--space-6)' }}>
+    <div style={{
+      padding: '3px',
+      borderRadius: '24px',
+      background: 'linear-gradient(145deg, #c8c2b8 0%, #a09890 30%, #8a847c 50%, #a09890 70%, #c8c2b8 100%)',
+      boxShadow: '0 8px 30px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.35), inset 0 -1px 0 rgba(0,0,0,0.4)',
+      marginBottom: 'var(--space-6)',
+    }}>
+      <div style={{
+        background: 'linear-gradient(180deg, #1a1f2e 0%, #141820 40%, #111520 100%)',
+        borderRadius: '21px',
+        padding: 'var(--space-6)',
+        boxShadow: 'inset 0 2px 10px rgba(0,0,0,0.6)',
+      }}>
       <h3
         style={{
           fontSize: '1.1rem',
@@ -299,29 +311,57 @@ export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '16px' }}>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
-                      <span style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--white)', fontFamily: 'var(--font-brand)', letterSpacing: '0.02em' }}>
+                      <span style={{ 
+                        fontSize: '1.2rem', 
+                        fontWeight: 800,
+                        background: 'linear-gradient(90deg, #FFFFFF 0%, #A8B4C0 100%)',
+                        WebkitBackgroundClip: 'text',
+                        WebkitTextFillColor: 'transparent',
+                        textShadow: '0 2px 10px rgba(255,255,255,0.1)'
+                      }}>
                         Order #{order.id.slice(0, 8).toUpperCase()}
                       </span>
-                      <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'rgba(255,255,255,0.2)' }} />
-                      <span style={{ fontSize: '0.9rem', color: 'var(--grey-400)', fontWeight: 500 }}>
-                        {new Date(order.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                      <span style={{ fontSize: '0.85rem', color: 'var(--grey-400)', fontWeight: 600 }}>
+                        •
+                      </span>
+                      <span style={{ fontSize: '0.85rem', color: 'var(--grey-400)', fontWeight: 500 }}>
+                        {new Date(order.created_at).toLocaleDateString('en-US', {
+                          month: 'short',
+                          day: 'numeric',
+                          year: 'numeric',
+                        })}
                       </span>
                     </div>
-                    <span style={{ fontSize: '0.85rem', color: 'var(--silver-light)', fontFamily: 'monospace' }}>
-                      ID: {order.id}
-                    </span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                      <span style={{ 
+                        fontSize: '0.8rem', 
+                        color: 'var(--teal)', 
+                        fontFamily: 'monospace', 
+                        letterSpacing: '0.05em',
+                        background: 'rgba(0,196,188,0.1)',
+                        padding: '2px 6px',
+                        borderRadius: '4px',
+                        border: '1px solid rgba(0,196,188,0.2)'
+                      }}>
+                        ID: {order.id}
+                      </span>
+                    </div>
                   </div>
                   <span
-                    className={`badge ${
-                      order.status === 'cancelled'
-                        ? 'badge-red'
-                        : order.status.startsWith('approved_') ||
-                          order.status === 'delivered' ||
-                          order.status === 'shipped'
-                        ? 'badge-teal'
-                        : 'badge-silver'
-                    }`}
-                    style={{ fontSize: '0.85rem', padding: '6px 14px', fontWeight: 700, borderRadius: '8px' }}
+                    style={{ 
+                      fontSize: '0.85rem', 
+                      padding: '6px 14px', 
+                      fontWeight: 800, 
+                      borderRadius: '8px',
+                      background: 'linear-gradient(180deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.02) 100%)',
+                      border: '1px solid rgba(255,255,255,0.15)',
+                      boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.2), 0 2px 10px rgba(0,0,0,0.3)',
+                      textShadow: '0 1px 2px rgba(0,0,0,0.8)',
+                      backdropFilter: 'blur(8px)',
+                      color: order.status === 'cancelled' ? '#fc8181' : order.status.startsWith('approved_') || order.status === 'delivered' || order.status === 'shipped' ? '#00E5FF' : '#E2E8F0',
+                      letterSpacing: '0.05em',
+                      textTransform: 'uppercase'
+                    }}
                   >
                     {STATUS_LABEL[order.status] || order.status.split('_').map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}
                   </span>
@@ -331,7 +371,16 @@ export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '20px', marginTop: '8px' }}>
                   
                   {/* Buyer Info */}
-                  <div style={{ background: 'rgba(0,0,0,0.25)', padding: '16px 20px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.04)' }}>
+                  <div style={{ 
+                    background: 'linear-gradient(180deg, #0b0f16 0%, #121822 100%)', 
+                    padding: '16px 20px', 
+                    borderRadius: '12px', 
+                    borderTop: '1px solid rgba(0,0,0,0.8)',
+                    borderBottom: '1px solid rgba(255,255,255,0.08)',
+                    borderLeft: '1px solid rgba(0,0,0,0.5)',
+                    borderRight: '1px solid rgba(255,255,255,0.03)',
+                    boxShadow: 'inset 0 4px 20px rgba(0,0,0,0.9)'
+                  }}>
                     <div style={{ fontSize: '0.75rem', color: 'var(--grey-400)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '10px', fontWeight: 600 }}>Buyer</div>
                     <div style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--white)' }}>
                       {order.buyer_name || 'Anonymous Scientist'}
@@ -342,7 +391,16 @@ export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
                   </div>
 
                   {/* Order Details */}
-                  <div style={{ background: 'rgba(0,0,0,0.25)', padding: '16px 20px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.04)' }}>
+                  <div style={{ 
+                    background: 'linear-gradient(180deg, #0b0f16 0%, #121822 100%)', 
+                    padding: '16px 20px', 
+                    borderRadius: '12px', 
+                    borderTop: '1px solid rgba(0,0,0,0.8)',
+                    borderBottom: '1px solid rgba(255,255,255,0.08)',
+                    borderLeft: '1px solid rgba(0,0,0,0.5)',
+                    borderRight: '1px solid rgba(255,255,255,0.03)',
+                    boxShadow: 'inset 0 4px 20px rgba(0,0,0,0.9)'
+                  }}>
                     <div style={{ fontSize: '0.75rem', color: 'var(--grey-400)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '10px', fontWeight: 600 }}>Details</div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
                       <span style={{ fontSize: '0.9rem', color: 'var(--silver)' }}>Method</span>
@@ -429,18 +487,19 @@ export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
                       />
                     )}
                     
-                    <button
+                      <button
                       onClick={(e) => { e.stopPropagation(); handleUpdateOrderStatus(order.id, 'cancelled'); }}
                       className="btn btn-secondary"
                       style={{
-                        border: '1px solid rgba(252,129,129,0.4)',
-                        color: 'var(--red)',
-                        background: 'linear-gradient(180deg, rgba(252,129,129,0.1) 0%, rgba(252,129,129,0.05) 100%)',
+                        border: 'none',
+                        color: '#FFAAAA',
+                        background: 'linear-gradient(180deg, #5C1E1E 0%, #3B1111 100%)',
                         fontSize: '0.9rem',
                         padding: '10px 20px',
                         fontWeight: 700,
                         borderRadius: '10px',
-                        boxShadow: '0 4px 15px rgba(252, 129, 129, 0.1), inset 0 1px 0 rgba(255,255,255,0.05)',
+                        boxShadow: '0 4px 15px rgba(252, 129, 129, 0.2), inset 0 1px 0 rgba(255,160,160,0.2), inset 0 -2px 0 rgba(0,0,0,0.4)',
+                        textShadow: '0 1px 2px rgba(0,0,0,0.6)',
                         display: 'flex',
                         alignItems: 'center',
                         gap: '8px'
@@ -1087,6 +1146,7 @@ export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
           `}</style>
         </div>
       )}
+      </div>
     </div>
   );
 }
