@@ -20,23 +20,22 @@ export default function IncomingCallToast({ call, onAccept, onDecline, stackInde
     let cancelled = false;
     (async () => {
       try {
-        const res = await fetch('/api/messenger/get-conversations', {
+        const res = await fetch('/api/messenger/list-participants', {
           method: 'POST',
           headers: { 'content-type': 'application/json' },
-          body: JSON.stringify({}),
+          body: JSON.stringify({ conversationId: call.conversation_id }),
         });
         if (cancelled || !res.ok) return;
         const json = (await res.json()) as {
-          conversations?: Array<{
-            conversation_id: string;
-            counterparty_full_name?: string | null;
-            counterparty_username?: string | null;
-            title?: string | null;
+          participants?: Array<{
+            user_id: string;
+            full_name?: string | null;
+            username?: string | null;
           }>;
         };
-        const conv = (json.conversations ?? []).find((c) => c.conversation_id === call.conversation_id);
-        if (conv && !cancelled) {
-          const name = conv.counterparty_full_name ?? conv.counterparty_username ?? conv.title ?? 'Someone';
+        const caller = (json.participants ?? []).find((p) => p.user_id === call.initiator_id);
+        if (caller && !cancelled) {
+          const name = caller.full_name ?? caller.username ?? 'Someone';
           setCallerName(name);
         }
       } catch {
@@ -46,7 +45,7 @@ export default function IncomingCallToast({ call, onAccept, onDecline, stackInde
     return () => {
       cancelled = true;
     };
-  }, [call.conversation_id]);
+  }, [call.conversation_id, call.initiator_id]);
 
   const handleAction = async (action: 'accept' | 'decline') => {
     try {

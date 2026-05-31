@@ -38,6 +38,11 @@ function fivemPartitionKey(d: Date = new Date()): string {
   return `${hh}:${String(slot).padStart(2, '0')}`;
 }
 
+function capitalizeWords(str: string): string {
+  if (!str) return str;
+  return str.replace(/\b\w/g, c => c.toUpperCase());
+}
+
 export async function GET(req: NextRequest) {
   const unauth = assertCronAuth(req);
   if (unauth) return unauth;
@@ -125,8 +130,8 @@ export async function GET(req: NextRequest) {
           const result = await sendWebPush(
             { endpoint: s.endpoint, p256dh: s.p256dh, auth: s.auth },
             {
-              title: row.title,
-              body: row.body,
+              title: capitalizeWords(row.title),
+              body: capitalizeWords(row.body),
               url: row.url ?? '/',
               tag: row.tag ?? undefined,
               icon: row.icon_url ?? undefined,
