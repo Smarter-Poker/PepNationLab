@@ -179,9 +179,12 @@ export default async function proxy(request: NextRequest) {
     {
       cookies: {
         getAll() {
-          return request.cookies.getAll();
+          const all = request.cookies.getAll();
+          console.log('[DEBUG middleware getAll()]', all);
+          return all;
         },
         setAll(cookiesToSet) {
+          console.log('[DEBUG middleware setAll()] cookiesToSet:', cookiesToSet);
           cookiesToSet.forEach(({ name, value, options }) => {
             request.cookies.set({ name, value, ...options });
           });
@@ -193,10 +196,11 @@ export default async function proxy(request: NextRequest) {
       },
     },
   );
-
   const {
-    data: { user },
-  } = await supabase.auth.getUser();
+    data: { session },
+  } = await supabase.auth.getSession();
+  const user = session?.user || null;
+  console.log('[DEBUG middleware getSession()] user:', !!user, 'session:', !!session);
 
   // Helper to preserve cookies on redirect
   const redirectWithCookies = (url: URL) => {
