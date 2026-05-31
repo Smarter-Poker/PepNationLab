@@ -121,8 +121,10 @@ export async function GET(req: Request) {
           .lt('created_at', rangeEndExclusive);
 
         let totalCogs = 0;
+        let totalShipping = 0;
 
         for (const order of orders ?? []) {
+          totalShipping += Number(order.shipping_cost) || 0;
           const items = (order.order_items as unknown) as Array<{
             product_id: string | null;
             quantity: number;
@@ -150,9 +152,13 @@ export async function GET(req: Request) {
           }
         }
 
-        // Sub-agents already collected shipping at retail from customers,
-        // so the super-agent does NOT re-bill shipping here.
-        const totalOwed = Math.round(totalCogs * 100) / 100;
+        // Sub-agents collected shipping at retail from customers. Since the Admin 
+        // bills the Super Agent for this shipping cost on their weekly statement, 
+        // the Super Agent MUST re-bill shipping to the Sub-Agent here, otherwise
+        // the Super Agent loses money paying for the Sub-Agent's shipping.
+        const cogsRound = Math.round(totalCogs * 100) / 100;
+        const shippingRound = Math.round(totalShipping * 100) / 100;
+        const totalOwed = Math.round((totalCogs + totalShipping) * 100) / 100;
 
         const { data: invoice } = await supabase
           .from('sub_agent_invoices')
@@ -162,7 +168,8 @@ export async function GET(req: Request) {
               sub_agent_id: subAgent.id,
               week_start: weekStart,
               week_end: weekEnd,
-              total_cogs: totalOwed,
+              total_cogs: cogsRound,
+              total_shipping: shippingRound,
               total_owed: totalOwed,
               status: 'open',
               updated_at: new Date().toISOString(),

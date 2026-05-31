@@ -132,8 +132,10 @@ export async function POST(req: NextRequest) {
     }
 
     let totalCogs = 0;
+    let totalShipping = 0;
 
     for (const order of orders ?? []) {
+      totalShipping += Number(order.shipping_cost) || 0;
       const items = (order.order_items as unknown) as Array<{
         product_id: string | null;
         quantity: number;
@@ -145,11 +147,9 @@ export async function POST(req: NextRequest) {
         const qty = Number(item.quantity) || 0;
         if (qty <= 0) continue;
 
-        // Always price at the super-agent's wholesale cost: prefer the
-        // historical snapshot from the order; fall back to the live
-        // super_agent_pricing baseline. Never reuse unit_cost_price — that
-        // is the sub-agent's resale cost, not what the super-agent is owed.
-        const stored = Number(item.unit_super_agent_cost);
+        // The sub-agent owes the super-agent the unit_cost_price (which the
+        // super-agent sets as their baseline cost).
+        const stored = Number(item.unit_cost_price);
         if (Number.isFinite(stored) && stored >= 0) {
           totalCogs += stored * qty;
         } else if (item.product_id) {
@@ -163,9 +163,13 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Sub-agents already collected shipping at retail from the customer.
-    // The super-agent does NOT bill shipping a second time here.
-    const totalOwed = Math.round(totalCogs * 100) / 100;
+    // Sub-agents collected shipping at retail from customers. Since the Admin 
+    // bills the Super Agent for this shipping cost on their weekly statement, 
+    // the Super Agent MUST re-bill shipping to the Sub-Agent here, otherwise
+    // the Super Agent loses money paying for the Sub-Agent's shipping.
+    const cogsRound = Math.round(totalCogs * 100) / 100;
+    const shippingRound = Math.round(totalShipping * 100) / 100;
+    const totalOwed = Math.round((totalCogs + totalShipping) * 100) / 100;
 
     const { data: invoice, error: invoiceError } = await supabase
       .from('sub_agent_invoices')
@@ -175,7 +179,8 @@ export async function POST(req: NextRequest) {
           sub_agent_id,
           week_start,
           week_end: weekEnd,
-          total_cogs: totalOwed,
+          total_cogs: cogsRound,
+          total_shipping: shippingRound,
           total_owed: totalOwed,
           status: 'open',
           updated_at: new Date().toISOString()

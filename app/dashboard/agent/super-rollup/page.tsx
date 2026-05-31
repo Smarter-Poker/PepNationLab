@@ -22,7 +22,7 @@ interface SubRow {
   pageviews: number;
   orders: number;
   revenue_cents: number;
-  commission_owed: number;
+  margin_earned: number;
 }
 
 export default async function SuperAgentRollupPage() {
@@ -77,10 +77,10 @@ export default async function SuperAgentRollupPage() {
         .gte('created_at', rangeStart)
     : { data: [] };
 
-  const commissionMap = new Map<string, number>();
+  const marginMap = new Map<string, number>();
   for (const o of subOrders ?? []) {
     const aid = String(o.agent_id);
-    const cur = commissionMap.get(aid) ?? 0;
+    const cur = marginMap.get(aid) ?? 0;
     let orderProfit = 0;
     const items = (o.order_items as Array<{ quantity: number; unit_cost_price: number | null; unit_super_agent_cost: number | null }>) ?? [];
     for (const item of items) {
@@ -92,7 +92,7 @@ export default async function SuperAgentRollupPage() {
           orderProfit += (cost - superCost) * q;
        }
     }
-    commissionMap.set(aid, cur + orderProfit);
+    marginMap.set(aid, cur + orderProfit);
   }
 
   const rows: SubRow[] = (downline ?? []).map((d) => {
@@ -105,7 +105,7 @@ export default async function SuperAgentRollupPage() {
       pageviews: a?.pageviews_30d ?? 0,
       orders: a?.orders_30d ?? 0,
       revenue_cents: a?.revenue_cents_30d ?? 0,
-      commission_owed: commissionMap.get(String(d.id)) ?? 0,
+      margin_earned: marginMap.get(String(d.id)) ?? 0,
     };
   });
 
@@ -114,9 +114,9 @@ export default async function SuperAgentRollupPage() {
       pageviews: acc.pageviews + r.pageviews,
       orders: acc.orders + r.orders,
       revenue_cents: acc.revenue_cents + r.revenue_cents,
-      commission_owed: acc.commission_owed + r.commission_owed,
+      margin_earned: acc.margin_earned + r.margin_earned,
     }),
-    { pageviews: 0, orders: 0, revenue_cents: 0, commission_owed: 0 }
+    { pageviews: 0, orders: 0, revenue_cents: 0, margin_earned: 0 }
   );
 
   return (
@@ -151,8 +151,8 @@ export default async function SuperAgentRollupPage() {
           <div style={{ color: 'var(--white)', fontSize: '1.6rem', fontWeight: 800, marginTop: 4 }}>{money(totals.revenue_cents)}</div>
         </div>
         <div className="card-glass hover-lift stagger-fade-in" style={{ padding: 'var(--space-4)', borderRadius: 'var(--radius-md)', animationDelay: '0.5s' }}>
-          <div style={{ color: 'var(--silver)', fontSize: '0.78rem', textTransform: 'uppercase' }}>Commissions Owed</div>
-          <div style={{ color: 'var(--white)', fontSize: '1.6rem', fontWeight: 800, marginTop: 4 }}>${totals.commission_owed.toFixed(2)}</div>
+          <div style={{ color: 'var(--silver)', fontSize: '0.78rem', textTransform: 'uppercase' }}>Margin Earned</div>
+          <div style={{ color: 'var(--white)', fontSize: '1.6rem', fontWeight: 800, marginTop: 4 }}>${totals.margin_earned.toFixed(2)}</div>
         </div>
       </div>
 
@@ -164,7 +164,7 @@ export default async function SuperAgentRollupPage() {
               <th style={{ textAlign: 'right', padding: 'var(--space-3)', color: 'var(--silver)' }}>Pageviews</th>
               <th style={{ textAlign: 'right', padding: 'var(--space-3)', color: 'var(--silver)' }}>Orders</th>
               <th style={{ textAlign: 'right', padding: 'var(--space-3)', color: 'var(--silver)' }}>Revenue</th>
-              <th style={{ textAlign: 'right', padding: 'var(--space-3)', color: 'var(--silver)' }}>Commission Owed</th>
+              <th style={{ textAlign: 'right', padding: 'var(--space-3)', color: 'var(--silver)' }}>Margin Earned</th>
             </tr>
           </thead>
           <tbody>
@@ -183,7 +183,7 @@ export default async function SuperAgentRollupPage() {
                 <td style={{ padding: 'var(--space-3)', color: 'var(--silver)', textAlign: 'right' }}>{r.pageviews}</td>
                 <td style={{ padding: 'var(--space-3)', color: 'var(--silver)', textAlign: 'right' }}>{r.orders}</td>
                 <td style={{ padding: 'var(--space-3)', color: 'var(--white)', textAlign: 'right' }}>{money(r.revenue_cents)}</td>
-                <td style={{ padding: 'var(--space-3)', color: 'var(--white)', textAlign: 'right' }}>${r.commission_owed.toFixed(2)}</td>
+                <td style={{ padding: 'var(--space-3)', color: 'var(--white)', textAlign: 'right' }}>${r.margin_earned.toFixed(2)}</td>
               </tr>
             ))}
           </tbody>
