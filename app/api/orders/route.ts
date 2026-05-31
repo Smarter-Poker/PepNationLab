@@ -108,7 +108,7 @@ export async function POST(request: NextRequest) {
     // Get researcher profile
     const { data: profile, error: profileError } = await serviceSupabase
       .from('profiles')
-      .select('id, referring_agent_id, role, tier, parent_agent_id, account_type, prepaid_balance, credit_limit, auto_approve_orders')
+      .select('id, referring_agent_id, role, tier, parent_agent_id, account_type, prepaid_balance, credit_limit, auto_approve_orders, is_sub_agent, referring_sub_agent_id')
       .eq('id', user.id)
       .single();
 
@@ -507,6 +507,7 @@ export async function POST(request: NextRequest) {
     const trimmedCouponCode = couponCode ? String(couponCode).trim().toUpperCase() : '';
 
     // HARD RULE: Agents CANNOT use coupons on their own self-buy orders.
+    // SACA spec: this also covers sub-agents — they're role=agent + is_sub_agent.
     if (isAgentSelfBuy && trimmedCouponCode) {
       // Rollback: release the inventory reservation.
       if (inventoryReserved) await serviceSupabase.rpc('release_inventory', inventoryReserveParams);
@@ -869,7 +870,41 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: `An unexpected error occurred: ${itemsError.message || JSON.stringify(itemsError)}` }, { status: 500 });
     }
 
+    // ── SACA Phase 4: Sub-Agent Commission Accrual ───────────────────────────
+    // After the order + items are committed, resolve the effective sub-agent
+    // referral and stamp it on the order, then call the SECDEF RPC to write
+    // a pending ledger row. Failures are logged but never roll back the order
+    // — commission accrual is a separate concern from order success. The DB
+    // trigger trg_void_subagent_commission_on_cancel handles the reversal
+    // path if the order is later cancelled before shipping.
+    try {
+      let effectiveReferringSubAgentId: string | null = null;
+      if ((profile as { is_sub_agent?: boolean | null }).is_sub_agent === true) {
+        // Self-buy by a sub-agent. Per spec, sub-agents earn commission on
+        // their own purchases too (credited at the weekly settlement).
+        effectiveReferringSubAgentId = user.id;
+      } else {
+        const referringSub = (profile as { referring_sub_agent_id?: string | null }).referring_sub_agent_id;
+        if (referringSub && typeof referringSub === 'string') {
+          effectiveReferringSubAgentId = referringSub;
+        }
+      }
 
+      if (effectiveReferringSubAgentId) {
+        await serviceSupabase
+          .from('orders')
+          .update({ referring_sub_agent_id: effectiveReferringSubAgentId })
+          .eq('id', order.id);
+
+        const { error: accrueErr } = await serviceSupabase
+          .rpc('accrue_sub_agent_commission', { p_order_id: order.id });
+        if (accrueErr) {
+          console.error('[orders] accrue_sub_agent_commission failed:', accrueErr.message);
+        }
+      }
+    } catch (e) {
+      console.error('[orders] SACA accrual block threw:', e);
+    }
 
     // Checkout disclaimer audit row was recorded above, prior to the order
     // insert, so a successful order implies a complete four-layer trail.
