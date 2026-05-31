@@ -88,10 +88,14 @@ export default function PaymentProofUpload({ orderId, uploadDisabled = false }: 
 
   return (
     <div
-      className="card-metal hover-lift"
+      className="card-glass hover-lift"
       style={{
         padding: 'var(--space-6)',
         marginBottom: 'var(--space-5)',
+        background: 'rgba(0, 0, 0, 0.3)',
+        border: '1px solid rgba(255, 255, 255, 0.06)',
+        borderRadius: 'var(--radius-lg)',
+        boxShadow: 'inset 0 0 20px rgba(0,0,0,0.5)'
       }}
     >
       <h2 style={{ fontSize: '0.95rem', color: 'var(--white)', marginBottom: 'var(--space-3)' }}>
