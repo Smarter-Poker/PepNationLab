@@ -279,14 +279,25 @@ export default async function AgentStorefrontPage({ params }: Props) {
           </div>
         </div>
 
-        <div className="sf-nav-actions">
-          <Link href="/dashboard" className="sf-btn-dash">Dashboard</Link>
+        <div className="sf-nav-actions" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <Link href="/dashboard" style={{ display: 'flex', background: 'none' }}>
+            <img 
+              src={
+                userProfile?.role === 'admin' ? '/nav-icons/admin-dashboard.png' :
+                userProfile?.role === 'agent' ? '/nav-icons/agent-dashboard.png' :
+                '/nav-icons/dashboard.png'
+              } 
+              alt="Dashboard" 
+              width={158} 
+              height={158} 
+              style={{ objectFit: 'contain', display: 'block' }} 
+            />
+          </Link>
           <Link
             href={`/checkout?agent=${encodeURIComponent(agentSlug)}`}
-            className="sf-btn-cart"
-            style={{ background: primaryColor }}
+            style={{ display: 'flex', background: 'none' }}
           >
-            Cart
+            <img src="/nav-icons/cart.png" width={105} height={105} alt="Cart" style={{ objectFit: 'contain', display: 'block' }} />
           </Link>
         </div>
       </nav>
