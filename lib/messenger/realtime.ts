@@ -112,7 +112,6 @@ export function subscribeMessages(
   return {
     channel: ch,
     broadcastNewMessage: (m: Message) => {
-      // Opt to still broadcast if needed, but postgres_changes handles standard delivery
       void ch.send({ type: 'broadcast', event: 'new_message', payload: m });
     },
   };
@@ -224,13 +223,17 @@ export function subscribeCallSignals(userId: string, handlers: CallSignalHandler
     }
   });
 
-  // Bulletproof fallback: listen to direct database updates via Supabase Postgres replication
+  // audit15 fix-22 (B4): filter INSERT to skip the user's own outgoing calls.
+  // Pushes the filter to the Realtime layer so the WAL stream doesn't deliver
+  // our own initiator-rows back to us. The client-side guard remains as a
+  // belt-and-suspenders check.
   ch.on(
     'postgres_changes',
     {
       event: 'INSERT',
       schema: 'public',
       table: 'messenger_calls',
+      filter: `initiator_id=neq.${userId}`,
     },
     (payload) => {
       console.log('[REALTIME] received messenger_calls postgres INSERT:', payload);
@@ -241,6 +244,9 @@ export function subscribeCallSignals(userId: string, handlers: CallSignalHandler
     }
   );
 
+  // UPDATE stays unfiltered: we need updates for calls where the user is
+  // either initiator OR callee, and postgres_changes filters can't express
+  // OR. RLS gates the WAL stream to conversations the user participates in.
   ch.on(
     'postgres_changes',
     {
@@ -259,17 +265,7 @@ export function subscribeCallSignals(userId: string, handlers: CallSignalHandler
   return ch;
 }
 
-// audit15 fix-12 (S7): per-target broadcast channel pool. Each broadcastCallSignal
-// previously built a fresh channel, paid the subscribe handshake, sent one
-// message, then scheduled removeChannel 1.5s later. On a multi-target burst
-// (group accept, rapid hangup+broadcast, multiple peers) this stacked up
-// channels and added handshake latency to the most timing-sensitive signal
-// (call_accepted, which the caller is watching for to transition into the
-// LiveKit room).
-//
-// Pool keeps up to MAX_POOL warm subscribed channels per target user, evicting
-// the least-recently-used and removing entries that haven't been touched in
-// IDLE_MS. The sweep is a single setTimeout per call instead of one per send.
+// audit15 fix-12 (S7): per-target broadcast channel pool.
 const CHANNEL_POOL_MAX = 32;
 const CHANNEL_POOL_IDLE_MS = 60_000;
 
@@ -299,7 +295,6 @@ function scheduleSweep() {
 
 function evictIfFull() {
   if (channelPool.size < CHANNEL_POOL_MAX) return;
-  // Drop the LRU entry.
   let oldestKey: string | null = null;
   let oldestT = Infinity;
   for (const [k, e] of channelPool.entries()) {
@@ -354,8 +349,6 @@ export async function broadcastCallSignal(
     try {
       await entry.subscribed;
     } catch (subErr) {
-      // Subscription failed permanently — drop this entry so the next call
-      // can retry from scratch instead of awaiting a rejected promise.
       try { void supabase.removeChannel(entry.channel); } catch {}
       channelPool.delete(targetUserId);
       throw subErr;
