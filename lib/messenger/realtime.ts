@@ -30,7 +30,9 @@ export function subscribeMessages(conversationId: string, handlers: MessageHandl
     }
   });
   ch.on('broadcast', { event: 'delete_message' }, (payload) => {
-    if (payload.payload && (payload.payload as any).messageId) {
+    if (payload.payload && (payload.payload as any).message) {
+      handlers.onUpdate?.((payload.payload as any).message as Message);
+    } else if (payload.payload && (payload.payload as any).messageId) {
       handlers.onDelete?.((payload.payload as any).messageId as string);
     }
   });
