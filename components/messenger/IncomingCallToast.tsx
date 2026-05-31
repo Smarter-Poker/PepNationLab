@@ -16,6 +16,7 @@ interface Props {
 
 export default function IncomingCallToast({ call, onAccept, onDecline, stackIndex = 0 }: Props) {
   const [callerName, setCallerName] = useState<string>('Someone');
+  const [isBusy, setIsBusy] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -49,6 +50,8 @@ export default function IncomingCallToast({ call, onAccept, onDecline, stackInde
   }, [call.conversation_id, call.initiator_id]);
 
   const handleAction = async (action: 'accept' | 'decline') => {
+    if (isBusy) return;
+    setIsBusy(true);
     let success = false;
     try {
       const res = await fetch('/api/messenger/call-signal', {
@@ -63,6 +66,8 @@ export default function IncomingCallToast({ call, onAccept, onDecline, stackInde
       }
     } catch {
       toast.error('Network Error');
+    } finally {
+      setIsBusy(false);
     }
 
     if (action === 'accept') {
@@ -109,6 +114,7 @@ export default function IncomingCallToast({ call, onAccept, onDecline, stackInde
       <div style={{ display: 'flex', gap: 8 }}>
         <button
           type="button"
+          disabled={isBusy}
           onClick={() => void handleAction('accept')}
           style={{
             flex: 1,
@@ -131,6 +137,7 @@ export default function IncomingCallToast({ call, onAccept, onDecline, stackInde
         </button>
         <button
           type="button"
+          disabled={isBusy}
           onClick={() => void handleAction('decline')}
           style={{
             flex: 1,

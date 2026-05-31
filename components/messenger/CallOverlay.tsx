@@ -425,7 +425,7 @@ function FaceTimeCallView({ isVideo, onHangUp }: FaceTimeCallViewProps) {
   );
 }
 
-export default function CallOverlay({ call, selfId, onClose }: Props) {
+export default function CallOverlay({ call, selfId, onClose, onAccept }: Props & { onAccept?: () => void }) {
   // Inject pulsing animation stylesheet on mount
   useEffect(() => {
     injectPulseRingAnim();
@@ -685,7 +685,9 @@ export default function CallOverlay({ call, selfId, onClose }: Props) {
           }
           onClose();
         } else if (action === 'accept') {
-          if (counterpartyId) {
+          if (onAccept) {
+            onAccept();
+          } else if (counterpartyId) {
             const { broadcastCallSignal } = await import('@/lib/messenger/realtime');
             void broadcastCallSignal(counterpartyId, 'call_accepted', call);
           }

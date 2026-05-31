@@ -144,6 +144,7 @@ export default function GlobalCallListener() {
           call={activeCall}
           selfId={user.id}
           onClose={() => setActiveCall(null)}
+          onAccept={() => handleAccept(activeCall)}
         />
       )}
     </>
