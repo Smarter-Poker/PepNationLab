@@ -1010,14 +1010,14 @@ a:hover { color: var(--teal-dark); }
    ============================================ */
 .sidebar {
   width: 260px;
-  min-height: 100vh;
+  /* Use dvh for mobile Safari compatibility so the bottom isn't covered by the browser UI */
+  height: calc(100dvh - 60px);
   background: var(--black-2);
   border-right: var(--border-teal);
   padding: var(--space-6) 0;
   position: fixed;
   top: 60px;
   left: 0;
-  bottom: 0;
   overflow-y: auto;
 }
 
@@ -1550,7 +1550,8 @@ html {
     position: fixed !important;
     top: 60px !important; /* Below the universal Navbar — matches AdminLayoutClient */
     left: 0 !important;
-    bottom: 0 !important;
+    height: calc(100dvh - 60px) !important;
+    bottom: auto !important;
     z-index: 500 !important;
     transform: translateX(-100%);
     transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
