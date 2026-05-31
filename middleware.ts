@@ -207,10 +207,9 @@ export default async function proxy(request: NextRequest) {
     },
   );
   const {
-    data: { session },
-  } = await supabase.auth.getSession();
-  const user = session?.user || null;
-  console.log('[DEBUG middleware getSession()] user:', !!user, 'session:', !!session);
+    data: { user },
+  } = await supabase.auth.getUser();
+  console.log('[DEBUG middleware getUser()] user:', !!user);
 
   // Helper to preserve cookies on redirect
   const redirectWithCookies = (url: URL) => {
