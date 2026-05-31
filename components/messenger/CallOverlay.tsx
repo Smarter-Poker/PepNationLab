@@ -197,6 +197,7 @@ function FaceTimeCallView({ isVideo, onHangUp }: FaceTimeCallViewProps) {
   }, [localParticipant.isMicrophoneEnabled, localParticipant.isCameraEnabled]);
 
   const toggleMute = async () => {
+    import('@/lib/messenger/haptics').then(h => h.vibrateLight());
     try {
       const current = localParticipant.isMicrophoneEnabled;
       await localParticipant.setMicrophoneEnabled(!current);
@@ -207,6 +208,7 @@ function FaceTimeCallView({ isVideo, onHangUp }: FaceTimeCallViewProps) {
   };
 
   const toggleCamera = async () => {
+    import('@/lib/messenger/haptics').then(h => h.vibrateLight());
     try {
       const current = localParticipant.isCameraEnabled;
       await localParticipant.setCameraEnabled(!current);
@@ -217,6 +219,7 @@ function FaceTimeCallView({ isVideo, onHangUp }: FaceTimeCallViewProps) {
   };
 
   const flipCamera = async () => {
+    import('@/lib/messenger/haptics').then(h => h.vibrateMedium());
     if (!localParticipant.isCameraEnabled) return;
     const nextMode = facingMode === 'user' ? 'environment' : 'user';
     setFacingMode(nextMode);
@@ -225,7 +228,11 @@ function FaceTimeCallView({ isVideo, onHangUp }: FaceTimeCallViewProps) {
       const devices = await navigator.mediaDevices.enumerateDevices();
       const videoDevices = devices.filter((d) => d.kind === 'videoinput');
       if (videoDevices.length > 1) {
-        const currentId = localParticipant.videoTrackPublications.values().next().value?.track?.mediaStreamTrack?.getSettings().deviceId;
+        // Safer way to get device ID
+        const publications = Array.from(localParticipant.videoTrackPublications.values());
+        const activeTrack = publications.find(p => p.track)?.track;
+        const currentId = activeTrack?.mediaStreamTrack?.getSettings()?.deviceId;
+        
         const currentIndex = videoDevices.findIndex((d) => d.deviceId === currentId);
         const nextIndex = (currentIndex + 1) % videoDevices.length;
         const nextDevice = videoDevices[nextIndex];
@@ -647,6 +654,11 @@ export default function CallOverlay({ call, selfId, onClose, onAccept }: Props &
   }, [call.id]);
 
   const handleHangUp = async () => {
+    import('@/lib/messenger/haptics').then(h => {
+      h.initHaptics();
+      h.vibrateHeavy();
+      h.playCallEndedSound();
+    });
     userClosedRef.current = true;
     if (counterpartyId) {
       try {
@@ -671,6 +683,10 @@ export default function CallOverlay({ call, selfId, onClose, onAccept }: Props &
   };
 
   const handleAction = async (action: 'accept' | 'decline' | 'hangup') => {
+    import('@/lib/messenger/haptics').then(h => {
+      h.initHaptics();
+      h.vibrateMedium();
+    });
     if (isSignaling) return;
     setIsSignaling(true);
 

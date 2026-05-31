@@ -53,6 +53,11 @@ export default function IncomingCallToast({ call, onAccept, onDecline, stackInde
     if (isBusy) return;
     setIsBusy(true);
 
+    import('@/lib/messenger/haptics').then(h => {
+      h.initHaptics();
+      h.vibrateMedium();
+    });
+
     // audit15: stamp the per-tab "I answered this call" flag BEFORE firing
     // the HTTP request. Supabase Realtime can deliver the postgres_changes
     // UPDATE event on this same client before the accept HTTP response

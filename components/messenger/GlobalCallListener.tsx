@@ -83,7 +83,14 @@ export default function GlobalCallListener() {
         }
         setActiveCall((cur) => {
           if (!cur || cur.id !== c.id) return cur;
-          if (c.status === 'ended' || c.status === 'declined' || c.status === 'missed') return null;
+          if (c.status === 'ended' || c.status === 'declined' || c.status === 'missed') {
+            import('@/lib/messenger/haptics').then((h) => {
+              h.initHaptics();
+              h.playCallEndedSound();
+              h.vibrateHeavy();
+            });
+            return null;
+          }
           
           // If the call transitioned to active, but THIS tab did not click "Answer",
           // then another tab answered it. We should hide the overlay on this tab!

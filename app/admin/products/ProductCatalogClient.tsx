@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, Fragment } from "react";
 import Link from "next/link";
 import { toast } from "sonner";
 import BulkImportModal from "./BulkImportModal";
@@ -444,10 +444,9 @@ export default function ProductCatalogClient({
                   const isExpanded = expandedGroups.has(p.name);
                   const hasMultiple = p.variantCount > 1;
                   return (
-                    <>
+                    <Fragment key={p.id}>
                       {/* Main product row */}
                       <tr
-                        key={p.id}
                         className="table-row-hover"
                         style={{
                           borderBottom: isExpanded
@@ -767,7 +766,7 @@ export default function ProductCatalogClient({
                             </tr>
                           );
                         })}
-                    </>
+                    </Fragment>
                   );
                 })
               ) : (

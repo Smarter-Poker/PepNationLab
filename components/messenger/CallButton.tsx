@@ -25,6 +25,14 @@ export default function CallButton({ conversationId, onCallStarted }: Props) {
   const [available, setAvailable] = useState(true);
   const [busy, setBusy] = useState(false);
 
+  const triggerStartHaptics = () => {
+    import('@/lib/messenger/haptics').then((h) => {
+      h.initHaptics();
+      h.vibrateMedium();
+      h.playPopSound();
+    });
+  };
+
   // audit15: this hook MUST be called before any conditional return below
   // (Rules of Hooks). Previously useMessengerStore lived after the
   // `if (!available) return null;` guard, which crashed the messenger pane
@@ -57,6 +65,7 @@ export default function CallButton({ conversationId, onCallStarted }: Props) {
   const startCall = async (callType: 'audio' | 'video') => {
     if (busy) return;
     setBusy(true);
+    triggerStartHaptics();
     try {
       const res = await fetch('/api/messenger/call-signal', {
         method: 'POST',
