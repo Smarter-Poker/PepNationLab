@@ -250,22 +250,8 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Notify the agent that a commission was earned (DB trigger auto-creates the row).
-    // This fires for any order where agent_id ≠ buyer_id (self-buys are excluded by the trigger).
-    if ((newStatus === 'approved_ship' || newStatus === 'approved_pickup') && order.agent_id && order.agent_id !== order.buyer_id) {
-      try {
-        // Look up the commission amount that the DB trigger just created
-        const { data: comm } = await supabase
-          .from('agent_commissions')
-          .select('commission_amount')
-          .eq('order_id', orderId)
-          .maybeSingle();
-        if (comm?.commission_amount) {
-          const fmt = `$${Number(comm.commission_amount).toFixed(2)}`;
-          await notifyCommissionEarned(supabase, order.agent_id, fmt, orderId);
-        }
-      } catch { /* notification failures must not break the order */ }
-    }
+    // (Removed legacy commission notification. Standard/Sub-Agents collect retail margin directly,
+    // and there is no commissions tab for them).
 
     // Auto-enqueue label job for shipping orders — awaited, idempotent server-side.
     if (newStatus === 'approved_ship') {

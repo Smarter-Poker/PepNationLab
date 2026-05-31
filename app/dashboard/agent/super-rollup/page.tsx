@@ -66,17 +66,33 @@ export default async function SuperAgentRollupPage() {
     (analytics ?? []).map((a) => [String(a.agent_id), a])
   );
 
-  const { data: commissions } = subIds.length
+  const rangeStart = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+  const { data: subOrders } = subIds.length
     ? await svc
-        .from('agent_commissions')
-        .select('agent_id, commission_amount, status')
+        .from('orders')
+        .select('agent_id, order_items(quantity, unit_cost_price, unit_super_agent_cost)')
         .in('agent_id', subIds)
-        .in('status', ['pending', 'approved'])
+        .in('status', ['approved_ship', 'approved_pickup', 'in_fulfillment', 'shipped', 'delivered'])
+        .eq('is_wholesale_restock', false)
+        .gte('created_at', rangeStart)
     : { data: [] };
+
   const commissionMap = new Map<string, number>();
-  for (const c of commissions ?? []) {
-    const cur = commissionMap.get(String(c.agent_id)) ?? 0;
-    commissionMap.set(String(c.agent_id), cur + Number(c.commission_amount));
+  for (const o of subOrders ?? []) {
+    const aid = String(o.agent_id);
+    const cur = commissionMap.get(aid) ?? 0;
+    let orderProfit = 0;
+    const items = (o.order_items as Array<{ quantity: number; unit_cost_price: number | null; unit_super_agent_cost: number | null }>) ?? [];
+    for (const item of items) {
+       const q = Number(item.quantity) || 0;
+       if (q <= 0) continue;
+       const cost = Number(item.unit_cost_price) || 0;
+       const superCost = Number(item.unit_super_agent_cost) || 0;
+       if (cost > superCost) {
+          orderProfit += (cost - superCost) * q;
+       }
+    }
+    commissionMap.set(aid, cur + orderProfit);
   }
 
   const rows: SubRow[] = (downline ?? []).map((d) => {

@@ -134,11 +134,9 @@ export async function GET(req: Request) {
             const qty = Number(item.quantity) || 0;
             if (qty <= 0) continue;
 
-            // Always price at the super-agent's wholesale cost: prefer the
-            // historical snapshot from the order; fall back to the live
-            // super_agent_pricing row; never reuse unit_cost_price (the
-            // sub-agent's cost — the customer-side margin we do not bill).
-            const stored = Number(item.unit_super_agent_cost);
+            // The sub-agent owes the super-agent the unit_cost_price (which the
+            // super-agent sets as their baseline cost).
+            const stored = Number(item.unit_cost_price);
             if (Number.isFinite(stored) && stored >= 0) {
               totalCogs += stored * qty;
             } else if (item.product_id && subAgent.parent_agent_id) {
