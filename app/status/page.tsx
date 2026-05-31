@@ -48,17 +48,18 @@ export default async function StatusPage() {
   return (
     <div style={{ minHeight: '100vh', background: 'var(--black)', padding: 'var(--space-6) var(--space-4)' }}>
       <div className="container" style={{ maxWidth: 720 }}>
-        <h1 style={{ color: 'var(--white)', fontSize: '1.8rem', fontFamily: 'var(--font-brand)', marginBottom: 'var(--space-4)' }}>
+        <h1 className="animated-gradient-text" style={{ color: 'var(--white)', fontSize: '1.8rem', fontFamily: 'var(--font-brand)', marginBottom: 'var(--space-4)' }}>
           Pep Nation Lab Status
         </h1>
 
         <div
-          className="card-metal"
+          className="card-metal hover-lift stagger-fade-in"
           style={{
             padding: 'var(--space-5)',
             borderLeft: `4px solid ${statusColor(overall)}`,
             borderRadius: 'var(--radius-md)',
             marginBottom: 'var(--space-5)',
+            animationDelay: '0.1s'
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>

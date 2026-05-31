@@ -190,7 +190,7 @@ export default function ProductsList({
         
         {/* Title Case header */}
         <div style={{ marginBottom: 'var(--space-8)' }}>
-          <h1 style={{ fontSize: '1.6rem', marginBottom: 'var(--space-2)' }}>
+          <h1 className="animated-gradient-text" style={{ fontSize: '1.6rem', marginBottom: 'var(--space-2)' }}>
             Research Compounds <span style={{ color: 'var(--teal)' }}>Catalog</span>
           </h1>
           <p style={{ color: 'var(--grey-400)', fontSize: '0.9rem', maxWidth: 640 }}>
@@ -199,7 +199,7 @@ export default function ProductsList({
         </div>
 
         {/* Search and Category Filter Card */}
-        <div className="card-metal" style={{ padding: 'var(--space-5)', marginBottom: 'var(--space-8)' }}>
+        <div className="card-metal hover-lift stagger-fade-in" style={{ padding: 'var(--space-5)', marginBottom: 'var(--space-8)', animationDelay: '0.1s' }}>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--space-4)', alignItems: 'center', justifyContent: 'space-between' }}>
             
             {/* Categories filter tabs */}
@@ -415,7 +415,7 @@ export default function ProductsList({
             })}
           </div>
         ) : (
-          <div className="card-metal" style={{ padding: 'var(--space-12)', textAlign: 'center' }}>
+          <div className="card-metal hover-lift stagger-fade-in" style={{ padding: 'var(--space-12)', textAlign: 'center' }}>
             <p style={{ color: 'var(--grey-400)', margin: 0 }}>
               No Compounds Found Matching Your Filters.
             </p>

@@ -95,7 +95,7 @@ export default function PaymentProofUpload({ orderId, uploadDisabled = false }: 
         borderColor: hasProof ? 'rgba(104,211,145,0.3)' : 'rgba(246,173,85,0.3)',
       }}
     >
-      <h2 style={{ fontSize: '0.95rem', color: hasProof ? '#68D391' : '#F6AD55', marginBottom: 'var(--space-3)' }}>
+      <h2 style={{ fontSize: '0.95rem', color: 'var(--white)', marginBottom: 'var(--space-3)' }}>
         Payment Proof
       </h2>
 
