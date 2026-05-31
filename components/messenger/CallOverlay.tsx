@@ -437,6 +437,11 @@ export default function CallOverlay({ call, selfId, onClose, onAccept }: Props &
   const [counterpartyAvatar, setCounterpartyAvatar] = useState<string | null>(null);
   const [isSignaling, setIsSignaling] = useState(false);
 
+  // audit15: gate the unmount-broadcasts-call_ended effect on an explicit
+  // user action. Without this, any spurious React unmount (e.g. parent
+  // re-render after accept) broadcasts call_ended and tears down the caller.
+  const userClosedRef = useRef(false);
+
   // Resolve counterparty name and avatar details
   useEffect(() => {
     let cancelled = false;
@@ -577,13 +582,17 @@ export default function CallOverlay({ call, selfId, onClose, onAccept }: Props &
     latestCounterpartyIdRef.current = counterpartyId;
   }, [counterpartyId]);
 
-  // Guaranteed unmount teardown signaling: broadcasts call_ended on true unmount
+  // audit15: broadcast call_ended ONLY when the user explicitly closed the
+  // overlay (hangup / decline). Previously this fired on every unmount,
+  // including spurious re-mounts from parent re-renders right after accept,
+  // which tore down the caller's side and produced "call failed immediately".
   useEffect(() => {
     return () => {
+      if (!userClosedRef.current) return;
       const cid = latestCounterpartyIdRef.current;
       const cl = latestCallRef.current;
       if (cid && cl && cl.status !== 'ended' && cl.status !== 'declined' && cl.status !== 'missed') {
-        console.log('[CALL] Unmounting CallOverlay — broadcasting call_ended to:', cid);
+        console.log('[CALL] Unmounting CallOverlay (user-closed) — broadcasting call_ended to:', cid);
         import('@/lib/messenger/realtime').then(({ broadcastCallSignal }) => {
           void broadcastCallSignal(cid, 'call_ended', cl);
         }).catch(() => {});
@@ -638,6 +647,7 @@ export default function CallOverlay({ call, selfId, onClose, onAccept }: Props &
   }, [call.id]);
 
   const handleHangUp = async () => {
+    userClosedRef.current = true;
     if (counterpartyId) {
       try {
         const { broadcastCallSignal } = await import('@/lib/messenger/realtime');
@@ -663,6 +673,19 @@ export default function CallOverlay({ call, selfId, onClose, onAccept }: Props &
   const handleAction = async (action: 'accept' | 'decline' | 'hangup') => {
     if (isSignaling) return;
     setIsSignaling(true);
+
+    // audit15: claim ownership of the accept BEFORE the HTTP call fires.
+    // Supabase Realtime delivers the postgres_changes UPDATE faster than the
+    // HTTP response returns, so the "another tab answered" guard in
+    // GlobalCallListener.onUpdate fires first and unmounts the overlay if
+    // this flag is not already set.
+    if (action === 'accept') {
+      try { sessionStorage.setItem('answered_call_' + call.id, 'true'); } catch {}
+    }
+    if (action === 'decline' || action === 'hangup') {
+      userClosedRef.current = true;
+    }
+
     try {
       const res = await fetch('/api/messenger/call-signal', {
         method: 'POST',
