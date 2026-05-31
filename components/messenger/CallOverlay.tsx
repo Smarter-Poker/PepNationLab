@@ -14,7 +14,10 @@ import '@livekit/components-styles';
 import type { CallSignalRow } from '@/lib/messenger/realtime';
 import { useMessengerStore } from '@/stores/messengerStore';
 import { createRingTone } from '@/lib/messenger/ringTone';
-import { Phone, PhoneOff, Video, VideoOff, Mic, MicOff, Camera, ScreenShare, ScreenShareOff, Pause, Play, Maximize2 } from 'lucide-react';
+import { captureCallError, captureCallEvent } from '@/lib/messenger/sentryCall';
+import { createE2EESetup, asRoomOptions, type E2EESetup } from '@/lib/messenger/livekitE2EE';
+import CallGridView from './CallGridView';
+import { Phone, PhoneOff, Video, VideoOff, Mic, MicOff, Camera, ScreenShare, ScreenShareOff, Pause, Play, Maximize2, Headphones } from 'lucide-react';
 import { toast } from 'sonner';
 import { Track, DisconnectReason, ConnectionState, ConnectionQuality } from 'livekit-client';
 
@@ -127,6 +130,12 @@ function injectPulseRingAnim() {
     }
     .pnl-hold-overlay h3 { font-size: 2rem; font-weight: 800; letter-spacing: 0.1em; margin-bottom: 8px; }
     .pnl-hold-overlay p { color: rgba(255, 255, 255, 0.7); margin-bottom: 24px; }
+    .pnl-e2ee-pill {
+      font-size: 0.7rem; color: rgba(0, 196, 188, 0.9);
+      letter-spacing: 0.1em; font-weight: 700; text-transform: uppercase;
+      padding: 2px 8px; background: rgba(0, 196, 188, 0.12);
+      border-radius: 999px; border: 1px solid rgba(0, 196, 188, 0.35);
+    }
   `;
   document.head.appendChild(style);
 }
@@ -142,10 +151,6 @@ function formatCallDuration(ms: number): string {
 
 const ALONE_HANGUP_GRACE_MS = 15_000;
 
-// audit15 fix-23 (B1): 4-bar signal-strength meter derived from LiveKit's
-// ConnectionQuality enum. Color shifts from teal (excellent) → amber (poor)
-// → red (lost) so a glance at the timer tells you whether to switch
-// networks before the call drops.
 function SignalBars({ quality }: { quality: ConnectionQuality | undefined }) {
   const filled =
     quality === ConnectionQuality.Excellent ? 4 :
@@ -160,14 +165,7 @@ function SignalBars({ quality }: { quality: ConnectionQuality | undefined }) {
   return (
     <span style={{ display: 'inline-flex', alignItems: 'flex-end', gap: 0, color, marginLeft: 8 }} aria-label={`Connection Quality: ${quality ?? 'Unknown'}`}>
       {[1, 2, 3, 4].map((i) => (
-        <span
-          key={i}
-          className="pnl-signal-bar"
-          style={{
-            height: 4 + i * 2,
-            opacity: i <= filled ? 1 : 0.25,
-          }}
-        />
+        <span key={i} className="pnl-signal-bar" style={{ height: 4 + i * 2, opacity: i <= filled ? 1 : 0.25 }} />
       ))}
     </span>
   );
@@ -177,13 +175,13 @@ interface FaceTimeCallViewProps {
   isVideo: boolean;
   onHangUp: () => void;
   startedAtMs: number;
+  isE2EE: boolean;
 }
 
-function FaceTimeCallView({ isVideo, onHangUp, startedAtMs }: FaceTimeCallViewProps) {
+function FaceTimeCallView({ isVideo, onHangUp, startedAtMs, isE2EE }: FaceTimeCallViewProps) {
   const { localParticipant } = useLocalParticipant();
   const remoteParticipants = useRemoteParticipants();
   const connectionState = useConnectionState();
-  // Active-speaker pulse — use the first remote (1:1 happy path).
   const speakerCandidate = remoteParticipants[0];
   const remoteIsSpeaking = useIsSpeaking(speakerCandidate);
 
@@ -204,19 +202,14 @@ function FaceTimeCallView({ isVideo, onHangUp, startedAtMs }: FaceTimeCallViewPr
   const [isCamDisabled, setIsCamDisabled] = useState(!isVideo);
   const [isScreenSharing, setIsScreenSharing] = useState(false);
   const [isOnHold, setIsOnHold] = useState(false);
-  // remember pre-hold state so resume restores
   const preHoldRef = useRef<{ mic: boolean; cam: boolean } | null>(null);
   const [facingMode, setFacingMode] = useState<'user' | 'environment'>('user');
 
-  // Tick the call-duration label once per second.
   const [, forceTimerTick] = useState(0);
   useEffect(() => {
     const id = setInterval(() => forceTimerTick((n) => (n + 1) | 0), 1000);
     return () => clearInterval(id);
   }, []);
-  // audit15 fix-23 (B1): force a re-tick on visibility change so the timer
-  // snaps to the correct elapsed value when the tab returns to foreground
-  // (browsers throttle setInterval to 1Hz or worse when backgrounded).
   useEffect(() => {
     const onVis = () => {
       if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
@@ -234,7 +227,6 @@ function FaceTimeCallView({ isVideo, onHangUp, startedAtMs }: FaceTimeCallViewPr
     setIsScreenSharing(localParticipant.isScreenShareEnabled);
   }, [localParticipant.isMicrophoneEnabled, localParticipant.isCameraEnabled, localParticipant.isScreenShareEnabled]);
 
-  // Auto-hangup grace window when alone in the room.
   const onHangUpRef = useRef(onHangUp);
   useEffect(() => { onHangUpRef.current = onHangUp; }, [onHangUp]);
   const hasSeenRemoteRef = useRef(false);
@@ -245,7 +237,9 @@ function FaceTimeCallView({ isVideo, onHangUp, startedAtMs }: FaceTimeCallViewPr
     if (!hasSeenRemoteRef.current) return;
     if (remoteParticipants.length > 0) return;
     const t = setTimeout(() => {
-      try { onHangUpRef.current(); } catch (err) { console.warn('[CALL] auto-hangup threw:', err); }
+      try { onHangUpRef.current(); } catch (err) {
+        captureCallError(err, 'overlay', { stage_detail: 'auto_hangup_handler' });
+      }
     }, ALONE_HANGUP_GRACE_MS);
     return () => clearTimeout(t);
   }, [remoteParticipants.length]);
@@ -255,30 +249,25 @@ function FaceTimeCallView({ isVideo, onHangUp, startedAtMs }: FaceTimeCallViewPr
       const current = localParticipant.isMicrophoneEnabled;
       await localParticipant.setMicrophoneEnabled(!current);
       setIsMuted(current);
-    } catch (err) { console.warn('Failed to toggle microphone:', err); }
+    } catch (err) { captureCallError(err, 'overlay', { stage_detail: 'toggle_mute' }); }
   };
   const toggleCamera = async () => {
     try {
       const current = localParticipant.isCameraEnabled;
       await localParticipant.setCameraEnabled(!current);
       setIsCamDisabled(current);
-    } catch (err) { console.warn('Failed to toggle camera:', err); }
+    } catch (err) { captureCallError(err, 'overlay', { stage_detail: 'toggle_camera' }); }
   };
-  // audit15 fix-23 (B1): screen-share toggle.
   const toggleScreenShare = async () => {
     try {
       const next = !localParticipant.isScreenShareEnabled;
       await localParticipant.setScreenShareEnabled(next);
       setIsScreenSharing(next);
     } catch (err) {
-      console.warn('Failed to toggle screen share:', err);
+      captureCallError(err, 'overlay', { stage_detail: 'toggle_screen_share' });
       toast.error('Could Not Share Screen');
     }
   };
-  // audit15 fix-23 (B1): Hold mutes everything locally. We do NOT broadcast
-  // hold state to the peer (would require a Supabase DataChannel or extra
-  // RPC); the peer simply sees a frozen video / silent mic and the user
-  // sees a clear "On Hold" overlay so they know the call is paused.
   const toggleHold = async () => {
     if (!isOnHold) {
       preHoldRef.current = {
@@ -288,19 +277,18 @@ function FaceTimeCallView({ isVideo, onHangUp, startedAtMs }: FaceTimeCallViewPr
       try {
         await localParticipant.setMicrophoneEnabled(false);
         if (isVideo) await localParticipant.setCameraEnabled(false);
-      } catch (err) { console.warn('Hold failed:', err); }
+      } catch (err) { captureCallError(err, 'overlay', { stage_detail: 'hold' }); }
       setIsOnHold(true);
     } else {
       const prior = preHoldRef.current;
       try {
         await localParticipant.setMicrophoneEnabled(prior?.mic ?? true);
         if (isVideo) await localParticipant.setCameraEnabled(prior?.cam ?? true);
-      } catch (err) { console.warn('Resume failed:', err); }
+      } catch (err) { captureCallError(err, 'overlay', { stage_detail: 'resume' }); }
       setIsOnHold(false);
       preHoldRef.current = null;
     }
   };
-  // audit15 fix-23 (B1): Picture-in-Picture for local camera tile.
   const requestPip = async () => {
     if (typeof document === 'undefined' || !document.pictureInPictureEnabled) {
       toast.info('Picture-In-Picture Not Supported In This Browser');
@@ -310,9 +298,22 @@ function FaceTimeCallView({ isVideo, onHangUp, startedAtMs }: FaceTimeCallViewPr
       const el = document.querySelector<HTMLVideoElement>('video[data-pnl-local-video="true"]');
       if (!el) return;
       await el.requestPictureInPicture();
-    } catch (err) {
-      console.warn('PIP failed:', err);
+    } catch (err) { captureCallError(err, 'overlay', { stage_detail: 'pip' }); }
+  };
+  // audit15 fix-30: Bluetooth/AirPods routing tooltip. The Web platform
+  // has no API to control audio output device routing; the user must
+  // change it in their OS. Surface clear guidance instead of nothing.
+  const showAudioRoutingHint = () => {
+    const ua = navigator.userAgent;
+    let detail = 'Tap Your Device Speaker / Bluetooth Icon To Switch.';
+    if (/iPhone|iPad|iPod/i.test(ua)) {
+      detail = 'On iOS, Use The Control Center Audio Card To Switch Between Speaker / Bluetooth.';
+    } else if (/Android/i.test(ua)) {
+      detail = 'On Android, Use The Quick Settings Tile Or Bluetooth Menu To Switch Output.';
+    } else if (/Mac/i.test(ua)) {
+      detail = 'On macOS, Use Sound In System Settings Or The Menubar Volume Icon To Switch Output.';
     }
+    toast.info('Audio Output Is Controlled By Your Device Settings', { description: detail });
   };
 
   const flipCamera = async () => {
@@ -335,15 +336,13 @@ function FaceTimeCallView({ isVideo, onHangUp, startedAtMs }: FaceTimeCallViewPr
       } else {
         toast.info('Only One Camera Detected');
       }
-    } catch (err) { console.warn('Failed to switch camera:', err); }
+    } catch (err) { captureCallError(err, 'overlay', { stage_detail: 'flip_camera' }); }
   };
 
   const isReconnecting =
     connectionState === ConnectionState.Reconnecting ||
     connectionState === ConnectionState.SignalReconnecting;
 
-  // Best-of-both signal quality: worst of local + remote so the bars reflect
-  // the more degraded leg of the connection.
   const localQuality = localParticipant.connectionQuality;
   const remoteQuality = speakerCandidate?.connectionQuality;
   const worstQuality = (() => {
@@ -357,45 +356,52 @@ function FaceTimeCallView({ isVideo, onHangUp, startedAtMs }: FaceTimeCallViewPr
     return rank(localQuality) < rank(remoteQuality) ? localQuality : remoteQuality;
   })();
 
+  const isGroup = remoteParticipants.length > 1;
+
   return (
     <div style={{ position: 'relative', width: '100%', height: '100%', overflow: 'hidden', background: '#000' }}>
-      <div style={{ width: '100%', height: '100%' }}>
-        {isVideo && remoteVideoTrack ? (
-          <VideoTrack
-            trackRef={remoteVideoTrack}
-            style={{
-              width: '100%', height: '100%', objectFit: 'cover',
-              transition: 'box-shadow 0.3s',
-              boxShadow: remoteIsSpeaking ? 'inset 0 0 0 4px rgba(0, 196, 188, 0.6)' : 'none',
-            }}
-          />
-        ) : (
-          <div style={{
-            width: '100%', height: '100%',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            background: 'radial-gradient(circle at center, #0B1E30 0%, #03080F 100%)',
-            flexDirection: 'column'
-          }}>
-            <div
-              className={remoteIsSpeaking ? 'pnl-speaker-active' : 'pnl-pulse-avatar-ring'}
+      {/* audit15 fix-30: switch between 1:1 FaceTime layout and group grid */}
+      {isGroup ? (
+        <CallGridView />
+      ) : (
+        <div style={{ width: '100%', height: '100%' }}>
+          {isVideo && remoteVideoTrack ? (
+            <VideoTrack
+              trackRef={remoteVideoTrack}
               style={{
-                width: 120, height: 120, borderRadius: '50%',
-                background: 'rgba(255, 255, 255, 0.05)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: '2.5rem', fontWeight: 700, color: '#00C4BC',
-                marginBottom: 20, border: '2px solid rgba(0, 196, 188, 0.2)'
+                width: '100%', height: '100%', objectFit: 'cover',
+                transition: 'box-shadow 0.3s',
+                boxShadow: remoteIsSpeaking ? 'inset 0 0 0 4px rgba(0, 196, 188, 0.6)' : 'none',
               }}
-            >
-              <Phone size={48} />
+            />
+          ) : (
+            <div style={{
+              width: '100%', height: '100%',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              background: 'radial-gradient(circle at center, #0B1E30 0%, #03080F 100%)',
+              flexDirection: 'column'
+            }}>
+              <div
+                className={remoteIsSpeaking ? 'pnl-speaker-active' : 'pnl-pulse-avatar-ring'}
+                style={{
+                  width: 120, height: 120, borderRadius: '50%',
+                  background: 'rgba(255, 255, 255, 0.05)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontSize: '2.5rem', fontWeight: 700, color: '#00C4BC',
+                  marginBottom: 20, border: '2px solid rgba(0, 196, 188, 0.2)'
+                }}
+              >
+                <Phone size={48} />
+              </div>
+              <div style={{ color: 'rgba(255,255,255,0.7)', fontSize: '1.1rem', fontWeight: 600, letterSpacing: '0.05em' }}>
+                {isVideo ? 'WAITING FOR COMPANION VIDEO...' : 'VOICE CONNECTION ACTIVE'}
+              </div>
             </div>
-            <div style={{ color: 'rgba(255,255,255,0.7)', fontSize: '1.1rem', fontWeight: 600, letterSpacing: '0.05em' }}>
-              {isVideo ? 'WAITING FOR COMPANION VIDEO...' : 'VOICE CONNECTION ACTIVE'}
-            </div>
-          </div>
-        )}
-      </div>
+          )}
+        </div>
+      )}
 
-      {isVideo && localCamTrack && localParticipant.isCameraEnabled && (
+      {!isGroup && isVideo && localCamTrack && localParticipant.isCameraEnabled && (
         <div style={{
           position: 'absolute', top: 24, right: 24, width: 110, height: 165,
           borderRadius: 16, overflow: 'hidden',
@@ -406,14 +412,12 @@ function FaceTimeCallView({ isVideo, onHangUp, startedAtMs }: FaceTimeCallViewPr
           <VideoTrack
             trackRef={localCamTrack}
             style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-            // Tag the video element so requestPip can find it.
             // @ts-expect-error custom data attr forwarded to underlying <video>
             data-pnl-local-video="true"
           />
         </div>
       )}
 
-      {/* Timer + signal bars + reconnect pill, top-center stack */}
       <div style={{
         position: 'absolute', top: 24, left: '50%',
         transform: 'translateX(-50%)', zIndex: 150,
@@ -423,6 +427,10 @@ function FaceTimeCallView({ isVideo, onHangUp, startedAtMs }: FaceTimeCallViewPr
           {formatCallDuration(elapsedMs)}
           <SignalBars quality={worstQuality} />
         </span>
+        {/* audit15 fix-30: E2EE indicator when LiveKit's e2ee worker is active. */}
+        {isE2EE && (
+          <span className="pnl-e2ee-pill" title="End-To-End Encrypted">End-To-End Encrypted</span>
+        )}
         {isReconnecting && (
           <span className="pnl-reconnect-pill" role="status" aria-live="assertive">
             <span className="pnl-reconnect-dot" />
@@ -431,7 +439,6 @@ function FaceTimeCallView({ isVideo, onHangUp, startedAtMs }: FaceTimeCallViewPr
         )}
       </div>
 
-      {/* Hold overlay (z-index above everything except the control bar) */}
       {isOnHold && (
         <div className="pnl-hold-overlay" role="status" aria-live="polite">
           <Pause size={48} style={{ color: '#FFB020', marginBottom: 12 }} />
@@ -451,27 +458,24 @@ function FaceTimeCallView({ isVideo, onHangUp, startedAtMs }: FaceTimeCallViewPr
         </div>
       )}
 
-      {/* Floating control bar */}
       <div style={{
         position: 'absolute', bottom: 40, left: '50%',
         transform: 'translateX(-50%)',
         background: 'rgba(11, 30, 48, 0.65)',
         backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)',
         padding: '16px 28px', borderRadius: 40,
-        display: 'flex', alignItems: 'center', gap: 16,
+        display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap', justifyContent: 'center',
         zIndex: 200,
         border: '1px solid rgba(255,255,255,0.08)',
         boxShadow: '0 20px 50px rgba(0,0,0,0.5)'
       }}>
         <button
-          type="button"
-          onClick={toggleMute}
+          type="button" onClick={toggleMute}
           style={{
-            background: isMuted ? '#E53E3E' : 'rgba(255,255,255,0.08)',
-            color: 'white', border: 'none', borderRadius: '50%',
-            width: 52, height: 52,
+            background: isMuted ? '#E53E3E' : 'rgba(255,255,255,0.08)', color: 'white',
+            border: 'none', borderRadius: '50%', width: 52, height: 52,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            cursor: 'pointer', transition: 'all 0.2s', outline: 'none'
+            cursor: 'pointer', transition: 'all 0.2s', outline: 'none',
           }}
           title={isMuted ? 'Unmute Microphone' : 'Mute Microphone'}
           aria-label={isMuted ? 'Unmute Microphone' : 'Mute Microphone'}
@@ -481,14 +485,12 @@ function FaceTimeCallView({ isVideo, onHangUp, startedAtMs }: FaceTimeCallViewPr
 
         {isVideo && (
           <button
-            type="button"
-            onClick={toggleCamera}
+            type="button" onClick={toggleCamera}
             style={{
-              background: isCamDisabled ? '#E53E3E' : 'rgba(255,255,255,0.08)',
-              color: 'white', border: 'none', borderRadius: '50%',
-              width: 52, height: 52,
+              background: isCamDisabled ? '#E53E3E' : 'rgba(255,255,255,0.08)', color: 'white',
+              border: 'none', borderRadius: '50%', width: 52, height: 52,
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              cursor: 'pointer', transition: 'all 0.2s', outline: 'none'
+              cursor: 'pointer', transition: 'all 0.2s', outline: 'none',
             }}
             title={isCamDisabled ? 'Turn Camera On' : 'Turn Camera Off'}
             aria-label={isCamDisabled ? 'Turn Camera On' : 'Turn Camera Off'}
@@ -499,32 +501,27 @@ function FaceTimeCallView({ isVideo, onHangUp, startedAtMs }: FaceTimeCallViewPr
 
         {isVideo && !isCamDisabled && (
           <button
-            type="button"
-            onClick={flipCamera}
+            type="button" onClick={flipCamera}
             style={{
               background: 'rgba(255,255,255,0.08)', color: 'white',
               border: 'none', borderRadius: '50%', width: 52, height: 52,
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              cursor: 'pointer', transition: 'all 0.2s', outline: 'none'
+              cursor: 'pointer', transition: 'all 0.2s', outline: 'none',
             }}
-            title="Flip Camera"
-            aria-label="Flip Camera"
+            title="Flip Camera" aria-label="Flip Camera"
           >
             <Camera size={22} />
           </button>
         )}
 
-        {/* audit15 fix-23 (B1): screen share */}
         <button
-          type="button"
-          onClick={toggleScreenShare}
+          type="button" onClick={toggleScreenShare}
           style={{
             background: isScreenSharing ? '#00C4BC' : 'rgba(255,255,255,0.08)',
             color: isScreenSharing ? '#000' : 'white',
-            border: 'none', borderRadius: '50%',
-            width: 52, height: 52,
+            border: 'none', borderRadius: '50%', width: 52, height: 52,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            cursor: 'pointer', transition: 'all 0.2s', outline: 'none'
+            cursor: 'pointer', transition: 'all 0.2s', outline: 'none',
           }}
           title={isScreenSharing ? 'Stop Sharing Screen' : 'Share Screen'}
           aria-label={isScreenSharing ? 'Stop Sharing Screen' : 'Share Screen'}
@@ -532,16 +529,14 @@ function FaceTimeCallView({ isVideo, onHangUp, startedAtMs }: FaceTimeCallViewPr
           {isScreenSharing ? <ScreenShareOff size={22} /> : <ScreenShare size={22} />}
         </button>
 
-        {/* audit15 fix-23 (B1): Hold */}
         <button
-          type="button"
-          onClick={toggleHold}
+          type="button" onClick={toggleHold}
           style={{
             background: isOnHold ? '#FFB020' : 'rgba(255,255,255,0.08)',
             color: isOnHold ? '#000' : 'white',
             border: 'none', borderRadius: '50%', width: 52, height: 52,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            cursor: 'pointer', transition: 'all 0.2s', outline: 'none'
+            cursor: 'pointer', transition: 'all 0.2s', outline: 'none',
           }}
           title={isOnHold ? 'Resume Call' : 'Hold Call'}
           aria-label={isOnHold ? 'Resume Call' : 'Hold Call'}
@@ -549,35 +544,44 @@ function FaceTimeCallView({ isVideo, onHangUp, startedAtMs }: FaceTimeCallViewPr
           {isOnHold ? <Play size={22} /> : <Pause size={22} />}
         </button>
 
-        {/* audit15 fix-23 (B1): PIP — only show in video mode where a video el exists */}
         {isVideo && (
           <button
-            type="button"
-            onClick={requestPip}
+            type="button" onClick={requestPip}
             style={{
               background: 'rgba(255,255,255,0.08)', color: 'white',
               border: 'none', borderRadius: '50%', width: 52, height: 52,
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              cursor: 'pointer', transition: 'all 0.2s', outline: 'none'
+              cursor: 'pointer', transition: 'all 0.2s', outline: 'none',
             }}
-            title="Picture-In-Picture"
-            aria-label="Picture-In-Picture"
+            title="Picture-In-Picture" aria-label="Picture-In-Picture"
           >
             <Maximize2 size={22} />
           </button>
         )}
 
+        {/* audit15 fix-30: Bluetooth / audio output routing hint. */}
         <button
-          type="button"
-          onClick={onHangUp}
+          type="button" onClick={showAudioRoutingHint}
+          style={{
+            background: 'rgba(255,255,255,0.08)', color: 'white',
+            border: 'none', borderRadius: '50%', width: 52, height: 52,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            cursor: 'pointer', transition: 'all 0.2s', outline: 'none',
+          }}
+          title="Audio Output (Bluetooth / Speaker)" aria-label="Audio Output Help"
+        >
+          <Headphones size={22} />
+        </button>
+
+        <button
+          type="button" onClick={onHangUp}
           style={{
             background: '#E53E3E', color: 'white',
             border: 'none', borderRadius: '50%', width: 52, height: 52,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            cursor: 'pointer', transition: 'all 0.2s', outline: 'none'
+            cursor: 'pointer', transition: 'all 0.2s', outline: 'none',
           }}
-          title="Hang Up"
-          aria-label="Hang Up"
+          title="Hang Up" aria-label="Hang Up"
         >
           <PhoneOff size={22} />
         </button>
@@ -603,7 +607,29 @@ export default function CallOverlay({ call, selfId, onClose, onAccept }: Props &
     activeStartedAtRef.current = Number.isFinite(fromServer) ? fromServer : Date.now();
   }
 
-  // Resolve counterparty profile (name + avatar)
+  // audit15 fix-30: per-call E2EE setup. Both peers derive the same key
+  // from the shared `livekit_room` UUID.
+  const [e2ee, setE2ee] = useState<E2EESetup | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const setup = await createE2EESetup(call.livekit_room);
+      if (!cancelled) {
+        setE2ee(setup);
+        if (setup) {
+          captureCallEvent('E2EE enabled for call', 'overlay', 'info', { call_id: call.id });
+        }
+      }
+    })();
+    return () => {
+      cancelled = true;
+      if (e2ee?.worker) {
+        try { e2ee.worker.terminate(); } catch {}
+      }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [call.livekit_room]);
+
   useEffect(() => {
     let cancelled = false;
     (async () => {
@@ -626,7 +652,7 @@ export default function CallOverlay({ call, selfId, onClose, onAccept }: Props &
           setCounterpartyAvatar(other.avatar_url ?? null);
         }
       } catch (err) {
-        console.warn('Failed to resolve counterparty profile in CallOverlay:', err);
+        captureCallError(err, 'overlay', { stage_detail: 'resolve_counterparty_profile' });
       }
     })();
     return () => { cancelled = true; };
@@ -649,7 +675,7 @@ export default function CallOverlay({ call, selfId, onClose, onAccept }: Props &
         const other = (json.participants ?? []).find((p) => p.user_id !== selfId);
         if (other && !cancelled) setCounterpartyId(other.user_id);
       } catch (err) {
-        console.warn('Failed to resolve counterparty in CallOverlay:', err);
+        captureCallError(err, 'overlay', { stage_detail: 'resolve_counterparty_id' });
       }
     })();
     return () => { cancelled = true; };
@@ -676,6 +702,7 @@ export default function CallOverlay({ call, selfId, onClose, onAccept }: Props &
       return true;
     } catch (err) {
       if ((err as { name?: string } | null)?.name === 'AbortError') return false;
+      captureCallError(err, 'token_fetch', { call_id: call.id });
       setError('Network Error');
       return false;
     }
@@ -687,23 +714,15 @@ export default function CallOverlay({ call, selfId, onClose, onAccept }: Props &
     return () => ctrl.abort();
   }, [fetchToken]);
 
-  // audit15 fix-23 (B1): token auto-refresh at T-5min. Token TTL is 6h
-  // (fix-14). Refresh 5 minutes before expiry so the LiveKitRoom handshake
-  // happens before the credential actually dies. Background loop runs only
-  // while the call is active.
   useEffect(() => {
     if (call.status !== 'active') return;
-    // 6h TTL minus 5min safety margin = 5h 55m = 21300 seconds = 21_300_000 ms.
     const REFRESH_MS = (6 * 60 - 5) * 60 * 1000;
     const id = setInterval(() => { void fetchToken(); }, REFRESH_MS);
     return () => clearInterval(id);
   }, [call.status, fetchToken]);
 
-  // audit15 fix-23 (B1): wake-lock during active calls so the screen
-  // doesn't sleep on mobile. Released on unmount or status change.
   useEffect(() => {
     if (call.status !== 'active') return;
-    let released = false;
     let sentinel: WakeLockSentinel | null = null;
     const requestLock = async () => {
       try {
@@ -711,16 +730,15 @@ export default function CallOverlay({ call, selfId, onClose, onAccept }: Props &
         if (!nav.wakeLock?.request) return;
         sentinel = await nav.wakeLock.request('screen');
       } catch (err) {
-        console.warn('[CALL] wake lock request failed:', err);
+        captureCallError(err, 'overlay', { stage_detail: 'wake_lock_request' });
       }
     };
     void requestLock();
     const onVis = () => {
-      if (!released && document.visibilityState === 'visible' && !sentinel) void requestLock();
+      if (document.visibilityState === 'visible' && !sentinel) void requestLock();
     };
     document.addEventListener('visibilitychange', onVis);
     return () => {
-      released = true;
       document.removeEventListener('visibilitychange', onVis);
       if (sentinel) {
         sentinel.release().catch(() => {});
@@ -729,7 +747,6 @@ export default function CallOverlay({ call, selfId, onClose, onAccept }: Props &
     };
   }, [call.status]);
 
-  // Ringtone (uses shared gesture-unlocked AudioContext from fix-11)
   useEffect(() => {
     if (call.status !== 'ringing') return;
     const ring = createRingTone();
@@ -737,13 +754,11 @@ export default function CallOverlay({ call, selfId, onClose, onAccept }: Props &
     return () => { if (ring) ring.stop(); };
   }, [call.status]);
 
-  // Refs for the unmount + pagehide cleanup
   const latestCallRef = useRef(call);
   const latestCounterpartyIdRef = useRef(counterpartyId);
   useEffect(() => { latestCallRef.current = call; }, [call]);
   useEffect(() => { latestCounterpartyIdRef.current = counterpartyId; }, [counterpartyId]);
 
-  // Broadcast on user-closed unmount only
   useEffect(() => {
     return () => {
       if (!userClosedRef.current) return;
@@ -757,7 +772,6 @@ export default function CallOverlay({ call, selfId, onClose, onAccept }: Props &
     };
   }, []);
 
-  // pagehide cleanup
   useEffect(() => {
     const callId = call.id;
     const handler = () => {
@@ -796,7 +810,7 @@ export default function CallOverlay({ call, selfId, onClose, onAccept }: Props &
       try {
         const { broadcastCallSignal } = await import('@/lib/messenger/realtime');
         void broadcastCallSignal(counterpartyId, 'call_ended', call);
-      } catch (e) { console.warn('Failed to broadcast call ended:', e); }
+      } catch (e) { captureCallError(e, 'hangup', { call_id: call.id }); }
     }
     try {
       await fetch('/api/messenger/call-signal', {
@@ -804,7 +818,7 @@ export default function CallOverlay({ call, selfId, onClose, onAccept }: Props &
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ action: 'hangup', callId: call.id }),
       });
-    } catch (err) { console.warn('Failed to update DB on call end:', err); }
+    } catch (err) { captureCallError(err, 'hangup', { call_id: call.id, stage_detail: 'post' }); }
     onClose();
   };
 
@@ -846,16 +860,14 @@ export default function CallOverlay({ call, selfId, onClose, onAccept }: Props &
           }
         }
       }
-    } catch {
+    } catch (err) {
+      captureCallError(err, action === 'accept' ? 'accept' : action === 'decline' ? 'decline' : 'hangup', { call_id: call.id });
       toast.error('Network Error');
     } finally {
       setIsSignaling(false);
     }
   };
 
-  // audit15 fix-23 (B1): focus management. On mount in 'ringing' state,
-  // focus the Answer button (callee) or the Cancel button (initiator) so
-  // keyboard / screen reader users land on the most useful control.
   const ringingPrimaryRef = useRef<HTMLButtonElement | null>(null);
   useEffect(() => {
     if (call.status !== 'ringing') return;
@@ -863,8 +875,6 @@ export default function CallOverlay({ call, selfId, onClose, onAccept }: Props &
     return () => clearTimeout(t);
   }, [call.status]);
 
-  // audit15 fix-23 (B1): keyboard shortcuts on ringing screen.
-  // Enter = accept (callee only), Esc = decline (callee) or cancel (initiator).
   useEffect(() => {
     if (call.status !== 'ringing') return;
     const isInit = call.initiator_id === selfId;
@@ -889,26 +899,26 @@ export default function CallOverlay({ call, selfId, onClose, onAccept }: Props &
     ? counterpartyName.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase()
     : '?';
 
+  // audit15 fix-30: build the LiveKitRoom options once per setup.
+  const livekitOptions = asRoomOptions(e2ee);
+
   return (
     <div
       style={{
         position: 'fixed', inset: 0, background: '#000',
         display: 'flex', flexDirection: 'column', zIndex: 2000,
       }}
-      role="dialog"
-      aria-modal="true"
+      role="dialog" aria-modal="true"
       aria-label={isVideo ? 'Video Call' : 'Voice Call'}
     >
       {error && (
         <div style={{ color: 'var(--white, #FFFFFF)', padding: 24, textAlign: 'center', margin: 'auto' }}>
           <p style={{ fontSize: '1.2rem', marginBottom: 16 }} aria-live="assertive">{error}</p>
-          {/* audit15 fix-23 (B1): permission-help link gives the user a recovery path. */}
           {/permission|denied/i.test(error) && (
             <p style={{ fontSize: '0.9rem', color: 'rgba(255,255,255,0.6)', marginBottom: 16 }}>
               <a
                 href="/help/messenger-call-permissions"
-                target="_blank"
-                rel="noopener noreferrer"
+                target="_blank" rel="noopener noreferrer"
                 style={{ color: '#00C4BC', textDecoration: 'underline' }}
               >
                 How To Enable Microphone And Camera
@@ -916,17 +926,14 @@ export default function CallOverlay({ call, selfId, onClose, onAccept }: Props &
             </p>
           )}
           <button
-            type="button"
-            onClick={onClose}
+            type="button" onClick={onClose}
             style={{
               background: 'var(--teal, #00C4BC)', color: '#000',
               border: 0, padding: '12px 24px', borderRadius: 8,
               cursor: 'pointer', fontWeight: 600, fontSize: '1rem',
-              boxShadow: '0 4px 12px rgba(0, 196, 188, 0.3)',
-              transition: 'all 0.2s',
+              boxShadow: '0 4px 12px rgba(0, 196, 188, 0.3)', transition: 'all 0.2s',
             }}
-            aria-label="Close"
-            title="Close"
+            aria-label="Close" title="Close"
           >
             Close
           </button>
@@ -956,11 +963,9 @@ export default function CallOverlay({ call, selfId, onClose, onAccept }: Props &
                 <div>
                   <button
                     ref={ringingPrimaryRef}
-                    type="button"
-                    onClick={handleHangUp}
+                    type="button" onClick={handleHangUp}
                     className="pnl-btn-action pnl-btn-decline"
-                    aria-label="Cancel Call"
-                    title="Cancel Call (Esc)"
+                    aria-label="Cancel Call" title="Cancel Call (Esc)"
                   >
                     <PhoneOff size={28} />
                   </button>
@@ -970,11 +975,9 @@ export default function CallOverlay({ call, selfId, onClose, onAccept }: Props &
                 <>
                   <div>
                     <button
-                      type="button"
-                      onClick={() => void handleAction('decline')}
+                      type="button" onClick={() => void handleAction('decline')}
                       className="pnl-btn-action pnl-btn-decline"
-                      aria-label="Decline Call"
-                      title="Decline Call (Esc)"
+                      aria-label="Decline Call" title="Decline Call (Esc)"
                     >
                       <PhoneOff size={28} />
                     </button>
@@ -983,11 +986,9 @@ export default function CallOverlay({ call, selfId, onClose, onAccept }: Props &
                   <div>
                     <button
                       ref={ringingPrimaryRef}
-                      type="button"
-                      onClick={() => void handleAction('accept')}
+                      type="button" onClick={() => void handleAction('accept')}
                       className="pnl-btn-action pnl-btn-accept"
-                      aria-label="Answer Call"
-                      title="Answer Call (Enter)"
+                      aria-label="Answer Call" title="Answer Call (Enter)"
                     >
                       <Phone size={28} />
                     </button>
@@ -1007,6 +1008,7 @@ export default function CallOverlay({ call, selfId, onClose, onAccept }: Props &
           connect={true}
           video={isVideo}
           audio={true}
+          options={livekitOptions}
           onDisconnected={(reason) => {
             if (reason === DisconnectReason.DUPLICATE_IDENTITY) {
               toast.info('Call Answered On Another Device');
@@ -1014,7 +1016,7 @@ export default function CallOverlay({ call, selfId, onClose, onAccept }: Props &
             onClose();
           }}
           onError={(err) => {
-            console.warn('[CALL] LiveKitRoom error:', err);
+            captureCallError(err, 'realtime', { call_id: call.id, stage_detail: 'livekit_room_error' });
             const msg = err?.message || '';
             if (/permission|denied|notallowed/i.test(msg)) {
               setError('Microphone Or Camera Permission Denied');
@@ -1032,6 +1034,7 @@ export default function CallOverlay({ call, selfId, onClose, onAccept }: Props &
             isVideo={isVideo}
             onHangUp={handleHangUp}
             startedAtMs={activeStartedAtRef.current ?? Date.now()}
+            isE2EE={Boolean(e2ee)}
           />
         </LiveKitRoom>
       )}
