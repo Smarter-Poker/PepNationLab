@@ -9,6 +9,10 @@
       "schedule": "59 23 * * 0"
     },
     {
+      "path": "/api/cron/sub-agent-settle",
+      "schedule": "50 23 * * 0"
+    },
+    {
       "path": "/api/cron/abandoned-cart-recovery",
       "schedule": "0 */6 * * *"
     },
