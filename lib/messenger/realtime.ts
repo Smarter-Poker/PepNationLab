@@ -234,7 +234,7 @@ export async function broadcastCallSignal(
   payload: any,
 ): Promise<void> {
   console.log(`[REALTIME] broadcasting event ${event} to target ${targetUserId}`);
-  const ch = supabase.channel(`call-signal-send:${targetUserId}`);
+  const ch = supabase.channel(`call-signal:${targetUserId}`);
   try {
     await new Promise<void>((resolve, reject) => {
       const timeout = setTimeout(() => reject(new Error('Channel subscription timeout')), 5000);
