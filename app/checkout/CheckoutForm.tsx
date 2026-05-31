@@ -859,9 +859,9 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
             }
           }
           .premium-panel {
-            background: linear-gradient(145deg, #1A1A1A 0%, #0D0D0D 100%);
-            border: 1px solid #C0B8A8;
-            box-shadow: inset 0 1px 1px rgba(255,255,255,0.1), 0 4px 12px rgba(0,0,0,0.5);
+            background: var(--surface-1);
+            border: 1px solid rgba(192, 184, 168, 0.4);
+            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.5);
             border-radius: 12px;
           }
           .premium-input {
@@ -1063,7 +1063,7 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
                       </div>
 
                       <div className="grid-2" style={{ alignItems: 'start' }}>
-                        <div className="form-group">
+                        <div className="form-group" style={{ marginTop: 0 }}>
                           <label className="form-label">Street Address</label>
                           <input
                             type="text"
@@ -1073,7 +1073,7 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
                             onChange={(e) => setStreet(e.target.value)}
                           />
                         </div>
-                        <div className="form-group">
+                        <div className="form-group" style={{ marginTop: 0 }}>
                           <label className="form-label">Suite Or Apartment</label>
                           <input
                             type="text"
@@ -1086,7 +1086,7 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
                       </div>
 
                       <div className="address-city-grid">
-                        <div className="form-group">
+                        <div className="form-group" style={{ marginTop: 0 }}>
                           <label className="form-label">City</label>
                           <input
                             type="text"
@@ -1096,7 +1096,7 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
                             onChange={(e) => setCity(e.target.value)}
                           />
                         </div>
-                        <div className="form-group">
+                        <div className="form-group" style={{ marginTop: 0 }}>
                           <label className="form-label">State</label>
                           <select
                             className="form-input premium-input"
@@ -1111,7 +1111,7 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
                             ))}
                           </select>
                         </div>
-                        <div className="form-group">
+                        <div className="form-group" style={{ marginTop: 0 }}>
                           <label className="form-label">Zip Code</label>
                           <input
                             type="text"
