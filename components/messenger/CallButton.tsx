@@ -25,6 +25,14 @@ export default function CallButton({ conversationId, onCallStarted }: Props) {
   const [available, setAvailable] = useState(true);
   const [busy, setBusy] = useState(false);
 
+  // audit15: this hook MUST be called before any conditional return below
+  // (Rules of Hooks). Previously useMessengerStore lived after the
+  // `if (!available) return null;` guard, which crashed the messenger pane
+  // the moment list-active-calls returned 503.
+  const conversations = useMessengerStore((s) => s.conversations);
+  const activeConv = conversations.find((c) => c.conversation_id === conversationId);
+  const counterpartyId = activeConv?.counterparty_id;
+
   useEffect(() => {
     let cancelled = false;
     (async () => {
@@ -45,10 +53,6 @@ export default function CallButton({ conversationId, onCallStarted }: Props) {
   }, []);
 
   if (!available) return null;
-
-  const conversations = useMessengerStore((s) => s.conversations);
-  const activeConv = conversations.find((c) => c.conversation_id === conversationId);
-  const counterpartyId = activeConv?.counterparty_id;
 
   const startCall = async (callType: 'audio' | 'video') => {
     if (busy) return;
