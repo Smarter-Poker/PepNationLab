@@ -57,19 +57,17 @@ export default function ConversationList({ selfId }: Props) {
         <button
           type="button"
           onClick={() => setComposeOpen(true)}
-          className="btn btn-primary"
+          className="hover-lift"
           aria-label="Start A New Conversation"
           style={{
+            background: 'transparent',
+            border: 'none',
+            padding: 0,
+            cursor: 'pointer',
             display: 'inline-flex',
-            alignItems: 'center',
-            gap: 6,
-            padding: '8px 14px',
-            fontSize: '0.85rem',
-            boxShadow: '0 2px 8px rgba(0,255,255,0.2)',
           }}
         >
-          <PenSquare size={14} aria-hidden="true" />
-          Compose
+          <img src="/messenger-icons/compose-icon.png" alt="Compose" style={{ height: 40, objectFit: 'contain' }} />
         </button>
       </div>
       <div style={{ flex: 1, overflowY: 'auto', minHeight: 0 }}>
