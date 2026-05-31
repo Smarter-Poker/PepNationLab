@@ -279,77 +279,11 @@ export default function MessageBubble({
 
   return (
     <>
-      <style>{`
-        .imessage-bubble {
-          position: relative;
-          max-width: 65%;
-          padding: 10px 16px;
-          border-radius: 20px;
-          color: white;
-          box-shadow: 0 1px 2px rgba(0,0,0,0.1);
-          white-space: pre-wrap;
-          word-break: break-word;
-        }
-        .imessage-bubble::before, .imessage-bubble::after {
-          content: "";
-          position: absolute;
-          bottom: 0;
-          height: 20px;
-        }
-        
-        .imessage-own {
-          background: linear-gradient(180deg, #0084FF 0%, #0073E6 100%);
-          align-self: flex-end;
-        }
-        .imessage-own.imessage-tail::before {
-          right: -7px;
-          width: 20px;
-          background: #0073E6;
-          border-bottom-left-radius: 16px 14px;
-          z-index: -1;
-        }
-        .imessage-own.imessage-tail::after {
-          right: -26px;
-          width: 26px;
-          background: var(--surface-1, #0F1923);
-          border-bottom-left-radius: 10px;
-          z-index: -1;
-        }
-
-        .imessage-other {
-          background: var(--surface-3, #1D2D3E);
-          align-self: flex-start;
-          color: white;
-        }
-        .imessage-other.imessage-tail::before {
-          left: -7px;
-          width: 20px;
-          background: var(--surface-3, #1D2D3E);
-          border-bottom-right-radius: 16px 14px;
-          z-index: -1;
-        }
-        .imessage-other.imessage-tail::after {
-          left: -26px;
-          width: 26px;
-          background: var(--surface-1, #0F1923);
-          border-bottom-right-radius: 10px;
-          z-index: -1;
-        }
-        
-        /* Media bubbles don't get standard padding or tails */
-        .imessage-media {
-          padding: 4px !important;
-          border-radius: 14px !important;
-        }
-        .imessage-media::before, .imessage-media::after {
-          display: none !important;
-        }
-      `}</style>
       <div
       data-msg-id={message.id}
       style={{ alignSelf: isOwn ? 'flex-end' : 'flex-start', maxWidth: '65%',
         display: 'flex', alignItems: 'flex-end', gap: 8, position: 'relative',
-        marginBottom: isLast ? 24 : 2 }}
+        marginBottom: isLast ? 24 : 4 }}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       onContextMenu={(e) => { e.preventDefault(); if (editing || confirmDelete) return; setMenuOpen(!isMenuOpen); }}

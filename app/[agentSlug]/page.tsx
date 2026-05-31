@@ -42,8 +42,8 @@ export default async function AgentStorefrontPage({ params }: Props) {
     const primaryColor = agent.primary_color ?? '#00C4BC';
     return (
       <div style={{ minHeight: '100vh', background: 'var(--black)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 'var(--space-6)' }}>
-        <div className="card-metal" style={{ maxWidth: 480, padding: 'var(--space-8)', textAlign: 'center', border: `1px solid ${primaryColor}30` }}>
-          <h1 style={{ color: 'var(--white)', fontSize: '1.4rem', marginBottom: 'var(--space-3)' }}>
+        <div className="card-metal hover-lift stagger-fade-in" style={{ maxWidth: 480, padding: 'var(--space-8)', textAlign: 'center', border: `1px solid ${primaryColor}30`, animationDelay: '0.1s' }}>
+          <h1 className="animated-gradient-text" style={{ color: 'var(--white)', fontSize: '1.4rem', marginBottom: 'var(--space-3)' }}>
             Storefront Paused
           </h1>
           <p style={{ color: 'var(--silver)', fontSize: '0.92rem', marginBottom: 'var(--space-4)' }}>
@@ -269,7 +269,7 @@ export default async function AgentStorefrontPage({ params }: Props) {
         style={{ background: `radial-gradient(ellipse at 50% 0%, ${primaryColor}10 0%, transparent 70%)` }}
       >
         <div style={{ maxWidth: 640, margin: '0 auto' }}>
-          <h1 style={{ marginBottom: 6, color: 'var(--white)' }}>
+          <h1 className="animated-gradient-text" style={{ marginBottom: 6, color: 'var(--white)' }}>
             {displayName}&apos;s Research Store
           </h1>
         </div>

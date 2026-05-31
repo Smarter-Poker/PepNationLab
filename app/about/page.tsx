@@ -63,7 +63,7 @@ export default function AboutPage() {
           <span className="badge badge-silver" style={{ marginBottom: 'var(--space-4)' }}>
             About Us
           </span>
-          <h1 style={{ fontSize: '2.4rem', marginBottom: 'var(--space-4)' }}>
+          <h1 className="animated-gradient-text" style={{ fontSize: '2.4rem', marginBottom: 'var(--space-4)' }}>
             About <span style={{ color: 'var(--teal)' }}>Pep Nation Lab</span>
           </h1>
           <p style={{ maxWidth: 620, margin: '0 auto', fontSize: '1rem', color: 'var(--silver)', lineHeight: 1.7 }}>
@@ -103,8 +103,8 @@ export default function AboutPage() {
             </h2>
           </div>
           <div className="grid-2">
-            {VALUES.map((v) => (
-              <div key={v.title} className="card-metal" style={{ padding: 'var(--space-6)' }}>
+            {VALUES.map((v, index) => (
+              <div key={v.title} className="card-metal hover-lift stagger-fade-in" style={{ padding: 'var(--space-6)', animationDelay: `${0.1 + index * 0.1}s` }}>
                 <div style={{ color: 'var(--teal)', marginBottom: 'var(--space-3)' }}>{v.icon}</div>
                 <h3 style={{ fontSize: '1rem', marginBottom: 'var(--space-2)', fontFamily: 'var(--font-brand)' }}>
                   {v.title}

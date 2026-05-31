@@ -942,8 +942,8 @@ export default function MessagePane({ userId, activeCall, setActiveCall }: Props
               return !blockedIds.has(m.sender_id);
             })
             .map((m, index, arr) => {
-              const isFirst = index === 0 || arr[index - 1].sender_id !== m.sender_id || (new Date(m.created_at).getTime() - new Date(arr[index - 1].created_at).getTime() > 5 * 60 * 1000);
-              const isLast = index === arr.length - 1 || arr[index + 1].sender_id !== m.sender_id || (new Date(arr[index + 1].created_at).getTime() - new Date(m.created_at).getTime() > 5 * 60 * 1000);
+              const isFirst = index === 0 || arr[index - 1].sender_id !== m.sender_id || (new Date(m.created_at).getTime() - new Date(arr[index - 1].created_at).getTime() > 60 * 1000);
+              const isLast = index === arr.length - 1 || arr[index + 1].sender_id !== m.sender_id || (new Date(arr[index + 1].created_at).getTime() - new Date(m.created_at).getTime() > 60 * 1000);
               const senderProfile = participantsMap[m.sender_id] || {};
               let senderName = senderProfile.full_name || senderProfile.username || 'User';
               if (conversationType === 'direct' && currentConv && m.sender_id !== userId) {

@@ -62,7 +62,7 @@ export default function BecomeAgentPage() {
           <span className="badge badge-teal" style={{ marginBottom: 'var(--space-4)' }}>
             Agent Program
           </span>
-          <h1 style={{ fontSize: '2.4rem', marginBottom: 'var(--space-4)' }}>
+          <h1 className="animated-gradient-text" style={{ fontSize: '2.4rem', marginBottom: 'var(--space-4)' }}>
             Run Your Own <span style={{ color: 'var(--teal)' }}>Research Business</span>
           </h1>
           <p style={{ maxWidth: 620, margin: '0 auto var(--space-6)', fontSize: '1rem', color: 'var(--silver)', lineHeight: 1.7 }}>
@@ -84,8 +84,8 @@ export default function BecomeAgentPage() {
             </h2>
           </div>
           <div className="grid-2">
-            {BENEFITS.map((b) => (
-              <div key={b.title} className="card-metal" style={{ padding: 'var(--space-6)' }}>
+            {BENEFITS.map((b, index) => (
+              <div key={b.title} className="card-metal hover-lift stagger-fade-in" style={{ padding: 'var(--space-6)', animationDelay: `${0.1 + index * 0.1}s` }}>
                 <h3 style={{ fontSize: '1rem', marginBottom: 'var(--space-2)', fontFamily: 'var(--font-brand)', color: 'var(--teal)' }}>
                   {b.title}
                 </h3>
@@ -111,8 +111,8 @@ export default function BecomeAgentPage() {
             </p>
           </div>
           <div className="grid-3">
-            {TIERS.map((t) => (
-              <div key={t.name} className="card-metal" style={{ padding: 'var(--space-6)', textAlign: 'center' }}>
+            {TIERS.map((t, index) => (
+              <div key={t.name} className="card-metal hover-lift stagger-fade-in" style={{ padding: 'var(--space-6)', textAlign: 'center', animationDelay: `${0.1 + index * 0.1}s` }}>
                 <div style={{ fontFamily: 'var(--font-brand)', fontSize: '1.4rem', color: 'var(--teal)', fontWeight: 800 }}>
                   {t.name}
                 </div>
@@ -140,8 +140,8 @@ export default function BecomeAgentPage() {
             {STEPS.map((step, i) => (
               <div
                 key={i}
-                className="card-metal"
-                style={{ padding: 'var(--space-5)', display: 'flex', gap: 'var(--space-4)', alignItems: 'flex-start' }}
+                className="card-metal hover-lift stagger-fade-in"
+                style={{ padding: 'var(--space-5)', display: 'flex', gap: 'var(--space-4)', alignItems: 'flex-start', animationDelay: `${0.1 + Math.min(i, 5) * 0.1}s` }}
               >
                 <div
                   style={{
