@@ -175,68 +175,66 @@ export async function POST(req: NextRequest) {
     .from('payment-proofs')
     .createSignedUrl(key, 600);
 
-  // ── Messenger integration (fire-and-forget) ────────────────────────────
+  // ── Messenger integration ────────────────────────────────────────────────
   // Post a message in the researcher↔agent conversation so the agent is
   // immediately alerted and can view the proof without leaving the app.
-  void (async () => {
-    try {
-      const shortId = orderId.slice(0, 8).toUpperCase();
-      const isImage = file.type.startsWith('image/');
+  // IMPORTANT: We must 'await' this so Vercel does not kill the process!
+  try {
+    const shortId = orderId.slice(0, 8).toUpperCase();
+    const isImage = file.type.startsWith('image/');
 
-      // 24-hour signed URL for the messenger preview
-      const { data: longSigned } = await service.storage
-        .from('payment-proofs')
-        .createSignedUrl(key, 86400);
+    // 24-hour signed URL for the messenger preview
+    const { data: longSigned } = await service.storage
+      .from('payment-proofs')
+      .createSignedUrl(key, 86400);
 
-      if (!order.agent_id) {
-        // Direct to admin — fetch admins and drop notifications
-        const { data: admins } = await service.from('profiles').select('id').eq('role', 'admin');
-        if (admins && admins.length > 0) {
-          const payload = admins.map(a => ({
-            user_id: a.id,
-            title: 'Payment Proof Received (Direct Order)',
-            body: `A direct customer submitted a payment proof for Order #${shortId}. Review and mark as paid.`,
-            type: 'order',
-            metadata: { orderId, action: 'mark_paid' },
-          }));
-          await service.from('notifications').insert(payload);
-        }
-        return; // No agent messenger chat to update
+    if (!order.agent_id) {
+      // Direct to admin — fetch admins and drop notifications
+      const { data: admins } = await service.from('profiles').select('id').eq('role', 'admin');
+      if (admins && admins.length > 0) {
+        const payload = admins.map(a => ({
+          user_id: a.id,
+          title: 'Payment Proof Received (Direct Order)',
+          body: `A direct customer submitted a payment proof for Order #${shortId}. Review and mark as paid.`,
+          type: 'system',
+          url: `/admin/orders/${orderId}`,
+        }));
+        await service.from('notifications').insert(payload);
       }
-
+    } else {
       const conversationId = await findOrCreateDirectConversation(
         service,
         order.buyer_id,
         order.agent_id
       );
-      if (!conversationId) return;
+      if (conversationId) {
+        await service.from('messenger_messages').insert({
+          conversation_id: conversationId,
+          sender_id: user.id, // The researcher who uploaded
+          text: `📎 Payment proof submitted for Order #${shortId}. Please review and mark as paid once verified.`,
+          message_type: isImage ? 'image' : 'file',
+          media_url: longSigned?.signedUrl ?? null,
+          media_metadata: {
+            fileName: file.name || `payment-proof.${EXT_BY_MIME[file.type] || 'bin'}`,
+            mimeType: file.type,
+            sizeBytes: file.size,
+            orderId,
+          },
+        });
 
-      await service.from('messenger_messages').insert({
-        conversation_id: conversationId,
-        sender_id: user.id, // The researcher who uploaded
-        text: `📎 Payment proof submitted for Order #${shortId}. Please review and mark as paid once verified.`,
-        message_type: isImage ? 'image' : 'file',
-        media_url: longSigned?.signedUrl ?? null,
-        media_metadata: {
-          fileName: file.name || `payment-proof.${EXT_BY_MIME[file.type] || 'bin'}`,
-          mimeType: file.type,
-          sizeBytes: file.size,
-          orderId,
-        },
-      });
-
-      // Also drop an in-app notification for the agent
-      await service.from('notifications').insert({
-        user_id: order.agent_id,
-        title: 'Payment Proof Received',
-        body: `Your researcher submitted a payment proof for Order #${shortId}. Review and mark as paid.`,
-        type: 'order',
-        metadata: { orderId, action: 'mark_paid' },
-      });
-    } catch (err) {
-      console.error('[payment-proof] messenger integration error:', err);
+        // Also drop an in-app notification for the agent
+        await service.from('notifications').insert({
+          user_id: order.agent_id,
+          title: 'Payment Proof Received',
+          body: `Your researcher submitted a payment proof for Order #${shortId}. Review and mark as paid.`,
+          type: 'system',
+          url: `/dashboard/agent/orders/${orderId}`,
+        });
+      }
     }
-  })();
+  } catch (err) {
+    console.error('[payment-proof] messenger integration error:', err);
+  }
 
   return NextResponse.json({ data: { ...row, signed_url: signed?.signedUrl ?? null } });
 }
@@ -258,22 +256,24 @@ async function findOrCreateDirectConversation(
       .filter(Boolean) as string[];
 
     if (aConvoIds.length > 0) {
-      const { data: sharedPart } = await svc
-        .from('messenger_participants')
-        .select('conversation_id')
-        .eq('user_id', userBId)
-        .in('conversation_id', aConvoIds)
-        .limit(1)
-        .maybeSingle();
+      const { data: sharedDirectConvos } = await svc
+        .from('messenger_conversations')
+        .select('id')
+        .eq('type', 'direct')
+        .in('id', aConvoIds);
 
-      if (sharedPart?.conversation_id) {
-        const { data: convo } = await svc
-          .from('messenger_conversations')
-          .select('id')
-          .eq('id', sharedPart.conversation_id)
-          .eq('type', 'direct')
+      const sharedDirectIds = (sharedDirectConvos ?? []).map(c => c.id);
+
+      if (sharedDirectIds.length > 0) {
+        const { data: sharedPart } = await svc
+          .from('messenger_participants')
+          .select('conversation_id')
+          .eq('user_id', userBId)
+          .in('conversation_id', sharedDirectIds)
+          .limit(1)
           .maybeSingle();
-        if (convo?.id) return convo.id;
+
+        if (sharedPart?.conversation_id) return sharedPart.conversation_id;
       }
     }
 

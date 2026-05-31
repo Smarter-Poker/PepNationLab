@@ -64,39 +64,6 @@ function resolveTitle(pathname: string, role: string): string {
 }
 
 /* ─────────────────────────────────────────────
-   Avatar — shows initials circle from name
-   ───────────────────────────────────────────── */
-function Avatar({ name, size = 36 }: { name: string; size?: number }) {
-  const initials = name
-    .split(' ')
-    .map(w => w[0])
-    .slice(0, 2)
-    .join('')
-    .toUpperCase() || '?';
-  return (
-    <div style={{
-      width: size,
-      height: size,
-      borderRadius: '50%',
-      background: 'linear-gradient(135deg, var(--teal) 0%, var(--teal-dark) 100%)',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      fontSize: size * 0.38,
-      fontWeight: 800,
-      color: 'var(--black)',
-      fontFamily: 'var(--font-brand)',
-      flexShrink: 0,
-      border: '2px solid rgba(192,184,168,0.4)',
-      boxShadow: '0 0 10px rgba(192,184,168,0.2)',
-      letterSpacing: 0,
-    }}>
-      {initials}
-    </div>
-  );
-}
-
-/* ─────────────────────────────────────────────
    Mobile / slide-out nav drawer items
    ───────────────────────────────────────────── */
 function DrawerLink({
@@ -249,7 +216,7 @@ export default function Navbar({ onMenuClick, isOpen, title }: { onMenuClick?: (
   // We conditionally use native browser history if available. If the user landed
   // on a deep link directly (empty history stack), we route them up the app hierarchy.
   const handleBack = () => {
-    if (window.history.length > 2) {
+    if (window.history.length > 1) {
       router.back();
       return;
     }
@@ -480,7 +447,6 @@ export default function Navbar({ onMenuClick, isOpen, title }: { onMenuClick?: (
             alignItems: 'center',
             gap: 'var(--space-3)',
           }}>
-            <Avatar name={displayName} size={40} />
             <div style={{ minWidth: 0 }}>
               <div style={{ fontWeight: 600, color: 'var(--white)', fontSize: '0.9rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                 {displayName}

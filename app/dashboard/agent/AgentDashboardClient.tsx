@@ -125,6 +125,13 @@ export default function AgentDashboardClient({
     router.replace(`?${newParams.toString()}`, { scroll: false });
   };
 
+  useEffect(() => {
+    const newTab = tabParam || defaultTab;
+    if (newTab !== activeTab) {
+      setActiveTabState(newTab);
+    }
+  }, [tabParam, defaultTab, activeTab]);
+
   const [volumePricingEnabled, setVolumePricingEnabled] = useState<boolean>(agentProfile?.volume_pricing_enabled !== false);
 
   // Setup Form State (If no profile exists yet)
