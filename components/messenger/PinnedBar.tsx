@@ -26,6 +26,7 @@ interface Props {
   selfRole: ParticipantRole | null;
   refreshKey: number;
   onJump: (messageId: string) => void;
+  onPinsLoaded?: (count: number) => void;
 }
 
 function snippet(row: PinnedMessageRow): string {
@@ -43,7 +44,7 @@ function snippet(row: PinnedMessageRow): string {
   }
 }
 
-export default function PinnedBar({ conversationId, selfId, selfRole, refreshKey, onJump }: Props) {
+export default function PinnedBar({ conversationId, selfId, selfRole, refreshKey, onJump, onPinsLoaded }: Props) {
   const [pins, setPins] = useState<PinnedMessageRow[]>([]);
   const [loading, setLoading] = useState(false);
   const canManage = selfRole === 'owner' || selfRole === 'admin';
@@ -58,7 +59,9 @@ export default function PinnedBar({ conversationId, selfId, selfRole, refreshKey
       });
       if (!res.ok) return;
       const json = (await res.json()) as { pins?: PinnedMessageRow[] };
-      setPins(json.pins ?? []);
+      const loaded = json.pins ?? [];
+      setPins(loaded);
+      if (onPinsLoaded) onPinsLoaded(loaded.length);
     } finally {
       setLoading(false);
     }
@@ -82,7 +85,11 @@ export default function PinnedBar({ conversationId, selfId, selfRole, refreshKey
         toast(json.error ?? 'Could Not Unpin');
         return;
       }
-      setPins((cur) => cur.filter((p) => p.id !== row.id));
+      setPins((cur) => {
+        const next = cur.filter((p) => p.id !== row.id);
+        if (onPinsLoaded) onPinsLoaded(next.length);
+        return next;
+      });
     } catch {
       toast('Network Error');
     }

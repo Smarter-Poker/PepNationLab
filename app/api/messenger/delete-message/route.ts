@@ -66,7 +66,6 @@ export async function POST(req: NextRequest) {
   if (!participant) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
   const allowed =
-    msg.sender_id === user.id ||
     participant.role === 'owner' ||
     participant.role === 'admin';
   if (!allowed) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });

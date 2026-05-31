@@ -169,6 +169,7 @@ export default function MessagePane({ userId }: Props) {
   const [blockedIds, setBlockedIds] = useState<Set<string>>(new Set());
   const [reportTarget, setReportTarget] = useState<Message | null>(null);
   const [blockListOpen, setBlockListOpen] = useState(false);
+  const [pinCount, setPinCount] = useState(0);
   // Phase 13: reminders drawer
   const [remindersOpen, setRemindersOpen] = useState(false);
   const [reminderSeed, setReminderSeed] = useState<
@@ -1160,8 +1161,9 @@ export default function MessagePane({ userId }: Props) {
           selfRole={selfRole}
           refreshKey={pinRefreshKey}
           onJump={handleJumpToMessage}
+          onPinsLoaded={setPinCount}
         />
-        <div ref={scrollContainerRef} className="msg-list" onClick={() => setActiveMenuId(null)} style={{ flex: 1, minHeight: 0, overflowY: 'auto', WebkitOverflowScrolling: 'touch', overscrollBehavior: 'contain', padding: '56px 16px 16px 16px', display: 'flex', flexDirection: 'column', gap: 0 }}>
+        <div ref={scrollContainerRef} className="msg-list" onClick={() => setActiveMenuId(null)} style={{ flex: 1, minHeight: 0, overflowY: 'auto', WebkitOverflowScrolling: 'touch', overscrollBehavior: 'contain', padding: `${pinCount > 0 ? 56 : 16}px 16px 16px 16px`, display: 'flex', flexDirection: 'column', gap: 0 }}>
         {loading && messages.length === 0 ? (
           <div style={{ color: 'var(--grey-400, #A8B4C0)', textAlign: 'center', marginTop: 32 }}>
             Loading Messages
