@@ -224,6 +224,37 @@ export function subscribeCallSignals(userId: string, handlers: CallSignalHandler
     }
   });
 
+  // Bulletproof fallback: listen to direct database updates via Supabase Postgres replication
+  ch.on(
+    'postgres_changes',
+    {
+      event: 'INSERT',
+      schema: 'public',
+      table: 'messenger_calls',
+    },
+    (payload) => {
+      console.log('[REALTIME] received messenger_calls postgres INSERT:', payload);
+      const row = payload.new as CallSignalRow;
+      if (row.status === 'ringing' && row.initiator_id !== userId) {
+        handlers.onInsert?.(row);
+      }
+    }
+  );
+
+  ch.on(
+    'postgres_changes',
+    {
+      event: 'UPDATE',
+      schema: 'public',
+      table: 'messenger_calls',
+    },
+    (payload) => {
+      console.log('[REALTIME] received messenger_calls postgres UPDATE:', payload);
+      const row = payload.new as CallSignalRow;
+      handlers.onUpdate?.(row);
+    }
+  );
+
   ch.subscribe();
   return ch;
 }
