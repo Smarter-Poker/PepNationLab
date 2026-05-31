@@ -12,56 +12,56 @@ export const PAYMENT_METHODS = [
     key: 'zelle',
     label: 'Zelle',
     placeholder: 'Phone Number Or Email',
-    icon: <img src="/payment-logos/zelle.svg" alt="Zelle" style={{ width: 22, height: 22, objectFit: 'contain' }} />,
+    icon: <img src="/payment-logos/zelle.svg" alt="Zelle" style={{ width: 32, height: 32, objectFit: 'contain' }} />,
     color: '#6B35C4',
   },
   {
     key: 'cashapp',
     label: 'Cash App',
     placeholder: '$Cashtag (E.g. $YourName)',
-    icon: <img src="/payment-logos/cashapp.svg" alt="Cash App" style={{ width: 22, height: 22, objectFit: 'contain' }} />,
+    icon: <img src="/payment-logos/cashapp.svg" alt="Cash App" style={{ width: 32, height: 32, objectFit: 'contain' }} />,
     color: '#00D632',
   },
   {
     key: 'venmo',
     label: 'Venmo',
     placeholder: '@Username (E.g. @YourName)',
-    icon: <img src="/payment-logos/venmo.svg" alt="Venmo" style={{ width: 22, height: 22, objectFit: 'contain' }} />,
+    icon: <img src="/payment-logos/venmo.svg" alt="Venmo" style={{ width: 32, height: 32, objectFit: 'contain' }} />,
     color: '#3D95CE',
   },
   {
     key: 'paypal',
     label: 'PayPal',
     placeholder: 'Email Or @Username',
-    icon: <img src="/payment-logos/paypal.svg" alt="PayPal" style={{ width: 22, height: 22, objectFit: 'contain' }} />,
+    icon: <img src="/payment-logos/paypal.svg" alt="PayPal" style={{ width: 32, height: 32, objectFit: 'contain' }} />,
     color: '#003087',
   },
   {
     key: 'apple_cash',
     label: 'Apple Cash',
     placeholder: 'Phone Number Or Apple ID Email',
-    icon: <img src="/payment-logos/apple_cash.svg" alt="Apple Cash" style={{ width: 22, height: 22, objectFit: 'contain' }} />,
+    icon: <img src="/payment-logos/apple_cash.svg" alt="Apple Cash" style={{ width: 32, height: 32, objectFit: 'contain' }} />,
     color: '#E0E0E0',
   },
   {
     key: 'google_wallet',
     label: 'Google Wallet',
     placeholder: 'Gmail Address',
-    icon: <img src="/payment-logos/google_wallet.svg" alt="Google Wallet" style={{ width: 22, height: 22, objectFit: 'contain' }} />,
+    icon: <img src="/payment-logos/google_wallet.svg" alt="Google Wallet" style={{ width: 32, height: 32, objectFit: 'contain' }} />,
     color: '#4285F4',
   },
   {
     key: 'wise',
     label: 'Wise',
     placeholder: 'Email Or Wise Username',
-    icon: <img src="/payment-logos/wise.svg" alt="Wise" style={{ width: 22, height: 22, objectFit: 'contain' }} />,
+    icon: <img src="/payment-logos/wise.svg" alt="Wise" style={{ width: 32, height: 32, objectFit: 'contain' }} />,
     color: '#9FE870',
   },
   {
     key: 'chime',
     label: 'Chime',
     placeholder: 'Chime Username Or Link',
-    icon: <img src="/payment-logos/chime.svg" alt="Chime" style={{ width: 22, height: 22, objectFit: 'contain' }} />,
+    icon: <img src="/payment-logos/chime.svg" alt="Chime" style={{ width: 32, height: 32, objectFit: 'contain' }} />,
     color: '#3ABA78',
   },
 ] as const;
@@ -244,24 +244,17 @@ export default function PaymentMethodsPanel({
               }}
                 onClick={() => toggleMethod(method.key)}
               >
-                <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
-                  {/* Method icon circle */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)' }}>
+                  {/* Method icon container */}
                   <div style={{
-                    width: 38,
-                    height: 38,
-                    borderRadius: '50%',
-                    background: state.enabled
-                      ? `${method.color}22`
-                      : 'rgba(255,255,255,0.04)',
-                    border: state.enabled
-                      ? `1.5px solid ${method.color}55`
-                      : '1.5px solid rgba(255,255,255,0.08)',
+                    width: 44,
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    fontSize: '1.1rem',
                     transition: 'all 0.2s',
                     flexShrink: 0,
+                    opacity: state.enabled ? 1 : 0.6,
+                    filter: state.enabled ? 'none' : 'grayscale(100%)',
                   }}>
                     {method.icon}
                   </div>
