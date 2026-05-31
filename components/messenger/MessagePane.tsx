@@ -1113,7 +1113,7 @@ export default function MessagePane({ userId }: Props) {
             type="button"
             onClick={(e) => { e.stopPropagation(); setReminderSeed(null); setRemindersOpen(true); }}
             aria-label="Open Reminders"
-            className="msg-header-action"
+            className="msg-header-action hover-lift btn-secondary"
             style={headerBtn}
           >
             <Bell size={12} aria-hidden="true" />
@@ -1123,7 +1123,7 @@ export default function MessagePane({ userId }: Props) {
             type="button"
             onClick={() => setInfoOpen(true)}
             aria-label="Conversation Info"
-            className="msg-header-action"
+            className="msg-header-action hover-lift btn-secondary"
             style={headerBtn}
           >
             <Info size={12} aria-hidden="true" />
@@ -1357,12 +1357,14 @@ const headerBtn: React.CSSProperties = {
   display: 'inline-flex',
   alignItems: 'center',
   gap: 6,
-  padding: '4px 8px',
-  borderRadius: 6,
-  border: '1px solid var(--surface-3, #1D2D3E)',
-  background: 'transparent',
+  padding: '6px 12px',
+  borderRadius: 8,
+  border: '1px solid rgba(255, 255, 255, 0.1)',
+  background: 'linear-gradient(180deg, rgba(255,255,255,0.05) 0%, rgba(0,0,0,0.2) 100%)',
   color: 'var(--white, #FFFFFF)',
   cursor: 'pointer',
-  fontSize: '0.78rem',
-  fontWeight: 600,
+  fontSize: '0.8rem',
+  fontWeight: 700,
+  boxShadow: '0 2px 4px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.1)',
+  transition: 'all 0.2s',
 };

@@ -516,19 +516,22 @@ export default function MessageComposer({ conversationId, selfId, replyTo, onCle
             </button>
           </div>
 
-          {/* iMessage Style Pill */}
+          {/* iMessage Style Pill - Upgraded */}
           <div
             style={{
               flex: 1,
               display: 'flex',
               alignItems: 'flex-end',
-              background: 'var(--surface-2, #162230)',
+              background: 'rgba(0,0,0,0.4)',
               borderRadius: 24,
-              border: '1px solid var(--surface-3, #1D2D3E)',
+              border: '1px solid rgba(255, 255, 255, 0.08)',
               padding: '4px 6px',
               minHeight: 38,
-              boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.1)',
+              boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.6)',
+              transition: 'border-color 0.2s',
             }}
+            onFocus={(e) => { e.currentTarget.style.borderColor = 'rgba(0, 196, 188, 0.5)'; }}
+            onBlur={(e) => { e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.08)'; }}
           >
             <textarea
               ref={inputRef}
@@ -578,17 +581,16 @@ export default function MessageComposer({ conversationId, selfId, replyTo, onCle
                   onClick={() => void handleSendText()}
                   disabled={!text.trim() || sending}
                   aria-label="Send Message" title="Send Message"
+                  className="btn btn-primary"
                   style={{
-                    background: '#0084FF',
-                    border: 'none',
                     borderRadius: '50%',
-                    width: 28,
-                    height: 28,
+                    width: 32,
+                    height: 32,
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    cursor: 'pointer',
-                    color: '#FFF',
+                    padding: 0,
+                    margin: '0 2px 2px 0',
                     transition: 'transform 0.1s',
                   }}
                 >
