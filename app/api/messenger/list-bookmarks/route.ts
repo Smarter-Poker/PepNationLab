@@ -43,6 +43,17 @@ export async function POST(req: NextRequest) {
     .from('messenger_messages')
     .select('id, conversation_id, text, message_type, is_deleted')
     .in('id', ids);
+
+  let dismissedSet: Set<string> = new Set();
+  if (ids.length > 0) {
+    const { data: dis } = await svc
+      .from('messenger_message_dismissals')
+      .select('message_id')
+      .eq('user_id', user.id)
+      .in('message_id', ids);
+    dismissedSet = new Set(((dis ?? []) as Array<{ message_id: string }>).map((r) => r.message_id));
+  }
+
   const byId = new Map<string, { conversation_id: string; text: string | null; message_type: string; is_deleted: boolean }>();
   (msgs ?? []).forEach((m) =>
     byId.set(m.id, {
@@ -62,8 +73,8 @@ export async function POST(req: NextRequest) {
       created_at: b.created_at,
       conversation_id: m?.conversation_id ?? null,
       message_type: m?.message_type ?? null,
-      live_text: m?.is_deleted ? null : (m?.text ?? null),
-      source_deleted: m?.is_deleted ?? false,
+      live_text: m?.is_deleted || dismissedSet.has(b.message_id) ? null : (m?.text ?? null),
+      source_deleted: (m?.is_deleted ?? false) || dismissedSet.has(b.message_id),
     };
   });
 

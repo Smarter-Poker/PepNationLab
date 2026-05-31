@@ -47,16 +47,28 @@ export async function POST(req: NextRequest) {
   if (pinList.length === 0) return NextResponse.json({ pins: [] });
 
   const messageIds = pinList.map((p) => p.message_id);
+  const { data: dismissals } = await svc
+    .from('messenger_message_dismissals')
+    .select('message_id')
+    .eq('user_id', user.id)
+    .in('message_id', messageIds);
+
+  const dismissedSet = new Set((dismissals ?? []).map((d) => d.message_id));
+  const visiblePins = pinList.filter((p) => !dismissedSet.has(p.message_id));
+
+  if (visiblePins.length === 0) return NextResponse.json({ pins: [] });
+
+  const activeMessageIds = visiblePins.map((p) => p.message_id);
   const { data: msgs, error: mErr } = await svc
     .from('messenger_messages')
     .select('id, text, message_type, sender_id, created_at, media_url, is_deleted')
-    .in('id', messageIds);
+    .in('id', activeMessageIds);
   if (mErr) return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
 
   const byId = new Map<string, NonNullable<typeof msgs>[number]>();
   (msgs ?? []).forEach((m) => byId.set(m.id, m));
 
-  const pins = pinList.map((p) => ({
+  const pins = visiblePins.map((p) => ({
     id: p.id,
     message_id: p.message_id,
     pinned_by: p.pinned_by,

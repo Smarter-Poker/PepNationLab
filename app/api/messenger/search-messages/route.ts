@@ -44,5 +44,19 @@ export async function POST(req: NextRequest) {
     .limit(50);
 
   if (qErr) return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
-  return NextResponse.json({ results: data ?? [] });
+
+  const rawMessages = data ?? [];
+  const messageIds = rawMessages.map((m) => m.id);
+  let dismissedSet: Set<string> = new Set();
+  if (messageIds.length > 0) {
+    const { data: dis } = await svc
+      .from('messenger_message_dismissals')
+      .select('message_id')
+      .eq('user_id', user.id)
+      .in('message_id', messageIds);
+    dismissedSet = new Set(((dis ?? []) as Array<{ message_id: string }>).map((r) => r.message_id));
+  }
+  const visibleMessages = rawMessages.filter((m) => !dismissedSet.has(m.id));
+
+  return NextResponse.json({ results: visibleMessages });
 }
