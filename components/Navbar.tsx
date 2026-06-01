@@ -367,8 +367,8 @@ export default function Navbar({ onMenuClick, isOpen, title }: { onMenuClick?: (
                   } 
                   alt={dashLabel} 
                   width={158} 
-                  height={158} 
-                  style={{ objectFit: 'contain', display: 'block' }} 
+                  height={74} 
+                  style={{ width: 158, height: 'auto', objectFit: 'contain', display: 'block' }} 
                 />
               </Link>
               <div
