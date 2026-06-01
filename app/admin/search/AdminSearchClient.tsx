@@ -29,6 +29,7 @@ const SCOPE_LABELS: Array<{ key: Scope; label: string }> = [
 const ORDER_STATUSES = [
   'pending_customer_payment',
   'agent_approval_pending',
+  'admin_approval_pending',
   'approved_ship',
   'approved_pickup',
   'in_fulfillment',
