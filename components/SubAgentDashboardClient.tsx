@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 import AgentOverview from '@/components/AgentOverview';
 import PushNotificationToggle from '@/components/PushNotificationToggle';
 import Link from 'next/link';
+import WalletCard from '@/components/WalletCard';
 
 type Overview = {
   profile: {
@@ -178,6 +179,10 @@ export default function SubAgentDashboardClient({ data, onRefresh }: { data: Ove
               </button>
             </div>
             
+            <div style={{ marginBottom: '24px' }}>
+              <WalletCard />
+            </div>
+
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '16px', marginBottom: '24px' }}>
               <div className="card-glass" style={{ padding: '16px' }}>
                 <div style={{ fontSize: '12px', opacity: 0.7, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Available Balance</div>

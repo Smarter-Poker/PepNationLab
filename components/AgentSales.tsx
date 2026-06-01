@@ -7,6 +7,7 @@ import { createClient } from '@/lib/supabase/client';
 import AgentStatements from './AgentStatements';
 import AgentSubInvoices from './AgentSubInvoices';
 import AgentTierWidget from './AgentTierWidget';
+import WalletCard from './WalletCard';
 
 const STATUS_LABELS: Record<string, string> = {
   pending_customer_payment: 'Pending Payment',
@@ -302,17 +303,20 @@ export default function AgentSales({ orders, setOrders, agentId, userProfile }: 
         </div>
 
         {/* ACCOUNTING SECTION */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: 'var(--space-4)', marginTop: 'var(--space-6)' }}>
-          {(!userProfile?.tier?.includes('sub-agent')) && (
-            <div style={{ animation: 'fadeIn 0.3s ease-out' }}>
-              <AgentStatements />
-            </div>
-          )}
-          {(userProfile?.is_super_agent || userProfile?.tier?.includes('sub-agent')) && (
-            <div style={{ animation: 'fadeIn 0.3s ease-out' }}>
-              <AgentSubInvoices isSuperAgent={!!userProfile?.is_super_agent} />
-            </div>
-          )}
+        <div style={{ marginTop: 'var(--space-6)', display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
+          <WalletCard />
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: 'var(--space-4)' }}>
+            {(!userProfile?.tier?.includes('sub-agent')) && (
+              <div style={{ animation: 'fadeIn 0.3s ease-out' }}>
+                <AgentStatements />
+              </div>
+            )}
+            {(userProfile?.is_super_agent || userProfile?.tier?.includes('sub-agent')) && (
+              <div style={{ animation: 'fadeIn 0.3s ease-out' }}>
+                <AgentSubInvoices isSuperAgent={!!userProfile?.is_super_agent} />
+              </div>
+            )}
+          </div>
         </div>
       </div>
 

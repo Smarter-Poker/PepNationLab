@@ -7,6 +7,8 @@ import { useRouter, usePathname } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import NavbarNotificationBell from '@/components/NavbarNotificationBell';
 import MessageBell from '@/components/MessageBell';
+import NavbarWalletBadge from '@/components/NavbarWalletBadge';
+import WalletCard from '@/components/WalletCard';
 
 /* ───────────────────────────────────────────── 
    Page title resolution — maps route prefixes
@@ -371,20 +373,7 @@ export default function Navbar({ onMenuClick, isOpen, title }: { onMenuClick?: (
                 onClick={() => setDrawerOpen(o => !o)}
                 title={displayName}
               >
-                <span
-                  className="nav-display-name"
-                  style={{
-                    fontSize: '0.82rem',
-                    fontWeight: 600,
-                    color: 'var(--nav-title)',
-                    maxWidth: 130,
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    whiteSpace: 'nowrap',
-                  }}
-                >
-                  {displayName}
-                </span>
+                <NavbarWalletBadge />
               </div>
             </>
           ) : (
@@ -473,6 +462,14 @@ export default function Navbar({ onMenuClick, isOpen, title }: { onMenuClick?: (
 
         {/* Navigation links */}
         <nav style={{ flex: 1, padding: 'var(--space-3) 0', paddingBottom: 'calc(var(--space-6) + env(safe-area-inset-bottom, 24px))' }}>
+          
+          {/* Lab Wallet Inside Hamburger Menu */}
+          {user && (
+            <div style={{ padding: '0 var(--space-4)', marginBottom: 'var(--space-4)' }}>
+              <WalletCard />
+            </div>
+          )}
+
           {/* Common links */}
           <DrawerLink href={dashLink} label="Home" onClick={closeDrawer}
             icon={<svg {...IP}><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>}

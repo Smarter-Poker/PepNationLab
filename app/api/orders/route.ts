@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient, createAdminClient } from '@/lib/supabase/server';
 import { z } from 'zod';
-import { applyBulkPrice } from '@/lib/pricing';
+import { applyBulkPrice, isTierLadderV2 } from '@/lib/pricing';
 import { assertSameOrigin } from '@/lib/csrf';
 import { rateLimit } from '@/lib/rate-limit';
 
@@ -534,6 +534,32 @@ export async function POST(request: NextRequest) {
 
     const grossTotal = Math.max(0, subtotal - discountAmount) + shippingCost;
     const total = Math.max(0, grossTotal);
+
+    // Velocity caps (flag-gated, additive). A researcher order placed through a
+    // sub-agent's storefront is held against that sub-agent's virtual velocity
+    // cap — a ceiling on unsettled (pre-shipment) order value. This does NOT
+    // touch the super-agent's House credit; that is decremented later by the
+    // existing billing path when the order is Approved for Shipment. The check
+    // only ever ADDS a rejection, so flag-off behavior is byte-identical and the
+    // existing credit/prepaid protections are unaffected.
+    if (isTierLadderV2() && !isAgentSelfBuy && agentProfile?.parent_agent_id) {
+      const { data: subCapRow } = await serviceSupabase
+        .from('profiles').select('velocity_cap').eq('id', agentProfile.id).maybeSingle();
+      const cap = subCapRow?.velocity_cap == null ? null : Number(subCapRow.velocity_cap);
+      if (cap != null && cap > 0) {
+        const { data: consumed } = await serviceSupabase
+          .rpc('fn_sub_agent_consumed_velocity', { p_sub: agentProfile.id });
+        const used = Number(consumed) || 0;
+        if (used + total > cap + 0.001) {
+          if (inventoryReserved) await serviceSupabase.rpc('release_inventory', inventoryReserveParams);
+          const remaining = Math.max(0, cap - used);
+          return NextResponse.json(
+            { error: `Velocity Cap Reached. This Order Of $${total.toFixed(2)} Would Exceed Your Available Limit ($${remaining.toFixed(2)} Remaining). Contact Your Agent To Raise It.` },
+            { status: 403 },
+          );
+        }
+      }
+    }
 
     // Record the Layer 4 (checkout) disclaimer audit row
     const disclaimerVersion = process.env.NEXT_PUBLIC_DISCLAIMER_VERSION || 'v1.0';
