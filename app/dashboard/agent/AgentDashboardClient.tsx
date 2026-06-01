@@ -26,6 +26,8 @@ import { sanitizeUsername } from '@/lib/usernames';
 import { useTheme } from '@/components/ThemeProvider';
 import PaymentMethodsPanel from '@/components/PaymentMethodsPanel';
 import AvatarUpload from '@/components/AvatarUpload';
+import { createPortal } from 'react-dom';
+import QRCodeGenerator from '@/components/QRCodeGenerator';
 
 
 interface Profile {
@@ -101,6 +103,8 @@ export default function AgentDashboardClient({
 
   const [agentProfile, setAgentProfile] = useState<AgentProfile | null>(initialAgentProfile);
   const [orders, setOrders] = useState<Order[]>(initialOrders);
+  const [showQRModal, setShowQRModal] = useState(false);
+
 
   // Storefront Config Form State
   const [displayName, setDisplayName] = useState(agentProfile?.display_name ?? '');
@@ -553,10 +557,11 @@ export default function AgentDashboardClient({
     { id: 'Inventory', type: 'tab', label: 'Local Inventory Stock', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" /><polyline points="3.27 6.96 12 12.01 20.73 6.96" /><line x1="12" y1="22.08" x2="12" y2="12" /></svg> },
     { id: 'Sales & Accounting', type: 'tab', label: 'Sales & Accounting', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17" /><polyline points="16 7 22 7 22 13" /></svg> },
     { id: 'sales-v2', type: 'link', label: 'Sales Performance', href: '/dashboard/agent/sales', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="20" x2="18" y2="10" /><line x1="12" y1="20" x2="12" y2="4" /><line x1="6" y1="20" x2="6" y2="14" /></svg> },
+    { id: 'wallet', type: 'link', label: 'Wallet', href: '/wallet', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4" /><path d="M3 5v14a2 2 0 0 0 2 2h16v-5" /><path d="M18 12a2 2 0 0 0 0 4h4v-4Z" /></svg> },
     { id: 'Coupons', type: 'tab', label: 'Coupons', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z" /><line x1="7" y1="7" x2="7.01" y2="7" /></svg> },
     { id: 'Settings', type: 'tab', label: 'Account Settings', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /></svg> },
     { id: 'Research Bundles', type: 'tab', label: 'Bundles + Stacks', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" /><polyline points="3.27 6.96 12 12.01 20.73 6.96" /><line x1="12" y1="22.08" x2="12" y2="12" /></svg> },
-    { id: 'qr', type: 'action', label: 'My QR Code', action: () => { setActiveTab('Storefront Config'); setIsMobileMenuOpen(false); }, icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" /><rect x="3" y="14" width="7" height="7" /><rect x="14" y="14" width="3" height="3" /><rect x="19" y="14" width="2" height="2" /><rect x="14" y="19" width="2" height="2" /><rect x="19" y="19" width="2" height="2" /></svg> },
+    { id: 'qr', type: 'action', label: 'My QR Code', action: () => { setShowQRModal(true); setIsMobileMenuOpen(false); }, icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" /><rect x="3" y="14" width="7" height="7" /><rect x="14" y="14" width="3" height="3" /><rect x="19" y="14" width="2" height="2" /><rect x="14" y="19" width="2" height="2" /><rect x="19" y="19" width="2" height="2" /></svg> },
     { id: 'notifications', type: 'action', label: 'Notification Settings', action: () => { setActiveTab('Settings'); setIsMobileMenuOpen(false); if (typeof Notification !== 'undefined' && Notification.permission === 'default') Notification.requestPermission(); }, icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" /><path d="M13.73 21a2 2 0 0 1-3.46 0" /></svg> },
     { id: 'security', type: 'link', label: 'Account Security', href: '/account/security', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></svg> },
     ...(agentProfile ? [{ id: 'storefront-display', type: 'storefront-display' }] : []),
@@ -1353,6 +1358,24 @@ export default function AgentDashboardClient({
           <div style={{ animation: 'fadeIn 0.3s ease-out', maxWidth: 600 }}>
             <h2 style={{ fontFamily: 'var(--font-brand)', marginBottom: 'var(--space-6)', fontSize: '1.3rem' }}>Account Settings</h2>
 
+            {/* Link to full Account self-serve hub (Round 24). Existing quick controls remain below. */}
+            <div
+              className="card-metal hover-lift"
+              style={{
+                padding: 'var(--space-5)',
+                marginBottom: 'var(--space-6)',
+                border: '1px solid rgba(192,184,168,0.3)',
+              }}
+            >
+              <h4 style={{ marginTop: 0, marginBottom: 'var(--space-2)', color: 'var(--teal)' }}>Full Account Settings</h4>
+              <p style={{ fontSize: '0.82rem', color: 'var(--grey-400)', margin: '0 0 var(--space-4)', lineHeight: 1.6 }}>
+                Open The Full Account Hub To Manage Security, Notifications, Compliance, And Data Export.
+              </p>
+              <Link href="/account/settings" className="btn btn-primary btn-sm">
+                Open Full Account Settings
+              </Link>
+            </div>
+
             {/* Profile Picture Upload */}
             <div className="card-metal hover-lift" style={{ padding: 'var(--space-6)', marginBottom: 'var(--space-6)' }}>
               <h4 style={{ marginBottom: 'var(--space-2)', color: 'var(--teal)' }}>Profile Picture</h4>
@@ -1627,6 +1650,53 @@ function ThemeToggleCard() {
           }} />
         </button>
       </div>
+
+      {showQRModal && typeof document !== 'undefined' && createPortal(
+        <div style={{
+          position: 'fixed', inset: 0, zIndex: 999999,
+          background: 'rgba(5,10,15,0.95)',
+          backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)',
+          display: 'flex', flexDirection: 'column',
+          alignItems: 'center', justifyContent: 'center',
+          padding: '24px',
+        }}>
+          <button
+            onClick={() => setShowQRModal(false)}
+            style={{
+              position: 'absolute', top: 'max(24px, env(safe-area-inset-top))', right: 24,
+              background: 'rgba(255,255,255,0.1)', border: 'none', color: '#fff',
+              width: 36, height: 36, borderRadius: '50%',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              cursor: 'pointer', fontSize: '1.2rem'
+            }}
+          >
+            X
+          </button>
+          
+          <div style={{
+            background: 'var(--surface-2)',
+            padding: '40px 32px',
+            borderRadius: '24px',
+            border: '1px solid var(--border)',
+            display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 24,
+            boxShadow: '0 20px 40px rgba(0,0,0,0.5)',
+            maxWidth: 400, width: '100%'
+          }}>
+            <h2 style={{ fontSize: '1.25rem', fontWeight: 700, margin: 0, textAlign: 'center' }}>
+              My QR Code
+            </h2>
+            <QRCodeGenerator
+              url={typeof window !== 'undefined' ? `${window.location.origin}${userProfile?.role === 'sub_agent' ? `/invite?ref=${userProfile?.id}` : `/${agentProfile?.slug}`}` : ''}
+              qrCodeData={agentProfile?.qr_code_data}
+              size={240}
+            />
+            <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--silver)', textAlign: 'center', lineHeight: 1.5 }}>
+              Have your clients scan this code to {userProfile?.role === 'sub_agent' ? 'register under you' : 'visit your storefront'}!
+            </p>
+          </div>
+        </div>,
+        document.body
+      )}
     </div>
   );
 }
