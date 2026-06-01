@@ -378,6 +378,35 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
     }
   };
 
+  // Auto-apply ?coupon= from a marketing link (set by CouponLinkCapture
+  // on the agent storefront). Fires once when the form is mounted in an
+  // eligible state (not an agent self-buy / sub-agent), then clears the
+  // stash so a manual change can't be overridden by stale data.
+  const couponAutoAppliedRef = useRef(false);
+  useEffect(() => {
+    if (couponAutoAppliedRef.current) return;
+    if (couponDisabled) return;
+    try {
+      const raw = window.localStorage.getItem('pnl_pending_coupon');
+      if (!raw) return;
+      const parsed = JSON.parse(raw) as { code?: string; savedAt?: number };
+      const stashed = (parsed?.code ?? '').toUpperCase().replace(/[^A-Z0-9-]/g, '').slice(0, 24);
+      if (!/^[A-Z0-9-]{3,24}$/.test(stashed)) {
+        window.localStorage.removeItem('pnl_pending_coupon');
+        return;
+      }
+      couponAutoAppliedRef.current = true;
+      setCouponInput(stashed);
+      window.localStorage.removeItem('pnl_pending_coupon');
+      setTimeout(() => {
+        try { applyCoupon(); } catch { /* applyCoupon may throw if cart empty */ }
+      }, 50);
+    } catch {
+      // Storage unavailable or malformed; ignore.
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [couponDisabled, cartSubtotal]);
+
   const removeCoupon = () => {
     setAppliedCoupon(null);
     setCouponInput('');
