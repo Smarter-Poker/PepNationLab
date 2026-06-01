@@ -25,6 +25,7 @@ export type NotificationType =
   | 'invoice'
   | 'payment_reminder'
   | 'cart_reminder'
+  | 'refill_reminder'
   | 'referral'
   | 'system';
 
@@ -301,6 +302,27 @@ export async function notifyCartReminder(
     title: 'You left items in your cart',
     body: `You have ${itemCount} item${itemCount !== 1 ? 's' : ''} waiting${cartValue > 0 ? ` ($${cartValue.toFixed(2)})` : ''}. Complete your order before inventory moves.`,
     url: '/cart',
+  });
+}
+
+/**
+ * Notify a researcher it may be time to reorder (21-day refill drip).
+ * In-app bell + push (gated by the refill_reminder push type, default-on).
+ * The conversational Messenger DM from the agent is sent separately by the
+ * /api/cron/refill-reminders job — this only covers the bell + web push.
+ */
+export async function notifyRefillReminder(
+  supabase: SupabaseClient,
+  researcherId: string,
+  firstName: string,
+) {
+  const who = firstName && firstName.trim().length > 0 ? firstName.trim() : 'there';
+  await notify(supabase, {
+    userId: researcherId,
+    type: 'refill_reminder',
+    title: 'Time To Restock?',
+    body: `Hey ${who}, it has been a few weeks since your last order. Tap to browse and reorder when you are ready.`,
+    url: '/products',
   });
 }
 
