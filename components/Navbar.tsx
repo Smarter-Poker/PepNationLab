@@ -10,6 +10,11 @@ import MessageBell from '@/components/MessageBell';
 import NavbarWalletBadge from '@/components/NavbarWalletBadge';
 import WalletCard from '@/components/WalletCard';
 import { getRoleNavLinks } from '@/components/roleNavLinks';
+<<<<<<< Updated upstream
+=======
+import QRCodeGenerator from '@/components/QRCodeGenerator';
+import { createPortal } from 'react-dom';
+>>>>>>> Stashed changes
 
 /* ──────────────────────────────────── 
    Page title resolution — maps route prefixes
@@ -78,23 +83,44 @@ function DrawerLink({
   icon: React.ReactNode;
   onClick: () => void;
 }) {
+  const commonStyles: React.CSSProperties = {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 'var(--space-3)',
+    padding: '12px var(--space-5)',
+    color: 'var(--silver)',
+    fontSize: '0.95rem',
+    fontWeight: 500,
+    textDecoration: 'none',
+    borderLeft: '3px solid transparent',
+    transition: 'all 0.15s',
+    minHeight: 48,
+    background: 'none',
+    border: 'none',
+    borderLeftColor: 'transparent',
+    cursor: 'pointer',
+    width: '100%',
+    textAlign: 'left',
+  };
+
+  if (href === '#SHOW_QR') {
+    return (
+      <button
+        onClick={(e) => { e.preventDefault(); onClick(); }}
+        style={commonStyles}
+        className="drawer-link"
+      >
+        <span style={{ display: 'inline-flex', opacity: 0.7 }}>{icon}</span>
+        {label}
+      </button>
+    );
+  }
+
   return (
     <Link
       href={href}
       onClick={onClick}
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: 'var(--space-3)',
-        padding: '12px var(--space-5)',
-        color: 'var(--silver)',
-        fontSize: '0.95rem',
-        fontWeight: 500,
-        textDecoration: 'none',
-        borderLeft: '3px solid transparent',
-        transition: 'all 0.15s',
-        minHeight: 48,
-      }}
+      style={commonStyles}
       className="drawer-link"
     >
       <span style={{ display: 'inline-flex', opacity: 0.7 }}>{icon}</span>
@@ -113,7 +139,9 @@ export default function Navbar({ onMenuClick, isOpen, title }: { onMenuClick?: (
   const [user, setUser] = useState<{ id: string; email?: string } | null>(null);
   const [profile, setProfile] = useState<{ full_name?: string | null; role?: string; referring_agent_id?: string | null; is_super_agent?: boolean | null; is_sub_agent?: boolean | null } | null>(null);
   const [agentSlug, setAgentSlug] = useState<string | null>(null);
+  const [qrCodeData, setQrCodeData] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [showQRModal, setShowQRModal] = useState(false);
 
 
   const role = profile?.role ?? 'researcher';
@@ -138,6 +166,18 @@ export default function Navbar({ onMenuClick, isOpen, title }: { onMenuClick?: (
 
   // Canonical per-role hamburger menu — identical on every page for a given
   // role. Null for researchers / logged-out, who keep the generic drawer links.
+<<<<<<< Updated upstream
+=======
+  const handleMenuClick = (href: string) => {
+    if (href === '#SHOW_QR') {
+      setShowQRModal(true);
+      closeDrawer();
+    } else {
+      closeDrawer();
+    }
+  };
+
+>>>>>>> Stashed changes
   const roleLinks = user
     ? getRoleNavLinks(role, {
         isSuperAgent: profile?.is_super_agent === true,
@@ -175,18 +215,35 @@ export default function Navbar({ onMenuClick, isOpen, title }: { onMenuClick?: (
               if (data.role === 'researcher' && data.referring_agent_id) {
                 supabase
                   .from('agent_profiles')
-                  .select('slug')
+                  .select('slug, qr_code_data')
                   .eq('id', data.referring_agent_id)
                   .maybeSingle()
+<<<<<<< Updated upstream
                   .then(({ data: ap }) => { if (ap?.slug) setAgentSlug(ap.slug); });
+=======
+                  .then(({ data: ap }) => {
+                    if (ap?.slug) setAgentSlug(ap.slug);
+                    if (ap?.qr_code_data) setQrCodeData(ap.qr_code_data);
+                  });
+>>>>>>> Stashed changes
               } else if (data.role === 'agent' || data.role === 'super_agent') {
                 // Agents/super-agents: their own storefront slug, for "Visit My Storefront".
                 supabase
                   .from('agent_profiles')
+<<<<<<< Updated upstream
                   .select('slug')
                   .eq('id', session.user.id)
                   .maybeSingle()
                   .then(({ data: ap }) => { if (ap?.slug) setAgentSlug(ap.slug); });
+=======
+                  .select('slug, qr_code_data')
+                  .eq('id', session.user.id)
+                  .maybeSingle()
+                  .then(({ data: ap }) => {
+                    if (ap?.slug) setAgentSlug(ap.slug);
+                    if (ap?.qr_code_data) setQrCodeData(ap.qr_code_data);
+                  });
+>>>>>>> Stashed changes
               }
             }
             setLoading(false);
@@ -209,18 +266,35 @@ export default function Navbar({ onMenuClick, isOpen, title }: { onMenuClick?: (
               if (data.role === 'researcher' && data.referring_agent_id) {
                 supabase
                   .from('agent_profiles')
-                  .select('slug')
+                  .select('slug, qr_code_data')
                   .eq('id', data.referring_agent_id)
                   .maybeSingle()
+<<<<<<< Updated upstream
                   .then(({ data: ap }) => { if (ap?.slug) setAgentSlug(ap.slug); });
+=======
+                  .then(({ data: ap }) => {
+                    if (ap?.slug) setAgentSlug(ap.slug);
+                    if (ap?.qr_code_data) setQrCodeData(ap.qr_code_data);
+                  });
+>>>>>>> Stashed changes
               } else if (data.role === 'agent' || data.role === 'super_agent') {
                 // Agents/super-agents: their own storefront slug, for "Visit My Storefront".
                 supabase
                   .from('agent_profiles')
+<<<<<<< Updated upstream
                   .select('slug')
                   .eq('id', session.user.id)
                   .maybeSingle()
                   .then(({ data: ap }) => { if (ap?.slug) setAgentSlug(ap.slug); });
+=======
+                  .select('slug, qr_code_data')
+                  .eq('id', session.user.id)
+                  .maybeSingle()
+                  .then(({ data: ap }) => {
+                    if (ap?.slug) setAgentSlug(ap.slug);
+                    if (ap?.qr_code_data) setQrCodeData(ap.qr_code_data);
+                  });
+>>>>>>> Stashed changes
               }
             }
           });
@@ -496,7 +570,11 @@ export default function Navbar({ onMenuClick, isOpen, title }: { onMenuClick?: (
               other states (researchers, logged-out) keep the generic links. */}
           {roleLinks ? (
             roleLinks.map((l) => (
+<<<<<<< Updated upstream
               <DrawerLink key={`${l.href}-${l.label}`} href={l.href} label={l.label} onClick={closeDrawer} icon={l.icon} />
+=======
+              <DrawerLink key={`${l.href}-${l.label}`} href={l.href} label={l.label} onClick={() => handleMenuClick(l.href)} icon={l.icon} />
+>>>>>>> Stashed changes
             ))
           ) : (
             <>
@@ -579,6 +657,57 @@ export default function Navbar({ onMenuClick, isOpen, title }: { onMenuClick?: (
       </div>
       )} {/* end !onMenuClick drawer panel */}
 
+
+      {/* ══════════════════════════════════════════
+          QR CODE MODAL (Full Screen)
+      ══════════════════════════════════════════ */}
+      {showQRModal && typeof document !== 'undefined' && createPortal(
+        <div style={{
+          position: 'fixed', inset: 0, zIndex: 999999,
+          background: 'rgba(5,10,15,0.95)',
+          backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)',
+          display: 'flex', flexDirection: 'column',
+          alignItems: 'center', justifyContent: 'center',
+          animation: 'navBackdropIn 0.25s ease',
+          padding: '24px',
+        }}>
+          <button
+            onClick={() => setShowQRModal(false)}
+            style={{
+              position: 'absolute', top: 'max(24px, env(safe-area-inset-top))', right: 24,
+              background: 'rgba(255,255,255,0.1)', border: 'none', color: '#fff',
+              width: 36, height: 36, borderRadius: '50%',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              cursor: 'pointer', fontSize: '1.2rem'
+            }}
+          >
+            ✕
+          </button>
+          
+          <div style={{
+            background: 'var(--surface-2)',
+            padding: '40px 32px',
+            borderRadius: '24px',
+            border: '1px solid var(--border)',
+            display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 24,
+            boxShadow: '0 20px 40px rgba(0,0,0,0.5)',
+            maxWidth: 400, width: '100%'
+          }}>
+            <h2 style={{ fontSize: '1.25rem', fontWeight: 700, margin: 0, textAlign: 'center' }}>
+              My QR Code
+            </h2>
+            <QRCodeGenerator
+              url={typeof window !== 'undefined' ? `${window.location.origin}${profile?.role === 'sub_agent' ? `/invite?ref=${user?.id}` : `/${agentSlug}`}` : ''}
+              qrCodeData={qrCodeData}
+              size={240}
+            />
+            <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--silver)', textAlign: 'center', lineHeight: 1.5 }}>
+              Have your clients scan this code to {profile?.role === 'sub_agent' ? 'register under you' : 'visit your storefront'}!
+            </p>
+          </div>
+        </div>,
+        document.body
+      )}
 
       <style>{`
         .pnl-navbar { }
