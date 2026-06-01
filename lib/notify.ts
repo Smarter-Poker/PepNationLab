@@ -11,6 +11,7 @@
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { deliverPushNow } from '@/lib/push-deliver';
+import { pushTypeAllowed } from '@/lib/push-prefs';
 
 export type NotificationType =
   | 'order_placed'
@@ -72,11 +73,15 @@ export async function notify(
     // 2. Check user push preferences
     const { data: prefs } = await supabase
       .from('notification_preferences')
-      .select('push_enabled, push_events_order, push_events_messages, push_events_marketing, mute_all')
+      .select('push_enabled, push_events_order, push_events_messages, push_events_marketing, mute_all, push_type_prefs')
       .eq('user_id', userId)
       .maybeSingle();
 
     if (!prefs?.push_enabled || prefs?.mute_all) return;
+
+    // Per-event opt-out (Notification Preferences page). A push type is sent
+    // unless the user explicitly turned it off in push_type_prefs.
+    if (!pushTypeAllowed(prefs.push_type_prefs as Record<string, boolean> | null, type)) return;
 
     // Check per-event preference
     const orderTypes: NotificationType[] = [

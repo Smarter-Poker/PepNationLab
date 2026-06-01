@@ -8,7 +8,7 @@ import { createClient } from '@/lib/supabase/client';
 import NavbarNotificationBell from '@/components/NavbarNotificationBell';
 import MessageBell from '@/components/MessageBell';
 
-/* ─────────────────────────────────────────────
+/* ───────────────────────────────────────────── 
    Page title resolution — maps route prefixes
    to human-readable, title-case labels.
    ───────────────────────────────────────────── */
@@ -61,7 +61,7 @@ function resolveTitle(pathname: string, role: string): string {
   return 'Pep Nation Lab';
 }
 
-/* ─────────────────────────────────────────────
+/* ───────────────────────────────────────────── 
    Mobile / slide-out nav drawer items
    ───────────────────────────────────────────── */
 function DrawerLink({
@@ -524,6 +524,10 @@ export default function Navbar({ onMenuClick, isOpen, title }: { onMenuClick?: (
               )}
 
 
+
+              <DrawerLink href="/account/notification-preferences" label="Notification Preferences" onClick={closeDrawer}
+                icon={<svg {...IP}><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>}
+              />
 
               <div style={{ height: 1, background: 'rgba(255,255,255,0.06)', margin: 'var(--space-2) 0' }} />
 
