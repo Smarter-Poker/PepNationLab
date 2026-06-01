@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { Search, X, Clock, Copy, ExternalLink, Trash2, Filter } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -18,6 +19,9 @@ import { toast } from 'sonner';
 //   #13 zero-results logging via /api/admin/search-log
 //   #14 per-group "Show More" expand-to-full
 //   #15 mobile h1 shrink via clamp()
+//
+// fix-52b (post-audit): abort in-flight fetch on unmount, router.push
+// for Enter-key navigation instead of window.location.
 
 type Scope = 'all' | 'users' | 'products' | 'orders' | 'storefronts' | 'coupons' | 'transactions';
 
@@ -134,7 +138,6 @@ function countActiveFilters(f: OrderFilters): number {
   return (f.status ? 1 : 0) + (f.payment ? 1 : 0) + (f.from ? 1 : 0) + (f.to ? 1 : 0) + (f.min ? 1 : 0) + (f.max ? 1 : 0);
 }
 
-// #3: cheap client-side relevance per result. Larger = more relevant.
 function relevanceScore(title: string, subtitle: string, q: string): number {
   if (!q) return 0;
   const t = (title || '').toLowerCase();
@@ -148,8 +151,6 @@ function relevanceScore(title: string, subtitle: string, q: string): number {
   return score;
 }
 
-// #10: deterministic hue from a stable string so the same person always
-// gets the same colored circle. HSL with fixed S/L for visual harmony.
 function avatarColor(seed: string): string {
   let h = 0;
   for (let i = 0; i < seed.length; i++) h = (h * 31 + seed.charCodeAt(i)) | 0;
@@ -165,8 +166,6 @@ function initialsFor(name: string | null | undefined, fallback: string): string 
   return src.slice(0, 2).toUpperCase();
 }
 
-// #9: date presets. Returns ISO yyyy-mm-dd strings since the filter
-// inputs are <input type="date"> elements.
 function isoDay(d: Date): string {
   const y = d.getFullYear();
   const m = String(d.getMonth() + 1).padStart(2, '0');
@@ -188,13 +187,13 @@ function datePresetRange(preset: 'last_7' | 'last_30' | 'this_month' | 'last_mon
     const from = new Date(now.getFullYear(), now.getMonth(), 1);
     return { from: isoDay(from), to: isoDay(now) };
   }
-  // last_month
   const from = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-  const to = new Date(now.getFullYear(), now.getMonth(), 0); // last day of prev month
+  const to = new Date(now.getFullYear(), now.getMonth(), 0);
   return { from: isoDay(from), to: isoDay(to) };
 }
 
 export default function AdminSearchClient() {
+  const router = useRouter();
   const [query, setQuery] = useState('');
   const [scope, setScope] = useState<Scope>('all');
   const [filters, setFilters] = useState<OrderFilters>(BLANK_FILTERS);
@@ -204,7 +203,6 @@ export default function AdminSearchClient() {
   const [err, setErr] = useState<string | null>(null);
   const [recent, setRecent] = useState<string[]>([]);
   const [focusedIdx, setFocusedIdx] = useState(0);
-  // #14: per-group expanded state. Default false; clicking Show More flips.
   const [expanded, setExpanded] = useState<Record<Scope, boolean>>({
     all: false, users: false, storefronts: false, products: false,
     orders: false, coupons: false, transactions: false,
@@ -213,9 +211,7 @@ export default function AdminSearchClient() {
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const resultRefs = useRef<Map<string, HTMLAnchorElement | null>>(new Map());
-  // #5: AbortController for in-flight fetches.
   const inflightRef = useRef<AbortController | null>(null);
-  // #13: avoid double-logging the same empty query.
   const loggedEmptyRef = useRef<string>('');
 
   useEffect(() => {
@@ -239,7 +235,6 @@ export default function AdminSearchClient() {
     inputRef.current?.focus();
   }, []);
 
-  // Sync URL state.
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const p = new URLSearchParams();
@@ -260,7 +255,6 @@ export default function AdminSearchClient() {
     if (scope === 'orders') setFiltersOpen(true);
   }, [scope]);
 
-  // #5: AbortController-aware fetch.
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
     const q = query.trim();
@@ -270,13 +264,11 @@ export default function AdminSearchClient() {
       setLoading(false);
       setErr(null);
       setFocusedIdx(0);
-      // Cancel any in-flight superseded by an empty query.
       inflightRef.current?.abort();
       inflightRef.current = null;
       return;
     }
     debounceRef.current = setTimeout(async () => {
-      // Abort any prior request before issuing a new one.
       inflightRef.current?.abort();
       const ac = new AbortController();
       inflightRef.current = ac;
@@ -309,7 +301,6 @@ export default function AdminSearchClient() {
         if (ac.signal.aborted) return;
         setResults(json);
         setFocusedIdx(0);
-        // Reset per-group expanded state on a fresh query.
         setExpanded({
           all: false, users: false, storefronts: false, products: false,
           orders: false, coupons: false, transactions: false,
@@ -324,10 +315,12 @@ export default function AdminSearchClient() {
     }, 220);
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
+      // fix-52b: also abort the in-flight request on cleanup so a pending
+      // fetch that resolves after unmount can't setState on a dead tree.
+      inflightRef.current?.abort();
     };
   }, [query, scope, filters]);
 
-  // Build & sort each group by relevance (#3).
   const grouped = useMemo(() => {
     if (!results) return null;
     const q = query.trim();
@@ -375,7 +368,6 @@ export default function AdminSearchClient() {
       };
     });
 
-    // #1: deep-link orders to the orders list pre-filtered by status.
     const orderItems: FlatItem[] = results.orders.map((o) => {
       const title = o.buyer_name || o.buyer_email || `Order ${o.id.slice(0, 8)}`;
       const subtitle = `${prettyStatus(o.status)} · ${formatMoney(o.total)}${o.tracking_number ? ' · Tracking ' + o.tracking_number : ''}${o.payment_method ? ' · ' + o.payment_method : ''} · ${new Date(o.created_at).toLocaleDateString()}`;
@@ -386,8 +378,6 @@ export default function AdminSearchClient() {
         title, subtitle,
         ctaLabel: 'Open',
         copyTracking: o.tracking_number ?? undefined,
-        // Prefer server score for orders (real trigram similarity) then
-        // fall back to client heuristic.
         matchScore: o.match_score != null ? o.match_score * 10 : relevanceScore(title, subtitle, q),
       };
     });
@@ -406,7 +396,6 @@ export default function AdminSearchClient() {
       };
     });
 
-    // #1: deep-link transactions to the ledger pre-filtered by agent.
     const transactionItems: FlatItem[] = results.transactions.map((t) => {
       const title = t.description || `Transaction ${t.id.slice(0, 8)}`;
       const subtitle = `${t.type} · ${formatMoney(t.amount)} · ${new Date(t.created_at).toLocaleDateString()}${t.order_id ? ' · Order ' + t.order_id.slice(0, 8) : ''}`;
@@ -420,7 +409,6 @@ export default function AdminSearchClient() {
       };
     });
 
-    // Sort each group descending by matchScore (stable for ties).
     const byScoreDesc = (a: FlatItem, b: FlatItem) => (b.matchScore ?? 0) - (a.matchScore ?? 0);
     userItems.sort(byScoreDesc);
     storefrontItems.sort(byScoreDesc);
@@ -439,8 +427,6 @@ export default function AdminSearchClient() {
     };
   }, [results, query]);
 
-  // Flat list (for keyboard nav) — respects the per-group expanded state
-  // so ↓/↑ only walks visible rows.
   const flatList: FlatItem[] = useMemo(() => {
     if (!grouped) return [];
     const slice = (arr: FlatItem[], type: Scope) =>
@@ -471,7 +457,6 @@ export default function AdminSearchClient() {
     });
   }, [results, query, totalHits]);
 
-  // #13: log zero-result queries (deduped per query+scope combo).
   useEffect(() => {
     if (!results) return;
     const q = query.trim();
@@ -503,7 +488,8 @@ export default function AdminSearchClient() {
         const item = flatList[focusedIdx];
         if (item) {
           e.preventDefault();
-          window.location.href = item.href;
+          // fix-52b: client-side nav for consistency with the <Link> path.
+          router.push(item.href);
         }
       } else if (e.key === 'Escape') {
         if (query) {
@@ -517,7 +503,7 @@ export default function AdminSearchClient() {
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [flatList, focusedIdx, query]);
+  }, [flatList, focusedIdx, query, router]);
 
   useEffect(() => {
     const item = flatList[focusedIdx];
@@ -568,7 +554,6 @@ export default function AdminSearchClient() {
   return (
     <div style={{ maxWidth: 1000, margin: '0 auto' }}>
       <div style={{ position: 'sticky', top: 0, background: 'var(--black, #050A0F)', paddingBottom: 12, zIndex: 10, marginBottom: 16 }}>
-        {/* #15: clamp shrinks the heading on narrow viewports. */}
         <h1 style={{ fontSize: 'clamp(1.2rem, 4vw, 1.6rem)', fontWeight: 700, marginBottom: 12 }}>Global Search</h1>
 
         <label
@@ -604,7 +589,6 @@ export default function AdminSearchClient() {
           )}
         </label>
 
-        {/* #12: chips are toggle buttons inside a toolbar, not tabs. */}
         <div role="toolbar" aria-label="Search Scope" style={{ display: 'flex', gap: 6, overflowX: 'auto', paddingBottom: 4, WebkitOverflowScrolling: 'touch', alignItems: 'center' }}>
           {SCOPE_LABELS.map((s) => {
             const count = s.key === 'all' ? totalHits : (counts ? (counts as Record<string, number>)[s.key] : 0);
@@ -689,7 +673,6 @@ export default function AdminSearchClient() {
               borderRadius: 12, padding: 14, marginTop: 10,
             }}
           >
-            {/* #9: date presets row */}
             <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 10 }}>
               <span style={{ fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--grey-400, #A8B4C0)', fontWeight: 700, alignSelf: 'center' }}>Quick Range:</span>
               <PresetBtn label="Last 7 Days"  onClick={() => applyPreset('last_7')}  />
@@ -760,7 +743,7 @@ export default function AdminSearchClient() {
         <>
           {grouped.users.length > 0 && (
             <ResultGroup
-              title="Users" count={grouped.users.length} scope="users"
+              title="Users" count={grouped.users.length}
               expanded={expanded.users}
               onToggleExpanded={() => setExpanded((e) => ({ ...e, users: !e.users }))}
             >
@@ -778,7 +761,7 @@ export default function AdminSearchClient() {
 
           {grouped.storefronts.length > 0 && (
             <ResultGroup
-              title="Storefronts" count={grouped.storefronts.length} scope="storefronts"
+              title="Storefronts" count={grouped.storefronts.length}
               expanded={expanded.storefronts}
               onToggleExpanded={() => setExpanded((e) => ({ ...e, storefronts: !e.storefronts }))}
             >
@@ -791,7 +774,7 @@ export default function AdminSearchClient() {
 
           {grouped.products.length > 0 && (
             <ResultGroup
-              title="Products" count={grouped.products.length} scope="products"
+              title="Products" count={grouped.products.length}
               expanded={expanded.products}
               onToggleExpanded={() => setExpanded((e) => ({ ...e, products: !e.products }))}
             >
@@ -804,7 +787,7 @@ export default function AdminSearchClient() {
 
           {grouped.orders.length > 0 && (
             <ResultGroup
-              title="Orders" count={grouped.orders.length} scope="orders"
+              title="Orders" count={grouped.orders.length}
               expanded={expanded.orders}
               onToggleExpanded={() => setExpanded((e) => ({ ...e, orders: !e.orders }))}
             >
@@ -822,7 +805,7 @@ export default function AdminSearchClient() {
 
           {grouped.coupons.length > 0 && (
             <ResultGroup
-              title="Coupons" count={grouped.coupons.length} scope="coupons"
+              title="Coupons" count={grouped.coupons.length}
               expanded={expanded.coupons}
               onToggleExpanded={() => setExpanded((e) => ({ ...e, coupons: !e.coupons }))}
             >
@@ -835,7 +818,7 @@ export default function AdminSearchClient() {
 
           {grouped.transactions.length > 0 && (
             <ResultGroup
-              title="Transactions" count={grouped.transactions.length} scope="transactions"
+              title="Transactions" count={grouped.transactions.length}
               expanded={expanded.transactions}
               onToggleExpanded={() => setExpanded((e) => ({ ...e, transactions: !e.transactions }))}
             >
@@ -850,8 +833,6 @@ export default function AdminSearchClient() {
     </div>
   );
 }
-
-// ─── Sub-components ───
 
 function PresetBtn({ label, onClick }: { label: string; onClick: () => void }) {
   return (
@@ -893,11 +874,10 @@ const inputStyle: React.CSSProperties = {
 const selectStyle: React.CSSProperties = { ...inputStyle, paddingRight: 24 };
 
 function ResultGroup({
-  title, count, scope, expanded, onToggleExpanded, children,
+  title, count, expanded, onToggleExpanded, children,
 }: {
   title: string;
   count: number;
-  scope: Scope;
   expanded: boolean;
   onToggleExpanded: () => void;
   children: React.ReactNode;
@@ -940,8 +920,6 @@ function ResultRow({
   onCopyEmail?: () => void;
   onCopyTracking?: () => void;
 }) {
-  // Server-side trigram score on orders is 0..10 after our ×10. Threshold
-  // at 4 (~0.4 raw similarity) — anything lower isn't worth advertising.
   const showScore = item.type === 'orders' && item.matchScore != null && item.matchScore >= 4;
   return (
     <Link
@@ -957,7 +935,6 @@ function ResultRow({
         outlineOffset: focused ? -1 : 0,
       }}
     >
-      {/* #10: avatar circle on user rows */}
       {item.type === 'users' && item.avatarSeed && (
         <div
           aria-hidden="true"
@@ -994,7 +971,6 @@ function ResultRow({
             </span>
           )}
         </div>
-        {/* #2: highlight subtitle too */}
         <div style={{ fontSize: '0.78rem', color: 'var(--grey-400, #A8B4C0)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
           {highlight(item.subtitle, query)}
         </div>
