@@ -159,6 +159,8 @@ export default function AgentAccountDetail({
 
   useEffect(() => { load(); }, [load]);
 
+  const isSubAgent = detail?.agent?.is_sub_agent === true;
+
   async function saveChanges() {
     setSaving(true);
     try {
@@ -170,8 +172,8 @@ export default function AgentAccountDetail({
         account_type: accountType,
         commission_pct: baseVal,
         is_active: isActive,
-        display_name: displayName || undefined,
-        slug: slug || undefined,
+        display_name: isSubAgent ? undefined : (displayName || undefined),
+        slug: isSubAgent ? undefined : (slug || undefined),
       };
       if (commissionMode === 'fixed') {
         // Fixed percentage: cap == base forces a flat effective rate.
@@ -308,19 +310,21 @@ export default function AgentAccountDetail({
                 >
                   Overview
                 </button>
-                <button
-                  type="button"
-                  onClick={() => setActiveTab('Sub Agents')}
-                  style={{
-                    background: 'none', border: 'none', padding: '0 0 8px 0', cursor: 'pointer',
-                    fontSize: '1rem', fontWeight: 700,
-                    color: activeTab === 'Sub Agents' ? '#00E5FF' : 'var(--grey-400)',
-                    borderBottom: activeTab === 'Sub Agents' ? '2px solid #00E5FF' : '2px solid transparent',
-                    textTransform: 'uppercase', letterSpacing: '0.05em'
-                  }}
-                >
-                  Sub Agents ({detail.sub_agents?.length || 0})
-                </button>
+                {!isSubAgent && (
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('Sub Agents')}
+                    style={{
+                      background: 'none', border: 'none', padding: '0 0 8px 0', cursor: 'pointer',
+                      fontSize: '1rem', fontWeight: 700,
+                      color: activeTab === 'Sub Agents' ? '#00E5FF' : 'var(--grey-400)',
+                      borderBottom: activeTab === 'Sub Agents' ? '2px solid #00E5FF' : '2px solid transparent',
+                      textTransform: 'uppercase', letterSpacing: '0.05em'
+                    }}
+                  >
+                    Sub Agents ({detail.sub_agents?.length || 0})
+                  </button>
+                )}
               </div>
 
               {activeTab === 'Overview' && (
@@ -356,7 +360,9 @@ export default function AgentAccountDetail({
 
               {/* Edit form */}
               <div className="metal-embossed-panel" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
-                <h3 className="metal-text" style={{ fontSize: '1rem', margin: 0, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Edit Agent</h3>
+                <h3 className="metal-text" style={{ fontSize: '1rem', margin: 0, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  {isSubAgent ? 'Edit Sub-Agent' : 'Edit Agent'}
+                </h3>
 
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 'var(--space-4)' }}>
                   <div>
@@ -369,16 +375,20 @@ export default function AgentAccountDetail({
                   </div>
                   <div>
                     <label style={labelStyle}>Phone Number</label>
-                    <input style={inputStyle} type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} />
+                    <input style={inputStyle} type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="(555) 123-4567" />
                   </div>
-                  <div>
-                    <label style={labelStyle}>Storefront Name</label>
-                    <input style={inputStyle} value={displayName} onChange={(e) => setDisplayName(e.target.value)} placeholder="Store Display Name" />
-                  </div>
-                  <div>
-                    <label style={labelStyle}>URL Slug</label>
-                    <input style={inputStyle} value={slug} onChange={(e) => setSlug(e.target.value.toLowerCase().replace(/[^a-z0-9\-]/g, ''))} placeholder="e.g. john-store" />
-                  </div>
+                  {!(detail?.agent.is_sub_agent === true) && (
+                    <>
+                      <div>
+                        <label style={labelStyle}>Storefront Name</label>
+                        <input style={inputStyle} value={displayName} onChange={(e) => setDisplayName(e.target.value)} placeholder="Store Display Name" />
+                      </div>
+                      <div>
+                        <label style={labelStyle}>URL Slug</label>
+                        <input style={inputStyle} value={slug} onChange={(e) => setSlug(e.target.value.toLowerCase().replace(/[^a-z0-9\-]/g, ''))} placeholder="e.g. john-store" />
+                      </div>
+                    </>
+                  )}
                 </div>
 
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 'var(--space-4)' }}>

@@ -22,7 +22,7 @@ type CallerCheck =
   | { ok: true; callerId: string; isAdmin: boolean }
   | { ok: false; response: NextResponse };
 
-async function gateSuperAgent(): Promise<CallerCheck> {
+async function gateManager(): Promise<CallerCheck> {
   const gate = await requireAgent();
   if (!gate.ok) return { ok: false, response: gate.response };
   const supabase = await createServiceClient();
@@ -32,11 +32,13 @@ async function gateSuperAgent(): Promise<CallerCheck> {
     .eq('id', gate.user.id)
     .single();
   const isAdmin = caller?.role === 'admin';
-  if (!caller || (!caller.is_super_agent && !isAdmin)) {
+  const isSuperAgent = caller?.is_super_agent === true;
+  const isAgent = caller?.role === 'agent';
+  if (!caller || (!isSuperAgent && !isAgent && !isAdmin)) {
     return {
       ok: false,
       response: NextResponse.json(
-        { error: 'Forbidden. Only Super Agents Can Manage Agent Accounts.' },
+        { error: 'Forbidden. Only Agents And Super Agents Can Manage Accounts.' },
         { status: 403 },
       ),
     };
@@ -51,7 +53,7 @@ const num = (v: unknown): number => {
 
 export async function GET(_req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
   try {
-    const gate = await gateSuperAgent();
+    const gate = await gateManager();
     if (!gate.ok) return gate.response;
     const { id } = await ctx.params;
     const supabase = await createServiceClient();
@@ -175,7 +177,7 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
   if (csrf) return csrf;
 
   try {
-    const gate = await gateSuperAgent();
+    const gate = await gateManager();
     if (!gate.ok) return gate.response;
     const { id } = await ctx.params;
     const supabase = await createServiceClient();

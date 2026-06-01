@@ -130,10 +130,14 @@ export async function POST(req: NextRequest) {
     // role='agent', so disambiguate via is_super_agent for the dashboard.
     const createdByRole = callerProfile.is_super_agent === true ? 'super_agent' : 'agent';
 
+    // If Super Agent, promote to Agent (is_sub_agent: false)
+    // If Agent, promote to Sub Agent (is_sub_agent: true)
+    const isPromotingToFullAgent = callerProfile.is_super_agent === true;
+
     const now = new Date().toISOString();
     const updatePayload: Record<string, unknown> = {
       role: 'agent',
-      is_sub_agent: true,
+      is_sub_agent: !isPromotingToFullAgent,
       parent_agent_id: callerId,
       created_by_agent_id: callerId,
       created_by_role: createdByRole,
@@ -179,7 +183,7 @@ export async function POST(req: NextRequest) {
       changes: {
         previous_role: researcherProfile.role,
         new_role: 'agent',
-        is_sub_agent: true,
+        is_sub_agent: !isPromotingToFullAgent,
         commission_pct: commissionPct,
         commission_active_since: now,
         parent_agent_id: callerId,
@@ -221,7 +225,7 @@ export async function POST(req: NextRequest) {
       parent_slug: parentSlug,
       share_link: shareLink,
       created_by_role: createdByRole,
-      message: `${researcherProfile.full_name || 'Researcher'} Has Been Promoted To Sub-Agent At ${commissionPct}% Commission.`,
+      message: `${researcherProfile.full_name || 'Researcher'} Has Been Promoted To ${isPromotingToFullAgent ? 'Agent' : 'Sub-Agent'} At ${commissionPct}% Commission.`,
     });
 
   } catch (error) {

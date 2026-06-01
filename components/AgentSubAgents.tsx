@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import { pickOne } from '@/lib/relations';
 import SubAgentCommissionEditor from './SubAgentCommissionEditor';
+import AgentAccountDetail from '@/components/AgentAccountDetail';
 import {
   exportCSV,
   downloadCSV,
@@ -56,6 +57,9 @@ export default function AgentSubAgents({ agentId }: { agentId?: string }) {
 
   // Trust Toggle State
   const [togglingTrust, setTogglingTrust] = useState<string | null>(null);
+
+  // Agent management detail drawer
+  const [detailAgent, setDetailAgent] = useState<{ id: string; name: string } | null>(null);
 
   const fetchData = async () => {
     try {
@@ -497,7 +501,13 @@ export default function AgentSubAgents({ agentId }: { agentId?: string }) {
                     })()}
                   </div>
                   <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end', flexWrap: 'wrap', flex: '1 1 auto' }}>
-                    <SubAgentCommissionEditor subAgentId={agent.id} name={agent.full_name || agent.username || 'Sub-Agent'} />
+                    <button
+                      type="button"
+                      className="btn-neon-cyan"
+                      onClick={() => setDetailAgent({ id: agent.id, name: agent.full_name || agent.username || 'Sub-Agent' })}
+                    >
+                      Manage
+                    </button>
                     <button
                       className="btn-silver"
                       onClick={() => handleGenerateInvoice(agent.id)}
@@ -874,6 +884,15 @@ export default function AgentSubAgents({ agentId }: { agentId?: string }) {
             </div>
           </div>
         </div>
+      )}
+      {/* Agent Management Detail Drawer */}
+      {detailAgent && (
+        <AgentAccountDetail
+          agentId={detailAgent.id}
+          agentName={detailAgent.name}
+          onClose={() => setDetailAgent(null)}
+          onChanged={fetchData}
+        />
       )}
     </div>
   );

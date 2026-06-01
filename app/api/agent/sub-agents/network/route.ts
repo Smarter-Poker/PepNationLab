@@ -30,10 +30,10 @@ export async function GET() {
     const callerId = gate.user.id;
     const svc = await createServiceClient();
 
-    // Caller must be a super-agent (and never a sub-agent).
+    // Caller must be a super-agent or agent (not sub-agent).
     const { data: caller } = await svc
       .from('profiles')
-      .select('id, full_name, username, email, is_super_agent, is_sub_agent')
+      .select('id, full_name, username, email, is_super_agent, is_sub_agent, role')
       .eq('id', callerId)
       .maybeSingle();
 
@@ -41,13 +41,22 @@ export async function GET() {
       return NextResponse.json({ error: 'Forbidden.' }, { status: 403 });
     }
 
-    // Sub-agents directly under this caller.
-    const { data: subs, error: sErr } = await svc
+    const isSuperAgent = caller.role === 'super_agent' || caller.is_super_agent === true;
+
+    // Downline directly under this caller.
+    let query = svc
       .from('profiles')
       .select('id, full_name, username, email, commission_pct, is_active, created_at')
       .eq('parent_agent_id', callerId)
-      .eq('is_sub_agent', true)
       .order('created_at', { ascending: false });
+
+    if (isSuperAgent) {
+      query = query.eq('is_sub_agent', false);
+    } else {
+      query = query.eq('is_sub_agent', true);
+    }
+
+    const { data: subs, error: sErr } = await query;
 
     if (sErr) {
       console.error('[network] subs error:', sErr.message);

@@ -267,7 +267,7 @@ export default function AgentDashboardClient({
         const errData = await resApi.json();
         throw new Error(errData.error || 'Failed to promote');
       }
-      toast.success('Researcher successfully promoted to Sub-Agent!');
+      toast.success(`Researcher successfully promoted to ${userProfile.is_super_agent ? 'Agent' : 'Sub-Agent'}!`);
       setResearcherList(prev => prev.filter(r => r.id !== promoteResearcher.id));
       setPromoteResearcher(null);
     } catch (err: any) {
@@ -545,9 +545,10 @@ export default function AgentDashboardClient({
     { id: 'Orders', type: 'tab', label: 'Orders & Fulfillment', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path><line x1="3" y1="6" x2="21" y2="6"></line><path d="M16 10a4 4 0 0 1-8 0"></path></svg> },
     ...(agentProfile ? [{ id: 'visit', type: 'href', label: 'Visit My Storefront', href: storefrontUrl, icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg> }] : []),
     ...(userProfile.is_super_agent ? [
-      { id: 'My Agent Accounts', type: 'tab', label: 'My Agents', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /></svg> },
+      { id: 'My Agent Accounts', type: 'tab', label: 'My Agents', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /></svg> }
+    ] : (agentProfile ? [
       { id: 'My Sub-Agents', type: 'tab', label: 'My Sub Agents', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /></svg> }
-    ] : []),
+    ] : [])),
     { id: 'Researchers', type: 'tab', label: 'Researchers', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /></svg> },
     { id: 'Inventory', type: 'tab', label: 'Inventory Management', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" /><polyline points="3.27 6.96 12 12.01 20.73 6.96" /><line x1="12" y1="22.08" x2="12" y2="12" /></svg> },
     { id: 'Sales & Accounting', type: 'tab', label: 'Sales & Accounting', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17" /><polyline points="16 7 22 7 22 13" /></svg> },
@@ -716,14 +717,16 @@ export default function AgentDashboardClient({
         {/* My Sub-Agents Tab */}
         {activeTab === 'My Sub-Agents' && (
           <div style={{ animation: 'fadeIn 0.3s ease-out' }}>
-            <AgentNetworkMap />
             <AgentSubAgents agentId={userProfile.id} />
           </div>
         )}
 
         {/* My Agent Accounts Tab */}
         {activeTab === 'My Agent Accounts' && (
-          <AgentDownline agentId={userProfile.id} />
+          <div style={{ animation: 'fadeIn 0.3s ease-out' }}>
+            <AgentNetworkMap />
+            <AgentDownline agentId={userProfile.id} />
+          </div>
         )}
 
         {/* Store Products Tab */}
@@ -834,7 +837,7 @@ export default function AgentDashboardClient({
                           textShadow: '0 1px 3px rgba(0,0,0,0.6)',
                           fontFamily: 'var(--font-brand)',
                         }}>
-                          Promote To Sub-Agent
+                          {userProfile.is_super_agent ? 'Promote To Agent' : 'Promote To Sub-Agent'}
                         </h3>
                       </div>
                       {/* X close button */}
@@ -856,7 +859,7 @@ export default function AgentDashboardClient({
                     </div>
 
                     <p style={{ color: '#d0d8e4', fontSize: '0.95rem', marginBottom: 20, lineHeight: 1.5 }}>
-                      Promote This Researcher To A Sub-Agent? They Will Be Able To Set Prices For Their Own Downline.
+                      {userProfile.is_super_agent ? 'Promote This Researcher To An Agent?' : 'Promote This Researcher To A Sub-Agent? They Will Be Able To Set Prices For Their Own Downline.'}
                     </p>
 
                     <div className="form-group" style={{ marginBottom: 16 }}>
@@ -894,7 +897,7 @@ export default function AgentDashboardClient({
                         onClick={handlePromoteResearcher}
                         disabled={promoteLoading}
                       >
-                        {promoteLoading ? 'Promoting...' : 'Promote To Sub-Agent'}
+                        {promoteLoading ? 'Promoting...' : (userProfile.is_super_agent ? 'Promote To Agent' : 'Promote To Sub-Agent')}
                       </button>
                     </div>
                   </div>
@@ -1225,7 +1228,7 @@ export default function AgentDashboardClient({
                                 style={{ padding: '4px 8px', fontSize: '0.75rem' }}
                                 onClick={() => setPromoteResearcher(res)}
                               >
-                                Promote To Sub-Agent
+                                {userProfile.is_super_agent ? 'Promote To Agent' : 'Promote To Sub-Agent'}
                               </button>
                             </td>
                           )}
