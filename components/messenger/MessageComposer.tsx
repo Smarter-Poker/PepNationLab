@@ -571,30 +571,47 @@ export default function MessageComposer({ conversationId, selfId, replyTo, onCle
                   when the field is idle — matches the user's reference
                   desktop screenshot of how the composer should behave. */}
               {text.trim() || sending ? (
-                <button
-                  type="button"
-                  onClick={() => { vibrateMedium(); void handleSendText(); }}
-                  disabled={!text.trim() || sending}
-                  aria-label="Send Message" title="Send Message"
-                  className="btn btn-primary"
-                  style={{
-                    borderRadius: '50%',
-                    width: 32,
-                    height: 32,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    padding: 0,
-                    margin: '0 2px 2px 0',
-                    transition: 'transform 0.1s',
-                    flexShrink: 0,
-                  }}
-                >
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                    <line x1="12" y1="19" x2="12" y2="5"></line>
-                    <polyline points="5 12 12 5 19 12"></polyline>
-                  </svg>
-                </button>
+                <>
+                  {/* round-16: emoji button appears LEFT of Send only
+                      while the user is typing. Distinct aria-label
+                      ("Add Emoji") so the round-15 mobile-hide rule
+                      that targets aria-label="Insert Emoji" does NOT
+                      hit this typing-state instance. */}
+                  <button
+                    type="button"
+                    onClick={() => togglePopover(setShowEmoji)}
+                    className="hover-lift composer-emoji-typing"
+                    style={{ background: 'transparent', border: 'none', padding: 0, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}
+                    aria-label="Add Emoji"
+                    title="Add Emoji"
+                  >
+                    <img src="/messenger-icons/emoji-icon.png" alt="Add Emoji" style={{ width: 28, height: 28, objectFit: 'contain' }} />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { vibrateMedium(); void handleSendText(); }}
+                    disabled={!text.trim() || sending}
+                    aria-label="Send Message" title="Send Message"
+                    className="btn btn-primary"
+                    style={{
+                      borderRadius: '50%',
+                      width: 32,
+                      height: 32,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      padding: 0,
+                      margin: '0 2px 2px 0',
+                      transition: 'transform 0.1s',
+                      flexShrink: 0,
+                    }}
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                      <line x1="12" y1="19" x2="12" y2="5"></line>
+                      <polyline points="5 12 12 5 19 12"></polyline>
+                    </svg>
+                  </button>
+                </>
               ) : null}
             </div>
           </div>

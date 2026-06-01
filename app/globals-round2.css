@@ -1061,6 +1061,47 @@ body > * {
   }
 }
 
+/* ============================================================
+   ROUND 16 — DOUBLE THE + BUTTON; EMOJI APPEARS WHEN TYPING
+   ------------------------------------------------------------
+   User asks:
+   1. Double the + (Add Media) button so it's easier to tap and
+      visually prominent — it's the entry point for photo/video.
+   2. Add an emoji icon to the LEFT of the Send button — but only
+      after the user starts typing. JSX renders it inside the
+      `text.trim() || sending` conditional with the distinct
+      aria-label "Add Emoji" so the Round 15 mobile hide rule
+      (which targets aria-label="Insert Emoji") does NOT touch
+      this typing-state instance.
+   ============================================================ */
+
+@media (max-width: 768px) {
+  /* (1) Double the + button on mobile. Was 32px in Round 14,
+     now 64px. The button itself sizes from its image so we set
+     the image to 64x64. */
+  .msg-composer img[alt="Add Media"],
+  .messenger-main .msg-composer img[alt="Add Media"] {
+    width: 64px !important;
+    height: 64px !important;
+    transform: none !important;
+  }
+
+  /* (2) Typing-state emoji button to the LEFT of Send. Distinct
+     class composer-emoji-typing + alt="Add Emoji" so it's never
+     hit by any earlier "Emoji"/"Insert Emoji" hide rule. */
+  .msg-composer .composer-emoji-typing,
+  .messenger-main .msg-composer .composer-emoji-typing {
+    display: flex !important;
+    flex-shrink: 0 !important;
+  }
+  .msg-composer img[alt="Add Emoji"],
+  .messenger-main .msg-composer img[alt="Add Emoji"] {
+    width: 28px !important;
+    height: 28px !important;
+    transform: none !important;
+  }
+}
+
 /* --- (3) Product Catalog mobile UX: hide dropdowns, show search --- */
 .agentprod-mobile-search { display: none; }
 @media (max-width: 768px) {
