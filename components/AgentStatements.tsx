@@ -83,12 +83,12 @@ export default function AgentStatements() {
           <table className="table" style={{ minWidth: 600 }}>
           <thead>
             <tr>
-              <th>Week</th>
-              <th>Orders</th>
-              <th>COGS</th>
-              <th>Shipping</th>
-              <th>Total Owed</th>
-              <th>Status</th>
+              <th style={{ textAlign: 'center' }}>Week</th>
+              <th style={{ textAlign: 'center' }}>Orders</th>
+              <th style={{ textAlign: 'center' }}>COGS</th>
+              <th style={{ textAlign: 'center' }}>Shipping</th>
+              <th style={{ textAlign: 'center' }}>Total Owed</th>
+              <th style={{ textAlign: 'center' }}>Status</th>
             </tr>
           </thead>
           <tbody>
@@ -96,7 +96,7 @@ export default function AgentStatements() {
               const orderCount = stmt.statement_orders?.[0]?.count || 0;
               return (
                 <tr key={stmt.id}>
-                  <td>
+                  <td style={{ textAlign: 'center' }}>
                     <div style={{ fontWeight: 600, color: 'var(--white)' }}>
                       {new Date(stmt.week_start).toLocaleDateString()}
                     </div>
@@ -104,11 +104,11 @@ export default function AgentStatements() {
                       to {new Date(stmt.week_end).toLocaleDateString()}
                     </div>
                   </td>
-                  <td>{orderCount}</td>
-                  <td>{new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(Number(stmt.total_cogs) || 0)}</td>
-                  <td>{new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(Number(stmt.total_shipping) || 0)}</td>
-                  <td style={{ color: 'var(--teal)', fontWeight: 600 }}>{new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(Number(stmt.total_owed) || 0)}</td>
-                  <td>
+                  <td style={{ textAlign: 'center' }}>{orderCount}</td>
+                  <td style={{ textAlign: 'center' }}>{new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(Number(stmt.total_cogs) || 0)}</td>
+                  <td style={{ textAlign: 'center' }}>{new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(Number(stmt.total_shipping) || 0)}</td>
+                  <td style={{ textAlign: 'center', color: 'var(--teal)', fontWeight: 600 }}>{new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(Number(stmt.total_owed) || 0)}</td>
+                  <td style={{ textAlign: 'center' }}>
                     {stmt.status === 'paid' ? (
                       <span className="badge badge-teal">Paid</span>
                     ) : (

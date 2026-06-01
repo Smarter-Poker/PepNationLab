@@ -305,8 +305,8 @@ export default function AgentSales({ orders, setOrders, agentId, userProfile }: 
         </div>
 
         {/* ACCOUNTING SECTION */}
-        <div style={{ marginTop: 'var(--space-6)', display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
+        <div style={{ marginTop: 'var(--space-4)', display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
             {(!userProfile?.tier?.includes('sub-agent')) && (
               <div style={{ animation: 'fadeIn 0.3s ease-out' }}>
                 <AgentStatements />

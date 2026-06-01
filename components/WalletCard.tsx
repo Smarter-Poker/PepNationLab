@@ -66,15 +66,19 @@ export default function WalletCard() {
 
   if (loading) {
     return (
-      <div className="card-metal" style={{ padding: 'var(--space-8)', textAlign: 'center', color: 'var(--silver)' }}>
-        Loading Your Lab Wallet...
+      <div className="metal-frame" style={{ textAlign: 'center', color: 'var(--silver)' }}>
+        <div className="metal-content" style={{ padding: 'var(--space-8)' }}>
+          Loading Your Lab Wallet...
+        </div>
       </div>
     );
   }
   if (error || !data) {
     return (
-      <div className="card-metal" style={{ padding: 'var(--space-6)', color: 'var(--red)' }}>
-        {error || 'Wallet Unavailable.'}
+      <div className="metal-frame" style={{ color: 'var(--red)' }}>
+        <div className="metal-content" style={{ padding: 'var(--space-6)' }}>
+          {error || 'Wallet Unavailable.'}
+        </div>
       </div>
     );
   }
@@ -108,15 +112,15 @@ export default function WalletCard() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-5)' }}>
       {/* Balance hero */}
-      <div
-        className="card-metal"
-        style={{
-          padding: 'var(--space-6)',
-          background: 'linear-gradient(180deg, #0d1822 0%, #0a1119 100%)',
-          border: '1px solid rgba(0,196,188,0.2)',
-        }}
-      >
+      <div className="metal-frame">
         <div
+          className="metal-content"
+          style={{
+            padding: 'var(--space-6)',
+            background: 'linear-gradient(180deg, #0d1822 0%, #0a1119 100%)',
+          }}
+        >
+          <div
           style={{
             fontSize: '0.72rem',
             color: 'var(--teal)',
@@ -181,11 +185,13 @@ export default function WalletCard() {
             </div>
           </div>
         )}
+        </div>
       </div>
 
       {/* Transaction history */}
-      <div className="card-metal" style={{ padding: 'var(--space-6)' }}>
-        <h3
+      <div className="metal-frame">
+        <div className="metal-content" style={{ padding: 'var(--space-6)' }}>
+          <h3
           style={{
             fontSize: '0.82rem',
             color: 'var(--silver)',
@@ -252,6 +258,8 @@ export default function WalletCard() {
           </div>
         )}
       </div>
+    </div>
+  );
     </div>
   );
 }

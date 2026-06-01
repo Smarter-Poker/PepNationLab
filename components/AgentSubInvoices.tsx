@@ -99,27 +99,27 @@ export default function AgentSubInvoices({ isSuperAgent }: { isSuperAgent: boole
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem' }}>
           <thead>
             <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
-              <th style={{ textAlign: 'left', padding: 'var(--space-3)', color: 'var(--silver)' }}>Billing Period</th>
+              <th style={{ textAlign: 'center', padding: 'var(--space-3)', color: 'var(--silver)' }}>Billing Period</th>
               {isSuperAgent && (
-                <th style={{ textAlign: 'left', padding: 'var(--space-3)', color: 'var(--silver)' }}>Sub-Agent</th>
+                <th style={{ textAlign: 'center', padding: 'var(--space-3)', color: 'var(--silver)' }}>Sub-Agent</th>
               )}
-              <th style={{ textAlign: 'right', padding: 'var(--space-3)', color: 'var(--silver)' }}>COGS</th>
-              <th style={{ textAlign: 'right', padding: 'var(--space-3)', color: 'var(--silver)' }}>Shipping</th>
-              <th style={{ textAlign: 'right', padding: 'var(--space-3)', color: 'var(--teal)' }}>Total Owed</th>
+              <th style={{ textAlign: 'center', padding: 'var(--space-3)', color: 'var(--silver)' }}>COGS</th>
+              <th style={{ textAlign: 'center', padding: 'var(--space-3)', color: 'var(--silver)' }}>Shipping</th>
+              <th style={{ textAlign: 'center', padding: 'var(--space-3)', color: 'var(--teal)' }}>Total Owed</th>
               <th style={{ textAlign: 'center', padding: 'var(--space-3)', color: 'var(--silver)' }}>Status</th>
               {isSuperAgent && (
-                <th style={{ textAlign: 'right', padding: 'var(--space-3)', color: 'var(--silver)' }}>Action</th>
+                <th style={{ textAlign: 'center', padding: 'var(--space-3)', color: 'var(--silver)' }}>Action</th>
               )}
             </tr>
           </thead>
           <tbody>
             {invoices.map(inv => (
               <tr key={inv.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                <td style={{ padding: 'var(--space-3)', color: 'var(--white)' }}>
+                <td style={{ padding: 'var(--space-3)', color: 'var(--white)', textAlign: 'center' }}>
                   {inv.week_start} to {inv.week_end}
                 </td>
                 {isSuperAgent && (
-                  <td style={{ padding: 'var(--space-3)', color: 'var(--silver)' }}>
+                  <td style={{ padding: 'var(--space-3)', color: 'var(--silver)', textAlign: 'center' }}>
                     {(() => {
                       const p = Array.isArray(inv.profiles) ? inv.profiles[0] : inv.profiles;
                       return (
@@ -131,16 +131,16 @@ export default function AgentSubInvoices({ isSuperAgent }: { isSuperAgent: boole
                     })()}
                   </td>
                 )}
-                <td style={{ padding: 'var(--space-3)', color: 'var(--white)' }}>
+                <td style={{ padding: 'var(--space-3)', color: 'var(--white)', textAlign: 'center' }}>
                   {new Date(inv.created_at).toLocaleDateString()}
                 </td>
-                <td style={{ padding: 'var(--space-3)', color: 'var(--white)', textAlign: 'right' }}>
+                <td style={{ padding: 'var(--space-3)', color: 'var(--white)', textAlign: 'center' }}>
                   {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(Number(inv.total_cogs || 0))}
                 </td>
-                <td style={{ padding: 'var(--space-3)', color: 'var(--white)', textAlign: 'right' }}>
+                <td style={{ padding: 'var(--space-3)', color: 'var(--white)', textAlign: 'center' }}>
                   {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(Number(inv.total_shipping || 0))}
                 </td>
-                <td style={{ padding: 'var(--space-3)', color: 'var(--teal)', textAlign: 'right', fontWeight: 'bold' }}>
+                <td style={{ padding: 'var(--space-3)', color: 'var(--teal)', textAlign: 'center', fontWeight: 'bold' }}>
                   {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(Number(inv.total_owed || 0))}
                 </td>
                 <td style={{ padding: 'var(--space-3)', textAlign: 'center' }}>
@@ -157,7 +157,7 @@ export default function AgentSubInvoices({ isSuperAgent }: { isSuperAgent: boole
                   </span>
                 </td>
                 {isSuperAgent && (
-                  <td style={{ padding: 'var(--space-3)', textAlign: 'right' }}>
+                  <td style={{ padding: 'var(--space-3)', textAlign: 'center' }}>
                     {inv.status === 'open' && (
                       <button 
                         className="btn-glass"
