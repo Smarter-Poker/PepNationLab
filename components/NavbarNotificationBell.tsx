@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 import { toast } from 'sonner';
@@ -303,7 +304,7 @@ export default function NavbarNotificationBell() {
       </button>
 
       {/* ── Dropdown Panel (Full Screen) ────────────────────────────────────── */}
-      {open && (
+      {open && typeof document !== 'undefined' && createPortal(
         <div
           style={{
             position: 'fixed',
@@ -313,7 +314,7 @@ export default function NavbarNotificationBell() {
             background: 'rgba(10,14,20,0.98)',
             backdropFilter: 'blur(20px)',
             WebkitBackdropFilter: 'blur(20px)',
-            zIndex: 9999,
+            zIndex: 99999, // Super high z-index to cover everything
             display: 'flex',
             flexDirection: 'column',
           }}
@@ -487,6 +488,7 @@ export default function NavbarNotificationBell() {
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'center',
+            paddingBottom: 'max(10px, env(safe-area-inset-bottom))'
           }}>
             <Link
               href="/account/notifications"
@@ -512,7 +514,8 @@ export default function NavbarNotificationBell() {
               Open Messenger
             </Link>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
