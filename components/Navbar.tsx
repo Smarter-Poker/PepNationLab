@@ -278,13 +278,7 @@ export default function Navbar({ onMenuClick, isOpen, title }: { onMenuClick?: (
             transition: 'background 0.15s',
           }}
         >
-          {(isOpen !== undefined ? isOpen : drawerOpen) ? (
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-              <path d="M18 6L6 18M6 6l12 12" />
-            </svg>
-          ) : (
-            <img src="/images/hamburger-icon.png" alt="Menu" width={36} height={36} style={{ display: 'block' }} />
-          )}
+          <img src="/images/hamburger-icon.png" alt="Menu" width={36} height={36} style={{ display: 'block' }} />
         </button>
 
         {/* Back arrow */}
