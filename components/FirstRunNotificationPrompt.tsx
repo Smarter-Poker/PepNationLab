@@ -110,7 +110,7 @@ export default function FirstRunNotificationPrompt() {
     >
       <div
         className={!enabled ? "stagger-fade-in" : "card-metal stagger-fade-in"}
-        style={{ width: '100%', maxWidth: 420, padding: !enabled ? 0 : 'var(--space-7, 28px)', textAlign: 'center', borderRadius: 18 }}
+        style={{ width: '100%', maxWidth: 840, padding: !enabled ? 0 : 'var(--space-7, 28px)', textAlign: 'center', borderRadius: 18 }}
       >
         {!enabled ? (
           <div style={{ position: 'relative', width: '100%', filter: 'drop-shadow(0 20px 40px rgba(0,0,0,0.6))' }}>
