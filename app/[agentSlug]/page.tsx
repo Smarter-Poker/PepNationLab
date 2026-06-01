@@ -146,12 +146,19 @@ export default async function AgentStorefrontPage({ params }: Props) {
   }
 
 
+  // Use SECDEF RPC scoped to this storefront's slug so anon visitors can
+  // see stock badges WITHOUT being able to read every agent's inventory.
+  // Replaces a direct `from('agent_inventory')` query that previously
+  // depended on a blanket "Public can read agent inventory USING(true)"
+  // policy (dropped in migration 20260605060000).
   const { data: inventory } = await supabase
-    .from('agent_inventory')
-    .select('product_id, stock_count')
-    .eq('agent_id', agent.id);
+    .rpc('agent_inventory_for_storefront', { p_slug: agentSlug });
 
-  const inventoryMap = new Map(inventory?.map(i => [i.product_id, i.stock_count]) || []);
+  const inventoryMap = new Map(
+    (inventory as Array<{ product_id: string; stock_count: number }> | null)?.map(
+      (i) => [i.product_id, i.stock_count]
+    ) || []
+  );
 
   // Most-recent active lot with an attached COA, per product currently in the
   // storefront. Used to render the "View Certificate Of Analysis" link in the

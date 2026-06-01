@@ -12,11 +12,6 @@
   ],
   "permissive_policies": [
     {
-      "table": "agent_inventory",
-      "policy": "Public can read agent inventory",
-      "reason": "Anon storefront visitors need stock data to render the In-Stock / Out-Of-Stock badges on /[slug] product cards. FOLLOWUP: replace with a SECDEF RPC scoped to a single agent_id so competitors cannot enumerate every agent's stock_count across the platform."
-    },
-    {
       "table": "agent_storefront_events",
       "policy": "storefront_events_anon_insert",
       "reason": "Anon storefront analytics — insert-only event log used by the storefront grid to record view/add-to-cart events for funnel analysis. Append-only; admins read."
