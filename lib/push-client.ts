@@ -30,6 +30,22 @@ function urlBase64ToUint8Array(base64String: string): Uint8Array<ArrayBuffer> {
   return buffer;
 }
 
+/**
+ * True when an existing push subscription was created with the same VAPID
+ * application server key we are about to use. A mismatch means the push
+ * service will reject every send with VapidPkHashMismatch, so the stale
+ * subscription must be dropped and re-created.
+ */
+function applicationServerKeyMatches(existing: ArrayBuffer | null, want: Uint8Array): boolean {
+  if (!existing) return false;
+  const a = new Uint8Array(existing);
+  if (a.length !== want.length) return false;
+  for (let i = 0; i < a.length; i++) {
+    if (a[i] !== want[i]) return false;
+  }
+  return true;
+}
+
 export function isWebPushSupported(): boolean {
   return (
     typeof window !== 'undefined' &&
@@ -65,11 +81,26 @@ export async function enablePush(): Promise<EnableResult> {
     const reg = await navigator.serviceWorker.register('/sw.js');
     await navigator.serviceWorker.ready;
 
+    const wantKey = urlBase64ToUint8Array(vapidKey);
     let subscription = await reg.pushManager.getSubscription();
+
+    // Self-heal: if a subscription already exists but was created with a
+    // different VAPID key (e.g. the server keypair was rotated), every push
+    // to it fails with VapidPkHashMismatch. Drop the stale one so we can
+    // re-subscribe with the current key.
+    if (subscription && !applicationServerKeyMatches(subscription.options?.applicationServerKey ?? null, wantKey)) {
+      try {
+        await subscription.unsubscribe();
+      } catch {
+        // Best-effort — proceed to re-subscribe regardless.
+      }
+      subscription = null;
+    }
+
     if (!subscription) {
       subscription = await reg.pushManager.subscribe({
         userVisibleOnly: true,
-        applicationServerKey: urlBase64ToUint8Array(vapidKey),
+        applicationServerKey: wantKey,
       });
     }
 
