@@ -46,6 +46,7 @@ export default function NavbarWalletBadge() {
   const isResearcher = data.role === 'researcher';
   const primaryBalance = isResearcher ? data.storeCredit : data.prepaidBalance;
 
+  // Let's link to the appropriate wallet/accounting tab
   // NOTE: the tab value must be URL-encoded — the raw "Sales & Accounting"
   // contains an "&" that otherwise terminates the query string, leaving the
   // dashboard with an invalid tab and a blank panel (the wallet never renders).
@@ -61,28 +62,25 @@ export default function NavbarWalletBadge() {
       style={{
         display: 'flex',
         alignItems: 'center',
-        gap: '6px',
-        background: 'rgba(0,196,188,0.1)',
-        border: '1px solid rgba(0,196,188,0.3)',
-        padding: '4px 10px',
-        borderRadius: '999px',
+        gap: '8px',
         textDecoration: 'none',
-        color: 'var(--teal)',
-        fontWeight: 700,
-        fontSize: '0.85rem',
-        fontFamily: 'var(--font-brand)',
         transition: 'transform 0.2s',
       }}
       onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.05)'}
       onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
       title="View Wallet & Accounting"
     >
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M20 12V8H6a2 2 0 0 1-2-2c0-1.1.9-2 2-2h12v4"></path>
-        <path d="M4 6v12c0 1.1.9 2 2 2h14v-4"></path>
-        <path d="M18 12a2 2 0 0 0-2 2c0 1.1.9 2 2 2h4v-4h-4z"></path>
-      </svg>
-      {money(primaryBalance)}
+      <img src="/nav-icons/wallet-icon.png" alt="Wallet" width={42} height={42} style={{ display: 'block' }} />
+      <span style={{ 
+        color: 'var(--teal)', 
+        fontWeight: 800, 
+        fontSize: '0.9rem', 
+        fontFamily: 'var(--font-brand)',
+        letterSpacing: '0.02em',
+        textShadow: '0 0 10px rgba(0,196,188,0.2)'
+      }}>
+        {money(primaryBalance)}
+      </span>
     </Link>
   );
 }
