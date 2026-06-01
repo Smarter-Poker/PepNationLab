@@ -10,16 +10,9 @@ import MessageBell from '@/components/MessageBell';
 import NavbarWalletBadge from '@/components/NavbarWalletBadge';
 import WalletCard from '@/components/WalletCard';
 import { getRoleNavLinks } from '@/components/roleNavLinks';
-<<<<<<< Updated upstream
-=======
 import QRCodeGenerator from '@/components/QRCodeGenerator';
 import { createPortal } from 'react-dom';
->>>>>>> Stashed changes
 
-/* ──────────────────────────────────── 
-   Page title resolution — maps route prefixes
-   to human-readable, title-case labels.
-   ──────────────────────────────────── */
 function resolveTitle(pathname: string, role: string): string {
   if (pathname === '/')               return 'Pep Nation Lab';
   if (pathname.startsWith('/admin/products')) return 'Product Catalog';
@@ -60,7 +53,6 @@ function resolveTitle(pathname: string, role: string): string {
   if (pathname.startsWith('/shipping'))       return 'Shipping';
   if (pathname.startsWith('/invite'))         return 'Invitation';
 
-  // Agent storefront slugs — single-segment paths
   const segments = pathname.split('/').filter(Boolean);
   if (segments.length === 1 && !pathname.startsWith('/api')) {
     if (role.includes('agent') || role === 'researcher') return 'Agent Storefront';
@@ -69,9 +61,6 @@ function resolveTitle(pathname: string, role: string): string {
   return 'Pep Nation Lab';
 }
 
-/* ──────────────────────────────────── 
-   Mobile / slide-out nav drawer items
-   ──────────────────────────────────── */
 function DrawerLink({
   href,
   label,
@@ -150,7 +139,6 @@ export default function Navbar({ onMenuClick, isOpen, title }: { onMenuClick?: (
   const finalTitle = title || pageTitle;
   const isMessenger = pathname.startsWith('/messenger');
 
-  // Dashboard link based on role
   const dashLink = role === 'admin'
     ? '/admin'
     : role.includes('agent')
@@ -164,10 +152,6 @@ export default function Navbar({ onMenuClick, isOpen, title }: { onMenuClick?: (
 
   const closeDrawer = useCallback(() => setDrawerOpen(false), []);
 
-  // Canonical per-role hamburger menu — identical on every page for a given
-  // role. Null for researchers / logged-out, who keep the generic drawer links.
-<<<<<<< Updated upstream
-=======
   const handleMenuClick = (href: string) => {
     if (href === '#SHOW_QR') {
       setShowQRModal(true);
@@ -177,7 +161,8 @@ export default function Navbar({ onMenuClick, isOpen, title }: { onMenuClick?: (
     }
   };
 
->>>>>>> Stashed changes
+  // Canonical per-role hamburger menu — identical on every page for a given
+  // role. Null for researchers / logged-out, who keep the generic drawer links.
   const roleLinks = user
     ? getRoleNavLinks(role, {
         isSuperAgent: profile?.is_super_agent === true,
@@ -186,18 +171,15 @@ export default function Navbar({ onMenuClick, isOpen, title }: { onMenuClick?: (
       })
     : null;
 
-  // Lock body scroll when drawer is open
   useEffect(() => {
     document.body.style.overflow = drawerOpen ? 'hidden' : '';
     return () => { document.body.style.overflow = ''; };
   }, [drawerOpen]);
 
-  // Close drawer on route change
   useEffect(() => {
     setDrawerOpen(false);
   }, [pathname]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Auth state
   useEffect(() => {
     const supabase = createClient();
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -211,31 +193,19 @@ export default function Navbar({ onMenuClick, isOpen, title }: { onMenuClick?: (
           .then(({ data }) => {
             if (data) {
               setProfile(data);
-              // If researcher, look up their agent's storefront slug
               if (data.role === 'researcher' && data.referring_agent_id) {
                 supabase
                   .from('agent_profiles')
                   .select('slug, qr_code_data')
                   .eq('id', data.referring_agent_id)
                   .maybeSingle()
-<<<<<<< Updated upstream
-                  .then(({ data: ap }) => { if (ap?.slug) setAgentSlug(ap.slug); });
-=======
                   .then(({ data: ap }) => {
                     if (ap?.slug) setAgentSlug(ap.slug);
                     if (ap?.qr_code_data) setQrCodeData(ap.qr_code_data);
                   });
->>>>>>> Stashed changes
               } else if (data.role === 'agent' || data.role === 'super_agent') {
-                // Agents/super-agents: their own storefront slug, for "Visit My Storefront".
                 supabase
                   .from('agent_profiles')
-<<<<<<< Updated upstream
-                  .select('slug')
-                  .eq('id', session.user.id)
-                  .maybeSingle()
-                  .then(({ data: ap }) => { if (ap?.slug) setAgentSlug(ap.slug); });
-=======
                   .select('slug, qr_code_data')
                   .eq('id', session.user.id)
                   .maybeSingle()
@@ -243,7 +213,6 @@ export default function Navbar({ onMenuClick, isOpen, title }: { onMenuClick?: (
                     if (ap?.slug) setAgentSlug(ap.slug);
                     if (ap?.qr_code_data) setQrCodeData(ap.qr_code_data);
                   });
->>>>>>> Stashed changes
               }
             }
             setLoading(false);
@@ -269,24 +238,13 @@ export default function Navbar({ onMenuClick, isOpen, title }: { onMenuClick?: (
                   .select('slug, qr_code_data')
                   .eq('id', data.referring_agent_id)
                   .maybeSingle()
-<<<<<<< Updated upstream
-                  .then(({ data: ap }) => { if (ap?.slug) setAgentSlug(ap.slug); });
-=======
                   .then(({ data: ap }) => {
                     if (ap?.slug) setAgentSlug(ap.slug);
                     if (ap?.qr_code_data) setQrCodeData(ap.qr_code_data);
                   });
->>>>>>> Stashed changes
               } else if (data.role === 'agent' || data.role === 'super_agent') {
-                // Agents/super-agents: their own storefront slug, for "Visit My Storefront".
                 supabase
                   .from('agent_profiles')
-<<<<<<< Updated upstream
-                  .select('slug')
-                  .eq('id', session.user.id)
-                  .maybeSingle()
-                  .then(({ data: ap }) => { if (ap?.slug) setAgentSlug(ap.slug); });
-=======
                   .select('slug, qr_code_data')
                   .eq('id', session.user.id)
                   .maybeSingle()
@@ -294,7 +252,6 @@ export default function Navbar({ onMenuClick, isOpen, title }: { onMenuClick?: (
                     if (ap?.slug) setAgentSlug(ap.slug);
                     if (ap?.qr_code_data) setQrCodeData(ap.qr_code_data);
                   });
->>>>>>> Stashed changes
               }
             }
           });
@@ -315,16 +272,11 @@ export default function Navbar({ onMenuClick, isOpen, title }: { onMenuClick?: (
     window.location.replace('/');
   };
 
-  // ── Smart Hierarchical Back Button ────────────────────────────────
-  // We conditionally use native browser history if available. If the user landed
-  // on a deep link directly (empty history stack), we route them up the app hierarchy.
   const handleBack = () => {
     if (window.history.length > 1) {
       router.back();
       return;
     }
-
-    // Fallback: Logical Parent Routes
     if (pathname.startsWith('/admin/')) {
       router.push('/admin');
     } else if (pathname.startsWith('/account/')) {
@@ -341,9 +293,6 @@ export default function Navbar({ onMenuClick, isOpen, title }: { onMenuClick?: (
 
   return (
     <>
-      {/* ═══════════════════════════════════════════
-          HEADER BAR
-      ═══════════════════════════════════════════ */}
       <nav
         className="nav pnl-navbar"
         style={{
@@ -361,7 +310,6 @@ export default function Navbar({ onMenuClick, isOpen, title }: { onMenuClick?: (
           gap: 'var(--space-2)',
         }}
       >
-        {/* LEFT: Hamburger */}
         <button
           onClick={() => onMenuClick ? onMenuClick() : setDrawerOpen(o => !o)}
           aria-label="Open Navigation Menu"
@@ -382,7 +330,6 @@ export default function Navbar({ onMenuClick, isOpen, title }: { onMenuClick?: (
           <img src="/images/hamburger-icon.png" alt="Menu" width={36} height={36} style={{ display: 'block' }} />
         </button>
 
-        {/* Back arrow */}
         {showBack && (
           <>
             <button
@@ -420,16 +367,10 @@ export default function Navbar({ onMenuClick, isOpen, title }: { onMenuClick?: (
               </div>
             </button>
 
-            {/* Vertical divider */}
             <div style={{ width: 1, height: 22, background: 'var(--surface-3)', flexShrink: 0, marginLeft: 4 }} />
           </>
         )}
 
-        {/* MIDDLE-LEFT: Bells — placed BEFORE the spacer so the messenger
-            and notification icons fill the dead space that used to hold
-            the page title. With Dashboard pinned to the right and bells
-            to the left of the spacer, all 5 navbar icons distribute
-            cleanly across the row at their natural sizes on mobile. */}
         {!loading && user && (
           <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }}>
             <MessageBell onViewAll={() => router.push('/messenger')} />
@@ -437,13 +378,8 @@ export default function Navbar({ onMenuClick, isOpen, title }: { onMenuClick?: (
           </div>
         )}
 
-        {/* CENTER: Spacer (page title removed per mobile-fit request —
-            the truncated "M." / "S.." was cluttering the header on
-            narrow phones and added no information the right-side icons
-            don't already convey). */}
         <div style={{ flex: 1, minWidth: 0 }} aria-hidden="true" />
 
-        {/* RIGHT: Actions */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', flexShrink: 0 }}>
           {loading ? (
             <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'var(--surface-2)' }} className="skeleton" />
@@ -478,10 +414,6 @@ export default function Navbar({ onMenuClick, isOpen, title }: { onMenuClick?: (
         </div>
       </nav>
 
-      {/* ═══════════════════════════════════════════
-          SLIDE-OUT DRAWER (global site nav — not shown when admin controls hamburger)
-      ═══════════════════════════════════════════ */}
-      {/* Backdrop */}
       {!onMenuClick && drawerOpen && (
         <div
           onClick={closeDrawer}
@@ -497,7 +429,6 @@ export default function Navbar({ onMenuClick, isOpen, title }: { onMenuClick?: (
         />
       )}
 
-      {/* Drawer panel — only rendered for non-admin pages */}
       {!onMenuClick && (
       <div
         style={{
@@ -534,7 +465,6 @@ export default function Navbar({ onMenuClick, isOpen, title }: { onMenuClick?: (
           </Link>
         </div>
 
-        {/* User info in drawer */}
         {user && (
           <div style={{
             padding: 'var(--space-4) var(--space-5)',
@@ -554,10 +484,8 @@ export default function Navbar({ onMenuClick, isOpen, title }: { onMenuClick?: (
           </div>
         )}
 
-        {/* Navigation links */}
         <nav style={{ flex: 1, padding: 'var(--space-3) 0', paddingBottom: 'calc(var(--space-6) + env(safe-area-inset-bottom, 24px))' }}>
           
-          {/* Lab Wallet Inside Hamburger Menu */}
           {user && (
             <div style={{ padding: '0 var(--space-4)', marginBottom: 'var(--space-4)' }}>
               <WalletCard />
@@ -570,25 +498,18 @@ export default function Navbar({ onMenuClick, isOpen, title }: { onMenuClick?: (
               other states (researchers, logged-out) keep the generic links. */}
           {roleLinks ? (
             roleLinks.map((l) => (
-<<<<<<< Updated upstream
-              <DrawerLink key={`${l.href}-${l.label}`} href={l.href} label={l.label} onClick={closeDrawer} icon={l.icon} />
-=======
               <DrawerLink key={`${l.href}-${l.label}`} href={l.href} label={l.label} onClick={() => handleMenuClick(l.href)} icon={l.icon} />
->>>>>>> Stashed changes
             ))
           ) : (
             <>
-              {/* Common links */}
               <DrawerLink href={dashLink} label="Home" onClick={closeDrawer}
                 icon={<svg {...IP}><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>}
               />
-              {/* Products link — hidden for researchers (they use their agent's storefront) */}
               {role !== 'researcher' && (
                 <DrawerLink href="/products" label="Products" onClick={closeDrawer}
                   icon={<svg {...IP}><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>}
                 />
               )}
-              {/* Researchers see their agent's storefront instead */}
               {role === 'researcher' && agentSlug && (
                 <DrawerLink href={`/${agentSlug}`} label="Visit Your Store" onClick={closeDrawer}
                   icon={<svg {...IP}><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>}
@@ -657,10 +578,6 @@ export default function Navbar({ onMenuClick, isOpen, title }: { onMenuClick?: (
       </div>
       )} {/* end !onMenuClick drawer panel */}
 
-
-      {/* ══════════════════════════════════════════
-          QR CODE MODAL (Full Screen)
-      ══════════════════════════════════════════ */}
       {showQRModal && typeof document !== 'undefined' && createPortal(
         <div style={{
           position: 'fixed', inset: 0, zIndex: 999999,
@@ -681,7 +598,7 @@ export default function Navbar({ onMenuClick, isOpen, title }: { onMenuClick?: (
               cursor: 'pointer', fontSize: '1.2rem'
             }}
           >
-            ✕
+            X
           </button>
           
           <div style={{
