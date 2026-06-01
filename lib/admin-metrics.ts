@@ -26,6 +26,8 @@ export interface DashboardMetrics {
   activeAgents: number;
   sparkline: Array<{ date: string; revenue: number }>;
   topSkus: Array<{ name: string; quantity: number; revenue: number }>;
+  // fix-55 #5: top-agent leaderboard
+  topAgents: Array<{ id: string; name: string; gmv: number; orderCount: number }>;
   auditLog: Array<{
     id: string;
     action: string;
@@ -66,6 +68,8 @@ export async function fetchAdminMetrics(adminUserId: string): Promise<DashboardM
     activeAgentsRes,
     sparklineRes,
     auditLogRes,
+    // fix-55 #5: 30d order rows for top-agent aggregation
+    topAgentOrdersRes,
   ] = await Promise.all([
     supabase
       .from('orders')
@@ -86,18 +90,10 @@ export async function fetchAdminMetrics(adminUserId: string): Promise<DashboardM
       .lt('created_at', days7Ago)
       .eq('is_wholesale_restock', false)
       .not('status', 'in', `(${NON_GMV_STATUSES.join(',')})`),
-    // Only count pending_customer_payment and agent_approval_pending for direct orders (where admin is responsible),
-    // because external agent orders are filtered out in the admin orders view.
     supabase.from('orders').select('id', { count: 'exact', head: true }).eq('status', 'pending_customer_payment').or(`agent_id.is.null,agent_id.eq.${adminUserId}`),
     supabase.from('orders').select('id', { count: 'exact', head: true }).eq('status', 'agent_approval_pending').or(`agent_id.is.null,agent_id.eq.${adminUserId}`),
-    // Mandatory admin gate: orders agents/super-agents approved that are waiting
-    // for THIS admin to release them to fulfillment. Counted across ALL agents
-    // (no agent_id filter) because the admin gates every agent's orders.
     supabase.from('orders').select('id', { count: 'exact', head: true }).eq('status', 'admin_approval_pending'),
     supabase.from('orders').select('id', { count: 'exact', head: true }).eq('status', 'approved_ship'),
-    // Agent-approved pickup orders awaiting admin fulfillment. Previously these
-    // were surfaced nowhere on the admin dashboard (only approved_ship had a
-    // tile/metric), so agent-approved pickup orders appeared "missing" to admins.
     supabase.from('orders').select('id', { count: 'exact', head: true }).eq('status', 'approved_pickup'),
     supabase.from('orders').select('id', { count: 'exact', head: true }).eq('status', 'in_fulfillment'),
     supabase
@@ -143,12 +139,17 @@ export async function fetchAdminMetrics(adminUserId: string): Promise<DashboardM
       .select('id, action, entity_type, entity_id, created_at, actor_id, profiles!admin_audit_log_actor_id_fkey(full_name, email)')
       .order('created_at', { ascending: false })
       .limit(15),
+    // fix-55 #5: orders attributed to an agent in the last 30 days
+    supabase
+      .from('orders')
+      .select('agent_id, total')
+      .gte('created_at', days30Ago)
+      .eq('is_wholesale_restock', false)
+      .not('status', 'in', `(${NON_GMV_STATUSES.join(',')})`)
+      .not('agent_id', 'is', null),
   ]);
 
-  // Two-step topSkus query: fetch qualifying order IDs first, then get order_items
-  // for those orders. This avoids relying on PostgREST embedded resource filters
-  // (.gte('orders.created_at', ...)) which are version-dependent and may be
-  // silently ignored — returning all-time data instead of the last 30 days.
+  // Two-step topSkus query
   const { data: recentOrderRows } = await supabase
     .from('orders')
     .select('id')
@@ -175,9 +176,6 @@ export async function fetchAdminMetrics(adminUserId: string): Promise<DashboardM
   const gmvPrior7 = sumTotal(gmvPrior7Res.data);
 
   const lowStockList = (lowStockListRes.data || []).filter(
-    // Use a sensible default threshold of 10 for products without one configured.
-    // Defaulting to 0 would mean products with null threshold never appear as low-stock
-    // even when down to a single unit.
     (p: any) => Number(p.inventory_count) <= Number(p.low_stock_threshold ?? 10)
   );
 
@@ -186,7 +184,6 @@ export async function fetchAdminMetrics(adminUserId: string): Promise<DashboardM
     0
   );
 
-  // Group sparkline data by day in JS
   const dailyMap = new Map<string, number>();
   for (let i = 29; i >= 0; i--) {
     const d = new Date(now.getTime() - i * 86400000);
@@ -203,13 +200,11 @@ export async function fetchAdminMetrics(adminUserId: string): Promise<DashboardM
     revenue: Math.round(revenue * 100) / 100,
   }));
 
-  // Aggregate top SKUs from the two-step query above
   const skuMap = new Map<string, { quantity: number; revenue: number }>();
   for (const row of topSkusData) {
     if (!row.product_name) continue;
     const existing = skuMap.get(row.product_name) || { quantity: 0, revenue: 0 };
     existing.quantity += Number(row.quantity) || 0;
-    // unit_retail_price is stored as per-10-vial-pack price; divide by 10 for per-vial revenue.
     existing.revenue += (Number(row.quantity) || 0) * ((Number(row.unit_retail_price) || 0) / 10);
     skuMap.set(row.product_name, existing);
   }
@@ -217,6 +212,41 @@ export async function fetchAdminMetrics(adminUserId: string): Promise<DashboardM
     .map(([name, v]) => ({ name, ...v }))
     .sort((a, b) => b.quantity - a.quantity)
     .slice(0, 10);
+
+  // fix-55 #5: aggregate top agents by GMV (last 30d)
+  const agentAgg = new Map<string, { gmv: number; orderCount: number }>();
+  for (const row of topAgentOrdersRes.data || []) {
+    const aid = (row as any).agent_id as string | null;
+    if (!aid) continue;
+    const existing = agentAgg.get(aid) || { gmv: 0, orderCount: 0 };
+    existing.gmv += Number((row as any).total) || 0;
+    existing.orderCount += 1;
+    agentAgg.set(aid, existing);
+  }
+  const sortedAgentIds = Array.from(agentAgg.entries())
+    .sort((a, b) => b[1].gmv - a[1].gmv)
+    .slice(0, 10);
+
+  let topAgents: DashboardMetrics['topAgents'] = [];
+  if (sortedAgentIds.length > 0) {
+    const ids = sortedAgentIds.map(([id]) => id);
+    const { data: agentRows } = await supabase
+      .from('profiles')
+      .select('id, full_name, username, email')
+      .in('id', ids);
+    const nameMap = new Map<string, string>(
+      (agentRows ?? []).map((a: any) => [
+        a.id as string,
+        (a.full_name as string) || (a.username ? '@' + a.username : null) || (a.email as string) || 'Agent',
+      ])
+    );
+    topAgents = sortedAgentIds.map(([id, v]) => ({
+      id,
+      name: nameMap.get(id) ?? 'Agent',
+      gmv: Math.round(v.gmv * 100) / 100,
+      orderCount: v.orderCount,
+    }));
+  }
 
   const auditLog = ((auditLogRes.data || []) as any[]).map((entry) => {
     const actor = Array.isArray(entry.profiles) ? entry.profiles[0] : entry.profiles;
@@ -251,6 +281,7 @@ export async function fetchAdminMetrics(adminUserId: string): Promise<DashboardM
     activeAgents: activeAgentsRes.count ?? 0,
     sparkline,
     topSkus,
+    topAgents,
     auditLog,
   };
 }
