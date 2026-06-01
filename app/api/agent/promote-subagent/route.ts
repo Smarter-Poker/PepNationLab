@@ -15,7 +15,7 @@ import { notifyPromotedToAgent, notifyPromotionSuccess } from '@/lib/notify';
  *  - Sub-agent has a commission_pct (0-40), set at promote time, changeable
  *    later via PATCH /api/agent/sub-agents/[id]/commission-rate.
  *  - Sub-agent has a payment model (credit or prepaid) and credit_limit set
- *    by the parent — virtual cap, parent's own admin credit is the real ceiling.
+ *    by the parent - virtual cap, parent's own admin credit is the real ceiling.
  *  - Sub-agent's referring_agent_id is preserved (storefront access tag).
  *  - parent_agent_id is set to the caller so the sub-agent appears in the
  *    caller's downline.
@@ -126,12 +126,17 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Provisioning attribution: a super_agent and a regular agent both have
+    // role='agent', so disambiguate via is_super_agent for the dashboard.
+    const createdByRole = callerProfile.is_super_agent === true ? 'super_agent' : 'agent';
+
     const now = new Date().toISOString();
     const updatePayload: Record<string, unknown> = {
       role: 'agent',
       is_sub_agent: true,
       parent_agent_id: callerId,
       created_by_agent_id: callerId,
+      created_by_role: createdByRole,
       commission_pct: commissionPct,
       commission_active_since: now,
       account_type: paymentModel,
@@ -185,7 +190,7 @@ export async function POST(req: NextRequest) {
 
     // Resolve the parent's storefront slug so the response can carry the
     // share link the parent will give to the new sub-agent. If the parent
-    // has no agent_profiles row (edge case — should not happen for a real
+    // has no agent_profiles row (edge case - should not happen for a real
     // agent), share_link is null and the UI degrades gracefully.
     let parentSlug: string | null = null;
     try {
@@ -215,6 +220,7 @@ export async function POST(req: NextRequest) {
       credit_limit: paymentModel === 'credit' ? creditLimit : 0,
       parent_slug: parentSlug,
       share_link: shareLink,
+      created_by_role: createdByRole,
       message: `${researcherProfile.full_name || 'Researcher'} Has Been Promoted To Sub-Agent At ${commissionPct}% Commission.`,
     });
 
