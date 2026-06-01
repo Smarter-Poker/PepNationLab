@@ -158,14 +158,10 @@ export default function AboutPage() {
           </h2>
           <p style={{ maxWidth: 520, margin: '0 auto var(--space-6)', fontSize: '0.92rem', color: 'var(--grey-400)', lineHeight: 1.7 }}>
             Already Have An Account? Sign In To Browse Your Storefront With Wholesale Pricing.
-            Interested In Running Your Own Research-Supply Storefront? Apply To Become An Agent.
           </p>
           <div style={{ display: 'flex', gap: 'var(--space-4)', justifyContent: 'center', flexWrap: 'wrap' }}>
             <Link href="/login" className="btn btn-primary btn-lg">
               Sign In
-            </Link>
-            <Link href="/become-agent" className="btn btn-secondary btn-lg">
-              Become An Agent
             </Link>
           </div>
         </div>

@@ -100,9 +100,6 @@ export default function ProductsPreview() {
 
         {/* CTA */}
         <div style={{ textAlign: 'center', marginTop: 'var(--space-10)' }}>
-          <Link href="/become-agent" className="btn btn-primary btn-lg">
-            Become An Agent
-          </Link>
           <p style={{ marginTop: 'var(--space-4)', fontSize: '0.8rem', color: 'var(--grey-400)' }}>
             50+ Research Compounds Available • Wholesale Pricing For Qualified Researchers
           </p>

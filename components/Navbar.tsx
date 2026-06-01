@@ -45,7 +45,6 @@ function resolveTitle(pathname: string, role: string): string {
   if (pathname.startsWith('/dashboard'))      return 'Dashboard';
   if (pathname.startsWith('/products'))       return 'Products';
   if (pathname.startsWith('/about'))          return 'About';
-  if (pathname.startsWith('/become-agent'))   return 'Become An Agent';
   if (pathname.startsWith('/login'))          return 'Sign In';
   if (pathname.startsWith('/account'))        return 'Account';
   if (pathname.startsWith('/orders'))         return 'My Orders';
@@ -396,9 +395,6 @@ export default function Navbar({ onMenuClick, isOpen, title }: { onMenuClick?: (
           ) : (
             <>
               <Link href="/login" className="btn btn-ghost btn-sm">Sign In</Link>
-              <Link href="/become-agent" className="btn btn-primary btn-sm" style={{ fontSize: '0.78rem', padding: '6px 10px' }}>
-                Join
-              </Link>
             </>
           )}
         </div>
@@ -527,12 +523,7 @@ export default function Navbar({ onMenuClick, isOpen, title }: { onMenuClick?: (
                 </>
               )}
 
-              {/* Researcher */}
-              {role === 'researcher' && (
-                <DrawerLink href="/become-agent" label="Become An Agent" onClick={closeDrawer}
-                  icon={<svg {...IP}><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>}
-                />
-              )}
+
 
               <div style={{ height: 1, background: 'rgba(255,255,255,0.06)', margin: 'var(--space-2) 0' }} />
 
@@ -565,9 +556,6 @@ export default function Navbar({ onMenuClick, isOpen, title }: { onMenuClick?: (
               <div style={{ height: 1, background: 'rgba(255,255,255,0.06)', margin: 'var(--space-2) 0' }} />
               <DrawerLink href="/login" label="Sign In" onClick={closeDrawer}
                 icon={<svg {...IP}><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>}
-              />
-              <DrawerLink href="/become-agent" label="Become An Agent" onClick={closeDrawer}
-                icon={<svg {...IP}><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>}
               />
             </>
           )}

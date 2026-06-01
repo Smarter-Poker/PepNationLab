@@ -54,7 +54,6 @@ export default function FooterSection() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
               {[
                 { label: 'Products', href: '/products' },
-                { label: 'Become An Agent', href: '/become-agent' },
                 { label: 'Agent Dashboard', href: '/dashboard' },
                 { label: 'Sign In', href: '/login' },
               ].map(({ label, href }) => (
