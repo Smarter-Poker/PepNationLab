@@ -35,7 +35,7 @@ export default async function NotificationsPage() {
 
   const { data: row } = await supabase
     .from('notification_preferences')
-    .select('events_order_approved, events_order_shipped, events_order_delivered, events_payment_reminder, push_enabled, push_events_order, push_events_messages, push_events_marketing, send_read_receipts')
+    .select('events_order_approved, events_order_shipped, events_order_delivered, events_payment_reminder, push_enabled, push_events_order, push_events_messages, push_events_marketing, send_read_receipts, push_type_prefs')
     .eq('user_id', user.id)
     .maybeSingle();
 
@@ -59,5 +59,16 @@ export default async function NotificationsPage() {
       }
     : DEFAULT_PREFS;
 
-  return <NotificationsClient initialPrefs={prefs} sessionProfile={profile} />;
+  // Per-type push map (default-on storage: only explicit `false` opts out).
+  const rawTypeMap = (row as { push_type_prefs?: Record<string, boolean> | null } | null)?.push_type_prefs;
+  const initialTypeMap: Record<string, boolean> =
+    rawTypeMap && typeof rawTypeMap === 'object' ? rawTypeMap : {};
+
+  return (
+    <NotificationsClient
+      initialPrefs={prefs}
+      initialTypeMap={initialTypeMap}
+      sessionProfile={profile}
+    />
+  );
 }
