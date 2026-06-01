@@ -58,7 +58,7 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ id: string
     const { data: agent, error } = await supabase
       .from('profiles')
       .select(
-        'id, full_name, username, email, role, account_type, credit_limit, prepaid_balance, commission_pct, commission_active_since, is_active, is_sub_agent, parent_agent_id, created_at, agent_profiles(slug, display_name, is_active)',
+        'id, full_name, username, email, role, account_type, credit_limit, prepaid_balance, commission_pct, commission_active_since, is_active, is_sub_agent, parent_agent_id, created_at, last_sign_in_at, first_sign_in_at, sign_in_count, agent_profiles(slug, display_name, is_active)',
       )
       .eq('id', id)
       .single();
@@ -122,6 +122,9 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ id: string
         commission_active_since: agent.commission_active_since,
         is_active: !!agent.is_active,
         created_at: agent.created_at,
+        last_sign_in_at: (agent as { last_sign_in_at?: string | null }).last_sign_in_at ?? null,
+        first_sign_in_at: (agent as { first_sign_in_at?: string | null }).first_sign_in_at ?? null,
+        sign_in_count: num((agent as { sign_in_count?: number | null }).sign_in_count),
       },
       storefront: storefront
         ? { slug: storefront.slug, display_name: storefront.display_name, is_active: !!storefront.is_active }
