@@ -96,16 +96,21 @@ export default function MessengerShell({ userId }: Props) {
     return () => { cancelled = true; };
   }, []);
 
-  // round-22b: fetch own role so the realtime allow-list can skip the
+  // round-22c: fetch own role so the realtime allow-list can skip the
   // downline filter for admins. Without this, the round-22 sidebar
   // filtering would also suppress push notifications for any message
   // from a non-downline user the admin DM'd.
+  //
+  // Originally tried /api/auth/resolve in round-22b but that endpoint
+  // is a username→email lookup that returns {email}, NOT {role}, so the
+  // fetch was a silent no-op and admins were still being filtered.
+  // /api/messenger/me is a tiny dedicated endpoint that returns {role}.
   const [selfRole, setSelfRole] = useState<string | null>(null);
   useEffect(() => {
     let cancelled = false;
     (async () => {
       try {
-        const res = await fetch('/api/auth/resolve', { method: 'POST', cache: 'no-store' });
+        const res = await fetch('/api/messenger/me', { method: 'POST', cache: 'no-store' });
         if (!res.ok) return;
         const json = (await res.json()) as { role?: string | null };
         if (!cancelled && typeof json.role === 'string') setSelfRole(json.role);
