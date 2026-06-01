@@ -71,7 +71,7 @@ export default function AgentOverview({
     {
       id: 'sales',
       top: '66.9%', height: '15.4%',
-      action: () => onNavigate?.('Sales & Carts'),
+      action: () => onNavigate?.('Sales & Accounting'),
     },
     {
       id: 'orders',
