@@ -110,11 +110,30 @@ export async function sendCallRingPushNow(input: CallRingPushInput): Promise<num
       .eq('is_active', true);
 
     for (const s of (subs ?? []) as Array<{ endpoint: string; p256dh: string; auth: string; user_id: string }>) {
-      // audit15 fix-33: dropped `requireInteraction: true` — lib/web-push.ts
-      // PushPayload doesn't declare it and the field would error TypeScript.
+      // A ringing call must behave like a call, not a transient toast:
+      // - requireInteraction keeps it on screen until the user acts (Android).
+      // - Accept/Decline action buttons; the service worker opens the call
+      //   deep-link (url = /messenger?call=ID, which auto-accepts) on tap or
+      //   Accept, and dismisses on Decline.
+      // - a longer vibrate pattern + high urgency so it rings promptly.
+      // lib/web-push.ts PushPayload now declares all of these (the audit15
+      // fix-33 limitation that dropped requireInteraction no longer applies).
       const result = await sendWebPush(
         { endpoint: s.endpoint, p256dh: s.p256dh, auth: s.auth },
-        { title, body, url, tag },
+        {
+          title,
+          body,
+          url,
+          tag,
+          requireInteraction: true,
+          renotify: true,
+          urgency: 'high',
+          vibrate: [300, 100, 300, 100, 300],
+          actions: [
+            { action: 'accept', title: 'Accept' },
+            { action: 'decline', title: 'Decline' },
+          ],
+        },
       ).catch((err) => ({ ok: false, error: err instanceof Error ? err.message : String(err) }));
       if ((result as { ok: boolean }).ok) sent++;
     }
