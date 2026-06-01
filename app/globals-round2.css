@@ -678,6 +678,147 @@ body > * {
 /* Round 8 redeploy nudge — Vercel queue stalled 14:42 UTC 2026-06-01, force a fresh build off latest main HEAD which carries Navbar bells + ProductCard + CSS Round 8. */
 
 /* ============================================================
+   ROUND 9 — DOUBLE DASHBOARD + MESSENGER FULL-FIT (V2)
+   + PRODUCT CATALOG MOBILE SEARCH + CARD STACK LAYOUT
+   ------------------------------------------------------------
+   User fixes:
+   1. DASHBOARD ICON DOUBLED on mobile — 144px (≤768), 120px (≤380).
+      Cannot use full 176px (2x of 88) on iPhone 375 width because
+      the navbar would overflow horizontally. 144px is the safe
+      maximum that still feels "doubled" relative to Round 8.
+   2. MESSENGER conversation view CUT-OFF FIX — Round 8 was too
+      timid. Round 9 forces the header img selector to match any
+      depth (`.messenger-main header img` not just `> header > img`),
+      shrinks header icons further (28px), drops bubble font to
+      0.82rem, widens bubble envelope to 90%, and tightens the
+      composer so the Send button is always visible inside the
+      375px iPhone viewport.
+   3. PRODUCT CATALOG MOBILE — hide the view-mode toggle and
+      filter chips on mobile; show a search input instead. Desktop
+      unchanged. JS forces effectiveViewMode='category' on mobile
+      and filters products by search term.
+   4. PRODUCT CARD STACK LAYOUT on mobile — flex-wrap so the
+      image+Edit+Toggle stay on row 1 and the product info
+      (name/price/cost) wraps to row 2 full-width. Removed reorder
+      arrows in JSX (user said zero functionality).
+   ============================================================ */
+
+/* --- (1) Dashboard icon — DOUBLED on mobile --- */
+@media (max-width: 768px) {
+  .pnl-navbar a img.dashboard-icon {
+    width: 144px !important;
+    max-width: 144px !important;
+    height: auto !important;
+  }
+}
+@media (max-width: 380px) {
+  .pnl-navbar a img.dashboard-icon {
+    width: 120px !important;
+    max-width: 120px !important;
+  }
+}
+
+/* --- (2) Messenger conversation full-fit on mobile --- */
+@media (max-width: 768px) {
+  /* Conversation header — even more compact than Round 8 */
+  .messenger-main header,
+  .messenger-main > div > header {
+    padding: 6px 10px !important;
+    min-height: 44px !important;
+    gap: 6px !important;
+    border-bottom-width: 2px !important;
+  }
+  /* Header icons (phone, video, reminders, info) — match-any-depth */
+  .messenger-main header img,
+  .messenger-main header button img,
+  .messenger-main > div > header img {
+    width: 28px !important;
+    height: 28px !important;
+    max-width: 28px !important;
+    max-height: 28px !important;
+  }
+  .messenger-main header button {
+    padding: 2px !important;
+  }
+  /* Conversation name (first child div of header) */
+  .messenger-main header > div:first-child {
+    font-size: 0.95rem !important;
+  }
+  /* Day separator (YESTERDAY AT ...) */
+  .messenger-main time,
+  .messenger-main [data-day-separator] {
+    font-size: 0.55rem !important;
+    margin: 4px 0 2px !important;
+  }
+  /* Bubble — wider envelope, smaller text */
+  .messenger-main div[style*="max-width: 65%"] {
+    max-width: 90% !important;
+  }
+  .messenger-main div[style*="max-width: 65%"] p,
+  .messenger-main div[style*="max-width: 65%"] span {
+    font-size: 0.82rem !important;
+    line-height: 1.3 !important;
+  }
+  /* Composer — tighter, send button always visible */
+  .messenger-main .msg-composer,
+  .msg-composer {
+    padding: 4px 6px !important;
+    padding-bottom: max(6px, env(safe-area-inset-bottom)) !important;
+    border-top-width: 2px !important;
+  }
+  .messenger-main .msg-composer > div,
+  .msg-composer > div {
+    padding: 4px 6px !important;
+    gap: 6px !important;
+    border-top-width: 0 !important;
+  }
+  .msg-composer button[aria-label="Send Message"],
+  .messenger-main .msg-composer button[aria-label="Send Message"] {
+    flex-shrink: 0 !important;
+  }
+  /* Force horizontal containment so the send button can't slide offscreen */
+  .messenger-main,
+  .messenger-main > div {
+    max-width: 100vw !important;
+    overflow-x: hidden !important;
+  }
+}
+
+/* --- (3) Product Catalog mobile UX: hide dropdowns, show search --- */
+.agentprod-mobile-search { display: none; }
+@media (max-width: 768px) {
+  .agentprod-view-toggle,
+  .agentprod-filter-chips {
+    display: none !important;
+  }
+  .agentprod-mobile-search {
+    display: block !important;
+  }
+  /* The header controls wrapper can hide on mobile since search replaces it */
+  .agentprod-header-controls {
+    display: none !important;
+  }
+}
+
+/* --- (4) Product card mobile layout: image+actions on row 1, info on row 2 --- */
+@media (max-width: 768px) {
+  .agentprod-card {
+    flex-wrap: wrap !important;
+    align-items: center !important;
+  }
+  .agentprod-card .agentprod-info {
+    flex-basis: 100% !important;
+    order: 2 !important;
+    margin-top: 8px !important;
+  }
+  .agentprod-card .agentprod-actions {
+    order: 1 !important;
+    margin-left: auto !important;
+  }
+  /* image stays on left at order 0 (default) */
+}
+
+/* ============================================================
    END ROUND 2 + ROUND 3 + ROUND 4 + ROUND 5 + ROUND 6 + ROUND 7
    + ROUND 8 MOBILE SAFE-AREA AND HORIZONTAL OVERFLOW ENFORCEMENT
    ============================================================ */
