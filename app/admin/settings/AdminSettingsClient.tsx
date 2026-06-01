@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useTheme } from '@/components/ThemeProvider';
 import AvatarUpload from '@/components/AvatarUpload';
+import PushNotificationToggle from '@/components/PushNotificationToggle';
 
 interface AdminSettingsClientProps {
   profile: {
@@ -54,13 +55,12 @@ export default function AdminSettingsClient({ profile }: AdminSettingsClientProp
         <SettingsPasswordForm />
       </div>
 
-      {/* Notification Preferences */}
-      <div className="card-metal hover-lift" style={{ padding: 'var(--space-6)', marginTop: 'var(--space-6)' }}>
-        <h4 style={{ marginBottom: 'var(--space-2)', color: 'var(--teal)' }}>Notification Preferences</h4>
-        <p style={{ fontSize: '0.82rem', color: 'var(--grey-400)', marginBottom: 'var(--space-4)', marginTop: 0 }}>
-          Manage Push Notifications For New Messages When The Tab Is Hidden.
-        </p>
-        <NotificationPrefsPanel />
+      {/* Device Notifications */}
+      <div style={{ marginTop: 'var(--space-6)' }}>
+        <PushNotificationToggle
+          title="Notification Settings"
+          description="Enable Push Notifications On This Device For Incoming Calls And New Messages — Even When The App Is Closed."
+        />
       </div>
 
       {/* Theme Preferences */}
