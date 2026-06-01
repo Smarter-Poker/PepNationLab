@@ -1423,16 +1423,25 @@ export default function AgentStorefrontGrid({
                       .filter(([, qty]) => qty > 0)
                       .map(([vId, qty]) => {
                         const item = products.find(p => p.id === vId);
-                            retailPrice: perVial,
-                            // costPrice = agent tier cost per vial for self-buy, else same as retail.
-                            // CheckoutForm uses this for subtotal display and discount calculation.
-                            costPrice: costPerVial,
-                            // Use actual product weight; fall back to 0.5 oz if not set.
-                            // weight_oz is fetched from products table via the storefront page query.
-                            weightOz: Number(item.products?.weight_oz) || 0.5,
-                            agentSelfBuy: isStorefrontOwner,
-                          };
-                        })
+                        if (!item) return null;
+                        const perVial = item.retail_price / 10;
+                        const costPerVial = isStorefrontOwner && (item as any).cost_price != null
+                          ? Number((item as any).cost_price) / 10
+                          : perVial;
+                        const sizeLabel = item.products?.unit_size
+                          ? `(${item.products.unit_size}${item.products.unit_measure || ''})`
+                          : '';
+                        return {
+                          id: item.product_id,
+                          name: `${item.products?.name || 'Product'} ${sizeLabel}`.trim(),
+                          sku: item.product_id,
+                          quantity: qty,
+                          retailPrice: perVial,
+                          costPrice: costPerVial,
+                          weightOz: Number(item.products?.weight_oz) || 0.5,
+                          agentSelfBuy: isStorefrontOwner,
+                        };
+                      })
                         .filter(Boolean);
 
                       if (totalCartItems < overallMin) {
@@ -1503,9 +1512,7 @@ export default function AgentStorefrontGrid({
               Your Cart Is Empty
             </div>
           )}
-        </div>,
-        document.body
-      )}
+        </div>
 
       {/* Full-Screen Certificate Modal */}
 
