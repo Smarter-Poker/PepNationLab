@@ -133,7 +133,10 @@ export default function AgentTierWidget() {
                 {' '}<span style={{ color: '#00FF9D', fontWeight: 700 }}>{tier.next.name}</span> and lower your Agent Cost.
               </div>
             ) : (
-              <div style={{ fontSize: '0.85rem', color: '#00FF9D', fontWeight: 600 }}>You&apos;re at the top tier — best Agent Cost unlocked.</div>
+              <div style={{ fontSize: '0.85rem', color: 'var(--teal)', fontWeight: 600, marginBottom: 'var(--space-4)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+                You&apos;re At The Top Tier And Have The Best Agent Cost Unlocked.
+              </div>
             )}
             {tier.ladder && tier.ladder.length > 0 && (
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 12 }}>
