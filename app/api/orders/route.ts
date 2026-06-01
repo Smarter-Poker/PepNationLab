@@ -157,7 +157,8 @@ export async function POST(request: NextRequest) {
       localStock?.forEach(s => { agentStockMap[s.product_id] = Number(s.stock_count); });
     }
 
-    const localFulfillmentMap: Record<string, boolean> = {};
+    interface ItemFulfillmentSplit { localQty: number; chinaQty: number; }
+    const itemSplits: Record<string, ItemFulfillmentSplit> = {};
 
     // Check for banned or deactivated products and inventory limits
     for (const cartItem of items) {
@@ -184,26 +185,33 @@ export async function POST(request: NextRequest) {
 
       let availableStock = Number(dbProduct.inventory_count);
       let bypassInventoryCheck = false;
-      let isLocalFulfillment = false;
+      let localQty = 0;
+      let chinaQty = qty;
 
       if (agentProfile && !isAgentSelfBuy && fulfillmentMethod === 'ship') {
          const localAgentStock = agentStockMap[cartItem.id] || 0;
          if (localAgentStock >= qty) {
-           isLocalFulfillment = true;
+           localQty = qty;
+           chinaQty = 0;
            availableStock = localAgentStock;
+         } else if (localAgentStock > 0) {
+           localQty = localAgentStock;
+           chinaQty = qty - localAgentStock;
+           availableStock = localAgentStock + Number(dbProduct.inventory_count);
          } else {
-           // Not enough local stock, fallback to China stock
+           localQty = 0;
+           chinaQty = qty;
            availableStock = Number(dbProduct.inventory_count);
          }
       } else if (fulfillmentMethod === 'agent_pickup') {
          bypassInventoryCheck = true;
       }
 
-      localFulfillmentMap[cartItem.id] = isLocalFulfillment;
+      itemSplits[cartItem.id] = { localQty, chinaQty };
 
       if (!bypassInventoryCheck && availableStock < qty) {
         return NextResponse.json(
-          { error: `Insufficient inventory for "${dbProduct.name}". Only ${availableStock} remaining.` },
+          { error: `Insufficient inventory for "${dbProduct.name}". Available: ${availableStock}.` },
           { status: 400 }
         );
       }
@@ -424,11 +432,6 @@ export async function POST(request: NextRequest) {
         retailPrice = retailPrice * flashMultiplier;
       }
 
-      if (localFulfillmentMap[dbProduct.id]) {
-        costPrice = 0;
-        superAgentCost = superAgentCost !== null ? 0 : null;
-      }
-
       // Round unit prices to exact cents
       retailPrice = isFinite(retailPrice) ? Math.round(retailPrice * 100) / 100 : 0;
       costPrice = isFinite(costPrice) ? Math.round(costPrice * 100) / 100 : 0;
@@ -436,22 +439,54 @@ export async function POST(request: NextRequest) {
         superAgentCost = isFinite(superAgentCost) ? Math.round(superAgentCost * 100) / 100 : null;
       }
 
-      subtotal += retailPrice * itemQty;
-      totalWeightOz += (Number(dbProduct.weight_oz) || 0.5) * itemQty;
+      const split = itemSplits[dbProduct.id];
 
-      computedItems.push({
-        product_id: dbProduct.id,
-        product_name: dbProduct.name,
-        quantity: itemQty,
-        unit_retail_price: retailPrice,
-        unit_cost_price: costPrice,
-        unit_super_agent_cost: superAgentCost
-      });
+      if (split && split.localQty > 0) {
+        subtotal += retailPrice * split.localQty;
+        totalWeightOz += (Number(dbProduct.weight_oz) || 0.5) * split.localQty;
+        computedItems.push({
+          product_id: dbProduct.id,
+          product_name: dbProduct.name,
+          quantity: split.localQty,
+          unit_retail_price: retailPrice,
+          unit_cost_price: 0,
+          unit_super_agent_cost: superAgentCost !== null ? 0 : null,
+          isLocalFulfillment: true
+        } as any);
+      }
+
+      if (split && split.chinaQty > 0) {
+        subtotal += retailPrice * split.chinaQty;
+        totalWeightOz += (Number(dbProduct.weight_oz) || 0.5) * split.chinaQty;
+        computedItems.push({
+          product_id: dbProduct.id,
+          product_name: dbProduct.name,
+          quantity: split.chinaQty,
+          unit_retail_price: retailPrice,
+          unit_cost_price: costPrice,
+          unit_super_agent_cost: superAgentCost,
+          isLocalFulfillment: false
+        } as any);
+      }
+
+      if (!split || (split.localQty === 0 && split.chinaQty === 0)) {
+        subtotal += retailPrice * itemQty;
+        totalWeightOz += (Number(dbProduct.weight_oz) || 0.5) * itemQty;
+        computedItems.push({
+          product_id: dbProduct.id,
+          product_name: dbProduct.name,
+          quantity: itemQty,
+          unit_retail_price: retailPrice,
+          unit_cost_price: costPrice,
+          unit_super_agent_cost: superAgentCost,
+          isLocalFulfillment: false
+        } as any);
+      }
     }
 
     // STEP A: ATOMIC INVENTORY RESERVATION
-    const localItems = computedItems.filter(i => localFulfillmentMap[i.product_id]).map(i => ({ product_id: i.product_id, quantity: i.quantity }));
-    const chinaItems = computedItems.filter(i => !localFulfillmentMap[i.product_id]).map(i => ({ product_id: i.product_id, quantity: i.quantity }));
+    const localItems = computedItems.filter((i: any) => i.isLocalFulfillment).map(i => ({ product_id: i.product_id, quantity: i.quantity }));
+    const chinaItems = computedItems.filter((i: any) => !i.isLocalFulfillment).map(i => ({ product_id: i.product_id, quantity: i.quantity }));
 
     let localReserved = false;
     let chinaReserved = false;
