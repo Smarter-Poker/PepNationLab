@@ -91,66 +91,68 @@ export default function AgentTierWidget() {
 
   return (
     <div className="metal-frame" style={{ marginBottom: 'var(--space-6)' }}>
-      <div className="metal-content" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)', padding: 'var(--space-6)' }}>
-      {isSub ? (
-          <ProgressRing
-            progress={comm!.cap_pct && comm!.cap_pct > 0 ? (comm!.effective_pct ?? 0) / comm!.cap_pct : 1}
-            label={`${comm!.effective_pct ?? 0}%`}
-            sub="Commission"
-          />
-          <div style={{ flex: 1, minWidth: 220 }}>
-            <h3 style={{ fontSize: '1.05rem', color: 'var(--white)', fontFamily: 'var(--font-brand)', letterSpacing: '0.05em', textTransform: 'uppercase', margin: '0 0 6px' }}>
-              Your Commission Tier
-            </h3>
-            <p style={{ color: 'var(--grey-400)', fontSize: '0.82rem', margin: '0 0 12px' }}>
-              Base {comm!.base_pct ?? 0}%{comm!.cap_pct != null ? ` / Up To ${comm!.cap_pct}%` : ''} — {money(comm!.month_retail ?? 0)} Sold This Month
-            </p>
-            {comm!.next ? (
-              <div style={{ fontSize: '0.85rem', color: 'var(--silver-light)' }}>
-                Sell <span style={{ color: 'var(--teal)', fontWeight: 700 }}>{money(comm!.next.dollarsToNext)}</span> more to unlock a
-                {' '}<span style={{ color: '#00FF9D', fontWeight: 700 }}>+{comm!.next.bonus_pct}% Performance Bonus</span>.
-              </div>
-            ) : (
-              <div style={{ fontSize: '0.85rem', color: '#00FF9D', fontWeight: 600 }}>You&apos;ve unlocked every performance bonus this month.</div>
-            )}
+      <div className="metal-content" style={{ padding: 'var(--space-6)' }}>
+        {isSub ? (
+          /* ── Sub-agent commission mini-ladder ── */
+          <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 'var(--space-6)' }}>
+            <ProgressRing
+              progress={comm!.cap_pct && comm!.cap_pct > 0 ? (comm!.effective_pct ?? 0) / comm!.cap_pct : 1}
+              label={`${comm!.effective_pct ?? 0}%`}
+              sub="Commission"
+            />
+            <div style={{ flex: 1, minWidth: 220 }}>
+              <h3 style={{ fontSize: '1.05rem', color: 'var(--white)', fontFamily: 'var(--font-brand)', letterSpacing: '0.05em', textTransform: 'uppercase', margin: '0 0 6px' }}>
+                Your Commission Tier
+              </h3>
+              <p style={{ color: 'var(--grey-400)', fontSize: '0.82rem', margin: '0 0 12px' }}>
+                Base {comm!.base_pct ?? 0}%{comm!.cap_pct != null ? ` / Up To ${comm!.cap_pct}%` : ''} — {money(comm!.month_retail ?? 0)} Sold This Month
+              </p>
+              {comm!.next ? (
+                <div style={{ fontSize: '0.85rem', color: 'var(--silver-light)' }}>
+                  Sell <span style={{ color: 'var(--teal)', fontWeight: 700 }}>{money(comm!.next.dollarsToNext)}</span> more to unlock a
+                  {' '}<span style={{ color: '#00FF9D', fontWeight: 700 }}>+{comm!.next.bonus_pct}% Performance Bonus</span>.
+                </div>
+              ) : (
+                <div style={{ fontSize: '0.85rem', color: '#00FF9D', fontWeight: 600 }}>You&apos;ve unlocked every performance bonus this month.</div>
+              )}
+            </div>
           </div>
-        </div>
-      ) : (
-        /* ── House tier ladder (Super / standalone agent) ── */
-        <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 'var(--space-6)' }}>
-          <ProgressRing progress={tier.progress ?? 0} label={tier.levelName ?? 'Rookie'} sub={`Level ${tier.level ?? 1}`} />
-          <div style={{ flex: 1, minWidth: 220 }}>
-            <h3 style={{ fontSize: '1.05rem', color: 'var(--white)', fontFamily: 'var(--font-brand)', letterSpacing: '0.05em', textTransform: 'uppercase', margin: '0 0 6px' }}>
-              Your Tier{tier.locked ? ' (Locked)' : ''}
-            </h3>
-            <p style={{ color: 'var(--grey-400)', fontSize: '0.82rem', margin: '0 0 12px' }}>
-              {money(tier.volume30 ?? 0)} In Volume Over The Last 30 Days
-            </p>
-            {tier.next ? (
-              <div style={{ fontSize: '0.85rem', color: 'var(--silver-light)' }}>
-                <span style={{ color: 'var(--teal)', fontWeight: 700 }}>{money(tier.next.dollarsToNext)}</span> more to reach
-                {' '}<span style={{ color: '#00FF9D', fontWeight: 700 }}>{tier.next.name}</span> and lower your Agent Cost.
-              </div>
-            ) : (
-              <div style={{ fontSize: '0.85rem', color: 'var(--teal)', fontWeight: 600, marginBottom: 'var(--space-4)', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
-                You&apos;re At The Top Tier And Have The Best Agent Cost Unlocked.
-              </div>
-            )}
-            {tier.ladder && tier.ladder.length > 0 && (
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 12 }}>
-                {tier.ladder.map((l) => (
-                  <span key={l.level} style={{
-                    fontSize: '0.6rem', fontWeight: 800, padding: '3px 8px', borderRadius: 99, textTransform: 'uppercase', letterSpacing: '0.04em',
-                    background: l.level === tier.level ? 'var(--teal)' : 'rgba(192,184,168,0.1)',
-                    color: l.level === tier.level ? '#04221f' : 'var(--grey-400)',
-                  }}>{l.name}</span>
-                ))}
-              </div>
-            )}
+        ) : (
+          /* ── House tier ladder (Super / standalone agent) ── */
+          <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 'var(--space-6)' }}>
+            <ProgressRing progress={tier.progress ?? 0} label={tier.levelName ?? 'Rookie'} sub={`Level ${tier.level ?? 1}`} />
+            <div style={{ flex: 1, minWidth: 220 }}>
+              <h3 style={{ fontSize: '1.05rem', color: 'var(--white)', fontFamily: 'var(--font-brand)', letterSpacing: '0.05em', textTransform: 'uppercase', margin: '0 0 6px' }}>
+                Your Tier{tier.locked ? ' (Locked)' : ''}
+              </h3>
+              <p style={{ color: 'var(--grey-400)', fontSize: '0.82rem', margin: '0 0 12px' }}>
+                {money(tier.volume30 ?? 0)} In Volume Over The Last 30 Days
+              </p>
+              {tier.next ? (
+                <div style={{ fontSize: '0.85rem', color: 'var(--silver-light)' }}>
+                  <span style={{ color: 'var(--teal)', fontWeight: 700 }}>{money(tier.next.dollarsToNext)}</span> more to reach
+                  {' '}<span style={{ color: '#00FF9D', fontWeight: 700 }}>{tier.next.name}</span> and lower your Agent Cost.
+                </div>
+              ) : (
+                <div style={{ fontSize: '0.85rem', color: 'var(--teal)', fontWeight: 600, marginBottom: 'var(--space-4)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+                  You&apos;re At The Top Tier And Have The Best Agent Cost Unlocked.
+                </div>
+              )}
+              {tier.ladder && tier.ladder.length > 0 && (
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 12 }}>
+                  {tier.ladder.map((l) => (
+                    <span key={l.level} style={{
+                      fontSize: '0.6rem', fontWeight: 800, padding: '3px 8px', borderRadius: 99, textTransform: 'uppercase', letterSpacing: '0.04em',
+                      background: l.level === tier.level ? 'var(--teal)' : 'rgba(192,184,168,0.1)',
+                      color: l.level === tier.level ? '#04221f' : 'var(--grey-400)',
+                    }}>{l.name}</span>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
-        </div>
-      )}
+        )}
       </div>
     </div>
   );
