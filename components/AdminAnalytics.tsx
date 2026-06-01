@@ -188,27 +188,25 @@ export default function AdminAnalytics() {
             label: 'Revenue This Month', value: `$${data.revenueThisMonth.toFixed(2)}`,
             change: pctChange(data.revenueThisMonth, data.revenueLastMonth),
             positive: isPositive(data.revenueThisMonth, data.revenueLastMonth),
-            icon: '💰',
           },
           {
             label: 'Orders This Month', value: data.ordersThisMonth.toString(),
             change: pctChange(data.ordersThisMonth, data.ordersLastMonth),
             positive: isPositive(data.ordersThisMonth, data.ordersLastMonth),
-            icon: '📦',
           },
           {
             label: 'Avg Order Value', value: `$${data.avgOrderValue.toFixed(2)}`,
-            change: '', positive: true, icon: '📊',
+            change: '', positive: true,
           },
           {
             label: 'New Researchers (7d)', value: data.newResearchersWeek.toString(),
-            change: '', positive: true, icon: '👤',
+            change: '', positive: true,
           },
         ].map((kpi, i) => (
           <div key={i} className="metal-frame">
             <div className="metal-content" style={{ padding: 'var(--space-4)' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-                <span style={{ fontSize: '1.4rem' }}>{kpi.icon}</span>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', marginBottom: 8, minHeight: 20 }}>
+
                 {kpi.change && (
                   <span style={{
                     fontSize: '0.65rem', fontWeight: 700, padding: '2px 6px', borderRadius: 4,

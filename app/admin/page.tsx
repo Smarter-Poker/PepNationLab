@@ -195,40 +195,41 @@ export default async function AdminDashboard() {
           <Link
             key={label}
             href={href}
-            className="card-glass admin-kpi-card"
+            className="metal-frame admin-kpi-card"
             style={{
-              padding: 'var(--space-5)',
               display: 'block',
               textDecoration: 'none',
-              transition: 'transform 0.18s, border-color 0.18s',
+              transition: 'transform 0.18s',
             }}
           >
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-              <div style={{ minWidth: 0, flex: 1 }}>
-                <div style={{ fontSize: '1.7rem', fontWeight: 800, color, lineHeight: 1.1, fontFamily: "'Inter', 'Helvetica Neue', Arial, sans-serif", overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  {value}
-                </div>
-                <div style={{ fontSize: '0.78rem', color: 'var(--silver)', marginTop: 'var(--space-2)', fontWeight: 600 }}>
-                  {label}
-                </div>
-                {sub && (
-                  <div style={{ fontSize: '0.72rem', color: 'var(--grey-400)', marginTop: 4 }}>
-                    {sub}
+            <div className="metal-content" style={{ padding: 'var(--space-5)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                <div style={{ minWidth: 0, flex: 1 }}>
+                  <div className="metal-text" style={{ fontSize: '1.7rem', fontWeight: 800, color, lineHeight: 1.1, fontFamily: "'Inter', 'Helvetica Neue', Arial, sans-serif", overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {value}
                   </div>
-                )}
-                {trend && trend.direction !== 'flat' && (
-                  <div style={{ marginTop: 6, fontSize: '0.72rem', color: trend.direction === 'up' ? '#68D391' : 'var(--red)', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 4 }}>
-                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                      {trend.direction === 'up'
-                        ? <polyline points="23 6 13.5 15.5 8.5 10.5 1 18" />
-                        : <polyline points="23 18 13.5 8.5 8.5 13.5 1 6" />
-                      }
-                    </svg>
-                    <span>{trend.pct.toFixed(1)}%</span>
+                  <div style={{ fontSize: '0.78rem', color: 'var(--silver)', marginTop: 'var(--space-2)', fontWeight: 600 }}>
+                    {label}
                   </div>
-                )}
+                  {sub && (
+                    <div style={{ fontSize: '0.72rem', color: 'var(--grey-400)', marginTop: 4 }}>
+                      {sub}
+                    </div>
+                  )}
+                  {trend && trend.direction !== 'flat' && (
+                    <div style={{ marginTop: 6, fontSize: '0.72rem', color: trend.direction === 'up' ? '#68D391' : 'var(--red)', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 4 }}>
+                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                        {trend.direction === 'up'
+                          ? <polyline points="23 6 13.5 15.5 8.5 10.5 1 18" />
+                          : <polyline points="23 18 13.5 8.5 8.5 13.5 1 6" />
+                        }
+                      </svg>
+                      <span>{trend.pct.toFixed(1)}%</span>
+                    </div>
+                  )}
+                </div>
+                <span style={{ color, opacity: 0.6, flexShrink: 0, marginLeft: 8 }}>{icon}</span>
               </div>
-              <span style={{ color, opacity: 0.6, flexShrink: 0, marginLeft: 8 }}>{icon}</span>
             </div>
           </Link>
         ))}
