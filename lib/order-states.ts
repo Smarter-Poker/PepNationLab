@@ -6,6 +6,7 @@
 export type OrderStatus =
   | 'pending_customer_payment'
   | 'agent_approval_pending'
+  | 'admin_approval_pending'
   | 'approved_ship'
   | 'approved_pickup'
   | 'in_fulfillment'
@@ -13,9 +14,16 @@ export type OrderStatus =
   | 'delivered'
   | 'cancelled';
 
+// admin_approval_pending is the mandatory admin gate. Agent/super-agent (and
+// checkout auto-) approval parks the order here; ONLY an admin releases it to
+// approved_ship / approved_pickup. The shipping team and pickup fulfillment act
+// on the approved_* states, so nothing ships without admin sign-off. The
+// approved_* targets are kept reachable from the pending states too so an admin
+// can still fast-track / override an order directly when needed.
 export const ALLOWED_TRANSITIONS: Record<OrderStatus, OrderStatus[]> = {
-  pending_customer_payment: ['agent_approval_pending', 'approved_ship', 'approved_pickup', 'in_fulfillment', 'cancelled'],
-  agent_approval_pending: ['approved_ship', 'approved_pickup', 'in_fulfillment', 'cancelled'],
+  pending_customer_payment: ['agent_approval_pending', 'admin_approval_pending', 'approved_ship', 'approved_pickup', 'in_fulfillment', 'cancelled'],
+  agent_approval_pending: ['admin_approval_pending', 'approved_ship', 'approved_pickup', 'in_fulfillment', 'cancelled'],
+  admin_approval_pending: ['approved_ship', 'approved_pickup', 'cancelled'],
   approved_ship: ['in_fulfillment', 'shipped', 'cancelled'],
   approved_pickup: ['in_fulfillment', 'delivered', 'cancelled'],
   in_fulfillment: ['shipped', 'delivered', 'cancelled'],
@@ -24,8 +32,10 @@ export const ALLOWED_TRANSITIONS: Record<OrderStatus, OrderStatus[]> = {
   cancelled: [],
 };
 
+// The shipping role acts ONLY on post-admin-gate states. It must never be able
+// to pull a pre-gate order (pending_customer_payment / agent_approval_pending /
+// admin_approval_pending) into fulfillment — that would skip admin release.
 export const SHIPPING_TRANSITIONS: Partial<Record<OrderStatus, OrderStatus[]>> = {
-  pending_customer_payment: ['in_fulfillment'],
   approved_ship: ['in_fulfillment'],
   in_fulfillment: ['shipped'],
   shipped: ['delivered'],

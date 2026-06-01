@@ -48,6 +48,19 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized to ship this order' }, { status: 403 });
     }
 
+    // GATE: an agent may only purchase a label AFTER the order has cleared the
+    // mandatory admin-approval gate. Pre-gate statuses (pending_customer_payment,
+    // agent_approval_pending, admin_approval_pending) must never be shippable —
+    // buying a label there would skip admin release and push the order straight
+    // into the shipping pipeline. Only approved_ship (the admin-released ship
+    // state) or an order already in_fulfillment may have a label purchased.
+    if (order.status !== 'approved_ship' && order.status !== 'in_fulfillment') {
+      return NextResponse.json(
+        { error: 'This Order Must Be Approved By An Admin Before A Shipping Label Can Be Purchased.' },
+        { status: 409 }
+      );
+    }
+
     // Use the platform Shippo account key via the new purchaseLabelForOrder shim.
     // Per-agent keys are no longer required or consulted.
     const result = await purchaseLabelForOrder(supabase, {

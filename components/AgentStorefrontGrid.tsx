@@ -252,6 +252,8 @@ export default function AgentStorefrontGrid({
   minOrderQty = 1,
   minOverallQty = 1,
 }: Props) {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { setMounted(true); }, []);
   const [wishlist, setWishlist] = useState<Set<string>>(() => new Set(initialWishlistIds));
   const toggleWishlist = useCallback(async (productId: string) => {
     if (!productId) return;
@@ -1264,7 +1266,7 @@ export default function AgentStorefrontGrid({
         })}
       </motion.div>
       {/* Floating Cart — Bottom Right Corner */}
-      {typeof document !== 'undefined' && createPortal(
+      {mounted && createPortal(
         <div style={{ position: 'fixed', bottom: 'env(safe-area-inset-bottom, 0px)', right: 0, zIndex: 9999, pointerEvents: 'none' }}>
           {/* Floating Cart Button */}
           <div

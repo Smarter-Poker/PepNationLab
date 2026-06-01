@@ -237,7 +237,7 @@ export default function NavbarNotificationBell() {
     return () => clearTimeout(t);
   }, [open, unread, markAllRead]);
 
-  // ── Toggle dropdown ─────────────────────────────────────────────────────────
+  // ── Toggle dropdown ────────────────────────────────────────────────────────
   const handleBellClick = () => {
     setOpen(v => !v);
     if (!open) loadFeed();

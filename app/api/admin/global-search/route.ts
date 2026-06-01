@@ -14,36 +14,25 @@ function isValidScope(v: string | null): v is Scope {
   return !!v && (VALID_SCOPES as string[]).includes(v);
 }
 
-// fix-49 / fix-52: tokenize on whitespace and strip characters that would
-// break PostgREST's `.or()` mini-grammar (it uses commas as separators and
-// parentheses for grouping). A token with one of those would silently
-// malform the request.
-function sanitizeToken(t: string): string {
-  return t.replace(/[,()*]/g, '').trim();
-}
-
+// fix-49: token-split. "john smith" → ["john", "smith"]. ANY token matching
+// ANY column counts as a hit — the pg_trgm GIN indexes added in the
+// companion migration make this scale even with leading wildcards.
 function tokenize(q: string): string[] {
   return q
     .split(/\s+/)
-    .map((t) => sanitizeToken(t))
+    .map((t) => t.trim())
     .filter((t) => t.length >= 2);
 }
 
-function buildOrLeg(columns: string[], token: string): string {
-  return columns.map((c) => `${c}.ilike.%${token}%`).join(',');
-}
-
-// Chain one .or() leg per token so PostgREST AND-joins them. Pass the
-// queryBuilder in and out so each caller can keep its own typed builder.
-function applyTokenAndOr<T extends { or: (s: string) => T }>(
-  builder: T,
-  columns: string[],
-  tokens: string[],
-): T {
+function multiTokenOr(columns: string[], tokens: string[]): string {
+  const parts: string[] = [];
   for (const tok of tokens) {
-    builder = builder.or(buildOrLeg(columns, tok));
+    const like = `%${tok}%`;
+    for (const col of columns) {
+      parts.push(`${col}.ilike.${like}`);
+    }
   }
-  return builder;
+  return parts.join(',');
 }
 
 function numOrNull(v: string | null): number | null {
@@ -74,6 +63,7 @@ export async function GET(req: NextRequest) {
   const scopeRaw = sp.get('scope');
   const scope: Scope = isValidScope(scopeRaw) ? scopeRaw : 'all';
 
+  // Order-specific structured filters — only apply to the orders RPC.
   const filterStatus      = sp.get('status') || null;
   const filterPayment     = sp.get('payment') || null;
   const filterDateFrom    = sp.get('from') || null;
@@ -103,15 +93,16 @@ export async function GET(req: NextRequest) {
   const wants = (s: Scope) => scope === 'all' || scope === s;
   const tokens = q.length >= 2 ? tokenize(q) : [];
 
-  // USERS — AND-of-tokens, each token OR-matches across name/username/email
+  // USERS
   let usersP: Promise<{ data: any[] | null }>;
   if (wants('users') && tokens.length > 0) {
-    let builder = svc
+    const orStr = multiTokenOr(['full_name', 'username', 'email'], tokens);
+    usersP = svc
       .from('profiles')
       .select('id, full_name, username, email, role, is_super_agent')
-      .eq('is_active', true);
-    builder = applyTokenAndOr(builder, ['full_name', 'username', 'email'], tokens);
-    usersP = builder.limit(limitPer);
+      .or(orStr)
+      .eq('is_active', true)
+      .limit(limitPer);
   } else {
     usersP = Promise.resolve({ data: [] });
   }
@@ -119,9 +110,12 @@ export async function GET(req: NextRequest) {
   // PRODUCTS
   let productsP: Promise<{ data: any[] | null }>;
   if (wants('products') && tokens.length > 0) {
-    let builder = svc.from('products').select('id, name, slug, sku, base_cost, is_active');
-    builder = applyTokenAndOr(builder, ['name', 'slug', 'sku'], tokens);
-    productsP = builder.limit(limitPer);
+    const orStr = multiTokenOr(['name', 'slug', 'sku'], tokens);
+    productsP = svc
+      .from('products')
+      .select('id, name, slug, sku, base_cost, is_active')
+      .or(orStr)
+      .limit(limitPer);
   } else {
     productsP = Promise.resolve({ data: [] });
   }
@@ -129,14 +123,17 @@ export async function GET(req: NextRequest) {
   // STOREFRONTS
   let storefrontsP: Promise<{ data: any[] | null }>;
   if (wants('storefronts') && tokens.length > 0) {
-    let builder = svc.from('agent_profiles').select('id, slug, display_name, is_active');
-    builder = applyTokenAndOr(builder, ['slug', 'display_name'], tokens);
-    storefrontsP = builder.limit(limitPer);
+    const orStr = multiTokenOr(['slug', 'display_name'], tokens);
+    storefrontsP = svc
+      .from('agent_profiles')
+      .select('id, slug, display_name, is_active')
+      .or(orStr)
+      .limit(limitPer);
   } else {
     storefrontsP = Promise.resolve({ data: [] });
   }
 
-  // ORDERS — RPC owns the search logic (fuzzy + structured filters)
+  // ORDERS — RPC for fuzzy + structured filters.
   let ordersP: Promise<{ data: any[] | null }>;
   if (wants('orders') && (tokens.length > 0 || hasOrderFilters)) {
     ordersP = svc.rpc('fn_admin_search_orders', {
@@ -157,11 +154,12 @@ export async function GET(req: NextRequest) {
   // COUPONS
   let couponsP: Promise<{ data: any[] | null }>;
   if (wants('coupons') && tokens.length > 0) {
-    let builder = svc
+    const orStr = multiTokenOr(['code'], tokens);
+    couponsP = svc
       .from('coupons')
-      .select('id, code, type, value, agent_id, uses_count, expires_at, is_active');
-    builder = applyTokenAndOr(builder, ['code'], tokens);
-    couponsP = builder.limit(limitPer);
+      .select('id, code, type, value, agent_id, uses_count, expires_at, is_active')
+      .or(orStr)
+      .limit(limitPer);
   } else {
     couponsP = Promise.resolve({ data: [] });
   }
@@ -169,11 +167,13 @@ export async function GET(req: NextRequest) {
   // TRANSACTIONS
   let transactionsP: Promise<{ data: any[] | null }>;
   if (wants('transactions') && tokens.length > 0) {
-    let builder = svc
+    const orStr = multiTokenOr(['description'], tokens);
+    transactionsP = svc
       .from('balance_transactions')
-      .select('id, agent_id, amount, type, description, created_at, order_id');
-    builder = applyTokenAndOr(builder, ['description'], tokens);
-    transactionsP = builder.order('created_at', { ascending: false }).limit(limitPer);
+      .select('id, agent_id, amount, type, description, created_at, order_id')
+      .or(orStr)
+      .order('created_at', { ascending: false })
+      .limit(limitPer);
   } else {
     transactionsP = Promise.resolve({ data: [] });
   }

@@ -12,6 +12,7 @@ export interface DashboardMetrics {
   gmvPrior7: number;
   pendingAdminApproval: number;
   pendingAgentApproval: number;
+  awaitingAdminApproval: number;
   readyToShip: number;
   readyForPickup: number;
   awaitingTracking: number;
@@ -53,6 +54,7 @@ export async function fetchAdminMetrics(adminUserId: string): Promise<DashboardM
     gmvPrior7Res,
     pendingAdminApprovalRes,
     pendingAgentApprovalRes,
+    awaitingAdminApprovalRes,
     readyToShipRes,
     readyForPickupRes,
     awaitingTrackingRes,
@@ -88,6 +90,10 @@ export async function fetchAdminMetrics(adminUserId: string): Promise<DashboardM
     // because external agent orders are filtered out in the admin orders view.
     supabase.from('orders').select('id', { count: 'exact', head: true }).eq('status', 'pending_customer_payment').or(`agent_id.is.null,agent_id.eq.${adminUserId}`),
     supabase.from('orders').select('id', { count: 'exact', head: true }).eq('status', 'agent_approval_pending').or(`agent_id.is.null,agent_id.eq.${adminUserId}`),
+    // Mandatory admin gate: orders agents/super-agents approved that are waiting
+    // for THIS admin to release them to fulfillment. Counted across ALL agents
+    // (no agent_id filter) because the admin gates every agent's orders.
+    supabase.from('orders').select('id', { count: 'exact', head: true }).eq('status', 'admin_approval_pending'),
     supabase.from('orders').select('id', { count: 'exact', head: true }).eq('status', 'approved_ship'),
     // Agent-approved pickup orders awaiting admin fulfillment. Previously these
     // were surfaced nowhere on the admin dashboard (only approved_ship had a
@@ -231,6 +237,7 @@ export async function fetchAdminMetrics(adminUserId: string): Promise<DashboardM
     gmvPrior7,
     pendingAdminApproval: pendingAdminApprovalRes.count ?? 0,
     pendingAgentApproval: pendingAgentApprovalRes.count ?? 0,
+    awaitingAdminApproval: awaitingAdminApprovalRes.count ?? 0,
     readyToShip: readyToShipRes.count ?? 0,
     readyForPickup: readyForPickupRes.count ?? 0,
     awaitingTracking: awaitingTrackingRes.count ?? 0,

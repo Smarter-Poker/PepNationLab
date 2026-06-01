@@ -140,9 +140,12 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Failed To Add Items To Order.' }, { status: 500 });
     }
 
-    const approvedStatus = fulfillment === 'ship' ? 'approved_ship' : 'approved_pickup';
+    // GATE: agent-created manual orders must still pass admin approval before
+    // reaching the shipping team. Park at admin_approval_pending (inventory is
+    // deducted on this hop by deduct_inventory_on_order_approval); only an admin
+    // releases it onward to approved_ship / approved_pickup.
     const { error: approvalError } = await supabase.from('orders').update({
-      status: approvedStatus, agent_approved_at: new Date().toISOString(), updated_at: new Date().toISOString(),
+      status: 'admin_approval_pending', agent_approved_at: new Date().toISOString(), updated_at: new Date().toISOString(),
     }).eq('id', newOrder.id);
 
     if (approvalError) {
@@ -159,13 +162,13 @@ export async function POST(req: NextRequest) {
       if (admins && admins.length > 0) {
         const short = newOrder.id.slice(0, 8).toUpperCase();
         const totalStr = Number(computedTotal).toFixed(2);
-        const fulfillmentMsg = approvedStatus === 'approved_pickup' ? 'Ready for Agent Pickup' : 'Ready for Shipping';
+        const fulfillmentMsg = fulfillment === 'ship' ? 'Ready for Shipping' : 'Ready for Agent Pickup';
         const notifications = admins.map((admin) => ({
           user_id: admin.id,
-          title: 'Manual Order Ready',
-          body: `Order #${short} ($${totalStr}) — Agent Created & Approved. ${fulfillmentMsg}.`,
+          title: 'Manual Order Needs Admin Approval',
+          body: `Order #${short} ($${totalStr}) — Agent Created & Approved. Needs Admin Release (${fulfillmentMsg}).`,
           type: 'system',
-          url: `/admin/orders?status=${approvedStatus}`,
+          url: `/admin/orders?status=admin_approval_pending`,
         }));
         await supabase.from('notifications').insert(notifications);
       }

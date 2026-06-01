@@ -478,29 +478,59 @@ body > * {
 /* ============================================================
    ROUND 7 — NAVBAR ICON RESIZE + MESSENGER TWO-PANE FIX
    + PRODUCT CATALOG MOBILE ROWS
+   ------------------------------------------------------------
+   Why this round exists:
+   1. User reported Dashboard icon was being cut off on mobile.
+      Root cause: dashboard-icon image renders at 158x74 inline.
+      On a 375px iPhone, hamburger(36) + back(36) + divider +
+      bells + dashboard(158) + username(130) overflows by ~100px.
+      Fix: shrink all top-bar icons on <=768px so the row fits.
+   2. User reported messenger conversation list and conversation
+      view both visible/cut off on mobile. Root cause: the CSS
+      mobile two-pane slide rules (globals.css 1867-1932)
+      required .messenger-shell + .msg-panel-active classes but
+      MessengerShell.tsx only set .has-active on the aside.
+      The classes are NOW added on the root in MessengerShell.tsx,
+      this Round 7 block adds the overrides those rules need
+      (notably !important on sidebar width=100% so it overrides
+      the inline width:320 set when activeId is truthy).
+   3. Product Catalog filter chips and product rows still
+      character-wrapped because Round 6's span overrides used
+      white-space:normal which lets short labels break mid-word
+      in narrow flex containers. Round 7 keeps short labels
+      on one line and forces parent flex containers to wrap so
+      siblings move to a new row instead of compressing.
    ============================================================ */
 
+/* --- (1) NAVBAR — shrink all top-bar icons on mobile --- */
 @media (max-width: 768px) {
+  /* The dashboard image is the biggest offender — 158x74 inline.
+     Cap by width; height: auto preserves the 2:1 aspect ratio. */
   .pnl-navbar a img.dashboard-icon {
     width: 56px !important;
     max-width: 56px !important;
     height: auto !important;
   }
+  /* Hamburger icon — was 36x36 */
   .pnl-navbar img[alt="Menu"] {
     width: 28px !important;
     height: 28px !important;
   }
+  /* Hide username completely on phones (no room) */
   .pnl-navbar .nav-display-name {
     display: none !important;
   }
+  /* Bells + back arrow — tighten padding so they don't waste width */
   .pnl-navbar button {
     padding: 2px !important;
   }
+  /* Tighten the right-cluster gap so icons sit closer together */
   .pnl-navbar > div:last-child {
     gap: 4px !important;
   }
 }
 
+/* On very small phones (iPhone SE / 360px Android) go even smaller. */
 @media (max-width: 380px) {
   .pnl-navbar a img.dashboard-icon {
     width: 48px !important;
@@ -508,6 +538,8 @@ body > * {
   }
 }
 
+/* --- (2) MESSENGER — mobile two-pane slide works only when
+       the sidebar width override beats the inline width:320 --- */
 @media (max-width: 768px) {
   .messenger-shell .messenger-sidebar {
     width: 100% !important;
@@ -516,9 +548,11 @@ body > * {
   .messenger-shell .messenger-main {
     width: 100% !important;
   }
+  /* Conversation list: when active, hide; when idle, show full screen. */
   .messenger-shell.msg-panel-active .messenger-sidebar {
     pointer-events: none !important;
   }
+  /* The back button inside the message pane — make tappable, 44pt. */
   .messenger-back-btn {
     min-height: 44px !important;
     padding: 10px 14px !important;
@@ -526,12 +560,16 @@ body > * {
   }
 }
 
+/* --- (3) PRODUCT CATALOG MANAGER — readable rows on mobile --- */
 @media (max-width: 768px) {
+  /* Keep short labels on one line; only let the product name wrap. */
   .metal-embossed-panel span {
     word-break: keep-all !important;
     overflow-wrap: normal !important;
     white-space: nowrap !important;
   }
+  /* Allow the long product name to wrap (it's the 0.95rem 700-weight
+     span on the first text line) — restore word-wrapping for it only. */
   .metal-embossed-panel span[style*="0.95rem"][style*="font-weight: 700"],
   .metal-embossed-panel span[style*="font-size: 1rem"],
   .metal-embossed-panel strong {
@@ -539,18 +577,26 @@ body > * {
     overflow-wrap: break-word !important;
     word-break: normal !important;
   }
+  /* The product row wrapper (display:flex; align-items:center; gap:var(--space-4))
+     — let the image+arrows wrap above the info, info above the toggle. */
   .metal-embossed-panel > div[style*="display: flex"][style*="align-items: center"] {
     flex-wrap: wrap !important;
     gap: 8px !important;
   }
+  /* Info column inside the row (it has flex:1, min-width:0) must take
+     full width when the row wraps. */
   .metal-embossed-panel > div[style*="align-items: center"] > div[style*="flex: 1"] {
     flex-basis: 100% !important;
     min-width: 0 !important;
   }
+  /* The inner name/size/category and price lines should also wrap. */
   .metal-embossed-panel > div[style*="align-items: center"] > div[style*="flex: 1"] > div[style*="display: flex"] {
     flex-wrap: wrap !important;
     gap: 6px !important;
   }
+  /* The view-mode and filter chips containers (flat/by category, all/active/hidden):
+     these were the character-wrapping chips. Force them to be a single
+     scrollable row instead of stacking per character. */
   .metal-frame .metal-content > div[style*="justify-content: space-between"] {
     flex-direction: column !important;
     align-items: stretch !important;
@@ -570,6 +616,7 @@ body > * {
     flex-shrink: 0 !important;
     white-space: nowrap !important;
   }
+  /* Bulk margin row — the Apply Bulk Margin row needs to wrap nicely too */
   .metal-content > h4 + div[style*="display: flex"][style*="flex-wrap: wrap"] {
     gap: 10px !important;
   }
@@ -601,6 +648,7 @@ body > * {
       on mobile so short messages don't waste horizontal space.
    ============================================================ */
 
+/* --- (1) NAVBAR — normalize Dashboard icon, override Round 7 caps --- */
 @media (max-width: 768px) {
   .pnl-navbar a img.dashboard-icon {
     width: 88px !important;
@@ -615,11 +663,15 @@ body > * {
   }
 }
 
+/* --- (2) MESSENGER — defensive: hide any stray back row --- */
 .messenger-back-btn {
   display: none !important;
 }
 
+/* --- (3) MESSENGER conversation view — compact on mobile so the
+       entire header + thread + composer (with Send button) fits --- */
 @media (max-width: 768px) {
+  /* Tighten the conversation header (name + phone/video/info icons row) */
   .messenger-main > header,
   .messenger-main > div > header {
     padding: 8px 12px !important;
@@ -636,6 +688,8 @@ body > * {
     padding: 4px !important;
   }
 
+  /* Message bubble: wider envelope (more room on narrow phones),
+     smaller font + tighter padding so more thread fits per screen. */
   .messenger-main [data-bubble],
   .messenger-main [role="article"],
   .messenger-main > div > div > div > div[style*="max-width: 65%"],
@@ -651,12 +705,16 @@ body > * {
   .messenger-main [data-bubble] {
     padding: 6px 10px !important;
   }
+  /* Day-separator (YESTERDAY AT 10:06 PM, etc.) — smaller and tighter */
   .messenger-main [data-day-separator],
   .messenger-main time {
     font-size: 0.62rem !important;
     margin: 8px 0 4px !important;
   }
 
+  /* Composer (msg-composer) — tighten outer padding so the send
+     button is comfortably above the iOS home-indicator. The
+     existing safe-area padding stays via env(safe-area-inset-bottom). */
   .messenger-main .msg-composer,
   .msg-composer {
     padding: 6px 8px !important;
@@ -669,13 +727,12 @@ body > * {
     gap: 8px !important;
     border-top-width: 0 !important;
   }
+  /* Send button itself — keep at 44pt touch target but no extra margin */
   .messenger-main .msg-composer button[aria-label="Send Message"],
   .msg-composer button[aria-label="Send Message"] {
     flex-shrink: 0 !important;
   }
 }
-
-/* Round 8 redeploy nudge — Vercel queue stalled 14:42 UTC 2026-06-01, force a fresh build off latest main HEAD which carries Navbar bells + ProductCard + CSS Round 8. */
 
 /* ============================================================
    END ROUND 2 + ROUND 3 + ROUND 4 + ROUND 5 + ROUND 6 + ROUND 7

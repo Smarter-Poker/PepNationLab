@@ -18,6 +18,7 @@ export const metadata: Metadata = {
 const STATUS_LABELS: Record<string, string> = {
   pending_customer_payment: 'Pending Payment',
   agent_approval_pending: 'Agent Approval Pending',
+  admin_approval_pending: 'Pending Approval',
   approved_ship: 'Approved For Shipping',
   approved_pickup: 'Approved For Pickup',
   in_fulfillment: 'In Fulfillment',
@@ -29,6 +30,7 @@ const STATUS_LABELS: Record<string, string> = {
 const STATUS_COLORS: Record<string, string> = {
   pending_customer_payment: 'var(--red)',
   agent_approval_pending: '#00E5FF',
+  admin_approval_pending: '#00E5FF',
   approved_ship: '#00E5FF',
   approved_pickup: '#00E5FF',
   in_fulfillment: 'var(--teal)',

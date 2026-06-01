@@ -16,6 +16,8 @@ import AgentOverview from '@/components/AgentOverview';
 import AgentStorefrontConfig from '@/components/AgentStorefrontConfig';
 import AgentOrders from '@/components/AgentOrders';
 import AgentBundles from '@/components/AgentBundles';
+import AgentResearcherCRM from '@/components/AgentResearcherCRM';
+import AgentNetworkMap from '@/components/AgentNetworkMap';
 import AgentSetupChecklist from '@/components/AgentSetupChecklist';
 import MessageBell from '@/components/MessageBell';
 import PushNotificationToggle from '@/components/PushNotificationToggle';
@@ -729,6 +731,7 @@ export default function AgentDashboardClient({
         {/* My Sub-Agents Tab */}
         {activeTab === 'My Sub-Agents' && (
           <div style={{ animation: 'fadeIn 0.3s ease-out' }}>
+            <AgentNetworkMap />
             <AgentSubAgents agentId={userProfile.id} />
           </div>
         )}
@@ -1097,6 +1100,9 @@ export default function AgentDashboardClient({
               </div>
             )}
 
+
+            {/* CRM: lifetime value, order history, and private notes per researcher */}
+            <AgentResearcherCRM />
 
             <div className="card-metal hover-lift" style={{ padding: 'var(--space-6)' }}>
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', marginBottom: 'var(--space-6)' }}>
