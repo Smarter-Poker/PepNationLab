@@ -80,9 +80,22 @@ export default function WalletCard() {
   }
 
   const isResearcher = data.role === 'researcher';
-  const primaryBalance = isResearcher ? data.storeCredit : data.prepaidBalance;
-  const primaryLabel = isResearcher ? 'Lab Wallet Credit' : 'Prepaid Balance';
-  const hasCreditLine = data.accountType === 'credit' && data.creditLimit != null;
+  // Show the credit line whenever a limit exists — agents on credit frequently
+  // have a null account_type, so gating strictly on 'credit' hid the whole line
+  // and left the wallet looking empty ($0 prepaid, nothing else).
+  const hasCreditLine = data.creditLimit != null && data.creditLimit > 0;
+  // Hero balance: researchers show store credit; credit-line agents show their
+  // available credit (real spending power); everyone else shows prepaid balance.
+  const primaryBalance = isResearcher
+    ? data.storeCredit
+    : hasCreditLine
+    ? (data.creditAvailable ?? 0)
+    : data.prepaidBalance;
+  const primaryLabel = isResearcher
+    ? 'Lab Wallet Credit'
+    : hasCreditLine
+    ? 'Available Credit'
+    : 'Prepaid Balance';
   // Show the secondary balance only when it carries a value worth surfacing.
   const showSecondary = isResearcher
     ? data.prepaidBalance > 0

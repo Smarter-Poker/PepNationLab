@@ -86,8 +86,12 @@ export async function GET() {
   // Approximated as the sum of weekly statements still awaiting payment. The
   // precise in-flight projection lives in the checkout route; this is the
   // settled-but-unpaid figure that drives the "available credit" display.
+  // Compute settled-but-unpaid statements whenever the account carries a credit
+  // limit. account_type is frequently null on agents who are effectively on
+  // credit (credit_limit set, prepaid_balance 0), so we must NOT gate on it —
+  // otherwise their credit usage (and the whole credit line) silently shows 0.
   let creditUsed = 0;
-  if (accountType === 'credit') {
+  if ((creditLimit != null && creditLimit > 0) || accountType === 'credit') {
     const { data: stmts } = await service
       .from('weekly_statements')
       .select('total_owed')
