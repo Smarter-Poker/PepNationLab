@@ -17,6 +17,9 @@ const ICON_PROPS = {
   strokeLinejoin: 'round' as const,
 };
 
+// fix-46.1: Messenger now links directly to /messenger (the old
+// /admin/messenger was a no-op server redirect). Find User is an action,
+// not a destination, so it does not compete for the active highlight.
 const NAV = [
   { href: '/admin', label: 'Dashboard', icon: <svg {...ICON_PROPS}><rect x="3" y="3" width="7" height="9" /><rect x="14" y="3" width="7" height="5" /><rect x="14" y="12" width="7" height="9" /><rect x="3" y="16" width="7" height="5" /></svg> },
   { href: '/admin/products', label: 'Products', icon: <svg {...ICON_PROPS}><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" /><polyline points="3.27 6.96 12 12.01 20.73 6.96" /><line x1="12" y1="22.08" x2="12" y2="12" /></svg> },
@@ -25,12 +28,8 @@ const NAV = [
   { href: '/admin/researchers', label: 'Researchers', icon: <svg {...ICON_PROPS}><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /></svg> },
   { href: '/admin/sales', label: 'Sales & Revenue', icon: <svg {...ICON_PROPS}><polyline points="22 7 13.5 15.5 8.5 10.5 2 17" /><polyline points="16 7 22 7 22 13" /></svg> },
   { href: '/admin/orders', label: 'Orders', icon: <svg {...ICON_PROPS}><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z" /><line x1="3" y1="6" x2="21" y2="6" /><path d="M16 10a4 4 0 0 1-8 0" /></svg> },
-  // fix-46: Find User shortcut. Opens the messenger compose dialog directly
-  // so admin can search the full directory by name / username / email and
-  // filter by role chip without first navigating into the messenger and
-  // clicking "new conversation".
-  { href: '/messenger?compose=1', label: 'Find User', icon: <svg {...ICON_PROPS}><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg> },
-  { href: '/admin/messenger', label: 'Messenger', icon: <svg {...ICON_PROPS}><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg> },
+  { href: '/messenger?compose=1', label: 'Find User', icon: <svg {...ICON_PROPS}><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>, action: true },
+  { href: '/messenger', label: 'Messenger', icon: <svg {...ICON_PROPS}><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg> },
   { href: '/admin/referrals', label: 'Referrals', icon: <svg {...ICON_PROPS}><path d="M17 11a4 4 0 1 0-8 0M3 21h18M5 21a7 7 0 0 1 14 0"/></svg> },
   { href: '/admin/transactions', label: 'Transactions', icon: <svg {...ICON_PROPS}><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg> },
   { href: '/admin/pricing', label: 'Pricing', icon: <svg {...ICON_PROPS}><line x1="12" y1="1" x2="12" y2="23" /><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" /></svg> },
@@ -108,12 +107,11 @@ export function AdminLayoutClient({
 
         <nav style={{ display: 'flex', flexDirection: 'column', gap: 2, padding: '0 var(--space-2)' }}>
           {NAV.map((item) => {
-            // fix-46: highlight the Find User shortcut whenever we're on
-            // /messenger with ?compose=1 too, even though pathname alone
-            // doesn't include the query string.
-            const active =
-              pathname === item.href ||
-              (item.href === '/messenger?compose=1' && pathname === '/messenger');
+            // fix-46.1: only highlight destination items (skip action shortcuts
+            // like Find User). Compare against the route portion of href so
+            // /messenger?compose=1 doesn't accidentally match.
+            const hrefRoute = item.href.split('?')[0];
+            const active = !item.action && pathname === hrefRoute;
             return (
               <Link
                 key={item.href}

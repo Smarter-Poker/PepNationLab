@@ -1,5 +1,6 @@
 'use client';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
 import ConversationList from './ConversationList';
 import MessagePane from './MessagePane';
@@ -31,23 +32,25 @@ export default function MessengerShell({ userId }: Props) {
 
   const [composeOpen, setComposeOpen] = useState(false);
 
-  // fix-46: when the messenger is opened with ?compose=1 (e.g. from the admin
-  // sidebar's Find User shortcut), open the New Conversation dialog
-  // immediately so the user lands directly on the searchable/filterable
-  // contact picker. We strip the param from the URL after consuming it so
-  // a refresh doesn't keep re-opening the dialog.
+  // fix-46.1: react to ?compose=1 via useSearchParams so the dialog opens
+  // even when the user is already mounted on /messenger and the URL changes
+  // via client-side navigation (Next.js App Router does not remount the
+  // component, so a useEffect([]) read of window.location.search misses
+  // the change). After consuming the param we use router.replace() to
+  // strip it; the resulting reactive run sees compose=null and bails out.
+  const router = useRouter();
+  const searchParams = useSearchParams();
   useEffect(() => {
-    if (typeof window === 'undefined') return;
-    const params = new URLSearchParams(window.location.search);
-    const v = params.get('compose');
+    if (!searchParams) return;
+    const v = searchParams.get('compose');
     if (v === '1' || v === 'true') {
       setComposeOpen(true);
+      const params = new URLSearchParams(searchParams.toString());
       params.delete('compose');
       const qs = params.toString();
-      const newUrl = window.location.pathname + (qs ? `?${qs}` : '') + window.location.hash;
-      try { window.history.replaceState({}, '', newUrl); } catch {}
+      router.replace(qs ? `/messenger?${qs}` : '/messenger', { scroll: false });
     }
-  }, []);
+  }, [searchParams, router]);
 
   const prefsRef = useRef<CachedPrefs>({ browser_push: false, mute_all: false });
   const activeIdRef = useRef<string | null>(null);
