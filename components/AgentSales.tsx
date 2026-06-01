@@ -10,6 +10,7 @@ import AgentSubInvoices from './AgentSubInvoices';
 const STATUS_LABELS: Record<string, string> = {
   pending_customer_payment: 'Pending Payment',
   agent_approval_pending: 'Approval Pending',
+  admin_approval_pending: 'Awaiting Admin Approval',
   approved_ship: 'Approved For Shipping',
   approved_pickup: 'Approved For Pickup',
   in_fulfillment: 'In Fulfillment',
