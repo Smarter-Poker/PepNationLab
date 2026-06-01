@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
 import { requireAdmin } from '@/lib/admin-auth';
 import { assertSameOrigin } from '@/lib/csrf';
+import { withIdempotency, readIdempotencyKey } from '@/lib/idempotency';
 
 export async function POST(req: NextRequest) {
   const csrf = assertSameOrigin(req);
@@ -18,6 +19,12 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Invalid Request' }, { status: 400 });
     }
 
+    return withIdempotency({
+      userId: gate.userId,
+      route: '/api/admin/agents/super-upgrade',
+      key: readIdempotencyKey(req),
+      request: { agentId, is_super_agent },
+      handler: async () => {
     const supabase = await createServiceClient();
 
     // Prevent making a sub-agent a super-agent
@@ -49,6 +56,8 @@ export async function POST(req: NextRequest) {
     }
 
     return NextResponse.json({ success: true, is_super_agent });
+      },
+    });
   } catch (error) {
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }

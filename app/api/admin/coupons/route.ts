@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
 import { requireAdmin } from '@/lib/admin-auth';
 import { assertSameOrigin } from '@/lib/csrf';
+import { withIdempotency, readIdempotencyKey } from '@/lib/idempotency';
 
 // GET: List every coupon across all agents (joined with the owning agent profile)
 export async function GET() {
@@ -30,8 +31,15 @@ export async function POST(req: NextRequest) {
   const gate = await requireAdmin();
   if (!gate.ok) return gate.response;
 
-  const supabase = await createServiceClient();
   const body = await req.json().catch(() => ({}));
+
+  return withIdempotency({
+    userId: gate.userId,
+    route: '/api/admin/coupons',
+    key: readIdempotencyKey(req),
+    request: body,
+    handler: async () => {
+  const supabase = await createServiceClient();
 
   const {
     agentId,
@@ -147,6 +155,8 @@ export async function POST(req: NextRequest) {
   });
 
   return NextResponse.json({ success: true, id: created.id });
+    },
+  });
 }
 
 // PATCH: Toggle is_active flag
@@ -157,13 +167,20 @@ export async function PATCH(req: NextRequest) {
   const gate = await requireAdmin();
   if (!gate.ok) return gate.response;
 
-  const supabase = await createServiceClient();
   const body = await req.json().catch(() => ({}));
   const { id, is_active } = body;
 
   if (!id || typeof is_active !== 'boolean') {
     return NextResponse.json({ error: 'Missing Coupon Id Or Active Flag' }, { status: 400 });
   }
+
+  return withIdempotency({
+    userId: gate.userId,
+    route: '/api/admin/coupons',
+    key: readIdempotencyKey(req),
+    request: { id, is_active },
+    handler: async () => {
+  const supabase = await createServiceClient();
 
   const { data: existing } = await supabase
     .from('coupons')
@@ -198,6 +215,8 @@ export async function PATCH(req: NextRequest) {
   });
 
   return NextResponse.json({ success: true });
+    },
+  });
 }
 
 // DELETE: Remove a coupon
@@ -208,12 +227,19 @@ export async function DELETE(req: NextRequest) {
   const gate = await requireAdmin();
   if (!gate.ok) return gate.response;
 
-  const supabase = await createServiceClient();
   const id = req.nextUrl.searchParams.get('id');
 
   if (!id) {
     return NextResponse.json({ error: 'Missing Coupon Id Parameter' }, { status: 400 });
   }
+
+  return withIdempotency({
+    userId: gate.userId,
+    route: '/api/admin/coupons',
+    key: readIdempotencyKey(req),
+    request: { method: 'DELETE', id },
+    handler: async () => {
+  const supabase = await createServiceClient();
 
   const { data: existing } = await supabase
     .from('coupons')
@@ -243,4 +269,6 @@ export async function DELETE(req: NextRequest) {
   });
 
   return NextResponse.json({ success: true });
+    },
+  });
 }

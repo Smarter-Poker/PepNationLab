@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireAdmin } from '@/lib/admin-auth';
 import { assertSameOrigin } from '@/lib/csrf';
 import { createServiceClient } from '@/lib/supabase/server';
+import { withIdempotency, readIdempotencyKey } from '@/lib/idempotency';
 
 export const dynamic = 'force-dynamic';
 
@@ -50,6 +51,12 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Invalid Effective Date' }, { status: 400 });
   }
 
+  return withIdempotency({
+    userId: gate.userId,
+    route: '/api/admin/agent-products/bulk-price',
+    key: readIdempotencyKey(req),
+    request: { ids, adjustmentType, newValue, effectiveAt: effectiveAt.toISOString(), notes },
+    handler: async () => {
   const service = await createServiceClient();
   const isImmediate = effectiveAt.getTime() <= Date.now();
 
@@ -99,5 +106,7 @@ export async function POST(req: NextRequest) {
     ok: true,
     scheduled_count: rows.length,
     applied_count: appliedCount,
+  });
+    },
   });
 }

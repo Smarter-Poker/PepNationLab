@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
 import { requireAdmin } from '@/lib/admin-auth';
 import { assertSameOrigin } from '@/lib/csrf';
+import { withIdempotency, readIdempotencyKey } from '@/lib/idempotency';
 
 export const dynamic = 'force-dynamic';
 
@@ -126,6 +127,12 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ error: 'Invalid id Or status' }, { status: 400 });
   }
 
+  return withIdempotency({
+    userId: gate.userId,
+    route: '/api/admin/referrals',
+    key: readIdempotencyKey(req),
+    request: { id, status },
+    handler: async () => {
   const service = await createServiceClient();
 
   const { data: before } = await service
@@ -155,4 +162,6 @@ export async function PATCH(req: NextRequest) {
   });
 
   return NextResponse.json({ ok: true });
+    },
+  });
 }

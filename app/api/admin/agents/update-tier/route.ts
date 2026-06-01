@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
 import { requireAdmin } from '@/lib/admin-auth';
 import { assertSameOrigin } from '@/lib/csrf';
+import { withIdempotency, readIdempotencyKey } from '@/lib/idempotency';
 
 const VALID_TIERS = ['tier_1', 'tier_2', 'tier_3'] as const;
 type AgentTier = (typeof VALID_TIERS)[number];
@@ -27,6 +28,12 @@ export async function PATCH(req: NextRequest) {
     );
   }
 
+  return withIdempotency({
+    userId: gate.userId,
+    route: '/api/admin/agents/update-tier',
+    key: readIdempotencyKey(req),
+    request: { agentId, tier },
+    handler: async () => {
   const supabase = await createServiceClient();
 
   // Confirm target is actually an agent (not another admin)
@@ -61,4 +68,6 @@ export async function PATCH(req: NextRequest) {
   } catch { /* non-critical: DB trigger also handles this */ }
 
   return NextResponse.json({ success: true, tier });
+    },
+  });
 }
