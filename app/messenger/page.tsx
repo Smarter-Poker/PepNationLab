@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
+import { Suspense } from 'react';
 import { createClient, createServiceClient } from '@/lib/supabase/server';
 import MessengerShell from '@/components/messenger/MessengerShell';
 
@@ -18,9 +19,6 @@ export default async function MessengerPage() {
   } = await supabase.auth.getUser();
   if (!user) redirect('/login?redirect=/messenger');
 
-  // Audit10: block deactivated users at page mount, not just inside the API.
-  // requireSession enforces this at the route layer; mirror it here so the
-  // shell does not hydrate for a banned/deactivated account.
   const svc = await createServiceClient();
   const { data: prof } = await svc
     .from('profiles')
@@ -29,5 +27,13 @@ export default async function MessengerPage() {
     .maybeSingle();
   if (prof && prof.is_active === false) redirect('/login?redirect=/messenger');
 
-  return <MessengerShell userId={user.id} />;
+  // fix-46.2: Suspense boundary required for MessengerShell's useSearchParams()
+  // (Next.js App Router rule; matches the codebase pattern in admin/orders,
+  // admin/researchers, etc.). The fallback is empty because the shell renders
+  // its own loading state via the conversation list.
+  return (
+    <Suspense fallback={null}>
+      <MessengerShell userId={user.id} />
+    </Suspense>
+  );
 }
