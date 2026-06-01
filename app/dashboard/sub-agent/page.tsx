@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
+import PushNotificationToggle from '@/components/PushNotificationToggle';
 
 /**
  * SACA Phase 5: Sub-agent dashboard.
@@ -249,6 +250,13 @@ export default function SubAgentDashboardPage() {
             </tbody>
           </table>
         )}
+      </div>
+
+      <div>
+        <PushNotificationToggle
+          title="Notification Settings"
+          description="Enable Push Notifications On This Device For Incoming Calls And New Messages — Even When The App Is Closed."
+        />
       </div>
     </div>
   );
