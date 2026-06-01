@@ -43,6 +43,7 @@ interface AgentOrdersProps {
 const STATUS_LABEL: Record<string, string> = {
   pending_customer_payment: 'Pending Payment',
   agent_approval_pending: 'Agent Approval Pending',
+  admin_approval_pending: 'Awaiting Admin Approval',
   approved_ship: 'Approved Ship',
   approved_pickup: 'Approved Pickup',
   in_fulfillment: 'In Fulfillment',
