@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import AdminAnalytics from '@/components/AdminAnalytics';
 import AdminOverviewSparkline from '@/components/AdminOverviewSparkline';
+import AdminDashboardRealtime from '@/components/AdminDashboardRealtime';
 import { fetchAdminMetrics, computeGmvDelta, timeAgo } from '@/lib/admin-metrics';
 import { getImpersonationContext } from '@/lib/impersonation';
 
@@ -35,7 +36,7 @@ export default async function AdminDashboard() {
   if (!user) redirect('/login');
 
   const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single();
-  
+
   if (profile?.role !== 'admin') {
     return redirect('/dashboard');
   }
@@ -136,7 +137,6 @@ export default async function AdminDashboard() {
       color: metrics.unpaidStatementsCount > 0 ? 'var(--red)' : 'var(--grey-400)',
       icon: <svg {...ICON_PROPS}><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /><line x1="16" y1="13" x2="8" y2="13" /><line x1="16" y1="17" x2="8" y2="17" /></svg>,
     },
-
     {
       label: 'New Researchers (24h)',
       value: String(metrics.newResearchers24h),
@@ -165,6 +165,8 @@ export default async function AdminDashboard() {
 
   return (
     <div style={{ padding: 'var(--space-8)' }}>
+      <AdminDashboardRealtime />
+
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-8)', flexWrap: 'wrap', gap: 'var(--space-3)' }}>
         <h1 style={{ fontSize: '1.6rem', margin: 0 }}>Admin Dashboard</h1>
         <p style={{ fontSize: '0.85rem', color: 'var(--grey-400)', margin: 0, fontFamily: 'var(--font-brand)', letterSpacing: '0.5px' }}>
@@ -293,6 +295,42 @@ export default async function AdminDashboard() {
           </div>
         </div>
       </div>
+
+      {/* fix-55 #5: Top Agents Leaderboard */}
+      {metrics.topAgents.length > 0 && (
+        <div className="metal-frame" style={{ marginBottom: 'var(--space-8)' }}>
+          <div className="metal-content" style={{ padding: 'var(--space-6)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-5)' }}>
+              <h3 style={{ fontSize: '1rem', margin: 0 }}>Top Agents (30 Days)</h3>
+              <Link href="/admin/agents" style={{ fontSize: '0.8rem', color: 'var(--teal)', textDecoration: 'none' }}>Manage Agents</Link>
+            </div>
+            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <thead>
+                <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+                  <th style={{ padding: 'var(--space-2) var(--space-3)', textAlign: 'left', fontSize: '0.7rem', color: 'var(--grey-400)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', width: 48 }}>Rank</th>
+                  <th style={{ padding: 'var(--space-2) var(--space-3)', textAlign: 'left', fontSize: '0.7rem', color: 'var(--grey-400)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Agent</th>
+                  <th style={{ padding: 'var(--space-2) var(--space-3)', textAlign: 'right', fontSize: '0.7rem', color: 'var(--grey-400)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Orders</th>
+                  <th style={{ padding: 'var(--space-2) var(--space-3)', textAlign: 'right', fontSize: '0.7rem', color: 'var(--grey-400)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>GMV</th>
+                </tr>
+              </thead>
+              <tbody>
+                {metrics.topAgents.map((a, idx) => (
+                  <tr key={a.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.03)' }}>
+                    <td style={{ padding: 'var(--space-2) var(--space-3)', fontSize: '0.82rem', color: 'var(--silver)', fontWeight: 700 }}>#{idx + 1}</td>
+                    <td style={{ padding: 'var(--space-2) var(--space-3)', fontSize: '0.85rem', color: 'var(--white)' }}>
+                      <Link href={`/admin/transactions?agent=${encodeURIComponent(a.id)}`} style={{ color: 'inherit', textDecoration: 'none' }}>
+                        {a.name}
+                      </Link>
+                    </td>
+                    <td style={{ padding: 'var(--space-2) var(--space-3)', fontSize: '0.82rem', color: 'var(--silver)', textAlign: 'right' }}>{a.orderCount}</td>
+                    <td style={{ padding: 'var(--space-2) var(--space-3)', fontSize: '0.82rem', color: 'var(--teal)', textAlign: 'right', fontWeight: 700 }}>{formatCurrency(a.gmv)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
 
       <div className="grid-2" style={{ marginBottom: 'var(--space-8)' }}>
         <div className="metal-frame">
