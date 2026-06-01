@@ -1002,6 +1002,65 @@ body > * {
   }
 }
 
+/* ============================================================
+   ROUND 15 — CLEAN UP MESSENGER MOBILE COMPOSER + GAP + DASHBOARD
+   ------------------------------------------------------------
+   User asks (clear and direct):
+   1. Remove emoji + calendar icons from composer on mobile;
+      Send button only shows after user starts typing.
+   2. Pull the "Adam Don..." header up so it sits right under
+      the global navbar — no wasted black band between them.
+   3. Move the Dashboard pill to the left so it fully fits in
+      the navbar frame on mobile.
+   ============================================================ */
+
+@media (max-width: 768px) {
+  /* (1) HIDE the emoji + calendar buttons inside the composer pill.
+     They share the right-side action area with the Send button; on
+     mobile we want a cleaner pill with just the field and Send. */
+  .msg-composer button[aria-label="Insert Emoji"],
+  .msg-composer button[aria-label="Schedule Send"],
+  .messenger-main .msg-composer button[aria-label="Insert Emoji"],
+  .messenger-main .msg-composer button[aria-label="Schedule Send"] {
+    display: none !important;
+  }
+
+  /* (2) PULL the messenger-shell UP under the navbar.
+     The MessengerLayout has a spacer = var(--nav-offset) and other
+     banners (Stale / Disclaimer / Impersonation) can reserve in-flow
+     space above the layout root. Counter that with negative margin-top
+     so the conversation header sits flush below the fixed Navbar. */
+  .messenger-shell {
+    margin-top: calc(0px - var(--safe-top, 0px)) !important;
+  }
+  /* Conversation header — zero top padding/margin so it touches
+     the navbar bottom edge. */
+  .messenger-main header,
+  .messenger-main > div > header {
+    margin-top: 0 !important;
+    padding-top: 4px !important;
+  }
+  /* Kill any extra spacer divs that sit before the messenger-main
+     in the messenger-layout-root. The MessengerLayout spacer is
+     identified by inline `height: var(--nav-offset, 60px)`. */
+  .messenger-layout-root > div[style*="height: var(--nav-offset"] {
+    height: 60px !important;
+  }
+
+  /* (3) SHRINK Dashboard icon further so it fully fits in the
+     navbar frame on iPhone widths without overflowing the right edge. */
+  .pnl-navbar a img.dashboard-icon {
+    width: 110px !important;
+    max-width: 110px !important;
+  }
+}
+@media (max-width: 380px) {
+  .pnl-navbar a img.dashboard-icon {
+    width: 88px !important;
+    max-width: 88px !important;
+  }
+}
+
 /* --- (3) Product Catalog mobile UX: hide dropdowns, show search --- */
 .agentprod-mobile-search { display: none; }
 @media (max-width: 768px) {
