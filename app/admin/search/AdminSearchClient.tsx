@@ -6,6 +6,8 @@ import { Search, X, Clock, Copy, ExternalLink, Trash2, Filter } from 'lucide-rea
 import { toast } from 'sonner';
 
 // fix-49: order-specific structured filters + fuzzy match (pg_trgm).
+// fix-50: Order Filters chip moved inline next to Transactions; drop the
+//         "What You Can Search" cheat-sheet from the empty state.
 
 type Scope = 'all' | 'users' | 'products' | 'orders' | 'storefronts' | 'coupons' | 'transactions';
 
@@ -113,6 +115,10 @@ function highlight(text: string | null | undefined, q: string): React.ReactNode 
 
 function hasAnyFilter(f: OrderFilters): boolean {
   return !!(f.status || f.payment || f.from || f.to || f.min || f.max);
+}
+
+function countActiveFilters(f: OrderFilters): number {
+  return (f.status ? 1 : 0) + (f.payment ? 1 : 0) + (f.from ? 1 : 0) + (f.to ? 1 : 0) + (f.min ? 1 : 0) + (f.max ? 1 : 0);
 }
 
 export default function AdminSearchClient() {
@@ -367,6 +373,7 @@ export default function AdminSearchClient() {
 
   const q = query.trim();
   const filtersActive = hasAnyFilter(filters);
+  const activeFilterCount = countActiveFilters(filters);
   const showEmptyState = q.length < 2 && !filtersActive && !loading;
   const showNoResults = !!results && totalHits === 0 && !loading && (q.length >= 2 || filtersActive);
 
@@ -408,7 +415,12 @@ export default function AdminSearchClient() {
           )}
         </label>
 
-        <div role="tablist" aria-label="Search Scope" style={{ display: 'flex', gap: 6, overflowX: 'auto', paddingBottom: 4, WebkitOverflowScrolling: 'touch', marginBottom: 8 }}>
+        {/* Scope chips + inline Order Filters trigger.
+            fix-50: filter button now lives in the same horizontal row as
+            the scope chips, immediately after Transactions, so it shares
+            the same overflow-x line on mobile and reads as part of the
+            entity selector. */}
+        <div role="tablist" aria-label="Search Scope" style={{ display: 'flex', gap: 6, overflowX: 'auto', paddingBottom: 4, WebkitOverflowScrolling: 'touch', alignItems: 'center' }}>
           {SCOPE_LABELS.map((s) => {
             const count = s.key === 'all' ? totalHits : (counts ? (counts as Record<string, number>)[s.key] : 0);
             const active = scope === s.key;
@@ -436,28 +448,47 @@ export default function AdminSearchClient() {
               </button>
             );
           })}
-        </div>
 
-        {/* Order-specific filter trigger and panel */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          {/* Visual separator between scopes and the filter action. */}
+          <span aria-hidden="true" style={{ flexShrink: 0, width: 1, height: 20, background: 'var(--surface-3, #1D2D3E)', margin: '0 4px' }} />
+
           <button
             type="button"
+            aria-pressed={filtersOpen}
+            aria-controls="order-filters-panel"
             onClick={() => setFiltersOpen((v) => !v)}
             style={{
+              flexShrink: 0,
               display: 'inline-flex', alignItems: 'center', gap: 6,
-              background: filtersOpen ? 'rgba(0,196,188,0.12)' : 'var(--surface-1, #0F1923)',
+              background: filtersActive ? 'rgba(0,196,188,0.18)' : 'var(--surface-1, #0F1923)',
               border: '1px solid ' + (filtersActive ? 'var(--teal, #00C4BC)' : 'var(--surface-3, #1D2D3E)'),
-              borderRadius: 999, padding: '6px 12px', color: 'var(--white, #FFFFFF)',
-              fontSize: '0.82rem', fontWeight: 600, cursor: 'pointer',
+              borderRadius: 999, padding: '6px 12px',
+              color: filtersActive ? 'var(--teal, #00C4BC)' : 'var(--white, #FFFFFF)',
+              fontSize: '0.82rem', fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap',
             }}
           >
-            <Filter size={14} /> Order Filters{filtersActive ? ' (Active)' : ''}
+            <Filter size={14} aria-hidden="true" />
+            Order Filters
+            {activeFilterCount > 0 && (
+              <span
+                aria-label={`${activeFilterCount} active`}
+                style={{
+                  marginLeft: 2, padding: '0 6px', minWidth: 18, height: 18,
+                  borderRadius: 999, background: 'var(--teal, #00C4BC)', color: '#000',
+                  fontSize: '0.66rem', fontWeight: 800,
+                  display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                }}
+              >
+                {activeFilterCount}
+              </span>
+            )}
           </button>
+
           {filtersActive && (
             <button
               type="button"
               onClick={clearFilters}
-              style={{ background: 'transparent', border: 0, color: 'var(--grey-400, #A8B4C0)', fontSize: '0.78rem', cursor: 'pointer' }}
+              style={{ flexShrink: 0, background: 'transparent', border: 0, color: 'var(--grey-400, #A8B4C0)', fontSize: '0.78rem', cursor: 'pointer', whiteSpace: 'nowrap' }}
             >
               Clear Filters
             </button>
@@ -466,10 +497,13 @@ export default function AdminSearchClient() {
 
         {filtersOpen && (
           <div
+            id="order-filters-panel"
+            role="region"
+            aria-label="Order Filters"
             style={{
               background: 'var(--surface-2, #162230)',
               border: '1px solid var(--surface-3, #1D2D3E)',
-              borderRadius: 12, padding: 14, marginTop: 8,
+              borderRadius: 12, padding: 14, marginTop: 10,
               display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 10,
             }}
           >
@@ -760,6 +794,9 @@ function ResultRow({
 }
 
 function EmptyState({ recent, onPickRecent, onClearRecent }: { recent: string[]; onPickRecent: (r: string) => void; onClearRecent: () => void; }) {
+  // fix-50: dropped the "What You Can Search" cheat-sheet — the input
+  // placeholder + scope chips already cover that surface. Recent Searches
+  // and a short tips line remain so a fresh visitor still gets a hint.
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
       {recent.length > 0 && (
@@ -782,22 +819,9 @@ function EmptyState({ recent, onPickRecent, onClearRecent }: { recent: string[];
         </section>
       )}
 
-      <section style={{ background: 'var(--surface-2, #162230)', border: '1px solid var(--surface-3, #1D2D3E)', borderRadius: 12, padding: 16 }}>
-        <div style={{ fontSize: '0.78rem', textTransform: 'uppercase', letterSpacing: '0.12em', color: 'var(--grey-400, #A8B4C0)', fontWeight: 700, marginBottom: 10 }}>
-          What You Can Search
-        </div>
-        <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: 8, color: 'var(--grey-300, #D0DAE4)', fontSize: '0.92rem' }}>
-          <li><strong>Users</strong> by full name, username, or email — fuzzy-matched, so “daneil” still finds “Daniel.”</li>
-          <li><strong>Storefronts</strong> by slug or display name.</li>
-          <li><strong>Products</strong> by name, slug, or SKU.</li>
-          <li><strong>Orders</strong> by buyer name, email, tracking number, order id, status, payment method, fulfillment method, coupon code, carrier, service level, shipping city / state / zip, AND product name from line items. Add structured filters (status, payment method, date range, total range) to narrow without typing.</li>
-          <li><strong>Coupons</strong> by code.</li>
-          <li><strong>Transactions</strong> by description.</li>
-        </ul>
-        <div style={{ marginTop: 12, fontSize: '0.78rem', color: 'var(--grey-400, #A8B4C0)' }}>
-          Tips: scope chips narrow the search. Arrow keys move through results, Enter opens the focused row, Esc clears the query. Order Filters work even with no query.
-        </div>
-      </section>
+      <div style={{ fontSize: '0.78rem', color: 'var(--grey-400, #A8B4C0)', padding: '4px 4px' }}>
+        Tips: Scope Chips Narrow The Search. Arrow Keys Move Through Results, Enter Opens The Focused Row, Esc Clears The Query. Order Filters Work Even With No Query.
+      </div>
     </div>
   );
 }
