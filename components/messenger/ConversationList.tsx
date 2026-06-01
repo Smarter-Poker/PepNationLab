@@ -14,14 +14,15 @@ interface DrillFrame {
 }
 
 /**
- * round-22: For admin users, this list is a HIERARCHICAL view of the
- * admin's downline. Default = top-level agents + admin-referred
- * researchers. Tapping the chevron on an agent row drills into THEIR
- * downline (parent_agent_id = thatAgent OR referring_agent_id = thatAgent).
- * Tapping the row body opens the existing DM as before.
+ * round-22 / round-23: a HIERARCHICAL view of the downline tree.
  *
- * Non-admin users see their full conversation list as before — drill
- * stack stays empty and the API returns the unfiltered set.
+ * Default (root) = the viewer's normal list (admins see their direct
+ * downline). Tapping the chevron on an agent/super_agent row drills into
+ * THAT agent's downline. The drill list now includes downline members the
+ * viewer has NOT messaged yet (the API returns `new:<id>` sentinel rows);
+ * tapping such a row starts the DM and opens it, so every arrow is always
+ * connected to the chat display. Tapping a row that already has a thread
+ * opens it as before.
  */
 export default function ConversationList({ selfId }: Props) {
   void selfId; // selfId is currently unused but kept for API consistency
@@ -33,8 +34,7 @@ export default function ConversationList({ selfId }: Props) {
   const loading = useMessengerStore((s) => s.loadingConversations);
 
   // Drill-down stack. Each frame represents a level we've descended
-  // INTO from the root admin view. Empty stack = root (admin's direct
-  // downline). Non-admin users never push onto this stack.
+  // INTO from the root view. Empty stack = root.
   const [drill, setDrill] = useState<DrillFrame[]>([]);
   const currentParent = drill.length > 0 ? drill[drill.length - 1] : null;
 
@@ -83,6 +83,35 @@ export default function ConversationList({ selfId }: Props) {
     ]);
     setActive(null);
   }, [setActive]);
+
+  // Opening a row. Downline members with no existing thread arrive as a
+  // `new:<memberId>` sentinel — start (or find) the direct conversation,
+  // refresh the drilled list so the real thread replaces the sentinel,
+  // then open it. Existing rows just activate.
+  const handleOpen = useCallback(async (c: { conversation_id?: string; counterparty_id?: string | null }) => {
+    const cid = (c.conversation_id ?? '').toString();
+    if (cid.startsWith('new:')) {
+      const counterpartyId = (c.counterparty_id ?? cid.slice(4)).toString();
+      if (!counterpartyId) return;
+      try {
+        const res = await fetch('/api/messenger/start-conversation', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ type: 'direct', participantIds: [counterpartyId] }),
+        });
+        if (!res.ok) return;
+        const json = (await res.json()) as { conversationId?: string };
+        if (json.conversationId) {
+          await fetchConversations(currentParent?.parentId ?? null);
+          setActive(json.conversationId);
+        }
+      } catch {
+        /* leave the list as-is on failure */
+      }
+      return;
+    }
+    setActive(cid);
+  }, [fetchConversations, currentParent?.parentId, setActive]);
 
   const handleBack = useCallback(() => {
     setDrill((stack) => stack.slice(0, -1));
@@ -138,10 +167,10 @@ export default function ConversationList({ selfId }: Props) {
           >
             <MessageSquare size={36} aria-hidden="true" />
             <div style={{ fontWeight: 600, color: 'var(--white, #FFFFFF)' }}>
-              {currentParent ? 'No Downline Conversations' : 'No Conversations Yet'}
+              {currentParent ? 'No Downline Members' : 'No Conversations Yet'}
             </div>
             <div style={{ fontSize: '0.84rem' }}>
-              {currentParent ? 'This Agent Has No Downline DMs Yet.' : 'Start A New Conversation To Begin.'}
+              {currentParent ? 'This Agent Has No Downline Accounts Yet.' : 'Start A New Conversation To Begin.'}
             </div>
           </div>
         ) : (
@@ -157,7 +186,7 @@ export default function ConversationList({ selfId }: Props) {
                   <ConversationItem
                     conversation={c}
                     active={activeId === c.conversation_id}
-                    onClick={() => setActive(c.conversation_id)}
+                    onClick={() => handleOpen(c as never)}
                   />
                 </div>
                 {isDrillable && (
