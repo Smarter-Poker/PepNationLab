@@ -109,42 +109,52 @@ export default function FirstRunNotificationPrompt() {
       }}
     >
       <div
-        className="card-metal stagger-fade-in"
-        style={{ width: '100%', maxWidth: 420, padding: 'var(--space-7, 28px)', textAlign: 'center', borderRadius: 18 }}
+        className={!enabled ? "stagger-fade-in" : "card-metal stagger-fade-in"}
+        style={{ width: '100%', maxWidth: 420, padding: !enabled ? 0 : 'var(--space-7, 28px)', textAlign: 'center', borderRadius: 18 }}
       >
-        <div
-          style={{
-            width: 56, height: 56, borderRadius: '50%', margin: '0 auto var(--space-4, 16px)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            background: 'rgba(192,184,168,0.12)', border: '1px solid rgba(192,184,168,0.3)', color: 'var(--teal)',
-          }}
-        >
-          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
-            <path d="M13.73 21a2 2 0 0 1-3.46 0" />
-          </svg>
-        </div>
-
         {!enabled ? (
-          <>
-            <h2 style={{ fontSize: '1.3rem', fontWeight: 800, color: 'var(--white)', margin: '0 0 8px' }}>
-              Turn On Notifications
-            </h2>
-            <p style={{ fontSize: '0.9rem', color: 'var(--silver)', lineHeight: 1.6, margin: '0 0 var(--space-5, 22px)' }}>
-              Get Alerts On This Device For Incoming Calls And New Messages — Even When Pep Nation Lab Is Closed.
-            </p>
-            {error && (
-              <p style={{ fontSize: '0.82rem', color: 'var(--red)', margin: '0 0 var(--space-3, 12px)' }}>{error}</p>
-            )}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2, 10px)' }}>
-              <button type="button" onClick={onEnable} disabled={busy} className="btn btn-primary" style={{ width: '100%', justifyContent: 'center' }}>
-                {busy ? 'Enabling...' : 'Enable Notifications'}
-              </button>
-              <button type="button" onClick={onClose} className="btn btn-ghost btn-sm" style={{ width: '100%', justifyContent: 'center', color: 'var(--grey-400)' }}>
-                Not Now
-              </button>
-            </div>
-          </>
+          <div style={{ position: 'relative', width: '100%' }}>
+            <img 
+              src="/images/enable-notifications.png" 
+              alt="Turn On Notifications" 
+              style={{ width: '100%', height: 'auto', display: 'block', borderRadius: 18 }} 
+            />
+            {/* Hitbox for Enable Notifications */}
+            <button 
+              type="button" 
+              onClick={onEnable} 
+              disabled={busy} 
+              aria-label="Enable Notifications"
+              style={{ 
+                position: 'absolute', 
+                top: '59%', 
+                left: '12%', 
+                width: '76%', 
+                height: '14%', 
+                background: 'transparent', 
+                border: 'none', 
+                cursor: 'pointer',
+                outline: 'none'
+              }}
+            />
+            {/* Hitbox for Not Now */}
+            <button 
+              type="button" 
+              onClick={onClose} 
+              aria-label="Not Now"
+              style={{ 
+                position: 'absolute', 
+                top: '75%', 
+                left: '12%', 
+                width: '76%', 
+                height: '14%', 
+                background: 'transparent', 
+                border: 'none', 
+                cursor: 'pointer',
+                outline: 'none'
+              }}
+            />
+          </div>
         ) : (
           <>
             <h2 style={{ fontSize: '1.3rem', fontWeight: 800, color: 'var(--white)', margin: '0 0 8px' }}>
