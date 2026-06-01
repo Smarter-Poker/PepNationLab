@@ -80,7 +80,7 @@ export default function SubAgentsPage() {
           <p style={{ margin: 0 }}>You Have No Sub-Agents Yet.</p>
           <p style={{ marginTop: '8px', opacity: 0.8 }}>
             Promote A Researcher From Your Downline To Get Started. Sub-Agents Sell On Your
-            Storefront At Your Prices And Earn A Commission Percentage Of Each Sale, Settled As
+            Storefront At Your Prices And Earn A Commission Percentage Of Total Sales, Settled As
             Digital Credits Every Sunday Night.
           </p>
         </div>
@@ -90,7 +90,7 @@ export default function SubAgentsPage() {
             <thead>
               <tr>
                 <th style={{ textAlign: 'left', padding: '8px', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>Name</th>
-                <th style={{ textAlign: 'right', padding: '8px', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>Commission %</th>
+                <th style={{ textAlign: 'right', padding: '8px', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>Commission % (Of Sales)</th>
                 <th style={{ textAlign: 'left', padding: '8px', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>Payment</th>
                 <th style={{ textAlign: 'right', padding: '8px', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>Credit Cap</th>
                 <th style={{ textAlign: 'right', padding: '8px', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>Prepaid Balance</th>

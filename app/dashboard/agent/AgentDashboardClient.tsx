@@ -879,7 +879,7 @@ export default function AgentDashboardClient({
                     </p>
 
                     <div className="form-group" style={{ marginBottom: 16 }}>
-                      <label className="form-label" style={{ color: '#8a9ab0', fontSize: '0.8rem', fontWeight: 600 }}>Commission Percentage (%)</label>
+                      <label className="form-label" style={{ color: '#8a9ab0', fontSize: '0.8rem', fontWeight: 600 }}>Commission Percentage (% Of Total Sales)</label>
                       <input type="number" className="form-input" min="0" max="40" value={promoteCommission} onChange={e => setPromoteCommission(e.target.value)} />
                     </div>
 

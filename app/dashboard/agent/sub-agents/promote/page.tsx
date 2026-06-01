@@ -155,8 +155,8 @@ export default function PromoteSubAgentPage() {
     <div style={{ padding: '24px', maxWidth: '900px', margin: '0 auto' }}>
       <h1 style={{ fontSize: '28px', marginBottom: '8px' }}>Promote A Researcher To Sub-Agent</h1>
       <p style={{ marginBottom: '24px', opacity: 0.85, lineHeight: 1.6 }}>
-        Sub-Agents Sell On Your Storefront At Your Prices And Earn A Commission Percentage Of Each
-        Sale. You Set The Commission Rate (Up To 40%), Decide Whether They Run On A Credit Line Or
+        Sub-Agents Sell On Your Storefront At Your Prices And Earn A Commission Percentage Of Total
+        Sales. You Set The Commission Rate (Up To 40%), Decide Whether They Run On A Credit Line Or
         Prepaid Balance, And Cap Their Credit. Commission Accrues On Every Order And Settles To
         Their Account As Digital Credits Every Sunday Night.
       </p>
@@ -229,7 +229,7 @@ export default function PromoteSubAgentPage() {
 
         <div style={{ marginBottom: '16px' }}>
           <label style={{ display: 'block', marginBottom: '4px', fontWeight: 600 }}>
-            Commission Percentage: {commissionPct}%
+            Commission Percentage (% Of Total Sales): {commissionPct}%
           </label>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             <input
@@ -252,7 +252,7 @@ export default function PromoteSubAgentPage() {
             />
           </div>
           <div style={{ fontSize: '12px', opacity: 0.75, marginTop: '4px' }}>
-            Capped At 40%. Applied To Gross Peptide Subtotal (Pre-Discount, No Shipping).
+            Capped At 40%. Applied To Gross Peptide Subtotal (Pre-Discount, No Shipping, NOT Profit).
           </div>
         </div>
 

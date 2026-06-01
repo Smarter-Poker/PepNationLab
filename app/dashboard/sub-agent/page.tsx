@@ -152,7 +152,7 @@ export default function SubAgentDashboardPage() {
           <div style={{ fontSize: '12px', opacity: 0.7, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Pending Commission</div>
           <div style={{ fontSize: '28px', fontWeight: 700, marginTop: '4px' }}>{fmtMoney(data.pending_commission)}</div>
           <div style={{ fontSize: '12px', opacity: 0.7, marginTop: '8px' }}>
-            Earning {data.profile.commission_pct ?? 0}% Per Sale. Credits Settle Sundays.
+            Earning {data.profile.commission_pct ?? 0}% Of Total Sales. Credits Settle Sundays.
           </div>
         </div>
 
