@@ -111,6 +111,8 @@ export default function AgentAccountDetail({
   const [commissionMode, setCommissionMode] = useState<'fixed' | 'gamified'>('fixed');
   const [maxCap, setMaxCap] = useState('');
   const [velocityCap, setVelocityCap] = useState('');
+  // Toggles the Gamification Scale explainer popover next to its radio label.
+  const [showGamificationInfo, setShowGamificationInfo] = useState(false);
   const [isActive, setIsActive] = useState(true);
   const [saving, setSaving] = useState(false);
 
@@ -406,9 +408,67 @@ export default function AgentAccountDetail({
                         <input type="radio" checked={commissionMode === 'fixed'} onChange={() => setCommissionMode('fixed')} /> Fixed Percentage
                       </label>
                       <label style={{ flex: 1, ...inputStyle, display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', borderColor: commissionMode === 'gamified' ? 'var(--teal)' : 'rgba(0,0,0,0.8)' }}>
-                        <input type="radio" checked={commissionMode === 'gamified'} onChange={() => setCommissionMode('gamified')} /> Gamification Scale
+                        <input type="radio" checked={commissionMode === 'gamified'} onChange={() => setCommissionMode('gamified')} />
+                        <span style={{ flex: 1 }}>Gamification Scale</span>
+                        <button
+                          type="button"
+                          aria-label="How The Gamification Scale Works"
+                          title="How The Gamification Scale Works"
+                          onClick={(e) => { e.preventDefault(); e.stopPropagation(); setShowGamificationInfo((v) => !v); }}
+                          style={{
+                            flex: '0 0 auto', width: 20, height: 20, borderRadius: '50%',
+                            border: '1px solid var(--teal)', background: showGamificationInfo ? 'var(--teal)' : 'transparent',
+                            color: showGamificationInfo ? '#04141a' : 'var(--teal)', fontSize: '0.72rem', fontWeight: 800,
+                            lineHeight: 1, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            fontStyle: 'italic', fontFamily: 'Georgia, serif',
+                          }}
+                        >
+                          i
+                        </button>
                       </label>
                     </div>
+
+                    {showGamificationInfo && (
+                      <div
+                        style={{
+                          border: '1px solid rgba(0,196,188,0.4)', background: 'rgba(0,196,188,0.06)',
+                          borderRadius: 8, padding: 'var(--space-3) var(--space-4)', marginBottom: 'var(--space-3)',
+                          fontSize: '0.78rem', color: 'var(--grey-300)', lineHeight: 1.55,
+                        }}
+                      >
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+                          <strong style={{ color: 'var(--teal)', fontSize: '0.82rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                            How The Gamification Scale Works
+                          </strong>
+                          <button
+                            type="button"
+                            aria-label="Close Explanation"
+                            onClick={() => setShowGamificationInfo(false)}
+                            style={{ background: 'none', border: 'none', color: 'var(--grey-400)', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600, lineHeight: 1 }}
+                          >
+                            Close
+                          </button>
+                        </div>
+                        <p style={{ margin: '0 0 8px' }}>
+                          Instead Of One Flat Commission, The Agent Earns A Higher Rate As They Sell More. Their Commission Starts At The Base Rate And Climbs Toward The Max Cap As Their Monthly Volume Grows — A Built-In Incentive To Keep Selling.
+                        </p>
+                        <ul style={{ margin: '0 0 8px', paddingLeft: 18, listStyle: 'disc' }}>
+                          <li style={{ marginBottom: 4 }}>
+                            <strong style={{ color: 'var(--white)' }}>Base Rate (%)</strong> — The Floor. Every Sale Earns At Least This Rate, Even At Zero Volume.
+                          </li>
+                          <li style={{ marginBottom: 4 }}>
+                            <strong style={{ color: 'var(--white)' }}>Max Cap (%)</strong> — The Ceiling. The Highest Rate The Agent Can Reach At Top Volume. Leave Blank For No Ceiling.
+                          </li>
+                          <li>
+                            <strong style={{ color: 'var(--white)' }}>Velocity Cap ($, Optional)</strong> — The Monthly Sales Figure At Which The Agent Hits The Max Cap. A Higher Velocity Cap Means They Must Sell More To Reach The Top Rate. Leave Blank To Use The Default Pace.
+                          </li>
+                        </ul>
+                        <p style={{ margin: 0 }}>
+                          Example: Base 15%, Max Cap 25%, Velocity Cap $10,000. The Agent Earns 15% Early In The Month And Scales Up Toward 25% As Their Monthly Sales Approach $10,000. A Full Storefront Agent's Own Profit Still Comes From Their Retail Pricing — This Scale Governs The Commission You Pay Them On Top.
+                        </p>
+                      </div>
+                    )}
+
                     {commissionMode === 'fixed' ? (
                       <div style={{ maxWidth: 240 }}>
                         <label style={labelStyle}>Commission Rate (%)</label>
