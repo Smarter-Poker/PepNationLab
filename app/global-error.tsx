@@ -28,7 +28,7 @@ export default function GlobalError({
             </div>
             <h1 style={{ fontSize: '1.6rem', color: '#FFFFFF', marginBottom: '0.75rem', fontWeight: 700 }}>A Critical Error Occurred</h1>
             <p style={{ fontSize: '0.95rem', color: '#A8B4C0', marginBottom: '2rem', lineHeight: 1.6 }}>The Application Encountered A Fatal Error. Please Reload The Page Or Contact Support.</p>
-            <button onClick={() => reset()} style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '0.75rem 1.5rem', background: '#00C4BC', color: '#050A0F', borderRadius: '0.5rem', fontWeight: 600, border: 'none', cursor: 'pointer', fontSize: '0.95rem' }}>Try Again</button>
+            <button onClick={() => reset()} style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '0.75rem 1.5rem', background: 'linear-gradient(180deg, #DCD3C3 0%, #B3A992 100%)', color: '#050A0F', borderRadius: '0.5rem', fontWeight: 600, border: 'none', cursor: 'pointer', fontSize: '0.95rem' }}>Try Again</button>
           </div>
         </div>
       </body>
