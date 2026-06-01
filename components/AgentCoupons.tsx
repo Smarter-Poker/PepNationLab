@@ -21,6 +21,7 @@ export default function AgentCoupons({ agentId }: { agentId: string }) {
   const [coupons, setCoupons] = useState<Coupon[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [perf, setPerf] = useState<Record<string, { redemptions: number; discount_given: number; revenue_driven: number }>>({});
 
   // Create form
   const [code, setCode] = useState('');
@@ -49,6 +50,15 @@ export default function AgentCoupons({ agentId }: { agentId: string }) {
       setCoupons((data as Coupon[]) ?? []);
     }
     setLoading(false);
+
+    // Realized per-coupon performance (revenue driven / discount given).
+    try {
+      const res = await fetch('/api/agent/coupons/performance', { cache: 'no-store' });
+      if (res.ok) {
+        const json = await res.json();
+        setPerf(json.byCode ?? {});
+      }
+    } catch { /* best-effort */ }
   }, [agentId]);
 
   useEffect(() => {
@@ -318,6 +328,11 @@ export default function AgentCoupons({ agentId }: { agentId: string }) {
                         ? ` / Expires ${new Date(c.expires_at).toLocaleDateString()}`
                         : ''}
                     </div>
+                    {perf[c.code] && perf[c.code].redemptions > 0 && (
+                      <div style={{ fontSize: '0.74rem', color: '#00FF9D', marginTop: 4, fontWeight: 600 }}>
+                        {`Drove $${perf[c.code].revenue_driven.toFixed(2)} In Revenue / $${perf[c.code].discount_given.toFixed(2)} Discounted Across ${perf[c.code].redemptions} Order${perf[c.code].redemptions !== 1 ? 's' : ''}`}
+                      </div>
+                    )}
                   </div>
                   <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
                     <button

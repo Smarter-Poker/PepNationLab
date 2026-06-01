@@ -19,10 +19,18 @@ const STATUS_LABELS: Record<string, string> = {
   cancelled: 'Cancelled',
 };
 
+interface SalesInsights {
+  topProducts: { name: string; qty: number; revenue: number }[];
+  topBuyers: { name: string; spend: number; orders: number }[];
+  revenue30: number;
+  orders30: number;
+}
+
 export default function AgentSales({ orders, setOrders, agentId, userProfile }: { orders: any[], setOrders: any, agentId: string, userProfile?: any }) {
   const [data, setData] = useState<{ liveCarts: any[]; sales: any[] } | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [insights, setInsights] = useState<SalesInsights | null>(null);
   const supabase = createClient();
   const isFetching = useRef(false);
   const needsRefetch = useRef(false);
@@ -74,6 +82,21 @@ export default function AgentSales({ orders, setOrders, agentId, userProfile }: 
       supabase.removeChannel(channel);
     };
   }, [agentId]);
+
+  // Load drill-down insights (top products, top buyers, 30-day revenue).
+  // Re-runs when the order count changes so it stays in sync with live sales.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch('/api/agent/sales/insights', { cache: 'no-store' });
+        if (!res.ok) return;
+        const json = await res.json();
+        if (!cancelled) setInsights(json);
+      } catch { /* best-effort */ }
+    })();
+    return () => { cancelled = true; };
+  }, [orders.length]);
 
   const formatCurrency = (val: number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(Number(val) || 0);
 
@@ -202,6 +225,72 @@ export default function AgentSales({ orders, setOrders, agentId, userProfile }: 
             </div>
           </div>
         </div>
+
+        {/* Insights: 30-Day Snapshot + Top Products + Top Researchers */}
+        {insights && (insights.topProducts.length > 0 || insights.topBuyers.length > 0) && (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 'var(--space-4)', marginTop: 'var(--space-6)' }}>
+            {/* 30-Day Snapshot */}
+            <div className="metal-frame">
+              <div className="metal-content" style={{ padding: 'var(--space-6)' }}>
+                <h2 className="metal-text" style={{ fontSize: '1.05rem', marginBottom: 'var(--space-4)', fontFamily: 'var(--font-brand)' }}>Last 30 Days</h2>
+                <div style={{ display: 'flex', gap: 'var(--space-6)' }}>
+                  <div>
+                    <div style={{ fontSize: '0.72rem', color: 'var(--grey-400)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Revenue</div>
+                    <div style={{ fontSize: '1.8rem', fontWeight: 800, color: '#00E5FF', fontFamily: 'var(--font-brand)' }}>{formatCurrency(insights.revenue30)}</div>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: '0.72rem', color: 'var(--grey-400)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Orders</div>
+                    <div style={{ fontSize: '1.8rem', fontWeight: 800, color: 'var(--white)', fontFamily: 'var(--font-brand)' }}>{insights.orders30}</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Top Products */}
+            <div className="metal-frame">
+              <div className="metal-content" style={{ padding: 'var(--space-6)' }}>
+                <h2 className="metal-text" style={{ fontSize: '1.05rem', marginBottom: 'var(--space-4)', fontFamily: 'var(--font-brand)' }}>Top Products</h2>
+                {insights.topProducts.length === 0 ? (
+                  <p style={{ color: 'var(--grey-400)', fontSize: '0.82rem', margin: 0 }}>No Sales Yet.</p>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
+                    {insights.topProducts.map((p, i) => (
+                      <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px', borderBottom: i < insights.topProducts.length - 1 ? '1px solid rgba(255,255,255,0.05)' : 'none', paddingBottom: 6 }}>
+                        <span style={{ color: 'var(--silver)', fontSize: '0.85rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.name}</span>
+                        <span style={{ flexShrink: 0, textAlign: 'right' }}>
+                          <span style={{ color: '#00FF9D', fontWeight: 700, fontSize: '0.85rem' }}>{formatCurrency(p.revenue)}</span>
+                          <span style={{ color: 'var(--grey-400)', fontSize: '0.72rem', marginLeft: 8 }}>{p.qty} Sold</span>
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Top Researchers */}
+            <div className="metal-frame">
+              <div className="metal-content" style={{ padding: 'var(--space-6)' }}>
+                <h2 className="metal-text" style={{ fontSize: '1.05rem', marginBottom: 'var(--space-4)', fontFamily: 'var(--font-brand)' }}>Top Researchers</h2>
+                {insights.topBuyers.length === 0 ? (
+                  <p style={{ color: 'var(--grey-400)', fontSize: '0.82rem', margin: 0 }}>No Buyers Yet.</p>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
+                    {insights.topBuyers.map((b, i) => (
+                      <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px', borderBottom: i < insights.topBuyers.length - 1 ? '1px solid rgba(255,255,255,0.05)' : 'none', paddingBottom: 6 }}>
+                        <span style={{ color: 'var(--silver)', fontSize: '0.85rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{b.name}</span>
+                        <span style={{ flexShrink: 0, textAlign: 'right' }}>
+                          <span style={{ color: '#00FF9D', fontWeight: 700, fontSize: '0.85rem' }}>{formatCurrency(b.spend)}</span>
+                          <span style={{ color: 'var(--grey-400)', fontSize: '0.72rem', marginLeft: 8 }}>{b.orders} Orders</span>
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Right: Interactive Orders Manager */}
         <div style={{ flex: 1, minWidth: 0, marginTop: 'var(--space-6)' }}>
