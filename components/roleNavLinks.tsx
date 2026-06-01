@@ -5,16 +5,15 @@ import React from 'react';
  *
  * These mirror the EXISTING role dashboards' menus as portable links so the
  * Navbar drawer can render the same menu for a given role on EVERY page (not
- * just on the dashboard). Nothing here adds or removes destinations — it simply
- * makes each role's existing menu reachable from any page:
+ * just on the dashboard):
  *   - admin            -> the /admin/* destinations (already link-based)
  *   - agent/super_agent-> /dashboard/agent?tab=<tab> (the dashboard reads ?tab)
- *   - sub_agent        -> /dashboard/sub-agent?tab=<tab> (reads ?tab)
+ *   - sub_agent        -> /dashboard/sub-agent?tab=<tab> (reads ?tab) + account pages
+ *   - researcher       -> their dashboard, their agent storefront, and the
+ *                         global /account/* settings pages
  *
- * In-page-only actions (Copy Storefront, My QR Code, Notification Settings) link
- * to the dashboard tab where they live, so the menu stays visually identical
- * with no dead buttons off-dashboard. Researchers are intentionally not included
- * (their dashboard is left untouched per product decision).
+ * The /account/* pages are role-agnostic, so sub-agents and researchers reach
+ * their full account + notification settings through them.
  */
 
 export interface RoleNavLink {
@@ -38,6 +37,25 @@ const ip = {
 // Encode an agent/sub-agent dashboard tab into a portable URL.
 const agentTab = (tab: string) => `/dashboard/agent?tab=${encodeURIComponent(tab)}`;
 const subTab = (tab: string) => `/dashboard/sub-agent?tab=${encodeURIComponent(tab)}`;
+
+// Shared icons reused across role menus.
+const ICON = {
+  grid: <svg {...ip}><rect x="3" y="3" width="7" height="9" /><rect x="14" y="3" width="7" height="5" /><rect x="14" y="12" width="7" height="9" /><rect x="3" y="16" width="7" height="5" /></svg>,
+  storefront: <svg {...ip}><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" /><polyline points="15 3 21 3 21 9" /><line x1="10" y1="14" x2="21" y2="3" /></svg>,
+  orders: <svg {...ip}><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z" /><line x1="3" y1="6" x2="21" y2="6" /><path d="M16 10a4 4 0 0 1-8 0" /></svg>,
+  messenger: <svg {...ip}><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg>,
+  heart: <svg {...ip}><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" /></svg>,
+  clock: <svg {...ip}><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg>,
+  pin: <svg {...ip}><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" /><circle cx="12" cy="10" r="3" /></svg>,
+  card: <svg {...ip}><rect x="1" y="4" width="22" height="16" rx="2" ry="2" /><line x1="1" y1="10" x2="23" y2="10" /></svg>,
+  gift: <svg {...ip}><polyline points="20 12 20 22 4 22 4 12" /><rect x="2" y="7" width="20" height="5" /><line x1="12" y1="22" x2="12" y2="7" /><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z" /><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z" /></svg>,
+  bell: <svg {...ip}><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" /><path d="M13.73 21a2 2 0 0 1-3.46 0" /></svg>,
+  lock: <svg {...ip}><rect x="3" y="11" width="18" height="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></svg>,
+  gear: <svg {...ip}><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" /></svg>,
+  people: <svg {...ip}><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /></svg>,
+  sales: <svg {...ip}><polyline points="22 7 13.5 15.5 8.5 10.5 2 17" /><polyline points="16 7 22 7 22 13" /></svg>,
+  qr: <svg {...ip}><rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" /><rect x="3" y="14" width="7" height="7" /><rect x="14" y="14" width="3" height="3" /><rect x="19" y="14" width="2" height="2" /><rect x="14" y="19" width="2" height="2" /><rect x="19" y="19" width="2" height="2" /></svg>,
+};
 
 const ADMIN_LINKS: RoleNavLink[] = [
   { href: '/admin', label: 'Dashboard', icon: <svg {...ip}><rect x="3" y="3" width="7" height="9" /><rect x="14" y="3" width="7" height="5" /><rect x="14" y="12" width="7" height="9" /><rect x="3" y="16" width="7" height="5" /></svg> },
@@ -89,17 +107,45 @@ function agentLinks(isSuper: boolean, storefrontHref: string): RoleNavLink[] {
 }
 
 const SUBAGENT_LINKS: RoleNavLink[] = [
-  { href: subTab('Overview'), label: 'Overview', icon: <svg {...ip}><rect x="3" y="3" width="7" height="9" /><rect x="14" y="3" width="7" height="5" /><rect x="14" y="12" width="7" height="9" /><rect x="3" y="16" width="7" height="5" /></svg> },
-  { href: subTab('Researchers'), label: 'Researchers', icon: <svg {...ip}><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /></svg> },
-  { href: subTab('Orders'), label: 'Orders', icon: <svg {...ip}><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z" /><line x1="3" y1="6" x2="21" y2="6" /><path d="M16 10a4 4 0 0 1-8 0" /></svg> },
-  { href: subTab('Sales & Accounting'), label: 'Sales & Accounting', icon: <svg {...ip}><polyline points="22 7 13.5 15.5 8.5 10.5 2 17" /><polyline points="16 7 22 7 22 13" /></svg> },
-  { href: '/messenger', label: 'Messenger', icon: <svg {...ip}><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg> },
-  { href: '/account/security', label: 'Account Security', icon: <svg {...ip}><rect x="3" y="11" width="18" height="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></svg> },
+  { href: subTab('Overview'), label: 'Overview', icon: ICON.grid },
+  { href: subTab('Researchers'), label: 'Researchers', icon: ICON.people },
+  { href: '#SHOW_QR', label: 'My Invite QR', icon: ICON.qr },
+  { href: subTab('Orders'), label: 'Orders', icon: ICON.orders },
+  { href: subTab('Sales & Accounting'), label: 'Sales & Accounting', icon: ICON.sales },
+  { href: '/messenger', label: 'Messenger', icon: ICON.messenger },
+  { href: '/account/notifications', label: 'Account Settings', icon: ICON.gear },
+  { href: '/account/security', label: 'Account Security', icon: ICON.lock },
 ];
 
+// Researcher (customer) menu. Their account lives entirely in the role-agnostic
+// /account/* pages plus their referring agent's storefront.
+function researcherLinks(storefrontHref?: string): RoleNavLink[] {
+  const links: RoleNavLink[] = [
+    { href: '/dashboard', label: 'Dashboard', icon: ICON.grid },
+  ];
+  // Only show the storefront link when we actually have a real slug (not the
+  // generic agent-dashboard fallback the Navbar passes when no slug is known).
+  if (storefrontHref && !storefrontHref.includes('/dashboard')) {
+    links.push({ href: storefrontHref, label: 'Visit Your Store', icon: ICON.storefront });
+  }
+  links.push(
+    { href: '/orders', label: 'My Orders', icon: ICON.orders },
+    { href: '/messenger', label: 'Messenger', icon: ICON.messenger },
+    { href: '/account/wishlist', label: 'Wishlist', icon: ICON.heart },
+    { href: '/account/recently-viewed', label: 'Recently Viewed', icon: ICON.clock },
+    { href: '/account/addresses', label: 'Saved Addresses', icon: ICON.pin },
+    { href: '/account/payment-method', label: 'Payment Method', icon: ICON.card },
+    { href: '/account/referrals', label: 'Referrals', icon: ICON.gift },
+    { href: '/account/notifications', label: 'Notification Settings', icon: ICON.bell },
+    { href: '/account/security', label: 'Account Security', icon: ICON.lock },
+    { href: '/account', label: 'Account Settings', icon: ICON.gear },
+  );
+  return links;
+}
+
 /**
- * Returns the canonical hamburger menu links for a role, or null for roles that
- * should keep the Navbar's existing generic drawer (researcher / logged-out).
+ * Returns the canonical hamburger menu links for a role, or null only for
+ * logged-out users (handled by the Navbar's generic drawer).
  */
 export function getRoleNavLinks(
   role: string,
@@ -110,5 +156,6 @@ export function getRoleNavLinks(
   if (role === 'super_agent' || role === 'agent' || opts.isSuperAgent) {
     return agentLinks(!!opts.isSuperAgent || role === 'super_agent', opts.storefrontHref || '/dashboard/agent');
   }
+  if (role === 'researcher') return researcherLinks(opts.storefrontHref);
   return null;
 }
