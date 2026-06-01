@@ -1,7 +1,6 @@
 'use client';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { ArrowLeft } from 'lucide-react';
 import ConversationList from './ConversationList';
 import MessagePane from './MessagePane';
 import SearchBar from './SearchBar';
@@ -143,13 +142,47 @@ export default function MessengerShell({ userId }: Props) {
     return () => { cancelled = true; clearInterval(id); };
   }, []);
 
-  const handleBack = useCallback(() => {
-    setActive(null);
-  }, [setActive]);
-
   const handleNewConversation = useCallback(() => {
     setComposeOpen(true);
   }, []);
+
+  // Mobile back-button integration:
+  // The in-content "Conversations" back row is REMOVED. The global navbar
+  // back button is the single back UX on mobile. We push a history entry
+  // when a conversation is opened so the browser/system back triggers
+  // popstate, which we intercept to clear activeId (showing the
+  // conversation list again) instead of routing away from /messenger.
+  // The next system back actually leaves /messenger.
+  const pushedRef = useRef(false);
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (activeId && !pushedRef.current) {
+      try {
+        window.history.pushState({ pnlMessengerActive: activeId }, '');
+        pushedRef.current = true;
+      } catch { /* silent */ }
+    } else if (!activeId && pushedRef.current) {
+      // activeId was cleared programmatically (e.g. user picked another
+      // conversation from the list); roll the synthetic entry off the
+      // history stack so the stack stays clean.
+      try {
+        window.history.back();
+      } catch { /* silent */ }
+      pushedRef.current = false;
+    }
+  }, [activeId]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const onPop = () => {
+      if (activeIdRef.current) {
+        setActive(null);
+        pushedRef.current = false;
+      }
+    };
+    window.addEventListener('popstate', onPop);
+    return () => window.removeEventListener('popstate', onPop);
+  }, [setActive]);
 
   return (
     <div
@@ -182,30 +215,7 @@ export default function MessengerShell({ userId }: Props) {
         className="messenger-main"
       >
         {activeId && (
-          <>
-            <button
-              type="button"
-              onClick={handleBack}
-              aria-label="Back To Conversations"
-              className="messenger-back-btn"
-              style={{
-                display: 'none',
-                alignItems: 'center',
-                gap: 6,
-                padding: '10px 12px',
-                background: 'transparent',
-                border: 0,
-                borderBottom: '1px solid var(--surface-3, #1D2D3E)',
-                color: 'var(--white, #FFFFFF)',
-                fontSize: '0.92rem',
-                cursor: 'pointer',
-              }}
-            >
-              <ArrowLeft size={16} />
-              Conversations
-            </button>
-            <MessagePane conversationId={activeId} selfId={userId} />
-          </>
+          <MessagePane conversationId={activeId} selfId={userId} />
         )}
       </section>
       {composeOpen && (
