@@ -10,6 +10,7 @@
  */
 
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { deliverPushNow } from '@/lib/push-deliver';
 
 export type NotificationType =
   | 'order_placed'
@@ -88,15 +89,38 @@ export async function notify(
     if (messageTypes.includes(type) && !prefs.push_events_messages) return;
     if (marketingTypes.includes(type) && !prefs.push_events_marketing) return;
 
-    // 3. Queue web push
-    await supabase.from('push_outbox').insert({
-      recipient_user_id: userId,
+    // 3. Queue web push (durable fallback) ...
+    const { data: outbox } = await supabase
+      .from('push_outbox')
+      .insert({
+        recipient_user_id: userId,
+        title,
+        body: body ?? null,
+        url: url ?? null,
+        tag: type,
+        status: 'pending',
+      })
+      .select('id')
+      .single();
+
+    // ... then deliver it immediately so the user is alerted in seconds
+    // (with sound + haptics) instead of waiting for the 5-minute cron.
+    const sent = await deliverPushNow(supabase, userId, {
       title,
-      body: body ?? null,
-      url: url ?? null,
+      body: body ?? '',
+      url: url ?? undefined,
       tag: type,
-      status: 'pending',
+      vibrate: [120, 60, 120],
+      renotify: true,
+      urgency: 'high',
     });
+    if (sent > 0 && outbox?.id) {
+      await supabase
+        .from('push_outbox')
+        .update({ status: 'sent', sent_at: new Date().toISOString() })
+        .eq('id', outbox.id)
+        .then(() => undefined, () => undefined);
+    }
   } catch (err) {
     console.error('[notify] push enqueue error:', err);
   }
@@ -443,11 +467,14 @@ export async function notifyNewMessage(
   conversationId: string,
 ) {
   const preview = messagePreview.length > 80 ? `${messagePreview.slice(0, 77)}…` : messagePreview;
+  // In-app bell row only — the message web-push is sent by enqueuePush() in the
+  // send-message route, so disable push here to avoid a duplicate notification.
   await notify(supabase, {
     userId: recipientId,
     type: 'new_message',
     title: `New Message from ${senderName}`,
     body: preview,
     url: `/messenger?conv=${conversationId}`,
+    withPush: false,
   });
 }
