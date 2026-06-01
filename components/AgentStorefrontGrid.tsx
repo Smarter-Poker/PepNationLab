@@ -1265,191 +1265,164 @@ export default function AgentStorefrontGrid({
           );
         })}
       </motion.div>
+
       {/* Floating Cart — Bottom Right Corner */}
-      {mounted && createPortal(
-        <div style={{ position: 'fixed', bottom: 'env(safe-area-inset-bottom, 0px)', right: 0, zIndex: 9999, pointerEvents: 'none' }}>
-          {/* Floating Cart Button */}
-          <div
-            role="button"
-            tabIndex={0}
-            className="floating-cart-wrapper"
-            onClick={() => {
-              if (totalCartItems === 0) {
-                setCartToast(true);
-                setTimeout(() => setCartToast(false), 2500);
-              } else {
-                setShowCartFloat(!showCartFloat);
-              }
-            }}
-            onMouseEnter={e => { 
-              e.currentTarget.style.transform = 'scale(1.05)'; 
-              e.currentTarget.style.filter = 'drop-shadow(0 12px 24px rgba(0,0,0,0.9)) brightness(1.2)';
-            }}
-            onMouseLeave={e => { 
-              e.currentTarget.style.transform = ''; 
-              e.currentTarget.style.filter = '';
-            }}
-          >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/cart-icon.png" width={160} height={160} alt="Cart" style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block' }} />
-            {totalCartItems > 0 && (
-              <span style={{
-                position: 'absolute', top: '38%', left: '47%', transform: 'translate(-50%, -50%)', width: 24, height: 24,
-                borderRadius: '50%', background: '#14B8A6', color: '#FFFFFF',
-                fontSize: '0.8rem', fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                boxShadow: '0 2px 4px rgba(0,0,0,0.5), 0 0 0 1.5px rgba(255,255,255,0.3)',
-                zIndex: 10
-              }}>
-                {totalCartItems}
-              </span>
-            )}
-          </div>
+      <div style={{ position: 'fixed', bottom: 'env(safe-area-inset-bottom, 0px)', right: 0, zIndex: 9999, pointerEvents: 'none' }}>
+        {/* Floating Cart Button */}
+        <div
+          role="button"
+          tabIndex={0}
+          className="floating-cart-wrapper"
+          onClick={() => {
+            if (totalCartItems === 0) {
+              setCartToast(true);
+              setTimeout(() => setCartToast(false), 2500);
+            } else {
+              setShowCartFloat(!showCartFloat);
+            }
+          }}
+          onMouseEnter={e => { 
+            e.currentTarget.style.transform = 'scale(1.05)'; 
+            e.currentTarget.style.filter = 'drop-shadow(0 12px 24px rgba(0,0,0,0.9)) brightness(1.2)';
+          }}
+          onMouseLeave={e => { 
+            e.currentTarget.style.transform = ''; 
+            e.currentTarget.style.filter = '';
+          }}
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/cart-icon.png" width={160} height={160} alt="Cart" style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block' }} />
+          {totalCartItems > 0 && (
+            <span style={{
+              position: 'absolute', top: '38%', left: '47%', transform: 'translate(-50%, -50%)', width: 24, height: 24,
+              borderRadius: '50%', background: '#14B8A6', color: '#FFFFFF',
+              fontSize: '0.8rem', fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center',
+              boxShadow: '0 2px 4px rgba(0,0,0,0.5), 0 0 0 1.5px rgba(255,255,255,0.3)',
+              zIndex: 10
+            }}>
+              {totalCartItems}
+            </span>
+          )}
+        </div>
 
-          {/* Cart dropdown */}
-          <AnimatePresence>
-            {showCartFloat && (
-              <motion.div
-                initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                style={{
-                  position: 'absolute', bottom: 140, right: 0,
-                  width: 'min(300px, 85vw)',
-                  background: 'var(--surface-2)', border: '1px solid rgba(255,255,255,0.1)',
-                  borderRadius: 'var(--radius-lg)', boxShadow: '0 16px 48px rgba(0,0,0,0.6)',
-                  overflow: 'hidden',
-                  pointerEvents: 'auto'
-                }}
-              >
-                <div style={{ padding: '14px 16px', borderBottom: '1px solid rgba(255,255,255,0.06)', fontWeight: 700, color: 'var(--white)', fontSize: '0.9rem' }}>
-                  Cart ({totalCartItems} Items)
-                </div>
-                <div style={{ maxHeight: 240, overflowY: 'auto', padding: '8px 0' }}>
-                  {Object.entries(cartItems).map(([variantId, qty]) => {
-                    const item = products.find(p => p.id === variantId);
-                    if (!item) return null;
-                    const name = item.products?.name || 'Product';
-                    const size = item.products?.unit_size ? `${item.products.unit_size}${item.products.unit_measure || ''}` : '';
-                    return (
-                      <div key={variantId} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 16px', gap: 8 }}>
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ fontSize: '0.8rem', color: 'var(--white)', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                            {name} {size && `(${size})`}
-                          </div>
-                          <div style={{ fontSize: '0.75rem', color: 'var(--grey-400)' }}>
-                            ${formatPrice(item.retail_price / 10)} x {qty}
-                          </div>
+        {/* Cart dropdown */}
+        <AnimatePresence>
+          {showCartFloat && (
+            <motion.div
+              initial={{ opacity: 0, y: 10, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 10, scale: 0.95 }}
+              style={{
+                position: 'absolute', bottom: 140, right: 0,
+                width: 'min(300px, 85vw)',
+                background: 'var(--surface-2)', border: '1px solid rgba(255,255,255,0.1)',
+                borderRadius: 'var(--radius-lg)', boxShadow: '0 16px 48px rgba(0,0,0,0.6)',
+                overflow: 'hidden',
+                pointerEvents: 'auto'
+              }}
+            >
+              <div style={{ padding: '14px 16px', borderBottom: '1px solid rgba(255,255,255,0.06)', fontWeight: 700, color: 'var(--white)', fontSize: '0.9rem' }}>
+                Cart ({totalCartItems} Items)
+              </div>
+              <div style={{ maxHeight: 240, overflowY: 'auto', padding: '8px 0' }}>
+                {Object.entries(cartItems).map(([variantId, qty]) => {
+                  const item = products.find(p => p.id === variantId);
+                  if (!item) return null;
+                  const name = item.products?.name || 'Product';
+                  const size = item.products?.unit_size ? `${item.products.unit_size}${item.products.unit_measure || ''}` : '';
+                  return (
+                    <div key={variantId} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 16px', gap: 8 }}>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: '0.8rem', color: 'var(--white)', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {name} {size && `(${size})`}
                         </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                          <button onClick={() => setCartItems(prev => {
-                            const next = { ...prev };
-                            if (next[variantId] <= 1) delete next[variantId];
-                            else next[variantId]--;
-                            return next;
-                          })} style={{
-                            width: 36, height: 36, borderRadius: '50%', border: '1px solid rgba(255,255,255,0.2)',
-                            background: 'transparent', color: 'var(--white)', cursor: 'pointer', fontSize: '0.85rem',
-                            display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            flexShrink: 0, touchAction: 'manipulation'
-                          }}>-</button>
-                          <input
-                            type="number"
-                            min="0"
-                            value={qty || ''}
-                            onChange={(e) => {
-                              const val = parseInt(e.target.value, 10);
-                              setCartItems(prev => {
-                                const next = { ...prev };
-                                if (isNaN(val)) {
-                                  // allow empty state while typing, or set to 0. 
-                                  // For simplicity, we just delete if they clear it or type 0.
-                                  if (e.target.value === '') {
-                                    // Hack: temporary state can be tricky with a single dict, but we will let them type it and fix on blur
-                                  }
-                                  return next;
-                                }
-                                const prodItem = products.find(p => p.id === variantId);
-                                const maxQty = prodItem?.products?.inventory_count || 0;
-                                
-                                let boundedVal = val;
-                                if (val > maxQty) {
-                                  toast.error(`Maximum available stock is ${maxQty}.`);
-                                  boundedVal = maxQty;
-                                }
-
-                                if (boundedVal <= 0) {
-                                  delete next[variantId];
-                                } else {
-                                  next[variantId] = boundedVal;
-                                }
-                                return next;
-                              });
-                            }}
-                            onBlur={(e) => {
-                              if (e.target.value === '' || parseInt(e.target.value, 10) <= 0) {
-                                setCartItems(prev => {
-                                  const next = { ...prev };
-                                  delete next[variantId];
-                                  return next;
-                                });
-                              }
-                            }}
-                            style={{ 
-                              color: 'var(--white)', fontWeight: 700, fontSize: '0.8rem', 
-                              width: 40, textAlign: 'center', background: 'transparent',
-                              border: '1px solid rgba(255,255,255,0.2)', borderRadius: 4, padding: '2px',
-                              appearance: 'textfield', outline: 'none'
-                            }}
-                          />
-                          <button onClick={() => addToCart(variantId)} style={{
-                            width: 36, height: 36, borderRadius: '50%', border: 'none',
-                            background: primaryColor, color: 'var(--white)', cursor: 'pointer', fontSize: '0.85rem',
-                            display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800,
-                            flexShrink: 0, touchAction: 'manipulation'
-                          }}>+</button>
+                        <div style={{ fontSize: '0.75rem', color: 'var(--grey-400)' }}>
+                          ${formatPrice(item.retail_price / 10)} x {qty}
                         </div>
                       </div>
-                    );
-                  })}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                        <button onClick={() => setCartItems(prev => {
+                          const next = { ...prev };
+                          if (next[variantId] <= 1) delete next[variantId];
+                          else next[variantId]--;
+                          return next;
+                        })} style={{
+                          width: 36, height: 36, borderRadius: '50%', border: '1px solid rgba(255,255,255,0.2)',
+                          background: 'transparent', color: 'var(--white)', cursor: 'pointer', fontSize: '0.85rem',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          flexShrink: 0, touchAction: 'manipulation'
+                        }}>-</button>
+                        <input
+                          type="number"
+                          min="0"
+                          value={qty || ''}
+                          onChange={(e) => {
+                            const val = parseInt(e.target.value, 10);
+                            setCartItems(prev => {
+                              const next = { ...prev };
+                              if (isNaN(val)) {
+                                return next;
+                              }
+                              const prodItem = products.find(p => p.id === variantId);
+                              const maxQty = prodItem?.products?.inventory_count || 0;
+                              
+                              let boundedVal = val;
+                              if (val > maxQty) {
+                                toast.error(`Maximum available stock is ${maxQty}.`);
+                                boundedVal = maxQty;
+                              }
+
+                              if (boundedVal <= 0) {
+                                delete next[variantId];
+                              } else {
+                                next[variantId] = boundedVal;
+                              }
+                              return next;
+                            });
+                          }}
+                          onBlur={(e) => {
+                            if (e.target.value === '' || parseInt(e.target.value, 10) <= 0) {
+                              setCartItems(prev => {
+                                const next = { ...prev };
+                                delete next[variantId];
+                                return next;
+                              });
+                            }
+                          }}
+                          style={{ 
+                            color: 'var(--white)', fontWeight: 700, fontSize: '0.8rem', 
+                            width: 40, textAlign: 'center', background: 'transparent',
+                            border: '1px solid rgba(255,255,255,0.2)', borderRadius: 4, padding: '2px',
+                            appearance: 'textfield', outline: 'none'
+                          }}
+                        />
+                        <button onClick={() => addToCart(variantId)} style={{
+                          width: 36, height: 36, borderRadius: '50%', border: 'none',
+                          background: primaryColor, color: 'var(--white)', cursor: 'pointer', fontSize: '0.85rem',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800,
+                          flexShrink: 0, touchAction: 'manipulation'
+                        }}>+</button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+              <div style={{ padding: '12px 16px', borderTop: '1px solid rgba(255,255,255,0.06)', display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', color: 'var(--grey-400)', marginBottom: 4 }}>
+                  <span>Total</span>
+                  <span style={{ color: 'var(--white)', fontWeight: 700 }}>
+                    ${Object.entries(cartItems).reduce((sum, [vId, qty]) => {
+                      const item = products.find(p => p.id === vId);
+                      return sum + (item ? (item.retail_price / 10) * qty : 0);
+                    }, 0).toFixed(2)}
+                  </span>
                 </div>
-                <div style={{ padding: '12px 16px', borderTop: '1px solid rgba(255,255,255,0.06)', display: 'flex', flexDirection: 'column', gap: 8 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', color: 'var(--grey-400)', marginBottom: 4 }}>
-                    <span>Total</span>
-                    <span style={{ color: 'var(--white)', fontWeight: 700 }}>
-                      ${Object.entries(cartItems).reduce((sum, [vId, qty]) => {
+                <button
+                  onClick={() => {
+                    const pnlCart = Object.entries(cartItems)
+                      .filter(([, qty]) => qty > 0)
+                      .map(([vId, qty]) => {
                         const item = products.find(p => p.id === vId);
-                        return sum + (item ? (item.retail_price / 10) * qty : 0);
-                      }, 0).toFixed(2)}
-                    </span>
-                  </div>
-                  <button
-                    onClick={() => {
-                      // Translate storefront cartItems (Record<variantId, qty>) →
-                      // CartItem[] format that CheckoutForm reads from
-                      // localStorage[`pnl_storefront_cart_${agentSlug}`].
-                      const pnlCart = Object.entries(cartItems)
-                        .filter(([, qty]) => qty > 0)
-                        .map(([vId, qty]) => {
-                          const item = products.find(p => p.id === vId);
-                          if (!item) return null;
-                          const perVial = item.retail_price / 10;
-                          // For agent self-buy: use the tier cost per vial (cost_price / 10)
-                          // so the checkout subtotal shows the correct tier price, not retail.
-                          // cost_price is injected by the storefront page = base_cost × tier_mult.
-                          const costPerVial = isStorefrontOwner && (item as any).cost_price != null
-                            ? Number((item as any).cost_price) / 10
-                            : perVial;
-                          const sizeLabel = item.products?.unit_size
-                            ? `(${item.products.unit_size}${item.products.unit_measure || ''})`
-                            : '';
-                          return {
-                            // IMPORTANT: orders API queries `products` table by id,
-                            // so must use product_id (master catalog ID), NOT agent_product.id
-                            id: item.product_id,
-                            name: `${item.products?.name || 'Product'} ${sizeLabel}`.trim(),
-                            sku: item.product_id,
-                            quantity: qty,
-                            // retailPrice = public markup price (shown as strikethrough for agent self-buy)
                             retailPrice: perVial,
                             // costPrice = agent tier cost per vial for self-buy, else same as retail.
                             // CheckoutForm uses this for subtotal display and discount calculation.
