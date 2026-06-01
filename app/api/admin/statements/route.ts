@@ -15,6 +15,7 @@ import { requireAdmin } from '@/lib/admin-auth';
 
 import { computeStatement, persistStatement } from '@/lib/statements';
 import { assertSameOrigin } from '@/lib/csrf';
+import { withIdempotency, readIdempotencyKey } from '@/lib/idempotency';
 
 // GET: list all statements with agent info
 export async function GET(req: NextRequest) {
@@ -49,9 +50,16 @@ export async function POST(req: NextRequest) {
   const gate = await requireAdmin();
   if (!gate.ok) return gate.response;
 
-  const supabase = await createServiceClient();
   const body = await req.json().catch(() => ({}));
   const action = body.action;
+
+  return withIdempotency({
+    userId: gate.userId,
+    route: '/api/admin/statements',
+    key: readIdempotencyKey(req),
+    request: body,
+    handler: async () => {
+  const supabase = await createServiceClient();
 
   if (action === 'generate') {
     const { agentId, weekStart } = body;
@@ -157,4 +165,6 @@ export async function POST(req: NextRequest) {
   }
 
   return NextResponse.json({ error: 'Invalid Action' }, { status: 400 });
+    },
+  });
 }

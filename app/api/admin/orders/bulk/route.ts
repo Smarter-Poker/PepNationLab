@@ -11,6 +11,7 @@ import {
 import { enqueueOrderPush, shortOrderId } from '@/lib/push-enqueue';
 import { enqueueWebhook, fetchOrderForWebhook, type WebhookEventType } from '@/lib/webhook-dispatch';
 import { notifyAdminOrderStatusChange } from '@/lib/notify';
+import { withIdempotency, readIdempotencyKey } from '@/lib/idempotency';
 
 type BulkPushEvent = 'order_approved' | 'order_shipped' | 'order_delivered';
 
@@ -51,6 +52,12 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Too Many Orders In One Request (Max 200).' }, { status: 400 });
   }
 
+  return withIdempotency({
+    userId: gate.userId,
+    route: '/api/admin/orders/bulk',
+    key: readIdempotencyKey(req),
+    request: { ids, action },
+    handler: async () => {
   const supabase = await createServiceClient();
 
   const { data: orders, error: ordersErr } = await supabase
@@ -206,5 +213,7 @@ export async function POST(req: NextRequest) {
     job_ids: jobIds,
     failed,
     note: 'Label Jobs Queued. Labels Will Be Generated Within 5 Minutes By The Background Processor.',
+  });
+    },
   });
 }

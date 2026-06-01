@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
 import { requireAdmin } from '@/lib/admin-auth';
 import { assertSameOrigin } from '@/lib/csrf';
+import { withIdempotency, readIdempotencyKey } from '@/lib/idempotency';
 
 const VALID_TRANSACTION_TYPES = [
   'commission', 'withdrawal', 'adjustment', 'order_charge', 'restock_charge',
@@ -66,8 +67,15 @@ export async function POST(req: NextRequest) {
   const gate = await requireAdmin();
   if (!gate.ok) return gate.response;
 
-  const supabase = await createServiceClient();
   const body = await req.json().catch(() => ({}));
+
+  return withIdempotency({
+    userId: gate.userId,
+    route: '/api/admin/transactions',
+    key: readIdempotencyKey(req),
+    request: body,
+    handler: async () => {
+  const supabase = await createServiceClient();
 
   const {
     agent_id,
@@ -132,4 +140,6 @@ export async function POST(req: NextRequest) {
 
   if (error) return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
   return NextResponse.json({ success: true, id: data.id });
+    },
+  });
 }
