@@ -840,20 +840,22 @@ body > * {
    ============================================================ */
 
 @media (max-width: 768px) {
-  /* PRIMARY: hard-zoom the entire conversation pane to 78% on mobile.
-     This shrinks header + thread + composer + Send button uniformly so
-     the whole thing fits. zoom affects layout (unlike transform: scale),
-     so the pane's children behave as if the viewport were 1/0.78 = 128%
-     wider, leaving plenty of room for the Send button at the right edge. */
+  /* round-13 fix: REMOVED the zoom:0.82 from round-12. zoom shrinks
+     layout too, leaving a ~18% empty strip on the right edge of the
+     screen (visible in user's screenshot as a "weird block out on
+     the right"). Force the messenger-main and the layout root to
+     fill the full viewport width regardless of any other rule. */
   .messenger-main,
-  .messenger-shell .messenger-main {
-    zoom: 0.82;
+  .messenger-shell .messenger-main,
+  .messenger-shell,
+  .messenger-layout-root {
+    width: 100% !important;
+    max-width: 100vw !important;
+    min-width: 0 !important;
   }
 
-  /* SECONDARY (Firefox fallback + belt-and-suspenders shrink):
-     even if zoom is ignored, every individual element below shrinks
-     enough that the full conversation still fits on a 667px-tall
-     iPhone SE screen below the 60px navbar. */
+  /* PER-ELEMENT SHRINKS — keep these from round-12, they make
+     header + thread + composer fit vertically without zoom. */
 
   /* Conversation header — minimum padding, smaller icons, smaller name */
   .messenger-main header,
