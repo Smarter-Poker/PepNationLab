@@ -1,4 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { deliverPushNow } from '@/lib/push-deliver';
 
 /**
  * Pretty-print an order id for the user (first 8 chars uppercase).
@@ -81,6 +82,31 @@ export async function enqueuePush(
       .single();
 
     if (error || !data) return null;
+
+    // Deliver immediately so the recipient is alerted in seconds rather than
+    // waiting up to 5 minutes for the push-dispatch cron. The outbox row stays
+    // as the durability fallback; mark it sent so the cron does not resend.
+    try {
+      const sent = await deliverPushNow(supabase, userId, {
+        title: String(title).slice(0, 120),
+        body: String(body).slice(0, 500),
+        url: url ?? undefined,
+        tag: tag ?? String(event),
+        vibrate: [120, 60, 120],
+        renotify: true,
+        urgency: 'high',
+      });
+      if (sent > 0) {
+        await supabase
+          .from('push_outbox')
+          .update({ status: 'sent', sent_at: new Date().toISOString() })
+          .eq('id', data.id)
+          .then(() => undefined, () => undefined);
+      }
+    } catch {
+      /* inline delivery is best-effort; the cron will retry the pending row */
+    }
+
     return String(data.id);
   } catch {
     return null;

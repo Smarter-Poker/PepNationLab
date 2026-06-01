@@ -49,6 +49,14 @@ export interface PushPayload {
   icon?: string;
   badge?: string;
   requireInteraction?: boolean;
+  /** Vibration pattern (Android haptics). Defaults applied in the service worker. */
+  vibrate?: number[];
+  /** Re-alert (sound/vibrate) even when a notification with the same tag exists. */
+  renotify?: boolean;
+  /** Notification action buttons (e.g. Accept / Decline for calls). */
+  actions?: { action: string; title: string }[];
+  /** Delivery urgency hint to the push service. */
+  urgency?: 'very-low' | 'low' | 'normal' | 'high';
 }
 
 export interface PushSendResult {
@@ -80,13 +88,18 @@ export async function sendWebPush(
     icon: payload.icon ?? '/logo-mark.svg',
     badge: payload.badge ?? '/logo-mark.svg',
     requireInteraction: payload.requireInteraction,
+    vibrate: payload.vibrate,
+    renotify: payload.renotify,
+    actions: payload.actions,
   });
 
   try {
     const result = await webpush.sendNotification(
       { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
       body,
-      { TTL: 60, urgency: 'normal' }
+      // 24h TTL so a push still lands when the device reconnects; high urgency
+      // so messages/calls alert promptly rather than being batched.
+      { TTL: 86400, urgency: payload.urgency ?? 'high' }
     );
     return { ok: true, statusCode: result.statusCode };
   } catch (err: unknown) {
