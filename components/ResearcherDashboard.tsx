@@ -272,6 +272,8 @@ export default function ResearcherDashboard({ userId, userName, userEmail, agent
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [orders, setOrders] = useState<Order[]>([]);
   const [favorites, setFavorites] = useState<Favorite[]>([]);
+  const [pastOrders, setPastOrders] = useState<Favorite[]>([]);
+  const [favoritesTab, setFavoritesTab] = useState<'favorites' | 'pastOrders'>('favorites');
   const [loadingOrders, setLoadingOrders] = useState(false);
   const [loadingFavs, setLoadingFavs] = useState(false);
   const [expandedOrder, setExpandedOrder] = useState<string | null>(null);
@@ -305,6 +307,7 @@ export default function ResearcherDashboard({ userId, userName, userEmail, agent
       const res = await fetch('/api/researcher/favorites');
       const json = await res.json();
       setFavorites(json.favorites ?? []);
+      setPastOrders(json.pastOrders ?? []);
     } catch { /* ok */ }
     setLoadingFavs(false);
   }
@@ -750,29 +753,93 @@ export default function ResearcherDashboard({ userId, userName, userEmail, agent
           {/* ── FAVORITES TAB ── */}
           {tab === 'favorites' && (
             <div>
-              {loadingFavs ? <Spinner /> : favorites.length === 0 ? (
+              <div style={{ display: 'flex', gap: 'var(--space-4)', marginBottom: 'var(--space-5)', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+                <button
+                  onClick={() => setFavoritesTab('favorites')}
+                  style={{
+                    padding: 'var(--space-3) var(--space-4)',
+                    background: 'none',
+                    border: 'none',
+                    borderBottom: favoritesTab === 'favorites' ? '2px solid var(--teal)' : '2px solid transparent',
+                    color: favoritesTab === 'favorites' ? 'var(--white)' : 'var(--grey-400)',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease'
+                  }}
+                >
+                  My Favorites
+                </button>
+                <button
+                  onClick={() => setFavoritesTab('pastOrders')}
+                  style={{
+                    padding: 'var(--space-3) var(--space-4)',
+                    background: 'none',
+                    border: 'none',
+                    borderBottom: favoritesTab === 'pastOrders' ? '2px solid var(--teal)' : '2px solid transparent',
+                    color: favoritesTab === 'pastOrders' ? 'var(--white)' : 'var(--grey-400)',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease'
+                  }}
+                >
+                  Buy It Again
+                </button>
+              </div>
+
+              {loadingFavs ? <Spinner /> : (favoritesTab === 'favorites' ? favorites : pastOrders).length === 0 ? (
                 <div className="card-metal" style={{ textAlign: 'center', padding: 48 }}>
                   <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 12, opacity: 0.3 }}>
-                    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                      {favoritesTab === 'favorites' ? (
+                        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+                      ) : (
+                        <path d="M16.5 9.4l-9-5.19M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"></path>
+                      )}
+                    </svg>
                   </div>
-                  <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.9rem', fontWeight: 600, marginBottom: 12 }}>No Favorites Yet</div>
+                  <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.9rem', fontWeight: 600, marginBottom: 12 }}>
+                    {favoritesTab === 'favorites' ? 'No Favorites Yet' : 'No Past Orders Found'}
+                  </div>
                   <a href={agentSlug ? `/${agentSlug}` : '/dashboard'} style={{ display: 'inline-block', fontSize: '0.82rem', color: 'var(--teal)', fontWeight: 600 }}>Browse Catalog</a>
                 </div>
               ) : (
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 'var(--space-4)' }}>
-                  {favorites.map(f => f.products && (
+                  {(favoritesTab === 'favorites' ? favorites : pastOrders).map(f => f.products && (
                     <div key={f.product_id} className="card-metal" style={{ padding: 'var(--space-4)' }}>
-                      {f.products.image_url && (
-                        <div style={{ height: 120, borderRadius: 8, overflow: 'hidden', marginBottom: 10, background: 'rgba(255,255,255,0.03)' }}>
+                      <div style={{ position: 'relative', height: 120, borderRadius: 8, overflow: 'hidden', marginBottom: 10, background: 'rgba(255,255,255,0.03)' }}>
+                        {f.products.image_url ? (
                           <img src={f.products.image_url} alt={f.products.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                        </div>
-                      )}
+                        ) : (
+                          <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'rgba(255,255,255,0.2)' }}>No Image</div>
+                        )}
+                        {favoritesTab === 'pastOrders' && f.created_at && (
+                          <div style={{
+                            position: 'absolute',
+                            top: 6,
+                            left: 6,
+                            background: 'rgba(0,0,0,0.8)',
+                            backdropFilter: 'blur(4px)',
+                            padding: '4px 8px',
+                            borderRadius: '4px',
+                            fontSize: '0.6rem',
+                            color: 'var(--silver)',
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.05em',
+                            fontWeight: 'bold',
+                            border: '1px solid rgba(255,255,255,0.1)'
+                          }}>
+                            Last Purchased: {new Date(f.created_at).toLocaleDateString()}
+                          </div>
+                        )}
+                      </div>
                       <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#fff', marginBottom: 4 }}>{f.products.name}</div>
                       {f.products.category && <div style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.3)', marginBottom: 6 }}>{f.products.category}</div>}
                       <div style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--teal)', marginBottom: 8 }}>${Number(f.products.base_price).toFixed(2)}</div>
                       <div style={{ display: 'flex', gap: 6 }}>
                         <a href={agentSlug ? `/${agentSlug}` : '/dashboard'} style={{ flex: 1, textAlign: 'center', padding: '5px 10px', background: 'rgba(192,184,168,0.08)', border: '1px solid rgba(192,184,168,0.15)', borderRadius: 6, color: 'var(--teal)', fontSize: '0.72rem', fontWeight: 600, textDecoration: 'none' }}>View In Store</a>
-                        <button onClick={() => removeFavorite(f.product_id)} style={{ padding: '5px 10px', background: 'rgba(252,129,129,0.08)', border: '1px solid rgba(252,129,129,0.15)', borderRadius: 6, color: '#FC8181', fontSize: '0.72rem', fontWeight: 600, cursor: 'pointer' }}>Remove</button>
+                        {favoritesTab === 'favorites' && (
+                          <button onClick={() => removeFavorite(f.product_id)} style={{ padding: '5px 10px', background: 'rgba(252,129,129,0.08)', border: '1px solid rgba(252,129,129,0.15)', borderRadius: 6, color: '#FC8181', fontSize: '0.72rem', fontWeight: 600, cursor: 'pointer' }}>Remove</button>
+                        )}
                       </div>
                     </div>
                   ))}
