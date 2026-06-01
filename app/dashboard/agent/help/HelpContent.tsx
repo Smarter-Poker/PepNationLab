@@ -35,7 +35,7 @@ const SECTIONS: Section[] = [
     body: [
       'You sell from your OWN agent_inventory — a per-agent stock count separate from the master product catalog. The admin maintains a master catalog; your agent_products table picks which of those products YOU sell and at what retail price.',
       'To start selling a product: open Store Products, find the product in the master catalog, and add it to your store. It is now visible on your storefront BUT will show as out of stock until you restock it.',
-      'To restock: open Inventory. Pick the product, choose a quantity, and submit. This creates a wholesale_restock order against the admin at your tier's wholesale cost. The admin approves it and the stock count credits to your agent_inventory.',
+      'To restock: open Inventory. Pick the product, choose a quantity, and submit. This creates a wholesale_restock order against the admin at your tier\'s wholesale cost. The admin approves it and the stock count credits to your agent_inventory.',
       'Sales deduct atomically: when a researcher buys 3 vials, your agent_inventory.inventory_count drops by 3 inside the same transaction as the order insert. If stock hits zero, the storefront shows Out Of Stock and the product cannot be added to a cart.',
       'Setting custom retail prices: open Store Products and edit the retail_price field. The platform multipliers (5x / 6x / 7x by tier) are the SUGGESTED default — you can override per product.',
     ],
@@ -44,18 +44,18 @@ const SECTIONS: Section[] = [
     id: 'coupons',
     title: '3. Coupons',
     body: [
-      'Coupons are codes a researcher types at checkout to get a discount. They live in the coupons table and are scoped to your account — they cannot be used on another agent's storefront.',
+      'Coupons are codes a researcher types at checkout to get a discount. They live in the coupons table and are scoped to your account — they cannot be used on another agent\'s storefront.',
       'To create: open the Coupons tab. Pick a code (case-insensitive, alphanumeric), a type (Percentage or Fixed amount), a value, and optional constraints — expiry date, max uses, minimum order subtotal. Save.',
       'To distribute: copy the code and share it however you like — Messenger, email, text, social. The atomic redeem_coupon RPC validates expiry, max-uses, and min-subtotal at checkout time, so even a leaked code with maxUses=10 can never be used 11 times.',
-      'Tracking: each redemption is recorded against the order with the coupon's id, so your Sales analytics show which coupons drove which orders.',
-      'Self-buy and sub-agent buys: coupon redemption is disabled on self-purchases and sub-agent purchases by design — they don't go through the same retail price math.',
+      'Tracking: each redemption is recorded against the order with the coupon\'s id, so your Sales analytics show which coupons drove which orders.',
+      'Self-buy and sub-agent buys: coupon redemption is disabled on self-purchases and sub-agent purchases by design — they don\'t go through the same retail price math.',
     ],
   },
   {
     id: 'ledger',
     title: '4. Weekly Ledger & Statements',
     body: [
-      'Every Sunday at 23:59 UTC the invoice cron runs. It groups your week's orders, computes total COGS (cost of goods sold at your wholesale tier) + shipping owed, and writes a weekly_statement row.',
+      'Every Sunday at 23:59 UTC the invoice cron runs. It groups your week\'s orders, computes total COGS (cost of goods sold at your wholesale tier) + shipping owed, and writes a weekly_statement row.',
       'You see this on your Sales & Accounting tab: status moves from Open → Pending Payment → Paid. The admin marks Paid once funds clear.',
       'Your prepaid or credit account: if account_type = prepaid, you fund your balance ahead of time and orders draw from it. If account_type = credit, you have a credit_limit and settle weekly. Your dashboard shows the available balance and the limit.',
       'Real-time visibility: every approved order writes a balance_transactions row in the ledger. The Agent Ledger view lists each charge with order id, amount, and timestamp.',
@@ -66,7 +66,7 @@ const SECTIONS: Section[] = [
     id: 'subagents',
     title: '5. Sub-Agents (Super-Agent Feature)',
     body: [
-      'Super-agents (role = agent, is_super_agent = true) can create sub-agents who sell under them. Sub-agents see researchers they referred, earn a percentage commission on every approved order, and settle weekly to the super-agent's ledger.',
+      'Super-agents (role = agent, is_super_agent = true) can create sub-agents who sell under them. Sub-agents see researchers they referred, earn a percentage commission on every approved order, and settle weekly to the super-agent\'s ledger.',
       'To create a sub-agent: open the Sub-Agents tab and click New. The sub-agent gets credentials and lands on /dashboard/sub-agent on first login — a slim dashboard showing their balance, pending commission, lifetime earnings, recent settlements, and orders attributed to them.',
       'Setting commission: each sub-agent has a commission_pct on their profile (0 to 100). The auto-commission-on-approval trigger writes a balance_transactions row for that percentage of the order revenue when the order is approved. The sub-agent-settle cron sums and credits each Sunday.',
       'Researcher attribution: a researcher tagged with referring_sub_agent_id = <sub-agent-id> permanently earns the sub-agent commission on every order. The sub-agent shares a /[slug]?ref=<their-id> link, and any signup through that link is permanently tagged to them.',
@@ -101,8 +101,8 @@ const SECTIONS: Section[] = [
     body: [
       'Researchers are your customers. They sign up via your storefront at /<your-slug> (rate-limited, registration-disabled platform-wide except via storefront), accept the 4-layer disclaimer, and become a profile row with role = researcher and referring_agent_id = your id.',
       'You can also create a researcher account manually from the Researchers tab. They get a temp password, must_change_password = true so they are forced to change it on first login.',
-      'Disclaimer compliance: every researcher must accept the 4-layer disclaimer (site entry, registration, add-to-cart, checkout). Their acceptances are recorded in disclaimer_acceptances with timestamp and IP. Do not skip these gates — they are the platform's legal foundation.',
-      'Once they place an order, they can self-serve from /orders. They get push notifications and email (when enabled) for shipping updates. They cannot see other researchers, other agents, or anyone else's data — RLS enforces strict isolation.',
+      'Disclaimer compliance: every researcher must accept the 4-layer disclaimer (site entry, registration, add-to-cart, checkout). Their acceptances are recorded in disclaimer_acceptances with timestamp and IP. Do not skip these gates — they are the platform\'s legal foundation.',
+      'Once they place an order, they can self-serve from /orders. They get push notifications and email (when enabled) for shipping updates. They cannot see other researchers, other agents, or anyone else\'s data — RLS enforces strict isolation.',
       'If a researcher is inactive for 30+ days and has an abandoned cart, the abandoned-cart-recovery cron will surface them in your Cart Reminders panel so you can reach out.',
     ],
   },
