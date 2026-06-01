@@ -9,11 +9,11 @@ import { notifyNewResearcher } from '@/lib/notify';
  *
  * Creates a researcher account tied to the caller's downline.
  *
- * SACA 2026-05-31 — sub-agent callers:
+ * SACA 2026-05-31 - sub-agent callers:
  *   When the caller is a sub-agent (profiles.is_sub_agent=true), the
  *   researcher MUST be filed under the sub-agent's PARENT, not the sub-agent
  *   itself. Sub-agents never have their own storefront and never own the
- *   researcher relationship — they only earn commission on the researcher's
+ *   researcher relationship - they only earn commission on the researcher's
  *   orders. So we stamp:
  *     referring_agent_id     = sub-agent's parent_agent_id  (storefront owner)
  *     referring_sub_agent_id = sub-agent's id              (commission tag)
@@ -23,8 +23,14 @@ import { notifyNewResearcher } from '@/lib/notify';
  *     referring_sub_agent_id = NULL
  *
  *   Admins can create researchers but the researcher will not have a
- *   storefront owner of record — kept for backwards compatibility with
+ *   storefront owner of record - kept for backwards compatibility with
  *   admin-driven imports.
+ *
+ * Provisioning attribution (2026-06-01):
+ *   created_by_agent_id stamps the actual caller (sub-agent, agent, super
+ *   agent, or admin). created_by_role records the caller's role at creation
+ *   so the admin dashboard can render "Created By <Role>" without an extra
+ *   join to a possibly-changed creator profile.
  */
 export async function POST(req: NextRequest) {
   const csrf = assertSameOrigin(req);
@@ -41,7 +47,7 @@ export async function POST(req: NextRequest) {
 
   const { data: callerProfile, error: profileErr } = await admin
     .from('profiles')
-    .select('id, role, is_active, full_name, is_sub_agent, parent_agent_id')
+    .select('id, role, is_active, full_name, is_sub_agent, parent_agent_id, is_super_agent')
     .eq('id', user.id)
     .single();
 
@@ -72,6 +78,16 @@ export async function POST(req: NextRequest) {
     }
     referringAgentId = callerProfile.parent_agent_id;
     referringSubAgentId = user.id;
+  }
+
+  // Provisioning attribution: created_by_role records WHICH KIND of account
+  // performed the creation. Sub-agents are still role='agent' in the enum,
+  // so check is_sub_agent / is_super_agent to disambiguate for the UI.
+  let createdByRole: string = callerProfile.role;
+  if (callerProfile.is_sub_agent === true) {
+    createdByRole = 'sub_agent';
+  } else if (callerProfile.role === 'agent' && callerProfile.is_super_agent === true) {
+    createdByRole = 'super_agent';
   }
 
   const body = await req.json().catch(() => ({}));
@@ -124,7 +140,7 @@ export async function POST(req: NextRequest) {
 
   const newUserId = authData.user.id;
 
-  // UPSERT (not just UPDATE) — guarantees the profile is written even if the
+  // UPSERT (not just UPDATE) - guarantees the profile is written even if the
   // handle_new_user trigger races with this call and the row doesn't exist yet.
   // createAdminClient() bypasses RLS so this always succeeds regardless of policies.
   const profilePayload: Record<string, unknown> = {
@@ -134,6 +150,9 @@ export async function POST(req: NextRequest) {
     full_name,
     role: 'researcher',
     referring_agent_id: referringAgentId,
+    // Provisioning attribution (2026-06-01)
+    created_by_agent_id: user.id,
+    created_by_role: createdByRole,
     disclaimer_v1_accepted: false,
     is_active: true,
     must_change_password: true,
@@ -146,7 +165,7 @@ export async function POST(req: NextRequest) {
   const { data: upsertedRows, error: profileError } = await admin
     .from('profiles')
     .upsert(profilePayload, { onConflict: 'id' })
-    .select('id, referring_agent_id, referring_sub_agent_id');
+    .select('id, referring_agent_id, referring_sub_agent_id, created_by_agent_id');
 
   if (profileError) {
     console.error('[create-researcher] profile upsert error:', profileError);
@@ -160,7 +179,7 @@ export async function POST(req: NextRequest) {
   // Sanity-check: verify referring_agent_id was actually written
   const written = upsertedRows?.[0];
   if (!written?.referring_agent_id || written.referring_agent_id !== referringAgentId) {
-    console.error('[create-researcher] referring_agent_id not set correctly after upsert — rolling back');
+    console.error('[create-researcher] referring_agent_id not set correctly after upsert - rolling back');
     await admin.auth.admin.deleteUser(newUserId);
     return NextResponse.json(
       { error: 'Profile Setup Failed: Could Not Link Researcher To Agent' },
@@ -168,7 +187,7 @@ export async function POST(req: NextRequest) {
     );
   }
   if (referringSubAgentId && written.referring_sub_agent_id !== referringSubAgentId) {
-    console.error('[create-researcher] referring_sub_agent_id not set correctly — rolling back');
+    console.error('[create-researcher] referring_sub_agent_id not set correctly - rolling back');
     await admin.auth.admin.deleteUser(newUserId);
     return NextResponse.json(
       { error: 'Profile Setup Failed: Could Not Tag Sub-Agent Commission' },
@@ -208,5 +227,6 @@ export async function POST(req: NextRequest) {
     referring_agent_id: referringAgentId,
     referring_sub_agent_id: referringSubAgentId,
     sub_agent_tagged: !!referringSubAgentId,
+    created_by_role: createdByRole,
   });
 }
