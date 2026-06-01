@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { createClient, createServiceClient } from '@/lib/supabase/server';
-import { Heart, ArrowLeft, Bookmark, History, Bell, ShieldCheck, CreditCard } from 'lucide-react';
+import { Heart, ArrowLeft, Bookmark, History, Bell, ShieldCheck, Gift } from 'lucide-react';
 import WishlistClient from './WishlistClient';
 
 export const dynamic = 'force-dynamic';
@@ -151,9 +151,9 @@ export default async function WishlistPage() {
             <ShieldCheck size={12} aria-hidden="true" />
             Security
           </Link>
-          <Link href="/account/credits" className="btn btn-ghost btn-sm" style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-            <CreditCard size={12} aria-hidden="true" />
-            Credits
+          <Link href="/account/referrals" className="btn btn-ghost btn-sm" style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+            <Gift size={12} aria-hidden="true" />
+            Referrals
           </Link>
         </div>
 

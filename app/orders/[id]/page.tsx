@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { redirect, notFound } from 'next/navigation';
+import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { createClient, createServiceClient } from '@/lib/supabase/server';
 import PageShell from '@/components/PageShell';
@@ -104,7 +104,39 @@ export default async function OrderDetailPage(
     .maybeSingle();
 
   if (error || !orderData) {
-    notFound();
+    return (
+      <PageShell hideFooter>
+        <section className="section">
+          <div className="container-sm">
+            <div className="card-metal hover-lift stagger-fade-in" style={{ padding: 'var(--space-12)', textAlign: 'center', animationDelay: '0.1s' }}>
+              <svg
+                width="44"
+                height="44"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="var(--teal)"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                style={{ marginBottom: 'var(--space-4)' }}
+                aria-hidden="true"
+              >
+                <circle cx="12" cy="12" r="10" />
+                <line x1="12" y1="8" x2="12" y2="12" />
+                <line x1="12" y1="16" x2="12.01" y2="16" />
+              </svg>
+              <h1 style={{ fontSize: '1.3rem', marginBottom: 'var(--space-2)' }}>Order Not Found</h1>
+              <p style={{ fontSize: '0.88rem', color: 'var(--grey-400)', marginBottom: 'var(--space-6)', maxWidth: 420, marginInline: 'auto', lineHeight: 1.6 }}>
+                We Could Not Find This Order, Or It Is Not Associated With Your Account. If You Believe This Is An Error, Contact Your Agent For Help.
+              </p>
+              <Link href="/orders" className="btn btn-primary">
+                Back To My Orders
+              </Link>
+            </div>
+          </div>
+        </section>
+      </PageShell>
+    );
   }
 
   const order = orderData as unknown as Order;
@@ -126,7 +158,7 @@ export default async function OrderDetailPage(
     }
   }
 
-  // ─── Recommendations ("You May Also Like") ──────────────────────────────
+  // ─── Recommendations ("You May Also Like") ─────────────────────────
   // Seed from the FIRST eligible order_item.product_id. Service client used
   // so the SECURITY DEFINER RPC + materialized view reads work regardless
   // of the researcher's row-level role. We intersect the candidate ids

@@ -2,7 +2,7 @@ import type React from 'react';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { createClient, createServiceClient } from '@/lib/supabase/server';
-import { History, ArrowLeft, Bookmark, Bell, ShieldCheck, CreditCard } from 'lucide-react';
+import { History, ArrowLeft, Bookmark, Bell, ShieldCheck, Gift } from 'lucide-react';
 
 export const dynamic = 'force-dynamic';
 
@@ -87,7 +87,7 @@ export default async function RecentlyViewedPage() {
 
   const items = ((rows as unknown as ItemRow[]) ?? []).filter(r => r.products && r.products.is_active && !r.products.is_banned);
 
-  // ─── Trending Now ───────────────────────────────────────────────────────
+  // ─── Trending Now ─────────────────────────────────────────
   // Top products by units sold in the last 60 days. Joined to the master
   // products table for image + category. Visible to everyone — the link
   // routes back to the researcher's referring agent storefront when known.
@@ -167,9 +167,9 @@ export default async function RecentlyViewedPage() {
             <ShieldCheck size={12} aria-hidden="true" />
             Security
           </Link>
-          <Link href="/account/credits" className="btn btn-ghost btn-sm" style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-            <CreditCard size={12} aria-hidden="true" />
-            Credits
+          <Link href="/account/referrals" className="btn btn-ghost btn-sm" style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+            <Gift size={12} aria-hidden="true" />
+            Referrals
           </Link>
         </div>
 
