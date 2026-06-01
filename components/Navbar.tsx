@@ -348,7 +348,7 @@ export default function Navbar({ onMenuClick, isOpen, title }: { onMenuClick?: (
             <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'var(--surface-2)' }} className="skeleton" />
           ) : user ? (
             <>
-              <Link href={dashLink} aria-label={dashLabel} style={{ display: 'flex', alignItems: 'center', padding: 4, transition: 'transform 0.2s', background: 'none', flexShrink: 0, marginRight: 4 }} onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.05)'} onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}>
+              <Link href={dashLink} aria-label={dashLabel} style={{ display: 'flex', alignItems: 'center', padding: 4, transition: 'transform 0.2s', background: 'none', flexShrink: 0, marginRight: 4, position: 'relative', left: -2 }} onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.05)'} onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}>
                 <img
                   src={
                     role === 'admin' ? '/nav-icons/admin-dashboard.png' :
@@ -363,7 +363,7 @@ export default function Navbar({ onMenuClick, isOpen, title }: { onMenuClick?: (
                 />
               </Link>
               <div
-                style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', cursor: 'pointer' }}
+                style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', cursor: 'pointer', position: 'relative', left: -2 }}
                 onClick={() => setDrawerOpen(o => !o)}
                 title={displayName}
               >

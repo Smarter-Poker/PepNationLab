@@ -302,32 +302,30 @@ export default function NavbarNotificationBell() {
         )}
       </button>
 
-      {/* ── Dropdown Panel ────────────────────────────────────────────────── */}
+      {/* ── Dropdown Panel (Full Screen) ────────────────────────────────────── */}
       {open && (
         <div
           style={{
-            position: 'absolute',
-            top: 50,
-            right: 0,
-            width: 360,
-            maxWidth: '92vw',
+            position: 'fixed',
+            inset: 0,
+            width: '100vw',
+            height: '100vh',
             background: 'rgba(10,14,20,0.98)',
             backdropFilter: 'blur(20px)',
             WebkitBackdropFilter: 'blur(20px)',
-            border: '1px solid rgba(192,184,168,0.12)',
-            borderRadius: 16,
-            boxShadow: '0 20px 60px rgba(0,0,0,0.7), 0 0 0 1px rgba(192,184,168,0.05)',
-            zIndex: 1000,
-            overflow: 'hidden',
+            zIndex: 9999,
+            display: 'flex',
+            flexDirection: 'column',
           }}
         >
           {/* Header */}
           <div style={{
-            padding: '14px 16px',
+            padding: 'max(24px, env(safe-area-inset-top)) 16px 14px',
             borderBottom: '1px solid rgba(255,255,255,0.07)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
+            flexShrink: 0,
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <span style={{ color: 'var(--white)', fontWeight: 700, fontSize: '0.9rem' }}>
@@ -366,15 +364,35 @@ export default function NavbarNotificationBell() {
               <Link
                 href="/account/notifications"
                 onClick={() => setOpen(false)}
-                style={{ color: 'rgba(192,184,168,0.6)', fontSize: '0.72rem', textDecoration: 'none' }}
+                style={{ color: 'rgba(192,184,168,0.6)', fontSize: '0.72rem', textDecoration: 'none', marginRight: 8 }}
               >
                 Settings
               </Link>
+              <button
+                onClick={() => setOpen(false)}
+                style={{
+                  background: 'rgba(255,255,255,0.1)',
+                  border: 'none',
+                  color: 'var(--white)',
+                  width: 28,
+                  height: 28,
+                  borderRadius: '50%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer',
+                  fontSize: '1rem',
+                  lineHeight: 1,
+                }}
+                aria-label="Close notifications"
+              >
+                ✕
+              </button>
             </div>
           </div>
 
           {/* Notification list */}
-          <div style={{ maxHeight: 420, overflowY: 'auto' }}>
+          <div style={{ flex: 1, overflowY: 'auto' }}>
             {loading && items.length === 0 ? (
               <div style={{ padding: '24px 16px', color: 'rgba(192,184,168,0.5)', textAlign: 'center', fontSize: '0.82rem' }}>
                 Loading…
