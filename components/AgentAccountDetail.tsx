@@ -32,6 +32,9 @@ type Detail = {
     commission_active_since: string | null;
     is_active: boolean;
     created_at: string;
+    last_sign_in_at?: string | null;
+    first_sign_in_at?: string | null;
+    sign_in_count?: number;
   };
   storefront: { slug: string | null; display_name: string | null; is_active: boolean } | null;
   ledger: Array<{ id: string; type: string; amount: number; balance_after: number | null; description: string | null; created_at: string }>;
@@ -57,6 +60,12 @@ const fmtMoney = (v: number | null | undefined) => `$${(Number(v) || 0).toFixed(
 const fmtDate = (s: string | null | undefined) => {
   if (!s) return '—';
   try { return new Date(s).toLocaleDateString(); } catch { return String(s); }
+};
+const fmtLastSignIn = (s: string | null | undefined) => {
+  if (!s) return 'Never Logged In';
+  try {
+    return new Date(s).toLocaleString(undefined, { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' });
+  } catch { return 'Never Logged In'; }
 };
 const titleCaseStatus = (s: string) =>
   s.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
@@ -285,6 +294,7 @@ export default function AgentAccountDetail({
                   {/* Snapshot stats */}
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: 'var(--space-3)' }}>
                 <Stat label="Status" value={isActive ? 'Active' : 'Inactive'} color={isActive ? '#00FF9D' : '#FFAAAA'} />
+                <Stat label="Last Logged In" value={fmtLastSignIn(detail.agent.last_sign_in_at)} color={detail.agent.last_sign_in_at ? 'var(--silver)' : 'var(--grey-500)'} />
                 <Stat label="Wallet Balance" value={fmtMoney(detail.agent.prepaid_balance)} color="var(--teal)" />
                 <Stat label="Credit Limit" value={detail.agent.account_type === 'credit' ? fmtMoney(detail.agent.credit_limit) : '—'} />
                 <Stat label="Lifetime Sales" value={fmtMoney(detail.sales.grossTotal)} />
