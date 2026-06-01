@@ -9,6 +9,7 @@ interface CrmRow {
   full_name: string | null;
   username: string | null;
   email: string | null;
+  phone: string | null;
   created_at: string;
   auto_approve_orders: boolean;
   order_count: number;
@@ -67,6 +68,8 @@ export default function AgentResearcherCRM() {
   const [query, setQuery] = useState('');
   const [openId, setOpenId] = useState<string | null>(null);
   const [draft, setDraft] = useState('');
+  const [emailDraft, setEmailDraft] = useState('');
+  const [phoneDraft, setPhoneDraft] = useState('');
   const [saving, setSaving] = useState(false);
 
   const load = useCallback(async () => {
@@ -93,22 +96,33 @@ export default function AgentResearcherCRM() {
     }
     setOpenId(row.id);
     setDraft(row.note ?? '');
+    setEmailDraft(row.email ?? '');
+    setPhoneDraft(row.phone ?? '');
   };
 
   const saveNote = async (researcherId: string) => {
     setSaving(true);
     try {
-      const res = await fetch('/api/agent/researchers/notes', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ researcherId, note: draft }),
-      });
-      if (!res.ok) throw new Error('Save Failed');
-      setRows(prev => prev.map(r => r.id === researcherId ? { ...r, note: draft } : r));
+      const [noteRes, contactRes] = await Promise.all([
+        fetch('/api/agent/researchers/notes', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ researcherId, note: draft }),
+        }),
+        fetch('/api/agent/researchers/contact', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ researcherId, email: emailDraft, phone: phoneDraft }),
+        })
+      ]);
+      
+      if (!noteRes.ok || !contactRes.ok) throw new Error('Save Failed');
+      
+      setRows(prev => prev.map(r => r.id === researcherId ? { ...r, note: draft, email: emailDraft, phone: phoneDraft } : r));
       setOpenId(null);
-      toast.success('Note Saved');
+      toast.success('Changes Saved');
     } catch {
-      toast.error('Could Not Save Note');
+      toast.error('Could Not Save Changes');
     } finally {
       setSaving(false);
     }
@@ -219,6 +233,48 @@ export default function AgentResearcherCRM() {
                       <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.03)' }}>
                         <td colSpan={7} style={{ padding: '0 0 var(--space-4)' }}>
                           <div style={{ background: 'rgba(0,0,0,0.25)', borderRadius: 10, padding: 'var(--space-4)', border: '1px solid rgba(192,184,168,0.12)' }}>
+                            
+                            <div style={{ display: 'flex', gap: 'var(--space-4)', marginBottom: 'var(--space-4)', flexWrap: 'wrap' }}>
+                              <div style={{ flex: '1 1 200px' }}>
+                                <label style={{ display: 'block', fontSize: '0.72rem', color: 'var(--grey-400)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 6 }}>
+                                  Email Address
+                                </label>
+                                <input
+                                  type="email"
+                                  value={emailDraft}
+                                  onChange={e => setEmailDraft(e.target.value)}
+                                  placeholder="researcher@example.com"
+                                  style={{
+                                    width: '100%', boxSizing: 'border-box',
+                                    background: 'var(--surface-3, #1D2D3E)',
+                                    border: '1px solid rgba(255,255,255,0.1)',
+                                    borderRadius: 8, padding: '10px 12px',
+                                    color: 'var(--white)', fontSize: '0.85rem',
+                                    outline: 'none',
+                                  }}
+                                />
+                              </div>
+                              <div style={{ flex: '1 1 200px' }}>
+                                <label style={{ display: 'block', fontSize: '0.72rem', color: 'var(--grey-400)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 6 }}>
+                                  Phone Number
+                                </label>
+                                <input
+                                  type="tel"
+                                  value={phoneDraft}
+                                  onChange={e => setPhoneDraft(e.target.value)}
+                                  placeholder="(555) 123-4567"
+                                  style={{
+                                    width: '100%', boxSizing: 'border-box',
+                                    background: 'var(--surface-3, #1D2D3E)',
+                                    border: '1px solid rgba(255,255,255,0.1)',
+                                    borderRadius: 8, padding: '10px 12px',
+                                    color: 'var(--white)', fontSize: '0.85rem',
+                                    outline: 'none',
+                                  }}
+                                />
+                              </div>
+                            </div>
+
                             <label style={{ display: 'block', fontSize: '0.72rem', color: 'var(--grey-400)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 6 }}>
                               Private Note (Only You Can See This)
                             </label>
@@ -240,7 +296,7 @@ export default function AgentResearcherCRM() {
                             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 'var(--space-2)', marginTop: 'var(--space-3)' }}>
                               <button className="btn btn-ghost btn-sm" onClick={() => setOpenId(null)} disabled={saving}>Cancel</button>
                               <button className="btn btn-primary btn-sm" onClick={() => saveNote(r.id)} disabled={saving}>
-                                {saving ? 'Saving...' : 'Save Note'}
+                                {saving ? 'Saving...' : 'Save Changes'}
                               </button>
                             </div>
                           </div>

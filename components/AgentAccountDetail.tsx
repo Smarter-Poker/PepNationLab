@@ -25,6 +25,7 @@ type Detail = {
     full_name: string | null;
     username: string | null;
     email: string | null;
+    phone: string | null;
     account_type: 'credit' | 'prepaid' | string | null;
     credit_limit: number | null;
     prepaid_balance: number;
@@ -98,6 +99,8 @@ export default function AgentAccountDetail({
 
   // Editable fields
   const [fullName, setFullName] = useState('');
+  const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
   const [displayName, setDisplayName] = useState('');
   const [slug, setSlug] = useState('');
   const [accountType, setAccountType] = useState<'credit' | 'prepaid'>('prepaid');
@@ -129,6 +132,8 @@ export default function AgentAccountDetail({
       const d = json as Detail;
       setDetail(d);
       setFullName(d.agent.full_name || '');
+      setEmail(d.agent.email || '');
+      setPhone(d.agent.phone || '');
       setDisplayName(d.storefront?.display_name || '');
       setSlug(d.storefront?.slug || '');
       setAccountType(d.agent.account_type === 'credit' ? 'credit' : 'prepaid');
@@ -158,6 +163,8 @@ export default function AgentAccountDetail({
       const baseVal = commissionPct === '' ? 0 : commissionPct;
       const payload: Record<string, any> = {
         full_name: fullName,
+        email,
+        phone,
         account_type: accountType,
         commission_pct: baseVal,
         is_active: isActive,
@@ -353,6 +360,14 @@ export default function AgentAccountDetail({
                   <div>
                     <label style={labelStyle}>Full Name</label>
                     <input style={inputStyle} value={fullName} onChange={(e) => setFullName(e.target.value)} />
+                  </div>
+                  <div>
+                    <label style={labelStyle}>Email Address</label>
+                    <input style={inputStyle} type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="agent@example.com" />
+                  </div>
+                  <div>
+                    <label style={labelStyle}>Phone Number</label>
+                    <input style={inputStyle} type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="(555) 123-4567" />
                   </div>
                   <div>
                     <label style={labelStyle}>Storefront Name</label>

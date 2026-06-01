@@ -40,7 +40,7 @@ export async function GET() {
     // 1. The agent's researchers
     const { data: researchers, error: rErr } = await svc
       .from('profiles')
-      .select('id, full_name, username, email, created_at, auto_approve_orders, last_sign_in_at, first_sign_in_at')
+      .select('id, full_name, username, email, phone, created_at, auto_approve_orders, last_sign_in_at, first_sign_in_at')
       .eq('referring_agent_id', agentId)
       .eq('role', 'researcher')
       .order('created_at', { ascending: false });
@@ -128,6 +128,7 @@ export async function GET() {
         full_name: r.full_name,
         username: r.username,
         email: r.email,
+        phone: (r as { phone?: string | null }).phone ?? null,
         created_at: r.created_at,
         auto_approve_orders: r.auto_approve_orders ?? false,
         last_sign_in_at: (r as { last_sign_in_at?: string | null }).last_sign_in_at ?? null,

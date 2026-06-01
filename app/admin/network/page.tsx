@@ -75,7 +75,7 @@ export default async function AdminNetworkPage() {
 
       {reparentOptions.length > 0 && (
         <div style={{ marginBottom: 'var(--space-5)' }}>
-          <ReparentControl agents={reparentOptions} />
+          <ReparentControl people={reparentOptions} />
         </div>
       )}
 

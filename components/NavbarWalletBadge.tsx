@@ -71,16 +71,6 @@ export default function NavbarWalletBadge() {
       title="View Wallet & Accounting"
     >
       <img src="/nav-icons/wallet-icon.png" alt="Wallet" width={84} height={84} style={{ display: 'block' }} />
-      <span style={{ 
-        color: 'var(--teal)', 
-        fontWeight: 800, 
-        fontSize: '0.9rem', 
-        fontFamily: 'var(--font-brand)',
-        letterSpacing: '0.02em',
-        textShadow: '0 0 10px rgba(0,196,188,0.2)'
-      }}>
-        {money(primaryBalance)}
-      </span>
     </Link>
   );
 }

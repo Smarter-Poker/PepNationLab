@@ -130,7 +130,7 @@ export async function POST(req: NextRequest) {
     disclaimer_accepted_at: new Date().toISOString(),
     is_active: true,
     // Provisioning attribution (2026-06-01)
-    created_by_agent_id: gate.user.id,
+    created_by_agent_id: gate.userId,
     created_by_role: 'admin',
     updated_at: new Date().toISOString(),
   };

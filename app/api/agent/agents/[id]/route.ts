@@ -59,7 +59,7 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ id: string
     const { data: agent, error } = await supabase
       .from('profiles')
       .select(
-        'id, full_name, username, email, role, account_type, credit_limit, prepaid_balance, commission_pct, commission_max_pct, velocity_cap, commission_active_since, is_active, is_sub_agent, parent_agent_id, created_at, last_sign_in_at, first_sign_in_at, sign_in_count, agent_profiles(slug, display_name, is_active)',
+        'id, full_name, username, email, phone, role, account_type, credit_limit, prepaid_balance, commission_pct, commission_max_pct, velocity_cap, commission_active_since, is_active, is_sub_agent, parent_agent_id, created_at, last_sign_in_at, first_sign_in_at, sign_in_count, agent_profiles(slug, display_name, is_active)',
       )
       .eq('id', id)
       .single();
@@ -201,6 +201,16 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
       updates.full_name = body.full_name.trim();
       changes.full_name = updates.full_name;
     }
+    
+    if (typeof body.email === 'string' && body.email.trim()) {
+      updates.email = body.email.trim();
+      changes.email = updates.email;
+    }
+
+    if (body.phone !== undefined) {
+      updates.phone = typeof body.phone === 'string' ? body.phone.trim() : null;
+      changes.phone = updates.phone;
+    }
 
     let nextAccountType = target.account_type as string | null;
     if (body.account_type === 'credit' || body.account_type === 'prepaid') {
@@ -301,6 +311,11 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
       if (upErr) {
         console.error('[PATCH agent] profile update error:', upErr);
         return NextResponse.json({ error: 'Failed To Update Agent.' }, { status: 500 });
+      }
+      
+      if (updates.email) {
+        const { error: authErr } = await supabase.auth.admin.updateUserById(id, { email: updates.email });
+        if (authErr) console.error('[PATCH agent] auth update error:', authErr);
       }
     }
 

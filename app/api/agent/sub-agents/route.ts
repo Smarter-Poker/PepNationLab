@@ -42,7 +42,7 @@ export async function GET(_req: NextRequest) {
     const { data: subAgents, error } = await supabase
       .from('profiles')
       .select(`
-        id, full_name, username, email,
+        id, full_name, username, email, phone,
         is_sub_agent, commission_pct, commission_active_since,
         account_type, credit_limit, prepaid_balance,
         created_at, is_active, last_sign_in_at, first_sign_in_at

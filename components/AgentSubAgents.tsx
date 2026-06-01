@@ -44,6 +44,12 @@ export default function AgentSubAgents({ agentId }: { agentId?: string }) {
   const [resetPwValue, setResetPwValue] = useState('');
   const [resetPwSaving, setResetPwSaving] = useState(false);
 
+  // Edit Contact State
+  const [editContactUser, setEditContactUser] = useState<{ id: string; name: string; email: string; phone: string } | null>(null);
+  const [editEmail, setEditEmail] = useState('');
+  const [editPhone, setEditPhone] = useState('');
+  const [editContactSaving, setEditContactSaving] = useState(false);
+
   // Revoke Sub-Agent State
   const [revokeTarget, setRevokeTarget] = useState<{ id: string; name: string } | null>(null);
   const [revoking, setRevoking] = useState(false);
@@ -401,6 +407,16 @@ export default function AgentSubAgents({ agentId }: { agentId?: string }) {
                         style={{ fontSize: '0.7rem', color: 'var(--grey-400)', background: 'none', border: 'none', cursor: 'pointer', padding: 0, textDecoration: 'underline', textAlign: 'left' }}
                       >
                         Edit Password
+                      </button>
+                      <button
+                        onClick={() => {
+                          setEditContactUser({ id: agent.id, name: agent.full_name || 'Sub-Agent', email: agent.email || '', phone: agent.phone || '' });
+                          setEditEmail(agent.email || '');
+                          setEditPhone(agent.phone || '');
+                        }}
+                        style={{ fontSize: '0.7rem', color: 'var(--grey-400)', background: 'none', border: 'none', cursor: 'pointer', padding: 0, textDecoration: 'underline', textAlign: 'left' }}
+                      >
+                        Edit Contact Info
                       </button>
                     </div>
                   </div>
@@ -789,6 +805,72 @@ export default function AgentSubAgents({ agentId }: { agentId?: string }) {
                   {revoking ? 'Revoking...' : 'Confirm Revoke'}
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Contact Modal */}
+      {editContactUser && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+          background: 'rgba(0,0,0,0.8)', zIndex: 1100,
+          display: 'flex', alignItems: 'center', justifyContent: 'center'
+        }}>
+          <div className="metal-frame" style={{ width: '100%', maxWidth: 400 }}>
+            <div className="metal-content" style={{ padding: 'var(--space-6)' }}>
+              <h3 className="metal-text" style={{ marginTop: 0, marginBottom: 'var(--space-4)' }}>Edit Contact Info</h3>
+              <p style={{ fontSize: '0.85rem', color: 'var(--silver)', marginBottom: 'var(--space-4)' }}>
+                Agent: <strong style={{ color: 'var(--white)' }}>{editContactUser.name}</strong>
+              </p>
+              <form onSubmit={async (e) => {
+                e.preventDefault();
+                if (!editContactUser) return;
+                setEditContactSaving(true);
+                try {
+                  const res = await fetch('/api/agent/sub-agents/contact', {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ subAgentId: editContactUser.id, email: editEmail, phone: editPhone }),
+                  });
+                  const json = await res.json();
+                  if (!res.ok) throw new Error(json.error);
+                  toast.success('Contact Info Updated');
+                  setSubAgents(prev => prev.map(a => a.id === editContactUser.id ? { ...a, email: editEmail, phone: editPhone } : a));
+                  setEditContactUser(null);
+                } catch (err: any) {
+                  toast.error(err.message || 'Failed To Update Contact Info');
+                } finally {
+                  setEditContactSaving(false);
+                }
+              }}>
+                <div style={{ marginBottom: 'var(--space-4)' }}>
+                  <label style={{ display: 'block', marginBottom: '8px', color: 'var(--grey-300)', fontSize: '0.85rem' }}>Email Address</label>
+                  <input
+                    type="email"
+                    style={{ width: '100%', padding: '10px 14px', background: 'linear-gradient(180deg, #0b0f16 0%, #121822 100%)', border: '1px solid rgba(0,0,0,0.8)', color: 'var(--white)', borderRadius: '6px' }}
+                    value={editEmail}
+                    onChange={e => setEditEmail(e.target.value)}
+                    placeholder="agent@example.com"
+                  />
+                </div>
+                <div style={{ marginBottom: 'var(--space-6)' }}>
+                  <label style={{ display: 'block', marginBottom: '8px', color: 'var(--grey-300)', fontSize: '0.85rem' }}>Phone Number</label>
+                  <input
+                    type="tel"
+                    style={{ width: '100%', padding: '10px 14px', background: 'linear-gradient(180deg, #0b0f16 0%, #121822 100%)', border: '1px solid rgba(0,0,0,0.8)', color: 'var(--white)', borderRadius: '6px' }}
+                    value={editPhone}
+                    onChange={e => setEditPhone(e.target.value)}
+                    placeholder="(555) 123-4567"
+                  />
+                </div>
+                <div style={{ display: 'flex', gap: 'var(--space-3)', justifyContent: 'flex-end' }}>
+                  <button type="button" className="btn-silver" onClick={() => setEditContactUser(null)} disabled={editContactSaving}>Cancel</button>
+                  <button type="submit" className="btn-neon-cyan" disabled={editContactSaving}>
+                    {editContactSaving ? 'Saving...' : 'Save Changes'}
+                  </button>
+                </div>
+              </form>
             </div>
           </div>
         </div>
