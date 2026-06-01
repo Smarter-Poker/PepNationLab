@@ -7,6 +7,9 @@ import SalesKPIStrip from './SalesKPIStrip';
 import SalesTimeseriesChart from './SalesTimeseriesChart';
 import GoalTracker from './GoalTracker';
 import AutoInsightsCallouts from './AutoInsightsCallouts';
+import SalesHeatmap from './SalesHeatmap';
+import SubAgentRollupTable from './SubAgentRollupTable';
+import AIWeeklySummary from './AIWeeklySummary';
 
 export default function SalesPageV2() {
   const [preset, setPreset] = useState<RangePreset>('30d');
@@ -40,6 +43,9 @@ export default function SalesPageV2() {
         <SalesKPIStrip data={kpis} />
         <SalesTimeseriesChart points={points} />
         <GoalTracker revenueCents={revenueCents} />
+        <AIWeeklySummary />
+        <SalesHeatmap preset={preset} />
+        <SubAgentRollupTable preset={preset} />
 
         <div className="card-glass" style={{ padding: 14, borderRadius: 12 }}>
           <h3 style={{ color: 'var(--white)', fontSize: '0.95rem', marginTop: 0 }}>Exports</h3>
