@@ -416,7 +416,13 @@ export default function ResearcherDashboard({ userId, userName, userEmail, agent
           {MENU_ITEMS.map(item => (
             <button
               key={item.id}
-              onClick={() => setTab(item.id)}
+              onClick={() => {
+                if (item.id === 'messages') {
+                  window.location.href = '/messenger';
+                } else {
+                  setTab(item.id);
+                }
+              }}
               style={{
                 width: '100%',
                 display: 'flex',
