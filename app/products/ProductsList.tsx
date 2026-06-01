@@ -325,12 +325,12 @@ export default function ProductsList({
                         borderRadius: 'var(--radius-full)',
                         background: product.in_stock ? 'rgba(192,184,168,0.08)' : 'rgba(246,173,85,0.08)',
                         border: `1px solid ${product.in_stock ? 'rgba(192,184,168,0.25)' : 'rgba(246,173,85,0.25)'}`,
-                        color: product.in_stock ? 'var(--teal)' : '#F6AD55'
+                        color: product.in_stock ? 'var(--teal)' : '#00E5FF'
                       }}>
                         <span style={{
                           width: 5, height: 5, borderRadius: '50%',
-                          background: product.in_stock ? 'var(--teal)' : '#F6AD55',
-                          boxShadow: `0 0 4px ${product.in_stock ? 'var(--teal)' : '#F6AD55'}`
+                          background: product.in_stock ? 'var(--teal)' : '#00E5FF',
+                          boxShadow: `0 0 4px ${product.in_stock ? 'var(--teal)' : '#00E5FF'}`
                         }} />
                         {product.in_stock ? 'In Stock — Ships Now' : `Out of Stock / Backordered`}
                       </span>

@@ -107,7 +107,7 @@ export default function AgentStatements() {
                   <td>{orderCount}</td>
                   <td>{new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(Number(stmt.total_cogs) || 0)}</td>
                   <td>{new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(Number(stmt.total_shipping) || 0)}</td>
-                  <td style={{ color: 'var(--gold)', fontWeight: 600 }}>{new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(Number(stmt.total_owed) || 0)}</td>
+                  <td style={{ color: 'var(--teal)', fontWeight: 600 }}>{new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(Number(stmt.total_owed) || 0)}</td>
                   <td>
                     {stmt.status === 'paid' ? (
                       <span className="badge badge-teal">Paid</span>

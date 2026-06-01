@@ -63,7 +63,7 @@ const STATUS_LABELS: Record<string, string> = {
 const STATUS_COLORS: Record<string, string> = {
   pending: 'var(--grey-400)',
   applied: '#60A5FA',
-  qualifying: '#F6AD55',
+  qualifying: '#00E5FF',
   rewarded: '#68D391',
   expired: 'var(--grey-500)',
   revoked: '#E53E3E',

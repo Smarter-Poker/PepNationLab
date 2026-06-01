@@ -563,7 +563,7 @@ export default function NotificationCenterClient({ initialPrefs, sessionProfile 
               {/* Status */}
               <div style={{ marginBottom: 14, fontSize: '0.8rem' }}>
                 <span style={{ color: 'var(--white)', fontWeight: 600 }}>Status: </span>
-                {!pushSupported && <span style={{ color: '#F6AD55' }}>Not supported in this browser</span>}
+                {!pushSupported && <span style={{ color: '#00E5FF' }}>Not supported in this browser</span>}
                 {pushSupported && pushPermission === 'default' && <span style={{ color: SILVER }}>Not yet enabled</span>}
                 {pushSupported && pushPermission === 'denied' && <span style={{ color: '#E53E3E' }}>Blocked - check browser settings</span>}
                 {pushSupported && pushPermission === 'granted' && prefs.push_enabled && <span style={{ color: TEAL }}>Active</span>}

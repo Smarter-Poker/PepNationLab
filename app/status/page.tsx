@@ -31,7 +31,7 @@ async function fetchStatus(): Promise<StatusReport | null> {
 
 function statusColor(s: string | undefined): string {
   if (s === 'ok') return '#48BB78';
-  if (s === 'degraded') return '#F6AD55';
+  if (s === 'degraded') return '#00E5FF';
   return '#E53E3E';
 }
 

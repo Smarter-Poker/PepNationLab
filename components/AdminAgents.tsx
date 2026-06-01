@@ -213,7 +213,7 @@ export default function AdminAgents() {
   const tierStyle = (tier: string) => ({
     tier_1: { bg: 'rgba(104,211,145,0.15)', color: '#68D391', border: '1px solid rgba(104,211,145,0.35)' },
     tier_2: { bg: 'rgba(99,179,237,0.15)',  color: '#63B3ED', border: '1px solid rgba(99,179,237,0.35)' },
-    tier_3: { bg: 'rgba(246,173,85,0.15)',  color: '#F6AD55', border: '1px solid rgba(246,173,85,0.35)' },
+    tier_3: { bg: 'rgba(246,173,85,0.15)',  color: '#00E5FF', border: '1px solid rgba(246,173,85,0.35)' },
   }[tier] ?? { bg: 'rgba(192,184,168,0.1)', color: 'var(--teal)', border: '1px solid rgba(192,184,168,0.3)' });
 
   const openEditModal = (agent: any) => {

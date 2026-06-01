@@ -94,7 +94,7 @@ export function AdminLayoutClient({
       >
         <div style={{ padding: '0 var(--space-4) var(--space-3)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div>
-            <div style={{ fontSize: '0.78rem', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--gold)', fontWeight: 700 }}>
+            <div style={{ fontSize: '0.78rem', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--teal)', fontWeight: 700 }}>
               Admin
             </div>
             <div style={{ fontSize: '0.95rem', color: 'var(--ivory)', marginTop: 2 }}>
@@ -119,7 +119,7 @@ export function AdminLayoutClient({
                   gap: 10,
                   padding: '8px 12px',
                   borderRadius: 8,
-                  color: active ? 'var(--gold)' : 'var(--ivory)',
+                  color: active ? 'var(--teal)' : 'var(--ivory)',
                   background: active ? 'rgba(192,184,168,0.08)' : 'transparent',
                   textDecoration: 'none',
                   fontSize: '0.88rem',

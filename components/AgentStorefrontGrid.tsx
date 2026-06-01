@@ -58,7 +58,7 @@ function StockBadge({ state }: { state: StockState }) {
   let label = 'In Stock';
   if (state.kind === 'low_stock') {
     bg = 'rgba(246,173,85,0.15)';
-    fg = '#F6AD55';
+    fg = '#00E5FF';
     border = 'rgba(246,173,85,0.40)';
     label = `Only ${state.count} Left`;
   } else if (state.kind === 'backorder') {

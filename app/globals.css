@@ -85,8 +85,8 @@
 
   /* Status Colors */
   --green:          #48BB78;
-  --orange:         #ED8936;
-  --gold:           #F6AD55;
+  --orange:         #00C4BC;
+  --gold:           #00E5FF;
 
   /* ── Semantic nav tokens (used by the universal Navbar) ── */
   --nav-bg:         rgba(5, 10, 15, 0.92);

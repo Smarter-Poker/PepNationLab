@@ -485,7 +485,7 @@ export default function AgentStoreProducts({ agentId }: { agentId: string }) {
                             </span>
                           )}
                           {p.agent_cost != null && p.agent_cost > 0 && p.retail_price > 0 && (
-                            <span style={{ fontSize: '0.65rem', fontWeight: 700, padding: '2px 6px', borderRadius: '4px', background: 'rgba(0,229,255,0.1)', color: (p.retail_price / p.agent_cost - 1) >= 0.15 ? '#00E5FF' : '#F6AD55', border: '1px solid rgba(0,229,255,0.2)' }}>
+                            <span style={{ fontSize: '0.65rem', fontWeight: 700, padding: '2px 6px', borderRadius: '4px', background: 'rgba(0,229,255,0.1)', color: (p.retail_price / p.agent_cost - 1) >= 0.15 ? '#00E5FF' : '#00E5FF', border: '1px solid rgba(0,229,255,0.2)' }}>
                               +{Math.round((p.retail_price / p.agent_cost - 1) * 100)}%
                             </span>
                           )}
@@ -672,7 +672,7 @@ export default function AgentStoreProducts({ agentId }: { agentId: string }) {
                                   </span>
                                 )}
                                 {p.agent_cost != null && p.agent_cost > 0 && p.retail_price > 0 && (
-                                  <span style={{ fontSize: '0.65rem', fontWeight: 700, padding: '2px 6px', borderRadius: '4px', background: 'rgba(0,229,255,0.1)', color: (p.retail_price / p.agent_cost - 1) >= 0.15 ? '#00E5FF' : '#F6AD55', border: '1px solid rgba(0,229,255,0.2)' }}>
+                                  <span style={{ fontSize: '0.65rem', fontWeight: 700, padding: '2px 6px', borderRadius: '4px', background: 'rgba(0,229,255,0.1)', color: (p.retail_price / p.agent_cost - 1) >= 0.15 ? '#00E5FF' : '#00E5FF', border: '1px solid rgba(0,229,255,0.2)' }}>
                                     +{(Math.round((p.retail_price / p.agent_cost - 1) * 100))}%
                                   </span>
                                 )}

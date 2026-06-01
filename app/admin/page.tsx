@@ -77,7 +77,7 @@ export default async function AdminDashboard() {
       value: String(metrics.pendingAgentApproval),
       sub: 'Awaiting Agent Decision',
       href: '/admin/orders?status=agent_approval_pending',
-      color: metrics.pendingAgentApproval > 0 ? '#F6AD55' : 'var(--grey-400)',
+      color: metrics.pendingAgentApproval > 0 ? '#00E5FF' : 'var(--grey-400)',
       icon: <svg {...ICON_PROPS}><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" /></svg>,
     },
     {
@@ -85,7 +85,7 @@ export default async function AdminDashboard() {
       value: String(metrics.readyToShip),
       sub: 'Approved, Awaiting Label',
       href: '/admin/orders?status=approved_ship',
-      color: metrics.readyToShip > 0 ? '#F6AD55' : 'var(--grey-400)',
+      color: metrics.readyToShip > 0 ? '#00E5FF' : 'var(--grey-400)',
       icon: <svg {...ICON_PROPS}><rect x="1" y="3" width="15" height="13" /><polygon points="16 8 20 8 23 11 23 16 16 16 16 8" /><circle cx="5.5" cy="18.5" r="2.5" /><circle cx="18.5" cy="18.5" r="2.5" /></svg>,
     },
     {
@@ -93,7 +93,7 @@ export default async function AdminDashboard() {
       value: String(metrics.readyForPickup),
       sub: 'Agent-Approved, Awaiting Fulfillment',
       href: '/admin/orders?status=approved_pickup',
-      color: metrics.readyForPickup > 0 ? '#F6AD55' : 'var(--grey-400)',
+      color: metrics.readyForPickup > 0 ? '#00E5FF' : 'var(--grey-400)',
       icon: <svg {...ICON_PROPS}><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" /><polyline points="3.27 6.96 12 12.01 20.73 6.96" /><line x1="12" y1="22.08" x2="12" y2="12" /></svg>,
     },
     {
@@ -274,7 +274,7 @@ export default async function AdminDashboard() {
                       <div style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--silver)' }}>{p.name}</div>
                       <div style={{ fontSize: '0.72rem', color: 'var(--grey-400)' }}>Threshold: {p.low_stock_threshold}</div>
                     </div>
-                    <div style={{ fontSize: '0.85rem', fontWeight: 700, color: p.inventory_count === 0 ? 'var(--red)' : '#F6AD55' }}>
+                    <div style={{ fontSize: '0.85rem', fontWeight: 700, color: p.inventory_count === 0 ? 'var(--red)' : '#00E5FF' }}>
                       {p.inventory_count} Left
                     </div>
                   </div>

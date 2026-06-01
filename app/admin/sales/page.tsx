@@ -87,7 +87,7 @@ export default function AdminSalesPage() {
     statement_payment: '#68D391',
     debit: 'var(--red)',
     order_charge: 'var(--red)',
-    adjustment: '#F6AD55',
+    adjustment: '#00E5FF',
   };
 
   return (

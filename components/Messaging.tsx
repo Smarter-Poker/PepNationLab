@@ -447,7 +447,7 @@ export default function Messaging({
                               <span style={{
                                 marginLeft: 'auto', fontSize: '0.6rem', fontWeight: 700, padding: '2px 8px', borderRadius: 4,
                                 background: m.invoice_status === 'paid' ? 'rgba(72,187,120,0.1)' : m.invoice_status === 'overdue' ? 'rgba(229,62,62,0.1)' : 'rgba(237,137,54,0.1)',
-                                color: m.invoice_status === 'paid' ? '#48BB78' : m.invoice_status === 'overdue' ? '#FC8181' : '#ED8936',
+                                color: m.invoice_status === 'paid' ? '#48BB78' : m.invoice_status === 'overdue' ? '#FC8181' : '#00C4BC',
                                 textTransform: 'uppercase', letterSpacing: '0.05em',
                               }}>{m.invoice_status}</span>
                             )}
@@ -607,7 +607,7 @@ export default function Messaging({
       {editingMsg && (
         <div style={{ padding: '6px 16px', borderTop: '1px solid rgba(237,137,54,0.1)', background: 'rgba(237,137,54,0.03)', display: 'flex', alignItems: 'center', gap: 8 }}>
           <div style={{ flex: 1 }}>
-            <div style={{ fontSize: '0.68rem', color: '#ED8936', fontWeight: 600 }}>✏️ Editing Message</div>
+            <div style={{ fontSize: '0.68rem', color: '#00C4BC', fontWeight: 600 }}>✏️ Editing Message</div>
           </div>
           <button onClick={() => { setEditingMsg(null); setEditBody(''); }} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.3)', cursor: 'pointer', padding: 4 }}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>

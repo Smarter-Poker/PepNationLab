@@ -34,7 +34,7 @@ const STATUS_LABELS: Record<string, string> = {
 
 const STATUS_COLORS: Record<string, string> = {
   open: "var(--grey-400)",
-  pending_payment: "#F6AD55",
+  pending_payment: "#00E5FF",
   paid: "#68D391",
 };
 

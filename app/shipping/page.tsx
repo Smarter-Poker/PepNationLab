@@ -203,7 +203,7 @@ export default function ShippingDashboard() {
   const STATUS_FILTERS: { value: StatusFilter; label: string; count: number; color: string }[] = [
     { value: 'all', label: 'All', count: orders.length, color: 'var(--silver)' },
     { value: 'approved_ship', label: 'New Orders', count: newOrders.length, color: '#00C4BC' },
-    { value: 'in_fulfillment', label: 'In Progress', count: inProgress.length, color: '#F6AD55' },
+    { value: 'in_fulfillment', label: 'In Progress', count: inProgress.length, color: '#00E5FF' },
     { value: 'shipped', label: 'Shipped', count: orders.filter(o => o.status === 'shipped').length, color: '#68D391' },
   ];
 
@@ -222,7 +222,7 @@ export default function ShippingDashboard() {
 
   const statCards = [
     { label: 'New Orders', value: newOrders.length, icon: <Package size={18} />, color: '#00C4BC' },
-    { label: 'In Progress', value: inProgress.length, icon: <Clock size={18} />, color: '#F6AD55' },
+    { label: 'In Progress', value: inProgress.length, icon: <Clock size={18} />, color: '#00E5FF' },
     { label: 'Shipped Today', value: shippedToday.length, icon: <Truck size={18} />, color: '#68D391' },
     { label: 'Total Items', value: totalItemsToShip, icon: <PackageCheck size={18} />, color: '#63B3ED' },
   ];
@@ -289,7 +289,7 @@ export default function ShippingDashboard() {
 
         {/* Batch Controls */}
         <div className="card-metal hover-lift stagger-fade-in" style={{ padding: 'var(--space-4)', display: 'flex', alignItems: 'center', gap: 10, animationDelay: '0.6s' }}>
-          <Zap size={20} style={{ color: '#F6AD55', flexShrink: 0 }} />
+          <Zap size={20} style={{ color: '#00E5FF', flexShrink: 0 }} />
           <div style={{ flex: 1 }}>
             <div style={{ fontSize: '0.68rem', color: 'rgba(255,255,255,0.3)', marginBottom: 4, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em' }}>Batch Actions</div>
             <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>

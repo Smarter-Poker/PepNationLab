@@ -60,7 +60,7 @@ const STATUS_LABELS: Record<string, string> = {
 };
 const STATUS_COLORS: Record<string, string> = {
   pending_customer_payment: '#FC8181',
-  agent_approval_pending: '#F6AD55',
+  agent_approval_pending: '#00E5FF',
   approved_ship: '#63B3ED',
   approved_pickup: '#63B3ED',
   in_fulfillment: '#C0B8A8',

@@ -18,7 +18,7 @@ interface AnalyticsData {
   avgOrderValue: number;
 }
 
-const COLORS = ['#C0B8A8', '#0099FF', '#F6AD55', '#68D391', '#FC8181', '#C084FC', '#63B3ED'];
+const COLORS = ['#C0B8A8', '#0099FF', '#00E5FF', '#68D391', '#FC8181', '#C084FC', '#63B3ED'];
 
 export default function AdminAnalytics() {
   const [data, setData] = useState<AnalyticsData | null>(null);
@@ -84,7 +84,7 @@ export default function AdminAnalytics() {
       orders.forEach(o => { statusCounts[o.status] = (statusCounts[o.status] || 0) + 1; });
       const statusLabels: Record<string, { label: string; color: string }> = {
         pending_customer_payment: { label: 'Pending Payment', color: '#FC8181' },
-        agent_approval_pending: { label: 'Pending Approval', color: '#F6AD55' },
+        agent_approval_pending: { label: 'Pending Approval', color: '#00E5FF' },
         approved_ship: { label: 'Approved', color: '#63B3ED' },
         in_fulfillment: { label: 'Fulfilling', color: '#C0B8A8' },
         shipped: { label: 'Shipped', color: '#0099FF' },
@@ -311,7 +311,7 @@ export default function AdminAnalytics() {
                     formatter={(val: any) => [`$${Number(val).toFixed(2)}`, 'Revenue']}
                     cursor={{ fill: 'rgba(255,255,255,0.02)' }}
                   />
-                  <Bar dataKey="revenue" fill="#F6AD55" radius={[0, 4, 4, 0]} />
+                  <Bar dataKey="revenue" fill="#00E5FF" radius={[0, 4, 4, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </div>

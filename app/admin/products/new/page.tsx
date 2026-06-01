@@ -360,12 +360,12 @@ export default function NewProductPage() {
             }}>
               <div style={{
                 width: 10, height: 10, borderRadius: '50%',
-                background: invCount > 0 ? 'var(--teal)' : '#F6AD55',
-                boxShadow: `0 0 6px ${invCount > 0 ? 'var(--teal)' : '#F6AD55'}`,
+                background: invCount > 0 ? 'var(--teal)' : '#00E5FF',
+                boxShadow: `0 0 6px ${invCount > 0 ? 'var(--teal)' : '#00E5FF'}`,
                 flexShrink: 0
               }} />
               <div>
-                <div style={{ fontSize: '0.88rem', fontWeight: 700, color: invCount > 0 ? 'var(--teal)' : '#F6AD55' }}>
+                <div style={{ fontSize: '0.88rem', fontWeight: 700, color: invCount > 0 ? 'var(--teal)' : '#00E5FF' }}>
                   {invCount > 0
                     ? `In Stock — Ships Now (${form.inventory_count} Units)`
                     : `Out of Stock / Backordered`}

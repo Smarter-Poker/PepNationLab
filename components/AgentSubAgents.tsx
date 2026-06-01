@@ -525,7 +525,7 @@ export default function AgentSubAgents({ agentId }: { agentId?: string }) {
                     <span style={{ fontSize: '1.1rem', color: '#00E5FF', fontWeight: 800 }}>{formatCurrency(inv.total_owed)}</span>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', justifyContent: 'flex-end', flex: '1 1 auto' }}>
-                    <span className="badge-metal" style={{ marginRight: '8px', color: inv.status === 'paid' ? '#00FF9D' : 'var(--gold)' }}>
+                    <span className="badge-metal" style={{ marginRight: '8px', color: inv.status === 'paid' ? '#00FF9D' : 'var(--teal)' }}>
                       {inv.status}
                     </span>
                     <button
