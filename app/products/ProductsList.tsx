@@ -101,10 +101,12 @@ export default function ProductsList({
   });
 
   return (
-    <div style={{ minHeight: '100dvh', background: 'var(--black)' }}>
-      {/* Top Navbar */}
+    <div style={{ minHeight: '100dvh', background: 'var(--black)', maxWidth: '100vw', overflowX: 'hidden' }}>
+      {/* Top Navbar — reserves iOS safe-area-inset-top so the bar
+          and its content are not clipped by the Dynamic Island / notch. */}
       <nav className="glass-header" style={{
-        height: 64,
+        height: 'calc(64px + var(--safe-top, 0px))',
+        paddingTop: 'var(--safe-top, 0px)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
