@@ -3,14 +3,13 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Search, X, Copy, ExternalLink, Filter } from 'lucide-react';
+import { Search, X, Copy, ExternalLink, Filter, AlertTriangle, ChevronRight } from 'lucide-react';
 import { toast } from 'sonner';
 
 // fix-52: ships items #1-5, 9-15 from the global-search deep-dive.
 // fix-52b: abort in-flight fetch on unmount, router.push for Enter-key nav.
-// fix-52c: empty state is now blank — Tips + Recent Searches removed per
-//          user direction. Pure command-palette: type to search, nothing
-//          else on the page until results arrive.
+// fix-52c: empty state is now blank — Tips + Recent Searches removed per user.
+// fix-53:  operational nudges panel on empty state (fetches /api/admin/operational-nudges).
 
 type Scope = 'all' | 'users' | 'products' | 'orders' | 'storefronts' | 'coupons' | 'transactions';
 
@@ -75,6 +74,14 @@ interface OrderFilters {
   to: string;
   min: string;
   max: string;
+}
+
+interface Nudges {
+  pendingCustomerPayment: number;
+  agentApprovalPending: number;
+  expiredActiveCoupons: number;
+  researchersFirstLogin: number;
+  activeAgentsNoWarehouse: number;
 }
 
 const BLANK_FILTERS: OrderFilters = { status: '', payment: '', from: '', to: '', min: '', max: '' };
@@ -193,6 +200,7 @@ export default function AdminSearchClient() {
     all: false, users: false, storefronts: false, products: false,
     orders: false, coupons: false, transactions: false,
   });
+  const [nudges, setNudges] = useState<Nudges | null>(null);
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -236,6 +244,23 @@ export default function AdminSearchClient() {
   useEffect(() => {
     if (scope === 'orders') setFiltersOpen(true);
   }, [scope]);
+
+  // fix-53: fetch the operational nudges on mount, fire-and-forget.
+  // Cached server-side (30s + 60s SWR) so revisits are cheap.
+  useEffect(() => {
+    let aborted = false;
+    (async () => {
+      try {
+        const res = await fetch('/api/admin/operational-nudges', { method: 'GET' });
+        if (!res.ok || aborted) return;
+        const json = (await res.json()) as Nudges;
+        if (!aborted) setNudges(json);
+      } catch {
+        // Silent — nudges are decorative, not load-blocking.
+      }
+    })();
+    return () => { aborted = true; };
+  }, []);
 
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
@@ -512,6 +537,7 @@ export default function AdminSearchClient() {
   const q = query.trim();
   const filtersActive = hasAnyFilter(filters);
   const activeFilterCount = countActiveFilters(filters);
+  const showEmptyState = q.length < 2 && !filtersActive && !loading && !results;
   const showNoResults = !!results && totalHits === 0 && !loading && (q.length >= 2 || filtersActive);
 
   return (
@@ -689,6 +715,9 @@ export default function AdminSearchClient() {
         {results && (q.length >= 2 || filtersActive) ? `${totalHits} result${totalHits === 1 ? '' : 's'} for ${q || 'current filters'}` : ''}
       </div>
 
+      {/* fix-53: operational nudges panel on the empty state */}
+      {showEmptyState && nudges && <OperationalNudgesPanel nudges={nudges} />}
+
       {showNoResults && (
         <div style={{ color: 'var(--grey-400, #A8B4C0)', background: 'var(--surface-2, #162230)', border: '1px solid var(--surface-3, #1D2D3E)', borderRadius: 12, padding: 24, textAlign: 'center' }}>
           <div style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--white, #FFFFFF)', marginBottom: 4 }}>
@@ -792,6 +821,69 @@ export default function AdminSearchClient() {
         </>
       )}
     </div>
+  );
+}
+
+// fix-53: operational nudges panel. Renders nothing if every count is 0
+// — that way the empty state preserves the blank-canvas feel when
+// there's nothing actionable.
+function OperationalNudgesPanel({ nudges }: { nudges: Nudges }) {
+  const rows: Array<{ key: string; label: string; count: number; href: string }> = [
+    { key: 'pcp', label: 'Orders Pending Customer Payment', count: nudges.pendingCustomerPayment, href: '/admin/orders?status=pending_customer_payment' },
+    { key: 'aap', label: 'Orders Awaiting Agent Approval', count: nudges.agentApprovalPending,    href: '/admin/orders?status=agent_approval_pending' },
+    { key: 'eac', label: 'Expired Active Coupons',          count: nudges.expiredActiveCoupons,    href: '/admin/coupons' },
+    { key: 'rfl', label: 'Researchers Needing Password',    count: nudges.researchersFirstLogin,   href: '/admin/researchers' },
+    { key: 'anw', label: 'Active Agents Without Warehouse', count: nudges.activeAgentsNoWarehouse, href: '/admin/agents' },
+  ];
+  const visible = rows.filter((r) => r.count > 0);
+  if (visible.length === 0) return null;
+  return (
+    <section style={{ marginBottom: 20 }}>
+      <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 8, padding: '0 4px' }}>
+        <h2 style={{ fontSize: '0.78rem', textTransform: 'uppercase', letterSpacing: '0.12em', color: 'var(--grey-400, #A8B4C0)', margin: 0, fontWeight: 700 }}>
+          Needs Attention
+        </h2>
+        <span style={{ fontSize: '0.78rem', color: 'var(--grey-500)' }}>({visible.length})</span>
+      </div>
+      <div style={{ background: 'var(--surface-2, #162230)', border: '1px solid var(--surface-3, #1D2D3E)', borderRadius: 12, overflow: 'hidden' }}>
+        {visible.map((row) => (
+          <Link
+            key={row.key}
+            href={row.href}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px',
+              borderBottom: '1px solid var(--surface-3, #1D2D3E)',
+              textDecoration: 'none', color: 'inherit', cursor: 'pointer',
+            }}
+          >
+            <div
+              aria-hidden="true"
+              style={{
+                flexShrink: 0, width: 28, height: 28, borderRadius: 8,
+                background: 'rgba(255,191,77,0.14)', color: '#FFBF4D',
+                display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+              }}
+            >
+              <AlertTriangle size={14} />
+            </div>
+            <span style={{ flex: 1, minWidth: 0, fontSize: '0.92rem', fontWeight: 600, color: 'var(--white, #FFFFFF)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {row.label}
+            </span>
+            <span
+              aria-label={`${row.count} items`}
+              style={{
+                flexShrink: 0, padding: '2px 10px', borderRadius: 999,
+                background: 'var(--teal, #00C4BC)', color: '#000',
+                fontSize: '0.78rem', fontWeight: 800,
+              }}
+            >
+              {row.count}
+            </span>
+            <ChevronRight size={14} aria-hidden="true" style={{ color: 'var(--grey-400, #A8B4C0)' }} />
+          </Link>
+        ))}
+      </div>
+    </section>
   );
 }
 
