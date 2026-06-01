@@ -86,16 +86,6 @@ export default function SubAgentDashboardClient({ data, onRefresh }: { data: Ove
       <div className="container" style={{ paddingTop: 'var(--space-8)', paddingBottom: activeTab === 'Overview' ? 0 : 'var(--space-12)' }}>
         
         {/* Navigation back to Overview if deep linked */}
-        {activeTab !== 'Overview' && (
-          <button 
-            onClick={() => setActiveTab('Overview')} 
-            className="btn btn-ghost btn-sm" 
-            style={{ marginBottom: 'var(--space-4)', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
-            Back to Overview
-          </button>
-        )}
 
         {/* Overview (Metallic 6-Button Image) */}
         {activeTab === 'Overview' && (
@@ -152,9 +142,11 @@ export default function SubAgentDashboardClient({ data, onRefresh }: { data: Ove
                 </div>
               </div>
             )}
-            <div className="card-glass" style={{ padding: '20px' }}>
-              <div style={{ fontSize: '28px', fontWeight: 700 }}>{data.referred_researchers_count}</div>
-              <div style={{ fontSize: '14px', opacity: 0.7 }}>Total Researchers Tagged To You</div>
+            <div className="metal-frame">
+              <div className="metal-content" style={{ padding: 'var(--space-6)' }}>
+                <div style={{ fontSize: '28px', fontWeight: 700 }}>{data.referred_researchers_count}</div>
+                <div style={{ fontSize: '14px', opacity: 0.7 }}>Total Researchers Tagged To You</div>
+              </div>
             </div>
           </div>
         )}
@@ -162,57 +154,48 @@ export default function SubAgentDashboardClient({ data, onRefresh }: { data: Ove
         {/* Sales & Accounting Tab */}
         {activeTab === 'Sales & Accounting' && (
           <div style={{ animation: 'fadeIn 0.3s ease-out' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-              <h1 style={{ fontSize: '24px' }}>Sales & Accounting</h1>
-              <button
-                type="button"
-                disabled={refreshing}
-                onClick={async () => {
-                  setRefreshing(true);
-                  await onRefresh();
-                  setRefreshing(false);
-                  toast.success('Balance Refreshed');
-                }}
-                className="btn btn-primary btn-sm"
-              >
-                {refreshing ? 'Refreshing...' : 'Refresh Balance'}
-              </button>
-            </div>
-            
             <div style={{ marginBottom: '24px' }}>
               <WalletCard />
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '16px', marginBottom: '24px' }}>
-              <div className="card-glass" style={{ padding: '16px' }}>
-                <div style={{ fontSize: '12px', opacity: 0.7, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Available Balance</div>
-                <div style={{ fontSize: '28px', fontWeight: 700, marginTop: '4px' }}>{fmtMoney(availableBalance)}</div>
-                <div style={{ fontSize: '12px', opacity: 0.7, marginTop: '8px' }}>
-                  {isCredit ? (
-                    <>Credit Line {fmtMoney(data.profile.credit_limit)} + Prepaid {fmtMoney(data.profile.prepaid_balance)}</>
-                  ) : (
-                    <>Prepaid Account</>
-                  )}
+              <div className="metal-frame">
+                <div className="metal-content" style={{ padding: 'var(--space-6)', textAlign: 'center', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                  <div style={{ fontSize: '0.85rem', color: 'var(--grey-400)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '8px', fontWeight: 600 }}>Available Balance</div>
+                  <div style={{ fontSize: '2.5rem', fontWeight: 800, color: 'var(--white)', fontFamily: 'var(--font-brand)', textShadow: '0 0 10px rgba(255,255,255,0.2)', marginTop: '4px' }}>{fmtMoney(availableBalance)}</div>
+                  <div style={{ fontSize: '12px', opacity: 0.7, marginTop: '8px' }}>
+                    {isCredit ? (
+                      <>Credit Line {fmtMoney(data.profile.credit_limit)} + Prepaid {fmtMoney(data.profile.prepaid_balance)}</>
+                    ) : (
+                      <>Prepaid Account</>
+                    )}
+                  </div>
                 </div>
               </div>
 
-              <div className="card-glass" style={{ padding: '16px' }}>
-                <div style={{ fontSize: '12px', opacity: 0.7, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Pending Commission</div>
-                <div style={{ fontSize: '28px', fontWeight: 700, marginTop: '4px' }}>{fmtMoney(data.pending_commission)}</div>
-                <div style={{ fontSize: '12px', opacity: 0.7, marginTop: '8px' }}>
-                  Earning {data.profile.commission_pct ?? 0}% Of Total Sales. Credits Settle Sundays.
+              <div className="metal-frame">
+                <div className="metal-content" style={{ padding: 'var(--space-6)', textAlign: 'center', display: 'flex', flexDirection: 'column', justifyContent: 'center', position: 'relative', overflow: 'hidden' }}>
+                  <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(circle at center, rgba(0, 255, 157, 0.05) 0%, transparent 70%)', pointerEvents: 'none' }} />
+                  <div style={{ fontSize: '0.85rem', color: 'var(--grey-400)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '8px', fontWeight: 600 }}>Pending Commission</div>
+                  <div style={{ fontSize: '2.5rem', fontWeight: 800, color: '#00FF9D', fontFamily: 'var(--font-brand)', textShadow: '0 0 15px rgba(0,255,157,0.3)', marginTop: '4px' }}>{fmtMoney(data.pending_commission)}</div>
+                  <div style={{ fontSize: '12px', opacity: 0.7, marginTop: '8px' }}>
+                    Earning {data.profile.commission_pct ?? 0}% Of Total Sales. Credits Settle Sundays.
+                  </div>
                 </div>
               </div>
 
-              <div className="card-glass" style={{ padding: '16px' }}>
-                <div style={{ fontSize: '12px', opacity: 0.7, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Lifetime Earned</div>
-                <div style={{ fontSize: '28px', fontWeight: 700, marginTop: '4px' }}>{fmtMoney(data.lifetime_commission)}</div>
-                <div style={{ fontSize: '12px', opacity: 0.7, marginTop: '8px' }}>{data.recent_settlements.length} Settled Weeks</div>
+              <div className="metal-frame">
+                <div className="metal-content" style={{ padding: 'var(--space-6)', textAlign: 'center', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                  <div style={{ fontSize: '0.85rem', color: 'var(--grey-400)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '8px', fontWeight: 600 }}>Lifetime Earned</div>
+                  <div style={{ fontSize: '2.5rem', fontWeight: 800, color: '#00E5FF', fontFamily: 'var(--font-brand)', textShadow: '0 0 10px rgba(0,229,255,0.2)', marginTop: '4px' }}>{fmtMoney(data.lifetime_commission)}</div>
+                  <div style={{ fontSize: '12px', opacity: 0.7, marginTop: '8px' }}>{data.recent_settlements.length} Settled Weeks</div>
+                </div>
               </div>
             </div>
 
-            <div className="card-glass" style={{ padding: '20px', marginBottom: '20px' }}>
-              <h2 style={{ fontSize: '18px', marginBottom: '12px' }}>Recent Settlements</h2>
+            <div className="metal-frame" style={{ marginBottom: '20px' }}>
+              <div className="metal-content" style={{ padding: 'var(--space-6)' }}>
+                <h2 className="metal-text" style={{ fontSize: '1.25rem', marginBottom: 'var(--space-6)', fontFamily: 'var(--font-brand)' }}>Recent Settlements</h2>
               {data.recent_settlements.length === 0 ? (
                 <div style={{ opacity: 0.75 }}>No Settled Weeks Yet. Your First Weekly Payout Lands Sunday Night.</div>
               ) : (
@@ -235,6 +218,7 @@ export default function SubAgentDashboardClient({ data, onRefresh }: { data: Ove
                   </tbody>
                 </table>
               )}
+              </div>
             </div>
           </div>
         )}
@@ -242,10 +226,10 @@ export default function SubAgentDashboardClient({ data, onRefresh }: { data: Ove
         {/* Orders & Fulfillment Tab */}
         {activeTab === 'Orders' && (
           <div style={{ animation: 'fadeIn 0.3s ease-out' }}>
-            <h1 style={{ fontSize: '24px', marginBottom: '16px' }}>Orders & Fulfillment</h1>
-            <div className="card-glass" style={{ padding: '20px', marginBottom: '20px' }}>
-              <h2 style={{ fontSize: '18px', marginBottom: '12px' }}>Recent Orders Attributed To You</h2>
-              <p style={{ opacity: 0.7, fontSize: '0.85rem', marginBottom: '16px' }}>Orders are fulfilled by your Parent Agent. You earn commission on completed sales.</p>
+            <div className="metal-frame" style={{ marginBottom: '20px' }}>
+              <div className="metal-content" style={{ padding: 'var(--space-6)' }}>
+                <h2 className="metal-text" style={{ fontSize: '1.25rem', marginBottom: 'var(--space-4)', fontFamily: 'var(--font-brand)' }}>Recent Orders Attributed To You</h2>
+                <p style={{ opacity: 0.7, fontSize: '0.85rem', marginBottom: '16px' }}>Orders are fulfilled by your Parent Agent. You earn commission on completed sales.</p>
               {data.recent_orders.length === 0 ? (
                 <div style={{ opacity: 0.75 }}>No Orders Yet. Once Your Researchers Buy, You&apos;ll See Them Here.</div>
               ) : (
@@ -270,6 +254,7 @@ export default function SubAgentDashboardClient({ data, onRefresh }: { data: Ove
                   </tbody>
                 </table>
               )}
+              </div>
             </div>
           </div>
         )}
