@@ -4,8 +4,11 @@ import Link from 'next/link';
 
 export default function HeroSection() {
   return (
-    <section className="hero-bg section" style={{ 
-      minHeight: 'calc(100vh - 64px)',
+    <section className="hero-bg section" style={{
+      // 100dvh (dynamic viewport) is iOS-Safari-safe — 100vh leaks behind
+      // the URL bar and chrome, causing the section to extend past the
+      // viewport and prevent reaching the next section.
+      minHeight: 'calc(100dvh - 64px)',
       display: 'flex', alignItems: 'center',
       position: 'relative', overflow: 'hidden'
     }}>
