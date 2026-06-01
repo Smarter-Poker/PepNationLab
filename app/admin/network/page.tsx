@@ -1,6 +1,7 @@
 import { createClient, createServiceClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
+import ReparentControl from '@/components/admin/ReparentControl';
 
 interface TreeRow {
   id: string;
@@ -42,16 +43,23 @@ export default async function AdminNetworkPage() {
   // Compute aggregated leg GMV (own + descendants) for each node
   const legGmv = new Map<string, number>();
   for (const r of rows) {
-    let n: TreeRow | undefined = r;
-    // Walk up the parent chain, adding own gmv to each ancestor + self
     const idsInPath = r.path.split('/');
     for (const aid of idsInPath) {
       legGmv.set(aid, (legGmv.get(aid) ?? 0) + Number(r.gmv || 0));
     }
-    // Self always includes own
     if (!legGmv.has(r.id)) legGmv.set(r.id, Number(r.gmv || 0));
-    void n;
   }
+
+  // Build a flat list for the ReparentControl picker (agents + super agents only)
+  const reparentOptions = rows
+    .filter((r) => r.role === 'agent' || r.role === 'super_agent')
+    .map((r) => ({
+      id: r.id,
+      name: r.name + (r.username ? ` (@${r.username})` : ''),
+      parent_id: r.parent_id,
+      role: r.role,
+      is_super_agent: r.is_super_agent,
+    }));
 
   return (
     <div style={{ padding: 'var(--space-8)' }}>
@@ -59,11 +67,17 @@ export default async function AdminNetworkPage() {
         <div>
           <h1 style={{ fontSize: '1.6rem', margin: 0 }}>Network Map</h1>
           <p style={{ fontSize: '0.85rem', color: 'var(--grey-400)', marginTop: 6, marginBottom: 0 }}>
-            Agent Downline — Last 30 Days Revenue Per Leg
+            Agent Downline - Last 30 Days Revenue Per Leg
           </p>
         </div>
         <Link href="/admin/agents" style={{ fontSize: '0.85rem', color: 'var(--teal)', textDecoration: 'none' }}>Manage Agents</Link>
       </div>
+
+      {reparentOptions.length > 0 && (
+        <div style={{ marginBottom: 'var(--space-5)' }}>
+          <ReparentControl agents={reparentOptions} />
+        </div>
+      )}
 
       {rows.length === 0 ? (
         <div className="metal-frame">
@@ -111,7 +125,7 @@ export default async function AdminNetworkPage() {
                         {fmtMoney(row.gmv)} <span style={{ fontSize: '0.7rem', color: 'var(--grey-400)', fontWeight: 500 }}>own</span>
                       </span>
                       <span style={{ fontSize: '0.72rem', color: 'var(--grey-400)' }}>
-                        Leg Total: {fmtMoney(leg)}{row.order_count > 0 ? ` · ${row.order_count} Orders` : ''}
+                        Leg Total: {fmtMoney(leg)}{row.order_count > 0 ? ` - ${row.order_count} Orders` : ''}
                       </span>
                     </span>
                   </Link>
