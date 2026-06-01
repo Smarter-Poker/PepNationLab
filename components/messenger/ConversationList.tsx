@@ -50,10 +50,20 @@ export default function ConversationList({ selfId }: Props) {
       const json = (await res.json()) as { conversations?: unknown };
       const list = Array.isArray(json.conversations) ? (json.conversations as never[]) : [];
       setConversations(list);
+      // round-22b: clear activeId when the previously open conversation
+      // is no longer in the new list (admin drilled into a different
+      // sub-tree, etc). Without this, the right pane keeps fetching the
+      // old conversation and the auto-select on width>768 fires
+      // unpredictably.
+      const currentActive = useMessengerStore.getState().activeConversationId;
+      if (currentActive) {
+        const ids = new Set(list.map((c: { conversation_id?: string }) => c.conversation_id));
+        if (!ids.has(currentActive)) setActive(null);
+      }
     } finally {
       setLoading(false);
     }
-  }, [setConversations, setLoading]);
+  }, [setConversations, setLoading, setActive]);
 
   useEffect(() => {
     void fetchConversations(currentParent?.parentId ?? null);

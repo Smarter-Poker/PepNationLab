@@ -96,10 +96,34 @@ export default function MessengerShell({ userId }: Props) {
     return () => { cancelled = true; };
   }, []);
 
+  // round-22b: fetch own role so the realtime allow-list can skip the
+  // downline filter for admins. Without this, the round-22 sidebar
+  // filtering would also suppress push notifications for any message
+  // from a non-downline user the admin DM'd.
+  const [selfRole, setSelfRole] = useState<string | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch('/api/auth/resolve', { method: 'POST', cache: 'no-store' });
+        if (!res.ok) return;
+        const json = (await res.json()) as { role?: string | null };
+        if (!cancelled && typeof json.role === 'string') setSelfRole(json.role);
+      } catch { /* silent */ }
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
   useEffect(() => {
     if (!userId) return;
 
-    const allowConvIds = new Set<string>(conversations.map((c) => c.conversation_id));
+    // round-22b: for admins, pass `undefined` so the subscription
+    // accepts ALL incoming-message broadcasts. Non-admin users still
+    // get the conservative allow-list derived from the visible
+    // conversation list (avoids noise from convs not yet in state).
+    const allowConvIds = selfRole === 'admin'
+      ? undefined
+      : new Set<string>(conversations.map((c) => c.conversation_id));
     const ch = subscribeMyIncomingMessages(
       userId,
       (m: IncomingMessageNotification & { sender_id?: string }) => {
@@ -122,7 +146,7 @@ export default function MessengerShell({ userId }: Props) {
     );
 
     return () => { unsubscribe(ch); };
-  }, [userId, conversations]);
+  }, [userId, conversations, selfRole]);
 
   useEffect(() => {
     let cancelled = false;

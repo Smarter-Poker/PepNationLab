@@ -44,22 +44,19 @@ async function getAdminDownlineIds(
 ): Promise<Set<string>> {
   const ids = new Set<string>();
   if (parentId) {
-    // Drill-down: any profile whose parent OR referring agent is parentId
-    const { data: byParent } = await svc
-      .from('profiles')
-      .select('id')
-      .eq('parent_agent_id', parentId)
-      .eq('is_active', true)
-      .limit(500);
-    for (const r of (byParent ?? []) as { id: string }[]) ids.add(r.id);
-
-    const { data: byReferring } = await svc
-      .from('profiles')
-      .select('id')
-      .eq('referring_agent_id', parentId)
-      .eq('is_active', true)
-      .limit(500);
-    for (const r of (byReferring ?? []) as { id: string }[]) ids.add(r.id);
+    // Drill-down: any profile whose parent agent OR referring agent OR
+    // referring sub-agent is parentId. The third column matters for the
+    // SACA (sub-agent commission attribution) tree — researchers brought
+    // in by a sub-agent set referring_sub_agent_id instead of
+    // referring_agent_id, and would otherwise be invisible in drill-down.
+    const [byParent, byReferring, bySubReferring] = await Promise.all([
+      svc.from('profiles').select('id').eq('parent_agent_id', parentId).eq('is_active', true).limit(500),
+      svc.from('profiles').select('id').eq('referring_agent_id', parentId).eq('is_active', true).limit(500),
+      svc.from('profiles').select('id').eq('referring_sub_agent_id', parentId).eq('is_active', true).limit(500),
+    ]);
+    for (const r of (byParent.data ?? []) as { id: string }[]) ids.add(r.id);
+    for (const r of (byReferring.data ?? []) as { id: string }[]) ids.add(r.id);
+    for (const r of (bySubReferring.data ?? []) as { id: string }[]) ids.add(r.id);
     return ids;
   }
 
@@ -125,16 +122,24 @@ export async function POST(req: NextRequest) {
     const downlineIds = await getAdminDownlineIds(svc, user.id, parentId);
     conversations = conversations.filter((c) => {
       const cp = c.counterparty_id;
-      // Direct DMs only — keep when counterparty is in the downline set.
-      return typeof cp === 'string' && downlineIds.has(cp);
+      const role = (c.counterparty_role ?? '').toString();
+      // round-22 hotfix:
+      // 1) Keep GROUP / non-direct conversations always (counterparty_id
+      //    is null for groups, support threads, etc.). Filtering them
+      //    out would orphan admins from group chats they participate in.
+      const isDirect = (c.type ?? '').toString() === 'direct';
+      if (!isDirect) return true;
+      if (typeof cp !== 'string') return true; // safety: keep when shape unexpected
+      // 2) Keep direct DMs with OTHER ADMINS (escalations / cross-admin
+      //    coordination) regardless of downline set. Other admins are
+      //    peers, not downline.
+      if (role === 'admin') return true;
+      // 3) Otherwise enforce downline scope.
+      return downlineIds.has(cp);
     });
   }
 
-  const res = NextResponse.json({
-    conversations,
-    _scope: me?.role === 'admin' ? (parentId ? 'admin_drill' : 'admin_root') : 'self',
-    _parentId: parentId,
-  });
+  const res = NextResponse.json({ conversations });
   res.headers.set('Cache-Control', 'private, no-store, max-age=0');
   return res;
 }
