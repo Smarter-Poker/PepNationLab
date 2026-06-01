@@ -70,6 +70,19 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  // One account per device. A physical push endpoint can only belong to whoever
+  // is signed in on that device right now. If this same endpoint was previously
+  // registered to a DIFFERENT user (e.g. the device was switched from one
+  // account to another), deactivate those stale rows so calls/messages meant for
+  // the old account never ring this device — which otherwise looks like the two
+  // accounts are "linked".
+  await service
+    .from('push_subscriptions')
+    .update({ is_active: false, last_failure_reason: 'reassigned_to_other_user' })
+    .eq('endpoint', endpoint)
+    .neq('user_id', user.id)
+    .then(() => undefined, () => undefined);
+
   // Auto-flip push_enabled = true so the user does not have to also save the prefs page.
   await service
     .from('notification_preferences')

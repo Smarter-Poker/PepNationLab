@@ -129,6 +129,23 @@ export default function GlobalCallListener() {
   const [incomingCalls, setIncomingCalls] = useState<CallSignalRow[]>([]);
   const [activeCall, setActiveCall] = useState<CallSignalRow | null>(null);
   const activeCallRef = useRef<CallSignalRow | null>(null);
+  // Call id from a tapped push notification (/messenger?call=ID). When that
+  // ringing call surfaces, we auto-accept it so the user lands straight in the
+  // call instead of having to tap Accept again.
+  const autoAcceptIdRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    try {
+      const u = new URL(window.location.href);
+      const cid = u.searchParams.get('call');
+      if (cid) {
+        autoAcceptIdRef.current = cid;
+        // Strip the param so a later refresh doesn't re-trigger auto-accept.
+        u.searchParams.delete('call');
+        window.history.replaceState({}, '', u.pathname + (u.search ? u.search : '') + u.hash);
+      }
+    } catch { /* no-op */ }
+  }, []);
 
   useEffect(() => {
     activeCallRef.current = activeCall;
@@ -300,6 +317,18 @@ export default function GlobalCallListener() {
       console.warn('Failed to broadcast call declined signal:', err);
     });
   }, []);
+
+  // Auto-accept the call the user tapped in a push notification, the moment it
+  // shows up in the incoming list (from the active-calls fetch or realtime).
+  useEffect(() => {
+    const cid = autoAcceptIdRef.current;
+    if (!cid || activeCall) return;
+    const match = incomingCalls.find((c) => c.id === cid && c.status === 'ringing');
+    if (match) {
+      autoAcceptIdRef.current = null;
+      handleAccept(match);
+    }
+  }, [incomingCalls, activeCall, handleAccept]);
 
   const handleClose = useCallback(() => setActiveCall(null), []);
   const handleOverlayAccept = useCallback(() => {
