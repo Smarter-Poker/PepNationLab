@@ -24,6 +24,7 @@ export type PushTypeKey =
   | 'invoice'
   | 'payment_reminder'
   | 'cart_reminder'
+  | 'refill_reminder'
   | 'referral'
   | 'system';
 
@@ -60,6 +61,7 @@ export const PUSH_TYPES: PushTypeDef[] = [
   { key: 'payment_reminder',  group: 'Billing',               label: 'Payment Reminders',   desc: 'An Outstanding Balance Is Due' },
 
   { key: 'cart_reminder',     group: 'Promotions & Updates',  label: 'Cart Reminders',      desc: 'Items Left In Your Cart' },
+  { key: 'refill_reminder',   group: 'Promotions & Updates',  label: 'Refill Reminders',    desc: 'A Reorder Nudge 21 Days After Your Order' },
   { key: 'referral',          group: 'Promotions & Updates',  label: 'Referral Rewards',    desc: 'Referral And Welcome Bonuses' },
   { key: 'system',            group: 'Promotions & Updates',  label: 'Announcements',       desc: 'Product News And System Alerts' },
 ];
