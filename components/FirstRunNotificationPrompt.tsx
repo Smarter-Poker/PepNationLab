@@ -156,22 +156,48 @@ export default function FirstRunNotificationPrompt() {
             />
           </div>
         ) : (
-          <>
-            <h2 style={{ fontSize: '1.3rem', fontWeight: 800, color: 'var(--white)', margin: '0 0 8px' }}>
-              You&apos;re All Set
-            </h2>
-            <p style={{ fontSize: '0.9rem', color: 'var(--silver)', lineHeight: 1.6, margin: '0 0 var(--space-5, 22px)' }}>
-              Notifications Are On For This Device. Next, Finish Setting Up Your Account.
-            </p>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2, 10px)' }}>
-              <Link href={setupHref} onClick={onClose} className="btn btn-primary" style={{ width: '100%', justifyContent: 'center' }}>
-                Finish Setting Up My Account
-              </Link>
-              <button type="button" onClick={onClose} className="btn btn-ghost btn-sm" style={{ width: '100%', justifyContent: 'center', color: 'var(--grey-400)' }}>
-                Done
-              </button>
-            </div>
-          </>
+          <div style={{ position: 'relative', width: '100%', filter: 'drop-shadow(0 20px 40px rgba(0,0,0,0.6))' }}>
+            <img 
+              src="/images/notifications-done-dynamic.png" 
+              alt="You're All Set" 
+              style={{ width: '100%', height: 'auto', display: 'block' }} 
+            />
+            {/* Hitbox for Finish Setting Up My Account */}
+            <Link 
+              href={setupHref} 
+              onClick={onClose} 
+              aria-label="Finish Setting Up My Account"
+              style={{ 
+                position: 'absolute', 
+                top: '59%', 
+                left: '12%', 
+                width: '76%', 
+                height: '14%', 
+                background: 'transparent', 
+                border: 'none', 
+                cursor: 'pointer',
+                outline: 'none',
+                display: 'block',
+              }}
+            />
+            {/* Hitbox for Done */}
+            <button 
+              type="button" 
+              onClick={onClose} 
+              aria-label="Done"
+              style={{ 
+                position: 'absolute', 
+                top: '75%', 
+                left: '12%', 
+                width: '76%', 
+                height: '14%', 
+                background: 'transparent', 
+                border: 'none', 
+                cursor: 'pointer',
+                outline: 'none'
+              }}
+            />
+          </div>
         )}
       </div>
     </div>
