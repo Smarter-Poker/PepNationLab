@@ -46,15 +46,9 @@ export default function NavbarWalletBadge() {
   const isResearcher = data.role === 'researcher';
   const primaryBalance = isResearcher ? data.storeCredit : data.prepaidBalance;
 
-  // Let's link to the appropriate wallet/accounting tab
-  // NOTE: the tab value must be URL-encoded — the raw "Sales & Accounting"
-  // contains an "&" that otherwise terminates the query string, leaving the
-  // dashboard with an invalid tab and a blank panel (the wallet never renders).
   const linkHref = data.role === 'admin'
     ? '/admin'
-    : isResearcher
-    ? `/dashboard?tab=${encodeURIComponent('wallet')}`
-    : `/dashboard/agent?tab=${encodeURIComponent('Sales & Accounting')}`;
+    : '/wallet';
 
   return (
     <Link
