@@ -21,7 +21,7 @@ interface Props {
   reason: string | null;
 }
 
-const TEAL = '#00C4BC';
+const TEAL = '#C0B8A8';
 const SILVER = '#A8B4C0';
 const SURFACE = '#0F1923';
 const SURFACE_2 = '#162230';

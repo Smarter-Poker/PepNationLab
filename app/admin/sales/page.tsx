@@ -192,7 +192,7 @@ export default function AdminSalesPage() {
                     formatter={(value: any) => [`$${Number(value).toFixed(2)}`, 'Revenue']}
                     labelStyle={{ color: 'var(--grey-400)', marginBottom: 4 }}
                   />
-                  <Bar dataKey="total_revenue" fill="#00C4BC" radius={[4, 4, 0, 0]} maxBarSize={72} isAnimationActive={false} />
+                  <Bar dataKey="total_revenue" fill="#C0B8A8" radius={[4, 4, 0, 0]} maxBarSize={72} isAnimationActive={false} />
                 </BarChart>
                 </ResponsiveContainer>
               </div>
