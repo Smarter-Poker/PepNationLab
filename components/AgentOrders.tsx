@@ -588,29 +588,10 @@ export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
                       </button>
                     )}
 
-                    {isPendingApproval && order.fulfillment_method === 'ship' && (
-                      <button
-                        onClick={(e) => { e.stopPropagation(); handleBuyShippingLabel(order.id); }}
-                        className="btn btn-primary pulse-primary"
-                        style={{
-                          fontSize: '0.9rem',
-                          padding: '10px 24px',
-                          fontWeight: 700,
-                          background: 'linear-gradient(180deg, #DCD3C3 0%, #B3A992 100%)',
-                          color: '#0A1018',
-                          border: 'none',
-                          borderRadius: '10px',
-                          textShadow: '0 1px 2px rgba(0,0,0,0.3)',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '8px'
-                        }}
-                        disabled={loadingOrderId === order.id || buyingLabelId === order.id}
-                      >
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="3" width="15" height="13"></rect><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon><circle cx="5.5" cy="18.5" r="2.5"></circle><circle cx="18.5" cy="18.5" r="2.5"></circle></svg>
-                        {buyingLabelId === order.id ? 'Generating...' : 'Buy USPS Label'}
-                      </button>
-                    )}
+                    {/* Buy-label removed: agents no longer purchase labels before
+                        the admin-approval gate. After an admin releases the order to
+                        approved_ship, the label is auto-enqueued (shippo_enqueue_label_job)
+                        and drained by the label-jobs cron, or bought by admin/shipping. */}
                   </div>
                 )}
               </div>
