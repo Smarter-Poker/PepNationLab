@@ -546,6 +546,7 @@ export async function POST(request: NextRequest) {
           p_code: trimmedCouponCode,
           p_agent_id: couponAgentId,
           p_order_subtotal: subtotal,
+          p_buyer_id: user.id,
         });
 
       if (redeemError) {
