@@ -63,6 +63,7 @@ interface Researcher {
   full_name: string | null;
   created_at: string;
   auto_approve_orders?: boolean;
+  last_sign_in_at?: string | null;
 }
 
 interface Order {
@@ -1178,6 +1179,7 @@ export default function AgentDashboardClient({
                         <th style={{ padding: 'var(--space-3) 0', fontWeight: 600 }}>Full Name</th>
                         <th style={{ padding: 'var(--space-3) 0', fontWeight: 600 }}>Credentials</th>
                         <th style={{ padding: 'var(--space-3) 0', fontWeight: 600 }}>Created</th>
+                        <th style={{ padding: 'var(--space-3) 0', fontWeight: 600 }}>Last Logged In</th>
                         <th style={{ padding: 'var(--space-3) 0', fontWeight: 600 }}>Status</th>
                         <th style={{ padding: 'var(--space-3) 0', fontWeight: 600 }}>Auto Approve</th>
                         {userProfile.is_super_agent && (
@@ -1201,6 +1203,9 @@ export default function AgentDashboardClient({
                             </div>
                           </td>
                           <td style={{ padding: 'var(--space-3) 0' }}>{new Date(res.created_at).toLocaleDateString()}</td>
+                          <td style={{ padding: 'var(--space-3) 0', color: res.last_sign_in_at ? 'var(--silver-light)' : 'var(--grey-500)', fontStyle: res.last_sign_in_at ? 'normal' : 'italic' }}>
+                            {res.last_sign_in_at ? new Date(res.last_sign_in_at).toLocaleString(undefined, { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' }) : 'Never Logged In'}
+                          </td>
                           <td style={{ padding: 'var(--space-3) 0' }}>
                             <span className="badge badge-teal" style={{ fontSize: '0.65rem' }}>Active</span>
                           </td>
