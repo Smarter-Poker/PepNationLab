@@ -9,6 +9,7 @@ import {
   isWebPushSupported,
   notificationPermission,
 } from '@/lib/push-client';
+import { PUSH_TYPES, PUSH_GROUPS, pushTypeAllowed } from '@/lib/push-prefs';
 import type { LucideIcon } from 'lucide-react';
 import {
   Package, CheckCircle, Truck, PartyPopper, XCircle, DollarSign, User,
@@ -88,12 +89,73 @@ const SILVER  = 'rgba(192,184,168,0.65)';
 const SURFACE = 'rgba(255,255,255,0.03)';
 const BORDER  = '1px solid rgba(255,255,255,0.08)';
 
+/* iOS-style on/off switch for per-type push toggles. */
+function PushSwitch({
+  checked,
+  disabled,
+  busy,
+  onChange,
+  label,
+}: {
+  checked: boolean;
+  disabled?: boolean;
+  busy?: boolean;
+  onChange: () => void;
+  label: string;
+}) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={checked}
+      aria-label={label}
+      disabled={disabled || busy}
+      onClick={onChange}
+      style={{
+        position: 'relative',
+        width: 46,
+        height: 28,
+        flexShrink: 0,
+        borderRadius: 999,
+        border: 'none',
+        cursor: disabled || busy ? 'not-allowed' : 'pointer',
+        background: checked ? TEAL : 'rgba(255,255,255,0.14)',
+        opacity: disabled ? 0.4 : busy ? 0.7 : 1,
+        transition: 'background 0.2s ease, opacity 0.2s ease',
+        padding: 0,
+      }}
+    >
+      <span
+        style={{
+          position: 'absolute',
+          top: 3,
+          left: checked ? 21 : 3,
+          width: 22,
+          height: 22,
+          borderRadius: '50%',
+          background: checked ? '#0A1018' : '#FFFFFF',
+          transition: 'left 0.2s ease, background 0.2s ease',
+          boxShadow: '0 1px 3px rgba(0,0,0,0.4)',
+        }}
+      />
+    </button>
+  );
+}
+
 /* ==============================================================================
    Notification Center Page
 ============================================================================== */
 import AvatarUpload from '@/components/AvatarUpload';
 
-export default function NotificationCenterClient({ initialPrefs, sessionProfile }: { initialPrefs: Prefs, sessionProfile: any }) {
+export default function NotificationCenterClient({
+  initialPrefs,
+  initialTypeMap,
+  sessionProfile,
+}: {
+  initialPrefs: Prefs;
+  initialTypeMap?: Record<string, boolean>;
+  sessionProfile: any;
+}) {
   const [activeTab, setActiveTab] = useState<'notifications' | 'settings'>('notifications');
 
   /* -- Notifications state ------------------------------------------------ */
@@ -105,6 +167,10 @@ export default function NotificationCenterClient({ initialPrefs, sessionProfile 
   const [prefs, setPrefs]         = useState<Prefs>(initialPrefs);
   const [saving, setSaving]       = useState(false);
   const [saveMsg, setSaveMsg]     = useState<{ text: string; ok: boolean } | null>(null);
+
+  /* -- Per-type push prefs (default-on: only an explicit false opts out) -- */
+  const [typeMap, setTypeMap]     = useState<Record<string, boolean>>(initialTypeMap || {});
+  const [busyTypeKey, setBusyTypeKey] = useState<string | null>(null);
 
   /* -- Push state --------------------------------------------------------- */
   const [pushSupported, setPushSupported] = useState(false);
@@ -154,7 +220,7 @@ export default function NotificationCenterClient({ initialPrefs, sessionProfile 
     setItems(prev => prev.map(n => ({ ...n, read_at: n.read_at ?? new Date().toISOString() })));
   };
 
-  /* -- Save preferences --------------------------------------------------- */
+  /* -- Save preferences (in-app + privacy) -------------------------------- */
   const save = async () => {
     setSaving(true);
     setSaveMsg(null);
@@ -176,6 +242,43 @@ export default function NotificationCenterClient({ initialPrefs, sessionProfile 
     } finally {
       setSaving(false);
       setTimeout(() => setSaveMsg(null), 4000);
+    }
+  };
+
+  /* -- Per-type push instant toggle --------------------------------------- */
+  const isTypeOn = (key: string) => pushTypeAllowed(typeMap, key);
+
+  const toggleType = async (key: string) => {
+    const next = !isTypeOn(key);
+    const prev = typeMap;
+    // Default-on storage: store only opt-outs, so an absent key reads as ON.
+    const optimistic = { ...typeMap };
+    if (next) delete optimistic[key];
+    else optimistic[key] = false;
+    setTypeMap(optimistic);
+    setBusyTypeKey(key);
+    try {
+      const res = await fetch('/api/account/notifications/push-types', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ key, enabled: next }),
+      });
+      if (!res.ok) {
+        setTypeMap(prev);
+        setPushMsg({ text: 'Could Not Save That Toggle. Try Again.', ok: false });
+        setTimeout(() => setPushMsg(null), 3000);
+      } else {
+        const j = await res.json();
+        if (j?.push_type_prefs && typeof j.push_type_prefs === 'object') {
+          setTypeMap(j.push_type_prefs);
+        }
+      }
+    } catch {
+      setTypeMap(prev);
+      setPushMsg({ text: 'Network Error. Try Again.', ok: false });
+      setTimeout(() => setPushMsg(null), 3000);
+    } finally {
+      setBusyTypeKey(null);
     }
   };
 
@@ -233,6 +336,8 @@ export default function NotificationCenterClient({ initialPrefs, sessionProfile 
     { key: 'notifications', label: 'Notifications' },
     { key: 'settings', label: 'Settings' },
   ] as const;
+
+  const typesDisabled = !prefs.push_enabled;
 
   return (
     <div style={{
@@ -482,6 +587,129 @@ export default function NotificationCenterClient({ initialPrefs, sessionProfile 
               />
             </section>
 
+            {/* Browser push master toggle */}
+            <section style={{ background: SURFACE, border: BORDER, borderRadius: 14, padding: '20px 22px' }}>
+              <h2 style={{ fontSize: '1rem', color: 'var(--white)', fontWeight: 700, margin: '0 0 4px' }}>
+                Push Notifications
+              </h2>
+              <p style={{ color: SILVER, fontSize: '0.78rem', marginBottom: 16, marginTop: 4 }}>
+                Receive alerts even when the browser tab is closed or minimized. Turn This On, Then Choose Exactly Which Alerts You Want Below.
+              </p>
+
+              {/* Status */}
+              <div style={{ marginBottom: 14, fontSize: '0.8rem' }}>
+                <span style={{ color: 'var(--white)', fontWeight: 600 }}>Status: </span>
+                {!pushSupported && <span style={{ color: '#00E5FF' }}>Not supported in this browser</span>}
+                {pushSupported && pushPermission === 'default' && <span style={{ color: SILVER }}>Not yet enabled</span>}
+                {pushSupported && pushPermission === 'denied' && <span style={{ color: '#E53E3E' }}>Blocked - check browser settings</span>}
+                {pushSupported && pushPermission === 'granted' && prefs.push_enabled && <span style={{ color: TEAL }}>Active</span>}
+                {pushSupported && pushPermission === 'granted' && !prefs.push_enabled && <span style={{ color: SILVER }}>Granted but disabled</span>}
+              </div>
+
+              {/* Enable/disable buttons */}
+              <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 16 }}>
+                {pushSupported && !prefs.push_enabled && (
+                  <button
+                    onClick={handleEnablePush}
+                    disabled={pushBusy || pushPermission === 'denied'}
+                    style={{
+                      background: TEAL, color: 'var(--black)', border: 'none',
+                      borderRadius: 8, padding: '9px 18px', fontWeight: 700,
+                      fontSize: '0.82rem', cursor: pushBusy ? 'wait' : 'pointer',
+                      opacity: (pushBusy || pushPermission === 'denied') ? 0.5 : 1,
+                    }}
+                  >
+                    {pushBusy ? 'Working...' : 'Enable Push Notifications'}
+                  </button>
+                )}
+                {pushSupported && prefs.push_enabled && (
+                  <>
+                    <button
+                      onClick={handleDisablePush}
+                      disabled={pushBusy}
+                      style={{
+                        background: 'transparent', color: 'var(--white)',
+                        border: '1px solid rgba(255,255,255,0.2)', borderRadius: 8,
+                        padding: '9px 18px', fontWeight: 600, fontSize: '0.82rem',
+                        cursor: pushBusy ? 'wait' : 'pointer', opacity: pushBusy ? 0.5 : 1,
+                      }}
+                    >
+                      {pushBusy ? 'Working...' : 'Disable Push'}
+                    </button>
+                    <button
+                      onClick={handleTestPush}
+                      disabled={pushBusy}
+                      style={{
+                        background: 'transparent', color: TEAL,
+                        border: `1px solid ${TEAL}`, borderRadius: 8,
+                        padding: '9px 18px', fontWeight: 600, fontSize: '0.82rem',
+                        cursor: pushBusy ? 'wait' : 'pointer', opacity: pushBusy ? 0.5 : 1,
+                      }}
+                    >
+                      Send Test Push
+                    </button>
+                  </>
+                )}
+              </div>
+              {pushMsg && (
+                <div style={{ fontSize: '0.78rem', color: pushMsg.ok ? TEAL : '#E53E3E' }}>
+                  {pushMsg.text}
+                </div>
+              )}
+            </section>
+
+            {/* Per-type push controls — every notification, by category */}
+            <section style={{ background: SURFACE, border: BORDER, borderRadius: 14, padding: '20px 22px' }}>
+              <h2 style={{ fontSize: '1rem', color: 'var(--white)', fontWeight: 700, margin: '0 0 4px' }}>
+                Choose Which Alerts You Receive
+              </h2>
+              <p style={{ color: SILVER, fontSize: '0.78rem', marginBottom: 4, marginTop: 4 }}>
+                Turn Any Notification On Or Off. Organized By Category. Changes Save Automatically.
+              </p>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 14, marginTop: 14, opacity: typesDisabled ? 0.55 : 1, transition: 'opacity 0.2s' }}>
+                {PUSH_GROUPS.map((group) => {
+                  const rows = PUSH_TYPES.filter((t) => t.group === group);
+                  if (rows.length === 0) return null;
+                  return (
+                    <div key={group}>
+                      <h3 style={{ fontSize: '0.72rem', fontWeight: 700, color: TEAL, textTransform: 'uppercase', letterSpacing: '0.06em', margin: '0 0 2px' }}>
+                        {group}
+                      </h3>
+                      {rows.map((row, i) => (
+                        <div
+                          key={row.key}
+                          style={{
+                            display: 'flex', alignItems: 'center', gap: 14,
+                            padding: '12px 0',
+                            borderTop: i === 0 ? 'none' : '1px solid rgba(255,255,255,0.05)',
+                          }}
+                        >
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ color: 'var(--white)', fontSize: '0.87rem', fontWeight: 500 }}>{row.label}</div>
+                            <div style={{ color: SILVER, fontSize: '0.73rem', marginTop: 2 }}>{row.desc}</div>
+                          </div>
+                          <PushSwitch
+                            label={row.label}
+                            checked={isTypeOn(row.key)}
+                            busy={busyTypeKey === row.key}
+                            disabled={typesDisabled}
+                            onChange={() => toggleType(row.key)}
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  );
+                })}
+              </div>
+
+              {typesDisabled && pushSupported && pushPermission !== 'denied' && (
+                <p style={{ color: SILVER, fontSize: '0.76rem', marginTop: 14 }}>
+                  Turn On Push Notifications Above To Customize These Individual Alerts.
+                </p>
+              )}
+            </section>
+
             {/* In-app event prefs */}
             <section style={{ background: SURFACE, border: BORDER, borderRadius: 14, padding: '20px 22px' }}>
               <h2 style={{ fontSize: '1rem', color: 'var(--white)', fontWeight: 700, margin: '0 0 4px' }}>
@@ -551,104 +779,7 @@ export default function NotificationCenterClient({ initialPrefs, sessionProfile 
               </label>
             </section>
 
-            {/* Browser push */}
-            <section style={{ background: SURFACE, border: BORDER, borderRadius: 14, padding: '20px 22px' }}>
-              <h2 style={{ fontSize: '1rem', color: 'var(--white)', fontWeight: 700, margin: '0 0 4px' }}>
-                Browser Push Notifications
-              </h2>
-              <p style={{ color: SILVER, fontSize: '0.78rem', marginBottom: 16, marginTop: 4 }}>
-                Receive alerts even when the browser tab is closed or minimized.
-              </p>
-
-              {/* Status */}
-              <div style={{ marginBottom: 14, fontSize: '0.8rem' }}>
-                <span style={{ color: 'var(--white)', fontWeight: 600 }}>Status: </span>
-                {!pushSupported && <span style={{ color: '#00E5FF' }}>Not supported in this browser</span>}
-                {pushSupported && pushPermission === 'default' && <span style={{ color: SILVER }}>Not yet enabled</span>}
-                {pushSupported && pushPermission === 'denied' && <span style={{ color: '#E53E3E' }}>Blocked - check browser settings</span>}
-                {pushSupported && pushPermission === 'granted' && prefs.push_enabled && <span style={{ color: TEAL }}>Active</span>}
-                {pushSupported && pushPermission === 'granted' && !prefs.push_enabled && <span style={{ color: SILVER }}>Granted but disabled</span>}
-              </div>
-
-              {/* Enable/disable buttons */}
-              <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 16 }}>
-                {pushSupported && !prefs.push_enabled && (
-                  <button
-                    onClick={handleEnablePush}
-                    disabled={pushBusy || pushPermission === 'denied'}
-                    style={{
-                      background: TEAL, color: 'var(--black)', border: 'none',
-                      borderRadius: 8, padding: '9px 18px', fontWeight: 700,
-                      fontSize: '0.82rem', cursor: pushBusy ? 'wait' : 'pointer',
-                      opacity: (pushBusy || pushPermission === 'denied') ? 0.5 : 1,
-                    }}
-                  >
-                    {pushBusy ? 'Working...' : 'Enable Push Notifications'}
-                  </button>
-                )}
-                {pushSupported && prefs.push_enabled && (
-                  <>
-                    <button
-                      onClick={handleDisablePush}
-                      disabled={pushBusy}
-                      style={{
-                        background: 'transparent', color: 'var(--white)',
-                        border: '1px solid rgba(255,255,255,0.2)', borderRadius: 8,
-                        padding: '9px 18px', fontWeight: 600, fontSize: '0.82rem',
-                        cursor: pushBusy ? 'wait' : 'pointer', opacity: pushBusy ? 0.5 : 1,
-                      }}
-                    >
-                      {pushBusy ? 'Working...' : 'Disable Push'}
-                    </button>
-                    <button
-                      onClick={handleTestPush}
-                      disabled={pushBusy}
-                      style={{
-                        background: 'transparent', color: TEAL,
-                        border: `1px solid ${TEAL}`, borderRadius: 8,
-                        padding: '9px 18px', fontWeight: 600, fontSize: '0.82rem',
-                        cursor: pushBusy ? 'wait' : 'pointer', opacity: pushBusy ? 0.5 : 1,
-                      }}
-                    >
-                      Send Test Push
-                    </button>
-                  </>
-                )}
-              </div>
-              {pushMsg && (
-                <div style={{ fontSize: '0.78rem', color: pushMsg.ok ? TEAL : '#E53E3E', marginBottom: 12 }}>
-                  {pushMsg.text}
-                </div>
-              )}
-
-              {/* Per-type push controls live on the dedicated Notification
-                  Preferences page, which is the single source of truth for
-                  which push types are delivered. The old coarse order/messages/
-                  marketing bucket checkboxes were removed to avoid two competing
-                  controls (the buckets no longer gate delivery). */}
-              {prefs.push_enabled && (
-                <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: 14 }}>
-                  <h3 style={{ fontSize: '0.85rem', color: 'var(--white)', fontWeight: 600, marginBottom: 6 }}>
-                    Choose Which Alerts You Receive
-                  </h3>
-                  <p style={{ fontSize: '0.78rem', color: 'rgba(192,184,168,0.65)', margin: '0 0 12px' }}>
-                    Turn Individual Push Notifications On Or Off On The Notification Preferences Page.
-                  </p>
-                  <Link
-                    href="/account/notification-preferences"
-                    style={{
-                      display: 'inline-block', background: 'transparent', color: TEAL,
-                      border: `1px solid ${TEAL}`, borderRadius: 8, padding: '9px 18px',
-                      fontWeight: 600, fontSize: '0.82rem', textDecoration: 'none',
-                    }}
-                  >
-                    Manage Notification Preferences
-                  </Link>
-                </div>
-              )}
-            </section>
-
-            {/* Save button */}
+            {/* Save button (in-app + privacy prefs; per-type push saves instantly) */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
               <button
                 onClick={save}
