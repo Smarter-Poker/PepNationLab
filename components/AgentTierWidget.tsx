@@ -90,10 +90,9 @@ export default function AgentTierWidget() {
   const isSub = comm?.enabled && comm.applicable;
 
   return (
-    <div className="card-metal hover-lift" style={{ padding: 'var(--space-6)', marginBottom: 'var(--space-6)' }}>
+    <div className="metal-frame" style={{ marginBottom: 'var(--space-6)' }}>
+      <div className="metal-content" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)', padding: 'var(--space-6)' }}>
       {isSub ? (
-        /* ── Sub-agent commission mini-ladder ── */
-        <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 'var(--space-6)' }}>
           <ProgressRing
             progress={comm!.cap_pct && comm!.cap_pct > 0 ? (comm!.effective_pct ?? 0) / comm!.cap_pct : 1}
             label={`${comm!.effective_pct ?? 0}%`}
@@ -152,6 +151,7 @@ export default function AgentTierWidget() {
           </div>
         </div>
       )}
+      </div>
     </div>
   );
 }
