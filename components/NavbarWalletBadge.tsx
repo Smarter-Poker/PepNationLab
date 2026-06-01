@@ -70,7 +70,7 @@ export default function NavbarWalletBadge() {
       onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
       title="View Wallet & Accounting"
     >
-      <img src="/nav-icons/wallet-icon.png" alt="Wallet" width={42} height={42} style={{ display: 'block' }} />
+      <img src="/nav-icons/wallet-icon.png" alt="Wallet" width={84} height={84} style={{ display: 'block' }} />
       <span style={{ 
         color: 'var(--teal)', 
         fontWeight: 800, 
