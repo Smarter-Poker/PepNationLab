@@ -364,7 +364,6 @@ export default function Navbar({ onMenuClick, isOpen, title }: { onMenuClick?: (
               </Link>
               <div
                 style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', cursor: 'pointer', position: 'relative', left: -2 }}
-                onClick={() => setDrawerOpen(o => !o)}
                 title={displayName}
               >
                 <NavbarWalletBadge />
