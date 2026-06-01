@@ -383,7 +383,7 @@ export async function notifyPromotedToAgent(
   await notify(supabase, {
     userId: newAgentId,
     type: 'system',
-    title: 'You\\'ve Been Promoted to Sub-Agent!',
+    title: 'You Have Been Promoted To Sub-Agent!',
     body: `${superAgentName} has promoted you to Sub-Agent. Your storefront is now live at /${agentSlug}.`,
     url: `/${agentSlug}`,
   });
