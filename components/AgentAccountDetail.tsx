@@ -360,6 +360,9 @@ export default function AgentAccountDetail({
                   <div>
                     <label style={labelStyle}>Commission Rate (%)</label>
                     <input style={inputStyle} type="number" min="0" max="100" step="0.1" value={commissionPct} onChange={(e) => setCommissionPct(e.target.value)} placeholder="0" />
+                    <p style={{ fontSize: '0.7rem', color: 'var(--grey-500)', margin: '4px 0 0', lineHeight: 1.4 }}>
+                      Applies When This Agent Earns Commission Within A Downline. A Full Storefront Agent's Margin Comes From Their Own Retail Pricing.
+                    </p>
                   </div>
                 </div>
 
@@ -373,22 +376,30 @@ export default function AgentAccountDetail({
               {/* Give credit */}
               <div className="metal-embossed-panel" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
                 <h3 className="metal-text" style={{ fontSize: '1rem', margin: 0, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Give Wallet Credit</h3>
-                <p style={{ fontSize: '0.8rem', color: 'var(--grey-400)', margin: 0 }}>
-                  Adds Funds To This Agent's Prepaid Wallet. Recorded In Their Ledger Below.
-                </p>
-                <form onSubmit={giveCredit} style={{ display: 'flex', gap: 'var(--space-3)', flexWrap: 'wrap', alignItems: 'flex-end' }}>
-                  <div style={{ flex: '0 0 140px' }}>
-                    <label style={labelStyle}>Amount ($)</label>
-                    <input style={inputStyle} type="number" min="0.01" step="0.01" value={creditAmount} onChange={(e) => setCreditAmount(e.target.value)} placeholder="0.00" />
-                  </div>
-                  <div style={{ flex: '1 1 200px' }}>
-                    <label style={labelStyle}>Note (Optional)</label>
-                    <input style={inputStyle} value={creditNote} onChange={(e) => setCreditNote(e.target.value)} placeholder="E.g., Weekly Bonus" maxLength={200} />
-                  </div>
-                  <button type="submit" className="btn-neon-cyan" disabled={crediting}>
-                    {crediting ? 'Crediting...' : 'Give Credit'}
-                  </button>
-                </form>
+                {detail.agent.account_type === 'credit' ? (
+                  <p style={{ fontSize: '0.8rem', color: 'var(--grey-400)', margin: 0, lineHeight: 1.5 }}>
+                    This Agent Is On A Credit Line. Wallet Credit Applies Only To Prepaid Accounts. To Increase Their Capacity, Raise The Credit Limit Above.
+                  </p>
+                ) : (
+                  <>
+                    <p style={{ fontSize: '0.8rem', color: 'var(--grey-400)', margin: 0 }}>
+                      Adds Funds To This Agent's Prepaid Wallet. Recorded In Their Ledger Below.
+                    </p>
+                    <form onSubmit={giveCredit} style={{ display: 'flex', gap: 'var(--space-3)', flexWrap: 'wrap', alignItems: 'flex-end' }}>
+                      <div style={{ flex: '0 0 140px' }}>
+                        <label style={labelStyle}>Amount ($)</label>
+                        <input style={inputStyle} type="number" min="0.01" step="0.01" value={creditAmount} onChange={(e) => setCreditAmount(e.target.value)} placeholder="0.00" />
+                      </div>
+                      <div style={{ flex: '1 1 200px' }}>
+                        <label style={labelStyle}>Note (Optional)</label>
+                        <input style={inputStyle} value={creditNote} onChange={(e) => setCreditNote(e.target.value)} placeholder="E.g., Weekly Bonus" maxLength={200} />
+                      </div>
+                      <button type="submit" className="btn-neon-cyan" disabled={crediting}>
+                        {crediting ? 'Crediting...' : 'Give Credit'}
+                      </button>
+                    </form>
+                  </>
+                )}
               </div>
 
               {/* Sales history */}

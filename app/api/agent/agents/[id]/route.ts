@@ -85,21 +85,18 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ id: string
       .order('created_at', { ascending: false })
       .limit(30);
 
-    // Sales history: this agent's storefront orders.
-    const { data: orderRows } = await supabase
+    // Sales summary via aggregate RPC — accurate across the agent's full order
+    // history (the previous 500-row page-sum under-counted high-volume agents).
+    const { data: summaryRows } = await supabase.rpc('agent_sales_summary', { p_agent_id: id });
+    const summary = Array.isArray(summaryRows) ? summaryRows[0] : summaryRows;
+
+    // Recent orders (latest 12) for the activity list.
+    const { data: recentRows } = await supabase
       .from('orders')
-      .select('id, status, total, created_at, buyer_name, buyer_email, payment_method')
+      .select('id, status, total, created_at, buyer_name, payment_method')
       .eq('agent_id', id)
       .order('created_at', { ascending: false })
-      .limit(500);
-
-    const orders = orderRows ?? [];
-    const nonCancelled = orders.filter((o) => o.status !== 'cancelled');
-    const grossTotal = nonCancelled.reduce((acc, o) => acc + num(o.total), 0);
-    const since30 = Date.now() - 30 * 24 * 60 * 60 * 1000;
-    const last30Total = nonCancelled
-      .filter((o) => new Date(o.created_at as string).getTime() >= since30)
-      .reduce((acc, o) => acc + num(o.total), 0);
+      .limit(12);
 
     // Sub-Agents of this agent
     const { data: subAgentsRows } = await supabase
@@ -138,11 +135,11 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ id: string
         created_at: r.created_at,
       })),
       sales: {
-        ordersCount: orders.length,
-        nonCancelledCount: nonCancelled.length,
-        grossTotal: Math.round(grossTotal * 100) / 100,
-        last30Total: Math.round(last30Total * 100) / 100,
-        recent: orders.slice(0, 12).map((o) => ({
+        ordersCount: num(summary?.orders_count),
+        nonCancelledCount: num(summary?.noncancelled_count),
+        grossTotal: Math.round(num(summary?.gross_total) * 100) / 100,
+        last30Total: Math.round(num(summary?.last30_total) * 100) / 100,
+        recent: (recentRows ?? []).map((o) => ({
           id: o.id,
           status: o.status,
           total: num(o.total),
@@ -233,7 +230,26 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
       changes.is_active = body.is_active;
     }
 
-    if (Object.keys(updates).length === 0 && body.display_name === undefined) {
+    // Validate + de-duplicate the storefront slug up front so we fail fast
+    // (before any write) on a collision instead of silently swallowing it.
+    let slugToSet: string | null = null;
+    if (typeof body.slug === 'string' && body.slug.trim()) {
+      const parsedSlug = body.slug.trim().toLowerCase().replace(/[^a-z0-9\-]/g, '');
+      if (parsedSlug) {
+        const { data: clash } = await supabase
+          .from('agent_profiles')
+          .select('id')
+          .eq('slug', parsedSlug)
+          .neq('id', id)
+          .maybeSingle();
+        if (clash) {
+          return NextResponse.json({ error: 'That Storefront Slug Is Already Taken.' }, { status: 409 });
+        }
+        slugToSet = parsedSlug;
+      }
+    }
+
+    if (Object.keys(updates).length === 0 && body.display_name === undefined && slugToSet === null) {
       return NextResponse.json({ error: 'No Changes Provided.' }, { status: 400 });
     }
 
@@ -253,15 +269,16 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
       storefrontUpdate.display_name = body.display_name.trim();
       changes.display_name = storefrontUpdate.display_name;
     }
-    if (typeof body.slug === 'string' && body.slug.trim()) {
-      const parsedSlug = body.slug.trim().toLowerCase().replace(/[^a-z0-9\-]/g, '');
-      if (parsedSlug) {
-        storefrontUpdate.slug = parsedSlug;
-        changes.slug = parsedSlug;
-      }
+    if (slugToSet) {
+      storefrontUpdate.slug = slugToSet;
+      changes.slug = slugToSet;
     }
     if (Object.keys(storefrontUpdate).length > 0) {
-      await supabase.from('agent_profiles').update(storefrontUpdate).eq('id', id);
+      const { error: sfErr } = await supabase.from('agent_profiles').update(storefrontUpdate).eq('id', id);
+      if (sfErr) {
+        console.error('[PATCH agent] storefront update error:', sfErr);
+        return NextResponse.json({ error: 'Failed To Update Storefront.' }, { status: 500 });
+      }
     }
 
     // Audit (best-effort).

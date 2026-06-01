@@ -197,6 +197,31 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'An unexpected error occurred saving storefront.' }, { status: 500 });
     }
 
+    // Auto-provision Agent Products with 20% markup on Tier 1
+    try {
+      const { data: tier1 } = await supabase.from('pricing_tiers').select('multiplier').eq('tier_name', 'tier_1').single();
+      const { data: products } = await supabase.from('products').select('id, base_cost').eq('is_active', true);
+      
+      if (tier1 && products && products.length > 0) {
+        const agentMultiplier = (Number(tier1.multiplier) || 1.3) * 1.2;
+        const agentProductsToInsert = products.map((p) => {
+          const retailPrice = Math.round((Number(p.base_cost) * agentMultiplier) * 100) / 100;
+          return {
+            agent_id: userId,
+            product_id: p.id,
+            retail_price: retailPrice,
+            margin_percent: 50,
+            is_visible: true,
+            sort_order: 0
+          };
+        });
+        await supabase.from('agent_products').insert(agentProductsToInsert);
+      }
+    } catch (provisionErr) {
+      console.error('Failed to auto-provision agent products:', provisionErr);
+      // Non-fatal, agent account still created
+    }
+
     return NextResponse.json({ success: true, userId, username: usernameClean, role: 'Agent Account' });
   } catch (error) {
     console.error('[POST create-agent] unexpected error:', error);
