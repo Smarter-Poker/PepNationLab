@@ -174,28 +174,23 @@ export default function AgentInventory({ agentId }: { agentId: string }) {
           backgroundColor: 'rgba(0,0,0,0.85)', zIndex: 9999,
           display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 'var(--space-4)'
         }}>
-          <div className="metal-frame" style={{ maxWidth: 500, width: '100%' }}>
-            <div className="metal-content" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12, color: 'var(--teal)' }}>
-                <AlertTriangle size={24} />
-                <h3 style={{ fontSize: '1.2rem', margin: 0, color: 'var(--white)' }}>Important Warning</h3>
-              </div>
-              <p style={{ fontSize: '0.9rem', color: 'var(--white)', lineHeight: 1.5 }}>
-                Before You Adjust Any Of These Numbers, This Page Is For Agents
-                That Have <strong>In-Stock Inventory That They Want To List For Sale.</strong>
-                <br /><br />
-                Do Not Adjust These Numbers Unless You Have Them Available
-                Today To Sell. This Will Take Priority Over What's Currently Listed
-              </p>
-              <button 
-                className="btn-silver" 
-                style={{ alignSelf: 'flex-end', marginTop: 'var(--space-2)' }}
-                onClick={() => setShowWarningModal(false)}
-              >
-                I Understand
-              </button>
-            </div>
-          </div>
+          <button 
+            type="button" 
+            onClick={() => setShowWarningModal(false)}
+            style={{ 
+              background: 'transparent', border: 'none', padding: 0, 
+              cursor: 'pointer', maxWidth: 650, width: '100%',
+              transition: 'transform 0.2s ease', 
+            }}
+            onMouseOver={(e) => e.currentTarget.style.transform = 'scale(1.02)'}
+            onMouseOut={(e) => e.currentTarget.style.transform = 'scale(1)'}
+          >
+            <img 
+              src="/images/inventory-warning.png" 
+              alt="Important Warning: In-Stock Inventory Priority" 
+              style={{ width: '100%', height: 'auto', display: 'block' }} 
+            />
+          </button>
         </div>
       )}
 
