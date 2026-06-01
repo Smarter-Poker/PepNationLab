@@ -444,17 +444,17 @@ export default function AgentStoreProducts({ agentId }: { agentId: string }) {
                       </div>
                     </form>
                   ) : (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)' }}>
+                    <div style={{ display: 'flex', alignItems: 'flex-start', gap: 'var(--space-4)' }}>
                       {/* Reorder Arrows */}
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 2, paddingTop: 6 }}>
                         <button onClick={() => moveProduct(p.id, 'up')} disabled={reordering} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 2, fontSize: '0.7rem', color: 'rgba(255,255,255,0.4)', lineHeight: 1 }} title="Move Up">▲</button>
                         <button onClick={() => moveProduct(p.id, 'down')} disabled={reordering} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 2, fontSize: '0.7rem', color: 'rgba(255,255,255,0.4)', lineHeight: 1 }} title="Move Down">▼</button>
                       </div>
-                      {/* Product Image */}
+                      {/* Product Image — larger so the peptide vial is actually visible */}
                       <img
                         src={p.custom_image_url || p.products.image_url || '/images/peptide_clear.png'}
                         alt={displayName}
-                        style={{ width: 44, height: 44, borderRadius: 6, objectFit: 'cover', background: 'rgba(0,0,0,0.5)', border: '1px solid rgba(255,255,255,0.1)' }}
+                        style={{ width: 80, height: 80, borderRadius: 8, objectFit: 'cover', background: 'rgba(0,0,0,0.5)', border: '1px solid rgba(255,255,255,0.1)', flexShrink: 0 }}
                       />
                       {/* Product Info */}
                       <div style={{ flex: 1, minWidth: 0 }}>
@@ -491,16 +491,24 @@ export default function AgentStoreProducts({ agentId }: { agentId: string }) {
                           )}
                         </div>
                       </div>
-                      {/* Toggle Switch */}
-                      <button
-                        onClick={() => toggleVisibility(p)}
-                        style={{ width: 44, height: 24, borderRadius: 12, border: 'none', cursor: 'pointer', position: 'relative', transition: 'background 0.2s', background: p.is_visible ? '#00E5FF' : 'rgba(255,255,255,0.1)' }}
-                        title={p.is_visible ? 'Click To Hide' : 'Click To Show'}
-                      >
-                        <div style={{ width: 18, height: 18, borderRadius: '50%', background: '#fff', position: 'absolute', top: 3, transition: 'left 0.2s', left: p.is_visible ? 23 : 3, boxShadow: '0 1px 3px rgba(0,0,0,0.3)' }} />
-                      </button>
-                      {/* Edit Button */}
-                      <button onClick={() => handleEdit(p)} className="btn-silver" style={{ padding: '6px 14px', fontSize: '0.75rem' }}>Edit</button>
+                      {/* Right-stack: Edit on top, true on/off toggle below.
+                          Both anchored to the upper-right corner of the card. */}
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 8, flexShrink: 0 }}>
+                        <button onClick={() => handleEdit(p)} className="btn-silver" style={{ padding: '6px 14px', fontSize: '0.75rem', minWidth: 64 }}>Edit</button>
+                        <button
+                          onClick={() => toggleVisibility(p)}
+                          style={{ width: 52, height: 28, borderRadius: 14, border: '1px solid rgba(0,0,0,0.45)', cursor: 'pointer', position: 'relative', transition: 'background 0.2s', background: p.is_visible ? '#00E5FF' : 'rgba(255,255,255,0.12)', boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.45)' }}
+                          title={p.is_visible ? 'On — Tap To Hide' : 'Off — Tap To Show'}
+                          aria-label={p.is_visible ? 'Visibility On' : 'Visibility Off'}
+                          aria-pressed={p.is_visible}
+                          role="switch"
+                        >
+                          <span style={{ position: 'absolute', top: 4, left: p.is_visible ? 27 : 4, width: 20, height: 20, borderRadius: '50%', background: '#fff', transition: 'left 0.2s', boxShadow: '0 1px 3px rgba(0,0,0,0.5)' }} />
+                          <span style={{ position: 'absolute', top: 5, left: p.is_visible ? 8 : 28, fontSize: '0.55rem', fontWeight: 800, color: p.is_visible ? '#063A47' : 'rgba(255,255,255,0.6)', letterSpacing: '0.04em', pointerEvents: 'none' }}>
+                            {p.is_visible ? 'ON' : 'OFF'}
+                          </span>
+                        </button>
+                      </div>
                     </div>
                   )}
                 </div>
@@ -645,12 +653,12 @@ export default function AgentStoreProducts({ agentId }: { agentId: string }) {
                             </div>
                           </form>
                         ) : (
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)' }}>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                          <div style={{ display: 'flex', alignItems: 'flex-start', gap: 'var(--space-4)' }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 2, paddingTop: 6 }}>
                               <button onClick={() => moveProduct(p.id, 'up')} disabled={reordering} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 2, fontSize: '0.7rem', color: 'rgba(255,255,255,0.4)', lineHeight: 1 }} title="Move Up">▲</button>
                               <button onClick={() => moveProduct(p.id, 'down')} disabled={reordering} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 2, fontSize: '0.7rem', color: 'rgba(255,255,255,0.4)', lineHeight: 1 }} title="Move Down">▼</button>
                             </div>
-                            <img src={p.custom_image_url || p.products.image_url || '/images/peptide_clear.png'} alt={displayName} style={{ width: 44, height: 44, borderRadius: 6, objectFit: 'cover', background: 'rgba(0,0,0,0.5)', border: '1px solid rgba(255,255,255,0.1)' }} />
+                            <img src={p.custom_image_url || p.products.image_url || '/images/peptide_clear.png'} alt={displayName} style={{ width: 80, height: 80, borderRadius: 8, objectFit: 'cover', background: 'rgba(0,0,0,0.5)', border: '1px solid rgba(255,255,255,0.1)', flexShrink: 0 }} />
                             <div style={{ flex: 1, minWidth: 0 }}>
                               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
                                 <span style={{ fontSize: '0.95rem', fontWeight: 700, color: '#fff' }}>{displayName}</span>
@@ -678,10 +686,22 @@ export default function AgentStoreProducts({ agentId }: { agentId: string }) {
                                 )}
                               </div>
                             </div>
-                            <button onClick={() => toggleVisibility(p)} style={{ width: 44, height: 24, borderRadius: 12, border: 'none', cursor: 'pointer', position: 'relative', transition: 'background 0.2s', background: p.is_visible ? '#00E5FF' : 'rgba(255,255,255,0.1)' }} title={p.is_visible ? 'Click To Hide' : 'Click To Show'}>
-                              <div style={{ width: 18, height: 18, borderRadius: '50%', background: '#fff', position: 'absolute', top: 3, transition: 'left 0.2s', left: p.is_visible ? 23 : 3, boxShadow: '0 1px 3px rgba(0,0,0,0.3)' }} />
-                            </button>
-                            <button onClick={() => handleEdit(p)} className="btn-silver" style={{ padding: '6px 14px', fontSize: '0.75rem' }}>Edit</button>
+                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 8, flexShrink: 0 }}>
+                              <button onClick={() => handleEdit(p)} className="btn-silver" style={{ padding: '6px 14px', fontSize: '0.75rem', minWidth: 64 }}>Edit</button>
+                              <button
+                                onClick={() => toggleVisibility(p)}
+                                style={{ width: 52, height: 28, borderRadius: 14, border: '1px solid rgba(0,0,0,0.45)', cursor: 'pointer', position: 'relative', transition: 'background 0.2s', background: p.is_visible ? '#00E5FF' : 'rgba(255,255,255,0.12)', boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.45)' }}
+                                title={p.is_visible ? 'On — Tap To Hide' : 'Off — Tap To Show'}
+                                aria-label={p.is_visible ? 'Visibility On' : 'Visibility Off'}
+                                aria-pressed={p.is_visible}
+                                role="switch"
+                              >
+                                <span style={{ position: 'absolute', top: 4, left: p.is_visible ? 27 : 4, width: 20, height: 20, borderRadius: '50%', background: '#fff', transition: 'left 0.2s', boxShadow: '0 1px 3px rgba(0,0,0,0.5)' }} />
+                                <span style={{ position: 'absolute', top: 5, left: p.is_visible ? 8 : 28, fontSize: '0.55rem', fontWeight: 800, color: p.is_visible ? '#063A47' : 'rgba(255,255,255,0.6)', letterSpacing: '0.04em', pointerEvents: 'none' }}>
+                                  {p.is_visible ? 'ON' : 'OFF'}
+                                </span>
+                              </button>
+                            </div>
                           </div>
                         )}
                       </div>

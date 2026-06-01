@@ -114,5 +114,21 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
   }
 
+  // Audit log: the shipping team's status changes were previously untracked,
+  // so admins had no record of who shipped what or when. Record it now.
+  try {
+    await serviceClient.from('admin_audit_log').insert({
+      actor_id: user.id,
+      action: 'order_shipping_updated',
+      entity_type: 'order',
+      entity_id: order_id,
+      changes: {
+        shipping_action: action,
+        status: updateData.status ?? null,
+        ...(tracking_number ? { tracking_number } : {}),
+      },
+    });
+  } catch { /* audit failure must not break the shipping response */ }
+
   return NextResponse.json({ data, message: 'Order updated successfully' });
 }

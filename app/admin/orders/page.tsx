@@ -22,6 +22,7 @@ interface Order {
   status:
     | "pending_customer_payment"
     | "agent_approval_pending"
+    | "admin_approval_pending"
     | "approved_ship"
     | "approved_pickup"
     | "in_fulfillment"
@@ -57,6 +58,7 @@ interface OrderItem {
 const STATUS_LABELS: Record<string, string> = {
   pending_customer_payment: "Pending Payment",
   agent_approval_pending: "Agent Approval Pending",
+  admin_approval_pending: "Admin Approval Pending",
   approved_ship: "Approved — Ship",
   approved_pickup: "Approved — Pickup",
   in_fulfillment: "In Fulfillment",
@@ -68,6 +70,7 @@ const STATUS_LABELS: Record<string, string> = {
 const STATUS_COLORS: Record<string, string> = {
   pending_customer_payment: "var(--red)",
   agent_approval_pending: "#00E5FF",
+  admin_approval_pending: "var(--red)",
   approved_ship: "#00E5FF",
   approved_pickup: "#00E5FF",
   in_fulfillment: "var(--teal)",
@@ -547,6 +550,9 @@ function AdminOrdersPageInner() {
                 </option>
                 <option value="agent_approval_pending">
                   Agent Approval Pending
+                </option>
+                <option value="admin_approval_pending">
+                  Admin Approval Pending
                 </option>
                 <option value="approved_ship">Approved Ship</option>
                 <option value="approved_pickup">Approved Pickup</option>

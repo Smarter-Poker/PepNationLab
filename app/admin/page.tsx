@@ -81,6 +81,14 @@ export default async function AdminDashboard() {
       icon: <svg {...ICON_PROPS}><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" /></svg>,
     },
     {
+      label: 'Awaiting My Approval',
+      value: String(metrics.awaitingAdminApproval),
+      sub: 'Agent-Approved, Needs Admin Release',
+      href: '/admin/orders?status=admin_approval_pending',
+      color: metrics.awaitingAdminApproval > 0 ? 'var(--red)' : 'var(--grey-400)',
+      icon: <svg {...ICON_PROPS}><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" /><polyline points="22 4 12 14.01 9 11.01" /></svg>,
+    },
+    {
       label: 'Ready To Ship',
       value: String(metrics.readyToShip),
       sub: 'Approved, Awaiting Label',

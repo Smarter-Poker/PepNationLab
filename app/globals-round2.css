@@ -627,6 +627,114 @@ body > * {
 }
 
 /* ============================================================
+   ROUND 8 — NAV NORMALIZATION + MESSENGER FULL-FIT
+   ------------------------------------------------------------
+   1. Round 7 over-shrunk the Dashboard icon (56px / 48px) which
+      left the navbar looking lopsided. Now that the message and
+      notification bells have moved LEFT of the spacer in
+      Navbar.tsx, all five icons distribute across the row and
+      the Dashboard icon can render at a normalized prominent
+      size (88px on most phones, 72px on iPhone SE / 360px).
+   2. The in-content "Conversations" back row was REMOVED from
+      MessengerShell.tsx. We also hide .messenger-back-btn here
+      as defense in depth in case another descendant ever sets
+      that class.
+   3. The conversation view on mobile cut off the composer's
+      Send button and pushed the thread off-screen. This round
+      shrinks the conversation header padding, message bubble
+      font, composer padding, and per-message margins so the
+      header + thread + composer (with Send) all fit in the
+      visual viewport. Bubble max-width grows from 65% to 82%
+      on mobile so short messages don't waste horizontal space.
+   ============================================================ */
+
+/* --- (1) NAVBAR — normalize Dashboard icon, override Round 7 caps --- */
+@media (max-width: 768px) {
+  .pnl-navbar a img.dashboard-icon {
+    width: 88px !important;
+    max-width: 88px !important;
+    height: auto !important;
+  }
+}
+@media (max-width: 380px) {
+  .pnl-navbar a img.dashboard-icon {
+    width: 72px !important;
+    max-width: 72px !important;
+  }
+}
+
+/* --- (2) MESSENGER — defensive: hide any stray back row --- */
+.messenger-back-btn {
+  display: none !important;
+}
+
+/* --- (3) MESSENGER conversation view — compact on mobile so the
+       entire header + thread + composer (with Send button) fits --- */
+@media (max-width: 768px) {
+  /* Tighten the conversation header (name + phone/video/info icons row) */
+  .messenger-main > header,
+  .messenger-main > div > header {
+    padding: 8px 12px !important;
+    gap: 8px !important;
+    min-height: 48px !important;
+  }
+  .messenger-main > header img,
+  .messenger-main > div > header img {
+    width: 32px !important;
+    height: 32px !important;
+  }
+  .messenger-main > header [aria-label],
+  .messenger-main > div > header [aria-label] {
+    padding: 4px !important;
+  }
+
+  /* Message bubble: wider envelope (more room on narrow phones),
+     smaller font + tighter padding so more thread fits per screen. */
+  .messenger-main [data-bubble],
+  .messenger-main [role="article"],
+  .messenger-main > div > div > div > div[style*="max-width: 65%"],
+  .messenger-main div[style*="maxWidth: '65%'"] {
+    max-width: 82% !important;
+  }
+  .messenger-main p,
+  .messenger-main [data-bubble] p,
+  .messenger-main [data-bubble] span:not([aria-hidden]) {
+    font-size: 0.84rem !important;
+    line-height: 1.35 !important;
+  }
+  .messenger-main [data-bubble] {
+    padding: 6px 10px !important;
+  }
+  /* Day-separator (YESTERDAY AT 10:06 PM, etc.) — smaller and tighter */
+  .messenger-main [data-day-separator],
+  .messenger-main time {
+    font-size: 0.62rem !important;
+    margin: 8px 0 4px !important;
+  }
+
+  /* Composer (msg-composer) — tighten outer padding so the send
+     button is comfortably above the iOS home-indicator. The
+     existing safe-area padding stays via env(safe-area-inset-bottom). */
+  .messenger-main .msg-composer,
+  .msg-composer {
+    padding: 6px 8px !important;
+    padding-bottom: max(8px, env(safe-area-inset-bottom)) !important;
+    border-top-width: 1px !important;
+  }
+  .messenger-main .msg-composer > div,
+  .msg-composer > div {
+    padding: 4px 8px !important;
+    gap: 8px !important;
+    border-top-width: 0 !important;
+  }
+  /* Send button itself — keep at 44pt touch target but no extra margin */
+  .messenger-main .msg-composer button[aria-label="Send Message"],
+  .msg-composer button[aria-label="Send Message"] {
+    flex-shrink: 0 !important;
+  }
+}
+
+/* ============================================================
    END ROUND 2 + ROUND 3 + ROUND 4 + ROUND 5 + ROUND 6 + ROUND 7
-   MOBILE SAFE-AREA AND HORIZONTAL OVERFLOW ENFORCEMENT
+   + ROUND 8 MOBILE SAFE-AREA AND HORIZONTAL OVERFLOW ENFORCEMENT
    ============================================================ */
