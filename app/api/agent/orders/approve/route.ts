@@ -213,7 +213,15 @@ export async function POST(req: NextRequest) {
       prepaidDeducted = true;
     }
 
-    const updatePayload: Record<string, string> = { status: finalStatus, agent_approved_at: new Date().toISOString(), updated_at: new Date().toISOString() };
+    // MANDATORY ADMIN GATE: agent/super-agent approval no longer releases the
+    // order straight to approved_ship / approved_pickup. It parks at
+    // admin_approval_pending. Billing (prepaid deduction / credit check) and
+    // inventory still commit here because the agent is committing the purchase;
+    // an admin then RELEASES the order to approved_* (which is what the shipping
+    // team and pickup fulfillment act on). The fulfillment method the admin
+    // releases to is taken from order.fulfillment_method, so the agent's ship vs
+    // pickup choice is preserved.
+    const updatePayload: Record<string, string> = { status: 'admin_approval_pending', agent_approved_at: new Date().toISOString(), updated_at: new Date().toISOString() };
     if (tracking_number && typeof tracking_number === 'string') updatePayload.tracking_number = tracking_number;
 
     const { error: updateError } = await supabase.from('orders').update(updatePayload).eq('id', orderId);
@@ -243,59 +251,32 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Awaited in-app + push notification — never blocks order completion.
-    if ((finalStatus === 'approved_ship' || finalStatus === 'approved_pickup') && order.buyer_id) {
-      try {
-        const short = shortOrderId(orderId);
-        await notifyOrderApproved(supabase, order.buyer_id, orderId, short);
-        await enqueueOrderPush(supabase, { userId: order.buyer_id, orderId, event: 'order_approved' });
-      } catch { /* notification failures must not break the order */ }
-
-      // Notify Admins that order is ready
-      try {
-        const { data: admins } = await supabase.from('profiles').select('id').eq('role', 'admin');
-        if (admins && admins.length > 0) {
-          const short = shortOrderId(orderId);
-          const totalStr = Number(totalOwed).toFixed(2);
-          const fulfillmentMsg = finalStatus === 'approved_pickup' ? 'Ready for Agent Pickup' : 'Ready for Shipping';
-          const notifications = admins.map((admin) => ({
-            user_id: admin.id,
-            title: 'Order Ready For Fulfillment',
-            body: `Order #${short} ($${totalStr}) — Agent Approved. ${fulfillmentMsg}.`,
-            type: 'system',
-            url: `/admin/orders?status=${finalStatus}`,
-          }));
-          await supabase.from('notifications').insert(notifications);
-        }
-      } catch (err) {
-        console.error('Failed to notify admins of approval', err);
-      }
-    }
-
-    // (Removed legacy commission notification. Standard/Sub-Agents collect retail margin directly,
-    // and there is no commissions tab for them).
-
-    // Auto-enqueue label job for shipping orders — awaited, idempotent server-side.
-    if (finalStatus === 'approved_ship') {
-      try {
-        await supabase.rpc('shippo_enqueue_label_job', { p_order_id: orderId });
-      } catch { /* enqueue failures must not break order approval */ }
-    }
-
-    // Awaited webhook: order.approved
+    // The order is now agent-approved and parked at the MANDATORY admin gate.
+    // The buyer is NOT told "approved" yet, NO shipping label is created, and the
+    // order.approved webhook does NOT fire here — all of that happens when an
+    // admin releases the order to approved_ship / approved_pickup (see
+    // app/api/admin/orders). Here we only alert the admins that an order is
+    // waiting for their approval so nothing stalls silently at the gate.
     try {
-      const orderPayload = await fetchOrderForWebhook(supabase, orderId);
-      if (orderPayload) {
-        await enqueueWebhook(supabase, {
-          event: 'order.approved',
-          agentId: (orderPayload as { agent_id?: string | null }).agent_id ?? null,
-          payload: { order: orderPayload },
-          relatedOrderId: orderId,
-        });
+      const { data: admins } = await supabase.from('profiles').select('id').eq('role', 'admin');
+      if (admins && admins.length > 0) {
+        const short = shortOrderId(orderId);
+        const totalStr = Number(totalOwed).toFixed(2);
+        const fulfillmentMsg = order.fulfillment_method === 'agent_pickup' ? 'For Pickup' : 'For Shipping';
+        const notifications = admins.map((admin) => ({
+          user_id: admin.id,
+          title: 'Order Needs Admin Approval',
+          body: `Order #${short} ($${totalStr}) — Agent Approved (${fulfillmentMsg}). Review And Release To Fulfillment.`,
+          type: 'system',
+          url: `/admin/orders?status=admin_approval_pending`,
+        }));
+        await supabase.from('notifications').insert(notifications);
       }
-    } catch { /* webhook errors must not break the order */ }
+    } catch (err) {
+      console.error('Failed to notify admins of pending approval', err);
+    }
 
-    return NextResponse.json({ success: true, status: finalStatus });
+    return NextResponse.json({ success: true, status: 'admin_approval_pending' });
       },
     });
   } catch (error) {

@@ -135,6 +135,16 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
   }
 
+  // Admin released the order to shipping — enqueue the Shippo label job now.
+  // This is deferred from agent approval (the agent now parks orders at
+  // admin_approval_pending) so labels are only ever created AFTER the admin
+  // gate, never for an order an agent approved but an admin has not released.
+  if (status === 'approved_ship') {
+    try {
+      await supabase.rpc('shippo_enqueue_label_job', { p_order_id: id });
+    } catch { /* label enqueue must not break the admin response */ }
+  }
+
   // Write audit log entry (awaited).
   try {
     await supabase.from('admin_audit_log').insert({
