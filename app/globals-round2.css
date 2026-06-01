@@ -827,138 +827,178 @@ body > * {
 }
 
 /* ============================================================
-   ROUND 12 — NUCLEAR SHRINK: WHOLE MESSENGER FITS ON ONE SCREEN
+   ROUND 14 — KILL HORIZONTAL OVERFLOW ON MOBILE; MAKE THE MESSENGER
+   LOOK LIKE THE DESKTOP REFERENCE INSIDE A PHONE VIEWPORT
    ------------------------------------------------------------
-   User said: "SHRINK THE ENTIRE SCREEN SO IT ALL FITS ON MOBILE".
-   Stop tweaking individual elements. Apply zoom on the messenger
-   conversation pane on mobile so the WHOLE thing — header, thread,
-   composer, Send button — fits within the visible viewport at one
-   compressed scale. zoom is supported in iOS Safari (which is what
-   the user is on) and Chrome / Edge. Firefox doesn't support it but
-   the fallback rules below shrink every individual sub-element so
-   even without zoom the layout fits.
+   User reference: desktop screenshot of "Savage Brands" conversation
+   showing header (name + 4 icons), thread of message bubbles, and
+   composer (+ icon, Message pill with emoji + keyboard icons, send).
+   Everything visible, NO horizontal scrolling.
+
+   Symptom on mobile: had to slide left to see the right side.
+   Root cause: some descendant of .messenger-main was wider than
+   the viewport (likely the conversation header's icon row or a
+   bubble with an un-broken URL/word). This block makes EVERY
+   descendant of the messenger lock to 100vw and break long words
+   so nothing can ever extend horizontally.
+
+   Replaces the over-aggressive round-12 shrinks that made text
+   unreadably small. Bubble fonts go back to comfortable sizes.
    ============================================================ */
 
 @media (max-width: 768px) {
-  /* round-13 fix: REMOVED the zoom:0.82 from round-12. zoom shrinks
-     layout too, leaving a ~18% empty strip on the right edge of the
-     screen (visible in user's screenshot as a "weird block out on
-     the right"). Force the messenger-main and the layout root to
-     fill the full viewport width regardless of any other rule. */
-  .messenger-main,
-  .messenger-shell .messenger-main,
+  /* 1. LOCK EVERY MESSENGER DESCENDANT TO VIEWPORT WIDTH.
+        Universal selector inside .messenger-shell so nothing — bubble,
+        image, header icon row, pinned bar, composer pill — can exceed
+        the viewport. box-sizing keeps padding inside the budget. */
   .messenger-shell,
+  .messenger-shell *,
+  .messenger-layout-root,
+  .messenger-layout-root * {
+    max-width: 100vw !important;
+    box-sizing: border-box !important;
+  }
+  .messenger-shell,
+  .messenger-main,
+  .messenger-sidebar,
   .messenger-layout-root {
     width: 100% !important;
-    max-width: 100vw !important;
-    min-width: 0 !important;
+    overflow-x: hidden !important;
   }
 
-  /* PER-ELEMENT SHRINKS — keep these from round-12, they make
-     header + thread + composer fit vertically without zoom. */
+  /* 2. WORD-BREAK EVERY TEXT NODE. Long unbroken URLs / emojis /
+        sequences would otherwise blow out the bubble width. */
+  .messenger-main p,
+  .messenger-main span:not([aria-hidden]),
+  .messenger-main [data-bubble],
+  .messenger-main [data-bubble] *,
+  .messenger-main [role="article"],
+  .messenger-main [role="article"] *,
+  .messenger-sidebar p,
+  .messenger-sidebar span {
+    overflow-wrap: anywhere !important;
+    word-break: break-word !important;
+    white-space: normal !important;
+  }
 
-  /* Conversation header — minimum padding, smaller icons, smaller name */
+  /* 3. CONVERSATION HEADER — readable, name truncates with ellipsis
+        if it's too long. Icons shrink to fit but stay touch-target safe. */
   .messenger-main header,
   .messenger-main > div > header {
-    padding: 4px 8px !important;
-    min-height: 38px !important;
+    padding: 8px 10px !important;
+    min-height: 44px !important;
+    gap: 6px !important;
+    flex-wrap: nowrap !important;
+  }
+  /* Conversation name (first flex child) — truncate, no shrink-zero */
+  .messenger-main header > div:first-child {
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+    flex: 1 1 0 !important;
+    min-width: 0 !important;
+    font-size: 0.95rem !important;
+  }
+  /* Header icon row — never shrink, tight gap */
+  .messenger-main header > div:last-child {
+    flex-shrink: 0 !important;
     gap: 4px !important;
-    border-bottom-width: 1px !important;
   }
   .messenger-main header img,
   .messenger-main header button img,
   .messenger-main > div > header img {
-    width: 22px !important;
-    height: 22px !important;
-    max-width: 22px !important;
-    max-height: 22px !important;
+    width: 26px !important;
+    height: 26px !important;
+    max-width: 26px !important;
+    max-height: 26px !important;
   }
   .messenger-main header button {
-    padding: 1px !important;
-  }
-  .messenger-main header > div:first-child {
-    font-size: 0.82rem !important;
+    padding: 2px !important;
+    flex-shrink: 0 !important;
   }
 
-  /* Day separator + timestamps — tiny */
+  /* 4. DAY SEPARATORS / TIMESTAMPS — readable */
   .messenger-main time,
   .messenger-main [data-day-separator] {
-    font-size: 0.5rem !important;
-    margin: 2px 0 1px !important;
+    font-size: 0.62rem !important;
+    margin: 6px 0 3px !important;
   }
 
-  /* Bubbles — tighter padding, smaller text */
+  /* 5. BUBBLES — readable, wrap properly, max-width caps short of edge */
   .messenger-main [data-bubble] {
-    padding: 4px 8px !important;
+    padding: 8px 12px !important;
   }
   .messenger-main p,
   .messenger-main [data-bubble] p,
-  .messenger-main [data-bubble] span:not([aria-hidden]),
-  .messenger-main div[style*="max-width: 65%"] p,
-  .messenger-main div[style*="max-width: 65%"] span {
-    font-size: 0.75rem !important;
-    line-height: 1.25 !important;
+  .messenger-main [data-bubble] span:not([aria-hidden]) {
+    font-size: 0.88rem !important;
+    line-height: 1.35 !important;
   }
   .messenger-main div[style*="max-width: 65%"] {
-    max-width: 92% !important;
+    max-width: 78% !important;
+  }
+  .messenger-main img,
+  .messenger-main video {
+    max-width: 100% !important;
+    height: auto !important;
   }
 
-  /* Message list — less vertical padding */
+  /* 6. MESSAGE LIST — comfortable padding */
   .messenger-main .msg-list {
-    padding: 8px 10px 10px 10px !important;
+    padding: 10px 12px 12px 12px !important;
   }
 
-  /* Composer — minimum padding, minimum pill height */
+  /* 7. COMPOSER — locks to viewport; the pill fills remaining width
+        after the + button without overflowing. */
   .messenger-main .msg-composer,
   .msg-composer {
-    padding: 3px 4px !important;
-    padding-bottom: max(8px, env(safe-area-inset-bottom)) !important;
-    border-top-width: 1px !important;
+    padding: 8px 10px !important;
+    padding-bottom: max(12px, env(safe-area-inset-bottom)) !important;
+    width: 100% !important;
+    max-width: 100vw !important;
   }
   .messenger-main .msg-composer > div,
   .msg-composer > div {
-    padding: 2px 6px !important;
-    gap: 4px !important;
-    border-top-width: 0 !important;
+    padding: 4px 0 !important;
+    gap: 8px !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
   }
-
-  /* iMessage pill — shorter */
+  /* iMessage pill — can shrink, must not exceed parent */
   .msg-composer > div > div[style*="borderRadius: 24"],
   .msg-composer div[style*="border-radius: 24"] {
-    min-height: 36px !important;
-    border-width: 2px !important;
+    min-width: 0 !important;
+    flex: 1 1 0 !important;
+    min-height: 40px !important;
   }
-
-  /* Composer icons — tiny */
+  /* Add Media, emoji, calendar icons — capped sizes that fit on 360px */
   .msg-composer img[alt="Add Media"],
   .messenger-main .msg-composer img[alt="Add Media"] {
-    width: 26px !important;
-    height: 26px !important;
+    width: 32px !important;
+    height: 32px !important;
     transform: none !important;
   }
   .msg-composer img[alt="Emoji"],
   .msg-composer img[alt="Schedule"],
   .messenger-main .msg-composer img[alt="Emoji"],
   .messenger-main .msg-composer img[alt="Schedule"] {
-    width: 22px !important;
-    height: 22px !important;
+    width: 24px !important;
+    height: 24px !important;
     transform: none !important;
   }
-
-  /* Send button — slightly smaller */
+  /* Send button — always visible, modest size */
   .msg-composer button[aria-label="Send Message"],
   .messenger-main .msg-composer button[aria-label="Send Message"] {
-    width: 26px !important;
-    height: 26px !important;
+    width: 30px !important;
+    height: 30px !important;
     flex-shrink: 0 !important;
   }
-
-  /* Textarea — shorter min height */
+  /* Textarea — readable */
   .msg-composer textarea,
   .messenger-main .msg-composer textarea {
-    min-height: 20px !important;
-    font-size: 0.85rem !important;
-    line-height: 20px !important;
+    min-height: 22px !important;
+    font-size: 0.92rem !important;
+    line-height: 22px !important;
   }
 }
 
