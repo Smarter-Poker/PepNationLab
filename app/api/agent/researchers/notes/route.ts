@@ -34,11 +34,12 @@ export async function POST(req: NextRequest) {
 
   const svc = await createServiceClient();
 
-  // Ownership check: the researcher must have been referred by this agent.
+  // Ownership check: the researcher must have been referred by this agent and must still be a researcher.
   const { data: researcher } = await svc
     .from('profiles')
     .select('id, referring_agent_id')
     .eq('id', researcherId)
+    .eq('role', 'researcher')
     .maybeSingle();
 
   if (!researcher || researcher.referring_agent_id !== agentId) {

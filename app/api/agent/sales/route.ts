@@ -15,7 +15,8 @@ export async function GET(req: NextRequest) {
     const { data: researchers, error: researchersError } = await supabase
       .from('profiles')
       .select('id, full_name, email, cart_state, cart_updated_at')
-      .eq('referring_agent_id', agentId);
+      .eq('referring_agent_id', agentId)
+      .eq('role', 'researcher');
 
     if (researchersError) {
       return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });

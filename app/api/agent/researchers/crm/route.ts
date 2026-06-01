@@ -42,6 +42,7 @@ export async function GET() {
       .from('profiles')
       .select('id, full_name, username, email, created_at, auto_approve_orders')
       .eq('referring_agent_id', agentId)
+      .eq('role', 'researcher')
       .order('created_at', { ascending: false });
 
     if (rErr) {

@@ -128,9 +128,12 @@ export async function computeAgentCostV2(supabase: ServiceClient, productId: str
     resolveHouseTierLevel(supabase, agentId),
     getHouseTiers(supabase),
   ]);
-  const tier = tiers.find((t) => t.level === level) ?? tiers[tiers.length - 1];
-  // Safety: if config is missing, fall back to the highest markup (Rookie 70%).
-  const markup = tier ? tier.markup : 0.7;
+  const tier = tiers.find((t) => t.level === level);
+  // Safety: on an unknown level or missing config, fall back to the HIGHEST
+  // configured markup (most house-protective), or 0.7 if the table is empty.
+  const markup = tier
+    ? tier.markup
+    : (tiers.length ? Math.max(...tiers.map((t) => t.markup)) : 0.7);
   return Math.round(base * (1 + markup) * 100) / 100;
 }
 

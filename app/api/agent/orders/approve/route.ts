@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
 import { requireAgent } from '@/lib/admin-auth';
 import { pickOne } from '@/lib/relations';
-import { computeAgentCost, computeAgentCostForAgent, type AgentTier } from '@/lib/pricing';
+import { computeAgentCostForAgent, type AgentTier } from '@/lib/pricing';
 import { enqueueOrderPush, shortOrderId } from '@/lib/push-enqueue';
 import { enqueueWebhook, fetchOrderForWebhook } from '@/lib/webhook-dispatch';
 import { assertSameOrigin } from '@/lib/csrf';

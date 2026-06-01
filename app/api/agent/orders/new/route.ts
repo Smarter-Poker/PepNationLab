@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
 import { requireAgent } from '@/lib/admin-auth';
-import { computeAgentCost, computeAgentCostForAgent, computeSubAgentBaselineCost, type AgentTier } from '@/lib/pricing';
+import { computeAgentCostForAgent, computeSubAgentBaselineCost, type AgentTier } from '@/lib/pricing';
 import { assertSameOrigin } from '@/lib/csrf';
 
 interface ManualOrderItemInput {
