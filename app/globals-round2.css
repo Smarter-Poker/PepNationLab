@@ -1104,27 +1104,51 @@ body > * {
 
 /* ============================================================
    ROUND 18 — Dashboard +50% on mobile, emoji picker z-index lift
+   (Dashboard size revised in round-20 below to fully fit the
+   navbar without clipping at the right edge.)
+   ============================================================ */
+
+/* ============================================================
+   ROUND 20 — Remove emoji icon completely on mobile; size
+   Dashboard to fully fit; (uploads-by-MIME wired in JSX)
    ------------------------------------------------------------
-   User asks:
-   1. Admin Dashboard button +50% bigger in the header.
-   2. + button now opens the native photo/video library directly
-      on mobile (wired in MessageComposer.tsx via mobileMediaInputRef).
-   3. Emoji picker should reliably open above the composer when
-      tapped. Force its z-index high so no other overlay covers it.
+   1. Hide the typing-state emoji button outright on mobile.
+   2. Dashboard pill must NEVER clip on the right edge — bring
+      icon size down to 130px on <=768 and 100px on <=380,
+      with explicit right-margin on the Link.
    ============================================================ */
 
 @media (max-width: 768px) {
-  /* Dashboard icon +50% (was 110, now 165) */
+  /* Hide the typing-state emoji button completely on mobile.
+     Distinct class composer-emoji-typing was added in round-16
+     so we don't impact desktop. */
+  .msg-composer .composer-emoji-typing,
+  .messenger-main .msg-composer .composer-emoji-typing {
+    display: none !important;
+  }
+
+  /* Dashboard size revised down so it FULLY fits the navbar
+     frame on every phone width with a comfortable right margin. */
   .pnl-navbar a img.dashboard-icon {
-    width: 165px !important;
-    max-width: 165px !important;
+    width: 130px !important;
+    max-width: 130px !important;
+  }
+  /* Pull the Dashboard link inward from the right edge. */
+  .pnl-navbar a:has(img.dashboard-icon),
+  .pnl-navbar a[aria-label*="Dashboard"] {
+    margin-right: 12px !important;
+    padding-right: 0 !important;
   }
 }
+
 @media (max-width: 380px) {
-  /* On the narrowest phones bump from 88 to 132 (88 * 1.5) */
   .pnl-navbar a img.dashboard-icon {
-    width: 132px !important;
-    max-width: 132px !important;
+    width: 100px !important;
+    max-width: 100px !important;
+  }
+  .pnl-navbar a:has(img.dashboard-icon),
+  .pnl-navbar a[aria-label*="Dashboard"] {
+    margin-right: 8px !important;
   }
 }
 

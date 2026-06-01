@@ -458,16 +458,21 @@ export default function MessageComposer({ conversationId, selfId, replyTo, onCle
         }}
       />
       {/* round-18: combined photo + video native picker for mobile.
-          Tapping the + button on mobile clicks this directly, opening
-          the iOS / Android photo library where the user can pick a
-          photo OR a video without going through an in-app menu. */}
+          round-20: route by MIME so images call handleImage (renders as
+          inline image bubble) and videos call handleVideo (renders with
+          a player). Previously fell through to handleFile which sent
+          everything as a generic file-attachment download link. */}
       <input ref={mobileMediaInputRef} type="file"
         accept="image/*,video/*"
         style={{ display: 'none' }}
         onChange={(e) => {
           const f = e.target.files?.[0];
           e.target.value = '';
-          if (f) void handleFile(f);
+          if (!f) return;
+          if (f.type.startsWith('image/')) { void handleImage(f); return; }
+          if (f.type.startsWith('video/')) { void handleVideo(f); return; }
+          // Fallback: treat anything else as a generic file upload.
+          void handleFile(f);
         }}
       />
 
