@@ -5,6 +5,10 @@
       "schedule": "0 */6 * * *"
     },
     {
+      "path": "/api/cron/idempotency-sweep",
+      "schedule": "30 3 * * *"
+    },
+    {
       "path": "/api/cron/invoices",
       "schedule": "59 23 * * 0"
     },
