@@ -306,8 +306,7 @@ export default function AgentSales({ orders, setOrders, agentId, userProfile }: 
 
         {/* ACCOUNTING SECTION */}
         <div style={{ marginTop: 'var(--space-6)', display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
-          <WalletCard />
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: 'var(--space-4)' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
             {(!userProfile?.tier?.includes('sub-agent')) && (
               <div style={{ animation: 'fadeIn 0.3s ease-out' }}>
                 <AgentStatements />
@@ -319,64 +318,6 @@ export default function AgentSales({ orders, setOrders, agentId, userProfile }: 
               </div>
             )}
           </div>
-        </div>
-      </div>
-
-      {/* 3. BOTTOM SECTION: LIVE CARTS */}
-      <div className="metal-frame">
-        <div className="metal-content">
-          <div style={{ display: 'flex', alignItems: 'center', marginBottom: 'var(--space-4)', gap: '12px' }}>
-            <h2 className="metal-text" style={{ fontSize: '1.25rem', margin: 0, fontFamily: 'var(--font-brand)' }}>
-              Live Downline Carts
-            </h2>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'rgba(0, 229, 255, 0.1)', padding: '4px 8px', borderRadius: '4px', border: '1px solid rgba(0, 229, 255, 0.2)' }}>
-              <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#00E5FF', boxShadow: '0 0 8px #00E5FF', animation: 'pulse 2s infinite' }} />
-              <span style={{ fontSize: '0.75rem', color: '#00E5FF', fontWeight: 600, letterSpacing: '0.05em', textTransform: 'uppercase' }}>Auto-refreshes</span>
-            </div>
-          </div>
-          
-          {liveCarts.length === 0 ? (
-            <div className="metal-embossed-panel" style={{ textAlign: 'center', padding: 'var(--space-8)', opacity: 0.7 }}>
-              No Researchers Currently Have Items In Their Cart.
-            </div>
-          ) : (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 'var(--space-4)' }}>
-              {liveCarts.map((cartRecord: any) => {
-                const cartTotal = cartRecord.cart.reduce((sum: number, item: any) => sum + (Number(item.retailPrice) * Number(item.quantity)), 0);
-                
-                return (
-                  <div key={cartRecord.id} className="metal-embossed-panel" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: 'var(--space-3)' }}>
-                      <div>
-                        <strong style={{ color: '#00E5FF', fontSize: '1.05rem' }}>{cartRecord.name}</strong>
-                        <div style={{ fontSize: '0.8rem', color: 'var(--grey-400)', marginTop: 2 }}>{cartRecord.email}</div>
-                      </div>
-                      <div style={{ textAlign: 'right' }}>
-                        <div style={{ color: 'var(--white)', fontWeight: 'bold', fontSize: '1.1rem' }}>{formatCurrency(cartTotal)}</div>
-                        <div style={{ fontSize: '0.7rem', color: 'var(--silver)', textTransform: 'uppercase', marginTop: 2 }}>
-                          Potential Sale
-                        </div>
-                      </div>
-                    </div>
-                    
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--space-2)' }}>
-                      {cartRecord.cart.map((item: any, idx: number) => (
-                        <div key={idx} style={{ background: 'rgba(0,0,0,0.5)', border: '1px solid rgba(255,255,255,0.1)', padding: '4px 8px', borderRadius: 6, display: 'flex', alignItems: 'center', gap: '8px', flex: '1 1 100%' }}>
-                          <span style={{ background: 'var(--surface-3)', color: 'var(--white)', fontWeight: 800, padding: '2px 6px', borderRadius: 4, fontSize: '0.75rem' }}>{item.quantity}x</span>
-                          <span style={{ fontSize: '0.85rem', color: 'var(--silver)', flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.name}</span>
-                          <span style={{ fontSize: '0.85rem', color: '#00FF9D', fontWeight: 600 }}>{formatCurrency(item.retailPrice * item.quantity)}</span>
-                        </div>
-                      ))}
-                    </div>
-                    
-                    <div style={{ fontSize: '0.7rem', color: 'var(--grey-400)', textAlign: 'right', marginTop: '4px' }}>
-                      Last Active: {new Date(cartRecord.updated_at).toLocaleTimeString()}
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-          )}
         </div>
       </div>
 
