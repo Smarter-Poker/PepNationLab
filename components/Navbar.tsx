@@ -193,6 +193,8 @@ export default function Navbar({ onMenuClick, isOpen, title }: { onMenuClick?: (
           .then(({ data }) => {
             if (data) {
               setProfile(data);
+              // A sub-agent is role='agent' + is_sub_agent=true and has no
+              // storefront, so only fetch a storefront slug for non-sub agents.
               if (data.role === 'researcher' && data.referring_agent_id) {
                 supabase
                   .from('agent_profiles')
@@ -203,7 +205,7 @@ export default function Navbar({ onMenuClick, isOpen, title }: { onMenuClick?: (
                     if (ap?.slug) setAgentSlug(ap.slug);
                     if (ap?.qr_code_data) setQrCodeData(ap.qr_code_data);
                   });
-              } else if (data.role === 'agent' || data.role === 'super_agent') {
+              } else if ((data.role === 'agent' || data.role === 'super_agent') && data.is_sub_agent !== true) {
                 supabase
                   .from('agent_profiles')
                   .select('slug, qr_code_data')
@@ -242,7 +244,7 @@ export default function Navbar({ onMenuClick, isOpen, title }: { onMenuClick?: (
                     if (ap?.slug) setAgentSlug(ap.slug);
                     if (ap?.qr_code_data) setQrCodeData(ap.qr_code_data);
                   });
-              } else if (data.role === 'agent' || data.role === 'super_agent') {
+              } else if ((data.role === 'agent' || data.role === 'super_agent') && data.is_sub_agent !== true) {
                 supabase
                   .from('agent_profiles')
                   .select('slug, qr_code_data')
@@ -290,6 +292,13 @@ export default function Navbar({ onMenuClick, isOpen, title }: { onMenuClick?: (
   };
 
   const showBack = pathname !== '/';
+
+  // QR popup details — sub-agents recruit via /invite?ref (no storefront);
+  // agents/super-agents share their storefront slug.
+  const isSubAgent = profile?.is_sub_agent === true;
+  const qrUrl = typeof window !== 'undefined'
+    ? `${window.location.origin}${isSubAgent ? `/invite?ref=${user?.id ?? ''}` : `/${agentSlug ?? ''}`}`
+    : '';
 
   return (
     <>
@@ -611,15 +620,15 @@ export default function Navbar({ onMenuClick, isOpen, title }: { onMenuClick?: (
             maxWidth: 400, width: '100%'
           }}>
             <h2 style={{ fontSize: '1.25rem', fontWeight: 700, margin: 0, textAlign: 'center' }}>
-              My QR Code
+              {isSubAgent ? 'My Invite QR' : 'My QR Code'}
             </h2>
             <QRCodeGenerator
-              url={typeof window !== 'undefined' ? `${window.location.origin}${profile?.role === 'sub_agent' ? `/invite?ref=${user?.id}` : `/${agentSlug}`}` : ''}
-              qrCodeData={qrCodeData}
+              url={qrUrl}
+              qrCodeData={isSubAgent ? null : qrCodeData}
               size={240}
             />
             <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--silver)', textAlign: 'center', lineHeight: 1.5 }}>
-              Have your clients scan this code to {profile?.role === 'sub_agent' ? 'register under you' : 'visit your storefront'}!
+              Have your clients scan this code to {isSubAgent ? 'register under you' : 'visit your storefront'}!
             </p>
           </div>
         </div>,
