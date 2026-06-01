@@ -1139,15 +1139,27 @@ export default function AgentDashboardClient({
             )}
 
 
-            <div className="card-metal hover-lift" style={{ padding: 'var(--space-6)', marginBottom: 'var(--space-6)' }}>
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', marginBottom: 'var(--space-6)' }}>
-                <button onClick={() => { setShowCreateResearcher(true); setCrError(''); setCrSuccess(''); }}
-                  className="btn btn-primary" style={{ fontSize: '0.82rem', marginBottom: 'var(--space-4)' }}>
-                  + Create Researcher Account
-                </button>
-                <h3 style={{ fontSize: '1.1rem', color: 'var(--white)', fontFamily: 'var(--font-brand)', letterSpacing: '0.05em', textTransform: 'uppercase', marginBottom: 6 }}>My Researchers</h3>
-                <p style={{ color: 'var(--grey-400)', fontSize: '0.82rem', margin: 0 }}>All Researcher Accounts You Have Created</p>
-              </div>
+            <div style={{
+              borderRadius: 20,
+              padding: 10,
+              background: 'linear-gradient(145deg, #c8c2b8 0%, #a09890 30%, #8a847c 50%, #a09890 70%, #c8c2b8 100%)',
+              boxShadow: '0 8px 48px rgba(0,0,0,0.8), inset 0 1px 0 rgba(255,255,255,0.35), inset 0 -1px 0 rgba(0,0,0,0.4)',
+              marginBottom: 'var(--space-6)'
+            }}>
+              <div style={{
+                borderRadius: 12,
+                background: 'linear-gradient(180deg, #1a1f2e 0%, #141820 40%, #111520 100%)',
+                padding: 'var(--space-6)',
+                boxShadow: 'inset 0 2px 8px rgba(0,0,0,0.6)',
+              }}>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', marginBottom: 'var(--space-6)' }}>
+                  <h3 style={{ fontSize: '1.1rem', color: 'var(--white)', fontFamily: 'var(--font-brand)', letterSpacing: '0.05em', textTransform: 'uppercase', marginBottom: 6 }}>My Researchers</h3>
+                  <p style={{ color: 'var(--grey-400)', fontSize: '0.82rem', margin: 0, marginBottom: 'var(--space-4)' }}>All Researcher Accounts You Have Created</p>
+                  <button onClick={() => { setShowCreateResearcher(true); setCrError(''); setCrSuccess(''); }}
+                    className="btn btn-primary" style={{ fontSize: '0.82rem' }}>
+                    + Create Researcher Account
+                  </button>
+                </div>
 
               {researcherList.length > 0 ? (
                 <div style={{ overflowX: 'auto' }}>
@@ -1243,6 +1255,7 @@ export default function AgentDashboardClient({
                   <p style={{ fontSize: '0.78rem', color: 'var(--grey-400)', margin: 0 }}>Click "Create Researcher Account" To Add Your First Researcher.</p>
                 </div>
               )}
+              </div>
             </div>
 
             {/* CRM: lifetime value, order history, and private notes per researcher */}
