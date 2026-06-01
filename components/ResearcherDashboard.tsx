@@ -517,7 +517,7 @@ export default function ResearcherDashboard({ userId, userName, userEmail, agent
                 {[
                   { key: 'storefront', top: '5.5%',  height: '17%',   action: () => { window.location.href = agentSlug ? `/${agentSlug}` : '/products'; } },
                   { key: 'orders',     top: '23.5%', height: '19.5%', action: () => setTab('orders') },
-                  { key: 'messages',   top: '44%',   height: '19%',   action: () => setTab('messages') },
+                  { key: 'messages',   top: '44%',   height: '19%',   action: () => { window.location.href = '/messenger'; } },
                   { key: 'favorites',  top: '64%',   height: '15.5%', action: () => setTab('favorites') },
                   { key: 'account',    top: '80.5%', height: '14.5%', action: () => setTab('account') },
                 ].map(z => (
