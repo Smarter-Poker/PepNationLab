@@ -1076,19 +1076,19 @@ body > * {
    ============================================================ */
 
 @media (max-width: 768px) {
-  /* (1) Double the + button on mobile. Was 32px in Round 14,
-     now 64px. The button itself sizes from its image so we set
-     the image to 64x64. */
+  /* round-17: Plus button +50% larger (96px). User asked for the
+     + button to grow another 50% on mobile (was 64px in round 16).
+     64 * 1.5 = 96. Big, prominent entry point for photo/video upload. */
   .msg-composer img[alt="Add Media"],
   .messenger-main .msg-composer img[alt="Add Media"] {
-    width: 64px !important;
-    height: 64px !important;
+    width: 96px !important;
+    height: 96px !important;
     transform: none !important;
   }
 
-  /* (2) Typing-state emoji button to the LEFT of Send. Distinct
-     class composer-emoji-typing + alt="Add Emoji" so it's never
-     hit by any earlier "Emoji"/"Insert Emoji" hide rule. */
+  /* round-17: typing-state emoji icon matches the + button size (96px)
+     so the composer has visually balanced action icons on both sides
+     of the pill. */
   .msg-composer .composer-emoji-typing,
   .messenger-main .msg-composer .composer-emoji-typing {
     display: flex !important;
@@ -1096,8 +1096,8 @@ body > * {
   }
   .msg-composer img[alt="Add Emoji"],
   .messenger-main .msg-composer img[alt="Add Emoji"] {
-    width: 28px !important;
-    height: 28px !important;
+    width: 96px !important;
+    height: 96px !important;
     transform: none !important;
   }
 }
