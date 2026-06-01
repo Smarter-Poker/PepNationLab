@@ -368,6 +368,7 @@ export default function Navbar({ onMenuClick, isOpen, title }: { onMenuClick?: (
                   alt={dashLabel} 
                   width={158} 
                   height={74} 
+                  className="dashboard-icon"
                   style={{ width: 158, height: 'auto', objectFit: 'contain', display: 'block' }} 
                 />
               </Link>
