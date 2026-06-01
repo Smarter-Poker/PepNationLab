@@ -1102,6 +1102,39 @@ body > * {
   }
 }
 
+/* ============================================================
+   ROUND 18 — Dashboard +50% on mobile, emoji picker z-index lift
+   ------------------------------------------------------------
+   User asks:
+   1. Admin Dashboard button +50% bigger in the header.
+   2. + button now opens the native photo/video library directly
+      on mobile (wired in MessageComposer.tsx via mobileMediaInputRef).
+   3. Emoji picker should reliably open above the composer when
+      tapped. Force its z-index high so no other overlay covers it.
+   ============================================================ */
+
+@media (max-width: 768px) {
+  /* Dashboard icon +50% (was 110, now 165) */
+  .pnl-navbar a img.dashboard-icon {
+    width: 165px !important;
+    max-width: 165px !important;
+  }
+}
+@media (max-width: 380px) {
+  /* On the narrowest phones bump from 88 to 132 (88 * 1.5) */
+  .pnl-navbar a img.dashboard-icon {
+    width: 132px !important;
+    max-width: 132px !important;
+  }
+}
+
+/* Lift the EmojiPicker above any sibling overlay. The picker uses
+   position:absolute inside the composer; bump z-index so it can
+   never be covered by another popover or message bubble. */
+.msg-composer [role="dialog"][aria-label="Pick An Emoji"] {
+  z-index: 999 !important;
+}
+
 /* --- (3) Product Catalog mobile UX: hide dropdowns, show search --- */
 .agentprod-mobile-search { display: none; }
 @media (max-width: 768px) {

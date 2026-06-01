@@ -78,6 +78,10 @@ export default function MessageComposer({ conversationId, selfId, replyTo, onCle
   const imageInputRef = useRef<HTMLInputElement>(null);
   const videoInputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  // round-18: combined photo + video input for mobile. The + button on
+  // mobile bypasses AttachMenu and clicks this input directly so the OS
+  // opens its native photo/video library picker in one tap.
+  const mobileMediaInputRef = useRef<HTMLInputElement>(null);
   const appendMessage = useMessengerStore((s) => s.appendMessage);
   const updateMessage = useMessengerStore((s) => s.updateMessage);
   const removeMessage = useMessengerStore((s) => s.removeMessage);
@@ -440,6 +444,19 @@ export default function MessageComposer({ conversationId, selfId, replyTo, onCle
           if (f) void handleFile(f);
         }}
       />
+      {/* round-18: combined photo + video native picker for mobile.
+          Tapping the + button on mobile clicks this directly, opening
+          the iOS / Android photo library where the user can pick a
+          photo OR a video without going through an in-app menu. */}
+      <input ref={mobileMediaInputRef} type="file"
+        accept="image/*,video/*"
+        style={{ display: 'none' }}
+        onChange={(e) => {
+          const f = e.target.files?.[0];
+          e.target.value = '';
+          if (f) void handleFile(f);
+        }}
+      />
 
       {replyTo && <ReplyChip replyTo={replyTo} onClear={onClearReply} />}
 
@@ -490,7 +507,17 @@ export default function MessageComposer({ conversationId, selfId, replyTo, onCle
           <div style={{ display: 'flex', alignItems: 'center', paddingBottom: 6 }}>
             <button
               type="button"
-              onClick={() => togglePopover(setShowAttach)}
+              onClick={() => {
+                // round-18: on mobile, open the native photo/video library
+                // directly via the combined image+video input. On desktop,
+                // keep the existing AttachMenu popover (Image / Video / Voice / File).
+                vibrateLight();
+                if (typeof window !== 'undefined' && window.matchMedia('(max-width: 768px)').matches) {
+                  mobileMediaInputRef.current?.click();
+                } else {
+                  togglePopover(setShowAttach);
+                }
+              }}
               style={{
                 display: 'flex',
                 alignItems: 'center',
