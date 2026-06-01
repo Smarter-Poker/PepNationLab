@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
+import { toast } from 'sonner';
 
 /* ─── Types ────────────────────────────────────────────────────────────────── */
 export type NotifType =
@@ -179,6 +180,18 @@ export default function NavbarNotificationBell() {
             setUnread(prev => prev + 1);
             setRinging(true);
             setTimeout(() => setRinging(false), 800);
+            // Live on-screen toast so a new order or message surfaces instantly
+            // without opening the bell or refreshing the page.
+            try {
+              const dest = newItem.url || '/dashboard';
+              toast(newItem.title, {
+                description: newItem.body || undefined,
+                action: {
+                  label: 'View',
+                  onClick: () => { window.location.href = dest; },
+                },
+              });
+            } catch { /* toast best-effort */ }
             if (typeof navigator !== 'undefined' && navigator.vibrate) {
               try { navigator.vibrate([100, 50, 100]); } catch { /* haptics best-effort */ }
             }
@@ -224,7 +237,7 @@ export default function NavbarNotificationBell() {
     return () => clearTimeout(t);
   }, [open, unread, markAllRead]);
 
-  // ── Toggle dropdown ────────────────────────────────────────────────────────
+  // ── Toggle dropdown ─────────────────────────────────────────────────────────
   const handleBellClick = () => {
     setOpen(v => !v);
     if (!open) loadFeed();
