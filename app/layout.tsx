@@ -10,6 +10,7 @@ import { ThemeProvider } from "@/components/ThemeProvider";
 import { Toaster } from "sonner";
 import GlobalCallListener from "@/components/messenger/GlobalCallListener";
 import SessionKeepalive from "@/components/messenger/SessionKeepalive";
+import FirstRunNotificationPrompt from "@/components/FirstRunNotificationPrompt";
 
 export const viewport: Viewport = {
   themeColor: [
@@ -94,6 +95,8 @@ export default function RootLayout({
           <ImpersonationBanner />
           <PwaInstallPrompt />
           <GlobalCallListener />
+          {/* First-login: prompt to enable device notifications, then nudge to finish account setup. */}
+          <FirstRunNotificationPrompt />
           {/* fix-42: proactive JWT refresh — eliminates stale-token 401s. */}
           <SessionKeepalive />
         </ThemeProvider>
