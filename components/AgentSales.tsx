@@ -142,6 +142,8 @@ export default function AgentSales({ orders, setOrders, agentId, userProfile }: 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-8)' }}>
 
+      <WalletCard />
+
       {/* Gamification tier ladder (renders only when tier-ladder v2 flag is on) */}
       <AgentTierWidget />
 

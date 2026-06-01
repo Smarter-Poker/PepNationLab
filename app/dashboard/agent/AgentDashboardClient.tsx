@@ -116,7 +116,16 @@ export default function AgentDashboardClient({
   const tabParam = searchParams.get('tab') as any;
   
   const defaultTab = (initialAgentProfile && (!initialAgentProfile.payment_handles || Object.keys(initialAgentProfile.payment_handles).every((k) => !initialAgentProfile.payment_handles![k]))) ? 'Storefront Config' : 'Overview';
-  const [activeTab, setActiveTabState] = useState<'Overview' | 'Sales & Accounting' | 'Orders' | 'Researchers' | 'My Sub-Agents' | 'My Agent Accounts' | 'Store Products' | 'Research Bundles' | 'Inventory' | 'Coupons' | 'Storefront Config' | 'Settings'>(tabParam || defaultTab);
+
+  // Whitelist of valid tabs. Any unknown / malformed ?tab= value (e.g. a link
+  // whose "&" terminated the query string, leaving "Sales ") must fall back to
+  // the default tab — otherwise the main panel renders blank and looks broken.
+  const VALID_TABS = ['Overview', 'Sales & Accounting', 'Orders', 'Researchers', 'My Sub-Agents', 'My Agent Accounts', 'Store Products', 'Research Bundles', 'Inventory', 'Coupons', 'Storefront Config', 'Settings'] as const;
+  type AgentTabName = typeof VALID_TABS[number];
+  const resolveTab = (t: unknown): AgentTabName =>
+    (typeof t === 'string' && (VALID_TABS as readonly string[]).includes(t)) ? (t as AgentTabName) : (defaultTab as AgentTabName);
+
+  const [activeTab, setActiveTabState] = useState<AgentTabName>(resolveTab(tabParam));
 
   const setActiveTab = (tab: typeof activeTab) => {
     setActiveTabState(tab);
@@ -126,7 +135,7 @@ export default function AgentDashboardClient({
   };
 
   useEffect(() => {
-    const newTab = tabParam || defaultTab;
+    const newTab = resolveTab(tabParam);
     if (newTab !== activeTab) {
       setActiveTabState(newTab);
     }
