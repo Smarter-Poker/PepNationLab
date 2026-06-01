@@ -47,8 +47,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized. Please Sign In.' }, { status: 401 });
     }
 
-    // Per-user rate limit: 10 orders / minute. Keyed on user.id so the
-    // limiter survives IP changes mid-session (mobile networks, VPNs).
+    // Per-user rate limit: 10 orders / minute.
     const limited = await rateLimit({
       key: 'orders_create',
       limit: 10,
@@ -85,9 +84,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Shipping Address Is Required For Deliveries.' }, { status: 400 });
     }
 
-    // Idempotency replay: if a request with this key already produced an
-    // order for THIS user, return that order rather than creating a duplicate.
-    // Scoped to buyer_id so a user cannot replay another user's order.
+    // Idempotency replay
     if (idempotencyKey) {
       const { data: existing } = await serviceSupabase
         .from('orders')
@@ -116,13 +113,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Researcher Profile Not Found.' }, { status: 404 });
     }
 
-    // SACA: sub-agents are role='agent' + is_sub_agent=true. They sell on
-    // the parent's storefront at parent's prices — NOT at wholesale cost —
-    // and earn commission as digital credits on the weekly settlement.
-    // So they must NOT be treated as agent self-buy (which would give them
-    // wholesale pricing on top of commission, a double-discount the spec
-    // explicitly rejects). Route them through the referring_agent_id path
-    // so their parent becomes agentProfile and they pay parent's retail.
     const isSubAgent = (profile as { is_sub_agent?: boolean | null }).is_sub_agent === true;
 
     // --- DETERMINE AGENT OF RECORD ---
@@ -130,9 +120,6 @@ export async function POST(request: NextRequest) {
     let superAgentProfile = null;
     let isAgentSelfBuy = false;
 
-    // NOTE: Admins are intentionally excluded from isAgentSelfBuy.
-    // Admins don't have agent_profiles rows, so the tier-pricing path would
-    // fail or fall back to tier_3 (retail). Admins buy at standard pricing.
     if ((profile.role === 'agent' || profile.role === 'super_agent') && !isSubAgent) {
       agentProfile = profile;
       isAgentSelfBuy = true;
@@ -174,22 +161,18 @@ export async function POST(request: NextRequest) {
     for (const cartItem of items) {
       const dbProduct = dbProducts.find(p => p.id === cartItem.id);
       if (!dbProduct) {
-        // Hard fail — consistent with the pricing loop below. A missing product
-        // at this stage means the cart is stale; reject cleanly.
         return NextResponse.json(
           { error: `Product ID "${cartItem.id}" Is No Longer Available. Please Return To The Store And Refresh Your Cart.` },
           { status: 400 }
         );
       }
-      
+
       if (dbProduct.is_banned || !dbProduct.is_active) {
         return NextResponse.json({ error: `Product "${dbProduct.name}" Is Unavailable For Sale.` }, { status: 400 });
       }
 
       const qty = Number(cartItem.quantity) || 1;
 
-      // Server-side per-item quantity safety cap. 10,000 vials is enough for
-      // any legitimate research order; anything above is likely a data error.
       if (qty > 10_000) {
         return NextResponse.json(
           { error: `Quantity for "${dbProduct.name}" exceeds the maximum allowed (10,000 per item).` },
@@ -199,16 +182,10 @@ export async function POST(request: NextRequest) {
 
       let availableStock = Number(dbProduct.inventory_count);
       let bypassInventoryCheck = false;
-      
-      // If it's a researcher buying from an agent's store, and they want it shipped,
-      // it ships from the agent's local on-hand inventory.
-      // If they choose 'agent_pickup', it is fulfilled via a stacked bulk shipment
-      // from main China inventory directly to the agent.
+
       if (agentProfile && !isAgentSelfBuy && fulfillmentMethod === 'ship') {
          availableStock = agentStockMap[cartItem.id] || 0;
       } else if (fulfillmentMethod === 'agent_pickup') {
-         // Agent pickup orders are pre-ordered in bulk from China, so we don't
-         // want to block checkout if the global system says '0' stock.
          bypassInventoryCheck = true;
       }
 
@@ -220,11 +197,8 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // ── CLOSED-LOOP RESEARCHER OWNERSHIP + CATALOG GUARD ────────────────────
-    // HARD RULE: A researcher can ONLY place orders through the agent who
-    // created their account. No cross-agent access. Ever.
+    // CLOSED-LOOP RESEARCHER OWNERSHIP + CATALOG GUARD
     if (agentSlug) {
-      // Resolve the storefront agent from the slug (same table the storefront page uses)
       const { data: storefrontAgent } = await serviceSupabase
         .from('agent_profiles')
         .select('id, min_overall_qty, min_order_qty')
@@ -232,46 +206,29 @@ export async function POST(request: NextRequest) {
         .single();
 
       if (!storefrontAgent) {
-        return NextResponse.json(
-          { error: 'Agent Storefront Not Found.' },
-          { status: 404 }
-        );
+        return NextResponse.json({ error: 'Agent Storefront Not Found.' }, { status: 404 });
       }
 
-      // For researchers: their referring_agent_id MUST match the storefront agent.
-      // Agents/admins placing self-buy orders are exempt from this check.
       if (!isAgentSelfBuy) {
         const researcherBelongsToAgent = profile.referring_agent_id === storefrontAgent.id;
         if (!researcherBelongsToAgent) {
-          return NextResponse.json(
-            { error: 'Your Account Does Not Have Access To This Store.' },
-            { status: 403 }
-          );
+          return NextResponse.json({ error: 'Your Account Does Not Have Access To This Store.' }, { status: 403 });
         }
       }
 
-      // Enforce storefront overall minimum quantity for EVERYONE checking out from this storefront
       const totalRequestedQty = items.reduce((acc, item) => acc + (Number(item.quantity) || 0), 0);
       const minQty = Number(storefrontAgent.min_overall_qty) || 1;
       if (totalRequestedQty < minQty) {
-        return NextResponse.json(
-          { error: `This storefront requires a minimum overall order of ${minQty} items.` },
-          { status: 400 }
-        );
+        return NextResponse.json({ error: `This storefront requires a minimum overall order of ${minQty} items.` }, { status: 400 });
       }
 
-      // Enforce per-peptide minimum quantity
       const minPerItem = Number(storefrontAgent.min_order_qty) || 1;
       for (const item of items) {
         if ((Number(item.quantity) || 0) < minPerItem) {
-          return NextResponse.json(
-            { error: `This storefront requires a minimum of ${minPerItem} per peptide.` },
-            { status: 400 }
-          );
+          return NextResponse.json({ error: `This storefront requires a minimum of ${minPerItem} per peptide.` }, { status: 400 });
         }
       }
 
-      // Every product must also be visible in this agent's catalog.
       const { data: visibleRows } = await serviceSupabase
         .from('agent_products')
         .select('product_id')
@@ -283,18 +240,42 @@ export async function POST(request: NextRequest) {
       const blocked = items.find(i => !visibleSet.has(i.id));
       if (blocked) {
         const blockedName = dbProducts.find(p => p.id === blocked.id)?.name ?? blocked.id;
-        return NextResponse.json(
-          { error: `Product "${blockedName}" Is Not Available Through This Agent's Store.` },
-          { status: 403 }
-        );
+        return NextResponse.json({ error: `Product "${blockedName}" Is Not Available Through This Agent's Store.` }, { status: 403 });
       }
     }
-    // ───────────────────────────────────────────────────────────────────
 
-    // 1. Fetch Admin Default Multipliers (Tier 3 is standard retail)
+    // 1. Fetch Admin Default Multipliers
     const { data: tiers } = await serviceSupabase.from('pricing_tiers').select('tier_name, multiplier');
     const tierMultipliers: Record<string, number> = {};
     tiers?.forEach(t => { tierMultipliers[t.tier_name] = Number(t.multiplier); });
+
+    // fix-57 #2: fetch active flash sale (if any). Single row max.
+    // Applied to researcher retail pricing only — agent self-buys and
+    // wholesale restocks are exempt (already at wholesale tier).
+    const wholesaleExplicit = explicitWholesale === true &&
+      (profile.role === 'agent' || profile.role === 'super_agent') &&
+      !isSubAgent;
+    const flashSaleEligible = !isAgentSelfBuy && !wholesaleExplicit;
+    let flashSaleDiscountPct = 0;
+    if (flashSaleEligible) {
+      const nowIso = new Date().toISOString();
+      const { data: activeSale } = await serviceSupabase
+        .from('flash_sales')
+        .select('discount_pct')
+        .eq('is_active', true)
+        .lte('starts_at', nowIso)
+        .gte('ends_at', nowIso)
+        .order('ends_at', { ascending: true })
+        .limit(1)
+        .maybeSingle();
+      if (activeSale) {
+        const d = Number(activeSale.discount_pct);
+        if (Number.isFinite(d) && d > 0 && d <= 90) {
+          flashSaleDiscountPct = d;
+        }
+      }
+    }
+    const flashMultiplier = 1 - (flashSaleDiscountPct / 100);
 
     // 2. Agent profiles already resolved above.
 
@@ -308,13 +289,13 @@ export async function POST(request: NextRequest) {
 
     const agentTier = agentProfile?.tier || 'tier_3';
     const agentOverrides = await getOverrides(agentTier);
-    
+
     let superAgentOverrides: Record<string, number> = {};
     if (superAgentProfile) {
       superAgentOverrides = await getOverrides(superAgentProfile.tier || 'tier_3');
     }
 
-    // 4. Fetch Custom Retail Prices (if agent manually set them)
+    // 4. Fetch Custom Retail Prices
     let agentCustomRetail: Record<string, number> = {};
     if (agentProfile) {
       const { data: acr } = await serviceSupabase
@@ -322,10 +303,6 @@ export async function POST(request: NextRequest) {
         .select('product_id, retail_price, is_on_sale, sale_price')
         .eq('agent_id', agentProfile.id);
       acr?.forEach(a => {
-        // IMPORTANT: retail_price and sale_price are stored as 10-pack prices
-        // (seeded as base_cost * 10 by the DB trigger). The storefront grid
-        // divides by 10 for per-vial display. We must do the same here so
-        // the server charges exactly what the customer saw on the storefront.
         const rawPrice = a.is_on_sale && a.sale_price != null
           ? Number(a.sale_price)
           : Number(a.retail_price);
@@ -333,14 +310,14 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // 5. Fetch Super Agent Baseline Costs (if Sub-Agent)
+    // 5. Fetch Super Agent Baseline Costs
     let superAgentBaselines: Record<string, { baseline_cost: number, bulk_baseline_cost: number | null, bulk_threshold: number }> = {};
     if (superAgentProfile) {
       const { data: sab } = await serviceSupabase
         .from('super_agent_pricing')
         .select('product_id, baseline_cost, bulk_baseline_cost, bulk_threshold')
         .eq('super_agent_id', superAgentProfile.id);
-      sab?.forEach(b => { 
+      sab?.forEach(b => {
         superAgentBaselines[b.product_id] = {
           baseline_cost: Number(b.baseline_cost),
           bulk_baseline_cost: b.bulk_baseline_cost !== null ? Number(b.bulk_baseline_cost) : null,
@@ -357,9 +334,6 @@ export async function POST(request: NextRequest) {
     for (const cartItem of items) {
       const dbProduct = dbProducts.find(p => p.id === cartItem.id);
       if (!dbProduct) {
-        // Hard fail: never silently drop a line item. If the product doesn't
-        // exist in the catalog, the cart is stale — reject and let the user
-        // refresh their storefront.
         return NextResponse.json(
           { error: `Product ID "${cartItem.id}" Is No Longer Available. Please Return To The Store And Refresh Your Cart.` },
           { status: 400 }
@@ -367,26 +341,20 @@ export async function POST(request: NextRequest) {
       }
 
       const baseCost = Number(dbProduct.base_cost);
-      
-      // Calculate Retail Price (What the buyer pays)
+
       let retailPrice = 0;
-      
+
       if (isAgentSelfBuy) {
-        // If the agent is buying for themselves, they pay their wholesale cost.
-        // We will calculate costPrice first, then set retailPrice = costPrice.
+        // costPrice path; retail will be set below
       } else if (agentCustomRetail[dbProduct.id]) {
         retailPrice = agentCustomRetail[dbProduct.id];
       } else {
-        // NOTE: base_cost in `products` is the per-10-vial pack cost.
-        // All prices stored in order_items are PER-VIAL (quantity = # of vials).
-        // We divide by 10 here to convert pack cost → per-vial.
         const retailMultiplier = tierMultipliers['tier_3'] ?? 1.7;
         retailPrice = baseCost * retailMultiplier / 10;
       }
 
       const itemQty = Number(cartItem.quantity) || 1;
 
-      // Consistent quantity cap in the pricing loop — mirrors the inventory loop.
       if (itemQty > 10_000) {
         return NextResponse.json(
           { error: `Quantity for a cart item exceeds the maximum allowed (10,000 per item).` },
@@ -394,15 +362,11 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      // Calculate Agent Cost (What the agent of record owes Admin or Super Agent)
-      let costPrice = retailPrice; // Default to retail if no agent
+      let costPrice = retailPrice;
       let superAgentCost = null;
 
       if (agentProfile) {
         if (superAgentProfile) {
-          // This is a Sub-Agent.
-          // Super Agent Cost (What Super Agent owes Admin):
-          // NOTE: base_cost is per-10-vial pack. Divide by 10 → per-vial cost.
           const saMultiplier = superAgentOverrides[dbProduct.id] ?? tierMultipliers[superAgentProfile.tier || 'tier_3'] ?? 1.7;
           superAgentCost = applyBulkPrice(
             baseCost * saMultiplier / 10,
@@ -411,7 +375,6 @@ export async function POST(request: NextRequest) {
             dbProduct.admin_bulk_threshold
           );
 
-          // Cost Price (What Sub-Agent owes Super Agent):
           const saConfig = superAgentBaselines[dbProduct.id];
           if (saConfig) {
              if (saConfig.bulk_baseline_cost !== null && itemQty >= saConfig.bulk_threshold) {
@@ -424,9 +387,6 @@ export async function POST(request: NextRequest) {
           }
 
         } else {
-          // Standard Agent (or Super Agent buying directly).
-          // Agent Cost = Admin Base Cost * Agent Tier Multiplier
-          // NOTE: base_cost is per-10-vial pack. Divide by 10 → per-vial cost.
           const agentMultiplier = agentOverrides[dbProduct.id] ?? tierMultipliers[agentTier] ?? 1.7;
           costPrice = applyBulkPrice(
             baseCost * agentMultiplier / 10,
@@ -436,26 +396,23 @@ export async function POST(request: NextRequest) {
           );
         }
       }
-      
-      // If agent self buy, they pay exactly what they owe — UNLESS the item
-      // quantity is below the 10-vial minimum, in which case standard retail
-      // dynamic pricing applies (same rule enforced in the storefront UI).
+
       if (isAgentSelfBuy) {
         if (itemQty >= 10) {
-          // Qualifies for agent direct pricing — pay their tier cost.
           retailPrice = costPrice;
         } else {
-          // Below minimum: charge standard retail (tier_3 markup) per-vial.
           const retailMultiplier = tierMultipliers['tier_3'] ?? 1.7;
           retailPrice = baseCost * retailMultiplier / 10;
-          // costPrice remains the tier cost for accounting (commission calcs),
-          // but the buyer pays retail.
           costPrice = retailPrice;
         }
       }
 
-      // Round unit prices to exact cents (2 decimals) to match DB storage
-      // This prevents fractional cent drift in subtotal math vs order_items sums.
+      // fix-57 #2: Flash sale discount applies to retail buyers, not wholesale.
+      if (flashSaleDiscountPct > 0 && !isAgentSelfBuy) {
+        retailPrice = retailPrice * flashMultiplier;
+      }
+
+      // Round unit prices to exact cents
       retailPrice = isFinite(retailPrice) ? Math.round(retailPrice * 100) / 100 : 0;
       costPrice = isFinite(costPrice) ? Math.round(costPrice * 100) / 100 : 0;
       if (superAgentCost !== null) {
@@ -475,13 +432,7 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // ── STEP A: ATOMIC INVENTORY RESERVATION ────────────────────────────────
-    // The advisory stock check above gives user-friendly error messages.
-    // This call atomically reserves the stock using SELECT FOR UPDATE inside
-    // a SECURITY DEFINER RPC, eliminating the TOCTOU race where two concurrent
-    // requests both read the same inventory_count and both pass the check.
-    // If reservation fails (stock was depleted by a concurrent request), we
-    // get a DB exception and return a 422 — no order row is ever written.
+    // STEP A: ATOMIC INVENTORY RESERVATION
     const inventoryItems = computedItems.map(item => ({
       product_id: item.product_id,
       quantity: item.quantity,
@@ -506,22 +457,13 @@ export async function POST(request: NextRequest) {
       inventoryReserved = true;
     }
 
-    // ── STEP B: COUPON REDEMPTION ────────────────────────────────────────
-    // redeem_coupon increments uses_count atomically. IMPORTANT: any rollback
-    // path after this point must call unreedeem_coupon(appliedCouponId) to
-    // prevent a permanent count leak if the order never commits.
+    // STEP B: COUPON REDEMPTION
     let discountAmount = 0;
     let appliedCouponCode: string | null = null;
     let appliedCouponId: string | null = null;
     const trimmedCouponCode = couponCode ? String(couponCode).trim().toUpperCase() : '';
 
-    // HARD RULE: Agents AND Sub-Agents CANNOT use coupons on self-buys.
-    // SACA spec: sub-agents earn commission as digital credits weekly, so
-    // they cannot also stack a coupon discount at checkout. The isSubAgent
-    // half of this guard handles SACA sub-agents (who now correctly fall
-    // out of isAgentSelfBuy because they buy at parent's retail).
     if ((isAgentSelfBuy || isSubAgent) && trimmedCouponCode) {
-      // Rollback: release the inventory reservation.
       if (inventoryReserved) await serviceSupabase.rpc('release_inventory', inventoryReserveParams);
       return NextResponse.json(
         { error: 'Coupon Codes Cannot Be Applied To Agent Or Sub-Agent Self-Buy Orders.' },
@@ -568,9 +510,7 @@ export async function POST(request: NextRequest) {
       discountAmount = Number(row.discount_amount) || 0;
     }
 
-    // Calculate shipping costs — pick the tier with the highest min_weight_oz
-    // that still covers totalWeightOz. Falls back to a $12 default and logs
-    // a warning so we can audit gaps in the shipping_rates table.
+    // Calculate shipping costs
     let shippingCost = 0;
     if (fulfillmentMethod === 'ship') {
       const { data: shippingRates } = await serviceSupabase
@@ -592,14 +532,10 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Tax calculation has been permanently disabled globally.
     const grossTotal = Math.max(0, subtotal - discountAmount) + shippingCost;
-
     const total = Math.max(0, grossTotal);
 
-    // Record the Layer 4 (checkout) disclaimer audit row BEFORE the order
-    // insert. If the audit fails we refuse to place the order — research-only
-    // compliance requires the four-layer trail to be intact for every sale.
+    // Record the Layer 4 (checkout) disclaimer audit row
     const disclaimerVersion = process.env.NEXT_PUBLIC_DISCLAIMER_VERSION || 'v1.0';
     const checkoutIp =
       request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
@@ -607,7 +543,6 @@ export async function POST(request: NextRequest) {
       null;
     const checkoutUserAgent = request.headers.get('user-agent') || null;
 
-    // disclaimer_id is captured so we can back-fill order_id after the order insert.
     const { data: disclaimerRow, error: disclaimerError } = await serviceSupabase
       .from('disclaimer_acceptances')
       .insert({
@@ -628,11 +563,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Wholesale restock flag must be set explicitly by the caller — we never
-    // imply it from buyer role. A plain agent buying through their own
-    // storefront is a retail self-buy, not a wholesale replenishment.
-    // SACA: sub-agents do not have a storefront to restock; they cannot
-    // flip this flag even if their client sets wholesale=true.
     const isWholesaleRestock =
       explicitWholesale === true &&
       (profile.role === 'agent' || profile.role === 'super_agent') &&
@@ -642,9 +572,7 @@ export async function POST(request: NextRequest) {
     let prepaidDeducted = false;
     let prepaidDeductedAmount = 0;
     let prepaidDeductedAgentId: string | null = null;
-    let oldBalance = 0;
 
-    // --- Helper for Super Agent Credit Check ---
     const checkSuperAgentCredit = async (saProfile: any, amount: number) => {
       if (saProfile.account_type === 'prepaid') {
         const bal = Number(saProfile.prepaid_balance) || 0;
@@ -698,21 +626,13 @@ export async function POST(request: NextRequest) {
       }
     };
 
-    // --- SACA: Sub-Agent Orders Always Require Parent Approval ---
-    // Per spec (2026-05-31): "SUB AGENTS CAN AUTO APPROVE BUT IT STILL NEEDS
-    // APPROVAL FROM THEIR AGENT OR SUPER AGENT." A sub-agent's auto_approve
-    // flag (or a SACA-tagged researcher's auto_approve flag) CANNOT cascade
-    // into approved_ship. The order must park at agent_approval_pending so
-    // the parent agent or super-agent reviews it explicitly.
     const isSACAOrder =
       isSubAgent ||
       ((profile as { referring_sub_agent_id?: string | null }).referring_sub_agent_id != null);
 
-    // --- Two-Step Approval & Cascading Auto-Approve Logic ---
     if (isWholesaleRestock) {
       if (profile.role === 'super_agent') {
         if (profile.auto_approve_orders) {
-          // Admin Trusts Super Agent -> Auto-Approve & Check Credit
           const res = await checkSuperAgentCredit(profile, total);
           if (res.error) return NextResponse.json({ error: res.error }, { status: res.status });
           prepaidDeducted = res.prepaidDeducted || false;
@@ -722,12 +642,10 @@ export async function POST(request: NextRequest) {
           }
           initialStatus = 'admin_approval_pending';
         } else {
-          // No Admin Trust -> Wait for manual admin approval
           initialStatus = 'pending_customer_payment';
         }
       } else if (profile.role === 'agent') {
         if (profile.auto_approve_orders && superAgentProfile) {
-          // Super Agent Trusts Sub-Agent -> Auto-Approve & Check Super Agent's Credit
           let wholesaleCogs = 0;
           for (const item of computedItems) {
             wholesaleCogs += (item.unit_super_agent_cost !== null ? item.unit_super_agent_cost : item.unit_cost_price) * item.quantity;
@@ -743,30 +661,22 @@ export async function POST(request: NextRequest) {
           }
           initialStatus = 'admin_approval_pending';
         } else {
-          // No Super Agent Trust -> Wait for manual super agent approval
           initialStatus = 'agent_approval_pending';
         }
       }
     } else {
-      // Retail Orders (Researchers)
       if (isSACAOrder) {
-        // SACA override: sub-agent-attributed retail orders never auto-approve.
-        // Park at agent_approval_pending for the parent agent / super-agent
-        // to review manually, even if the buyer's auto_approve_orders=true.
         initialStatus = 'agent_approval_pending';
       } else if (profile.auto_approve_orders) {
-        // Agent Trusts Researcher -> Auto-Approve Researcher payment
         if (agentProfile && agentProfile.role === 'agent') {
-          // It's a Sub-Agent. Does the Super Agent trust the Sub-Agent?
           if (agentProfile.auto_approve_orders && superAgentProfile) {
-            // Cascade -> Auto-Approve Sub-Agent too! Check Super Agent's Credit.
             let retailCogs = 0;
             for (const item of computedItems) {
               const cost = item.unit_super_agent_cost !== null ? item.unit_super_agent_cost : item.unit_cost_price;
               retailCogs += cost * item.quantity;
             }
             retailCogs += shippingCost;
-            
+
             const res = await checkSuperAgentCredit(superAgentProfile, retailCogs);
             if (res.error) return NextResponse.json({ error: res.error }, { status: res.status });
             prepaidDeducted = res.prepaidDeducted || false;
@@ -776,19 +686,15 @@ export async function POST(request: NextRequest) {
             }
             initialStatus = 'admin_approval_pending';
           } else {
-            // Super Agent does NOT trust Sub-Agent. Park it at agent_approval_pending
             initialStatus = 'agent_approval_pending';
           }
         } else if (agentProfile && agentProfile.role === 'super_agent') {
-          // It's a Super Agent.
-          // Wait, if it's a Super Agent's researcher, the Super Agent trusts them!
-          // We must check Super Agent's credit for the COGS.
           let retailCogs = 0;
           for (const item of computedItems) {
              retailCogs += item.unit_cost_price * item.quantity;
           }
           retailCogs += shippingCost;
-          
+
           const res = await checkSuperAgentCredit(agentProfile, retailCogs);
           if (res.error) return NextResponse.json({ error: res.error }, { status: res.status });
           prepaidDeducted = res.prepaidDeducted || false;
@@ -825,7 +731,6 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (orderError || !order) {
-      // 23505 = unique_violation — idempotency key replay.
       if (orderError && (orderError as any).code === '23505' && idempotencyKey) {
         const { data: existing } = await serviceSupabase
           .from('orders')
@@ -834,8 +739,6 @@ export async function POST(request: NextRequest) {
           .eq('buyer_id', user.id)
           .maybeSingle();
         if (existing) {
-          // Replay: release the pre-reserved resources since the replayed order
-          // already owns them from the original request.
           if (inventoryReserved) await serviceSupabase.rpc('release_inventory', inventoryReserveParams);
 
           if (appliedCouponId) await serviceSupabase.rpc('unreedeem_coupon', { p_coupon_id: appliedCouponId });
@@ -847,7 +750,6 @@ export async function POST(request: NextRequest) {
           });
         }
       }
-      // Order insert failed: roll back all pre-committed resources.
       if (inventoryReserved) await serviceSupabase.rpc('release_inventory', inventoryReserveParams);
       if (appliedCouponId) await serviceSupabase.rpc('unreedeem_coupon', { p_coupon_id: appliedCouponId });
       if (prepaidDeducted && prepaidDeductedAmount > 0 && prepaidDeductedAgentId) {
@@ -857,14 +759,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Failed To Save Order Transaction.' }, { status: 500 });
     }
 
-    // Back-fill the disclaimer row with this order_id so the compliance audit
-    // trail is complete and no checkout disclaimer is ever orphaned.
     void serviceSupabase
       .from('disclaimer_acceptances')
       .update({ order_id: order.id })
       .eq('id', disclaimerRow.id);
 
-    // Create order items
     if (computedItems.length === 0) {
       await serviceSupabase.from('orders').delete().eq('id', order.id);
       return NextResponse.json({ error: 'Cart Items Could Not Be Processed. Please Try Again.' }, { status: 400 });
@@ -885,10 +784,6 @@ export async function POST(request: NextRequest) {
       .insert(itemsToInsert);
 
     if (itemsError) {
-      // Items insert failed: roll back order + all pre-committed resources.
-      // Inventory was pre-reserved — release it so stock is not permanently lost.
-      // Coupon was pre-incremented — unreedeem so the count is not permanently burned.
-      // Store credit was pre-deducted — release so balance is restored.
       console.error('Database Order Items Write Error:', JSON.stringify(itemsError));
       await serviceSupabase.from('orders').delete().eq('id', order.id);
       if (inventoryReserved) await serviceSupabase.rpc('release_inventory', inventoryReserveParams);
@@ -900,20 +795,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: `An unexpected error occurred: ${itemsError.message || JSON.stringify(itemsError)}` }, { status: 500 });
     }
 
-    // ── SACA Phase 4: Sub-Agent Commission Accrual ────────────────────────────
-    // After the order + items are committed, resolve the effective sub-agent
-    // referral and stamp it on the order, then call the SECDEF RPC to write
-    // a pending ledger row. Failures are logged but never roll back the order
-    // — commission accrual is a separate concern from order success. The DB
-    // trigger trg_void_subagent_commission_on_cancel handles the reversal
-    // path if the order is later cancelled before shipping.
+    // SACA Phase 4: Sub-Agent Commission Accrual
     try {
       let effectiveReferringSubAgentId: string | null = null;
       if (isSubAgent) {
-        // Self-buy by a sub-agent. Per spec, sub-agents earn commission on
-        // their own purchases too (credited at the weekly settlement).
-        // They paid parent's retail at checkout; the commission % is the
-        // "discount" they get as digital credits next week.
         effectiveReferringSubAgentId = user.id;
       } else {
         const referringSub = (profile as { referring_sub_agent_id?: string | null }).referring_sub_agent_id;
@@ -938,11 +823,7 @@ export async function POST(request: NextRequest) {
       console.error('[orders] SACA accrual block threw:', e);
     }
 
-    // Checkout disclaimer audit row was recorded above, prior to the order
-    // insert, so a successful order implies a complete four-layer trail.
-
-    // Awaited abandoned-cart recovery attribution. We never fail the
-    // order if this lookup misses or errors — it is purely an analytics signal.
+    // Abandoned-cart recovery attribution
     try {
       const fourteenDaysAgo = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString();
       const { data: openReminder } = await serviceSupabase
@@ -961,13 +842,12 @@ export async function POST(request: NextRequest) {
           .eq('id', openReminder.id);
       }
     } catch {
-      // Best-effort attribution; never bubble up.
+      // Best-effort attribution
     }
 
-    // Awaited in-app + push notifications for new order.
+    // In-app + push notifications for new order
     try {
       const short = shortOrderId(order.id);
-      // 1. Notify agent when a researcher places an order
       if (agentProfile && !isAgentSelfBuy) {
         const { data: buyerProfile } = await serviceSupabase
           .from('profiles')
@@ -975,9 +855,7 @@ export async function POST(request: NextRequest) {
           .eq('id', user.id)
           .maybeSingle();
         const buyerName = buyerProfile?.full_name || 'A Researcher';
-        // In-app notification for agent
         await notifyOrderPlaced(serviceSupabase, agentProfile.id, order.id, short, buyerName);
-        // Web push for agent
         await enqueuePush(serviceSupabase, {
           userId: agentProfile.id,
           title: `New Order #${short}`,
@@ -988,7 +866,6 @@ export async function POST(request: NextRequest) {
           tag: `new-order-${order.id}`,
         });
       }
-      // 2. In-app + push confirm to researcher
       await notify(serviceSupabase, {
         userId: user.id,
         type: 'order_placed',
