@@ -6,6 +6,7 @@ import AgentOrders from './AgentOrders';
 import { createClient } from '@/lib/supabase/client';
 import AgentStatements from './AgentStatements';
 import AgentSubInvoices from './AgentSubInvoices';
+import AgentTierWidget from './AgentTierWidget';
 
 const STATUS_LABELS: Record<string, string> = {
   pending_customer_payment: 'Pending Payment',
@@ -139,7 +140,10 @@ export default function AgentSales({ orders, setOrders, agentId, userProfile }: 
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-8)' }}>
-      
+
+      {/* Gamification tier ladder (renders only when tier-ladder v2 flag is on) */}
+      <AgentTierWidget />
+
       {/* 1. TOP ROW: KPI SNAPSHOTS */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: 'var(--space-4)' }}>
         

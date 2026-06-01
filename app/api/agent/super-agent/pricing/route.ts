@@ -123,8 +123,8 @@ export async function POST(req: NextRequest) {
     // A super-agent cannot price sub-agents below their own wholesale cost
     // (which would mean selling at a loss). computeAgentCost returns the
     // per-10-vial-pack cost; baseline_cost is also per-10-vial-pack.
-    const { computeAgentCost } = await import('@/lib/pricing');
-    const ownCostPer10 = await computeAgentCost(supabase as any, product_id, (superAgentProfile.tier as 'tier_1' | 'tier_2' | 'tier_3') ?? 'tier_3');
+    const { computeAgentCostForAgent } = await import('@/lib/pricing');
+    const ownCostPer10 = await computeAgentCostForAgent(supabase as any, product_id, superAgentId, (superAgentProfile.tier as 'tier_1' | 'tier_2' | 'tier_3') ?? 'tier_3');
     // Allow zero-cost items as explicitly requested.
     // Ensure that if ownCostPer10 is exactly 0, they can set baseline_cost >= 0.
     if (ownCostPer10 === undefined || ownCostPer10 === null) {

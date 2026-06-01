@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
 import { requireAgent } from '@/lib/admin-auth';
-import { computeAgentCost, computeSubAgentBaselineCost, type AgentTier } from '@/lib/pricing';
+import { computeAgentCost, computeAgentCostForAgent, computeSubAgentBaselineCost, type AgentTier } from '@/lib/pricing';
 import { assertSameOrigin } from '@/lib/csrf';
 
 interface ManualOrderItemInput {
@@ -92,7 +92,7 @@ export async function POST(req: NextRequest) {
       // computeAgentCost / computeSubAgentBaselineCost return per-10-vial-pack costs.
       // Divide by 10 to get per-vial cost, consistent with the per-vial unit_retail_price
       // and per-vial quantity stored in order_items (same model as orders/route.ts).
-      const unitCost = (await computeAgentCost(supabase, ap.product_id, tier)) / 10;
+      const unitCost = (await computeAgentCostForAgent(supabase, ap.product_id, agentId, tier)) / 10;
       const unitSuperAgentCost = parentAgentId
         ? (await computeSubAgentBaselineCost(supabase, ap.product_id, parentAgentId)) / 10
         : null;

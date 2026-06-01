@@ -11,6 +11,7 @@ import AgentStoreProducts from '@/components/AgentStoreProducts';
 import AgentSales from '@/components/AgentSales';
 import AgentSubAgents from '@/components/AgentSubAgents';
 import AgentInventory from '@/components/AgentInventory';
+import AgentDownline from '@/components/AgentDownline';
 import AgentInbox from '@/components/AgentInbox';
 import AgentOverview from '@/components/AgentOverview';
 import AgentStorefrontConfig from '@/components/AgentStorefrontConfig';
@@ -114,7 +115,7 @@ export default function AgentDashboardClient({
   const tabParam = searchParams.get('tab') as any;
   
   const defaultTab = (initialAgentProfile && (!initialAgentProfile.payment_handles || Object.keys(initialAgentProfile.payment_handles).every((k) => !initialAgentProfile.payment_handles![k]))) ? 'Storefront Config' : 'Overview';
-  const [activeTab, setActiveTabState] = useState<'Overview' | 'Sales & Accounting' | 'Orders' | 'Researchers' | 'My Sub-Agents' | 'Store Products' | 'Research Bundles' | 'Inventory' | 'Coupons' | 'Storefront Config' | 'Settings'>(tabParam || defaultTab);
+  const [activeTab, setActiveTabState] = useState<'Overview' | 'Sales & Accounting' | 'Orders' | 'Researchers' | 'My Sub-Agents' | 'My Agent Accounts' | 'Store Products' | 'Research Bundles' | 'Inventory' | 'Coupons' | 'Storefront Config' | 'Settings'>(tabParam || defaultTab);
 
   const setActiveTab = (tab: typeof activeTab) => {
     setActiveTabState(tab);
@@ -533,7 +534,10 @@ export default function AgentDashboardClient({
     { id: 'Sales & Accounting', label: 'Sales & Accounting', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17" /><polyline points="16 7 22 7 22 13" /></svg> },
     { id: 'Orders', label: 'Orders & Fulfillment', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path><line x1="3" y1="6" x2="21" y2="6"></line><path d="M16 10a4 4 0 0 1-8 0"></path></svg> },
     { id: 'Researchers', label: 'Researchers', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /></svg> },
-    ...(userProfile.is_super_agent ? [{ id: 'My Sub-Agents', label: 'My Sub-Agents', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /></svg> }] : []),
+    ...(userProfile.is_super_agent ? [
+      { id: 'My Sub-Agents', label: 'My Sub-Agents', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /></svg> },
+      { id: 'My Agent Accounts', label: 'My Agent Accounts', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /></svg> }
+    ] : []),
     { id: 'Coupons', label: 'Coupons', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z" /><line x1="7" y1="7" x2="7.01" y2="7" /></svg> },
     { id: 'Store Products', label: 'Store Products', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /><line x1="16" y1="13" x2="8" y2="13" /><line x1="16" y1="17" x2="8" y2="17" /></svg> },
     { id: 'Research Bundles', label: 'Bundles', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" /><polyline points="3.27 6.96 12 12.01 20.73 6.96" /><line x1="12" y1="22.08" x2="12" y2="12" /></svg> },
@@ -743,6 +747,11 @@ export default function AgentDashboardClient({
             <AgentNetworkMap />
             <AgentSubAgents agentId={userProfile.id} />
           </div>
+        )}
+
+        {/* My Agent Accounts Tab */}
+        {activeTab === 'My Agent Accounts' && (
+          <AgentDownline agentId={userProfile.id} />
         )}
 
         {/* Store Products Tab */}

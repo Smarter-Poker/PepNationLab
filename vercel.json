@@ -29,6 +29,10 @@
       "schedule": "0 15 * * *"
     },
     {
+      "path": "/api/cron/tier-recompute",
+      "schedule": "0 8 * * *"
+    },
+    {
       "path": "/api/cron/referrals-fulfil",
       "schedule": "30 * * * *"
     },

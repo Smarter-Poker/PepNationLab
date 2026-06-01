@@ -80,6 +80,75 @@ export async function computeSubAgentBaselineCost(supabase: ServiceClient, produ
   return computeAgentCost(supabase, productId, superTier);
 }
 
+/* ── 5-Tier Gamification Ladder (v2) — flag-gated ──────────────────────────
+   Active only when NEXT_PUBLIC_TIER_LADDER_V2 === '1'. Until the flag is set,
+   computeAgentCostForAgent() falls through to the legacy per-tier multiplier
+   path below, so production pricing is byte-for-byte unchanged. */
+
+export function isTierLadderV2(): boolean {
+  return process.env.NEXT_PUBLIC_TIER_LADDER_V2 === '1';
+}
+
+export interface HouseTier {
+  level: number;
+  name: string;
+  min_volume: number;
+  max_volume: number | null;
+  markup: number;
+}
+
+export async function getHouseTiers(supabase: ServiceClient): Promise<HouseTier[]> {
+  const hit = getCached<HouseTier[]>('houseTiers');
+  if (hit !== undefined) return hit;
+  const { data } = await supabase
+    .from('house_tiers')
+    .select('level, name, min_volume, max_volume, markup')
+    .order('level');
+  const tiers: HouseTier[] = (data ?? []).map((t) => ({
+    level: Number(t.level),
+    name: String(t.name),
+    min_volume: Number(t.min_volume),
+    max_volume: t.max_volume == null ? null : Number(t.max_volume),
+    markup: Number(t.markup),
+  }));
+  return setCache('houseTiers', tiers);
+}
+
+/** Resolve the agent's effective house tier level (admin override else volume bucket). */
+export async function resolveHouseTierLevel(supabase: ServiceClient, agentId: string): Promise<number> {
+  const { data, error } = await supabase.rpc('fn_resolve_house_tier_level', { p_agent: agentId });
+  if (error || data == null) return 1;
+  return Number(data);
+}
+
+/** v2 wholesale cost for a House-facing agent: cost = base * (1 + markup(level)). */
+export async function computeAgentCostV2(supabase: ServiceClient, productId: string, agentId: string): Promise<number> {
+  const [base, level, tiers] = await Promise.all([
+    getProductBaseCost(supabase, productId),
+    resolveHouseTierLevel(supabase, agentId),
+    getHouseTiers(supabase),
+  ]);
+  const tier = tiers.find((t) => t.level === level) ?? tiers[tiers.length - 1];
+  // Safety: if config is missing, fall back to the highest markup (Rookie 70%).
+  const markup = tier ? tier.markup : 0.7;
+  return Math.round(base * (1 + markup) * 100) / 100;
+}
+
+/**
+ * Flag-aware entry point for an agent's wholesale cost. When the tier ladder v2
+ * flag is enabled, resolves the dynamic 5-tier markup; otherwise falls back to
+ * the legacy per-tier multiplier using the passed-in legacy tier.
+ */
+export async function computeAgentCostForAgent(
+  supabase: ServiceClient,
+  productId: string,
+  agentId: string,
+  legacyTier: AgentTier,
+): Promise<number> {
+  if (isTierLadderV2()) return computeAgentCostV2(supabase, productId, agentId);
+  return computeAgentCost(supabase, productId, legacyTier);
+}
+
 export function applyBulkPrice(base: number, qty: number, bulkPrice: number | null | undefined, bulkThreshold: number | null | undefined): number {
   if (bulkPrice == null) return base;
   const threshold = bulkThreshold && bulkThreshold > 0 ? bulkThreshold : 100;

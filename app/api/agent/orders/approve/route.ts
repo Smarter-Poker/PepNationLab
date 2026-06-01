@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
 import { requireAgent } from '@/lib/admin-auth';
 import { pickOne } from '@/lib/relations';
-import { computeAgentCost, type AgentTier } from '@/lib/pricing';
+import { computeAgentCost, computeAgentCostForAgent, type AgentTier } from '@/lib/pricing';
 import { enqueueOrderPush, shortOrderId } from '@/lib/push-enqueue';
 import { enqueueWebhook, fetchOrderForWebhook } from '@/lib/webhook-dispatch';
 import { assertSameOrigin } from '@/lib/csrf';
@@ -117,12 +117,12 @@ export async function POST(req: NextRequest) {
         // unit_super_agent_cost is stored per-vial (since orders/route.ts fix).
         // The computeAgentCost fallback returns per-10-vial pack, so divide by 10.
         if (Number.isFinite(stored) && stored >= 0) totalCogs += stored * qty;
-        else if (item.product_id) totalCogs += (await computeAgentCost(supabase, item.product_id, billedAgentTier) / 10) * qty;
+        else if (item.product_id) totalCogs += (await computeAgentCostForAgent(supabase, item.product_id, primaryBilledAgentId, billedAgentTier) / 10) * qty;
       } else {
         const stored = Number(item.unit_cost_price);
         // unit_cost_price is stored per-vial (since orders/route.ts fix).
         if (Number.isFinite(stored) && stored >= 0) totalCogs += stored * qty;
-        else if (item.product_id) totalCogs += (await computeAgentCost(supabase, item.product_id, billedAgentTier) / 10) * qty;
+        else if (item.product_id) totalCogs += (await computeAgentCostForAgent(supabase, item.product_id, primaryBilledAgentId, billedAgentTier) / 10) * qty;
       }
     }
 

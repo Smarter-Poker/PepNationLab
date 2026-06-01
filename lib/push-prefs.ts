@@ -25,6 +25,7 @@ export type PushTypeKey =
   | 'payment_reminder'
   | 'cart_reminder'
   | 'refill_reminder'
+  | 'tier_levelup'
   | 'referral'
   | 'system';
 
@@ -56,6 +57,7 @@ export const PUSH_TYPES: PushTypeDef[] = [
 
   { key: 'commission_earned', group: 'Earnings & Team',       label: 'Commission Earned',   desc: 'You Earn Or Are Paid A Commission' },
   { key: 'new_researcher',    group: 'Earnings & Team',       label: 'New Researcher',      desc: 'A Researcher Joins Your Team' },
+  { key: 'tier_levelup',      group: 'Earnings & Team',       label: 'Tier Level-Ups',      desc: 'You Reach A New Tier And Your Pricing Improves' },
 
   { key: 'invoice',           group: 'Billing',               label: 'Invoices',            desc: 'A Weekly Invoice Is Generated' },
   { key: 'payment_reminder',  group: 'Billing',               label: 'Payment Reminders',   desc: 'An Outstanding Balance Is Due' },

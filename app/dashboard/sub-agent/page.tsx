@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { toast } from 'sonner';
 import PushNotificationToggle from '@/components/PushNotificationToggle';
+import Navbar from '@/components/Navbar';
 
 /**
  * SACA Phase 5: Sub-agent dashboard.
@@ -99,18 +100,26 @@ export default function SubAgentDashboardPage() {
 
   if (loading) {
     return (
-      <div style={{ padding: '24px' }}>
-        <h1 style={{ fontSize: '28px' }}>Sub-Agent Dashboard</h1>
-        <p>Loading...</p>
+      <div style={{ minHeight: '100dvh', background: 'var(--black)' }}>
+        <Navbar />
+        <div style={{ height: 60 }} />
+        <div style={{ padding: '24px', maxWidth: '1200px', margin: '0 auto' }}>
+          <h1 style={{ fontSize: '28px' }}>Sub-Agent Dashboard</h1>
+          <p>Loading...</p>
+        </div>
       </div>
     );
   }
 
   if (error || !data) {
     return (
-      <div style={{ padding: '24px' }}>
-        <h1 style={{ fontSize: '28px' }}>Sub-Agent Dashboard</h1>
-        <div style={{ color: '#E53E3E', marginTop: '12px' }}>{error || 'No Data.'}</div>
+      <div style={{ minHeight: '100dvh', background: 'var(--black)' }}>
+        <Navbar />
+        <div style={{ height: 60 }} />
+        <div style={{ padding: '24px', maxWidth: '1200px', margin: '0 auto' }}>
+          <h1 style={{ fontSize: '28px' }}>Sub-Agent Dashboard</h1>
+          <div style={{ color: '#E53E3E', marginTop: '12px' }}>{error || 'No Data.'}</div>
+        </div>
       </div>
     );
   }
@@ -121,7 +130,10 @@ export default function SubAgentDashboardPage() {
     : Number(data.profile.prepaid_balance ?? 0);
 
   return (
-    <div style={{ padding: '24px', maxWidth: '1200px', margin: '0 auto' }}>
+    <div style={{ minHeight: '100dvh', background: 'var(--black)' }}>
+      <Navbar />
+      <div style={{ height: 60 }} />
+      <div style={{ padding: '24px', maxWidth: '1200px', margin: '0 auto' }}>
       <h1 style={{ fontSize: '28px', marginBottom: '4px' }}>Sub-Agent Dashboard</h1>
       <p style={{ opacity: 0.85, marginBottom: '24px' }}>
         Welcome, {data.profile.full_name || data.profile.username || 'Sub-Agent'}.
@@ -346,6 +358,7 @@ export default function SubAgentDashboardPage() {
           description="Enable Push Notifications On This Device For Incoming Calls And New Messages — Even When The App Is Closed."
         />
       </div>
+    </div>
     </div>
   );
 }

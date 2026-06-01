@@ -26,6 +26,7 @@ export type NotificationType =
   | 'payment_reminder'
   | 'cart_reminder'
   | 'refill_reminder'
+  | 'tier_levelup'
   | 'referral'
   | 'system';
 
@@ -323,6 +324,24 @@ export async function notifyRefillReminder(
     title: 'Time To Restock?',
     body: `Hey ${who}, it has been a few weeks since your last order. Tap to browse and reorder when you are ready.`,
     url: '/products',
+  });
+}
+
+/**
+ * Notify an agent they leveled up the House tier ladder ("Achievement Unlocked").
+ * Their wholesale pricing improves immediately at the new tier.
+ */
+export async function notifyTierLevelUp(
+  supabase: SupabaseClient,
+  agentId: string,
+  newLevelName: string,
+) {
+  await notify(supabase, {
+    userId: agentId,
+    type: 'tier_levelup',
+    title: `Level Up: ${newLevelName}`,
+    body: `Achievement Unlocked. You reached the ${newLevelName} tier — your Agent Cost just dropped. Keep the momentum going.`,
+    url: '/dashboard/agent?tab=overview',
   });
 }
 
