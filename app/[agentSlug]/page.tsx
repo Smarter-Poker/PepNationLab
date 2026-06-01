@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server';
 import Link from 'next/link';
 import AgentStorefrontGrid from '@/components/AgentStorefrontGrid';
 import AgentStorefrontLogin from '@/components/AgentStorefrontLogin';
+import CouponLinkCapture from '@/components/CouponLinkCapture';
 
 interface Props {
   params: Promise<{ agentSlug: string }>;
@@ -221,6 +222,7 @@ export default async function AgentStorefrontPage({ params }: Props) {
 
   return (
     <div style={{ minHeight: '100dvh', background: 'var(--black)' }}>
+      <CouponLinkCapture />
       <style dangerouslySetInnerHTML={{__html: `
         .sf-nav { height: 60px; background: var(--black-2); border-bottom: 1px solid rgba(192,184,168,0.2); display: flex; align-items: center; justify-content: space-between; padding: 0 12px; position: sticky; top: 0; z-index: 50; gap: 8px; }
         .sf-nav-brand { display: flex; align-items: center; gap: 8px; min-width: 0; flex: 1; }
