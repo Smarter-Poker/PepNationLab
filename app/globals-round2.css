@@ -675,6 +675,8 @@ body > * {
   }
 }
 
+/* Round 8 redeploy nudge — Vercel queue stalled 14:42 UTC 2026-06-01, force a fresh build off latest main HEAD which carries Navbar bells + ProductCard + CSS Round 8. */
+
 /* ============================================================
    END ROUND 2 + ROUND 3 + ROUND 4 + ROUND 5 + ROUND 6 + ROUND 7
    + ROUND 8 MOBILE SAFE-AREA AND HORIZONTAL OVERFLOW ENFORCEMENT
