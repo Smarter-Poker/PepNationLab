@@ -32,8 +32,10 @@ export const ALLOWED_TRANSITIONS: Record<OrderStatus, OrderStatus[]> = {
   cancelled: [],
 };
 
+// The shipping role acts ONLY on post-admin-gate states. It must never be able
+// to pull a pre-gate order (pending_customer_payment / agent_approval_pending /
+// admin_approval_pending) into fulfillment — that would skip admin release.
 export const SHIPPING_TRANSITIONS: Partial<Record<OrderStatus, OrderStatus[]>> = {
-  pending_customer_payment: ['in_fulfillment'],
   approved_ship: ['in_fulfillment'],
   in_fulfillment: ['shipped'],
   shipped: ['delivered'],
