@@ -187,7 +187,12 @@ export default function MessengerShell({ userId }: Props) {
   return (
     <div
       className={`messenger-shell${activeId ? ' msg-panel-active' : ''}`}
-      style={{ display: 'flex', height: '100dvh', minHeight: 0, background: 'var(--black, #050A0F)', overflow: 'hidden' }}
+      // round-10 fix: the parent layout (app/messenger/layout.tsx) already
+      // subtracts the 60px fixed navbar via a spacer + flex:1 1 0 content
+      // column. Using height:100dvh here would push the shell 60px below
+      // the visible viewport and hide the composer / Send button on mobile.
+      // Use flex:1 1 0 so the shell fills the space its parent gives it.
+      style={{ display: 'flex', flex: '1 1 0', minHeight: 0, width: '100%', background: 'var(--black, #050A0F)', overflow: 'hidden' }}
     >
       <aside
         style={{
