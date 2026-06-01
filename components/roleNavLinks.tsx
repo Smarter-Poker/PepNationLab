@@ -12,6 +12,9 @@ import React from 'react';
  *   - researcher       -> their dashboard, their agent storefront, and the
  *                         global /account/* settings pages
  *
+ * The href '#SHOW_QR' is a sentinel the Navbar intercepts to open the
+ * full-screen QR popup (instead of navigating).
+ *
  * The /account/* pages are role-agnostic, so sub-agents and researchers reach
  * their full account + notification settings through them.
  */
@@ -99,7 +102,7 @@ function agentLinks(isSuper: boolean, storefrontHref: string): RoleNavLink[] {
     { href: agentTab('Sales & Accounting'), label: 'Sales & Accounting', icon: <svg {...ip}><polyline points="22 7 13.5 15.5 8.5 10.5 2 17" /><polyline points="16 7 22 7 22 13" /></svg> },
     { href: agentTab('Coupons'), label: 'Coupons', icon: <svg {...ip}><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z" /><line x1="7" y1="7" x2="7.01" y2="7" /></svg> },
     { href: agentTab('Research Bundles'), label: 'Bundles + Stacks', icon: <svg {...ip}><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" /><polyline points="3.27 6.96 12 12.01 20.73 6.96" /><line x1="12" y1="22.08" x2="12" y2="12" /></svg> },
-    { href: agentTab('Storefront Config'), label: 'My QR Code', icon: <svg {...ip}><rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" /><rect x="3" y="14" width="7" height="7" /><rect x="14" y="14" width="3" height="3" /><rect x="19" y="14" width="2" height="2" /><rect x="14" y="19" width="2" height="2" /><rect x="19" y="19" width="2" height="2" /></svg> },
+    { href: '#SHOW_QR', label: 'My QR Code', icon: ICON.qr },
     { href: '/messenger', label: 'Messenger', icon: <svg {...ip}><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg> },
     { href: agentTab('Settings'), label: 'Account Settings', icon: <svg {...ip}><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /></svg> },
     { href: '/account/security', label: 'Account Security', icon: <svg {...ip}><rect x="3" y="11" width="18" height="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></svg> },
