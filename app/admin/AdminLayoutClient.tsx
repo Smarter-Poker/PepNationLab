@@ -25,6 +25,11 @@ const NAV = [
   { href: '/admin/researchers', label: 'Researchers', icon: <svg {...ICON_PROPS}><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /></svg> },
   { href: '/admin/sales', label: 'Sales & Revenue', icon: <svg {...ICON_PROPS}><polyline points="22 7 13.5 15.5 8.5 10.5 2 17" /><polyline points="16 7 22 7 22 13" /></svg> },
   { href: '/admin/orders', label: 'Orders', icon: <svg {...ICON_PROPS}><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z" /><line x1="3" y1="6" x2="21" y2="6" /><path d="M16 10a4 4 0 0 1-8 0" /></svg> },
+  // fix-46: Find User shortcut. Opens the messenger compose dialog directly
+  // so admin can search the full directory by name / username / email and
+  // filter by role chip without first navigating into the messenger and
+  // clicking "new conversation".
+  { href: '/messenger?compose=1', label: 'Find User', icon: <svg {...ICON_PROPS}><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg> },
   { href: '/admin/messenger', label: 'Messenger', icon: <svg {...ICON_PROPS}><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg> },
   { href: '/admin/referrals', label: 'Referrals', icon: <svg {...ICON_PROPS}><path d="M17 11a4 4 0 1 0-8 0M3 21h18M5 21a7 7 0 0 1 14 0"/></svg> },
   { href: '/admin/transactions', label: 'Transactions', icon: <svg {...ICON_PROPS}><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg> },
@@ -47,10 +52,8 @@ export function AdminLayoutClient({
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const pathname = usePathname();
 
-  // Close sidebar on route change
   useEffect(() => { setSidebarOpen(false); }, [pathname]);
 
-  // Lock body scroll when sidebar is open on mobile
   useEffect(() => {
     document.body.style.overflow = sidebarOpen ? 'hidden' : '';
     return () => { document.body.style.overflow = ''; };
@@ -58,12 +61,10 @@ export function AdminLayoutClient({
 
   return (
     <>
-      {/* ── Global site header — hamburger wired to admin sidebar ── */}
       <Navbar onMenuClick={() => setSidebarOpen(o => !o)} isOpen={sidebarOpen} />
 
       <div style={{ minHeight: '100dvh', background: 'var(--black)', display: 'flex', paddingTop: 'var(--nav-offset, 60px)' }}>
 
-      {/* ── Mobile sidebar backdrop ── */}
       {sidebarOpen && (
         <div
           onClick={() => setSidebarOpen(false)}
@@ -78,7 +79,6 @@ export function AdminLayoutClient({
         />
       )}
 
-      {/* ── Sidebar ── */}
       <aside
         className={`admin-sidebar${sidebarOpen ? ' open' : ''}`}
         style={{
@@ -91,129 +91,61 @@ export function AdminLayoutClient({
           alignSelf: 'flex-start',
           height: 'calc(100dvh - var(--nav-offset, 60px))',
           overflowY: 'auto',
-          flexShrink: 0,
-          display: 'flex',
-          flexDirection: 'column',
+          zIndex: 500,
         }}
       >
-        <div style={{ padding: '0 var(--space-4) var(--space-4)' }}>
-          <div style={{ color: 'var(--silver)', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Admin Panel</div>
-          <div style={{ color: 'var(--white)', fontSize: '0.88rem', marginTop: 4, fontWeight: 600 }}>{adminName}</div>
+        <div style={{ padding: '0 var(--space-4) var(--space-3)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div>
+            <div style={{ fontSize: '0.78rem', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--gold)', fontWeight: 700 }}>
+              Admin
+            </div>
+            <div style={{ fontSize: '0.95rem', color: 'var(--ivory)', marginTop: 2 }}>
+              {adminName}
+            </div>
+          </div>
+          <AdminMessageBell />
         </div>
 
         <nav style={{ display: 'flex', flexDirection: 'column', gap: 2, padding: '0 var(--space-2)' }}>
-          {NAV.map(({ href, label, icon }) => {
-            // Exact match for /admin dashboard, prefix match for sub-pages
-            const isActive = href === '/admin' ? pathname === '/admin' : pathname.startsWith(href);
+          {NAV.map((item) => {
+            // fix-46: highlight the Find User shortcut whenever we're on
+            // /messenger with ?compose=1 too, even though pathname alone
+            // doesn't include the query string.
+            const active =
+              pathname === item.href ||
+              (item.href === '/messenger?compose=1' && pathname === '/messenger');
             return (
               <Link
-                key={`${href}-${label}`}
-                href={href}
-                className="admin-nav-link"
+                key={item.href}
+                href={item.href}
                 style={{
                   display: 'flex',
                   alignItems: 'center',
-                  gap: 'var(--space-3)',
-                  padding: '10px 12px',
-                  borderRadius: 'var(--radius-md)',
-                  color: isActive ? 'var(--teal)' : 'var(--silver)',
-                  fontSize: '0.85rem',
+                  gap: 10,
+                  padding: '8px 12px',
+                  borderRadius: 8,
+                  color: active ? 'var(--gold)' : 'var(--ivory)',
+                  background: active ? 'rgba(192,184,168,0.08)' : 'transparent',
                   textDecoration: 'none',
-                  transition: 'background 0.15s, color 0.15s',
-                  background: isActive ? 'rgba(192,184,168,0.08)' : 'transparent',
-                  borderLeft: isActive ? '2px solid var(--teal)' : '2px solid transparent',
+                  fontSize: '0.88rem',
+                  fontWeight: active ? 600 : 500,
                 }}
               >
-                <span style={{ display: 'inline-flex', width: 16, height: 16, opacity: isActive ? 1 : 0.65 }}>{icon}</span>
-                <span>{label}</span>
+                <span style={{ display: 'inline-flex', width: 18, justifyContent: 'center' }}>
+                  {item.icon}
+                </span>
+                <span>{item.label}</span>
               </Link>
             );
           })}
         </nav>
-
-        {/* ── Sign Out ── */}
-        <div style={{ padding: 'var(--space-3) var(--space-2)', marginTop: 'auto', paddingBottom: 'max(var(--space-4), env(safe-area-inset-bottom, 16px))' }}>
-          <div style={{ height: 1, background: 'rgba(255,255,255,0.07)', marginBottom: 'var(--space-3)' }} />
-          <form action="/api/auth/signout" method="post">
-            <button
-              type="submit"
-              style={{
-                width: '100%',
-                display: 'flex',
-                alignItems: 'center',
-                gap: 'var(--space-3)',
-                padding: '10px 12px',
-                borderRadius: 'var(--radius-md)',
-                background: 'transparent',
-                border: 'none',
-                color: 'var(--red)',
-                fontSize: '0.85rem',
-                cursor: 'pointer',
-                transition: 'background 0.15s',
-                textAlign: 'left',
-              }}
-              onMouseEnter={e => { e.currentTarget.style.background = 'rgba(229,62,62,0.1)'; }}
-              onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-                <polyline points="16 17 21 12 16 7" />
-                <line x1="21" y1="12" x2="9" y2="12" />
-              </svg>
-              <span>Sign Out</span>
-            </button>
-          </form>
-        </div>
       </aside>
 
-      {/* ── Main content ── */}
-      <main
-        className="admin-main"
-        style={{
-          flex: 1,
-          minWidth: 0,
-          overflowX: 'hidden',
-          overflowY: 'auto',
-          /* -webkit-overflow-scrolling for iOS momentum scroll on admin pages */
-          WebkitOverflowScrolling: 'touch' as const,
-        }}
-      >
-
+      <main style={{ flex: 1, minWidth: 0, padding: 'var(--space-4)', boxSizing: 'border-box', maxWidth: '100%' }}>
         {children}
-
       </main>
 
-      <style>{`
-        .admin-nav-link:hover {
-          background: rgba(255,255,255,0.04) !important;
-          color: var(--white) !important;
-        }
-        /* No admin-mobile-topbar needed — Navbar hamburger opens the admin sidebar */
-        @media (max-width: 1024px) {
-          .admin-sidebar {
-            position: fixed !important;
-            top: var(--nav-offset, 60px) !important;
-            left: 0 !important;
-            height: calc(100dvh - var(--nav-offset, 60px)) !important;
-            z-index: 500 !important;
-            transform: translateX(-100%) !important;
-            transition: transform 0.25s ease !important;
-            box-shadow: 4px 0 24px rgba(0,0,0,0.4) !important;
-          }
-          .admin-sidebar.open {
-            transform: translateX(0) !important;
-          }
-        }
-        /* Desktop: sidebar is sticky in the flex row */
-        @media (min-width: 1025px) {
-          .admin-sidebar {
-            position: sticky !important;
-            transform: none !important;
-            box-shadow: none !important;
-          }
-        }
-      `}</style>
-    </div>
+      </div>
     </>
   );
 }

@@ -13,10 +13,9 @@ interface ContactRow {
   username: string | null;
   email: string | null;
   role: string;
+  is_super_agent?: boolean | null;
 }
 
-// Audit12: admins always sort to the top of every non-admin caller's contact
-// list so agents/super_agents/researchers can find platform support quickly.
 function sortContacts(rows: ContactRow[]): ContactRow[] {
   return rows
     .filter((r) => r && r.id)
@@ -30,40 +29,31 @@ function sortContacts(rows: ContactRow[]): ContactRow[] {
     });
 }
 
-// Audit12: every non-admin caller should always have at least the platform
-// admin(s) in their contact list. Returns active admin profiles excluding
-// the caller.
 async function loadAdminContacts(
   svc: ReturnType<typeof createServiceClient> extends Promise<infer T> ? T : never,
   excludeId: string,
 ): Promise<ContactRow[]> {
   const { data, error } = await svc
     .from('profiles')
-    .select('id, full_name, username, email, role')
+    .select('id, full_name, username, email, role, is_super_agent')
     .eq('role', 'admin')
     .eq('is_active', true)
     .neq('id', excludeId)
     .limit(50);
   if (error) {
-    // Audit13: surface this in server logs so a silently failing query is
-    // not the reason the picker stays empty.
     console.error('[list-contacts] loadAdminContacts failed', error);
     return [];
   }
   return (data ?? []) as ContactRow[];
 }
 
-// Audit13: every response uses these headers so no intermediate cache can
-// serve a stale contact list (Vercel's default `cache-control: max-age=0,
-// must-revalidate` allows the browser to hold a cached copy until a
-// revalidation round-trip; we want zero cache).
 function freshJson(body: unknown): NextResponse {
   const res = NextResponse.json(body);
   res.headers.set('Cache-Control', 'private, no-store, max-age=0');
   return res;
 }
 
-const AUDIT_TAG = 'audit13';
+const AUDIT_TAG = 'fix46';
 
 export async function POST(req: NextRequest) {
   const csrf = assertSameOrigin(req);
@@ -85,7 +75,9 @@ export async function POST(req: NextRequest) {
 
   if (!me) return freshJson({ contacts: [], _audit: AUDIT_TAG, _branch: 'no_profile' });
 
-  const SELECT = 'id, full_name, username, email, role';
+  // fix-46: include is_super_agent so the picker can distinguish super-agents
+  // (who share role='agent' in the DB) from regular agents.
+  const SELECT = 'id, full_name, username, email, role, is_super_agent';
   const selectActive = (q: ReturnType<typeof svc.from>) => q.select(SELECT).eq('is_active', true).neq('id', me.id);
 
   if (me.role === 'admin') {
@@ -123,17 +115,10 @@ export async function POST(req: NextRequest) {
 
   if (me.role === 'agent') {
     const meIsSubAgent = (me as { is_sub_agent?: boolean | null }).is_sub_agent === true;
-    // Regular agents and super-agents-as-agents own researchers via referring_agent_id.
-    // Sub-agents do not own any researchers via referring_agent_id (those rows point
-    // to the sub-agent's parent), so for sub-agent callers we instead fetch the
-    // researchers that were tagged to them via referring_sub_agent_id — that is
-    // the SACA commission link and represents the customers the sub-agent created.
     const researcherQuery = meIsSubAgent
       ? selectActive(svc.from('profiles')).eq('referring_sub_agent_id', me.id)
       : selectActive(svc.from('profiles')).eq('referring_agent_id', me.id);
     const { data: researchers } = await researcherQuery.limit(500);
-    // Sub-agents cannot have nested sub-agents, but the no-op query is cheap
-    // and keeps the code path identical for both branches.
     const { data: subAgents } = await selectActive(svc.from('profiles'))
       .eq('parent_agent_id', me.id)
       .limit(200);
@@ -169,10 +154,6 @@ export async function POST(req: NextRequest) {
         .maybeSingle();
       if (agent) byId.set(agent.id, agent as ContactRow);
     }
-    // SACA: if the researcher was created by a sub-agent, expose that
-    // sub-agent as a contact too — the researcher already had the
-    // sub-agent as their salesperson when they signed up, so a messenger
-    // conversation between them is the natural support channel.
     const meSubAgentTag = (me as { referring_sub_agent_id?: string | null }).referring_sub_agent_id;
     if (meSubAgentTag) {
       const { data: subAgent } = await svc
@@ -193,8 +174,6 @@ export async function POST(req: NextRequest) {
     });
   }
 
-  // Unknown role (e.g. shipping) -- still expose the platform admin(s) so the
-  // caller is not entirely contactless.
   const admins = await loadAdminContacts(svc, me.id);
   return freshJson({
     contacts: sortContacts(admins),
