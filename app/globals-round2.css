@@ -260,5 +260,168 @@ header.sf-nav {
 }
 
 /* ============================================================
-   END ROUND 2 + ROUND 3 MOBILE SAFE-AREA ENFORCEMENT
+   ROUND 4 — FACEBOOK-STYLE MOBILE BASELINE
+   ------------------------------------------------------------
+   Authored from the mobile-first-fb-style skill. Adds the
+   missing pieces every web app needs to feel native on mobile:
+   - iOS auto-zoom fix (input font-size >= 16px)
+   - 44pt touch targets on coarse pointers
+   - prefers-reduced-motion accessibility
+   - color-scheme adaptation for form controls
+   - long-press / context-menu suppression on UI chrome
+   - focus-visible (keyboard yes, mouse no)
+   - bottom action bar helper class
+   - skeleton loading + aspect-ratio + content-visibility helpers
+   ============================================================ */
+
+/* CSS color-scheme on :root tells the browser which schemes the
+   site supports so form controls + scrollbars match the theme. */
+:root {
+  color-scheme: light dark;
+}
+
+/* iOS AUTO-ZOOM TRAP FIX: any input with font-size < 16px on iOS
+   Safari triggers an automatic zoom on focus that never reverts.
+   Globals.css ships .form-input at 0.95rem (15.2px on a 16px root)
+   which is exactly under the threshold. Force every input/textarea
+   /select to 16px minimum. Pointer:fine devices can shrink back. */
+input, textarea, select,
+.form-input {
+  font-size: max(16px, 1rem) !important;
+}
+
+@media (min-width: 769px) and (pointer: fine) {
+  input, textarea, select,
+  .form-input {
+    font-size: 0.95rem !important;
+  }
+}
+
+/* Touch target enforcement at iOS HIG / Material 44pt minimum.
+   `pointer: coarse` = touch devices. Doesn't affect desktop. */
+@media (pointer: coarse) {
+  .btn, button, [role="button"],
+  input[type="button"], input[type="submit"],
+  a.btn, a.btn-primary, a.btn-secondary, a.btn-ghost {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  /* Icon-only buttons */
+  .icon-btn {
+    min-width: 44px;
+    min-height: 44px;
+  }
+  /* List rows that act as tappable */
+  [role="listitem"] > a,
+  .list-row,
+  .conv-list [role="listitem"] {
+    min-height: 56px;
+  }
+}
+
+/* Reduced-motion accessibility: users with vestibular disorders
+   can request OS-level animation disable. Honor it site-wide. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Long-press context menu suppression on UI chrome only (NOT on
+   real photo content, which users should be able to save). */
+nav, header, footer, .btn, button, [role="button"],
+.tab-bar, .icon-btn, [role="navigation"] {
+  -webkit-touch-callout: none;
+}
+
+/* Smooth scrolling helper for any container marked as scrollable.
+   Use `data-scroll-container` on any scroll surface to get iOS
+   momentum + contained overscroll for free. */
+[data-scroll-container] {
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+}
+
+/* Sticky bottom action bar pattern (checkout Continue, product
+   detail Add To Cart, etc.). Combined with .has-bottom-bar on
+   the parent so the last content isn't hidden behind the bar. */
+[data-bottom-action-bar] {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 50;
+  padding: 12px 16px;
+  padding-bottom: max(12px, var(--safe-bottom, 0px));
+  background: var(--surface-1, #0F1923);
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+.has-bottom-bar {
+  padding-bottom: calc(72px + var(--safe-bottom, 0px));
+}
+
+/* Fully-tappable list items pattern. */
+.tap-target {
+  display: block;
+  min-height: 44px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Skeleton loading state that respects the current theme. */
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--surface-2, #162230) 0%,
+    var(--surface-3, #1D2D3E) 50%,
+    var(--surface-2, #162230) 100%
+  );
+  background-size: 200% 100%;
+  animation: skeleton-pulse 1.5s ease-in-out infinite;
+  border-radius: 8px;
+}
+@keyframes skeleton-pulse {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* Image content quality default. Per-element loading="lazy" and
+   decoding="async" still apply on individual <img> tags. */
+img {
+  max-width: 100%;
+  height: auto;
+}
+
+/* Focus visibility: keyboard users see ring, mouse users don't. */
+:focus:not(:focus-visible) { outline: none; }
+:focus-visible {
+  outline: 2px solid var(--teal, #00C4BC);
+  outline-offset: 2px;
+}
+
+/* Word-break safety for long emails, URLs, non-spaced strings. */
+p, span, div, h1, h2, h3, h4, h5, h6 {
+  overflow-wrap: anywhere;
+}
+
+/* Aspect-ratio helpers for product images, video tiles, etc. */
+.aspect-square { aspect-ratio: 1 / 1; }
+.aspect-video { aspect-ratio: 16 / 9; }
+.aspect-portrait { aspect-ratio: 9 / 16; }
+.aspect-photo { aspect-ratio: 4 / 3; }
+
+/* Content visibility hint for very long lists — browser skips
+   rendering off-screen items, with estimated 80px height for an
+   accurate scrollbar position. */
+[data-virtualized-row] {
+  content-visibility: auto;
+  contain-intrinsic-size: 0 80px;
+}
+
+/* ============================================================
+   END ROUND 2 + ROUND 3 + ROUND 4 MOBILE SAFE-AREA ENFORCEMENT
    ============================================================ */
