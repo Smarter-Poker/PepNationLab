@@ -57,6 +57,9 @@ import { sanitizeUsername } from '@/lib/usernames';
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://pepnationlab.com';
 
+// Platform rule: the gamification Max Cap can never exceed 40%.
+const MAX_CAP_LIMIT = 40;
+
 /**
  * POST /api/agent/agents
  *
@@ -129,8 +132,8 @@ export async function POST(req: NextRequest) {
     let commMax: number | null = null;
     if (commission_max_pct !== undefined && commission_max_pct !== null && commission_max_pct !== '') {
       commMax = Number(commission_max_pct);
-      if (!Number.isFinite(commMax) || commMax < 0 || commMax > 100) {
-        return NextResponse.json({ error: 'Max Commission Cap Must Be Between 0 And 100' }, { status: 400 });
+      if (!Number.isFinite(commMax) || commMax < 0 || commMax > MAX_CAP_LIMIT) {
+        return NextResponse.json({ error: 'Max Commission Cap Cannot Exceed 40%' }, { status: 400 });
       }
       if (commPct != null && commMax < commPct) {
         return NextResponse.json({ error: 'Max Commission Cap Cannot Be Below The Base Rate' }, { status: 400 });
