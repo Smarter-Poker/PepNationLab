@@ -32,6 +32,7 @@ export default function AgentInventory({ agentId }: { agentId: string }) {
   const [inventory, setInventory] = useState<AgentInventoryItem[]>([]);
   const [alerts, setAlerts] = useState<SmartAlert[]>([]);
   const [suggestedCart, setSuggestedCart] = useState<SuggestedCartItem[]>([]);
+  const [showWarningModal, setShowWarningModal] = useState(true);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [savingId, setSavingId] = useState<string | null>(null);
@@ -167,6 +168,35 @@ export default function AgentInventory({ agentId }: { agentId: string }) {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
+      {showWarningModal && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+          backgroundColor: 'rgba(0,0,0,0.85)', zIndex: 9999,
+          display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 'var(--space-4)'
+        }}>
+          <div className="metal-frame" style={{ maxWidth: 500, width: '100%' }}>
+            <div className="metal-content" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12, color: 'var(--orange)' }}>
+                <AlertTriangle size={24} />
+                <h3 className="metal-text" style={{ fontSize: '1.2rem', margin: 0 }}>Important Warning</h3>
+              </div>
+              <p style={{ fontSize: '0.9rem', color: 'var(--white)', lineHeight: 1.5 }}>
+                Before you adjust any of these numbers, this page is for agents that have <strong>In-Stock Inventory That They Want To List For Sale</strong>. 
+                <br /><br />
+                Do not adjust these numbers unless you have them available today to sell. This will take priority over what's currently listed (shipping from China).
+              </p>
+              <button 
+                className="btn-neon-cyan" 
+                style={{ alignSelf: 'flex-end', marginTop: 'var(--space-2)' }}
+                onClick={() => setShowWarningModal(false)}
+              >
+                I Understand
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Smart Alerts Banner */}
       {alerts.length > 0 && (
         <div className="metal-frame">
@@ -217,7 +247,7 @@ export default function AgentInventory({ agentId }: { agentId: string }) {
             </h3>
           </div>
           <p style={{ color: 'var(--grey-400)', fontSize: '0.85rem', marginBottom: 'var(--space-6)' }}>
-            Manage your on-hand stock. When your researchers purchase from your storefront, this inventory will automatically decrement. Products with 0 stock will show as "Out of Stock".
+            Manage Your On-Hand Stock. When Your Researchers Purchase From Your Storefront, This Inventory Will Automatically Decrement. Products With 0 Stock Will Show As "Out Of Stock".
           </p>
 
           {error && (

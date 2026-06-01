@@ -157,6 +157,8 @@ export async function POST(request: NextRequest) {
       localStock?.forEach(s => { agentStockMap[s.product_id] = Number(s.stock_count); });
     }
 
+    const localFulfillmentMap: Record<string, boolean> = {};
+
     // Check for banned or deactivated products and inventory limits
     for (const cartItem of items) {
       const dbProduct = dbProducts.find(p => p.id === cartItem.id);
@@ -182,12 +184,22 @@ export async function POST(request: NextRequest) {
 
       let availableStock = Number(dbProduct.inventory_count);
       let bypassInventoryCheck = false;
+      let isLocalFulfillment = false;
 
       if (agentProfile && !isAgentSelfBuy && fulfillmentMethod === 'ship') {
-         availableStock = agentStockMap[cartItem.id] || 0;
+         const localAgentStock = agentStockMap[cartItem.id] || 0;
+         if (localAgentStock >= qty) {
+           isLocalFulfillment = true;
+           availableStock = localAgentStock;
+         } else {
+           // Not enough local stock, fallback to China stock
+           availableStock = Number(dbProduct.inventory_count);
+         }
       } else if (fulfillmentMethod === 'agent_pickup') {
          bypassInventoryCheck = true;
       }
+
+      localFulfillmentMap[cartItem.id] = isLocalFulfillment;
 
       if (!bypassInventoryCheck && availableStock < qty) {
         return NextResponse.json(
@@ -412,6 +424,11 @@ export async function POST(request: NextRequest) {
         retailPrice = retailPrice * flashMultiplier;
       }
 
+      if (localFulfillmentMap[dbProduct.id]) {
+        costPrice = 0;
+        superAgentCost = superAgentCost !== null ? 0 : null;
+      }
+
       // Round unit prices to exact cents
       retailPrice = isFinite(retailPrice) ? Math.round(retailPrice * 100) / 100 : 0;
       costPrice = isFinite(costPrice) ? Math.round(costPrice * 100) / 100 : 0;
@@ -433,28 +450,37 @@ export async function POST(request: NextRequest) {
     }
 
     // STEP A: ATOMIC INVENTORY RESERVATION
-    const inventoryItems = computedItems.map(item => ({
-      product_id: item.product_id,
-      quantity: item.quantity,
-    }));
-    const isAgentShip = agentProfile && !isAgentSelfBuy && fulfillmentMethod === 'ship';
-    const inventoryReserveParams = {
-      p_items: inventoryItems,
-      p_agent_id: isAgentShip ? agentProfile?.id : null,
-      p_is_agent_ship: !!isAgentShip
-    };
-    let inventoryReserved = false;
-    if (fulfillmentMethod !== 'agent_pickup') {
-      const { error: reserveErr } = await serviceSupabase
-        .rpc('reserve_inventory', inventoryReserveParams);
-      if (reserveErr) {
-        const isStock = /Insufficient inventory/i.test(reserveErr.message);
-        return NextResponse.json(
-          { error: isStock ? reserveErr.message : 'Failed To Reserve Inventory. Please Try Again.' },
-          { status: 422 }
-        );
+    const localItems = computedItems.filter(i => localFulfillmentMap[i.product_id]).map(i => ({ product_id: i.product_id, quantity: i.quantity }));
+    const chinaItems = computedItems.filter(i => !localFulfillmentMap[i.product_id]).map(i => ({ product_id: i.product_id, quantity: i.quantity }));
+
+    let localReserved = false;
+    let chinaReserved = false;
+
+    const releaseReservedInventory = async () => {
+      if (localReserved && localItems.length > 0) {
+        await serviceSupabase.rpc('release_inventory', { p_items: localItems, p_agent_id: agentProfile?.id, p_is_agent_ship: true });
       }
-      inventoryReserved = true;
+      if (chinaReserved && chinaItems.length > 0) {
+        await serviceSupabase.rpc('release_inventory', { p_items: chinaItems, p_agent_id: null, p_is_agent_ship: false });
+      }
+    };
+
+    if (fulfillmentMethod !== 'agent_pickup') {
+      if (localItems.length > 0) {
+        const { error: reserveErr } = await serviceSupabase.rpc('reserve_inventory', { p_items: localItems, p_agent_id: agentProfile?.id, p_is_agent_ship: true });
+        if (reserveErr) {
+          return NextResponse.json({ error: /Insufficient inventory/i.test(reserveErr.message) ? reserveErr.message : 'Failed To Reserve Local Inventory. Please Try Again.' }, { status: 422 });
+        }
+        localReserved = true;
+      }
+      if (chinaItems.length > 0) {
+        const { error: reserveErr } = await serviceSupabase.rpc('reserve_inventory', { p_items: chinaItems, p_agent_id: null, p_is_agent_ship: false });
+        if (reserveErr) {
+          await releaseReservedInventory();
+          return NextResponse.json({ error: /Insufficient inventory/i.test(reserveErr.message) ? reserveErr.message : 'Failed To Reserve Global Inventory. Please Try Again.' }, { status: 422 });
+        }
+        chinaReserved = true;
+      }
     }
 
     // STEP B: COUPON REDEMPTION
@@ -464,7 +490,7 @@ export async function POST(request: NextRequest) {
     const trimmedCouponCode = couponCode ? String(couponCode).trim().toUpperCase() : '';
 
     if ((isAgentSelfBuy || isSubAgent) && trimmedCouponCode) {
-      if (inventoryReserved) await serviceSupabase.rpc('release_inventory', inventoryReserveParams);
+      await releaseReservedInventory();
       return NextResponse.json(
         { error: 'Coupon Codes Cannot Be Applied To Agent Or Sub-Agent Self-Buy Orders.' },
         { status: 403 }
@@ -474,7 +500,7 @@ export async function POST(request: NextRequest) {
     if (trimmedCouponCode) {
       const couponAgentId = profile.referring_agent_id ?? agentProfile?.id ?? null;
       if (!couponAgentId) {
-        if (inventoryReserved) await serviceSupabase.rpc('release_inventory', inventoryReserveParams);
+        await releaseReservedInventory();
         return NextResponse.json(
           { error: 'Coupon Codes Are Only Valid For Orders Placed Through A Referring Agent.' },
           { status: 400 }
@@ -489,7 +515,7 @@ export async function POST(request: NextRequest) {
 
       if (redeemError) {
         console.error('Coupon RPC Failed:', redeemError);
-        if (inventoryReserved) await serviceSupabase.rpc('release_inventory', inventoryReserveParams);
+        await releaseReservedInventory();
         return NextResponse.json(
           { error: 'Coupon Invalid Or Limit Reached' },
           { status: 422 }
@@ -498,7 +524,7 @@ export async function POST(request: NextRequest) {
 
       const row = Array.isArray(redeem) ? redeem[0] : redeem;
       if (!row?.coupon_id) {
-        if (inventoryReserved) await serviceSupabase.rpc('release_inventory', inventoryReserveParams);
+        await releaseReservedInventory();
         return NextResponse.json(
           { error: 'Coupon Invalid Or Limit Reached' },
           { status: 422 }
@@ -551,7 +577,7 @@ export async function POST(request: NextRequest) {
           .rpc('fn_sub_agent_consumed_velocity', { p_sub: agentProfile.id });
         const used = Number(consumed) || 0;
         if (used + total > cap + 0.001) {
-          if (inventoryReserved) await serviceSupabase.rpc('release_inventory', inventoryReserveParams);
+          await releaseReservedInventory();
           const remaining = Math.max(0, cap - used);
           return NextResponse.json(
             { error: `Velocity Cap Reached. This Order Of $${total.toFixed(2)} Would Exceed Your Available Limit ($${remaining.toFixed(2)} Remaining). Contact Your Agent To Raise It.` },
@@ -765,7 +791,7 @@ export async function POST(request: NextRequest) {
           .eq('buyer_id', user.id)
           .maybeSingle();
         if (existing) {
-          if (inventoryReserved) await serviceSupabase.rpc('release_inventory', inventoryReserveParams);
+          await releaseReservedInventory();
 
           if (appliedCouponId) await serviceSupabase.rpc('unreedeem_coupon', { p_coupon_id: appliedCouponId });
           return NextResponse.json({
@@ -776,7 +802,7 @@ export async function POST(request: NextRequest) {
           });
         }
       }
-      if (inventoryReserved) await serviceSupabase.rpc('release_inventory', inventoryReserveParams);
+      await releaseReservedInventory();
       if (appliedCouponId) await serviceSupabase.rpc('unreedeem_coupon', { p_coupon_id: appliedCouponId });
       if (prepaidDeducted && prepaidDeductedAmount > 0 && prepaidDeductedAgentId) {
         await serviceSupabase.rpc('refund_prepaid_balance', { p_agent_id: prepaidDeductedAgentId, p_amount: prepaidDeductedAmount });
@@ -812,7 +838,7 @@ export async function POST(request: NextRequest) {
     if (itemsError) {
       console.error('Database Order Items Write Error:', JSON.stringify(itemsError));
       await serviceSupabase.from('orders').delete().eq('id', order.id);
-      if (inventoryReserved) await serviceSupabase.rpc('release_inventory', inventoryReserveParams);
+      await releaseReservedInventory();
       if (appliedCouponId) await serviceSupabase.rpc('unreedeem_coupon', { p_coupon_id: appliedCouponId });
       if (prepaidDeducted && prepaidDeductedAmount > 0 && prepaidDeductedAgentId) {
         await serviceSupabase.rpc('refund_prepaid_balance', { p_agent_id: prepaidDeductedAgentId, p_amount: prepaidDeductedAmount });
