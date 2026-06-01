@@ -9,11 +9,12 @@ import NavbarNotificationBell from '@/components/NavbarNotificationBell';
 import MessageBell from '@/components/MessageBell';
 import NavbarWalletBadge from '@/components/NavbarWalletBadge';
 import WalletCard from '@/components/WalletCard';
+import { getRoleNavLinks } from '@/components/roleNavLinks';
 
-/* ───────────────────────────────────────────── 
+/* ──────────────────────────────────── 
    Page title resolution — maps route prefixes
    to human-readable, title-case labels.
-   ───────────────────────────────────────────── */
+   ──────────────────────────────────── */
 function resolveTitle(pathname: string, role: string): string {
   if (pathname === '/')               return 'Pep Nation Lab';
   if (pathname.startsWith('/admin/products')) return 'Product Catalog';
@@ -63,9 +64,9 @@ function resolveTitle(pathname: string, role: string): string {
   return 'Pep Nation Lab';
 }
 
-/* ───────────────────────────────────────────── 
+/* ──────────────────────────────────── 
    Mobile / slide-out nav drawer items
-   ───────────────────────────────────────────── */
+   ──────────────────────────────────── */
 function DrawerLink({
   href,
   label,
@@ -110,7 +111,7 @@ export default function Navbar({ onMenuClick, isOpen, title }: { onMenuClick?: (
 
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [user, setUser] = useState<{ id: string; email?: string } | null>(null);
-  const [profile, setProfile] = useState<{ full_name?: string | null; role?: string; referring_agent_id?: string | null } | null>(null);
+  const [profile, setProfile] = useState<{ full_name?: string | null; role?: string; referring_agent_id?: string | null; is_super_agent?: boolean | null; is_sub_agent?: boolean | null } | null>(null);
   const [agentSlug, setAgentSlug] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -135,6 +136,16 @@ export default function Navbar({ onMenuClick, isOpen, title }: { onMenuClick?: (
 
   const closeDrawer = useCallback(() => setDrawerOpen(false), []);
 
+  // Canonical per-role hamburger menu — identical on every page for a given
+  // role. Null for researchers / logged-out, who keep the generic drawer links.
+  const roleLinks = user
+    ? getRoleNavLinks(role, {
+        isSuperAgent: profile?.is_super_agent === true,
+        isSubAgent: profile?.is_sub_agent === true,
+        storefrontHref: agentSlug ? `/${agentSlug}` : '/dashboard/agent',
+      })
+    : null;
+
   // Lock body scroll when drawer is open
   useEffect(() => {
     document.body.style.overflow = drawerOpen ? 'hidden' : '';
@@ -154,7 +165,7 @@ export default function Navbar({ onMenuClick, isOpen, title }: { onMenuClick?: (
         setUser({ id: session.user.id, email: session.user.email });
         supabase
           .from('profiles')
-          .select('full_name, role, referring_agent_id')
+          .select('full_name, role, referring_agent_id, is_super_agent, is_sub_agent')
           .eq('id', session.user.id)
           .maybeSingle()
           .then(({ data }) => {
@@ -166,6 +177,14 @@ export default function Navbar({ onMenuClick, isOpen, title }: { onMenuClick?: (
                   .from('agent_profiles')
                   .select('slug')
                   .eq('id', data.referring_agent_id)
+                  .maybeSingle()
+                  .then(({ data: ap }) => { if (ap?.slug) setAgentSlug(ap.slug); });
+              } else if (data.role === 'agent' || data.role === 'super_agent') {
+                // Agents/super-agents: their own storefront slug, for "Visit My Storefront".
+                supabase
+                  .from('agent_profiles')
+                  .select('slug')
+                  .eq('id', session.user.id)
                   .maybeSingle()
                   .then(({ data: ap }) => { if (ap?.slug) setAgentSlug(ap.slug); });
               }
@@ -181,7 +200,7 @@ export default function Navbar({ onMenuClick, isOpen, title }: { onMenuClick?: (
         setUser({ id: session.user.id, email: session.user.email });
         supabase
           .from('profiles')
-          .select('full_name, role, referring_agent_id')
+          .select('full_name, role, referring_agent_id, is_super_agent, is_sub_agent')
           .eq('id', session.user.id)
           .maybeSingle()
           .then(({ data }) => {
@@ -192,6 +211,14 @@ export default function Navbar({ onMenuClick, isOpen, title }: { onMenuClick?: (
                   .from('agent_profiles')
                   .select('slug')
                   .eq('id', data.referring_agent_id)
+                  .maybeSingle()
+                  .then(({ data: ap }) => { if (ap?.slug) setAgentSlug(ap.slug); });
+              } else if (data.role === 'agent' || data.role === 'super_agent') {
+                // Agents/super-agents: their own storefront slug, for "Visit My Storefront".
+                supabase
+                  .from('agent_profiles')
+                  .select('slug')
+                  .eq('id', session.user.id)
                   .maybeSingle()
                   .then(({ data: ap }) => { if (ap?.slug) setAgentSlug(ap.slug); });
               }
@@ -214,7 +241,7 @@ export default function Navbar({ onMenuClick, isOpen, title }: { onMenuClick?: (
     window.location.replace('/');
   };
 
-  // ── Smart Hierarchical Back Button ───────────────────────────────────────
+  // ── Smart Hierarchical Back Button ────────────────────────────────
   // We conditionally use native browser history if available. If the user landed
   // on a deep link directly (empty history stack), we route them up the app hierarchy.
   const handleBack = () => {
@@ -240,9 +267,9 @@ export default function Navbar({ onMenuClick, isOpen, title }: { onMenuClick?: (
 
   return (
     <>
-      {/* ══════════════════════════════════════════
+      {/* ═══════════════════════════════════════════
           HEADER BAR
-      ══════════════════════════════════════════ */}
+      ═══════════════════════════════════════════ */}
       <nav
         className="nav pnl-navbar"
         style={{
@@ -377,9 +404,9 @@ export default function Navbar({ onMenuClick, isOpen, title }: { onMenuClick?: (
         </div>
       </nav>
 
-      {/* ══════════════════════════════════════════
+      {/* ═══════════════════════════════════════════
           SLIDE-OUT DRAWER (global site nav — not shown when admin controls hamburger)
-      ══════════════════════════════════════════ */}
+      ═══════════════════════════════════════════ */}
       {/* Backdrop */}
       {!onMenuClick && drawerOpen && (
         <div
@@ -463,57 +490,57 @@ export default function Navbar({ onMenuClick, isOpen, title }: { onMenuClick?: (
             </div>
           )}
 
-          {/* Common links */}
-          <DrawerLink href={dashLink} label="Home" onClick={closeDrawer}
-            icon={<svg {...IP}><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>}
-          />
-          {/* Products link — hidden for researchers (they use their agent's storefront) */}
-          {role !== 'researcher' && (
-            <DrawerLink href="/products" label="Products" onClick={closeDrawer}
-              icon={<svg {...IP}><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>}
-            />
-          )}
-          {/* Researchers see their agent's storefront instead */}
-          {role === 'researcher' && agentSlug && (
-            <DrawerLink href={`/${agentSlug}`} label="Visit Your Store" onClick={closeDrawer}
-              icon={<svg {...IP}><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>}
-            />
-          )}
-          <DrawerLink href="/about" label="About" onClick={closeDrawer}
-            icon={<svg {...IP}><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>}
-          />
-
-          {user && (
+          {/* Role-based menu: identical for a given role on EVERY page, so the
+              hamburger matches that role's dashboard menu everywhere. Admin /
+              agent / super-agent / sub-agent render their canonical menu; all
+              other states (researchers, logged-out) keep the generic links. */}
+          {roleLinks ? (
+            roleLinks.map((l) => (
+              <DrawerLink key={`${l.href}-${l.label}`} href={l.href} label={l.label} onClick={closeDrawer} icon={l.icon} />
+            ))
+          ) : (
             <>
-              <div style={{ height: 1, background: 'rgba(255,255,255,0.06)', margin: 'var(--space-2) 0' }} />
-
-              {/* Dashboard */}
-              <DrawerLink href={dashLink} label={dashLabel} onClick={closeDrawer}
-                icon={<svg {...IP}><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>}
+              {/* Common links */}
+              <DrawerLink href={dashLink} label="Home" onClick={closeDrawer}
+                icon={<svg {...IP}><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>}
               />
-
-              {/* Messenger — only shown when NOT on messenger page */}
-              {!isMessenger && (
-                <DrawerLink href="/messenger" label="Messenger" onClick={closeDrawer}
-                  icon={<svg {...IP}><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>}
+              {/* Products link — hidden for researchers (they use their agent's storefront) */}
+              {role !== 'researcher' && (
+                <DrawerLink href="/products" label="Products" onClick={closeDrawer}
+                  icon={<svg {...IP}><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>}
                 />
               )}
+              {/* Researchers see their agent's storefront instead */}
+              {role === 'researcher' && agentSlug && (
+                <DrawerLink href={`/${agentSlug}`} label="Visit Your Store" onClick={closeDrawer}
+                  icon={<svg {...IP}><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>}
+                />
+              )}
+              <DrawerLink href="/about" label="About" onClick={closeDrawer}
+                icon={<svg {...IP}><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>}
+              />
 
-              {/* Agent-specific */}
-              {role.includes('agent') && (
+              {user && (
                 <>
-                  <DrawerLink href="/dashboard/agent" label="My Store" onClick={closeDrawer}
-                    icon={<svg {...IP}><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>}
+                  <div style={{ height: 1, background: 'rgba(255,255,255,0.06)', margin: 'var(--space-2) 0' }} />
+                  <DrawerLink href={dashLink} label={dashLabel} onClick={closeDrawer}
+                    icon={<svg {...IP}><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>}
+                  />
+                  {!isMessenger && (
+                    <DrawerLink href="/messenger" label="Messenger" onClick={closeDrawer}
+                      icon={<svg {...IP}><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>}
+                    />
+                  )}
+                  <DrawerLink href="/account/notification-preferences" label="Notification Preferences" onClick={closeDrawer}
+                    icon={<svg {...IP}><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>}
                   />
                 </>
               )}
+            </>
+          )}
 
-
-
-              <DrawerLink href="/account/notification-preferences" label="Notification Preferences" onClick={closeDrawer}
-                icon={<svg {...IP}><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>}
-              />
-
+          {user && (
+            <>
               <div style={{ height: 1, background: 'rgba(255,255,255,0.06)', margin: 'var(--space-2) 0' }} />
 
               <button
