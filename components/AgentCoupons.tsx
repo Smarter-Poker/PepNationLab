@@ -13,13 +13,34 @@ interface Coupon {
   max_uses_per_user: number | null;
   uses_count: number;
   expires_at: string | null;
+  starts_at: string | null;
+  deleted_at: string | null;
+  new_customers_only: boolean | null;
+  notes: string | null;
   is_active: boolean;
   created_at: string;
 }
 
 interface PerfEntry { redemptions: number; discount_given: number; revenue_driven: number }
 
-type FilterMode = 'all' | 'active' | 'inactive' | 'expired';
+interface RedemptionRow {
+  order_id: string;
+  buyer_id: string;
+  buyer_name: string | null;
+  subtotal: number;
+  discount_amount: number;
+  total: number;
+  status: string;
+  created_at: string;
+}
+
+interface RedemptionsResponse {
+  coupon: Coupon;
+  redemptions: RedemptionRow[];
+  totals: { count: number; discount_given: number; revenue_driven: number };
+}
+
+type FilterMode = 'all' | 'active' | 'inactive' | 'expired' | 'scheduled';
 
 const FONT_LABEL: React.CSSProperties = {
   display: 'block',
@@ -81,28 +102,49 @@ function fmtDate(s: string | null): string {
   catch { return s; }
 }
 
+function fmtDateTime(s: string | null): string {
+  if (!s) return '—';
+  try {
+    return new Date(s).toLocaleString(undefined, {
+      month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit',
+    });
+  } catch { return s; }
+}
+
 function generateSuggestion(): string {
   const adj = ['SAVE', 'WELCOME', 'RESEARCH', 'LAUNCH', 'BOOST', 'BONUS', 'PEP'];
-  const num = Math.floor(Math.random() * 30) + 5; // 5-35
+  const num = Math.floor(Math.random() * 30) + 5;
   return `${adj[Math.floor(Math.random() * adj.length)]}${num}`;
 }
 
 function couponState(c: Coupon): { label: string; color: string; bg: string } {
-  const expired = c.expires_at != null && new Date(c.expires_at).getTime() < Date.now();
+  if (c.deleted_at) return { label: 'Archived', color: 'var(--grey-400)', bg: 'rgba(168,180,192,0.08)' };
+  const now = Date.now();
+  const expired = c.expires_at != null && new Date(c.expires_at).getTime() < now;
+  const scheduled = c.starts_at != null && new Date(c.starts_at).getTime() > now;
   const exhausted = c.max_uses != null && c.uses_count >= c.max_uses;
   if (expired) return { label: 'Expired', color: '#FFAAAA', bg: 'rgba(229,62,62,0.12)' };
   if (exhausted) return { label: 'Exhausted', color: '#F6AD55', bg: 'rgba(246,173,85,0.12)' };
   if (!c.is_active) return { label: 'Inactive', color: 'var(--grey-400)', bg: 'rgba(168,180,192,0.10)' };
+  if (scheduled) return { label: 'Scheduled', color: '#00E5FF', bg: 'rgba(0,229,255,0.12)' };
   return { label: 'Active', color: '#00FF9D', bg: 'rgba(0,255,157,0.12)' };
 }
 
-export default function AgentCoupons({ agentId }: { agentId: string }) {
+interface AgentCouponsProps {
+  agentId: string;
+  agentSlug?: string;
+}
+
+export default function AgentCoupons({ agentId, agentSlug }: AgentCouponsProps) {
   const [coupons, setCoupons] = useState<Coupon[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [perf, setPerf] = useState<Record<string, PerfEntry>>({});
   const [filter, setFilter] = useState<FilterMode>('all');
+  const [search, setSearch] = useState('');
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [linkCopiedId, setLinkCopiedId] = useState<string | null>(null);
+  const [resolvedSlug, setResolvedSlug] = useState<string | null>(agentSlug ?? null);
 
   // Create form
   const [code, setCode] = useState('');
@@ -111,13 +153,24 @@ export default function AgentCoupons({ agentId }: { agentId: string }) {
   const [minOrder, setMinOrder] = useState('');
   const [maxUses, setMaxUses] = useState('');
   const [maxUsesPerUser, setMaxUsesPerUser] = useState('');
+  const [startsAt, setStartsAt] = useState('');
   const [expiresAt, setExpiresAt] = useState('');
+  const [newCustomersOnly, setNewCustomersOnly] = useState(false);
   const [creating, setCreating] = useState(false);
   const [formError, setFormError] = useState('');
 
-  // Touched state — show errors only after blur (better UX than show-while-typing)
+  // Touched state
   const [touched, setTouched] = useState<Record<string, boolean>>({});
   const markTouched = (k: string) => setTouched((t) => ({ ...t, [k]: true }));
+
+  // Modals
+  const [qrModalCoupon, setQrModalCoupon] = useState<Coupon | null>(null);
+  const [redemptionsModalCoupon, setRedemptionsModalCoupon] = useState<Coupon | null>(null);
+  const [redemptionsData, setRedemptionsData] = useState<RedemptionsResponse | null>(null);
+  const [redemptionsLoading, setRedemptionsLoading] = useState(false);
+  const [bulkModalOpen, setBulkModalOpen] = useState(false);
+  const [notifyingId, setNotifyingId] = useState<string | null>(null);
+  const [notifyToast, setNotifyToast] = useState<{ couponId: string; text: string } | null>(null);
 
   const loadCoupons = useCallback(async () => {
     setLoading(true);
@@ -131,13 +184,13 @@ export default function AgentCoupons({ agentId }: { agentId: string }) {
       const j = await res.json();
       setCoupons(((j.coupons ?? []) as Coupon[]));
     } catch (err) {
-      // Fallback: direct read via RLS-gated supabase client.
       try {
         const supabase = createClient();
         const { data } = await supabase
           .from('coupons')
           .select('*')
           .eq('agent_id', agentId)
+          .is('deleted_at', null)
           .order('created_at', { ascending: false });
         setCoupons((data as Coupon[]) ?? []);
       } catch {
@@ -147,7 +200,6 @@ export default function AgentCoupons({ agentId }: { agentId: string }) {
       setLoading(false);
     }
 
-    // Realized per-coupon performance (revenue driven / discount given).
     try {
       const r = await fetch('/api/agent/coupons/performance', { cache: 'no-store' });
       if (r.ok) {
@@ -159,7 +211,25 @@ export default function AgentCoupons({ agentId }: { agentId: string }) {
 
   useEffect(() => { loadCoupons(); }, [loadCoupons]);
 
-  // ---- live validation ---------------------------------------------------
+  // Resolve storefront slug if not passed in via props.
+  useEffect(() => {
+    if (resolvedSlug) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch('/api/agent/me', { cache: 'no-store' });
+        if (!res.ok) return;
+        const j = await res.json();
+        const slug = j?.agent?.slug ?? j?.profile?.slug ?? j?.slug ?? null;
+        if (!cancelled && typeof slug === 'string' && slug.length > 0) {
+          setResolvedSlug(slug);
+        }
+      } catch { /* best-effort */ }
+    })();
+    return () => { cancelled = true; };
+  }, [resolvedSlug]);
+
+  // Live validation
   const validation = useMemo(() => {
     const v: Record<string, string> = {};
     const normalizedCode = code.trim().toUpperCase();
@@ -208,13 +278,19 @@ export default function AgentCoupons({ agentId }: { agentId: string }) {
         v.expiresAt = 'Expiration Date Must Be In The Future.';
       }
     }
+    if (startsAt && expiresAt) {
+      const s = Date.parse(`${startsAt}T00:00:00`);
+      const e = Date.parse(`${expiresAt}T23:59:59`);
+      if (Number.isFinite(s) && Number.isFinite(e) && e <= s) {
+        v.expiresAt = 'Expiration Must Be After The Start Date.';
+      }
+    }
 
     return v;
-  }, [code, discountType, discountValue, minOrder, maxUses, maxUsesPerUser, expiresAt]);
+  }, [code, discountType, discountValue, minOrder, maxUses, maxUsesPerUser, startsAt, expiresAt]);
 
   const isValid = Object.keys(validation).length === 0;
 
-  // ---- live preview ------------------------------------------------------
   const previewSummary = useMemo(() => {
     if (!isValid) return null;
     const value = Number(discountValue);
@@ -223,15 +299,16 @@ export default function AgentCoupons({ agentId }: { agentId: string }) {
     if (minOrder.trim()) parts.push(`Requires A Minimum Order Of ${fmtMoney(Number(minOrder))}`);
     if (maxUses.trim()) parts.push(`Can Be Used ${Number(maxUses)} Time${Number(maxUses) === 1 ? '' : 's'} Total Across All Researchers`);
     if (maxUsesPerUser.trim()) parts.push(`Each Researcher Can Use It ${Number(maxUsesPerUser)} Time${Number(maxUsesPerUser) === 1 ? '' : 's'}`);
+    if (startsAt) parts.push(`Activates On ${fmtDate(`${startsAt}T00:00:00`)}`);
     if (expiresAt) parts.push(`Expires On ${fmtDate(`${expiresAt}T23:59:59`)}`);
+    if (newCustomersOnly) parts.push('Limited To Researchers Who Have Never Ordered From You');
     return parts;
-  }, [isValid, discountType, discountValue, minOrder, maxUses, maxUsesPerUser, expiresAt]);
+  }, [isValid, discountType, discountValue, minOrder, maxUses, maxUsesPerUser, startsAt, expiresAt, newCustomersOnly]);
 
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault();
     setFormError('');
-    // Force-show all errors on submit.
-    setTouched({ code: true, discountValue: true, minOrder: true, maxUses: true, maxUsesPerUser: true, expiresAt: true });
+    setTouched({ code: true, discountValue: true, minOrder: true, maxUses: true, maxUsesPerUser: true, startsAt: true, expiresAt: true });
 
     if (!isValid) {
       setFormError('Fix The Highlighted Fields Before Creating The Coupon.');
@@ -243,6 +320,7 @@ export default function AgentCoupons({ agentId }: { agentId: string }) {
       const res = await fetch('/api/agent/coupons', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({
           code: code.trim().toUpperCase(),
           discount_type: discountType,
@@ -250,7 +328,9 @@ export default function AgentCoupons({ agentId }: { agentId: string }) {
           min_order_amount: minOrder.trim() ? Number(minOrder) : null,
           max_uses: maxUses.trim() ? Number(maxUses) : null,
           max_uses_per_user: maxUsesPerUser.trim() ? Number(maxUsesPerUser) : null,
+          starts_at: startsAt || null,
           expires_at: expiresAt || null,
+          new_customers_only: newCustomersOnly,
         }),
       });
       const json = await res.json().catch(() => ({}));
@@ -258,13 +338,14 @@ export default function AgentCoupons({ agentId }: { agentId: string }) {
         setFormError(json.error || 'Failed To Create Coupon.');
         return;
       }
-      // Reset
       setCode('');
       setDiscountValue('');
       setMinOrder('');
       setMaxUses('');
       setMaxUsesPerUser('');
+      setStartsAt('');
       setExpiresAt('');
+      setNewCustomersOnly(false);
       setTouched({});
       await loadCoupons();
     } catch {
@@ -280,6 +361,7 @@ export default function AgentCoupons({ agentId }: { agentId: string }) {
       const res = await fetch(`/api/agent/coupons/${coupon.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({ is_active: !coupon.is_active }),
       });
       if (!res.ok) throw new Error('PATCH failed');
@@ -290,15 +372,15 @@ export default function AgentCoupons({ agentId }: { agentId: string }) {
   }
 
   async function deleteCoupon(coupon: Coupon) {
-    if (!confirm(`Permanently Delete Coupon "${coupon.code}"?\n\nThis Cannot Be Undone.`)) return;
+    if (!confirm(`Archive Coupon "${coupon.code}" — Redemption History Is Preserved.\n\nResearchers Will No Longer Be Able To Redeem This Code. Continue?`)) return;
     const previous = coupons;
     setCoupons((prev) => prev.filter((c) => c.id !== coupon.id));
     try {
-      const res = await fetch(`/api/agent/coupons/${coupon.id}`, { method: 'DELETE' });
+      const res = await fetch(`/api/agent/coupons/${coupon.id}`, { method: 'DELETE', credentials: 'include' });
       if (!res.ok) throw new Error('DELETE failed');
     } catch {
       setCoupons(previous);
-      alert('Failed To Delete Coupon.');
+      alert('Failed To Archive Coupon.');
     }
   }
 
@@ -309,6 +391,72 @@ export default function AgentCoupons({ agentId }: { agentId: string }) {
     }).catch(() => {});
   }
 
+  function buildStorefrontLink(coupon: Coupon): string {
+    if (typeof window === 'undefined') return '';
+    const origin = window.location.origin;
+    if (resolvedSlug) return `${origin}/${resolvedSlug}?coupon=${encodeURIComponent(coupon.code)}`;
+    return `${origin}/dashboard?coupon=${encodeURIComponent(coupon.code)}`;
+  }
+
+  function copyLink(coupon: Coupon) {
+    const link = buildStorefrontLink(coupon);
+    if (!link) return;
+    navigator.clipboard?.writeText(link).then(() => {
+      setLinkCopiedId(coupon.id);
+      setTimeout(() => setLinkCopiedId((id) => (id === coupon.id ? null : id)), 1800);
+    }).catch(() => {});
+  }
+
+  async function openRedemptions(coupon: Coupon) {
+    setRedemptionsModalCoupon(coupon);
+    setRedemptionsData(null);
+    setRedemptionsLoading(true);
+    try {
+      const res = await fetch(`/api/agent/coupons/${coupon.id}/redemptions`, { cache: 'no-store' });
+      if (!res.ok) {
+        const j = await res.json().catch(() => ({}));
+        throw new Error(j.error || 'Failed To Load Redemptions.');
+      }
+      const json = (await res.json()) as RedemptionsResponse;
+      setRedemptionsData(json);
+    } catch (err) {
+      setRedemptionsData({
+        coupon,
+        redemptions: [],
+        totals: { count: 0, discount_given: 0, revenue_driven: 0 },
+      });
+      console.error(err);
+    } finally {
+      setRedemptionsLoading(false);
+    }
+  }
+
+  async function notifyDownline(coupon: Coupon) {
+    if (notifyingId) return;
+    setNotifyingId(coupon.id);
+    try {
+      const res = await fetch(`/api/agent/coupons/${coupon.id}/notify-downline`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({}),
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setNotifyToast({ couponId: coupon.id, text: json.error || 'Notification Failed.' });
+      } else {
+        const sent = typeof json.sent === 'number' ? json.sent : 0;
+        const total = typeof json.total === 'number' ? json.total : 0;
+        setNotifyToast({ couponId: coupon.id, text: `Notified ${sent} Of ${total} Researchers.` });
+      }
+    } catch {
+      setNotifyToast({ couponId: coupon.id, text: 'Network Error.' });
+    } finally {
+      setNotifyingId(null);
+      setTimeout(() => setNotifyToast((t) => (t && t.couponId === coupon.id ? null : t)), 3500);
+    }
+  }
+
   function applyTemplate(template: 'launch' | 'loyalty' | 'bulk') {
     if (template === 'launch') {
       setCode('WELCOME10');
@@ -317,9 +465,10 @@ export default function AgentCoupons({ agentId }: { agentId: string }) {
       setMinOrder('');
       setMaxUses('');
       setMaxUsesPerUser('1');
-      // 30 days from today
       const d = new Date(); d.setDate(d.getDate() + 30);
       setExpiresAt(d.toISOString().slice(0, 10));
+      setStartsAt('');
+      setNewCustomersOnly(true);
     } else if (template === 'loyalty') {
       setCode('LOYAL15');
       setDiscountType('percent');
@@ -327,7 +476,9 @@ export default function AgentCoupons({ agentId }: { agentId: string }) {
       setMinOrder('100');
       setMaxUses('');
       setMaxUsesPerUser('');
+      setStartsAt('');
       setExpiresAt('');
+      setNewCustomersOnly(false);
     } else {
       setCode('BULK25');
       setDiscountType('fixed');
@@ -337,10 +488,11 @@ export default function AgentCoupons({ agentId }: { agentId: string }) {
       setMaxUsesPerUser('1');
       const d = new Date(); d.setDate(d.getDate() + 14);
       setExpiresAt(d.toISOString().slice(0, 10));
+      setStartsAt('');
+      setNewCustomersOnly(false);
     }
   }
 
-  // ---- derived metrics ---------------------------------------------------
   const stats = useMemo(() => {
     let active = 0; let totalRedemptions = 0; let revenueDriven = 0; let discountsGiven = 0;
     for (const c of coupons) {
@@ -352,7 +504,6 @@ export default function AgentCoupons({ agentId }: { agentId: string }) {
         revenueDriven += p.revenue_driven;
         discountsGiven += p.discount_given;
       } else {
-        // RPC-recorded uses_count is a fallback when performance feed is missing.
         totalRedemptions += c.uses_count;
       }
     }
@@ -360,19 +511,51 @@ export default function AgentCoupons({ agentId }: { agentId: string }) {
   }, [coupons, perf]);
 
   const filteredCoupons = useMemo(() => {
-    if (filter === 'all') return coupons;
+    const trimmed = search.trim().toLowerCase();
     return coupons.filter((c) => {
-      const label = couponState(c).label.toLowerCase();
-      return label === filter;
+      const labelOk =
+        filter === 'all' ||
+        couponState(c).label.toLowerCase() === filter;
+      const searchOk = !trimmed || c.code.toLowerCase().includes(trimmed);
+      return labelOk && searchOk;
     });
-  }, [coupons, filter]);
+  }, [coupons, filter, search]);
+
+  function exportCsv() {
+    const header = ['Code', 'Discount', 'Min Order', 'Uses', 'Max Uses', 'Starts At', 'Expires At', 'New Customers Only', 'State'];
+    const rows = filteredCoupons.map((c) => [
+      c.code,
+      c.discount_type === 'percent' ? `${c.discount_value}%` : `$${Number(c.discount_value).toFixed(2)}`,
+      c.min_order_amount != null ? `$${Number(c.min_order_amount).toFixed(2)}` : '',
+      String(c.uses_count),
+      c.max_uses != null ? String(c.max_uses) : 'Unlimited',
+      c.starts_at ? fmtDate(c.starts_at) : '',
+      c.expires_at ? fmtDate(c.expires_at) : '',
+      c.new_customers_only ? 'Yes' : 'No',
+      couponState(c).label,
+    ]);
+    const escape = (v: string) => {
+      const needs = /[",\n]/.test(v);
+      const escaped = v.replace(/"/g, '""');
+      return needs ? `"${escaped}"` : escaped;
+    };
+    const csv = [header, ...rows].map((r) => r.map((cell) => escape(String(cell ?? ''))).join(',')).join('\r\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `coupons-${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 4000);
+  }
 
   const todayIso = new Date().toISOString().slice(0, 10);
 
   return (
     <div className="metal-frame">
       <div className="metal-content" style={{ padding: 'var(--space-6)' }}>
-        {/* HEADER */}
         <div style={{ marginBottom: 'var(--space-5)' }}>
           <h3
             className="metal-text"
@@ -387,11 +570,10 @@ export default function AgentCoupons({ agentId }: { agentId: string }) {
             Discount Coupons
           </h3>
           <p style={{ color: 'var(--grey-400)', fontSize: '0.88rem', margin: '6px 0 0', lineHeight: 1.5, maxWidth: 720 }}>
-            Build Promotional Codes Your Referred Researchers Redeem At Checkout. Set Strict Caps Per Researcher And Per Coupon — Every Rule Is Enforced Server-Side.
+            Build Promotional Codes Your Referred Researchers Redeem At Checkout. Schedule Activations, Cap Usage, And Broadcast To Your Downline — Every Rule Is Enforced Server-Side.
           </p>
         </div>
 
-        {/* STATS STRIP */}
         <div style={{
           display: 'grid',
           gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
@@ -405,14 +587,12 @@ export default function AgentCoupons({ agentId }: { agentId: string }) {
           <StatTile label="Discounts Given" value={fmtMoney(stats.discountsGiven)} accent="#F6AD55" />
         </div>
 
-        {/* CREATE + PREVIEW (2-col on desktop, stacked on mobile) */}
         <div style={{
           display: 'grid',
           gridTemplateColumns: 'minmax(0, 1fr)',
           gap: 'var(--space-4)',
           marginBottom: 'var(--space-6)',
         }} className="coupons-create-grid">
-          {/* CREATE FORM */}
           <form
             onSubmit={handleCreate}
             className="metal-embossed-panel"
@@ -429,7 +609,6 @@ export default function AgentCoupons({ agentId }: { agentId: string }) {
               </div>
             )}
 
-            {/* SECTION 1: Identity */}
             <div>
               <div style={SECTION_LABEL}>1 · Identity</div>
               <div style={{
@@ -471,7 +650,6 @@ export default function AgentCoupons({ agentId }: { agentId: string }) {
               </div>
             </div>
 
-            {/* SECTION 2: Discount */}
             <div>
               <div style={SECTION_LABEL}>2 · Discount</div>
               <div style={{
@@ -522,7 +700,6 @@ export default function AgentCoupons({ agentId }: { agentId: string }) {
               </div>
             </div>
 
-            {/* SECTION 3: Limits */}
             <div>
               <div style={SECTION_LABEL}>3 · Limits</div>
               <div style={{
@@ -540,7 +717,7 @@ export default function AgentCoupons({ agentId }: { agentId: string }) {
                     style={touched.minOrder && validation.minOrder ? INPUT_INVALID : INPUT}
                     min={0}
                     step={0.01}
-                    placeholder={discountType === 'fixed' ? `≥ ${discountValue || '0.00'}` : 'Optional'}
+                    placeholder={discountType === 'fixed' ? `>= ${discountValue || '0.00'}` : 'Optional'}
                     value={minOrder}
                     onChange={(e) => setMinOrder(e.target.value)}
                     onBlur={() => markTouched('minOrder')}
@@ -551,7 +728,7 @@ export default function AgentCoupons({ agentId }: { agentId: string }) {
                     {touched.minOrder && validation.minOrder
                       ? validation.minOrder
                       : discountType === 'fixed'
-                      ? 'Required For Fixed Discounts. Must Be ≥ Discount Amount.'
+                      ? 'Required For Fixed Discounts. Must Be At Least The Discount Amount.'
                       : 'Researchers Must Spend This Much Before The Coupon Applies.'}
                   </p>
                 </div>
@@ -600,26 +777,72 @@ export default function AgentCoupons({ agentId }: { agentId: string }) {
               </div>
             </div>
 
-            {/* SECTION 4: Validity */}
             <div>
-              <div style={SECTION_LABEL}>4 · Validity</div>
-              <div>
-                <label htmlFor="expires-at" style={FONT_LABEL}>Expires On</label>
+              <div style={SECTION_LABEL}>4 · Audience</div>
+              <label style={{
+                display: 'flex',
+                alignItems: 'flex-start',
+                gap: 10,
+                padding: 'var(--space-3)',
+                borderRadius: 8,
+                background: 'rgba(0,229,255,0.04)',
+                border: '1px solid rgba(0,229,255,0.16)',
+                cursor: 'pointer',
+              }}>
                 <input
-                  id="expires-at"
-                  type="date"
-                  style={touched.expiresAt && validation.expiresAt ? INPUT_INVALID : INPUT}
-                  min={todayIso}
-                  value={expiresAt}
-                  onChange={(e) => setExpiresAt(e.target.value)}
-                  onBlur={() => markTouched('expiresAt')}
-                  aria-invalid={!!(touched.expiresAt && validation.expiresAt)}
+                  type="checkbox"
+                  checked={newCustomersOnly}
+                  onChange={(e) => setNewCustomersOnly(e.target.checked)}
+                  style={{ marginTop: 3, accentColor: '#00E5FF' }}
                 />
-                <p style={touched.expiresAt && validation.expiresAt ? HELPER_ERROR : HELPER}>
-                  {touched.expiresAt && validation.expiresAt
-                    ? validation.expiresAt
-                    : 'Leave Blank For No Expiration. Coupon Expires At 11:59 PM On The Selected Date.'}
-                </p>
+                <span>
+                  <strong style={{ display: 'block', color: 'var(--white)', fontSize: '0.88rem', marginBottom: 2 }}>
+                    Limit To New Customers Only
+                  </strong>
+                  <span style={{ fontSize: '0.76rem', color: 'var(--grey-400)', lineHeight: 1.4 }}>
+                    Researchers Who Have Never Placed An Order With You. Repeat Buyers Will Be Blocked At Checkout.
+                  </span>
+                </span>
+              </label>
+            </div>
+
+            <div>
+              <div style={SECTION_LABEL}>5 · Validity</div>
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+                gap: 'var(--space-3)',
+              }}>
+                <div>
+                  <label htmlFor="starts-at" style={FONT_LABEL}>Starts On</label>
+                  <input
+                    id="starts-at"
+                    type="date"
+                    style={INPUT}
+                    value={startsAt}
+                    onChange={(e) => setStartsAt(e.target.value)}
+                    onBlur={() => markTouched('startsAt')}
+                  />
+                  <p style={HELPER}>Leave Blank For Immediate Activation.</p>
+                </div>
+                <div>
+                  <label htmlFor="expires-at" style={FONT_LABEL}>Expires On</label>
+                  <input
+                    id="expires-at"
+                    type="date"
+                    style={touched.expiresAt && validation.expiresAt ? INPUT_INVALID : INPUT}
+                    min={todayIso}
+                    value={expiresAt}
+                    onChange={(e) => setExpiresAt(e.target.value)}
+                    onBlur={() => markTouched('expiresAt')}
+                    aria-invalid={!!(touched.expiresAt && validation.expiresAt)}
+                  />
+                  <p style={touched.expiresAt && validation.expiresAt ? HELPER_ERROR : HELPER}>
+                    {touched.expiresAt && validation.expiresAt
+                      ? validation.expiresAt
+                      : 'Leave Blank For No Expiration. Coupon Expires At 11:59 PM On The Selected Date.'}
+                  </p>
+                </div>
               </div>
             </div>
 
@@ -633,7 +856,6 @@ export default function AgentCoupons({ agentId }: { agentId: string }) {
             </button>
           </form>
 
-          {/* LIVE PREVIEW */}
           <div
             className="metal-embossed-panel"
             style={{ padding: 'var(--space-5)' }}
@@ -703,11 +925,50 @@ export default function AgentCoupons({ agentId }: { agentId: string }) {
           </div>
         </div>
 
-        {/* FILTER + LIST */}
+        {/* LIST CONTROLS */}
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          flexWrap: 'wrap',
+          gap: 'var(--space-2)',
+          marginBottom: 'var(--space-3)',
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', flex: 1, minWidth: 220 }}>
+            <input
+              type="search"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search Codes…"
+              aria-label="Search Coupon Codes"
+              style={{ ...INPUT, minHeight: 40, padding: '8px 12px', fontSize: '0.85rem', maxWidth: 280 }}
+            />
+          </div>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+            <button
+              type="button"
+              className="btn-silver"
+              onClick={() => setBulkModalOpen(true)}
+              style={{ fontSize: '0.78rem', padding: '8px 14px', minHeight: 38 }}
+            >
+              Bulk Generate
+            </button>
+            <button
+              type="button"
+              className="btn-silver"
+              onClick={exportCsv}
+              disabled={filteredCoupons.length === 0}
+              style={{ fontSize: '0.78rem', padding: '8px 14px', minHeight: 38, opacity: filteredCoupons.length === 0 ? 0.5 : 1 }}
+            >
+              Export CSV
+            </button>
+          </div>
+        </div>
+
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 'var(--space-2)', marginBottom: 'var(--space-3)' }}>
           <div style={{ ...SECTION_LABEL, margin: 0 }}>Your Coupons</div>
           <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-            {(['all', 'active', 'inactive', 'expired'] as FilterMode[]).map((f) => (
+            {(['all', 'active', 'scheduled', 'inactive', 'expired'] as FilterMode[]).map((f) => (
               <button
                 key={f}
                 type="button"
@@ -752,7 +1013,7 @@ export default function AgentCoupons({ agentId }: { agentId: string }) {
             <p style={{ color: 'var(--grey-400)', fontSize: '0.84rem', margin: 0, lineHeight: 1.5 }}>
               {coupons.length === 0
                 ? 'Create Your First Coupon Above. Try A Starter Template To Get Going Fast.'
-                : 'Switch Filters Or Create A New Coupon To Fill This List.'}
+                : 'Switch Filters, Clear Your Search, Or Create A New Coupon To Fill This List.'}
             </p>
           </div>
         ) : (
@@ -765,120 +1026,178 @@ export default function AgentCoupons({ agentId }: { agentId: string }) {
               const usagePct = c.max_uses != null && c.max_uses > 0
                 ? Math.min(100, Math.round((c.uses_count / c.max_uses) * 100))
                 : null;
+              const toast = notifyToast && notifyToast.couponId === c.id ? notifyToast.text : null;
+              const linkCopied = linkCopiedId === c.id;
               return (
                 <div
                   key={c.id}
                   className="metal-embossed-panel"
                   style={{
                     padding: 'var(--space-4)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 'var(--space-3)',
+                  }}
+                >
+                  <div style={{
                     display: 'grid',
                     gridTemplateColumns: 'minmax(0, 1fr) auto',
                     gap: 'var(--space-3)',
                     alignItems: 'center',
-                  }}
-                >
-                  <div style={{ minWidth: 0 }}>
-                    {/* Code row + state badge */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                  }}>
+                    <div style={{ minWidth: 0 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                        <button
+                          type="button"
+                          onClick={() => copyCode(c)}
+                          title="Copy Code"
+                          style={{
+                            fontFamily: 'monospace',
+                            fontSize: '1.05rem',
+                            fontWeight: 700,
+                            color: 'var(--teal)',
+                            background: 'rgba(0,196,188,0.08)',
+                            border: '1px solid rgba(0,196,188,0.25)',
+                            borderRadius: 6,
+                            padding: '4px 10px',
+                            cursor: 'pointer',
+                            letterSpacing: '0.05em',
+                            minHeight: 32,
+                          }}
+                        >
+                          {c.code}
+                        </button>
+                        {copiedId === c.id && (
+                          <span style={{ fontSize: '0.74rem', color: '#00FF9D', fontWeight: 700 }}>Copied</span>
+                        )}
+                        <span
+                          style={{
+                            fontSize: '0.66rem',
+                            padding: '3px 10px',
+                            borderRadius: 999,
+                            background: state.bg,
+                            color: state.color,
+                            fontWeight: 700,
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.06em',
+                            border: `1px solid ${state.color}55`,
+                          }}
+                        >
+                          {state.label}
+                        </span>
+                        {c.new_customers_only && (
+                          <span style={{
+                            fontSize: '0.62rem',
+                            padding: '3px 8px',
+                            borderRadius: 999,
+                            background: 'rgba(0,229,255,0.10)',
+                            color: '#00E5FF',
+                            fontWeight: 700,
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.06em',
+                            border: '1px solid rgba(0,229,255,0.35)',
+                          }}>New Customers</span>
+                        )}
+                      </div>
+
+                      <div style={{ display: 'flex', gap: 'var(--space-4)', marginTop: 8, flexWrap: 'wrap', fontSize: '0.82rem' }}>
+                        <span style={{ color: 'var(--white)', fontWeight: 600 }}>
+                          {c.discount_type === 'percent'
+                            ? `${Number(c.discount_value)}% Off`
+                            : `${fmtMoney(c.discount_value)} Off`}
+                        </span>
+                        {c.min_order_amount != null && (
+                          <span style={{ color: 'var(--grey-400)' }}>Min Order {fmtMoney(c.min_order_amount)}</span>
+                        )}
+                        <span style={{ color: 'var(--grey-400)' }}>{usesLabel}</span>
+                        {c.max_uses_per_user != null && (
+                          <span style={{ color: 'var(--grey-400)' }}>{c.max_uses_per_user}/Researcher</span>
+                        )}
+                        {c.starts_at && (
+                          <span style={{ color: 'var(--grey-400)' }}>Starts {fmtDate(c.starts_at)}</span>
+                        )}
+                        <span style={{ color: 'var(--grey-400)' }}>
+                          Expires {c.expires_at ? fmtDate(c.expires_at) : 'Never'}
+                        </span>
+                      </div>
+
+                      {usagePct != null && (
+                        <div style={{ marginTop: 8, background: 'rgba(255,255,255,0.06)', borderRadius: 999, height: 4, overflow: 'hidden' }}>
+                          <div style={{
+                            width: `${usagePct}%`,
+                            height: '100%',
+                            background: usagePct >= 90 ? '#F6AD55' : 'var(--teal)',
+                            transition: 'width 200ms ease-out',
+                          }} />
+                        </div>
+                      )}
+
+                      {perf[c.code] && perf[c.code].redemptions > 0 && (
+                        <div style={{ fontSize: '0.74rem', color: '#00FF9D', marginTop: 8, fontWeight: 600 }}>
+                          {`Drove ${fmtMoney(perf[c.code].revenue_driven)} In Revenue · ${fmtMoney(perf[c.code].discount_given)} Discounted Across ${perf[c.code].redemptions} Order${perf[c.code].redemptions !== 1 ? 's' : ''}`}
+                        </div>
+                      )}
+                    </div>
+
+                    <div style={{ display: 'flex', gap: 'var(--space-2)', flexShrink: 0 }}>
                       <button
                         type="button"
-                        onClick={() => copyCode(c)}
-                        title="Copy Code"
-                        style={{
-                          fontFamily: 'monospace',
-                          fontSize: '1.05rem',
-                          fontWeight: 700,
-                          color: 'var(--teal)',
-                          background: 'rgba(0,196,188,0.08)',
-                          border: '1px solid rgba(0,196,188,0.25)',
-                          borderRadius: 6,
-                          padding: '4px 10px',
-                          cursor: 'pointer',
-                          letterSpacing: '0.05em',
-                          minHeight: 32,
-                        }}
+                        onClick={() => toggleActive(c)}
+                        className="btn-silver"
+                        style={{ fontSize: '0.76rem', padding: '8px 12px', minHeight: 36 }}
+                        aria-label={c.is_active ? `Deactivate ${c.code}` : `Activate ${c.code}`}
                       >
-                        {c.code}
+                        {c.is_active ? 'Deactivate' : 'Activate'}
                       </button>
-                      {copiedId === c.id && (
-                        <span style={{ fontSize: '0.74rem', color: '#00FF9D', fontWeight: 700 }}>Copied</span>
-                      )}
-                      <span
-                        style={{
-                          fontSize: '0.66rem',
-                          padding: '3px 10px',
-                          borderRadius: 999,
-                          background: state.bg,
-                          color: state.color,
-                          fontWeight: 700,
-                          textTransform: 'uppercase',
-                          letterSpacing: '0.06em',
-                          border: `1px solid ${state.color}55`,
-                        }}
+                      <button
+                        type="button"
+                        onClick={() => deleteCoupon(c)}
+                        className="btn-neon-red"
+                        style={{ fontSize: '0.76rem', padding: '8px 12px', minHeight: 36 }}
+                        aria-label={`Archive ${c.code}`}
                       >
-                        {state.label}
-                      </span>
+                        Archive
+                      </button>
                     </div>
-
-                    {/* Discount summary */}
-                    <div style={{ display: 'flex', gap: 'var(--space-4)', marginTop: 8, flexWrap: 'wrap', fontSize: '0.82rem' }}>
-                      <span style={{ color: 'var(--white)', fontWeight: 600 }}>
-                        {c.discount_type === 'percent'
-                          ? `${Number(c.discount_value)}% Off`
-                          : `${fmtMoney(c.discount_value)} Off`}
-                      </span>
-                      {c.min_order_amount != null && (
-                        <span style={{ color: 'var(--grey-400)' }}>Min Order {fmtMoney(c.min_order_amount)}</span>
-                      )}
-                      <span style={{ color: 'var(--grey-400)' }}>{usesLabel}</span>
-                      {c.max_uses_per_user != null && (
-                        <span style={{ color: 'var(--grey-400)' }}>{c.max_uses_per_user}/Researcher</span>
-                      )}
-                      <span style={{ color: 'var(--grey-400)' }}>
-                        Expires {c.expires_at ? fmtDate(c.expires_at) : 'Never'}
-                      </span>
-                    </div>
-
-                    {/* Usage progress bar (when capped) */}
-                    {usagePct != null && (
-                      <div style={{ marginTop: 8, background: 'rgba(255,255,255,0.06)', borderRadius: 999, height: 4, overflow: 'hidden' }}>
-                        <div style={{
-                          width: `${usagePct}%`,
-                          height: '100%',
-                          background: usagePct >= 90 ? '#F6AD55' : 'var(--teal)',
-                          transition: 'width 200ms ease-out',
-                        }} />
-                      </div>
-                    )}
-
-                    {/* Performance */}
-                    {perf[c.code] && perf[c.code].redemptions > 0 && (
-                      <div style={{ fontSize: '0.74rem', color: '#00FF9D', marginTop: 8, fontWeight: 600 }}>
-                        {`Drove ${fmtMoney(perf[c.code].revenue_driven)} In Revenue · ${fmtMoney(perf[c.code].discount_given)} Discounted Across ${perf[c.code].redemptions} Order${perf[c.code].redemptions !== 1 ? 's' : ''}`}
-                      </div>
-                    )}
                   </div>
 
-                  {/* Actions */}
-                  <div style={{ display: 'flex', gap: 'var(--space-2)', flexShrink: 0 }}>
+                  <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: 'var(--space-3)' }}>
                     <button
                       type="button"
-                      onClick={() => toggleActive(c)}
                       className="btn-silver"
-                      style={{ fontSize: '0.76rem', padding: '8px 12px', minHeight: 36 }}
-                      aria-label={c.is_active ? `Deactivate ${c.code}` : `Activate ${c.code}`}
+                      onClick={() => copyLink(c)}
+                      style={{ fontSize: '0.74rem', padding: '6px 12px', minHeight: 32 }}
                     >
-                      {c.is_active ? 'Deactivate' : 'Activate'}
+                      {linkCopied ? 'Link Copied' : 'Copy Link'}
                     </button>
                     <button
                       type="button"
-                      onClick={() => deleteCoupon(c)}
-                      className="btn-neon-red"
-                      style={{ fontSize: '0.76rem', padding: '8px 12px', minHeight: 36 }}
-                      aria-label={`Delete ${c.code}`}
+                      className="btn-silver"
+                      onClick={() => setQrModalCoupon(c)}
+                      style={{ fontSize: '0.74rem', padding: '6px 12px', minHeight: 32 }}
                     >
-                      Delete
+                      QR
                     </button>
+                    <button
+                      type="button"
+                      className="btn-silver"
+                      onClick={() => openRedemptions(c)}
+                      style={{ fontSize: '0.74rem', padding: '6px 12px', minHeight: 32 }}
+                    >
+                      Redemptions
+                    </button>
+                    <button
+                      type="button"
+                      className="btn-silver"
+                      onClick={() => notifyDownline(c)}
+                      disabled={notifyingId === c.id}
+                      style={{ fontSize: '0.74rem', padding: '6px 12px', minHeight: 32, opacity: notifyingId === c.id ? 0.6 : 1 }}
+                    >
+                      {notifyingId === c.id ? 'Sending…' : 'Send To Researchers'}
+                    </button>
+                    {toast && (
+                      <span style={{ fontSize: '0.74rem', color: 'var(--teal)', fontWeight: 600 }}>{toast}</span>
+                    )}
                   </div>
                 </div>
               );
@@ -893,6 +1212,29 @@ export default function AgentCoupons({ agentId }: { agentId: string }) {
           }
         `}</style>
       </div>
+
+      {qrModalCoupon && (
+        <QrModal
+          coupon={qrModalCoupon}
+          onClose={() => setQrModalCoupon(null)}
+        />
+      )}
+
+      {redemptionsModalCoupon && (
+        <RedemptionsModal
+          coupon={redemptionsModalCoupon}
+          data={redemptionsData}
+          loading={redemptionsLoading}
+          onClose={() => { setRedemptionsModalCoupon(null); setRedemptionsData(null); }}
+        />
+      )}
+
+      {bulkModalOpen && (
+        <BulkGenerateModal
+          onClose={() => setBulkModalOpen(false)}
+          onCreated={async () => { await loadCoupons(); setBulkModalOpen(false); }}
+        />
+      )}
     </div>
   );
 }
@@ -912,5 +1254,430 @@ function StatTile({ label, value, accent }: { label: string; value: string; acce
         {value}
       </div>
     </div>
+  );
+}
+
+// -------- MODALS --------
+
+interface ModalShellProps {
+  title: string;
+  onClose: () => void;
+  children: React.ReactNode;
+  footer?: React.ReactNode;
+  maxWidth?: number;
+}
+
+function ModalShell({ title, onClose, children, footer, maxWidth = 560 }: ModalShellProps) {
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    document.addEventListener('keydown', onKey);
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.removeEventListener('keydown', onKey);
+      document.body.style.overflow = prevOverflow;
+    };
+  }, [onClose]);
+
+  return (
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-label={title}
+      onClick={onClose}
+      style={{
+        position: 'fixed',
+        inset: 0,
+        background: 'rgba(5,10,15,0.85)',
+        zIndex: 1000,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: 'var(--space-3)',
+      }}
+    >
+      <div
+        className="metal-embossed-panel"
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          width: '100%',
+          maxWidth,
+          maxHeight: '90vh',
+          overflowY: 'auto',
+          padding: 'var(--space-5)',
+          background: 'linear-gradient(180deg, #0f1923 0%, #0a131c 100%)',
+          borderRadius: 12,
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 'var(--space-4)', gap: 'var(--space-3)' }}>
+          <h4 className="metal-text" style={{ margin: 0, fontSize: '1.1rem', fontFamily: 'var(--font-brand)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+            {title}
+          </h4>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close"
+            className="btn-silver"
+            style={{ minHeight: 32, minWidth: 32, padding: '0 10px', fontSize: '0.9rem', fontWeight: 700 }}
+          >
+            X
+          </button>
+        </div>
+        {children}
+        {footer && (
+          <div style={{ marginTop: 'var(--space-4)', display: 'flex', justifyContent: 'flex-end', gap: 'var(--space-2)' }}>
+            {footer}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function QrModal({ coupon, onClose }: { coupon: Coupon; onClose: () => void }) {
+  const qrUrl = `/api/agent/coupons/${coupon.id}/qr`;
+  return (
+    <ModalShell title={`QR · ${coupon.code}`} onClose={onClose}>
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 'var(--space-3)' }}>
+        <div style={{
+          background: '#FFFFFF',
+          padding: 16,
+          borderRadius: 8,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          maxWidth: '100%',
+        }}>
+          <img
+            src={qrUrl}
+            alt={`QR Code For ${coupon.code}`}
+            style={{ width: '100%', maxWidth: 280, height: 'auto', display: 'block' }}
+          />
+        </div>
+        <p style={{ fontSize: '0.78rem', color: 'var(--grey-400)', margin: 0, textAlign: 'center', lineHeight: 1.5 }}>
+          Scan To Open Your Storefront With The Coupon Pre-Applied.
+        </p>
+        <a
+          href={qrUrl}
+          download={`coupon-${coupon.code}.png`}
+          className="btn-neon-cyan"
+          style={{ minHeight: 40, padding: '8px 16px', fontSize: '0.85rem', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
+        >
+          Download PNG
+        </a>
+      </div>
+    </ModalShell>
+  );
+}
+
+function RedemptionsModal({
+  coupon,
+  data,
+  loading,
+  onClose,
+}: {
+  coupon: Coupon;
+  data: RedemptionsResponse | null;
+  loading: boolean;
+  onClose: () => void;
+}) {
+  return (
+    <ModalShell title={`Redemptions · ${coupon.code}`} onClose={onClose} maxWidth={720}>
+      {loading ? (
+        <div style={{ display: 'flex', justifyContent: 'center', padding: 'var(--space-6)' }}>
+          <div style={{ width: 28, height: 28, borderRadius: '50%', border: '2px solid var(--teal)', borderTopColor: 'transparent', animation: 'spin 0.8s linear infinite' }} />
+        </div>
+      ) : !data ? (
+        <p style={{ color: '#FFAAAA', fontSize: '0.86rem' }}>Failed To Load Redemptions.</p>
+      ) : (
+        <>
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
+            gap: 'var(--space-3)',
+            marginBottom: 'var(--space-4)',
+          }}>
+            <StatTile label="Redemptions" value={String(data.totals.count)} />
+            <StatTile label="Discount Given" value={fmtMoney(data.totals.discount_given)} accent="#F6AD55" />
+            <StatTile label="Revenue Driven" value={fmtMoney(data.totals.revenue_driven)} accent="#00FF9D" />
+          </div>
+          {data.redemptions.length === 0 ? (
+            <p style={{ color: 'var(--grey-400)', fontSize: '0.86rem', textAlign: 'center', padding: 'var(--space-4) 0' }}>
+              No Redemptions Yet.
+            </p>
+          ) : (
+            <div style={{ overflowX: 'auto' }}>
+              <table style={{
+                width: '100%',
+                borderCollapse: 'collapse',
+                fontSize: '0.82rem',
+                color: 'var(--silver)',
+              }}>
+                <thead>
+                  <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+                    <th style={{ textAlign: 'left', padding: '8px 6px', color: 'var(--grey-400)', fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Researcher</th>
+                    <th style={{ textAlign: 'left', padding: '8px 6px', color: 'var(--grey-400)', fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Order</th>
+                    <th style={{ textAlign: 'left', padding: '8px 6px', color: 'var(--grey-400)', fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Date</th>
+                    <th style={{ textAlign: 'right', padding: '8px 6px', color: 'var(--grey-400)', fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Subtotal</th>
+                    <th style={{ textAlign: 'right', padding: '8px 6px', color: 'var(--grey-400)', fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Discount</th>
+                    <th style={{ textAlign: 'right', padding: '8px 6px', color: 'var(--grey-400)', fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Total</th>
+                    <th style={{ textAlign: 'left', padding: '8px 6px', color: 'var(--grey-400)', fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {data.redemptions.map((r) => (
+                    <tr key={r.order_id} style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+                      <td style={{ padding: '8px 6px', color: 'var(--white)' }}>{r.buyer_name || '—'}</td>
+                      <td style={{ padding: '8px 6px', fontFamily: 'monospace' }}>{r.order_id.slice(0, 8)}</td>
+                      <td style={{ padding: '8px 6px' }}>{fmtDateTime(r.created_at)}</td>
+                      <td style={{ padding: '8px 6px', textAlign: 'right' }}>{fmtMoney(r.subtotal)}</td>
+                      <td style={{ padding: '8px 6px', textAlign: 'right', color: '#F6AD55' }}>-{fmtMoney(r.discount_amount)}</td>
+                      <td style={{ padding: '8px 6px', textAlign: 'right', color: 'var(--white)', fontWeight: 600 }}>{fmtMoney(r.total)}</td>
+                      <td style={{ padding: '8px 6px', textTransform: 'capitalize' }}>{r.status.replace(/_/g, ' ')}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </>
+      )}
+    </ModalShell>
+  );
+}
+
+function BulkGenerateModal({ onClose, onCreated }: { onClose: () => void; onCreated: () => void }) {
+  const [prefix, setPrefix] = useState('');
+  const [count, setCount] = useState('25');
+  const [discountType, setDiscountType] = useState<'percent' | 'fixed'>('percent');
+  const [discountValue, setDiscountValue] = useState('');
+  const [minOrder, setMinOrder] = useState('');
+  const [maxUsesPerUser, setMaxUsesPerUser] = useState('1');
+  const [startsAt, setStartsAt] = useState('');
+  const [expiresAt, setExpiresAt] = useState('');
+  const [newCustomersOnly, setNewCustomersOnly] = useState(false);
+  const [singleUse, setSingleUse] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState('');
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setError('');
+    const cleanPrefix = prefix.trim().toUpperCase().replace(/[^A-Z0-9-]/g, '');
+    const n = parseInt(count, 10);
+    const dv = Number(discountValue);
+    if (!/^[A-Z0-9-]{2,12}$/.test(cleanPrefix)) {
+      setError('Prefix Must Be 2-12 Letters/Numbers/Hyphens.');
+      return;
+    }
+    if (!Number.isInteger(n) || n < 1 || n > 500) {
+      setError('Count Must Be Between 1 And 500.');
+      return;
+    }
+    if (!Number.isFinite(dv) || dv <= 0) {
+      setError('Enter A Discount Value Greater Than Zero.');
+      return;
+    }
+    if (discountType === 'fixed' && !minOrder.trim()) {
+      setError('Fixed-Amount Coupons Require A Minimum Order.');
+      return;
+    }
+    setSubmitting(true);
+    try {
+      const res = await fetch('/api/agent/coupons/bulk', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          prefix: cleanPrefix,
+          count: n,
+          discount_type: discountType,
+          discount_value: dv,
+          min_order_amount: minOrder.trim() ? Number(minOrder) : null,
+          max_uses_per_user: maxUsesPerUser.trim() ? Number(maxUsesPerUser) : null,
+          starts_at: startsAt || null,
+          expires_at: expiresAt || null,
+          new_customers_only: newCustomersOnly,
+          single_use: singleUse,
+        }),
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setError(json.error || 'Bulk Generation Failed.');
+        return;
+      }
+      onCreated();
+    } catch {
+      setError('Network Error. Please Try Again.');
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  return (
+    <ModalShell title="Bulk Generate Coupons" onClose={onClose} maxWidth={560}>
+      <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
+        {error && (
+          <div role="alert" style={{ background: 'rgba(229,62,62,0.10)', border: '1px solid rgba(229,62,62,0.35)', borderRadius: 8, padding: 'var(--space-2) var(--space-3)' }}>
+            <p style={{ color: '#FFAAAA', fontSize: '0.82rem', margin: 0 }}>{error}</p>
+          </div>
+        )}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 'var(--space-2)' }}>
+          <div>
+            <label style={FONT_LABEL}>Prefix</label>
+            <input
+              type="text"
+              value={prefix}
+              onChange={(e) => setPrefix(e.target.value.toUpperCase().replace(/[^A-Z0-9-]/g, ''))}
+              placeholder="LAUNCH"
+              style={INPUT}
+              autoCapitalize="characters"
+              autoComplete="off"
+              required
+            />
+            <p style={HELPER}>Each Code Will Look Like {prefix || 'LAUNCH'}-XXXXXX.</p>
+          </div>
+          <div>
+            <label style={FONT_LABEL}>Count</label>
+            <input
+              type="number"
+              value={count}
+              onChange={(e) => setCount(e.target.value.replace(/[^0-9]/g, ''))}
+              min={1}
+              max={500}
+              step={1}
+              style={INPUT}
+              inputMode="numeric"
+              required
+            />
+            <p style={HELPER}>1 To 500 Codes Per Batch.</p>
+          </div>
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 'var(--space-2)' }}>
+          <div>
+            <label style={FONT_LABEL}>Discount Type</label>
+            <select value={discountType} onChange={(e) => setDiscountType(e.target.value as 'percent' | 'fixed')} style={INPUT}>
+              <option value="percent">Percentage Off</option>
+              <option value="fixed">Fixed Amount Off</option>
+            </select>
+          </div>
+          <div>
+            <label style={FONT_LABEL}>{discountType === 'percent' ? 'Percent Off' : 'Amount Off ($)'}</label>
+            <input
+              type="number"
+              value={discountValue}
+              onChange={(e) => setDiscountValue(e.target.value)}
+              min={1}
+              max={discountType === 'percent' ? 90 : 500}
+              step={discountType === 'percent' ? 1 : 0.01}
+              placeholder={discountType === 'percent' ? '10' : '25.00'}
+              style={INPUT}
+              inputMode="decimal"
+              required
+            />
+          </div>
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 'var(--space-2)' }}>
+          <div>
+            <label style={FONT_LABEL}>Minimum Order ($)</label>
+            <input
+              type="number"
+              value={minOrder}
+              onChange={(e) => setMinOrder(e.target.value)}
+              min={0}
+              step={0.01}
+              placeholder="Optional"
+              style={INPUT}
+              inputMode="decimal"
+            />
+          </div>
+          <div>
+            <label style={FONT_LABEL}>Max Uses Per Researcher</label>
+            <input
+              type="number"
+              value={maxUsesPerUser}
+              onChange={(e) => setMaxUsesPerUser(e.target.value.replace(/[^0-9]/g, ''))}
+              min={1}
+              step={1}
+              placeholder="Unlimited"
+              style={INPUT}
+              inputMode="numeric"
+            />
+          </div>
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 'var(--space-2)' }}>
+          <div>
+            <label style={FONT_LABEL}>Starts On</label>
+            <input
+              type="date"
+              value={startsAt}
+              onChange={(e) => setStartsAt(e.target.value)}
+              style={INPUT}
+            />
+          </div>
+          <div>
+            <label style={FONT_LABEL}>Expires On</label>
+            <input
+              type="date"
+              value={expiresAt}
+              onChange={(e) => setExpiresAt(e.target.value)}
+              style={INPUT}
+            />
+          </div>
+        </div>
+
+        <label style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 8,
+          padding: 'var(--space-2) var(--space-3)',
+          borderRadius: 8,
+          background: 'rgba(0,229,255,0.04)',
+          border: '1px solid rgba(0,229,255,0.16)',
+          cursor: 'pointer',
+        }}>
+          <input
+            type="checkbox"
+            checked={newCustomersOnly}
+            onChange={(e) => setNewCustomersOnly(e.target.checked)}
+            style={{ accentColor: '#00E5FF' }}
+          />
+          <span style={{ fontSize: '0.82rem', color: 'var(--white)' }}>Limit To New Customers Only</span>
+        </label>
+
+        <label style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 8,
+          padding: 'var(--space-2) var(--space-3)',
+          borderRadius: 8,
+          background: 'rgba(0,196,188,0.04)',
+          border: '1px solid rgba(0,196,188,0.16)',
+          cursor: 'pointer',
+        }}>
+          <input
+            type="checkbox"
+            checked={singleUse}
+            onChange={(e) => setSingleUse(e.target.checked)}
+            style={{ accentColor: 'var(--teal)' }}
+          />
+          <span style={{ fontSize: '0.82rem', color: 'var(--white)' }}>Single-Use (Each Code Can Be Redeemed Once)</span>
+        </label>
+
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 'var(--space-2)', marginTop: 'var(--space-2)' }}>
+          <button type="button" className="btn-silver" onClick={onClose} disabled={submitting} style={{ minHeight: 40, padding: '8px 16px', fontSize: '0.85rem' }}>
+            Cancel
+          </button>
+          <button type="submit" className="btn-neon-cyan" disabled={submitting} style={{ minHeight: 40, padding: '8px 16px', fontSize: '0.85rem', fontWeight: 700 }}>
+            {submitting ? 'Generating…' : 'Generate Codes'}
+          </button>
+        </div>
+      </form>
+    </ModalShell>
   );
 }
