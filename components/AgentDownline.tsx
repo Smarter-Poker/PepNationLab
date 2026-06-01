@@ -19,6 +19,12 @@ export default function AgentDownline({ agentId }: { agentId?: string }) {
   const [caAccountType, setCaAccountType] = useState<'credit' | 'prepaid'>('prepaid');
   const [caCreditLimit, setCaCreditLimit] = useState('');
   const [caPrepaidBalance, setCaPrepaidBalance] = useState('');
+  // Commission structure: 'fixed' = flat rate; 'gamified' = base climbs with
+  // volume up to a max cap via the house milestone ladder.
+  const [caCommissionMode, setCaCommissionMode] = useState<'fixed' | 'gamified'>('fixed');
+  const [caCommissionPct, setCaCommissionPct] = useState('');
+  const [caMaxCap, setCaMaxCap] = useState('');
+  const [caVelocityCap, setCaVelocityCap] = useState('');
   const [caLoading, setCaLoading] = useState(false);
   const [caError, setCaError] = useState('');
 
@@ -66,6 +72,13 @@ export default function AgentDownline({ agentId }: { agentId?: string }) {
           account_type: caAccountType,
           credit_limit: caAccountType === 'credit' ? caCreditLimit : undefined,
           prepaid_balance: caAccountType === 'prepaid' ? caPrepaidBalance : undefined,
+          // Commission structure. Fixed -> cap == base (flat). Gamified -> cap
+          // above base lets the house milestone ladder lift the rate.
+          commission_pct: caCommissionPct === '' ? undefined : caCommissionPct,
+          commission_max_pct: caCommissionMode === 'fixed'
+            ? (caCommissionPct === '' ? undefined : caCommissionPct)
+            : (caMaxCap === '' ? null : caMaxCap),
+          velocity_cap: caCommissionMode === 'gamified' && caVelocityCap !== '' ? caVelocityCap : undefined,
         })
       });
       const data = await res.json();
@@ -80,6 +93,10 @@ export default function AgentDownline({ agentId }: { agentId?: string }) {
       setCaSlug('');
       setCaCreditLimit('');
       setCaPrepaidBalance('');
+      setCaCommissionMode('fixed');
+      setCaCommissionPct('');
+      setCaMaxCap('');
+      setCaVelocityCap('');
       fetchData();
     } catch (err: any) {
       setCaError(err.message);
@@ -330,6 +347,46 @@ export default function AgentDownline({ agentId }: { agentId?: string }) {
                     />
                   </div>
                 )}
+
+                <hr style={{ border: 'none', borderTop: '1px solid rgba(255,255,255,0.1)', margin: 'var(--space-2) 0' }} />
+
+                <div>
+                  <label style={{ display: 'block', marginBottom: '6px', color: 'var(--grey-300)', fontSize: '0.85rem' }}>Commission Structure</label>
+                  <div style={{ display: 'flex', gap: 'var(--space-3)', marginBottom: 'var(--space-3)' }}>
+                    <label style={{ flex: 1, padding: '10px', background: 'linear-gradient(180deg, #0b0f16 0%, #121822 100%)', border: `1px solid ${caCommissionMode === 'fixed' ? 'var(--teal)' : 'rgba(0,0,0,0.8)'}`, color: 'var(--white)', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <input type="radio" checked={caCommissionMode === 'fixed'} onChange={() => setCaCommissionMode('fixed')} />
+                      Fixed Percentage
+                    </label>
+                    <label style={{ flex: 1, padding: '10px', background: 'linear-gradient(180deg, #0b0f16 0%, #121822 100%)', border: `1px solid ${caCommissionMode === 'gamified' ? 'var(--teal)' : 'rgba(0,0,0,0.8)'}`, color: 'var(--white)', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <input type="radio" checked={caCommissionMode === 'gamified'} onChange={() => setCaCommissionMode('gamified')} />
+                      Gamification Scale
+                    </label>
+                  </div>
+                  {caCommissionMode === 'fixed' ? (
+                    <div>
+                      <label style={{ display: 'block', marginBottom: '6px', color: 'var(--grey-300)', fontSize: '0.85rem' }}>Commission Rate (%)</label>
+                      <input type="number" min="0" max="100" step="0.1" style={{ width: '100%', padding: '10px', background: 'linear-gradient(180deg, #0b0f16 0%, #121822 100%)', border: '1px solid rgba(0,0,0,0.8)', color: 'var(--white)', borderRadius: '6px' }} value={caCommissionPct} onChange={e => setCaCommissionPct(e.target.value)} placeholder="e.g. 20" />
+                    </div>
+                  ) : (
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: 'var(--space-3)' }}>
+                      <div>
+                        <label style={{ display: 'block', marginBottom: '6px', color: 'var(--grey-300)', fontSize: '0.85rem' }}>Base Rate (%)</label>
+                        <input type="number" min="0" max="100" step="0.1" style={{ width: '100%', padding: '10px', background: 'linear-gradient(180deg, #0b0f16 0%, #121822 100%)', border: '1px solid rgba(0,0,0,0.8)', color: 'var(--white)', borderRadius: '6px' }} value={caCommissionPct} onChange={e => setCaCommissionPct(e.target.value)} placeholder="e.g. 15" />
+                      </div>
+                      <div>
+                        <label style={{ display: 'block', marginBottom: '6px', color: 'var(--grey-300)', fontSize: '0.85rem' }}>Max Cap (%)</label>
+                        <input type="number" min="0" max="100" step="0.1" style={{ width: '100%', padding: '10px', background: 'linear-gradient(180deg, #0b0f16 0%, #121822 100%)', border: '1px solid rgba(0,0,0,0.8)', color: 'var(--white)', borderRadius: '6px' }} value={caMaxCap} onChange={e => setCaMaxCap(e.target.value)} placeholder="No Cap" />
+                      </div>
+                      <div>
+                        <label style={{ display: 'block', marginBottom: '6px', color: 'var(--grey-300)', fontSize: '0.85rem' }}>Velocity Cap ($)</label>
+                        <input type="number" min="0" step="0.01" style={{ width: '100%', padding: '10px', background: 'linear-gradient(180deg, #0b0f16 0%, #121822 100%)', border: '1px solid rgba(0,0,0,0.8)', color: 'var(--white)', borderRadius: '6px' }} value={caVelocityCap} onChange={e => setCaVelocityCap(e.target.value)} placeholder="None" />
+                      </div>
+                    </div>
+                  )}
+                  <p style={{ fontSize: '0.72rem', color: 'var(--grey-500)', margin: '6px 0 0', lineHeight: 1.4 }}>
+                    Fixed Pays A Flat Rate. Gamification Scale Climbs From The Base Rate With Volume Up To The Max Cap (House Milestone Ladder).
+                  </p>
+                </div>
 
                 <button type="submit" className="btn-neon-cyan" disabled={caLoading} style={{ marginTop: 'var(--space-2)' }}>
                   {caLoading ? 'Creating...' : 'Create Agent Account'}
