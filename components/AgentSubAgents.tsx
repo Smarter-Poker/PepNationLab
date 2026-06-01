@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import { pickOne } from '@/lib/relations';
+import SubAgentCommissionEditor from './SubAgentCommissionEditor';
 import {
   exportCSV,
   downloadCSV,
@@ -480,6 +481,7 @@ export default function AgentSubAgents({ agentId }: { agentId?: string }) {
                     })()}
                   </div>
                   <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end', flexWrap: 'wrap', flex: '1 1 auto' }}>
+                    <SubAgentCommissionEditor subAgentId={agent.id} name={agent.full_name || agent.username || 'Sub-Agent'} />
                     <button
                       className="btn-silver"
                       onClick={() => handleGenerateInvoice(agent.id)}

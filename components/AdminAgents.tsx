@@ -4,6 +4,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { toast } from 'sonner';
 import { createClient } from '@/lib/supabase/client';
 import ViewAsButton from '@/components/ViewAsButton';
+import AdminTierOverrideControl from '@/components/AdminTierOverrideControl';
 
 export default function AdminAgents() {
   const [agents, setAgents] = useState<any[]>([]);
@@ -521,6 +522,7 @@ export default function AdminAgents() {
                     <span style={{ fontSize: '0.8rem', color: 'var(--silver)' }}>
                       {agent.account_type === 'prepaid' ? 'Prepaid' : 'Credit'}
                     </span>
+                    <AdminTierOverrideControl agentId={agent.id} />
                   </div>
                 </div>
 

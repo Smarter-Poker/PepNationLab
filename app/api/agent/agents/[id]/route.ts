@@ -101,6 +101,14 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ id: string
       .filter((o) => new Date(o.created_at as string).getTime() >= since30)
       .reduce((acc, o) => acc + num(o.total), 0);
 
+    // Sub-Agents of this agent
+    const { data: subAgentsRows } = await supabase
+      .from('profiles')
+      .select('id, full_name, username, email, created_at, is_active, commission_pct')
+      .eq('parent_agent_id', id)
+      .eq('is_sub_agent', true)
+      .order('created_at', { ascending: false });
+
     return NextResponse.json({
       agent: {
         id: agent.id,
@@ -140,6 +148,15 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ id: string
           payment_method: o.payment_method,
         })),
       },
+      sub_agents: (subAgentsRows ?? []).map((sa) => ({
+        id: sa.id,
+        full_name: sa.full_name,
+        username: sa.username,
+        email: sa.email,
+        is_active: sa.is_active,
+        commission_pct: sa.commission_pct != null ? num(sa.commission_pct) : null,
+        created_at: sa.created_at,
+      })),
     });
   } catch (err) {
     console.error('[GET agent-detail] error:', err);
@@ -226,12 +243,19 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
       }
     }
 
-    // Mirror active state + optional display_name to the storefront row.
+    // Mirror active state + optional display_name and slug to the storefront row.
     const storefrontUpdate: Record<string, any> = {};
     if (typeof body.is_active === 'boolean') storefrontUpdate.is_active = body.is_active;
     if (typeof body.display_name === 'string' && body.display_name.trim()) {
       storefrontUpdate.display_name = body.display_name.trim();
       changes.display_name = storefrontUpdate.display_name;
+    }
+    if (typeof body.slug === 'string' && body.slug.trim()) {
+      const parsedSlug = body.slug.trim().toLowerCase().replace(/[^a-z0-9\-]/g, '');
+      if (parsedSlug) {
+        storefrontUpdate.slug = parsedSlug;
+        changes.slug = parsedSlug;
+      }
     }
     if (Object.keys(storefrontUpdate).length > 0) {
       await supabase.from('agent_profiles').update(storefrontUpdate).eq('id', id);

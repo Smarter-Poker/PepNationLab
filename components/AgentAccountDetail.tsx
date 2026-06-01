@@ -42,6 +42,15 @@ type Detail = {
     last30Total: number;
     recent: Array<{ id: string; status: string; total: number; created_at: string; buyer_name: string | null; payment_method: string | null }>;
   };
+  sub_agents: Array<{
+    id: string;
+    full_name: string | null;
+    username: string | null;
+    email: string | null;
+    is_active: boolean;
+    commission_pct: number | null;
+    created_at: string;
+  }>;
 };
 
 const fmtMoney = (v: number | null | undefined) => `$${(Number(v) || 0).toFixed(2)}`;
@@ -79,11 +88,15 @@ export default function AgentAccountDetail({
   // Editable fields
   const [fullName, setFullName] = useState('');
   const [displayName, setDisplayName] = useState('');
+  const [slug, setSlug] = useState('');
   const [accountType, setAccountType] = useState<'credit' | 'prepaid'>('prepaid');
   const [creditLimit, setCreditLimit] = useState('');
   const [commissionPct, setCommissionPct] = useState('');
   const [isActive, setIsActive] = useState(true);
   const [saving, setSaving] = useState(false);
+
+  // Tabs
+  const [activeTab, setActiveTab] = useState<'Overview' | 'Sub Agents'>('Overview');
 
   // Give-credit form
   const [creditAmount, setCreditAmount] = useState('');
@@ -101,6 +114,7 @@ export default function AgentAccountDetail({
       setDetail(d);
       setFullName(d.agent.full_name || '');
       setDisplayName(d.storefront?.display_name || '');
+      setSlug(d.storefront?.slug || '');
       setAccountType(d.agent.account_type === 'credit' ? 'credit' : 'prepaid');
       setCreditLimit(d.agent.credit_limit != null ? String(d.agent.credit_limit) : '');
       setCommissionPct(d.agent.commission_pct != null ? String(d.agent.commission_pct) : '');
@@ -123,6 +137,7 @@ export default function AgentAccountDetail({
         commission_pct: commissionPct === '' ? undefined : commissionPct,
         is_active: isActive,
         display_name: displayName || undefined,
+        slug: slug || undefined,
       };
       if (accountType === 'credit') payload.credit_limit = creditLimit === '' ? 0 : creditLimit;
 
@@ -236,7 +251,38 @@ export default function AgentAccountDetail({
           ) : detail ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
 
-              {/* Snapshot stats */}
+              <div style={{ display: 'flex', gap: 'var(--space-4)', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: 'var(--space-2)' }}>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('Overview')}
+                  style={{
+                    background: 'none', border: 'none', padding: '0 0 8px 0', cursor: 'pointer',
+                    fontSize: '1rem', fontWeight: 700,
+                    color: activeTab === 'Overview' ? '#00E5FF' : 'var(--grey-400)',
+                    borderBottom: activeTab === 'Overview' ? '2px solid #00E5FF' : '2px solid transparent',
+                    textTransform: 'uppercase', letterSpacing: '0.05em'
+                  }}
+                >
+                  Overview
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('Sub Agents')}
+                  style={{
+                    background: 'none', border: 'none', padding: '0 0 8px 0', cursor: 'pointer',
+                    fontSize: '1rem', fontWeight: 700,
+                    color: activeTab === 'Sub Agents' ? '#00E5FF' : 'var(--grey-400)',
+                    borderBottom: activeTab === 'Sub Agents' ? '2px solid #00E5FF' : '2px solid transparent',
+                    textTransform: 'uppercase', letterSpacing: '0.05em'
+                  }}
+                >
+                  Sub Agents ({detail.sub_agents?.length || 0})
+                </button>
+              </div>
+
+              {activeTab === 'Overview' && (
+                <>
+                  {/* Snapshot stats */}
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: 'var(--space-3)' }}>
                 <Stat label="Status" value={isActive ? 'Active' : 'Inactive'} color={isActive ? '#00FF9D' : '#FFAAAA'} />
                 <Stat label="Wallet Balance" value={fmtMoney(detail.agent.prepaid_balance)} color="var(--teal)" />
@@ -276,6 +322,10 @@ export default function AgentAccountDetail({
                   <div>
                     <label style={labelStyle}>Storefront Name</label>
                     <input style={inputStyle} value={displayName} onChange={(e) => setDisplayName(e.target.value)} placeholder="Store Display Name" />
+                  </div>
+                  <div>
+                    <label style={labelStyle}>URL Slug</label>
+                    <input style={inputStyle} value={slug} onChange={(e) => setSlug(e.target.value.toLowerCase().replace(/[^a-z0-9\-]/g, ''))} placeholder="e.g. john-store" />
                   </div>
                 </div>
 
@@ -370,6 +420,29 @@ export default function AgentAccountDetail({
                   </div>
                 )}
               </div>
+              </>
+              )}
+
+              {activeTab === 'Sub Agents' && (
+                <div className="metal-embossed-panel">
+                  <h3 className="metal-text" style={{ fontSize: '1rem', margin: '0 0 var(--space-3)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Sub Agents</h3>
+                  {!detail.sub_agents || detail.sub_agents.length === 0 ? (
+                    <div style={{ color: 'var(--grey-400)', fontSize: '0.85rem', padding: 'var(--space-3) 0' }}>No Sub Agents Yet.</div>
+                  ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                      {detail.sub_agents.map((sa) => (
+                        <div key={sa.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.82rem', padding: '6px 0', borderBottom: '1px solid rgba(255,255,255,0.04)', gap: 8 }}>
+                          <span style={{ color: 'var(--white)', flex: 1, fontWeight: 600 }}>{sa.full_name || sa.username || 'Anonymous'}</span>
+                          <span style={{ color: 'var(--silver)' }}>{sa.email || ''}</span>
+                          <span style={{ color: 'var(--grey-400)' }}>Joined: {fmtDate(sa.created_at)}</span>
+                          <span style={{ color: sa.is_active ? '#00FF9D' : '#FFAAAA', minWidth: 60, textAlign: 'right' }}>{sa.is_active ? 'Active' : 'Inactive'}</span>
+                          <span style={{ color: '#00E5FF', fontWeight: 700, minWidth: 60, textAlign: 'right' }}>{sa.commission_pct ?? 0}%</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
 
             </div>
           ) : null}
