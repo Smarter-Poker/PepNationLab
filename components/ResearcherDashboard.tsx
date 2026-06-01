@@ -897,7 +897,7 @@ export default function ResearcherDashboard({ userId, userName, userEmail, agent
                   </div>
                   <div>
                     <label style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.4)', display: 'block', marginBottom: 4 }}>Phone</label>
-                    <input type="tel" value={phone} onChange={e => setPhone(e.target.value)} className="form-input" placeholder="(555) 123-4567" />
+                    <input type="tel" value={phone} onChange={e => setPhone(e.target.value)} className="form-input" />
                   </div>
                   <div>
                     <label style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.4)', display: 'block', marginBottom: 4 }}>New Password</label>

@@ -861,7 +861,7 @@ export default function AgentSubAgents({ agentId }: { agentId?: string }) {
                     style={{ width: '100%', padding: '10px 14px', background: 'linear-gradient(180deg, #0b0f16 0%, #121822 100%)', border: '1px solid rgba(0,0,0,0.8)', color: 'var(--white)', borderRadius: '6px' }}
                     value={editPhone}
                     onChange={e => setEditPhone(e.target.value)}
-                    placeholder="(555) 123-4567"
+                    placeholder=""
                   />
                 </div>
                 <div style={{ display: 'flex', gap: 'var(--space-3)', justifyContent: 'flex-end' }}>

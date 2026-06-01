@@ -262,7 +262,7 @@ export default function AgentResearcherCRM() {
                                   type="tel"
                                   value={phoneDraft}
                                   onChange={e => setPhoneDraft(e.target.value)}
-                                  placeholder="(555) 123-4567"
+                                  placeholder=""
                                   style={{
                                     width: '100%', boxSizing: 'border-box',
                                     background: 'var(--surface-3, #1D2D3E)',
