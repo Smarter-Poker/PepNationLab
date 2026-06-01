@@ -307,17 +307,26 @@ export default function MessageBubble({
       );
     }
     if (message.message_type === 'video' && message.media_url) {
+      // round-21: bubble shows ONLY the video player (no filename/size
+      // caption below). Append #t=0.1 to force iOS Safari to render the
+      // first frame at 0.1s as the static thumbnail — without this, iOS
+      // shows a black box until tapped. The native <video controls>
+      // overlays its own play button so the bubble looks like a
+      // tappable thumbnail with a play icon, matching the user's ask.
+      const videoSrc = message.media_url.includes('#t=')
+        ? message.media_url
+        : `${message.media_url}#t=0.1`;
       return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
           {message.text && <span>{message.text}</span>}
           <div style={{ position: 'relative', maxWidth: 320, ...opacityStyle }}>
             {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
             <video
-              src={message.media_url}
+              src={videoSrc}
               controls={!isOptimistic}
               playsInline
               preload="metadata"
-              aria-label={`Video${meta.filename ? `: ${meta.filename}` : ''}`}
+              aria-label="Video"
               style={{
                 maxWidth: '100%',
                 width: 320,
@@ -327,24 +336,6 @@ export default function MessageBubble({
                 aspectRatio: '16 / 9',
               }}
             />
-          {meta.filename && (
-            <a
-              href={safeHref(message.media_url)}
-              download={meta.filename}
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{
-                display: 'flex', alignItems: 'center', gap: 6,
-                padding: '4px 8px', fontSize: '0.76rem',
-                color: isOwn ? '#000' : 'var(--grey-400, #A8B4C0)',
-              }}
-              aria-label={`Download ${meta.filename}`}
-            >
-              <Download size={12} />
-              {meta.filename}
-              {meta.size ? <span style={{ opacity: 0.7 }}>({formatSize(meta.size)})</span> : null}
-            </a>
-          )}
           </div>
         </div>
       );
