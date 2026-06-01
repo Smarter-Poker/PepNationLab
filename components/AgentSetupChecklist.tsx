@@ -1,5 +1,7 @@
 'use client';
 
+import Link from 'next/link';
+
 /**
  * Setup checklist banner for first-time agents.
  *
@@ -7,6 +9,10 @@
  * setup fields are populated. When shown, it lists the remaining steps and
  * deep-links into the Storefront Config tab so the agent can finish setup
  * and toggle `is_active = true` to go live.
+ *
+ * fix-47: added a secondary "Open Help & Docs" CTA so a new agent who
+ * needs context before diving in has somewhere to land before touching
+ * the storefront config.
  */
 
 interface AgentSetupChecklistProps {
@@ -53,7 +59,7 @@ export default function AgentSetupChecklist({ agentProfile, onOpenConfig }: Agen
             Welcome! Finish Setup To Go Live
           </h3>
           <p style={{ fontSize: '0.82rem', color: 'var(--grey-300)', marginBottom: 'var(--space-3)', maxWidth: 560 }}>
-            Your Storefront Is Offline Until You Complete The Steps Below. Each Step Links To The Storefront Config Tab.
+            Your Storefront Is Offline Until You Complete The Steps Below. Read The Docs First If You Want Context, Or Jump Straight Into The Config.
           </p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
             <StepRow done={!slugMissing} label="Pick A Storefront Slug" />
@@ -63,14 +69,23 @@ export default function AgentSetupChecklist({ agentProfile, onOpenConfig }: Agen
             <StepRow done={!inactive} label="Activate Storefront" />
           </div>
         </div>
-        <button
-          type="button"
-          className="btn btn-primary"
-          style={{ fontSize: '0.82rem' }}
-          onClick={onOpenConfig}
-        >
-          Open Storefront Config
-        </button>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8, alignItems: 'stretch' }}>
+          <button
+            type="button"
+            className="btn btn-primary"
+            style={{ fontSize: '0.82rem' }}
+            onClick={onOpenConfig}
+          >
+            Open Storefront Config
+          </button>
+          <Link
+            href="/dashboard/agent/help"
+            className="btn btn-ghost"
+            style={{ fontSize: '0.82rem', textAlign: 'center', textDecoration: 'none' }}
+          >
+            Open Help & Docs
+          </Link>
+        </div>
       </div>
     </div>
   );
