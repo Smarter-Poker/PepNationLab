@@ -12,6 +12,33 @@
 
 import { createServiceClient } from '@/lib/supabase/server';
 import { sendWebPush, isWebPushConfigured } from '@/lib/web-push';
+import { pushTypeAllowed } from '@/lib/push-prefs';
+
+/**
+ * Filter call targets to those who have NOT turned off "Incoming Calls" in
+ * their Notification Preferences (push_type_prefs.call_incoming === false).
+ * Missing prefs row or absent key = allowed (default on). Never throws — a
+ * prefs read error must never block a real call ring.
+ */
+async function callAllowedTargets(
+  svc: Awaited<ReturnType<typeof createServiceClient>>,
+  targetUserIds: string[],
+): Promise<string[]> {
+  if (targetUserIds.length === 0) return [];
+  try {
+    const { data } = await svc
+      .from('notification_preferences')
+      .select('user_id, push_type_prefs')
+      .in('user_id', targetUserIds);
+    const blocked = new Set<string>();
+    for (const r of (data ?? []) as Array<{ user_id: string; push_type_prefs: Record<string, boolean> | null }>) {
+      if (!pushTypeAllowed(r.push_type_prefs, 'call_incoming')) blocked.add(r.user_id);
+    }
+    return targetUserIds.filter((id) => !blocked.has(id));
+  } catch {
+    return targetUserIds;
+  }
+}
 
 export interface CallRingPushInput {
   callId: string;
@@ -57,17 +84,21 @@ export async function enqueueCallRingPush(input: CallRingPushInput): Promise<num
   if (input.targetUserIds.length === 0) return 0;
   const { title, body, url, tag } = payloadFor(input);
 
-  const rows: OutboxInsertRow[] = input.targetUserIds.map((uid) => ({
-    recipient_user_id: uid,
-    title,
-    body,
-    url,
-    tag,
-    event: 'messenger.call.incoming',
-  }));
-
   try {
     const svc = await createServiceClient();
+    // Skip recipients who turned off "Incoming Calls" in their preferences.
+    const targets = await callAllowedTargets(svc, input.targetUserIds);
+    if (targets.length === 0) return 0;
+
+    const rows: OutboxInsertRow[] = targets.map((uid) => ({
+      recipient_user_id: uid,
+      title,
+      body,
+      url,
+      tag,
+      event: 'messenger.call.incoming',
+    }));
+
     const { error } = await svc.from('push_outbox').insert(rows);
     if (error) {
       console.warn('[messenger.call] push_outbox insert failed', {
@@ -103,10 +134,14 @@ export async function sendCallRingPushNow(input: CallRingPushInput): Promise<num
 
   try {
     const svc = await createServiceClient();
+    // Skip recipients who turned off "Incoming Calls" in their preferences.
+    const targets = await callAllowedTargets(svc, input.targetUserIds);
+    if (targets.length === 0) return 0;
+
     const { data: subs } = await svc
       .from('push_subscriptions')
       .select('endpoint, p256dh, auth, user_id')
-      .in('user_id', input.targetUserIds)
+      .in('user_id', targets)
       .eq('is_active', true);
 
     for (const s of (subs ?? []) as Array<{ endpoint: string; p256dh: string; auth: string; user_id: string }>) {

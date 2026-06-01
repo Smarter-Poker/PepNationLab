@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
 import { getCronAuth } from '@/lib/messenger/server';
+import { enqueuePush } from '@/lib/push-enqueue';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -85,13 +86,23 @@ export async function GET(req: NextRequest) {
       }));
       await svc.from('notifications').insert(notificationsToInsert);
 
-      const pushOutboxPayload = fired.map((r) => ({
-        recipient_user_id: r.user_id,
-        title: 'Message Reminder',
-        body: 'You asked to be reminded about a message in the messenger.',
-        url: `/messenger`,
-      }));
-      await svc.from('push_outbox').insert(pushOutboxPayload);
+      // Route the reminder push through enqueuePush so it respects the user's
+      // master push switch (push_enabled) and global mute (mute_all) like every
+      // other push path. A self-requested reminder is intentionally NOT gated by
+      // any per-type category toggle (event 'messenger_reminder' maps to no
+      // PushTypeKey in eventToTypeKey), so it always fires when push is on but
+      // never for users who turned push off entirely.
+      await Promise.all(
+        fired.map((r) =>
+          enqueuePush(svc, {
+            userId: r.user_id as string,
+            title: 'Message Reminder',
+            body: 'You asked to be reminded about a message in the messenger.',
+            url: '/messenger',
+            event: 'messenger_reminder',
+          }),
+        ),
+      );
     }
   }
 

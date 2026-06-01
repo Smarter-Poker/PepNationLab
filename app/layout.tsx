@@ -56,6 +56,13 @@ export const metadata: Metadata = {
     index: false,
     follow: false,
   },
+  other: {
+    // Round 4 mobile baseline: prevent iOS Safari from auto-converting
+    // anything that looks like a phone number, address, email, or date
+    // in body text into a tappable link. We re-enable per-element with
+    // explicit <a href="tel:..."> where the link IS desired.
+    'format-detection': 'telephone=no, address=no, email=no, date=no',
+  },
 };
 
 // Inline script injected into <head> before React hydration.

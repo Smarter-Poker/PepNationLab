@@ -11,6 +11,7 @@
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { deliverPushNow } from '@/lib/push-deliver';
+import { pushTypeAllowed } from '@/lib/push-prefs';
 
 export type NotificationType =
   | 'order_placed'
@@ -72,22 +73,21 @@ export async function notify(
     // 2. Check user push preferences
     const { data: prefs } = await supabase
       .from('notification_preferences')
-      .select('push_enabled, push_events_order, push_events_messages, push_events_marketing, mute_all')
+      .select('push_enabled, mute_all, push_type_prefs')
       .eq('user_id', userId)
       .maybeSingle();
 
     if (!prefs?.push_enabled || prefs?.mute_all) return;
 
-    // Check per-event preference
-    const orderTypes: NotificationType[] = [
-      'order_placed', 'order_approved', 'order_shipped', 'order_delivered', 'order_cancelled',
-    ];
-    const messageTypes: NotificationType[] = ['new_message'];
-    const marketingTypes: NotificationType[] = ['commission_earned', 'referral', 'cart_reminder', 'system'];
-
-    if (orderTypes.includes(type) && !prefs.push_events_order) return;
-    if (messageTypes.includes(type) && !prefs.push_events_messages) return;
-    if (marketingTypes.includes(type) && !prefs.push_events_marketing) return;
+    // Single push-delivery gate: a push type is sent unless the user explicitly
+    // turned it off on the Notification Preferences page (push_type_prefs is a
+    // default-on map; an absent key reads as ON). This is authoritative — the
+    // older coarse push_events_order/messages/marketing buckets are no longer
+    // consulted here (push_events_marketing defaulted false and was silently
+    // suppressing commission/referral/cart/system pushes regardless of the
+    // per-type toggle). Existing explicit bucket opt-outs were folded into
+    // push_type_prefs by migration 20260605080000.
+    if (!pushTypeAllowed(prefs.push_type_prefs as Record<string, boolean> | null, type)) return;
 
     // 3. Queue web push (durable fallback) ...
     const { data: outbox } = await supabase
