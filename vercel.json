@@ -5,6 +5,10 @@
       "schedule": "0 */6 * * *"
     },
     {
+      "path": "/api/cron/coupons-expire",
+      "schedule": "15 4 * * *"
+    },
+    {
       "path": "/api/cron/idempotency-sweep",
       "schedule": "30 3 * * *"
     },

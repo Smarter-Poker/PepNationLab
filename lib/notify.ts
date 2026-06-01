@@ -28,7 +28,8 @@ export type NotificationType =
   | 'refill_reminder'
   | 'tier_levelup'
   | 'referral'
-  | 'system';
+  | 'system'
+  | 'coupon_redeemed';
 
 export interface NotifyOptions {
   userId: string;
@@ -53,7 +54,6 @@ export async function notify(
   const { userId, type, title, body, url, withPush = true } = opts;
 
   try {
-    // 1. In-app notification row
     const { error } = await supabase.from('notifications').insert({
       user_id: userId,
       type,
@@ -72,7 +72,6 @@ export async function notify(
   if (!withPush) return;
 
   try {
-    // 2. Check user push preferences
     const { data: prefs } = await supabase
       .from('notification_preferences')
       .select('push_enabled, mute_all, push_type_prefs')
@@ -81,17 +80,8 @@ export async function notify(
 
     if (!prefs?.push_enabled || prefs?.mute_all) return;
 
-    // Single push-delivery gate: a push type is sent unless the user explicitly
-    // turned it off on the Notification Preferences page (push_type_prefs is a
-    // default-on map; an absent key reads as ON). This is authoritative — the
-    // older coarse push_events_order/messages/marketing buckets are no longer
-    // consulted here (push_events_marketing defaulted false and was silently
-    // suppressing commission/referral/cart/system pushes regardless of the
-    // per-type toggle). Existing explicit bucket opt-outs were folded into
-    // push_type_prefs by migration 20260605080000.
     if (!pushTypeAllowed(prefs.push_type_prefs as Record<string, boolean> | null, type)) return;
 
-    // 3. Queue web push (durable fallback) ...
     const { data: outbox } = await supabase
       .from('push_outbox')
       .insert({
@@ -105,8 +95,6 @@ export async function notify(
       .select('id')
       .single();
 
-    // ... then deliver it immediately so the user is alerted in seconds
-    // (with sound + haptics) instead of waiting for the 5-minute cron.
     const sent = await deliverPushNow(supabase, userId, {
       title,
       body: body ?? '',
@@ -308,9 +296,6 @@ export async function notifyCartReminder(
 
 /**
  * Notify a researcher it may be time to reorder (21-day refill drip).
- * In-app bell + push (gated by the refill_reminder push type, default-on).
- * The conversational Messenger DM from the agent is sent separately by the
- * /api/cron/refill-reminders job — this only covers the bell + web push.
  */
 export async function notifyRefillReminder(
   supabase: SupabaseClient,
@@ -327,10 +312,7 @@ export async function notifyRefillReminder(
   });
 }
 
-/**
- * Notify an agent they leveled up the House tier ladder ("Achievement Unlocked").
- * Their wholesale pricing improves immediately at the new tier.
- */
+/** Notify an agent they leveled up. */
 export async function notifyTierLevelUp(
   supabase: SupabaseClient,
   agentId: string,
@@ -375,8 +357,6 @@ export async function notifyReferralReward(
   ]);
 }
 
-
-
 /** Notify agent of a prepaid balance recharge or store credit grant */
 export async function notifyBalanceRecharge(
   supabase: SupabaseClient,
@@ -403,7 +383,7 @@ export async function notifyPromotedToAgent(
   await notify(supabase, {
     userId: newAgentId,
     type: 'system',
-    title: 'You\'ve Been Promoted to Sub-Agent!',
+    title: 'You\\'ve Been Promoted to Sub-Agent!',
     body: `${superAgentName} has promoted you to Sub-Agent. Your storefront is now live at /${agentSlug}.`,
     url: `/${agentSlug}`,
   });
@@ -439,8 +419,6 @@ export async function notifyRoleRevoked(
     url: `/dashboard`,
   });
 }
-
-
 
 /** Notify agent their auto-subscription order was created */
 export async function notifySubscriptionOrder(
@@ -508,8 +486,6 @@ export async function notifyNewMessage(
   conversationId: string,
 ) {
   const preview = messagePreview.length > 80 ? `${messagePreview.slice(0, 77)}…` : messagePreview;
-  // In-app bell row only — the message web-push is sent by enqueuePush() in the
-  // send-message route, so disable push here to avoid a duplicate notification.
   await notify(supabase, {
     userId: recipientId,
     type: 'new_message',
@@ -517,5 +493,30 @@ export async function notifyNewMessage(
     body: preview,
     url: `/messenger?conv=${conversationId}`,
     withPush: false,
+  });
+}
+
+/**
+ * Notify an agent that one of their coupons was just redeemed.
+ * Body line surfaces the discount + revenue so the agent sees the value
+ * the coupon drove without having to open the dashboard.
+ */
+export async function notifyCouponRedeemed(
+  supabase: SupabaseClient,
+  agentId: string,
+  code: string,
+  discountAmount: number,
+  orderTotal: number,
+  orderId: string,
+  shortId: string,
+) {
+  const discount = `$${(Number.isFinite(discountAmount) ? discountAmount : 0).toFixed(2)}`;
+  const total = `$${(Number.isFinite(orderTotal) ? orderTotal : 0).toFixed(2)}`;
+  await notify(supabase, {
+    userId: agentId,
+    type: 'coupon_redeemed',
+    title: `Coupon ${code} Redeemed`,
+    body: `A researcher used ${code} on order #${shortId} — ${discount} off a ${total} order.`,
+    url: `/dashboard/agent?tab=Coupons`,
   });
 }
