@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
 import { assertSameOrigin } from '@/lib/csrf';
+import { rateLimit, getClientIp } from '@/lib/rate-limit';
 
 /**
  * Re-resolves cart items against the live catalog. Returns, per requested
@@ -11,17 +12,29 @@ import { assertSameOrigin } from '@/lib/csrf';
  * Public endpoint — no auth required. We only echo the rows the caller
  * already references (anonymous shoppers must be able to see live prices on
  * the storefront), and we never reveal cost prices.
+ *
+ * fix-47: rate-limited per IP (120/min). Generous enough that a real shopper
+ * with a busy cart never trips it; protects against a runaway client that
+ * would otherwise repeat-poll the catalog forever.
  */
 export async function POST(req: NextRequest) {
   const csrf = assertSameOrigin(req);
   if (csrf) return csrf;
 
+  const ip = getClientIp(req);
+  const limited = await rateLimit({
+    key: 'cart_refresh',
+    limit: 120,
+    windowSeconds: 60,
+    identifier: ip,
+  });
+  if (!limited.allowed) {
+    return NextResponse.json({ error: 'Rate Limit Exceeded' }, { status: 429 });
+  }
+
   try {
     const body = await req.json();
 
-    // Two query modes:
-    // 1. agentProductIds: agent_products.id UUIDs (used by agent dashboard)
-    // 2. productIds: master products.id UUIDs (used by CartContext main catalog path)
     const agentProductIds = Array.isArray(body?.agentProductIds)
       ? (body.agentProductIds as unknown[]).filter((v): v is string => typeof v === 'string').slice(0, 200)
       : [];
@@ -37,7 +50,6 @@ export async function POST(req: NextRequest) {
 
     const supabase = await createServiceClient();
 
-    // Build the query: either by agent_products.id or by product_id depending on mode.
     const query = supabase
       .from('agent_products')
       .select(`
@@ -69,9 +81,6 @@ export async function POST(req: NextRequest) {
         id: row.id as string,
         productId: (product?.id ?? row.product_id) as string | null,
         name: product?.name ?? null,
-        // retail_price is stored as per-10-vial-pack price in the DB.
-        // Divide by 10 so CartContext receives per-vial prices consistent
-        // with how AgentStorefrontGrid initially sets cart item prices.
         retailPrice: (Number(row.retail_price) || 0) / 10,
         bulkCostPrice:
           product?.admin_bulk_price != null ? Number(product.admin_bulk_price) / 10 : null,

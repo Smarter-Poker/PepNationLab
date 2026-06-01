@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { assertSameOrigin } from '@/lib/csrf';
+import { rateLimit, getClientIp } from '@/lib/rate-limit';
 
 export async function POST(req: NextRequest) {
   const csrf = assertSameOrigin(req);
@@ -13,6 +14,19 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    // fix-47: rate-limit. 120/min/user is generous enough that a real cart
+    // session (sub-second debounced writes during checkout) never trips it,
+    // but caps a misbehaving tab that would otherwise hammer profiles UPDATE.
+    const limited = await rateLimit({
+      key: 'cart_sync',
+      limit: 120,
+      windowSeconds: 60,
+      identifier: user.id,
+    });
+    if (!limited.allowed) {
+      return NextResponse.json({ error: 'Rate Limit Exceeded' }, { status: 429 });
+    }
+
     const body = await req.json();
     const { cart } = body;
 
@@ -20,14 +34,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Invalid cart format' }, { status: 400 });
     }
 
-    // Hard cap at 50 items to prevent DB bloat from malicious payloads.
     if (cart.length > 50) {
       return NextResponse.json({ error: 'Cart Exceeds Maximum Item Limit (50).' }, { status: 400 });
     }
 
-    // Persist the fields the cart needs to re-hydrate accurately. weightOz
-    // and sku are essential for shipping calc and storefront display, so they
-    // must round-trip with the cart state.
     const strippedCart = cart.map((item: any) => ({
       id: item.id,
       name: item.name,

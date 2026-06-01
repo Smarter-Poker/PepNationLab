@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import { toast } from 'sonner';
 import PushNotificationToggle from '@/components/PushNotificationToggle';
 
@@ -13,6 +14,9 @@ import PushNotificationToggle from '@/components/PushNotificationToggle';
  *  - Lifetime settled commission
  *  - Last 8 weekly settlements
  *  - Last 10 attributed orders
+ *
+ * fix-47: added a "Help & Resources" panel at the bottom linking to the
+ * shared agent docs hub + a one-tap path back into messenger.
  */
 
 type Overview = {
@@ -60,6 +64,19 @@ export default function SubAgentDashboardPage() {
   const [data, setData] = useState<Overview | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const load = async () => {
+    try {
+      const res = await fetch('/api/sub-agent/overview', { credentials: 'include', cache: 'no-store' });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json?.error || `HTTP ${res.status}`);
+      setData(json as Overview);
+      setError(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed To Load Dashboard.');
+    }
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -110,7 +127,10 @@ export default function SubAgentDashboardPage() {
         Welcome, {data.profile.full_name || data.profile.username || 'Sub-Agent'}.
         {data.profile.parent ? (
           <>
-            {' '}You Sell Under <strong>{data.profile.parent.full_name || data.profile.parent.username}</strong>.
+            {' '}You Sell Under <strong>{data.profile.parent.full_name || data.profile.parent.username}</strong>
+            {data.profile.parent.storefront_slug ? (
+              <> At <Link href={`/${data.profile.parent.storefront_slug}`} style={{ color: 'var(--teal, #00C4BC)' }}>/{data.profile.parent.storefront_slug}</Link></>
+            ) : null}.
           </>
         ) : null}
       </p>
@@ -224,7 +244,7 @@ export default function SubAgentDashboardPage() {
         )}
       </div>
 
-      <div className="card-glass" style={{ padding: '20px' }}>
+      <div className="card-glass" style={{ padding: '20px', marginBottom: '20px' }}>
         <h2 style={{ fontSize: '18px', marginBottom: '12px' }}>Recent Orders Attributed To You</h2>
         {data.recent_orders.length === 0 ? (
           <div style={{ opacity: 0.75 }}>No Orders Yet. Once Your Researchers Buy, You&apos;ll See Them Here.</div>
@@ -250,6 +270,74 @@ export default function SubAgentDashboardPage() {
             </tbody>
           </table>
         )}
+      </div>
+
+      {/* fix-47: Help & Resources — destinations for every "how do I X" question. */}
+      <div className="card-glass" style={{ padding: '20px', marginBottom: '20px' }}>
+        <h2 style={{ fontSize: '18px', marginBottom: '12px' }}>Help & Resources</h2>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '12px' }}>
+          <Link
+            href="/dashboard/agent/help"
+            style={{
+              display: 'block',
+              background: 'rgba(0,196,188,0.06)',
+              border: '1px solid rgba(0,196,188,0.2)',
+              borderRadius: '8px',
+              padding: '14px',
+              textDecoration: 'none',
+              color: 'inherit',
+            }}
+          >
+            <div style={{ fontSize: '15px', fontWeight: 700, marginBottom: '4px' }}>Agent Docs Hub</div>
+            <div style={{ fontSize: '12px', opacity: 0.75 }}>
+              Full Documentation On Storefronts, Inventory, Coupons, Commissions, And Order Fulfillment.
+            </div>
+          </Link>
+          <Link
+            href="/messenger"
+            style={{
+              display: 'block',
+              background: 'rgba(0,196,188,0.06)',
+              border: '1px solid rgba(0,196,188,0.2)',
+              borderRadius: '8px',
+              padding: '14px',
+              textDecoration: 'none',
+              color: 'inherit',
+            }}
+          >
+            <div style={{ fontSize: '15px', fontWeight: 700, marginBottom: '4px' }}>Message Your Parent Agent</div>
+            <div style={{ fontSize: '12px', opacity: 0.75 }}>
+              Open The Messenger. Your Parent Agent And The Platform Admin Are Already In Your Contacts.
+            </div>
+          </Link>
+          <button
+            type="button"
+            disabled={refreshing}
+            onClick={async () => {
+              setRefreshing(true);
+              await load();
+              setRefreshing(false);
+              toast.success('Balance Refreshed');
+            }}
+            style={{
+              textAlign: 'left',
+              background: 'rgba(0,196,188,0.06)',
+              border: '1px solid rgba(0,196,188,0.2)',
+              borderRadius: '8px',
+              padding: '14px',
+              cursor: refreshing ? 'wait' : 'pointer',
+              color: 'inherit',
+              opacity: refreshing ? 0.7 : 1,
+            }}
+          >
+            <div style={{ fontSize: '15px', fontWeight: 700, marginBottom: '4px' }}>
+              {refreshing ? 'Refreshing…' : 'Refresh Balance'}
+            </div>
+            <div style={{ fontSize: '12px', opacity: 0.75 }}>
+              Reload The Latest Numbers. Useful Right After Sunday Night Settlement.
+            </div>
+          </button>
+        </div>
       </div>
 
       <div>
