@@ -516,7 +516,7 @@ export default function AdminAgents() {
                         }}>
                           {(agent.tier || 'tier_3').replace('_', ' ').toUpperCase()}
                         </span>
-                        <span style={{ fontSize: '0.65rem', color: 'var(--grey-500)', lineHeight: 1 }}>✎</span>
+                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ color: "var(--grey-500)", flexShrink: 0 }} aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 1 1 3 3L7 19l-4 1 1-4Z"/></svg>
                       </button>
                     )}
                     <span style={{ fontSize: '0.8rem', color: 'var(--silver)' }}>

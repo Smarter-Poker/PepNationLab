@@ -67,7 +67,8 @@ function LoginPageInner() {
     // means the server request arrives before the cookie exists.
     for (let i = 0; i < 15; i++) {
       const { data: { session } } = await supabase.auth.getSession();
-      console.log('Session access_token:', session?.access_token);
+      // round-23: removed `console.log('Session access_token:', ...)` —
+      // was leaking the bearer token to the browser console in production.
       if (session?.access_token) break;
       await new Promise(r => setTimeout(r, 200));
     }

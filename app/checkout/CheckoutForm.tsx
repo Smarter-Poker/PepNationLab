@@ -1092,7 +1092,7 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
 
                 <div className="step-buttons">
                   <Link href={agentSlug ? `/${agentSlug}` : '/'} className="btn-neon-cyan" style={{ minWidth: 200, padding: '12px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', textDecoration: 'none' }}>
-                    Back to Store
+                    Back To Store
                   </Link>
                   <button 
                     type="button" 
@@ -1101,7 +1101,7 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
                     style={{ minWidth: 150, opacity: meetsOverallMin ? 1 : 0.5, cursor: meetsOverallMin ? 'pointer' : 'not-allowed' }}
                     disabled={!meetsOverallMin}
                   >
-                    Continue to Payment
+                    Continue To Payment
                   </button>
                 </div>
               </div>

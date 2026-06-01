@@ -554,7 +554,7 @@ export default function AgentDashboardClient({
     { id: 'Coupons', type: 'tab', label: 'Coupons', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z" /><line x1="7" y1="7" x2="7.01" y2="7" /></svg> },
     { id: 'Settings', type: 'tab', label: 'Account Settings', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /></svg> },
     { id: 'Research Bundles', type: 'tab', label: 'Bundles + Stacks', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" /><polyline points="3.27 6.96 12 12.01 20.73 6.96" /><line x1="12" y1="22.08" x2="12" y2="12" /></svg> },
-    ...(agentProfile ? [{ id: 'copy', type: 'action', label: copiedStorefront ? '✓ Link Copied!' : 'Copy Storefront', action: () => { copyStorefrontLink(); setIsMobileMenuOpen(false); }, icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>, color: copiedStorefront ? 'var(--teal)' : 'currentColor' }] : []),
+    ...(agentProfile ? [{ id: 'copy', type: 'action', label: copiedStorefront ? 'Link Copied' : 'Copy Storefront', action: () => { copyStorefrontLink(); setIsMobileMenuOpen(false); }, icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>, color: copiedStorefront ? 'var(--teal)' : 'currentColor' }] : []),
     { id: 'qr', type: 'action', label: 'My QR Code', action: () => { setActiveTab('Storefront Config'); setIsMobileMenuOpen(false); }, icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" /><rect x="3" y="14" width="7" height="7" /><rect x="14" y="14" width="3" height="3" /><rect x="19" y="14" width="2" height="2" /><rect x="14" y="19" width="2" height="2" /><rect x="19" y="19" width="2" height="2" /></svg> },
     { id: 'notifications', type: 'action', label: 'Notification Settings', action: () => { setActiveTab('Settings'); setIsMobileMenuOpen(false); if (typeof Notification !== 'undefined' && Notification.permission === 'default') Notification.requestPermission(); }, icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" /><path d="M13.73 21a2 2 0 0 1-3.46 0" /></svg> },
     { id: 'security', type: 'link', label: 'Account Security', href: '/account/security', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></svg> },
@@ -851,7 +851,7 @@ export default function AgentDashboardClient({
                         onMouseLeave={e => (e.currentTarget.style.color = '#8a9ab0')}
                         aria-label="Close"
                       >
-                        ✕
+                        Close
                       </button>
                     </div>
 
@@ -966,7 +966,7 @@ export default function AgentDashboardClient({
                         onMouseLeave={e => (e.currentTarget.style.color = '#8a9ab0')}
                         aria-label="Close"
                       >
-                        ✕
+                        Close
                       </button>
                     </div>
 

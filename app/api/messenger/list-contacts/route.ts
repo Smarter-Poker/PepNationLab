@@ -69,7 +69,7 @@ export async function POST(req: NextRequest) {
 
   const { data: me } = await svc
     .from('profiles')
-    .select('id, role, parent_agent_id, referring_agent_id, is_sub_agent, referring_sub_agent_id')
+    .select('id, role, parent_agent_id, referring_agent_id, is_sub_agent, referring_sub_agent_id, is_super_agent')
     .eq('id', user.id)
     .maybeSingle();
 
@@ -89,22 +89,37 @@ export async function POST(req: NextRequest) {
     });
   }
 
-  if (me.role === 'super_agent') {
+  const isSuperAgent = me.role === 'super_agent' || (me as { is_super_agent?: boolean }).is_super_agent === true;
+  if (isSuperAgent) {
     const { data: directDownline } = await selectActive(svc.from('profiles'))
       .eq('parent_agent_id', me.id)
       .limit(200);
     const downlineRows = (directDownline ?? []) as ContactRow[];
-    const agentIds = downlineRows.filter((r) => r.role === 'agent').map((r) => r.id);
+    const directAgentIds = downlineRows.map((r) => r.id);
+
+    let indirectSubAgents: ContactRow[] = [];
+    if (directAgentIds.length > 0) {
+      const { data: indirect } = await selectActive(svc.from('profiles'))
+        .in('parent_agent_id', directAgentIds)
+        .limit(200);
+      indirectSubAgents = (indirect ?? []) as ContactRow[];
+    }
+
+    const allAgentOrSubIds = [...directAgentIds, ...indirectSubAgents.map((r) => r.id)];
+
     let researcherRows: ContactRow[] = [];
-    if (agentIds.length > 0) {
-      const { data: researchers } = await selectActive(svc.from('profiles'))
-        .in('referring_agent_id', agentIds)
+    if (allAgentOrSubIds.length > 0) {
+      const { data: res1 } = await selectActive(svc.from('profiles'))
+        .in('referring_agent_id', allAgentOrSubIds)
         .limit(500);
-      researcherRows = (researchers ?? []) as ContactRow[];
+      const { data: res2 } = await selectActive(svc.from('profiles'))
+        .in('referring_sub_agent_id', allAgentOrSubIds)
+        .limit(500);
+      researcherRows = [...((res1 ?? []) as ContactRow[]), ...((res2 ?? []) as ContactRow[])];
     }
     const admins = await loadAdminContacts(svc, me.id);
     const byId = new Map<string, ContactRow>();
-    for (const r of [...downlineRows, ...researcherRows, ...admins]) byId.set(r.id, r);
+    for (const r of [...downlineRows, ...indirectSubAgents, ...researcherRows, ...admins]) byId.set(r.id, r);
     return freshJson({
       contacts: sortContacts(Array.from(byId.values())),
       _audit: AUDIT_TAG,

@@ -1194,6 +1194,245 @@ body > * {
 }
 
 /* ============================================================
+   ROUND 23 — SITE-WIDE MOBILE SWEEP (storefront + agent dashboard
+   + admin + public/legal)
+   ------------------------------------------------------------
+   User asked: apply the locked-in mobile spec (signed off after 22
+   rounds on /messenger) to every other page. Four parallel audits
+   (Wave 1 storefront, Wave 2 agent dashboard, Wave 3 admin, Wave 4
+   public/legal) identified cross-cutting issues that this CSS block
+   addresses universally. Per-page JSX fixes ship alongside.
+   ============================================================ */
+
+/* (1) Universal ≥16px on inputs to prevent iOS auto-zoom on focus.
+   The pre-existing Round 4 input rule used `font-size: max(16px, 1rem)`
+   which DOES NOT win against inline `fontSize: 0.88rem` or `0.9rem`.
+   This new rule forces 16px on mobile against ALL inputs regardless of
+   inline overrides, then resumes the desktop sizing above 768px. */
+@media (max-width: 768px) {
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+  textarea,
+  select,
+  .form-input,
+  .input,
+  .premium-input {
+    font-size: 16px !important;
+    line-height: 1.4 !important;
+  }
+}
+
+/* (2) Strengthen 44×44 touch targets on coarse pointers against inline
+   `padding: 6px 12px` or `padding: 8px` style buttons that were beating
+   the Round 4 enforcer. The :not() guards exclude the messenger composer
+   pill icons (correctly sized via inline width/height + scoped rules). */
+@media (pointer: coarse) {
+  button:not(.composer-emoji-typing):not([aria-label="Add Media"]):not([aria-label="Add Emoji"]):not([aria-label="Send Message"]),
+  [role="button"]:not(.composer-emoji-typing),
+  a.btn,
+  a.btn-primary,
+  a.btn-secondary,
+  a.btn-ghost,
+  a.btn-silver,
+  a.btn-sm,
+  input[type="button"],
+  input[type="submit"] {
+    min-height: 44px !important;
+    min-width: 44px !important;
+  }
+}
+
+/* (3) Account pages — admin, agent, and researcher self-serve surfaces
+   commonly forget padding-top: var(--nav-offset) when not wrapped in
+   PageShell, so content slides under the fixed Navbar. Defensive top
+   padding for the specific known offenders. */
+.account-page-wrapper,
+[data-account-page],
+body > main:not(.dashboard-main):not(.admin-main),
+body > div.pnl-page:not(.pnl-page-with-navbar) {
+  padding-top: max(var(--nav-offset, 60px), var(--safe-top, 0px));
+}
+
+/* (4) Card padding clamp — Round-2 set `padding: var(--space-8)` on
+   `.card`, `.card-metal`, `.card-glass`. At 32px each side that
+   crushes content to ~311px on 375px viewports for legal docs and
+   account hub cards. Below 480px, dial down to var(--space-4). */
+@media (max-width: 480px) {
+  .card,
+  .card-metal,
+  .card-glass {
+    padding: var(--space-4) !important;
+  }
+  .card .card-glass,
+  .card-metal .card-glass,
+  .card .card-metal,
+  .card-glass > .card-glass {
+    padding: var(--space-3) !important;
+  }
+}
+
+/* (5) Hide HowItWorks connector line on mobile — it absolute-positions
+   between 3-up desktop columns and visually drifts when columns stack. */
+@media (max-width: 768px) {
+  .how-it-works-connector,
+  [data-how-it-works-connector] {
+    display: none !important;
+  }
+}
+
+/* (6) Hero section mobile polish. */
+@media (max-width: 768px) {
+  .hero-orbit,
+  [data-hero-orbit] {
+    display: none !important;
+  }
+  .hero-stats {
+    flex-wrap: wrap !important;
+    gap: var(--space-4) !important;
+  }
+  .hero-section,
+  section.hero {
+    min-height: calc(100dvh - var(--nav-offset, 60px)) !important;
+  }
+}
+
+/* (7) Admin tables — every <table> not already inside .table-responsive
+   becomes its own horizontal-scroll container on mobile so the page
+   itself doesn't horizontally overflow. Sticky right-side detail panes
+   in admin/orders unstick on mobile so they don't trap under navbar. */
+@media (max-width: 768px) {
+  table:not(.no-mobile-wrap) {
+    display: block;
+    width: 100%;
+    max-width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  table:not(.no-mobile-wrap) thead,
+  table:not(.no-mobile-wrap) tbody {
+    display: table;
+    width: max-content;
+    min-width: 100%;
+  }
+  [data-admin-detail-pane],
+  .admin-order-detail-sticky {
+    position: static !important;
+  }
+}
+
+/* (8) Fixed-px grids — the dominant inline pattern across the codebase
+   that breaks 375px viewports. Collapse to single column below 480px. */
+@media (max-width: 480px) {
+  [style*="gridTemplateColumns: '2fr 1fr 1fr'"],
+  [style*="gridTemplateColumns: \"2fr 1fr 1fr\""],
+  [style*="grid-template-columns: 2fr 1fr 1fr"],
+  [style*="gridTemplateColumns: '1fr 1fr'"],
+  [style*="gridTemplateColumns: \"1fr 1fr\""],
+  [style*="grid-template-columns: 1fr 1fr"],
+  [style*="gridTemplateColumns: '1fr 1fr 1fr'"],
+  [style*="gridTemplateColumns: \"1fr 1fr 1fr\""],
+  [style*="grid-template-columns: 1fr 1fr 1fr"] {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* (9) Storefront [agentSlug] page Dashboard icon — inline width=158
+   was beating the spec sizing. */
+@media (max-width: 768px) {
+  .sf-nav img.dashboard-icon,
+  .sf-nav .dashboard-icon {
+    width: 130px !important;
+    max-width: 130px !important;
+    height: auto !important;
+  }
+}
+@media (max-width: 380px) {
+  .sf-nav img.dashboard-icon,
+  .sf-nav .dashboard-icon {
+    width: 100px !important;
+    max-width: 100px !important;
+  }
+}
+
+/* (10) Long-form text — wrap weird strings (emails, URLs) and bump
+   body to ≥0.95rem with 1.6 line-height on small screens. */
+.legal-document p,
+.legal-document li,
+.legal-document a,
+[data-legal-doc] p,
+[data-legal-doc] li,
+[data-legal-doc] a {
+  overflow-wrap: anywhere !important;
+  word-break: break-word !important;
+}
+@media (max-width: 480px) {
+  .legal-document p,
+  .legal-document li,
+  [data-legal-doc] p,
+  [data-legal-doc] li {
+    font-size: 0.95rem !important;
+    line-height: 1.6 !important;
+  }
+}
+
+/* (11) Footer disclaimer — was 0.75rem (~12px). Bump on mobile. */
+@media (max-width: 768px) {
+  footer p,
+  footer .disclaimer,
+  [data-footer] p {
+    font-size: 0.85rem !important;
+    line-height: 1.5 !important;
+  }
+}
+
+/* (12) Inline-styled tiny labels (0.62-0.78rem widespread) — floor to 0.82. */
+@media (max-width: 768px) {
+  [style*="font-size: 0.62rem"],
+  [style*="font-size: 0.65rem"],
+  [style*="font-size: 0.68rem"],
+  [style*="font-size: 0.7rem"],
+  [style*="font-size: 0.72rem"],
+  [style*="font-size: 0.74rem"],
+  [style*="font-size: 0.75rem"],
+  [style*="font-size: 0.76rem"],
+  [style*="font-size: 0.78rem"],
+  [style*="fontSize: '0.62rem'"],
+  [style*="fontSize: '0.65rem'"],
+  [style*="fontSize: '0.68rem'"],
+  [style*="fontSize: '0.7rem'"],
+  [style*="fontSize: '0.72rem'"],
+  [style*="fontSize: '0.74rem'"],
+  [style*="fontSize: '0.75rem'"],
+  [style*="fontSize: '0.76rem'"],
+  [style*="fontSize: '0.78rem'"] {
+    font-size: 0.82rem !important;
+  }
+}
+
+/* (13) Modal safe-area top/bottom — iPhone notch / Dynamic Island
+   doesn't cover the modal header. */
+.modal-overlay,
+[data-modal-overlay],
+[role="dialog"][aria-modal="true"],
+.disclaimer-gate-overlay {
+  padding-top: max(var(--space-4, 16px), var(--safe-top, 0px), 5vh) !important;
+  padding-bottom: max(var(--space-4, 16px), var(--safe-bottom, 0px), 5vh) !important;
+}
+
+/* (14) Switches and checkboxes — bump bounding tap area to 44px on
+   coarse pointers without distorting visual size. */
+@media (pointer: coarse) {
+  label.form-checkbox,
+  label.checkbox-row,
+  label > input[type="checkbox"],
+  label:has(> input[type="checkbox"]),
+  [role="switch"] {
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+  }
+}
+
+/* ============================================================
    END ROUND 2 + ROUND 3 + ROUND 4 + ROUND 5 + ROUND 6 + ROUND 7
-   + ROUND 8 MOBILE SAFE-AREA AND HORIZONTAL OVERFLOW ENFORCEMENT
+   + ROUND 8 + ROUND 9-22 (messenger) + ROUND 23 (site-wide mobile)
    ============================================================ */

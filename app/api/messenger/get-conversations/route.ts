@@ -43,70 +43,11 @@ interface RawConv {
  * sentinels the client starts on tap, so every arrow is always connected
  * to the chat display.
  */
-async function getDownlineIds(
-  svc: Awaited<ReturnType<typeof createServiceClient>>,
-  callerId: string,
-  callerRole: string,
-  parentId: string | null,
-): Promise<Set<string>> {
-  const ids = new Set<string>();
-
-  // Drill-down (any role): identical predicate.
-  if (parentId) {
-    const [byParent, byReferring, bySubReferring] = await Promise.all([
-      svc.from('profiles').select('id').eq('parent_agent_id', parentId).eq('is_active', true).limit(500),
-      svc.from('profiles').select('id').eq('referring_agent_id', parentId).eq('is_active', true).limit(500),
-      svc.from('profiles').select('id').eq('referring_sub_agent_id', parentId).eq('is_active', true).limit(500),
-    ]);
-    for (const r of (byParent.data ?? []) as { id: string }[]) ids.add(r.id);
-    for (const r of (byReferring.data ?? []) as { id: string }[]) ids.add(r.id);
-    for (const r of (bySubReferring.data ?? []) as { id: string }[]) ids.add(r.id);
-    return ids;
-  }
-
-  // Root level — admin special case (cluster of top-level agents +
-  // admin-direct researchers, since admin has no parent_agent_id link).
-  if (callerRole === 'admin') {
-    const { data: topAgents } = await svc
-      .from('profiles')
-      .select('id')
-      .in('role', ['agent', 'super_agent'])
-      .is('parent_agent_id', null)
-      .eq('is_active', true)
-      .limit(500);
-    for (const r of (topAgents ?? []) as { id: string }[]) ids.add(r.id);
-
-    const { data: directResearchers } = await svc
-      .from('profiles')
-      .select('id')
-      .eq('referring_agent_id', callerId)
-      .eq('is_active', true)
-      .limit(500);
-    for (const r of (directResearchers ?? []) as { id: string }[]) ids.add(r.id);
-    return ids;
-  }
-
-  // Root level — super_agent / agent with downline: their direct downline.
-  const [byParent, byReferring, bySubReferring] = await Promise.all([
-    svc.from('profiles').select('id').eq('parent_agent_id', callerId).eq('is_active', true).limit(500),
-    svc.from('profiles').select('id').eq('referring_agent_id', callerId).eq('is_active', true).limit(500),
-    svc.from('profiles').select('id').eq('referring_sub_agent_id', callerId).eq('is_active', true).limit(500),
-  ]);
-  for (const r of (byParent.data ?? []) as { id: string }[]) ids.add(r.id);
-  for (const r of (byReferring.data ?? []) as { id: string }[]) ids.add(r.id);
-  for (const r of (bySubReferring.data ?? []) as { id: string }[]) ids.add(r.id);
-  return ids;
-}
-
-/**
- * Build openable rows for EVERY direct downline member of parentId. Reuses
- * the caller's existing thread where a DM exists; otherwise returns a
- * `new:<memberId>` sentinel the client opens via start-conversation.
- */
 async function buildDownlineRows(
   svc: Awaited<ReturnType<typeof createServiceClient>>,
   viewerId: string,
-  parentId: string,
+  parentId: string | null,
+  callerRole: string,
   existing: RawConv[],
 ): Promise<RawConv[]> {
   const byCounterparty = new Map<string, RawConv>();
@@ -114,15 +55,43 @@ async function buildDownlineRows(
     if (typeof c.counterparty_id === 'string') byCounterparty.set(c.counterparty_id, c);
   }
 
-  const [byParent, byReferring, bySubReferring] = await Promise.all([
-    svc.from('profiles').select('id, full_name, username, role').eq('parent_agent_id', parentId).eq('is_active', true).limit(500),
-    svc.from('profiles').select('id, full_name, username, role').eq('referring_agent_id', parentId).eq('is_active', true).limit(500),
-    svc.from('profiles').select('id, full_name, username, role').eq('referring_sub_agent_id', parentId).eq('is_active', true).limit(500),
-  ]);
+  let membersData: { id: string; full_name: string | null; username: string | null; role: string | null }[] = [];
 
-  const members = new Map<string, { id: string; full_name: string | null; username: string | null; role: string | null }>();
-  for (const r of [...((byParent.data ?? []) as never[]), ...((byReferring.data ?? []) as never[]), ...((bySubReferring.data ?? []) as never[])]) {
-    const m = r as { id: string; full_name: string | null; username: string | null; role: string | null };
+  if (parentId) {
+    const [byParent, byReferring, bySubReferring] = await Promise.all([
+      svc.from('profiles').select('id, full_name, username, role').eq('parent_agent_id', parentId).eq('is_active', true).limit(500),
+      svc.from('profiles').select('id, full_name, username, role').eq('referring_agent_id', parentId).eq('is_active', true).limit(500),
+      svc.from('profiles').select('id, full_name, username, role').eq('referring_sub_agent_id', parentId).eq('is_active', true).limit(500),
+    ]);
+    membersData = [...((byParent.data ?? []) as never[]), ...((byReferring.data ?? []) as never[]), ...((bySubReferring.data ?? []) as never[])];
+  } else {
+    if (callerRole === 'admin') {
+      const { data: topAgents } = await svc
+        .from('profiles')
+        .select('id, full_name, username, role')
+        .in('role', ['agent', 'super_agent'])
+        .is('parent_agent_id', null)
+        .eq('is_active', true)
+        .limit(500);
+      const { data: directResearchers } = await svc
+        .from('profiles')
+        .select('id, full_name, username, role')
+        .eq('referring_agent_id', viewerId)
+        .eq('is_active', true)
+        .limit(500);
+      membersData = [...((topAgents ?? []) as never[]), ...((directResearchers ?? []) as never[])];
+    } else {
+      const [byParent, byReferring, bySubReferring] = await Promise.all([
+        svc.from('profiles').select('id, full_name, username, role').eq('parent_agent_id', viewerId).eq('is_active', true).limit(500),
+        svc.from('profiles').select('id, full_name, username, role').eq('referring_agent_id', viewerId).eq('is_active', true).limit(500),
+        svc.from('profiles').select('id, full_name, username, role').eq('referring_sub_agent_id', viewerId).eq('is_active', true).limit(500),
+      ]);
+      membersData = [...((byParent.data ?? []) as never[]), ...((byReferring.data ?? []) as never[]), ...((bySubReferring.data ?? []) as never[])];
+    }
+  }
+
+  const members = new Map<string, typeof membersData[0]>();
+  for (const m of membersData) {
     if (m.id !== viewerId) members.set(m.id, m);
   }
 
@@ -131,6 +100,7 @@ async function buildDownlineRows(
     const ex = byCounterparty.get(m.id);
     if (ex) {
       rows.push(ex);
+      byCounterparty.delete(m.id);
     } else {
       rows.push({
         conversation_id: `new:${m.id}`,
@@ -151,7 +121,29 @@ async function buildDownlineRows(
     }
   }
 
+  // Preserve existing conversations with Admins or non-direct members
+  for (const c of existing) {
+    if (typeof c.counterparty_id === 'string' && byCounterparty.has(c.counterparty_id)) {
+      const cRole = (c.counterparty_role ?? '').toString();
+      const isDirect = (c.type ?? '').toString() === 'direct';
+      // If it's a group chat, it's not direct. We include groups if they exist.
+      if (!isDirect) {
+        rows.push(c);
+      } else if (cRole === 'admin') {
+        rows.push(c);
+      }
+    } else if (typeof c.counterparty_id !== 'string') {
+      // e.g. groups without counterparty_id
+      rows.push(c);
+    }
+  }
+
   rows.sort((a, b) => {
+    // Keep admin chats at the top if we want, or just alphabetical
+    const aAdmin = a.counterparty_role === 'admin' ? 0 : 1;
+    const bAdmin = b.counterparty_role === 'admin' ? 0 : 1;
+    if (aAdmin !== bAdmin) return aAdmin - bAdmin;
+
     const an = (a.counterparty_full_name || a.counterparty_username || '').toLowerCase();
     const bn = (b.counterparty_full_name || b.counterparty_username || '').toLowerCase();
     return an.localeCompare(bn);
@@ -240,10 +232,11 @@ export async function POST(req: NextRequest) {
         // with the same canInvite() network check used to start the DM.
         const allowed = role === 'admin' || parentId === user.id || (await canInvite(user.id, parentId));
         if (allowed) {
-          conversations = await buildDownlineRows(svc, user.id, parentId, conversations);
+          conversations = await buildDownlineRows(svc, user.id, parentId, role, conversations);
         } else {
-          // Out of network — fall back to the safe filtered view.
-          const downlineIds = await getDownlineIds(svc, user.id, role, parentId);
+          // Out of network — fall back to the safe filtered view without sentinels.
+          const membersData = await buildDownlineRows(svc, user.id, parentId, role, []);
+          const downlineIds = new Set(membersData.map(m => m.counterparty_id));
           conversations = conversations.filter((c) => {
             const cp = c.counterparty_id;
             const isDirect = (c.type ?? '').toString() === 'direct';
@@ -254,17 +247,8 @@ export async function POST(req: NextRequest) {
           });
         }
       } else {
-        // ROOT: conversations with the caller's direct downline (unchanged).
-        const downlineIds = await getDownlineIds(svc, user.id, role, null);
-        conversations = conversations.filter((c) => {
-          const cp = c.counterparty_id;
-          const cRole = (c.counterparty_role ?? '').toString();
-          const isDirect = (c.type ?? '').toString() === 'direct';
-          if (!isDirect) return true;
-          if (typeof cp !== 'string') return true;
-          if (cRole === 'admin') return true;
-          return downlineIds.has(cp);
-        });
+        // ROOT: inject all direct downline members as openable rows (sentinels if needed).
+        conversations = await buildDownlineRows(svc, user.id, null, role, conversations);
       }
     }
   }
