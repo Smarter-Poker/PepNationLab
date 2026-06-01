@@ -152,7 +152,10 @@ export default function MessengerShell({ userId }: Props) {
   }, []);
 
   return (
-    <div style={{ display: 'flex', height: '100dvh', minHeight: 0, background: 'var(--black, #050A0F)', overflow: 'hidden' }}>
+    <div
+      className={`messenger-shell${activeId ? ' msg-panel-active' : ''}`}
+      style={{ display: 'flex', height: '100dvh', minHeight: 0, background: 'var(--black, #050A0F)', overflow: 'hidden' }}
+    >
       <aside
         style={{
           width: activeId ? 320 : '100%',
