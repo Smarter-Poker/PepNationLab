@@ -131,9 +131,10 @@ export default function AgentSubInvoices({ isSuperAgent }: { isSuperAgent: boole
                     })()}
                   </td>
                 )}
-                <td style={{ padding: 'var(--space-3)', color: 'var(--white)', textAlign: 'center' }}>
-                  {new Date(inv.created_at).toLocaleDateString()}
-                </td>
+                {/* Round 24: removed stray <td>{created_at}</td> — column had no
+                    matching <th> in the header, so every following cell rendered one
+                    column to the LEFT (COGS appeared as Shipping, Shipping as Total
+                    Owed, etc.). Surfaced in deep-dive audit 2026-06-01. */}
                 <td style={{ padding: 'var(--space-3)', color: 'var(--white)', textAlign: 'center' }}>
                   {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(Number(inv.total_cogs || 0))}
                 </td>

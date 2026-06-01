@@ -4,10 +4,7 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import AgentOrders from './AgentOrders';
 import { createClient } from '@/lib/supabase/client';
-import AgentStatements from './AgentStatements';
-import AgentSubInvoices from './AgentSubInvoices';
-import AgentTierWidget from './AgentTierWidget';
-import WalletCard from './WalletCard';
+import WalletStatusStrip from './WalletStatusStrip';
 
 const STATUS_LABELS: Record<string, string> = {
   pending_customer_payment: 'Pending Payment',
@@ -142,10 +139,10 @@ export default function AgentSales({ orders, setOrders, agentId, userProfile }: 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-8)' }}>
 
-      <WalletCard />
-
-      {/* Gamification tier ladder (renders only when tier-ladder v2 flag is on) */}
-      <AgentTierWidget />
+      {/* Round 24: WalletCard + AgentTierWidget moved out. Sales is analytics only.
+          A one-line wallet status strip is kept so the agent still sees the at-a-glance
+          balance + owed-this-week with a deep-link to /wallet. */}
+      <WalletStatusStrip />
 
       {/* 1. TOP ROW: KPI SNAPSHOTS */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: 'var(--space-4)' }}>
@@ -304,21 +301,9 @@ export default function AgentSales({ orders, setOrders, agentId, userProfile }: 
           <AgentOrders orders={orders} setOrders={setOrders} />
         </div>
 
-        {/* ACCOUNTING SECTION */}
-        <div style={{ marginTop: 'var(--space-4)', display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
-            {(!userProfile?.tier?.includes('sub-agent')) && (
-              <div style={{ animation: 'fadeIn 0.3s ease-out' }}>
-                <AgentStatements />
-              </div>
-            )}
-            {(userProfile?.is_super_agent || userProfile?.tier?.includes('sub-agent')) && (
-              <div style={{ animation: 'fadeIn 0.3s ease-out' }}>
-                <AgentSubInvoices isSuperAgent={!!userProfile?.is_super_agent} />
-              </div>
-            )}
-          </div>
-        </div>
+        {/* Round 24: AgentStatements + AgentSubInvoices moved to /wallet — Sales no longer
+            duplicates the Wallet surface. Statements and sub-invoices both live in the
+            new dedicated Wallet page along with the Pay Now flow. */}
       </div>
 
     </div>
