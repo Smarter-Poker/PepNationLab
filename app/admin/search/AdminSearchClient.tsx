@@ -8,9 +8,11 @@ import { toast } from 'sonner';
 
 // fix-52:  ships items #1-5, 9-15 from the global-search deep-dive.
 // fix-52b: abort in-flight fetch on unmount, router.push for Enter-key nav.
-// fix-52c: empty state is now blank — Tips + Recent Searches removed per user.
-// fix-53:  operational nudges panel on empty state (fetches /api/admin/operational-nudges).
+// fix-52c: empty state is now blank — Tips + Recent Searches removed.
+// fix-53:  operational nudges panel on empty state.
 // fix-53b: nudge icon uses palette teal (was off-palette amber).
+// fix-54:  expand nudges from 5 to 11 categories (fulfillment / inventory /
+//          financial / statement / cart hygiene).
 
 type Scope = 'all' | 'users' | 'products' | 'orders' | 'storefronts' | 'coupons' | 'transactions';
 
@@ -78,11 +80,19 @@ interface OrderFilters {
 }
 
 interface Nudges {
+  // Original 5
   pendingCustomerPayment: number;
   agentApprovalPending: number;
   expiredActiveCoupons: number;
   researchersFirstLogin: number;
   activeAgentsNoWarehouse: number;
+  // fix-54
+  staleApprovedShip: number;
+  shippedNoTracking: number;
+  outOfStockActiveProducts: number;
+  negativePrepaidBalance: number;
+  openStatementsPastDue: number;
+  abandonedCarts: number;
 }
 
 const BLANK_FILTERS: OrderFilters = { status: '', payment: '', from: '', to: '', min: '', max: '' };
@@ -823,12 +833,20 @@ export default function AdminSearchClient() {
 }
 
 function OperationalNudgesPanel({ nudges }: { nudges: Nudges }) {
+  // Order = roughly by urgency: money-in (customer payments) → fulfillment
+  // → inventory → financial-health → researcher-hygiene → setup gaps.
   const rows: Array<{ key: string; label: string; count: number; href: string }> = [
-    { key: 'pcp', label: 'Orders Pending Customer Payment', count: nudges.pendingCustomerPayment, href: '/admin/orders?status=pending_customer_payment' },
-    { key: 'aap', label: 'Orders Awaiting Agent Approval', count: nudges.agentApprovalPending,    href: '/admin/orders?status=agent_approval_pending' },
-    { key: 'eac', label: 'Expired Active Coupons',          count: nudges.expiredActiveCoupons,    href: '/admin/coupons' },
-    { key: 'rfl', label: 'Researchers Needing Password',    count: nudges.researchersFirstLogin,   href: '/admin/researchers' },
-    { key: 'anw', label: 'Active Agents Without Warehouse', count: nudges.activeAgentsNoWarehouse, href: '/admin/agents' },
+    { key: 'pcp',  label: 'Orders Pending Customer Payment', count: nudges.pendingCustomerPayment,   href: '/admin/orders?status=pending_customer_payment' },
+    { key: 'aap',  label: 'Orders Awaiting Agent Approval',  count: nudges.agentApprovalPending,     href: '/admin/orders?status=agent_approval_pending' },
+    { key: 'sas',  label: 'Orders Stuck After Approval',     count: nudges.staleApprovedShip,        href: '/admin/orders?status=approved_ship' },
+    { key: 'snt',  label: 'Shipped Orders Missing Tracking', count: nudges.shippedNoTracking,        href: '/admin/orders?status=shipped' },
+    { key: 'oos',  label: 'Products Out Of Stock',           count: nudges.outOfStockActiveProducts, href: '/admin/products' },
+    { key: 'osp',  label: 'Open Statements Past Due',        count: nudges.openStatementsPastDue,    href: '/admin/statements' },
+    { key: 'npb',  label: 'Agents With Negative Balance',    count: nudges.negativePrepaidBalance,   href: '/admin/agents' },
+    { key: 'eac',  label: 'Expired Active Coupons',          count: nudges.expiredActiveCoupons,     href: '/admin/coupons' },
+    { key: 'rfl',  label: 'Researchers Needing Password',    count: nudges.researchersFirstLogin,    href: '/admin/researchers' },
+    { key: 'anw',  label: 'Active Agents Without Warehouse', count: nudges.activeAgentsNoWarehouse,  href: '/admin/agents' },
+    { key: 'abc',  label: 'Abandoned Researcher Carts',      count: nudges.abandonedCarts,           href: '/admin/researchers' },
   ];
   const visible = rows.filter((r) => r.count > 0);
   if (visible.length === 0) return null;
