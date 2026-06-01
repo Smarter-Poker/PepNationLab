@@ -40,9 +40,8 @@ export async function GET() {
     // 1. The agent's researchers
     const { data: researchers, error: rErr } = await svc
       .from('profiles')
-      .select('id, full_name, username, email, created_at, auto_approve_orders')
+      .select('id, full_name, username, email, created_at, auto_approve_orders, last_sign_in_at, first_sign_in_at')
       .eq('referring_agent_id', agentId)
-      .eq('role', 'researcher')
       .order('created_at', { ascending: false });
 
     if (rErr) {
@@ -130,6 +129,8 @@ export async function GET() {
         email: r.email,
         created_at: r.created_at,
         auto_approve_orders: r.auto_approve_orders ?? false,
+        last_sign_in_at: (r as { last_sign_in_at?: string | null }).last_sign_in_at ?? null,
+        first_sign_in_at: (r as { first_sign_in_at?: string | null }).first_sign_in_at ?? null,
         order_count: orderCount,
         total_spent: Number(totalSpent.toFixed(2)),
         avg_order: Number(avgOrder.toFixed(2)),
