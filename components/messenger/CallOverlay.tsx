@@ -137,6 +137,17 @@ function injectPulseRingAnim() {
       padding: 2px 8px; background: rgba(0, 196, 188, 0.12);
       border-radius: 999px; border: 1px solid rgba(0, 196, 188, 0.35);
     }
+    /* fix-43: compact toolbar button — 44px is Apple's accessibility-minimum
+       touch target. Keeps the bar fitting on iPhone in one or two short rows. */
+    .pnl-toolbar-btn {
+      width: 44px; height: 44px;
+      border: none; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; transition: all 0.2s; outline: none;
+      color: white; background: rgba(255,255,255,0.08);
+      flex-shrink: 0;
+    }
+    .pnl-toolbar-btn:disabled { opacity: 0.6; cursor: not-allowed; }
   `;
   document.head.appendChild(style);
 }
@@ -172,13 +183,6 @@ function SignalBars({ quality }: { quality: ConnectionQuality | undefined }) {
   );
 }
 
-/**
- * fix-40: only call useIsSpeaking when a participant is defined. Calling
- * useIsSpeaking(undefined) outside ParticipantContext throws synchronously
- * via useEnsureParticipant, which was the actual instant-crash on call accept.
- * This sub-component is conditionally rendered only when speakerCandidate is
- * non-null, and pipes its boolean back to the parent through a setter.
- */
 function RemoteSpeakingProbe({
   participant,
   onChange,
@@ -209,7 +213,6 @@ function FaceTimeCallView({ isVideo, onHangUp, startedAtMs, isE2EE }: FaceTimeCa
   const connectionState = useConnectionState();
   const speakerCandidate = remoteParticipants[0];
 
-  // fix-40: see RemoteSpeakingProbe note above.
   const [remoteIsSpeaking, setRemoteIsSpeaking] = useState(false);
   const handleRemoteSpeakingChange = useCallback((b: boolean) => setRemoteIsSpeaking(b), []);
 
@@ -385,8 +388,6 @@ function FaceTimeCallView({ isVideo, onHangUp, startedAtMs, isE2EE }: FaceTimeCa
 
   return (
     <div style={{ position: 'relative', width: '100%', height: '100%', overflow: 'hidden', background: '#000' }}>
-      {/* fix-40: conditional probe — only calls useIsSpeaking when a remote
-          participant exists, sidestepping the useEnsureParticipant throw. */}
       {speakerCandidate && (
         <RemoteSpeakingProbe
           participant={speakerCandidate}
@@ -434,10 +435,15 @@ function FaceTimeCallView({ isVideo, onHangUp, startedAtMs, isE2EE }: FaceTimeCa
         </div>
       )}
 
+      {/* fix-43: local-cam preview honors safe-area-inset so it doesn't slide
+          behind iPhone's notch / dynamic island on landscape. */}
       {!isGroup && isVideo && localCamTrack && localParticipant.isCameraEnabled && (
         <div style={{
-          position: 'absolute', top: 24, right: 24, width: 110, height: 165,
-          borderRadius: 16, overflow: 'hidden',
+          position: 'absolute',
+          top: 'calc(env(safe-area-inset-top, 0px) + 16px)',
+          right: 'calc(env(safe-area-inset-right, 0px) + 16px)',
+          width: 100, height: 150,
+          borderRadius: 14, overflow: 'hidden',
           boxShadow: '0 12px 24px rgba(0,0,0,0.5)',
           border: '2px solid rgba(255, 255, 255, 0.15)',
           zIndex: 100, background: '#0B1E30',
@@ -452,9 +458,12 @@ function FaceTimeCallView({ isVideo, onHangUp, startedAtMs, isE2EE }: FaceTimeCa
       )}
 
       <div style={{
-        position: 'absolute', top: 24, left: '50%',
+        position: 'absolute',
+        top: 'calc(env(safe-area-inset-top, 0px) + 16px)',
+        left: '50%',
         transform: 'translateX(-50%)', zIndex: 150,
-        display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8,
+        display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6,
+        maxWidth: 'calc(100vw - 32px)',
       }}>
         <span className="pnl-call-timer" aria-label="Call Duration" aria-live="off">
           {formatCallDuration(elapsedMs)}
@@ -490,131 +499,114 @@ function FaceTimeCallView({ isVideo, onHangUp, startedAtMs, isE2EE }: FaceTimeCa
         </div>
       )}
 
+      {/*
+        fix-43: maxWidth constraint prevents the toolbar from expanding past
+        the viewport — the original cause of the "toolbar covered the whole
+        iPhone screen" bug. With 44px buttons + 8px gap and 8 buttons the
+        natural width is 408px; on a 390px iPhone the maxWidth caps it at
+        ~366px, the row wraps cleanly to 2 short rows, and total toolbar
+        height stays around 110px instead of 500px+.
+        Bottom uses env(safe-area-inset-bottom) so it sits above the iPhone
+        home indicator.
+      */}
       <div style={{
-        position: 'absolute', bottom: 40, left: '50%',
+        position: 'absolute',
+        bottom: 'calc(env(safe-area-inset-bottom, 0px) + 16px)',
+        left: '50%',
         transform: 'translateX(-50%)',
-        background: 'rgba(11, 30, 48, 0.65)',
+        background: 'rgba(11, 30, 48, 0.7)',
         backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)',
-        padding: '16px 28px', borderRadius: 40,
-        display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap', justifyContent: 'center',
+        padding: '10px 14px', borderRadius: 28,
+        display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', justifyContent: 'center',
         zIndex: 200,
         border: '1px solid rgba(255,255,255,0.08)',
-        boxShadow: '0 20px 50px rgba(0,0,0,0.5)'
+        boxShadow: '0 20px 50px rgba(0,0,0,0.5)',
+        maxWidth: 'min(560px, calc(100vw - 24px))',
+        boxSizing: 'border-box',
       }}>
         <button
           type="button" onClick={toggleMute}
-          style={{
-            background: isMuted ? '#E53E3E' : 'rgba(255,255,255,0.08)', color: 'white',
-            border: 'none', borderRadius: '50%', width: 52, height: 52,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            cursor: 'pointer', transition: 'all 0.2s', outline: 'none',
-          }}
+          className="pnl-toolbar-btn"
+          style={{ background: isMuted ? '#E53E3E' : 'rgba(255,255,255,0.08)' }}
           title={isMuted ? 'Unmute Microphone' : 'Mute Microphone'}
           aria-label={isMuted ? 'Unmute Microphone' : 'Mute Microphone'}
         >
-          {isMuted ? <MicOff size={22} /> : <Mic size={22} />}
+          {isMuted ? <MicOff size={20} /> : <Mic size={20} />}
         </button>
 
         {isVideo && (
           <button
             type="button" onClick={toggleCamera}
-            style={{
-              background: isCamDisabled ? '#E53E3E' : 'rgba(255,255,255,0.08)', color: 'white',
-              border: 'none', borderRadius: '50%', width: 52, height: 52,
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              cursor: 'pointer', transition: 'all 0.2s', outline: 'none',
-            }}
+            className="pnl-toolbar-btn"
+            style={{ background: isCamDisabled ? '#E53E3E' : 'rgba(255,255,255,0.08)' }}
             title={isCamDisabled ? 'Turn Camera On' : 'Turn Camera Off'}
             aria-label={isCamDisabled ? 'Turn Camera On' : 'Turn Camera Off'}
           >
-            {isCamDisabled ? <VideoOff size={22} /> : <Video size={22} />}
+            {isCamDisabled ? <VideoOff size={20} /> : <Video size={20} />}
           </button>
         )}
 
         {isVideo && !isCamDisabled && (
           <button
             type="button" onClick={flipCamera}
-            style={{
-              background: 'rgba(255,255,255,0.08)', color: 'white',
-              border: 'none', borderRadius: '50%', width: 52, height: 52,
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              cursor: 'pointer', transition: 'all 0.2s', outline: 'none',
-            }}
+            className="pnl-toolbar-btn"
             title="Flip Camera" aria-label="Flip Camera"
           >
-            <Camera size={22} />
+            <Camera size={20} />
           </button>
         )}
 
         <button
           type="button" onClick={toggleScreenShare}
+          className="pnl-toolbar-btn"
           style={{
             background: isScreenSharing ? '#00C4BC' : 'rgba(255,255,255,0.08)',
             color: isScreenSharing ? '#000' : 'white',
-            border: 'none', borderRadius: '50%', width: 52, height: 52,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            cursor: 'pointer', transition: 'all 0.2s', outline: 'none',
           }}
           title={isScreenSharing ? 'Stop Sharing Screen' : 'Share Screen'}
           aria-label={isScreenSharing ? 'Stop Sharing Screen' : 'Share Screen'}
         >
-          {isScreenSharing ? <ScreenShareOff size={22} /> : <ScreenShare size={22} />}
+          {isScreenSharing ? <ScreenShareOff size={20} /> : <ScreenShare size={20} />}
         </button>
 
         <button
           type="button" onClick={toggleHold}
+          className="pnl-toolbar-btn"
           style={{
             background: isOnHold ? '#FFB020' : 'rgba(255,255,255,0.08)',
             color: isOnHold ? '#000' : 'white',
-            border: 'none', borderRadius: '50%', width: 52, height: 52,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            cursor: 'pointer', transition: 'all 0.2s', outline: 'none',
           }}
           title={isOnHold ? 'Resume Call' : 'Hold Call'}
           aria-label={isOnHold ? 'Resume Call' : 'Hold Call'}
         >
-          {isOnHold ? <Play size={22} /> : <Pause size={22} />}
+          {isOnHold ? <Play size={20} /> : <Pause size={20} />}
         </button>
 
         {isVideo && (
           <button
             type="button" onClick={requestPip}
-            style={{
-              background: 'rgba(255,255,255,0.08)', color: 'white',
-              border: 'none', borderRadius: '50%', width: 52, height: 52,
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              cursor: 'pointer', transition: 'all 0.2s', outline: 'none',
-            }}
+            className="pnl-toolbar-btn"
             title="Picture-In-Picture" aria-label="Picture-In-Picture"
           >
-            <Maximize2 size={22} />
+            <Maximize2 size={20} />
           </button>
         )}
 
         <button
           type="button" onClick={showAudioRoutingHint}
-          style={{
-            background: 'rgba(255,255,255,0.08)', color: 'white',
-            border: 'none', borderRadius: '50%', width: 52, height: 52,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            cursor: 'pointer', transition: 'all 0.2s', outline: 'none',
-          }}
+          className="pnl-toolbar-btn"
           title="Audio Output (Bluetooth / Speaker)" aria-label="Audio Output Help"
         >
-          <Headphones size={22} />
+          <Headphones size={20} />
         </button>
 
         <button
           type="button" onClick={onHangUp}
-          style={{
-            background: '#E53E3E', color: 'white',
-            border: 'none', borderRadius: '50%', width: 52, height: 52,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            cursor: 'pointer', transition: 'all 0.2s', outline: 'none',
-          }}
+          className="pnl-toolbar-btn"
+          style={{ background: '#E53E3E' }}
           title="Hang Up" aria-label="Hang Up"
         >
-          <PhoneOff size={22} />
+          <PhoneOff size={20} />
         </button>
       </div>
     </div>
