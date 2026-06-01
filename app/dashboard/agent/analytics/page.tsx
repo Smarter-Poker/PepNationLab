@@ -91,6 +91,18 @@ export default async function AgentAnalyticsPage() {
   }
   const topRanked = Array.from(productCounts.values()).sort((a, b) => b.views - a.views).slice(0, 10);
 
+  // Conversion funnel — ordered steps from first visit to completed order.
+  // Bar widths are proportional to the top of the funnel (pageviews); each
+  // row also shows step-over-step conversion against the previous stage.
+  const funnelSteps = [
+    { label: 'Pageviews', value: Number(metrics.pageviews_30d) || 0 },
+    { label: 'Unique Sessions', value: Number(metrics.unique_sessions_30d) || 0 },
+    { label: 'Add To Cart', value: Number(metrics.add_to_cart_30d) || 0 },
+    { label: 'Checkouts Started', value: Number(metrics.checkout_starts_30d) || 0 },
+    { label: 'Orders Completed', value: Number(metrics.orders_30d) || 0 },
+  ];
+  const funnelTop = funnelSteps[0].value;
+
   return (
     <div style={{ padding: 'var(--space-5)' }}>
       <div style={{ marginBottom: 'var(--space-4)' }}>
@@ -113,6 +125,49 @@ export default async function AgentAnalyticsPage() {
         <MetricCard index={4} label="Orders Completed" value={String(metrics.orders_30d)} />
         <MetricCard index={5} label="Revenue" value={money(Number(metrics.revenue_cents_30d))} />
         <MetricCard index={6} label="Conversion %" value={`${metrics.conversion_pct_30d ?? 0}%`} sub="Orders / Pageviews" />
+      </div>
+
+      {/* Conversion funnel */}
+      <div className="card-metal hover-lift stagger-fade-in" style={{ padding: 'var(--space-5)', marginBottom: 'var(--space-6)', animationDelay: '0.35s' }}>
+        <h2 style={{ color: 'var(--white)', fontSize: '1.05rem', marginBottom: 'var(--space-1)' }}>Conversion Funnel</h2>
+        <p style={{ color: 'var(--silver)', fontSize: '0.82rem', marginBottom: 'var(--space-4)' }}>
+          Where Visitors Drop Off On The Way To An Order.
+        </p>
+        {funnelTop === 0 ? (
+          <p style={{ color: 'var(--silver)', fontSize: '0.9rem' }}>No Traffic Recorded Yet.</p>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
+            {funnelSteps.map((step, i) => {
+              const pctOfTop = funnelTop > 0 ? (step.value / funnelTop) * 100 : 0;
+              const prev = i > 0 ? funnelSteps[i - 1].value : null;
+              const stepPct = prev && prev > 0 ? (step.value / prev) * 100 : null;
+              return (
+                <div key={step.label}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 4 }}>
+                    <span style={{ color: 'var(--white)', fontSize: '0.85rem', fontWeight: 600 }}>{step.label}</span>
+                    <span style={{ color: 'var(--silver)', fontSize: '0.82rem' }}>
+                      <strong style={{ color: 'var(--white)', fontFamily: 'var(--font-brand)' }}>{step.value.toLocaleString()}</strong>
+                      <span style={{ color: 'var(--grey-500)' }}> · {pctOfTop.toFixed(1)}%</span>
+                      {stepPct !== null && (
+                        <span style={{ color: 'var(--teal)' }}> · {stepPct.toFixed(0)}% Of Prev</span>
+                      )}
+                    </span>
+                  </div>
+                  <div style={{ height: 12, background: 'var(--surface-2)', borderRadius: 'var(--radius-full)', overflow: 'hidden' }}>
+                    <div
+                      style={{
+                        width: `${Math.max(step.value > 0 ? 2 : 0, pctOfTop)}%`,
+                        height: '100%',
+                        background: 'linear-gradient(90deg, #B3A992 0%, #DCD3C3 100%)',
+                        borderRadius: 'var(--radius-full)',
+                      }}
+                    />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 'var(--space-4)' }}>
