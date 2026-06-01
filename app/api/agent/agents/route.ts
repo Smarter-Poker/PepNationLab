@@ -90,6 +90,9 @@ export async function POST(req: NextRequest) {
       prepaid_balance,
       slug,
       display_name,
+      commission_pct,
+      commission_max_pct,
+      velocity_cap,
     } = body;
 
     if (!full_name || !username || !password || !account_type || !slug || !display_name) {
@@ -110,6 +113,34 @@ export async function POST(req: NextRequest) {
       const pb = Number(prepaid_balance);
       if (!Number.isFinite(pb) || pb < 0) {
         return NextResponse.json({ error: 'Prepaid Balance Must Be Zero Or Greater' }, { status: 400 });
+      }
+    }
+
+    // Commission structure (optional). Fixed Percentage = cap equal to base
+    // (forces a flat effective rate); Gamification Scale = cap above the base
+    // plus an optional velocity cap, so the milestone ladder lifts the rate.
+    let commPct: number | null = null;
+    if (commission_pct !== undefined && commission_pct !== null && commission_pct !== '') {
+      commPct = Number(commission_pct);
+      if (!Number.isFinite(commPct) || commPct < 0 || commPct > 100) {
+        return NextResponse.json({ error: 'Commission Rate Must Be Between 0 And 100' }, { status: 400 });
+      }
+    }
+    let commMax: number | null = null;
+    if (commission_max_pct !== undefined && commission_max_pct !== null && commission_max_pct !== '') {
+      commMax = Number(commission_max_pct);
+      if (!Number.isFinite(commMax) || commMax < 0 || commMax > 100) {
+        return NextResponse.json({ error: 'Max Commission Cap Must Be Between 0 And 100' }, { status: 400 });
+      }
+      if (commPct != null && commMax < commPct) {
+        return NextResponse.json({ error: 'Max Commission Cap Cannot Be Below The Base Rate' }, { status: 400 });
+      }
+    }
+    let velCap: number | null = null;
+    if (velocity_cap !== undefined && velocity_cap !== null && velocity_cap !== '') {
+      velCap = Number(velocity_cap);
+      if (!Number.isFinite(velCap) || velCap < 0) {
+        return NextResponse.json({ error: 'Velocity Cap Must Be Zero Or Greater' }, { status: 400 });
       }
     }
 
@@ -168,6 +199,10 @@ export async function POST(req: NextRequest) {
       account_type: account_type,
       credit_limit: account_type === 'credit' ? (Number(credit_limit) || null) : null,
       prepaid_balance: account_type === 'prepaid' ? (Number(prepaid_balance) || 0) : 0,
+      // Commission structure (fixed vs gamification). Null when not supplied.
+      commission_pct: commPct,
+      commission_max_pct: commMax,
+      velocity_cap: velCap,
     };
 
     const { error: profileError } = await supabase.from('profiles').upsert(profileData);
