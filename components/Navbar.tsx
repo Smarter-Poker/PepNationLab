@@ -328,6 +328,18 @@ export default function Navbar({ onMenuClick, isOpen, title }: { onMenuClick?: (
           </>
         )}
 
+        {/* MIDDLE-LEFT: Bells — placed BEFORE the spacer so the messenger
+            and notification icons fill the dead space that used to hold
+            the page title. With Dashboard pinned to the right and bells
+            to the left of the spacer, all 5 navbar icons distribute
+            cleanly across the row at their natural sizes on mobile. */}
+        {!loading && user && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }}>
+            <MessageBell onViewAll={() => router.push('/messenger')} />
+            <NavbarNotificationBell />
+          </div>
+        )}
+
         {/* CENTER: Spacer (page title removed per mobile-fit request —
             the truncated "M." / "S.." was cluttering the header on
             narrow phones and added no information the right-side icons
@@ -340,24 +352,18 @@ export default function Navbar({ onMenuClick, isOpen, title }: { onMenuClick?: (
             <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'var(--surface-2)' }} className="skeleton" />
           ) : user ? (
             <>
-              {/* Messenger / Notification Bell */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                <MessageBell onViewAll={() => router.push('/messenger')} />
-                <NavbarNotificationBell />
-              </div>
-
               <Link href={dashLink} aria-label={dashLabel} style={{ display: 'flex', alignItems: 'center', padding: 8, transition: 'transform 0.2s', background: 'none' }} onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.05)'} onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}>
-                <img 
+                <img
                   src={
                     role === 'admin' ? '/nav-icons/admin-dashboard.png' :
                     role.includes('agent') ? '/nav-icons/agent-dashboard.png' :
                     '/nav-icons/dashboard.png'
-                  } 
-                  alt={dashLabel} 
-                  width={158} 
-                  height={74} 
+                  }
+                  alt={dashLabel}
+                  width={158}
+                  height={74}
                   className="dashboard-icon"
-                  style={{ width: 158, height: 'auto', objectFit: 'contain', display: 'block' }} 
+                  style={{ width: 158, height: 'auto', objectFit: 'contain', display: 'block' }}
                 />
               </Link>
               <div
