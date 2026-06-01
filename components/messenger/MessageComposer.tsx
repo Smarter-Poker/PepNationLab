@@ -565,31 +565,37 @@ export default function MessageComposer({ conversationId, selfId, replyTo, onCle
                   </button>
                 </>
               )}
-              {text.trim() || sending ? (
-                <button
-                  type="button"
-                  onClick={() => { vibrateMedium(); void handleSendText(); }}
-                  disabled={!text.trim() || sending}
-                  aria-label="Send Message" title="Send Message"
-                  className="btn btn-primary"
-                  style={{
-                    borderRadius: '50%',
-                    width: 32,
-                    height: 32,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    padding: 0,
-                    margin: '0 2px 2px 0',
-                    transition: 'transform 0.1s',
-                  }}
-                >
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                    <line x1="12" y1="19" x2="12" y2="5"></line>
-                    <polyline points="5 12 12 5 19 12"></polyline>
-                  </svg>
-                </button>
-              ) : null}
+              {/* round-11 fix: ALWAYS render the Send button. Previously it
+                  was conditionally rendered only when text.trim() was non-empty
+                  or sending was true, which made it invisible whenever the
+                  field was empty — leaving the composer with no obvious way
+                  to send. Now the button is always present; we just disable
+                  it when there's nothing to send. */}
+              <button
+                type="button"
+                onClick={() => { vibrateMedium(); void handleSendText(); }}
+                disabled={!text.trim() || sending}
+                aria-label="Send Message" title="Send Message"
+                className="btn btn-primary"
+                style={{
+                  borderRadius: '50%',
+                  width: 32,
+                  height: 32,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  padding: 0,
+                  margin: '0 2px 2px 0',
+                  transition: 'transform 0.1s',
+                  opacity: text.trim() || sending ? 1 : 0.45,
+                  flexShrink: 0,
+                }}
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="12" y1="19" x2="12" y2="5"></line>
+                  <polyline points="5 12 12 5 19 12"></polyline>
+                </svg>
+              </button>
             </div>
           </div>
         </div>
