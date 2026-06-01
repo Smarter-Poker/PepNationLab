@@ -478,7 +478,7 @@ export default function AgentStoreProducts({ agentId }: { agentId: string }) {
                           style={{ width: 52, height: 28, borderRadius: 14, border: '1px solid rgba(0,0,0,0.45)', cursor: 'pointer', position: 'relative', transition: 'background 0.2s', background: p.is_visible ? '#00E5FF' : 'rgba(255,255,255,0.12)', boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.45)' }}
                           title={p.is_visible ? 'On — Tap To Hide' : 'Off — Tap To Show'}
                           aria-label={p.is_visible ? 'Visibility On' : 'Visibility Off'}
-                          aria-pressed={p.is_visible}
+                          aria-checked={p.is_visible}
                           role="switch"
                         >
                           <span style={{ position: 'absolute', top: 4, left: p.is_visible ? 27 : 4, width: 20, height: 20, borderRadius: '50%', background: '#fff', transition: 'left 0.2s', boxShadow: '0 1px 3px rgba(0,0,0,0.5)' }} />
@@ -671,7 +671,7 @@ export default function AgentStoreProducts({ agentId }: { agentId: string }) {
                                 style={{ width: 52, height: 28, borderRadius: 14, border: '1px solid rgba(0,0,0,0.45)', cursor: 'pointer', position: 'relative', transition: 'background 0.2s', background: p.is_visible ? '#00E5FF' : 'rgba(255,255,255,0.12)', boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.45)' }}
                                 title={p.is_visible ? 'On — Tap To Hide' : 'Off — Tap To Show'}
                                 aria-label={p.is_visible ? 'Visibility On' : 'Visibility Off'}
-                                aria-pressed={p.is_visible}
+                                aria-checked={p.is_visible}
                                 role="switch"
                               >
                                 <span style={{ position: 'absolute', top: 4, left: p.is_visible ? 27 : 4, width: 20, height: 20, borderRadius: '50%', background: '#fff', transition: 'left 0.2s', boxShadow: '0 1px 3px rgba(0,0,0,0.5)' }} />
