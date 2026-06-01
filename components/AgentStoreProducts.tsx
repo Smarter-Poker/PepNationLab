@@ -29,7 +29,7 @@ interface AgentProduct {
   products: ProductInfo;
   /** Your cost price from PNL (base_cost × tier multiplier, per 10 vials) */
   agent_cost: number | null;
-  /** The agent’s current tier key, e.g. ‘tier_1’ */
+  /** The agent's current tier key, e.g. 'tier_1' */
   agent_tier: string | null;
 }
 
@@ -59,18 +59,15 @@ export default function AgentStoreProducts({ agentId }: { agentId: string }) {
       const json = await res.json();
       if (res.ok) {
         const sorted = (json.data || []).sort((a: AgentProduct, b: AgentProduct) => {
-          // Primary: canonical product name A→Z
           const nameA = (a.products?.name || '').toLowerCase().trim();
           const nameB = (b.products?.name || '').toLowerCase().trim();
           if (nameA < nameB) return -1;
           if (nameA > nameB) return 1;
-          // Secondary: unit_size numerically smallest→largest (e.g. 10mg before 50mg before 500mg)
           const sizeA = parseFloat(a.products?.unit_size || '0') || 0;
           const sizeB = parseFloat(b.products?.unit_size || '0') || 0;
           return sizeA - sizeB;
         });
         setProducts(sorted);
-        // Auto-expand all categories on first load
         const cats = new Set(sorted.map((p: AgentProduct) => p.products?.category || 'Other'));
         setExpandedCategories(cats as Set<string>);
       } else {
@@ -83,7 +80,6 @@ export default function AgentStoreProducts({ agentId }: { agentId: string }) {
     }
   }
 
-  // Toggle visibility
   async function toggleVisibility(product: AgentProduct) {
     try {
       const res = await fetch('/api/agent/products', {
@@ -97,7 +93,6 @@ export default function AgentStoreProducts({ agentId }: { agentId: string }) {
     } catch {}
   }
 
-  // Move product up/down
   async function moveProduct(productId: string, direction: 'up' | 'down') {
     const idx = products.findIndex(p => p.id === productId);
     if (idx === -1) return;
@@ -108,11 +103,9 @@ export default function AgentStoreProducts({ agentId }: { agentId: string }) {
     const swapIdx = direction === 'up' ? idx - 1 : idx + 1;
     [newProducts[idx], newProducts[swapIdx]] = [newProducts[swapIdx], newProducts[idx]];
 
-    // Update sort_order values
     const reordered = newProducts.map((p, i) => ({ ...p, sort_order: i }));
     setProducts(reordered);
 
-    // Save to DB
     setReordering(true);
     try {
       await fetch('/api/agent/products/reorder', {
@@ -127,11 +120,8 @@ export default function AgentStoreProducts({ agentId }: { agentId: string }) {
     }
   }
 
-  // Edit
   function handleEdit(p: AgentProduct) {
     setEditingId(p.id);
-    // Pre-fill with the product's current retail_price (per-10-unit stored value)
-    // and back-compute markup % for the helper field.
     const existingMargin = (p as any).margin_percent != null
       ? Number((p as any).margin_percent)
       : p.agent_cost != null && p.agent_cost > 0 && p.retail_price > 0
@@ -142,7 +132,7 @@ export default function AgentStoreProducts({ agentId }: { agentId: string }) {
       custom_name: p.custom_name ?? '',
       custom_description: p.custom_description ?? '',
       custom_image_url: p.custom_image_url ?? '',
-      retail_price: p.retail_price,   // stored as per-10-unit; displayed ÷10
+      retail_price: p.retail_price,
       margin_percent: existingMargin,
       is_visible: p.is_visible,
       is_on_sale: p.is_on_sale,
@@ -154,8 +144,6 @@ export default function AgentStoreProducts({ agentId }: { agentId: string }) {
     e.preventDefault();
     if (!editingId) return;
 
-    // ── Hard rule: listed price can never be below agent cost ──────────────
-    // retail_price and agent_cost are both stored as per-10-unit values.
     const listedPrice = Number((editForm as any).retail_price);
     const currentProduct = products.find(p => p.id === editingId);
     const agentCostPer10 = currentProduct?.agent_cost ?? 0;
@@ -215,14 +203,12 @@ export default function AgentStoreProducts({ agentId }: { agentId: string }) {
     });
   }
 
-  // Filter
   const filtered = products.filter(p => {
     if (filter === 'active') return p.is_visible;
     if (filter === 'hidden') return !p.is_visible;
     return true;
   });
 
-  // Group by category
   const grouped = filtered.reduce<Record<string, AgentProduct[]>>((acc, p) => {
     const cat = p.products?.category || 'Other';
     if (!acc[cat]) acc[cat] = [];
@@ -257,7 +243,6 @@ export default function AgentStoreProducts({ agentId }: { agentId: string }) {
               </p>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              {/* View mode toggle */}
               <div style={{ display: 'flex', gap: 4, background: 'rgba(0,0,0,0.5)', borderRadius: '4px', padding: 3, border: '1px solid rgba(255,255,255,0.05)' }}>
                 {( [['flat', 'All'], ['category', 'By Category']] as ['flat' | 'category', string][] ).map(([key, label]) => (
                   <button
@@ -327,7 +312,7 @@ export default function AgentStoreProducts({ agentId }: { agentId: string }) {
         </div>
       )}
 
-      {/* ── Flat alphabetical list (default) ── */}
+      {/* Flat alphabetical list (default) */}
       {viewMode === 'flat' && (
         <div className="metal-frame">
           <div className="metal-content" style={{ padding: 0, overflow: 'hidden' }}>
@@ -444,19 +429,16 @@ export default function AgentStoreProducts({ agentId }: { agentId: string }) {
                       </div>
                     </form>
                   ) : (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)' }}>
-                      {/* Reorder Arrows */}
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                    <div style={{ display: 'flex', alignItems: 'flex-start', gap: 'var(--space-4)' }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 2, paddingTop: 6 }}>
                         <button onClick={() => moveProduct(p.id, 'up')} disabled={reordering} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 2, fontSize: '0.7rem', color: 'rgba(255,255,255,0.4)', lineHeight: 1 }} title="Move Up">▲</button>
                         <button onClick={() => moveProduct(p.id, 'down')} disabled={reordering} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 2, fontSize: '0.7rem', color: 'rgba(255,255,255,0.4)', lineHeight: 1 }} title="Move Down">▼</button>
                       </div>
-                      {/* Product Image */}
                       <img
                         src={p.custom_image_url || p.products.image_url || '/images/peptide_clear.png'}
                         alt={displayName}
-                        style={{ width: 44, height: 44, borderRadius: 6, objectFit: 'cover', background: 'rgba(0,0,0,0.5)', border: '1px solid rgba(255,255,255,0.1)' }}
+                        style={{ width: 80, height: 80, borderRadius: 8, objectFit: 'cover', background: 'rgba(0,0,0,0.5)', border: '1px solid rgba(255,255,255,0.1)', flexShrink: 0 }}
                       />
-                      {/* Product Info */}
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
                           <span style={{ fontSize: '0.95rem', fontWeight: 700, color: '#fff' }}>{displayName}</span>
@@ -464,7 +446,6 @@ export default function AgentStoreProducts({ agentId }: { agentId: string }) {
                           <span style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.4)', padding: '2px 6px', borderRadius: '4px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)' }}>{p.products.category}</span>
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                          {/* Agent cost per vial */}
                           {p.agent_cost != null && p.agent_cost > 0 && (
                             <>
                               <span style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.4)', fontWeight: 500 }}>Your Cost:</span>
@@ -474,7 +455,6 @@ export default function AgentStoreProducts({ agentId }: { agentId: string }) {
                               <span style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.2)' }}>→</span>
                             </>
                           )}
-                          {/* Agent's listed sale price */}
                           <span style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.4)', fontWeight: 500 }}>Listed:</span>
                           <span style={{ fontSize: '0.85rem', color: '#00E5FF', fontWeight: 800 }}>
                             ${(Number(p.retail_price) / 10).toFixed(2)} / Vial
@@ -491,16 +471,22 @@ export default function AgentStoreProducts({ agentId }: { agentId: string }) {
                           )}
                         </div>
                       </div>
-                      {/* Toggle Switch */}
-                      <button
-                        onClick={() => toggleVisibility(p)}
-                        style={{ width: 44, height: 24, borderRadius: 12, border: 'none', cursor: 'pointer', position: 'relative', transition: 'background 0.2s', background: p.is_visible ? '#00E5FF' : 'rgba(255,255,255,0.1)' }}
-                        title={p.is_visible ? 'Click To Hide' : 'Click To Show'}
-                      >
-                        <div style={{ width: 18, height: 18, borderRadius: '50%', background: '#fff', position: 'absolute', top: 3, transition: 'left 0.2s', left: p.is_visible ? 23 : 3, boxShadow: '0 1px 3px rgba(0,0,0,0.3)' }} />
-                      </button>
-                      {/* Edit Button */}
-                      <button onClick={() => handleEdit(p)} className="btn-silver" style={{ padding: '6px 14px', fontSize: '0.75rem' }}>Edit</button>
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 8, flexShrink: 0 }}>
+                        <button onClick={() => handleEdit(p)} className="btn-silver" style={{ padding: '6px 14px', fontSize: '0.75rem', minWidth: 64 }}>Edit</button>
+                        <button
+                          onClick={() => toggleVisibility(p)}
+                          style={{ width: 52, height: 28, borderRadius: 14, border: '1px solid rgba(0,0,0,0.45)', cursor: 'pointer', position: 'relative', transition: 'background 0.2s', background: p.is_visible ? '#00E5FF' : 'rgba(255,255,255,0.12)', boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.45)' }}
+                          title={p.is_visible ? 'On — Tap To Hide' : 'Off — Tap To Show'}
+                          aria-label={p.is_visible ? 'Visibility On' : 'Visibility Off'}
+                          aria-pressed={p.is_visible}
+                          role="switch"
+                        >
+                          <span style={{ position: 'absolute', top: 4, left: p.is_visible ? 27 : 4, width: 20, height: 20, borderRadius: '50%', background: '#fff', transition: 'left 0.2s', boxShadow: '0 1px 3px rgba(0,0,0,0.5)' }} />
+                          <span style={{ position: 'absolute', top: 5, left: p.is_visible ? 8 : 28, fontSize: '0.55rem', fontWeight: 800, color: p.is_visible ? '#063A47' : 'rgba(255,255,255,0.6)', letterSpacing: '0.04em', pointerEvents: 'none' }}>
+                            {p.is_visible ? 'ON' : 'OFF'}
+                          </span>
+                        </button>
+                      </div>
                     </div>
                   )}
                 </div>
@@ -511,7 +497,7 @@ export default function AgentStoreProducts({ agentId }: { agentId: string }) {
         </div>
       )}
 
-      {/* ── By Category view ── */}
+      {/* By Category view */}
       {viewMode === 'category' && sortedCategories.map(category => {
         const catProducts = grouped[category];
         const isExpanded = expandedCategories.has(category);
@@ -645,12 +631,12 @@ export default function AgentStoreProducts({ agentId }: { agentId: string }) {
                             </div>
                           </form>
                         ) : (
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)' }}>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                          <div style={{ display: 'flex', alignItems: 'flex-start', gap: 'var(--space-4)' }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 2, paddingTop: 6 }}>
                               <button onClick={() => moveProduct(p.id, 'up')} disabled={reordering} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 2, fontSize: '0.7rem', color: 'rgba(255,255,255,0.4)', lineHeight: 1 }} title="Move Up">▲</button>
                               <button onClick={() => moveProduct(p.id, 'down')} disabled={reordering} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 2, fontSize: '0.7rem', color: 'rgba(255,255,255,0.4)', lineHeight: 1 }} title="Move Down">▼</button>
                             </div>
-                            <img src={p.custom_image_url || p.products.image_url || '/images/peptide_clear.png'} alt={displayName} style={{ width: 44, height: 44, borderRadius: 6, objectFit: 'cover', background: 'rgba(0,0,0,0.5)', border: '1px solid rgba(255,255,255,0.1)' }} />
+                            <img src={p.custom_image_url || p.products.image_url || '/images/peptide_clear.png'} alt={displayName} style={{ width: 80, height: 80, borderRadius: 8, objectFit: 'cover', background: 'rgba(0,0,0,0.5)', border: '1px solid rgba(255,255,255,0.1)', flexShrink: 0 }} />
                             <div style={{ flex: 1, minWidth: 0 }}>
                               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
                                 <span style={{ fontSize: '0.95rem', fontWeight: 700, color: '#fff' }}>{displayName}</span>
@@ -678,10 +664,22 @@ export default function AgentStoreProducts({ agentId }: { agentId: string }) {
                                 )}
                               </div>
                             </div>
-                            <button onClick={() => toggleVisibility(p)} style={{ width: 44, height: 24, borderRadius: 12, border: 'none', cursor: 'pointer', position: 'relative', transition: 'background 0.2s', background: p.is_visible ? '#00E5FF' : 'rgba(255,255,255,0.1)' }} title={p.is_visible ? 'Click To Hide' : 'Click To Show'}>
-                              <div style={{ width: 18, height: 18, borderRadius: '50%', background: '#fff', position: 'absolute', top: 3, transition: 'left 0.2s', left: p.is_visible ? 23 : 3, boxShadow: '0 1px 3px rgba(0,0,0,0.3)' }} />
-                            </button>
-                            <button onClick={() => handleEdit(p)} className="btn-silver" style={{ padding: '6px 14px', fontSize: '0.75rem' }}>Edit</button>
+                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 8, flexShrink: 0 }}>
+                              <button onClick={() => handleEdit(p)} className="btn-silver" style={{ padding: '6px 14px', fontSize: '0.75rem', minWidth: 64 }}>Edit</button>
+                              <button
+                                onClick={() => toggleVisibility(p)}
+                                style={{ width: 52, height: 28, borderRadius: 14, border: '1px solid rgba(0,0,0,0.45)', cursor: 'pointer', position: 'relative', transition: 'background 0.2s', background: p.is_visible ? '#00E5FF' : 'rgba(255,255,255,0.12)', boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.45)' }}
+                                title={p.is_visible ? 'On — Tap To Hide' : 'Off — Tap To Show'}
+                                aria-label={p.is_visible ? 'Visibility On' : 'Visibility Off'}
+                                aria-pressed={p.is_visible}
+                                role="switch"
+                              >
+                                <span style={{ position: 'absolute', top: 4, left: p.is_visible ? 27 : 4, width: 20, height: 20, borderRadius: '50%', background: '#fff', transition: 'left 0.2s', boxShadow: '0 1px 3px rgba(0,0,0,0.5)' }} />
+                                <span style={{ position: 'absolute', top: 5, left: p.is_visible ? 8 : 28, fontSize: '0.55rem', fontWeight: 800, color: p.is_visible ? '#063A47' : 'rgba(255,255,255,0.6)', letterSpacing: '0.04em', pointerEvents: 'none' }}>
+                                  {p.is_visible ? 'ON' : 'OFF'}
+                                </span>
+                              </button>
+                            </div>
                           </div>
                         )}
                       </div>
