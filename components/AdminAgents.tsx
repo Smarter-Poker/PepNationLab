@@ -539,6 +539,20 @@ export default function AdminAgents() {
                   )}
                 </div>
 
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', minWidth: '160px' }}>
+                  <span style={{ fontSize: '0.75rem', color: 'var(--grey-400)', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>Last Logged In</span>
+                  <span style={{
+                    fontSize: '0.85rem',
+                    fontWeight: 600,
+                    color: agent.last_sign_in_at ? 'var(--silver)' : 'var(--grey-500)',
+                    fontStyle: agent.last_sign_in_at ? 'normal' : 'italic',
+                  }}>
+                    {agent.last_sign_in_at
+                      ? new Date(agent.last_sign_in_at).toLocaleString(undefined, { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' })
+                      : 'Never Logged In'}
+                  </span>
+                </div>
+
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', minWidth: '120px' }}>
                   <span style={{ fontSize: '0.75rem', color: 'var(--grey-400)', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>Storefront</span>
                   {agent.agent_profiles?.[0]?.slug ? (
