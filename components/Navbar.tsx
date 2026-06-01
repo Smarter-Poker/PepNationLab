@@ -328,23 +328,11 @@ export default function Navbar({ onMenuClick, isOpen, title }: { onMenuClick?: (
           </>
         )}
 
-        {/* CENTER: Page title */}
-        <div style={{ flex: 1, minWidth: 0, overflow: 'hidden' }}>
-          <span style={{
-            fontFamily: 'var(--font-brand)',
-            fontSize: '0.9rem',
-            fontWeight: 800,
-            color: 'var(--nav-title)',
-            letterSpacing: '0.08em',
-            textTransform: 'uppercase',
-            whiteSpace: 'nowrap',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-            display: 'block',
-          }}>
-            {finalTitle}
-          </span>
-        </div>
+        {/* CENTER: Spacer (page title removed per mobile-fit request —
+            the truncated "M." / "S.." was cluttering the header on
+            narrow phones and added no information the right-side icons
+            don't already convey). */}
+        <div style={{ flex: 1, minWidth: 0 }} aria-hidden="true" />
 
         {/* RIGHT: Actions */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', flexShrink: 0 }}>
