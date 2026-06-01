@@ -1,3 +1,4 @@
+/* ============================================================
    ROUND 2 + ROUND 3 MOBILE SAFE-AREA ENFORCEMENT
    ------------------------------------------------------------
    Loaded AFTER globals.css from app/layout.tsx. Purely additive.
@@ -8,6 +9,7 @@
    bottom:0 and inset:0 patterns, on EVERY viewport size (iPad
    PWA standalone with notch matters too), and uses !important to
    beat inline styles.
+   ============================================================ */
 
 /* ---------- ROUND 2: TARGETED COMPONENT CATCH-ALLS ---------- */
 
@@ -27,12 +29,6 @@
 }
 .app-bottom-bar {
   padding-bottom: max(12px, var(--safe-bottom, 0px));
-}
-
-.messenger-main header,
-.messenger-main > div > header,
-.messenger-shell header {
-  padding-top: max(12px, var(--safe-top, 0px)) !important;
 }
 
 .messenger-main [data-composer],
@@ -75,7 +71,9 @@
   padding-right: var(--safe-right, 0px);
 }
 
+/* ============================================================
    ROUND 3 — NUCLEAR INLINE-STYLE ENFORCEMENT
+   ============================================================ */
 
 [style*="position: fixed"][style*="top: 0"]:not([data-no-safe-area]),
 [style*="position:fixed"][style*="top: 0"]:not([data-no-safe-area]),
@@ -190,31 +188,14 @@ header.sf-nav {
   padding-top: max(8px, var(--safe-top, 0px)) !important;
 }
 
+/* ============================================================
    ROUND 4 — FACEBOOK-STYLE MOBILE BASELINE
+   ============================================================ */
 
-   ------------------------------------------------------------
-   Authored from the mobile-first-fb-style skill. Adds the
-   missing pieces every web app needs to feel native on mobile:
-   - iOS auto-zoom fix (input font-size >= 16px)
-   - 44pt touch targets on coarse pointers
-   - prefers-reduced-motion accessibility
-   - color-scheme adaptation for form controls
-   - long-press / context-menu suppression on UI chrome
-   - focus-visible (keyboard yes, mouse no)
-   - bottom action bar helper class
-   - skeleton loading + aspect-ratio + content-visibility helpers
-
-/* CSS color-scheme on :root tells the browser which schemes the
-   site supports so form controls + scrollbars match the theme. */
 :root {
   color-scheme: light dark;
 }
 
-/* iOS AUTO-ZOOM TRAP FIX: any input with font-size < 16px on iOS
-   Safari triggers an automatic zoom on focus that never reverts.
-   Globals.css ships .form-input at 0.95rem (15.2px on a 16px root)
-   which is exactly under the threshold. Force every input/textarea
-   /select to 16px minimum. Pointer:fine devices can shrink back. */
 input, textarea, select,
 .form-input {
   font-size: max(16px, 1rem) !important;
@@ -227,8 +208,6 @@ input, textarea, select,
   }
 }
 
-/* Touch target enforcement at iOS HIG / Material 44pt minimum.
-   `pointer: coarse` = touch devices. Doesn't affect desktop. */
 @media (pointer: coarse) {
   .btn, button, [role="button"],
   input[type="button"], input[type="submit"],
@@ -236,12 +215,10 @@ input, textarea, select,
     min-height: 44px;
     min-width: 44px;
   }
-  /* Icon-only buttons */
   .icon-btn {
     min-width: 44px;
     min-height: 44px;
   }
-  /* List rows that act as tappable */
   [role="listitem"] > a,
   .list-row,
   .conv-list [role="listitem"] {
@@ -249,8 +226,6 @@ input, textarea, select,
   }
 }
 
-/* Reduced-motion accessibility: users with vestibular disorders
-   can request OS-level animation disable. Honor it site-wide. */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;
@@ -260,25 +235,17 @@ input, textarea, select,
   }
 }
 
-/* Long-press context menu suppression on UI chrome only (NOT on
-   real photo content, which users should be able to save). */
 nav, header, footer, .btn, button, [role="button"],
 .tab-bar, .icon-btn, [role="navigation"] {
   -webkit-touch-callout: none;
 }
 
-/* Smooth scrolling helper for any container marked as scrollable.
-   Use `data-scroll-container` on any scroll surface to get iOS
-   momentum + contained overscroll for free. */
 [data-scroll-container] {
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   overscroll-behavior: contain;
 }
 
-/* Sticky bottom action bar pattern (checkout Continue, product
-   detail Add To Cart, etc.). Combined with .has-bottom-bar on
-   the parent so the last content isn't hidden behind the bar. */
 [data-bottom-action-bar] {
   position: fixed;
   bottom: 0;
@@ -294,7 +261,6 @@ nav, header, footer, .btn, button, [role="button"],
   padding-bottom: calc(72px + var(--safe-bottom, 0px));
 }
 
-/* Fully-tappable list items pattern. */
 .tap-target {
   display: block;
   min-height: 44px;
@@ -302,7 +268,6 @@ nav, header, footer, .btn, button, [role="button"],
   -webkit-tap-highlight-color: transparent;
 }
 
-/* Skeleton loading state that respects the current theme. */
 .skeleton {
   background: linear-gradient(
     90deg,
@@ -319,56 +284,35 @@ nav, header, footer, .btn, button, [role="button"],
   100% { background-position: -200% 0; }
 }
 
-/* Image content quality default. Per-element loading="lazy" and
-   decoding="async" still apply on individual <img> tags. */
 img {
   max-width: 100%;
   height: auto;
 }
 
-/* Focus visibility: keyboard users see ring, mouse users don't. */
 :focus:not(:focus-visible) { outline: none; }
 :focus-visible {
   outline: 2px solid var(--teal, #00C4BC);
   outline-offset: 2px;
 }
 
-/* Word-break safety for long emails, URLs, non-spaced strings. */
 p, span, div, h1, h2, h3, h4, h5, h6 {
   overflow-wrap: anywhere;
 }
 
-/* Aspect-ratio helpers for product images, video tiles, etc. */
 .aspect-square { aspect-ratio: 1 / 1; }
 .aspect-video { aspect-ratio: 16 / 9; }
 .aspect-portrait { aspect-ratio: 9 / 16; }
 .aspect-photo { aspect-ratio: 4 / 3; }
 
-/* Content visibility hint for very long lists — browser skips
-   rendering off-screen items, with estimated 80px height for an
-   accurate scrollbar position. */
 [data-virtualized-row] {
   content-visibility: auto;
   contain-intrinsic-size: 0 80px;
 }
 
+/* ============================================================
    ROUND 5 — NUCLEAR HORIZONTAL OVERFLOW PREVENTION
-   ------------------------------------------------------------
-   User report: global Navbar still appears "cut off" on every
-   page, and pages require horizontal scrolling to see content.
-   Root cause: Navbar.tsx renders dashboard/messenger icons via
-   <img width={158} height={158}> — each icon is 158px wide,
-   which is more than 1/3 of an iPhone viewport. Combined with
-   the display-name span (130px), messenger bell, notification
-   bell, and hamburger, the navbar's natural width is ~440px,
-   well over the 375-430px iPhone viewport. The icons spill
-   past the right edge, creating horizontal scroll. The CSS
-   below CLAMPS every navbar width to 100vw, FORCES flex
-   children to shrink, and CAPS any inline-sized nav <img> to
-   the actual navbar height (36px) regardless of attribute.
+   ============================================================ */
 
-/* Force every global navbar variant to the viewport width and
-   hide any overflow that would otherwise create horizontal scroll. */
 .pnl-navbar,
 nav.pnl-navbar,
 .sf-nav,
@@ -382,19 +326,12 @@ nav.glass-header {
   box-sizing: border-box !important;
 }
 
-/* Force every direct child to be willing to shrink past its
-   natural width. Without min-width:0 a flex child with a long
-   image or text refuses to shrink and pushes the row past 100vw. */
 .pnl-navbar > *,
 .sf-nav > *,
 .glass-header > * {
   min-width: 0 !important;
 }
 
-/* Cap every <img> rendered inside any navbar to a sensible
-   touch-target size (36×36). Overrides the inline width=158
-   height=158 attributes on the dashboard / messenger / bell
-   icons that were the original cause of horizontal blow-out. */
 .pnl-navbar img:not(.dashboard-icon),
 .sf-nav img:not(.dashboard-icon),
 .glass-header img:not(.dashboard-icon),
@@ -407,11 +344,6 @@ nav.glass-header {
   flex-shrink: 0 !important;
 }
 
-/* Whole-page horizontal scroll guard hardened. The base globals.css
-   sets max-width: 100vw on body — re-assert with !important so any
-   late-loaded inline style or third-party component cannot break it.
-   Also clamp the Next.js scroll-focus boundary which can otherwise
-   inherit a wider intrinsic size from absolutely-positioned children. */
 html, body {
   max-width: 100vw !important;
   overflow-x: hidden !important;
@@ -425,8 +357,6 @@ body > div {
   overflow-x: hidden !important;
 }
 
-/* Banners (Impersonation, Stale Browser) — clamp their width too
-   so a long warning string can't push horizontal scroll. */
 .impersonation-banner,
 .stale-browser-banner,
 [data-impersonation-banner],
@@ -436,9 +366,6 @@ body > div {
   box-sizing: border-box !important;
 }
 
-/* nav-display-name (the user's name pill in the navbar) — already
-   has maxWidth 130 inline. Reinforce so it can shrink further on
-   very narrow phones (e.g. iPhone SE at 375px). */
 .nav-display-name {
   max-width: clamp(80px, 30vw, 130px) !important;
   overflow: hidden !important;
@@ -446,32 +373,109 @@ body > div {
   white-space: nowrap !important;
 }
 
-/* Catch-all: every direct child of <body> caps at viewport width.
-   The fixed Navbar is one of those children (via the Toaster, banner
-   stack, drawer overlays). Already-fixed children stay fixed; this
-   just prevents them from being WIDER than the viewport. */
 body > * {
   max-width: 100vw !important;
 }
 
-/* Specifically for the storefront [agentSlug] page wrapper which
-   may have inline `width: 100vw`. Force overflow hidden so the
-   horizontal margin of any product card or image cannot leak. */
 .sf-page-wrapper,
 [data-storefront-page] {
   max-width: 100vw !important;
   overflow-x: hidden !important;
 }
 
-/* Content-below-navbar offset is intentionally NOT applied to
-   body globally because login, forgot-password, error, not-found,
-   storefront [agentSlug], and messenger all render their own
-   chrome without the global Navbar and would receive an unwanted
-   gap at the top. Pages that do need the offset already use
-   PageShell (which applies .page-top-padding) or set their own
-   padding-top via component-level styling. The horizontal
-   overflow guards above DO apply globally because they have no
-   downside on any page. */
+/* ============================================================
+   ROUND 6 — MOBILE TABLE + FILTER CHIP RESPONSIVE LAYOUT
+   ------------------------------------------------------------
+   User report: My Researchers table, Product Catalog Manager
+   filter chips, and product detail rows break character-by-
+   character vertically on iPhone because their grid/flex
+   columns are too narrow at 375-430px viewports.
+   ============================================================ */
+@media (max-width: 768px) {
+  table {
+    display: block;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    max-width: 100vw;
+    white-space: nowrap;
+  }
+  table thead,
+  table tbody {
+    display: table;
+    width: 100%;
+    min-width: 480px;
+  }
+  table th,
+  table td {
+    white-space: nowrap;
+    word-break: keep-all;
+    min-width: 80px;
+    padding: 8px 12px !important;
+  }
+  table td button,
+  table td a {
+    white-space: nowrap;
+    font-size: 0.78rem;
+  }
 
-   END ROUND 2 + ROUND 3 + ROUND 4 + ROUND 5 MOBILE SAFE-AREA
-   AND HORIZONTAL OVERFLOW ENFORCEMENT
+  .filter-chips,
+  [data-filter-chips],
+  [role="tablist"] {
+    flex-wrap: wrap !important;
+    gap: 4px !important;
+  }
+  .filter-chips > *,
+  [data-filter-chips] > *,
+  [role="tablist"] > * {
+    flex-shrink: 0 !important;
+    white-space: nowrap !important;
+  }
+
+  .metal-embossed-panel {
+    flex-wrap: wrap !important;
+  }
+  .metal-embossed-panel > * {
+    min-width: 0 !important;
+    word-break: normal !important;
+    overflow-wrap: anywhere !important;
+  }
+  .metal-embossed-panel span,
+  .metal-embossed-panel div,
+  .metal-embossed-panel button {
+    word-break: normal !important;
+    overflow-wrap: break-word !important;
+    white-space: normal !important;
+  }
+  .metal-embossed-panel h4,
+  .metal-embossed-panel strong {
+    white-space: normal !important;
+    word-break: keep-all !important;
+    overflow-wrap: anywhere !important;
+    min-width: 0;
+  }
+  .metal-embossed-panel input[type="checkbox"],
+  .metal-embossed-panel button {
+    flex-shrink: 0 !important;
+  }
+}
+
+/* ============================================================
+   ROUND 6 — MESSENGER HEADER DE-BLOAT
+   ------------------------------------------------------------
+   Round 2's safe-top padding-top inside the messenger conversation
+   header was DOUBLE-counting with the layout's spacer above. Result:
+   ~60px empty band that pushed Anna+icons way down the screen
+   ("cut off" appearance). 12px is correct since the spacer above
+   already reserves --nav-offset.
+   ============================================================ */
+.messenger-main header,
+.messenger-main > div > header,
+.messenger-shell header {
+  padding-top: 12px !important;
+}
+
+/* ============================================================
+   END ROUND 2 + ROUND 3 + ROUND 4 + ROUND 5 + ROUND 6 MOBILE
+   SAFE-AREA AND HORIZONTAL OVERFLOW ENFORCEMENT
+   ============================================================ */
