@@ -13,6 +13,7 @@ export interface DashboardMetrics {
   pendingAdminApproval: number;
   pendingAgentApproval: number;
   readyToShip: number;
+  readyForPickup: number;
   awaitingTracking: number;
   lowStockCount: number;
   lowStockList: Array<{ id: string; name: string; inventory_count: number; low_stock_threshold: number }>;
@@ -53,6 +54,7 @@ export async function fetchAdminMetrics(adminUserId: string): Promise<DashboardM
     pendingAdminApprovalRes,
     pendingAgentApprovalRes,
     readyToShipRes,
+    readyForPickupRes,
     awaitingTrackingRes,
     lowStockListRes,
     outOfStockRes,
@@ -87,6 +89,10 @@ export async function fetchAdminMetrics(adminUserId: string): Promise<DashboardM
     supabase.from('orders').select('id', { count: 'exact', head: true }).eq('status', 'pending_customer_payment').or(`agent_id.is.null,agent_id.eq.${adminUserId}`),
     supabase.from('orders').select('id', { count: 'exact', head: true }).eq('status', 'agent_approval_pending').or(`agent_id.is.null,agent_id.eq.${adminUserId}`),
     supabase.from('orders').select('id', { count: 'exact', head: true }).eq('status', 'approved_ship'),
+    // Agent-approved pickup orders awaiting admin fulfillment. Previously these
+    // were surfaced nowhere on the admin dashboard (only approved_ship had a
+    // tile/metric), so agent-approved pickup orders appeared "missing" to admins.
+    supabase.from('orders').select('id', { count: 'exact', head: true }).eq('status', 'approved_pickup'),
     supabase.from('orders').select('id', { count: 'exact', head: true }).eq('status', 'in_fulfillment'),
     supabase
       .from('products')
@@ -226,6 +232,7 @@ export async function fetchAdminMetrics(adminUserId: string): Promise<DashboardM
     pendingAdminApproval: pendingAdminApprovalRes.count ?? 0,
     pendingAgentApproval: pendingAgentApprovalRes.count ?? 0,
     readyToShip: readyToShipRes.count ?? 0,
+    readyForPickup: readyForPickupRes.count ?? 0,
     awaitingTracking: awaitingTrackingRes.count ?? 0,
     lowStockCount: lowStockList.length,
     lowStockList,

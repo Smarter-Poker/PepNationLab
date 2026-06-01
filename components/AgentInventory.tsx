@@ -233,23 +233,25 @@ export default function AgentInventory({ agentId }: { agentId: string }) {
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
               {inventory.map((item: any) => (
-                <div key={item.id} className="metal-embossed-panel" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', flex: '1 1 200px' }}>
+                <div key={item.id} className="metal-embossed-panel" style={{ display: 'flex', flexDirection: 'column', alignItems: 'stretch', gap: '12px' }}>
+                  {/* Product Name — full-width header */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                     <span style={{ fontSize: '0.75rem', color: 'var(--grey-400)', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>Product Name</span>
                     <span style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--white)' }}>{item.name}</span>
                   </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', minWidth: '120px' }}>
-                    <span style={{ fontSize: '0.75rem', color: 'var(--grey-400)', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>SKU</span>
+                  {/* SKU — label INLINE with value on one row */}
+                  <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                    <span style={{ fontSize: '0.75rem', color: 'var(--grey-400)', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>SKU:</span>
                     <span style={{ fontSize: '0.9rem', color: 'var(--silver)' }}>{item.sku || 'N/A'}</span>
                   </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', minWidth: '150px' }}>
-                    <span style={{ fontSize: '0.75rem', color: 'var(--grey-400)', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>Category</span>
-                    <div>
-                      <span className="badge-metal">{item.category}</span>
-                    </div>
+                  {/* Category — label INLINE with badge on one row */}
+                  <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                    <span style={{ fontSize: '0.75rem', color: 'var(--grey-400)', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>Category:</span>
+                    <span className="badge-metal">{item.category}</span>
                   </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', minWidth: '150px', alignItems: 'flex-end' }}>
-                    <span style={{ fontSize: '0.75rem', color: 'var(--grey-400)', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>Stock Count</span>
+                  {/* Stock Count — label + stepper inline */}
+                  <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: '8px', flexWrap: 'wrap' }}>
+                    <span style={{ fontSize: '0.75rem', color: 'var(--grey-400)', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>Stock Count:</span>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                       <button 
                         className="btn-silver"

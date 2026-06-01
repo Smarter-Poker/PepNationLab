@@ -473,5 +473,103 @@ body > * {
    overflow guards above DO apply globally because they have no
    downside on any page. */
 
-   END ROUND 2 + ROUND 3 + ROUND 4 + ROUND 5 MOBILE SAFE-AREA
-   AND HORIZONTAL OVERFLOW ENFORCEMENT
+/* ============================================================
+   ROUND 6 — MOBILE TABLE + FILTER CHIP RESPONSIVE LAYOUT
+   ------------------------------------------------------------
+   User report: My Researchers table, Product Catalog Manager
+   filter chips, and product detail rows all break character-
+   by-character vertically on iPhone because their grid/flex
+   columns are too narrow at 375-430px viewports.
+   ============================================================ */
+@media (max-width: 768px) {
+  /* Traditional <table> elements: horizontal-scroll the cells so
+     columns render at natural width — the user swipes to see more
+     instead of seeing characters wrap one per line. */
+  table {
+    display: block;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    max-width: 100vw;
+    white-space: nowrap;
+  }
+  table thead,
+  table tbody {
+    display: table;
+    width: 100%;
+    min-width: 480px;
+  }
+  table th,
+  table td {
+    white-space: nowrap;
+    word-break: keep-all;
+    min-width: 80px;
+    padding: 8px 12px !important;
+  }
+  table td button,
+  table td a {
+    white-space: nowrap;
+    font-size: 0.78rem;
+  }
+
+  /* Filter chip rows wrap properly and don't compress text. */
+  .filter-chips,
+  [data-filter-chips],
+  [role="tablist"] {
+    flex-wrap: wrap !important;
+    gap: 4px !important;
+  }
+  .filter-chips > *,
+  [data-filter-chips] > *,
+  [role="tablist"] > * {
+    flex-shrink: 0 !important;
+    white-space: nowrap !important;
+  }
+
+  /* Product rows: prevent character-per-line vertical breaking. */
+  .metal-embossed-panel {
+    flex-wrap: wrap !important;
+  }
+  .metal-embossed-panel > * {
+    min-width: 0 !important;
+    word-break: normal !important;
+    overflow-wrap: anywhere !important;
+  }
+  .metal-embossed-panel span,
+  .metal-embossed-panel div,
+  .metal-embossed-panel button {
+    word-break: normal !important;
+    overflow-wrap: break-word !important;
+    white-space: normal !important;
+  }
+  .metal-embossed-panel h4,
+  .metal-embossed-panel strong {
+    white-space: normal !important;
+    word-break: keep-all !important;
+    overflow-wrap: anywhere !important;
+    min-width: 0;
+  }
+  .metal-embossed-panel input[type="checkbox"],
+  .metal-embossed-panel button {
+    flex-shrink: 0 !important;
+  }
+}
+
+/* ============================================================
+   ROUND 6 — MESSENGER HEADER DE-BLOAT
+   ------------------------------------------------------------
+   Round 2's safe-top padding-top inside the messenger conversation
+   header was DOUBLE-counting with the layout's spacer above. Result:
+   ~60px empty band that pushed Anna+icons way down the screen
+   ("cut off" appearance). 12px is correct since the spacer above
+   already reserves --nav-offset.
+   ============================================================ */
+.messenger-main header,
+.messenger-main > div > header,
+.messenger-shell header {
+  padding-top: 12px !important;
+}
+
+/* ============================================================
+   END ROUND 2 + ROUND 3 + ROUND 4 + ROUND 5 + ROUND 6 MOBILE
+   SAFE-AREA AND HORIZONTAL OVERFLOW ENFORCEMENT

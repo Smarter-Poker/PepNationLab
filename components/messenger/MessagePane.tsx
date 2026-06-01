@@ -1034,13 +1034,12 @@ export default function MessagePane({ userId }: Props) {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          // Defense-in-depth: even though the messenger layout already reserves
-          // --nav-offset (which includes --safe-top), reapply --safe-top here in
-          // case the conversation pane is rendered without the standard wrapper
-          // (e.g. PWA standalone landing on a deep link). Prevents Dynamic Island
-          // / notch from clipping the contact name and action buttons.
+          // Messenger conversation header — fixed 12px padding all sides.
+          // The messenger layout's spacer already reserves --nav-offset
+          // (60px + safe-top) ABOVE this header, so adding safe-top here
+          // again created a ~60px empty band that pushed Anna+icons way
+          // down into the conversation. Plain 12px is correct.
           padding: '12px 16px',
-          paddingTop: 'max(12px, var(--safe-top, 0px))',
           borderBottom: '6px solid rgba(255, 255, 255, 0.08)',
           background: 'linear-gradient(145deg, #0a0d14 0%, #0f141d 100%)',
           boxShadow: '0 2px 10px rgba(0,0,0,0.5)',
