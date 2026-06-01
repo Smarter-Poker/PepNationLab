@@ -40,24 +40,28 @@ function injectAnim() {
 
 export default function IncomingCallScreen({ call, onAccept, onDecline }: Props) {
   const [callerName, setCallerName] = useState<string>(call.caller_name ?? 'Someone');
-  const [callerAvatar] = useState<string | null>(null);
+  // fix-44: now actually mutable so we can populate from broadcast payload
+  // or API fallback. Previously this was const-no-setter and avatars never
+  // rendered, so receivers always saw the initials placeholder.
+  const [callerAvatar, setCallerAvatar] = useState<string | null>(call.caller_avatar ?? null);
   const [isBusy, setIsBusy] = useState(false);
   const [authExpired, setAuthExpired] = useState(false);
 
-  // fix-42: keep callerName in sync if the parent re-renders with a richer
-  // payload (e.g. broadcast arrived after postgres_changes and merged in).
   useEffect(() => {
     if (call.caller_name && call.caller_name !== callerName) {
       setCallerName(call.caller_name);
     }
-  }, [call.caller_name, callerName]);
+    if (call.caller_avatar && call.caller_avatar !== callerAvatar) {
+      setCallerAvatar(call.caller_avatar);
+    }
+  }, [call.caller_name, call.caller_avatar, callerName, callerAvatar]);
 
   useEffect(() => {
     injectAnim();
   }, []);
 
   useEffect(() => {
-    if (call.caller_name) return;
+    if (call.caller_name && call.caller_avatar !== undefined) return;
     let cancelled = false;
     (async () => {
       try {
@@ -72,11 +76,13 @@ export default function IncomingCallScreen({ call, onAccept, onDecline }: Props)
             user_id: string;
             full_name?: string | null;
             username?: string | null;
+            avatar_url?: string | null;
           }>;
         };
         const caller = (json.participants ?? []).find((p) => p.user_id === call.initiator_id);
         if (caller && !cancelled) {
-          setCallerName(caller.full_name ?? caller.username ?? 'Someone');
+          if (!call.caller_name) setCallerName(caller.full_name ?? caller.username ?? 'Someone');
+          if (caller.avatar_url && !callerAvatar) setCallerAvatar(caller.avatar_url);
         }
       } catch {
         // non-fatal
@@ -85,12 +91,9 @@ export default function IncomingCallScreen({ call, onAccept, onDecline }: Props)
     return () => {
       cancelled = true;
     };
-  }, [call.conversation_id, call.initiator_id, call.caller_name]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [call.conversation_id, call.initiator_id]);
 
-  // fix-42: ringtone is gated on authExpired. When auth fails on Accept the
-  // screen stays mounted with the Sign In CTA but goes silent — previously
-  // the ringtone kept playing forever because the effect's [] deps meant
-  // the cleanup only ran on full unmount.
   useEffect(() => {
     if (authExpired) return;
     const ring = createRingTone();
@@ -108,6 +111,28 @@ export default function IncomingCallScreen({ call, onAccept, onDecline }: Props)
       if (action === 'accept') h.vibrateHeavy(); else h.vibrateMedium();
     } catch {}
 
+    // fix-44 (3): pre-acquire mic/cam permissions INSIDE the user-gesture
+    // context. Once the browser caches the grant for this origin, LiveKit's
+    // subsequent getUserMedia (inside LiveKitRoom) reuses the permission
+    // without re-prompting. On iOS Safari especially, this is the only way
+    // "Allow" persists — the prompt MUST fire inside a click handler, not a
+    // later async chain. Tracks are stopped immediately; we only want the
+    // grant.
+    if (action === 'accept') {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          audio: true,
+          video: call.call_type === 'video',
+        });
+        stream.getTracks().forEach((t) => t.stop());
+      } catch (err) {
+        toast.error('Camera And Microphone Required. Please Allow Access To Answer The Call.');
+        setIsBusy(false);
+        onDecline();
+        return;
+      }
+    }
+
     if (action === 'accept') {
       try { sessionStorage.setItem('answered_call_' + call.id, 'true'); } catch {}
     }
@@ -120,13 +145,6 @@ export default function IncomingCallScreen({ call, onAccept, onDecline }: Props)
         body: JSON.stringify({ action, callId: call.id }),
       });
 
-      // fix-42: on 401 we go straight to the Sign In CTA. We DO NOT call
-      // supabase.auth.refreshSession() here — if the refresh token is also
-      // dead, that call clears the local session, fires onAuthStateChange
-      // with null, GlobalCallListener treats it as a logout, and the user
-      // is signed out app-wide. SessionKeepalive handles refresh proactively
-      // in the background; if a stale-JWT 401 reaches us here, the right UX
-      // is a contained sign-in prompt, not a forced logout.
       if (res.status === 401) {
         setAuthExpired(true);
         setIsBusy(false);
@@ -165,14 +183,12 @@ export default function IncomingCallScreen({ call, onAccept, onDecline }: Props)
         position: 'fixed',
         inset: 0,
         zIndex: 9999,
-        background:
-          'linear-gradient(180deg, #03080F 0%, #0B1E30 50%, #03080F 100%)',
+        background: 'linear-gradient(180deg, #03080F 0%, #0B1E30 50%, #03080F 100%)',
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'space-between',
-        padding:
-          'calc(env(safe-area-inset-top, 0px) + 48px) 24px calc(env(safe-area-inset-bottom, 0px) + 56px) 24px',
+        padding: 'calc(env(safe-area-inset-top, 0px) + 48px) 24px calc(env(safe-area-inset-bottom, 0px) + 56px) 24px',
         overflow: 'hidden',
       }}
     >
@@ -186,8 +202,7 @@ export default function IncomingCallScreen({ call, onAccept, onDecline }: Props)
           height: 640,
           marginLeft: -320,
           marginTop: -320,
-          background:
-            'radial-gradient(circle, rgba(0, 196, 188, 0.45) 0%, rgba(0, 196, 188, 0) 70%)',
+          background: 'radial-gradient(circle, rgba(0, 196, 188, 0.45) 0%, rgba(0, 196, 188, 0) 70%)',
           pointerEvents: 'none',
           zIndex: 0,
         }}

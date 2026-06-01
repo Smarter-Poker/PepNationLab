@@ -75,7 +75,6 @@ export async function POST(req: NextRequest) {
     const callerPart = await getParticipant(parsed.data.conversationId, user.id);
     if (!callerPart) return NextResponse.json({ error: 'Not A Participant' }, { status: 403 });
 
-    // Audit10: block-pair gate
     const { data: others } = await svc
       .from('messenger_participants')
       .select('user_id')
@@ -129,13 +128,12 @@ export async function POST(req: NextRequest) {
     }, ip, ua);
 
     if (otherList.length > 0) {
-      // fix-41: resolve caller identity ONCE up front so we can include it
-      // in BOTH the realtime broadcast payload (so the receiver renders the
-      // caller's name without needing an authenticated API call) AND the
-      // web push fanout. Previously the resolution was push-only.
+      // fix-44: include avatar_url so the receiver's IncomingCallScreen can
+      // render the caller's profile photo (Daniel's avatar instead of the
+      // "DB" initials placeholder) without any authenticated API lookups.
       const { data: callerProfile } = await svc
         .from('profiles')
-        .select('full_name, username, email')
+        .select('full_name, username, email, avatar_url')
         .eq('id', user.id)
         .maybeSingle();
       const callerName =
@@ -144,11 +142,13 @@ export async function POST(req: NextRequest) {
         (callerProfile?.email && String(callerProfile.email).split('@')[0]) ||
         'Someone';
       const callerUsername = callerProfile?.username ?? null;
+      const callerAvatar = callerProfile?.avatar_url ?? null;
 
       const enrichedPayload = {
         ...inserted,
         caller_name: callerName,
         caller_username: callerUsername,
+        caller_avatar: callerAvatar,
       };
 
       for (const p of otherList) {
@@ -170,7 +170,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ call: inserted });
   }
 
-  // accept / decline / hangup all need the existing call row.
   const callId = parsed.data.callId;
   const { data: call } = await svc
     .from('messenger_calls')
@@ -261,7 +260,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ call: updated });
   }
 
-  // hangup
   const callerIsInitiator = (call as CallRow).initiator_id === user.id;
   const callIsActive = (call as CallRow).status === 'active';
   const callerCanHangup = callerIsInitiator || callIsActive;

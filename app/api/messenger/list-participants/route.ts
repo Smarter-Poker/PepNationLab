@@ -29,10 +29,6 @@ export async function POST(req: NextRequest) {
 
   const svc = await createServiceClient();
 
-  // Audit fix (Phase 9): include `settings` so the UI can render the caller's
-  // per-participant flags (archived, etc.) without an extra round trip.
-  // Other participants' settings are not sensitive (per-participant prefs),
-  // but we still scrub them out before returning so only the caller sees their own.
   const { data: partsData, error: qErr } = await svc
     .from('messenger_participants')
     .select('id, user_id, role, joined_at, last_read_message_id, settings')
@@ -43,14 +39,17 @@ export async function POST(req: NextRequest) {
 
   const participants = partsData ?? [];
   const userIds = participants.map((p) => p.user_id);
-  
+
+  // fix-44: include avatar_url so calling surfaces can render profile photos
+  // instead of falling back to initials. The column has always existed; it
+  // just was not being selected.
   let profilesMap: Record<string, any> = {};
   if (userIds.length > 0) {
     const { data: profs } = await svc
       .from('profiles')
-      .select('id, full_name, username, role, email')
+      .select('id, full_name, username, role, email, avatar_url')
       .in('id', userIds);
-      
+
     if (profs) {
       profs.forEach((p) => {
         profilesMap[p.id] = p;
@@ -66,7 +65,7 @@ export async function POST(req: NextRequest) {
     last_read_message_id: string | null;
     settings: Record<string, unknown> | null;
   };
-  
+
   const flat = (participants as unknown as Row[]).map((r) => {
     const profile = profilesMap[r.user_id] || null;
     return {
@@ -74,12 +73,12 @@ export async function POST(req: NextRequest) {
       user_id: r.user_id,
       role: r.role,
       joined_at: r.joined_at,
-      // Only return settings for the caller's own participant row.
       settings: r.user_id === user.id ? (r.settings ?? {}) : null,
       full_name: profile?.full_name ?? null,
       username: profile?.username ?? null,
       profile_role: profile?.role ?? null,
       email: profile?.email ?? null,
+      avatar_url: profile?.avatar_url ?? null,
       last_read_message_id: r.last_read_message_id,
     };
   });

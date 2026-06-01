@@ -17,7 +17,7 @@ import { createRingTone } from '@/lib/messenger/ringTone';
 import { captureCallError, captureCallEvent } from '@/lib/messenger/sentryCall';
 import { createE2EESetup, asRoomOptions, type E2EESetup } from '@/lib/messenger/livekitE2EE';
 import CallGridView from './CallGridView';
-import { Phone, PhoneOff, Video, VideoOff, Mic, MicOff, Camera, ScreenShare, ScreenShareOff, Pause, Play, Maximize2, Headphones } from 'lucide-react';
+import { Phone, PhoneOff, Video, VideoOff, Mic, MicOff, SwitchCamera, ScreenShare, ScreenShareOff, Pause, Play, Maximize2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Track, DisconnectReason, ConnectionState, ConnectionQuality } from 'livekit-client';
 import type { Participant } from 'livekit-client';
@@ -137,16 +137,15 @@ function injectPulseRingAnim() {
       padding: 2px 8px; background: rgba(0, 196, 188, 0.12);
       border-radius: 999px; border: 1px solid rgba(0, 196, 188, 0.35);
     }
-    /* fix-43: compact toolbar button — 44px is Apple's accessibility-minimum
-       touch target. Keeps the bar fitting on iPhone in one or two short rows. */
     .pnl-toolbar-btn {
       width: 44px; height: 44px;
       border: none; border-radius: 50%;
       display: flex; align-items: center; justify-content: center;
-      cursor: pointer; transition: all 0.2s; outline: none;
+      cursor: pointer; transition: background 0.2s, transform 0.1s; outline: none;
       color: white; background: rgba(255,255,255,0.08);
       flex-shrink: 0;
     }
+    .pnl-toolbar-btn:active { transform: scale(0.92); }
     .pnl-toolbar-btn:disabled { opacity: 0.6; cursor: not-allowed; }
   `;
   document.head.appendChild(style);
@@ -162,6 +161,7 @@ function formatCallDuration(ms: number): string {
 }
 
 const ALONE_HANGUP_GRACE_MS = 15_000;
+const TOOLBAR_HIDE_AFTER_MS = 5_000;
 
 function SignalBars({ quality }: { quality: ConnectionQuality | undefined }) {
   const filled =
@@ -200,18 +200,30 @@ function RemoteSpeakingProbe({
   return null;
 }
 
+function useIsMobile(): boolean {
+  const [mobile, setMobile] = useState(false);
+  useEffect(() => {
+    if (typeof navigator === 'undefined') return;
+    setMobile(/iPhone|iPad|iPod|Android/i.test(navigator.userAgent));
+  }, []);
+  return mobile;
+}
+
 interface FaceTimeCallViewProps {
   isVideo: boolean;
   onHangUp: () => void;
   startedAtMs: number;
   isE2EE: boolean;
+  counterpartyName: string;
+  counterpartyAvatar: string | null;
 }
 
-function FaceTimeCallView({ isVideo, onHangUp, startedAtMs, isE2EE }: FaceTimeCallViewProps) {
+function FaceTimeCallView({ isVideo, onHangUp, startedAtMs, isE2EE, counterpartyName, counterpartyAvatar }: FaceTimeCallViewProps) {
   const { localParticipant } = useLocalParticipant();
   const remoteParticipants = useRemoteParticipants();
   const connectionState = useConnectionState();
   const speakerCandidate = remoteParticipants[0];
+  const isMobile = useIsMobile();
 
   const [remoteIsSpeaking, setRemoteIsSpeaking] = useState(false);
   const handleRemoteSpeakingChange = useCallback((b: boolean) => setRemoteIsSpeaking(b), []);
@@ -235,6 +247,31 @@ function FaceTimeCallView({ isVideo, onHangUp, startedAtMs, isE2EE }: FaceTimeCa
   const [isOnHold, setIsOnHold] = useState(false);
   const preHoldRef = useRef<{ mic: boolean; cam: boolean } | null>(null);
   const [facingMode, setFacingMode] = useState<'user' | 'environment'>('user');
+
+  // fix-44: auto-hiding toolbar (FaceTime-style). Visible by default, fades
+  // after 5 seconds of inactivity. Tap the video area to toggle.
+  const [toolbarVisible, setToolbarVisible] = useState(true);
+  const hideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const armHideTimer = useCallback(() => {
+    if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
+    hideTimerRef.current = setTimeout(() => setToolbarVisible(false), TOOLBAR_HIDE_AFTER_MS);
+  }, []);
+  const showToolbar = useCallback(() => {
+    setToolbarVisible(true);
+    armHideTimer();
+  }, [armHideTimer]);
+  useEffect(() => {
+    armHideTimer();
+    return () => { if (hideTimerRef.current) clearTimeout(hideTimerRef.current); };
+  }, [armHideTimer]);
+  const handleVideoTap = useCallback(() => {
+    if (toolbarVisible) {
+      setToolbarVisible(false);
+      if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
+    } else {
+      showToolbar();
+    }
+  }, [toolbarVisible, showToolbar]);
 
   const [, forceTimerTick] = useState(0);
   useEffect(() => {
@@ -275,21 +312,26 @@ function FaceTimeCallView({ isVideo, onHangUp, startedAtMs, isE2EE }: FaceTimeCa
     return () => clearTimeout(t);
   }, [remoteParticipants.length]);
 
-  const toggleMute = async () => {
+  const wrap = (fn: () => Promise<void> | void) => async () => {
+    showToolbar();
+    await fn();
+  };
+
+  const toggleMute = wrap(async () => {
     try {
       const current = localParticipant.isMicrophoneEnabled;
       await localParticipant.setMicrophoneEnabled(!current);
       setIsMuted(current);
     } catch (err) { captureCallError(err, 'overlay', { stage_detail: 'toggle_mute' }); }
-  };
-  const toggleCamera = async () => {
+  });
+  const toggleCamera = wrap(async () => {
     try {
       const current = localParticipant.isCameraEnabled;
       await localParticipant.setCameraEnabled(!current);
       setIsCamDisabled(current);
     } catch (err) { captureCallError(err, 'overlay', { stage_detail: 'toggle_camera' }); }
-  };
-  const toggleScreenShare = async () => {
+  });
+  const toggleScreenShare = wrap(async () => {
     try {
       const next = !localParticipant.isScreenShareEnabled;
       await localParticipant.setScreenShareEnabled(next);
@@ -298,8 +340,8 @@ function FaceTimeCallView({ isVideo, onHangUp, startedAtMs, isE2EE }: FaceTimeCa
       captureCallError(err, 'overlay', { stage_detail: 'toggle_screen_share' });
       toast.error('Could Not Share Screen');
     }
-  };
-  const toggleHold = async () => {
+  });
+  const toggleHold = wrap(async () => {
     if (!isOnHold) {
       preHoldRef.current = {
         mic: localParticipant.isMicrophoneEnabled,
@@ -319,8 +361,8 @@ function FaceTimeCallView({ isVideo, onHangUp, startedAtMs, isE2EE }: FaceTimeCa
       setIsOnHold(false);
       preHoldRef.current = null;
     }
-  };
-  const requestPip = async () => {
+  });
+  const requestPip = wrap(async () => {
     if (typeof document === 'undefined' || !document.pictureInPictureEnabled) {
       toast.info('Picture-In-Picture Not Supported In This Browser');
       return;
@@ -330,21 +372,9 @@ function FaceTimeCallView({ isVideo, onHangUp, startedAtMs, isE2EE }: FaceTimeCa
       if (!el) return;
       await el.requestPictureInPicture();
     } catch (err) { captureCallError(err, 'overlay', { stage_detail: 'pip' }); }
-  };
-  const showAudioRoutingHint = () => {
-    const ua = navigator.userAgent;
-    let detail = 'Tap Your Device Speaker / Bluetooth Icon To Switch.';
-    if (/iPhone|iPad|iPod/i.test(ua)) {
-      detail = 'On iOS, Use The Control Center Audio Card To Switch Between Speaker / Bluetooth.';
-    } else if (/Android/i.test(ua)) {
-      detail = 'On Android, Use The Quick Settings Tile Or Bluetooth Menu To Switch Output.';
-    } else if (/Mac/i.test(ua)) {
-      detail = 'On macOS, Use Sound In System Settings Or The Menubar Volume Icon To Switch Output.';
-    }
-    toast.info('Audio Output Is Controlled By Your Device Settings', { description: detail });
-  };
+  });
 
-  const flipCamera = async () => {
+  const flipCamera = wrap(async () => {
     if (!localParticipant.isCameraEnabled) return;
     const nextMode = facingMode === 'user' ? 'environment' : 'user';
     setFacingMode(nextMode);
@@ -365,6 +395,11 @@ function FaceTimeCallView({ isVideo, onHangUp, startedAtMs, isE2EE }: FaceTimeCa
         toast.info('Only One Camera Detected');
       }
     } catch (err) { captureCallError(err, 'overlay', { stage_detail: 'flip_camera' }); }
+  });
+
+  const handleHangUpClick = () => {
+    showToolbar();
+    onHangUp();
   };
 
   const isReconnecting =
@@ -385,6 +420,9 @@ function FaceTimeCallView({ isVideo, onHangUp, startedAtMs, isE2EE }: FaceTimeCa
   })();
 
   const isGroup = remoteParticipants.length > 1;
+  const counterpartyInitials = counterpartyName
+    ? counterpartyName.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase()
+    : '?';
 
   return (
     <div style={{ position: 'relative', width: '100%', height: '100%', overflow: 'hidden', background: '#000' }}>
@@ -395,48 +433,61 @@ function FaceTimeCallView({ isVideo, onHangUp, startedAtMs, isE2EE }: FaceTimeCa
         />
       )}
 
-      {isGroup ? (
-        <CallGridView />
-      ) : (
-        <div style={{ width: '100%', height: '100%' }}>
-          {isVideo && remoteVideoTrack ? (
-            <VideoTrack
-              trackRef={remoteVideoTrack}
-              style={{
-                width: '100%', height: '100%', objectFit: 'cover',
-                transition: 'box-shadow 0.3s',
-                boxShadow: remoteIsSpeaking ? 'inset 0 0 0 4px rgba(0, 196, 188, 0.6)' : 'none',
-              }}
-            />
-          ) : (
-            <div style={{
-              width: '100%', height: '100%',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              background: 'radial-gradient(circle at center, #0B1E30 0%, #03080F 100%)',
-              flexDirection: 'column'
-            }}>
-              <div
-                className={remoteIsSpeaking ? 'pnl-speaker-active' : 'pnl-pulse-avatar-ring'}
+      {/* fix-44: clickable video area toggles toolbar visibility */}
+      <div
+        onClick={handleVideoTap}
+        style={{ position: 'absolute', inset: 0, cursor: 'pointer' }}
+        aria-label="Toggle Controls"
+      >
+        {isGroup ? (
+          <CallGridView />
+        ) : (
+          <div style={{ width: '100%', height: '100%' }}>
+            {isVideo && remoteVideoTrack ? (
+              <VideoTrack
+                trackRef={remoteVideoTrack}
                 style={{
-                  width: 120, height: 120, borderRadius: '50%',
-                  background: 'rgba(255, 255, 255, 0.05)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: '2.5rem', fontWeight: 700, color: '#00C4BC',
-                  marginBottom: 20, border: '2px solid rgba(0, 196, 188, 0.2)'
+                  width: '100%', height: '100%', objectFit: 'cover',
+                  transition: 'box-shadow 0.3s',
+                  boxShadow: remoteIsSpeaking ? 'inset 0 0 0 4px rgba(0, 196, 188, 0.6)' : 'none',
                 }}
-              >
-                <Phone size={48} />
+              />
+            ) : (
+              <div style={{
+                width: '100%', height: '100%',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                background: 'radial-gradient(circle at center, #0B1E30 0%, #03080F 100%)',
+                flexDirection: 'column'
+              }}>
+                {/* fix-44: show counterparty's profile photo (or initials)
+                    in the audio-only / waiting-for-video placeholder */}
+                <div
+                  className={remoteIsSpeaking ? 'pnl-speaker-active' : 'pnl-pulse-avatar-ring'}
+                  style={{
+                    width: 160, height: 160, borderRadius: '50%',
+                    background: counterpartyAvatar
+                      ? `url(${counterpartyAvatar}) center/cover no-repeat`
+                      : 'linear-gradient(135deg, #00C4BC 0%, #0B1E30 100%)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontSize: '3rem', fontWeight: 700, color: '#FFFFFF',
+                    marginBottom: 24, border: '3px solid rgba(255, 255, 255, 0.15)',
+                    boxShadow: '0 20px 60px rgba(0, 0, 0, 0.65)',
+                  }}
+                >
+                  {!counterpartyAvatar && counterpartyInitials}
+                </div>
+                <div style={{ color: '#FFFFFF', fontSize: '1.4rem', fontWeight: 700, marginBottom: 8 }}>
+                  {counterpartyName}
+                </div>
+                <div style={{ color: 'rgba(255,255,255,0.62)', fontSize: '0.95rem', fontWeight: 500, letterSpacing: '0.05em' }}>
+                  {isVideo ? 'Waiting For Companion Video...' : 'Voice Call Active'}
+                </div>
               </div>
-              <div style={{ color: 'rgba(255,255,255,0.7)', fontSize: '1.1rem', fontWeight: 600, letterSpacing: '0.05em' }}>
-                {isVideo ? 'WAITING FOR COMPANION VIDEO...' : 'VOICE CONNECTION ACTIVE'}
-              </div>
-            </div>
-          )}
-        </div>
-      )}
+            )}
+          </div>
+        )}
+      </div>
 
-      {/* fix-43: local-cam preview honors safe-area-inset so it doesn't slide
-          behind iPhone's notch / dynamic island on landscape. */}
       {!isGroup && isVideo && localCamTrack && localParticipant.isCameraEnabled && (
         <div style={{
           position: 'absolute',
@@ -447,6 +498,7 @@ function FaceTimeCallView({ isVideo, onHangUp, startedAtMs, isE2EE }: FaceTimeCa
           boxShadow: '0 12px 24px rgba(0,0,0,0.5)',
           border: '2px solid rgba(255, 255, 255, 0.15)',
           zIndex: 100, background: '#0B1E30',
+          pointerEvents: 'none',
         }}>
           <VideoTrack
             trackRef={localCamTrack}
@@ -464,6 +516,7 @@ function FaceTimeCallView({ isVideo, onHangUp, startedAtMs, isE2EE }: FaceTimeCa
         transform: 'translateX(-50%)', zIndex: 150,
         display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6,
         maxWidth: 'calc(100vw - 32px)',
+        pointerEvents: 'none',
       }}>
         <span className="pnl-call-timer" aria-label="Call Duration" aria-live="off">
           {formatCallDuration(elapsedMs)}
@@ -487,7 +540,7 @@ function FaceTimeCallView({ isVideo, onHangUp, startedAtMs, isE2EE }: FaceTimeCa
           <p>Microphone And Camera Paused</p>
           <button
             type="button"
-            onClick={toggleHold}
+            onClick={() => void toggleHold()}
             style={{
               background: '#00C4BC', color: '#000',
               border: 0, padding: '12px 24px', borderRadius: 8,
@@ -500,32 +553,38 @@ function FaceTimeCallView({ isVideo, onHangUp, startedAtMs, isE2EE }: FaceTimeCa
       )}
 
       {/*
-        fix-43: maxWidth constraint prevents the toolbar from expanding past
-        the viewport — the original cause of the "toolbar covered the whole
-        iPhone screen" bug. With 44px buttons + 8px gap and 8 buttons the
-        natural width is 408px; on a 390px iPhone the maxWidth caps it at
-        ~366px, the row wraps cleanly to 2 short rows, and total toolbar
-        height stays around 110px instead of 500px+.
-        Bottom uses env(safe-area-inset-bottom) so it sits above the iPhone
-        home indicator.
+        fix-44: SINGLE-LINE auto-hiding toolbar.
+          - flexWrap: nowrap so it stays one row.
+          - maxWidth: calc(100vw - 24px) so it never overflows the viewport.
+          - Auto-hides after 5s; tap the video area to toggle.
+          - On mobile we hide the Screen Share button entirely because iOS
+            Safari does not implement getDisplayMedia.
+          - The Headphones button was removed entirely per user request.
+          - Camera Flip uses SwitchCamera icon for visual clarity.
       */}
-      <div style={{
-        position: 'absolute',
-        bottom: 'calc(env(safe-area-inset-bottom, 0px) + 16px)',
-        left: '50%',
-        transform: 'translateX(-50%)',
-        background: 'rgba(11, 30, 48, 0.7)',
-        backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)',
-        padding: '10px 14px', borderRadius: 28,
-        display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', justifyContent: 'center',
-        zIndex: 200,
-        border: '1px solid rgba(255,255,255,0.08)',
-        boxShadow: '0 20px 50px rgba(0,0,0,0.5)',
-        maxWidth: 'min(560px, calc(100vw - 24px))',
-        boxSizing: 'border-box',
-      }}>
+      <div
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          position: 'absolute',
+          bottom: 'calc(env(safe-area-inset-bottom, 0px) + 12px)',
+          left: '50%',
+          transform: `translateX(-50%) translateY(${toolbarVisible ? 0 : 24}px)`,
+          opacity: toolbarVisible ? 1 : 0,
+          pointerEvents: toolbarVisible ? 'auto' : 'none',
+          transition: 'opacity 0.3s ease, transform 0.3s ease',
+          background: 'rgba(11, 30, 48, 0.78)',
+          backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)',
+          padding: '8px 12px', borderRadius: 32,
+          display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'nowrap',
+          zIndex: 200,
+          border: '1px solid rgba(255,255,255,0.08)',
+          boxShadow: '0 12px 32px rgba(0,0,0,0.5)',
+          maxWidth: 'calc(100vw - 24px)',
+          boxSizing: 'border-box',
+        }}
+      >
         <button
-          type="button" onClick={toggleMute}
+          type="button" onClick={() => void toggleMute()}
           className="pnl-toolbar-btn"
           style={{ background: isMuted ? '#E53E3E' : 'rgba(255,255,255,0.08)' }}
           title={isMuted ? 'Unmute Microphone' : 'Mute Microphone'}
@@ -536,7 +595,7 @@ function FaceTimeCallView({ isVideo, onHangUp, startedAtMs, isE2EE }: FaceTimeCa
 
         {isVideo && (
           <button
-            type="button" onClick={toggleCamera}
+            type="button" onClick={() => void toggleCamera()}
             className="pnl-toolbar-btn"
             style={{ background: isCamDisabled ? '#E53E3E' : 'rgba(255,255,255,0.08)' }}
             title={isCamDisabled ? 'Turn Camera On' : 'Turn Camera Off'}
@@ -548,29 +607,31 @@ function FaceTimeCallView({ isVideo, onHangUp, startedAtMs, isE2EE }: FaceTimeCa
 
         {isVideo && !isCamDisabled && (
           <button
-            type="button" onClick={flipCamera}
+            type="button" onClick={() => void flipCamera()}
             className="pnl-toolbar-btn"
-            title="Flip Camera" aria-label="Flip Camera"
+            title="Switch Camera" aria-label="Switch Camera"
           >
-            <Camera size={20} />
+            <SwitchCamera size={20} />
+          </button>
+        )}
+
+        {!isMobile && (
+          <button
+            type="button" onClick={() => void toggleScreenShare()}
+            className="pnl-toolbar-btn"
+            style={{
+              background: isScreenSharing ? '#00C4BC' : 'rgba(255,255,255,0.08)',
+              color: isScreenSharing ? '#000' : 'white',
+            }}
+            title={isScreenSharing ? 'Stop Sharing Screen' : 'Share Screen'}
+            aria-label={isScreenSharing ? 'Stop Sharing Screen' : 'Share Screen'}
+          >
+            {isScreenSharing ? <ScreenShareOff size={20} /> : <ScreenShare size={20} />}
           </button>
         )}
 
         <button
-          type="button" onClick={toggleScreenShare}
-          className="pnl-toolbar-btn"
-          style={{
-            background: isScreenSharing ? '#00C4BC' : 'rgba(255,255,255,0.08)',
-            color: isScreenSharing ? '#000' : 'white',
-          }}
-          title={isScreenSharing ? 'Stop Sharing Screen' : 'Share Screen'}
-          aria-label={isScreenSharing ? 'Stop Sharing Screen' : 'Share Screen'}
-        >
-          {isScreenSharing ? <ScreenShareOff size={20} /> : <ScreenShare size={20} />}
-        </button>
-
-        <button
-          type="button" onClick={toggleHold}
+          type="button" onClick={() => void toggleHold()}
           className="pnl-toolbar-btn"
           style={{
             background: isOnHold ? '#FFB020' : 'rgba(255,255,255,0.08)',
@@ -584,7 +645,7 @@ function FaceTimeCallView({ isVideo, onHangUp, startedAtMs, isE2EE }: FaceTimeCa
 
         {isVideo && (
           <button
-            type="button" onClick={requestPip}
+            type="button" onClick={() => void requestPip()}
             className="pnl-toolbar-btn"
             title="Picture-In-Picture" aria-label="Picture-In-Picture"
           >
@@ -593,15 +654,7 @@ function FaceTimeCallView({ isVideo, onHangUp, startedAtMs, isE2EE }: FaceTimeCa
         )}
 
         <button
-          type="button" onClick={showAudioRoutingHint}
-          className="pnl-toolbar-btn"
-          title="Audio Output (Bluetooth / Speaker)" aria-label="Audio Output Help"
-        >
-          <Headphones size={20} />
-        </button>
-
-        <button
-          type="button" onClick={onHangUp}
+          type="button" onClick={handleHangUpClick}
           className="pnl-toolbar-btn"
           style={{ background: '#E53E3E' }}
           title="Hang Up" aria-label="Hang Up"
@@ -618,8 +671,8 @@ export default function CallOverlay({ call, selfId, onClose, onAccept }: Props &
 
   const conversations = useMessengerStore((s) => s.conversations);
   const [counterpartyId, setCounterpartyId] = useState<string | null>(null);
-  const [counterpartyName, setCounterpartyName] = useState<string>('Someone');
-  const [counterpartyAvatar, setCounterpartyAvatar] = useState<string | null>(null);
+  const [counterpartyName, setCounterpartyName] = useState<string>(call.caller_name ?? 'Someone');
+  const [counterpartyAvatar, setCounterpartyAvatar] = useState<string | null>(call.caller_avatar ?? null);
   const [isSignaling, setIsSignaling] = useState(false);
   const userClosedRef = useRef(false);
 
@@ -676,8 +729,8 @@ export default function CallOverlay({ call, selfId, onClose, onAccept }: Props &
         };
         const other = (json.participants ?? []).find((p) => p.user_id !== selfId);
         if (other && !cancelled) {
-          setCounterpartyName(other.full_name ?? other.username ?? 'Someone');
-          setCounterpartyAvatar(other.avatar_url ?? null);
+          setCounterpartyName((cur) => other.full_name ?? other.username ?? cur);
+          if (other.avatar_url) setCounterpartyAvatar(other.avatar_url);
         }
       } catch (err) {
         captureCallError(err, 'overlay', { stage_detail: 'resolve_counterparty_profile' });
@@ -1062,6 +1115,8 @@ export default function CallOverlay({ call, selfId, onClose, onAccept }: Props &
             onHangUp={handleHangUp}
             startedAtMs={activeStartedAtRef.current ?? Date.now()}
             isE2EE={Boolean(e2ee)}
+            counterpartyName={counterpartyName}
+            counterpartyAvatar={counterpartyAvatar}
           />
         </LiveKitRoom>
       )}
@@ -1082,7 +1137,7 @@ export default function CallOverlay({ call, selfId, onClose, onAccept }: Props &
             <Phone size={32} style={{ color: '#00C4BC' }} />
           </div>
           <div style={{ fontSize: '1.2rem', fontWeight: 600, letterSpacing: '0.05em' }} aria-live="polite">
-            CONNECTING TO CONFERENCE...
+            Connecting To Conference...
           </div>
         </div>
       )}
