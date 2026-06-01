@@ -9,8 +9,13 @@ import {
   isWebPushSupported,
   notificationPermission,
 } from '@/lib/push-client';
+import type { LucideIcon } from 'lucide-react';
+import {
+  Package, CheckCircle, Truck, PartyPopper, XCircle, DollarSign, User,
+  MessageCircle, FileText, Clock, ShoppingCart, Link2, Bell,
+} from 'lucide-react';
 
-/* ─── Types ────────────────────────────────────────────────────────────────── */
+/* --- Types ------------------------------------------------------------------ */
 interface NotifItem {
   id: string;
   type: string;
@@ -33,7 +38,7 @@ interface Prefs {
   send_read_receipts: boolean;
 }
 
-/* ─── Helpers ──────────────────────────────────────────────────────────────── */
+/* --- Helpers ---------------------------------------------------------------- */
 function timeAgo(iso: string): string {
   const d = Date.now() - new Date(iso).getTime();
   const s = Math.floor(d / 1000);
@@ -45,20 +50,20 @@ function timeAgo(iso: string): string {
   return new Date(iso).toLocaleDateString();
 }
 
-const TYPE_ICON: Record<string, string> = {
-  order_placed:     '📦',
-  order_approved:   '✅',
-  order_shipped:    '🚚',
-  order_delivered:  '🎉',
-  order_cancelled:  '❌',
-  commission_earned:'💰',
-  new_researcher:   '👤',
-  new_message:      '💬',
-  invoice:          '📄',
-  payment_reminder: '⏰',
-  cart_reminder:    '🛒',
-  referral:         '🔗',
-  system:           '🔔',
+const TYPE_ICON: Record<string, LucideIcon> = {
+  order_placed:      Package,
+  order_approved:    CheckCircle,
+  order_shipped:     Truck,
+  order_delivered:   PartyPopper,
+  order_cancelled:   XCircle,
+  commission_earned: DollarSign,
+  new_researcher:    User,
+  new_message:       MessageCircle,
+  invoice:           FileText,
+  payment_reminder:  Clock,
+  cart_reminder:     ShoppingCart,
+  referral:          Link2,
+  system:            Bell,
 };
 
 const TYPE_LABEL: Record<string, string> = {
@@ -77,37 +82,37 @@ const TYPE_LABEL: Record<string, string> = {
   system:           'System',
 };
 
-/* ─── Style constants ──────────────────────────────────────────────────────── */
+/* --- Style constants -------------------------------------------------------- */
 const TEAL    = 'var(--teal, #C0B8A8)';
 const SILVER  = 'rgba(192,184,168,0.65)';
 const SURFACE = 'rgba(255,255,255,0.03)';
 const BORDER  = '1px solid rgba(255,255,255,0.08)';
 
-/* ══════════════════════════════════════════════════════════════════════════════
+/* ==============================================================================
    Notification Center Page
-══════════════════════════════════════════════════════════════════════════════ */
+============================================================================== */
 import AvatarUpload from '@/components/AvatarUpload';
 
 export default function NotificationCenterClient({ initialPrefs, sessionProfile }: { initialPrefs: Prefs, sessionProfile: any }) {
   const [activeTab, setActiveTab] = useState<'notifications' | 'settings'>('notifications');
 
-  /* ── Notifications state ──────────────────────────────────────────────── */
+  /* -- Notifications state ------------------------------------------------ */
   const [items, setItems]         = useState<NotifItem[]>([]);
   const [loadingList, setLoadingList] = useState(true);
   const [filterType, setFilterType] = useState<string>('all');
 
-  /* ── Preferences state ────────────────────────────────────────────────── */
+  /* -- Preferences state -------------------------------------------------- */
   const [prefs, setPrefs]         = useState<Prefs>(initialPrefs);
   const [saving, setSaving]       = useState(false);
   const [saveMsg, setSaveMsg]     = useState<{ text: string; ok: boolean } | null>(null);
 
-  /* ── Push state ───────────────────────────────────────────────────────── */
+  /* -- Push state --------------------------------------------------------- */
   const [pushSupported, setPushSupported] = useState(false);
   const [pushPermission, setPushPermission] = useState<NotificationPermission | 'unsupported'>('default');
   const [pushBusy, setPushBusy]   = useState(false);
   const [pushMsg, setPushMsg]     = useState<{ text: string; ok: boolean } | null>(null);
 
-  /* ── Load feed ────────────────────────────────────────────────────────── */
+  /* -- Load feed ---------------------------------------------------------- */
   const loadFeed = useCallback(async () => {
     setLoadingList(true);
     try {
@@ -123,13 +128,13 @@ export default function NotificationCenterClient({ initialPrefs, sessionProfile 
 
   useEffect(() => { loadFeed(); }, [loadFeed]);
 
-  /* ── Push support check ───────────────────────────────────────────────── */
+  /* -- Push support check ------------------------------------------------- */
   useEffect(() => {
     setPushSupported(isWebPushSupported());
     setPushPermission(notificationPermission());
   }, []);
 
-  /* ── Mark individual as read ────────────────────────────────────────────── */
+  /* -- Mark individual as read ---------------------------------------------- */
   const markRead = async (id: string) => {
     setItems(prev => prev.map(n => n.id === id ? { ...n, read_at: new Date().toISOString() } : n));
     await fetch('/api/account/notifications/mark-read', {
@@ -139,7 +144,7 @@ export default function NotificationCenterClient({ initialPrefs, sessionProfile 
     }).catch(() => { /* ignore */ });
   };
 
-  /* ── Mark all read ────────────────────────────────────────────────────── */
+  /* -- Mark all read ------------------------------------------------------ */
   const markAllRead = async () => {
     await fetch('/api/account/notifications/mark-read', {
       method: 'POST',
@@ -149,7 +154,7 @@ export default function NotificationCenterClient({ initialPrefs, sessionProfile 
     setItems(prev => prev.map(n => ({ ...n, read_at: n.read_at ?? new Date().toISOString() })));
   };
 
-  /* ── Save preferences ─────────────────────────────────────────────────── */
+  /* -- Save preferences --------------------------------------------------- */
   const save = async () => {
     setSaving(true);
     setSaveMsg(null);
@@ -174,7 +179,7 @@ export default function NotificationCenterClient({ initialPrefs, sessionProfile 
     }
   };
 
-  /* ── Push enable/disable ──────────────────────────────────────────────── */
+  /* -- Push enable/disable ------------------------------------------------ */
   const handleEnablePush = async () => {
     setPushBusy(true);
     setPushMsg(null);
@@ -214,7 +219,7 @@ export default function NotificationCenterClient({ initialPrefs, sessionProfile 
     setPushBusy(false);
   };
 
-  /* ── Filtered items ───────────────────────────────────────────────────── */
+  /* -- Filtered items ----------------------------------------------------- */
   const filteredItems = filterType === 'all'
     ? items
     : filterType === 'unread'
@@ -223,7 +228,7 @@ export default function NotificationCenterClient({ initialPrefs, sessionProfile 
 
   const unreadCount = items.filter(n => !n.read_at).length;
 
-  /* ── Tabs ─────────────────────────────────────────────────────────────── */
+  /* -- Tabs --------------------------------------------------------------- */
   const tabs = [
     { key: 'notifications', label: 'Notifications' },
     { key: 'settings', label: 'Settings' },
@@ -293,7 +298,7 @@ export default function NotificationCenterClient({ initialPrefs, sessionProfile 
           ))}
         </div>
 
-        {/* ══ NOTIFICATIONS TAB ══════════════════════════════════════════════ */}
+        {/* == NOTIFICATIONS TAB ============================================== */}
         {activeTab === 'notifications' && (
           <div>
             {/* Filter bar */}
@@ -321,7 +326,7 @@ export default function NotificationCenterClient({ initialPrefs, sessionProfile 
                       transition: 'all 0.15s',
                     }}
                   >
-                    {f === 'all' ? 'All' : f === 'unread' ? `Unread (${unreadCount})` : (TYPE_ICON[f] + ' ' + (TYPE_LABEL[f] ?? f))}
+                    {f === 'all' ? 'All' : f === 'unread' ? `Unread (${unreadCount})` : (TYPE_LABEL[f] ?? f)}
                   </button>
                 ))}
               </div>
@@ -353,11 +358,11 @@ export default function NotificationCenterClient({ initialPrefs, sessionProfile 
             }}>
               {loadingList ? (
                 <div style={{ padding: '40px 20px', textAlign: 'center', color: SILVER, fontSize: '0.85rem' }}>
-                  Loading notifications…
+                  Loading notifications...
                 </div>
               ) : filteredItems.length === 0 ? (
                 <div style={{ padding: '48px 20px', textAlign: 'center' }}>
-                  <div style={{ fontSize: '2.5rem', marginBottom: 12 }}>🔔</div>
+                  <div style={{ marginBottom: 12, display: 'flex', justifyContent: 'center' }}><Bell size={40} color={SILVER} /></div>
                   <div style={{ color: SILVER, fontSize: '0.88rem', fontWeight: 600 }}>
                     {filterType === 'unread' ? 'All caught up!' : 'No notifications yet'}
                   </div>
@@ -393,7 +398,7 @@ export default function NotificationCenterClient({ initialPrefs, sessionProfile 
                       fontSize: '1.15rem',
                       flexShrink: 0,
                     }}>
-                      {TYPE_ICON[n.type] ?? '🔔'}
+                      {(() => { const Ico = TYPE_ICON[n.type] ?? Bell; return <Ico size={18} color="var(--white)" />; })()}
                     </div>
 
                     {/* Content */}
@@ -432,7 +437,7 @@ export default function NotificationCenterClient({ initialPrefs, sessionProfile 
                             style={{ color: TEAL, fontSize: '0.74rem', textDecoration: 'none', fontWeight: 600 }}
                             onClick={() => !n.read_at && markRead(n.id)}
                           >
-                            View →
+                            View
                           </Link>
                         )}
                         {!n.read_at && (
@@ -459,7 +464,7 @@ export default function NotificationCenterClient({ initialPrefs, sessionProfile 
           </div>
         )}
 
-        {/* ══ SETTINGS TAB ═══════════════════════════════════════════════════ */}
+        {/* == SETTINGS TAB =================================================== */}
         {activeTab === 'settings' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
 
@@ -560,8 +565,8 @@ export default function NotificationCenterClient({ initialPrefs, sessionProfile 
                 <span style={{ color: 'var(--white)', fontWeight: 600 }}>Status: </span>
                 {!pushSupported && <span style={{ color: '#F6AD55' }}>Not supported in this browser</span>}
                 {pushSupported && pushPermission === 'default' && <span style={{ color: SILVER }}>Not yet enabled</span>}
-                {pushSupported && pushPermission === 'denied' && <span style={{ color: '#E53E3E' }}>Blocked — check browser settings</span>}
-                {pushSupported && pushPermission === 'granted' && prefs.push_enabled && <span style={{ color: TEAL }}>✓ Active</span>}
+                {pushSupported && pushPermission === 'denied' && <span style={{ color: '#E53E3E' }}>Blocked - check browser settings</span>}
+                {pushSupported && pushPermission === 'granted' && prefs.push_enabled && <span style={{ color: TEAL }}>Active</span>}
                 {pushSupported && pushPermission === 'granted' && !prefs.push_enabled && <span style={{ color: SILVER }}>Granted but disabled</span>}
               </div>
 
@@ -578,7 +583,7 @@ export default function NotificationCenterClient({ initialPrefs, sessionProfile 
                       opacity: (pushBusy || pushPermission === 'denied') ? 0.5 : 1,
                     }}
                   >
-                    {pushBusy ? 'Working…' : 'Enable Push Notifications'}
+                    {pushBusy ? 'Working...' : 'Enable Push Notifications'}
                   </button>
                 )}
                 {pushSupported && prefs.push_enabled && (
@@ -593,7 +598,7 @@ export default function NotificationCenterClient({ initialPrefs, sessionProfile 
                         cursor: pushBusy ? 'wait' : 'pointer', opacity: pushBusy ? 0.5 : 1,
                       }}
                     >
-                      {pushBusy ? 'Working…' : 'Disable Push'}
+                      {pushBusy ? 'Working...' : 'Disable Push'}
                     </button>
                     <button
                       onClick={handleTestPush}
@@ -616,27 +621,29 @@ export default function NotificationCenterClient({ initialPrefs, sessionProfile 
                 </div>
               )}
 
-              {/* Push event prefs */}
+              {/* Per-type push controls live on the dedicated Notification
+                  Preferences page, which is the single source of truth for
+                  which push types are delivered. The old coarse order/messages/
+                  marketing bucket checkboxes were removed to avoid two competing
+                  controls (the buckets no longer gate delivery). */}
               {prefs.push_enabled && (
                 <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: 14 }}>
-                  <h3 style={{ fontSize: '0.85rem', color: 'var(--white)', fontWeight: 600, marginBottom: 10 }}>
-                    Send Push For:
+                  <h3 style={{ fontSize: '0.85rem', color: 'var(--white)', fontWeight: 600, marginBottom: 6 }}>
+                    Choose Which Alerts You Receive
                   </h3>
-                  {([
-                    { key: 'push_events_order', label: 'Order status changes' },
-                    { key: 'push_events_messages', label: 'New messages' },
-                    { key: 'push_events_marketing', label: 'Promotions & new products' },
-                  ] as const).map(row => (
-                    <label key={row.key} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '6px 0', cursor: 'pointer' }}>
-                      <input
-                        type="checkbox"
-                        checked={prefs[row.key]}
-                        onChange={e => setPrefs(p => ({ ...p, [row.key]: e.target.checked }))}
-                        style={{ width: 16, height: 16, accentColor: TEAL, cursor: 'pointer' }}
-                      />
-                      <span style={{ color: 'var(--white)', fontSize: '0.83rem' }}>{row.label}</span>
-                    </label>
-                  ))}
+                  <p style={{ fontSize: '0.78rem', color: 'rgba(192,184,168,0.65)', margin: '0 0 12px' }}>
+                    Turn Individual Push Notifications On Or Off On The Notification Preferences Page.
+                  </p>
+                  <Link
+                    href="/account/notification-preferences"
+                    style={{
+                      display: 'inline-block', background: 'transparent', color: TEAL,
+                      border: `1px solid ${TEAL}`, borderRadius: 8, padding: '9px 18px',
+                      fontWeight: 600, fontSize: '0.82rem', textDecoration: 'none',
+                    }}
+                  >
+                    Manage Notification Preferences
+                  </Link>
                 </div>
               )}
             </section>
@@ -653,7 +660,7 @@ export default function NotificationCenterClient({ initialPrefs, sessionProfile 
                   opacity: saving ? 0.5 : 1,
                 }}
               >
-                {saving ? 'Saving…' : 'Save Preferences'}
+                {saving ? 'Saving...' : 'Save Preferences'}
               </button>
               {saveMsg && (
                 <span style={{ fontSize: '0.82rem', color: saveMsg.ok ? TEAL : '#E53E3E' }}>
