@@ -176,17 +176,19 @@ export default function AgentInventory({ agentId }: { agentId: string }) {
         }}>
           <div className="metal-frame" style={{ maxWidth: 500, width: '100%' }}>
             <div className="metal-content" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 12, color: 'var(--orange)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12, color: 'var(--teal)' }}>
                 <AlertTriangle size={24} />
-                <h3 className="metal-text" style={{ fontSize: '1.2rem', margin: 0 }}>Important Warning</h3>
+                <h3 style={{ fontSize: '1.2rem', margin: 0, color: 'var(--white)' }}>Important Warning</h3>
               </div>
               <p style={{ fontSize: '0.9rem', color: 'var(--white)', lineHeight: 1.5 }}>
-                Before you adjust any of these numbers, this page is for agents that have <strong>In-Stock Inventory That They Want To List For Sale</strong>. 
+                Before You Adjust Any Of These Numbers, This Page Is For Agents
+                That Have <strong>In-Stock Inventory That They Want To List For Sale.</strong>
                 <br /><br />
-                Do not adjust these numbers unless you have them available today to sell. This will take priority over what's currently listed (shipping from China).
+                Do Not Adjust These Numbers Unless You Have Them Available
+                Today To Sell. This Will Take Priority Over What's Currently Listed
               </p>
               <button 
-                className="btn-neon-cyan" 
+                className="btn-silver" 
                 style={{ alignSelf: 'flex-end', marginTop: 'var(--space-2)' }}
                 onClick={() => setShowWarningModal(false)}
               >
