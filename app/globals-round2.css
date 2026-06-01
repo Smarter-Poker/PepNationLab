@@ -826,6 +826,140 @@ body > * {
   }
 }
 
+/* ============================================================
+   ROUND 12 — NUCLEAR SHRINK: WHOLE MESSENGER FITS ON ONE SCREEN
+   ------------------------------------------------------------
+   User said: "SHRINK THE ENTIRE SCREEN SO IT ALL FITS ON MOBILE".
+   Stop tweaking individual elements. Apply zoom on the messenger
+   conversation pane on mobile so the WHOLE thing — header, thread,
+   composer, Send button — fits within the visible viewport at one
+   compressed scale. zoom is supported in iOS Safari (which is what
+   the user is on) and Chrome / Edge. Firefox doesn't support it but
+   the fallback rules below shrink every individual sub-element so
+   even without zoom the layout fits.
+   ============================================================ */
+
+@media (max-width: 768px) {
+  /* PRIMARY: hard-zoom the entire conversation pane to 78% on mobile.
+     This shrinks header + thread + composer + Send button uniformly so
+     the whole thing fits. zoom affects layout (unlike transform: scale),
+     so the pane's children behave as if the viewport were 1/0.78 = 128%
+     wider, leaving plenty of room for the Send button at the right edge. */
+  .messenger-main,
+  .messenger-shell .messenger-main {
+    zoom: 0.82;
+  }
+
+  /* SECONDARY (Firefox fallback + belt-and-suspenders shrink):
+     even if zoom is ignored, every individual element below shrinks
+     enough that the full conversation still fits on a 667px-tall
+     iPhone SE screen below the 60px navbar. */
+
+  /* Conversation header — minimum padding, smaller icons, smaller name */
+  .messenger-main header,
+  .messenger-main > div > header {
+    padding: 4px 8px !important;
+    min-height: 38px !important;
+    gap: 4px !important;
+    border-bottom-width: 1px !important;
+  }
+  .messenger-main header img,
+  .messenger-main header button img,
+  .messenger-main > div > header img {
+    width: 22px !important;
+    height: 22px !important;
+    max-width: 22px !important;
+    max-height: 22px !important;
+  }
+  .messenger-main header button {
+    padding: 1px !important;
+  }
+  .messenger-main header > div:first-child {
+    font-size: 0.82rem !important;
+  }
+
+  /* Day separator + timestamps — tiny */
+  .messenger-main time,
+  .messenger-main [data-day-separator] {
+    font-size: 0.5rem !important;
+    margin: 2px 0 1px !important;
+  }
+
+  /* Bubbles — tighter padding, smaller text */
+  .messenger-main [data-bubble] {
+    padding: 4px 8px !important;
+  }
+  .messenger-main p,
+  .messenger-main [data-bubble] p,
+  .messenger-main [data-bubble] span:not([aria-hidden]),
+  .messenger-main div[style*="max-width: 65%"] p,
+  .messenger-main div[style*="max-width: 65%"] span {
+    font-size: 0.75rem !important;
+    line-height: 1.25 !important;
+  }
+  .messenger-main div[style*="max-width: 65%"] {
+    max-width: 92% !important;
+  }
+
+  /* Message list — less vertical padding */
+  .messenger-main .msg-list {
+    padding: 8px 10px 10px 10px !important;
+  }
+
+  /* Composer — minimum padding, minimum pill height */
+  .messenger-main .msg-composer,
+  .msg-composer {
+    padding: 3px 4px !important;
+    padding-bottom: max(8px, env(safe-area-inset-bottom)) !important;
+    border-top-width: 1px !important;
+  }
+  .messenger-main .msg-composer > div,
+  .msg-composer > div {
+    padding: 2px 6px !important;
+    gap: 4px !important;
+    border-top-width: 0 !important;
+  }
+
+  /* iMessage pill — shorter */
+  .msg-composer > div > div[style*="borderRadius: 24"],
+  .msg-composer div[style*="border-radius: 24"] {
+    min-height: 36px !important;
+    border-width: 2px !important;
+  }
+
+  /* Composer icons — tiny */
+  .msg-composer img[alt="Add Media"],
+  .messenger-main .msg-composer img[alt="Add Media"] {
+    width: 26px !important;
+    height: 26px !important;
+    transform: none !important;
+  }
+  .msg-composer img[alt="Emoji"],
+  .msg-composer img[alt="Schedule"],
+  .messenger-main .msg-composer img[alt="Emoji"],
+  .messenger-main .msg-composer img[alt="Schedule"] {
+    width: 22px !important;
+    height: 22px !important;
+    transform: none !important;
+  }
+
+  /* Send button — slightly smaller */
+  .msg-composer button[aria-label="Send Message"],
+  .messenger-main .msg-composer button[aria-label="Send Message"] {
+    width: 26px !important;
+    height: 26px !important;
+    flex-shrink: 0 !important;
+  }
+
+  /* Textarea — shorter min height */
+  .msg-composer textarea,
+  .messenger-main .msg-composer textarea {
+    min-height: 20px !important;
+    font-size: 0.85rem !important;
+    line-height: 20px !important;
+  }
+}
+
 /* --- (3) Product Catalog mobile UX: hide dropdowns, show search --- */
 .agentprod-mobile-search { display: none; }
 @media (max-width: 768px) {
