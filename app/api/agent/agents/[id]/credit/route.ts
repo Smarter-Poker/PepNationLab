@@ -56,7 +56,7 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
 
     const { data: target } = await supabase
       .from('profiles')
-      .select('id, parent_agent_id, full_name')
+      .select('id, parent_agent_id, full_name, account_type')
       .eq('id', id)
       .single();
     if (!target) {
@@ -64,6 +64,15 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
     }
     if (!isAdmin && target.parent_agent_id !== callerId) {
       return NextResponse.json({ error: 'This Agent Is Not In Your Network.' }, { status: 403 });
+    }
+    // Wallet credit only spends on prepaid accounts; a credit-line agent draws
+    // against their credit limit, so a prepaid credit would sit inert. Reject it
+    // and steer the caller to raise the credit limit instead.
+    if (target.account_type === 'credit') {
+      return NextResponse.json(
+        { error: 'This Agent Is On A Credit Line. Raise Their Credit Limit Instead Of Adding Wallet Credit.' },
+        { status: 400 },
+      );
     }
 
     const body = await req.json().catch(() => ({}));
