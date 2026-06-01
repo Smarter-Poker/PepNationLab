@@ -65,6 +65,19 @@ export default function MessageComposer({ conversationId, selfId, replyTo, onCle
   const [sending, setSending] = useState(false);
   const [showEmoji, setShowEmoji] = useState(false);
   const [showAttach, setShowAttach] = useState(false);
+  // round-19: state-driven mobile detection (matchMedia listener)
+  // so the + button reliably opens the native photo/video picker on
+  // mobile without re-checking on every click. Also gates the emoji
+  // portal so it renders fixed-positioned on mobile.
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const mq = window.matchMedia('(max-width: 768px)');
+    const sync = () => setIsMobile(mq.matches);
+    sync();
+    mq.addEventListener('change', sync);
+    return () => mq.removeEventListener('change', sync);
+  }, []);
   const [voiceMode, setVoiceMode] = useState(false);
   const [showGif, setShowGif] = useState(false);
   const [gifAvailable, setGifAvailable] = useState(true);
@@ -508,11 +521,14 @@ export default function MessageComposer({ conversationId, selfId, replyTo, onCle
             <button
               type="button"
               onClick={() => {
-                // round-18: on mobile, open the native photo/video library
-                // directly via the combined image+video input. On desktop,
-                // keep the existing AttachMenu popover (Image / Video / Voice / File).
+                // round-19: state-driven mobile detection so the + button
+                // ALWAYS dispatches the right action at click time.
                 vibrateLight();
-                if (typeof window !== 'undefined' && window.matchMedia('(max-width: 768px)').matches) {
+                if (isMobile) {
+                  // Programmatic .click() on a hidden file input must
+                  // be inside a user-gesture handler; this onClick IS
+                  // the user gesture so iOS Safari accepts it and
+                  // shows the system photo/video library picker.
                   mobileMediaInputRef.current?.click();
                 } else {
                   togglePopover(setShowAttach);
