@@ -22,6 +22,7 @@ interface Order {
   status:
     | "pending_customer_payment"
     | "agent_approval_pending"
+    | "admin_approval_pending"
     | "approved_ship"
     | "approved_pickup"
     | "in_fulfillment"
@@ -57,6 +58,7 @@ interface OrderItem {
 const STATUS_LABELS: Record<string, string> = {
   pending_customer_payment: "Pending Payment",
   agent_approval_pending: "Agent Approval Pending",
+  admin_approval_pending: "Admin Approval Pending",
   approved_ship: "Approved — Ship",
   approved_pickup: "Approved — Pickup",
   in_fulfillment: "In Fulfillment",
@@ -68,6 +70,7 @@ const STATUS_LABELS: Record<string, string> = {
 const STATUS_COLORS: Record<string, string> = {
   pending_customer_payment: "var(--red)",
   agent_approval_pending: "#00E5FF",
+  admin_approval_pending: "var(--red)",
   approved_ship: "#00E5FF",
   approved_pickup: "#00E5FF",
   in_fulfillment: "var(--teal)",
@@ -547,6 +550,9 @@ function AdminOrdersPageInner() {
                 </option>
                 <option value="agent_approval_pending">
                   Agent Approval Pending
+                </option>
+                <option value="admin_approval_pending">
+                  Admin Approval Pending
                 </option>
                 <option value="approved_ship">Approved Ship</option>
                 <option value="approved_pickup">Approved Pickup</option>
@@ -1326,6 +1332,49 @@ function AdminOrdersPageInner() {
                               }}
                             >
                               Override & Force Approve Order
+                            </button>
+                          </>
+                        )}
+
+                      {selectedOrder.status === "admin_approval_pending" &&
+                        userRole !== "shipping" && (
+                          <>
+                            <div
+                              className="form-group"
+                              style={{ marginBottom: "var(--space-2)" }}
+                            >
+                              <label className="form-label">
+                                Admin Release Notes
+                              </label>
+                              <input
+                                type="text"
+                                className="form-input"
+                                placeholder="Add Release Context..."
+                                value={approvalNotes}
+                                onChange={(e) =>
+                                  setApprovalNotes(e.target.value)
+                                }
+                              />
+                            </div>
+                            <button
+                              onClick={() =>
+                                handleStatusTransition(
+                                  selectedOrder.fulfillment_method ===
+                                    "agent_pickup"
+                                    ? "approved_pickup"
+                                    : "approved_ship",
+                                )
+                              }
+                              className="btn-neon-cyan"
+                              style={{
+                                width: "100%",
+                                justifyContent: "center",
+                              }}
+                            >
+                              {selectedOrder.fulfillment_method ===
+                              "agent_pickup"
+                                ? "Approve & Release To Pickup"
+                                : "Approve & Release To Shipping"}
                             </button>
                           </>
                         )}
