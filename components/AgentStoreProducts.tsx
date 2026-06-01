@@ -475,7 +475,7 @@ export default function AgentStoreProducts({ agentId }: { agentId: string }) {
                         <button onClick={() => handleEdit(p)} className="btn-silver" style={{ padding: '6px 14px', fontSize: '0.75rem', minWidth: 64 }}>Edit</button>
                         <button
                           onClick={() => toggleVisibility(p)}
-                          style={{ width: 52, height: 28, borderRadius: 14, border: '1px solid rgba(0,0,0,0.45)', cursor: 'pointer', position: 'relative', transition: 'background 0.2s', background: p.is_visible ? '#00E5FF' : 'rgba(255,255,255,0.12)', boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.45)' }}
+                          style={{ width: 52, height: 28, minWidth: 52, minHeight: 28, borderRadius: 14, border: '1px solid rgba(0,0,0,0.45)', cursor: 'pointer', position: 'relative', transition: 'background 0.2s', background: p.is_visible ? '#00E5FF' : 'rgba(255,255,255,0.12)', boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.45)' }}
                           title={p.is_visible ? 'On — Tap To Hide' : 'Off — Tap To Show'}
                           aria-label={p.is_visible ? 'Visibility On' : 'Visibility Off'}
                           aria-checked={p.is_visible}
@@ -668,7 +668,7 @@ export default function AgentStoreProducts({ agentId }: { agentId: string }) {
                               <button onClick={() => handleEdit(p)} className="btn-silver" style={{ padding: '6px 14px', fontSize: '0.75rem', minWidth: 64 }}>Edit</button>
                               <button
                                 onClick={() => toggleVisibility(p)}
-                                style={{ width: 52, height: 28, borderRadius: 14, border: '1px solid rgba(0,0,0,0.45)', cursor: 'pointer', position: 'relative', transition: 'background 0.2s', background: p.is_visible ? '#00E5FF' : 'rgba(255,255,255,0.12)', boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.45)' }}
+                                style={{ width: 52, height: 28, minWidth: 52, minHeight: 28, borderRadius: 14, border: '1px solid rgba(0,0,0,0.45)', cursor: 'pointer', position: 'relative', transition: 'background 0.2s', background: p.is_visible ? '#00E5FF' : 'rgba(255,255,255,0.12)', boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.45)' }}
                                 title={p.is_visible ? 'On — Tap To Hide' : 'Off — Tap To Show'}
                                 aria-label={p.is_visible ? 'Visibility On' : 'Visibility Off'}
                                 aria-checked={p.is_visible}
