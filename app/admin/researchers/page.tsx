@@ -30,6 +30,8 @@ interface Profile {
   disclaimer_v1_accepted: boolean;
   is_active: boolean;
   created_at: string;
+  last_sign_in_at: string | null;
+  first_sign_in_at: string | null;
   agent_profiles: AgentProfile[] | AgentProfile | null;
 }
 
@@ -590,6 +592,12 @@ function ResearchersAdminPageInner() {
                       Joined {new Date(profile.created_at).toLocaleDateString()} • Disclaimer:{' '}
                       <span style={{ color: profile.disclaimer_v1_accepted ? 'var(--teal)' : 'var(--red)' }}>
                         {profile.disclaimer_v1_accepted ? 'ACCEPTED' : 'PENDING'}
+                      </span>
+                    </div>
+                    <div style={{ fontSize: '0.74rem', marginTop: 4, color: profile.last_sign_in_at ? 'var(--silver)' : 'var(--grey-500)', fontStyle: profile.last_sign_in_at ? 'normal' : 'italic' }}>
+                      Last Logged In:{' '}
+                      <span style={{ fontWeight: 600 }}>
+                        {profile.last_sign_in_at ? new Date(profile.last_sign_in_at).toLocaleString(undefined, { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' }) : 'Never Logged In'}
                       </span>
                     </div>
                   </div>
