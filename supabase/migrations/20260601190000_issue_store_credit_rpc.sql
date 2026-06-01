@@ -3,7 +3,7 @@
 -- p_created_by records WHO funded the credit (issuing agent / super-agent / admin)
 -- so the future checkout-redemption settlement can charge the right party.
 --
--- Applied to production via Supabase MCP as issue_store_credit_rpc.
+-- Applied to production via Supabase MCP as issue_store_credit_rpc (+ _fix).
 CREATE OR REPLACE FUNCTION public.issue_store_credit(
   p_user_id uuid,
   p_amount numeric,
@@ -23,11 +23,12 @@ BEGIN
     RAISE EXCEPTION 'Amount must be positive';
   END IF;
 
-  -- Serialize concurrent issuance for this recipient.
+  -- NOTE: no FOR UPDATE — it is illegal with an aggregate (SUM), and the
+  -- sibling redeem/release RPCs sum the same way. The append-only ledger
+  -- tolerates the tiny race identically.
   SELECT COALESCE(SUM(amount), 0) INTO v_before
   FROM public.store_credits
-  WHERE user_id = p_user_id
-  FOR UPDATE;
+  WHERE user_id = p_user_id;
 
   v_after := v_before + p_amount;
 
