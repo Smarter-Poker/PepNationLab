@@ -487,12 +487,12 @@ a:hover { color: var(--teal-dark); }
   font-size: 0.9rem;
   padding: 10px 24px;
   font-weight: 700;
-  background: linear-gradient(180deg, #00C4BC 0%, #0099FF 100%);
-  color: #fff;
+  background: linear-gradient(180deg, #DCD3C3 0%, #B3A992 100%);
+  color: #0A1018;
   border: none;
   border-radius: 10px;
-  text-shadow: 0 1px 2px rgba(0,0,0,0.3);
-  box-shadow: 0 4px 15px rgba(0, 196, 188, 0.3), inset 0 1px 0 rgba(255,255,255,0.3);
+  text-shadow: 0 1px 0 rgba(255,255,255,0.25);
+  box-shadow: 0 4px 15px rgba(192, 184, 168, 0.32), inset 0 1px 0 rgba(255,255,255,0.5);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -623,23 +623,23 @@ a:hover { color: var(--teal-dark); }
 
 /* Primary */
 .btn-primary {
-  background: linear-gradient(180deg, #00C4BC 0%, #0099FF 100%);
-  color: #fff;
+  background: linear-gradient(180deg, #DCD3C3 0%, #B3A992 100%);
+  color: #0A1018;
   font-weight: 700;
   border-radius: 10px;
-  text-shadow: 0 1px 2px rgba(0,0,0,0.3);
-  box-shadow: 0 4px 16px rgba(0, 196, 188, 0.3);
+  text-shadow: 0 1px 0 rgba(255,255,255,0.25);
+  box-shadow: 0 4px 16px rgba(192, 184, 168, 0.3), inset 0 1px 0 rgba(255,255,255,0.45);
   border: none;
 }
 
 .btn-primary:hover {
-  box-shadow: 0 6px 24px rgba(0, 196, 188, 0.5);
+  box-shadow: 0 6px 24px rgba(192, 184, 168, 0.5), inset 0 1px 0 rgba(255,255,255,0.55);
   transform: translateY(-1px);
 }
 
 /* Secondary (Outline) */
 .btn-secondary {
-  background: rgba(0, 196, 188, 0.1);
+  background: rgba(192, 184, 168, 0.1);
   color: var(--teal);
   border: 1px solid var(--teal);
   font-weight: 600;
@@ -647,8 +647,8 @@ a:hover { color: var(--teal-dark); }
 }
 
 .btn-secondary:hover {
-  background: rgba(0, 196, 188, 0.2);
-  box-shadow: 0 4px 12px rgba(0, 196, 188, 0.2);
+  background: rgba(192, 184, 168, 0.2);
+  box-shadow: 0 4px 12px rgba(192, 184, 168, 0.2);
 }
 
 /* Ghost */
@@ -2007,7 +2007,7 @@ html[data-theme="light"] .messenger-back-btn {
   100% { background-position: 0% 50%; }
 }
 .animated-gradient-text {
-  background: linear-gradient(90deg, #FFFFFF, #A8B4C0, #00C4BC, #A8B4C0, #FFFFFF);
+  background: linear-gradient(90deg, #FFFFFF, #C0B8A8, #DCD3C3, #C0B8A8, #FFFFFF);
   background-size: 200% auto;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;

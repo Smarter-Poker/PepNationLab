@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { toast } from 'sonner';
 
 /**
  * SACA Phase 5: Sub-agent dashboard.
@@ -24,8 +25,15 @@ type Overview = {
     account_type: 'credit' | 'prepaid' | string | null;
     credit_limit: number | null;
     prepaid_balance: number | null;
-    parent: { id: string; full_name: string | null; username: string | null } | null;
+    parent: {
+      id: string;
+      full_name: string | null;
+      username: string | null;
+      email?: string | null;
+      storefront_slug?: string | null;
+    } | null;
   };
+  share_link: string | null;
   pending_commission: number;
   lifetime_commission: number;
   recent_settlements: Array<{ id: string; week_start: string; week_end: string; total_commission: number; orders_count: number; settled_at: string }>;
@@ -139,6 +147,55 @@ export default function SubAgentDashboardPage() {
           <div style={{ fontSize: '12px', opacity: 0.7, marginTop: '8px' }}>Tagged To You</div>
         </div>
       </div>
+
+      {(data.profile.parent || data.share_link) && (
+        <div className="card-glass" style={{ padding: '20px', marginBottom: '20px' }}>
+          <h2 style={{ fontSize: '18px', marginBottom: '12px' }}>Your Storefront &amp; Parent Agent</h2>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px' }}>
+            {data.profile.parent && (
+              <div style={{ background: 'rgba(0,196,188,0.06)', border: '1px solid rgba(0,196,188,0.2)', borderRadius: '8px', padding: '14px' }}>
+                <div style={{ fontSize: '11px', opacity: 0.7, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '6px' }}>Parent Agent</div>
+                <div style={{ fontSize: '15px', fontWeight: 700 }}>
+                  {data.profile.parent.full_name || data.profile.parent.username || 'Parent Agent'}
+                </div>
+                {data.profile.parent.email && (
+                  <div style={{ fontSize: '12px', opacity: 0.85, marginTop: '4px', fontFamily: 'monospace' }}>
+                    {data.profile.parent.email}
+                  </div>
+                )}
+                <div style={{ fontSize: '11px', opacity: 0.7, marginTop: '8px' }}>
+                  Approves Every Order And Pays Your Weekly Commission Settlement.
+                </div>
+              </div>
+            )}
+            {data.share_link && (
+              <div style={{ background: 'rgba(0,196,188,0.06)', border: '1px solid rgba(0,196,188,0.2)', borderRadius: '8px', padding: '14px' }}>
+                <div style={{ fontSize: '11px', opacity: 0.7, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '6px' }}>Your Referral Link</div>
+                <div style={{ fontSize: '13px', fontFamily: 'monospace', wordBreak: 'break-all', background: 'rgba(0,0,0,0.3)', padding: '8px', borderRadius: '4px', marginBottom: '8px' }}>
+                  {typeof window !== 'undefined' ? window.location.origin : ''}{data.share_link}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const fullUrl = (typeof window !== 'undefined' ? window.location.origin : '') + (data.share_link ?? '');
+                    void navigator.clipboard.writeText(fullUrl).then(
+                      () => toast.success('Referral Link Copied To Clipboard'),
+                      () => toast.error('Could Not Copy Link')
+                    );
+                  }}
+                  className="btn-primary"
+                  style={{ fontSize: '12px', padding: '6px 16px' }}
+                >
+                  Copy Link
+                </button>
+                <div style={{ fontSize: '11px', opacity: 0.7, marginTop: '8px' }}>
+                  Share This Link With New Researchers. Sign-Ups Through This Link Are Permanently Tagged To You And Earn You Commission On Every Order.
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       <div className="card-glass" style={{ padding: '20px', marginBottom: '20px' }}>
         <h2 style={{ fontSize: '18px', marginBottom: '12px' }}>Recent Settlements</h2>

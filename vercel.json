@@ -1,32 +1,16 @@
 {
   "crons": [
     {
-      "path": "/api/cron/reminders",
-      "schedule": "0 12 * * *"
+      "path": "/api/cron/abandoned-cart-recovery",
+      "schedule": "0 */6 * * *"
     },
     {
       "path": "/api/cron/invoices",
       "schedule": "59 23 * * 0"
     },
     {
-      "path": "/api/cron/sub-agent-settle",
-      "schedule": "50 23 * * 0"
-    },
-    {
-      "path": "/api/cron/abandoned-cart-recovery",
-      "schedule": "0 */6 * * *"
-    },
-    {
-      "path": "/api/cron/apply-price-changes",
-      "schedule": "0,15,30,45 * * * *"
-    },
-    {
-      "path": "/api/cron/subscriptions-process",
-      "schedule": "5 * * * *"
-    },
-    {
-      "path": "/api/cron/referrals-fulfil",
-      "schedule": "30 * * * *"
+      "path": "/api/cron/label-jobs",
+      "schedule": "*/5 * * * *"
     },
     {
       "path": "/api/cron/push-dispatch",
@@ -37,36 +21,44 @@
       "schedule": "0 4 * * *"
     },
     {
+      "path": "/api/cron/referrals-fulfil",
+      "schedule": "30 * * * *"
+    },
+    {
+      "path": "/api/cron/reminders",
+      "schedule": "0 12 * * *"
+    },
+    {
+      "path": "/api/cron/shippo-reconcile",
+      "schedule": "0 22 * * 0"
+    },
+    {
+      "path": "/api/cron/sub-agent-settle",
+      "schedule": "50 23 * * 0"
+    },
+    {
       "path": "/api/cron/webhooks-dispatch",
       "schedule": "*/5 * * * *"
-    },
-    {
-      "path": "/api/messenger/cron/process-scheduled",
-      "schedule": "* * * * *"
-    },
-    {
-      "path": "/api/messenger/cron/fire-reminders",
-      "schedule": "* * * * *"
-    },
-    {
-      "path": "/api/messenger/cron/expire-messages",
-      "schedule": "*/5 * * * *"
-    },
-    {
-      "path": "/api/messenger/cron/mark-missed-calls",
-      "schedule": "* * * * *"
     },
     {
       "path": "/api/messenger/cron/cleanup-presence",
       "schedule": "*/5 * * * *"
     },
     {
-      "path": "/api/cron/label-jobs",
+      "path": "/api/messenger/cron/expire-messages",
       "schedule": "*/5 * * * *"
     },
     {
-      "path": "/api/cron/shippo-reconcile",
-      "schedule": "0 22 * * 0"
+      "path": "/api/messenger/cron/fire-reminders",
+      "schedule": "* * * * *"
+    },
+    {
+      "path": "/api/messenger/cron/mark-missed-calls",
+      "schedule": "* * * * *"
+    },
+    {
+      "path": "/api/messenger/cron/process-scheduled",
+      "schedule": "* * * * *"
     }
   ]
 }
