@@ -1,0 +1,45 @@
+{
+  "_doc": "Allowlist for the RLS policy guard at scripts/check_rls_policies.js. Every entry MUST include a real reason that survives review. The guard fails CI if anything outside this file goes permissive or RLS-off.",
+  "rls_disabled_tables": [
+    {
+      "table": "test_realtime_dummy",
+      "reason": "Throwaway scratch table for verifying realtime broadcast wiring. Holds no real data. Migration 20260604000013_test_dummy.sql."
+    },
+    {
+      "table": "test_realtime_rls",
+      "reason": "Sibling scratch table used by the realtime RLS smoke test (migration 20260604000014_test_rls.sql). Contains no real data; CI does not need to defend it."
+    }
+  ],
+  "permissive_policies": [
+    {
+      "table": "agent_inventory",
+      "policy": "Public can read agent inventory",
+      "reason": "Anon storefront visitors need stock data to render the In-Stock / Out-Of-Stock badges on /[slug] product cards. FOLLOWUP: replace with a SECDEF RPC scoped to a single agent_id so competitors cannot enumerate every agent's stock_count across the platform."
+    },
+    {
+      "table": "agent_storefront_events",
+      "policy": "storefront_events_anon_insert",
+      "reason": "Anon storefront analytics — insert-only event log used by the storefront grid to record view/add-to-cart events for funnel analysis. Append-only; admins read."
+    },
+    {
+      "table": "message_reactions",
+      "policy": "Users can view reactions",
+      "reason": "Reactions are visible to any participant of the conversation. Legacy policy from messenger v1; safe because participation is enforced on the parent messenger_messages SELECT policy and reactions only ever join through it."
+    },
+    {
+      "table": "messenger_link_previews",
+      "policy": "mlp_select_authenticated",
+      "reason": "Link previews are unfurled URLs (title, image, description). They contain no user-specific data; visible to all authenticated users so any participant who later sees the message can render the preview."
+    },
+    {
+      "table": "referral_settings",
+      "policy": "Anyone reads referral settings",
+      "reason": "Stores the public-facing referral bonus amounts shown on /referrals and inside the agent dashboard. Single-row config table; no PII."
+    },
+    {
+      "table": "shipping_rates",
+      "policy": "Anyone can view shipping rates",
+      "reason": "Public flat-rate shipping tiers shown on the checkout page and the public Shipping page. Anonymous quotes must work pre-login."
+    }
+  ]
+}

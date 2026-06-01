@@ -1,0 +1,27 @@
+name: RLS Policy Guard
+
+on:
+  pull_request:
+    paths:
+      - 'supabase/migrations/**'
+      - 'scripts/check_rls_policies.js'
+      - 'scripts/.rls-policy-allowlist.json'
+      - '.github/workflows/rls-guard.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'supabase/migrations/**'
+      - 'scripts/check_rls_policies.js'
+      - 'scripts/.rls-policy-allowlist.json'
+      - '.github/workflows/rls-guard.yml'
+
+jobs:
+  rls-guard:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Scan migrations for RLS holes
+        run: node scripts/check_rls_policies.js
