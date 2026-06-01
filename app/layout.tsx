@@ -11,6 +11,8 @@ import { Toaster } from "sonner";
 import GlobalCallListener from "@/components/messenger/GlobalCallListener";
 import SessionKeepalive from "@/components/messenger/SessionKeepalive";
 import FirstRunNotificationPrompt from "@/components/FirstRunNotificationPrompt";
+import FlashSaleBanner from "@/components/FlashSaleBanner";
+import SupportButton from "@/components/messenger/SupportButton";
 
 export const viewport: Viewport = {
   themeColor: [
@@ -57,17 +59,10 @@ export const metadata: Metadata = {
     follow: false,
   },
   other: {
-    // Round 4 mobile baseline: prevent iOS Safari from auto-converting
-    // anything that looks like a phone number, address, email, or date
-    // in body text into a tappable link. We re-enable per-element with
-    // explicit <a href="tel:..."> where the link IS desired.
     'format-detection': 'telephone=no, address=no, email=no, date=no',
   },
 };
 
-// Inline script injected into <head> before React hydration.
-// Reads localStorage synchronously to set data-theme on <html>
-// BEFORE the first paint, preventing a flash of the wrong theme.
 const NO_FLASH_SCRIPT = `
 (function(){
   try {
@@ -86,12 +81,13 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      {/* No-flash script runs synchronously before page renders */}
       <head>
         <script dangerouslySetInnerHTML={{ __html: NO_FLASH_SCRIPT }} />
       </head>
       <body>
         <ThemeProvider>
+          {/* fix-56 #2: storefront-wide flash sale banner. Self-hides on /admin and /api. */}
+          <FlashSaleBanner />
           <StaleBrowserBanner />
           <SiteDisclaimerGate>
             <CartProvider>
@@ -102,10 +98,10 @@ export default function RootLayout({
           <ImpersonationBanner />
           <PwaInstallPrompt />
           <GlobalCallListener />
-          {/* First-login: prompt to enable device notifications, then nudge to finish account setup. */}
           <FirstRunNotificationPrompt />
-          {/* fix-42: proactive JWT refresh — eliminates stale-token 401s. */}
           <SessionKeepalive />
+          {/* fix-56 #6: floating Support button on /messenger for non-admin users. */}
+          <SupportButton />
         </ThemeProvider>
       </body>
     </html>
