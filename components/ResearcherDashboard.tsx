@@ -8,6 +8,7 @@ import { useCart } from '@/components/CartContext';
 import { toast } from 'sonner';
 import WalletCard from '@/components/WalletCard';
 import LabToolsCalculators from '@/components/LabToolsCalculators';
+import OrderTimeline from '@/components/OrderTimeline';
 
 interface Order {
   id: string;
@@ -667,6 +668,10 @@ export default function ResearcherDashboard({ userId, userName, userEmail, agent
                             style={{ overflow: 'hidden' }}
                           >
                             <div style={{ padding: '0 var(--space-6) var(--space-6)', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+                              {/* Visual order tracking timeline */}
+                              <div style={{ marginTop: 20, marginBottom: 4 }}>
+                                <OrderTimeline status={o.status} hasTracking={!!o.tracking_number} />
+                              </div>
                               <div style={{ marginTop: 20 }}>
                             <div style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.4)', fontWeight: 700, marginBottom: 12, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Order Items</div>
                             {o.order_items?.map(item => (
