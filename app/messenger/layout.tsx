@@ -33,9 +33,11 @@ export default function MessengerLayout({ children }: { children: React.ReactNod
           but we use a 60px spacer below to push content down. */}
       <Navbar />
 
-      {/* 60px spacer compensates for the fixed Navbar above.
-          flex-shrink:0 prevents this from collapsing. */}
-      <div style={{ height: 60, flexShrink: 0 }} />
+      {/* Spacer compensates for the fixed Navbar above. Uses --nav-offset
+          (60px + iOS safe-area-inset-top) so the messenger does not slide
+          under the iPhone status bar / Dynamic Island. flex-shrink:0
+          prevents this from collapsing. */}
+      <div style={{ height: 'var(--nav-offset, 60px)', flexShrink: 0 }} />
 
       {/* Shell: fills ALL remaining space below the Navbar.
           flex:1 1 0 + minHeight:0 is the Facebook pattern — allows

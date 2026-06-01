@@ -61,7 +61,7 @@ export function AdminLayoutClient({
       {/* ── Global site header — hamburger wired to admin sidebar ── */}
       <Navbar onMenuClick={() => setSidebarOpen(o => !o)} isOpen={sidebarOpen} />
 
-      <div style={{ minHeight: '100dvh', background: 'var(--black)', display: 'flex', paddingTop: 60 }}>
+      <div style={{ minHeight: '100dvh', background: 'var(--black)', display: 'flex', paddingTop: 'var(--nav-offset, 60px)' }}>
 
       {/* ── Mobile sidebar backdrop ── */}
       {sidebarOpen && (
@@ -87,9 +87,9 @@ export function AdminLayoutClient({
           borderRight: '1px solid rgba(192,184,168,0.12)',
           padding: 'var(--space-4) 0',
           position: 'sticky',
-          top: 60,
+          top: 'var(--nav-offset, 60px)',
           alignSelf: 'flex-start',
-          height: 'calc(100dvh - 60px)',
+          height: 'calc(100dvh - var(--nav-offset, 60px))',
           overflowY: 'auto',
           flexShrink: 0,
           display: 'flex',
@@ -192,9 +192,9 @@ export function AdminLayoutClient({
         @media (max-width: 1024px) {
           .admin-sidebar {
             position: fixed !important;
-            top: 60px !important;
+            top: var(--nav-offset, 60px) !important;
             left: 0 !important;
-            height: calc(100dvh - 60px) !important;
+            height: calc(100dvh - var(--nav-offset, 60px)) !important;
             z-index: 500 !important;
             transform: translateX(-100%) !important;
             transition: transform 0.25s ease !important;
