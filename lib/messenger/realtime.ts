@@ -192,6 +192,7 @@ export interface CallSignalRow {
   // bug when the receiver's session JWT has expired and the API call 401s.
   caller_name?: string;
   caller_username?: string | null;
+  caller_avatar?: string | null;
 }
 
 interface CallSignalHandlers {

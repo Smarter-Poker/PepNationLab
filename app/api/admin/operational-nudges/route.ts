@@ -26,7 +26,7 @@ export const dynamic = 'force-dynamic';
 export async function GET(req: NextRequest) {
   const adminCheck = await requireAdmin();
   if (!adminCheck.ok) {
-    return NextResponse.json({ error: adminCheck.error ?? 'Unauthorized' }, { status: adminCheck.status ?? 401 });
+    return adminCheck.response;
   }
 
   const ip = getClientIp(req);

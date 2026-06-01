@@ -201,8 +201,8 @@ export default function MessengerShell({ userId }: Props) {
         }}
         className={`messenger-sidebar${activeId ? ' has-active' : ''}`}
       >
-        <SearchBar onNewConversation={handleNewConversation} />
-        <ConversationList />
+        <SearchBar />
+        <ConversationList selfId={userId} />
       </aside>
       <section
         style={{
@@ -215,7 +215,7 @@ export default function MessengerShell({ userId }: Props) {
         className="messenger-main"
       >
         {activeId && (
-          <MessagePane conversationId={activeId} selfId={userId} />
+          <MessagePane userId={userId} />
         )}
       </section>
       {composeOpen && (

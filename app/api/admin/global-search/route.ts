@@ -55,7 +55,7 @@ function numOrNull(v: string | null): number | null {
 export async function GET(req: NextRequest) {
   const adminCheck = await requireAdmin();
   if (!adminCheck.ok) {
-    return NextResponse.json({ error: adminCheck.error ?? 'Unauthorized' }, { status: adminCheck.status ?? 401 });
+    return adminCheck.response;
   }
 
   const ip = getClientIp(req);
@@ -104,7 +104,7 @@ export async function GET(req: NextRequest) {
   const tokens = q.length >= 2 ? tokenize(q) : [];
 
   // USERS — AND-of-tokens, each token OR-matches across name/username/email
-  let usersP: Promise<{ data: any[] | null }>;
+  let usersP: any;
   if (wants('users') && tokens.length > 0) {
     let builder = svc
       .from('profiles')
@@ -117,7 +117,7 @@ export async function GET(req: NextRequest) {
   }
 
   // PRODUCTS
-  let productsP: Promise<{ data: any[] | null }>;
+  let productsP: any;
   if (wants('products') && tokens.length > 0) {
     let builder = svc.from('products').select('id, name, slug, sku, base_cost, is_active');
     builder = applyTokenAndOr(builder, ['name', 'slug', 'sku'], tokens);
@@ -127,7 +127,7 @@ export async function GET(req: NextRequest) {
   }
 
   // STOREFRONTS
-  let storefrontsP: Promise<{ data: any[] | null }>;
+  let storefrontsP: any;
   if (wants('storefronts') && tokens.length > 0) {
     let builder = svc.from('agent_profiles').select('id, slug, display_name, is_active');
     builder = applyTokenAndOr(builder, ['slug', 'display_name'], tokens);
@@ -137,7 +137,7 @@ export async function GET(req: NextRequest) {
   }
 
   // ORDERS — RPC owns the search logic (fuzzy + structured filters)
-  let ordersP: Promise<{ data: any[] | null }>;
+  let ordersP: any;
   if (wants('orders') && (tokens.length > 0 || hasOrderFilters)) {
     ordersP = svc.rpc('fn_admin_search_orders', {
       p_query: q.length >= 2 ? q : null,
@@ -155,7 +155,7 @@ export async function GET(req: NextRequest) {
   }
 
   // COUPONS
-  let couponsP: Promise<{ data: any[] | null }>;
+  let couponsP: any;
   if (wants('coupons') && tokens.length > 0) {
     let builder = svc
       .from('coupons')
@@ -167,7 +167,7 @@ export async function GET(req: NextRequest) {
   }
 
   // TRANSACTIONS
-  let transactionsP: Promise<{ data: any[] | null }>;
+  let transactionsP: any;
   if (wants('transactions') && tokens.length > 0) {
     let builder = svc
       .from('balance_transactions')
