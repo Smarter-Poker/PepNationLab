@@ -51,6 +51,9 @@ const num = (v: unknown): number => {
   return Number.isFinite(n) ? n : 0;
 };
 
+// Platform rule: the gamification Max Cap can never exceed 40%.
+const MAX_CAP_LIMIT = 40;
+
 export async function GET(_req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
   try {
     const gate = await gateManager();
@@ -118,6 +121,7 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ id: string
         full_name: agent.full_name,
         username: agent.username,
         email: agent.email,
+        phone: (agent as { phone?: string | null }).phone ?? null,
         account_type: agent.account_type,
         credit_limit: agent.credit_limit != null ? num(agent.credit_limit) : null,
         prepaid_balance: num(agent.prepaid_balance),
@@ -126,6 +130,7 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ id: string
         velocity_cap: velocityCap != null ? num(velocityCap) : null,
         commission_active_since: agent.commission_active_since,
         is_active: !!agent.is_active,
+        is_sub_agent: (agent as { is_sub_agent?: boolean }).is_sub_agent === true,
         created_at: agent.created_at,
         last_sign_in_at: (agent as { last_sign_in_at?: string | null }).last_sign_in_at ?? null,
         first_sign_in_at: (agent as { first_sign_in_at?: string | null }).first_sign_in_at ?? null,
@@ -249,6 +254,7 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
     //     fn_sub_agent_effective_commission (LEAST(base + bonus, cap)).
     //   - Gamification Scale: cap above the base lets the milestone ladder lift
     //     the rate with volume up to the cap; null cap = uncapped ladder.
+    // Platform rule: the cap can never exceed 40%.
     const baseForCap = updates.commission_pct != null
       ? Number(updates.commission_pct)
       : Number(target.commission_pct ?? 0);
@@ -257,8 +263,8 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
       changes.commission_max_pct = null;
     } else if (body.commission_max_pct !== undefined && body.commission_max_pct !== '') {
       const cap = Number(body.commission_max_pct);
-      if (!Number.isFinite(cap) || cap < 0 || cap > 100) {
-        return NextResponse.json({ error: 'Max Commission Cap Must Be Between 0 And 100.' }, { status: 400 });
+      if (!Number.isFinite(cap) || cap < 0 || cap > MAX_CAP_LIMIT) {
+        return NextResponse.json({ error: 'Max Commission Cap Cannot Exceed 40%.' }, { status: 400 });
       }
       if (cap < baseForCap) {
         return NextResponse.json({ error: 'Max Commission Cap Cannot Be Below The Base Rate.' }, { status: 400 });
