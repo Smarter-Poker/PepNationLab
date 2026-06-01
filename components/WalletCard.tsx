@@ -257,6 +257,7 @@ export default function WalletCard() {
             })}
           </div>
         )}
+        </div>
       </div>
     </div>
   );
