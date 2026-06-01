@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { createServiceClient } from '@/lib/supabase/server';
 import { requireAdmin } from '@/lib/admin-auth';
 import { assertSameOrigin } from '@/lib/csrf';
+import { withIdempotency, readIdempotencyKey } from '@/lib/idempotency';
 
 // All sales are final — no refunds or exchanges. Cancellation simply voids
 // the order and commission rows. No refund_type parameter is accepted.
@@ -26,27 +27,36 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
     return NextResponse.json({ error: 'Invalid Cancel Payload', details: parsed.error.issues }, { status: 400 });
   }
 
-  const service = await createServiceClient();
+  // Idempotent so a double-click on Cancel doesn't fire cancel_order twice.
+  return withIdempotency({
+    userId: gate.userId,
+    route: `/api/admin/orders/${id}/cancel`,
+    key: readIdempotencyKey(req),
+    request: { id, ...parsed.data },
+    handler: async () => {
+      const service = await createServiceClient();
 
-  // cancel_order RPC: pass 'none' as refund_type — all sales are final.
-  const { error: rpcError } = await service.rpc('cancel_order', {
-    p_order_id: id,
-    p_reason: parsed.data.reason,
-    p_refund_type: 'none',
-    p_actor_id: gate.userId,
+      // cancel_order RPC: pass 'none' as refund_type — all sales are final.
+      const { error: rpcError } = await service.rpc('cancel_order', {
+        p_order_id: id,
+        p_reason: parsed.data.reason,
+        p_refund_type: 'none',
+        p_actor_id: gate.userId,
+      });
+
+      if (rpcError) {
+        return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 422 });
+      }
+
+      await service.from('admin_audit_log').insert({
+        actor_id: gate.userId,
+        action: 'order_cancelled',
+        entity_type: 'order',
+        entity_id: id,
+        changes: { reason: parsed.data.reason },
+      });
+
+      return NextResponse.json({ success: true, cancelled: true });
+    },
   });
-
-  if (rpcError) {
-    return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 422 });
-  }
-
-  await service.from('admin_audit_log').insert({
-    actor_id: gate.userId,
-    action: 'order_cancelled',
-    entity_type: 'order',
-    entity_id: id,
-    changes: { reason: parsed.data.reason },
-  });
-
-  return NextResponse.json({ success: true, cancelled: true });
 }
