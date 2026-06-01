@@ -1,0 +1,51 @@
+name: DB Integration Tests
+
+# Runs the __tests__/db suite against a real Supabase project.
+#
+# Secrets required:
+#   SUPABASE_URL                 — point at a Supabase BRANCH database
+#                                   for isolation. Production is supported
+#                                   but every fixture is cleaned up.
+#   SUPABASE_SERVICE_ROLE_KEY    — service-role key for the project above.
+#
+# When secrets are NOT set, every test in __tests__/db/ skips cleanly
+# (env-guard at the top of `_helpers.ts`) and the job exits green.
+
+on:
+  pull_request:
+    paths:
+      - '__tests__/db/**'
+      - 'lib/**'
+      - 'supabase/migrations/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.github/workflows/tests-db.yml'
+  push:
+    branches: [main]
+    paths:
+      - '__tests__/db/**'
+      - 'lib/**'
+      - 'supabase/migrations/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.github/workflows/tests-db.yml'
+  # Manual trigger so a maintainer can run the suite against any branch
+  # once a Supabase branch DB is provisioned.
+  workflow_dispatch: {}
+
+jobs:
+  db-integration:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+      - name: Install
+        run: npm ci
+      - name: Vitest (db suite)
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: npm run test:db

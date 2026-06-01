@@ -10,7 +10,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "vitest run",
+    "test": "vitest run --exclude __tests__/db --exclude __tests__/e2e",
+    "test:db": "vitest run __tests__/db",
     "test:e2e": "playwright test",
     "test-pipeline": "node scratch/simulate-pipeline.js"
   },
