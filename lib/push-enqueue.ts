@@ -30,18 +30,12 @@ export interface EnqueuePushArgs {
   tag?: string;
 }
 
-function eventCategory(event: string): 'order' | 'messages' | 'marketing' | 'other' {
-  if (event.startsWith('order_') || event === 'payment_reminder') return 'order';
-  if (event === 'message') return 'messages';
-  if (event === 'marketing') return 'marketing';
-  return 'other';
-}
-
 /**
  * Look up the recipient's notification_preferences, honour push opt-outs,
  * and insert a pending row into push_outbox. Returns the new row id, or
- * null when suppressed (push disabled, event category off, no prefs row).
- * NEVER throws — notification side-effects must not break the caller.
+ * null when suppressed (push disabled, globally muted, per-type opt-out,
+ * no prefs row). NEVER throws — notification side-effects must not break
+ * the caller.
  */
 export async function enqueuePush(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -53,7 +47,7 @@ export async function enqueuePush(
 
     const { data: prefs } = await supabase
       .from('notification_preferences')
-      .select('push_enabled, push_events_order, push_events_messages, push_events_marketing, mute_all, push_type_prefs')
+      .select('push_enabled, mute_all, push_type_prefs')
       .eq('user_id', userId)
       .maybeSingle();
 
@@ -62,13 +56,9 @@ export async function enqueuePush(
     if (prefs.mute_all) return null;
     if (!prefs.push_enabled) return null;
 
-    const cat = eventCategory(String(event));
-    if (cat === 'order' && prefs.push_events_order === false) return null;
-    if (cat === 'messages' && prefs.push_events_messages === false) return null;
-    if (cat === 'marketing' && prefs.push_events_marketing === false) return null;
-
-    // Per-event opt-out (Notification Preferences page). Test events map to a
-    // null key and are never gated here so the Send Test button always works.
+    // Per-event opt-out (Notification Preferences page) is the single delivery
+    // gate. Test events map to a null key and are never gated here so the Send
+    // Test button always works.
     const typeKey = eventToTypeKey(String(event));
     if (typeKey && !pushTypeAllowed(prefs.push_type_prefs as Record<string, boolean> | null, typeKey)) {
       return null;
