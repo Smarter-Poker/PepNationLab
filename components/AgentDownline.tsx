@@ -185,14 +185,7 @@ export default function AgentDownline({ agentId }: { agentId?: string }) {
                         <span style={{ color: 'var(--grey-400)', fontSize: '0.85rem' }}>No Storefront</span>
                       )}
                     </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', minWidth: '100px' }}>
-                      <span style={{ fontSize: '0.75rem', color: 'var(--grey-400)', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>Last Login</span>
-                      <span style={{ color: 'var(--white)', fontSize: '0.85rem' }}>
-                        {agent.last_sign_in_at
-                          ? new Date(agent.last_sign_in_at).toLocaleDateString()
-                          : (agent.first_sign_in_at ? new Date(agent.first_sign_in_at).toLocaleDateString() : 'Never')}
-                      </span>
-                    </div>
+
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', flex: '1 1 auto' }}>
                       <button
                         type="button"
