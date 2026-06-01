@@ -39,24 +39,24 @@ function injectAnim() {
 }
 
 export default function IncomingCallScreen({ call, onAccept, onDecline }: Props) {
-  // fix-41: prefer the caller_name baked into the realtime broadcast payload.
-  // The server-side broadcast (call-signal route, 'start' action) populates
-  // this field so the receiver can render the name WITHOUT an authenticated
-  // API call. The list-participants fallback below only runs if the field is
-  // missing (e.g. a stale-bundle sender that doesn't include it yet).
   const [callerName, setCallerName] = useState<string>(call.caller_name ?? 'Someone');
-  const [callerAvatar, setCallerAvatar] = useState<string | null>(null);
+  const [callerAvatar] = useState<string | null>(null);
   const [isBusy, setIsBusy] = useState(false);
   const [authExpired, setAuthExpired] = useState(false);
+
+  // fix-42: keep callerName in sync if the parent re-renders with a richer
+  // payload (e.g. broadcast arrived after postgres_changes and merged in).
+  useEffect(() => {
+    if (call.caller_name && call.caller_name !== callerName) {
+      setCallerName(call.caller_name);
+    }
+  }, [call.caller_name, callerName]);
 
   useEffect(() => {
     injectAnim();
   }, []);
 
   useEffect(() => {
-    // If the broadcast already named the caller, skip the API roundtrip —
-    // it would 401 anyway when the receiver's session is stale, defeating
-    // the whole point of the broadcast enrichment.
     if (call.caller_name) return;
     let cancelled = false;
     (async () => {
@@ -87,31 +87,16 @@ export default function IncomingCallScreen({ call, onAccept, onDecline }: Props)
     };
   }, [call.conversation_id, call.initiator_id, call.caller_name]);
 
-  // Ringtone while the incoming screen is up.
+  // fix-42: ringtone is gated on authExpired. When auth fails on Accept the
+  // screen stays mounted with the Sign In CTA but goes silent — previously
+  // the ringtone kept playing forever because the effect's [] deps meant
+  // the cleanup only ran on full unmount.
   useEffect(() => {
+    if (authExpired) return;
     const ring = createRingTone();
     if (ring) ring.start();
     return () => { if (ring) ring.stop(); };
-  }, []);
-
-  const callSignalFetch = async (action: 'accept' | 'decline'): Promise<Response> => {
-    return fetch('/api/messenger/call-signal', {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ action, callId: call.id }),
-    });
-  };
-
-  const tryRefreshSession = async (): Promise<boolean> => {
-    try {
-      const { createClient } = await import('@/lib/supabase/client');
-      const supabase = createClient();
-      const { data, error } = await supabase.auth.refreshSession();
-      return !error && Boolean(data?.session);
-    } catch {
-      return false;
-    }
-  };
+  }, [authExpired]);
 
   const handleAction = async (action: 'accept' | 'decline') => {
     if (isBusy) return;
@@ -129,18 +114,19 @@ export default function IncomingCallScreen({ call, onAccept, onDecline }: Props)
 
     let success = false;
     try {
-      let res = await callSignalFetch(action);
+      const res = await fetch('/api/messenger/call-signal', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ action, callId: call.id }),
+      });
 
-      // fix-41: 401 means the server-side getUser() rejected the cached JWT.
-      // Try one refreshSession() roundtrip and replay the request. If refresh
-      // ALSO fails, surface a sign-in CTA on the screen and abort.
-      if (res.status === 401 && action === 'accept') {
-        const refreshed = await tryRefreshSession();
-        if (refreshed) {
-          res = await callSignalFetch(action);
-        }
-      }
-
+      // fix-42: on 401 we go straight to the Sign In CTA. We DO NOT call
+      // supabase.auth.refreshSession() here — if the refresh token is also
+      // dead, that call clears the local session, fires onAuthStateChange
+      // with null, GlobalCallListener treats it as a logout, and the user
+      // is signed out app-wide. SessionKeepalive handles refresh proactively
+      // in the background; if a stale-JWT 401 reaches us here, the right UX
+      // is a contained sign-in prompt, not a forced logout.
       if (res.status === 401) {
         setAuthExpired(true);
         setIsBusy(false);
@@ -338,9 +324,6 @@ export default function IncomingCallScreen({ call, onAccept, onDecline }: Props)
               <button
                 type="button"
                 onClick={() => {
-                  // fix-41: hand-off to the login page, then back to messenger.
-                  // Open in a new tab so the ringing screen remains visible
-                  // until decline.
                   const target = '/login?redirect=' + encodeURIComponent('/messenger');
                   try {
                     window.open(target, '_blank', 'noopener,noreferrer');

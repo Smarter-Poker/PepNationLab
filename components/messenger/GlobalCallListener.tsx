@@ -106,6 +106,24 @@ class CallOverlayErrorBoundary extends React.Component<
   }
 }
 
+/**
+ * fix-42: merge dedupe helper. The realtime layer has two INSERT sources for
+ * the same call.id: postgres_changes (no caller_name — it's not a DB column)
+ * and the explicit ch.send broadcast (caller_name populated). Whichever lands
+ * first becomes the cached row. The identity-only dedupe used pre-fix-42
+ * silently dropped the second event, so caller_name was lost when
+ * postgres_changes won the race. This merger preserves caller fields from
+ * whichever source provided them.
+ */
+function mergeCallRows(existing: CallSignalRow, incoming: CallSignalRow): CallSignalRow {
+  return {
+    ...existing,
+    ...incoming,
+    caller_name: incoming.caller_name ?? existing.caller_name,
+    caller_username: incoming.caller_username ?? existing.caller_username,
+  };
+}
+
 export default function GlobalCallListener() {
   const [user, setUser] = useState<{ id: string } | null>(null);
   const [incomingCalls, setIncomingCalls] = useState<CallSignalRow[]>([]);
@@ -182,7 +200,11 @@ export default function GlobalCallListener() {
             try { return Boolean(sessionStorage.getItem(`answered_call_${c.id}`)); } catch { return false; }
           })();
           if (alreadyAnswered) continue;
-          setIncomingCalls((cur) => (cur.some((x) => x.id === c.id) ? cur : [...cur, c]));
+          setIncomingCalls((cur) => {
+            const idx = cur.findIndex((x) => x.id === c.id);
+            if (idx === -1) return [...cur, c];
+            return cur.map((x, i) => (i === idx ? mergeCallRows(x, c) : x));
+          });
         }
       } catch (err) {
         console.warn('[GLOBAL CALL] Failed to resume in-flight calls:', err);
@@ -207,11 +229,25 @@ export default function GlobalCallListener() {
           return;
         }
 
-        setIncomingCalls((cur) => (cur.some((x) => x.id === c.id) ? cur : [...cur, c]));
+        // fix-42: merge dedupe — preserve caller fields across the race
+        // between postgres_changes (no name) and broadcast (has name).
+        setIncomingCalls((cur) => {
+          const idx = cur.findIndex((x) => x.id === c.id);
+          if (idx === -1) return [...cur, c];
+          return cur.map((x, i) => (i === idx ? mergeCallRows(x, c) : x));
+        });
       },
       onUpdate: (c) => {
         if (c.status !== 'ringing') {
           setIncomingCalls((cur) => cur.filter((x) => x.id !== c.id));
+        } else {
+          // Still ringing — merge into existing entry so caller_name from
+          // a delayed broadcast is preserved.
+          setIncomingCalls((cur) => {
+            const idx = cur.findIndex((x) => x.id === c.id);
+            if (idx === -1) return cur;
+            return cur.map((x, i) => (i === idx ? mergeCallRows(x, c) : x));
+          });
         }
         setActiveCall((cur) => {
           if (!cur || cur.id !== c.id) return cur;
@@ -273,10 +309,6 @@ export default function GlobalCallListener() {
 
   if (!user?.id) return null;
 
-  // fix-40: Only the first ringing call gets the full-screen FaceTime-style
-  // takeover. Additional simultaneous incoming calls wait until this one is
-  // resolved (accepted, declined, or auto-missed). When there is an active
-  // call already mounted, never show the incoming screen.
   const primaryIncoming = !activeCall ? incomingCalls[0] : null;
 
   return (

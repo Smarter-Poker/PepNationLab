@@ -8,6 +8,7 @@ import StaleBrowserBanner from "@/components/StaleBrowserBanner";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { Toaster } from "sonner";
 import GlobalCallListener from "@/components/messenger/GlobalCallListener";
+import SessionKeepalive from "@/components/messenger/SessionKeepalive";
 
 export const viewport: Viewport = {
   themeColor: [
@@ -92,6 +93,8 @@ export default function RootLayout({
           <ImpersonationBanner />
           <PwaInstallPrompt />
           <GlobalCallListener />
+          {/* fix-42: proactive JWT refresh — eliminates stale-token 401s. */}
+          <SessionKeepalive />
         </ThemeProvider>
       </body>
     </html>
