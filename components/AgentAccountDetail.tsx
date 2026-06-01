@@ -10,7 +10,7 @@ import { toast } from 'sonner';
  * agent name. Lets the Super Agent:
  *   - Edit Full Name + Storefront Display Name
  *   - Switch Payment Model (Prepaid / Credit Line) and set the Credit Limit
- *   - Adjust the Commission Rate
+ *   - Choose the Commission Structure: Fixed Percentage or Gamification Scale
  *   - Activate / Deactivate the account (also toggles the storefront)
  *   - Give Wallet Credit (adds to prepaid balance, recorded in the ledger)
  *   - Review Sales History + the Wallet Ledger
@@ -29,6 +29,8 @@ type Detail = {
     credit_limit: number | null;
     prepaid_balance: number;
     commission_pct: number | null;
+    commission_max_pct: number | null;
+    velocity_cap: number | null;
     commission_active_since: string | null;
     is_active: boolean;
     created_at: string;
@@ -101,6 +103,11 @@ export default function AgentAccountDetail({
   const [accountType, setAccountType] = useState<'credit' | 'prepaid'>('prepaid');
   const [creditLimit, setCreditLimit] = useState('');
   const [commissionPct, setCommissionPct] = useState('');
+  // Commission structure: 'fixed' = flat rate; 'gamified' = base climbs with
+  // volume up to a max cap via the house milestone ladder.
+  const [commissionMode, setCommissionMode] = useState<'fixed' | 'gamified'>('fixed');
+  const [maxCap, setMaxCap] = useState('');
+  const [velocityCap, setVelocityCap] = useState('');
   const [isActive, setIsActive] = useState(true);
   const [saving, setSaving] = useState(false);
 
@@ -127,6 +134,14 @@ export default function AgentAccountDetail({
       setAccountType(d.agent.account_type === 'credit' ? 'credit' : 'prepaid');
       setCreditLimit(d.agent.credit_limit != null ? String(d.agent.credit_limit) : '');
       setCommissionPct(d.agent.commission_pct != null ? String(d.agent.commission_pct) : '');
+      // Derive the commission structure from the saved cap vs base. A cap above
+      // the base means the milestone ladder is active (gamified); otherwise the
+      // agent is on a flat rate (fixed).
+      const basePct = d.agent.commission_pct == null ? 0 : Number(d.agent.commission_pct);
+      const capPct = d.agent.commission_max_pct;
+      setCommissionMode(capPct != null && Number(capPct) > basePct ? 'gamified' : 'fixed');
+      setMaxCap(capPct != null ? String(capPct) : '');
+      setVelocityCap(d.agent.velocity_cap != null ? String(d.agent.velocity_cap) : '');
       setIsActive(!!d.agent.is_active);
     } catch (err: any) {
       setError(err.message || 'Failed To Load Agent.');
@@ -140,14 +155,24 @@ export default function AgentAccountDetail({
   async function saveChanges() {
     setSaving(true);
     try {
+      const baseVal = commissionPct === '' ? 0 : commissionPct;
       const payload: Record<string, any> = {
         full_name: fullName,
         account_type: accountType,
-        commission_pct: commissionPct === '' ? undefined : commissionPct,
+        commission_pct: baseVal,
         is_active: isActive,
         display_name: displayName || undefined,
         slug: slug || undefined,
       };
+      if (commissionMode === 'fixed') {
+        // Fixed percentage: cap == base forces a flat effective rate.
+        payload.commission_max_pct = baseVal;
+        payload.velocity_cap = null;
+      } else {
+        // Gamification scale: cap above base lets the ladder lift the rate.
+        payload.commission_max_pct = maxCap === '' ? null : maxCap;
+        payload.velocity_cap = velocityCap === '' ? null : velocityCap;
+      }
       if (accountType === 'credit') payload.credit_limit = creditLimit === '' ? 0 : creditLimit;
 
       const res = await fetch(`/api/agent/agents/${agentId}`, {
@@ -357,11 +382,41 @@ export default function AgentAccountDetail({
                       <input style={inputStyle} type="number" min="0" step="0.01" value={creditLimit} onChange={(e) => setCreditLimit(e.target.value)} placeholder="0.00" />
                     </div>
                   )}
-                  <div>
-                    <label style={labelStyle}>Commission Rate (%)</label>
-                    <input style={inputStyle} type="number" min="0" max="100" step="0.1" value={commissionPct} onChange={(e) => setCommissionPct(e.target.value)} placeholder="0" />
-                    <p style={{ fontSize: '0.7rem', color: 'var(--grey-500)', margin: '4px 0 0', lineHeight: 1.4 }}>
-                      Applies When This Agent Earns Commission Within A Downline. A Full Storefront Agent's Margin Comes From Their Own Retail Pricing.
+
+                  {/* Commission structure: Fixed Percentage vs Gamification Scale */}
+                  <div style={{ gridColumn: '1 / -1' }}>
+                    <label style={labelStyle}>Commission Structure</label>
+                    <div style={{ display: 'flex', gap: 'var(--space-2)', marginBottom: 'var(--space-3)' }}>
+                      <label style={{ flex: 1, ...inputStyle, display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', borderColor: commissionMode === 'fixed' ? 'var(--teal)' : 'rgba(0,0,0,0.8)' }}>
+                        <input type="radio" checked={commissionMode === 'fixed'} onChange={() => setCommissionMode('fixed')} /> Fixed Percentage
+                      </label>
+                      <label style={{ flex: 1, ...inputStyle, display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', borderColor: commissionMode === 'gamified' ? 'var(--teal)' : 'rgba(0,0,0,0.8)' }}>
+                        <input type="radio" checked={commissionMode === 'gamified'} onChange={() => setCommissionMode('gamified')} /> Gamification Scale
+                      </label>
+                    </div>
+                    {commissionMode === 'fixed' ? (
+                      <div style={{ maxWidth: 240 }}>
+                        <label style={labelStyle}>Commission Rate (%)</label>
+                        <input style={inputStyle} type="number" min="0" max="100" step="0.1" value={commissionPct} onChange={(e) => setCommissionPct(e.target.value)} placeholder="0" />
+                      </div>
+                    ) : (
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 'var(--space-3)' }}>
+                        <div>
+                          <label style={labelStyle}>Base Rate (%)</label>
+                          <input style={inputStyle} type="number" min="0" max="100" step="0.1" value={commissionPct} onChange={(e) => setCommissionPct(e.target.value)} placeholder="0" />
+                        </div>
+                        <div>
+                          <label style={labelStyle}>Max Cap (%)</label>
+                          <input style={inputStyle} type="number" min="0" max="100" step="0.1" value={maxCap} onChange={(e) => setMaxCap(e.target.value)} placeholder="No Cap" />
+                        </div>
+                        <div>
+                          <label style={labelStyle}>Velocity Cap ($, Optional)</label>
+                          <input style={inputStyle} type="number" min="0" step="0.01" value={velocityCap} onChange={(e) => setVelocityCap(e.target.value)} placeholder="None" />
+                        </div>
+                      </div>
+                    )}
+                    <p style={{ fontSize: '0.7rem', color: 'var(--grey-500)', margin: '8px 0 0', lineHeight: 1.4 }}>
+                      Fixed Percentage Pays A Flat Rate. Gamification Scale Starts At The Base Rate And Climbs With Monthly Volume Up To The Max Cap (House Milestone Ladder). A Full Storefront Agent's Own Margin Still Comes From Their Retail Pricing.
                     </p>
                   </div>
                 </div>
