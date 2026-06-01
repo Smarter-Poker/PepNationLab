@@ -720,7 +720,7 @@ export async function POST(request: NextRequest) {
             prepaidDeductedAmount = res.amount || 0;
             prepaidDeductedAgentId = res.agentId || null;
           }
-          initialStatus = 'approved_ship';
+          initialStatus = 'admin_approval_pending';
         } else {
           // No Admin Trust -> Wait for manual admin approval
           initialStatus = 'pending_customer_payment';
@@ -741,7 +741,7 @@ export async function POST(request: NextRequest) {
             prepaidDeductedAmount = res.amount || 0;
             prepaidDeductedAgentId = res.agentId || null;
           }
-          initialStatus = 'approved_ship';
+          initialStatus = 'admin_approval_pending';
         } else {
           // No Super Agent Trust -> Wait for manual super agent approval
           initialStatus = 'agent_approval_pending';
@@ -774,7 +774,7 @@ export async function POST(request: NextRequest) {
               prepaidDeductedAmount = res.amount || 0;
               prepaidDeductedAgentId = res.agentId || null;
             }
-            initialStatus = 'approved_ship';
+            initialStatus = 'admin_approval_pending';
           } else {
             // Super Agent does NOT trust Sub-Agent. Park it at agent_approval_pending
             initialStatus = 'agent_approval_pending';
@@ -796,7 +796,7 @@ export async function POST(request: NextRequest) {
             prepaidDeductedAmount = res.amount || 0;
             prepaidDeductedAgentId = res.agentId || null;
           }
-          initialStatus = 'approved_ship';
+          initialStatus = 'admin_approval_pending';
         }
       }
     }
