@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
 import { requireAgent } from '@/lib/admin-auth';
 import { assertSameOrigin } from '@/lib/csrf';
+import { withIdempotency, readIdempotencyKey } from '@/lib/idempotency';
 
 export async function POST(req: NextRequest) {
   const csrf = assertSameOrigin(req);
@@ -19,6 +20,12 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'invoice_id is required' }, { status: 400 });
     }
 
+    return withIdempotency({
+      userId: superAgentId,
+      route: '/api/agent/super-agent/invoices/pay',
+      key: readIdempotencyKey(req),
+      request: { invoice_id },
+      handler: async () => {
     const supabase = await createServiceClient();
 
     // Verify the caller is the super_agent for this invoice, or an admin
@@ -56,6 +63,8 @@ export async function POST(req: NextRequest) {
     }
 
     return NextResponse.json({ success: true, message: 'Invoice marked as paid' });
+      },
+    });
 
   } catch (error) {
     console.error('Invoice Payment Error:', error);

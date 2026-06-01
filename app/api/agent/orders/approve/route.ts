@@ -7,6 +7,7 @@ import { enqueueOrderPush, shortOrderId } from '@/lib/push-enqueue';
 import { enqueueWebhook, fetchOrderForWebhook } from '@/lib/webhook-dispatch';
 import { assertSameOrigin } from '@/lib/csrf';
 import { notifyOrderApproved, notifyCommissionEarned } from '@/lib/notify';
+import { withIdempotency, readIdempotencyKey } from '@/lib/idempotency';
 
 export async function POST(req: NextRequest) {
   const csrf = assertSameOrigin(req);
@@ -28,6 +29,13 @@ export async function POST(req: NextRequest) {
     if (!VALID_AGENT_TRANSITIONS.has(newStatus)) {
       return NextResponse.json({ error: 'Invalid agent status transition. Must be approved_ship, approved_pickup, or cancelled.' }, { status: 400 });
     }
+
+    return withIdempotency({
+      userId: callerId,
+      route: '/api/agent/orders/approve',
+      key: readIdempotencyKey(req),
+      request: { orderId, newStatus, tracking_number },
+      handler: async () => {
 
     const { data: order, error: orderError } = await supabase
       .from('orders')
@@ -288,6 +296,8 @@ export async function POST(req: NextRequest) {
     } catch { /* webhook errors must not break the order */ }
 
     return NextResponse.json({ success: true, status: finalStatus });
+      },
+    });
   } catch (error) {
     console.error('Agent Order Approve API Error:', error);
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
