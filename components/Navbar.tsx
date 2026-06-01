@@ -495,7 +495,9 @@ export default function Navbar({ onMenuClick, isOpen, title }: { onMenuClick?: (
 
         <nav style={{ flex: 1, padding: 'var(--space-3) 0', paddingBottom: 'calc(var(--space-6) + env(safe-area-inset-bottom, 24px))' }}>
           
-          {user && (
+          {/* Wallet snapshot — hidden for sub-agents, who use the dedicated
+              /wallet page (reached via the wallet icon) instead. */}
+          {user && profile?.is_sub_agent !== true && (
             <div style={{ padding: '0 var(--space-4)', marginBottom: 'var(--space-4)' }}>
               <WalletCard />
             </div>
