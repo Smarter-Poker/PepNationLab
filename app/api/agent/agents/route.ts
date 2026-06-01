@@ -32,6 +32,7 @@ export async function GET(_req: NextRequest) {
         id, full_name, username, email,
         account_type, credit_limit, prepaid_balance,
         created_at, is_active,
+        last_sign_in_at, first_sign_in_at,
         agent_profiles(slug, display_name)
       `)
       .eq('parent_agent_id', callerId)
@@ -156,6 +157,9 @@ export async function POST(req: NextRequest) {
       is_sub_agent: false,
       parent_agent_id: callerId,
       referring_agent_id: callerId,
+      // Provisioning attribution (2026-06-01): track the super_agent as the creator.
+      created_by_agent_id: callerId,
+      created_by_role: 'super_agent',
       disclaimer_v1_accepted: true,
       disclaimer_accepted_at: new Date().toISOString(),
       is_active: true,
