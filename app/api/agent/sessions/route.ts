@@ -1,0 +1,75 @@
+import { NextResponse, type NextRequest } from 'next/server';
+import { createClient } from '@/lib/supabase/server';
+import { assertSameOrigin } from '@/lib/csrf';
+
+export const dynamic = 'force-dynamic';
+
+export async function GET() {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
+  }
+
+  const { data, error } = await supabase
+    .from('user_sessions')
+    .select('id, device_name, user_agent, ip, last_seen, created_at, revoked_at')
+    .eq('user_id', user.id)
+    .is('revoked_at', null)
+    .order('last_seen', { ascending: false })
+    .limit(50);
+
+  if (error) {
+    return NextResponse.json({ error: 'sessions_fetch_failed' }, { status: 500 });
+  }
+
+  return NextResponse.json({ sessions: data ?? [] });
+}
+
+export async function DELETE(req: NextRequest) {
+  const csrf = assertSameOrigin(req);
+  if (csrf) return csrf;
+
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
+  }
+
+  const { data: keepRow } = await supabase
+    .from('user_sessions')
+    .select('id')
+    .eq('user_id', user.id)
+    .is('revoked_at', null)
+    .order('last_seen', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  const nowIso = new Date().toISOString();
+
+  let query = supabase
+    .from('user_sessions')
+    .update({ revoked_at: nowIso })
+    .eq('user_id', user.id)
+    .is('revoked_at', null);
+
+  if (keepRow?.id) {
+    query = query.neq('id', keepRow.id);
+  }
+
+  const { error, count } = await query.select('id', { count: 'exact' });
+
+  if (error) {
+    return NextResponse.json({ error: 'sessions_revoke_failed' }, { status: 500 });
+  }
+
+  await supabase
+    .rpc('log_account_event', {
+      p_user_id: user.id,
+      p_event: 'sessions_revoked_all_others',
+      p_details: { kept: keepRow?.id ?? null, revoked_count: count ?? 0 },
+    })
+    .then(() => null, () => null);
+
+  return NextResponse.json({ revoked: count ?? 0 });
+}
