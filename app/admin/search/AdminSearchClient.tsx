@@ -3,25 +3,14 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Search, X, Clock, Copy, ExternalLink, Trash2, Filter } from 'lucide-react';
+import { Search, X, Copy, ExternalLink, Filter } from 'lucide-react';
 import { toast } from 'sonner';
 
 // fix-52: ships items #1-5, 9-15 from the global-search deep-dive.
-//   #1  deep-link result rows where destination supports URL state
-//   #2  highlight subtitle (was title-only)
-//   #3  client-side relevance sort per group
-//   #4  AND-of-tokens (server-side; this file just keeps the contract)
-//   #5  AbortController for stale fetches
-//   #9  date-range presets in the filter panel
-//   #10 initial-circle avatars on user rows
-//   #11 inactive pill badge instead of " · Inactive" in subtitle
-//   #12 drop role="tab" semantics — these chips are not real tabs
-//   #13 zero-results logging via /api/admin/search-log
-//   #14 per-group "Show More" expand-to-full
-//   #15 mobile h1 shrink via clamp()
-//
-// fix-52b (post-audit): abort in-flight fetch on unmount, router.push
-// for Enter-key navigation instead of window.location.
+// fix-52b: abort in-flight fetch on unmount, router.push for Enter-key nav.
+// fix-52c: empty state is now blank — Tips + Recent Searches removed per
+//          user direction. Pure command-palette: type to search, nothing
+//          else on the page until results arrive.
 
 type Scope = 'all' | 'users' | 'products' | 'orders' | 'storefronts' | 'coupons' | 'transactions';
 
@@ -90,8 +79,6 @@ interface OrderFilters {
 
 const BLANK_FILTERS: OrderFilters = { status: '', payment: '', from: '', to: '', min: '', max: '' };
 
-const RECENT_KEY = 'pnl-admin-search-recent';
-const MAX_RECENT = 8;
 const INITIAL_GROUP_VISIBLE = 25;
 
 function formatMoney(v: number | null | undefined): string {
@@ -201,7 +188,6 @@ export default function AdminSearchClient() {
   const [results, setResults] = useState<SearchResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState<string | null>(null);
-  const [recent, setRecent] = useState<string[]>([]);
   const [focusedIdx, setFocusedIdx] = useState(0);
   const [expanded, setExpanded] = useState<Record<Scope, boolean>>({
     all: false, users: false, storefronts: false, products: false,
@@ -228,10 +214,6 @@ export default function AdminSearchClient() {
       min:     p.get('min')     || '',
       max:     p.get('max')     || '',
     });
-    try {
-      const raw = localStorage.getItem(RECENT_KEY);
-      if (raw) setRecent(JSON.parse(raw));
-    } catch {}
     inputRef.current?.focus();
   }, []);
 
@@ -315,8 +297,6 @@ export default function AdminSearchClient() {
     }, 220);
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
-      // fix-52b: also abort the in-flight request on cleanup so a pending
-      // fetch that resolves after unmount can't setState on a dead tree.
       inflightRef.current?.abort();
     };
   }, [query, scope, filters]);
@@ -448,16 +428,6 @@ export default function AdminSearchClient() {
   }, [grouped]);
 
   useEffect(() => {
-    if (!results || query.trim().length < 2 || totalHits === 0) return;
-    const q = query.trim();
-    setRecent((prev) => {
-      const next = [q, ...prev.filter((r) => r !== q)].slice(0, MAX_RECENT);
-      try { localStorage.setItem(RECENT_KEY, JSON.stringify(next)); } catch {}
-      return next;
-    });
-  }, [results, query, totalHits]);
-
-  useEffect(() => {
     if (!results) return;
     const q = query.trim();
     if (q.length < 2) return;
@@ -488,7 +458,6 @@ export default function AdminSearchClient() {
         const item = flatList[focusedIdx];
         if (item) {
           e.preventDefault();
-          // fix-52b: client-side nav for consistency with the <Link> path.
           router.push(item.href);
         }
       } else if (e.key === 'Escape') {
@@ -524,11 +493,6 @@ export default function AdminSearchClient() {
     };
   }, [grouped]);
 
-  const clearRecent = () => {
-    setRecent([]);
-    try { localStorage.removeItem(RECENT_KEY); } catch {}
-  };
-
   const clearFilters = () => setFilters(BLANK_FILTERS);
 
   const applyPreset = useCallback((preset: 'last_7' | 'last_30' | 'this_month' | 'last_month') => {
@@ -548,7 +512,6 @@ export default function AdminSearchClient() {
   const q = query.trim();
   const filtersActive = hasAnyFilter(filters);
   const activeFilterCount = countActiveFilters(filters);
-  const showEmptyState = q.length < 2 && !filtersActive && !loading;
   const showNoResults = !!results && totalHits === 0 && !loading && (q.length >= 2 || filtersActive);
 
   return (
@@ -725,8 +688,6 @@ export default function AdminSearchClient() {
       <div aria-live="polite" style={{ position: 'absolute', left: -9999, width: 1, height: 1, overflow: 'hidden' }}>
         {results && (q.length >= 2 || filtersActive) ? `${totalHits} result${totalHits === 1 ? '' : 's'} for ${q || 'current filters'}` : ''}
       </div>
-
-      {showEmptyState && <EmptyState recent={recent} onPickRecent={(r) => setQuery(r)} onClearRecent={clearRecent} />}
 
       {showNoResults && (
         <div style={{ color: 'var(--grey-400, #A8B4C0)', background: 'var(--surface-2, #162230)', border: '1px solid var(--surface-3, #1D2D3E)', borderRadius: 12, padding: 24, textAlign: 'center' }}>
@@ -992,36 +953,6 @@ function ResultRow({
         </span>
       </div>
     </Link>
-  );
-}
-
-function EmptyState({ recent, onPickRecent, onClearRecent }: { recent: string[]; onPickRecent: (r: string) => void; onClearRecent: () => void; }) {
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-      {recent.length > 0 && (
-        <section style={{ background: 'var(--surface-2, #162230)', border: '1px solid var(--surface-3, #1D2D3E)', borderRadius: 12, padding: 16 }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-            <div style={{ fontSize: '0.78rem', textTransform: 'uppercase', letterSpacing: '0.12em', color: 'var(--grey-400, #A8B4C0)', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6 }}>
-              <Clock size={12} /> Recent Searches
-            </div>
-            <button type="button" onClick={onClearRecent} style={{ background: 'transparent', border: 0, color: 'var(--grey-400, #A8B4C0)', cursor: 'pointer', fontSize: '0.75rem', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-              <Trash2 size={12} /> Clear
-            </button>
-          </div>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-            {recent.map((r) => (
-              <button key={r} type="button" onClick={() => onPickRecent(r)} style={{ padding: '4px 10px', background: 'var(--surface-1, #0F1923)', border: '1px solid var(--surface-3, #1D2D3E)', borderRadius: 999, color: 'var(--white, #FFFFFF)', fontSize: '0.82rem', cursor: 'pointer' }}>
-                {r}
-              </button>
-            ))}
-          </div>
-        </section>
-      )}
-
-      <div style={{ fontSize: '0.78rem', color: 'var(--grey-400, #A8B4C0)', padding: '4px 4px' }}>
-        Tips: Scope Chips Narrow The Search. Arrow Keys Move Through Results, Enter Opens The Focused Row, Esc Clears The Query. Order Filters Work Even With No Query.
-      </div>
-    </div>
   );
 }
 
