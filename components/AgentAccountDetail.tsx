@@ -1,0 +1,389 @@
+'use client';
+
+import React, { useEffect, useState, useCallback } from 'react';
+import { toast } from 'sonner';
+
+/**
+ * AgentAccountDetail — full management drawer for a single downline FULL agent.
+ *
+ * Opened from AgentDownline ("My Agent Accounts") when a Super Agent clicks an
+ * agent name. Lets the Super Agent:
+ *   - Edit Full Name + Storefront Display Name
+ *   - Switch Payment Model (Prepaid / Credit Line) and set the Credit Limit
+ *   - Adjust the Commission Rate
+ *   - Activate / Deactivate the account (also toggles the storefront)
+ *   - Give Wallet Credit (adds to prepaid balance, recorded in the ledger)
+ *   - Review Sales History + the Wallet Ledger
+ *
+ * All writes go through /api/agent/agents/[id] (PATCH) and
+ * /api/agent/agents/[id]/credit (POST), which enforce downline ownership.
+ */
+
+type Detail = {
+  agent: {
+    id: string;
+    full_name: string | null;
+    username: string | null;
+    email: string | null;
+    account_type: 'credit' | 'prepaid' | string | null;
+    credit_limit: number | null;
+    prepaid_balance: number;
+    commission_pct: number | null;
+    commission_active_since: string | null;
+    is_active: boolean;
+    created_at: string;
+  };
+  storefront: { slug: string | null; display_name: string | null; is_active: boolean } | null;
+  ledger: Array<{ id: string; type: string; amount: number; balance_after: number | null; description: string | null; created_at: string }>;
+  sales: {
+    ordersCount: number;
+    nonCancelledCount: number;
+    grossTotal: number;
+    last30Total: number;
+    recent: Array<{ id: string; status: string; total: number; created_at: string; buyer_name: string | null; payment_method: string | null }>;
+  };
+};
+
+const fmtMoney = (v: number | null | undefined) => `$${(Number(v) || 0).toFixed(2)}`;
+const fmtDate = (s: string | null | undefined) => {
+  if (!s) return '—';
+  try { return new Date(s).toLocaleDateString(); } catch { return String(s); }
+};
+const titleCaseStatus = (s: string) =>
+  s.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+
+const labelStyle: React.CSSProperties = {
+  display: 'block', marginBottom: 6, color: 'var(--grey-300)', fontSize: '0.8rem', fontWeight: 600,
+};
+const inputStyle: React.CSSProperties = {
+  width: '100%', padding: '10px 12px',
+  background: 'linear-gradient(180deg, #0b0f16 0%, #121822 100%)',
+  border: '1px solid rgba(0,0,0,0.8)', color: 'var(--white)', borderRadius: 6,
+};
+
+export default function AgentAccountDetail({
+  agentId,
+  agentName,
+  onClose,
+  onChanged,
+}: {
+  agentId: string;
+  agentName: string;
+  onClose: () => void;
+  onChanged: () => void;
+}) {
+  const [detail, setDetail] = useState<Detail | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Editable fields
+  const [fullName, setFullName] = useState('');
+  const [displayName, setDisplayName] = useState('');
+  const [accountType, setAccountType] = useState<'credit' | 'prepaid'>('prepaid');
+  const [creditLimit, setCreditLimit] = useState('');
+  const [commissionPct, setCommissionPct] = useState('');
+  const [isActive, setIsActive] = useState(true);
+  const [saving, setSaving] = useState(false);
+
+  // Give-credit form
+  const [creditAmount, setCreditAmount] = useState('');
+  const [creditNote, setCreditNote] = useState('');
+  const [crediting, setCrediting] = useState(false);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetch(`/api/agent/agents/${agentId}`, { cache: 'no-store' });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || 'Failed To Load Agent.');
+      const d = json as Detail;
+      setDetail(d);
+      setFullName(d.agent.full_name || '');
+      setDisplayName(d.storefront?.display_name || '');
+      setAccountType(d.agent.account_type === 'credit' ? 'credit' : 'prepaid');
+      setCreditLimit(d.agent.credit_limit != null ? String(d.agent.credit_limit) : '');
+      setCommissionPct(d.agent.commission_pct != null ? String(d.agent.commission_pct) : '');
+      setIsActive(!!d.agent.is_active);
+    } catch (err: any) {
+      setError(err.message || 'Failed To Load Agent.');
+    } finally {
+      setLoading(false);
+    }
+  }, [agentId]);
+
+  useEffect(() => { load(); }, [load]);
+
+  async function saveChanges() {
+    setSaving(true);
+    try {
+      const payload: Record<string, any> = {
+        full_name: fullName,
+        account_type: accountType,
+        commission_pct: commissionPct === '' ? undefined : commissionPct,
+        is_active: isActive,
+        display_name: displayName || undefined,
+      };
+      if (accountType === 'credit') payload.credit_limit = creditLimit === '' ? 0 : creditLimit;
+
+      const res = await fetch(`/api/agent/agents/${agentId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || 'Failed To Save.');
+      toast.success('Agent Updated.');
+      await load();
+      onChanged();
+    } catch (err: any) {
+      toast.error(err.message || 'Failed To Save.');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function giveCredit(e: React.FormEvent) {
+    e.preventDefault();
+    const amt = Number(creditAmount);
+    if (!Number.isFinite(amt) || amt <= 0) {
+      toast.error('Enter A Credit Amount Greater Than $0.');
+      return;
+    }
+    setCrediting(true);
+    try {
+      const res = await fetch(`/api/agent/agents/${agentId}/credit`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ amount: amt, note: creditNote }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || 'Failed To Issue Credit.');
+      toast.success(`Credited ${fmtMoney(json.amount)}. New Balance ${fmtMoney(json.newBalance)}.`);
+      setCreditAmount('');
+      setCreditNote('');
+      await load();
+      onChanged();
+    } catch (err: any) {
+      toast.error(err.message || 'Failed To Issue Credit.');
+    } finally {
+      setCrediting(false);
+    }
+  }
+
+  async function toggleActiveQuick(next: boolean) {
+    setSaving(true);
+    try {
+      const res = await fetch(`/api/agent/agents/${agentId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ is_active: next }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || 'Failed To Update.');
+      setIsActive(next);
+      toast.success(next ? 'Account Activated.' : 'Account Deactivated.');
+      await load();
+      onChanged();
+    } catch (err: any) {
+      toast.error(err.message || 'Failed To Update.');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div
+      onClick={onClose}
+      style={{
+        position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(6px)',
+        zIndex: 1200, display: 'flex', alignItems: 'flex-start', justifyContent: 'center',
+        padding: 'var(--space-4)', overflowY: 'auto',
+      }}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className="metal-frame"
+        style={{ width: '100%', maxWidth: 760, margin: 'var(--space-6) 0' }}
+      >
+        <div className="metal-content" style={{ padding: 'var(--space-6)' }}>
+          {/* Header */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 'var(--space-4)', marginBottom: 'var(--space-5)' }}>
+            <div>
+              <h2 className="metal-text" style={{ fontSize: '1.4rem', fontFamily: 'var(--font-brand)', margin: 0 }}>
+                {detail?.agent.full_name || agentName}
+              </h2>
+              {detail?.agent.username && (
+                <div style={{ fontFamily: 'monospace', fontSize: '0.82rem', color: '#00E5FF', marginTop: 4 }}>
+                  {detail.agent.username}
+                </div>
+              )}
+              {detail?.storefront?.slug ? (
+                <a href={`/${detail.storefront.slug}`} target="_blank" rel="noopener noreferrer" style={{ color: '#00E5FF', fontSize: '0.8rem', textDecoration: 'none' }}>
+                  /{detail.storefront.slug}
+                </a>
+              ) : (
+                <span style={{ color: 'var(--grey-400)', fontSize: '0.8rem' }}>No Storefront</span>
+              )}
+            </div>
+            <button type="button" className="btn-silver" onClick={onClose}>Close</button>
+          </div>
+
+          {loading ? (
+            <div style={{ padding: 'var(--space-8)', textAlign: 'center', color: 'var(--silver)' }}>Loading Agent...</div>
+          ) : error ? (
+            <div style={{ padding: 'var(--space-6)', color: 'var(--red)' }}>Error: {error}</div>
+          ) : detail ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
+
+              {/* Snapshot stats */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: 'var(--space-3)' }}>
+                <Stat label="Status" value={isActive ? 'Active' : 'Inactive'} color={isActive ? '#00FF9D' : '#FFAAAA'} />
+                <Stat label="Wallet Balance" value={fmtMoney(detail.agent.prepaid_balance)} color="var(--teal)" />
+                <Stat label="Credit Limit" value={detail.agent.account_type === 'credit' ? fmtMoney(detail.agent.credit_limit) : '—'} />
+                <Stat label="Lifetime Sales" value={fmtMoney(detail.sales.grossTotal)} />
+                <Stat label="Last 30 Days" value={fmtMoney(detail.sales.last30Total)} />
+                <Stat label="Orders" value={String(detail.sales.nonCancelledCount)} />
+              </div>
+
+              {/* Quick activate / deactivate */}
+              <div className="metal-embossed-panel" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 'var(--space-3)' }}>
+                <div>
+                  <div style={{ fontWeight: 700, color: 'var(--white)' }}>Account Access</div>
+                  <div style={{ fontSize: '0.8rem', color: 'var(--grey-400)' }}>
+                    Deactivating Blocks Login And Takes The Storefront Offline.
+                  </div>
+                </div>
+                <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
+                  <button type="button" className={isActive ? 'btn-silver' : 'btn-neon-cyan'} disabled={saving} onClick={() => toggleActiveQuick(true)}>
+                    Turn On
+                  </button>
+                  <button type="button" className="btn-neon-red" disabled={saving} onClick={() => toggleActiveQuick(false)}>
+                    Turn Off
+                  </button>
+                </div>
+              </div>
+
+              {/* Edit form */}
+              <div className="metal-embossed-panel" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
+                <h3 className="metal-text" style={{ fontSize: '1rem', margin: 0, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Edit Agent</h3>
+
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 'var(--space-4)' }}>
+                  <div>
+                    <label style={labelStyle}>Full Name</label>
+                    <input style={inputStyle} value={fullName} onChange={(e) => setFullName(e.target.value)} />
+                  </div>
+                  <div>
+                    <label style={labelStyle}>Storefront Name</label>
+                    <input style={inputStyle} value={displayName} onChange={(e) => setDisplayName(e.target.value)} placeholder="Store Display Name" />
+                  </div>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 'var(--space-4)' }}>
+                  <div>
+                    <label style={labelStyle}>Payment Model</label>
+                    <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
+                      <label style={{ flex: 1, ...inputStyle, display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', borderColor: accountType === 'prepaid' ? 'var(--teal)' : 'rgba(0,0,0,0.8)' }}>
+                        <input type="radio" checked={accountType === 'prepaid'} onChange={() => setAccountType('prepaid')} /> Prepaid
+                      </label>
+                      <label style={{ flex: 1, ...inputStyle, display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', borderColor: accountType === 'credit' ? 'var(--teal)' : 'rgba(0,0,0,0.8)' }}>
+                        <input type="radio" checked={accountType === 'credit'} onChange={() => setAccountType('credit')} /> Credit Line
+                      </label>
+                    </div>
+                  </div>
+                  {accountType === 'credit' && (
+                    <div>
+                      <label style={labelStyle}>Credit Limit ($)</label>
+                      <input style={inputStyle} type="number" min="0" step="0.01" value={creditLimit} onChange={(e) => setCreditLimit(e.target.value)} placeholder="0.00" />
+                    </div>
+                  )}
+                  <div>
+                    <label style={labelStyle}>Commission Rate (%)</label>
+                    <input style={inputStyle} type="number" min="0" max="100" step="0.1" value={commissionPct} onChange={(e) => setCommissionPct(e.target.value)} placeholder="0" />
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                  <button type="button" className="btn-neon-cyan" disabled={saving} onClick={saveChanges}>
+                    {saving ? 'Saving...' : 'Save Changes'}
+                  </button>
+                </div>
+              </div>
+
+              {/* Give credit */}
+              <div className="metal-embossed-panel" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
+                <h3 className="metal-text" style={{ fontSize: '1rem', margin: 0, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Give Wallet Credit</h3>
+                <p style={{ fontSize: '0.8rem', color: 'var(--grey-400)', margin: 0 }}>
+                  Adds Funds To This Agent's Prepaid Wallet. Recorded In Their Ledger Below.
+                </p>
+                <form onSubmit={giveCredit} style={{ display: 'flex', gap: 'var(--space-3)', flexWrap: 'wrap', alignItems: 'flex-end' }}>
+                  <div style={{ flex: '0 0 140px' }}>
+                    <label style={labelStyle}>Amount ($)</label>
+                    <input style={inputStyle} type="number" min="0.01" step="0.01" value={creditAmount} onChange={(e) => setCreditAmount(e.target.value)} placeholder="0.00" />
+                  </div>
+                  <div style={{ flex: '1 1 200px' }}>
+                    <label style={labelStyle}>Note (Optional)</label>
+                    <input style={inputStyle} value={creditNote} onChange={(e) => setCreditNote(e.target.value)} placeholder="E.g., Weekly Bonus" maxLength={200} />
+                  </div>
+                  <button type="submit" className="btn-neon-cyan" disabled={crediting}>
+                    {crediting ? 'Crediting...' : 'Give Credit'}
+                  </button>
+                </form>
+              </div>
+
+              {/* Sales history */}
+              <div className="metal-embossed-panel">
+                <h3 className="metal-text" style={{ fontSize: '1rem', margin: '0 0 var(--space-3)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Recent Sales</h3>
+                {detail.sales.recent.length === 0 ? (
+                  <div style={{ color: 'var(--grey-400)', fontSize: '0.85rem', padding: 'var(--space-3) 0' }}>No Orders Yet.</div>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                    {detail.sales.recent.map((o) => (
+                      <div key={o.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.82rem', padding: '6px 0', borderBottom: '1px solid rgba(255,255,255,0.04)', gap: 8 }}>
+                        <span style={{ color: 'var(--silver)', fontFamily: 'monospace' }}>#{o.id.slice(0, 8).toUpperCase()}</span>
+                        <span style={{ color: 'var(--grey-400)', flex: 1, textAlign: 'center' }}>{o.buyer_name || '—'}</span>
+                        <span style={{ color: 'var(--grey-400)' }}>{fmtDate(o.created_at)}</span>
+                        <span style={{ color: o.status === 'cancelled' ? 'var(--grey-500)' : 'var(--teal)', minWidth: 70, textAlign: 'right' }}>{titleCaseStatus(o.status)}</span>
+                        <span style={{ color: 'var(--white)', fontWeight: 700, minWidth: 70, textAlign: 'right' }}>{fmtMoney(o.total)}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Wallet ledger */}
+              <div className="metal-embossed-panel">
+                <h3 className="metal-text" style={{ fontSize: '1rem', margin: '0 0 var(--space-3)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Wallet Ledger</h3>
+                {detail.ledger.length === 0 ? (
+                  <div style={{ color: 'var(--grey-400)', fontSize: '0.85rem', padding: 'var(--space-3) 0' }}>No Wallet Transactions Yet.</div>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                    {detail.ledger.map((t) => (
+                      <div key={t.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.82rem', padding: '6px 0', borderBottom: '1px solid rgba(255,255,255,0.04)', gap: 8 }}>
+                        <span style={{ color: 'var(--silver)', flex: 1 }}>{t.description || titleCaseStatus(t.type)}</span>
+                        <span style={{ color: 'var(--grey-400)' }}>{fmtDate(t.created_at)}</span>
+                        <span style={{ color: t.amount < 0 ? '#FFAAAA' : '#00FF9D', fontWeight: 700, minWidth: 80, textAlign: 'right' }}>
+                          {t.amount < 0 ? '-' : '+'}{fmtMoney(Math.abs(t.amount))}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+            </div>
+          ) : null}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function Stat({ label, value, color }: { label: string; value: string; color?: string }) {
+  return (
+    <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 8, padding: '10px 12px' }}>
+      <div style={{ fontSize: '0.68rem', color: 'var(--grey-400)', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>{label}</div>
+      <div style={{ fontSize: '1.05rem', fontWeight: 800, color: color || 'var(--white)', marginTop: 4 }}>{value}</div>
+    </div>
+  );
+}

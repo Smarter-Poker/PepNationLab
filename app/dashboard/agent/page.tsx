@@ -66,6 +66,7 @@ export default async function AgentDashboardPage() {
     .from('profiles')
     .select('id, email, username, full_name, role, created_at, auto_approve_orders, last_sign_in_at')
     .eq('referring_agent_id', user.id)
+    .eq('role', 'researcher')
     .order('created_at', { ascending: false });
 
   const researchers = (researchersData || []).map(r => ({

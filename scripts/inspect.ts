@@ -29,7 +29,7 @@ async function main() {
     for (const child of children || []) {
        const { data: storefront } = await supabase
          .from('agent_profiles')
-         .select('slug, store_name')
+         .select('slug, display_name')
          .eq('id', child.id)
          .maybeSingle();
        console.log(`Child ${child.full_name} Storefront:`, storefront || 'NONE');

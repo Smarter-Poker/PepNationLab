@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { toast } from 'sonner';
+import AgentAccountDetail from '@/components/AgentAccountDetail';
 
 export default function AgentDownline({ agentId }: { agentId?: string }) {
   const [agents, setAgents] = useState<any[]>([]);
@@ -25,6 +26,9 @@ export default function AgentDownline({ agentId }: { agentId?: string }) {
   const [resetPwUser, setResetPwUser] = useState<{ id: string; name: string; username: string } | null>(null);
   const [resetPwValue, setResetPwValue] = useState('');
   const [resetPwSaving, setResetPwSaving] = useState(false);
+
+  // Agent management detail drawer
+  const [detailAgent, setDetailAgent] = useState<{ id: string; name: string } | null>(null);
 
   const fetchData = async () => {
     try {
@@ -128,7 +132,14 @@ export default function AgentDownline({ agentId }: { agentId?: string }) {
                   >
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', flex: '1 1 200px' }}>
                       <span style={{ fontSize: '0.75rem', color: 'var(--grey-400)', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>Agent Name</span>
-                      <span style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--white)' }}>{agent.full_name || 'Anonymous'}</span>
+                      <button
+                        type="button"
+                        onClick={() => setDetailAgent({ id: agent.id, name: agent.full_name || 'Agent' })}
+                        style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--white)', background: 'none', border: 'none', padding: 0, cursor: 'pointer', textAlign: 'left', textDecoration: 'underline', textDecorationColor: 'rgba(0,229,255,0.45)', textUnderlineOffset: '3px' }}
+                        title="Manage This Agent"
+                      >
+                        {agent.full_name || 'Anonymous'}
+                      </button>
                       {ap?.display_name && (
                         <span style={{ fontSize: '0.8rem', color: 'var(--silver)' }}>Store: {ap.display_name}</span>
                       )}
@@ -160,6 +171,16 @@ export default function AgentDownline({ agentId }: { agentId?: string }) {
                       ) : (
                         <span style={{ color: 'var(--grey-400)', fontSize: '0.85rem' }}>No Storefront</span>
                       )}
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', flex: '1 1 auto' }}>
+                      <button
+                        type="button"
+                        className="btn-neon-cyan"
+                        onClick={() => setDetailAgent({ id: agent.id, name: agent.full_name || 'Agent' })}
+                        style={{ padding: '6px 16px', fontSize: '0.8rem' }}
+                      >
+                        Manage
+                      </button>
                     </div>
                   </div>
                 );
@@ -365,6 +386,16 @@ export default function AgentDownline({ agentId }: { agentId?: string }) {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Agent Management Detail Drawer */}
+      {detailAgent && (
+        <AgentAccountDetail
+          agentId={detailAgent.id}
+          agentName={detailAgent.name}
+          onClose={() => setDetailAgent(null)}
+          onChanged={fetchData}
+        />
       )}
     </div>
   );
