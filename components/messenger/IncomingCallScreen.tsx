@@ -1,6 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
-import { Phone, PhoneOff, Video } from 'lucide-react';
+import { Phone, PhoneOff, Video, LogIn } from 'lucide-react';
 import type { CallSignalRow } from '@/lib/messenger/realtime';
 import { createRingTone } from '@/lib/messenger/ringTone';
 import { toast } from 'sonner';
@@ -39,15 +39,25 @@ function injectAnim() {
 }
 
 export default function IncomingCallScreen({ call, onAccept, onDecline }: Props) {
-  const [callerName, setCallerName] = useState<string>('Someone');
+  // fix-41: prefer the caller_name baked into the realtime broadcast payload.
+  // The server-side broadcast (call-signal route, 'start' action) populates
+  // this field so the receiver can render the name WITHOUT an authenticated
+  // API call. The list-participants fallback below only runs if the field is
+  // missing (e.g. a stale-bundle sender that doesn't include it yet).
+  const [callerName, setCallerName] = useState<string>(call.caller_name ?? 'Someone');
   const [callerAvatar, setCallerAvatar] = useState<string | null>(null);
   const [isBusy, setIsBusy] = useState(false);
+  const [authExpired, setAuthExpired] = useState(false);
 
   useEffect(() => {
     injectAnim();
   }, []);
 
   useEffect(() => {
+    // If the broadcast already named the caller, skip the API roundtrip —
+    // it would 401 anyway when the receiver's session is stale, defeating
+    // the whole point of the broadcast enrichment.
+    if (call.caller_name) return;
     let cancelled = false;
     (async () => {
       try {
@@ -62,29 +72,46 @@ export default function IncomingCallScreen({ call, onAccept, onDecline }: Props)
             user_id: string;
             full_name?: string | null;
             username?: string | null;
-            avatar_url?: string | null;
           }>;
         };
         const caller = (json.participants ?? []).find((p) => p.user_id === call.initiator_id);
         if (caller && !cancelled) {
           setCallerName(caller.full_name ?? caller.username ?? 'Someone');
-          setCallerAvatar(caller.avatar_url ?? null);
         }
       } catch {
-        // non-fatal — keep defaults
+        // non-fatal
       }
     })();
     return () => {
       cancelled = true;
     };
-  }, [call.conversation_id, call.initiator_id]);
+  }, [call.conversation_id, call.initiator_id, call.caller_name]);
 
-  // Play the ringtone while the incoming screen is up.
+  // Ringtone while the incoming screen is up.
   useEffect(() => {
     const ring = createRingTone();
     if (ring) ring.start();
     return () => { if (ring) ring.stop(); };
   }, []);
+
+  const callSignalFetch = async (action: 'accept' | 'decline'): Promise<Response> => {
+    return fetch('/api/messenger/call-signal', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ action, callId: call.id }),
+    });
+  };
+
+  const tryRefreshSession = async (): Promise<boolean> => {
+    try {
+      const { createClient } = await import('@/lib/supabase/client');
+      const supabase = createClient();
+      const { data, error } = await supabase.auth.refreshSession();
+      return !error && Boolean(data?.session);
+    } catch {
+      return false;
+    }
+  };
 
   const handleAction = async (action: 'accept' | 'decline') => {
     if (isBusy) return;
@@ -102,11 +129,24 @@ export default function IncomingCallScreen({ call, onAccept, onDecline }: Props)
 
     let success = false;
     try {
-      const res = await fetch('/api/messenger/call-signal', {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ action, callId: call.id }),
-      });
+      let res = await callSignalFetch(action);
+
+      // fix-41: 401 means the server-side getUser() rejected the cached JWT.
+      // Try one refreshSession() roundtrip and replay the request. If refresh
+      // ALSO fails, surface a sign-in CTA on the screen and abort.
+      if (res.status === 401 && action === 'accept') {
+        const refreshed = await tryRefreshSession();
+        if (refreshed) {
+          res = await callSignalFetch(action);
+        }
+      }
+
+      if (res.status === 401) {
+        setAuthExpired(true);
+        setIsBusy(false);
+        return;
+      }
+
       success = res.ok;
       if (!res.ok) {
         const json = await res.json().catch(() => ({}));
@@ -226,6 +266,27 @@ export default function IncomingCallScreen({ call, onAccept, onDecline }: Props)
         </div>
       </div>
 
+      {authExpired && (
+        <div
+          style={{
+            position: 'relative',
+            zIndex: 2,
+            background: 'rgba(229, 62, 62, 0.12)',
+            border: '1px solid rgba(229, 62, 62, 0.4)',
+            borderRadius: 12,
+            padding: '12px 16px',
+            color: '#FFFFFF',
+            fontSize: '0.9rem',
+            textAlign: 'center',
+            maxWidth: 420,
+          }}
+          role="status"
+          aria-live="assertive"
+        >
+          Your Session Has Expired. Please Sign In Again To Answer.
+        </div>
+      )}
+
       <div
         style={{
           position: 'relative',
@@ -272,33 +333,75 @@ export default function IncomingCallScreen({ call, onAccept, onDecline }: Props)
           </div>
         </div>
         <div style={{ textAlign: 'center' }}>
-          <button
-            type="button"
-            disabled={isBusy}
-            onClick={() => void handleAction('accept')}
-            aria-label="Accept Call"
-            title="Accept"
-            className="pnl-accept-bounce"
-            style={{
-              width: 80,
-              height: 80,
-              borderRadius: '50%',
-              background: '#22C55E',
-              color: '#FFFFFF',
-              border: 0,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              cursor: 'pointer',
-              boxShadow: '0 12px 32px rgba(34, 197, 94, 0.55)',
-              outline: 'none',
-            }}
-          >
-            <Phone size={32} aria-hidden="true" />
-          </button>
-          <div style={{ color: 'rgba(255, 255, 255, 0.72)', marginTop: 12, fontSize: '0.92rem', fontWeight: 600 }}>
-            Accept
-          </div>
+          {authExpired ? (
+            <>
+              <button
+                type="button"
+                onClick={() => {
+                  // fix-41: hand-off to the login page, then back to messenger.
+                  // Open in a new tab so the ringing screen remains visible
+                  // until decline.
+                  const target = '/login?redirect=' + encodeURIComponent('/messenger');
+                  try {
+                    window.open(target, '_blank', 'noopener,noreferrer');
+                  } catch {
+                    window.location.href = target;
+                  }
+                }}
+                aria-label="Sign In To Answer"
+                title="Sign In To Answer"
+                style={{
+                  width: 80,
+                  height: 80,
+                  borderRadius: '50%',
+                  background: '#00C4BC',
+                  color: '#000',
+                  border: 0,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer',
+                  boxShadow: '0 12px 32px rgba(0, 196, 188, 0.55)',
+                  outline: 'none',
+                }}
+              >
+                <LogIn size={32} aria-hidden="true" />
+              </button>
+              <div style={{ color: 'rgba(255, 255, 255, 0.72)', marginTop: 12, fontSize: '0.92rem', fontWeight: 600 }}>
+                Sign In
+              </div>
+            </>
+          ) : (
+            <>
+              <button
+                type="button"
+                disabled={isBusy}
+                onClick={() => void handleAction('accept')}
+                aria-label="Accept Call"
+                title="Accept"
+                className="pnl-accept-bounce"
+                style={{
+                  width: 80,
+                  height: 80,
+                  borderRadius: '50%',
+                  background: '#22C55E',
+                  color: '#FFFFFF',
+                  border: 0,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer',
+                  boxShadow: '0 12px 32px rgba(34, 197, 94, 0.55)',
+                  outline: 'none',
+                }}
+              >
+                <Phone size={32} aria-hidden="true" />
+              </button>
+              <div style={{ color: 'rgba(255, 255, 255, 0.72)', marginTop: 12, fontSize: '0.92rem', fontWeight: 600 }}>
+                Accept
+              </div>
+            </>
+          )}
         </div>
       </div>
     </div>

@@ -184,6 +184,12 @@ export interface CallSignalRow {
   status: 'ringing' | 'active' | 'ended' | 'missed' | 'declined';
   livekit_room: string;
   started_at: string;
+  // fix-41: Optional fields populated by the server-side broadcast so the
+  // receiver can render the caller's identity WITHOUT making an authenticated
+  // /api/messenger/list-participants call. This closes the "shows Someone"
+  // bug when the receiver's session JWT has expired and the API call 401s.
+  caller_name?: string;
+  caller_username?: string | null;
 }
 
 interface CallSignalHandlers {

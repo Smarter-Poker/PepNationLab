@@ -88,10 +88,6 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // audit15 fix-21 (B2): per-pair call_start rate limit. Evaluated per target
-    // so a caller can still call multiple distinct users at the platform
-    // default — only the per-pair burst is throttled. First target that trips
-    // the limiter blocks the start.
     for (const row of otherList) {
       const pairKey = `${user.id}:${row.user_id}`;
       const pairLimited = await messengerRateLimit('call_start', pairKey);
@@ -124,7 +120,6 @@ export async function POST(req: NextRequest) {
       .maybeSingle();
     if (insErr || !inserted) return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
 
-    // audit15 fix-21 (B6): telemetry — log the start with participant count.
     void recordCallTelemetry('messenger_call.start', user.id, {
       call_id: (inserted as CallRow).id,
       conversation_id: (inserted as CallRow).conversation_id,
@@ -133,16 +128,11 @@ export async function POST(req: NextRequest) {
       participant_count: otherList.length + 1,
     }, ip, ua);
 
-    // Broadcast the incoming call signal to each target
     if (otherList.length > 0) {
-      for (const p of otherList) {
-        void broadcastCallSignalServer(p.user_id, 'incoming_call', inserted);
-      }
-
-      // audit15 fix-21 (B3): web push fanout. Resolve caller's name once,
-      // then both enqueue durable outbox rows AND fire inline so devices
-      // with subscriptions wake up immediately. The cron handles late
-      // delivery for offline devices.
+      // fix-41: resolve caller identity ONCE up front so we can include it
+      // in BOTH the realtime broadcast payload (so the receiver renders the
+      // caller's name without needing an authenticated API call) AND the
+      // web push fanout. Previously the resolution was push-only.
       const { data: callerProfile } = await svc
         .from('profiles')
         .select('full_name, username, email')
@@ -153,6 +143,18 @@ export async function POST(req: NextRequest) {
         (callerProfile?.username && String(callerProfile.username).trim()) ||
         (callerProfile?.email && String(callerProfile.email).split('@')[0]) ||
         'Someone';
+      const callerUsername = callerProfile?.username ?? null;
+
+      const enrichedPayload = {
+        ...inserted,
+        caller_name: callerName,
+        caller_username: callerUsername,
+      };
+
+      for (const p of otherList) {
+        void broadcastCallSignalServer(p.user_id, 'incoming_call', enrichedPayload);
+      }
+
       const targetIds = otherList.map((p) => p.user_id);
       const pushInput = {
         callId: (inserted as CallRow).id,
@@ -204,7 +206,6 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ call: current, alreadyAccepted: true });
     }
 
-    // audit15 fix-21 (B6): telemetry — ring_ms = answered_at - started_at.
     const startedAt = new Date((updated as CallRow).started_at).getTime();
     const answeredAt = new Date((updated as CallRow).answered_at!).getTime();
     void recordCallTelemetry('messenger_call.accept', user.id, {
@@ -239,7 +240,6 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ call: current, alreadyResolved: true });
     }
 
-    // Insert Missed Call system message
     const typeStr = (updated as CallRow).call_type === 'video' ? 'Video' : 'Voice';
     await svc.from('messenger_messages').insert({
       conversation_id: (updated as CallRow).conversation_id,
