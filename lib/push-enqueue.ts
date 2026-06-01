@@ -1,5 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { deliverPushNow } from '@/lib/push-deliver';
+import { pushTypeAllowed, eventToTypeKey } from '@/lib/push-prefs';
 
 /**
  * Pretty-print an order id for the user (first 8 chars uppercase).
@@ -52,7 +53,7 @@ export async function enqueuePush(
 
     const { data: prefs } = await supabase
       .from('notification_preferences')
-      .select('push_enabled, push_events_order, push_events_messages, push_events_marketing, mute_all')
+      .select('push_enabled, push_events_order, push_events_messages, push_events_marketing, mute_all, push_type_prefs')
       .eq('user_id', userId)
       .maybeSingle();
 
@@ -65,6 +66,13 @@ export async function enqueuePush(
     if (cat === 'order' && prefs.push_events_order === false) return null;
     if (cat === 'messages' && prefs.push_events_messages === false) return null;
     if (cat === 'marketing' && prefs.push_events_marketing === false) return null;
+
+    // Per-event opt-out (Notification Preferences page). Test events map to a
+    // null key and are never gated here so the Send Test button always works.
+    const typeKey = eventToTypeKey(String(event));
+    if (typeKey && !pushTypeAllowed(prefs.push_type_prefs as Record<string, boolean> | null, typeKey)) {
+      return null;
+    }
 
     const { data, error } = await supabase
       .from('push_outbox')
