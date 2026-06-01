@@ -15,6 +15,8 @@ interface CrmRow {
   total_spent: number;
   avg_order: number;
   last_order_at: string | null;
+  last_sign_in_at?: string | null;
+  first_sign_in_at?: string | null;
   note: string;
 }
 
@@ -182,6 +184,7 @@ export default function AgentResearcherCRM() {
                   <th style={{ padding: 'var(--space-3) 8px', fontWeight: 600, textAlign: 'right' }}>Orders</th>
                   <th style={{ padding: 'var(--space-3) 8px', fontWeight: 600, textAlign: 'right' }}>Avg Order</th>
                   <th style={{ padding: 'var(--space-3) 8px', fontWeight: 600 }}>Last Order</th>
+                  <th style={{ padding: 'var(--space-3) 8px', fontWeight: 600 }}>Last Logged In</th>
                   <th style={{ padding: 'var(--space-3) 0 var(--space-3) 8px', fontWeight: 600, textAlign: 'right' }}>Note</th>
                 </tr>
               </thead>
@@ -199,6 +202,9 @@ export default function AgentResearcherCRM() {
                       <td style={{ padding: 'var(--space-3) 8px', textAlign: 'right' }}>{r.order_count}</td>
                       <td style={{ padding: 'var(--space-3) 8px', textAlign: 'right' }}>{r.order_count > 0 ? money(r.avg_order) : '—'}</td>
                       <td style={{ padding: 'var(--space-3) 8px' }}>{daysAgo(r.last_order_at)}</td>
+                      <td style={{ padding: 'var(--space-3) 8px', color: r.last_sign_in_at ? 'var(--silver-light)' : 'var(--grey-500)', fontStyle: r.last_sign_in_at ? 'normal' : 'italic' }}>
+                        {r.last_sign_in_at ? new Date(r.last_sign_in_at).toLocaleString(undefined, { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' }) : 'Never Logged In'}
+                      </td>
                       <td style={{ padding: 'var(--space-3) 0 var(--space-3) 8px', textAlign: 'right' }}>
                         <button
                           onClick={() => openNote(r)}
@@ -211,7 +217,7 @@ export default function AgentResearcherCRM() {
                     </tr>
                     {openId === r.id && (
                       <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.03)' }}>
-                        <td colSpan={6} style={{ padding: '0 0 var(--space-4)' }}>
+                        <td colSpan={7} style={{ padding: '0 0 var(--space-4)' }}>
                           <div style={{ background: 'rgba(0,0,0,0.25)', borderRadius: 10, padding: 'var(--space-4)', border: '1px solid rgba(192,184,168,0.12)' }}>
                             <label style={{ display: 'block', fontSize: '0.72rem', color: 'var(--grey-400)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 6 }}>
                               Private Note (Only You Can See This)
