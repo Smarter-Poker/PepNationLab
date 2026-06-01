@@ -1,4 +1,4 @@
-/*
+/* ============================================================
    ROUND 2 + ROUND 3 MOBILE SAFE-AREA ENFORCEMENT
    ------------------------------------------------------------
    Loaded AFTER globals.css from app/layout.tsx. Purely additive.
@@ -9,7 +9,7 @@
    bottom:0 and inset:0 patterns, on EVERY viewport size (iPad
    PWA standalone with notch matters too), and uses !important to
    beat inline styles.
-*/
+   ============================================================ */
 
 /* ---------- ROUND 2: TARGETED COMPONENT CATCH-ALLS ---------- */
 
@@ -71,9 +71,9 @@
   padding-right: var(--safe-right, 0px);
 }
 
-/*
+/* ============================================================
    ROUND 3 — NUCLEAR INLINE-STYLE ENFORCEMENT
-*/
+   ============================================================ */
 
 [style*="position: fixed"][style*="top: 0"]:not([data-no-safe-area]),
 [style*="position:fixed"][style*="top: 0"]:not([data-no-safe-area]),
@@ -188,9 +188,9 @@ header.sf-nav {
   padding-top: max(8px, var(--safe-top, 0px)) !important;
 }
 
-/*
+/* ============================================================
    ROUND 4 — FACEBOOK-STYLE MOBILE BASELINE
-*/
+   ============================================================ */
 
 :root {
   color-scheme: light dark;
@@ -309,9 +309,9 @@ p, span, div, h1, h2, h3, h4, h5, h6 {
   contain-intrinsic-size: 0 80px;
 }
 
-/*
+/* ============================================================
    ROUND 5 — NUCLEAR HORIZONTAL OVERFLOW PREVENTION
-*/
+   ============================================================ */
 
 .pnl-navbar,
 nav.pnl-navbar,
@@ -383,18 +383,15 @@ body > * {
   overflow-x: hidden !important;
 }
 
-/*
+/* ============================================================
    ROUND 6 — MOBILE TABLE + FILTER CHIP RESPONSIVE LAYOUT
    ------------------------------------------------------------
    User report: My Researchers table, Product Catalog Manager
-   filter chips, and product detail rows all break character-
-   by-character vertically on iPhone because their grid/flex
+   filter chips, and product detail rows break character-by-
+   character vertically on iPhone because their grid/flex
    columns are too narrow at 375-430px viewports.
-*/
+   ============================================================ */
 @media (max-width: 768px) {
-  /* Traditional <table> elements: horizontal-scroll the cells so
-     columns render at natural width — the user swipes to see more
-     instead of seeing characters wrap one per line. */
   table {
     display: block;
     overflow-x: auto;
@@ -422,7 +419,6 @@ body > * {
     font-size: 0.78rem;
   }
 
-  /* Filter chip rows wrap properly and don't compress text. */
   .filter-chips,
   [data-filter-chips],
   [role="tablist"] {
@@ -436,7 +432,6 @@ body > * {
     white-space: nowrap !important;
   }
 
-  /* Product rows: prevent character-per-line vertical breaking. */
   .metal-embossed-panel {
     flex-wrap: wrap !important;
   }
@@ -465,7 +460,7 @@ body > * {
   }
 }
 
-/*
+/* ============================================================
    ROUND 6 — MESSENGER HEADER DE-BLOAT
    ------------------------------------------------------------
    Round 2's safe-top padding-top inside the messenger conversation
@@ -473,14 +468,165 @@ body > * {
    ~60px empty band that pushed Anna+icons way down the screen
    ("cut off" appearance). 12px is correct since the spacer above
    already reserves --nav-offset.
-*/
+   ============================================================ */
 .messenger-main header,
 .messenger-main > div > header,
 .messenger-shell header {
   padding-top: 12px !important;
 }
 
-/*
-   END ROUND 2 + ROUND 3 + ROUND 4 + ROUND 5 + ROUND 6 MOBILE
-   SAFE-AREA AND HORIZONTAL OVERFLOW ENFORCEMENT
-*/
+/* ============================================================
+   ROUND 7 — NAVBAR ICON RESIZE + MESSENGER TWO-PANE FIX
+   + PRODUCT CATALOG MOBILE ROWS
+   ------------------------------------------------------------
+   Why this round exists:
+   1. User reported Dashboard icon was being cut off on mobile.
+      Root cause: dashboard-icon image renders at 158x74 inline.
+      On a 375px iPhone, hamburger(36) + back(36) + divider +
+      bells + dashboard(158) + username(130) overflows by ~100px.
+      Fix: shrink all top-bar icons on <=768px so the row fits.
+   2. User reported messenger conversation list and conversation
+      view both visible/cut off on mobile. Root cause: the CSS
+      mobile two-pane slide rules (globals.css 1867-1932)
+      required .messenger-shell + .msg-panel-active classes but
+      MessengerShell.tsx only set .has-active on the aside.
+      The classes are NOW added on the root in MessengerShell.tsx,
+      this Round 7 block adds the overrides those rules need
+      (notably !important on sidebar width=100% so it overrides
+      the inline width:320 set when activeId is truthy).
+   3. Product Catalog filter chips and product rows still
+      character-wrapped because Round 6's span overrides used
+      white-space:normal which lets short labels break mid-word
+      in narrow flex containers. Round 7 keeps short labels
+      on one line and forces parent flex containers to wrap so
+      siblings move to a new row instead of compressing.
+   ============================================================ */
+
+/* --- (1) NAVBAR — shrink all top-bar icons on mobile --- */
+@media (max-width: 768px) {
+  /* The dashboard image is the biggest offender — 158x74 inline.
+     Cap by width; height: auto preserves the 2:1 aspect ratio. */
+  .pnl-navbar a img.dashboard-icon {
+    width: 56px !important;
+    max-width: 56px !important;
+    height: auto !important;
+  }
+  /* Hamburger icon — was 36x36 */
+  .pnl-navbar img[alt="Menu"] {
+    width: 28px !important;
+    height: 28px !important;
+  }
+  /* Hide username completely on phones (no room) */
+  .pnl-navbar .nav-display-name {
+    display: none !important;
+  }
+  /* Bells + back arrow — tighten padding so they don't waste width */
+  .pnl-navbar button {
+    padding: 2px !important;
+  }
+  /* Tighten the right-cluster gap so icons sit closer together */
+  .pnl-navbar > div:last-child {
+    gap: 4px !important;
+  }
+}
+
+/* On very small phones (iPhone SE / 360px Android) go even smaller. */
+@media (max-width: 380px) {
+  .pnl-navbar a img.dashboard-icon {
+    width: 48px !important;
+    max-width: 48px !important;
+  }
+}
+
+/* --- (2) MESSENGER — mobile two-pane slide works only when
+       the sidebar width override beats the inline width:320 --- */
+@media (max-width: 768px) {
+  .messenger-shell .messenger-sidebar {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+  .messenger-shell .messenger-main {
+    width: 100% !important;
+  }
+  /* Conversation list: when active, hide; when idle, show full screen. */
+  .messenger-shell.msg-panel-active .messenger-sidebar {
+    pointer-events: none !important;
+  }
+  /* The back button inside the message pane — make tappable, 44pt. */
+  .messenger-back-btn {
+    min-height: 44px !important;
+    padding: 10px 14px !important;
+    font-size: 0.95rem !important;
+  }
+}
+
+/* --- (3) PRODUCT CATALOG MANAGER — readable rows on mobile --- */
+@media (max-width: 768px) {
+  /* Keep short labels on one line; only let the product name wrap. */
+  .metal-embossed-panel span {
+    word-break: keep-all !important;
+    overflow-wrap: normal !important;
+    white-space: nowrap !important;
+  }
+  /* Allow the long product name to wrap (it's the 0.95rem 700-weight
+     span on the first text line) — restore word-wrapping for it only. */
+  .metal-embossed-panel span[style*="0.95rem"][style*="font-weight: 700"],
+  .metal-embossed-panel span[style*="font-size: 1rem"],
+  .metal-embossed-panel strong {
+    white-space: normal !important;
+    overflow-wrap: break-word !important;
+    word-break: normal !important;
+  }
+  /* The product row wrapper (display:flex; align-items:center; gap:var(--space-4))
+     — let the image+arrows wrap above the info, info above the toggle. */
+  .metal-embossed-panel > div[style*="display: flex"][style*="align-items: center"] {
+    flex-wrap: wrap !important;
+    gap: 8px !important;
+  }
+  /* Info column inside the row (it has flex:1, min-width:0) must take
+     full width when the row wraps. */
+  .metal-embossed-panel > div[style*="align-items: center"] > div[style*="flex: 1"] {
+    flex-basis: 100% !important;
+    min-width: 0 !important;
+  }
+  /* The inner name/size/category and price lines should also wrap. */
+  .metal-embossed-panel > div[style*="align-items: center"] > div[style*="flex: 1"] > div[style*="display: flex"] {
+    flex-wrap: wrap !important;
+    gap: 6px !important;
+  }
+  /* The view-mode and filter chips containers (flat/by category, all/active/hidden):
+     these were the character-wrapping chips. Force them to be a single
+     scrollable row instead of stacking per character. */
+  .metal-frame .metal-content > div[style*="justify-content: space-between"] {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 12px !important;
+  }
+  .metal-frame .metal-content > div[style*="justify-content: space-between"] > div[style*="gap: 8"] {
+    width: 100% !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    flex-wrap: nowrap !important;
+    padding-bottom: 4px !important;
+  }
+  .metal-frame .metal-content > div[style*="justify-content: space-between"] > div[style*="gap: 8"] > div {
+    flex-shrink: 0 !important;
+  }
+  .metal-frame .metal-content > div[style*="justify-content: space-between"] > div[style*="gap: 8"] > div > button {
+    flex-shrink: 0 !important;
+    white-space: nowrap !important;
+  }
+  /* Bulk margin row — the Apply Bulk Margin row needs to wrap nicely too */
+  .metal-content > h4 + div[style*="display: flex"][style*="flex-wrap: wrap"] {
+    gap: 10px !important;
+  }
+  .metal-content > h4 + div[style*="display: flex"] button[class*="btn-neon-cyan"] {
+    margin-left: 0 !important;
+    width: 100% !important;
+  }
+}
+
+/* ============================================================
+   END ROUND 2 + ROUND 3 + ROUND 4 + ROUND 5 + ROUND 6 + ROUND 7
+   MOBILE SAFE-AREA AND HORIZONTAL OVERFLOW ENFORCEMENT
+   ============================================================ */
