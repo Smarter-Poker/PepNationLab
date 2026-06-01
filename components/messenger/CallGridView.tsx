@@ -163,7 +163,7 @@ export default function CallGridView() {
           gridTemplateColumns: cols,
           gap: 12,
           height: '100%',
-          maxHeight: 'calc(100vh - 160px)',
+          maxHeight: 'calc(100dvh - 160px)',
         }}
       >
         {remoteParticipants.map((p) => (
