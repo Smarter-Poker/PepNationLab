@@ -25,6 +25,7 @@ const NAV = [
   { href: '/admin/store-preview', label: 'Store Preview', icon: <svg {...ICON_PROPS}><rect x="3" y="3" width="18" height="18" rx="2" ry="2" /><line x1="3" y1="9" x2="21" y2="9" /></svg> },
   { href: '/admin/agents', label: 'Agents', icon: <svg {...ICON_PROPS}><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /></svg> },
   { href: '/admin/network', label: 'Network', icon: <svg {...ICON_PROPS}><circle cx="12" cy="5" r="3" /><circle cx="5" cy="19" r="3" /><circle cx="19" cy="19" r="3" /><line x1="12" y1="8" x2="5" y2="16" /><line x1="12" y1="8" x2="19" y2="16" /></svg> },
+  { href: '/admin/provisioned-accounts', label: 'Provisioned Accounts', icon: <svg {...ICON_PROPS}><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="8.5" cy="7" r="4" /><polyline points="17 11 19 13 23 9" /></svg> },
   { href: '/admin/researchers', label: 'Researchers', icon: <svg {...ICON_PROPS}><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /></svg> },
   { href: '/admin/sales', label: 'Sales & Revenue', icon: <svg {...ICON_PROPS}><polyline points="22 7 13.5 15.5 8.5 10.5 2 17" /><polyline points="16 7 22 7 22 13" /></svg> },
   { href: '/admin/orders', label: 'Orders', icon: <svg {...ICON_PROPS}><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z" /><line x1="3" y1="6" x2="21" y2="6" /><path d="M16 10a4 4 0 0 1-8 0" /></svg> },
@@ -63,7 +64,7 @@ export function AdminLayoutClient({
 
   return (
     <>
-      {/* fix-57 #7: global admin Realtime refresher — server components re-fetch on orders/notifications events. */}
+      {/* fix-57 #7: global admin Realtime refresher - server components re-fetch on orders/notifications events. */}
       <AdminRealtimeRefresher />
 
       <Navbar onMenuClick={() => setSidebarOpen(o => !o)} isOpen={sidebarOpen} />
