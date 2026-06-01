@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
 import { assertSameOrigin } from '@/lib/csrf';
-import { requireSession } from '@/lib/messenger/server';
+import { requireSession, canInvite } from '@/lib/messenger/server';
 import { messengerRateLimit, messengerRateLimitResponse } from '@/lib/messengerRateLimit';
 
 export const runtime = 'nodejs';
@@ -22,9 +22,9 @@ interface RawConv {
 }
 
 /**
- * round-22 (admin) → round-23 (super_agent + agent-with-downline):
- * the messenger sidebar is a HIERARCHICAL view of the caller's downline,
- * not a flat dump.
+ * round-22 (admin) → round-23 (super_agent + agent-with-downline) →
+ * round-24 (always-connected drill): the messenger sidebar is a
+ * HIERARCHICAL view of the caller's downline, not a flat dump.
  *
  * Roles that trigger hierarchical mode:
  *   - admin                                         (always)
@@ -33,23 +33,15 @@ interface RawConv {
  *     sub-agent / referred researcher) — opt-in by data shape, so a
  *     plain agent with no downline keeps the flat list.
  *
- * Default (no parentId): conversations with the caller's direct downline:
- *   - admin   → top-level agents (parent_agent_id IS NULL, role in
- *               agent/super_agent) PLUS researchers the admin referred.
- *   - other   → profiles where parent_agent_id = caller.id OR
- *               referring_agent_id = caller.id OR
- *               referring_sub_agent_id = caller.id.
+ * Default (no parentId): conversations with the caller's direct downline.
  *
- * Drill-down (parentId in body): conversations with the chosen user's
- *   direct downline (parent_agent_id = parentId OR referring_agent_id =
- *   parentId OR referring_sub_agent_id = parentId). Identical across
- *   all hierarchical roles.
- *
- * Group / non-direct conversations and direct DMs with admins are
- * always kept regardless of downline scope.
- *
- * Non-hierarchical callers (researchers, sub-agents, plain agents with
- * no downline) get the unfiltered fn_get_user_conversations RPC result.
+ * Drill-down (parentId in body): EVERY direct downline member of the
+ * chosen user (parent_agent_id = parentId OR referring_agent_id = parentId
+ * OR referring_sub_agent_id = parentId) is returned as an openable row —
+ * not just members the caller has already DM'd. Members with an existing
+ * thread reuse it; members without one come back as `new:<memberId>`
+ * sentinels the client starts on tap, so every arrow is always connected
+ * to the chat display.
  */
 async function getDownlineIds(
   svc: Awaited<ReturnType<typeof createServiceClient>>,
@@ -95,8 +87,6 @@ async function getDownlineIds(
   }
 
   // Root level — super_agent / agent with downline: their direct downline.
-  // Use the SAME three-column union as drill-down so the predicate is
-  // consistent across all levels of the tree.
   const [byParent, byReferring, bySubReferring] = await Promise.all([
     svc.from('profiles').select('id').eq('parent_agent_id', callerId).eq('is_active', true).limit(500),
     svc.from('profiles').select('id').eq('referring_agent_id', callerId).eq('is_active', true).limit(500),
@@ -106,6 +96,68 @@ async function getDownlineIds(
   for (const r of (byReferring.data ?? []) as { id: string }[]) ids.add(r.id);
   for (const r of (bySubReferring.data ?? []) as { id: string }[]) ids.add(r.id);
   return ids;
+}
+
+/**
+ * Build openable rows for EVERY direct downline member of parentId. Reuses
+ * the caller's existing thread where a DM exists; otherwise returns a
+ * `new:<memberId>` sentinel the client opens via start-conversation.
+ */
+async function buildDownlineRows(
+  svc: Awaited<ReturnType<typeof createServiceClient>>,
+  viewerId: string,
+  parentId: string,
+  existing: RawConv[],
+): Promise<RawConv[]> {
+  const byCounterparty = new Map<string, RawConv>();
+  for (const c of existing) {
+    if (typeof c.counterparty_id === 'string') byCounterparty.set(c.counterparty_id, c);
+  }
+
+  const [byParent, byReferring, bySubReferring] = await Promise.all([
+    svc.from('profiles').select('id, full_name, username, role').eq('parent_agent_id', parentId).eq('is_active', true).limit(500),
+    svc.from('profiles').select('id, full_name, username, role').eq('referring_agent_id', parentId).eq('is_active', true).limit(500),
+    svc.from('profiles').select('id, full_name, username, role').eq('referring_sub_agent_id', parentId).eq('is_active', true).limit(500),
+  ]);
+
+  const members = new Map<string, { id: string; full_name: string | null; username: string | null; role: string | null }>();
+  for (const r of [...((byParent.data ?? []) as never[]), ...((byReferring.data ?? []) as never[]), ...((bySubReferring.data ?? []) as never[])]) {
+    const m = r as { id: string; full_name: string | null; username: string | null; role: string | null };
+    if (m.id !== viewerId) members.set(m.id, m);
+  }
+
+  const rows: RawConv[] = [];
+  for (const m of members.values()) {
+    const ex = byCounterparty.get(m.id);
+    if (ex) {
+      rows.push(ex);
+    } else {
+      rows.push({
+        conversation_id: `new:${m.id}`,
+        type: 'direct',
+        title: null,
+        avatar_url: null,
+        last_message_text: null,
+        last_message_at: null,
+        unread_count: 0,
+        is_pinned: false,
+        is_muted: false,
+        counterparty_id: m.id,
+        counterparty_full_name: m.full_name,
+        counterparty_username: m.username,
+        counterparty_role: m.role,
+        counterparty_avatar_url: null,
+      });
+    }
+  }
+
+  rows.sort((a, b) => {
+    const an = (a.counterparty_full_name || a.counterparty_username || '').toLowerCase();
+    const bn = (b.counterparty_full_name || b.counterparty_username || '').toLowerCase();
+    return an.localeCompare(bn);
+  });
+
+  return rows;
 }
 
 /**
@@ -126,7 +178,6 @@ async function shouldUseHierarchy(
   if (caller.role !== 'agent' && caller.role !== 'super_agent') return false;
 
   // Plain agent: only enable hierarchy if they actually have downline.
-  // Cheap probe — one row is enough.
   const { data, error } = await svc
     .from('profiles')
     .select('id', { count: 'exact', head: false })
@@ -174,27 +225,47 @@ export async function POST(req: NextRequest) {
   let conversations = (data ?? []) as RawConv[];
 
   if (me) {
+    const role = (me.role ?? '') as string;
     const hierarchical = await shouldUseHierarchy(svc, {
       id: me.id as string,
-      role: (me.role ?? '') as string,
+      role,
       is_super_agent: (me as { is_super_agent?: boolean }).is_super_agent === true,
       is_sub_agent: (me as { is_sub_agent?: boolean }).is_sub_agent === true,
     });
 
     if (hierarchical) {
-      const downlineIds = await getDownlineIds(svc, user.id, (me.role ?? '') as string, parentId);
-      conversations = conversations.filter((c) => {
-        const cp = c.counterparty_id;
-        const role = (c.counterparty_role ?? '').toString();
-        // 1) Keep GROUP / non-direct conversations always.
-        const isDirect = (c.type ?? '').toString() === 'direct';
-        if (!isDirect) return true;
-        if (typeof cp !== 'string') return true; // safety
-        // 2) Keep direct DMs with admins (peer escalation lane).
-        if (role === 'admin') return true;
-        // 3) Otherwise enforce downline scope.
-        return downlineIds.has(cp);
-      });
+      if (parentId) {
+        // DRILL: surface EVERY downline member as an openable row, so the
+        // arrow is always connected even before a DM exists. Authorized
+        // with the same canInvite() network check used to start the DM.
+        const allowed = role === 'admin' || parentId === user.id || (await canInvite(user.id, parentId));
+        if (allowed) {
+          conversations = await buildDownlineRows(svc, user.id, parentId, conversations);
+        } else {
+          // Out of network — fall back to the safe filtered view.
+          const downlineIds = await getDownlineIds(svc, user.id, role, parentId);
+          conversations = conversations.filter((c) => {
+            const cp = c.counterparty_id;
+            const isDirect = (c.type ?? '').toString() === 'direct';
+            if (!isDirect) return true;
+            if (typeof cp !== 'string') return true;
+            if ((c.counterparty_role ?? '').toString() === 'admin') return true;
+            return downlineIds.has(cp);
+          });
+        }
+      } else {
+        // ROOT: conversations with the caller's direct downline (unchanged).
+        const downlineIds = await getDownlineIds(svc, user.id, role, null);
+        conversations = conversations.filter((c) => {
+          const cp = c.counterparty_id;
+          const cRole = (c.counterparty_role ?? '').toString();
+          const isDirect = (c.type ?? '').toString() === 'direct';
+          if (!isDirect) return true;
+          if (typeof cp !== 'string') return true;
+          if (cRole === 'admin') return true;
+          return downlineIds.has(cp);
+        });
+      }
     }
   }
 
