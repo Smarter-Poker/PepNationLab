@@ -5,9 +5,19 @@ import Link from 'next/link';
 import { Search, X, Clock, Copy, ExternalLink, Trash2, Filter } from 'lucide-react';
 import { toast } from 'sonner';
 
-// fix-49: order-specific structured filters + fuzzy match (pg_trgm).
-// fix-50: Order Filters chip moved inline next to Transactions; drop the
-//         "What You Can Search" cheat-sheet from the empty state.
+// fix-52: ships items #1-5, 9-15 from the global-search deep-dive.
+//   #1  deep-link result rows where destination supports URL state
+//   #2  highlight subtitle (was title-only)
+//   #3  client-side relevance sort per group
+//   #4  AND-of-tokens (server-side; this file just keeps the contract)
+//   #5  AbortController for stale fetches
+//   #9  date-range presets in the filter panel
+//   #10 initial-circle avatars on user rows
+//   #11 inactive pill badge instead of " · Inactive" in subtitle
+//   #12 drop role="tab" semantics — these chips are not real tabs
+//   #13 zero-results logging via /api/admin/search-log
+//   #14 per-group "Show More" expand-to-full
+//   #15 mobile h1 shrink via clamp()
 
 type Scope = 'all' | 'users' | 'products' | 'orders' | 'storefronts' | 'coupons' | 'transactions';
 
@@ -61,6 +71,8 @@ interface FlatItem {
   copyEmail?: string;
   copyTracking?: string;
   matchScore?: number | null;
+  inactive?: boolean;
+  avatarSeed?: string;
 }
 
 interface OrderFilters {
@@ -76,6 +88,7 @@ const BLANK_FILTERS: OrderFilters = { status: '', payment: '', from: '', to: '',
 
 const RECENT_KEY = 'pnl-admin-search-recent';
 const MAX_RECENT = 8;
+const INITIAL_GROUP_VISIBLE = 25;
 
 function formatMoney(v: number | null | undefined): string {
   if (v == null) return '—';
@@ -121,6 +134,66 @@ function countActiveFilters(f: OrderFilters): number {
   return (f.status ? 1 : 0) + (f.payment ? 1 : 0) + (f.from ? 1 : 0) + (f.to ? 1 : 0) + (f.min ? 1 : 0) + (f.max ? 1 : 0);
 }
 
+// #3: cheap client-side relevance per result. Larger = more relevant.
+function relevanceScore(title: string, subtitle: string, q: string): number {
+  if (!q) return 0;
+  const t = (title || '').toLowerCase();
+  const s = (subtitle || '').toLowerCase();
+  const ql = q.toLowerCase();
+  let score = 0;
+  if (t.includes(ql)) score += 3;
+  if (t.startsWith(ql)) score += 2;
+  if (t === ql) score += 5;
+  if (s.includes(ql)) score += 1;
+  return score;
+}
+
+// #10: deterministic hue from a stable string so the same person always
+// gets the same colored circle. HSL with fixed S/L for visual harmony.
+function avatarColor(seed: string): string {
+  let h = 0;
+  for (let i = 0; i < seed.length; i++) h = (h * 31 + seed.charCodeAt(i)) | 0;
+  const hue = Math.abs(h) % 360;
+  return `hsl(${hue}, 55%, 38%)`;
+}
+
+function initialsFor(name: string | null | undefined, fallback: string): string {
+  const src = (name || fallback || '').trim();
+  if (!src) return '·';
+  const parts = src.split(/\s+/).filter(Boolean);
+  if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
+  return src.slice(0, 2).toUpperCase();
+}
+
+// #9: date presets. Returns ISO yyyy-mm-dd strings since the filter
+// inputs are <input type="date"> elements.
+function isoDay(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
+function datePresetRange(preset: 'last_7' | 'last_30' | 'this_month' | 'last_month'): { from: string; to: string } {
+  const now = new Date();
+  if (preset === 'last_7') {
+    const from = new Date(now); from.setDate(from.getDate() - 6);
+    return { from: isoDay(from), to: isoDay(now) };
+  }
+  if (preset === 'last_30') {
+    const from = new Date(now); from.setDate(from.getDate() - 29);
+    return { from: isoDay(from), to: isoDay(now) };
+  }
+  if (preset === 'this_month') {
+    const from = new Date(now.getFullYear(), now.getMonth(), 1);
+    return { from: isoDay(from), to: isoDay(now) };
+  }
+  // last_month
+  const from = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+  const to = new Date(now.getFullYear(), now.getMonth(), 0); // last day of prev month
+  return { from: isoDay(from), to: isoDay(to) };
+}
+
 export default function AdminSearchClient() {
   const [query, setQuery] = useState('');
   const [scope, setScope] = useState<Scope>('all');
@@ -131,10 +204,19 @@ export default function AdminSearchClient() {
   const [err, setErr] = useState<string | null>(null);
   const [recent, setRecent] = useState<string[]>([]);
   const [focusedIdx, setFocusedIdx] = useState(0);
+  // #14: per-group expanded state. Default false; clicking Show More flips.
+  const [expanded, setExpanded] = useState<Record<Scope, boolean>>({
+    all: false, users: false, storefronts: false, products: false,
+    orders: false, coupons: false, transactions: false,
+  });
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const resultRefs = useRef<Map<string, HTMLAnchorElement | null>>(new Map());
+  // #5: AbortController for in-flight fetches.
+  const inflightRef = useRef<AbortController | null>(null);
+  // #13: avoid double-logging the same empty query.
+  const loggedEmptyRef = useRef<string>('');
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -174,12 +256,11 @@ export default function AdminSearchClient() {
     try { window.history.replaceState({}, '', newUrl); } catch {}
   }, [query, scope, filters]);
 
-  // Auto-expand filters panel when scope=orders.
   useEffect(() => {
     if (scope === 'orders') setFiltersOpen(true);
   }, [scope]);
 
-  // Run search (debounced).
+  // #5: AbortController-aware fetch.
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
     const q = query.trim();
@@ -189,9 +270,17 @@ export default function AdminSearchClient() {
       setLoading(false);
       setErr(null);
       setFocusedIdx(0);
+      // Cancel any in-flight superseded by an empty query.
+      inflightRef.current?.abort();
+      inflightRef.current = null;
       return;
     }
     debounceRef.current = setTimeout(async () => {
+      // Abort any prior request before issuing a new one.
+      inflightRef.current?.abort();
+      const ac = new AbortController();
+      inflightRef.current = ac;
+
       setLoading(true);
       setErr(null);
       try {
@@ -204,7 +293,12 @@ export default function AdminSearchClient() {
         if (filters.to)      sp.set('to',      filters.to);
         if (filters.min)     sp.set('min',     filters.min);
         if (filters.max)     sp.set('max',     filters.max);
-        const res = await fetch('/api/admin/global-search?' + sp.toString(), { method: 'GET', cache: 'no-store' });
+        const res = await fetch('/api/admin/global-search?' + sp.toString(), {
+          method: 'GET',
+          cache: 'no-store',
+          signal: ac.signal,
+        });
+        if (ac.signal.aborted) return;
         if (!res.ok) {
           const j = await res.json().catch(() => ({}));
           setErr(j.error || 'Search Failed');
@@ -212,13 +306,20 @@ export default function AdminSearchClient() {
           return;
         }
         const json = (await res.json()) as SearchResult;
+        if (ac.signal.aborted) return;
         setResults(json);
         setFocusedIdx(0);
-      } catch {
+        // Reset per-group expanded state on a fresh query.
+        setExpanded({
+          all: false, users: false, storefronts: false, products: false,
+          orders: false, coupons: false, transactions: false,
+        });
+      } catch (e: any) {
+        if (e && e.name === 'AbortError') return;
         setErr('Network Error');
         setResults(null);
       } finally {
-        setLoading(false);
+        if (!ac.signal.aborted) setLoading(false);
       }
     }, 220);
     return () => {
@@ -226,76 +327,139 @@ export default function AdminSearchClient() {
     };
   }, [query, scope, filters]);
 
-  const flatList: FlatItem[] = useMemo(() => {
-    if (!results) return [];
-    const out: FlatItem[] = [];
-    for (const u of results.users) {
-      out.push({
+  // Build & sort each group by relevance (#3).
+  const grouped = useMemo(() => {
+    if (!results) return null;
+    const q = query.trim();
+
+    const userItems: FlatItem[] = results.users.map((u) => {
+      const title = u.full_name || u.username || u.email || u.id;
+      const subtitle = `${roleLabel(u)}${u.username ? ' · @' + u.username : ''}${u.email ? ' · ' + u.email : ''}`;
+      return {
         key: 'u:' + u.id,
         type: 'users',
         href: u.role === 'researcher' ? '/admin/researchers' : '/admin/agents',
-        title: u.full_name || u.username || u.email || u.id,
-        subtitle: `${roleLabel(u)}${u.username ? ' · @' + u.username : ''}${u.email ? ' · ' + u.email : ''}`,
+        title, subtitle,
         ctaLabel: 'Open',
         copyEmail: u.email ?? undefined,
-      });
-    }
-    for (const s of results.storefronts) {
-      out.push({
+        matchScore: relevanceScore(title, subtitle, q),
+        avatarSeed: u.id,
+      };
+    });
+
+    const storefrontItems: FlatItem[] = results.storefronts.map((s) => {
+      const title = s.display_name;
+      const subtitle = '/' + s.slug;
+      return {
         key: 's:' + s.id,
         type: 'storefronts',
         href: `/${s.slug}`,
-        title: s.display_name,
-        subtitle: '/' + s.slug + (s.is_active === false ? ' · Inactive' : ''),
+        title, subtitle,
         ctaLabel: 'Preview',
-      });
-    }
-    for (const p of results.products) {
-      out.push({
+        matchScore: relevanceScore(title, subtitle, q),
+        inactive: s.is_active === false,
+      };
+    });
+
+    const productItems: FlatItem[] = results.products.map((p) => {
+      const title = p.name;
+      const subtitle = `${p.slug}${p.sku ? ' · SKU ' + p.sku : ''}${p.base_cost != null ? ' · Base ' + formatMoney(p.base_cost) : ''}`;
+      return {
         key: 'p:' + p.id,
         type: 'products',
         href: `/admin/products/${p.id}`,
-        title: p.name,
-        subtitle: `${p.slug}${p.sku ? ' · SKU ' + p.sku : ''}${p.base_cost != null ? ' · Base ' + formatMoney(p.base_cost) : ''}${!p.is_active ? ' · Inactive' : ''}`,
+        title, subtitle,
         ctaLabel: 'Edit',
-      });
-    }
-    for (const o of results.orders) {
-      out.push({
+        matchScore: relevanceScore(title, subtitle, q),
+        inactive: !p.is_active,
+      };
+    });
+
+    // #1: deep-link orders to the orders list pre-filtered by status.
+    const orderItems: FlatItem[] = results.orders.map((o) => {
+      const title = o.buyer_name || o.buyer_email || `Order ${o.id.slice(0, 8)}`;
+      const subtitle = `${prettyStatus(o.status)} · ${formatMoney(o.total)}${o.tracking_number ? ' · Tracking ' + o.tracking_number : ''}${o.payment_method ? ' · ' + o.payment_method : ''} · ${new Date(o.created_at).toLocaleDateString()}`;
+      return {
         key: 'o:' + o.id,
         type: 'orders',
-        href: '/admin/orders',
-        title: o.buyer_name || o.buyer_email || `Order ${o.id.slice(0, 8)}`,
-        subtitle: `${prettyStatus(o.status)} · ${formatMoney(o.total)}${o.tracking_number ? ' · Tracking ' + o.tracking_number : ''}${o.payment_method ? ' · ' + o.payment_method : ''} · ${new Date(o.created_at).toLocaleDateString()}`,
+        href: `/admin/orders?status=${encodeURIComponent(o.status)}`,
+        title, subtitle,
         ctaLabel: 'Open',
         copyTracking: o.tracking_number ?? undefined,
-        matchScore: o.match_score ?? null,
-      });
-    }
-    for (const c of results.coupons) {
-      out.push({
+        // Prefer server score for orders (real trigram similarity) then
+        // fall back to client heuristic.
+        matchScore: o.match_score != null ? o.match_score * 10 : relevanceScore(title, subtitle, q),
+      };
+    });
+
+    const couponItems: FlatItem[] = results.coupons.map((c) => {
+      const title = c.code;
+      const subtitle = `${c.type === 'percent' ? `${c.value}% off` : c.type === 'fixed' ? `${formatMoney(c.value)} off` : c.type} · Used ${c.uses_count}×${c.expires_at ? ' · Expires ' + new Date(c.expires_at).toLocaleDateString() : ''}`;
+      return {
         key: 'c:' + c.id,
         type: 'coupons',
         href: '/admin/coupons',
-        title: c.code,
-        subtitle: `${c.type === 'percent' ? `${c.value}% off` : c.type === 'fixed' ? `${formatMoney(c.value)} off` : c.type} · Used ${c.uses_count}×${c.expires_at ? ' · Expires ' + new Date(c.expires_at).toLocaleDateString() : ''}${c.is_active === false ? ' · Inactive' : ''}`,
+        title, subtitle,
         ctaLabel: 'Manage',
-      });
-    }
-    for (const t of results.transactions) {
-      out.push({
+        matchScore: relevanceScore(title, subtitle, q),
+        inactive: c.is_active === false,
+      };
+    });
+
+    // #1: deep-link transactions to the ledger pre-filtered by agent.
+    const transactionItems: FlatItem[] = results.transactions.map((t) => {
+      const title = t.description || `Transaction ${t.id.slice(0, 8)}`;
+      const subtitle = `${t.type} · ${formatMoney(t.amount)} · ${new Date(t.created_at).toLocaleDateString()}${t.order_id ? ' · Order ' + t.order_id.slice(0, 8) : ''}`;
+      return {
         key: 't:' + t.id,
         type: 'transactions',
-        href: '/admin/transactions',
-        title: t.description || `Transaction ${t.id.slice(0, 8)}`,
-        subtitle: `${t.type} · ${formatMoney(t.amount)} · ${new Date(t.created_at).toLocaleDateString()}${t.order_id ? ' · Order ' + t.order_id.slice(0, 8) : ''}`,
+        href: t.agent_id ? `/admin/transactions?agent=${encodeURIComponent(t.agent_id)}` : '/admin/transactions',
+        title, subtitle,
         ctaLabel: 'Open',
-      });
-    }
-    return out;
-  }, [results]);
+        matchScore: relevanceScore(title, subtitle, q),
+      };
+    });
 
-  const totalHits = flatList.length;
+    // Sort each group descending by matchScore (stable for ties).
+    const byScoreDesc = (a: FlatItem, b: FlatItem) => (b.matchScore ?? 0) - (a.matchScore ?? 0);
+    userItems.sort(byScoreDesc);
+    storefrontItems.sort(byScoreDesc);
+    productItems.sort(byScoreDesc);
+    orderItems.sort(byScoreDesc);
+    couponItems.sort(byScoreDesc);
+    transactionItems.sort(byScoreDesc);
+
+    return {
+      users: userItems,
+      storefronts: storefrontItems,
+      products: productItems,
+      orders: orderItems,
+      coupons: couponItems,
+      transactions: transactionItems,
+    };
+  }, [results, query]);
+
+  // Flat list (for keyboard nav) — respects the per-group expanded state
+  // so ↓/↑ only walks visible rows.
+  const flatList: FlatItem[] = useMemo(() => {
+    if (!grouped) return [];
+    const slice = (arr: FlatItem[], type: Scope) =>
+      expanded[type] ? arr : arr.slice(0, INITIAL_GROUP_VISIBLE);
+    return [
+      ...slice(grouped.users, 'users'),
+      ...slice(grouped.storefronts, 'storefronts'),
+      ...slice(grouped.products, 'products'),
+      ...slice(grouped.orders, 'orders'),
+      ...slice(grouped.coupons, 'coupons'),
+      ...slice(grouped.transactions, 'transactions'),
+    ];
+  }, [grouped, expanded]);
+
+  const totalHits = useMemo(() => {
+    if (!grouped) return 0;
+    return grouped.users.length + grouped.storefronts.length + grouped.products.length +
+           grouped.orders.length + grouped.coupons.length + grouped.transactions.length;
+  }, [grouped]);
 
   useEffect(() => {
     if (!results || query.trim().length < 2 || totalHits === 0) return;
@@ -306,6 +470,25 @@ export default function AdminSearchClient() {
       return next;
     });
   }, [results, query, totalHits]);
+
+  // #13: log zero-result queries (deduped per query+scope combo).
+  useEffect(() => {
+    if (!results) return;
+    const q = query.trim();
+    if (q.length < 2) return;
+    if (totalHits !== 0) return;
+    const sig = `${scope}::${q}::${JSON.stringify(filters)}`;
+    if (loggedEmptyRef.current === sig) return;
+    loggedEmptyRef.current = sig;
+    try {
+      fetch('/api/admin/search-log', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query: q, scope, filters }),
+        keepalive: true,
+      }).catch(() => {});
+    } catch {}
+  }, [results, totalHits, query, scope, filters]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -344,16 +527,16 @@ export default function AdminSearchClient() {
   }, [focusedIdx, flatList]);
 
   const counts = useMemo(() => {
-    if (!results) return null;
+    if (!grouped) return null;
     return {
-      users: results.users.length,
-      storefronts: results.storefronts.length,
-      products: results.products.length,
-      orders: results.orders.length,
-      coupons: results.coupons.length,
-      transactions: results.transactions.length,
+      users: grouped.users.length,
+      storefronts: grouped.storefronts.length,
+      products: grouped.products.length,
+      orders: grouped.orders.length,
+      coupons: grouped.coupons.length,
+      transactions: grouped.transactions.length,
     };
-  }, [results]);
+  }, [grouped]);
 
   const clearRecent = () => {
     setRecent([]);
@@ -361,6 +544,11 @@ export default function AdminSearchClient() {
   };
 
   const clearFilters = () => setFilters(BLANK_FILTERS);
+
+  const applyPreset = useCallback((preset: 'last_7' | 'last_30' | 'this_month' | 'last_month') => {
+    const range = datePresetRange(preset);
+    setFilters((f) => ({ ...f, from: range.from, to: range.to }));
+  }, []);
 
   const copyToClipboard = async (text: string, label: string) => {
     try {
@@ -380,7 +568,8 @@ export default function AdminSearchClient() {
   return (
     <div style={{ maxWidth: 1000, margin: '0 auto' }}>
       <div style={{ position: 'sticky', top: 0, background: 'var(--black, #050A0F)', paddingBottom: 12, zIndex: 10, marginBottom: 16 }}>
-        <h1 style={{ fontSize: '1.6rem', fontWeight: 700, marginBottom: 12 }}>Global Search</h1>
+        {/* #15: clamp shrinks the heading on narrow viewports. */}
+        <h1 style={{ fontSize: 'clamp(1.2rem, 4vw, 1.6rem)', fontWeight: 700, marginBottom: 12 }}>Global Search</h1>
 
         <label
           style={{
@@ -415,12 +604,8 @@ export default function AdminSearchClient() {
           )}
         </label>
 
-        {/* Scope chips + inline Order Filters trigger.
-            fix-50: filter button now lives in the same horizontal row as
-            the scope chips, immediately after Transactions, so it shares
-            the same overflow-x line on mobile and reads as part of the
-            entity selector. */}
-        <div role="tablist" aria-label="Search Scope" style={{ display: 'flex', gap: 6, overflowX: 'auto', paddingBottom: 4, WebkitOverflowScrolling: 'touch', alignItems: 'center' }}>
+        {/* #12: chips are toggle buttons inside a toolbar, not tabs. */}
+        <div role="toolbar" aria-label="Search Scope" style={{ display: 'flex', gap: 6, overflowX: 'auto', paddingBottom: 4, WebkitOverflowScrolling: 'touch', alignItems: 'center' }}>
           {SCOPE_LABELS.map((s) => {
             const count = s.key === 'all' ? totalHits : (counts ? (counts as Record<string, number>)[s.key] : 0);
             const active = scope === s.key;
@@ -428,8 +613,7 @@ export default function AdminSearchClient() {
               <button
                 key={s.key}
                 type="button"
-                role="tab"
-                aria-selected={active}
+                aria-pressed={active}
                 onClick={() => setScope(s.key)}
                 style={{
                   flexShrink: 0,
@@ -449,7 +633,6 @@ export default function AdminSearchClient() {
             );
           })}
 
-          {/* Visual separator between scopes and the filter action. */}
           <span aria-hidden="true" style={{ flexShrink: 0, width: 1, height: 20, background: 'var(--surface-3, #1D2D3E)', margin: '0 4px' }} />
 
           <button
@@ -504,37 +687,47 @@ export default function AdminSearchClient() {
               background: 'var(--surface-2, #162230)',
               border: '1px solid var(--surface-3, #1D2D3E)',
               borderRadius: 12, padding: 14, marginTop: 10,
-              display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 10,
             }}
           >
-            <Field label="Status">
-              <select value={filters.status} onChange={(e) => setFilters({ ...filters, status: e.target.value })} style={selectStyle}>
-                <option value="">Any</option>
-                {ORDER_STATUSES.map((s) => (
-                  <option key={s} value={s}>{prettyStatus(s)}</option>
-                ))}
-              </select>
-            </Field>
-            <Field label="Payment Method">
-              <select value={filters.payment} onChange={(e) => setFilters({ ...filters, payment: e.target.value })} style={selectStyle}>
-                <option value="">Any</option>
-                {PAYMENT_METHODS.map((m) => (
-                  <option key={m} value={m}>{prettyStatus(m)}</option>
-                ))}
-              </select>
-            </Field>
-            <Field label="Date From">
-              <input type="date" value={filters.from} onChange={(e) => setFilters({ ...filters, from: e.target.value })} style={inputStyle} />
-            </Field>
-            <Field label="Date To">
-              <input type="date" value={filters.to} onChange={(e) => setFilters({ ...filters, to: e.target.value })} style={inputStyle} />
-            </Field>
-            <Field label="Min Total">
-              <input type="number" inputMode="decimal" placeholder="0" value={filters.min} onChange={(e) => setFilters({ ...filters, min: e.target.value })} style={inputStyle} />
-            </Field>
-            <Field label="Max Total">
-              <input type="number" inputMode="decimal" placeholder="0" value={filters.max} onChange={(e) => setFilters({ ...filters, max: e.target.value })} style={inputStyle} />
-            </Field>
+            {/* #9: date presets row */}
+            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 10 }}>
+              <span style={{ fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--grey-400, #A8B4C0)', fontWeight: 700, alignSelf: 'center' }}>Quick Range:</span>
+              <PresetBtn label="Last 7 Days"  onClick={() => applyPreset('last_7')}  />
+              <PresetBtn label="Last 30 Days" onClick={() => applyPreset('last_30')} />
+              <PresetBtn label="This Month"   onClick={() => applyPreset('this_month')} />
+              <PresetBtn label="Last Month"   onClick={() => applyPreset('last_month')} />
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 10 }}>
+              <Field label="Status">
+                <select value={filters.status} onChange={(e) => setFilters({ ...filters, status: e.target.value })} style={selectStyle}>
+                  <option value="">Any</option>
+                  {ORDER_STATUSES.map((s) => (
+                    <option key={s} value={s}>{prettyStatus(s)}</option>
+                  ))}
+                </select>
+              </Field>
+              <Field label="Payment Method">
+                <select value={filters.payment} onChange={(e) => setFilters({ ...filters, payment: e.target.value })} style={selectStyle}>
+                  <option value="">Any</option>
+                  {PAYMENT_METHODS.map((m) => (
+                    <option key={m} value={m}>{prettyStatus(m)}</option>
+                  ))}
+                </select>
+              </Field>
+              <Field label="Date From">
+                <input type="date" value={filters.from} onChange={(e) => setFilters({ ...filters, from: e.target.value })} style={inputStyle} />
+              </Field>
+              <Field label="Date To">
+                <input type="date" value={filters.to} onChange={(e) => setFilters({ ...filters, to: e.target.value })} style={inputStyle} />
+              </Field>
+              <Field label="Min Total">
+                <input type="number" inputMode="decimal" placeholder="0" value={filters.min} onChange={(e) => setFilters({ ...filters, min: e.target.value })} style={inputStyle} />
+              </Field>
+              <Field label="Max Total">
+                <input type="number" inputMode="decimal" placeholder="0" value={filters.max} onChange={(e) => setFilters({ ...filters, max: e.target.value })} style={inputStyle} />
+              </Field>
+            </div>
           </div>
         )}
       </div>
@@ -563,138 +756,118 @@ export default function AdminSearchClient() {
         </div>
       )}
 
-      {results && totalHits > 0 && (
+      {grouped && totalHits > 0 && (
         <>
-          {results.users.length > 0 && (
-            <ResultGroup title="Users" count={results.users.length}>
-              {results.users.map((u) => {
-                const key = 'u:' + u.id;
-                const focused = flatList[focusedIdx]?.key === key;
+          {grouped.users.length > 0 && (
+            <ResultGroup
+              title="Users" count={grouped.users.length} scope="users"
+              expanded={expanded.users}
+              onToggleExpanded={() => setExpanded((e) => ({ ...e, users: !e.users }))}
+            >
+              {(expanded.users ? grouped.users : grouped.users.slice(0, INITIAL_GROUP_VISIBLE)).map((item) => {
+                const focused = flatList[focusedIdx]?.key === item.key;
                 return (
                   <ResultRow
-                    key={key} refStore={resultRefs} focused={focused} query={q}
-                    onCopyEmail={u.email ? () => copyToClipboard(u.email!, 'Email') : undefined}
-                    item={{
-                      key, type: 'users',
-                      href: u.role === 'researcher' ? '/admin/researchers' : '/admin/agents',
-                      title: u.full_name || u.username || u.email || u.id,
-                      subtitle: `${roleLabel(u)}${u.username ? ' · @' + u.username : ''}${u.email ? ' · ' + u.email : ''}`,
-                      ctaLabel: 'Open',
-                      copyEmail: u.email ?? undefined,
-                    }}
+                    key={item.key} refStore={resultRefs} focused={focused} query={q} item={item}
+                    onCopyEmail={item.copyEmail ? () => copyToClipboard(item.copyEmail!, 'Email') : undefined}
                   />
                 );
               })}
             </ResultGroup>
           )}
 
-          {results.storefronts.length > 0 && (
-            <ResultGroup title="Storefronts" count={results.storefronts.length}>
-              {results.storefronts.map((s) => {
-                const key = 's:' + s.id;
-                const focused = flatList[focusedIdx]?.key === key;
+          {grouped.storefronts.length > 0 && (
+            <ResultGroup
+              title="Storefronts" count={grouped.storefronts.length} scope="storefronts"
+              expanded={expanded.storefronts}
+              onToggleExpanded={() => setExpanded((e) => ({ ...e, storefronts: !e.storefronts }))}
+            >
+              {(expanded.storefronts ? grouped.storefronts : grouped.storefronts.slice(0, INITIAL_GROUP_VISIBLE)).map((item) => {
+                const focused = flatList[focusedIdx]?.key === item.key;
+                return <ResultRow key={item.key} refStore={resultRefs} focused={focused} query={q} item={item} />;
+              })}
+            </ResultGroup>
+          )}
+
+          {grouped.products.length > 0 && (
+            <ResultGroup
+              title="Products" count={grouped.products.length} scope="products"
+              expanded={expanded.products}
+              onToggleExpanded={() => setExpanded((e) => ({ ...e, products: !e.products }))}
+            >
+              {(expanded.products ? grouped.products : grouped.products.slice(0, INITIAL_GROUP_VISIBLE)).map((item) => {
+                const focused = flatList[focusedIdx]?.key === item.key;
+                return <ResultRow key={item.key} refStore={resultRefs} focused={focused} query={q} item={item} />;
+              })}
+            </ResultGroup>
+          )}
+
+          {grouped.orders.length > 0 && (
+            <ResultGroup
+              title="Orders" count={grouped.orders.length} scope="orders"
+              expanded={expanded.orders}
+              onToggleExpanded={() => setExpanded((e) => ({ ...e, orders: !e.orders }))}
+            >
+              {(expanded.orders ? grouped.orders : grouped.orders.slice(0, INITIAL_GROUP_VISIBLE)).map((item) => {
+                const focused = flatList[focusedIdx]?.key === item.key;
                 return (
                   <ResultRow
-                    key={key} refStore={resultRefs} focused={focused} query={q}
-                    item={{
-                      key, type: 'storefronts',
-                      href: `/${s.slug}`,
-                      title: s.display_name,
-                      subtitle: '/' + s.slug + (s.is_active === false ? ' · Inactive' : ''),
-                      ctaLabel: 'Preview',
-                    }}
+                    key={item.key} refStore={resultRefs} focused={focused} query={q} item={item}
+                    onCopyTracking={item.copyTracking ? () => copyToClipboard(item.copyTracking!, 'Tracking #') : undefined}
                   />
                 );
               })}
             </ResultGroup>
           )}
 
-          {results.products.length > 0 && (
-            <ResultGroup title="Products" count={results.products.length}>
-              {results.products.map((p) => {
-                const key = 'p:' + p.id;
-                const focused = flatList[focusedIdx]?.key === key;
-                return (
-                  <ResultRow
-                    key={key} refStore={resultRefs} focused={focused} query={q}
-                    item={{
-                      key, type: 'products',
-                      href: `/admin/products/${p.id}`,
-                      title: p.name,
-                      subtitle: `${p.slug}${p.sku ? ' · SKU ' + p.sku : ''}${p.base_cost != null ? ' · Base ' + formatMoney(p.base_cost) : ''}${!p.is_active ? ' · Inactive' : ''}`,
-                      ctaLabel: 'Edit',
-                    }}
-                  />
-                );
+          {grouped.coupons.length > 0 && (
+            <ResultGroup
+              title="Coupons" count={grouped.coupons.length} scope="coupons"
+              expanded={expanded.coupons}
+              onToggleExpanded={() => setExpanded((e) => ({ ...e, coupons: !e.coupons }))}
+            >
+              {(expanded.coupons ? grouped.coupons : grouped.coupons.slice(0, INITIAL_GROUP_VISIBLE)).map((item) => {
+                const focused = flatList[focusedIdx]?.key === item.key;
+                return <ResultRow key={item.key} refStore={resultRefs} focused={focused} query={q} item={item} />;
               })}
             </ResultGroup>
           )}
 
-          {results.orders.length > 0 && (
-            <ResultGroup title="Orders" count={results.orders.length}>
-              {results.orders.map((o) => {
-                const key = 'o:' + o.id;
-                const focused = flatList[focusedIdx]?.key === key;
-                return (
-                  <ResultRow
-                    key={key} refStore={resultRefs} focused={focused} query={q}
-                    onCopyTracking={o.tracking_number ? () => copyToClipboard(o.tracking_number!, 'Tracking #') : undefined}
-                    item={{
-                      key, type: 'orders', href: '/admin/orders',
-                      title: o.buyer_name || o.buyer_email || `Order ${o.id.slice(0, 8)}`,
-                      subtitle: `${prettyStatus(o.status)} · ${formatMoney(o.total)}${o.tracking_number ? ' · Tracking ' + o.tracking_number : ''}${o.payment_method ? ' · ' + o.payment_method : ''} · ${new Date(o.created_at).toLocaleDateString()}`,
-                      ctaLabel: 'Open',
-                      copyTracking: o.tracking_number ?? undefined,
-                      matchScore: o.match_score ?? null,
-                    }}
-                  />
-                );
-              })}
-            </ResultGroup>
-          )}
-
-          {results.coupons.length > 0 && (
-            <ResultGroup title="Coupons" count={results.coupons.length}>
-              {results.coupons.map((c) => {
-                const key = 'c:' + c.id;
-                const focused = flatList[focusedIdx]?.key === key;
-                return (
-                  <ResultRow
-                    key={key} refStore={resultRefs} focused={focused} query={q}
-                    item={{
-                      key, type: 'coupons', href: '/admin/coupons',
-                      title: c.code,
-                      subtitle: `${c.type === 'percent' ? `${c.value}% off` : c.type === 'fixed' ? `${formatMoney(c.value)} off` : c.type} · Used ${c.uses_count}×${c.expires_at ? ' · Expires ' + new Date(c.expires_at).toLocaleDateString() : ''}${c.is_active === false ? ' · Inactive' : ''}`,
-                      ctaLabel: 'Manage',
-                    }}
-                  />
-                );
-              })}
-            </ResultGroup>
-          )}
-
-          {results.transactions.length > 0 && (
-            <ResultGroup title="Transactions" count={results.transactions.length}>
-              {results.transactions.map((t) => {
-                const key = 't:' + t.id;
-                const focused = flatList[focusedIdx]?.key === key;
-                return (
-                  <ResultRow
-                    key={key} refStore={resultRefs} focused={focused} query={q}
-                    item={{
-                      key, type: 'transactions', href: '/admin/transactions',
-                      title: t.description || `Transaction ${t.id.slice(0, 8)}`,
-                      subtitle: `${t.type} · ${formatMoney(t.amount)} · ${new Date(t.created_at).toLocaleDateString()}${t.order_id ? ' · Order ' + t.order_id.slice(0, 8) : ''}`,
-                      ctaLabel: 'Open',
-                    }}
-                  />
-                );
+          {grouped.transactions.length > 0 && (
+            <ResultGroup
+              title="Transactions" count={grouped.transactions.length} scope="transactions"
+              expanded={expanded.transactions}
+              onToggleExpanded={() => setExpanded((e) => ({ ...e, transactions: !e.transactions }))}
+            >
+              {(expanded.transactions ? grouped.transactions : grouped.transactions.slice(0, INITIAL_GROUP_VISIBLE)).map((item) => {
+                const focused = flatList[focusedIdx]?.key === item.key;
+                return <ResultRow key={item.key} refStore={resultRefs} focused={focused} query={q} item={item} />;
               })}
             </ResultGroup>
           )}
         </>
       )}
     </div>
+  );
+}
+
+// ─── Sub-components ───
+
+function PresetBtn({ label, onClick }: { label: string; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      style={{
+        padding: '4px 10px',
+        background: 'var(--surface-1, #0F1923)',
+        border: '1px solid var(--surface-3, #1D2D3E)',
+        borderRadius: 999, color: 'var(--white, #FFFFFF)',
+        fontSize: '0.74rem', fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap',
+      }}
+    >
+      {label}
+    </button>
   );
 }
 
@@ -719,7 +892,17 @@ const inputStyle: React.CSSProperties = {
 
 const selectStyle: React.CSSProperties = { ...inputStyle, paddingRight: 24 };
 
-function ResultGroup({ title, count, children }: { title: string; count: number; children: React.ReactNode }) {
+function ResultGroup({
+  title, count, scope, expanded, onToggleExpanded, children,
+}: {
+  title: string;
+  count: number;
+  scope: Scope;
+  expanded: boolean;
+  onToggleExpanded: () => void;
+  children: React.ReactNode;
+}) {
+  const showToggle = count > INITIAL_GROUP_VISIBLE;
   return (
     <section style={{ marginBottom: 20 }}>
       <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 8, padding: '0 4px' }}>
@@ -728,6 +911,20 @@ function ResultGroup({ title, count, children }: { title: string; count: number;
       </div>
       <div style={{ background: 'var(--surface-2, #162230)', border: '1px solid var(--surface-3, #1D2D3E)', borderRadius: 12, overflow: 'hidden' }}>
         {children}
+        {showToggle && (
+          <button
+            type="button"
+            onClick={onToggleExpanded}
+            style={{
+              width: '100%', padding: '10px 16px',
+              background: 'transparent', border: 0, borderTop: '1px solid var(--surface-3, #1D2D3E)',
+              color: 'var(--teal, #00C4BC)', cursor: 'pointer',
+              fontSize: '0.82rem', fontWeight: 600,
+            }}
+          >
+            {expanded ? `Show Less` : `Show All ${count}`}
+          </button>
+        )}
       </div>
     </section>
   );
@@ -743,7 +940,9 @@ function ResultRow({
   onCopyEmail?: () => void;
   onCopyTracking?: () => void;
 }) {
-  const showScore = item.matchScore != null && item.matchScore >= 0.4;
+  // Server-side trigram score on orders is 0..10 after our ×10. Threshold
+  // at 4 (~0.4 raw similarity) — anything lower isn't worth advertising.
+  const showScore = item.type === 'orders' && item.matchScore != null && item.matchScore >= 4;
   return (
     <Link
       ref={(el) => { if (el) refStore.current.set(item.key, el); else refStore.current.delete(item.key); }}
@@ -758,19 +957,46 @@ function ResultRow({
         outlineOffset: focused ? -1 : 0,
       }}
     >
+      {/* #10: avatar circle on user rows */}
+      {item.type === 'users' && item.avatarSeed && (
+        <div
+          aria-hidden="true"
+          style={{
+            flexShrink: 0, width: 32, height: 32, borderRadius: '50%',
+            background: avatarColor(item.avatarSeed),
+            display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+            color: '#FFFFFF', fontSize: '0.78rem', fontWeight: 700, letterSpacing: '0.02em',
+          }}
+        >
+          {initialsFor(item.title, item.avatarSeed)}
+        </div>
+      )}
+
       <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 2 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
           <span style={{ fontSize: '0.95rem', fontWeight: 600, color: 'var(--white, #FFFFFF)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
             {highlight(item.title, query)}
           </span>
+          {item.inactive && (
+            <span
+              style={{
+                fontSize: '0.62rem', padding: '1px 6px', borderRadius: 999,
+                background: 'rgba(168,180,192,0.18)', color: 'var(--grey-300, #D0DAE4)',
+                fontWeight: 700, letterSpacing: '0.05em', textTransform: 'uppercase', flexShrink: 0,
+              }}
+            >
+              Inactive
+            </span>
+          )}
           {showScore && (
-            <span style={{ fontSize: '0.62rem', padding: '1px 6px', borderRadius: 999, background: 'rgba(0,196,188,0.15)', color: 'var(--teal, #00C4BC)', fontWeight: 700, letterSpacing: '0.05em' }}>
-              {Math.round((item.matchScore as number) * 100)}% match
+            <span style={{ fontSize: '0.62rem', padding: '1px 6px', borderRadius: 999, background: 'rgba(0,196,188,0.15)', color: 'var(--teal, #00C4BC)', fontWeight: 700, letterSpacing: '0.05em', flexShrink: 0 }}>
+              {Math.round((item.matchScore as number) * 10)}% match
             </span>
           )}
         </div>
+        {/* #2: highlight subtitle too */}
         <div style={{ fontSize: '0.78rem', color: 'var(--grey-400, #A8B4C0)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-          {item.subtitle}
+          {highlight(item.subtitle, query)}
         </div>
       </div>
       <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
@@ -794,9 +1020,6 @@ function ResultRow({
 }
 
 function EmptyState({ recent, onPickRecent, onClearRecent }: { recent: string[]; onPickRecent: (r: string) => void; onClearRecent: () => void; }) {
-  // fix-50: dropped the "What You Can Search" cheat-sheet — the input
-  // placeholder + scope chips already cover that surface. Recent Searches
-  // and a short tips line remain so a fresh visitor still gets a hint.
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
       {recent.length > 0 && (
