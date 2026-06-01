@@ -113,82 +113,47 @@ export default function FirstRunNotificationPrompt() {
         style={{ width: '100%', maxWidth: 420, padding: !enabled ? 0 : 'var(--space-7, 28px)', textAlign: 'center', borderRadius: 18 }}
       >
         {!enabled ? (
-          <div style={{
-            background: '#0B0D11',
-            padding: '40px 32px',
-            borderRadius: 18,
-            border: '2px solid rgba(210, 193, 160, 0.6)', // Thicker border
-            textAlign: 'center',
-            color: '#fff',
-            fontFamily: 'var(--font-brand, sans-serif)',
-          }}>
-            <div style={{
-              width: 52,
-              height: 52,
-              borderRadius: '50%',
-              border: '1px solid rgba(255, 255, 255, 0.3)',
-              margin: '0 auto 24px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}>
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
-                <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
-              </svg>
-            </div>
-            
-            <h2 style={{ margin: '0 0 16px', fontSize: '1.4rem', fontWeight: 800, letterSpacing: '0.02em', color: '#fff' }}>
-              Turn On Notifications
-            </h2>
-            
-            <p style={{ margin: '0 0 32px', fontSize: '0.95rem', color: '#B3B8BF', lineHeight: 1.5 }}>
-              Get Alerts On This Device For Incoming Calls And New Messages — Even When Pep Nation Lab Is Closed.
-            </p>
-            
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 12, alignItems: 'center' }}>
-              <button 
-                type="button" 
-                onClick={onEnable} 
-                disabled={busy} 
-                aria-label="Enable Notifications"
-                style={{ 
-                  width: '100%', 
-                  padding: '14px', 
-                  borderRadius: 10, 
-                  background: 'linear-gradient(180deg, #D4CBBD 0%, #C4B6A0 100%)', 
-                  color: '#000', 
-                  border: 'none', 
-                  fontWeight: 700, 
-                  fontSize: '1rem', 
-                  cursor: 'pointer',
-                  transition: 'opacity 0.2s, transform 0.1s',
-                  opacity: busy ? 0.7 : 1,
-                }}
-              >
-                {busy ? 'Enabling...' : 'Enable Notifications'}
-              </button>
-              
-              <button 
-                type="button" 
-                onClick={onClose} 
-                aria-label="Not Now"
-                style={{ 
-                  width: '100%', 
-                  padding: '14px', 
-                  borderRadius: 10, 
-                  background: '#1D2128', 
-                  color: '#9CA3AF', 
-                  border: '1px solid rgba(255, 255, 255, 0.1)', 
-                  fontWeight: 600, 
-                  fontSize: '1rem', 
-                  cursor: 'pointer',
-                  transition: 'background 0.2s'
-                }}
-              >
-                Not Now
-              </button>
-            </div>
+          <div style={{ position: 'relative', width: '100%', filter: 'drop-shadow(0 20px 40px rgba(0,0,0,0.6))' }}>
+            <img 
+              src="/images/enable-notifications-dynamic.png" 
+              alt="Turn On Notifications" 
+              style={{ width: '100%', height: 'auto', display: 'block' }} 
+            />
+            {/* Hitbox for Enable Notifications */}
+            <button 
+              type="button" 
+              onClick={onEnable} 
+              disabled={busy} 
+              aria-label="Enable Notifications"
+              style={{ 
+                position: 'absolute', 
+                top: '59%', 
+                left: '12%', 
+                width: '76%', 
+                height: '14%', 
+                background: 'transparent', 
+                border: 'none', 
+                cursor: 'pointer',
+                outline: 'none',
+              }}
+            />
+            {/* Hitbox for Not Now */}
+            <button 
+              type="button" 
+              onClick={onClose} 
+              aria-label="Not Now"
+              style={{ 
+                position: 'absolute', 
+                top: '75%', 
+                left: '12%', 
+                width: '76%', 
+                height: '14%', 
+                background: 'transparent', 
+                border: 'none', 
+                cursor: 'pointer',
+                outline: 'none'
+              }}
+            />
           </div>
         ) : (
           <>
