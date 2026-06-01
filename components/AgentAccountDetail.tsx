@@ -34,6 +34,7 @@ type Detail = {
     velocity_cap: number | null;
     commission_active_since: string | null;
     is_active: boolean;
+    is_sub_agent?: boolean;
     created_at: string;
     last_sign_in_at?: string | null;
     first_sign_in_at?: string | null;
@@ -60,6 +61,8 @@ type Detail = {
 };
 
 const fmtMoney = (v: number | null | undefined) => `$${(Number(v) || 0).toFixed(2)}`;
+const fmtMoney0 = (v: number | null | undefined) => `$${Math.round(Number(v) || 0).toLocaleString()}`;
+const fmtPct = (n: number) => `${Number.isInteger(n) ? n : Number(n.toFixed(1))}%`;
 const fmtDate = (s: string | null | undefined) => {
   if (!s) return '—';
   try { return new Date(s).toLocaleDateString(); } catch { return String(s); }
@@ -72,6 +75,21 @@ const fmtLastSignIn = (s: string | null | undefined) => {
 };
 const titleCaseStatus = (s: string) =>
   s.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+
+// Hard ceiling on the gamification Max Cap (platform rule).
+const MAX_CAP_LIMIT = 40;
+
+// The 5-level gamification commission ladder. Mirrors the house default steps in
+// fn_house_default_commission_steps(): Level 1 is the Base (under $2,500 monthly
+// retail); each higher level adds its bonus once the agent crosses the threshold.
+// Effective rate = min(Base + Bonus, Max Cap).
+const COMMISSION_LEVELS: { level: number; name: string; min: number; max: number | null; bonus: number }[] = [
+  { level: 1, name: 'Rookie',      min: 0,     max: 2499,  bonus: 0 },
+  { level: 2, name: 'Established', min: 2500,  max: 7499,  bonus: 3 },
+  { level: 3, name: 'Pro',         min: 7500,  max: 19999, bonus: 7 },
+  { level: 4, name: 'Elite',       min: 20000, max: 49999, bonus: 12 },
+  { level: 5, name: 'Apex',        min: 50000, max: null,  bonus: 20 },
+];
 
 const labelStyle: React.CSSProperties = {
   display: 'block', marginBottom: 6, color: 'var(--grey-300)', fontSize: '0.8rem', fontWeight: 600,
@@ -111,7 +129,7 @@ export default function AgentAccountDetail({
   const [commissionMode, setCommissionMode] = useState<'fixed' | 'gamified'>('fixed');
   const [maxCap, setMaxCap] = useState('');
   const [velocityCap, setVelocityCap] = useState('');
-  // Toggles the Gamification Scale explainer popover next to its radio label.
+  // Opens the full-screen Gamification Scale explainer.
   const [showGamificationInfo, setShowGamificationInfo] = useState(false);
   const [isActive, setIsActive] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -162,6 +180,14 @@ export default function AgentAccountDetail({
   const isSubAgent = detail?.agent?.is_sub_agent === true;
 
   async function saveChanges() {
+    // Platform rule: the gamification Max Cap can never exceed 40%.
+    if (commissionMode === 'gamified' && maxCap !== '') {
+      const capNum = Number(maxCap);
+      if (Number.isFinite(capNum) && capNum > MAX_CAP_LIMIT) {
+        toast.error('Max Cap Cannot Exceed 40%.');
+        return;
+      }
+    }
     setSaving(true);
     try {
       const baseVal = commissionPct === '' ? 0 : commissionPct;
@@ -252,7 +278,19 @@ export default function AgentAccountDetail({
     }
   }
 
+  // Live effective rate per level from the entered Base + Max Cap (cap clamped to 40%).
+  const baseNumForLadder = commissionPct === '' ? 0 : (Number(commissionPct) || 0);
+  const capRawForLadder = maxCap === '' ? null : Number(maxCap);
+  const capNumForLadder = capRawForLadder != null && Number.isFinite(capRawForLadder)
+    ? Math.min(capRawForLadder, MAX_CAP_LIMIT)
+    : null;
+  const effForBonus = (bonus: number) => {
+    const v = baseNumForLadder + bonus;
+    return capNumForLadder != null ? Math.min(v, capNumForLadder) : v;
+  };
+
   return (
+    <>
     <div
       onClick={onClose}
       style={{
@@ -424,11 +462,11 @@ export default function AgentAccountDetail({
                           type="button"
                           aria-label="How The Gamification Scale Works"
                           title="How The Gamification Scale Works"
-                          onClick={(e) => { e.preventDefault(); e.stopPropagation(); setShowGamificationInfo((v) => !v); }}
+                          onClick={(e) => { e.preventDefault(); e.stopPropagation(); setShowGamificationInfo(true); }}
                           style={{
                             flex: '0 0 auto', width: 20, height: 20, borderRadius: '50%',
-                            border: '1px solid var(--teal)', background: showGamificationInfo ? 'var(--teal)' : 'transparent',
-                            color: showGamificationInfo ? '#04141a' : 'var(--teal)', fontSize: '0.72rem', fontWeight: 800,
+                            border: '1px solid var(--teal)', background: 'transparent',
+                            color: 'var(--teal)', fontSize: '0.72rem', fontWeight: 800,
                             lineHeight: 1, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
                             fontStyle: 'italic', fontFamily: 'Georgia, serif',
                           }}
@@ -437,47 +475,6 @@ export default function AgentAccountDetail({
                         </button>
                       </label>
                     </div>
-
-                    {showGamificationInfo && (
-                      <div
-                        style={{
-                          border: '1px solid rgba(0,196,188,0.4)', background: 'rgba(0,196,188,0.06)',
-                          borderRadius: 8, padding: 'var(--space-3) var(--space-4)', marginBottom: 'var(--space-3)',
-                          fontSize: '0.78rem', color: 'var(--grey-300)', lineHeight: 1.55,
-                        }}
-                      >
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-                          <strong style={{ color: 'var(--teal)', fontSize: '0.82rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                            How The Gamification Scale Works
-                          </strong>
-                          <button
-                            type="button"
-                            aria-label="Close Explanation"
-                            onClick={() => setShowGamificationInfo(false)}
-                            style={{ background: 'none', border: 'none', color: 'var(--grey-400)', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600, lineHeight: 1 }}
-                          >
-                            Close
-                          </button>
-                        </div>
-                        <p style={{ margin: '0 0 8px' }}>
-                          Instead Of One Flat Commission, The Agent Earns A Higher Rate As They Sell More. Their Commission Starts At The Base Rate And Climbs Toward The Max Cap As Their Monthly Volume Grows — A Built-In Incentive To Keep Selling.
-                        </p>
-                        <ul style={{ margin: '0 0 8px', paddingLeft: 18, listStyle: 'disc' }}>
-                          <li style={{ marginBottom: 4 }}>
-                            <strong style={{ color: 'var(--white)' }}>Base Rate (%)</strong> — The Floor. Every Sale Earns At Least This Rate, Even At Zero Volume.
-                          </li>
-                          <li style={{ marginBottom: 4 }}>
-                            <strong style={{ color: 'var(--white)' }}>Max Cap (%)</strong> — The Ceiling. The Highest Rate The Agent Can Reach At Top Volume. Leave Blank For No Ceiling.
-                          </li>
-                          <li>
-                            <strong style={{ color: 'var(--white)' }}>Velocity Cap ($, Optional)</strong> — The Monthly Sales Figure At Which The Agent Hits The Max Cap. A Higher Velocity Cap Means They Must Sell More To Reach The Top Rate. Leave Blank To Use The Default Pace.
-                          </li>
-                        </ul>
-                        <p style={{ margin: 0 }}>
-                          Example: Base 15%, Max Cap 25%, Velocity Cap $10,000. The Agent Earns 15% Early In The Month And Scales Up Toward 25% As Their Monthly Sales Approach $10,000. A Full Storefront Agent's Own Profit Still Comes From Their Retail Pricing — This Scale Governs The Commission You Pay Them On Top.
-                        </p>
-                      </div>
-                    )}
 
                     {commissionMode === 'fixed' ? (
                       <div style={{ maxWidth: 240 }}>
@@ -488,11 +485,11 @@ export default function AgentAccountDetail({
                       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 'var(--space-3)' }}>
                         <div>
                           <label style={labelStyle}>Base Rate (%)</label>
-                          <input style={inputStyle} type="number" min="0" max="100" step="0.1" value={commissionPct} onChange={(e) => setCommissionPct(e.target.value)} placeholder="0" />
+                          <input style={inputStyle} type="number" min="0" max="40" step="0.1" value={commissionPct} onChange={(e) => setCommissionPct(e.target.value)} placeholder="0" />
                         </div>
                         <div>
-                          <label style={labelStyle}>Max Cap (%)</label>
-                          <input style={inputStyle} type="number" min="0" max="100" step="0.1" value={maxCap} onChange={(e) => setMaxCap(e.target.value)} placeholder="No Cap" />
+                          <label style={labelStyle}>Max Cap (%, Max 40)</label>
+                          <input style={inputStyle} type="number" min="0" max="40" step="0.1" value={maxCap} onChange={(e) => setMaxCap(e.target.value)} placeholder="Up To 40" />
                         </div>
                         <div>
                           <label style={labelStyle}>Velocity Cap ($, Optional)</label>
@@ -501,7 +498,14 @@ export default function AgentAccountDetail({
                       </div>
                     )}
                     <p style={{ fontSize: '0.7rem', color: 'var(--grey-500)', margin: '8px 0 0', lineHeight: 1.4 }}>
-                      Fixed Percentage Pays A Flat Rate. Gamification Scale Starts At The Base Rate And Climbs With Monthly Volume Up To The Max Cap (House Milestone Ladder). A Full Storefront Agent's Own Margin Still Comes From Their Retail Pricing.
+                      Fixed Percentage Pays A Flat Rate. Gamification Scale Climbs Through 5 Levels As Monthly Sales Grow, Up To The Max Cap (40% Maximum).{' '}
+                      <button
+                        type="button"
+                        onClick={() => setShowGamificationInfo(true)}
+                        style={{ background: 'none', border: 'none', padding: 0, color: 'var(--teal)', cursor: 'pointer', fontWeight: 700, textDecoration: 'underline' }}
+                      >
+                        See The 5 Levels
+                      </button>.
                     </p>
                   </div>
                 </div>
@@ -610,6 +614,110 @@ export default function AgentAccountDetail({
         </div>
       </div>
     </div>
+
+    {/* Full-screen Gamification Scale explainer */}
+    {showGamificationInfo && (
+      <div
+        onClick={() => setShowGamificationInfo(false)}
+        style={{
+          position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.92)', backdropFilter: 'blur(10px)',
+          zIndex: 1400, display: 'flex', alignItems: 'flex-start', justifyContent: 'center',
+          padding: 'var(--space-4)', overflowY: 'auto',
+        }}
+      >
+        <div
+          onClick={(e) => e.stopPropagation()}
+          className="metal-frame"
+          style={{ width: '100%', maxWidth: 720, margin: 'var(--space-5) 0' }}
+        >
+          <div className="metal-content" style={{ padding: 'var(--space-6)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 'var(--space-4)', marginBottom: 'var(--space-4)' }}>
+              <div>
+                <h2 className="metal-text" style={{ fontSize: '1.3rem', fontFamily: 'var(--font-brand)', margin: 0, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  Gamification Scale
+                </h2>
+                <p style={{ color: 'var(--grey-400)', fontSize: '0.82rem', margin: '6px 0 0' }}>
+                  Commission Climbs Through 5 Levels As Monthly Sales Grow.
+                </p>
+              </div>
+              <button type="button" className="btn-silver" onClick={() => setShowGamificationInfo(false)}>Close</button>
+            </div>
+
+            <p style={{ fontSize: '0.85rem', color: 'var(--grey-300)', lineHeight: 1.55, margin: '0 0 var(--space-4)' }}>
+              Instead Of One Flat Commission, The Agent Climbs A 5-Level Ladder Based On How Much They Sell Each Calendar Month. They Start At Level 1 (The Base Rate) And Move Up A Level Each Time Their Monthly Sales Cross The Next Threshold. The Higher The Level, The Bigger The Commission — Up To The Max Cap, Which Can Never Exceed 40%.
+            </p>
+
+            {/* Live level table */}
+            <div style={{ border: '1px solid rgba(0,196,188,0.35)', borderRadius: 10, overflow: 'hidden', marginBottom: 'var(--space-4)' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1.3fr 1.5fr 0.8fr 1fr', background: 'rgba(0,196,188,0.12)', padding: '10px 12px', fontSize: '0.66rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--teal)' }}>
+                <span>Level</span>
+                <span>Monthly Sales</span>
+                <span style={{ textAlign: 'center' }}>Bonus</span>
+                <span style={{ textAlign: 'right' }}>Commission</span>
+              </div>
+              {COMMISSION_LEVELS.map((lv) => {
+                const range = lv.max == null
+                  ? `${fmtMoney0(lv.min)}+`
+                  : `${fmtMoney0(lv.min)} – ${fmtMoney0(lv.max)}`;
+                return (
+                  <div
+                    key={lv.level}
+                    style={{
+                      display: 'grid', gridTemplateColumns: '1.3fr 1.5fr 0.8fr 1fr', alignItems: 'center',
+                      padding: '10px 12px', fontSize: '0.8rem',
+                      borderTop: '1px solid rgba(255,255,255,0.06)',
+                      background: lv.level % 2 === 0 ? 'rgba(255,255,255,0.015)' : 'transparent',
+                    }}
+                  >
+                    <span style={{ color: 'var(--white)', fontWeight: 700 }}>
+                      <span style={{ display: 'inline-block', minWidth: 18, color: 'var(--teal)' }}>{lv.level}.</span> {lv.name}
+                    </span>
+                    <span style={{ color: 'var(--silver)' }}>{range}</span>
+                    <span style={{ textAlign: 'center', color: lv.bonus === 0 ? 'var(--grey-500)' : '#00FF9D', fontWeight: 700 }}>
+                      {lv.bonus === 0 ? 'Base' : `+${lv.bonus}%`}
+                    </span>
+                    <span style={{ textAlign: 'right', color: 'var(--white)', fontWeight: 800 }}>{fmtPct(effForBonus(lv.bonus))}</span>
+                  </div>
+                );
+              })}
+            </div>
+
+            <div style={{ fontSize: '0.78rem', color: 'var(--grey-400)', lineHeight: 1.5, marginBottom: 'var(--space-4)' }}>
+              The Commission Column Above Updates Live From The Base Rate ({fmtPct(baseNumForLadder)})
+              {capNumForLadder != null ? ` And Max Cap (${fmtPct(capNumForLadder)})` : ' (No Cap Set Yet)'} You Have Entered.
+              Each Level Adds Its Bonus To The Base Rate, And The Total Is Held At The Max Cap.
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 'var(--space-3)', marginBottom: 'var(--space-4)' }}>
+              <div style={{ border: '1px solid rgba(255,255,255,0.08)', borderRadius: 8, padding: '12px 14px' }}>
+                <div style={{ fontSize: '0.7rem', color: 'var(--teal)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: 4 }}>Base Rate</div>
+                <div style={{ fontSize: '0.78rem', color: 'var(--grey-300)', lineHeight: 1.5 }}>The Level 1 Floor. Every Sale Earns At Least This, Even At Zero Volume.</div>
+              </div>
+              <div style={{ border: '1px solid rgba(255,255,255,0.08)', borderRadius: 8, padding: '12px 14px' }}>
+                <div style={{ fontSize: '0.7rem', color: 'var(--teal)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: 4 }}>Max Cap</div>
+                <div style={{ fontSize: '0.78rem', color: 'var(--grey-300)', lineHeight: 1.5 }}>The Ceiling At Level 5. Cannot Exceed 40%. The Agent Never Earns More Than This, No Matter The Volume.</div>
+              </div>
+              <div style={{ border: '1px solid rgba(255,255,255,0.08)', borderRadius: 8, padding: '12px 14px' }}>
+                <div style={{ fontSize: '0.7rem', color: 'var(--teal)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: 4 }}>Monthly Reset</div>
+                <div style={{ fontSize: '0.78rem', color: 'var(--grey-300)', lineHeight: 1.5 }}>Levels Are Based On Sales In The Current Calendar Month And Reset On The 1st.</div>
+              </div>
+            </div>
+
+            <div style={{ border: '1px solid rgba(0,196,188,0.4)', background: 'rgba(0,196,188,0.06)', borderRadius: 8, padding: 'var(--space-3) var(--space-4)', marginBottom: 'var(--space-3)' }}>
+              <strong style={{ color: 'var(--teal)', fontSize: '0.78rem', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block', marginBottom: 6 }}>Example</strong>
+              <p style={{ fontSize: '0.8rem', color: 'var(--grey-300)', lineHeight: 1.55, margin: 0 }}>
+                With A Base Of 10% And A Max Cap Of 30%: An Agent Selling $1,000 This Month Earns 10% (Level 1). At $8,000 They Reach Level 3 And Earn 17%. At $50,000+ They Hit Level 5 And Earn 30% (Held At The Cap). The More They Sell, The More They Make.
+              </p>
+            </div>
+
+            <p style={{ fontSize: '0.74rem', color: 'var(--grey-500)', lineHeight: 1.5, margin: 0 }}>
+              Note: A Full Storefront Agent's Own Profit Still Comes From Their Retail Pricing. This Ladder Governs The Commission Paid On Top. Velocity Cap Is Optional And Only Limits How Fast Volume Counts Toward Leveling.
+            </p>
+          </div>
+        </div>
+      </div>
+    )}
+    </>
   );
 }
 
