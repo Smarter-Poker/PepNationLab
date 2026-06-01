@@ -63,7 +63,26 @@ interface Order {
   order_items: OrderItem[];
 }
 
-export default async function OrdersPage() {
+const ACTIVE_STATUSES = new Set([
+  'pending_customer_payment',
+  'agent_approval_pending',
+  'approved_ship',
+  'approved_pickup',
+  'in_fulfillment',
+  'shipped',
+]);
+
+const SORT_OPTIONS: { id: string; label: string }[] = [
+  { id: 'newest', label: 'Newest' },
+  { id: 'oldest', label: 'Oldest' },
+  { id: 'total', label: 'Highest Total' },
+];
+
+export default async function OrdersPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ sort?: string }>;
+}) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
@@ -71,26 +90,62 @@ export default async function OrdersPage() {
     redirect('/login?redirect=/orders');
   }
 
-  const { data: ordersData } = await supabase
+  const { sort: sortParam } = await searchParams;
+  const sort = SORT_OPTIONS.some((o) => o.id === sortParam) ? sortParam! : 'newest';
+
+  let query = supabase
     .from('orders')
     .select('id, status, created_at, payment_method, fulfillment_method, subtotal, discount_amount, coupon_code, shipping_cost, total, tracking_number, order_items(id, product_name, quantity, unit_retail_price)')
-    .eq('buyer_id', user.id)
-    .order('created_at', { ascending: false });
+    .eq('buyer_id', user.id);
+
+  if (sort === 'oldest') query = query.order('created_at', { ascending: true });
+  else if (sort === 'total') query = query.order('total', { ascending: false });
+  else query = query.order('created_at', { ascending: false });
+
+  const { data: ordersData } = await query;
 
   const orders = (ordersData ?? []) as Order[];
+
+  // Resolve the buyer's home storefront so the "Continue Shopping" CTA is a
+  // live link (the legacy /products route now just redirects to /).
+  let storefrontHref = '/dashboard';
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('referring_agent_id')
+    .eq('id', user.id)
+    .maybeSingle();
+  if (profile?.referring_agent_id) {
+    const { data: agent } = await supabase
+      .from('agent_profiles')
+      .select('slug')
+      .eq('id', profile.referring_agent_id)
+      .maybeSingle();
+    if (agent?.slug) storefrontHref = `/${agent.slug}`;
+  }
+
+  // Summary metrics across the buyer's lifetime.
+  const activeCount = orders.filter((o) => ACTIVE_STATUSES.has(o.status)).length;
+  const lifetimeSpend = orders
+    .filter((o) => o.status !== 'cancelled')
+    .reduce((sum, o) => sum + Number(o.total || 0), 0);
 
   return (
     <PageShell>
       <section className="section">
         <div className="container-sm">
           {/* Header */}
-          <div style={{ marginBottom: 'var(--space-8)' }}>
-            <h1 className="animated-gradient-text" style={{ fontSize: '1.8rem', marginBottom: 'var(--space-2)' }}>
-              My <span style={{ color: 'var(--teal)' }}>Orders</span>
-            </h1>
-            <p style={{ fontSize: '0.9rem', color: 'var(--grey-400)' }}>
-              Your Research Compound Order History And Fulfillment Status
-            </p>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 'var(--space-3)', marginBottom: 'var(--space-6)' }}>
+            <div>
+              <h1 className="animated-gradient-text" style={{ fontSize: '1.8rem', marginBottom: 'var(--space-2)' }}>
+                My <span style={{ color: 'var(--teal)' }}>Orders</span>
+              </h1>
+              <p style={{ fontSize: '0.9rem', color: 'var(--grey-400)' }}>
+                Your Research Compound Order History And Fulfillment Status
+              </p>
+            </div>
+            <Link href={storefrontHref} className="btn btn-secondary" style={{ fontSize: '0.78rem', padding: '8px 16px', whiteSpace: 'nowrap' }}>
+              Continue Shopping
+            </Link>
           </div>
 
           {orders.length === 0 ? (
@@ -105,6 +160,7 @@ export default async function OrdersPage() {
                 strokeLinecap="round"
                 strokeLinejoin="round"
                 style={{ marginBottom: 'var(--space-4)' }}
+                aria-hidden="true"
               >
                 <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z" />
                 <line x1="3" y1="6" x2="21" y2="6" />
@@ -112,14 +168,56 @@ export default async function OrdersPage() {
               </svg>
               <h2 style={{ fontSize: '1.2rem', marginBottom: 'var(--space-2)' }}>No Orders Yet</h2>
               <p style={{ fontSize: '0.88rem', color: 'var(--grey-400)', marginBottom: 'var(--space-6)' }}>
-                You Have Not Placed Any Research Orders. Browse The Catalog To Get Started.
+                You Have Not Placed Any Research Orders. Browse Your Storefront To Get Started.
               </p>
-              <Link href="/products" className="btn btn-primary">
+              <Link href={storefrontHref} className="btn btn-primary">
                 Browse Research Catalog
               </Link>
             </div>
           ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-5)' }}>
+            <>
+              {/* Summary strip */}
+              <div className="stagger-fade-in" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 'var(--space-3)', marginBottom: 'var(--space-6)', animationDelay: '0.05s' }}>
+                {[
+                  { label: 'Total Orders', value: String(orders.length) },
+                  { label: 'In Progress', value: String(activeCount) },
+                  { label: 'Lifetime Spend', value: `$${lifetimeSpend.toFixed(2)}` },
+                ].map((stat) => (
+                  <div key={stat.label} className="card-glass" style={{ padding: 'var(--space-4)', borderRadius: 'var(--radius-md)' }}>
+                    <div style={{ fontSize: '1.4rem', fontWeight: 800, fontFamily: 'var(--font-brand)', color: 'var(--teal)', lineHeight: 1 }}>{stat.value}</div>
+                    <div style={{ fontSize: '0.74rem', color: 'var(--grey-400)', marginTop: 'var(--space-2)' }}>{stat.label}</div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Sort control */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', marginBottom: 'var(--space-5)', flexWrap: 'wrap' }}>
+                <span style={{ fontSize: '0.76rem', color: 'var(--grey-500)' }}>Sort By</span>
+                {SORT_OPTIONS.map((opt) => {
+                  const active = opt.id === sort;
+                  return (
+                    <Link
+                      key={opt.id}
+                      href={opt.id === 'newest' ? '/orders' : `/orders?sort=${opt.id}`}
+                      aria-current={active ? 'true' : undefined}
+                      style={{
+                        fontSize: '0.76rem',
+                        fontWeight: 600,
+                        padding: '5px 12px',
+                        borderRadius: 'var(--radius-full)',
+                        textDecoration: 'none',
+                        color: active ? '#0A1018' : 'var(--grey-300)',
+                        background: active ? 'linear-gradient(180deg, #DCD3C3 0%, #B3A992 100%)' : 'var(--surface-1)',
+                        border: active ? '1px solid transparent' : '1px solid rgba(255,255,255,0.08)',
+                      }}
+                    >
+                      {opt.label}
+                    </Link>
+                  );
+                })}
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-5)' }}>
               {orders.map((order, index) => {
                 const statusColor = STATUS_COLORS[order.status] ?? 'var(--grey-400)';
                 return (
@@ -250,7 +348,8 @@ export default async function OrdersPage() {
                   </div>
                 );
               })}
-            </div>
+              </div>
+            </>
           )}
         </div>
       </section>
