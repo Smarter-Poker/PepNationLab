@@ -6,10 +6,11 @@ import { useRouter } from 'next/navigation';
 import { Search, X, Copy, ExternalLink, Filter, AlertTriangle, ChevronRight } from 'lucide-react';
 import { toast } from 'sonner';
 
-// fix-52: ships items #1-5, 9-15 from the global-search deep-dive.
+// fix-52:  ships items #1-5, 9-15 from the global-search deep-dive.
 // fix-52b: abort in-flight fetch on unmount, router.push for Enter-key nav.
 // fix-52c: empty state is now blank — Tips + Recent Searches removed per user.
 // fix-53:  operational nudges panel on empty state (fetches /api/admin/operational-nudges).
+// fix-53b: nudge icon uses palette teal (was off-palette amber).
 
 type Scope = 'all' | 'users' | 'products' | 'orders' | 'storefronts' | 'coupons' | 'transactions';
 
@@ -245,8 +246,6 @@ export default function AdminSearchClient() {
     if (scope === 'orders') setFiltersOpen(true);
   }, [scope]);
 
-  // fix-53: fetch the operational nudges on mount, fire-and-forget.
-  // Cached server-side (30s + 60s SWR) so revisits are cheap.
   useEffect(() => {
     let aborted = false;
     (async () => {
@@ -715,7 +714,6 @@ export default function AdminSearchClient() {
         {results && (q.length >= 2 || filtersActive) ? `${totalHits} result${totalHits === 1 ? '' : 's'} for ${q || 'current filters'}` : ''}
       </div>
 
-      {/* fix-53: operational nudges panel on the empty state */}
       {showEmptyState && nudges && <OperationalNudgesPanel nudges={nudges} />}
 
       {showNoResults && (
@@ -824,9 +822,6 @@ export default function AdminSearchClient() {
   );
 }
 
-// fix-53: operational nudges panel. Renders nothing if every count is 0
-// — that way the empty state preserves the blank-canvas feel when
-// there's nothing actionable.
 function OperationalNudgesPanel({ nudges }: { nudges: Nudges }) {
   const rows: Array<{ key: string; label: string; count: number; href: string }> = [
     { key: 'pcp', label: 'Orders Pending Customer Payment', count: nudges.pendingCustomerPayment, href: '/admin/orders?status=pending_customer_payment' },
@@ -860,7 +855,7 @@ function OperationalNudgesPanel({ nudges }: { nudges: Nudges }) {
               aria-hidden="true"
               style={{
                 flexShrink: 0, width: 28, height: 28, borderRadius: 8,
-                background: 'rgba(255,191,77,0.14)', color: '#FFBF4D',
+                background: 'rgba(0,196,188,0.14)', color: 'var(--teal, #00C4BC)',
                 display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
               }}
             >
