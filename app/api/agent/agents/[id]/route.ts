@@ -10,7 +10,8 @@ export const dynamic = 'force-dynamic';
  *
  *   GET   /api/agent/agents/[id]   -> full detail (profile + storefront + ledger + sales)
  *   PATCH /api/agent/agents/[id]   -> edit full_name, account_type, credit_limit,
- *                                     commission_pct, is_active, storefront display_name
+ *                                     commission_pct, commission_max_pct, velocity_cap,
+ *                                     is_active, storefront display_name
  *
  * Authorization: caller must be a super_agent (or admin) AND the target must be
  * their own downline agent (target.parent_agent_id === caller.id). Admins bypass
@@ -58,7 +59,7 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ id: string
     const { data: agent, error } = await supabase
       .from('profiles')
       .select(
-        'id, full_name, username, email, role, account_type, credit_limit, prepaid_balance, commission_pct, commission_active_since, is_active, is_sub_agent, parent_agent_id, created_at, last_sign_in_at, first_sign_in_at, sign_in_count, agent_profiles(slug, display_name, is_active)',
+        'id, full_name, username, email, role, account_type, credit_limit, prepaid_balance, commission_pct, commission_max_pct, velocity_cap, commission_active_since, is_active, is_sub_agent, parent_agent_id, created_at, last_sign_in_at, first_sign_in_at, sign_in_count, agent_profiles(slug, display_name, is_active)',
       )
       .eq('id', id)
       .single();
@@ -106,6 +107,9 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ id: string
       .eq('is_sub_agent', true)
       .order('created_at', { ascending: false });
 
+    const commissionMaxPct = (agent as { commission_max_pct?: number | null }).commission_max_pct;
+    const velocityCap = (agent as { velocity_cap?: number | null }).velocity_cap;
+
     return NextResponse.json({
       agent: {
         id: agent.id,
@@ -116,6 +120,8 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ id: string
         credit_limit: agent.credit_limit != null ? num(agent.credit_limit) : null,
         prepaid_balance: num(agent.prepaid_balance),
         commission_pct: agent.commission_pct != null ? num(agent.commission_pct) : null,
+        commission_max_pct: commissionMaxPct != null ? num(commissionMaxPct) : null,
+        velocity_cap: velocityCap != null ? num(velocityCap) : null,
         commission_active_since: agent.commission_active_since,
         is_active: !!agent.is_active,
         created_at: agent.created_at,
@@ -223,6 +229,42 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
       }
       updates.commission_pct = pct;
       changes.commission_pct = pct;
+    }
+
+    // Commission structure: gamification cap + velocity.
+    //   - Fixed Percentage: the client sends commission_max_pct === commission_pct
+    //     (cap == base), which forces the effective rate flat in
+    //     fn_sub_agent_effective_commission (LEAST(base + bonus, cap)).
+    //   - Gamification Scale: cap above the base lets the milestone ladder lift
+    //     the rate with volume up to the cap; null cap = uncapped ladder.
+    const baseForCap = updates.commission_pct != null
+      ? Number(updates.commission_pct)
+      : Number(target.commission_pct ?? 0);
+    if (body.commission_max_pct === null) {
+      updates.commission_max_pct = null;
+      changes.commission_max_pct = null;
+    } else if (body.commission_max_pct !== undefined && body.commission_max_pct !== '') {
+      const cap = Number(body.commission_max_pct);
+      if (!Number.isFinite(cap) || cap < 0 || cap > 100) {
+        return NextResponse.json({ error: 'Max Commission Cap Must Be Between 0 And 100.' }, { status: 400 });
+      }
+      if (cap < baseForCap) {
+        return NextResponse.json({ error: 'Max Commission Cap Cannot Be Below The Base Rate.' }, { status: 400 });
+      }
+      updates.commission_max_pct = cap;
+      changes.commission_max_pct = cap;
+    }
+
+    if (body.velocity_cap === null) {
+      updates.velocity_cap = null;
+      changes.velocity_cap = null;
+    } else if (body.velocity_cap !== undefined && body.velocity_cap !== '') {
+      const vc = Number(body.velocity_cap);
+      if (!Number.isFinite(vc) || vc < 0) {
+        return NextResponse.json({ error: 'Velocity Cap Must Be Zero Or Greater.' }, { status: 400 });
+      }
+      updates.velocity_cap = vc;
+      changes.velocity_cap = vc;
     }
 
     if (typeof body.is_active === 'boolean') {
