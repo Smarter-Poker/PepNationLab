@@ -490,7 +490,7 @@ export default function MessageBubble({
       )}
       {popoverOpen && (
         <ReactionPopover
-          onReact={(emoji) => { onReact(message, emoji, 'add'); setPopoverOpen(false); }}
+          onPick={(emoji: string) => { onReact(message, emoji, 'add'); setPopoverOpen(false); }}
           onClose={() => setPopoverOpen(false)}
         />
       )}

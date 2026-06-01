@@ -500,12 +500,11 @@ function FaceTimeCallView({ isVideo, onHangUp, startedAtMs, isE2EE, counterparty
           zIndex: 100, background: '#0B1E30',
           pointerEvents: 'none',
         }}>
-          <VideoTrack
-            trackRef={localCamTrack}
-            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-            // @ts-expect-error custom data attr forwarded to underlying <video>
-            data-pnl-local-video="true"
-          />
+            <VideoTrack
+              trackRef={localCamTrack}
+              style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+              data-pnl-local-video="true"
+            />
         </div>
       )}
 

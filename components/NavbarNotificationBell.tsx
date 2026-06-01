@@ -179,6 +179,9 @@ export default function NavbarNotificationBell() {
             setUnread(prev => prev + 1);
             setRinging(true);
             setTimeout(() => setRinging(false), 800);
+            if (typeof navigator !== 'undefined' && navigator.vibrate) {
+              try { navigator.vibrate([100, 50, 100]); } catch { /* haptics best-effort */ }
+            }
             try {
               const ctx = new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
               const osc = ctx.createOscillator();

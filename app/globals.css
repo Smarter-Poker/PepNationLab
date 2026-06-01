@@ -1,10 +1,8 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
 
-/* ============================================
    PEPNATIONLAB — DESIGN SYSTEM
    Teal / Black / Silver / Grey / White
    Red: WARNINGS ONLY
-   ============================================ */
 
 :root {
   /* Core Palette */
@@ -94,9 +92,7 @@
   --nav-title:      #FFFFFF;
 }
 
-/* ============================================
    IMESSAGE STYLES
-   ============================================ */
 .imessage-bubble {
   position: relative;
   padding: 10px 16px;
@@ -161,9 +157,7 @@
   display: none !important;
 }
 
-/* ============================================
    PREMIUM BUTTON STYLES (MESSENGER)
-   ============================================ */
 .premium-btn {
   width: 32px;
   height: 32px;
@@ -185,11 +179,9 @@
   transform: translateY(1px);
 }
 
-/* ============================================
    LIGHT MODE — html[data-theme="light"]
    Warm off-white palette, dark charcoal text,
    same sand/teal accent (#C0B8A8).
-   ============================================ */
 html[data-theme="light"] {
   --black:          #F8F5F0;
   --black-2:        #EDE9E3;
@@ -285,9 +277,7 @@ html[data-theme="light"] .skeleton {
   background: linear-gradient(90deg, #E8E3DC 25%, #F0EBE4 50%, #E8E3DC 75%);
 }
 
-/* ============================================
    RESET & BASE
-   ============================================ */
 *, *::before, *::after {
   box-sizing: border-box;
   margin: 0;
@@ -312,9 +302,7 @@ body {
   max-width: 100vw;
 }
 
-/* ============================================
    TYPOGRAPHY
-   ============================================ */
 h1, h2, h3, h4, h5, h6 {
   font-family: var(--font-brand);
   font-weight: 700;
@@ -338,9 +326,7 @@ a {
 }
 a:hover { color: var(--teal-dark); }
 
-/* ============================================
    LAYOUT
-   ============================================ */
 .container {
   width: 100%;
   max-width: 1280px;
@@ -375,9 +361,7 @@ a:hover { color: var(--teal-dark); }
 .gap-6 { gap: var(--space-6); }
 .gap-8 { gap: var(--space-8); }
 
-/* ============================================
    CHECKOUT & FORM GRIDS
-   ============================================ */
 .checkout-grid { display: grid; grid-template-columns: 1fr 340px; gap: var(--space-8); }
 .fulfillment-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-4); }
 .address-city-grid { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: var(--space-4); align-items: start; }
@@ -391,9 +375,7 @@ a:hover { color: var(--teal-dark); }
 }
 
 
-/* ============================================
    CARDS
-   ============================================ */
 .card {
   background: var(--surface-1);
   border: var(--border-teal);
@@ -434,9 +416,7 @@ a:hover { color: var(--teal-dark); }
   transform: translateY(-2px);
 }
 
-/* ============================================
    DEEP PREMIUM METALLIC FRAMEWORK
-   ============================================ */
 
 /* Outer Silver Frame */
 .metal-frame {
@@ -571,9 +551,7 @@ a:hover { color: var(--teal-dark); }
 }
 
 
-/* ============================================
    BUTTONS
-   ============================================ */
 .btn {
   display: inline-flex;
   align-items: center;
@@ -675,9 +653,7 @@ a:hover { color: var(--teal-dark); }
 .btn-lg { padding: var(--space-4) var(--space-8); font-size: 1rem; }
 .btn-xl { padding: var(--space-5) var(--space-10); font-size: 1.1rem; }
 
-/* ============================================
    FORMS
-   ============================================ */
 .form-group {
   display: flex;
   flex-direction: column;
@@ -736,9 +712,7 @@ a:hover { color: var(--teal-dark); }
   margin-top: 2px;
 }
 
-/* ============================================
    BADGES (PREMIUM GLASSMORPHISM)
-   ============================================ */
 .badge {
   display: inline-flex;
   align-items: center;
@@ -765,9 +739,7 @@ a:hover { color: var(--teal-dark); }
 .badge-tier-2  { color: #E2E8F0; }
 .badge-tier-3  { color: #CBD5E0; }
 
-/* ============================================
    NAVIGATION
-   ============================================ */
 .nav {
   position: fixed;
   top: 0; left: 0; right: 0;
@@ -790,9 +762,7 @@ a:hover { color: var(--teal-dark); }
   text-shadow: 0 0 20px rgba(0, 196, 188, 0.5);
 }
 
-/* ============================================
    TEAL GLOW EFFECTS
-   ============================================ */
 .glow-teal {
   text-shadow: 0 0 20px rgba(0, 196, 188, 0.6), 0 0 40px rgba(0, 196, 188, 0.3);
 }
@@ -801,9 +771,7 @@ a:hover { color: var(--teal-dark); }
   box-shadow: 0 0 0 1px rgba(0, 196, 188, 0.3), 0 0 20px rgba(0, 196, 188, 0.1);
 }
 
-/* ============================================
    WARNING / DISCLAIMER SYSTEM (RED)
-   ============================================ */
 .disclaimer-box,
 .disclaimer-warning {
   background: var(--red-bg);
@@ -846,9 +814,7 @@ a:hover { color: var(--teal-dark); }
   line-height: 1.7;
 }
 
-/* ============================================
    ANIMATIONS
-   ============================================ */
 @keyframes pulse-teal {
   0%, 100% { box-shadow: 0 0 10px rgba(0, 196, 188, 0.2); }
   50%       { box-shadow: 0 0 25px rgba(0, 196, 188, 0.5), 0 0 50px rgba(0, 196, 188, 0.2); }
@@ -878,17 +844,13 @@ a:hover { color: var(--teal-dark); }
 .delay-300 { animation-delay: 300ms; }
 .delay-400 { animation-delay: 400ms; }
 
-/* ============================================
    SCROLLBAR
-   ============================================ */
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: var(--black-2); }
 ::-webkit-scrollbar-thumb { background: var(--teal-dark); border-radius: 3px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--teal); }
 
-/* ============================================
    UTILITY CLASSES
-   ============================================ */
 .composer-icon-btn {
   background: transparent;
   border: none;
@@ -944,9 +906,7 @@ a:hover { color: var(--teal-dark); }
 
 .page-top-padding { padding-top: var(--nav-offset, 60px); }
 
-/* ============================================
    MODAL / OVERLAY
-   ============================================ */
 .modal-overlay {
   position: fixed;
   inset: 0;
@@ -975,9 +935,7 @@ a:hover { color: var(--teal-dark); }
   flex-shrink: 0;
 }
 
-/* ============================================
    HERO SECTION
-   ============================================ */
 .hero-bg {
   background:
     radial-gradient(ellipse at 20% 50%, rgba(0, 196, 188, 0.08) 0%, transparent 60%),
@@ -985,9 +943,7 @@ a:hover { color: var(--teal-dark); }
     var(--black);
 }
 
-/* ============================================
    PRODUCT CARD
-   ============================================ */
 .product-card {
   background: var(--surface-1);
   border: var(--border-teal);
@@ -1013,9 +969,7 @@ a:hover { color: var(--teal-dark); }
   padding: var(--space-4);
 }
 
-/* ============================================
    DASHBOARD SIDEBAR
-   ============================================ */
 .sidebar {
   width: 260px;
   /* Use dvh for mobile Safari compatibility so the bottom isn't covered by the browser UI */
@@ -1077,9 +1031,7 @@ a:hover { color: var(--teal-dark); }
 }
 
 
-/* ============================================
    STATUS INDICATORS
-   ============================================ */
 .status-dot {
   width: 8px;
   height: 8px;
@@ -1091,16 +1043,13 @@ a:hover { color: var(--teal-dark); }
 .status-pending { background: var(--orange); box-shadow: 0 0 6px var(--orange); }
 .status-error   { background: var(--red); box-shadow: 0 0 6px var(--red); }
 
-/* ============================================
    LOADING SKELETON
-   ============================================ */
 .skeleton {
   background: linear-gradient(90deg, var(--surface-2) 25%, var(--surface-3) 50%, var(--surface-2) 75%);
   background-size: 1000px 100%;
   animation: shimmer 1.5s infinite;
   border-radius: var(--radius-md);
 }
-/* ============================================
    TITLE CASE — HARD PLATFORM RULE
    First letter of every word MUST be capitalized
    across all PepNationLab user-facing elements.
@@ -1109,7 +1058,6 @@ a:hover { color: var(--teal-dark); }
    CSS capitalize lowercases then re-capitalizes, which corrupts
    compound names: BPC-157 becomes "Bpc-157", TB-500 becomes "Tb-500".
    Headings MUST be written correctly in source code.
-   ============================================ */
 
 /* Safe elements — no scientific content */
 .btn              { text-transform: capitalize; }
@@ -1128,10 +1076,8 @@ nav button.drawer-close { text-transform: capitalize; }
 
 .message-card-hover:hover { background: rgba(0, 196, 188, 0.05) !important; border-color: rgba(0, 196, 188, 0.3) !important; transform: translateY(-2px); }
 
-/* ============================================
    MISSING UTILITY CLASSES
    (referenced by components, previously undefined)
-   ============================================ */
 
 /* Fade-in animation (used by agent dashboard tab transitions) */
 @keyframes fadeIn {
@@ -1199,10 +1145,8 @@ nav button.drawer-close { text-transform: capitalize; }
   transform: scale(1.05);
 }
 
-/* ============================================
    MOBILE-FIRST RESPONSIVE (Facebook-Style)
    Full-width cards, touch-friendly, no scroll
-   ============================================ */
 
 /* Force all pages to fit viewport — never wider than screen */
 html {
@@ -1433,7 +1377,6 @@ img, video, svg, iframe {
   }
 }
 
-/* ============================================================
    GLOBAL SAFE-AREA HANDLING — Facebook-style notch / Dynamic
    Island accommodation. Layout uses viewport-fit=cover, so any
    element fixed/sticky to top:0 MUST reserve env(safe-area-inset-top)
@@ -1447,7 +1390,6 @@ img, video, svg, iframe {
    The .pnl-navbar (global header) and .sf-nav (storefront header)
    grow their height by --safe-top, and any consumer that uses the
    60px nav-offset reserves the full --nav-offset.
-   ============================================================ */
 :root {
   --safe-top:    env(safe-area-inset-top, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
@@ -1493,6 +1435,120 @@ html, body {
   overflow-x: hidden;
 }
 
+   ROUND 2 MOBILE SAFE-AREA CATCH-ALLS
+   Adopt the Facebook pattern site-wide: nothing renders behind
+   the iPhone Dynamic Island / notch (top) or the home-indicator
+   pill (bottom). These rules are defense-in-depth so any modal,
+   overlay, or sticky bar built without explicit safe-area handling
+   still respects the notch.
+
+/* Every modal overlay rendered with `position: fixed; inset: 0`
+   (or top/bottom: 0) should pad its content so close buttons,
+   form fields, and CTAs are not clipped by the notch/home bar.
+   Inner cards usually have their own padding — this only inflates
+   the OUTER scrim padding by the safe-area inset. */
+.modal-overlay,
+[data-modal-overlay],
+[role="dialog"][aria-modal="true"] {
+  padding-top: max(var(--space-4, 16px), var(--safe-top, 0px));
+  padding-bottom: max(var(--space-4, 16px), var(--safe-bottom, 0px));
+  padding-left: max(var(--space-4, 16px), var(--safe-left, 0px));
+  padding-right: max(var(--space-4, 16px), var(--safe-right, 0px));
+}
+
+/* Catch-all: any sticky bar pinned to top:0 reserves safe-top so
+   its content lives below the Dynamic Island. Components that
+   already handle this (Navbar, sf-nav, glass-header) override with
+   their own !important rules above. */
+.app-sticky-top,
+[data-sticky-top] {
+  top: var(--safe-top, 0px);
+  padding-top: max(8px, var(--safe-top, 0px));
+}
+
+/* Generic helper class — opt-in for any page that builds a
+   bottom-pinned action bar (mobile checkout footer, etc.). */
+.app-bottom-bar {
+  padding-bottom: max(12px, var(--safe-bottom, 0px));
+}
+
+/* Messenger conversation header — defense-in-depth in case the
+   layout chain ever drops the navbar spacer (e.g. PWA standalone
+   deep link). Inline style on the header already does this, but
+   this rule catches any future regression. */
+.messenger-main > div > header {
+  padding-top: max(12px, var(--safe-top, 0px)) !important;
+}
+
+/* Messenger composer — ensure the iPhone home-indicator pill never
+   overlaps the Send button. The composer already uses env() inline;
+   this re-asserts via the CSS variable for consistency and overrides
+   any third-party portal that might re-render the composer.
+   `.msg-composer` is the className on the actual wrapper. */
+.messenger-main [data-composer],
+.messenger-main form[data-composer-form],
+.messenger-main .msg-composer,
+.msg-composer {
+  padding-bottom: max(12px, var(--safe-bottom, 0px)) !important;
+}
+
+/* All messenger surfaces must clamp their width to the viewport
+   so the two-panel slide on mobile never produces a horizontal
+   scroll. */
+.messenger-shell,
+.messenger-sidebar,
+.messenger-main,
+.messenger-layout-root {
+  max-width: 100vw;
+  min-width: 0;
+}
+
+/* On mobile, force scroll containers inside any layout to use
+   `-webkit-overflow-scrolling: touch` so momentum scrolling works
+   inside admin/agent dashboards. Without this, some flex columns
+   with `overflow: auto` lock up on iOS Safari. */
+@media (max-width: 768px) {
+  main, [role="main"], .admin-layout > main, .dashboard-main {
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-y: contain;
+  }
+
+  /* Any page that uses inline `maxHeight: 90vh` for a modal card
+     is slightly broken on iOS Safari (vh accounts for the URL bar
+     even when collapsed). Widen the viewport units to be safe via
+     a small ceiling — only affects mobile so desktop modals are
+     untouched. */
+  [role="dialog"] .card,
+  [role="dialog"] .card-metal,
+  .modal-overlay > div,
+  [data-modal-overlay] > div {
+    max-height: 88dvh !important;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Every admin/agent inline header that uses position:sticky;top:0
+     and forgot to reserve safe-top — apply via attribute selector.
+     Most internal headers use inline styles, so this catches the
+     ones we missed. */
+  [style*="position: sticky"][style*="top: 0"],
+  [style*="position:sticky"][style*="top:0"] {
+    padding-top: max(8px, var(--safe-top, 0px));
+  }
+}
+
+/* Universal opt-in safe-area padding for any page wrapper. Apply
+   className="pnl-safe-page" to any top-level page <div> that lacks
+   a Navbar above it (e.g. /messenger, error pages, full-bleed
+   landing). */
+.pnl-safe-page {
+  padding-top: var(--safe-top, 0px);
+  padding-bottom: var(--safe-bottom, 0px);
+  padding-left: var(--safe-left, 0px);
+  padding-right: var(--safe-right, 0px);
+}
+   END ROUND 2 MOBILE SAFE-AREA CATCH-ALLS
+
 /* Prevent text selection on UI elements (app-like feel) */
 nav, .btn, button, .badge, .sidebar-nav-item {
   -webkit-user-select: none;
@@ -1536,16 +1592,12 @@ html {
   }
 }
 
-/* ============================================
    NAVBAR HEIGHT — 60px (+ notch)
-   ============================================ */
 .pnl-navbar { height: var(--nav-offset, 60px); }  /* Scoped to app navbar only, not all nav elements */
 .dashboard-main { padding-top: var(--nav-offset, 60px); }
 .sidebar { top: var(--nav-offset, 60px); }
 
-/* ============================================
    ADMIN PANEL — MOBILE-FIRST LAYOUT
-   ============================================ */
 
 /* Admin content area — prevents overflow on mobile */
 .admin-content {
@@ -1674,9 +1726,7 @@ html[data-theme="light"] .admin-nav-link:hover {
   color: var(--teal) !important;
 }
 
-/* ============================================================
    MESSENGER — FACEBOOK-STYLE MOBILE-FIRST LAYOUT
-   ============================================================
 
    Architecture (matches the Facebook/WhatsApp Web pattern):
 
@@ -1692,7 +1742,6 @@ html[data-theme="light"] .admin-nav-link:hover {
 
    On desktop (>768px): both panels visible side by side.
    On mobile (≤768px):  slide transition — list OR pane, never both.
-   ============================================================ */
 
 /* ---- Desktop: both panels visible ---- */
 .messenger-shell {
@@ -1874,9 +1923,7 @@ html[data-theme="light"] .messenger-back-btn {
   outline-offset: 2px;
 }
 
-/* ================================================================
    MESSENGER — COMPREHENSIVE MOBILE FIXES
-   ================================================================ */
 
 /* ---- Header action buttons: show label on desktop, icon-only on mobile ---- */
 .msg-header-action {
@@ -1969,12 +2016,10 @@ html[data-theme="light"] .messenger-back-btn {
   }
 }
 
-/* ============================================
    GLOBAL SCROLL SAFETY
    Ensures every page and every tab can be scrolled
    vertically on mobile. No page-level wrapper should
    ever trap vertical scroll.
-   ============================================ */
 
 /* Researcher dashboard tab content — always scrollable on mobile */
 .researcher-main {
@@ -2023,9 +2068,7 @@ html[data-theme="light"] .messenger-back-btn {
   animation: pulse-glow-silver 2s infinite cubic-bezier(0.66, 0, 0, 1);
 }
 
-/* ============================================
    DYNAMIC PREMIUM ENHANCEMENTS
-   ============================================ */
 
 /* Hover Lift for Cards and Actionable Panels */
 .hover-lift {

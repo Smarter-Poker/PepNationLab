@@ -12,6 +12,7 @@ interface MessageHandlers {
   onDelete?: (id: string) => void;
   onReactionInsert?: (r: Reaction) => void;
   onReactionDelete?: (r: { message_id: string; user_id: string; emoji: string | null }) => void;
+  onPinChange?: () => void;
 }
 
 export function subscribeMessages(
