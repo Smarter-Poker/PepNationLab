@@ -178,7 +178,7 @@ export default function ChangePasswordPage() {
               disabled={loading}
               style={{
                 width: '100%', padding: '15px',
-                background: 'linear-gradient(180deg, #00C4BC 0%, #00a09a 100%)',
+                background: 'linear-gradient(180deg, #DCD3C3 0%, #B3A992 100%)',
                 border: 'none', borderRadius: 8,
                 color: '#000000', fontSize: '1rem', fontWeight: 700,
                 cursor: loading ? 'not-allowed' : 'pointer',

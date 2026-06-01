@@ -325,7 +325,11 @@ export default function AgentStorefrontGrid({
     const keys = ['q', 'category', 'sort', 'min', 'max', 'inStock', 'bulk', 'wMin', 'wMax'];
     return keys.some(k => searchParams.get(k));
   })();
-  const initFromStore = !urlHasAnyFacet ? readStoredFilters() : null;
+  // Hydration-safe: do NOT read localStorage during the initial render. The
+  // server has no localStorage, so reading it here desyncs the SSR vs client
+  // first render and throws React #418. The stored view is restored in an
+  // effect after mount (see the restore effect below).
+  const initFromStore: Record<string, string> | null = null;
   const getInit = (key: string): string => {
     const fromUrl = searchParams?.get(key);
     if (fromUrl !== null && fromUrl !== undefined) return fromUrl;
@@ -381,6 +385,28 @@ export default function AgentStorefrontGrid({
     if (!getInit('wMax')) setMaxWeight(weightBounds.max);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [priceBounds.min, priceBounds.max, weightBounds.min, weightBounds.max]);
+
+  // Restore the researcher's last saved view from localStorage AFTER mount so
+  // the first client render matches the server (URL-only) render and avoids a
+  // React #418 hydration mismatch. Skips when the URL already carries facets.
+  const filtersRestored = useRef(false);
+  useEffect(() => {
+    if (filtersRestored.current) return;
+    filtersRestored.current = true;
+    if (urlHasAnyFacet) return;
+    const stored = readStoredFilters();
+    if (!stored) return;
+    if (typeof stored.q === 'string') setSearchQuery(stored.q);
+    if (typeof stored.sort === 'string') setSortBy(stored.sort as typeof initialSort);
+    if (typeof stored.category === 'string') setFilterCategory(stored.category);
+    if (stored.inStock !== undefined) setInStockOnly(stored.inStock === '1');
+    if (stored.bulk !== undefined) setBulkOnly(stored.bulk === '1');
+    if (typeof stored.min === 'string') setMinPrice(clampNum(stored.min, priceBounds.min));
+    if (typeof stored.max === 'string') setMaxPrice(clampNum(stored.max, priceBounds.max));
+    if (typeof stored.wMin === 'string') setMinWeight(clampNum(stored.wMin, weightBounds.min));
+    if (typeof stored.wMax === 'string') setMaxWeight(clampNum(stored.wMax, weightBounds.max));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // ─── URL sync (debounced, replace state to avoid history spam) ──────────
   const urlSyncTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -442,15 +468,20 @@ export default function AgentStorefrontGrid({
   const [detailProduct, setDetailProduct] = useState<GroupedProduct | null>(null);
   const [recommendations, setRecommendations] = useState<RecommendationItem[]>([]);
   const [recommendationsLoading, setRecommendationsLoading] = useState(false);
-  const [cartItems, setCartItems] = useState<Record<string, number>>(() => {
-    if (typeof window !== 'undefined') {
-      try {
-        const saved = localStorage.getItem(`cart_${agentSlug}`);
-        if (saved) return JSON.parse(saved);
-      } catch { /* ignore */ }
-    }
-    return {};
-  });
+  // Start empty so SSR and the first client render agree (no localStorage on
+  // the server) — the saved cart is hydrated in the mount effect below. This
+  // prevents a React #418 hydration mismatch on the cart badge / float.
+  const [cartItems, setCartItems] = useState<Record<string, number>>({});
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(`cart_${agentSlug}`);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed && typeof parsed === 'object') setCartItems(parsed);
+      }
+    } catch { /* ignore */ }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [agentSlug]);
   const [showCartFloat, setShowCartFloat] = useState(false);
   const [cartToast, setCartToast] = useState(false);
   const [showBulkPricing, setShowBulkPricing] = useState(false);
@@ -493,8 +524,12 @@ export default function AgentStorefrontGrid({
 
   const [pendingQty, setPendingQty] = useState(isStorefrontOwner ? Math.max(10, selfBuyMin) : selfBuyMin);
 
-  // Save cart to localStorage on change
+  // Save cart to localStorage on change. Skip the very first run so the mount
+  // pass (before the saved cart is hydrated above) cannot overwrite a stored
+  // cart with the empty initial state.
+  const firstCartSave = useRef(true);
   useEffect(() => {
+    if (firstCartSave.current) { firstCartSave.current = false; return; }
     try {
       localStorage.setItem(`cart_${agentSlug}`, JSON.stringify(cartItems));
 

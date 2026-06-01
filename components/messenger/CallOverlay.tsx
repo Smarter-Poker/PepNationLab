@@ -20,6 +20,7 @@ import CallGridView from './CallGridView';
 import { Phone, PhoneOff, Video, VideoOff, Mic, MicOff, Camera, ScreenShare, ScreenShareOff, Pause, Play, Maximize2, Headphones } from 'lucide-react';
 import { toast } from 'sonner';
 import { Track, DisconnectReason, ConnectionState, ConnectionQuality } from 'livekit-client';
+import type { Participant } from 'livekit-client';
 
 interface Props {
   call: CallSignalRow;
@@ -80,8 +81,8 @@ function injectPulseRingAnim() {
     .pnl-btn-action:focus-visible { outline: 3px solid #00C4BC; outline-offset: 4px; }
     .pnl-btn-decline { background: #E53E3E; color: white; }
     .pnl-btn-decline:hover { background: #F56565; box-shadow: 0 0 24px rgba(229, 62, 62, 0.5); }
-    .pnl-btn-accept { background: #00C4BC; color: black; }
-    .pnl-btn-accept:hover { background: #00e0d7; box-shadow: 0 0 24px rgba(0, 196, 188, 0.5); }
+    .pnl-btn-accept { background: #22C55E; color: white; }
+    .pnl-btn-accept:hover { background: #34D67A; box-shadow: 0 0 24px rgba(34, 197, 94, 0.5); }
     .pnl-ringing-status {
       font-size: 0.85rem; color: #00C4BC; margin-bottom: 24px;
       letter-spacing: 0.15em; text-transform: uppercase; font-weight: 700;
@@ -171,6 +172,30 @@ function SignalBars({ quality }: { quality: ConnectionQuality | undefined }) {
   );
 }
 
+/**
+ * fix-40: only call useIsSpeaking when a participant is defined. Calling
+ * useIsSpeaking(undefined) outside ParticipantContext throws synchronously
+ * via useEnsureParticipant, which was the actual instant-crash on call accept.
+ * This sub-component is conditionally rendered only when speakerCandidate is
+ * non-null, and pipes its boolean back to the parent through a setter.
+ */
+function RemoteSpeakingProbe({
+  participant,
+  onChange,
+}: {
+  participant: Participant;
+  onChange: (b: boolean) => void;
+}) {
+  const isSpeaking = useIsSpeaking(participant);
+  useEffect(() => {
+    onChange(Boolean(isSpeaking));
+  }, [isSpeaking, onChange]);
+  useEffect(() => {
+    return () => onChange(false);
+  }, [onChange]);
+  return null;
+}
+
 interface FaceTimeCallViewProps {
   isVideo: boolean;
   onHangUp: () => void;
@@ -183,7 +208,10 @@ function FaceTimeCallView({ isVideo, onHangUp, startedAtMs, isE2EE }: FaceTimeCa
   const remoteParticipants = useRemoteParticipants();
   const connectionState = useConnectionState();
   const speakerCandidate = remoteParticipants[0];
-  const remoteIsSpeaking = useIsSpeaking(speakerCandidate);
+
+  // fix-40: see RemoteSpeakingProbe note above.
+  const [remoteIsSpeaking, setRemoteIsSpeaking] = useState(false);
+  const handleRemoteSpeakingChange = useCallback((b: boolean) => setRemoteIsSpeaking(b), []);
 
   const trackReferences = useTracks(
     [
@@ -357,6 +385,15 @@ function FaceTimeCallView({ isVideo, onHangUp, startedAtMs, isE2EE }: FaceTimeCa
 
   return (
     <div style={{ position: 'relative', width: '100%', height: '100%', overflow: 'hidden', background: '#000' }}>
+      {/* fix-40: conditional probe — only calls useIsSpeaking when a remote
+          participant exists, sidestepping the useEnsureParticipant throw. */}
+      {speakerCandidate && (
+        <RemoteSpeakingProbe
+          participant={speakerCandidate}
+          onChange={handleRemoteSpeakingChange}
+        />
+      )}
+
       {isGroup ? (
         <CallGridView />
       ) : (
@@ -601,20 +638,6 @@ export default function CallOverlay({ call, selfId, onClose, onAccept }: Props &
     activeStartedAtRef.current = Number.isFinite(fromServer) ? fromServer : Date.now();
   }
 
-  // audit15 fix-36 (audit): per-call E2EE setup with ref-based cleanup.
-  // The previous version (fix-30) had the cleanup function close over the
-  // `e2ee` state from render scope, but `setE2ee(setup)` runs inside the
-  // async IIFE AFTER the effect's setup wires the cleanup closure. The
-  // closure therefore captured the initial `e2ee = null` value and the
-  // worker.terminate() call was never reached — leaking one Worker
-  // (~2-3 MB) per call until tab close.
-  //
-  // Now `e2eeRef.current` tracks the actual setup the IIFE created. The
-  // state mirror still exists to drive a re-render so LiveKitRoom picks
-  // up the options. Cleanup terminates via ref, killing the actual current
-  // worker regardless of when the async resolved relative to the cleanup.
-  // Race: if `cancelled` flips to true AFTER setup completes but BEFORE
-  // setE2ee fires, we terminate the orphan inline.
   const [e2ee, setE2ee] = useState<E2EESetup | null>(null);
   const e2eeRef = useRef<E2EESetup | null>(null);
   useEffect(() => {
@@ -622,8 +645,6 @@ export default function CallOverlay({ call, selfId, onClose, onAccept }: Props &
     (async () => {
       const setup = await createE2EESetup(call.livekit_room);
       if (cancelled) {
-        // Race: effect already torn down. Kill the orphan inline so its
-        // Worker doesn't leak.
         if (setup?.worker) {
           try { setup.worker.terminate(); } catch {}
         }
