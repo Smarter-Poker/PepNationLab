@@ -3,16 +3,34 @@ import { createServiceClient } from '@/lib/supabase/server';
 import { assertCronAuth, claimCronRun, finishCronRun } from '@/lib/cron';
 import { notifyCartReminder } from '@/lib/notify';
 
+interface VariantStep {
+  hours_after: number;
+  subject: string;
+  body: string;
+  discount_pct?: number;
+  free_shipping?: boolean;
+}
+
+interface Variant {
+  id: string;
+  name: string;
+  enabled: boolean;
+  steps: VariantStep[];
+}
+
 /**
- * Abandoned cart recovery cron.
+ * fix-56 #4: multi-step A/B-tested abandoned cart recovery.
  *
- * Runs every 6 hours. Targets researchers whose cart has been sitting for
- * more than 24 hours but less than 14 days, and who have not received a
- * reminder in the past 7 days. Sends one in-app notification. Logs every
- * send to the abandoned_cart_reminders ledger so the recovery channel can
- * be attributed when the user later checks out.
+ * Runs every 6 hours. For each researcher with an aged cart:
+ *  1. Pick a sticky variant from cart_recovery_variants (id-hash assignment)
+ *  2. Count prior reminders to determine current step
+ *  3. If the current step's hours_after threshold has elapsed since
+ *     cart_updated_at, send that step's message and log it
+ *  4. Stop when all steps have been delivered
  *
- * Bounded to 200 users per run to keep the function within Vercel limits.
+ * Attribution: when an order is later placed, /api/orders updates
+ * abandoned_cart_reminders.recovered_order_id matching that user — the
+ * admin dashboard reads sent vs recovered to compute win rate.
  */
 export async function GET(req: Request) {
   const unauth = assertCronAuth(req);
@@ -26,21 +44,34 @@ export async function GET(req: Request) {
 
   try {
     const supabase = await createServiceClient();
-
     const now = new Date();
+
+    // Load enabled variants
+    const { data: variantRows, error: varErr } = await supabase
+      .from('cart_recovery_variants')
+      .select('id, name, enabled, steps')
+      .eq('enabled', true)
+      .order('created_at', { ascending: true });
+
+    if (varErr || !variantRows || variantRows.length === 0) {
+      await finishCronRun(claim.id, 'succeeded', 'no_enabled_variants');
+      return NextResponse.json({ skipped: true, reason: 'no_enabled_variants' });
+    }
+    const variants = variantRows as unknown as Variant[];
+
+    // Candidates: researchers with non-empty cart that's at least 24h old
+    // and not touched in the last 14d
     const cutoff24h = new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString();
     const cutoff14d = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000).toISOString();
-    const cutoff7d = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString();
 
     const { data: candidates, error: fetchError } = await supabase
       .from('profiles')
-      .select('id, full_name, cart_state, cart_updated_at, last_cart_reminder_at')
+      .select('id, full_name, cart_state, cart_updated_at')
       .eq('role', 'researcher')
       .not('cart_state', 'is', null)
       .neq('cart_state', '[]')
       .lt('cart_updated_at', cutoff24h)
       .gt('cart_updated_at', cutoff14d)
-      .or(`last_cart_reminder_at.is.null,last_cart_reminder_at.lt.${cutoff7d}`)
       .limit(200);
 
     if (fetchError) {
@@ -50,40 +81,63 @@ export async function GET(req: Request) {
 
     let sent = 0;
     let skipped = 0;
+    const candidateIds = (candidates ?? []).map((c) => c.id);
+
+    // Bulk-fetch reminder history for all candidates in one query
+    const { data: priorRows } = candidateIds.length > 0
+      ? await supabase
+          .from('abandoned_cart_reminders')
+          .select('user_id, variant_name, step_index')
+          .in('user_id', candidateIds)
+      : { data: [] as any[] };
+
+    const historyByUser = new Map<string, Array<{ variant_name: string | null; step_index: number }>>();
+    for (const row of priorRows ?? []) {
+      const k = (row as any).user_id as string;
+      const arr = historyByUser.get(k) ?? [];
+      arr.push({ variant_name: (row as any).variant_name ?? null, step_index: Number((row as any).step_index) || 0 });
+      historyByUser.set(k, arr);
+    }
 
     for (const candidate of candidates ?? []) {
-      let cartItems: Array<{ retailPrice?: number; quantity?: number; name?: string }> = [];
+      // Sticky variant assignment via id-hash
+      let hash = 0;
+      for (let i = 0; i < candidate.id.length; i++) hash = (hash * 31 + candidate.id.charCodeAt(i)) | 0;
+      const variant = variants[Math.abs(hash) % variants.length];
+
+      // What step are we on? Count distinct prior step_index values for this
+      // variant. nextStep is the smallest step we haven't sent yet.
+      const history = (historyByUser.get(candidate.id) ?? []).filter((h) => h.variant_name === variant.name);
+      const sentSteps = new Set(history.map((h) => h.step_index));
+      let nextStep = -1;
+      for (let i = 0; i < variant.steps.length; i++) {
+        if (!sentSteps.has(i)) { nextStep = i; break; }
+      }
+      if (nextStep === -1) { skipped++; continue; } // all steps sent
+
+      // Time check: enforce hours_after on this step relative to cart_updated_at
+      const step = variant.steps[nextStep];
+      const earliest = new Date(new Date(candidate.cart_updated_at!).getTime() + (Number(step.hours_after) || 0) * 60 * 60 * 1000);
+      if (earliest > now) { skipped++; continue; }
+
+      // Validate cart still has items
+      let cartItems: Array<{ retailPrice?: number; quantity?: number }> = [];
       try {
-        cartItems =
-          typeof candidate.cart_state === 'string'
-            ? JSON.parse(candidate.cart_state)
-            : (candidate.cart_state as typeof cartItems);
-      } catch {
-        skipped++;
-        continue;
-      }
+        cartItems = typeof candidate.cart_state === 'string'
+          ? JSON.parse(candidate.cart_state)
+          : (candidate.cart_state as typeof cartItems);
+      } catch { skipped++; continue; }
+      if (!Array.isArray(cartItems) || cartItems.length === 0) { skipped++; continue; }
 
-      if (!Array.isArray(cartItems) || cartItems.length === 0) {
-        skipped++;
-        continue;
-      }
+      const cartValue = cartItems.reduce((s, it) => s + (Number(it?.retailPrice) || 0) * (Number(it?.quantity) || 0), 0);
+      const itemCount = cartItems.reduce((s, it) => s + (Number(it?.quantity) || 0), 0);
 
-      const cartValue = cartItems.reduce((sum, item) => {
-        const price = Number(item?.retailPrice) || 0;
-        const qty = Number(item?.quantity) || 0;
-        return sum + price * qty;
-      }, 0);
-
-      const firstName = candidate.full_name
-        ? String(candidate.full_name).split(' ')[0]
-        : 'Researcher';
-      const itemCount = cartItems.reduce(
-        (sum, item) => sum + (Number(item?.quantity) || 0),
-        0
-      );
-
-      const subject = 'You Left Items In Your Cart';
-      const body = `Hi ${firstName},\n\nYou Have ${itemCount} Item${itemCount === 1 ? '' : 's'} Waiting In Your Cart${cartValue > 0 ? ` (Total: $${cartValue.toFixed(2)})` : ''}. Log Back In To Complete Your Order Before Inventory Moves.\n\nBest,\nYour PepNationLab Team`;
+      // Personalize body
+      const firstName = candidate.full_name ? String(candidate.full_name).split(' ')[0] : 'Researcher';
+      let body = (step.body || '').replace(/\{name\}/g, firstName);
+      if (step.discount_pct) body += `\n\nOffer: ${step.discount_pct}% Off Your Order.`;
+      if (step.free_shipping) body += `\n\nOffer: Free Shipping On Your Order.`;
+      const subject = step.subject || 'You Left Items In Your Cart';
 
       const { error: msgError } = await supabase.from('internal_messages').insert({
         sender_id: null,
@@ -93,12 +147,8 @@ export async function GET(req: Request) {
         type: 'notification',
         is_read: false,
       });
-      if (msgError) {
-        skipped++;
-        continue;
-      }
+      if (msgError) { skipped++; continue; }
 
-      // In-app notification — shows in bell immediately via Realtime
       void notifyCartReminder(supabase, candidate.id, itemCount, cartValue).catch(() => { /* best-effort */ });
 
       await supabase.from('abandoned_cart_reminders').insert({
@@ -106,6 +156,8 @@ export async function GET(req: Request) {
         cart_state_snapshot: candidate.cart_state,
         cart_value: cartValue || null,
         channel: 'in_app',
+        variant_name: variant.name,
+        step_index: nextStep,
       });
 
       await supabase
@@ -116,18 +168,8 @@ export async function GET(req: Request) {
       sent++;
     }
 
-    await finishCronRun(
-      claim.id,
-      'succeeded',
-      `sent=${sent} skipped=${skipped}`
-    );
-
-    return NextResponse.json({
-      success: true,
-      sent,
-      skipped,
-      considered: candidates?.length ?? 0,
-    });
+    await finishCronRun(claim.id, 'succeeded', `sent=${sent} skipped=${skipped}`);
+    return NextResponse.json({ success: true, sent, skipped, considered: candidates?.length ?? 0 });
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     await finishCronRun(claim.id, 'failed', message.slice(0, 500));
