@@ -175,6 +175,9 @@ export default function AgentDashboardClient({
 
   // Promote Sub-Agent Modal State
   const [promoteResearcher, setPromoteResearcher] = useState<Researcher | null>(null);
+  const [promoteCommission, setPromoteCommission] = useState('20');
+  const [promotePaymentModel, setPromotePaymentModel] = useState<'credit'|'prepaid'>('prepaid');
+  const [promoteCreditLimit, setPromoteCreditLimit] = useState('0');
   const [promoteLoading, setPromoteLoading] = useState(false);
 
   const handleToggleTrust = async (targetUserId: string, currentStatus: boolean, isSubAgent: boolean = false) => {
@@ -242,7 +245,12 @@ export default function AgentDashboardClient({
       const resApi = await fetch('/api/agent/promote-subagent', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ researcherId: promoteResearcher.id })
+        body: JSON.stringify({ 
+          researcherId: promoteResearcher.id,
+          commissionPct: promoteCommission,
+          paymentModel: promotePaymentModel,
+          creditLimit: promoteCreditLimit
+        })
       });
       if (!resApi.ok) {
         const errData = await resApi.json();
@@ -866,9 +874,29 @@ export default function AgentDashboardClient({
                       </button>
                     </div>
 
-                    <p style={{ color: '#d0d8e4', fontSize: '0.95rem', marginBottom: 30, lineHeight: 1.5 }}>
+                    <p style={{ color: '#d0d8e4', fontSize: '0.95rem', marginBottom: 20, lineHeight: 1.5 }}>
                       Promote This Researcher To A Sub-Agent? They Will Be Able To Set Prices For Their Own Downline.
                     </p>
+
+                    <div className="form-group" style={{ marginBottom: 16 }}>
+                      <label className="form-label" style={{ color: '#8a9ab0', fontSize: '0.8rem', fontWeight: 600 }}>Commission Percentage (%)</label>
+                      <input type="number" className="form-input" min="0" max="40" value={promoteCommission} onChange={e => setPromoteCommission(e.target.value)} />
+                    </div>
+
+                    <div className="form-group" style={{ marginBottom: 16 }}>
+                      <label className="form-label" style={{ color: '#8a9ab0', fontSize: '0.8rem', fontWeight: 600 }}>Account Type</label>
+                      <select className="form-input" value={promotePaymentModel} onChange={e => setPromotePaymentModel(e.target.value as any)}>
+                        <option value="prepaid">Prepaid (Wallet)</option>
+                        <option value="credit">Credit Line</option>
+                      </select>
+                    </div>
+
+                    {promotePaymentModel === 'credit' && (
+                      <div className="form-group" style={{ marginBottom: 24 }}>
+                        <label className="form-label" style={{ color: '#8a9ab0', fontSize: '0.8rem', fontWeight: 600 }}>Credit Limit ($)</label>
+                        <input type="number" className="form-input" min="0" value={promoteCreditLimit} onChange={e => setPromoteCreditLimit(e.target.value)} />
+                      </div>
+                    )}
 
                     <div style={{ display: 'flex', gap: 12 }}>
                       <button
