@@ -86,7 +86,12 @@ export async function computeSubAgentBaselineCost(supabase: ServiceClient, produ
    path below, so production pricing is byte-for-byte unchanged. */
 
 export function isTierLadderV2(): boolean {
-  return process.env.NEXT_PUBLIC_TIER_LADDER_V2 === '1';
+  // Engine ACTIVATED. The 5-tier ladder is live by default. Pre-existing accounts
+  // were grandfathered onto a Fixed-Scale-Override at their prior pricing, so the
+  // volume ladder is never auto-applied to them — being volume-driven vs a fixed
+  // "hard percentage" is a per-account choice (admin House Tier Lock / super-agent
+  // plan). Hard kill-switch: set NEXT_PUBLIC_TIER_LADDER_V2='0' to revert to legacy.
+  return process.env.NEXT_PUBLIC_TIER_LADDER_V2 !== '0';
 }
 
 export interface HouseTier {
