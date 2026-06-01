@@ -1336,6 +1336,50 @@ function AdminOrdersPageInner() {
                           </>
                         )}
 
+                      {selectedOrder.status === "admin_approval_pending" &&
+                        userRole !== "shipping" && (
+                          <>
+                            <div
+                              className="form-group"
+                              style={{ marginBottom: "var(--space-2)" }}
+                            >
+                              <label className="form-label">
+                                Internal Approval Notes
+                              </label>
+                              <input
+                                type="text"
+                                className="form-input"
+                                placeholder="Add Approval Context..."
+                                value={approvalNotes}
+                                onChange={(e) =>
+                                  setApprovalNotes(e.target.value)
+                                }
+                              />
+                            </div>
+                            <button
+                              onClick={() =>
+                                handleStatusTransition(
+                                  selectedOrder.fulfillment_method ===
+                                    "agent_pickup"
+                                    ? "approved_pickup"
+                                    : "approved_ship",
+                                )
+                              }
+                              className="btn-neon-cyan"
+                              style={{
+                                width: "100%",
+                                justifyContent: "center",
+                              }}
+                            >
+                              Approve & Release To{" "}
+                              {selectedOrder.fulfillment_method ===
+                              "agent_pickup"
+                                ? "Pickup"
+                                : "Shipping"}
+                            </button>
+                          </>
+                        )}
+
                       {(selectedOrder.status === "approved_ship" ||
                         selectedOrder.status === "approved_pickup") && (
                         <button
