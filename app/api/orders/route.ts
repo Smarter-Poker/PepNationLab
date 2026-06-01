@@ -7,7 +7,7 @@ import { rateLimit } from '@/lib/rate-limit';
 
 
 import { enqueuePush, shortOrderId } from '@/lib/push-enqueue';
-import { notifyOrderPlaced, notify } from '@/lib/notify';
+import { notifyOrderPlaced, notify, notifyCouponRedeemed } from '@/lib/notify';
 
 
 const CheckoutSchema = z.object({
@@ -944,6 +944,17 @@ export async function POST(request: NextRequest) {
           .maybeSingle();
         const buyerName = buyerProfile?.full_name || 'A Researcher';
         await notifyOrderPlaced(serviceSupabase, agentProfile.id, order.id, short, buyerName);
+        if (appliedCouponCode && discountAmount > 0) {
+          await notifyCouponRedeemed(
+            serviceSupabase,
+            agentProfile.id,
+            appliedCouponCode,
+            discountAmount,
+            Number(order.total) || 0,
+            order.id,
+            short,
+          );
+        }
         await enqueuePush(serviceSupabase, {
           userId: agentProfile.id,
           title: `New Order #${short}`,
