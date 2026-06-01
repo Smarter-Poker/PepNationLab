@@ -1,4 +1,3 @@
-/* ============================================================
    ROUND 2 + ROUND 3 MOBILE SAFE-AREA ENFORCEMENT
    ------------------------------------------------------------
    Loaded AFTER globals.css from app/layout.tsx. Purely additive.
@@ -9,7 +8,6 @@
    bottom:0 and inset:0 patterns, on EVERY viewport size (iPad
    PWA standalone with notch matters too), and uses !important to
    beat inline styles.
-   ============================================================ */
 
 /* ---------- ROUND 2: TARGETED COMPONENT CATCH-ALLS ---------- */
 
@@ -71,9 +69,7 @@
   padding-right: var(--safe-right, 0px);
 }
 
-/* ============================================================
    ROUND 3 — NUCLEAR INLINE-STYLE ENFORCEMENT
-   ============================================================ */
 
 [style*="position: fixed"][style*="top: 0"]:not([data-no-safe-area]),
 [style*="position:fixed"][style*="top: 0"]:not([data-no-safe-area]),
@@ -188,9 +184,7 @@ header.sf-nav {
   padding-top: max(8px, var(--safe-top, 0px)) !important;
 }
 
-/* ============================================================
    ROUND 4 — FACEBOOK-STYLE MOBILE BASELINE
-   ============================================================ */
 
 :root {
   color-scheme: light dark;
@@ -309,9 +303,7 @@ p, span, div, h1, h2, h3, h4, h5, h6 {
   contain-intrinsic-size: 0 80px;
 }
 
-/* ============================================================
    ROUND 5 — NUCLEAR HORIZONTAL OVERFLOW PREVENTION
-   ============================================================ */
 
 .pnl-navbar,
 nav.pnl-navbar,
@@ -383,14 +375,12 @@ body > * {
   overflow-x: hidden !important;
 }
 
-/* ============================================================
    ROUND 6 — MOBILE TABLE + FILTER CHIP RESPONSIVE LAYOUT
    ------------------------------------------------------------
    User report: My Researchers table, Product Catalog Manager
    filter chips, and product detail rows break character-by-
    character vertically on iPhone because their grid/flex
    columns are too narrow at 375-430px viewports.
-   ============================================================ */
 @media (max-width: 768px) {
   table {
     display: block;
@@ -419,6 +409,44 @@ body > * {
     font-size: 0.78rem;
   }
 
+   ROUND 6 — MOBILE TABLE + FILTER CHIP RESPONSIVE LAYOUT
+   ------------------------------------------------------------
+   User report: My Researchers table, Product Catalog Manager
+   filter chips, and product detail rows all break character-
+   by-character vertically on iPhone because their grid/flex
+   columns are too narrow at 375-430px viewports.
+@media (max-width: 768px) {
+  /* Traditional <table> elements: horizontal-scroll the cells so
+     columns render at natural width — the user swipes to see more
+     instead of seeing characters wrap one per line. */
+  table {
+    display: block;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    max-width: 100vw;
+    white-space: nowrap;
+  }
+  table thead,
+  table tbody {
+    display: table;
+    width: 100%;
+    min-width: 480px;
+  }
+  table th,
+  table td {
+    white-space: nowrap;
+    word-break: keep-all;
+    min-width: 80px;
+    padding: 8px 12px !important;
+  }
+  table td button,
+  table td a {
+    white-space: nowrap;
+    font-size: 0.78rem;
+  }
+
+  /* Filter chip rows wrap properly and don't compress text. */
   .filter-chips,
   [data-filter-chips],
   [role="tablist"] {
@@ -432,6 +460,7 @@ body > * {
     white-space: nowrap !important;
   }
 
+  /* Product rows: prevent character-per-line vertical breaking. */
   .metal-embossed-panel {
     flex-wrap: wrap !important;
   }
@@ -460,7 +489,6 @@ body > * {
   }
 }
 
-/* ============================================================
    ROUND 6 — MESSENGER HEADER DE-BLOAT
    ------------------------------------------------------------
    Round 2's safe-top padding-top inside the messenger conversation
@@ -468,14 +496,11 @@ body > * {
    ~60px empty band that pushed Anna+icons way down the screen
    ("cut off" appearance). 12px is correct since the spacer above
    already reserves --nav-offset.
-   ============================================================ */
 .messenger-main header,
 .messenger-main > div > header,
 .messenger-shell header {
   padding-top: 12px !important;
 }
 
-/* ============================================================
    END ROUND 2 + ROUND 3 + ROUND 4 + ROUND 5 + ROUND 6 MOBILE
    SAFE-AREA AND HORIZONTAL OVERFLOW ENFORCEMENT
-   ============================================================ */
