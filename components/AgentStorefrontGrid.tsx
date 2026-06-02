@@ -929,18 +929,16 @@ export default function AgentStorefrontGrid({
           z-index: 1000; display: flex; align-items: flex-end; justify-content: center;
           overflow: hidden;
         }
-        /* Brushed-nickel border: 2px metallic silver gradient ring */
+        /* Premium thick brushed-nickel frame */
         .sf-modal-sheet {
           width: 100%; max-height: 95dvh; overflow-y: auto;
           -webkit-overflow-scrolling: touch;
-          background: linear-gradient(180deg, #131b24 0%, #0a0f14 100%);
+          background: linear-gradient(180deg, #131b24 0%, #0a0f14 100%) padding-box,
+                      linear-gradient(135deg, #b0b5bc 0%, #5c626b 20%, #e2e6eb 50%, #5c626b 80%, #b0b5bc 100%) border-box;
           border-radius: 22px 22px 0 0;
-          border: 2px solid transparent;
-          background-clip: padding-box;
+          border: 5px solid transparent;
           box-shadow:
-            0 0 0 2px #8a9099,
-            0 0 0 2.5px rgba(255,255,255,0.18),
-            inset 0 1px 0 rgba(255,255,255,0.08),
+            inset 0 1px 0 rgba(255,255,255,0.15),
             0 -10px 50px rgba(0,0,0,0.8),
             0 4px 24px rgba(138,144,153,0.12);
           display: flex; flex-direction: column;
@@ -980,9 +978,7 @@ export default function AgentStorefrontGrid({
           .sf-modal-sheet {
             border-radius: 20px; max-width: 560px; max-height: 90vh;
             box-shadow:
-              0 0 0 2px #8a9099,
-              0 0 0 2.5px rgba(255,255,255,0.18),
-              inset 0 1px 0 rgba(255,255,255,0.08),
+              inset 0 1px 0 rgba(255,255,255,0.15),
               0 24px 80px rgba(0,0,0,0.85),
               0 4px 24px rgba(138,144,153,0.12);
           }
@@ -1942,7 +1938,8 @@ export default function AgentStorefrontGrid({
                                   key={v.id}
                                   onClick={() => setSelectedVariants(prev => ({ ...prev, [detailProduct.name]: v.id }))}
                                   style={{
-                                    padding: '8px 16px', borderRadius: 'var(--radius-md)',
+                                    flex: '1 1 calc(16.666% - 8px)', minWidth: 60, textAlign: 'center',
+                                    padding: '8px 4px', borderRadius: 'var(--radius-md)',
                                     border: isSelected ? `2px solid ${primaryColor}` : '1px solid rgba(255,255,255,0.15)',
                                     background: isSelected ? `${primaryColor}15` : 'transparent',
                                     color: isSelected ? primaryColor : 'var(--grey-300)',

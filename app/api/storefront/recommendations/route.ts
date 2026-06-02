@@ -81,10 +81,32 @@ export async function GET(req: NextRequest) {
     agentId = (agentRow?.id as string | undefined) ?? null;
   }
 
-  // 1) Try co-purchase matrix. Fetch a few extras so post-filtering still
-  //    leaves us at or above the requested limit.
+  // 1) Get seed product details (to find category)
+  const { data: seedProduct } = await supabase
+    .from('products')
+    .select('id, category')
+    .eq('id', productId)
+    .single();
+
+  const seedCategory = seedProduct?.category;
+
+  const candidateIds = new Set<string>();
+
+  // 2) Always try to find BAC Water
+  try {
+    const { data: bacWater } = await supabase
+      .from('products')
+      .select('id')
+      .ilike('name', '%Bacteriostatic Water%')
+      .limit(1)
+      .maybeSingle();
+    if (bacWater?.id && bacWater.id !== productId) {
+      candidateIds.add(bacWater.id);
+    }
+  } catch {}
+
+  // 3) Try co-purchase matrix (what people standardly research together)
   const fetchN = limit + 10;
-  const candidateIds: string[] = [];
   try {
     const { data: pairs, error: rpcErr } = await supabase.rpc(
       'get_copurchase_recommendations',
@@ -93,51 +115,57 @@ export async function GET(req: NextRequest) {
     if (!rpcErr && Array.isArray(pairs)) {
       for (const row of pairs as Array<{ related_product_id: string }>) {
         if (row?.related_product_id && row.related_product_id !== productId) {
-          candidateIds.push(row.related_product_id);
+          candidateIds.add(row.related_product_id);
         }
       }
     }
-  } catch {
-    // Best-effort — fall through to popular fallback.
+  } catch {}
+
+  // 4) Fallback to same category
+  if (candidateIds.size < limit && seedCategory) {
+    try {
+      const { data: sameCat } = await supabase
+        .from('products')
+        .select('id')
+        .eq('category', seedCategory)
+        .neq('id', productId)
+        .limit(fetchN);
+      for (const row of sameCat ?? []) {
+        if (row.id) candidateIds.add(row.id);
+      }
+    } catch {}
   }
 
-  // 2) If we don't have enough, fill from product_popular_60d.
-  if (candidateIds.length < limit) {
+  // 5) If we STILL don't have enough, fill from product_popular_60d.
+  if (candidateIds.size < limit) {
     try {
       const { data: pop } = await supabase
         .from('product_popular_60d')
         .select('product_id, units')
         .order('units', { ascending: false })
-        .limit(fetchN + candidateIds.length);
+        .limit(fetchN + candidateIds.size);
       for (const row of (pop ?? []) as Array<{ product_id: string }>) {
-        if (
-          row.product_id &&
-          row.product_id !== productId &&
-          !candidateIds.includes(row.product_id)
-        ) {
-          candidateIds.push(row.product_id);
+        if (row.product_id && row.product_id !== productId) {
+          candidateIds.add(row.product_id);
         }
       }
-    } catch {
-      // Empty fallback is acceptable — we'll just return [].
-    }
+    } catch {}
   }
 
-  if (candidateIds.length === 0) {
+  const candidateArray = Array.from(candidateIds);
+
+  if (candidateArray.length === 0) {
     return NextResponse.json({ recommendations: [] });
   }
 
-  // 3) Resolve product rows — filter active, non-banned, not the seed.
+  // 6) Resolve product rows — filter active, non-banned, not the seed.
   const { data: productsRaw } = await supabase
     .from('products')
     .select('id, name, slug, category, image_url, is_active, is_banned')
-    .in('id', candidateIds);
+    .in('id', candidateArray);
   const productMap = new Map<string, ProductRow>();
   for (const p of (productsRaw ?? []) as ProductRow[]) {
-    if (!p) continue;
-    if (p.is_active === false) continue;
-    if (p.is_banned === true) continue;
-    if (p.id === productId) continue;
+    if (!p || p.is_active === false || p.is_banned === true || p.id === productId) continue;
     productMap.set(p.id, p);
   }
 
@@ -164,7 +192,7 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  // 5) Preserve the candidate ordering (co-purchase first, then popular).
+  // 7) Preserve the candidate ordering (co-purchase first, then popular).
   const out: Array<{
     id: string;
     name: string;
@@ -173,7 +201,7 @@ export async function GET(req: NextRequest) {
     image_url: string | null;
     retail_price?: number;
   }> = [];
-  for (const cid of candidateIds) {
+  for (const cid of candidateArray) {
     if (out.length >= limit) break;
     const p = productMap.get(cid);
     if (!p) continue;

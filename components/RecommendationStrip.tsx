@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { getProductImage } from '@/lib/categoryImage';
 
 export interface RecommendationItem {
   id: string;
@@ -109,10 +110,10 @@ export default function RecommendationStrip({
                       justifyContent: 'center',
                     }}
                   >
-                    {item.image_url ? (
+                    {item.image_url || getProductImage(item.name, item.slug || '') ? (
                       /* eslint-disable-next-line @next/next/no-img-element */
                       <img
-                        src={item.image_url}
+                        src={item.image_url || getProductImage(item.name, item.slug || '')}
                         alt={item.name}
                         style={{
                           width: '100%',
