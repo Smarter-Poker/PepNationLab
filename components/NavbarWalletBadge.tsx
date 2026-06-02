@@ -34,9 +34,12 @@ export default function NavbarWalletBadge() {
     };
   }, []);
 
-  // Always a clickable link, even before the snapshot loads, so tapping the
-  // icon reliably opens the wallet. Admins land on their dashboard wallet.
-  const linkHref = data?.role === 'admin' ? '/admin' : '/wallet';
+  // Always route every role — admins included — to the unified /wallet page.
+  // Admins have prepaid_balance like everyone else (seeded $100k) and need the
+  // same Send/Spend/Activity view; sending them to /admin instead hid the
+  // wallet entirely. The snapshot fetch above just primes the SWR; the actual
+  // link target no longer branches on role.
+  const linkHref = '/wallet';
 
   return (
     <Link
