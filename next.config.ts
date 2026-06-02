@@ -63,9 +63,12 @@ const nextConfig = {
       },
     ];
   },
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
+  // R33: removed the `eslint: { ignoreDuringBuilds: true }` block. Next 16
+  // dropped support for the eslint key in next.config; it now logs
+  // "`eslint` configuration in next.config.ts is no longer supported" on
+  // every build. Lint is configured via `npm run lint` (eslint.config.mjs)
+  // and the Vercel build doesn't run lint anyway, so this block was dead
+  // weight that only produced noise.
   typescript: {
     ignoreBuildErrors: true,
   },
