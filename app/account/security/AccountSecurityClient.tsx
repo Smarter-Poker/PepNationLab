@@ -45,7 +45,6 @@ interface UserSession {
 interface Props {
   userEmail: string;
   role: string;
-  fullName: string | null;
   reason: string | null;
 }
 

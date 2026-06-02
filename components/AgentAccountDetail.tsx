@@ -344,18 +344,7 @@ export default function AgentAccountDetail({
               <h2 className="metal-text" style={{ fontSize: '1.4rem', fontFamily: 'var(--font-brand)', margin: 0 }}>
                 {detail?.agent.full_name || agentName}
               </h2>
-              {detail?.agent.username && (
-                <div style={{ fontFamily: 'monospace', fontSize: '0.82rem', color: '#00E5FF', marginTop: 4 }}>
-                  {detail.agent.username}
-                </div>
-              )}
-              {detail?.storefront?.slug ? (
-                <a href={`/${detail.storefront.slug}`} target="_blank" rel="noopener noreferrer" style={{ color: '#00E5FF', fontSize: '0.8rem', textDecoration: 'none' }}>
-                  /{detail.storefront.slug}
-                </a>
-              ) : (
-                <span style={{ color: 'var(--grey-400)', fontSize: '0.8rem' }}>No Storefront</span>
-              )}
+              {/* Username and storefront removed to prevent redundant name display */}
             </div>
             <button type="button" className="btn-silver" onClick={onClose}>Close</button>
           </div>
@@ -404,30 +393,13 @@ export default function AgentAccountDetail({
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: 'var(--space-3)' }}>
                 <Stat label="Status" value={isActive ? 'Active' : 'Inactive'} color={isActive ? '#00FF9D' : '#FFAAAA'} />
                 <Stat label="Last Logged In" value={fmtLastSignIn(detail.agent.last_sign_in_at)} color={detail.agent.last_sign_in_at ? 'var(--silver)' : 'var(--grey-500)'} />
-                <Stat label="Wallet Balance" value={fmtMoney(detail.agent.prepaid_balance)} color="var(--teal)" />
-                <Stat label="Credit Limit" value={detail.agent.account_type === 'credit' ? fmtMoney(detail.agent.credit_limit) : '—'} />
+                <Stat label="Wallet Balance" value={detail.agent.account_type === 'credit' ? fmtMoney(detail.agent.credit_limit) : fmtMoney(detail.agent.prepaid_balance)} color="var(--teal)" />
                 <Stat label="Lifetime Sales" value={fmtMoney(detail.sales.grossTotal)} />
                 <Stat label="Last 30 Days" value={fmtMoney(detail.sales.last30Total)} />
                 <Stat label="Orders" value={String(detail.sales.nonCancelledCount)} />
               </div>
 
-              {/* Quick activate / deactivate */}
-              <div className="metal-embossed-panel" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 'var(--space-3)' }}>
-                <div>
-                  <div style={{ fontWeight: 700, color: 'var(--white)' }}>Account Access</div>
-                  <div style={{ fontSize: '0.8rem', color: 'var(--grey-400)' }}>
-                    Deactivating Blocks Login And Takes The Storefront Offline.
-                  </div>
-                </div>
-                <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
-                  <button type="button" className={isActive ? 'btn-silver' : 'btn-neon-cyan'} disabled={saving} onClick={() => toggleActiveQuick(true)}>
-                    Turn On
-                  </button>
-                  <button type="button" className="btn-neon-red" disabled={saving} onClick={() => toggleActiveQuick(false)}>
-                    Turn Off
-                  </button>
-                </div>
-              </div>
+
 
               {/* Edit form */}
               <div className="metal-embossed-panel" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
@@ -437,7 +409,7 @@ export default function AgentAccountDetail({
 
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 'var(--space-4)' }}>
                   <div>
-                    <label style={labelStyle}>Full Name</label>
+                    <label style={labelStyle}>First and Last Name</label>
                     <input style={inputStyle} value={fullName} onChange={(e) => setFullName(e.target.value)} />
                   </div>
                   <div>
@@ -587,33 +559,27 @@ export default function AgentAccountDetail({
               </div>
 
               {/* Give credit */}
-              <div className="metal-embossed-panel" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
-                <h3 className="metal-text" style={{ fontSize: '1rem', margin: 0, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Give Wallet Credit</h3>
-                {detail.agent.account_type === 'credit' ? (
-                  <p style={{ fontSize: '0.8rem', color: 'var(--grey-400)', margin: 0, lineHeight: 1.5 }}>
-                    This Agent Is On A Credit Line. Wallet Credit Applies Only To Prepaid Accounts. To Increase Their Capacity, Raise The Credit Limit Above.
+              {detail.agent.account_type !== 'credit' && (
+                <div className="metal-embossed-panel" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
+                  <h3 className="metal-text" style={{ fontSize: '1rem', margin: 0, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Give Wallet Credit</h3>
+                  <p style={{ fontSize: '0.8rem', color: 'var(--grey-400)', margin: 0 }}>
+                    Adds Funds To This Agent's Prepaid Wallet. Recorded In Their Ledger Below.
                   </p>
-                ) : (
-                  <>
-                    <p style={{ fontSize: '0.8rem', color: 'var(--grey-400)', margin: 0 }}>
-                      Adds Funds To This Agent's Prepaid Wallet. Recorded In Their Ledger Below.
-                    </p>
-                    <form onSubmit={giveCredit} style={{ display: 'flex', gap: 'var(--space-3)', flexWrap: 'wrap', alignItems: 'flex-end' }}>
-                      <div style={{ flex: '0 0 140px' }}>
-                        <label style={labelStyle}>Amount ($)</label>
-                        <input style={inputStyle} type="number" min="0.01" step="0.01" value={creditAmount} onChange={(e) => setCreditAmount(e.target.value)} placeholder="0.00" />
-                      </div>
-                      <div style={{ flex: '1 1 200px' }}>
-                        <label style={labelStyle}>Note (Optional)</label>
-                        <input style={inputStyle} value={creditNote} onChange={(e) => setCreditNote(e.target.value)} placeholder="E.g., Weekly Bonus" maxLength={200} />
-                      </div>
-                      <button type="submit" className="btn-neon-cyan" disabled={crediting}>
-                        {crediting ? 'Crediting...' : 'Give Credit'}
-                      </button>
-                    </form>
-                  </>
-                )}
-              </div>
+                  <form onSubmit={giveCredit} style={{ display: 'flex', gap: 'var(--space-3)', flexWrap: 'wrap', alignItems: 'flex-end' }}>
+                    <div style={{ flex: '0 0 140px' }}>
+                      <label style={labelStyle}>Amount ($)</label>
+                      <input style={inputStyle} type="number" min="0.01" step="0.01" value={creditAmount} onChange={(e) => setCreditAmount(e.target.value)} placeholder="0.00" />
+                    </div>
+                    <div style={{ flex: '1 1 200px' }}>
+                      <label style={labelStyle}>Note (Optional)</label>
+                      <input style={inputStyle} value={creditNote} onChange={(e) => setCreditNote(e.target.value)} placeholder="E.g., Weekly Bonus" maxLength={200} />
+                    </div>
+                    <button type="submit" className="btn-neon-cyan" disabled={crediting}>
+                      {crediting ? 'Crediting...' : 'Give Credit'}
+                    </button>
+                  </form>
+                </div>
+              )}
 
               {/* Sales history */}
               <div className="metal-embossed-panel">
@@ -653,6 +619,50 @@ export default function AgentAccountDetail({
                     ))}
                   </div>
                 )}
+              </div>
+
+              {/* Account Access (Moved to bottom) */}
+              <div className="metal-embossed-panel" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 'var(--space-3)', marginTop: 'var(--space-4)' }}>
+                <div>
+                  <div style={{ fontWeight: 700, color: 'var(--white)' }}>Account Access</div>
+                  <div style={{ fontSize: '0.8rem', color: 'var(--grey-400)' }}>
+                    Deactivating Blocks Login And Takes The Storefront Offline.
+                  </div>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+                  <span style={{ color: isActive ? '#00FF9D' : 'var(--grey-400)', fontWeight: 600, fontSize: '0.9rem' }}>
+                    {isActive ? 'Active' : 'Inactive'}
+                  </span>
+                  <label style={{ position: 'relative', display: 'inline-block', width: 44, height: 24 }}>
+                    <input 
+                      type="checkbox" 
+                      style={{ opacity: 0, width: 0, height: 0 }} 
+                      checked={isActive} 
+                      disabled={saving}
+                      onChange={(e) => {
+                        const next = e.target.checked;
+                        if (!next) {
+                          if (window.confirm("Are You Sure You Want To Deactivate This Account?")) {
+                            toggleActiveQuick(false);
+                          }
+                        } else {
+                          toggleActiveQuick(true);
+                        }
+                      }} 
+                    />
+                    <span style={{
+                      position: 'absolute', cursor: 'pointer', top: 0, left: 0, right: 0, bottom: 0,
+                      backgroundColor: isActive ? '#00FF9D' : 'var(--grey-500)',
+                      transition: '.4s', borderRadius: 24,
+                    }}>
+                      <span style={{
+                        position: 'absolute', content: '""', height: 18, width: 18, left: 3, bottom: 3,
+                        backgroundColor: 'var(--bg-metal-dark)', transition: '.4s', borderRadius: '50%',
+                        transform: isActive ? 'translateX(20px)' : 'translateX(0)'
+                      }}></span>
+                    </span>
+                  </label>
+                </div>
               </div>
               </>
               )}
@@ -712,8 +722,8 @@ export default function AgentAccountDetail({
               <button type="button" className="btn-silver" onClick={() => setShowGamificationInfo(false)}>Close</button>
             </div>
 
-            <p style={{ fontSize: '0.85rem', color: 'var(--grey-300)', lineHeight: 1.55, margin: '0 0 var(--space-4)' }}>
-              Instead Of One Flat Commission, The Agent Climbs A 5-Level Ladder Based On How Much They Sell Each Calendar Month. They Start At Level 1 (The Base Rate) And Move Up A Level Each Time Their Monthly Sales Cross The Next Threshold. The Higher The Level, The Bigger The Commission — Up To The Max Cap, Which Can Never Exceed 40%.
+            <p style={{ fontSize: '0.9rem', color: 'var(--white)', lineHeight: 1.55, margin: '0 0 var(--space-4)', fontWeight: 500 }}>
+              Instead Of One Flat Commission, The Agent Climbs A 5-Level Ladder Based On How Much They Sell Each Calendar Month. They Start At Level 1 (The Base Rate) And Move Up A Level Each Time Their Monthly Sales Cross The Next Threshold. The Higher The Level, The Bigger The Commission Up To The Max Cap, Which Can Never Exceed 40%.
             </p>
 
             {/* Live level table */}
@@ -751,7 +761,7 @@ export default function AgentAccountDetail({
               })}
             </div>
 
-            <div style={{ fontSize: '0.78rem', color: 'var(--grey-400)', lineHeight: 1.5, marginBottom: 'var(--space-4)' }}>
+            <div style={{ fontSize: '0.85rem', color: 'var(--silver)', lineHeight: 1.5, marginBottom: 'var(--space-4)' }}>
               The Commission Column Above Updates Live From The Base Rate ({fmtPct(baseNumForLadder)})
               {capNumForLadder != null ? ` And Max Cap (${fmtPct(capNumForLadder)})` : ' (No Cap Set Yet)'} You Have Entered.
               Each Level Adds Its Bonus To The Base Rate, And The Total Is Held At The Max Cap.
@@ -774,8 +784,8 @@ export default function AgentAccountDetail({
 
             <div style={{ border: '1px solid rgba(0,196,188,0.4)', background: 'rgba(0,196,188,0.06)', borderRadius: 8, padding: 'var(--space-3) var(--space-4)', marginBottom: 'var(--space-3)' }}>
               <strong style={{ color: 'var(--teal)', fontSize: '0.78rem', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block', marginBottom: 6 }}>Example</strong>
-              <p style={{ fontSize: '0.8rem', color: 'var(--grey-300)', lineHeight: 1.55, margin: 0 }}>
-                With A Base Of 10% And A Max Cap Of 30%: An Agent Selling $1,000 This Month Earns 10% (Level 1). At $8,000 They Reach Level 3 And Earn 17%. At $50,000+ They Hit Level 5 And Earn 30% (Held At The Cap). The More They Sell, The More They Make.
+              <p style={{ fontSize: '0.85rem', color: 'var(--white)', lineHeight: 1.55, margin: 0, fontWeight: 500 }}>
+                With A Base Of 10% And A Max Cap Of 40%: An Agent Selling $1,000 This Month Earns 10% (Level 1). At $8,000 They Reach Level 3 And Earn 17%. At $50,000+ They Hit Level 5 And Earn 40% (Held At The Cap). The More They Sell, The More They Make.
               </p>
             </div>
 

@@ -140,7 +140,7 @@ export default function WalletSettings() {
         )}
       </div>
 
-      <a href="/account/settings" style={{ color: 'var(--teal)', fontWeight: 700, fontSize: '0.85rem' }}>
+      <a href="/account" style={{ color: 'var(--teal)', fontWeight: 700, fontSize: '0.85rem' }}>
         Open Full Account Settings →
       </a>
     </section>
