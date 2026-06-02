@@ -37,19 +37,72 @@ export default function MessengerShell({ userId }: Props) {
   // component, so a useEffect([]) read of window.location.search misses
   // the change). After consuming the param we use router.replace() to
   // strip it; the resulting reactive run sees compose=null and bails out.
+  //
+  // R30 Phase 5: also handle deep-links from the Researcher CRM:
+  //   ?participant=<uuid>    → open/create a 1:1 thread with that user
+  //   ?participants=<csv>    → open a group thread with all of them
+  // These are fired by the CRM's per-row Message button and the bulk
+  // Message All button so the agent lands directly in the right
+  // conversation instead of an empty messenger screen.
   const router = useRouter();
   const searchParams = useSearchParams();
+  const consumedRef = useRef<string | null>(null);
   useEffect(() => {
     if (!searchParams) return;
-    const v = searchParams.get('compose');
-    if (v === '1' || v === 'true') {
+    const compose = searchParams.get('compose');
+    const participant = searchParams.get('participant');
+    const participants = searchParams.get('participants');
+
+    if (compose === '1' || compose === 'true') {
       setComposeOpen(true);
       const params = new URLSearchParams(searchParams.toString());
       params.delete('compose');
       const qs = params.toString();
       router.replace(qs ? `/messenger?${qs}` : '/messenger', { scroll: false });
+      return;
     }
-  }, [searchParams, router]);
+
+    if (participant || participants) {
+      const key = participant ?? participants ?? '';
+      if (consumedRef.current === key) return;
+      consumedRef.current = key;
+
+      const ids = participant
+        ? [participant]
+        : (participants ?? '')
+            .split(',')
+            .map((s) => s.trim())
+            .filter((s) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(s));
+      if (ids.length === 0) return;
+
+      const params = new URLSearchParams(searchParams.toString());
+      params.delete('participant');
+      params.delete('participants');
+      const qs = params.toString();
+      router.replace(qs ? `/messenger?${qs}` : '/messenger', { scroll: false });
+
+      void (async () => {
+        try {
+          const body =
+            ids.length === 1
+              ? { type: 'direct', participantIds: ids }
+              : { type: 'group', participantIds: ids, title: '' };
+          const res = await fetch('/api/messenger/start-conversation', {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify(body),
+          });
+          if (!res.ok) return;
+          const json = (await res.json()) as { conversationId?: string };
+          if (json.conversationId) {
+            setActive(json.conversationId);
+          }
+        } catch {
+          /* leave the messenger on the empty state if the API errors */
+        }
+      })();
+    }
+  }, [searchParams, router, setActive]);
 
   const prefsRef = useRef<CachedPrefs>({ browser_push: false, mute_all: false });
   const activeIdRef = useRef<string | null>(null);
