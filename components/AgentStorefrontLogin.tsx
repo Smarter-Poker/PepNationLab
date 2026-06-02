@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
-import { useAvailability, availabilityMessage } from '@/lib/useAvailability';
+import UniqueField from '@/components/UniqueField';
 
 interface Props {
   agentSlug: string;
@@ -31,21 +31,9 @@ export default function AgentStorefrontLogin({
   const [success, setSuccess] = useState<string | null>(null);
   const [referralCode, setReferralCode] = useState<string>('');
   // SACA Phase 3: optional sub-agent tag picked up from ?sa=<uuid> in the URL.
-  // When present, the register POST sends it as `subAgentId` so the server
-  // can stamp profiles.referring_sub_agent_id on signup. Every order the
-  // researcher places afterward attributes commission to that sub-agent.
   const [subAgentId, setSubAgentId] = useState<string>('');
-
-  // Live username availability — only meaningful on the register tab. On the
-  // login tab the user is supplying an EXISTING username, so we set
-  // `disabled: true` to keep the hook idle and avoid noisy /api/availability
-  // hits while someone signs in.
-  const usernameCheck = useAvailability({
-    field: 'username',
-    value: username,
-    disabled: mode !== 'register',
-  });
-  const usernameMsg = availabilityMessage(usernameCheck);
+  // Reservation token from the live availability check, sent on submit.
+  const [usernameReservationToken, setUsernameReservationToken] = useState<string | null>(null);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -57,7 +45,6 @@ export default function AgentStorefrontLogin({
         setMode('register');
       }
       // SACA Phase 3: optional sub-agent referral tag. Format: ?sa=<uuid>.
-      // Server validates the UUID is an actual sub-agent under this slug.
       const sa = params.get('sa');
       if (sa && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(sa)) {
         setSubAgentId(sa.toLowerCase());
@@ -80,7 +67,6 @@ export default function AgentStorefrontLogin({
       if (raw.includes('@')) {
         authEmail = raw;
       } else {
-        // Resolve username to email via server
         const res = await fetch('/api/auth/resolve', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -107,7 +93,6 @@ export default function AgentStorefrontLogin({
         throw new Error('Sign In Failed. Please Try Again.');
       }
 
-      // Verify user belongs to THIS agent's downline
       const verifyRes = await fetch('/api/auth/verify-agent-access', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -125,11 +110,8 @@ export default function AgentStorefrontLogin({
         throw new Error(verifyData.reason || 'This Account Does Not Belong To This Store.');
       }
 
-      // Single-session enforcement — best-effort, never block login
       supabase.auth.signOut({ scope: 'others' }).catch(() => {});
 
-      // Wait until Supabase confirms the session is readable in cookies (max 3s).
-      // On mobile incognito the cookie write is async.
       let cookieFound = false;
       for (let i = 0; i < 20; i++) {
         if (document.cookie.includes('sb-') && document.cookie.includes('-auth-token')) {
@@ -140,11 +122,9 @@ export default function AgentStorefrontLogin({
       }
 
       if (!cookieFound) {
-        // Fallback sleep just in case cookie name differs
         await new Promise(r => setTimeout(r, 1000));
       }
 
-      // Refresh the router to load the storefront
       router.refresh();
     } catch (err: any) {
       setError(err.message || 'Sign In Failed. Please Try Again.');
@@ -165,18 +145,7 @@ export default function AgentStorefrontLogin({
       if (password.length < 8) {
         throw new Error('Password Must Be At Least 8 Characters');
       }
-      // Pre-flight collision guard. The live check already turned the
-      // username field red, but defense in depth — block the submit so an
-      // impatient double-click can't sneak through before the debounce
-      // resolved.
-      if (usernameCheck.status === 'taken' || usernameCheck.status === 'invalid') {
-        throw new Error(usernameCheck.reason || 'Username Is Already Taken');
-      }
 
-      // Public storefront register endpoint resolves the agent by slug
-      // and ties the new researcher to that agent's referring_agent_id.
-      // SACA Phase 3: if a sub-agent tag was picked up from ?sa=, pass it
-      // along; the server validates ownership before stamping the tag.
       const res = await fetch('/api/storefront/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -188,6 +157,7 @@ export default function AgentStorefrontLogin({
           lastName: lastName.trim(),
           referralCode: referralCode || undefined,
           subAgentId: subAgentId || undefined,
+          reservationToken: usernameReservationToken || undefined,
         }),
       });
       const data = await res.json();
@@ -195,7 +165,6 @@ export default function AgentStorefrontLogin({
         throw new Error(data.error || 'Registration Failed');
       }
 
-      // Account created — now sign them in
       const email = data.email || `${username.trim()}@internal.auth`;
       const supabase = createClient();
       const { error: authError } = await supabase.auth.signInWithPassword({
@@ -204,17 +173,14 @@ export default function AgentStorefrontLogin({
       });
 
       if (authError) {
-        // Account created but auto-login failed — prompt manual login.
         setSuccess('Account Created Successfully. Please Sign In.');
         setMode('login');
         setLoading(false);
         return;
       }
 
-      // Single-session enforcement — best-effort, never block login
       supabase.auth.signOut({ scope: 'others' }).catch(() => {});
 
-      // Wait until Supabase confirms the session is readable in cookies (max 3s).
       let cookieFound = false;
       for (let i = 0; i < 20; i++) {
         if (document.cookie.includes('sb-') && document.cookie.includes('-auth-token')) {
@@ -228,22 +194,12 @@ export default function AgentStorefrontLogin({
         await new Promise(r => setTimeout(r, 1000));
       }
 
-      // Refresh the router to load the storefront
       router.refresh();
     } catch (err: any) {
       setError(err.message || 'Network Error');
       setLoading(false);
     }
   }
-
-  // Block the register submit whenever the live check is unhappy. 'checking'
-  // is a soft block — the debounce settles within ~400ms and the button
-  // re-enables, so it never permanently traps the user.
-  const blockRegister =
-    loading ||
-    usernameCheck.status === 'taken' ||
-    usernameCheck.status === 'invalid' ||
-    usernameCheck.status === 'checking';
 
   return (
     <div style={{
@@ -266,8 +222,6 @@ export default function AgentStorefrontLogin({
             Pep Nation&apos;s Research Store
           </h2>
         </div>
-
-
 
         {error && (
           <div style={{ background: 'var(--red-bg)', borderLeft: '3px solid var(--red)', padding: 'var(--space-3)', marginBottom: 'var(--space-4)', borderRadius: '0 4px 4px 0' }}>
@@ -357,32 +311,16 @@ export default function AgentStorefrontLogin({
                 />
               </div>
             </div>
-            <div className="form-group">
-              <label className="form-label" style={{ color: primaryColor }}>Choose A Username</label>
-              <input
-                type="text"
-                className="form-input"
-                placeholder="E.g. John_Doe"
-                value={username}
-                onChange={e => setUsername(e.target.value)}
-                aria-invalid={usernameCheck.status === 'taken' || usernameCheck.status === 'invalid' || undefined}
-                aria-describedby="storefront-register-username-status"
-                required
-                autoCapitalize="none"
-                autoCorrect="off"
-                spellCheck={false}
-              />
-              {usernameMsg && (
-                <div
-                  id="storefront-register-username-status"
-                  role="status"
-                  aria-live="polite"
-                  style={{ marginTop: 6, fontSize: '0.78rem', color: usernameMsg.color }}
-                >
-                  {usernameMsg.text}
-                </div>
-              )}
-            </div>
+            <UniqueField
+              field="username"
+              label="Choose A Username"
+              value={username}
+              onChange={setUsername}
+              onTokenChange={setUsernameReservationToken}
+              labelColor={primaryColor}
+              placeholder="E.g. John_Doe"
+              required
+            />
             <div className="form-group">
               <label className="form-label" style={{ color: primaryColor }}>Create A Password</label>
               <input
@@ -398,14 +336,14 @@ export default function AgentStorefrontLogin({
             <button
               type="submit"
               className="btn btn-primary"
-              disabled={blockRegister}
+              disabled={loading}
               style={{
                 marginTop: 'var(--space-2)',
                 background: `linear-gradient(135deg, ${primaryColor}, ${primaryColor}90)`,
                 color: 'var(--white)',
                 boxShadow: `0 4px 16px ${primaryColor}40`,
-                opacity: blockRegister ? 0.7 : 1,
-                cursor: blockRegister ? 'not-allowed' : 'pointer',
+                opacity: loading ? 0.7 : 1,
+                cursor: loading ? 'not-allowed' : 'pointer',
               }}
             >
               {loading ? 'Creating Account...' : 'Create Account & Enter'}
