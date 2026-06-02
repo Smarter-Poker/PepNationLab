@@ -11,6 +11,7 @@ import { createClient } from '@/lib/supabase/client';
 import AgentStatements from './AgentStatements';
 import AgentDownlineInvoices from './AgentDownlineInvoices';
 import AgentTierWidget from './AgentTierWidget';
+import { Star, ArrowUp, ArrowDown } from 'lucide-react';
 
 // Revenue is only "collected" once an order is approved or further along. Pending
 // and approval-stage orders are treated as pipeline (potential, not yet earned).
@@ -582,7 +583,7 @@ export default function AgentSales({ orders, setOrders, agentId, userProfile }: 
             <div className="sa-label">This Month vs Last</div>
             <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginTop: 6 }}>
               <span style={{ fontSize: '1.3rem', fontWeight: 800, color: 'var(--white)', fontFamily: 'var(--font-brand)' }}>{fmt(a.monthRevenue)}</span>
-              <span className={a.momDelta >= 0 ? 'sa-delta-up' : 'sa-delta-down'}>{a.momDelta >= 0 ? '▲' : '▼'} {Math.abs(a.momDelta).toFixed(0)}%</span>
+              <span className={a.momDelta >= 0 ? 'sa-delta-up' : 'sa-delta-down'} style={{ display: 'inline-flex', alignItems: 'center', gap: 3 }}>{a.momDelta >= 0 ? <ArrowUp size={12} aria-hidden /> : <ArrowDown size={12} aria-hidden />}{Math.abs(a.momDelta).toFixed(0)}%</span>
             </div>
             <div style={{ color: 'var(--grey-400)', fontSize: '0.74rem', marginTop: 4 }}>Last Month: {fmt(a.lastMonthRevenue)}</div>
           </div>
@@ -604,7 +605,7 @@ export default function AgentSales({ orders, setOrders, agentId, userProfile }: 
                   background: hit ? 'rgba(0,255,157,0.12)' : 'rgba(255,255,255,0.04)',
                   color: hit ? '#00FF9D' : 'var(--grey-500)',
                   border: `1px solid ${hit ? 'rgba(0,255,157,0.35)' : 'rgba(255,255,255,0.08)'}`,
-                }}>{hit ? '★' : '○'} {m.label}</span>
+                }}><Star size={12} aria-hidden fill={hit ? '#00FF9D' : 'none'} stroke={hit ? '#00FF9D' : 'var(--grey-500)'} /> {m.label}</span>
               );
             })}
           </div>
@@ -798,8 +799,8 @@ function KpiCard({ label, value, delta, deltaLabel, sub, color, help }: { label:
         <div className="sa-label">{label}{help && <span className="sa-info" title={help}>i</span>}</div>
         <div className="sa-stat" style={{ marginTop: 6, color: color || 'var(--white)' }}>{value}</div>
         {typeof delta === 'number' && (
-          <div className={delta >= 0 ? 'sa-delta-up' : 'sa-delta-down'} style={{ marginTop: 6 }}>
-            {delta >= 0 ? '▲' : '▼'} {Math.abs(delta).toFixed(0)}% <span style={{ color: 'var(--grey-500)', fontWeight: 600 }}>{deltaLabel}</span>
+          <div className={delta >= 0 ? 'sa-delta-up' : 'sa-delta-down'} style={{ marginTop: 6, display: 'flex', alignItems: 'center', gap: 4 }}>
+            {delta >= 0 ? <ArrowUp size={12} aria-hidden /> : <ArrowDown size={12} aria-hidden />} {Math.abs(delta).toFixed(0)}% <span style={{ color: 'var(--grey-500)', fontWeight: 600 }}>{deltaLabel}</span>
           </div>
         )}
         {sub && <div style={{ color: 'var(--grey-400)', fontSize: '0.74rem', marginTop: 6 }}>{sub}</div>}
