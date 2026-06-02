@@ -16,7 +16,7 @@ export default async function AccountProfilePage() {
   const { data } = await supabase
     .from('profiles')
     .select(
-      'id, full_name, email, username, role, phone, timezone, locale, bio, pronouns, ' +
+      'id, first_name, last_name, full_name, email, username, role, phone, timezone, locale, bio, pronouns, ' +
       'avatar_url, username_changed_at, phone_verified_at, deactivated_at, is_active, ' +
       'disclaimer_v1_accepted, disclaimer_accepted_at',
     )
