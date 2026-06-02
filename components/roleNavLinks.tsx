@@ -58,6 +58,7 @@ const ICON = {
   people: <svg {...ip}><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /></svg>,
   sales: <svg {...ip}><polyline points="22 7 13.5 15.5 8.5 10.5 2 17" /><polyline points="16 7 22 7 22 13" /></svg>,
   qr: <svg {...ip}><rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" /><rect x="3" y="14" width="7" height="7" /><rect x="14" y="14" width="3" height="3" /><rect x="19" y="14" width="2" height="2" /><rect x="14" y="19" width="2" height="2" /><rect x="19" y="19" width="2" height="2" /></svg>,
+  wallet: <svg {...ip}><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4" /><path d="M3 5v14a2 2 0 0 0 2 2h16v-5" /><path d="M18 12a2 2 0 0 0 0 4h4v-4Z" /></svg>,
 };
 
 const ADMIN_LINKS: RoleNavLink[] = [
@@ -102,6 +103,7 @@ function agentLinks(isSuper: boolean, storefrontHref: string): RoleNavLink[] {
     { href: agentTab('Sales & Accounting'), label: 'Sales & Accounting', icon: <svg {...ip}><polyline points="22 7 13.5 15.5 8.5 10.5 2 17" /><polyline points="16 7 22 7 22 13" /></svg> },
     { href: agentTab('Coupons'), label: 'Coupons', icon: <svg {...ip}><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z" /><line x1="7" y1="7" x2="7.01" y2="7" /></svg> },
     { href: agentTab('Research Bundles'), label: 'Bundles + Stacks', icon: <svg {...ip}><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" /><polyline points="3.27 6.96 12 12.01 20.73 6.96" /><line x1="12" y1="22.08" x2="12" y2="12" /></svg> },
+    { href: '/wallet', label: 'Wallet', icon: <svg {...ip}><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4" /><path d="M3 5v14a2 2 0 0 0 2 2h16v-5" /><path d="M18 12a2 2 0 0 0 0 4h4v-4Z" /></svg> },
     { href: '#SHOW_QR', label: 'My QR Code', icon: ICON.qr },
     { href: '/messenger', label: 'Messenger', icon: <svg {...ip}><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg> },
     { href: '/account', label: 'Account Settings', icon: <svg {...ip}><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /></svg> },
@@ -112,6 +114,7 @@ function agentLinks(isSuper: boolean, storefrontHref: string): RoleNavLink[] {
 const SUBAGENT_LINKS: RoleNavLink[] = [
   { href: subTab('Overview'), label: 'Overview', icon: ICON.grid },
   { href: subTab('Researchers'), label: 'Researchers', icon: ICON.people },
+  { href: '/wallet', label: 'Wallet', icon: ICON.wallet },
   { href: '#SHOW_QR', label: 'My Invite QR', icon: ICON.qr },
   { href: subTab('Orders'), label: 'Orders', icon: ICON.orders },
   { href: subTab('Sales & Accounting'), label: 'Sales & Accounting', icon: ICON.sales },
