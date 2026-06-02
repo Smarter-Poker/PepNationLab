@@ -1,21 +1,19 @@
 'use client';
 
 /**
- * MyQRCodeModal — R24 unified.
+ * MyQRCodeModal — premium brushed-nickel restyle.
  *
- * Why it broke before:
- *   - The same click that opens the modal can re-fire on the modal's backdrop
- *     (React 19 portal event delegation), causing the modal to close on the
- *     same tick it opened, so it visually "does nothing".
+ * Visual layer: matches the existing platform "metal" aesthetic
+ * (.metal-frame + .metal-content + .metal-text + .metal-embossed-panel)
+ * used across AdminAgents, AgentBundles, AdminAnalytics, etc.
  *
- * Defenses now in place:
- *   1. `readyToClose` flag — backdrop click handler is a no-op for the first
- *      120ms after open, so the open-click cannot accidentally close it.
- *   2. Explicit X close button (44x44 tap target) — the primary close UX.
- *   3. Escape key closes.
- *   4. `data-qr-modal-root` attribute so the trigger button can stopPropagation
- *      on clicks that aren't ours, without affecting nested buttons inside.
- *   5. Inline-only hex colors — never depend on CSS vars that might be missing.
+ * Event-bubble defenses retained from prior fix:
+ *   1. `readyToClose` flag — backdrop close handler is a no-op for the first
+ *      120ms after open so the click that opened cannot immediately close it.
+ *   2. e.target === e.currentTarget check on the backdrop.
+ *   3. All inner controls stopPropagation to prevent bubble-close.
+ *   4. SSR-safe `mounted` flag before createPortal.
+ *   5. Escape key closes.
  */
 
 import { useEffect, useRef, useState } from 'react';
@@ -45,25 +43,21 @@ export default function MyQRCodeModal({
   const [readyToClose, setReadyToClose] = useState(false);
   const lastOpenRef = useRef(false);
 
-  // Mount guard for SSR / hydration
   useEffect(() => { setMounted(true); }, []);
 
-  // Open lifecycle: reset state + arm "ready to close" after a short delay so
-  // the click that opened the modal cannot immediately close it via the backdrop.
   useEffect(() => {
     if (!open) {
       lastOpenRef.current = false;
       setReadyToClose(false);
       return;
     }
-    if (lastOpenRef.current) return; // dedupe
+    if (lastOpenRef.current) return;
     lastOpenRef.current = true;
     setData(null);
     setErr(null);
     setReadyToClose(false);
     const armId = setTimeout(() => setReadyToClose(true), 120);
 
-    // Fetch the QR payload
     fetch('/api/agent/my-qr', { cache: 'no-store' })
       .then(async r => {
         const j = await r.json().catch(() => ({}));
@@ -76,7 +70,6 @@ export default function MyQRCodeModal({
     return () => clearTimeout(armId);
   }, [open]);
 
-  // Lock body scroll while open + Escape key to close
   useEffect(() => {
     if (!open) return;
     const prev = document.body.style.overflow;
@@ -92,8 +85,7 @@ export default function MyQRCodeModal({
   if (!mounted || !open || typeof document === 'undefined') return null;
 
   function attemptBackdropClose(e: React.MouseEvent) {
-    if (!readyToClose) return; // ignore the open-click
-    // Only close if the click was on the backdrop itself, NOT bubbled from a child.
+    if (!readyToClose) return;
     if (e.target !== e.currentTarget) return;
     onClose();
   }
@@ -138,7 +130,7 @@ export default function MyQRCodeModal({
         }
       }
       if (navigator.share) { await navigator.share(shareData); return; }
-    } catch {/* fall through to copy */}
+    } catch {/* fall through */}
     try {
       await navigator.clipboard.writeText(data.url);
       toast.success('Link Copied To Clipboard');
@@ -158,6 +150,45 @@ export default function MyQRCodeModal({
     }
   }
 
+  // ---- Style helpers -----------------------------------------------------
+  // Brushed-nickel button skin (matches .metal-frame outer ring + inset highlights).
+  const nickelButton: React.CSSProperties = {
+    padding: '14px 12px',
+    borderRadius: 12,
+    minHeight: 52,
+    cursor: 'pointer',
+    fontWeight: 800,
+    fontSize: '0.82rem',
+    letterSpacing: '0.06em',
+    textTransform: 'uppercase' as const,
+    color: '#0F1923',
+    border: 'none',
+    background: 'linear-gradient(180deg, #DCD3C3 0%, #B3A992 100%)',
+    boxShadow:
+      '0 0 0 1.5px #8a847c, ' +
+      'inset 0 1px 0 rgba(255,255,255,0.55), ' +
+      'inset 0 -1px 0 rgba(0,0,0,0.35), ' +
+      '0 4px 12px rgba(0,0,0,0.45)',
+  };
+
+  const ghostButton: React.CSSProperties = {
+    padding: '14px 12px',
+    borderRadius: 12,
+    minHeight: 52,
+    cursor: 'pointer',
+    fontWeight: 800,
+    fontSize: '0.82rem',
+    letterSpacing: '0.06em',
+    textTransform: 'uppercase' as const,
+    color: '#FFFFFF',
+    background: 'linear-gradient(180deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.02) 100%)',
+    border: '1px solid rgba(255,255,255,0.12)',
+    boxShadow:
+      'inset 0 1px 0 rgba(255,255,255,0.08), ' +
+      'inset 0 -1px 0 rgba(0,0,0,0.4), ' +
+      '0 2px 8px rgba(0,0,0,0.3)',
+  };
+
   return createPortal(
     <div
       data-qr-modal-root
@@ -167,23 +198,30 @@ export default function MyQRCodeModal({
       onClick={attemptBackdropClose}
       style={{
         position: 'fixed', inset: 0, zIndex: 999999,
-        background: 'rgba(5,10,15,0.95)',
-        backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)',
+        background: 'radial-gradient(ellipse at center, rgba(15,25,35,0.92) 0%, rgba(5,10,15,0.98) 100%)',
+        backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)',
         display: 'flex', flexDirection: 'column',
         alignItems: 'center', justifyContent: 'center',
         padding: 'max(24px, env(safe-area-inset-top)) 16px max(24px, env(safe-area-inset-bottom)) 16px',
       }}
     >
+      {/* X close button — nickel pill, top-right */}
       <button
         type="button"
         onClick={(e) => { e.stopPropagation(); onClose(); }}
         aria-label="Close"
         style={{
           position: 'absolute', top: 'max(20px, env(safe-area-inset-top))', right: 20,
-          background: 'rgba(255,255,255,0.12)', border: '1px solid rgba(255,255,255,0.2)',
-          color: '#fff', width: 44, height: 44, borderRadius: '50%',
+          width: 44, height: 44, borderRadius: '50%', cursor: 'pointer', padding: 0,
+          background: 'linear-gradient(145deg, #c8c2b8 0%, #8a847c 50%, #a09890 100%)',
+          border: 'none',
+          color: '#0F1923',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          cursor: 'pointer', padding: 0,
+          boxShadow:
+            '0 0 0 1.5px #5e5852, ' +
+            'inset 0 1px 0 rgba(255,255,255,0.6), ' +
+            'inset 0 -1px 0 rgba(0,0,0,0.4), ' +
+            '0 6px 18px rgba(0,0,0,0.5)',
         }}
       >
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
@@ -192,82 +230,120 @@ export default function MyQRCodeModal({
         </svg>
       </button>
 
+      {/* Brushed-nickel frame wrapper */}
       <div
+        className="metal-frame"
         onClick={(e) => e.stopPropagation()}
-        style={{
-          background: '#162230',
-          padding: '32px 24px',
-          borderRadius: 24,
-          border: '1px solid rgba(255,255,255,0.1)',
-          display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 20,
-          boxShadow: '0 20px 40px rgba(0,0,0,0.5)',
-          maxWidth: 420, width: '100%', maxHeight: '90dvh', overflowY: 'auto',
-        }}
+        style={{ maxWidth: 460, width: '100%', maxHeight: '92dvh', overflow: 'hidden' }}
       >
-        <h2 style={{ fontSize: '1.25rem', fontWeight: 700, margin: 0, textAlign: 'center', color: '#FFFFFF' }}>
-          {data?.roleLabel || 'My QR Code'}
-        </h2>
+        <div className="metal-content" style={{
+          padding: '28px 24px',
+          maxHeight: 'calc(92dvh - 6px)',
+          overflowY: 'auto',
+          display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 18,
+        }}>
+          {/* Title — gradient metal text */}
+          <h2
+            className="metal-text"
+            style={{
+              fontSize: '1.4rem', fontWeight: 800, margin: 0, textAlign: 'center',
+              fontFamily: 'var(--font-brand)', letterSpacing: '0.04em',
+            }}
+          >
+            {data?.roleLabel || 'My QR Code'}
+          </h2>
 
-        {err && (
-          <p style={{ color: '#E53E3E', textAlign: 'center', fontSize: '0.9rem', margin: 0 }}>
-            {err}
-          </p>
-        )}
+          {err && (
+            <p style={{
+              color: '#E53E3E', textAlign: 'center', fontSize: '0.88rem', margin: 0,
+              padding: '10px 14px', borderRadius: 10,
+              background: 'rgba(229,62,62,0.08)',
+              border: '1px solid rgba(229,62,62,0.3)',
+              width: '100%',
+            }}>{err}</p>
+          )}
 
-        {!data && !err && (
-          <div style={{
-            width: 240, height: 240, background: '#FFFFFF', borderRadius: 12,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            color: '#162230', fontSize: '0.85rem',
-          }}>
-            Loading...
-          </div>
-        )}
-
-        {data && (
-          <>
-            <div data-qr-container style={{ background: '#FFFFFF', padding: 14, borderRadius: 12 }}>
-              <QRCodeGenerator
-                url={data.url}
-                qrCodeData={data.qrCodeData ?? null}
-                size={240}
-                fgColor={data.primaryColor ?? '#0F1923'}
-                bgColor="#FFFFFF"
-              />
-            </div>
-
-            <div style={{ textAlign: 'center' }}>
-              <div style={{ color: '#A8B4C0', fontSize: '0.85rem', lineHeight: 1.5, marginBottom: 6 }}>
-                {data.description}
-              </div>
+          {!data && !err && (
+            <div style={{
+              width: 264, height: 264, borderRadius: 18,
+              background: 'linear-gradient(145deg, #c8c2b8 0%, #a09890 30%, #8a847c 50%, #a09890 70%, #c8c2b8 100%)',
+              padding: 3,
+              boxShadow: '0 8px 30px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.35)',
+            }}>
               <div style={{
-                display: 'inline-flex', gap: 6, alignItems: 'center', padding: '6px 12px',
-                background: 'rgba(255,255,255,0.05)', borderRadius: 8, fontSize: '0.78rem',
-                color: '#D0DAE4', wordBreak: 'break-all', maxWidth: '100%',
+                width: '100%', height: '100%', borderRadius: 15, background: '#FFFFFF',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                color: '#162230', fontSize: '0.85rem', fontWeight: 700,
+              }}>
+                Loading...
+              </div>
+            </div>
+          )}
+
+          {data && (
+            <>
+              {/* Brushed-silver QR mount (frame + white inner) */}
+              <div
+                data-qr-container
+                style={{
+                  background: 'linear-gradient(145deg, #c8c2b8 0%, #a09890 30%, #8a847c 50%, #a09890 70%, #c8c2b8 100%)',
+                  padding: 3,
+                  borderRadius: 18,
+                  boxShadow:
+                    '0 8px 30px rgba(0,0,0,0.5), ' +
+                    'inset 0 1px 0 rgba(255,255,255,0.35), ' +
+                    'inset 0 -1px 0 rgba(0,0,0,0.4)',
+                }}
+              >
+                <div style={{
+                  background: '#FFFFFF',
+                  padding: 16,
+                  borderRadius: 15,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                }}>
+                  <QRCodeGenerator
+                    url={data.url}
+                    qrCodeData={data.qrCodeData ?? null}
+                    size={240}
+                    fgColor={data.primaryColor ?? '#0F1923'}
+                    bgColor="#FFFFFF"
+                  />
+                </div>
+              </div>
+
+              {/* Description */}
+              <p style={{
+                color: '#A8B4C0', fontSize: '0.88rem', lineHeight: 1.5, margin: 0,
+                textAlign: 'center', maxWidth: 360, fontWeight: 500,
+              }}>
+                {data.description}
+              </p>
+
+              {/* URL — embossed inset panel */}
+              <div className="metal-embossed-panel" style={{
+                padding: '10px 14px',
+                fontSize: '0.78rem',
+                color: '#D0DAE4',
+                wordBreak: 'break-all',
+                textAlign: 'center',
+                fontFamily: 'monospace',
+                width: '100%',
               }}>
                 {data.url}
               </div>
-            </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, width: '100%' }}>
-              <button type="button" onClick={downloadQR} style={{
-                padding: '12px 8px', borderRadius: 10, minHeight: 48, cursor: 'pointer',
-                background: '#C0B8A8', color: '#0F1923', border: 'none',
-                fontWeight: 700, fontSize: '0.82rem',
-              }}>Download</button>
-              <button type="button" onClick={shareQR} style={{
-                padding: '12px 8px', borderRadius: 10, minHeight: 48, cursor: 'pointer',
-                background: 'rgba(255,255,255,0.08)', color: '#FFFFFF',
-                border: '1px solid rgba(255,255,255,0.15)', fontWeight: 700, fontSize: '0.82rem',
-              }}>Share</button>
-              <button type="button" onClick={copyUrl} style={{
-                padding: '12px 8px', borderRadius: 10, minHeight: 48, cursor: 'pointer',
-                background: 'rgba(255,255,255,0.08)', color: '#FFFFFF',
-                border: '1px solid rgba(255,255,255,0.15)', fontWeight: 700, fontSize: '0.82rem',
-              }}>Copy Link</button>
-            </div>
-          </>
-        )}
+              {/* Action buttons — Download (nickel) + Share + Copy (ghost) */}
+              <div style={{
+                display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)',
+                gap: 10, width: '100%', marginTop: 4,
+              }}>
+                <button type="button" onClick={downloadQR} style={nickelButton}>Download</button>
+                <button type="button" onClick={shareQR} style={ghostButton}>Share</button>
+                <button type="button" onClick={copyUrl} style={ghostButton}>Copy Link</button>
+              </div>
+            </>
+          )}
+        </div>
       </div>
     </div>,
     document.body
