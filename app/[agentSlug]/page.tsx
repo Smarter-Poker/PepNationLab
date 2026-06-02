@@ -5,6 +5,7 @@ import Link from 'next/link';
 import AgentStorefrontGrid from '@/components/AgentStorefrontGrid';
 import AgentStorefrontLogin from '@/components/AgentStorefrontLogin';
 import CouponLinkCapture from '@/components/CouponLinkCapture';
+import StorefrontRenameBanner from '@/components/StorefrontRenameBanner';
 
 interface Props {
   params: Promise<{ agentSlug: string }>;
@@ -32,7 +33,8 @@ export default async function AgentStorefrontPage({ params }: Props) {
       is_active,
       volume_pricing_enabled,
       min_order_qty,
-      min_overall_qty
+      min_overall_qty,
+      storefront_renamed_at
     `)
     .ilike('slug', agentSlug)
     .single();
@@ -219,6 +221,10 @@ export default async function AgentStorefrontPage({ params }: Props) {
 
   const primaryColor = agent.primary_color ?? '#00C4BC';
   const displayName = agent.display_name;
+  // First-view rename banner: shown ONLY to the storefront owner when they
+  // have never personalized their display_name (auto-provisioned at promotion).
+  const showRenameBanner =
+    isStorefrontOwner && (agent as { storefront_renamed_at?: string | null }).storefront_renamed_at == null;
 
   return (
     <div style={{ minHeight: '100dvh', background: 'var(--black)' }}>
@@ -311,6 +317,14 @@ export default async function AgentStorefrontPage({ params }: Props) {
           </Link>
         </div>
       </nav>
+
+      {showRenameBanner ? (
+        <StorefrontRenameBanner
+          agentId={agent.id}
+          currentName={agent.display_name}
+          settingsUrl="/dashboard/agent?tab=storefront"
+        />
+      ) : null}
 
       <section
         className="sf-hero"
