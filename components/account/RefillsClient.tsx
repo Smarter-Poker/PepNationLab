@@ -113,8 +113,8 @@ export default function RefillsClient() {
           }
           localStorage.setItem(`pnl_reorder_add_${agentSlug}`, JSON.stringify(pending));
         } else {
-          // No storefront slug — fall back to the legacy checkout cart, still merging
-          // additively into anything present.
+          // No storefront slug (or no resolvable storefront variants) — fall back to
+          // the legacy checkout cart, still merging additively into anything present.
           const cartKey = 'pnl_storefront_cart';
           let existing: any[] = [];
           const raw = localStorage.getItem(cartKey);

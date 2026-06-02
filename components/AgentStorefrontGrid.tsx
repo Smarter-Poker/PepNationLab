@@ -474,16 +474,78 @@ export default function AgentStorefrontGrid({
   // the server) — the saved cart is hydrated in the mount effect below. This
   // prevents a React #418 hydration mismatch on the cart badge / float.
   const [cartItems, setCartItems] = useState<Record<string, number>>({});
+  // Saved For Later — items the buyer parked out of the active cart. Persisted
+  // per-storefront so it survives navigation. Keyed by variant id like cartItems.
+  const [savedForLater, setSavedForLater] = useState<Record<string, number>>({});
   useEffect(() => {
     try {
+      // Existing cart for this storefront is ALWAYS the source of truth.
+      let base: Record<string, number> = {};
       const saved = localStorage.getItem(`cart_${agentSlug}`);
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (parsed && typeof parsed === 'object') setCartItems(parsed);
+        if (parsed && typeof parsed === 'object') base = { ...parsed };
+      }
+      // Additively merge any pending reorder payload on TOP of the existing cart.
+      // This guarantees a reorder can never empty or replace what is already here.
+      const addRaw = localStorage.getItem(`pnl_reorder_add_${agentSlug}`);
+      if (addRaw) {
+        try {
+          const add = JSON.parse(addRaw);
+          if (add && typeof add === 'object') {
+            for (const [k, v] of Object.entries(add)) {
+              base[k] = (Number(base[k]) || 0) + Number(v || 0);
+            }
+          }
+        } catch { /* ignore malformed payload */ }
+        localStorage.removeItem(`pnl_reorder_add_${agentSlug}`);
+      }
+      if (Object.keys(base).length) setCartItems(base);
+
+      // Hydrate Saved For Later.
+      const sfl = localStorage.getItem(`pnl_saved_${agentSlug}`);
+      if (sfl) {
+        const parsed = JSON.parse(sfl);
+        if (parsed && typeof parsed === 'object') setSavedForLater(parsed);
       }
     } catch { /* ignore */ }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [agentSlug]);
+  // Persist Saved For Later on change (skip first run so mount cannot wipe storage).
+  const firstSavedSave = useRef(true);
+  useEffect(() => {
+    if (firstSavedSave.current) { firstSavedSave.current = false; return; }
+    try { localStorage.setItem(`pnl_saved_${agentSlug}`, JSON.stringify(savedForLater)); } catch { /* ignore */ }
+  }, [savedForLater, agentSlug]);
+  // Move a cart line into Saved For Later (additive on the saved side).
+  const saveItemForLater = (variantId: string) => {
+    setCartItems(prev => {
+      const qty = Number(prev[variantId]) || 0;
+      if (qty <= 0) return prev;
+      setSavedForLater(s => ({ ...s, [variantId]: (Number(s[variantId]) || 0) + qty }));
+      const next = { ...prev };
+      delete next[variantId];
+      return next;
+    });
+  };
+  // Move a saved line back into the active cart (additive on the cart side).
+  const moveSavedToCart = (variantId: string) => {
+    setSavedForLater(prev => {
+      const qty = Number(prev[variantId]) || 0;
+      if (qty <= 0) return prev;
+      setCartItems(c => ({ ...c, [variantId]: (Number(c[variantId]) || 0) + qty }));
+      const next = { ...prev };
+      delete next[variantId];
+      return next;
+    });
+  };
+  const removeSavedItem = (variantId: string) => {
+    setSavedForLater(prev => {
+      const next = { ...prev };
+      delete next[variantId];
+      return next;
+    });
+  };
   const [showCartFloat, setShowCartFloat] = useState(false);
   const [cartToast, setCartToast] = useState(false);
   const [showBulkPricing, setShowBulkPricing] = useState(false);
@@ -758,6 +820,7 @@ export default function AgentStorefrontGrid({
   }, [products]);
 
   const totalCartItems = Object.values(cartItems).reduce((sum, qty) => sum + qty, 0);
+  const totalSavedItems = Object.values(savedForLater).reduce((sum, qty) => sum + Number(qty || 0), 0);
 
   // Reorder flow (and any deep link) can request the cart be opened on arrival via
   // ?cart=1. Open it once the cart has hydrated with items, then never re-open.
@@ -785,17 +848,23 @@ export default function AgentStorefrontGrid({
   return (
     <div style={{ display: 'flex', flexDirection: 'column' }}>
       <style dangerouslySetInnerHTML={{__html: `
+        /* Outer metallic frame — same 3px brushed-metal ring as the peptide cards */
         .sf-toolbar {
-          display: flex;
-          gap: 12px;
-          padding: 12px;
-          background: linear-gradient(180deg, rgba(20,25,30,0.8) 0%, rgba(10,15,20,0.9) 100%);
-          border-radius: 16px;
-          border: 2px solid transparent;
-          background-clip: padding-box;
-          box-shadow: 0 0 0 1.5px #C0B8A8, inset 0 0 0 1px rgba(0,0,0,0.5), 0 8px 24px rgba(0,0,0,0.6);
+          padding: 3px;
+          border-radius: 18px;
+          background: linear-gradient(145deg, #c8c2b8 0%, #a09890 30%, #8a847c 50%, #a09890 70%, #c8c2b8 100%);
+          box-shadow: 0 8px 30px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.35), inset 0 -1px 0 rgba(0,0,0,0.4);
           margin-bottom: 24px;
+        }
+        /* Inner panel — even 16px padding on every side so the inputs never touch the frame */
+        .sf-toolbar-inner {
+          display: flex;
           flex-direction: column;
+          gap: 12px;
+          padding: 16px;
+          background: linear-gradient(180deg, var(--surface-1, #0F1923) 0%, var(--surface-2, #162230) 100%);
+          border-radius: 15px;
+          box-shadow: inset 0 2px 10px rgba(0,0,0,0.6);
         }
         .sf-toolbar-search  { position: relative; flex: 1; }
         .sf-toolbar-cat     { flex: 0 0 auto; }
@@ -834,7 +903,7 @@ export default function AgentStorefrontGrid({
           display: flex; align-items: center; justify-content: center;
         }
         @media (min-width: 640px) {
-          .sf-toolbar { flex-direction: row; flex-wrap: nowrap; padding: 14px; }
+          .sf-toolbar-inner { flex-direction: row; flex-wrap: nowrap; align-items: center; padding: 16px; }
           .sf-toolbar-search  { flex: 1 1 240px; }
           .sf-toolbar-cat     { flex: 0 0 auto; }
           .sf-toolbar select  { width: auto; min-width: 160px; padding: 9px 12px; font-size: 0.85rem; }
@@ -928,8 +997,9 @@ export default function AgentStorefrontGrid({
         }
       `}} />
 
-      {/* Faceted Search & Filter Toolbar */}
-      <div className="sf-toolbar glass-header">
+      {/* Faceted Search & Filter Toolbar — outer metal frame matches the peptide cards */}
+      <div className="sf-toolbar">
+        <div className="sf-toolbar-inner glass-header">
         {/* Search */}
         <div className="sf-toolbar-search">
           <span className="sf-search-icon">
@@ -969,6 +1039,7 @@ export default function AgentStorefrontGrid({
           </select>
         </div>
 
+        </div>
       </div>
 
 
@@ -1287,7 +1358,7 @@ export default function AgentStorefrontGrid({
           tabIndex={0}
           className="floating-cart-wrapper hover-cart-float"
           onClick={() => {
-            if (totalCartItems === 0) {
+            if (totalCartItems === 0 && totalSavedItems === 0) {
               setCartToast(true);
               setTimeout(() => setCartToast(false), 2500);
             } else {
@@ -1436,10 +1507,89 @@ export default function AgentStorefrontGrid({
                           flexShrink: 0, touchAction: 'manipulation'
                         }}>+</button>
                       </div>
+                        <button
+                          type="button"
+                          onClick={() => saveItemForLater(variantId)}
+                          style={{
+                            marginTop: 8, alignSelf: 'flex-start', background: 'none', border: 'none',
+                            color: 'var(--silver)', fontSize: '0.74rem', fontWeight: 700, cursor: 'pointer',
+                            padding: 0, textDecoration: 'underline', textUnderlineOffset: 2,
+                          }}
+                        >
+                          Save For Later
+                        </button>
                       </div>
                     </div>
                   );
                 })}
+
+                {/* Saved For Later */}
+                {Object.keys(savedForLater).length > 0 && (
+                  <div style={{ marginTop: 6, paddingTop: 12, borderTop: '1px solid rgba(255,255,255,0.08)', display: 'flex', flexDirection: 'column', gap: 10 }}>
+                    <div style={{ fontSize: '0.82rem', color: 'var(--white)', fontWeight: 800 }}>
+                      Saved For Later ({totalSavedItems} {totalSavedItems === 1 ? 'Item' : 'Items'})
+                    </div>
+                    {Object.entries(savedForLater).map(([variantId, qty]) => {
+                      const item = products.find(p => p.id === variantId);
+                      if (!item) return null;
+                      const name = item.products?.name || 'Product';
+                      const size = item.products?.unit_size ? `${item.products.unit_size}${item.products.unit_measure || ''}` : '';
+                      const imgUrl = getProductImage(
+                        item.custom_image_url ?? item.products?.image_url ?? null,
+                        item.products?.category || 'Other',
+                        name,
+                      );
+                      const perVial = item.retail_price / 10;
+                      return (
+                        <div key={variantId} style={{
+                          display: 'flex', alignItems: 'center', gap: 12, padding: 10,
+                          background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 12,
+                        }}>
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={imgUrl ?? undefined}
+                            alt={name}
+                            width={56}
+                            height={56}
+                            style={{ width: 56, height: 56, borderRadius: 10, objectFit: 'cover', flexShrink: 0, background: '#0F1923', opacity: 0.9 }}
+                          />
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ fontSize: '0.86rem', color: 'var(--white)', fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                              {name} {size && `(${size})`}
+                            </div>
+                            <div style={{ fontSize: '0.76rem', color: 'var(--grey-400)', marginBottom: 6 }}>
+                              ${formatPrice(perVial)} Each · Qty {Number(qty)}
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                              <button
+                                type="button"
+                                onClick={() => moveSavedToCart(variantId)}
+                                style={{
+                                  background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.15)',
+                                  color: 'var(--white)', fontSize: '0.74rem', fontWeight: 700, cursor: 'pointer',
+                                  padding: '6px 12px', borderRadius: 8,
+                                }}
+                              >
+                                Move To Cart
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => removeSavedItem(variantId)}
+                                style={{
+                                  background: 'none', border: 'none', color: 'var(--grey-400)',
+                                  fontSize: '0.74rem', fontWeight: 700, cursor: 'pointer', padding: 0,
+                                  textDecoration: 'underline', textUnderlineOffset: 2,
+                                }}
+                              >
+                                Remove
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
               <div style={{ padding: '12px 16px', borderTop: '1px solid rgba(255,255,255,0.06)', display: 'flex', flexDirection: 'column', gap: 8 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', color: 'var(--grey-400)', marginBottom: 4 }}>
