@@ -29,6 +29,11 @@ import {
  * Renders nothing when any gate fails. Pulls from
  * /api/messenger/support/[id]/context which already returns the full
  * payload the support flow needs.
+ *
+ * Layout modes:
+ *   - default (inline=false / unset): legacy fixed-position right rail.
+ *   - inline=true: renders as a plain block — used when mounted inside
+ *     the Customer Support widget's left column.
  */
 
 interface ContextPayload {
@@ -131,7 +136,22 @@ function StatusPill({ status }: { status: string }) {
   );
 }
 
-export default function SupportContextSidebar({ conversationId }: { conversationId: string }) {
+interface SupportContextSidebarProps {
+  conversationId: string;
+  /** When true, renders as a plain in-flow block — no fixed positioning,
+   *  no z-index, no maxHeight. Used by the Customer Support widget which
+   *  mounts this inside its left column. */
+  inline?: boolean;
+  /** When true, suppress the internal header ("Researcher Context" + chevron).
+   *  Used when the parent has its own collapsible header above the panel. */
+  hideOwnHeader?: boolean;
+}
+
+export default function SupportContextSidebar({
+  conversationId,
+  inline = false,
+  hideOwnHeader = false,
+}: SupportContextSidebarProps) {
   const [show, setShow] = useState(false);
   const [data, setData] = useState<ContextPayload | null>(null);
   const [loading, setLoading] = useState(false);
@@ -192,72 +212,92 @@ export default function SupportContextSidebar({ conversationId }: { conversation
 
   if (!show || !data) return null;
 
-  const containerStyle: React.CSSProperties = isMobile
+  // Inline mode skips all fixed-position rules so the panel renders as a
+  // plain block inside whatever container it was mounted in (e.g., the
+  // Customer Support widget's left column). Default mode keeps the legacy
+  // right-rail behavior for any callers still relying on it.
+  const containerStyle: React.CSSProperties = inline
+    ? { display: 'block', width: '100%' }
+    : isMobile
+      ? {
+          position: 'fixed',
+          top: 'calc(var(--nav-offset, 60px) + 8px)',
+          right: 8,
+          zIndex: 95,
+          maxWidth: 'calc(100vw - 16px)',
+        }
+      : {
+          position: 'fixed',
+          right: 12,
+          top: 'calc(var(--nav-offset, 60px) + 12px)',
+          width: 320,
+          maxHeight: 'calc(100dvh - var(--nav-offset, 60px) - 84px)',
+          overflowY: 'auto',
+          zIndex: 95,
+        };
+
+  const inner: React.CSSProperties = inline
     ? {
-        position: 'fixed',
-        top: 'calc(var(--nav-offset, 60px) + 8px)',
-        right: 8,
-        zIndex: 95,
-        maxWidth: 'calc(100vw - 16px)',
+        // Inline mode is hosted by a parent that owns the chrome; we keep the
+        // content padding but drop the heavy frame/border/shadow that look
+        // wrong against the left-column surface.
+        background: 'transparent',
+        border: 'none',
+        borderRadius: 0,
+        boxShadow: 'none',
+        overflow: 'visible',
+        color: 'var(--white, #fff)',
       }
     : {
-        position: 'fixed',
-        right: 12,
-        top: 'calc(var(--nav-offset, 60px) + 12px)',
-        width: 320,
-        maxHeight: 'calc(100dvh - var(--nav-offset, 60px) - 84px)',
-        overflowY: 'auto',
-        zIndex: 95,
+        background: 'linear-gradient(180deg, #0F1923 0%, #1D2D3E 100%)',
+        border: '1px solid #C0B8A8',
+        borderRadius: 12,
+        boxShadow:
+          '0 8px 24px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255,255,255,0.10), inset 0 -2px 4px rgba(0,0,0,0.45)',
+        overflow: 'hidden',
+        color: 'var(--white, #fff)',
       };
-
-  const inner: React.CSSProperties = {
-    background: 'linear-gradient(180deg, #0F1923 0%, #1D2D3E 100%)',
-    border: '1px solid #C0B8A8',
-    borderRadius: 12,
-    boxShadow:
-      '0 8px 24px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255,255,255,0.10), inset 0 -2px 4px rgba(0,0,0,0.45)',
-    overflow: 'hidden',
-    color: 'var(--white, #fff)',
-  };
 
   return (
     <aside aria-label="Support Researcher Context" style={containerStyle}>
       <div style={inner}>
-        <header
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 10,
-            padding: '10px 12px',
-            borderBottom: '1px solid rgba(255,255,255,0.06)',
-            background:
-              'linear-gradient(135deg, rgba(0,196,188,0.10) 0%, rgba(0,196,188,0.02) 100%)',
-          }}
-        >
-          <User size={16} style={{ color: 'var(--teal, #00C4BC)' }} aria-hidden="true" />
-          <strong style={{ fontSize: '0.86rem', flex: 1 }}>Researcher Context</strong>
-          {isMobile && (
-            <button
-              type="button"
-              onClick={() => setCollapsed((v) => !v)}
-              aria-label={collapsed ? 'Expand' : 'Collapse'}
-              style={{
-                background: 'transparent',
-                border: '1px solid rgba(255,255,255,0.10)',
-                borderRadius: 6,
-                color: 'var(--silver, #C0B8A8)',
-                width: 26,
-                height: 26,
-                display: 'inline-flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                cursor: 'pointer',
-              }}
-            >
-              {collapsed ? <ChevronDown size={14} /> : <ChevronUp size={14} />}
-            </button>
-          )}
-        </header>
+        {!hideOwnHeader && (
+          <header
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 10,
+              padding: '10px 12px',
+              borderBottom: '1px solid rgba(255,255,255,0.06)',
+              background:
+                'linear-gradient(135deg, rgba(0,196,188,0.10) 0%, rgba(0,196,188,0.02) 100%)',
+            }}
+          >
+            <User size={16} style={{ color: 'var(--teal, #00C4BC)' }} aria-hidden="true" />
+            <strong style={{ fontSize: '0.86rem', flex: 1 }}>Researcher Context</strong>
+            {isMobile && !inline && (
+              <button
+                type="button"
+                onClick={() => setCollapsed((v) => !v)}
+                aria-label={collapsed ? 'Expand' : 'Collapse'}
+                style={{
+                  background: 'transparent',
+                  border: '1px solid rgba(255,255,255,0.10)',
+                  borderRadius: 6,
+                  color: 'var(--silver, #C0B8A8)',
+                  width: 26,
+                  height: 26,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer',
+                }}
+              >
+                {collapsed ? <ChevronDown size={14} /> : <ChevronUp size={14} />}
+              </button>
+            )}
+          </header>
+        )}
 
         {!collapsed && (
           <div style={{ padding: '12px' }}>
