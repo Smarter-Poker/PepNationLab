@@ -81,7 +81,8 @@ export default function RecommendationStrip({
           display: 'flex',
           gap: 'var(--space-2)',
           overflowX: 'auto',
-          overscrollBehaviorX: 'contain',
+          overscrollBehaviorX: 'none',
+          touchAction: 'pan-x',
           WebkitOverflowScrolling: 'touch',
           paddingBottom: 6,
           scrollbarWidth: 'thin',
@@ -157,6 +158,7 @@ export default function RecommendationStrip({
                       WebkitLineClamp: 2,
                       WebkitBoxOrient: 'vertical',
                       overflow: 'hidden',
+                      textTransform: 'capitalize',
                     }}
                   >
                     {displayName}
