@@ -51,7 +51,7 @@ export default function AgentOverview({
     {
       id: 'storefront',
       top: '1.2%', height: '15.4%',
-      action: () => window.open(storefrontUrl, '_blank', 'noopener,noreferrer'),
+      action: () => window.location.href = storefrontUrl,
     },
     {
       id: 'researchers',

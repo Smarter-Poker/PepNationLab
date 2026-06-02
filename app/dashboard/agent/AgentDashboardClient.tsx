@@ -640,8 +640,6 @@ export default function AgentDashboardClient({
                 <a
                   key={item.id}
                   href={item.href}
-                  target="_blank"
-                  rel="noopener noreferrer"
                   className="sidebar-nav-item"
                   style={{ display: 'block', textDecoration: 'none', borderLeft: '3px solid transparent' }}
                   onClick={() => setIsMobileMenuOpen(false)}

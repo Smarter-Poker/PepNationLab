@@ -60,7 +60,11 @@ export default async function CheckoutPage({ searchParams }: PageProps) {
         .ilike('slug', agentSlug)
         .single();
       if (ap?.payment_handles) {
-        agentPaymentHandles = ap.payment_handles as Record<string, string>;
+        if (typeof ap.payment_handles === 'string') {
+          try { agentPaymentHandles = JSON.parse(ap.payment_handles); } catch {}
+        } else {
+          agentPaymentHandles = ap.payment_handles as Record<string, string>;
+        }
       }
       if (ap?.min_overall_qty) {
         minOverallQty = ap.min_overall_qty;
@@ -75,7 +79,11 @@ export default async function CheckoutPage({ searchParams }: PageProps) {
         .eq('id', profile.referring_agent_id)
         .single();
       if (ap?.payment_handles) {
-        agentPaymentHandles = ap.payment_handles as Record<string, string>;
+        if (typeof ap.payment_handles === 'string') {
+          try { agentPaymentHandles = JSON.parse(ap.payment_handles); } catch {}
+        } else {
+          agentPaymentHandles = ap.payment_handles as Record<string, string>;
+        }
       }
       if (ap?.min_overall_qty) {
         minOverallQty = ap.min_overall_qty;
