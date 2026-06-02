@@ -666,7 +666,7 @@ export default function AgentSubAgents({ agentId }: { agentId?: string }) {
                           <td>
                             <input
                               type="number"
-                              style={{ width: 120, padding: '6px 12px', background: 'linear-gradient(180deg, #0b0f16 0%, #121822 100%)', border: '1px solid rgba(0,0,0,0.8)', color: 'var(--white)', borderRadius: '6px' }}
+                              style={{ width: 120, padding: '6px 12px', background: 'var(--bg-metal-dark)', border: '1px solid rgba(0,0,0,0.8)', color: 'var(--white)', borderRadius: '6px' }}
                               value={costVal}
                               onChange={e => setCostInputs(prev => ({ ...prev, [prod.id]: e.target.value }))}
                               placeholder="Set Cost..."
@@ -676,7 +676,7 @@ export default function AgentSubAgents({ agentId }: { agentId?: string }) {
                           <td>
                             <input
                               type="number"
-                              style={{ width: 80, padding: '6px', background: 'linear-gradient(180deg, #0b0f16 0%, #121822 100%)', border: '1px solid rgba(0,0,0,0.8)', color: 'var(--white)', borderRadius: '6px' }}
+                              style={{ width: 80, padding: '6px', background: 'var(--bg-metal-dark)', border: '1px solid rgba(0,0,0,0.8)', color: 'var(--white)', borderRadius: '6px' }}
                               value={bulkThreshVal}
                               onChange={e => setBulkThreshInputs(prev => ({ ...prev, [prod.id]: e.target.value }))}
                               placeholder="100"
@@ -686,7 +686,7 @@ export default function AgentSubAgents({ agentId }: { agentId?: string }) {
                           <td>
                             <input
                               type="number"
-                              style={{ width: 100, padding: '6px', background: 'linear-gradient(180deg, #0b0f16 0%, #121822 100%)', border: '1px solid rgba(0,0,0,0.8)', color: 'var(--white)', borderRadius: '6px' }}
+                              style={{ width: 100, padding: '6px', background: 'var(--bg-metal-dark)', border: '1px solid rgba(0,0,0,0.8)', color: 'var(--white)', borderRadius: '6px' }}
                               value={bulkCostVal}
                               onChange={e => setBulkCostInputs(prev => ({ ...prev, [prod.id]: e.target.value }))}
                               placeholder="Optional"
@@ -757,7 +757,7 @@ export default function AgentSubAgents({ agentId }: { agentId?: string }) {
                   <label style={{ display: 'block', marginBottom: '8px', color: 'var(--grey-300)', fontSize: '0.85rem' }}>New Password</label>
                   <input
                     type="text"
-                    style={{ width: '100%', padding: '10px 14px', background: 'linear-gradient(180deg, #0b0f16 0%, #121822 100%)', border: '1px solid rgba(0,0,0,0.8)', color: 'var(--white)', borderRadius: '6px' }}
+                    style={{ width: '100%', padding: '10px 14px', background: 'var(--bg-metal-dark)', border: '1px solid rgba(0,0,0,0.8)', color: 'var(--white)', borderRadius: '6px' }}
                     value={resetPwValue}
                     onChange={e => setResetPwValue(e.target.value)}
                     placeholder="Minimum 8 Characters"
@@ -858,7 +858,7 @@ export default function AgentSubAgents({ agentId }: { agentId?: string }) {
                   <label style={{ display: 'block', marginBottom: '8px', color: 'var(--grey-300)', fontSize: '0.85rem' }}>Email Address</label>
                   <input
                     type="email"
-                    style={{ width: '100%', padding: '10px 14px', background: 'linear-gradient(180deg, #0b0f16 0%, #121822 100%)', border: '1px solid rgba(0,0,0,0.8)', color: 'var(--white)', borderRadius: '6px' }}
+                    style={{ width: '100%', padding: '10px 14px', background: 'var(--bg-metal-dark)', border: '1px solid rgba(0,0,0,0.8)', color: 'var(--white)', borderRadius: '6px' }}
                     value={editEmail}
                     onChange={e => setEditEmail(e.target.value)}
                     placeholder=""
@@ -868,7 +868,7 @@ export default function AgentSubAgents({ agentId }: { agentId?: string }) {
                   <label style={{ display: 'block', marginBottom: '8px', color: 'var(--grey-300)', fontSize: '0.85rem' }}>Phone Number</label>
                   <input
                     type="tel"
-                    style={{ width: '100%', padding: '10px 14px', background: 'linear-gradient(180deg, #0b0f16 0%, #121822 100%)', border: '1px solid rgba(0,0,0,0.8)', color: 'var(--white)', borderRadius: '6px' }}
+                    style={{ width: '100%', padding: '10px 14px', background: 'var(--bg-metal-dark)', border: '1px solid rgba(0,0,0,0.8)', color: 'var(--white)', borderRadius: '6px' }}
                     value={editPhone}
                     onChange={e => setEditPhone(e.target.value)}
                     placeholder=""

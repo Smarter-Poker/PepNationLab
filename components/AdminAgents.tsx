@@ -360,7 +360,7 @@ export default function AdminAgents() {
               <div 
                 key={agent.id}
                 style={{
-                  background: 'linear-gradient(180deg, #0b0f16 0%, #121822 100%)',
+                  background: 'var(--bg-metal-dark)',
                   borderTop: '1px solid rgba(0,0,0,0.8)',
                   borderBottom: '1px solid rgba(255,255,255,0.08)',
                   borderLeft: '1px solid rgba(0,0,0,0.5)',

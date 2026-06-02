@@ -1,7 +1,8 @@
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/server';
-  Bell, ShieldCheck, Heart, History, MapPin, Package, Gift, Wallet, ChevronRight,
+import {
+  Bell, ShieldCheck, Heart, History, MapPin, Gift, Wallet, ChevronRight,
   User, RotateCcw, FileCheck, LifeBuoy,
 } from 'lucide-react';
 
@@ -99,17 +100,16 @@ export default async function AccountHubPage() {
           <NavRow index={0} href="/account/profile" label="Profile" description="Your Name, Avatar, Username, And Contact Details." Icon={User} />
           <NavRow index={1} href="/account/wishlist" label="Wishlist" description="Products You Saved For Later." Icon={Heart} />
           <NavRow index={2} href="/account/recently-viewed" label="Recently Viewed" description="The Last 50 Products You Browsed." Icon={History} />
-          <NavRow index={3} href="/orders" label="Orders" description="Track Past And Pending Orders." Icon={Package} />
-          <NavRow index={4} href="/account/refills" label="Refills & Reorders" description="Reorder A Past Protocol In One Tap." Icon={RotateCcw} />
+          <NavRow index={3} href="/account/refills" label="Refills & Reorders" description="Reorder A Past Protocol In One Tap." Icon={RotateCcw} />
           {isResearcher && (
-            <NavRow index={5} href="/account/referrals" label="Referrals" description="Share Your Code And Earn Store Credit." Icon={Gift} />
+            <NavRow index={4} href="/account/referrals" label="Referrals" description="Share Your Code And Earn Store Credit." Icon={Gift} />
           )}
-          <NavRow index={6} href="/account/notifications" label="Notifications" description="Choose Which Alerts You Receive. The Bell In The Header Shows Your Live Feed." Icon={Bell} />
-          <NavRow index={7} href="/account/security" label="Security" description="Password, Two-Factor, Active Sessions, And Sign-In Activity." Icon={ShieldCheck} />
-          <NavRow index={8} href="/account/addresses" label="Saved Addresses" description="Ship-To And Ship-From Addresses Used At Checkout And On Outbound Labels." Icon={MapPin} />
-          <NavRow index={9} href="/account/payment-method" label="Payment Methods" description="Default Method Plus Your Handle Or Contact For Each One You Use." Icon={Wallet} />
-          <NavRow index={10} href="/account/compliance" label="Compliance & Disclaimers" description="Review And Re-Acknowledge The Research-Only Disclaimer." Icon={FileCheck} />
-          <NavRow index={11} href="/account/help" label="Help & Support" description="Browse FAQs Or Send Our Team A Message." Icon={LifeBuoy} />
+          <NavRow index={5} href="/account/notifications" label="Notifications" description="Choose Which Alerts You Receive. The Bell In The Header Shows Your Live Feed." Icon={Bell} />
+          <NavRow index={6} href="/account/security" label="Security" description="Password, Two-Factor, Active Sessions, And Sign-In Activity." Icon={ShieldCheck} />
+          <NavRow index={7} href="/account/addresses" label="Saved Addresses" description="Ship-To And Ship-From Addresses Used At Checkout And On Outbound Labels." Icon={MapPin} />
+          <NavRow index={8} href="/account/payment-method" label="Payment Methods" description="Default Method Plus Your Handle Or Contact For Each One You Use." Icon={Wallet} />
+          <NavRow index={9} href="/account/compliance" label="Compliance & Disclaimers" description="Review And Re-Acknowledge The Research-Only Disclaimer." Icon={FileCheck} />
+          <NavRow index={10} href="/account/help" label="Help & Support" description="Browse FAQs Or Send Our Team A Message." Icon={LifeBuoy} />
         </div>
       </div>
     </div>

@@ -55,7 +55,7 @@ const INPUT: React.CSSProperties = {
   width: '100%',
   minHeight: 44,
   padding: '10px 14px',
-  background: 'linear-gradient(180deg, #0b0f16 0%, #121822 100%)',
+  background: 'var(--bg-metal-dark)',
   border: '1px solid rgba(255,255,255,0.08)',
   color: 'var(--white)',
   borderRadius: 8,
@@ -864,7 +864,7 @@ export default function AgentCoupons({ agentId, agentSlug }: AgentCouponsProps) 
             <div style={SECTION_LABEL}>Live Preview</div>
             <div
               style={{
-                background: 'linear-gradient(135deg, rgba(0,196,188,0.08) 0%, rgba(0,229,255,0.04) 100%)',
+                background: 'var(--bg-glass-teal)',
                 border: '1px dashed rgba(0,229,255,0.35)',
                 borderRadius: 12,
                 padding: 'var(--space-5)',

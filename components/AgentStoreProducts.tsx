@@ -311,7 +311,7 @@ export default function AgentStoreProducts({ agentId }: { agentId: string }) {
           width: '100%',
           padding: '12px 14px',
           fontSize: '0.95rem',
-          background: 'linear-gradient(180deg, #0b0f16 0%, #121822 100%)',
+          background: 'var(--bg-metal-dark)',
           border: '1px solid rgba(0,0,0,0.8)',
           boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.5)',
           color: '#fff',
@@ -328,7 +328,7 @@ export default function AgentStoreProducts({ agentId }: { agentId: string }) {
             <input
               type="number"
               className="form-input"
-              style={{ width: 80, padding: '4px 8px', height: 32, background: 'linear-gradient(180deg, #0b0f16 0%, #121822 100%)', border: '1px solid rgba(0,0,0,0.8)', boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.5)', color: '#fff' }}
+              style={{ width: 80, padding: '4px 8px', height: 32, background: 'var(--bg-metal-dark)', border: '1px solid rgba(0,0,0,0.8)', boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.5)', color: '#fff' }}
               value={bulkMargin}
               onChange={e => setBulkMargin(e.target.value)}
             />
@@ -379,7 +379,7 @@ export default function AgentStoreProducts({ agentId }: { agentId: string }) {
                     <form onSubmit={handleSave} style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
                       <div className="form-group" style={{ marginBottom: 0 }}>
                         <label className="form-label" style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.6)' }}>Custom Name</label>
-                        <input type="text" className="form-input" style={{ background: 'linear-gradient(180deg, #0b0f16 0%, #121822 100%)', border: '1px solid rgba(0,0,0,0.8)', boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.5)', color: '#fff' }}
+                        <input type="text" className="form-input" style={{ background: 'var(--bg-metal-dark)', border: '1px solid rgba(0,0,0,0.8)', boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.5)', color: '#fff' }}
                           placeholder={p.products.name}
                           value={editForm.custom_name || ''}
                           onChange={e => setEditForm({ ...editForm, custom_name: e.target.value })} />
@@ -398,7 +398,7 @@ export default function AgentStoreProducts({ agentId }: { agentId: string }) {
                               step="0.01"
                               min={p.agent_cost != null ? (p.agent_cost / 10).toFixed(2) : '0'}
                               className="form-input"
-                              style={{ paddingLeft: 26, background: 'linear-gradient(180deg, #0b0f16 0%, #121822 100%)', border: '1px solid rgba(0,0,0,0.8)', boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.5)', color: '#fff' }}
+                              style={{ paddingLeft: 26, background: 'var(--bg-metal-dark)', border: '1px solid rgba(0,0,0,0.8)', boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.5)', color: '#fff' }}
                               placeholder={(Number(editForm.retail_price) / 10).toFixed(2)}
                               value={Number((editForm as any).retail_price) >= 0 ? (Number((editForm as any).retail_price) / 10).toFixed(2) : ''}
                               onChange={e => {
@@ -428,7 +428,7 @@ export default function AgentStoreProducts({ agentId }: { agentId: string }) {
                             step="1"
                             min="0"
                             className="form-input"
-                            style={{ background: 'linear-gradient(180deg, #0b0f16 0%, #121822 100%)', border: '1px solid rgba(0,0,0,0.8)', boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.5)', color: '#fff' }}
+                            style={{ background: 'var(--bg-metal-dark)', border: '1px solid rgba(0,0,0,0.8)', boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.5)', color: '#fff' }}
                             placeholder="e.g. 50"
                             value={(editForm as any).margin_percent ?? 50}
                             onChange={e => {
@@ -443,7 +443,7 @@ export default function AgentStoreProducts({ agentId }: { agentId: string }) {
                       </div>
                       <div className="form-group" style={{ marginBottom: 0 }}>
                         <label className="form-label" style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.6)' }}>Custom Description</label>
-                        <textarea className="form-input" style={{ background: 'linear-gradient(180deg, #0b0f16 0%, #121822 100%)', border: '1px solid rgba(0,0,0,0.8)', boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.5)', color: '#fff' }} rows={2} placeholder={p.products.description || 'No Description'} value={editForm.custom_description || ''} onChange={e => setEditForm({ ...editForm, custom_description: e.target.value })} />
+                        <textarea className="form-input" style={{ background: 'var(--bg-metal-dark)', border: '1px solid rgba(0,0,0,0.8)', boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.5)', color: '#fff' }} rows={2} placeholder={p.products.description || 'No Description'} value={editForm.custom_description || ''} onChange={e => setEditForm({ ...editForm, custom_description: e.target.value })} />
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)', flexWrap: 'wrap' }}>
                         <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: '0.82rem', color: 'rgba(255,255,255,0.6)' }}>
@@ -458,7 +458,7 @@ export default function AgentStoreProducts({ agentId }: { agentId: string }) {
                         {(editForm as any).is_on_sale && (
                           <div className="form-group" style={{ marginBottom: 0, flex: 1, minWidth: 120 }}>
                             <label className="form-label" style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.6)' }}>Sale Price ($)</label>
-                            <input type="number" step="0.01" className="form-input" style={{ background: 'linear-gradient(180deg, #0b0f16 0%, #121822 100%)', border: '1px solid rgba(0,0,0,0.8)', boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.5)', color: '#fff' }} placeholder="Sale price" value={(editForm as any).sale_price || ''} onChange={e => setEditForm({ ...editForm, sale_price: Number(e.target.value) || null } as any)} />
+                            <input type="number" step="0.01" className="form-input" style={{ background: 'var(--bg-metal-dark)', border: '1px solid rgba(0,0,0,0.8)', boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.5)', color: '#fff' }} placeholder="Sale price" value={(editForm as any).sale_price || ''} onChange={e => setEditForm({ ...editForm, sale_price: Number(e.target.value) || null } as any)} />
                           </div>
                         )}
                       </div>
@@ -583,7 +583,7 @@ export default function AgentStoreProducts({ agentId }: { agentId: string }) {
                           <form onSubmit={handleSave} style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
                             <div className="form-group" style={{ marginBottom: 0 }}>
                               <label className="form-label" style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.6)' }}>Custom Name</label>
-                              <input type="text" className="form-input" style={{ background: 'linear-gradient(180deg, #0b0f16 0%, #121822 100%)', border: '1px solid rgba(0,0,0,0.8)', boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.5)', color: '#fff' }}
+                              <input type="text" className="form-input" style={{ background: 'var(--bg-metal-dark)', border: '1px solid rgba(0,0,0,0.8)', boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.5)', color: '#fff' }}
                                 placeholder={p.products.name}
                                 value={editForm.custom_name || ''}
                                 onChange={e => setEditForm({ ...editForm, custom_name: e.target.value })} />
@@ -602,7 +602,7 @@ export default function AgentStoreProducts({ agentId }: { agentId: string }) {
                                     step="0.01"
                                     min={p.agent_cost != null ? (p.agent_cost / 10).toFixed(2) : '0'}
                                     className="form-input"
-                                    style={{ paddingLeft: 26, background: 'linear-gradient(180deg, #0b0f16 0%, #121822 100%)', border: '1px solid rgba(0,0,0,0.8)', boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.5)', color: '#fff' }}
+                                    style={{ paddingLeft: 26, background: 'var(--bg-metal-dark)', border: '1px solid rgba(0,0,0,0.8)', boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.5)', color: '#fff' }}
                                     placeholder={(Number(editForm.retail_price) / 10).toFixed(2)}
                                     value={Number((editForm as any).retail_price) >= 0 ? (Number((editForm as any).retail_price) / 10).toFixed(2) : ''}
                                     onChange={e => {
@@ -631,7 +631,7 @@ export default function AgentStoreProducts({ agentId }: { agentId: string }) {
                                   step="1"
                                   min="0"
                                   className="form-input"
-                                  style={{ background: 'linear-gradient(180deg, #0b0f16 0%, #121822 100%)', border: '1px solid rgba(0,0,0,0.8)', boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.5)', color: '#fff' }}
+                                  style={{ background: 'var(--bg-metal-dark)', border: '1px solid rgba(0,0,0,0.8)', boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.5)', color: '#fff' }}
                                   placeholder="e.g. 50"
                                   value={(editForm as any).margin_percent ?? 50}
                                   onChange={e => {
@@ -646,7 +646,7 @@ export default function AgentStoreProducts({ agentId }: { agentId: string }) {
                             </div>
                             <div className="form-group" style={{ marginBottom: 0 }}>
                               <label className="form-label" style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.6)' }}>Custom Description</label>
-                              <textarea className="form-input" style={{ background: 'linear-gradient(180deg, #0b0f16 0%, #121822 100%)', border: '1px solid rgba(0,0,0,0.8)', boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.5)', color: '#fff' }} rows={2} placeholder={p.products.description || 'No Description'} value={editForm.custom_description || ''} onChange={e => setEditForm({ ...editForm, custom_description: e.target.value })} />
+                              <textarea className="form-input" style={{ background: 'var(--bg-metal-dark)', border: '1px solid rgba(0,0,0,0.8)', boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.5)', color: '#fff' }} rows={2} placeholder={p.products.description || 'No Description'} value={editForm.custom_description || ''} onChange={e => setEditForm({ ...editForm, custom_description: e.target.value })} />
                             </div>
                             <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)', flexWrap: 'wrap' }}>
                               <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: '0.82rem', color: 'rgba(255,255,255,0.6)' }}>
@@ -656,7 +656,7 @@ export default function AgentStoreProducts({ agentId }: { agentId: string }) {
                               {(editForm as any).is_on_sale && (
                                 <div className="form-group" style={{ marginBottom: 0, flex: 1, minWidth: 120 }}>
                                   <label className="form-label" style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.6)' }}>Sale Price ($)</label>
-                                  <input type="number" step="0.01" className="form-input" style={{ background: 'linear-gradient(180deg, #0b0f16 0%, #121822 100%)', border: '1px solid rgba(0,0,0,0.8)', boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.5)', color: '#fff' }} placeholder="Sale price" value={(editForm as any).sale_price || ''} onChange={e => setEditForm({ ...editForm, sale_price: Number(e.target.value) || null } as any)} />
+                                  <input type="number" step="0.01" className="form-input" style={{ background: 'var(--bg-metal-dark)', border: '1px solid rgba(0,0,0,0.8)', boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.5)', color: '#fff' }} placeholder="Sale price" value={(editForm as any).sale_price || ''} onChange={e => setEditForm({ ...editForm, sale_price: Number(e.target.value) || null } as any)} />
                                 </div>
                               )}
                             </div>

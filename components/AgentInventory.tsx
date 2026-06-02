@@ -298,7 +298,7 @@ export default function AgentInventory({ agentId }: { agentId: string }) {
                           width: 60, 
                           height: 28, 
                           textAlign: 'center', 
-                          background: 'linear-gradient(180deg, #0b0f16 0%, #121822 100%)',
+                          background: 'var(--bg-metal-dark)',
                           border: '1px solid rgba(0,0,0,0.8)',
                           boxShadow: 'inset 0 2px 10px rgba(0,0,0,0.9)',
                           color: 'var(--white)',

@@ -199,7 +199,7 @@ export default function AgentBundles({ agentId }: { agentId: string }) {
                   <label style={{ display: 'block', marginBottom: '8px', color: 'var(--grey-300)', fontSize: '0.85rem' }}>Bundle Name</label>
                   <input
                     type="text"
-                    style={{ width: '100%', padding: '10px 14px', background: 'linear-gradient(180deg, #0b0f16 0%, #121822 100%)', border: '1px solid rgba(0,0,0,0.8)', color: 'var(--white)', borderRadius: '6px' }}
+                    style={{ width: '100%', padding: '10px 14px', background: 'var(--bg-metal-dark)', border: '1px solid rgba(0,0,0,0.8)', color: 'var(--white)', borderRadius: '6px' }}
                     placeholder="e.g. Healing Stack, Weight Loss Pack"
                     value={bundleName}
                     onChange={e => setBundleName(e.target.value)}
@@ -210,7 +210,7 @@ export default function AgentBundles({ agentId }: { agentId: string }) {
                   <label style={{ display: 'block', marginBottom: '8px', color: 'var(--grey-300)', fontSize: '0.85rem' }}>Bundle Discount (%)</label>
                   <input
                     type="number"
-                    style={{ width: '100%', padding: '10px 14px', background: 'linear-gradient(180deg, #0b0f16 0%, #121822 100%)', border: '1px solid rgba(0,0,0,0.8)', color: 'var(--white)', borderRadius: '6px' }}
+                    style={{ width: '100%', padding: '10px 14px', background: 'var(--bg-metal-dark)', border: '1px solid rgba(0,0,0,0.8)', color: 'var(--white)', borderRadius: '6px' }}
                     value={discountPercent}
                     onChange={e => setDiscountPercent(Number(e.target.value))}
                     min={0}
@@ -221,7 +221,7 @@ export default function AgentBundles({ agentId }: { agentId: string }) {
               <div className="form-group" style={{ marginBottom: 0 }}>
                 <label style={{ display: 'block', marginBottom: '8px', color: 'var(--grey-300)', fontSize: '0.85rem' }}>Description (Optional)</label>
                 <textarea
-                  style={{ width: '100%', padding: '10px 14px', background: 'linear-gradient(180deg, #0b0f16 0%, #121822 100%)', border: '1px solid rgba(0,0,0,0.8)', color: 'var(--white)', borderRadius: '6px' }}
+                  style={{ width: '100%', padding: '10px 14px', background: 'var(--bg-metal-dark)', border: '1px solid rgba(0,0,0,0.8)', color: 'var(--white)', borderRadius: '6px' }}
                   rows={2}
                   placeholder="Describe What This Bundle Targets..."
                   value={bundleDesc}
@@ -236,7 +236,7 @@ export default function AgentBundles({ agentId }: { agentId: string }) {
                 </label>
                 <div style={{
                   maxHeight: 280, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 4,
-                  background: 'linear-gradient(180deg, #0b0f16 0%, #121822 100%)', borderRadius: '6px', padding: 'var(--space-3)',
+                  background: 'var(--bg-metal-dark)', borderRadius: '6px', padding: 'var(--space-3)',
                   border: '1px solid rgba(0,0,0,0.8)', boxShadow: 'inset 0 4px 20px rgba(0,0,0,0.9)'
                 }}>
                   {products.map(p => {

@@ -258,7 +258,7 @@ export default function AgentDownline({ agentId }: { agentId?: string }) {
                   <input
                     type="text"
                     required
-                    style={{ width: '100%', padding: '10px', background: 'linear-gradient(180deg, #0b0f16 0%, #121822 100%)', border: '1px solid rgba(0,0,0,0.8)', color: 'var(--white)', borderRadius: '6px' }}
+                    style={{ width: '100%', padding: '10px', background: 'var(--bg-metal-dark)', border: '1px solid rgba(0,0,0,0.8)', color: 'var(--white)', borderRadius: '6px' }}
                     value={caFullName}
                     onChange={e => setCaFullName(e.target.value)}
                     placeholder="E.g., John Smith"
@@ -269,7 +269,7 @@ export default function AgentDownline({ agentId }: { agentId?: string }) {
                   <input
                     type="text"
                     required
-                    style={{ width: '100%', padding: '10px', background: 'linear-gradient(180deg, #0b0f16 0%, #121822 100%)', border: '1px solid rgba(0,0,0,0.8)', color: 'var(--white)', borderRadius: '6px' }}
+                    style={{ width: '100%', padding: '10px', background: 'var(--bg-metal-dark)', border: '1px solid rgba(0,0,0,0.8)', color: 'var(--white)', borderRadius: '6px' }}
                     value={caUsername}
                     onChange={e => setCaUsername(e.target.value.toLowerCase().replace(/[^a-z0-9]/g, ''))}
                     placeholder="Lowercase letters & numbers"
@@ -281,7 +281,7 @@ export default function AgentDownline({ agentId }: { agentId?: string }) {
                     type="text"
                     required
                     minLength={8}
-                    style={{ width: '100%', padding: '10px', background: 'linear-gradient(180deg, #0b0f16 0%, #121822 100%)', border: '1px solid rgba(0,0,0,0.8)', color: 'var(--white)', borderRadius: '6px' }}
+                    style={{ width: '100%', padding: '10px', background: 'var(--bg-metal-dark)', border: '1px solid rgba(0,0,0,0.8)', color: 'var(--white)', borderRadius: '6px' }}
                     value={caPassword}
                     onChange={e => setCaPassword(e.target.value)}
                     placeholder="Minimum 8 characters"
@@ -295,7 +295,7 @@ export default function AgentDownline({ agentId }: { agentId?: string }) {
                   <input
                     type="text"
                     required
-                    style={{ width: '100%', padding: '10px', background: 'linear-gradient(180deg, #0b0f16 0%, #121822 100%)', border: '1px solid rgba(0,0,0,0.8)', color: 'var(--white)', borderRadius: '6px' }}
+                    style={{ width: '100%', padding: '10px', background: 'var(--bg-metal-dark)', border: '1px solid rgba(0,0,0,0.8)', color: 'var(--white)', borderRadius: '6px' }}
                     value={caDisplayName}
                     onChange={e => setCaDisplayName(e.target.value)}
                     placeholder="E.g., John's Store"
@@ -306,7 +306,7 @@ export default function AgentDownline({ agentId }: { agentId?: string }) {
                   <input
                     type="text"
                     required
-                    style={{ width: '100%', padding: '10px', background: 'linear-gradient(180deg, #0b0f16 0%, #121822 100%)', border: '1px solid rgba(0,0,0,0.8)', color: 'var(--white)', borderRadius: '6px' }}
+                    style={{ width: '100%', padding: '10px', background: 'var(--bg-metal-dark)', border: '1px solid rgba(0,0,0,0.8)', color: 'var(--white)', borderRadius: '6px' }}
                     value={caSlug}
                     onChange={e => setCaSlug(e.target.value.toLowerCase().replace(/[^a-z0-9\-]/g, ''))}
                     placeholder="PepNationLab.com/MyStoreNameHere"
@@ -318,11 +318,11 @@ export default function AgentDownline({ agentId }: { agentId?: string }) {
                 <div>
                   <label style={{ display: 'block', marginBottom: '6px', color: 'var(--grey-300)', fontSize: '0.85rem' }}>Payment Model</label>
                   <div style={{ display: 'flex', gap: 'var(--space-3)' }}>
-                    <label style={{ flex: 1, padding: '10px', background: 'linear-gradient(180deg, #0b0f16 0%, #121822 100%)', border: `1px solid ${caAccountType === 'prepaid' ? 'var(--teal)' : 'rgba(0,0,0,0.8)'}`, color: 'var(--white)', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <label style={{ flex: 1, padding: '10px', background: 'var(--bg-metal-dark)', border: `1px solid ${caAccountType === 'prepaid' ? 'var(--teal)' : 'rgba(0,0,0,0.8)'}`, color: 'var(--white)', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}>
                       <input type="radio" checked={caAccountType === 'prepaid'} onChange={() => setCaAccountType('prepaid')} />
                       Prepaid
                     </label>
-                    <label style={{ flex: 1, padding: '10px', background: 'linear-gradient(180deg, #0b0f16 0%, #121822 100%)', border: `1px solid ${caAccountType === 'credit' ? 'var(--teal)' : 'rgba(0,0,0,0.8)'}`, color: 'var(--white)', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <label style={{ flex: 1, padding: '10px', background: 'var(--bg-metal-dark)', border: `1px solid ${caAccountType === 'credit' ? 'var(--teal)' : 'rgba(0,0,0,0.8)'}`, color: 'var(--white)', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}>
                       <input type="radio" checked={caAccountType === 'credit'} onChange={() => setCaAccountType('credit')} />
                       Credit Line
                     </label>
@@ -337,7 +337,7 @@ export default function AgentDownline({ agentId }: { agentId?: string }) {
                       required
                       min="0"
                       step="0.01"
-                      style={{ width: '100%', padding: '10px', background: 'linear-gradient(180deg, #0b0f16 0%, #121822 100%)', border: '1px solid rgba(0,0,0,0.8)', color: 'var(--white)', borderRadius: '6px' }}
+                      style={{ width: '100%', padding: '10px', background: 'var(--bg-metal-dark)', border: '1px solid rgba(0,0,0,0.8)', color: 'var(--white)', borderRadius: '6px' }}
                       value={caPrepaidBalance}
                       onChange={e => setCaPrepaidBalance(e.target.value)}
                       placeholder="0.00"
@@ -352,7 +352,7 @@ export default function AgentDownline({ agentId }: { agentId?: string }) {
                       required
                       min="0"
                       step="0.01"
-                      style={{ width: '100%', padding: '10px', background: 'linear-gradient(180deg, #0b0f16 0%, #121822 100%)', border: '1px solid rgba(0,0,0,0.8)', color: 'var(--white)', borderRadius: '6px' }}
+                      style={{ width: '100%', padding: '10px', background: 'var(--bg-metal-dark)', border: '1px solid rgba(0,0,0,0.8)', color: 'var(--white)', borderRadius: '6px' }}
                       value={caCreditLimit}
                       onChange={e => setCaCreditLimit(e.target.value)}
                       placeholder="0.00"
@@ -365,11 +365,11 @@ export default function AgentDownline({ agentId }: { agentId?: string }) {
                 <div>
                   <label style={{ display: 'block', marginBottom: '6px', color: 'var(--grey-300)', fontSize: '0.85rem' }}>Commission Structure</label>
                   <div style={{ display: 'flex', gap: 'var(--space-3)', marginBottom: 'var(--space-3)' }}>
-                    <label style={{ flex: 1, padding: '10px', background: 'linear-gradient(180deg, #0b0f16 0%, #121822 100%)', border: `1px solid ${caCommissionMode === 'fixed' ? 'var(--teal)' : 'rgba(0,0,0,0.8)'}`, color: 'var(--white)', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <label style={{ flex: 1, padding: '10px', background: 'var(--bg-metal-dark)', border: `1px solid ${caCommissionMode === 'fixed' ? 'var(--teal)' : 'rgba(0,0,0,0.8)'}`, color: 'var(--white)', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}>
                       <input type="radio" checked={caCommissionMode === 'fixed'} onChange={() => setCaCommissionMode('fixed')} />
                       Fixed Percentage
                     </label>
-                    <label style={{ flex: 1, padding: '10px', background: 'linear-gradient(180deg, #0b0f16 0%, #121822 100%)', border: `1px solid ${caCommissionMode === 'gamified' ? 'var(--teal)' : 'rgba(0,0,0,0.8)'}`, color: 'var(--white)', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <label style={{ flex: 1, padding: '10px', background: 'var(--bg-metal-dark)', border: `1px solid ${caCommissionMode === 'gamified' ? 'var(--teal)' : 'rgba(0,0,0,0.8)'}`, color: 'var(--white)', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}>
                       <input type="radio" checked={caCommissionMode === 'gamified'} onChange={() => setCaCommissionMode('gamified')} />
                       <span style={{ flex: 1 }}>Gamification Scale</span>
                       <button
@@ -392,11 +392,11 @@ export default function AgentDownline({ agentId }: { agentId?: string }) {
 
                   {caCommissionMode === 'gamified' && (
                     <div style={{ display: 'flex', gap: 'var(--space-3)', marginBottom: 'var(--space-3)' }}>
-                      <label style={{ flex: 1, padding: '10px', background: 'linear-gradient(180deg, #0b0f16 0%, #121822 100%)', border: `1px solid ${caScaleType === 'default' ? 'var(--teal)' : 'rgba(0,0,0,0.8)'}`, color: 'var(--white)', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <label style={{ flex: 1, padding: '10px', background: 'var(--bg-metal-dark)', border: `1px solid ${caScaleType === 'default' ? 'var(--teal)' : 'rgba(0,0,0,0.8)'}`, color: 'var(--white)', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}>
                         <input type="radio" checked={caScaleType === 'default'} onChange={() => setCaScaleType('default')} />
                         Use Default Scale
                       </label>
-                      <label style={{ flex: 1, padding: '10px', background: 'linear-gradient(180deg, #0b0f16 0%, #121822 100%)', border: `1px solid ${caScaleType === 'custom' ? 'var(--teal)' : 'rgba(0,0,0,0.8)'}`, color: 'var(--white)', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <label style={{ flex: 1, padding: '10px', background: 'var(--bg-metal-dark)', border: `1px solid ${caScaleType === 'custom' ? 'var(--teal)' : 'rgba(0,0,0,0.8)'}`, color: 'var(--white)', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}>
                         <input type="radio" checked={caScaleType === 'custom'} onChange={() => setCaScaleType('custom')} />
                         Use Custom Scale
                       </label>
@@ -405,21 +405,21 @@ export default function AgentDownline({ agentId }: { agentId?: string }) {
                   {caCommissionMode === 'fixed' ? (
                     <div>
                       <label style={{ display: 'block', marginBottom: '6px', color: 'var(--grey-300)', fontSize: '0.85rem' }}>Commission Rate (%)</label>
-                      <input type="number" min="0" max="100" step="0.1" style={{ width: '100%', padding: '10px', background: 'linear-gradient(180deg, #0b0f16 0%, #121822 100%)', border: '1px solid rgba(0,0,0,0.8)', color: 'var(--white)', borderRadius: '6px' }} value={caCommissionPct} onChange={e => setCaCommissionPct(e.target.value)} placeholder="e.g. 20" />
+                      <input type="number" min="0" max="100" step="0.1" style={{ width: '100%', padding: '10px', background: 'var(--bg-metal-dark)', border: '1px solid rgba(0,0,0,0.8)', color: 'var(--white)', borderRadius: '6px' }} value={caCommissionPct} onChange={e => setCaCommissionPct(e.target.value)} placeholder="e.g. 20" />
                     </div>
                   ) : caScaleType === 'default' ? (
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: 'var(--space-3)' }}>
                       <div>
                         <label style={{ display: 'block', marginBottom: '6px', color: 'var(--grey-300)', fontSize: '0.85rem' }}>Base Rate (%)</label>
-                        <input type="number" min="0" max="40" step="0.1" style={{ width: '100%', padding: '10px', background: 'linear-gradient(180deg, #0b0f16 0%, #121822 100%)', border: '1px solid rgba(0,0,0,0.8)', color: 'var(--white)', borderRadius: '6px' }} value={caCommissionPct} onChange={e => setCaCommissionPct(e.target.value)} placeholder="e.g. 15" />
+                        <input type="number" min="0" max="40" step="0.1" style={{ width: '100%', padding: '10px', background: 'var(--bg-metal-dark)', border: '1px solid rgba(0,0,0,0.8)', color: 'var(--white)', borderRadius: '6px' }} value={caCommissionPct} onChange={e => setCaCommissionPct(e.target.value)} placeholder="e.g. 15" />
                       </div>
                       <div>
                         <label style={{ display: 'block', marginBottom: '6px', color: 'var(--grey-300)', fontSize: '0.85rem' }}>Max Cap (%)</label>
-                        <input type="number" min="0" max="40" step="0.1" style={{ width: '100%', padding: '10px', background: 'linear-gradient(180deg, #0b0f16 0%, #121822 100%)', border: '1px solid rgba(0,0,0,0.8)', color: 'var(--white)', borderRadius: '6px' }} value={caMaxCap} onChange={e => setCaMaxCap(e.target.value)} placeholder="No Cap" />
+                        <input type="number" min="0" max="40" step="0.1" style={{ width: '100%', padding: '10px', background: 'var(--bg-metal-dark)', border: '1px solid rgba(0,0,0,0.8)', color: 'var(--white)', borderRadius: '6px' }} value={caMaxCap} onChange={e => setCaMaxCap(e.target.value)} placeholder="No Cap" />
                       </div>
                       <div>
                         <label style={{ display: 'block', marginBottom: '6px', color: 'var(--grey-300)', fontSize: '0.85rem' }}>Velocity Cap ($)</label>
-                        <input type="number" min="0" step="0.01" style={{ width: '100%', padding: '10px', background: 'linear-gradient(180deg, #0b0f16 0%, #121822 100%)', border: '1px solid rgba(0,0,0,0.8)', color: 'var(--white)', borderRadius: '6px' }} value={caVelocityCap} onChange={e => setCaVelocityCap(e.target.value)} placeholder="None" />
+                        <input type="number" min="0" step="0.01" style={{ width: '100%', padding: '10px', background: 'var(--bg-metal-dark)', border: '1px solid rgba(0,0,0,0.8)', color: 'var(--white)', borderRadius: '6px' }} value={caVelocityCap} onChange={e => setCaVelocityCap(e.target.value)} placeholder="None" />
                       </div>
                     </div>
                   ) : (
@@ -436,12 +436,12 @@ export default function AgentDownline({ agentId }: { agentId?: string }) {
                             const newSteps = [...caCustomSteps];
                             newSteps[idx].min_volume = Number(e.target.value);
                             setCaCustomSteps(newSteps);
-                          }} style={{ width: '100%', padding: '8px', background: 'linear-gradient(180deg, #0b0f16 0%, #121822 100%)', border: '1px solid rgba(0,0,0,0.8)', color: 'var(--white)', borderRadius: '6px', opacity: idx === 0 ? 0.5 : 1 }} />
+                          }} style={{ width: '100%', padding: '8px', background: 'var(--bg-metal-dark)', border: '1px solid rgba(0,0,0,0.8)', color: 'var(--white)', borderRadius: '6px', opacity: idx === 0 ? 0.5 : 1 }} />
                           <input type="number" min="0" max="40" step="0.1" value={step.bonus_pct} onChange={e => {
                             const newSteps = [...caCustomSteps];
                             newSteps[idx].bonus_pct = Number(e.target.value);
                             setCaCustomSteps(newSteps);
-                          }} style={{ width: '100%', padding: '8px', background: 'linear-gradient(180deg, #0b0f16 0%, #121822 100%)', border: '1px solid rgba(0,0,0,0.8)', color: 'var(--white)', borderRadius: '6px' }} />
+                          }} style={{ width: '100%', padding: '8px', background: 'var(--bg-metal-dark)', border: '1px solid rgba(0,0,0,0.8)', color: 'var(--white)', borderRadius: '6px' }} />
                         </div>
                       ))}
                     </div>
@@ -501,7 +501,7 @@ export default function AgentDownline({ agentId }: { agentId?: string }) {
                   <label style={{ display: 'block', marginBottom: '8px', color: 'var(--grey-300)', fontSize: '0.85rem' }}>New Password</label>
                   <input
                     type="text"
-                    style={{ width: '100%', padding: '10px 14px', background: 'linear-gradient(180deg, #0b0f16 0%, #121822 100%)', border: '1px solid rgba(0,0,0,0.8)', color: 'var(--white)', borderRadius: '6px' }}
+                    style={{ width: '100%', padding: '10px 14px', background: 'var(--bg-metal-dark)', border: '1px solid rgba(0,0,0,0.8)', color: 'var(--white)', borderRadius: '6px' }}
                     value={resetPwValue}
                     onChange={e => setResetPwValue(e.target.value)}
                     placeholder="Minimum 8 Characters"

@@ -127,31 +127,31 @@ export default function AgentManualOrder({ onOrderCreated }: { onOrderCreated: (
             <div className="grid-2" style={{ gap: 'var(--space-4)' }}>
               <div className="form-group">
                 <label className="form-label" style={{ color: 'rgba(255,255,255,0.6)' }}>Full Name</label>
-                <input type="text" className="form-input" style={{ background: 'linear-gradient(180deg, #0b0f16 0%, #121822 100%)', border: '1px solid rgba(0,0,0,0.8)', boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.5)', color: '#fff' }} required value={buyerName} onChange={e => setBuyerName(e.target.value)} />
+                <input type="text" className="form-input" style={{ background: 'var(--bg-metal-dark)', border: '1px solid rgba(0,0,0,0.8)', boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.5)', color: '#fff' }} required value={buyerName} onChange={e => setBuyerName(e.target.value)} />
               </div>
               <div className="form-group">
                 <label className="form-label" style={{ color: 'rgba(255,255,255,0.6)' }}>Email (Optional)</label>
-                <input type="email" className="form-input" style={{ background: 'linear-gradient(180deg, #0b0f16 0%, #121822 100%)', border: '1px solid rgba(0,0,0,0.8)', boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.5)', color: '#fff' }} value={buyerEmail} onChange={e => setBuyerEmail(e.target.value)} />
+                <input type="email" className="form-input" style={{ background: 'var(--bg-metal-dark)', border: '1px solid rgba(0,0,0,0.8)', boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.5)', color: '#fff' }} value={buyerEmail} onChange={e => setBuyerEmail(e.target.value)} />
               </div>
             </div>
             
             <div className="form-group" style={{ marginTop: 'var(--space-4)' }}>
               <label className="form-label" style={{ color: 'rgba(255,255,255,0.6)' }}>Street Address</label>
-              <input type="text" className="form-input" style={{ background: 'linear-gradient(180deg, #0b0f16 0%, #121822 100%)', border: '1px solid rgba(0,0,0,0.8)', boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.5)', color: '#fff' }} required value={street} onChange={e => setStreet(e.target.value)} />
+              <input type="text" className="form-input" style={{ background: 'var(--bg-metal-dark)', border: '1px solid rgba(0,0,0,0.8)', boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.5)', color: '#fff' }} required value={street} onChange={e => setStreet(e.target.value)} />
             </div>
             
             <div className="grid-3" style={{ gap: 'var(--space-4)', marginTop: 'var(--space-4)' }}>
               <div className="form-group">
                 <label className="form-label" style={{ color: 'rgba(255,255,255,0.6)' }}>City</label>
-                <input type="text" className="form-input" style={{ background: 'linear-gradient(180deg, #0b0f16 0%, #121822 100%)', border: '1px solid rgba(0,0,0,0.8)', boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.5)', color: '#fff' }} required value={city} onChange={e => setCity(e.target.value)} />
+                <input type="text" className="form-input" style={{ background: 'var(--bg-metal-dark)', border: '1px solid rgba(0,0,0,0.8)', boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.5)', color: '#fff' }} required value={city} onChange={e => setCity(e.target.value)} />
               </div>
               <div className="form-group">
                 <label className="form-label" style={{ color: 'rgba(255,255,255,0.6)' }}>State</label>
-                <input type="text" className="form-input" style={{ background: 'linear-gradient(180deg, #0b0f16 0%, #121822 100%)', border: '1px solid rgba(0,0,0,0.8)', boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.5)', color: '#fff' }} required value={state} onChange={e => setState(e.target.value)} />
+                <input type="text" className="form-input" style={{ background: 'var(--bg-metal-dark)', border: '1px solid rgba(0,0,0,0.8)', boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.5)', color: '#fff' }} required value={state} onChange={e => setState(e.target.value)} />
               </div>
               <div className="form-group">
                 <label className="form-label" style={{ color: 'rgba(255,255,255,0.6)' }}>ZIP Code</label>
-                <input type="text" className="form-input" style={{ background: 'linear-gradient(180deg, #0b0f16 0%, #121822 100%)', border: '1px solid rgba(0,0,0,0.8)', boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.5)', color: '#fff' }} required value={zip} onChange={e => setZip(e.target.value)} />
+                <input type="text" className="form-input" style={{ background: 'var(--bg-metal-dark)', border: '1px solid rgba(0,0,0,0.8)', boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.5)', color: '#fff' }} required value={zip} onChange={e => setZip(e.target.value)} />
               </div>
             </div>
           </div>
@@ -163,7 +163,7 @@ export default function AgentManualOrder({ onOrderCreated }: { onOrderCreated: (
             <div style={{ display: 'flex', gap: 'var(--space-3)', alignItems: 'flex-end', marginBottom: 'var(--space-6)' }}>
               <div className="form-group" style={{ flexGrow: 1, marginBottom: 0 }}>
                 <label className="form-label" style={{ color: 'rgba(255,255,255,0.6)' }}>Select Product</label>
-                <select className="form-input" style={{ background: 'linear-gradient(180deg, #0b0f16 0%, #121822 100%)', border: '1px solid rgba(0,0,0,0.8)', boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.5)', color: '#fff' }} value={selectedProductId} onChange={e => setSelectedProductId(e.target.value)}>
+                <select className="form-input" style={{ background: 'var(--bg-metal-dark)', border: '1px solid rgba(0,0,0,0.8)', boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.5)', color: '#fff' }} value={selectedProductId} onChange={e => setSelectedProductId(e.target.value)}>
                   {products.map(p => {
                     const name = p.custom_name || p.products.name;
                     const size = p.products.unit_size ? ` (${p.products.unit_size}${p.products.unit_measure})` : '';
@@ -221,7 +221,7 @@ export default function AgentManualOrder({ onOrderCreated }: { onOrderCreated: (
             <div style={{ display: 'flex', gap: 'var(--space-4)', flexWrap: 'wrap' }}>
               <div className="form-group" style={{ width: 180, marginBottom: 0 }}>
                 <label className="form-label" style={{ color: 'rgba(255,255,255,0.6)' }}>Payment Received Via</label>
-                <select className="form-input" style={{ background: 'linear-gradient(180deg, #0b0f16 0%, #121822 100%)', border: '1px solid rgba(0,0,0,0.8)', boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.5)', color: '#fff' }} value={paymentMethod} onChange={e => setPaymentMethod(e.target.value)}>
+                <select className="form-input" style={{ background: 'var(--bg-metal-dark)', border: '1px solid rgba(0,0,0,0.8)', boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.5)', color: '#fff' }} value={paymentMethod} onChange={e => setPaymentMethod(e.target.value)}>
                   <option value="cashapp">Cash App</option>
                   <option value="venmo">Venmo</option>
                   <option value="apple_pay">Apple Pay</option>
@@ -232,7 +232,7 @@ export default function AgentManualOrder({ onOrderCreated }: { onOrderCreated: (
               </div>
               <div className="form-group" style={{ width: 120, marginBottom: 0 }}>
                 <label className="form-label" style={{ color: 'rgba(255,255,255,0.6)' }}>Shipping Cost ($)</label>
-                <input type="number" className="form-input" style={{ background: 'linear-gradient(180deg, #0b0f16 0%, #121822 100%)', border: '1px solid rgba(0,0,0,0.8)', boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.5)', color: '#fff' }} value={shippingCostInput} onChange={e => setShippingCostInput(e.target.value)} />
+                <input type="number" className="form-input" style={{ background: 'var(--bg-metal-dark)', border: '1px solid rgba(0,0,0,0.8)', boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.5)', color: '#fff' }} value={shippingCostInput} onChange={e => setShippingCostInput(e.target.value)} />
               </div>
             </div>
             

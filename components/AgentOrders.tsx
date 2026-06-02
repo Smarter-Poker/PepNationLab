@@ -386,7 +386,7 @@ export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
                   
                   {/* Buyer Info */}
                   <div style={{ 
-                    background: 'linear-gradient(180deg, #0b0f16 0%, #121822 100%)', 
+                    background: 'var(--bg-metal-dark)', 
                     padding: '16px 20px', 
                     borderRadius: '12px', 
                     borderTop: '1px solid rgba(0,0,0,0.8)',
@@ -406,7 +406,7 @@ export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
 
                   {/* Order Details */}
                   <div style={{ 
-                    background: 'linear-gradient(180deg, #0b0f16 0%, #121822 100%)', 
+                    background: 'var(--bg-metal-dark)', 
                     padding: '16px 20px', 
                     borderRadius: '12px', 
                     borderTop: '1px solid rgba(0,0,0,0.8)',

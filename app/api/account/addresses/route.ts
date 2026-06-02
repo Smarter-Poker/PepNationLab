@@ -3,16 +3,39 @@ import { createClient } from '@/lib/supabase/server';
 import { assertSameOrigin } from '@/lib/csrf';
 import { z } from 'zod';
 
-const AddressSchema = z.object({
-  label: z.string().max(80).nullable().optional(),
-  full_name: z.string().min(1).max(120),
-  street1: z.string().min(1).max(200),
-  street2: z.string().max(200).nullable().optional(),
-  city: z.string().min(1).max(120),
-  state: z.string().min(1).max(60),
-  zip: z.string().min(1).max(20),
-  country: z.string().min(2).max(60).default('US'),
-});
+/**
+ * /api/account/addresses  (Round 25)
+ * ----------------------------------
+ * GET   list addresses for the calling user (both ship-to AND ship-from)
+ * POST  create a new address, optionally as ship-to, ship-from, or both
+ *
+ * Schema flags on saved_addresses (all BOOLEAN):
+ *   is_ship_to        eligible for ship-to selection
+ *   is_ship_from      eligible for ship-from selection
+ *   is_default        default ship-to
+ *   is_default_from   default ship-from
+ */
+
+const AddressSchema = z
+  .object({
+    label: z.string().max(80).nullable().optional(),
+    full_name: z.string().min(1).max(120),
+    street1: z.string().min(1).max(200),
+    street2: z.string().max(200).nullable().optional(),
+    city: z.string().min(1).max(120),
+    state: z.string().min(1).max(60),
+    zip: z.string().min(1).max(20),
+    country: z.string().min(2).max(60).default('US'),
+    is_ship_to: z.boolean().optional().default(true),
+    is_ship_from: z.boolean().optional().default(false),
+  })
+  .refine((v) => v.is_ship_to || v.is_ship_from, {
+    message: 'must_be_at_least_one_kind',
+    path: ['is_ship_to'],
+  });
+
+const FIELDS =
+  'id, label, full_name, street1, street2, city, state, zip, country, is_default, is_default_from, is_ship_to, is_ship_from, created_at, updated_at';
 
 export async function GET() {
   const supabase = await createClient();
@@ -21,7 +44,7 @@ export async function GET() {
 
   const { data, error } = await supabase
     .from('saved_addresses')
-    .select('id, label, full_name, street1, street2, city, state, zip, country, is_default, created_at, updated_at')
+    .select(FIELDS)
     .eq('user_id', user.id)
     .order('is_default', { ascending: false })
     .order('updated_at', { ascending: false });
@@ -42,10 +65,14 @@ export async function POST(req: NextRequest) {
   const parsed = AddressSchema.safeParse(body);
   if (!parsed.success) return NextResponse.json({ error: 'invalid_body', details: parsed.error.flatten() }, { status: 400 });
 
-  const { count } = await supabase
+  // First address of each kind becomes its kind's default automatically.
+  const { data: existing } = await supabase
     .from('saved_addresses')
-    .select('id', { count: 'exact', head: true })
+    .select('id, is_ship_to, is_ship_from')
     .eq('user_id', user.id);
+
+  const hasAnyShipTo = (existing ?? []).some((a) => a.is_ship_to);
+  const hasAnyShipFrom = (existing ?? []).some((a) => a.is_ship_from);
 
   const { data, error } = await supabase
     .from('saved_addresses')
@@ -59,9 +86,12 @@ export async function POST(req: NextRequest) {
       state: parsed.data.state,
       zip: parsed.data.zip,
       country: parsed.data.country,
-      is_default: (count ?? 0) === 0,
+      is_ship_to: parsed.data.is_ship_to,
+      is_ship_from: parsed.data.is_ship_from,
+      is_default: parsed.data.is_ship_to && !hasAnyShipTo,
+      is_default_from: parsed.data.is_ship_from && !hasAnyShipFrom,
     })
-    .select('id, label, full_name, street1, street2, city, state, zip, country, is_default, created_at, updated_at')
+    .select(FIELDS)
     .single();
 
   if (error) return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });

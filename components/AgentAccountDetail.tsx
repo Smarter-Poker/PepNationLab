@@ -97,7 +97,7 @@ const labelStyle: React.CSSProperties = {
 };
 const inputStyle: React.CSSProperties = {
   width: '100%', padding: '10px 12px',
-  background: 'linear-gradient(180deg, #0b0f16 0%, #121822 100%)',
+  background: 'var(--bg-metal-dark)',
   border: '1px solid rgba(0,0,0,0.8)', color: 'var(--white)', borderRadius: 6,
 };
 
@@ -511,11 +511,11 @@ export default function AgentAccountDetail({
 
                     {commissionMode === 'gamified' && (
                       <div style={{ display: 'flex', gap: 'var(--space-3)', marginBottom: 'var(--space-3)' }}>
-                        <label style={{ flex: 1, padding: '10px', background: 'linear-gradient(180deg, #0b0f16 0%, #121822 100%)', border: `1px solid ${scaleType === 'default' ? 'var(--teal)' : 'rgba(0,0,0,0.8)'}`, color: 'var(--white)', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <label style={{ flex: 1, padding: '10px', background: 'var(--bg-metal-dark)', border: `1px solid ${scaleType === 'default' ? 'var(--teal)' : 'rgba(0,0,0,0.8)'}`, color: 'var(--white)', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}>
                           <input type="radio" checked={scaleType === 'default'} onChange={() => setScaleType('default')} />
                           Use Default Scale
                         </label>
-                        <label style={{ flex: 1, padding: '10px', background: 'linear-gradient(180deg, #0b0f16 0%, #121822 100%)', border: `1px solid ${scaleType === 'custom' ? 'var(--teal)' : 'rgba(0,0,0,0.8)'}`, color: 'var(--white)', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <label style={{ flex: 1, padding: '10px', background: 'var(--bg-metal-dark)', border: `1px solid ${scaleType === 'custom' ? 'var(--teal)' : 'rgba(0,0,0,0.8)'}`, color: 'var(--white)', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}>
                           <input type="radio" checked={scaleType === 'custom'} onChange={() => setScaleType('custom')} />
                           Use Custom Scale
                         </label>
@@ -525,21 +525,21 @@ export default function AgentAccountDetail({
                     {commissionMode === 'fixed' ? (
                       <div>
                         <label style={{ display: 'block', marginBottom: '8px', color: 'var(--grey-300)', fontSize: '0.85rem' }}>Commission Rate (%)</label>
-                        <input type="number" min="0" max="100" step="0.1" style={{ width: '100%', padding: '10px', background: 'linear-gradient(180deg, #0b0f16 0%, #121822 100%)', border: '1px solid rgba(0,0,0,0.8)', color: 'var(--white)', borderRadius: '6px' }} value={commissionPct} onChange={e => setCommissionPct(e.target.value)} placeholder="e.g. 20" />
+                        <input type="number" min="0" max="100" step="0.1" style={{ width: '100%', padding: '10px', background: 'var(--bg-metal-dark)', border: '1px solid rgba(0,0,0,0.8)', color: 'var(--white)', borderRadius: '6px' }} value={commissionPct} onChange={e => setCommissionPct(e.target.value)} placeholder="e.g. 20" />
                       </div>
                     ) : scaleType === 'default' ? (
                       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: 'var(--space-3)' }}>
                         <div>
                           <label style={{ display: 'block', marginBottom: '8px', color: 'var(--grey-300)', fontSize: '0.85rem' }}>Base Rate (%)</label>
-                          <input type="number" min="0" max="40" step="0.1" style={{ width: '100%', padding: '10px', background: 'linear-gradient(180deg, #0b0f16 0%, #121822 100%)', border: '1px solid rgba(0,0,0,0.8)', color: 'var(--white)', borderRadius: '6px' }} value={commissionPct} onChange={e => setCommissionPct(e.target.value)} placeholder="e.g. 15" />
+                          <input type="number" min="0" max="40" step="0.1" style={{ width: '100%', padding: '10px', background: 'var(--bg-metal-dark)', border: '1px solid rgba(0,0,0,0.8)', color: 'var(--white)', borderRadius: '6px' }} value={commissionPct} onChange={e => setCommissionPct(e.target.value)} placeholder="e.g. 15" />
                         </div>
                         <div>
                           <label style={{ display: 'block', marginBottom: '8px', color: 'var(--grey-300)', fontSize: '0.85rem' }}>Max Cap (%)</label>
-                          <input type="number" min="0" max="40" step="0.1" style={{ width: '100%', padding: '10px', background: 'linear-gradient(180deg, #0b0f16 0%, #121822 100%)', border: '1px solid rgba(0,0,0,0.8)', color: 'var(--white)', borderRadius: '6px' }} value={maxCap} onChange={e => setMaxCap(e.target.value)} placeholder="No Cap" />
+                          <input type="number" min="0" max="40" step="0.1" style={{ width: '100%', padding: '10px', background: 'var(--bg-metal-dark)', border: '1px solid rgba(0,0,0,0.8)', color: 'var(--white)', borderRadius: '6px' }} value={maxCap} onChange={e => setMaxCap(e.target.value)} placeholder="No Cap" />
                         </div>
                         <div>
                           <label style={{ display: 'block', marginBottom: '8px', color: 'var(--grey-300)', fontSize: '0.85rem' }}>Velocity Cap ($)</label>
-                          <input type="number" min="0" step="0.01" style={{ width: '100%', padding: '10px', background: 'linear-gradient(180deg, #0b0f16 0%, #121822 100%)', border: '1px solid rgba(0,0,0,0.8)', color: 'var(--white)', borderRadius: '6px' }} value={velocityCap} onChange={e => setVelocityCap(e.target.value)} placeholder="None" />
+                          <input type="number" min="0" step="0.01" style={{ width: '100%', padding: '10px', background: 'var(--bg-metal-dark)', border: '1px solid rgba(0,0,0,0.8)', color: 'var(--white)', borderRadius: '6px' }} value={velocityCap} onChange={e => setVelocityCap(e.target.value)} placeholder="None" />
                         </div>
                       </div>
                     ) : (
@@ -556,12 +556,12 @@ export default function AgentAccountDetail({
                               const newSteps = [...customSteps];
                               newSteps[idx].min_volume = Number(e.target.value);
                               setCustomSteps(newSteps);
-                            }} style={{ width: '100%', padding: '8px', background: 'linear-gradient(180deg, #0b0f16 0%, #121822 100%)', border: '1px solid rgba(0,0,0,0.8)', color: 'var(--white)', borderRadius: '6px', opacity: idx === 0 ? 0.5 : 1 }} />
+                            }} style={{ width: '100%', padding: '8px', background: 'var(--bg-metal-dark)', border: '1px solid rgba(0,0,0,0.8)', color: 'var(--white)', borderRadius: '6px', opacity: idx === 0 ? 0.5 : 1 }} />
                             <input type="number" min="0" max="40" step="0.1" value={step.bonus_pct} onChange={e => {
                               const newSteps = [...customSteps];
                               newSteps[idx].bonus_pct = Number(e.target.value);
                               setCustomSteps(newSteps);
-                            }} style={{ width: '100%', padding: '8px', background: 'linear-gradient(180deg, #0b0f16 0%, #121822 100%)', border: '1px solid rgba(0,0,0,0.8)', color: 'var(--white)', borderRadius: '6px' }} />
+                            }} style={{ width: '100%', padding: '8px', background: 'var(--bg-metal-dark)', border: '1px solid rgba(0,0,0,0.8)', color: 'var(--white)', borderRadius: '6px' }} />
                           </div>
                         ))}
                       </div>

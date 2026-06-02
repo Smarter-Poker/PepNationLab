@@ -7,7 +7,7 @@ interface Step { min_volume: number; bonus_pct: number; }
 
 const inputStyle: React.CSSProperties = {
   width: '100%', padding: '8px 12px',
-  background: 'linear-gradient(180deg, #0b0f16 0%, #121822 100%)',
+  background: 'var(--bg-metal-dark)',
   border: '1px solid rgba(0,0,0,0.8)', color: 'var(--white)', borderRadius: 6,
 };
 

@@ -53,6 +53,10 @@
       "schedule": "50 23 * * 0"
     },
     {
+      "path": "/api/cron/auto-pay",
+      "schedule": "0 13 * * *"
+    },
+    {
       "path": "/api/cron/webhooks-dispatch",
       "schedule": "*/5 * * * *"
     },

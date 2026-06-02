@@ -170,9 +170,6 @@ export default function NotificationPreferencesClient({
 
         {/* Header */}
         <div style={{ marginBottom: 22 }}>
-          <Link href="/account" style={{ color: SILVER, fontSize: '0.78rem', textDecoration: 'none' }}>
-            Back To Account
-          </Link>
           <h1 style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--white)', margin: '10px 0 4px' }}>
             Notification Preferences
           </h1>

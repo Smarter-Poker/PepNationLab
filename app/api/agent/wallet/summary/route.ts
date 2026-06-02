@@ -14,7 +14,7 @@ export async function GET() {
   const svc = await createServiceClient();
   const { data: profile } = await svc
     .from('profiles')
-    .select('id, role, account_type, prepaid_balance, credit_limit, preferred_payout_handle')
+    .select('id, role, account_type, prepaid_balance, credit_limit, credit_used, preferred_payout_handle')
     .eq('id', user.id)
     .single();
   if (!profile) return NextResponse.json({ error: 'profile_not_found' }, { status: 404 });
@@ -48,10 +48,14 @@ export async function GET() {
   if (typeof forecast === 'number') forecastNext = forecast;
 
   const isPrepaid = profile.account_type === 'prepaid';
+  const creditUsed = Number(profile.credit_used || 0);
+  const creditLimit = Number(profile.credit_limit || 0);
   const primaryLabel = isPrepaid ? 'Prepaid Balance' : 'Credit Available';
+  // Credit available now reflects the live running credit_used (charged on order
+  // approval, paid down by admin payments) rather than only billed statements.
   const primary = isPrepaid
     ? Number(profile.prepaid_balance || 0)
-    : Math.max(0, Number(profile.credit_limit || 0) - owedThisWeek);
+    : Math.max(0, creditLimit - creditUsed);
 
   return NextResponse.json({
     primaryLabel,
@@ -60,7 +64,8 @@ export async function GET() {
     hasOpenStatement,
     nextStatementDate: nextStatementDate.toISOString(),
     forecastNext,
-    creditLimit: Number(profile.credit_limit || 0),
+    creditLimit,
+    creditUsed,
     prepaidBalance: Number(profile.prepaid_balance || 0),
     accountType: profile.account_type,
     preferredHandle: profile.preferred_payout_handle ?? null,

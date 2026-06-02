@@ -265,7 +265,7 @@ export default function MessageBell({ onViewAll, dropUp }: { onViewAll: () => vo
           ...(dropUp
             ? { bottom: 'calc(100% + 8px)', left: 0 }
             : { top: 'calc(100% + 8px)', right: 0 }),
-          width: 380, maxHeight: 480,
+          width: 'calc(100vw - 32px)', maxWidth: 380, maxHeight: 480,
           background: '#111827',
           border: '1px solid rgba(255,255,255,0.08)',
           borderRadius: 16,

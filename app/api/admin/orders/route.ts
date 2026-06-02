@@ -145,6 +145,16 @@ export async function POST(req: NextRequest) {
     } catch { /* label enqueue must not break the admin response */ }
   }
 
+  // Credit-line agents: debit their running credit balance (credit_used) for this
+  // order's COGS + shipping now that an admin has released it to fulfillment.
+  // No-op for prepaid agents (already debited at agent approval) and idempotent
+  // per order, so re-releasing or double-calls never double-charge.
+  if (status === 'approved_ship' || status === 'approved_pickup') {
+    try {
+      await supabase.rpc('charge_order_credit_line', { p_order_id: id, p_created_by: gate.userId });
+    } catch { /* credit-line ledger must not break the release */ }
+  }
+
   // Write audit log entry (awaited).
   try {
     await supabase.from('admin_audit_log').insert({

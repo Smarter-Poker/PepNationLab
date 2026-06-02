@@ -128,11 +128,6 @@ export default async function RecentlyViewedPage() {
   return (
     <div style={{ minHeight: '100dvh', background: 'var(--black)', padding: 'var(--space-6) var(--space-4)' }}>
       <div className="container" style={{ maxWidth: 880 }}>
-        <Link href="/account" className="btn btn-ghost btn-sm" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, marginBottom: 'var(--space-3)' }}>
-          <ArrowLeft size={14} aria-hidden="true" />
-          Back To Account
-        </Link>
-
         <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', marginBottom: 'var(--space-2)' }}>
           <History size={22} aria-hidden="true" style={{ color: 'var(--teal)' }} />
           <h1 className="animated-gradient-text" style={{ color: 'var(--white)', fontSize: '1.6rem', fontFamily: 'var(--font-brand)' }}>
