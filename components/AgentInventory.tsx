@@ -174,41 +174,23 @@ export default function AgentInventory({ agentId }: { agentId: string }) {
           backgroundColor: 'rgba(0,0,0,0.85)', zIndex: 9999,
           display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 'var(--space-4)'
         }}>
-          <div className="metal-frame stagger-fade-in" style={{ width: '100%', maxWidth: 540, animationDelay: '0.1s' }}>
-            <div className="metal-content" style={{ padding: 'var(--space-8)' }}>
-              <h2 style={{ 
-                display: 'flex', alignItems: 'center', gap: 'var(--space-3)', 
-                fontSize: '1.4rem', marginBottom: 'var(--space-6)', color: 'var(--white)' 
-              }}>
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--teal)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
-                  <line x1="12" y1="9" x2="12" y2="13"></line>
-                  <line x1="12" y1="17" x2="12.01" y2="17"></line>
-                </svg>
-                Important Warning
-              </h2>
-              
-              <div style={{ fontSize: '0.95rem', color: 'var(--silver)', lineHeight: 1.6, marginBottom: 'var(--space-6)' }}>
-                <p style={{ marginBottom: 'var(--space-4)' }}>
-                  Before You Adjust Any Of These Numbers, This Page Is For Agents That Have <strong>In-Stock Inventory</strong> That They Want To List For Sale.
-                </p>
-                <p>
-                  Do Not Adjust These Numbers Unless You Have Them Available Today To Sell. This Will Take Priority Over What's Currently Listed.
-                </p>
-              </div>
-
-              <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                <button 
-                  type="button" 
-                  className="btn-silver"
-                  onClick={() => setShowWarningModal(false)}
-                  style={{ padding: 'var(--space-3) var(--space-6)', fontSize: '0.95rem', fontWeight: 600 }}
-                >
-                  I Understand
-                </button>
-              </div>
-            </div>
-          </div>
+          <button 
+            type="button" 
+            onClick={() => setShowWarningModal(false)}
+            style={{ 
+              background: 'transparent', border: 'none', padding: 0, 
+              cursor: 'pointer', maxWidth: 650, width: '100%',
+              transition: 'transform 0.2s ease', 
+            }}
+            onMouseOver={(e) => e.currentTarget.style.transform = 'scale(1.02)'}
+            onMouseOut={(e) => e.currentTarget.style.transform = 'scale(1)'}
+          >
+            <img 
+              src="/images/inventory-warning.jpg" 
+              alt="Important Warning: In-Stock Inventory Priority" 
+              style={{ width: '100%', height: 'auto', display: 'block' }} 
+            />
+          </button>
         </div>
       )}
 

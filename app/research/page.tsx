@@ -1,0 +1,149 @@
+/**
+ * Research Library index — the entry point to the PepNationLab Research section.
+ * Server component: fetches the full compound catalog, renders research-area
+ * tiles, quick links, the Ask The Lab assistant, and the faceted browser.
+ * Research-use-only framing throughout.
+ */
+
+import type { Metadata } from 'next';
+import Link from 'next/link';
+import { GitCompare, Layers } from 'lucide-react';
+import { getAllCompounds } from '@/lib/compounds-server';
+import { RESEARCH_AREAS } from '@/lib/compounds';
+import AskTheLab from '@/components/research/AskTheLab';
+import ResearchBrowser from '@/components/research/ResearchBrowser';
+
+export const metadata: Metadata = {
+  title: 'Research Library | Pep Nation Lab',
+  robots: { index: false, follow: false },
+};
+
+export default async function ResearchLibraryPage() {
+  const compounds = await getAllCompounds();
+
+  return (
+    <div style={{ maxWidth: '1100px', margin: '0 auto', padding: 'var(--space-6, 32px) var(--space-4, 16px)' }}>
+      <header style={{ marginBottom: 'var(--space-7, 48px)' }}>
+        <h1
+          style={{
+            fontSize: '2.25rem',
+            fontWeight: 900,
+            color: 'var(--white, #FFFFFF)',
+            margin: 0,
+          }}
+        >
+          Research Library
+        </h1>
+        <p
+          style={{
+            color: 'var(--silver, #A8B4C0)',
+            fontSize: '1.05rem',
+            marginTop: 'var(--space-2, 8px)',
+            maxWidth: '720px',
+          }}
+        >
+          Factual, Research-Use-Only Reference For Every Compound In The Catalog. For Laboratory Research Only.
+        </p>
+      </header>
+
+      <section style={{ marginBottom: 'var(--space-7, 48px)' }}>
+        <h2
+          style={{
+            fontSize: '1.35rem',
+            fontWeight: 800,
+            color: 'var(--white, #FFFFFF)',
+            marginBottom: 'var(--space-4, 16px)',
+          }}
+        >
+          Browse By Research Area
+        </h2>
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))',
+            gap: 'var(--space-4, 16px)',
+          }}
+        >
+          {Object.keys(RESEARCH_AREAS).map((key) => {
+            const meta = RESEARCH_AREAS[key];
+            return (
+              <Link
+                key={key}
+                href={`/research/area/${key}`}
+                className="card-metal"
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 'var(--space-2, 8px)',
+                  padding: 'var(--space-4, 16px)',
+                  borderRadius: 'var(--radius-lg, 12px)',
+                  textDecoration: 'none',
+                  color: 'var(--white, #FFFFFF)',
+                }}
+              >
+                <span style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--teal, #00C4BC)' }}>
+                  {meta.label}
+                </span>
+                <span style={{ fontSize: '0.85rem', color: 'var(--silver, #A8B4C0)' }}>{meta.blurb}</span>
+              </Link>
+            );
+          })}
+        </div>
+      </section>
+
+      <section
+        style={{
+          display: 'flex',
+          flexWrap: 'wrap',
+          gap: 'var(--space-3, 12px)',
+          marginBottom: 'var(--space-7, 48px)',
+        }}
+      >
+        <Link
+          href="/research/compare"
+          className="btn-primary"
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 'var(--space-2, 8px)',
+            textDecoration: 'none',
+          }}
+        >
+          <GitCompare size={18} aria-hidden="true" />
+          Compare Compounds
+        </Link>
+        <Link
+          href="/research/stacks"
+          className="btn-secondary"
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 'var(--space-2, 8px)',
+            textDecoration: 'none',
+          }}
+        >
+          <Layers size={18} aria-hidden="true" />
+          Stacks And Combinations
+        </Link>
+      </section>
+
+      <section style={{ marginBottom: 'var(--space-7, 48px)' }}>
+        <AskTheLab />
+      </section>
+
+      <section>
+        <h2
+          style={{
+            fontSize: '1.35rem',
+            fontWeight: 800,
+            color: 'var(--white, #FFFFFF)',
+            marginBottom: 'var(--space-4, 16px)',
+          }}
+        >
+          Browse The Full Catalog
+        </h2>
+        <ResearchBrowser compounds={compounds} />
+      </section>
+    </div>
+  );
+}

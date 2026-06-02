@@ -1,0 +1,234 @@
+/**
+ * Peptide Expert shared library (pure — no server imports, safe in client or
+ * server components). Types, label maps, glossary, reconstitution + shelf-life
+ * math, and the cart-warning analyzer that power the Research section.
+ *
+ * Research-use-only: every helper presents factual / lab-prep information.
+ * Nothing here produces human dosing or medical advice.
+ */
+
+export interface CompoundHandling {
+  form?: string;
+  diluent?: string;
+  storage_temp?: string;
+  light_sensitive?: boolean;
+  freeze_thaw?: string;
+  reconstituted_days?: number | null;
+  notes?: string;
+}
+
+export interface CompoundIdentity {
+  sequence?: string;
+  molecular_weight?: string;
+  cas?: string;
+  parent?: string;
+}
+
+export interface Compound {
+  slug: string;
+  display_name: string;
+  aliases: string[];
+  category: string | null;
+  evidence_tier: string;
+  compound_class: string | null;
+  molecular_target: string | null;
+  identity: CompoundIdentity;
+  mechanism: string | null;
+  studied_for: string[];
+  research_areas: string[];
+  benefits: string | null;
+  side_effects: string | null;
+  warnings: string | null;
+  handling: CompoundHandling;
+  regulatory: string | null;
+  wada_status: string;
+  sources: string[];
+  plain_summary: string | null;
+  is_temp_sensitive: boolean;
+  is_pro_angiogenic: boolean;
+  is_glp1: boolean;
+  is_stack: boolean;
+  stack_components: string[];
+  stack_rationale: string | null;
+  risk_level: 'critical' | 'high' | 'moderate' | 'low';
+  risk_reasons: string[];
+  recommended_action: 'keep' | 'review' | 'restrict' | 'remove';
+  reconstitution_shelf_days: number | null;
+}
+
+export const EVIDENCE_TIER: Record<string, { label: string; color: string; blurb: string }> = {
+  approved_drug: { label: 'Approved Drug', color: '#68D391', blurb: 'FDA and/or EMA approved with robust human trial data.' },
+  investigational: { label: 'Investigational', color: '#00E5FF', blurb: 'In active human clinical trials; not yet approved.' },
+  preclinical: { label: 'Preclinical', color: '#F6AD55', blurb: 'Evidence is animal or in-vitro; no human efficacy data.' },
+  research_chemical: { label: 'Research Compound', color: '#A8B4C0', blurb: 'No approved human use; sold for laboratory research only.' },
+  cosmetic: { label: 'Cosmetic', color: '#D6BCFA', blurb: 'Recognized topical cosmetic active, not a drug.' },
+  supply: { label: 'Supply', color: '#A8B4C0', blurb: 'Reconstitution or lab-prep supply.' },
+};
+
+export const RISK_META: Record<Compound['risk_level'], { label: string; color: string; bg: string }> = {
+  critical: { label: 'Critical', color: '#FF6B6B', bg: 'rgba(229,62,62,0.16)' },
+  high: { label: 'High', color: '#F6AD55', bg: 'rgba(246,173,85,0.14)' },
+  moderate: { label: 'Moderate', color: '#00E5FF', bg: 'rgba(0,229,255,0.12)' },
+  low: { label: 'Low', color: '#68D391', bg: 'rgba(104,211,145,0.12)' },
+};
+
+export const WADA_LABEL: Record<string, string> = {
+  prohibited: 'WADA Prohibited',
+  prohibited_males: 'WADA Prohibited (Males)',
+  permitted: 'WADA Permitted',
+  not_listed: 'Not WADA-Listed',
+};
+
+export const RESEARCH_AREAS: Record<string, { label: string; blurb: string }> = {
+  tissue_repair: { label: 'Tissue Repair', blurb: 'Compounds studied for tendon, ligament, muscle, and wound repair.' },
+  healing: { label: 'Healing & Recovery', blurb: 'Compounds studied for healing, cytoprotection, and recovery.' },
+  metabolic: { label: 'Metabolic', blurb: 'Compounds studied for metabolism, glucose, and fat regulation.' },
+  longevity: { label: 'Longevity', blurb: 'Compounds studied for aging, senescence, and healthspan.' },
+  cosmetic: { label: 'Skin & Hair', blurb: 'Compounds studied for skin, hair, and cosmetic applications.' },
+  cognitive: { label: 'Cognitive', blurb: 'Compounds studied for cognition, mood, and neuroprotection.' },
+  immune: { label: 'Immune', blurb: 'Compounds studied for immune modulation and host defense.' },
+  sexual_health: { label: 'Sexual Health & Hormones', blurb: 'Compounds studied for reproductive and sexual-health pathways.' },
+  performance: { label: 'Performance', blurb: 'Compounds studied for the growth-hormone and anabolic axes.' },
+  sleep: { label: 'Sleep', blurb: 'Compounds studied for sleep and circadian regulation.' },
+  mitochondrial: { label: 'Mitochondrial', blurb: 'Compounds studied for mitochondrial function and energy.' },
+};
+
+export function evidenceTier(tier: string) {
+  return EVIDENCE_TIER[tier] ?? { label: tier, color: '#A8B4C0', blurb: '' };
+}
+
+export function wadaLabel(status: string): string {
+  return WADA_LABEL[status] ?? status;
+}
+
+export function researchAreaLabel(area: string): string {
+  return RESEARCH_AREAS[area]?.label ?? area;
+}
+
+/**
+ * Reconstitution helper (lab prep, not dosing): given the powder amount in a
+ * vial and a target concentration, return the volume of diluent to add.
+ * volume (mL) = mass (mg) / concentration (mg/mL).
+ */
+export function reconstitutionVolumeMl(vialMassMg: number, targetConcentrationMgPerMl: number): number | null {
+  if (!isFinite(vialMassMg) || !isFinite(targetConcentrationMgPerMl)) return null;
+  if (vialMassMg <= 0 || targetConcentrationMgPerMl <= 0) return null;
+  return vialMassMg / targetConcentrationMgPerMl;
+}
+
+/** Volume (mL) to draw for a given mass, after reconstitution. */
+export function drawVolumeMl(vialMassMg: number, diluentMl: number, desiredMassMg: number): number | null {
+  if (vialMassMg <= 0 || diluentMl <= 0 || desiredMassMg <= 0) return null;
+  const concentration = vialMassMg / diluentMl; // mg/mL
+  return desiredMassMg / concentration;
+}
+
+export interface ShelfLife {
+  totalDays: number;
+  elapsedDays: number;
+  remainingDays: number;
+  expired: boolean;
+  pct: number; // 0..1 remaining
+}
+
+/** Remaining shelf life of a reconstituted vial. */
+export function shelfLife(reconstitutedISO: string, totalDays: number, now: Date = new Date()): ShelfLife | null {
+  const start = new Date(reconstitutedISO).getTime();
+  if (isNaN(start) || !totalDays || totalDays <= 0) return null;
+  const dayMs = 24 * 60 * 60 * 1000;
+  const elapsed = Math.max(0, Math.floor((now.getTime() - start) / dayMs));
+  const remaining = Math.max(0, totalDays - elapsed);
+  return {
+    totalDays,
+    elapsedDays: elapsed,
+    remainingDays: remaining,
+    expired: remaining <= 0,
+    pct: Math.max(0, Math.min(1, remaining / totalDays)),
+  };
+}
+
+export interface CartWarning {
+  level: 'info' | 'warning' | 'danger';
+  title: string;
+  detail: string;
+}
+
+/**
+ * Analyze a set of compounds in a cart and return contextual, research-framed
+ * warnings: WADA-prohibited items, stacked pro-angiogenic compounds, multiple
+ * GLP-1 agents, and a cold-chain shipping note for temperature-sensitive items.
+ */
+export function analyzeCartWarnings(compounds: Compound[]): CartWarning[] {
+  const warnings: CartWarning[] = [];
+  if (compounds.length === 0) return warnings;
+
+  const wadaItems = compounds.filter((c) => c.wada_status === 'prohibited' || c.wada_status === 'prohibited_males');
+  if (wadaItems.length > 0) {
+    warnings.push({
+      level: 'warning',
+      title: 'WADA-Prohibited Items In Cart',
+      detail: `${wadaItems.map((c) => c.display_name).join(', ')} ${wadaItems.length === 1 ? 'is' : 'are'} on the WADA Prohibited List. Not for use by tested athletes.`,
+    });
+  }
+
+  const proAngio = compounds.filter((c) => c.is_pro_angiogenic);
+  if (proAngio.length >= 2) {
+    warnings.push({
+      level: 'info',
+      title: 'Multiple Pro-Angiogenic Compounds',
+      detail: `${proAngio.map((c) => c.display_name).join(', ')} each promote new blood-vessel growth. Research literature notes a theoretical caution about stacking pro-angiogenic agents.`,
+    });
+  }
+
+  const glp1 = compounds.filter((c) => c.is_glp1);
+  if (glp1.length >= 2) {
+    warnings.push({
+      level: 'warning',
+      title: 'More Than One GLP-1 Agent',
+      detail: `${glp1.map((c) => c.display_name).join(', ')} are GLP-1-class agents. Combining incretin agents compounds gastrointestinal and class-warning considerations.`,
+    });
+  }
+
+  const coldChain = compounds.filter((c) => c.is_temp_sensitive);
+  if (coldChain.length > 0) {
+    warnings.push({
+      level: 'info',
+      title: 'Cold-Chain Handling',
+      detail: `${coldChain.map((c) => c.display_name).join(', ')} ${coldChain.length === 1 ? 'is' : 'are'} temperature-sensitive. Refrigerate on arrival and avoid freeze-thaw cycles.`,
+    });
+  }
+
+  return warnings;
+}
+
+/**
+ * Glossary of terms surfaced as inline tooltips across the Research section so
+ * non-specialist readers are not lost.
+ */
+export const GLOSSARY: Record<string, string> = {
+  lyophilized: 'Freeze-dried into a stable powder that is reconstituted with a sterile liquid before use.',
+  reconstitution: 'Dissolving a freeze-dried powder in a sterile diluent such as bacteriostatic water.',
+  bacteriostatic: 'Containing a preservative (benzyl alcohol) that inhibits bacterial growth, allowing multi-dose use.',
+  ghrh: 'Growth-Hormone-Releasing Hormone — the hypothalamic signal that tells the pituitary to release growth hormone.',
+  'ghs-r1a': 'The ghrelin receptor; growth-hormone-releasing peptides act here to stimulate growth-hormone release.',
+  glp1: 'Glucagon-Like Peptide-1 — an incretin hormone that increases insulin, slows gastric emptying, and reduces appetite.',
+  gip: 'Glucose-dependent Insulinotropic Polypeptide — an incretin hormone that complements GLP-1.',
+  incretin: 'A gut hormone (GLP-1, GIP) that boosts insulin release in response to food.',
+  angiogenesis: 'The growth of new blood vessels.',
+  'pro-angiogenic': 'Promoting the growth of new blood vessels.',
+  senolytic: 'An agent that selectively clears senescent (aged, non-dividing) cells.',
+  telomerase: 'The enzyme that maintains the protective caps (telomeres) on the ends of chromosomes.',
+  cardiolipin: 'A lipid in the inner mitochondrial membrane essential to energy production.',
+  mitophagy: 'The cellular cleanup process that removes damaged mitochondria.',
+  melanocortin: 'A receptor family (MC1R-MC5R) involved in pigmentation, appetite, and sexual function.',
+  amylin: 'A pancreatic hormone that promotes satiety and slows gastric emptying.',
+  wada: 'World Anti-Doping Agency — maintains the Prohibited List for competitive sport.',
+  vial: 'The sealed glass container holding a freeze-dried peptide.',
+  subcutaneous: 'Beneath the skin.',
+  'half-life': 'The time for half of a substance to be cleared from circulation.',
+};
+
+export function findGlossaryTerms(text: string): string[] {
+  const lower = text.toLowerCase();
+  return Object.keys(GLOSSARY).filter((term) => lower.includes(term));
+}
