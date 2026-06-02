@@ -1,5 +1,7 @@
 'use client';
 
+import { ArrowUp, ArrowDown } from 'lucide-react';
+
 const money = (cents: number) =>
   new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 })
     .format((Number(cents) || 0) / 100);
@@ -8,10 +10,9 @@ function Delta({ d }: { d: number | null }) {
   if (d === null || !isFinite(d)) return <span style={{ color: 'var(--grey-500)', fontSize: '0.75rem' }}>—</span>;
   const up = d >= 0;
   const color = up ? '#2ed573' : '#ff4757';
-  const arrow = up ? '▲' : '▼';
   return (
-    <span style={{ color, fontSize: '0.78rem', fontWeight: 700 }}>
-      {arrow} {Math.abs(d).toFixed(1)}%
+    <span style={{ color, fontSize: '0.78rem', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 3 }}>
+      {up ? <ArrowUp size={12} aria-hidden /> : <ArrowDown size={12} aria-hidden />} {Math.abs(d).toFixed(1)}%
     </span>
   );
 }
