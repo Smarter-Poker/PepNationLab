@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * R27 — Help & Support page rebuild.
+ * R27 - Help & Support page rebuild.
  *
  * Replaces the legacy inline 6-item FAQ with a category-grouped accordion
  * backed by the canonical catalog in `lib/help-faq.ts` (~80 items across
@@ -12,11 +12,13 @@
  *   - Per-item deep linking via `#faq-<id>` URL hash so a support reply
  *     can paste a direct link to a specific answer (the matching item
  *     auto-opens and scrolls into view on mount)
- *   - Role-aware sections — For Agents block only renders for agent /
+ *   - Role-aware sections - For Agents block only renders for agent /
  *     super_agent / admin
  *   - Inline Links beneath answers for the most-common in-app destinations
  *   - Same Contact Support entry point that posts to
  *     /api/messenger/support/open and lands the user in the support thread
+ *   - R29.2: Tap-to-escalate email card opens mailto:Support@PepNationLab.com
+ *     when the support chat thread has not resolved the user's issue.
  */
 
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -59,6 +61,19 @@ function fireFaqBeacon(faqId: string, source: string) {
   }
 }
 
+
+const MAILTO_ESCALATE =
+  'mailto:Support@PepNationLab.com?subject=' +
+  encodeURIComponent('PepNationLab Support Escalation') +
+  '&body=' +
+  encodeURIComponent(
+    'Hello PepNationLab Support,\n' +
+    '\n' +
+    'My Support Thread Did Not Resolve My Issue. Please Help With:\n' +
+    '\n' +
+    '[Describe The Issue Here]\n',
+  );
+
 export default function HelpSupportClient({ role, initialCategory }: Props) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
@@ -80,7 +95,7 @@ export default function HelpSupportClient({ role, initialCategory }: Props) {
     return map;
   }, [visible, categories]);
 
-  // Search filter — when a query is active, hide non-matching items, and
+  // Search filter - when a query is active, hide non-matching items, and
   // auto-open every match for at-a-glance scanning.
   const matchedIds = useMemo(() => searchFaq(query, visible), [query, visible]);
   const isFiltering = query.trim().length > 0;
@@ -123,7 +138,7 @@ export default function HelpSupportClient({ role, initialCategory }: Props) {
     const next = openItem === id ? null : id;
     setOpenItem(next);
     if (next) {
-      // R28: anonymous beacon — track which answers actually get opened.
+      // R28: anonymous beacon - track which answers actually get opened.
       fireFaqBeacon(id, 'help-page');
       if (typeof window !== 'undefined') {
         // Update URL hash without scrolling (we already control scroll)
@@ -242,6 +257,58 @@ export default function HelpSupportClient({ role, initialCategory }: Props) {
           </button>
         </section>
 
+        {/* R29.2: Tap-to-escalate card. Visible always (no auth needed since
+            the page itself is auth-gated). When the support chat above has
+            not resolved the user's issue, this opens their mail client with
+            a prefilled draft to Support@PepNationLab.com. Mailto is the
+            simplest reliable cross-device path; on mobile it opens the
+            native mail composer, on desktop it opens the system handler. */}
+        <section
+          className="card-metal"
+          style={{
+            padding: 'var(--space-5)',
+            borderRadius: 'var(--radius-lg)',
+            borderLeft: '4px solid var(--red, #E53E3E)',
+          }}
+        >
+          <h2
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+              color: 'var(--red, #E53E3E)',
+              marginTop: 0,
+              fontSize: '1.05rem',
+            }}
+          >
+            <LifeBuoy size={18} aria-hidden /> Cannot Get Your Issue Resolved?
+          </h2>
+          <p
+            style={{
+              color: 'var(--silver)',
+              fontSize: '0.88rem',
+              lineHeight: 1.6,
+              margin: '0 0 var(--space-4)',
+            }}
+          >
+            If The Support Chat Above Has Not Resolved Your Issue, Tap Below To Email Our Senior Support Team Directly. We Reply Within One Business Day.
+          </p>
+          <a
+            href={MAILTO_ESCALATE}
+            className="btn btn-secondary"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 8,
+              borderColor: 'var(--red, #E53E3E)',
+              color: 'var(--red, #E53E3E)',
+            }}
+            onClick={() => fireFaqBeacon('support-escalation', 'help-page-escalate-email')}
+          >
+            <MessageSquare size={16} aria-hidden /> Tap To Escalate Via Email
+          </a>
+        </section>
+
         {/* Search bar */}
         <section
           className="card-metal"
@@ -353,7 +420,7 @@ export default function HelpSupportClient({ role, initialCategory }: Props) {
           </nav>
         )}
 
-        {/* FAQ — category sections */}
+        {/* FAQ - category sections */}
         {categories.map((cat: FaqCategory) => {
           const items = itemsByCategory.get(cat.id) ?? [];
           if (items.length === 0) return null;
