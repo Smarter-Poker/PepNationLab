@@ -48,7 +48,7 @@ function computeStockState(
 ): StockState {
   if (agentCount > threshold) return { kind: 'in_stock' };
   if (agentCount > 0) return { kind: 'low_stock', count: agentCount };
-  // agentCount === 0 (or negative — clamp to 0 for display)
+  // agentCount === 0 (or negative - clamp to 0 for display)
   if (masterInventory > 0) return { kind: 'in_stock' };
   if (backorderDays > 0) return { kind: 'backorder', days: backorderDays };
   return { kind: 'out_of_stock' };
@@ -114,21 +114,14 @@ interface Props {
   primaryColor: string;
   agentSlug: string;
   bundles?: BundleConfig[];
-  /** Set of product_ids the researcher already has in their wishlist. */
   initialWishlistIds?: string[];
-  /** Agent profile id used when logging recently-viewed rows. */
   agentId?: string | null;
-  /** product_id -> public URL of the most-recent active lot's COA document. */
   coaByProductId?: Record<string, string>;
-  /** When false, volume tier markups are not applied — all quantities use the base per-vial price. */
   volumePricingEnabled?: boolean;
-  /** True when the logged-in user IS the agent who owns this store (agent self-buy). */
   isStorefrontOwner?: boolean;
-  /** The viewer's pricing tier — used to compute agent-direct cost for self-buy. */
   viewerTier?: string;
   minOrderQty?: number;
   minOverallQty?: number;
-  /** Compound research data keyed by products.compound_slug — powers the embedded monograph. */
   compoundsBySlug?: Record<string, Compound>;
 }
 
@@ -154,27 +147,26 @@ interface GroupedProduct {
   compoundSlug: string | null;
 }
 
-// Top 20 most popular peptides (definitive ranking by market demand)
 const POPULAR_ORDER: string[] = [
-  'Tirzepatide',                              // #1  - Mainstream Giant
-  'Semaglutide',                              // #2  - Household Name
-  'BPC 157',                                  // #3  - The Healing Standard
-  'CJC-1295 without DAC 5mg + IPA 5mg',      // #4  - Premier Anti-Aging Combo
-  'TB500 (Thymosin B4 Acetate)',              // #5  - Elite Recovery
-  'BPC 10mg + TB 10mg',                       // #6  - The "Wolverine" Blend
-  'GHK-CU',                                   // #7  - Cosmetics & Hair Leader
-  'Retatrutide',                              // #8  - Next-Gen Triple Agonist
-  'GLOW (TB10+BPC10+GHK50)',                  // #9  - Esthetic/Repair Stack
-  'PT-141',                                   // #10 - Lifestyle Standard
-  'Ipamorelin',                               // #12 - Core Growth Peptide
-  'KLOW (TB10+BPC10+GHK50+KPV10)',            // #13 - Advanced Evolution Stack
-  'Tesamorelin',                              // #14 - Visceral Fat Burner
-  'AOD9604',                                  // #15 - Pure Lipolysis
-  'Sermorelin Acetate',                       // #16 - Trusted Vintage Choice
-  'HGH Fragment 176-191',                     // #17 - Bodybuilding Staple
-  'KPV',                                      // #18 - GI & Autoimmune Specialist
-  'Semax',                                    // #19 - Nootropic Focus
-  'Selank',                                   // #20 - Nootropic Anxiety Relief
+  'Tirzepatide',
+  'Semaglutide',
+  'BPC 157',
+  'CJC-1295 without DAC 5mg + IPA 5mg',
+  'TB500 (Thymosin B4 Acetate)',
+  'BPC 10mg + TB 10mg',
+  'GHK-CU',
+  'Retatrutide',
+  'GLOW (TB10+BPC10+GHK50)',
+  'PT-141',
+  'Ipamorelin',
+  'KLOW (TB10+BPC10+GHK50+KPV10)',
+  'Tesamorelin',
+  'AOD9604',
+  'Sermorelin Acetate',
+  'HGH Fragment 176-191',
+  'KPV',
+  'Semax',
+  'Selank',
 ];
 
 function fuzzyMatch(query: string, text: string): boolean {
@@ -188,13 +180,10 @@ function fuzzyMatch(query: string, text: string): boolean {
   return qi === q.length;
 }
 
-// Format price with two decimal places
 function formatPrice(price: number): string {
   return price.toFixed(2);
 }
 
-// Wrap matching substrings in <mark> for highlight rendering.
-// Returns plain text when query is empty so the React tree stays simple.
 function highlightText(text: string, query: string): React.ReactNode {
   const q = query.trim();
   if (!q) return text;
@@ -220,7 +209,6 @@ function highlightText(text: string, query: string): React.ReactNode {
   );
 }
 
-// Split product names like "GLOW (TB10+BPC10+GHK50)" into main + subtitle
 function splitProductName(name: string): { main: string; subtitle: string | null } {
   const match = name.match(/^([^(]+?)\s*\((.+)\)\s*$/);
   if (match) {
@@ -229,16 +217,12 @@ function splitProductName(name: string): { main: string; subtitle: string | null
   return { main: name, subtitle: null };
 }
 
-// Pick the best default variant: prefer 10mg, else closest above, else first
 function pickDefaultVariant(variants: ProductItem[]): string {
-  // Try to find exactly 10
   const ten = variants.find(v => parseFloat(v.products?.unit_size || '0') === 10);
   if (ten) return ten.id;
-  // Try closest size >= 10
   const above = variants.filter(v => parseFloat(v.products?.unit_size || '0') >= 10)
     .sort((a, b) => parseFloat(a.products?.unit_size || '0') - parseFloat(b.products?.unit_size || '0'));
   if (above.length > 0) return above[0].id;
-  // Fallback to largest available
   return variants[variants.length - 1]?.id ?? variants[0]?.id ?? '';
 }
 
@@ -278,7 +262,6 @@ export default function AgentStorefrontGrid({
         body: JSON.stringify({ productId }),
       });
       if (!res.ok) {
-        // Revert optimistic state on failure
         setWishlist(prev => {
           const next = new Set(prev);
           if (isAdding) next.delete(productId);
@@ -307,7 +290,7 @@ export default function AgentStorefrontGrid({
         keepalive: true,
       });
     } catch {
-      // Best-effort — never block UI
+      // Best-effort - never block UI
     }
   }, [agentId]);
 
@@ -315,9 +298,6 @@ export default function AgentStorefrontGrid({
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
-  // ─── Faceted filter state ───────────────────────────────────────────────
-  // Initial values come from URL on first mount; if none are present we try
-  // localStorage so a researcher who reloads the page keeps their last view.
   const filterStorageKey = `pnl_storefront_filters_${agentSlug}`;
   const readStoredFilters = (): Record<string, string> | null => {
     if (typeof window === 'undefined') return null;
@@ -333,10 +313,6 @@ export default function AgentStorefrontGrid({
     const keys = ['q', 'category', 'sort', 'min', 'max', 'inStock', 'bulk', 'wMin', 'wMax'];
     return keys.some(k => searchParams.get(k));
   })();
-  // Hydration-safe: do NOT read localStorage during the initial render. The
-  // server has no localStorage, so reading it here desyncs the SSR vs client
-  // first render and throws React #418. The stored view is restored in an
-  // effect after mount (see the restore effect below).
   const initFromStore: Record<string, string> | null = null;
   const getInit = (key: string): string => {
     const fromUrl = searchParams?.get(key);
@@ -356,7 +332,6 @@ export default function AgentStorefrontGrid({
   const [inStockOnly, setInStockOnly] = useState<boolean>(getInit('inStock') === '1');
   const [bulkOnly, setBulkOnly] = useState<boolean>(getInit('bulk') === '1');
 
-  // ─── Price + weight bounds (derived from the catalog) ──────────────────────
   const priceBounds = useMemo(() => {
     const prices = products.map(p => Number(p.retail_price)).filter(n => Number.isFinite(n));
     if (prices.length === 0) return { min: 0, max: 0 };
@@ -381,8 +356,6 @@ export default function AgentStorefrontGrid({
   const [minWeight, setMinWeight] = useState<number>(clampNum(getInit('wMin'), weightBounds.min));
   const [maxWeight, setMaxWeight] = useState<number>(clampNum(getInit('wMax'), weightBounds.max));
 
-  // If the catalog changes (e.g. SSR re-render), refresh price/weight defaults
-  // — but only when the user has not explicitly chosen a value.
   const initialBoundsApplied = useRef(false);
   useEffect(() => {
     if (initialBoundsApplied.current) return;
@@ -394,9 +367,6 @@ export default function AgentStorefrontGrid({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [priceBounds.min, priceBounds.max, weightBounds.min, weightBounds.max]);
 
-  // Restore the researcher's last saved view from localStorage AFTER mount so
-  // the first client render matches the server (URL-only) render and avoids a
-  // React #418 hydration mismatch. Skips when the URL already carries facets.
   const filtersRestored = useRef(false);
   useEffect(() => {
     if (filtersRestored.current) return;
@@ -416,7 +386,6 @@ export default function AgentStorefrontGrid({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // ─── URL sync (debounced, replace state to avoid history spam) ──────────
   const urlSyncTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {
     if (urlSyncTimer.current) clearTimeout(urlSyncTimer.current);
@@ -439,7 +408,6 @@ export default function AgentStorefrontGrid({
       } catch {
         // router can be unavailable in tests; ignore.
       }
-      // Mirror to localStorage so reload restores the view.
       try {
         const toStore: Record<string, string> = {};
         params.forEach((v, k) => { toStore[k] = v; });
@@ -476,24 +444,16 @@ export default function AgentStorefrontGrid({
   const [detailProduct, setDetailProduct] = useState<GroupedProduct | null>(null);
   const [recommendations, setRecommendations] = useState<RecommendationItem[]>([]);
   const [recommendationsLoading, setRecommendationsLoading] = useState(false);
-  // Start empty so SSR and the first client render agree (no localStorage on
-  // the server) — the saved cart is hydrated in the mount effect below. This
-  // prevents a React #418 hydration mismatch on the cart badge / float.
   const [cartItems, setCartItems] = useState<Record<string, number>>({});
-  // Saved For Later — items the buyer parked out of the active cart. Persisted
-  // per-storefront so it survives navigation. Keyed by variant id like cartItems.
   const [savedForLater, setSavedForLater] = useState<Record<string, number>>({});
   useEffect(() => {
     try {
-      // Existing cart for this storefront is ALWAYS the source of truth.
       let base: Record<string, number> = {};
       const saved = localStorage.getItem(`cart_${agentSlug}`);
       if (saved) {
         const parsed = JSON.parse(saved);
         if (parsed && typeof parsed === 'object') base = { ...parsed };
       }
-      // Additively merge any pending reorder payload on TOP of the existing cart.
-      // This guarantees a reorder can never empty or replace what is already here.
       const addRaw = localStorage.getItem(`pnl_reorder_add_${agentSlug}`);
       if (addRaw) {
         try {
@@ -508,7 +468,6 @@ export default function AgentStorefrontGrid({
       }
       if (Object.keys(base).length) setCartItems(base);
 
-      // Hydrate Saved For Later.
       const sfl = localStorage.getItem(`pnl_saved_${agentSlug}`);
       if (sfl) {
         const parsed = JSON.parse(sfl);
@@ -517,13 +476,11 @@ export default function AgentStorefrontGrid({
     } catch { /* ignore */ }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [agentSlug]);
-  // Persist Saved For Later on change (skip first run so mount cannot wipe storage).
   const firstSavedSave = useRef(true);
   useEffect(() => {
     if (firstSavedSave.current) { firstSavedSave.current = false; return; }
     try { localStorage.setItem(`pnl_saved_${agentSlug}`, JSON.stringify(savedForLater)); } catch { /* ignore */ }
   }, [savedForLater, agentSlug]);
-  // Move a cart line into Saved For Later (additive on the saved side).
   const saveItemForLater = (variantId: string) => {
     setCartItems(prev => {
       const qty = Number(prev[variantId]) || 0;
@@ -534,7 +491,6 @@ export default function AgentStorefrontGrid({
       return next;
     });
   };
-  // Move a saved line back into the active cart (additive on the cart side).
   const moveSavedToCart = (variantId: string) => {
     setSavedForLater(prev => {
       const qty = Number(prev[variantId]) || 0;
@@ -555,16 +511,10 @@ export default function AgentStorefrontGrid({
   const [showCartFloat, setShowCartFloat] = useState(false);
   const [cartToast, setCartToast] = useState(false);
   const [showBulkPricing, setShowBulkPricing] = useState(false);
-  // Modal-only quantity input — does NOT touch cartItems until "Add To Cart" is pressed.
-  // Agent self-buy: minimum 10 vials, increments of 10 (enforced here + server-side).
-  const selfBuyStep = 1;   // agents can buy any quantity; tiered pricing applies below 10  // Enforce per-peptide minimum using min_order_qty (defaults to 1). Agent direct price unlocks at 10+
+  const selfBuyStep = 1;
   const selfBuyMin  = minOrderQty ?? 1;
   const overallMin  = minOverallQty ?? 1;
 
-  // ─── Recommendations ("Researchers Also Bought") ───────────────────────
-  // When the product detail modal opens, fetch a strip of related products
-  // from the co-purchase matrix (falls back to the 60-day popular list when
-  // co-purchase data is sparse). Public route — no auth needed.
   useEffect(() => {
     if (!detailProduct) {
       setRecommendations([]);
@@ -594,16 +544,12 @@ export default function AgentStorefrontGrid({
 
   const [pendingQty, setPendingQty] = useState(isStorefrontOwner ? Math.max(10, selfBuyMin) : selfBuyMin);
 
-  // Save cart to localStorage on change. Skip the very first run so the mount
-  // pass (before the saved cart is hydrated above) cannot overwrite a stored
-  // cart with the empty initial state.
   const firstCartSave = useRef(true);
   useEffect(() => {
     if (firstCartSave.current) { firstCartSave.current = false; return; }
     try {
       localStorage.setItem(`cart_${agentSlug}`, JSON.stringify(cartItems));
 
-      // Continuously sync to the checkout format so the top-header checkout button works
       const pnlCart = Object.entries(cartItems)
         .filter(([, qty]) => qty > 0)
         .map(([vId, qty]) => {
@@ -633,7 +579,6 @@ export default function AgentStorefrontGrid({
         _savedAt: Date.now(),
       }));
 
-      // Wipe any stale storefront carts from OTHER agents to prevent cross-contamination
       Object.keys(localStorage)
         .filter(k => k.startsWith('pnl_storefront_cart_') && k !== `pnl_storefront_cart_${agentSlug}`)
         .forEach(k => localStorage.removeItem(k));
@@ -642,7 +587,6 @@ export default function AgentStorefrontGrid({
     } catch { /* ignore */ }
   }, [cartItems, agentSlug, products, isStorefrontOwner]);
 
-  // Group products by name
   const grouped = useMemo(() => {
     const map = new Map<string, GroupedProduct>();
     products.forEach(item => {
@@ -686,9 +630,6 @@ export default function AgentStorefrontGrid({
     return Array.from(cats).sort();
   }, [grouped]);
 
-  // Build a lookup from any product_id (master) to the GroupedProduct that
-  // contains it as a variant. Used by the recommendations strip to swap the
-  // modal target without re-fetching catalog data.
   const groupByProductId = useMemo(() => {
     const m = new Map<string, GroupedProduct>();
     for (const g of grouped) {
@@ -699,8 +640,6 @@ export default function AgentStorefrontGrid({
     return m;
   }, [grouped]);
 
-  // Predicate factories so we can compute "matches except category" for the
-  // category facet counts.
   const matchesSearch = useCallback(
     (g: GroupedProduct) => {
       const q = deferredSearch.trim().toLowerCase();
@@ -776,10 +715,6 @@ export default function AgentStorefrontGrid({
     return result;
   }, [grouped, matchesCategory, matchesSearch, matchesPrice, matchesWeight, matchesInStock, matchesBulk, sortBy]);
 
-  // Counts shown next to each category option — count products that match
-  // every OTHER filter (search, price, weight, in-stock, bulk) but ignore
-  // the category facet itself so picking a category doesn't zero out its
-  // own count.
   const categoryCounts = useMemo<Record<string, number>>(() => {
     const base = grouped.filter(g =>
       matchesSearch(g) &&
@@ -829,8 +764,6 @@ export default function AgentStorefrontGrid({
   const totalCartItems = Object.values(cartItems).reduce((sum, qty) => sum + qty, 0);
   const totalSavedItems = Object.values(savedForLater).reduce((sum, qty) => sum + Number(qty || 0), 0);
 
-  // Reorder flow (and any deep link) can request the cart be opened on arrival via
-  // ?cart=1. Open it once the cart has hydrated with items, then never re-open.
   const autoOpenCart = useRef(
     typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('cart') === '1'
   );
@@ -841,6 +774,35 @@ export default function AgentStorefrontGrid({
       setShowCartFloat(true);
     }
   }, [totalCartItems]);
+
+  // Add a product to the cart by display name. Used by the Research Profile
+  // diluent CTA to add Bacteriostatic Water without threading cart props through
+  // deeply-nested children. Inert when no matching product is on this storefront.
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const name = (e as CustomEvent<{ name?: string }>).detail?.name;
+      if (!name) return;
+      const matches = products.filter(
+        (p) => (p.products?.name || '').toLowerCase() === name.toLowerCase()
+      );
+      if (matches.length === 0) {
+        toast.error(`${name} Is Not Available On This Storefront.`);
+        return;
+      }
+      const pick =
+        matches
+          .slice()
+          .sort(
+            (a, b) =>
+              parseFloat(a.products?.unit_size || '0') - parseFloat(b.products?.unit_size || '0')
+          )[0] || matches[0];
+      setCartItems((prev) => ({ ...prev, [pick.id]: (prev[pick.id] || 0) + 1 }));
+      setShowCartFloat(true);
+      toast.success(`${pick.products?.name || name} Added To Cart.`);
+    };
+    window.addEventListener('pnl:add-to-cart-by-name', handler as EventListener);
+    return () => window.removeEventListener('pnl:add-to-cart-by-name', handler as EventListener);
+  }, [products]);
 
   if (!products || products.length === 0) {
     return (
@@ -855,7 +817,6 @@ export default function AgentStorefrontGrid({
   return (
     <div style={{ display: 'flex', flexDirection: 'column' }}>
       <style dangerouslySetInnerHTML={{__html: `
-        /* Outer metallic frame — same 3px brushed-metal ring as the peptide cards */
         .sf-toolbar {
           padding: 3px;
           border-radius: 18px;
@@ -866,7 +827,6 @@ export default function AgentStorefrontGrid({
           top: max(16px, var(--safe-top, 16px));
           z-index: 20;
         }
-        /* Inner panel — even 16px padding on every side so the inputs never touch the frame */
         .sf-toolbar-inner {
           display: flex;
           flex-direction: column;
@@ -918,8 +878,6 @@ export default function AgentStorefrontGrid({
           .sf-toolbar-cat     { flex: 0 0 auto; }
           .sf-toolbar select  { width: auto; min-width: 160px; padding: 9px 12px; font-size: 0.85rem; }
         }
-
-        /* ── Wishlist Heart Button — always a perfect circle ───────────── */
         .sf-wishlist-btn {
           position: absolute; top: 10px; right: 10px;
           width: 34px; height: 34px; min-width: 34px; min-height: 34px;
@@ -931,15 +889,12 @@ export default function AgentStorefrontGrid({
           box-sizing: border-box;
         }
         .sf-wishlist-btn:hover { transform: scale(1.12); }
-
-        /* ── Product Detail Modal / Bottom Sheet ──────────────────── */
         .sf-modal-overlay {
           position: fixed; top: 0; left: 0; right: 0; bottom: 0;
           background: rgba(0,0,0,0.85); backdrop-filter: blur(8px);
           z-index: 1000; display: flex; align-items: flex-end; justify-content: center;
           overflow: hidden;
         }
-        /* Premium thick brushed-nickel frame */
         .sf-modal-sheet {
           width: 100%; max-height: 95dvh; overflow-y: auto;
           -webkit-overflow-scrolling: touch;
@@ -1003,10 +958,8 @@ export default function AgentStorefrontGrid({
         }
       `}} />
 
-      {/* Faceted Search & Filter Toolbar — outer metal frame matches the peptide cards */}
       <div className="sf-toolbar">
         <div className="sf-toolbar-inner">
-        {/* Search */}
         <div className="sf-toolbar-search">
           <span className="sf-search-icon">
             <Search size={14} aria-hidden="true" />
@@ -1030,7 +983,6 @@ export default function AgentStorefrontGrid({
           )}
         </div>
 
-        {/* Category */}
         <div className="sf-toolbar-cat">
           <select
             aria-label="Filter By Category"
@@ -1048,9 +1000,6 @@ export default function AgentStorefrontGrid({
         </div>
       </div>
 
-
-
-      {/* Research Bundles */}
       {bundles && bundles.length > 0 && (
         <div style={{ marginTop: 0 }}>
           <h3 style={{ fontFamily: 'var(--font-brand)', fontSize: '1.05rem', color: 'var(--white)', marginBottom: 'var(--space-4)', letterSpacing: '0.03em' }}>
@@ -1153,7 +1102,6 @@ export default function AgentStorefrontGrid({
         </div>
       )}
 
-      {/* Empty State */}
       {filteredProducts.length === 0 && (
         <div className="metal-frame hover-lift stagger-fade-in">
           <div className="metal-content" style={{ textAlign: 'center', padding: 'var(--space-8) var(--space-6)' }}>
@@ -1180,7 +1128,6 @@ export default function AgentStorefrontGrid({
         </div>
       )}
 
-      {/* Product Grid */}
       <motion.div
         className="grid-3" style={{ gap: 'var(--space-6)', display: filteredProducts.length === 0 ? 'none' : undefined }}
         variants={containerVariants} initial="hidden" animate="show"
@@ -1190,9 +1137,6 @@ export default function AgentStorefrontGrid({
           const selectedVariantId = selectedVariants[group.name] || group.defaultVariantId;
           const activeVariant = group.variants.find(v => v.id === selectedVariantId) || group.variants[0];
 
-          // Stock state — based on the variant the storefront initially shows
-          // (the picked default). Master inventory + backorder come from
-          // the master products row, agent count from inventoryMap.
           const stockAgentCount = Math.max(0, Number(inventoryMap[activeVariant.product_id] ?? 0));
           const stockMasterInventory = Math.max(0, Number(activeVariant.products?.inventory_count ?? 0));
           const stockThreshold = Math.max(0, Number(activeVariant.products?.low_stock_threshold ?? 5));
@@ -1208,15 +1152,12 @@ export default function AgentStorefrontGrid({
               onClick={() => {
                 setDetailProduct(group);
                 logRecentlyViewed(activeVariant.product_id);
-                // Pre-fill pendingQty: start at 10 for agent self-buy (minimum),
-                // or restore existing cart qty, or 1 for researchers.
                 const defaultVId = group.defaultVariantId || group.variants[0]?.id;
                 const existingQty = defaultVId ? cartItems[defaultVId] : undefined;
                 setPendingQty(existingQty ?? (isStorefrontOwner ? Math.max(10, selfBuyMin) : selfBuyMin));
               }}
             >
               <div className="metal-content" style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden', padding: 0 }}>
-              {/* Product Image */}
               <div style={{
                 height: 220,
                 background: `radial-gradient(circle at 50% 50%, ${primaryColor}20 0%, var(--black) 100%)`,
@@ -1225,7 +1166,6 @@ export default function AgentStorefrontGrid({
               }}>
                 <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 1, background: `linear-gradient(90deg, transparent, ${primaryColor}50, transparent)` }} />
 
-                {/* Wishlist Heart Button — top right of card image */}
                 {(() => {
                   const wished = wishlist.has(activeVariant.product_id);
                   return (
@@ -1250,7 +1190,6 @@ export default function AgentStorefrontGrid({
                   );
                 })()}
 
-                {/* Photorealistic branded vial — product-specific image */}
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={group.imageUrl ?? undefined}
@@ -1269,7 +1208,6 @@ export default function AgentStorefrontGrid({
                   }}
                 />
 
-                {/* Popular badge — teal */}
                 {group.popularity < 20 && (
                   <div style={{
                     position: 'absolute', top: 12, left: 12,
@@ -1282,7 +1220,6 @@ export default function AgentStorefrontGrid({
                   </div>
                 )}
 
-                {/* On Sale badge — red, right side */}
                 {group.variants.some(v => (v as any).is_on_sale) && (
                   <div style={{
                     position: 'absolute', top: 12, right: 12,
@@ -1295,7 +1232,6 @@ export default function AgentStorefrontGrid({
                   </div>
                 )}
 
-                {/* Stock badge — bottom left, hidden for default "In Stock" (cleaner look). */}
                 {stockState.kind !== 'in_stock' && (
                   <div style={{ position: 'absolute', bottom: 12, left: 12 }}>
                     <StockBadge state={stockState} />
@@ -1303,7 +1239,6 @@ export default function AgentStorefrontGrid({
                 )}
               </div>
 
-              {/* Product Details */}
               <div style={{ padding: 'var(--space-5)', flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
                 {(() => {
                   const { main, subtitle } = splitProductName(toTitleCase(group.name));
@@ -1325,7 +1260,6 @@ export default function AgentStorefrontGrid({
                   );
                 })()}
 
-                {/* Summary Line — click card to open detail + add to cart */}
                 <div style={{
                   marginTop: 'auto', borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: 'var(--space-4)',
                   textAlign: 'center'
@@ -1334,9 +1268,6 @@ export default function AgentStorefrontGrid({
                     const defaultV = group.variants.find(v => v.id === group.defaultVariantId) || group.variants[0];
                     const size = defaultV.products?.unit_size || '10';
                     const measure = defaultV.products?.unit_measure || 'mg';
-                    // retail_price is the 10-pack price; divide by 10 for individual vial price.
-                    // Storefront owner (agent self-buy) sees their admin-configured tier cost
-                    // — wholesale buyers always pay tier flat, never retail or sale markup.
                     const perVialBase = isStorefrontOwner && (defaultV as any).cost_price != null
                       ? Number((defaultV as any).cost_price) / 10
                       : defaultV.retail_price / 10;
@@ -1369,9 +1300,7 @@ export default function AgentStorefrontGrid({
         })}
       </motion.div>
 
-      {/* Floating Cart — Bottom Right Corner */}
       <div style={{ position: 'fixed', bottom: 'env(safe-area-inset-bottom, 0px)', right: 0, zIndex: 9999, pointerEvents: 'none' }}>
-        {/* Floating Cart Button */}
         <div
           role="button"
           tabIndex={0}
@@ -1400,7 +1329,6 @@ export default function AgentStorefrontGrid({
           )}
         </div>
 
-        {/* Cart dropdown */}
         <AnimatePresence>
           {showCartFloat && (
             <motion.div
@@ -1421,8 +1349,6 @@ export default function AgentStorefrontGrid({
                 background: 'linear-gradient(180deg, #131b24 0%, #0a0f14 100%)',
                 border: '3px solid transparent', backgroundClip: 'padding-box',
                 borderRadius: 24,
-                // Thick brushed-nickel frame (matches the premium product detail modal):
-                // dark/light/dark beveled metal ring + deep ambient shadow.
                 boxShadow: '0 0 0 2px #5d6166, 0 0 0 4px #b9bdc2, 0 0 0 6px #6c7075, inset 0 1px 0 rgba(255,255,255,0.10), 0 30px 90px rgba(0,0,0,0.85), 0 6px 28px rgba(160,168,176,0.14)',
                 overflow: 'hidden', maxHeight: '92dvh'
               }}>
@@ -1477,7 +1403,7 @@ export default function AgentStorefrontGrid({
                           {name} {size && `(${size})`}
                         </div>
                         <div style={{ fontSize: '0.78rem', color: 'var(--grey-400)', marginBottom: 6 }}>
-                          ${formatPrice(perVial)} Each · ${formatPrice(perVial * qty)} Total
+                          ${formatPrice(perVial)} Each / ${formatPrice(perVial * qty)} Total
                         </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                         <button onClick={() => setCartItems(prev => {
@@ -1558,7 +1484,6 @@ export default function AgentStorefrontGrid({
                   );
                 })}
 
-                {/* Saved For Later */}
                 {Object.keys(savedForLater).length > 0 && (
                   <div style={{ marginTop: 6, paddingTop: 12, borderTop: '1px solid rgba(255,255,255,0.08)', display: 'flex', flexDirection: 'column', gap: 10 }}>
                     <div style={{ fontSize: '0.82rem', color: 'var(--white)', fontWeight: 800 }}>
@@ -1604,7 +1529,7 @@ export default function AgentStorefrontGrid({
                               {name} {size && `(${size})`}
                             </div>
                             <div style={{ fontSize: '0.76rem', color: 'var(--grey-400)', marginBottom: 6 }}>
-                              ${formatPrice(perVial)} Each · Qty {Number(qty)}
+                              ${formatPrice(perVial)} Each / Qty {Number(qty)}
                             </div>
                             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                               <button
@@ -1644,8 +1569,6 @@ export default function AgentStorefrontGrid({
                     ${Object.entries(cartItems).reduce((sum, [vId, qty]) => {
                       const item = products.find(p => p.id === vId);
                       if (!item) return sum;
-                      // Storefront owner sees tier cost in their cart total — must
-                      // match what the order route will actually charge them.
                       const per = isStorefrontOwner && (item as any).cost_price != null
                         ? Number((item as any).cost_price) / 10
                         : item.retail_price / 10;
@@ -1686,24 +1609,18 @@ export default function AgentStorefrontGrid({
                       }
                       
                       try {
-                        // Write to a per-agent scoped cart key so Agent A's cart
-                        // can NEVER contaminate Agent B's checkout. Closed-loop isolation.
-                        // Write cart with _savedAt timestamp so CheckoutForm can detect staleness.
                         localStorage.setItem(`pnl_storefront_cart_${agentSlug}`, JSON.stringify({
                           items: pnlCart,
                           _savedAt: Date.now(),
                         }));
-                        // Wipe any stale storefront carts from OTHER agents to prevent
-                        // cross-contamination if user visited multiple storefronts.
                         Object.keys(localStorage)
                           .filter(k => k.startsWith('pnl_storefront_cart_') && k !== `pnl_storefront_cart_${agentSlug}`)
                           .forEach(k => localStorage.removeItem(k));
-                        localStorage.removeItem('pnl_storefront_cart'); // legacy key cleanup
+                        localStorage.removeItem('pnl_storefront_cart');
                       } catch (e) {
                         console.error('Failed to sync cart:', e);
                       }
                       setShowCartFloat(false);
-                      // Pass agentSlug in URL so checkout page enforces this agent's catalog only.
                       window.location.href = `/checkout?agent=${encodeURIComponent(agentSlug)}`;
                     }}
                     style={{
@@ -1754,10 +1671,6 @@ export default function AgentStorefrontGrid({
           )}
         </div>
 
-      {/* Full-Screen Certificate Modal */}
-
-
-      {/* Product Detail Modal — bottom-sheet on mobile, centered on desktop */}
       <AnimatePresence>
         {detailProduct && (
           <motion.div
@@ -1773,7 +1686,6 @@ export default function AgentStorefrontGrid({
               onClick={e => e.stopPropagation()}
               className="sf-modal-sheet"
             >
-              {/* Top bar: drag handle (centered) + close button (right) */}
               <div style={{
                 display: 'flex', alignItems: 'center', padding: '14px 18px 8px', flexShrink: 0,
               }}>
@@ -1798,12 +1710,10 @@ export default function AgentStorefrontGrid({
                   </button>
                 </div>
               </div>
-              {/* Modal Header Image — no close button inside, border-radius won't clip anything */}
               <div
                 className="sf-modal-img"
                 style={{ background: `radial-gradient(circle at 50% 50%, ${primaryColor}20 0%, var(--black) 100%)` }}
               >
-                {/* Photorealistic branded vial — product-specific image */}
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={detailProduct.imageUrl ?? undefined}
@@ -1823,7 +1733,6 @@ export default function AgentStorefrontGrid({
                 <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 60, background: 'linear-gradient(transparent, var(--surface-2))' }} />
               </div>
 
-              {/* Modal Body */}
               <div className="sf-modal-body">
                 {/* Centered header: title, then badges, then short description */}
                 <div style={{ textAlign: 'center', marginBottom: 'var(--space-3)' }}>
@@ -1884,7 +1793,6 @@ export default function AgentStorefrontGrid({
                   </p>
                 </div>
 
-                {/* Agent Local Inventory Badge — show when agent has this product in their own stock */}
                 {(() => {
                   const selVId0 = selectedVariants[detailProduct.name] || detailProduct.defaultVariantId;
                   const selV0 = detailProduct.variants.find(v => v.id === selVId0) || detailProduct.variants[0];
@@ -1904,13 +1812,12 @@ export default function AgentStorefrontGrid({
                         boxShadow: '0 0 6px #68D39180'
                       }} />
                       <span style={{ fontSize: '0.82rem', color: '#68D391', fontWeight: 700 }}>
-                        {localStock} Vial{localStock !== 1 ? 's' : ''} In Agent Local Stock — Ships Immediately
+                        {localStock} Vial{localStock !== 1 ? 's' : ''} In Agent Local Stock - Ships Immediately
                       </span>
                     </div>
                   );
                 })()}
 
-                {/* Certificate Of Analysis */}
                 {(() => {
                   const firstVariant = detailProduct.variants[0];
                   const pid = firstVariant?.product_id;
@@ -1943,7 +1850,6 @@ export default function AgentStorefrontGrid({
                   );
                 })()}
 
-                {/* Embedded Research Monograph — full compound profile */}
                 {(() => {
                   const compound = detailProduct.compoundSlug
                     ? compoundsBySlug[detailProduct.compoundSlug]
@@ -1952,70 +1858,48 @@ export default function AgentStorefrontGrid({
                   return <ProductMonograph compound={compound} primaryColor={primaryColor} />;
                 })()}
 
-                {/* Size & Quantity Selector */}
                 {(() => {
                   const selectedVId = selectedVariants[detailProduct.name] || detailProduct.defaultVariantId;
                   const activeV = detailProduct.variants.find(v => v.id === selectedVId) || detailProduct.variants[0];
-                  // Use pendingQty for display — only committed to cartItems on "Add To Cart"
                   const qty = pendingQty;
-                  // retail_price is the 10-pack price — divide by 10 for individual vial base price
                   const rawPrice = (activeV as any).is_on_sale && (activeV as any).sale_price
                     ? (activeV as any).sale_price
                     : activeV.retail_price;
-                  const basePrice = rawPrice / 10;   // retail per-vial price
+                  const basePrice = rawPrice / 10;
 
-                  // Agent cost price — admin-configured tier price (e.g. $52 for 10 vials).
-                  // Falls back to retail base price when cost_price isn't set on this variant.
                   const agentCostPerVial = isStorefrontOwner && (activeV as any).cost_price != null
                     ? Number((activeV as any).cost_price) / 10
                     : basePrice;
 
-                  // ── AGENT SELF-BUY PRICING RULE ────────────────────────────────
-                  // Agent direct (tier) pricing applies at 10+ vials using cost_price.
-                  // Below 10 vials the standard retail dynamic pricing applies.
-                  // This is enforced here (display) AND server-side (API).
                   const agentQualifiesForDiscount = isStorefrontOwner;
 
-                  // Dynamic pricing tiers:
-                  // Agents see tiered pricing with 10+ labeled "Agent Direct Price".
-                  // Below 10 vials, agents pay the same retail dynamic rate as researchers.
-                  // Researchers see tiers only when volumePricingEnabled.
                   const tiers = isStorefrontOwner
                     ? [
-                        // Agents and storefront owners always pay tier cost on every
-                        // quantity — dynamic/bulk pricing is for researchers only.
-                        { label: 'All Quantities — Agent Direct Price', min: 1, max: Infinity, pct: 0 },
+                        { label: 'All Quantities - Agent Direct Price', min: 1, max: Infinity, pct: 0 },
                       ]
                     : volumePricingEnabled
                       ? [
-                          { label: '1–2 Vials', min: 1, max: 2, pct: 20 },
-                          { label: '3–5 Vials', min: 3, max: 5, pct: 15 },
-                          { label: '6–9 Vials', min: 6, max: 9, pct: 10 },
-                          { label: '10+ Vials — Best Price', min: 10, max: Infinity, pct: 0 },
+                          { label: '1-2 Vials', min: 1, max: 2, pct: 20 },
+                          { label: '3-5 Vials', min: 3, max: 5, pct: 15 },
+                          { label: '6-9 Vials', min: 6, max: 9, pct: 10 },
+                          { label: '10+ Vials - Best Price', min: 10, max: Infinity, pct: 0 },
                         ]
                       : [
-                          { label: 'All Quantities — Flat Price', min: 1, max: Infinity, pct: 0 },
+                          { label: 'All Quantities - Flat Price', min: 1, max: Infinity, pct: 0 },
                         ];
 
                   const getUnitPrice = (q: number) => {
-                    // Storefront owner (agent) always pays admin-configured tier cost,
-                    // regardless of quantity. No retail markup, no volume bracket switch.
                     if (isStorefrontOwner) return agentCostPerVial;
-                    // Researcher: retail + tiered markup (or flat when volume pricing off).
                     const t = tiers.find(t => q >= t.min && q <= t.max);
                     return t ? parseFloat((basePrice * (1 + t.pct / 100)).toFixed(2)) : basePrice;
                   };
 
                   const displayQty = qty > 0 ? qty : (isStorefrontOwner ? 10 : 1);
-                  // For agent self-buy: server computes actual tier cost. Show retail
-                  // here as the "before discount" price; discount is applied at checkout.
-                  // If qty < 10 (below minimum), retail pricing applies — no discount.
                   const unitPrice = getUnitPrice(displayQty);
                   const lineTotal = unitPrice * displayQty;
 
                   return (
                     <div style={{ marginBottom: 'var(--space-6)' }}>
-                      {/* Size Selector */}
                       {detailProduct.variants.length > 1 && (
                         <div style={{ marginBottom: 'var(--space-4)' }}>
                           <label style={{ fontSize: '0.8rem', color: 'var(--silver)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block', marginBottom: 6 }}>
@@ -2047,24 +1931,11 @@ export default function AgentStorefrontGrid({
                         </div>
                       )}
 
-                      {/* Quantity Selector + Price */}
                       <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-6)', flexWrap: 'wrap' }}>
                         <div>
                           <label style={{ fontSize: '0.8rem', color: 'var(--silver)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block', marginBottom: 6 }}>
                             Quantity (Vials)
                           </label>
-                          {/* Agent self-buy: default 10, can buy fewer at dynamic pricing */}
-                          {isStorefrontOwner && (
-                            <div style={{
-                              fontSize: '0.68rem', fontWeight: 700, letterSpacing: '0.06em',
-                              textTransform: 'uppercase', color: '#68D391',
-                              background: 'rgba(104,211,145,0.10)', border: '1px solid rgba(104,211,145,0.30)',
-                              borderRadius: 'var(--radius-full)', padding: '2px 10px',
-                              display: 'inline-block', marginBottom: 8
-                            }}>
-                              Agent Direct Price · All Quantities
-                            </div>
-                          )}
                           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                             <button
                               onClick={() => setPendingQty(prev => Math.max(selfBuyMin, prev - selfBuyStep))}
@@ -2085,7 +1956,7 @@ export default function AgentStorefrontGrid({
                                 if (!isNaN(val)) {
                                   setPendingQty(Math.max(selfBuyMin, val));
                                 } else if (e.target.value === '') {
-                                  setPendingQty(0); // Temporary state while typing
+                                  setPendingQty(0);
                                 }
                               }}
                               onBlur={() => {
@@ -2133,7 +2004,6 @@ export default function AgentStorefrontGrid({
                         )}
                       </div>
 
-                      {/* Dynamic Pricing Tiers — visible for agents always, or when volume pricing on */}
                       {(volumePricingEnabled || isStorefrontOwner) && (
                         <div style={{
                           marginTop: 'var(--space-5)', border: '1px solid rgba(255,255,255,0.08)',
@@ -2143,8 +2013,6 @@ export default function AgentStorefrontGrid({
                             Volume Pricing
                           </div>
                           {tiers.map((t, i) => {
-                            // For the 10+ agent-direct tier, show the actual cost price, not retail.
-                            // For all other tiers, apply the surcharge % on top of base retail price.
                             const tierPrice = (isStorefrontOwner && t.pct === 0)
                               ? agentCostPerVial
                               : parseFloat((basePrice * (1 + t.pct / 100)).toFixed(2));
@@ -2156,7 +2024,7 @@ export default function AgentStorefrontGrid({
                                 background: isActive ? `${primaryColor}10` : 'transparent'
                               }}>
                                 <span style={{ fontSize: '0.85rem', color: isActive ? 'var(--white)' : 'var(--grey-400)', fontWeight: isActive ? 600 : 400 }}>
-                                  {t.label ?? (t.max === Infinity ? `${t.min}+ vials` : `${t.min}–${t.max} vials`)}
+                                  {t.label ?? (t.max === Infinity ? `${t.min}+ vials` : `${t.min}-${t.max} vials`)}
                                   {t.pct > 0 && <span style={{ color: '#68D391', marginLeft: 8, fontSize: '0.75rem' }}>+{t.pct}%</span>}
                                   {t.pct === 0 && !isStorefrontOwner && <span style={{ color: 'var(--teal)', marginLeft: 8, fontSize: '0.75rem' }}>Best Price</span>}
                                 </span>
@@ -2173,9 +2041,7 @@ export default function AgentStorefrontGrid({
                 })()}
 
 
-                {/* Footer: See Bulk Pricing on left, action buttons on right */}
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 'var(--space-3)', marginTop: 'var(--space-5)' }}>
-                  {/* See Bulk Pricing toggle — bottom left */}
                   <div>
                     <button
                       type="button"
@@ -2241,7 +2107,6 @@ export default function AgentStorefrontGrid({
                     )}
                   </div>
 
-                  {/* Researchers Also Bought */}
                   <RecommendationStrip
                     title="Researchers Also Bought"
                     recommendations={recommendations}
@@ -2256,7 +2121,6 @@ export default function AgentStorefrontGrid({
                     }}
                   />
 
-                  {/* Close + Add To Cart — sticky at bottom on mobile */}
                   <div className="sf-modal-actions">
                     <button
                       className="sf-close-btn"
@@ -2269,14 +2133,13 @@ export default function AgentStorefrontGrid({
                       style={{ background: primaryColor }}
                       onClick={() => {
                         const vId = selectedVariants[detailProduct.name] || detailProduct.defaultVariantId;
-                        // Commit pendingQty to cart — ADD so repeated opens accumulate correctly.
                         setCartItems(prev => ({
                           ...prev,
                           [vId]: (prev[vId] || 0) + pendingQty,
                         }));
                         setDetailProduct(null);
-                        setShowBulkPricing(false); // close bulk pricing when item added
-                        setPendingQty(isStorefrontOwner ? Math.max(10, selfBuyMin) : selfBuyMin); // Reset to default for next open
+                        setShowBulkPricing(false);
+                        setPendingQty(isStorefrontOwner ? Math.max(10, selfBuyMin) : selfBuyMin);
                         setShowCartFloat(true);
                       }}
                     >
