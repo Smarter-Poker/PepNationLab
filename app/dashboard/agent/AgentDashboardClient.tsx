@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import { useAvailability, availabilityMessage } from '@/lib/useAvailability';
 import Navbar from '@/components/Navbar';
 import { toast } from 'sonner';
 import Link from 'next/link';
@@ -37,6 +38,7 @@ interface Profile {
   role: string;
   tier: string | null;
   is_super_agent?: boolean;
+  is_sub_agent?: boolean;
   avatar_url?: string | null;
 }
 
@@ -180,6 +182,16 @@ export default function AgentDashboardClient({
   const [crLoading, setCrLoading] = useState(false);
   const [crError, setCrError] = useState('');
   const [crSuccess, setCrSuccess] = useState('');
+  // Live username availability for the Create Researcher modal. Gated on
+  // the modal being open so we don't fire /api/availability while the
+  // dashboard is sitting idle on another tab.
+  const crUsernameCheck = useAvailability({
+    field: 'username',
+    value: crUsername,
+    disabled: !showCreateResearcher,
+  });
+  const crUsernameMsg = availabilityMessage(crUsernameCheck);
+
   const [researcherList, setResearcherList] = useState<Researcher[]>(initialResearchers);
   const [togglingTrust, setTogglingTrust] = useState<string | null>(null);
 
@@ -227,6 +239,15 @@ export default function AgentDashboardClient({
       const names = crFullName.trim().split(' ');
       const firstName = names[0] || '';
       const lastName = names.slice(1).join(' ') || '';
+
+      // Pre-flight live-availability guard. The status row already shows
+      // the user the username is taken; this stops a fast double-click from
+      // sneaking the POST through before the debounce settles.
+      if (crUsernameCheck.status === 'taken' || crUsernameCheck.status === 'invalid') {
+        setCrError(crUsernameCheck.reason || 'Username Is Already Taken');
+        setCrLoading(false);
+        return;
+      }
 
       const res = await fetch('/api/agent/create-researcher', {
         method: 'POST',
@@ -1053,7 +1074,7 @@ export default function AgentDashboardClient({
                       {/* Submit button at the very top middle */}
                       <button
                         type="submit"
-                        disabled={crLoading}
+                        disabled={crLoading || crUsernameCheck.status === 'taken' || crUsernameCheck.status === 'invalid' || crUsernameCheck.status === 'checking'}
                         style={{
                           width: '80%',
                           margin: '0 auto 20px auto',
@@ -1064,8 +1085,8 @@ export default function AgentDashboardClient({
                           color: '#ffffff',
                           fontSize: '1rem',
                           fontWeight: 700,
-                          cursor: crLoading ? 'not-allowed' : 'pointer',
-                          opacity: crLoading ? 0.65 : 1,
+                          cursor: (crLoading || crUsernameCheck.status === 'taken' || crUsernameCheck.status === 'invalid' || crUsernameCheck.status === 'checking') ? 'not-allowed' : 'pointer',
+                          opacity: (crLoading || crUsernameCheck.status === 'taken' || crUsernameCheck.status === 'invalid' || crUsernameCheck.status === 'checking') ? 0.65 : 1,
                           letterSpacing: '0.02em',
                           boxShadow: '0 2px 8px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.06)',
                           transition: 'background 0.15s, box-shadow 0.15s',
@@ -1127,6 +1148,8 @@ export default function AgentDashboardClient({
                           autoCapitalize="none"
                           spellCheck={false}
                           placeholder=""
+                          aria-invalid={crUsernameCheck.status === 'taken' || crUsernameCheck.status === 'invalid' || undefined}
+                          aria-describedby="agent-create-researcher-username-status"
                           style={{
                             width: '100%', boxSizing: 'border-box',
                             background: 'linear-gradient(180deg, #0a0c14 0%, #0d1018 100%)',
@@ -1142,6 +1165,16 @@ export default function AgentDashboardClient({
                           onFocus={e => { e.currentTarget.style.border = '1px solid #00C4BC'; }}
                           onBlur={e => { e.currentTarget.style.border = '1px solid #2a3045'; }}
                         />
+                        {crUsernameMsg && (
+                          <div
+                            id="agent-create-researcher-username-status"
+                            role="status"
+                            aria-live="polite"
+                            style={{ marginTop: 6, fontSize: '0.78rem', color: crUsernameMsg.color }}
+                          >
+                            {crUsernameMsg.text}
+                          </div>
+                        )}
                       </div>
 
                       {/* Temporary Password */}

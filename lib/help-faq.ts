@@ -18,7 +18,7 @@
  *     small button row beneath the answer.
  */
 
-export type FaqAudience = 'all' | 'agent';
+export type FaqAudience = 'all' | 'agent' | 'admin';
 
 export type FaqCategoryId =
   | 'getting-started'
@@ -31,12 +31,14 @@ export type FaqCategoryId =
   | 'account'
   | 'notifications'
   | 'messenger'
+  | 'support'
   | 'subscriptions'
   | 'referrals'
   | 'pricing'
   | 'privacy'
   | 'mobile'
-  | 'agents';
+  | 'agents'
+  | 'admin';
 
 export interface FaqLink {
   label: string;
@@ -76,9 +78,11 @@ export const FAQ_CATEGORIES: FaqCategory[] = [
   { id: 'account',         label: 'Account & Security',        audience: 'all' },
   { id: 'notifications',   label: 'Notifications & Messaging', audience: 'all' },
   { id: 'messenger',       label: 'Messenger Features',        audience: 'all' },
+  { id: 'support',         label: 'Customer Support',          audience: 'all' },
   { id: 'privacy',         label: 'Privacy & Data',            audience: 'all' },
   { id: 'mobile',          label: 'Mobile App',                audience: 'all' },
   { id: 'agents',          label: 'For Agents',                audience: 'agent' },
+  { id: 'admin',           label: 'Admin Tools',               audience: 'admin' },
 ];
 
 /**
@@ -313,18 +317,58 @@ export const FAQ_ITEMS: FaqItem[] = [
   { id: 'agent-tax-export', category: 'agents', audience: 'agent', q: 'Can I Export Sales Data For My Tax Filing?', a: 'Yes. Agent Dashboard → Sales → Export Tax. Pick A Year And A Format (CSV Or PDF). The Export Includes Gross Sales, Refunds, Net Sales, And Sales By Jurisdiction Where Applicable.' },
   { id: 'agent-address-validation', category: 'agents', audience: 'agent', q: 'Why Did A Customer Address Get Flagged At Label Generation?', a: 'Before Generating A Label, We Run The Buyer Address Through Shippo Address Validation. If The Carrier Cannot Confirm The Address (Missing Apartment Number, Misspelled Street, P.O. Box For UPS), We Flag It For Your Review. Correct It With The Buyer Via Messenger, Then Regenerate The Label.' },
   { id: 'agent-sub-agent-referrals', category: 'agents', audience: 'agent', q: 'How Are Sub-Agent Referrals Tracked?', a: 'Each Sub-Agent Has A Personal Storefront Link With Their ID Encoded. Any Researcher Who Signs Up Through That Link Is Permanently Tagged With Referring_Sub_Agent_Id And Triggers Commission On Every Future Order They Place.' },
+  { id: 'agent-invoice-pdf', category: 'agents', audience: 'agent', q: 'How Do I Download My Weekly Invoice PDF?', a: "Wallet → Statements → Open The Statement → Download Invoice. Different From The Receipt (Order-Level) And The 1099 (Annual Tax Summary). The Invoice Lists Every Order Bundled Into That Week's Bill, Plus COGS, Shipping, And Total Owed.", links: [{ label: 'Wallet', href: '/wallet' }] },
+  { id: 'agent-invoice-vs-receipt-vs-1099', category: 'agents', audience: 'agent', q: "What's The Difference Between Receipts, Invoices, And 1099s?", a: 'Receipt: Per-Order PDF Showing What The Buyer Bought And Paid. Invoice: Weekly PDF Showing What You Owe Admin (COGS + Shipping). 1099: Annual IRS Tax Form Showing Your Total Reportable Earnings. All Three Are Available From Your Wallet.' },
+
+  // R28 — content depth round
+  { id: 'become-an-agent', category: 'getting-started', q: "I'm A Researcher — Can I Become An Agent?", a: 'Yes. Visit Become-Agent And Apply. We Review Your Application Based On Order History, Reach, And Compliance. Approved Applicants Get Onboarded To Their Own Storefront With Initial Tier Pricing And A Welcome Packet.', links: [{ label: 'Apply To Become An Agent', href: '/become-agent' }] },
+  { id: 'zelle-tips', category: 'payments', q: 'Zelle Tips — Limits, Holds, Best Practices', a: 'Most Banks Cap Zelle Sends At $1,000 To $10,000 Per Day And $10,000 To $20,000 Per Month. Send To The Phone Or Email Your Agent Provides — Never To A Username. Zelle Transfers Are Final And Cannot Be Reversed, So Double-Check The Recipient Before Confirming. Some Banks Hold First-Time Sends Up To 24 Hours.' },
+  { id: 'venmo-tips', category: 'payments', q: 'Venmo Tips — Friends & Family Vs. Goods & Services', a: 'Use Friends & Family (Default) For Research Orders — Lower Fees And Faster. Goods & Services Adds A Buyer Protection Layer But Costs The Recipient 1.9% + $0.10 And Can Trigger A 21-Day Hold. Send Privately, Not Publicly. Limit Per Send Is $5,000 For Verified Accounts.' },
+  { id: 'cashapp-tips', category: 'payments', q: 'Cash App Tips — Cashtags And Instant Transfer Fees', a: "Send To Your Agent's $Cashtag (Starts With Dollar Sign). Standard Transfers Are Free; Instant Transfers To A Bank Card Cost 0.5% To 1.75%. Cash App Limits Unverified Accounts To $250 Per 7 Days. Verifying Your SSN Raises The Limit To $7,500 Per Week." },
+  { id: 'applepay-tips', category: 'payments', q: 'Apple Pay Tips — Requirements And Limits', a: 'Apple Pay Requires An iPhone Or Apple Watch With A Card Added To Wallet. Send Instantly Via The Apple Pay App. Limits: $3,000 Per Transaction, $10,000 Per Week For Verified Users. The Recipient Needs Apple Pay Too — Otherwise Use Apple Cash.' },
+  { id: 'applecash-tips', category: 'payments', q: 'Apple Cash Tips — Age, Verification, US-Only', a: 'Apple Cash Is US-Only And Requires You To Be 18 Or Older With A Verified iCloud Account And Two-Factor Enabled. Sends Are Instant Inside Messages. Daily Limit Is $10,000 For Verified Accounts. Recipient Needs Apple Cash Set Up On Their Side Too.' },
+  { id: 'paypal-tips', category: 'payments', q: 'PayPal Tips — F&F Vs. G&S And International', a: 'Friends & Family Avoids Fees But Has No Buyer Protection. Goods & Services Charges The Recipient About 3.49% + $0.49 But Adds Resolution Center Protection. International Sends Add A Currency Conversion Fee Of 3% To 4%. Send To The Email Your Agent Provides.' },
+  { id: 'googlewallet-tips', category: 'payments', q: 'Google Wallet Tips — Setup And Region', a: 'Google Wallet Send Money Is Available In The US, UK, And India. You Need A Google Account With A Linked Card Or Bank. Transfers Between Wallet Users Are Free And Instant. The Recipient Has To Have Google Wallet Set Up To Receive.' },
+  { id: 'wise-tips', category: 'payments', q: 'Wise Tips — International And Multi-Currency', a: 'Wise (Formerly TransferWise) Is Best For International Or Cross-Currency Sends. Fees Are Typically 0.4% To 1.5% Vs. 3% To 6% At A Bank. Both Sides Need A Wise Account. Domestic US Wise To Wise Is Instant And Free.' },
+  { id: 'chime-tips', category: 'payments', q: 'Chime Tips — Pay Anyone And Speed', a: 'Chime Pay Anyone Is Instant Between Chime Accounts (Free). To A Non-Chime Bank, It Goes Via ACH And Takes 1 To 3 Business Days. Daily Limits Default To $2,000 But Can Be Raised After Verification.' },
+  { id: 'refund-timing-per-app', category: 'returns', q: 'How Long Does A Refund Take To Land In My Payment App?', a: 'Depends On The Method. Zelle, Cash App, Venmo, Apple Cash: Usually Within 24 Hours After Your Agent Sends. Apple Pay, Google Wallet: 1 To 3 Business Days. PayPal: 3 To 5 Business Days. Wise: 1 To 2 Business Days Domestic, 2 To 5 International. Chime: Same Day Chime To Chime, 1 To 3 Days To A Non-Chime Bank. Store Credit Lands Instantly In Your Wallet.' },
+  { id: 'account-locked-recovery', category: 'account', q: "My Account Says It's Locked — How Do I Recover It?", a: 'Locked Accounts Are Usually The Result Of Multiple Failed Login Attempts Or A Security Concern. Wait 15 Minutes Then Try Again, Or Use Forgot Password To Reset Via Email. If You Are Still Locked Out, Contact Support With Your Email And We Will Verify Your Identity And Unlock.', links: [{ label: 'Forgot Password', href: '/forgot-password' }] },
+  { id: 'cart-reminder-why', category: 'notifications', q: 'Why Am I Being Reminded About My Cart?', a: 'If You Have Items In Your Cart But Have Not Checked Out, We Send A Single Reminder About 6 Hours Later So They Do Not Get Lost. You Can Turn Cart Reminders Off Under Account → Notifications → Cart Reminder.', links: [{ label: 'Notification Settings', href: '/account?tab=notifications' }] },
+  { id: 'support-hours', category: 'support', q: 'What Are Support Hours?', a: 'Support Is Available 7 Days A Week, 8 AM To 10 PM Eastern. After-Hours Messages Are Queued And Picked Up First Thing The Next Morning. Critical Order Issues (Damaged, Wrong Item, Stuck Payment) Are Prioritized And May Be Touched After Hours.' },
+  { id: 'support-sla', category: 'support', q: 'How Fast Will Support Respond?', a: 'Within 1 Hour During Business Hours For Most Tickets. Critical Order Issues (Damaged, Wrong Item, Stuck Payment) Are Prioritized And Usually Answered Within 15 Minutes. Outside Business Hours, Expect A Reply The Next Business Day Morning.' },
+  { id: 'support-escalation', category: 'support', q: 'How Do I Escalate A Stuck Issue?', a: "Open A Support Chat And Include The Word 'Escalate' Anywhere In Your Message. Your Ticket Is Flagged For Lead-Tier Support Review. If The Lead Cannot Resolve, It Goes To Engineering. We Aim For All Escalations To Be Touched Within 4 Business Hours.", links: [{ label: 'Open Messenger', href: '/messenger' }] },
+  { id: 'support-widget-everywhere', category: 'support', q: 'Where Can I Open A Support Chat From?', a: 'Three Places: The Help & Support Page (Start A Support Chat At The Top), The Customer Support Widget In The Bottom-Left Corner Of Every Page, Or The Order Detail Page (Contact Support About This Order Button).' },
+  { id: 'lot-lookup-for-verification', category: 'compounds', q: 'Can I Verify My Lot Number With The Manufacturer?', a: "Your COA Document Includes The Lot Number And Manufacturer Reference. Cross-Reference Against The Manufacturer's Public Lot Database If They Offer One. We Do Not Resell Counterfeit Lots — Every Lot Has A Matching COA Issued By A Third-Party Lab. If You Suspect A Mismatch, Open A Support Chat With Photos Of The Vial And The COA." },
+  { id: 'agent-storefront-offline', category: 'orders', q: "My Agent's Storefront Is Offline — What Happens To My Orders?", a: 'Pending Orders Stay Open And Can Still Be Fulfilled By Your Agent (Or Admin On Their Behalf). New Orders Cannot Be Placed Until The Storefront Is Reactivated. If The Storefront Is Permanently Closed, Admin Reassigns You To Another Agent And Pending Orders Are Refunded Or Reissued.' },
+  { id: 'multi-currency', category: 'pricing', q: 'Do You Support Currencies Other Than USD?', a: 'All Prices Are Displayed In USD. International Agents May Settle With You In Their Local Currency Off-Platform; The Order Itself Remains Booked In USD. We Are Not A Currency Conversion Service — Use Wise Or Your Bank For Conversions.' },
+  { id: 'pwa-install-failed', category: 'mobile', q: 'I Tapped Install But Nothing Happened — Why?', a: 'iOS Safari Requires The Share Icon (Square With Up Arrow) → Add To Home Screen. Android Chrome Shows An Install Prompt In The Menu (Three Dots). If The Option Is Missing, Try Reloading The Page Or Make Sure You Have Visited Pepnationlab.com Twice In The Last 7 Days.' },
+  { id: 'pwa-install-button-missing', category: 'mobile', q: 'The Install App Button Is Missing — Where Is It?', a: 'Install Eligibility Requires HTTPS (Always On), A Valid Web App Manifest (Always On), And A Visit Threshold On Android Chrome (Typically 2 Visits 5 Minutes Apart). On iOS Safari, Use Share → Add To Home Screen Manually — Apple Does Not Show An Install Prompt.' },
+  { id: 'platform-times-in-utc', category: 'notifications', q: 'Why Do Cron Times And Statements Show As UTC?', a: 'All Platform Timestamps Are UTC By Default So Buyers And Agents In Different Time Zones See The Same Reference. Your Account Profile Lets You Pick A Display Time Zone — The Database Stays UTC, And Pages Convert On Render.' },
+
+  // R28 — Admin Tools (admin audience)
+  { id: 'admin-impersonation', category: 'admin', audience: 'admin', q: 'How Do I Impersonate A User For Support?', a: "Admin Dashboard → Users → Pick A User → Impersonate. Your Session Switches To That User's View For 30 Minutes. All Actions Are Logged In admin_audit_log. End Impersonation From The Banner At The Top Of Every Page." },
+  { id: 'admin-mark-paid', category: 'admin', audience: 'admin', q: 'How Do I Mark An Order As Paid?', a: 'Admin Dashboard → Orders → Pick The Order → Mark Paid. Pick The Payment Method And A Reference (Transaction ID, Receipt Number). The Order Moves Out Of Pending Customer Payment And The Buyer Is Notified.' },
+  { id: 'admin-catalog-risk-audit', category: 'admin', audience: 'admin', q: 'What Is The Catalog Risk Audit?', a: 'Admin Dashboard → Catalog Risk. Scores Every Compound Against The Knowledge Base (Risk Level, Reasons, Recommended Action). One-Click Restrict (Hide From Storefronts) Or Remove (Block Sale). Every Action Is Audited In admin_audit_log.' },
+  { id: 'admin-product-ban', category: 'admin', audience: 'admin', q: 'How Do I Ban A Product Platform-Wide?', a: 'Admin Dashboard → Products → Pick A Product → Ban. Sets is_banned=true. A Database Trigger Prevents Adding The Product To Any Cart And A Checkout Re-Check Catches In-Flight Orders. Reactivate The Same Way.' },
+  { id: 'admin-impersonation-audit', category: 'admin', audience: 'admin', q: 'Where Is Impersonation Activity Logged?', a: 'All Impersonation Sessions Are Recorded In admin_audit_log With Start Time, End Time, Target User ID, And A Hash Of The Acting Admin. Available Under Admin Dashboard → Audit Log.' },
+  { id: 'admin-mfa-required', category: 'admin', audience: 'admin', q: 'Is MFA Required For Admin Accounts?', a: 'Yes. Admin Accounts Cannot Sign In Without Two-Factor Authentication Enabled. The Login Flow Forces You To Enroll On Your Next Sign-In If You Have Not Already.' },
 ];
 
 /**
- * Filter the catalog for a given viewer role. Admins and agents see
- * everything; researchers see only audience='all' items.
+ * Filter the catalog for a given viewer role.
+ *   - 'all'   → everyone
+ *   - 'agent' → agent / super_agent / admin
+ *   - 'admin' → admin only
  */
 export function visibleFaq(role: string | null | undefined): FaqItem[] {
   const isAgentTier =
     role === 'agent' || role === 'super_agent' || role === 'admin';
-  return FAQ_ITEMS.filter((item) =>
-    item.audience === 'agent' ? isAgentTier : true,
-  );
+  const isAdmin = role === 'admin';
+  return FAQ_ITEMS.filter((item) => {
+    if (item.audience === 'admin') return isAdmin;
+    if (item.audience === 'agent') return isAgentTier;
+    return true;
+  });
 }
 
 /**
@@ -333,9 +377,12 @@ export function visibleFaq(role: string | null | undefined): FaqItem[] {
 export function visibleCategories(role: string | null | undefined): FaqCategory[] {
   const isAgentTier =
     role === 'agent' || role === 'super_agent' || role === 'admin';
-  return FAQ_CATEGORIES.filter((cat) =>
-    cat.audience === 'agent' ? isAgentTier : true,
-  );
+  const isAdmin = role === 'admin';
+  return FAQ_CATEGORIES.filter((cat) => {
+    if (cat.audience === 'admin') return isAdmin;
+    if (cat.audience === 'agent') return isAgentTier;
+    return true;
+  });
 }
 
 /**
@@ -354,4 +401,66 @@ export function searchFaq(query: string, items: FaqItem[]): Set<string> {
     }
   }
   return hits;
+}
+
+/**
+ * suggestFaq — score the catalog against a free-form prompt (e.g. what a
+ * buyer is typing into the messenger composer or the support widget) and
+ * return the top N matches with a confidence score.
+ *
+ * Scoring (simple, intentionally explainable):
+ *   - +5  if a full question keyword phrase appears in the prompt
+ *   - +3  per token that hits the question text
+ *   - +1  per token that hits the answer body
+ *   - clamped to [0, 100]
+ *
+ * Usage:
+ *   const hints = suggestFaq("my order is stuck", visibleFaq(role), 3);
+ *   // → [{ item, score }, ...] sorted desc, only score > 4
+ */
+export interface FaqSuggestion {
+  item: FaqItem;
+  score: number;
+}
+
+export function suggestFaq(
+  prompt: string,
+  items: FaqItem[],
+  limit = 3,
+): FaqSuggestion[] {
+  const text = prompt.trim().toLowerCase();
+  if (text.length < 4) return [];
+  const tokens = text.split(/\s+/).filter((t) => t.length >= 3);
+  if (tokens.length === 0) return [];
+
+  const scored: FaqSuggestion[] = [];
+  for (const item of items) {
+    const qLower = item.q.toLowerCase();
+    const aLower = item.a.toLowerCase();
+    let score = 0;
+
+    // Phrase bonus — entire question stem in the prompt
+    if (text.includes(qLower.replace(/[?!.,]/g, '').toLowerCase().slice(0, 30))) {
+      score += 5;
+    }
+
+    // Per-token contribution
+    for (const tk of tokens) {
+      if (qLower.includes(tk)) score += 3;
+      else if (aLower.includes(tk)) score += 1;
+    }
+
+    if (score > 4) scored.push({ item, score: Math.min(score, 100) });
+  }
+
+  scored.sort((a, b) => b.score - a.score);
+  return scored.slice(0, limit);
+}
+
+/**
+ * Convenience helper: deep-link URL for a given item id.
+ * Use this in HelpHint, support replies, sitemap, etc.
+ */
+export function faqDeepLink(itemId: string): string {
+  return `/account/help#faq-${itemId}`;
 }

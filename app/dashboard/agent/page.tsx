@@ -145,7 +145,8 @@ export default async function AgentDashboardPage() {
         full_name: profile.full_name,
         role: profile.role,
         tier: profile.tier,
-        is_super_agent: profile.is_super_agent
+        is_super_agent: profile.is_super_agent,
+        is_sub_agent: profile.is_sub_agent
       }}
       initialAgentProfile={agentProfile}
       initialResearchers={researchers}
