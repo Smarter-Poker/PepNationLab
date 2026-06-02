@@ -4,9 +4,9 @@
  * ProductMonograph — research access shown inside the storefront product detail
  * modal. For the enhanced (Tirzepatide) layout, the research data is reached
  * through five premium brushed-metal buttons — Research, Findings, Preparation,
- * Spec Sheet, FAQs — laid out in an even auto-fit grid so every label is
- * perfectly centered. Each button opens the ProductResearchPanel INSIDE the
- * popup showing ONLY that one section.
+ * Spec Sheet, FAQs — laid out on a single row (5-column grid, clamped font) so
+ * every label stays on one line and centered. Each button opens the
+ * ProductResearchPanel INSIDE the popup showing ONLY that one section.
  *
  * Non-enhanced compounds keep the compact collapsed summary that links out to
  * /research/[slug] until the new layout is rolled out platform-wide.
@@ -40,8 +40,8 @@ const premiumMetalButton: React.CSSProperties = {
   alignItems: 'center',
   justifyContent: 'center',
   textAlign: 'center',
-  padding: '14px 10px',
-  borderRadius: 12,
+  padding: '13px 4px',
+  borderRadius: 11,
   cursor: 'pointer',
   border: '1px solid rgba(190,200,210,0.30)',
   background: 'linear-gradient(180deg, #34424f 0%, #1d2630 55%, #151d26 100%)',
@@ -49,8 +49,8 @@ const premiumMetalButton: React.CSSProperties = {
     'inset 0 1px 0 rgba(255,255,255,0.22), inset 0 -2px 4px rgba(0,0,0,0.5), 0 4px 12px rgba(0,0,0,0.5)',
   color: '#EAF2F8',
   fontWeight: 800,
-  fontSize: '0.85rem',
-  letterSpacing: '0.02em',
+  fontSize: 'clamp(0.62rem, 2.7vw, 0.8rem)',
+  letterSpacing: 0,
   whiteSpace: 'nowrap',
   lineHeight: 1,
 };
@@ -70,12 +70,12 @@ export default function ProductMonograph({ compound, primaryColor = '#00C4BC' }:
   if (enhanced) {
     return (
       <div style={{ marginBottom: 'var(--space-6)' }}>
-        {/* Premium metal buttons in an even auto-fit grid (centered labels) */}
+        {/* Premium metal buttons on a single row (5 columns, centered labels) */}
         <div
           style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(96px, 1fr))',
-            gap: 10,
+            gridTemplateColumns: 'repeat(5, 1fr)',
+            gap: 6,
           }}
         >
           {PANEL_BUTTONS.map((b) => (

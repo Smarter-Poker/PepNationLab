@@ -13,13 +13,6 @@ export interface RecommendationItem {
   retail_price?: number;
   unit_size?: string | null;
   unit_measure?: string | null;
-  /**
-   * Optional pre-resolved href. Use this when the caller is a Server
-   * Component — passing a `buildHref` function across the server-to-client
-   * boundary throws "Functions cannot be passed directly to Client
-   * Components". Client-side callers can keep using `buildHref`.
-   */
-  href?: string | null;
 }
 
 interface Props {
@@ -30,6 +23,12 @@ interface Props {
   onSelect?: (productId: string) => void;
   buildHref?: (productId: string) => string | null;
   hideWhenEmpty?: boolean;
+}
+
+// Bac. water is sold only in fixed 10-packs; surface it as a 10x pack with the
+// 10x price wherever it is shown as a recommendation.
+function isBacWater(item: RecommendationItem): boolean {
+  return item.slug === 'bac-water' || /bac\.?\s*water/i.test(item.name || '');
 }
 
 const cardBase: React.CSSProperties = {
@@ -112,9 +111,18 @@ export default function RecommendationStrip({
               />
             ))
           : recommendations.map((item) => {
-              const displayName = item.unit_size
+              const bw = isBacWater(item);
+              const displayName = bw
+                ? 'Bac. Water 10x 10ml'
+                : item.unit_size
                 ? `${item.name} ${item.unit_size}${item.unit_measure || ''}`
                 : item.name;
+              const displayPrice =
+                typeof item.retail_price === 'number'
+                  ? bw
+                    ? item.retail_price * 10
+                    : item.retail_price
+                  : undefined;
 
               const inner = (
                 <>
@@ -170,7 +178,7 @@ export default function RecommendationStrip({
                   >
                     {displayName}
                   </div>
-                  {typeof item.retail_price === 'number' && item.retail_price > 0 ? (
+                  {typeof displayPrice === 'number' && displayPrice > 0 ? (
                     <div
                       style={{
                         fontSize: '0.82rem',
@@ -179,7 +187,7 @@ export default function RecommendationStrip({
                         fontFamily: 'var(--font-brand)',
                       }}
                     >
-                      ${item.retail_price.toFixed(2)}
+                      ${displayPrice.toFixed(2)}
                     </div>
                   ) : item.category ? (
                     <div style={{ fontSize: '0.7rem', color: 'var(--grey-500)' }}>
@@ -188,16 +196,15 @@ export default function RecommendationStrip({
                   ) : null}
                 </>
               );
-              // Per-item href (server-component safe) takes precedence over
-              // the client-side buildHref function prop.
-              const resolvedHref =
-                (item.href && item.href.length > 0) ? item.href : (buildHref ? buildHref(item.id) : null);
-              if (resolvedHref) {
-                return (
-                  <a key={item.id} href={resolvedHref} style={cardBase}>
-                    {inner}
-                  </a>
-                );
+              if (buildHref) {
+                const href = buildHref(item.id);
+                if (href) {
+                  return (
+                    <a key={item.id} href={href} style={cardBase}>
+                      {inner}
+                    </a>
+                  );
+                }
               }
               return (
                 <button

@@ -9,7 +9,11 @@
  * section (`initialSection`): Research, Findings, Preparation, Spec Sheet, FAQs.
  * There is no cross-section tab nav — the back arrow returns to the modal.
  *
- * Research-Use-Only. Storage temperatures render in Fahrenheit.
+ * Links that leave the store (full research page, printable spec sheet) open in
+ * a NEW TAB so the store and the product modal stay intact behind the panel.
+ *
+ * Research-Use-Only. Storage temperatures render in Fahrenheit. FAQ answers are
+ * stripped of em/en dashes.
  */
 import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
@@ -55,6 +59,11 @@ function toFahrenheit(value?: string | null): string | null {
     return `${f}°F`;
   });
   return out;
+}
+
+// Ban em/en dashes from FAQ copy (platform request). Replace with a comma.
+function noEmDash(value: string): string {
+  return value.replace(/\s*[—–]\s*/g, ', ');
 }
 
 function Para({ children }: { children: React.ReactNode }) {
@@ -117,19 +126,20 @@ export default function ProductResearchPanel({ compound, primaryColor = '#00C4BC
   if (h.storage_temp) prepBits.push(`Stored At ${toFahrenheit(h.storage_temp)}`);
   if (shelfDays != null) prepBits.push(`Used Within ${shelfDays} Days Of Reconstitution`);
 
-  const faqs: { q: string; a: string }[] = [];
-  if (compound.plain_summary) faqs.push({ q: `What Is ${compound.display_name}?`, a: compound.plain_summary });
-  if (compound.mechanism) faqs.push({ q: 'How Does It Work?', a: compound.mechanism });
-  if (compound.studied_for.length > 0) faqs.push({ q: 'What Is It Studied For?', a: compound.studied_for.join(', ') + '.' });
-  if (compound.benefits) faqs.push({ q: 'What Findings Have Been Reported In Research?', a: compound.benefits });
-  if (compound.side_effects) faqs.push({ q: 'What Side Effects Have Been Reported?', a: compound.side_effects });
-  if (compound.warnings) faqs.push({ q: 'What Are The Warnings And Limitations?', a: compound.warnings });
-  if (prepBits.length > 0) faqs.push({ q: 'How Should It Be Stored And Prepared?', a: prepBits.join('; ') + '.' });
-  if (tier.blurb) faqs.push({ q: `What Does The ${tier.label} Evidence Tier Mean?`, a: tier.blurb });
+  const faqsRaw: { q: string; a: string }[] = [];
+  if (compound.plain_summary) faqsRaw.push({ q: `What Is ${compound.display_name}?`, a: compound.plain_summary });
+  if (compound.mechanism) faqsRaw.push({ q: 'How Does It Work?', a: compound.mechanism });
+  if (compound.studied_for.length > 0) faqsRaw.push({ q: 'What Is It Studied For?', a: compound.studied_for.join(', ') + '.' });
+  if (compound.benefits) faqsRaw.push({ q: 'What Findings Have Been Reported In Research?', a: compound.benefits });
+  if (compound.side_effects) faqsRaw.push({ q: 'What Side Effects Have Been Reported?', a: compound.side_effects });
+  if (compound.warnings) faqsRaw.push({ q: 'What Are The Warnings And Limitations?', a: compound.warnings });
+  if (prepBits.length > 0) faqsRaw.push({ q: 'How Should It Be Stored And Prepared?', a: prepBits.join('; ') + '.' });
+  if (tier.blurb) faqsRaw.push({ q: `What Does The ${tier.label} Evidence Tier Mean?`, a: tier.blurb });
   if (compound.regulatory || compound.wada_status) {
-    faqs.push({ q: 'What Is Its Regulatory And Anti-Doping Status?', a: `${compound.regulatory ? compound.regulatory + ' ' : ''}${wadaLabel(compound.wada_status)}.` });
+    faqsRaw.push({ q: 'What Is Its Regulatory And Anti-Doping Status?', a: `${compound.regulatory ? compound.regulatory + ' ' : ''}${wadaLabel(compound.wada_status)}.` });
   }
-  faqs.push({ q: 'Is It Approved For Human Use?', a: 'No. Every Product On Pep Nation Lab Is Sold Strictly For Laboratory And Research Use Only — Not For Human Or Veterinary Use.' });
+  faqsRaw.push({ q: 'Is It Approved For Human Use?', a: 'No. Every Product On Pep Nation Lab Is Sold Strictly For Laboratory And Research Use Only. It Is Not For Human Or Veterinary Use.' });
+  const faqs = faqsRaw.map((f) => ({ q: noEmDash(f.q), a: noEmDash(f.a) }));
 
   return (
     <div
@@ -308,6 +318,8 @@ export default function ProductResearchPanel({ compound, primaryColor = '#00C4BC
                 </div>
                 <Link
                   href={`/research/${compound.slug}/spec`}
+                  target="_blank"
+                  rel="noopener noreferrer"
                   style={{
                     display: 'inline-flex',
                     alignItems: 'center',
@@ -349,25 +361,28 @@ export default function ProductResearchPanel({ compound, primaryColor = '#00C4BC
                     </div>
                   ))}
                 </div>
-                <Link
-                  href={`/research/${compound.slug}`}
-                  style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: 8,
-                    marginTop: 'var(--space-5)',
-                    padding: '12px 18px',
-                    borderRadius: 'var(--radius-md)',
-                    background: primaryColor,
-                    color: '#04221F',
-                    fontWeight: 800,
-                    fontSize: '0.88rem',
-                    textDecoration: 'none',
-                  }}
-                >
-                  View The Full {compound.display_name} Research Page
-                  <ArrowRight size={15} aria-hidden="true" />
-                </Link>
+                <div style={{ display: 'flex', justifyContent: 'center', marginTop: 'var(--space-5)' }}>
+                  <Link
+                    href={`/research/${compound.slug}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 8,
+                      padding: '12px 20px',
+                      borderRadius: 'var(--radius-md)',
+                      background: primaryColor,
+                      color: '#04221F',
+                      fontWeight: 800,
+                      fontSize: '0.88rem',
+                      textDecoration: 'none',
+                    }}
+                  >
+                    View The Full {compound.display_name} Research Page
+                    <ArrowRight size={15} aria-hidden="true" />
+                  </Link>
+                </div>
               </div>
             )}
           </section>
