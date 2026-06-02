@@ -177,9 +177,9 @@ export default function AgentDownlineInvoices({ isSuperAgent }: { isSuperAgent: 
       
       {!isSuperAgent && (
         <div style={{ marginTop: 'var(--space-6)', padding: 'var(--space-4)', backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: 'var(--radius-md)' }}>
-          <h4 style={{ color: 'var(--white)', marginBottom: 'var(--space-2)' }}>How to pay</h4>
+          <h4 style={{ color: 'var(--white)', marginBottom: 'var(--space-2)' }}>How To Pay</h4>
           <p style={{ color: 'var(--silver)', fontSize: '0.9rem', lineHeight: 1.5 }}>
-            Please remit payment directly to your Super Agent using their preferred payment methods. Your Super Agent will mark your invoice as paid once funds are received.
+            Please Remit Payment Directly To Your Super Agent Using Their Preferred Payment Methods. Your Super Agent Will Mark Your Invoice As Paid Once Funds Are Received.
           </p>
         </div>
       )}
