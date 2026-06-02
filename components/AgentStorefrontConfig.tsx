@@ -3,6 +3,7 @@
 import React from 'react';
 import { toast } from 'sonner';
 import { createClient } from '@/lib/supabase/client';
+import { useAvailability, availabilityMessage } from '@/lib/useAvailability';
 
 interface AgentStorefrontConfigProps {
   displayName: string;
@@ -40,6 +41,25 @@ export default function AgentStorefrontConfig({
 }: AgentStorefrontConfigProps) {
   const [loading, setLoading] = React.useState(false);
 
+  // Live uniqueness checks. excludeId is THIS storefront's row id so editing
+  // the existing slug/display_name back to itself does not flag a collision.
+  const slugCheck = useAvailability({ field: 'slug', value: slug, excludeId: agentId });
+  const displayNameCheck = useAvailability({ field: 'display_name', value: displayName, excludeId: agentId });
+  const slugMsg = availabilityMessage(slugCheck);
+  const displayNameMsg = availabilityMessage(displayNameCheck);
+
+  // Save is blocked when EITHER live check is unhappy. 'checking' is
+  // intentionally a soft block — once the debounce settles it transitions to
+  // available/taken and the button re-enables.
+  const blockSave =
+    loading ||
+    slugCheck.status === 'taken' ||
+    slugCheck.status === 'invalid' ||
+    slugCheck.status === 'checking' ||
+    displayNameCheck.status === 'taken' ||
+    displayNameCheck.status === 'invalid' ||
+    displayNameCheck.status === 'checking';
+
   // Warehouse address local state — mirrors agent_profiles.warehouse_address.
   const [whName, setWhName] = React.useState(warehouseAddress?.name ?? '');
   const [whStreet1, setWhStreet1] = React.useState(warehouseAddress?.street1 ?? '');
@@ -73,6 +93,17 @@ export default function AgentStorefrontConfig({
 
     if (!/^[a-z0-9\-]+$/.test(cleanSlug)) {
       toast.error('Slug Must Contain Only Lowercase Letters, Numbers, And Hyphens.');
+      return;
+    }
+
+    // Defense in depth — if the live check flagged either field as taken,
+    // refuse the save without round-tripping to the server.
+    if (slugCheck.status === 'taken' || slugCheck.status === 'invalid') {
+      toast.error(slugCheck.reason || 'Slug Is Already Taken');
+      return;
+    }
+    if (displayNameCheck.status === 'taken' || displayNameCheck.status === 'invalid') {
+      toast.error(displayNameCheck.reason || 'Display Name Is Already Taken');
       return;
     }
 
@@ -124,6 +155,12 @@ export default function AgentStorefrontConfig({
         .eq('id', agentId);
 
       if (updateError) {
+        // 23505 = unique_violation. The DB has a case-insensitive unique index
+        // on lower(trim(display_name)); surface it with the same wording the
+        // live check uses so the message stays consistent.
+        if ((updateError as any).code === '23505') {
+          throw new Error('Display Name Is Already Taken — Try Another.');
+        }
         throw new Error(updateError.message);
       }
       toast.success('Storefront Configuration Updated Successfully');
@@ -228,14 +265,51 @@ export default function AgentStorefrontConfig({
           <div className="grid-2">
             <div className="form-group" style={{ marginTop: 0 }}>
               <label className="form-label">Display Name</label>
-              <input type="text" className="form-input" value={displayName} onChange={(e) => setDisplayName(e.target.value)} required />
+              <input
+                type="text"
+                className="form-input"
+                value={displayName}
+                onChange={(e) => setDisplayName(e.target.value)}
+                aria-invalid={displayNameCheck.status === 'taken' || displayNameCheck.status === 'invalid' || undefined}
+                aria-describedby="storefront-display-name-status"
+                required
+              />
+              {displayNameMsg && (
+                <div
+                  id="storefront-display-name-status"
+                  role="status"
+                  aria-live="polite"
+                  style={{ marginTop: 6, fontSize: '0.78rem', color: displayNameMsg.color }}
+                >
+                  {displayNameMsg.text}
+                </div>
+              )}
             </div>
             <div className="form-group" style={{ marginTop: 0 }}>
               <label className="form-label">URL Slug</label>
               <div style={{ display: 'flex', alignItems: 'center', height: 46, background: 'var(--surface-3)', borderRadius: 'var(--radius-md)', border: '1px solid rgba(255,255,255,0.1)', paddingLeft: 'var(--space-3)' }}>
                 <span style={{ fontSize: '0.85rem', color: 'var(--grey-400)' }}>pepnationlab.com/</span>
-                <input type="text" className="form-input" value={slug} onChange={(e) => setSlug(e.target.value)} style={{ background: 'transparent', border: 'none', boxShadow: 'none', height: '100%', paddingTop: 0, paddingBottom: 0 }} required />
+                <input
+                  type="text"
+                  className="form-input"
+                  value={slug}
+                  onChange={(e) => setSlug(e.target.value)}
+                  aria-invalid={slugCheck.status === 'taken' || slugCheck.status === 'invalid' || undefined}
+                  aria-describedby="storefront-slug-status"
+                  style={{ background: 'transparent', border: 'none', boxShadow: 'none', height: '100%', paddingTop: 0, paddingBottom: 0 }}
+                  required
+                />
               </div>
+              {slugMsg && (
+                <div
+                  id="storefront-slug-status"
+                  role="status"
+                  aria-live="polite"
+                  style={{ marginTop: 6, fontSize: '0.78rem', color: slugMsg.color }}
+                >
+                  {slugMsg.text}
+                </div>
+              )}
             </div>
           </div>
 
@@ -297,14 +371,14 @@ export default function AgentStorefrontConfig({
             <button
               type="button"
               onClick={handleUpdateProfile}
-              disabled={loading}
+              disabled={blockSave}
               className="btn-neon-cyan"
               style={{
                 minWidth: 160,
                 padding: '10px 24px',
                 fontSize: '1rem',
-                cursor: loading ? 'not-allowed' : 'pointer',
-                opacity: loading ? 0.7 : 1,
+                cursor: blockSave ? 'not-allowed' : 'pointer',
+                opacity: blockSave ? 0.7 : 1,
               }}
             >
               {loading ? 'Saving Changes...' : 'Save Configuration'}
@@ -376,14 +450,14 @@ export default function AgentStorefrontConfig({
             <button
               type="button"
               onClick={handleUpdateProfile}
-              disabled={loading}
+              disabled={blockSave}
               className="btn-neon-cyan"
               style={{
                 minWidth: 160,
                 padding: '10px 24px',
                 fontSize: '1rem',
-                cursor: loading ? 'not-allowed' : 'pointer',
-                opacity: loading ? 0.7 : 1,
+                cursor: blockSave ? 'not-allowed' : 'pointer',
+                opacity: blockSave ? 0.7 : 1,
               }}
             >
               {loading ? 'Saving Changes...' : 'Save Warehouse Details'}
