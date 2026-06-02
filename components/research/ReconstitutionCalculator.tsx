@@ -15,7 +15,14 @@ import { drawVolumeMl, reconstitutionVolumeMl } from '@/lib/compounds';
 
 const EXAMPLE_DRAW_MASSES_MG = [0.25, 0.5, 1, 2, 5];
 
-export default function ReconstitutionCalculator({ defaultMassMg }: { defaultMassMg?: number }) {
+export default function ReconstitutionCalculator({
+  defaultMassMg,
+  onAddDiluent,
+}: {
+  defaultMassMg?: number;
+  /** When provided, the diluent CTA becomes an "Add Bacteriostatic Water To Cart" button. */
+  onAddDiluent?: () => void;
+}) {
   const [mode, setMode] = useState<'diluent' | 'target'>('diluent');
   const [massMg, setMassMg] = useState<string>(defaultMassMg != null ? String(defaultMassMg) : '10');
   const [diluentMl, setDiluentMl] = useState<string>('2');
@@ -183,12 +190,35 @@ export default function ReconstitutionCalculator({ defaultMassMg }: { defaultMas
         </p>
       )}
 
-      <p style={{ marginTop: 'var(--space-3)', fontSize: '0.82rem', color: 'var(--silver)' }}>
-        Need Diluent?{' '}
-        <Link href="/research/bac-water" style={{ color: 'var(--teal)', fontWeight: 700 }}>
-          See Bacteriostatic Water.
-        </Link>
-      </p>
+      {onAddDiluent ? (
+        <button
+          type="button"
+          onClick={onAddDiluent}
+          style={{
+            marginTop: 'var(--space-3)',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 8,
+            padding: '10px 16px',
+            borderRadius: 'var(--radius-md)',
+            background: 'var(--teal)',
+            color: '#04221F',
+            border: 'none',
+            fontWeight: 800,
+            fontSize: '0.85rem',
+            cursor: 'pointer',
+          }}
+        >
+          Add Bacteriostatic Water To Cart
+        </button>
+      ) : (
+        <p style={{ marginTop: 'var(--space-3)', fontSize: '0.82rem', color: 'var(--silver)' }}>
+          Need Diluent?{' '}
+          <Link href="/research/bac-water" style={{ color: 'var(--teal)', fontWeight: 700 }}>
+            See Bacteriostatic Water.
+          </Link>
+        </p>
+      )}
     </div>
   );
 }
