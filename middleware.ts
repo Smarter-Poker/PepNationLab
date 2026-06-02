@@ -44,6 +44,14 @@ const PUBLIC_ROUTES = [
   '/api/storefront/search',
   // Storefront recommendations ("You May Also Like") — public, rate-limited.
   '/api/storefront/recommendations',
+  // Research Library — public research-use-only compound education (detail,
+  // spec sheets, comparison, stacks, research-area hubs). Compounds RLS is
+  // public-read; /account/shelf-life stays auth-gated (not listed here).
+  '/research',
+  // Grounded Ask-the-Lab Q&A and cart compound-warning lookups — public,
+  // read-only, no dosing. (Shelf-life API is auth-gated, not listed here.)
+  '/api/research/ask',
+  '/api/research/cart-warnings',
   // Agent invitation redemption — the token in the URL is the credential.
   '/invite',
   '/api/agent-invitations/redeem',

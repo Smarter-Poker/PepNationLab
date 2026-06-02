@@ -2,6 +2,7 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import { useCart } from '@/components/CartContext';
+import CartWarnings from '@/components/research/CartWarnings';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { US_STATES } from '@/lib/us-states';
@@ -724,6 +725,10 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
           <strong>Order Minimum Not Met:</strong> This storefront requires an overall minimum order of {minOverallQty} items. You currently have {totalCartQty} item{totalCartQty !== 1 ? 's' : ''} in your cart. Please go back to the store and add more items before checking out.
         </div>
       )}
+
+      {/* Research-use-only compound warnings: WADA-prohibited items, stacked
+          pro-angiogenic / multiple GLP-1 agents, and cold-chain handling. */}
+      <CartWarnings productIds={cart.map((item) => item.id)} />
 
       {/* Stale cart warning — shown if the cart is older than 24 hours */}
       {cartIsStale && (
