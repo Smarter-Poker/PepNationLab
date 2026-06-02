@@ -147,25 +147,25 @@ interface GroupedProduct {
 }
 
 const POPULAR_ORDER: string[] = [
-  'Tirzepatide',                              // #1  - Mainstream Giant
-  'Semaglutide',                              // #2  - Household Name
-  'BPC 157',                                  // #3  - The Healing Standard
-  'CJC-1295 without DAC 5mg + IPA 5mg',      // #4  - Premier Anti-Aging Combo
-  'TB500 (Thymosin B4 Acetate)',              // #5  - Elite Recovery
-  'BPC 10mg + TB 10mg',                       // #6  - The "Wolverine" Blend
-  'GHK-CU',                                   // #7  - Cosmetics & Hair Leader
-  'Retatrutide',                              // #8  - Next-Gen Triple Agonist
-  'GLOW (TB10+BPC10+GHK50)',                  // #9  - Esthetic/Repair Stack
-  'PT-141',                                   // #10 - Lifestyle Standard
-  'Ipamorelin',                               // #12 - Core Growth Peptide
-  'KLOW (TB10+BPC10+GHK50+KPV10)',            // #13 - Advanced Evolution Stack
-  'Tesamorelin',                              // #14 - Visceral Fat Burner
-  'AOD9604',                                  // #15 - Pure Lipolysis
-  'Sermorelin Acetate',                       // #16 - Trusted Vintage Choice
-  'HGH Fragment 176-191',                     // #17 - Bodybuilding Staple
-  'KPV',                                      // #18 - GI & Autoimmune Specialist
-  'Semax',                                    // #19 - Nootropic Focus
-  'Selank',                                   // #20 - Nootropic Anxiety Relief
+  'Tirzepatide',
+  'Semaglutide',
+  'BPC 157',
+  'CJC-1295 without DAC 5mg + IPA 5mg',
+  'TB500 (Thymosin B4 Acetate)',
+  'BPC 10mg + TB 10mg',
+  'GHK-CU',
+  'Retatrutide',
+  'GLOW (TB10+BPC10+GHK50)',
+  'PT-141',
+  'Ipamorelin',
+  'KLOW (TB10+BPC10+GHK50+KPV10)',
+  'Tesamorelin',
+  'AOD9604',
+  'Sermorelin Acetate',
+  'HGH Fragment 176-191',
+  'KPV',
+  'Semax',
+  'Selank',
 ];
 
 function fuzzyMatch(query: string, text: string): boolean {
@@ -930,15 +930,21 @@ export default function AgentStorefrontGrid({
           background: linear-gradient(to top, #0a0f14 75%, transparent);
         }
         .sf-modal-actions .sf-close-btn {
-          padding: 11px 20px; background: transparent;
-          border: 1px solid rgba(255,255,255,0.18); border-radius: var(--radius-md);
-          color: var(--white); cursor: pointer; font-weight: 600; font-size: 0.85rem;
+          padding: 12px 20px;
+          background: linear-gradient(180deg, #2b3744 0%, #1b242e 100%);
+          border: 1px solid rgba(190,200,210,0.25);
+          box-shadow: inset 0 1px 0 rgba(255,255,255,0.14), 0 3px 10px rgba(0,0,0,0.5);
+          border-radius: var(--radius-md);
+          color: var(--white); cursor: pointer; font-weight: 700; font-size: 0.85rem;
           white-space: nowrap;
+          display: inline-flex; align-items: center; justify-content: center; text-align: center;
         }
         .sf-modal-actions .sf-add-btn {
           flex: 1; padding: 12px 20px; border-radius: var(--radius-md);
-          font-weight: 800; font-size: 0.9rem; border: none; cursor: pointer;
-          color: #fff; white-space: nowrap;
+          font-weight: 800; font-size: 0.9rem; border: 1px solid var(--teal); cursor: pointer;
+          color: #04221F; white-space: nowrap;
+          display: inline-flex; align-items: center; justify-content: center; text-align: center;
+          box-shadow: inset 0 1px 0 rgba(255,255,255,0.35), 0 6px 16px rgba(0,196,188,0.40);
         }
         @media (min-width: 600px) {
           .sf-modal-overlay { align-items: center; padding: 20px; overflow-y: auto; }
@@ -1704,7 +1710,9 @@ export default function AgentStorefrontGrid({
               className="sf-modal-sheet"
             >
               <div style={{
-                display: 'flex', alignItems: 'center', padding: '14px 18px 8px', flexShrink: 0,
+                position: 'sticky', top: 0, zIndex: 8,
+                display: 'flex', alignItems: 'center', padding: '14px 18px 10px',
+                background: 'linear-gradient(180deg, #131b24 78%, rgba(19,27,36,0))',
               }}>
                 <div style={{ flex: 1 }} />
                 <div style={{ width: 44, height: 4, borderRadius: 2, background: 'rgba(255,255,255,0.20)' }} aria-hidden="true" />
@@ -1713,23 +1721,24 @@ export default function AgentStorefrontGrid({
                     onClick={() => setDetailProduct(null)}
                     aria-label="Close"
                     style={{
-                      width: 32, height: 32, minWidth: 32, minHeight: 32,
+                      width: 34, height: 34, minWidth: 34, minHeight: 34,
                       borderRadius: '50%', padding: 0,
-                      background: 'rgba(255,255,255,0.08)',
-                      border: '1px solid rgba(255,255,255,0.22)',
+                      background: 'linear-gradient(180deg, #2b3744 0%, #1b242e 100%)',
+                      border: '1px solid rgba(190,200,210,0.30)',
+                      boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.18), 0 3px 9px rgba(0,0,0,0.5)',
                       cursor: 'pointer', display: 'flex', alignItems: 'center',
                       justifyContent: 'center', boxSizing: 'border-box', flexShrink: 0,
                       transition: 'background 0.15s ease',
                     }}
                     className="hover-bg-glass"
                   >
-                    <X size={14} stroke="#ffffff" strokeWidth={2.5} aria-hidden="true" />
+                    <X size={15} stroke="#ffffff" strokeWidth={2.5} aria-hidden="true" />
                   </button>
                 </div>
               </div>
               <div
                 className="sf-modal-img"
-                style={{ background: `radial-gradient(circle at 50% 50%, ${primaryColor}20 0%, var(--black) 100%)` }}
+                style={{ marginTop: -54, background: `radial-gradient(circle at 50% 50%, ${primaryColor}20 0%, var(--black) 100%)` }}
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
@@ -1941,12 +1950,18 @@ export default function AgentStorefrontGrid({
                                   key={v.id}
                                   onClick={() => setSelectedVariants(prev => ({ ...prev, [detailProduct.name]: v.id }))}
                                   style={{
-                                    flex: '1 1 calc(16.666% - 8px)', minWidth: 60, textAlign: 'center',
-                                    padding: '8px 4px', borderRadius: 'var(--radius-md)',
-                                    border: isSelected ? `2px solid ${primaryColor}` : '1px solid rgba(255,255,255,0.15)',
-                                    background: isSelected ? `${primaryColor}15` : 'transparent',
-                                    color: isSelected ? primaryColor : 'var(--grey-300)',
-                                    fontWeight: isSelected ? 700 : 500, fontSize: '0.85rem',
+                                    flex: '1 1 calc(16.666% - 8px)', minWidth: 60,
+                                    display: 'inline-flex', alignItems: 'center', justifyContent: 'center', textAlign: 'center',
+                                    padding: '10px 6px', borderRadius: 10,
+                                    border: isSelected ? `1px solid ${primaryColor}` : '1px solid rgba(190,200,210,0.22)',
+                                    background: isSelected
+                                      ? `linear-gradient(180deg, ${primaryColor}26 0%, ${primaryColor}10 100%)`
+                                      : 'linear-gradient(180deg, #2b3744 0%, #1b242e 100%)',
+                                    boxShadow: isSelected
+                                      ? `inset 0 1px 0 rgba(255,255,255,0.18), 0 0 0 1px ${primaryColor}55, 0 0 12px ${primaryColor}40`
+                                      : 'inset 0 1px 0 rgba(255,255,255,0.10), 0 2px 6px rgba(0,0,0,0.4)',
+                                    color: isSelected ? primaryColor : 'var(--grey-200)',
+                                    fontWeight: isSelected ? 800 : 600, fontSize: '0.85rem',
                                     cursor: 'pointer', transition: 'all 0.15s ease'
                                   }}
                                 >
@@ -1973,11 +1988,13 @@ export default function AgentStorefrontGrid({
                               onClick={() => setPendingQty(prev => Math.max(minQ, prev - step))}
                               disabled={qty <= minQ}
                               style={{
-                                width: 36, height: 36, borderRadius: 'var(--radius-md)',
-                                border: '1px solid rgba(255,255,255,0.2)', background: 'transparent',
+                                width: 38, height: 38, borderRadius: 10,
+                                border: '1px solid rgba(190,200,210,0.25)',
+                                background: 'linear-gradient(180deg, #2b3744 0%, #1b242e 100%)',
+                                boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.14), 0 2px 6px rgba(0,0,0,0.45)',
                                 color: qty <= minQ ? 'var(--grey-600)' : 'var(--white)',
                                 cursor: qty <= minQ ? 'not-allowed' : 'pointer',
-                                fontSize: '1.1rem', display: 'flex', alignItems: 'center', justifyContent: 'center'
+                                fontSize: '1.2rem', display: 'flex', alignItems: 'center', justifyContent: 'center'
                               }}
                             >-</button>
                             <input
@@ -2005,9 +2022,11 @@ export default function AgentStorefrontGrid({
                             <button
                               onClick={() => setPendingQty(prev => prev + step)}
                               style={{
-                                width: 36, height: 36, borderRadius: 'var(--radius-md)',
-                                border: 'none', background: primaryColor, color: 'var(--white)',
-                                cursor: 'pointer', fontSize: '1.1rem', fontWeight: 800,
+                                width: 38, height: 38, borderRadius: 10,
+                                border: `1px solid ${primaryColor}`,
+                                background: `linear-gradient(180deg, ${primaryColor} 0%, ${primaryColor}cc 100%)`,
+                                boxShadow: `inset 0 1px 0 rgba(255,255,255,0.35), 0 4px 12px ${primaryColor}55`,
+                                color: '#04221F', cursor: 'pointer', fontSize: '1.2rem', fontWeight: 800,
                                 display: 'flex', alignItems: 'center', justifyContent: 'center'
                               }}
                             >+</button>
@@ -2080,10 +2099,12 @@ export default function AgentStorefrontGrid({
                       type="button"
                       onClick={() => setShowBulkPricing(prev => !prev)}
                       style={{
-                        background: 'none', border: 'none', cursor: 'pointer', padding: 0,
-                        color: primaryColor, fontSize: '0.82rem', fontWeight: 600,
-                        display: 'flex', alignItems: 'center', gap: 6,
-                        textDecoration: 'underline', textUnderlineOffset: 3
+                        display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                        padding: '10px 16px', borderRadius: 10, cursor: 'pointer',
+                        border: `1px solid ${primaryColor}55`,
+                        background: 'linear-gradient(180deg, #2b3744 0%, #1b242e 100%)',
+                        boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.12), 0 3px 8px rgba(0,0,0,0.45)',
+                        color: primaryColor, fontSize: '0.82rem', fontWeight: 700,
                       }}
                     >
                       {showBulkPricing ? 'Hide Bulk Pricing' : 'See Bulk Pricing'}
@@ -2175,7 +2196,7 @@ export default function AgentStorefrontGrid({
                     </button>
                     <button
                       className="sf-add-btn"
-                      style={{ background: primaryColor }}
+                      style={{ background: `linear-gradient(180deg, ${primaryColor} 0%, ${primaryColor}cc 100%)` }}
                       onClick={() => {
                         const vId = selectedVariants[detailProduct.name] || detailProduct.defaultVariantId;
                         setCartItems(prev => ({
