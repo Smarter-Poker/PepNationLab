@@ -535,6 +535,10 @@ export default function Navbar({ onMenuClick, isOpen, title }: { onMenuClick?: (
             <>
               <div style={{ height: 1, background: 'rgba(255,255,255,0.06)', margin: 'var(--space-2) 0' }} />
 
+              <DrawerLink href="/account/help" label="Help & Support" onClick={closeDrawer}
+                icon={<svg {...IP}><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="4"/><line x1="4.93" y1="4.93" x2="9.17" y2="9.17"/><line x1="14.83" y1="14.83" x2="19.07" y2="19.07"/><line x1="14.83" y1="9.17" x2="19.07" y2="4.93"/><line x1="4.93" y1="19.07" x2="9.17" y2="14.83"/></svg>}
+              />
+
               <button
                 onClick={() => { closeDrawer(); handleSignOut(); }}
                 style={{
