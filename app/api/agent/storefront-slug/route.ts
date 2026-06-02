@@ -9,6 +9,11 @@ import { assertSameOrigin } from '@/lib/csrf';
  * Update the calling agent's storefront slug with server-side validation
  * and a clean 409 surface when the slug collides with another agent OR
  * the database CHECK denylist (reserved words like admin/api/login/etc).
+ *
+ * Optional body: `reservationToken` — when supplied (and unexpired), the
+ * server consumes it BEFORE the UPDATE so a competing simultaneous signup
+ * trying the same slug loses the race. The 90-second token TTL lets a slow
+ * typist finish their flow without losing the slug to a fast bot.
  */
 export async function POST(req: NextRequest) {
   const csrf = assertSameOrigin(req);
@@ -35,6 +40,10 @@ export async function POST(req: NextRequest) {
 
   const body = await req.json().catch(() => ({}));
   const raw = typeof body?.slug === 'string' ? body.slug : '';
+  const reservationToken =
+    typeof body?.reservationToken === 'string' && /^[0-9a-f-]{36}$/i.test(body.reservationToken)
+      ? body.reservationToken
+      : null;
   const cleanSlug = raw.trim().toLowerCase();
 
   // Sanitize: lower-kebab only ([a-z0-9-]).
@@ -54,6 +63,21 @@ export async function POST(req: NextRequest) {
 
   const supabase = await createServiceClient();
   const agentId = gate.user.id;
+
+  // If the caller has a reservation token, consume it now. The RPC marks the
+  // row consumed atomically; a stale or wrong-slug token returns false and
+  // we fall through to the regular write path (DB still enforces uniqueness).
+  if (reservationToken) {
+    try {
+      await supabase.rpc('consume_slug_reservation', {
+        p_token: reservationToken,
+        p_field: 'slug',
+        p_normalized: cleanSlug,
+      });
+    } catch (err) {
+      console.warn('[storefront-slug] consume_slug_reservation failed:', err);
+    }
+  }
 
   const { data, error } = await supabase
     .from('agent_profiles')
