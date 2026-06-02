@@ -170,6 +170,7 @@ export async function POST(req: NextRequest) {
 
   const { error: profileError } = await supabase.from('profiles').upsert(profileData);
   if (profileError) {
+    console.error('[admin/agents] profile upsert failed:', profileError);
     await supabase.auth.admin.deleteUser(userId);
     return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
   }
@@ -184,15 +185,21 @@ export async function POST(req: NextRequest) {
       qrCodeData = null;
     }
 
-    const { error: agentError } = await supabase.from('agent_profiles').insert({
+    // A DB trigger (provision_agent_storefront) auto-creates an agent_profiles
+    // row the moment the profile role becomes 'agent' (during the upsert above),
+    // using a username-derived slug. So a row with this id may already exist.
+    // Upsert (not insert) so the admin's chosen slug + display name win and we
+    // never hit a primary-key collision.
+    const { error: agentError } = await supabase.from('agent_profiles').upsert({
       id: userId,
       slug,
       display_name,
       qr_code_data: qrCodeData,
       is_active: true,
-    });
+    }, { onConflict: 'id' });
 
     if (agentError) {
+      console.error('[admin/agents] agent_profiles upsert failed:', agentError);
       await supabase.auth.admin.deleteUser(userId);
       return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
     }
