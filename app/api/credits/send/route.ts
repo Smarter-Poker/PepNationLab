@@ -10,18 +10,16 @@ export const dynamic = 'force-dynamic';
 /**
  * POST /api/credits/send
  *
- * Issue Lab Wallet (store) credit to a recipient account.
+ * Send real wallet funds to a recipient account.
  *
- * Who may issue:
- *   - admin            → any account (platform-funded).
- *   - agent/super_agent/sub_agent → only accounts in their own downline
- *     (their researchers, their sub-agents, or a sub-agent's researcher).
+ * Who may send:
+ *   - admin            → any account (debited from the admin wallet).
+ *   - agent/super_agent/sub_agent → only accounts in their own downline.
  *
- * Funding model: the issuing agent funds the credit out of their own margin —
- * `store_credits.created_by` records the issuer so the checkout-redemption
- * settlement can reduce THAT agent's profit on the redeeming order. Admin-issued
- * credit is platform-funded (created_by = admin). No balance is moved at issue
- * time; the cost is realized when the recipient redeems at checkout.
+ * Money model: wallet_transfer debits the sender (their wallet balance, or — for
+ * credit-line agents — billed to their credit line so they owe it on their weekly
+ * statement) and credits the recipient's wallet, recording a transaction on BOTH
+ * sides. Every movement is real money and fully audited.
  *
  * Body: { recipientId?: uuid, recipientEmail?: string, amount: number, note?: string }
  */

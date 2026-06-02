@@ -11,10 +11,9 @@ export const dynamic = 'force-dynamic';
  * one wallet view so a single <WalletCard/> can render for researchers, sub-agents,
  * agents, super-agents, and admins:
  *
- *   - store_credits        — researcher-facing store credit (referral rewards land
- *                            here; redeemable at checkout). Balance = SUM(amount).
- *   - prepaid_balance      — agent / super-agent / sub-agent wholesale + commission
- *                            wallet, with the balance_transactions ledger.
+ *   - store_credits        — legacy researcher store credit (vestigial; balance = SUM(amount)).
+ *   - prepaid_balance      — the unified wallet balance for every role, with the
+ *                            balance_transactions ledger (transfers, charges, payouts).
  *
  * Every read is hard-scoped to the caller's own id (user_id / agent_id). The
  * service client is used only so the aggregates are not affected by RLS edge
@@ -62,9 +61,7 @@ export async function GET() {
   const prepaidBalance = num(profile.prepaid_balance);
   const creditLimit = profile.credit_limit != null ? num(profile.credit_limit) : null;
 
-  // ── Store credit (researcher Lab Wallet credit) ────────────────────────
-  // amount is signed (+ issue/release, - redeem). Sum ALL rows for the true
-  // balance; fetch a bounded window for the history list.
+  // ── Legacy store credit (vestigial) ───────────────────────────────
   const { data: scRows } = await service
     .from('store_credits')
     .select('id, amount, balance_before, balance_after, type, description, created_at')
@@ -74,7 +71,7 @@ export async function GET() {
 
   const storeCredit = (scRows ?? []).reduce((acc, r) => acc + num(r.amount), 0);
 
-  // ── Prepaid balance ledger (agent / super / sub wallet) ──────────────────
+  // ── Unified wallet ledger (all roles) ──────────────────────────
   const { data: btRows } = await service
     .from('balance_transactions')
     .select('id, type, amount, balance_before, balance_after, description, created_at')
@@ -82,14 +79,7 @@ export async function GET() {
     .order('created_at', { ascending: false })
     .limit(500);
 
-  // ── Credit line usage (for account_type='credit' agents) ─────────────────
-  // Approximated as the sum of weekly statements still awaiting payment. The
-  // precise in-flight projection lives in the checkout route; this is the
-  // settled-but-unpaid figure that drives the "available credit" display.
-  // Compute settled-but-unpaid statements whenever the account carries a credit
-  // limit. account_type is frequently null on agents who are effectively on
-  // credit (credit_limit set, prepaid_balance 0), so we must NOT gate on it —
-  // otherwise their credit usage (and the whole credit line) silently shows 0.
+  // ── Credit line usage (for credit-line agents) ────────────────────
   let creditUsed = 0;
   if ((creditLimit != null && creditLimit > 0) || accountType === 'credit') {
     const { data: stmts } = await service
@@ -102,12 +92,11 @@ export async function GET() {
   const creditAvailable =
     creditLimit != null ? Math.max(0, Math.round((creditLimit - creditUsed) * 100) / 100) : null;
 
-  // ── Merge both ledgers into one chronological history ────────────────────
+  // ── Merge both ledgers into one chronological history ─────────────────
   const creditTxns: WalletTxn[] = (scRows ?? []).map((r) => ({
     id: `sc_${r.id}`,
     ledger: 'credit',
     type: (r.type as string) || 'credit',
-    // store_credits.amount is already signed.
     signedAmount: num(r.amount),
     balanceAfter: r.balance_after != null ? num(r.balance_after) : null,
     description: (r.description as string) || 'Store Credit',
@@ -153,7 +142,6 @@ export async function GET() {
     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
     .slice(0, 100);
 
-  // Which balance is the headline for this role?
   const primaryLedger: 'credit' | 'wallet' = role === 'researcher' ? 'credit' : 'wallet';
 
   return NextResponse.json({
