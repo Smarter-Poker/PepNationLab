@@ -2,6 +2,16 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
 import { rateLimit, getClientIp } from '@/lib/rate-limit';
 import { sanitizeUsername } from '@/lib/usernames';
+import {
+  normalizeNfkc,
+  isMixedScriptLatinSuspect,
+  containsConfusableCodepoint,
+  containsProfanity,
+  generateSlugSuggestions,
+  generateDisplayNameSuggestions,
+  isSimilarName,
+  POLITELY_REJECT_REASON,
+} from '@/lib/availability-helpers';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -9,63 +19,217 @@ export const dynamic = 'force-dynamic';
 type Field = 'slug' | 'username' | 'display_name';
 
 /**
- * Reserved slugs that conflict with the platform's URL surface. Anything in
- * /app at the top level or that already routes elsewhere on pepnationlab.com
- * lives here. The DB CHECK constraint enforces the same list — this client
- * mirror just gives a friendlier message before the round-trip.
+ * Fallback embedded reserved set — used only if the DB read of
+ * public.reserved_slugs fails (e.g., transient outage). Kept small and
+ * narrow; the authoritative list is the DB table.
  */
-const RESERVED_SLUGS = new Set([
+const FALLBACK_RESERVED = new Set([
   'admin', 'api', 'login', 'logout', 'register', 'signup', 'forgot-password',
   'become-agent', 'about', 'terms', 'privacy', 'compliance', 'disclaimer',
   'dashboard', 'checkout', 'orders', 'products', 'messages', 'messenger',
-  'shipping', 'account', 'static', '_next', 'favicon.ico', 'sitemap.xml',
-  'robots.txt', 'health', 'reorder',
+  'shipping', 'account', '_next', 'health', 'reorder',
 ]);
 
+let reservedCache: { at: number; set: Set<string> } | null = null;
+const RESERVED_TTL_MS = 60_000;
+
+async function loadReservedSlugs(supabase: Awaited<ReturnType<typeof createServiceClient>>): Promise<Set<string>> {
+  if (reservedCache && Date.now() - reservedCache.at < RESERVED_TTL_MS) {
+    return reservedCache.set;
+  }
+  try {
+    const { data, error } = await supabase.from('reserved_slugs').select('slug');
+    if (error) throw error;
+    const s = new Set<string>((data || []).map((r: { slug: string }) => r.slug));
+    reservedCache = { at: Date.now(), set: s };
+    return s;
+  } catch (err) {
+    console.warn('[availability] reserved_slugs read failed, using fallback:', err);
+    return FALLBACK_RESERVED;
+  }
+}
+
 function escapeLike(v: string): string {
-  // ilike treats % and _ as wildcards — escape both so a username containing
-  // _ doesn't accidentally match multiple rows. Backslash escapes those.
   return v.replace(/[\\%_]/g, (m) => `\\${m}`);
 }
 
-function validateSlug(raw: string): { ok: true; normalized: string } | { ok: false; reason: string } {
-  const v = raw.trim().toLowerCase();
-  if (v.length < 3) return { ok: false, reason: 'Slug Must Be At Least 3 Characters.' };
-  if (v.length > 30) return { ok: false, reason: 'Slug Must Be 30 Characters Or Fewer.' };
-  if (!/^[a-z0-9-]+$/.test(v)) {
-    return { ok: false, reason: 'Slug May Only Contain Lowercase Letters, Numbers, And Hyphens.' };
+interface ValidationOK { ok: true; normalized: string }
+interface ValidationFail { ok: false; reason: string; reasonCode: 'invalid_format' | 'homoglyph' | 'profanity' | 'reserved' }
+type Validation = ValidationOK | ValidationFail;
+
+function validateSlug(raw: string, reserved: Set<string>): Validation {
+  const nfkc = normalizeNfkc(raw).toLowerCase();
+  if (nfkc.length < 3) return { ok: false, reason: 'Slug Must Be At Least 3 Characters.', reasonCode: 'invalid_format' };
+  if (nfkc.length > 30) return { ok: false, reason: 'Slug Must Be 30 Characters Or Fewer.', reasonCode: 'invalid_format' };
+  if (isMixedScriptLatinSuspect(nfkc) || containsConfusableCodepoint(nfkc)) {
+    return { ok: false, reason: 'Slug Contains Look-Alike Characters From A Different Script. Use Plain Latin Letters.', reasonCode: 'homoglyph' };
   }
-  if (v.startsWith('-') || v.endsWith('-')) {
-    return { ok: false, reason: 'Slug Cannot Start Or End With A Hyphen.' };
+  if (!/^[a-z0-9-]+$/.test(nfkc)) {
+    return { ok: false, reason: 'Slug May Only Contain Lowercase Letters, Numbers, And Hyphens.', reasonCode: 'invalid_format' };
   }
-  if (v.includes('--')) {
-    return { ok: false, reason: 'Slug Cannot Contain Consecutive Hyphens.' };
+  if (nfkc.startsWith('-') || nfkc.endsWith('-')) {
+    return { ok: false, reason: 'Slug Cannot Start Or End With A Hyphen.', reasonCode: 'invalid_format' };
   }
-  if (RESERVED_SLUGS.has(v)) {
-    return { ok: false, reason: 'That Slug Is Reserved By The Platform.' };
+  if (nfkc.includes('--')) {
+    return { ok: false, reason: 'Slug Cannot Contain Consecutive Hyphens.', reasonCode: 'invalid_format' };
   }
-  return { ok: true, normalized: v };
+  if (containsProfanity(nfkc)) {
+    return { ok: false, reason: POLITELY_REJECT_REASON, reasonCode: 'profanity' };
+  }
+  if (reserved.has(nfkc)) {
+    return { ok: false, reason: 'That Slug Is Reserved By The Platform.', reasonCode: 'reserved' };
+  }
+  return { ok: true, normalized: nfkc };
 }
 
-function validateUsername(raw: string): { ok: true; normalized: string } | { ok: false; reason: string } {
-  const v = sanitizeUsername(raw);
+function validateUsername(raw: string, reserved: Set<string>): Validation {
+  const nfkc = normalizeNfkc(raw);
+  if (isMixedScriptLatinSuspect(nfkc) || containsConfusableCodepoint(nfkc)) {
+    return { ok: false, reason: 'Username Contains Look-Alike Characters. Use Plain Latin Letters.', reasonCode: 'homoglyph' };
+  }
+  const v = sanitizeUsername(nfkc);
   if (!v) {
-    return { ok: false, reason: 'Username May Only Contain Letters, Numbers, And Underscores.' };
+    return { ok: false, reason: 'Username May Only Contain Letters, Numbers, And Underscores.', reasonCode: 'invalid_format' };
   }
-  if (v.length < 2) return { ok: false, reason: 'Username Must Be At Least 2 Characters.' };
-  if (v.length > 30) return { ok: false, reason: 'Username Must Be 30 Characters Or Fewer.' };
+  if (v.length < 2) return { ok: false, reason: 'Username Must Be At Least 2 Characters.', reasonCode: 'invalid_format' };
+  if (v.length > 30) return { ok: false, reason: 'Username Must Be 30 Characters Or Fewer.', reasonCode: 'invalid_format' };
+  if (containsProfanity(v)) {
+    return { ok: false, reason: POLITELY_REJECT_REASON, reasonCode: 'profanity' };
+  }
+  if (reserved.has(v.toLowerCase())) {
+    return { ok: false, reason: 'That Username Is Reserved By The Platform.', reasonCode: 'reserved' };
+  }
   return { ok: true, normalized: v };
 }
 
-function validateDisplayName(raw: string): { ok: true; normalized: string } | { ok: false; reason: string } {
-  const v = raw.trim();
-  if (v.length < 2) return { ok: false, reason: 'Display Name Must Be At Least 2 Characters.' };
-  if (v.length > 60) return { ok: false, reason: 'Display Name Must Be 60 Characters Or Fewer.' };
-  return { ok: true, normalized: v };
+function validateDisplayName(raw: string, _reserved: Set<string>): Validation {
+  const nfkc = normalizeNfkc(raw);
+  if (nfkc.length < 2) return { ok: false, reason: 'Display Name Must Be At Least 2 Characters.', reasonCode: 'invalid_format' };
+  if (nfkc.length > 60) return { ok: false, reason: 'Display Name Must Be 60 Characters Or Fewer.', reasonCode: 'invalid_format' };
+  // Display name is the friendliest field — we allow mixed scripts and
+  // non-Latin entirely. But we still block obvious profanity.
+  if (containsProfanity(nfkc)) {
+    return { ok: false, reason: POLITELY_REJECT_REASON, reasonCode: 'profanity' };
+  }
+  return { ok: true, normalized: nfkc };
+}
+
+async function logFailedAttempt(
+  supabase: Awaited<ReturnType<typeof createServiceClient>>,
+  payload: {
+    field: Field;
+    value: string;
+    normalized: string;
+    reason: string;
+    reason_code: 'taken' | 'reserved' | 'invalid_format' | 'homoglyph' | 'profanity' | 'brand' | 'rate_limited' | 'other';
+    ip: string | null;
+    user_agent: string | null;
+    caller_id: string | null;
+  },
+) {
+  // Fire-and-forget — never block the response on the audit write. The
+  // route's primary job is to answer the user; the log is best-effort.
+  supabase.from('availability_failed_attempts').insert(payload).then(
+    () => {},
+    (err) => console.warn('[availability] audit insert failed:', err?.message || err),
+  );
+}
+
+async function findSimilarExisting(
+  supabase: Awaited<ReturnType<typeof createServiceClient>>,
+  field: Field,
+  normalized: string,
+  excludeId: string | null,
+): Promise<string | null> {
+  // Cheap prefix probe: pull rows whose value starts with the first 3
+  // characters of the candidate. For 'slug' on agent_profiles this is a
+  // bounded result set (slugs are unique + lowercase). We then walk the
+  // returned set and apply isSimilarName().
+  if (normalized.length < 3) return null;
+  const table = field === 'username' ? 'profiles' : 'agent_profiles';
+  const column = field === 'username' ? 'username' : field === 'slug' ? 'slug' : 'display_name';
+  const prefix = normalized.slice(0, 3).toLowerCase();
+  try {
+    let q = supabase.from(table).select(`id, ${column}`).ilike(column, `${escapeLike(prefix)}%`).limit(25);
+    if (excludeId) q = q.neq('id', excludeId);
+    const { data } = await q;
+    const haystack = (data || []) as Array<Record<string, unknown>>;
+    for (const row of haystack) {
+      const existing = String((row as any)[column] ?? '').toLowerCase().trim();
+      if (!existing) continue;
+      if (isSimilarName(normalized.toLowerCase(), existing)) {
+        return existing;
+      }
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+async function filterAvailableSuggestions(
+  supabase: Awaited<ReturnType<typeof createServiceClient>>,
+  field: Field,
+  candidates: string[],
+  reserved: Set<string>,
+): Promise<string[]> {
+  if (candidates.length === 0) return [];
+  const out: string[] = [];
+  const table = field === 'username' ? 'profiles' : 'agent_profiles';
+  const column = field === 'username' ? 'username' : field === 'slug' ? 'slug' : 'display_name';
+  for (const c of candidates) {
+    if (out.length >= 5) break;
+    if (field === 'slug' && reserved.has(c.toLowerCase())) continue;
+    if (field === 'username' && reserved.has(c.toLowerCase())) continue;
+    try {
+      const { data } = await supabase.from(table).select('id').ilike(column, escapeLike(c)).limit(1);
+      if (!Array.isArray(data) || data.length === 0) {
+        out.push(c);
+      }
+    } catch {
+      // If a probe errors, just skip this candidate. The user gets fewer
+      // suggestions but still some.
+    }
+  }
+  return out;
+}
+
+async function issueReservation(
+  supabase: Awaited<ReturnType<typeof createServiceClient>>,
+  field: Field,
+  normalized: string,
+  ip: string | null,
+  excludeId: string | null,
+): Promise<string | null> {
+  try {
+    const { data, error } = await supabase
+      .from('slug_reservations')
+      .insert({
+        field,
+        normalized: normalized.toLowerCase(),
+        ip,
+        exclude_id: excludeId,
+      })
+      .select('token')
+      .single();
+    if (error || !data?.token) return null;
+    return String(data.token);
+  } catch {
+    return null;
+  }
+}
+
+async function jitterDelay() {
+  // 0–60ms jitter so an attacker can't distinguish DB-hit from
+  // reserved-list-hit via latency. Cheap and unobtrusive.
+  const ms = Math.floor(Math.random() * 60);
+  await new Promise((r) => setTimeout(r, ms));
 }
 
 export async function GET(req: NextRequest) {
   const ip = getClientIp(req);
+  const userAgent = req.headers.get('user-agent') ?? null;
+
   const limited = await rateLimit({
     key: 'availability_check',
     limit: 60,
@@ -91,34 +255,45 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'Invalid excludeId' }, { status: 400 });
   }
 
-  // Format-validate first so obvious junk is rejected without a DB query.
-  const validated =
+  const supabase = await createServiceClient();
+  const reserved = await loadReservedSlugs(supabase);
+
+  const validated: Validation =
     field === 'slug'
-      ? validateSlug(rawValue)
+      ? validateSlug(rawValue, reserved)
       : field === 'username'
-        ? validateUsername(rawValue)
-        : validateDisplayName(rawValue);
+        ? validateUsername(rawValue, reserved)
+        : validateDisplayName(rawValue, reserved);
 
   if (!validated.ok) {
-    return NextResponse.json({ available: false, reason: validated.reason, normalized: rawValue }, { status: 200 });
+    await jitterDelay();
+    // Audit format / homoglyph / profanity / reserved failures.
+    await logFailedAttempt(supabase, {
+      field,
+      value: rawValue.slice(0, 200),
+      normalized: rawValue.slice(0, 200),
+      reason: validated.reason,
+      reason_code: validated.reasonCode,
+      ip,
+      user_agent: userAgent,
+      caller_id: null,
+    });
+    return NextResponse.json(
+      {
+        available: false,
+        normalized: rawValue,
+        reason: validated.reason,
+        reserved: validated.reasonCode === 'reserved' || validated.reasonCode === 'profanity',
+      },
+      { status: 200, headers: { 'Cache-Control': 'private, no-store, max-age=0' } },
+    );
   }
 
-  const supabase = await createServiceClient();
   const value = validated.normalized;
   const likeValue = escapeLike(value);
-
-  let table: 'agent_profiles' | 'profiles';
-  let column: string;
-  if (field === 'slug') {
-    table = 'agent_profiles';
-    column = 'slug';
-  } else if (field === 'username') {
-    table = 'profiles';
-    column = 'username';
-  } else {
-    table = 'agent_profiles';
-    column = 'display_name';
-  }
+  const table: 'agent_profiles' | 'profiles' =
+    field === 'slug' ? 'agent_profiles' : field === 'username' ? 'profiles' : 'agent_profiles';
+  const column = field === 'slug' ? 'slug' : field === 'username' ? 'username' : 'display_name';
 
   let q = supabase.from(table).select('id').ilike(column, likeValue).limit(2);
   if (excludeId) q = q.neq('id', excludeId);
@@ -130,20 +305,58 @@ export async function GET(req: NextRequest) {
   }
 
   const taken = Array.isArray(data) && data.length > 0;
+  await jitterDelay();
+
+  if (taken) {
+    // Build alternative suggestions in parallel with the audit log write.
+    const candidates =
+      field === 'display_name'
+        ? generateDisplayNameSuggestions(value)
+        : generateSlugSuggestions(value);
+    const [suggestions] = await Promise.all([
+      filterAvailableSuggestions(supabase, field, candidates, reserved),
+      logFailedAttempt(supabase, {
+        field,
+        value: rawValue.slice(0, 200),
+        normalized: value.slice(0, 200),
+        reason: 'Already taken',
+        reason_code: 'taken',
+        ip,
+        user_agent: userAgent,
+        caller_id: null,
+      }),
+    ]);
+    return NextResponse.json(
+      {
+        available: false,
+        normalized: value,
+        reason:
+          field === 'slug'
+            ? 'That Storefront URL Slug Is Already Taken — Try Another.'
+            : field === 'username'
+              ? 'That Username Is Already Taken — Try Another.'
+              : 'That Display Name Is Already Taken — Try Another.',
+        suggestions,
+      },
+      { status: 200, headers: { 'Cache-Control': 'private, no-store, max-age=0' } },
+    );
+  }
+
+  // Available — issue a soft reservation and probe for similar names in
+  // parallel. Both are best-effort; if either fails, the response still
+  // carries available:true.
+  const [reservationToken, similarTo] = await Promise.all([
+    issueReservation(supabase, field, value, ip, excludeId || null),
+    findSimilarExisting(supabase, field, value, excludeId || null),
+  ]);
+
   return NextResponse.json(
     {
-      available: !taken,
+      available: true,
       normalized: value,
-      reason: taken
-        ? field === 'slug'
-          ? 'That Storefront URL Slug Is Already Taken — Try Another.'
-          : field === 'username'
-            ? 'That Username Is Already Taken — Try Another.'
-            : 'That Display Name Is Already Taken — Try Another.'
-        : undefined,
+      reservationToken,
+      similarTo,
     },
-    {
-      headers: { 'Cache-Control': 'private, no-store, max-age=0' },
-    },
+    { status: 200, headers: { 'Cache-Control': 'private, no-store, max-age=0' } },
   );
 }
