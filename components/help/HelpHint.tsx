@@ -19,7 +19,12 @@
 
 import Link from 'next/link';
 import { LifeBuoy } from 'lucide-react';
-import { faqDeepLink } from '@/lib/help-faq';
+
+// Deep link to a specific FAQ answer; the help page reads the `#faq-<id>`
+// hash on mount and expands the matching item.
+function faqDeepLink(faqId: string): string {
+  return `/account/help#faq-${faqId}`;
+}
 
 interface Props {
   faqId: string;

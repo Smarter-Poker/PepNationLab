@@ -320,6 +320,41 @@ export default function CustomerSupportWidget() {
 
   const totalUnread = rows.reduce((a, r) => a + (r.unread_count || 0), 0);
 
+  // Hard isolation: the set of conversation IDs that live in this inbox.
+  // The center MessagePane only renders when the active conversation is in
+  // this set — non-support threads (e.g., the main messenger's prior active
+  // conversation) are blocked from leaking into the Customer Support modal.
+  const supportThreadIds = useMemo(
+    () => new Set(rows.map((r) => r.conversation_id)),
+    [rows],
+  );
+
+  // First-time auto-open: when the modal opens and the rows have loaded,
+  // immediately select the most-recent support thread so the user never
+  // sees a blank center pane or — worse — the main messenger's previous
+  // active conversation flashing through. Triggers exactly once per open.
+  const autoOpenedThisCycleRef = useRef(false);
+  useEffect(() => {
+    if (!open) {
+      autoOpenedThisCycleRef.current = false;
+      return;
+    }
+    if (autoOpenedThisCycleRef.current) return;
+    if (rows.length === 0) return;
+    const currentActive = useMessengerStore.getState().activeConversationId;
+    const currentIsSupport = currentActive && rows.some((r) => r.conversation_id === currentActive);
+    if (!currentIsSupport) {
+      // Pick the first unread, else the most recent.
+      const target =
+        rows.find((r) => (r.unread_count || 0) > 0)?.conversation_id ??
+        rows[0]?.conversation_id ??
+        null;
+      if (target) setMessengerActive(target);
+    }
+    autoOpenedThisCycleRef.current = true;
+  }, [open, rows, setMessengerActive]);
+
+
   useEffect(() => {
     if (typeof document === 'undefined') return;
     const base = originalTitleRef.current || document.title.replace(/^\(\d+\)\s+/, '');
@@ -1074,6 +1109,68 @@ export default function CustomerSupportWidget() {
               {loading ? 'Refreshing…' : 'Refresh'}
             </button>
           </footer>
+
+          {/* Researcher Context — was a separate right-rail panel; now lives
+              INSIDE the left column. Only shows when a support thread is
+              selected. Collapsible via the same `contextCollapsed` state so
+              the inbox list gets the full column height when hidden. */}
+          {messengerActiveId && supportThreadIds.has(messengerActiveId) && (
+            <div
+              style={{
+                borderTop: `1px solid ${NICKEL_SOFT}`,
+                background: 'rgba(255,255,255,0.02)',
+                display: 'flex',
+                flexDirection: 'column',
+                flexShrink: 0,
+                maxHeight: contextCollapsed ? 44 : '46%',
+                minHeight: 44,
+                overflow: 'hidden',
+                transition: 'max-height 0.18s ease',
+              }}
+            >
+              <button
+                type="button"
+                onClick={() => setContextCollapsed((v) => !v)}
+                aria-expanded={!contextCollapsed}
+                aria-controls="cs-left-context"
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: 8,
+                  padding: '10px 14px',
+                  border: 'none',
+                  background: 'transparent',
+                  color: 'var(--white, #fff)',
+                  fontWeight: 600,
+                  fontSize: '0.82rem',
+                  cursor: 'pointer',
+                  flexShrink: 0,
+                }}
+              >
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                  <Info size={14} aria-hidden="true" />
+                  Researcher Context
+                </span>
+                <span aria-hidden="true" style={{ color: 'var(--silver, #C0B8A8)', fontSize: '0.78rem' }}>
+                  {contextCollapsed ? '▴' : '▾'}
+                </span>
+              </button>
+              {!contextCollapsed && (
+                <div
+                  id="cs-left-context"
+                  style={{
+                    flex: 1,
+                    overflowY: 'auto',
+                    overflowX: 'hidden',
+                    padding: '0 4px 8px',
+                  }}
+                >
+                  <SupportContextSidebar conversationId={messengerActiveId} />
+                </div>
+              )}
+            </div>
+          )}
               </aside>
             )}
 
@@ -1087,7 +1184,7 @@ export default function CustomerSupportWidget() {
                 background: 'var(--surface-1, #0F1923)',
               }}
             >
-              {messengerActiveId && adminIdRef.current ? (
+              {messengerActiveId && adminIdRef.current && supportThreadIds.has(messengerActiveId) ? (
                 <MessagePane userId={adminIdRef.current} />
               ) : (
                 <div
@@ -1115,74 +1212,7 @@ export default function CustomerSupportWidget() {
               )}
             </main>
 
-            {/* RIGHT: researcher context (closable). */}
-            {messengerActiveId && !contextCollapsed && (
-              <aside
-                className="cs-context-rail"
-                style={{
-                  width: 'min(380px, 90vw)',
-                  flexShrink: 0,
-                  borderLeft: `1px solid ${NICKEL_SOFT}`,
-                  background: 'var(--surface-1, #0F1923)',
-                  overflowY: 'auto',
-                  position: 'relative',
-                }}
-              >
-                <button
-                  type="button"
-                  onClick={() => setContextCollapsed(true)}
-                  aria-label="Hide Researcher Context"
-                  title="Hide Researcher Context"
-                  style={{
-                    position: 'absolute',
-                    top: 8,
-                    right: 8,
-                    zIndex: 5,
-                    width: 28,
-                    height: 28,
-                    padding: 0,
-                    borderRadius: 8,
-                    background: 'rgba(255,255,255,0.06)',
-                    border: '1px solid rgba(255,255,255,0.12)',
-                    color: 'var(--silver, #C0B8A8)',
-                    cursor: 'pointer',
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}
-                >
-                  <X size={14} aria-hidden="true" />
-                </button>
-                <SupportContextSidebar conversationId={messengerActiveId} />
-              </aside>
-            )}
-            {messengerActiveId && contextCollapsed && (
-              <button
-                type="button"
-                onClick={() => setContextCollapsed(false)}
-                aria-label="Show Researcher Context"
-                title="Show Researcher Context"
-                style={{
-                  position: 'absolute',
-                  right: 12,
-                  top: 16,
-                  zIndex: 4,
-                  width: 32,
-                  height: 32,
-                  padding: 0,
-                  borderRadius: 8,
-                  background: 'rgba(192,184,168,0.18)',
-                  border: `1px solid ${NICKEL_BORDER}`,
-                  color: 'var(--white, #fff)',
-                  cursor: 'pointer',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-              >
-                <Info size={16} aria-hidden="true" />
-              </button>
-            )}
+            {/* right_rail_removed — context now lives inside the left column. */}
           </div>
         </div>
       )}
