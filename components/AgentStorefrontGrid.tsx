@@ -861,7 +861,7 @@ export default function AgentStorefrontGrid({
           display: flex;
           flex-direction: column;
           gap: 12px;
-          padding: 16px;
+          padding: 16px !important;
           background: linear-gradient(180deg, var(--surface-1, #0F1923) 0%, var(--surface-2, #162230) 100%);
           border-radius: 15px;
           box-shadow: inset 0 2px 10px rgba(0,0,0,0.6);
@@ -903,7 +903,7 @@ export default function AgentStorefrontGrid({
           display: flex; align-items: center; justify-content: center;
         }
         @media (min-width: 640px) {
-          .sf-toolbar-inner { flex-direction: row; flex-wrap: nowrap; align-items: center; padding: 16px; }
+          .sf-toolbar-inner { flex-direction: row; flex-wrap: nowrap; align-items: center; padding: 16px !important; }
           .sf-toolbar-search  { flex: 1 1 240px; }
           .sf-toolbar-cat     { flex: 0 0 auto; }
           .sf-toolbar select  { width: auto; min-width: 160px; padding: 9px 12px; font-size: 0.85rem; }
@@ -1324,9 +1324,13 @@ export default function AgentStorefrontGrid({
                     const defaultV = group.variants.find(v => v.id === group.defaultVariantId) || group.variants[0];
                     const size = defaultV.products?.unit_size || '10';
                     const measure = defaultV.products?.unit_measure || 'mg';
-                    // retail_price is the 10-pack price; divide by 10 for individual vial price
-                    const perVialBase = defaultV.retail_price / 10;
-                    const isOnSale = (defaultV as any).is_on_sale && (defaultV as any).sale_price;
+                    // retail_price is the 10-pack price; divide by 10 for individual vial price.
+                    // Storefront owner (agent self-buy) sees their admin-configured tier cost
+                    // — wholesale buyers always pay tier flat, never retail or sale markup.
+                    const perVialBase = isStorefrontOwner && (defaultV as any).cost_price != null
+                      ? Number((defaultV as any).cost_price) / 10
+                      : defaultV.retail_price / 10;
+                    const isOnSale = !isStorefrontOwner && (defaultV as any).is_on_sale && (defaultV as any).sale_price;
                     const perVialDisplay = isOnSale ? (defaultV as any).sale_price / 10 : perVialBase;
                     const perVialOriginal = perVialBase;
                     return (
@@ -1433,7 +1437,9 @@ export default function AgentStorefrontGrid({
                     item.products?.category || 'Other',
                     name,
                   );
-                  const perVial = item.retail_price / 10;
+                  const perVial = isStorefrontOwner && (item as any).cost_price != null
+                    ? Number((item as any).cost_price) / 10
+                    : item.retail_price / 10;
                   return (
                     <div key={variantId} style={{
                       display: 'flex', alignItems: 'center', gap: 12, padding: 10,
@@ -1558,7 +1564,9 @@ export default function AgentStorefrontGrid({
                         item.products?.category || 'Other',
                         name,
                       );
-                      const perVial = item.retail_price / 10;
+                      const perVial = isStorefrontOwner && (item as any).cost_price != null
+                        ? Number((item as any).cost_price) / 10
+                        : item.retail_price / 10;
                       return (
                         <div key={variantId} style={{
                           display: 'flex', alignItems: 'center', gap: 12, padding: 10,
@@ -1625,7 +1633,13 @@ export default function AgentStorefrontGrid({
                   <span style={{ color: 'var(--white)', fontWeight: 800, fontSize: '1.25rem', letterSpacing: '0.01em' }}>
                     ${Object.entries(cartItems).reduce((sum, [vId, qty]) => {
                       const item = products.find(p => p.id === vId);
-                      return sum + (item ? (item.retail_price / 10) * qty : 0);
+                      if (!item) return sum;
+                      // Storefront owner sees tier cost in their cart total — must
+                      // match what the order route will actually charge them.
+                      const per = isStorefrontOwner && (item as any).cost_price != null
+                        ? Number((item as any).cost_price) / 10
+                        : item.retail_price / 10;
+                      return sum + per * qty;
                     }, 0).toFixed(2)}
                   </span>
                 </div>

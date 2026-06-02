@@ -172,13 +172,15 @@ export async function GET(req: NextRequest) {
   // Guarantee BAC water is at the very front
   const bacIdx = candidateNames.findIndex(n => {
     const lower = n.toLowerCase();
-    return lower.includes('bacteriostatic water') || lower.includes('bac water');
+    // Match "bac water", "bac. water", "bacteriostatic water"
+    return lower.includes('bacteriostatic water') || lower.replace(/\./g, '').includes('bac water');
   });
   if (bacIdx > -1) {
     const [bac] = candidateNames.splice(bacIdx, 1);
     candidateNames.unshift(bac);
   } else {
-    candidateNames.unshift('Bac Water');
+    // We will unshift the exact name so the DB query matches it
+    candidateNames.unshift('Bac. Water');
   }
 
   // 7) Fetch ALL variants for these candidate names
@@ -209,7 +211,7 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  // 9) Pick the best variant for each name (smallest unit_size)
+  // 9) Pick the best variant for each name (prefer 10mg, else smallest unit_size)
   const bestVariants = new Map<string, ProductRow>();
   for (const v of (allVariants || []) as ProductRow[]) {
     if (v.is_active === false || v.is_banned === true || v.id === productId) continue;
@@ -221,7 +223,13 @@ export async function GET(req: NextRequest) {
     } else {
       const sizeV = parseFloat(v.unit_size || '999');
       const sizeE = parseFloat(existing.unit_size || '999');
-      if (sizeV < sizeE) {
+      
+      // If the new one is 10mg and the existing is not, we immediately prefer the new one
+      if (sizeV === 10 && sizeE !== 10) {
+        bestVariants.set(v.name, v);
+      } 
+      // Otherwise, if the existing is NOT 10mg, we prefer the smallest size
+      else if (sizeE !== 10 && sizeV < sizeE) {
         bestVariants.set(v.name, v);
       }
     }
