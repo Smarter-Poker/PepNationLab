@@ -1,3 +1,4 @@
+import Link from "next/link";
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -140,9 +141,9 @@ export default function WalletSettings() {
         )}
       </div>
 
-      <a href="/account" style={{ color: 'var(--teal)', fontWeight: 700, fontSize: '0.85rem' }}>
+      <Link href="/account" style={{ color: 'var(--teal)', fontWeight: 700, fontSize: '0.85rem' }}>
         Open Full Account Settings →
-      </a>
+      </Link>
     </section>
   );
 }

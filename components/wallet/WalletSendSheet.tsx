@@ -61,6 +61,7 @@ export default function WalletSendSheet({
   useEffect(() => {
     if (selected) return; // freeze searches while a recipient is locked in
     const q = query.trim();
+      // eslint-disable-next-line react-hooks/set-state-in-effect
     if (q.length < 2) {
       setResults([]);
       setSearching(false);

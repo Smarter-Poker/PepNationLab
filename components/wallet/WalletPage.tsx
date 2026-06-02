@@ -128,6 +128,7 @@ export default function WalletPage({
     return true;
   });
   // If the active tab is no longer in the filtered list, snap back to overview.
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => {
     if (!tabs.find((t) => t.id === tab)) setTab('overview');
   }, [role, tab, tabs]);
