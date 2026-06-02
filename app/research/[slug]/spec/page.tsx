@@ -1,7 +1,8 @@
 /**
  * Technical Data Sheet — print-friendly spec sheet for one compound.
  * Server component: fetches the compound and renders all identity, handling,
- * regulatory, evidence, and source fields in a clean, printable layout.
+ * regulatory, evidence, and source fields in a clean, printable layout, plus a
+ * QR code that links to the public compound profile (for vial labels).
  * Research-Use-Only footer. No human dosing.
  */
 import Link from 'next/link';
@@ -9,6 +10,7 @@ import { notFound } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
 import { getCompound } from '@/lib/compounds-server';
 import { evidenceTier, wadaLabel } from '@/lib/compounds';
+import { generateQrDataUrl } from '@/lib/qr';
 import PrintButton from '@/components/research/PrintButton';
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
@@ -62,6 +64,14 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
   const h = compound.handling ?? {};
   const tier = evidenceTier(compound.evidence_tier);
 
+  const profileUrl = `https://pepnationlab.com/research/${compound.slug}`;
+  let qr: string | null = null;
+  try {
+    qr = await generateQrDataUrl(profileUrl);
+  } catch {
+    qr = null;
+  }
+
   return (
     <main style={{ maxWidth: 820, margin: '0 auto', padding: 'var(--space-5) var(--space-4)' }}>
       <div
@@ -87,17 +97,34 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
           background: 'var(--black)',
         }}
       >
-        <header style={{ marginBottom: 'var(--space-4)', borderBottom: '2px solid var(--teal)', paddingBottom: 'var(--space-3)' }}>
-          <p style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--teal)', letterSpacing: '0.06em', margin: 0 }}>
-            Technical Data Sheet
-          </p>
-          <h1 style={{ fontSize: '1.6rem', fontWeight: 900, color: 'var(--white)', margin: '6px 0 0' }}>
-            {compound.display_name}
-          </h1>
-          {compound.aliases.length > 0 && (
-            <p style={{ fontSize: '0.82rem', color: 'var(--silver)', margin: '4px 0 0' }}>
-              Also Known As: {compound.aliases.join(', ')}
+        <header style={{ marginBottom: 'var(--space-4)', borderBottom: '2px solid var(--teal)', paddingBottom: 'var(--space-3)', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 'var(--space-4)', flexWrap: 'wrap' }}>
+          <div style={{ minWidth: 0 }}>
+            <p style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--teal)', letterSpacing: '0.06em', margin: 0 }}>
+              Technical Data Sheet
             </p>
+            <h1 style={{ fontSize: '1.6rem', fontWeight: 900, color: 'var(--white)', margin: '6px 0 0' }}>
+              {compound.display_name}
+            </h1>
+            {compound.aliases.length > 0 && (
+              <p style={{ fontSize: '0.82rem', color: 'var(--silver)', margin: '4px 0 0' }}>
+                Also Known As: {compound.aliases.join(', ')}
+              </p>
+            )}
+          </div>
+          {qr && (
+            <div style={{ textAlign: 'center', flexShrink: 0 }}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={qr}
+                alt={`QR Code Linking To The ${compound.display_name} Research Profile`}
+                width={92}
+                height={92}
+                style={{ borderRadius: 8, display: 'block' }}
+              />
+              <p style={{ fontSize: '0.66rem', color: 'var(--silver)', margin: '4px 0 0', maxWidth: 92 }}>
+                Scan To View Profile
+              </p>
+            </div>
           )}
         </header>
 
