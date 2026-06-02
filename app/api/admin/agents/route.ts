@@ -55,6 +55,7 @@ export async function POST(req: NextRequest) {
     commission_pct,
     commission_max_pct,
     velocity_cap,
+    custom_commission_scale,
   } = body;
 
   const isResearcher = account_role === 'researcher';
@@ -135,6 +136,16 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: 'Velocity Cap Must Be Zero Or Greater' }, { status: 400 });
       }
     }
+    // Custom gamification ladder steps: each bonus must stay within 0..40.
+    if (Array.isArray(custom_commission_scale)) {
+      for (const step of custom_commission_scale) {
+        const bonus = Number(step?.bonus_pct);
+        const vol = Number(step?.min_volume);
+        if (!Number.isFinite(bonus) || bonus < 0 || bonus > MAX_CAP_LIMIT || !Number.isFinite(vol) || vol < 0) {
+          return NextResponse.json({ error: 'Gamification Levels Must Be Between 0 And 40% With Non-Negative Volumes' }, { status: 400 });
+        }
+      }
+    }
   }
 
   const usernameClean = sanitizeUsername(username);
@@ -211,12 +222,12 @@ export async function POST(req: NextRequest) {
     // Persist the commission/markup the admin chose. fn_agent_effective_markup
     // reads commission_pct (base) and commission_max_pct (floor); a NULL base
     // means 0 markup, so without this the admin's Fixed/Gamification choice was
-    // silently dropped. Custom per-step ladders for top-level agents are not
-    // stored here (sub_agent_commission_plan requires a parent agent); the house
-    // default ladder fills the curve between base and cap.
+    // silently dropped. A custom per-step ladder, if supplied, is also written to
+    // sub_agent_commission_plan below so the order engine applies it.
     profileData.commission_pct = commPct;
     profileData.commission_max_pct = commMax;
     profileData.velocity_cap = velCap;
+    profileData.commission_ladder_config = Array.isArray(custom_commission_scale) ? custom_commission_scale : undefined;
   }
 
   const { error: profileError } = await supabase.from('profiles').upsert(profileData);
@@ -253,6 +264,42 @@ export async function POST(req: NextRequest) {
       console.error('[admin/agents] agent_profiles upsert failed:', agentError);
       await supabase.auth.admin.deleteUser(userId);
       return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
+    }
+
+    // Persist a custom gamification ladder if the admin built one. The order-time
+    // engine (fn_agent_effective_markup) reads steps from sub_agent_commission_plan
+    // by sub_agent_id. Top-level admin-created agents have no super-agent parent,
+    // so parent_agent_id is null (allowed since 20260602000000). Non-fatal: the
+    // agent already has base + cap, and the house default ladder fills the curve.
+    if (Array.isArray(custom_commission_scale)) {
+      const { error: planError } = await supabase.from('sub_agent_commission_plan').upsert({
+        sub_agent_id: userId,
+        parent_agent_id: parent_agent_id ?? null,
+        steps: custom_commission_scale,
+        updated_at: new Date().toISOString(),
+      });
+      if (planError) console.error('[admin/agents] commission plan upsert failed (non-fatal):', planError);
+    }
+
+    // Seed the agent's product catalog so the storefront isn't empty. Mirrors
+    // POST /api/agent/agents. Non-fatal: the account exists regardless.
+    try {
+      const { data: tier1 } = await supabase.from('pricing_tiers').select('multiplier').eq('tier_name', 'tier_1').single();
+      const { data: products } = await supabase.from('products').select('id, base_cost').eq('is_active', true);
+      if (tier1 && products && products.length > 0) {
+        const agentMultiplier = (Number(tier1.multiplier) || 1.3) * 1.2;
+        const agentProductsToInsert = products.map((p) => ({
+          agent_id: userId,
+          product_id: p.id,
+          retail_price: Math.round((Number(p.base_cost) * agentMultiplier) * 100) / 100,
+          margin_percent: 50,
+          is_visible: true,
+          sort_order: 0,
+        }));
+        await supabase.from('agent_products').insert(agentProductsToInsert);
+      }
+    } catch (provisionErr) {
+      console.error('[admin/agents] agent product provisioning failed (non-fatal):', provisionErr);
     }
   }
 
