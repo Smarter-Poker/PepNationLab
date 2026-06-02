@@ -3,6 +3,100 @@ import { createAdminClient } from '@/lib/supabase/server';
 import { requireAgent } from '@/lib/admin-auth';
 import { assertSameOrigin } from '@/lib/csrf';
 import { notifyPromotedToAgent, notifyPromotionSuccess } from '@/lib/notify';
+import { generateQrDataUrl } from '@/lib/qr';
+
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://pepnationlab.com';
+
+/**
+ * Provisions a full storefront + product catalog for a newly minted full Agent.
+ * Mirrors POST /api/agent/agents so a super-agent's promoted agent is a complete,
+ * visible storefront rather than an invisible profile-only shell. Idempotent:
+ * skips storefront/product creation if rows already exist. Best-effort and
+ * non-fatal -- the profile is already a full agent regardless of outcome.
+ */
+async function provisionAgentStorefront(
+  admin: ReturnType<typeof createAdminClient>,
+  agentId: string,
+  username: string | null,
+  fullName: string | null,
+): Promise<string | null> {
+  let slug: string | null = null;
+  try {
+    const { data: existingStore } = await admin
+      .from('agent_profiles')
+      .select('id, slug')
+      .eq('id', agentId)
+      .maybeSingle();
+
+    if (existingStore) {
+      slug = (existingStore as { slug?: string | null }).slug ?? null;
+    } else {
+      const base =
+        ((username || fullName || 'agent') as string)
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, '-')
+          .replace(/^-+|-+$/g, '')
+          .slice(0, 40) || 'agent';
+      slug = base;
+      for (let i = 2; i < 100; i++) {
+        const { data: clash } = await admin
+          .from('agent_profiles')
+          .select('id')
+          .eq('slug', slug)
+          .maybeSingle();
+        if (!clash) break;
+        slug = `${base}-${i}`;
+      }
+      let qr: string | null = null;
+      try {
+        qr = await generateQrDataUrl(`${APP_URL}/${slug}`);
+      } catch {
+        /* QR is non-essential; storefront works without it */
+      }
+      await admin.from('agent_profiles').insert({
+        id: agentId,
+        slug,
+        display_name: (fullName || username || 'Agent') as string,
+        qr_code_data: qr,
+        is_active: true,
+      });
+    }
+
+    // Provision the agent's product catalog only if none exists yet.
+    const { count: prodCount } = await admin
+      .from('agent_products')
+      .select('id', { count: 'exact', head: true })
+      .eq('agent_id', agentId);
+
+    if (!prodCount) {
+      const { data: tier1 } = await admin
+        .from('pricing_tiers')
+        .select('multiplier')
+        .eq('tier_name', 'tier_1')
+        .single();
+      const { data: products } = await admin
+        .from('products')
+        .select('id, base_cost')
+        .eq('is_active', true);
+
+      if (tier1 && products && products.length > 0) {
+        const mult = (Number(tier1.multiplier) || 1.3) * 1.2;
+        const rows = products.map((p) => ({
+          agent_id: agentId,
+          product_id: p.id,
+          retail_price: Math.round(Number(p.base_cost) * mult * 100) / 100,
+          margin_percent: 50,
+          is_visible: true,
+          sort_order: 0,
+        }));
+        await admin.from('agent_products').insert(rows);
+      }
+    }
+  } catch (provErr) {
+    console.error('[promote-subagent] storefront provisioning failed:', provErr);
+  }
+  return slug;
+}
 
 /**
  * POST /api/agent/promote-subagent
@@ -211,6 +305,22 @@ export async function POST(req: NextRequest) {
     }
     const shareLink = parentSlug ? `/${parentSlug}?sa=${researcherId}` : null;
 
+    // PLATFORM RULE (2026-06-01): Super-agents may only create RESEARCHER or
+    // full AGENT accounts -- never sub-agents. The branch above already sets
+    // is_sub_agent=false for super-agent callers, and a DB trigger blocks any
+    // sub-agent under a super-agent as a hard backstop. A full agent must have
+    // a real storefront + catalog, otherwise it is an invisible profile-only
+    // shell (the original TJP/Anna defect). Provision it now.
+    let newAgentSlug: string | null = null;
+    if (isPromotingToFullAgent) {
+      newAgentSlug = await provisionAgentStorefront(
+        admin,
+        researcherId,
+        researcherProfile.username ?? null,
+        researcherProfile.full_name ?? null,
+      );
+    }
+
     void Promise.all([
       notifyPromotedToAgent(admin, researcherId, '', callerProfile.full_name || 'Your Agent'),
       notifyPromotionSuccess(admin, callerId, researcherProfile.full_name || 'Researcher', ''),
@@ -225,6 +335,7 @@ export async function POST(req: NextRequest) {
       parent_slug: parentSlug,
       share_link: shareLink,
       created_by_role: createdByRole,
+      new_agent_slug: newAgentSlug,
       message: `${researcherProfile.full_name || 'Researcher'} Has Been Promoted To ${isPromotingToFullAgent ? 'Agent' : 'Sub-Agent'} At ${commissionPct}% Commission.`,
     });
 
