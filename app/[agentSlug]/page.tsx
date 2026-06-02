@@ -1,10 +1,11 @@
 import { notFound } from 'next/navigation';
 import { Suspense } from 'react';
-import { createClient } from '@/lib/supabase/server';
+import { createClient, createServiceClient } from '@/lib/supabase/server';
 import Link from 'next/link';
 import AgentStorefrontGrid from '@/components/AgentStorefrontGrid';
 import AgentStorefrontLogin from '@/components/AgentStorefrontLogin';
 import { getCompoundsBySlugs } from '@/lib/compounds-server';
+import { computeAgentCostForAgent, type AgentTier } from '@/lib/pricing';
 import CouponLinkCapture from '@/components/CouponLinkCapture';
 import StorefrontRenameBanner from '@/components/StorefrontRenameBanner';
 
@@ -199,27 +200,31 @@ export default async function AgentStorefrontPage({ params }: Props) {
     initialWishlistIds = (favRows ?? []).map(r => r.product_id);
   }
 
-  // If the viewer is the storefront owner (agent self-buy), fetch their tier
-  // multiplier so we can compute cost_price per product for the correct display.
-  let viewerTierMultiplier = 1.0;
-  if (isStorefrontOwner && userProfile?.tier) {
-    const { data: tierRow } = await supabase
-      .from('pricing_tiers')
-      .select('multiplier')
-      .eq('tier_name', userProfile.tier)
-      .maybeSingle();
-    viewerTierMultiplier = tierRow?.multiplier != null ? Number(tierRow.multiplier) : 1.0;
+  // Augment each product with cost_price for the storefront-owner self-buy view.
+  // CRITICAL: this MUST equal what the agent is actually billed. Orders compute
+  // unit_cost_price as computeAgentCostForAgent(...) / 10, which (with the tier
+  // ladder v2 engine active) resolves the agent's house-tier markup / gamification
+  // rather than a flat legacy pricing_tiers multiplier. Reusing the canonical
+  // billing helper here keeps the displayed "Agent Direct Price" equal to the books.
+  let productsWithCost: Array<Record<string, unknown>> =
+    (products ?? []) as unknown as Array<Record<string, unknown>>;
+  if (isStorefrontOwner && (products?.length ?? 0) > 0) {
+    const svc = await createServiceClient();
+    const ownerTier = ((userProfile as { tier?: AgentTier } | null)?.tier ?? 'tier_3') as AgentTier;
+    productsWithCost = await Promise.all(
+      (products ?? []).map(async (p) => {
+        let costPrice: number | null = null;
+        try {
+          // Per-10-vial-pack wholesale cost (the grid divides by 10 for per-vial) —
+          // identical to orders/new unit_cost_price before its /10 conversion.
+          costPrice = await computeAgentCostForAgent(svc, p.product_id, agent.id, ownerTier);
+        } catch {
+          costPrice = null;
+        }
+        return { ...(p as Record<string, unknown>), cost_price: costPrice };
+      })
+    );
   }
-
-  // Augment each product with cost_price (= base_cost × viewer tier multiplier)
-  // so AgentStorefrontGrid can show the agent their direct tier price on self-buy.
-  const productsWithCost = (products ?? []).map(p => {
-    const baseCost = (p.products as any)?.base_cost;
-    const costPrice = baseCost != null && viewerTierMultiplier > 0
-      ? Number(baseCost) * viewerTierMultiplier
-      : null;
-    return { ...p, cost_price: costPrice };
-  });
 
   // Research monograph data for the product detail modal: fetch every compound
   // referenced by a product on this storefront, keyed by slug. Server-side so
