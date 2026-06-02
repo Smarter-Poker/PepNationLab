@@ -6,12 +6,14 @@ import { StickyNote, Loader2 } from 'lucide-react';
 /**
  * Customer Support v2 — Admin Internal Notes.
  *
- * Renders a yellow sticky-note styled list of internal notes scoped to a
- * single support conversation. Backed by /api/messenger/support/[id]/notes
- * which is admin-only at the route layer. This component still does its
- * own caller-supplied gating: parent should mount it only for admin +
- * is_support threads (e.g. inside SupportContextSidebar). If the API
- * returns 401/403, we just hide instead of leaking error UI.
+ * Renders an internal-notes list scoped to a single support conversation.
+ * Backed by /api/messenger/support/[id]/notes (admin-only). The component
+ * still self-gates by hiding when the API returns 401/403 so no error UI
+ * leaks for non-admin callers.
+ *
+ * v2 styling: dropped the bright yellow sticky-note treatment in favour
+ * of a grey-on-white neutral surface that matches the rest of the support
+ * sidebar (reads better against the dark backdrop).
  */
 
 interface Note {
@@ -116,11 +118,11 @@ export default function SupportInternalNotes({ conversationId }: { conversationI
           marginBottom: 8,
         }}
       >
-        <StickyNote size={14} style={{ color: '#FFD175' }} aria-hidden="true" />
+        <StickyNote size={14} style={{ color: 'var(--silver, #C0B8A8)' }} aria-hidden="true" />
         <strong
           style={{
             fontSize: '0.66rem',
-            color: '#FFD175',
+            color: 'var(--white, #fff)',
             fontWeight: 800,
             letterSpacing: '0.04em',
             textTransform: 'uppercase',
@@ -139,8 +141,8 @@ export default function SupportInternalNotes({ conversationId }: { conversationI
             style={{
               padding: '8px 10px',
               borderRadius: 6,
-              background: 'rgba(255,184,0,0.06)',
-              border: '1px dashed rgba(255,184,0,0.30)',
+              background: 'rgba(255,255,255,0.04)',
+              border: '1px dashed rgba(255,255,255,0.18)',
               color: 'var(--silver, #C0B8A8)',
               fontSize: '0.74rem',
               fontStyle: 'italic',
@@ -155,10 +157,10 @@ export default function SupportInternalNotes({ conversationId }: { conversationI
               style={{
                 padding: '8px 10px',
                 borderRadius: 6,
-                background: 'linear-gradient(180deg, rgba(255,221,128,0.92) 0%, rgba(245,200,90,0.88) 100%)',
-                border: '1px solid rgba(170,120,30,0.55)',
+                background: 'rgba(255,255,255,0.05)',
+                border: '1px solid rgba(255,255,255,0.12)',
                 boxShadow: '0 2px 4px rgba(0,0,0,0.30)',
-                color: '#3A2900',
+                color: 'var(--white, #fff)',
                 fontSize: '0.78rem',
                 lineHeight: 1.4,
                 fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Consolas, monospace',
@@ -167,10 +169,10 @@ export default function SupportInternalNotes({ conversationId }: { conversationI
               }}
             >
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-                <strong style={{ fontSize: '0.7rem', fontWeight: 800, color: '#3A2900' }}>
+                <strong style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--white, #fff)' }}>
                   {authorName(n)}
                 </strong>
-                <span style={{ fontSize: '0.66rem', color: '#5A3F00', fontWeight: 700 }}>
+                <span style={{ fontSize: '0.66rem', color: 'var(--silver, #C0B8A8)', fontWeight: 700 }}>
                   {relTime(n.created_at)}
                 </span>
               </div>
@@ -213,9 +215,9 @@ export default function SupportInternalNotes({ conversationId }: { conversationI
             style={{
               padding: '6px 12px',
               borderRadius: 6,
-              background: draft.trim().length === 0 ? 'rgba(255,184,0,0.10)' : '#FFB800',
-              border: '1px solid rgba(255,184,0,0.55)',
-              color: draft.trim().length === 0 ? 'var(--silver, #C0B8A8)' : '#1A1200',
+              background: draft.trim().length === 0 ? 'rgba(255,255,255,0.05)' : 'rgba(255,255,255,0.12)',
+              border: '1px solid rgba(255,255,255,0.20)',
+              color: draft.trim().length === 0 ? 'var(--silver, #C0B8A8)' : 'var(--white, #fff)',
               fontWeight: 800,
               fontSize: '0.74rem',
               cursor: submitting || draft.trim().length === 0 ? 'not-allowed' : 'pointer',
