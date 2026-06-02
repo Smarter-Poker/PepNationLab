@@ -14,6 +14,7 @@ interface AgentInventoryItem {
   image_url?: string;
   unit_size?: string;
   unit_measure?: string;
+  agent_cost?: number;
 }
 
 interface SmartAlert {
@@ -227,7 +228,7 @@ export default function AgentInventory({ agentId }: { agentId: string }) {
           margin: 0,
           borderRadius: 0,
           borderLeft: 'none', borderRight: 'none',
-          opacity: item.stock_count > 0 ? 1 : 0.5,
+          opacity: 1,
           transition: 'opacity 0.2s',
         }}
       >
@@ -241,8 +242,11 @@ export default function AgentInventory({ agentId }: { agentId: string }) {
                 onError={(e) => { (e.target as HTMLImageElement).src = '/images/peptide_clear.png'; }}
               />
               <div style={{ flex: 1 }}>
-                <div style={{ fontSize: '0.95rem', fontWeight: 700, color: '#fff', marginBottom: 4 }}>{item.name}</div>
-                {sizeLabel && <span className="badge-metal" style={{ fontSize: '0.62rem', padding: '2px 6px' }}>{sizeLabel}</span>}
+                <div style={{ fontSize: '0.95rem', fontWeight: 700, color: '#fff', marginBottom: 4 }}>
+                  {item.name}
+                  {sizeLabel && <span style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.6)', background: 'rgba(255,255,255,0.05)', padding: '2px 8px', borderRadius: '4px', marginLeft: 8 }}>{sizeLabel}</span>}
+                  <span style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.4)', padding: '2px 6px', borderRadius: '4px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', marginLeft: 8 }}>{item.category}</span>
+                </div>
               </div>
             </div>
 
@@ -306,14 +310,23 @@ export default function AgentInventory({ agentId }: { agentId: string }) {
             <div className="agentprod-info" style={{ flex: 1, minWidth: 0 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
                 <span style={{ fontSize: '0.95rem', fontWeight: 700, color: '#fff' }}>{item.name}</span>
-                {sizeLabel && <span className="badge-metal" style={{ fontSize: '0.62rem', padding: '2px 6px' }}>{sizeLabel}</span>}
+                {sizeLabel && <span style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.6)', background: 'rgba(255,255,255,0.05)', padding: '2px 8px', borderRadius: '4px' }}>{sizeLabel}</span>}
+                <span style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.4)', padding: '2px 6px', borderRadius: '4px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)' }}>{item.category}</span>
               </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-                <span className="badge-metal" style={{ fontSize: '0.62rem', padding: '2px 6px', background: 'rgba(0,0,0,0.3)' }}>{item.category}</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                {item.agent_cost != null && item.agent_cost > 0 && (
+                  <>
+                    <span style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.4)', fontWeight: 500 }}>Your Cost:</span>
+                    <span style={{ fontSize: '0.82rem', color: '#68D391', fontWeight: 700 }}>
+                      ${(item.agent_cost / 10).toFixed(2)} / Vial
+                    </span>
+                    <span style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.2)' }}>→</span>
+                  </>
+                )}
+                <span style={{ fontSize: '0.78rem', color: 'rgba(255,255,255,0.5)', marginTop: 2, marginBottom: 0 }}>
+                  Stock: <strong style={{ color: item.stock_count > 0 ? '#00E5FF' : '#FFAAAA' }}>{item.stock_count}</strong>
+                </span>
               </div>
-              <p style={{ fontSize: '0.78rem', color: 'rgba(255,255,255,0.5)', marginTop: 6, marginBottom: 0 }}>
-                Stock: <strong style={{ color: item.stock_count > 0 ? '#00E5FF' : '#FFAAAA' }}>{item.stock_count}</strong>
-              </p>
             </div>
             
             <div className="agentprod-actions" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -450,8 +463,8 @@ export default function AgentInventory({ agentId }: { agentId: string }) {
         </div>
       </div>
 
+      {/* Search Bar */}
       <input
-        className="agentprod-mobile-search"
         type="search"
         placeholder="Search Inventory By Name..."
         value={search}
@@ -465,6 +478,7 @@ export default function AgentInventory({ agentId }: { agentId: string }) {
           boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.5)',
           color: '#fff',
           borderRadius: 8,
+          marginBottom: 'var(--space-4)'
         }}
       />
 
