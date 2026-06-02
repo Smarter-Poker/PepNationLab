@@ -279,7 +279,15 @@ export default function ResearcherDashboard({ userId, userName, userEmail, agent
   const { addToCart } = useCart();
 
   // Account settings
-  const [fullName, setFullName] = useState(profile.full_name || '');
+  // R32: split first/last to mirror every other create-account form. The DB
+  // still stores a single full_name column, so on save we join the two fields
+  // back into one string. On first render, parse the existing full_name into
+  // first word + remainder so legacy single-name records stay editable.
+  const _initialName = (profile.full_name || '').trim();
+  const _initialFirst = _initialName.split(/\s+/)[0] || '';
+  const _initialLast = _initialName.split(/\s+/).slice(1).join(' ') || '';
+  const [firstName, setFirstName] = useState(_initialFirst);
+  const [lastName, setLastName] = useState(_initialLast);
   const [phone, setPhone] = useState(profile.phone || '');
   const [newPassword, setNewPassword] = useState('');
   const [saving, setSaving] = useState(false);
@@ -345,7 +353,8 @@ export default function ResearcherDashboard({ userId, userName, userEmail, agent
     try {
       const supabase = createClient();
       const updates: any = {};
-      if (fullName !== profile.full_name) updates.full_name = fullName;
+      const joined = `${firstName.trim()} ${lastName.trim()}`.trim();
+      if (joined !== (profile.full_name || '').trim()) updates.full_name = joined;
       if (phone !== (profile.phone || '')) updates.phone = phone;
 
       if (Object.keys(updates).length > 0) {
@@ -882,9 +891,17 @@ export default function ResearcherDashboard({ userId, userName, userEmail, agent
               <div className="card-metal hover-lift" style={{ padding: 'var(--space-6)' }}>
                 <h3 style={{ fontSize: '0.85rem', color: 'var(--silver)', fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 'var(--space-5)' }}>Profile Settings</h3>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
-                  <div>
-                    <label style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.4)', display: 'block', marginBottom: 4 }}>Full Name</label>
-                    <input type="text" value={fullName} onChange={e => setFullName(e.target.value)} className="form-input" />
+                  {/* R32: First + Last name top-aligned, matches every other
+                       create-account / edit-account form on the platform. */}
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-3)', alignItems: 'start' }}>
+                    <div>
+                      <label style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.4)', display: 'block', marginBottom: 4 }}>First Name</label>
+                      <input type="text" value={firstName} onChange={e => setFirstName(e.target.value)} className="form-input" />
+                    </div>
+                    <div>
+                      <label style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.4)', display: 'block', marginBottom: 4 }}>Last Name</label>
+                      <input type="text" value={lastName} onChange={e => setLastName(e.target.value)} className="form-input" />
+                    </div>
                   </div>
                   <div>
                     <label style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.4)', display: 'block', marginBottom: 4 }}>Email</label>
