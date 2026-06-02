@@ -10,13 +10,25 @@ export default function GoalTracker({ revenueCents }: { revenueCents: number }) 
   const [goal, setGoal] = useState<any>(null);
   const [editing, setEditing] = useState(false);
   const [target, setTarget] = useState('');
+  // The goal is monthly, so progress must always measure month-to-date revenue,
+  // independent of the page's selected range preset (which can be Today/YTD/etc.).
+  // Fetch MTD revenue directly; fall back to the passed prop only until it loads.
+  const [mtdCents, setMtdCents] = useState<number | null>(null);
 
   async function load() {
-    const r = await fetch('/api/agent/sales/goal', { cache: 'no-store' });
-    if (r.ok) {
-      const j = await r.json();
+    const [gr, kr] = await Promise.all([
+      fetch('/api/agent/sales/goal', { cache: 'no-store' }),
+      fetch('/api/agent/sales/kpis-v2?range=mtd', { cache: 'no-store' }),
+    ]);
+    if (gr.ok) {
+      const j = await gr.json();
       setGoal(j.goal);
       if (j.goal) setTarget(String(j.goal.target_cents / 100));
+    }
+    if (kr.ok) {
+      const j = await kr.json();
+      const rev = Number(j?.current?.revenue_cents);
+      if (Number.isFinite(rev)) setMtdCents(rev);
     }
   }
   useEffect(() => { load(); }, []);
@@ -34,7 +46,8 @@ export default function GoalTracker({ revenueCents }: { revenueCents: number }) 
   }
 
   const target_cents = Number(goal?.target_cents ?? 0);
-  const pct = target_cents > 0 ? Math.min(100, Math.round((revenueCents / target_cents) * 100)) : 0;
+  const revenue = mtdCents ?? revenueCents;
+  const pct = target_cents > 0 ? Math.min(100, Math.round((revenue / target_cents) * 100)) : 0;
 
   return (
     <div className="metal-frame">
@@ -67,7 +80,7 @@ export default function GoalTracker({ revenueCents }: { revenueCents: number }) 
               <div style={{ width: `${pct}%`, height: '100%', background: 'var(--teal)', transition: 'width 0.3s' }} />
             </div>
             <div style={{ color: 'var(--grey-300)', fontSize: '0.85rem', marginTop: 6 }}>
-              {money(revenueCents)} Of {money(target_cents)} — {pct}%
+              {money(revenue)} Of {money(target_cents)} — {pct}%
             </div>
           </>
         ) : (
