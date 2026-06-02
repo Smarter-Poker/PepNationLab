@@ -260,14 +260,68 @@ export default async function OrderDetailPage(
 
   const handleForMethod = paymentHandles?.[order.payment_method] || null;
 
+  // Customer Support v2: deep link into the messenger pre-chat picker
+  // pre-filled with this order id. The /messenger page reads ?openSupport=1
+  // and ?orderId=<uuid> via the SupportButton client component.
+  const supportHref = `/messenger?openSupport=1&orderId=${encodeURIComponent(order.id)}`;
+
   return (
     <PageShell hideFooter>
       <section className="section">
         <div className="container-sm">
-          <div style={{ marginBottom: 'var(--space-4)' }}>
+          <div
+            style={{
+              marginBottom: 'var(--space-4)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: 'var(--space-3)',
+              flexWrap: 'wrap',
+            }}
+          >
             <Link href="/orders" style={{ fontSize: '0.85rem', color: 'var(--teal)', textDecoration: 'none' }}>
               Back To My Orders
             </Link>
+            {order.buyer_id === user.id && (
+              <Link
+                href={supportHref}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  padding: '6px 12px',
+                  borderRadius: 999,
+                  background: 'rgba(0,196,188,0.12)',
+                  border: '1px solid rgba(0,196,188,0.45)',
+                  color: 'var(--teal)',
+                  fontSize: '0.78rem',
+                  fontWeight: 700,
+                  textDecoration: 'none',
+                  letterSpacing: '0.02em',
+                }}
+              >
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                >
+                  <circle cx="12" cy="12" r="10" />
+                  <circle cx="12" cy="12" r="4" />
+                  <line x1="4.93" y1="4.93" x2="9.17" y2="9.17" />
+                  <line x1="14.83" y1="14.83" x2="19.07" y2="19.07" />
+                  <line x1="14.83" y1="9.17" x2="19.07" y2="4.93" />
+                  <line x1="14.83" y1="9.17" x2="18.36" y2="5.64" />
+                  <line x1="4.93" y1="19.07" x2="9.17" y2="14.83" />
+                </svg>
+                Contact Support About This Order
+              </Link>
+            )}
           </div>
 
           <div style={{ marginBottom: 'var(--space-6)' }}>
