@@ -8,6 +8,7 @@ import CommissionsTab from './CommissionsTab';
 import ReceiptVault from './ReceiptVault';
 import CreditIncreaseForm from './CreditIncreaseForm';
 import WalletSettings from './WalletSettings';
+import WalletSendSheet from './WalletSendSheet';
 
 const money = (n: number) =>
   new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 2 }).format(Number(n) || 0);
@@ -57,6 +58,8 @@ export default function WalletPage({
   const [statements, setStatements] = useState<any[]>([]);
   const [activity, setActivity] = useState<ActivityTxn[]>([]);
   const [storeCredit, setStoreCredit] = useState<number>(0);
+  const [walletBalance, setWalletBalance] = useState<number>(0);
+  const [sendOpen, setSendOpen] = useState(false);
   const [payOpen, setPayOpen] = useState(false);
   const [detailId, setDetailId] = useState<string | null>(null);
   const [creditOpen, setCreditOpen] = useState(false);
@@ -82,6 +85,7 @@ export default function WalletPage({
         const j = await walletRes.json();
         setActivity(Array.isArray(j.transactions) ? j.transactions : []);
         setStoreCredit(typeof j.storeCredit === 'number' ? j.storeCredit : 0);
+        setWalletBalance(typeof j.prepaidBalance === 'number' ? j.prepaidBalance : 0);
       }
     } catch {
       setError(true);
@@ -251,20 +255,23 @@ export default function WalletPage({
           >
             <div>
               <div style={{ fontSize: '0.72rem', color: 'var(--grey-400)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-                Store Credit Balance
+                Wallet Balance
               </div>
-              <div style={{ fontSize: '1.6rem', fontWeight: 800, color: 'var(--teal)' }}>{money(storeCredit)}</div>
+              <div style={{ fontSize: '1.6rem', fontWeight: 800, color: 'var(--teal)' }}>{money(walletBalance)}</div>
               <div style={{ fontSize: '0.8rem', color: 'var(--grey-500)', marginTop: 4 }}>
-                Earned From Referrals. Applied Automatically At Checkout.
+                Real Funds You Can Send Or Spend Across The Network.
               </div>
             </div>
-            <a
-              href="/account/referrals"
-              className="btn-secondary"
-              style={{ padding: '10px 16px', borderRadius: 10, minHeight: 44, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', whiteSpace: 'nowrap' }}
-            >
-              Earn More Credit
-            </a>
+            {role !== 'researcher' && (
+              <button
+                type="button"
+                onClick={() => setSendOpen(true)}
+                className="btn btn-primary"
+                style={{ padding: '10px 16px', borderRadius: 10, minHeight: 44, whiteSpace: 'nowrap' }}
+              >
+                Send Funds
+              </button>
+            )}
           </section>
           <section className="card-glass" style={{ padding: 16, borderRadius: 12 }}>
             <h3 style={{ color: 'var(--white)', marginTop: 0, fontSize: '1rem' }}>Open Statements</h3>
@@ -403,6 +410,9 @@ export default function WalletPage({
           onClose={() => setCreditOpen(false)}
           onSubmitted={() => { setCreditOpen(false); toast.success('Request Submitted'); }}
         />
+      )}
+      {sendOpen && (
+        <WalletSendSheet onClose={() => setSendOpen(false)} onSent={refresh} />
       )}
     </div>
   );
