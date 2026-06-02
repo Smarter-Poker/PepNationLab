@@ -47,9 +47,17 @@ export async function GET() {
   const { data: forecast } = await supabase.rpc('forecast_next_statement', { p_agent_id: user.id });
   if (typeof forecast === 'number') forecastNext = forecast;
 
-  const isPrepaid = profile.account_type === 'prepaid';
+  // Admins (and anyone without a positive credit line) are prepaid — their
+  // wallet is funded by prepaid_balance, not by a credit line. account_type
+  // is sometimes NULL for admin accounts (the seed didn't set it), so we
+  // can't blindly check `=== 'prepaid'`. Treat the explicit 'prepaid' enum,
+  // the admin role, and any account with no credit line as prepaid.
   const creditUsed = Number(profile.credit_used || 0);
   const creditLimit = Number(profile.credit_limit || 0);
+  const isPrepaid =
+    profile.account_type === 'prepaid'
+    || profile.role === 'admin'
+    || creditLimit <= 0;
   const primaryLabel = isPrepaid ? 'Prepaid Balance' : 'Credit Available';
   // Credit available now reflects the live running credit_used (charged on order
   // approval, paid down by admin payments) rather than only billed statements.
