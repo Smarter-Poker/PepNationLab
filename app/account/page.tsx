@@ -1,7 +1,10 @@
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/server';
-import { Bell, ShieldCheck, Heart, History, MapPin, Package, Gift, Wallet, ChevronRight } from 'lucide-react';
+import {
+  Bell, ShieldCheck, Heart, History, MapPin, Package, Gift, Wallet, ChevronRight,
+  User, RotateCcw, FileCheck, LifeBuoy,
+} from 'lucide-react';
 
 export const dynamic = 'force-dynamic';
 
@@ -75,6 +78,8 @@ export default async function AccountHubPage() {
     .eq('id', user.id)
     .maybeSingle();
 
+  const isResearcher = profile?.role === 'researcher';
+
   return (
     <div style={{ minHeight: '100dvh', background: 'var(--black)', padding: 'var(--space-6) var(--space-4)' }}>
       <div className="container" style={{ maxWidth: 760 }}>
@@ -92,16 +97,20 @@ export default async function AccountHubPage() {
             gap: 'var(--space-3)',
           }}
         >
-          <NavRow index={0} href="/account/wishlist" label="Wishlist" description="Products You Saved For Later." Icon={Heart} />
-          <NavRow index={1} href="/account/recently-viewed" label="Recently Viewed" description="The Last 50 Products You Browsed." Icon={History} />
-          <NavRow index={2} href="/orders" label="Orders" description="Track Past And Pending Orders." Icon={Package} />
-          {profile?.role === 'researcher' && (
-            <NavRow index={3} href="/account/referrals" label="Referrals" description="Share Your Code And Earn Store Credit." Icon={Gift} />
+          <NavRow index={0} href="/account/profile" label="Profile" description="Your Name, Avatar, Username, And Contact Details." Icon={User} />
+          <NavRow index={1} href="/account/wishlist" label="Wishlist" description="Products You Saved For Later." Icon={Heart} />
+          <NavRow index={2} href="/account/recently-viewed" label="Recently Viewed" description="The Last 50 Products You Browsed." Icon={History} />
+          <NavRow index={3} href="/orders" label="Orders" description="Track Past And Pending Orders." Icon={Package} />
+          <NavRow index={4} href="/account/refills" label="Refills & Reorders" description="Reorder A Past Protocol In One Tap." Icon={RotateCcw} />
+          {isResearcher && (
+            <NavRow index={5} href="/account/referrals" label="Referrals" description="Share Your Code And Earn Store Credit." Icon={Gift} />
           )}
-          <NavRow index={4} href="/account/notifications" label="Notifications" description="Push And In-App Notification Preferences." Icon={Bell} />
-          <NavRow index={5} href="/account/security" label="Security" description="Password, 2FA, And Login Sessions." Icon={ShieldCheck} />
-          <NavRow index={6} href="/account/addresses" label="Saved Addresses" description="Manage Shipping Addresses Used At Checkout." Icon={MapPin} />
-          <NavRow index={7} href="/account/payment-method" label="Default Payment Method" description="Pre-Select Zelle, Venmo, Cash App, Or Apple Pay." Icon={Wallet} />
+          <NavRow index={6} href="/account/notifications" label="Notifications" description="Push And In-App Notification Preferences." Icon={Bell} />
+          <NavRow index={7} href="/account/security" label="Security" description="Password, 2FA, And Login Sessions." Icon={ShieldCheck} />
+          <NavRow index={8} href="/account/addresses" label="Saved Addresses" description="Manage Shipping Addresses Used At Checkout." Icon={MapPin} />
+          <NavRow index={9} href="/account/payment-method" label="Default Payment Method" description="Pre-Select Zelle, Venmo, Cash App, Or Apple Pay." Icon={Wallet} />
+          <NavRow index={10} href="/account/compliance" label="Compliance & Disclaimers" description="Review And Re-Acknowledge The Research-Only Disclaimer." Icon={FileCheck} />
+          <NavRow index={11} href="/account/help" label="Help & Support" description="Browse FAQs Or Send Our Team A Message." Icon={LifeBuoy} />
         </div>
       </div>
     </div>
