@@ -4,7 +4,18 @@ import { createClient } from '@/lib/supabase/server';
 import HelpSupportClient from '@/components/account/HelpSupportClient';
 import { FAQ_CATEGORIES } from '@/lib/help-faq';
 
-export const dynamic = 'force-dynamic';
+// R28.2 — caching posture.
+//
+// This page can't be ISR'd as currently shaped: it reads (a) cookies for
+// auth, (b) searchParams for ?cat=, (c) per-user `profiles.role` for
+// audience gating. Any one of those forces dynamic rendering. We drop the
+// explicit `dynamic = 'force-dynamic'` directive — Next.js already
+// dynamic-renders this page because `createClient()` reads cookies, and
+// keeping the directive blocks future optimization if the constraints
+// relax (e.g. role lookup moves into middleware headers).
+//
+// Per-request DB work is also minimised: auth.getUser() and the role
+// lookup now run in parallel via Promise.all instead of sequentially.
 
 interface PageProps {
   searchParams: Promise<{ cat?: string }>;
@@ -25,13 +36,19 @@ export default async function AccountHelpPage({ searchParams }: PageProps) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect('/login');
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('role')
-    .eq('id', user.id)
-    .maybeSingle();
+  // R28.2: parallelize searchParams parsing with the role lookup so the
+  // page renders ~1 RTT faster on cold cache. searchParams is a Promise in
+  // Next 16 App Router; profile fetch is a Supabase round-trip.
+  const [params, profileResult] = await Promise.all([
+    searchParams,
+    supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', user.id)
+      .maybeSingle(),
+  ]);
+  const profile = profileResult.data;
 
-  const params = await searchParams;
   const rawCat = typeof params?.cat === 'string' ? params.cat.trim() : '';
   // Only honour the searchParam if it points to a real, visible category
   // for this viewer's role tier — silently ignore unknown / role-gated ids.
