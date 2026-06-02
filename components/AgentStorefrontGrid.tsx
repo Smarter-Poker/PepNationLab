@@ -759,6 +759,19 @@ export default function AgentStorefrontGrid({
 
   const totalCartItems = Object.values(cartItems).reduce((sum, qty) => sum + qty, 0);
 
+  // Reorder flow (and any deep link) can request the cart be opened on arrival via
+  // ?cart=1. Open it once the cart has hydrated with items, then never re-open.
+  const autoOpenCart = useRef(
+    typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('cart') === '1'
+  );
+  const autoOpenedCart = useRef(false);
+  useEffect(() => {
+    if (autoOpenCart.current && !autoOpenedCart.current && totalCartItems > 0) {
+      autoOpenedCart.current = true;
+      setShowCartFloat(true);
+    }
+  }, [totalCartItems]);
+
   if (!products || products.length === 0) {
     return (
       <div style={{ textAlign: 'center', padding: 'var(--space-12) 0' }}>
@@ -1301,37 +1314,65 @@ export default function AgentStorefrontGrid({
         <AnimatePresence>
           {showCartFloat && (
             <motion.div
-              initial={{ opacity: 0, y: 10, scale: 0.95 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: 10, scale: 0.95 }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowCartFloat(false)}
               style={{
-                position: 'absolute', bottom: 140, right: 0,
-                width: 'min(300px, 85vw)',
-                background: 'var(--surface-2)', border: '1px solid rgba(255,255,255,0.1)',
-                borderRadius: 'var(--radius-lg)', boxShadow: '0 16px 48px rgba(0,0,0,0.6)',
-                overflow: 'hidden',
-                pointerEvents: 'auto'
+                position: 'fixed', inset: 0, zIndex: 100000,
+                background: 'rgba(5,10,15,0.92)', backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)',
+                display: 'flex', flexDirection: 'column', alignItems: 'center',
+                padding: 'max(16px, env(safe-area-inset-top)) 12px calc(16px + env(safe-area-inset-bottom, 0px)) 12px',
+                pointerEvents: 'auto', overflowY: 'auto'
               }}
             >
-              <div style={{ padding: '14px 16px', borderBottom: '1px solid rgba(255,255,255,0.06)', fontWeight: 700, color: 'var(--white)', fontSize: '0.9rem' }}>
-                Cart ({totalCartItems} Items)
+              <div onClick={(e) => e.stopPropagation()} style={{
+                width: '100%', maxWidth: 620, margin: 'auto 0', display: 'flex', flexDirection: 'column',
+                background: 'var(--surface-2)', border: '1px solid rgba(255,255,255,0.1)',
+                borderRadius: 'var(--radius-lg)', boxShadow: '0 24px 64px rgba(0,0,0,0.7)',
+                overflow: 'hidden', maxHeight: '92dvh'
+              }}>
+              <div style={{ padding: '16px 18px', borderBottom: '1px solid rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <span style={{ fontWeight: 800, color: 'var(--white)', fontSize: '1.05rem' }}>
+                  Your Cart ({totalCartItems} {totalCartItems === 1 ? 'Item' : 'Items'})
+                </span>
+                <button onClick={() => setShowCartFloat(false)} aria-label="Close Cart" style={{
+                  background: 'rgba(255,255,255,0.08)', border: 'none', color: 'var(--white)',
+                  width: 36, height: 36, borderRadius: '50%', cursor: 'pointer', fontSize: '1rem', flexShrink: 0
+                }}>X</button>
               </div>
-              <div style={{ maxHeight: 240, overflowY: 'auto', padding: '8px 0' }}>
+              <div style={{ flex: 1, overflowY: 'auto', padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: 10 }}>
                 {Object.entries(cartItems).map(([variantId, qty]) => {
                   const item = products.find(p => p.id === variantId);
                   if (!item) return null;
                   const name = item.products?.name || 'Product';
                   const size = item.products?.unit_size ? `${item.products.unit_size}${item.products.unit_measure || ''}` : '';
+                  const imgUrl = getProductImage(
+                    item.custom_image_url ?? item.products?.image_url ?? null,
+                    item.products?.category || 'Other',
+                    name,
+                  );
+                  const perVial = item.retail_price / 10;
                   return (
-                    <div key={variantId} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 16px', gap: 8 }}>
+                    <div key={variantId} style={{
+                      display: 'flex', alignItems: 'center', gap: 12, padding: 10,
+                      background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 12,
+                    }}>
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={imgUrl ?? undefined}
+                        alt={name}
+                        width={64}
+                        height={64}
+                        style={{ width: 64, height: 64, borderRadius: 10, objectFit: 'cover', flexShrink: 0, background: '#0F1923' }}
+                      />
                       <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontSize: '0.8rem', color: 'var(--white)', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        <div style={{ fontSize: '0.9rem', color: 'var(--white)', fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                           {name} {size && `(${size})`}
                         </div>
-                        <div style={{ fontSize: '0.75rem', color: 'var(--grey-400)' }}>
-                          ${formatPrice(item.retail_price / 10)} x {qty}
+                        <div style={{ fontSize: '0.78rem', color: 'var(--grey-400)', marginBottom: 6 }}>
+                          ${formatPrice(perVial)} Each · ${formatPrice(perVial * qty)} Total
                         </div>
-                      </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                         <button onClick={() => setCartItems(prev => {
                           const next = { ...prev };
@@ -1394,6 +1435,7 @@ export default function AgentStorefrontGrid({
                           display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800,
                           flexShrink: 0, touchAction: 'manipulation'
                         }}>+</button>
+                      </div>
                       </div>
                     </div>
                   );
@@ -1463,12 +1505,12 @@ export default function AgentStorefrontGrid({
                       window.location.href = `/checkout?agent=${encodeURIComponent(agentSlug)}`;
                     }}
                     style={{
-                      display: 'block', width: '100%', textAlign: 'center', padding: '10px',
+                      display: 'block', width: '100%', textAlign: 'center', padding: '14px',
                       background: primaryColor, color: 'var(--white)', borderRadius: 'var(--radius-md)',
-                      fontWeight: 800, fontSize: '0.85rem', border: 'none', cursor: 'pointer'
+                      fontWeight: 800, fontSize: '0.95rem', border: 'none', cursor: 'pointer', minHeight: 50
                     }}
                   >
-                    Checkout
+                    Go To Checkout
                   </button>
                   <button
                     onClick={() => setShowCartFloat(false)}
@@ -1490,6 +1532,7 @@ export default function AgentStorefrontGrid({
                     Clear Cart
                   </button>
                 </div>
+              </div>
               </motion.div>
             )}
           </AnimatePresence>

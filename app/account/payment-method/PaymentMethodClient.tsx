@@ -27,7 +27,6 @@ type MethodId =
   | 'zelle'
   | 'venmo'
   | 'cashapp'
-  | 'apple_pay'
   | 'apple_cash'
   | 'paypal'
   | 'google_wallet'
@@ -46,7 +45,6 @@ const METHODS: MethodSpec[] = [
   { id: 'zelle', label: 'Zelle', description: 'Bank-To-Bank Transfer. Common For Larger Orders.', handleLabel: 'Email Or Phone Linked To Your Zelle', placeholder: 'you@email.com or +1 555 555 0123' },
   { id: 'venmo', label: 'Venmo', description: 'Fast Mobile Settlement. Most Popular.', handleLabel: 'Venmo Username', placeholder: '@yourhandle' },
   { id: 'cashapp', label: 'Cash App', description: 'Mobile Wallet Settlement.', handleLabel: 'Cash App Cashtag', placeholder: '$yourtag' },
-  { id: 'apple_pay', label: 'Apple Pay', description: 'iPhone, iPad, And Mac Wallet.', handleLabel: 'Apple Pay Contact (Phone Or Email)', placeholder: '+1 555 555 0123 or you@icloud.com' },
   { id: 'apple_cash', label: 'Apple Cash', description: 'Person-To-Person Payments Through iMessage.', handleLabel: 'Apple Cash Contact (Phone Or Email)', placeholder: '+1 555 555 0123' },
   { id: 'paypal', label: 'PayPal', description: 'Goods-Or-Services Send To Your Agent.', handleLabel: 'PayPal Email', placeholder: 'you@email.com' },
   { id: 'google_wallet', label: 'Google Wallet', description: 'Google Pay Transfer Via Email Or Phone.', handleLabel: 'Google Wallet Email Or Phone', placeholder: 'you@gmail.com' },

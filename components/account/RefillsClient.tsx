@@ -138,8 +138,11 @@ export default function RefillsClient() {
           description: skipped.map((s) => `${s.product_name}: ${s.reason}`).join(', '),
         });
       }
-      toast.success('Added To Cart. Review And Check Out.');
-      router.push(agentSlug ? `/checkout?agent=${encodeURIComponent(agentSlug)}` : '/checkout');
+      toast.success('Added To Cart. Review Your Order And Add More If You Like.');
+      // Land on the agent's storefront with the cart auto-opened (?cart=1) so the
+      // buyer can review with images, add more items, then go to checkout — rather
+      // than dropping them straight onto the checkout page.
+      router.push(agentSlug ? `/${encodeURIComponent(agentSlug)}?cart=1` : '/checkout');
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Reorder Failed.');
     } finally {
