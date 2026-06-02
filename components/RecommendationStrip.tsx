@@ -61,6 +61,8 @@ export default function RecommendationStrip({
         marginTop: 'var(--space-5)',
         paddingTop: 'var(--space-4)',
         borderTop: '1px solid rgba(255,255,255,0.06)',
+        width: '100%',
+        maxWidth: '100%',
       }}
     >
       <h3
@@ -79,8 +81,12 @@ export default function RecommendationStrip({
           display: 'flex',
           gap: 'var(--space-2)',
           overflowX: 'auto',
+          overscrollBehaviorX: 'contain',
+          WebkitOverflowScrolling: 'touch',
           paddingBottom: 6,
           scrollbarWidth: 'thin',
+          width: '100%',
+          maxWidth: '100%',
         }}
       >
         {loading

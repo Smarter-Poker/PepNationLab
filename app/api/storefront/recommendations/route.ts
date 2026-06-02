@@ -179,8 +179,23 @@ export async function GET(req: NextRequest) {
     const [bac] = candidateNames.splice(bacIdx, 1);
     candidateNames.unshift(bac);
   } else {
-    // We will unshift the exact name so the DB query matches it
-    candidateNames.unshift('Bac. Water');
+    // If it's completely missing from candidates, fetch its exact DB name to guarantee match
+    try {
+      const { data: bacQuery } = await supabase
+        .from('products')
+        .select('name')
+        .or('name.ilike.%bacteriostatic water%,name.ilike.%bac%water%')
+        .limit(1);
+      
+      if (bacQuery && bacQuery.length > 0 && bacQuery[0].name) {
+        candidateNames.unshift(bacQuery[0].name);
+      } else {
+        // Absolute fallback just in case the DB is completely missing it
+        candidateNames.unshift('Bac. Water');
+      }
+    } catch {
+      candidateNames.unshift('Bac. Water');
+    }
   }
 
   // 7) Fetch ALL variants for these candidate names
