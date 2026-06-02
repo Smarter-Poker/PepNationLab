@@ -61,7 +61,7 @@ export async function POST(req: NextRequest) {
 
   const amount = Math.round((Number(body?.amount) || 0) * 100) / 100;
   if (!Number.isFinite(amount) || amount <= 0) {
-    return NextResponse.json({ error: 'Enter A Credit Amount Greater Than $0.' }, { status: 400 });
+    return NextResponse.json({ error: 'Enter An Amount Greater Than $0.' }, { status: 400 });
   }
   if (!recipientIdRaw && !recipientEmailRaw) {
     return NextResponse.json({ error: 'A Recipient Is Required.' }, { status: 400 });
