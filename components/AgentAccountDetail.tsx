@@ -649,33 +649,6 @@ export default function AgentAccountDetail({
     </div>
 
     {/* Full-screen Gamification Scale explainer */}
-    {showGamificationInfo && (
-      <div
-        onClick={() => setShowGamificationInfo(false)}
-        style={{
-          position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.92)', backdropFilter: 'blur(10px)',
-          zIndex: 1400, display: 'flex', alignItems: 'flex-start', justifyContent: 'center',
-          padding: 'var(--space-4)', overflowY: 'auto',
-        }}
-      >
-        <div
-          onClick={(e) => e.stopPropagation()}
-          className="metal-frame"
-          style={{ width: '100%', maxWidth: 720, margin: 'var(--space-5) 0' }}
-        >
-          <div className="metal-content" style={{ padding: 'var(--space-6)' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 'var(--space-4)', marginBottom: 'var(--space-4)' }}>
-              <div>
-                <h2 className="metal-text" style={{ fontSize: '1.3rem', fontFamily: 'var(--font-brand)', margin: 0, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                  Gamification Scale
-                </h2>
-                <p style={{ color: 'var(--grey-400)', fontSize: '0.82rem', margin: '6px 0 0' }}>
-                  Commission Climbs Through 5 Levels As Monthly Sales Grow.
-                </p>
-              </div>
-              <button type="button" className="btn-silver" onClick={() => setShowGamificationInfo(false)}>Close</button>
-            </div>
-
       {showGamificationInfo && (
         <div
           onClick={() => setShowGamificationInfo(false)}
