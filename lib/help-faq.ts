@@ -18,7 +18,7 @@
  *     small button row beneath the answer.
  */
 
-export type FaqAudience = 'all' | 'agent';
+export type FaqAudience = 'all' | 'agent' | 'admin';
 
 export type FaqCategoryId =
   | 'getting-started'
@@ -36,7 +36,9 @@ export type FaqCategoryId =
   | 'pricing'
   | 'privacy'
   | 'mobile'
-  | 'agents';
+  | 'agents'
+  | 'support'
+  | 'admin';
 
 export interface FaqLink {
   label: string;
@@ -79,6 +81,8 @@ export const FAQ_CATEGORIES: FaqCategory[] = [
   { id: 'privacy',         label: 'Privacy & Data',            audience: 'all' },
   { id: 'mobile',          label: 'Mobile App',                audience: 'all' },
   { id: 'agents',          label: 'For Agents',                audience: 'agent' },
+  { id: 'support',         label: 'Customer Support',          audience: 'all'   },
+  { id: 'admin',           label: 'Admin Tools',               audience: 'admin' },
 ];
 
 /**
@@ -313,6 +317,41 @@ export const FAQ_ITEMS: FaqItem[] = [
   { id: 'agent-tax-export', category: 'agents', audience: 'agent', q: 'Can I Export Sales Data For My Tax Filing?', a: 'Yes. Agent Dashboard → Sales → Export Tax. Pick A Year And A Format (CSV Or PDF). The Export Includes Gross Sales, Refunds, Net Sales, And Sales By Jurisdiction Where Applicable.' },
   { id: 'agent-address-validation', category: 'agents', audience: 'agent', q: 'Why Did A Customer Address Get Flagged At Label Generation?', a: 'Before Generating A Label, We Run The Buyer Address Through Shippo Address Validation. If The Carrier Cannot Confirm The Address (Missing Apartment Number, Misspelled Street, P.O. Box For UPS), We Flag It For Your Review. Correct It With The Buyer Via Messenger, Then Regenerate The Label.' },
   { id: 'agent-sub-agent-referrals', category: 'agents', audience: 'agent', q: 'How Are Sub-Agent Referrals Tracked?', a: 'Each Sub-Agent Has A Personal Storefront Link With Their ID Encoded. Any Researcher Who Signs Up Through That Link Is Permanently Tagged With Referring_Sub_Agent_Id And Triggers Commission On Every Future Order They Place.' },
+
+  // ─────────────────────────────────────────────────────────────
+  // R28 — DEPTH ADDITIONS
+  // ─────────────────────────────────────────────────────────────
+  { id: 'agent-invoice-pdf', category: 'agents', audience: 'agent', q: 'Where Do I Download My Weekly Invoice As A PDF?', a: 'Wallet → Statements → Download PDF. The PDF Bundles Every Order On The Statement With COGS, Shipping, Discounts, And Net Owed. Useful For Bookkeeping And End-Of-Year Accounting.', links: [{ label: 'Wallet', href: '/wallet' }] },
+  { id: 'agent-invoice-vs-receipt-vs-1099', category: 'agents', audience: 'agent', q: 'What Is The Difference Between An Invoice, A Receipt, And A 1099?', a: 'Receipt: Buyer-Side Document Showing What A Researcher Paid You Per Order. Invoice: Your Weekly Statement Of Orders You Owe Admin For (COGS + Shipping). 1099: IRS Tax Form Summarizing Your Annual Reportable Earnings, Generated After Year End.' },
+  { id: 'become-an-agent', category: 'getting-started', q: 'How Do I Become An Agent?', a: 'Apply Via The Become An Agent Page From The Footer. Pick A Tier (Tier 3 Is Entry), Submit Your Storefront Slug Preference, And Acknowledge The Compliance Disclosures. Admin Reviews Manually And Reaches Out To Approve.', links: [{ label: 'Become An Agent', href: '/become-agent' }] },
+  { id: 'zelle-tips', category: 'payments', q: 'Zelle Payment Tips', a: 'Send Friends-And-Family Equivalent (Zelle Has No Goods-And-Services Toggle). Add Your Order Number In The Memo. Most Banks Process Zelle Instantly During Business Hours; Some Hold Until The Next Business Day For New Recipients.' },
+  { id: 'venmo-tips', category: 'payments', q: 'Venmo Payment Tips', a: 'Always Send As Friends And Family (Toggle Off Goods & Services). Goods & Services Triggers Buyer Protection That Conflicts With Research-Only Sales And May Cause Reversal. Put Your Order Number In The Note.' },
+  { id: 'cashapp-tips', category: 'payments', q: 'Cash App Payment Tips', a: 'Send As Pay Not Request (You Are Initiating The Payment). For Larger Amounts You May Need To Verify Your Cash App Identity First. Add The Order Number In The Note.' },
+  { id: 'applepay-tips', category: 'payments', q: 'Apple Pay Payment Tips', a: 'Apple Pay Is Used Via Apple Cash On iMessage. Send To Your Agent\'s Phone Number (Their Stored Handle). Include The Order Number In The iMessage Thread So They Can Match It Quickly.' },
+  { id: 'applecash-tips', category: 'payments', q: 'Apple Cash Payment Tips', a: 'Apple Cash Lives Inside iMessage And Wallet. Send From Your Apple Cash Card To The Phone Number On File. Both Sides Need An Apple Cash Account. Send The Order Number In The Same iMessage Thread.' },
+  { id: 'paypal-tips', category: 'payments', q: 'PayPal Payment Tips', a: 'Always Use Friends And Family. Goods And Services Triggers Buyer Protection That Conflicts With Research-Only Sales And Can Result In Reversal. Put The Order Number In The Note. Send From A Verified PayPal Balance Or A Linked Bank.' },
+  { id: 'googlewallet-tips', category: 'payments', q: 'Google Wallet (Google Pay) Payment Tips', a: 'Send To The Email Or Phone Number Your Agent Has Configured. Google Wallet Peer-To-Peer Is U.S. Only. Note The Order Number In The Memo.' },
+  { id: 'wise-tips', category: 'payments', q: 'Wise Payment Tips', a: 'Wise Is The Go-To For International Or Larger USD Transfers. Use Your Agent\'s Wise Email Or Wisetag. Wise Charges A Small Fee — Check It Before Sending So Your Agent Receives The Expected Net.' },
+  { id: 'chime-tips', category: 'payments', q: 'Chime Payment Tips', a: 'Use Chime Pay Friends. Send To Your Agent\'s Chime Tag Or Phone. Chime Is U.S. Only. Note The Order Number In The Memo.' },
+  { id: 'refund-timing-per-app', category: 'returns', q: 'How Long Does A Refund Take By Payment App?', a: 'Zelle, Apple Cash: Same Day If Sent Before 5 PM Local. Venmo, Cash App, PayPal Friends-And-Family: 1 To 3 Business Days. Wise: 1 To 5 Business Days. Chime, Google Wallet: 1 To 3 Business Days. Refunds To Wallet Are Instant Regardless Of Original Method.' },
+  { id: 'account-locked-recovery', category: 'account', q: 'My Account Is Locked Or Deactivated — How Do I Recover It?', a: 'Open A Support Chat From The Login Screen Or Email Research@Pepnationlab.com. Include Your Username Or Email And A Brief Description Of The Issue. Admin Reviews The Audit Log And Reactivates If Appropriate, Or Explains What Happened.' },
+  { id: 'cart-reminder-why', category: 'notifications', q: 'Why Did I Get A Cart Reminder?', a: 'You Added Items To A Cart But Did Not Check Out. We Send One Friendly Reminder Push To Help You Finish. You Can Turn Cart Reminders Off Under Account → Notifications → Cart Reminder. We Never Send More Than One Per Cart Session.', links: [{ label: 'Notification Settings', href: '/account?tab=notifications' }] },
+  { id: 'support-hours', category: 'support', q: 'What Are Your Support Hours?', a: 'Live Support Coverage Runs 09:00 To 21:00 Eastern Time, Seven Days A Week. Outside Those Hours, A Message To Support Still Queues Up And A Human Replies The Next Morning. Critical Order Issues Get Bumped First.' },
+  { id: 'support-sla', category: 'support', q: 'How Fast Will Support Reply?', a: 'Inside Live Hours, Median Response Is Under 15 Minutes. Outside Live Hours, We Reply The Next Morning. Order Issues With A Real Block (Stuck Payment, Missing Package) Are Triaged Ahead Of General Questions.' },
+  { id: 'support-escalation', category: 'support', q: 'How Do I Escalate If My Issue Is Not Resolved?', a: 'Reply In The Same Support Thread And Tap Escalate. The Conversation Is Flagged For Admin And A Senior Support Specialist Picks It Up. Do Not Open A New Thread — It Resets Your Place In The Queue.' },
+  { id: 'support-widget-everywhere', category: 'support', q: 'How Do I Reach Support Without Leaving The Page I Am On?', a: 'The Support Widget Lives In The Bottom-Right Corner Of Every Authenticated Page. Tap It To Open A Mini Chat With Support. Your Conversation Continues In Messenger If You Switch Pages.' },
+  { id: 'lot-lookup-for-verification', category: 'compounds', q: 'How Do Resellers Verify A Lot Number?', a: 'Each Lot On Your Order Detail Page Carries A Verification Code You Can Read Out Or Paste Into Lab Records. The COA PDF Includes The Manufacturer\'s Lot ID So Downstream Verification Can Be Independently Confirmed.' },
+  { id: 'agent-storefront-offline', category: 'orders', q: 'My Agent\'s Storefront Is Offline — What Happens To My Orders?', a: 'Pending Orders Stay Open And Can Still Be Fulfilled By Your Agent (Or Admin On Their Behalf). New Orders Cannot Be Placed Until The Storefront Is Reactivated. If The Storefront Is Permanently Closed, Admin Reassigns You To Another Agent And Pending Orders Are Refunded Or Reissued.' },
+  { id: 'multi-currency', category: 'pricing', q: 'Can I See Prices In My Local Currency?', a: 'All Prices Display In USD Because Settlement Is USD-Denominated And Payment Apps Convert At Their Own Rates. If You Are International, Your Bank Or Payment App Shows The Equivalent Charge When You Send The Funds.' },
+  { id: 'pwa-install-failed', category: 'mobile', q: 'The Install App Prompt Did Not Work — What Do I Do?', a: 'Make Sure You Are On Chrome (Android) Or Safari (iOS) And Visiting The Site At pepnationlab.com Directly. If The Prompt Still Fails, Manually Add To Home Screen From The Browser Share Menu. iOS Requires The Home-Screen Install To Receive Push.' },
+  { id: 'pwa-install-button-missing', category: 'mobile', q: 'Where Is The Install App Button?', a: 'On Android Chrome The Button Lives In The Account Header After You Sign In. On iOS Safari There Is No Programmatic Install Prompt — Use Share → Add To Home Screen. On Desktop Chrome, Look For The Install Icon On The Right Side Of The Address Bar.' },
+  { id: 'platform-times-in-utc', category: 'orders', q: 'Why Do Some Times Show In UTC?', a: 'Internal System Events (Cron Runs, Statement Cutoffs, Audit Logs) Are Recorded And Surfaced In UTC For Consistency Across Time Zones. Buyer-Facing Times On Order Cards Are Converted To Your Browser Local Time Automatically.' },
+  { id: 'admin-impersonation', category: 'admin', audience: 'admin', q: 'How Does Admin Impersonation Work?', a: 'Admin Dashboard → Researchers Or Agents → Pick A User → Impersonate. The Session Is Recorded In Admin Audit Log With Full Tool Tracing And A Visible Banner Reminds You That You Are Impersonating. End The Session Immediately When Done.' },
+  { id: 'admin-mark-paid', category: 'admin', audience: 'admin', q: 'How Do I Mark An Order Paid From The Admin Side?', a: 'Admin → Orders → Pick The Order → Mark Paid. This Posts An Agent Approval Pending Transition. Use Sparingly And Only When The Agent Confirms Receipt — The Action Is Logged In The Admin Audit Log.' },
+  { id: 'admin-catalog-risk-audit', category: 'admin', audience: 'admin', q: 'How Do I Audit The Catalog For Compliance Risk?', a: 'Admin → Products → Filter By Risk. Surfaces Banned Products, Recently Added Products Without COA, And Products With Anomalous Pricing. Use Quarterly To Catch Compliance Drift.' },
+  { id: 'admin-product-ban', category: 'admin', audience: 'admin', q: 'How Do I Ban A Product Platform-Wide?', a: 'Admin → Products → Pick The Product → Toggle Banned. Banned Products Cannot Be Added To Any Cart, Cannot Be Checked Out (Checkout Re-Verifies At Submit Time), And Are Hidden From Storefronts. The Ban Is Logged To Admin Audit Log.' },
+  { id: 'admin-impersonation-audit', category: 'admin', audience: 'admin', q: 'How Do I Review Past Admin Impersonation Sessions?', a: 'Admin → Audit Log → Filter By Action: impersonate.start. Each Entry Includes The Acting Admin, The Impersonated User, Start Time, Duration, And A Click-Through To The Full Session Trace. Review Quarterly As Part Of SOC2 Posture.' },
+  { id: 'admin-mfa-required', category: 'admin', audience: 'admin', q: 'Is Two-Factor Required For Admin?', a: 'Yes. Admin Role Cannot Bypass The Two-Factor Enrollment Gate. If You Lose Your Authenticator Device, Use A Backup Code Or Contact Another Admin To Reset Enrollment Via Direct DB Tooling — There Is No Self-Service Reset For Admin.' },
 ];
 
 /**
@@ -320,22 +359,28 @@ export const FAQ_ITEMS: FaqItem[] = [
  * everything; researchers see only audience='all' items.
  */
 export function visibleFaq(role: string | null | undefined): FaqItem[] {
+  const isAdmin = role === 'admin';
   const isAgentTier =
     role === 'agent' || role === 'super_agent' || role === 'admin';
-  return FAQ_ITEMS.filter((item) =>
-    item.audience === 'agent' ? isAgentTier : true,
-  );
+  return FAQ_ITEMS.filter((item) => {
+    if (item.audience === 'admin') return isAdmin;
+    if (item.audience === 'agent') return isAgentTier;
+    return true;
+  });
 }
 
 /**
  * Filter the categories for a given viewer role. Same rule as items.
  */
 export function visibleCategories(role: string | null | undefined): FaqCategory[] {
+  const isAdmin = role === 'admin';
   const isAgentTier =
     role === 'agent' || role === 'super_agent' || role === 'admin';
-  return FAQ_CATEGORIES.filter((cat) =>
-    cat.audience === 'agent' ? isAgentTier : true,
-  );
+  return FAQ_CATEGORIES.filter((cat) => {
+    if (cat.audience === 'admin') return isAdmin;
+    if (cat.audience === 'agent') return isAgentTier;
+    return true;
+  });
 }
 
 /**
@@ -354,4 +399,65 @@ export function searchFaq(query: string, items: FaqItem[]): Set<string> {
     }
   }
   return hits;
+}
+
+/**
+ * R28 — Build a canonical deep-link URL to a specific FAQ answer. Used by
+ * <HelpHint />, the sitemap, and any surface that wants to send a buyer
+ * straight to a specific answer (the help page opens it on mount via hash).
+ */
+export function faqDeepLink(itemId: string): string {
+  return `/account/help#faq-${itemId}`;
+}
+
+export interface FaqSuggestion {
+  item: FaqItem;
+  /** Higher = stronger match. Bounded 0–100 in practice. */
+  score: number;
+}
+
+/**
+ * R28 — Lightweight natural-language match used by the support widget and
+ * the messenger composer to surface 1–3 likely answers before a user hits
+ * send. Scores by token overlap with the question (weighted higher) and
+ * the answer body. Returns `limit` strongest matches, descending.
+ *
+ * Behaviour:
+ *   - Empty or single-character prompts return `[]` so we never suggest a
+ *     random answer in response to nothing.
+ *   - Tokens shorter than 3 chars are dropped to keep noise out.
+ *   - Score is rounded to a percentage of the theoretical maximum so the
+ *     UI can render a confidence bar consistently across queries.
+ */
+export function suggestFaq(
+  prompt: string,
+  items: FaqItem[],
+  limit = 3,
+): FaqSuggestion[] {
+  const cleaned = (prompt || '').trim().toLowerCase();
+  if (cleaned.length < 2) return [];
+  const tokens = cleaned
+    .split(/[^a-z0-9]+/)
+    .filter((t) => t.length >= 3);
+  if (tokens.length === 0) return [];
+
+  const unique = Array.from(new Set(tokens));
+  const ranked: FaqSuggestion[] = [];
+
+  for (const it of items) {
+    const qLower = it.q.toLowerCase();
+    const aLower = it.a.toLowerCase();
+    let raw = 0;
+    for (const tok of unique) {
+      if (qLower.includes(tok)) raw += 3;
+      else if (aLower.includes(tok)) raw += 1;
+    }
+    if (raw === 0) continue;
+    const max = unique.length * 3;
+    const score = Math.min(100, Math.round((raw / max) * 100));
+    ranked.push({ item: it, score });
+  }
+
+  ranked.sort((a, b) => b.score - a.score);
+  return ranked.slice(0, Math.max(0, limit));
 }
