@@ -82,12 +82,14 @@ export default function AgentSales({ orders, setOrders, agentId, userProfile }: 
   const [commission, setCommission] = useState<{ lifetime: number; thisMonth: number; has: boolean } | null>(null);
   const [view, setView] = useState<string>('30'); // '7' | '30' | '90' | 'm0' | 'm1' | ...
   const [goal, setGoal] = useState<number>(0);
+  const [goalLoaded, setGoalLoaded] = useState(false);
   const [editingGoal, setEditingGoal] = useState(false);
   const [goalDraft, setGoalDraft] = useState('');
   const supabase = createClient();
   const isFetching = useRef(false);
   const needsRefetch = useRef(false);
-  const celebReady = useRef(false);
+  const milestoneSeeded = useRef(false);
+  const goalSeeded = useRef(false);
 
   // ── Monthly revenue goal: durable + cross-device via /api/agent/sales/goal,
   //    with a localStorage cache for instant first paint. ──────────────────────
@@ -96,18 +98,21 @@ export default function AgentSales({ orders, setOrders, agentId, userProfile }: 
     let cache = 5000;
     try { const raw = localStorage.getItem(`pnl_sales_goal_${agentId}`); if (raw) cache = Math.max(0, Number(raw) || 0); } catch { /* ignore */ }
     setGoal(cache);
+    setGoalLoaded(false);
     (async () => {
       try {
         const res = await fetch('/api/agent/sales/goal', { cache: 'no-store' });
-        if (!res.ok) return;
-        const j = await res.json();
-        const cents = j?.goal?.target_cents;
-        if (cents != null && !cancelled) {
-          const dollars = Math.round(Number(cents)) / 100;
-          setGoal(dollars);
-          try { localStorage.setItem(`pnl_sales_goal_${agentId}`, String(dollars)); } catch { /* ignore */ }
+        if (res.ok) {
+          const j = await res.json();
+          const cents = j?.goal?.target_cents;
+          if (cents != null && !cancelled) {
+            const dollars = Math.round(Number(cents)) / 100;
+            setGoal(dollars);
+            try { localStorage.setItem(`pnl_sales_goal_${agentId}`, String(dollars)); } catch { /* ignore */ }
+          }
         }
       } catch { /* offline — keep cache */ }
+      finally { if (!cancelled) setGoalLoaded(true); }
     })();
     return () => { cancelled = true; };
   }, [agentId]);
@@ -374,28 +379,37 @@ export default function AgentSales({ orders, setOrders, agentId, userProfile }: 
     const monthTag = `${new Date().getFullYear()}-${new Date().getMonth()}`;
     const celebrate = (msg: string) => { try { toast.success(msg); } catch { /* ignore */ } burstConfetti(); };
     try {
-      if (!celebReady.current) {
+      // Milestones — seed silently on the first loaded pass (orders are in by now,
+      // since we only run when !loading), celebrate only on a later crossing.
+      if (!milestoneSeeded.current) {
         if (localStorage.getItem(mKey) == null) localStorage.setItem(mKey, String(achievedMax));
-        if (goal > 0 && a.monthRevenue >= goal && localStorage.getItem(gKey) == null) localStorage.setItem(gKey, monthTag);
-        celebReady.current = true;
-        return;
+        milestoneSeeded.current = true;
+      } else {
+        const prevM = Number(localStorage.getItem(mKey) || '0');
+        if (achievedMax > prevM) {
+          const m = MILESTONES.find((x) => x.amount === achievedMax);
+          celebrate(`Milestone Unlocked — ${m?.label ?? fmt(achievedMax)}`);
+          localStorage.setItem(mKey, String(achievedMax));
+        }
       }
-      const prevM = Number(localStorage.getItem(mKey) || '0');
-      if (achievedMax > prevM) {
-        const m = MILESTONES.find((x) => x.amount === achievedMax);
-        celebrate(`Milestone Unlocked — ${m?.label ?? fmt(achievedMax)}`);
-        localStorage.setItem(mKey, String(achievedMax));
-      }
-      if (goal > 0 && a.monthRevenue >= goal && localStorage.getItem(gKey) !== monthTag) {
-        celebrate('Monthly Goal Reached — Nice Work!');
-        localStorage.setItem(gKey, monthTag);
+      // Goal — only evaluate once the REAL goal has loaded from the server, so we
+      // never fire on a goal that was already met when the page opened (the goal
+      // arrives async and starts at a cached/default value).
+      if (goalLoaded && goal > 0) {
+        if (!goalSeeded.current) {
+          if (a.monthRevenue >= goal) localStorage.setItem(gKey, monthTag);
+          goalSeeded.current = true;
+        } else if (a.monthRevenue >= goal && localStorage.getItem(gKey) !== monthTag) {
+          celebrate('Monthly Goal Reached — Nice Work!');
+          localStorage.setItem(gKey, monthTag);
+        }
       }
     } catch { /* ignore */ }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [loading, a.lifetimeRevenue, a.monthRevenue, goal]);
+  }, [loading, goalLoaded, a.lifetimeRevenue, a.monthRevenue, goal]);
 
   const downloadCsv = useCallback((rows: (string | number)[][], name: string) => {
-    const csv = rows.map((r) => r.map((c) => `"${String(c ?? '')}"`).join(',')).join('\n');
+    const csv = rows.map((r) => r.map((c) => `"${String(c ?? '').replace(/"/g, '""')}"`).join(',')).join('\n');
     const blob = new Blob([csv], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
@@ -416,15 +430,15 @@ export default function AgentSales({ orders, setOrders, agentId, userProfile }: 
   }, [orders, downloadCsv]);
 
   const exportPnlCsv = useCallback(() => {
-    const rows: (string | number)[][] = [['Month', 'Orders', 'Revenue', 'COGS', 'Shipping', 'Net Profit']];
-    for (const m of a.pnl) rows.push([m.label, m.orders, m.revenue.toFixed(2), m.cogs.toFixed(2), m.shipping.toFixed(2), m.net.toFixed(2)]);
+    const rows: (string | number)[][] = [['Month', 'Orders', 'Revenue', 'COGS', 'Shipping', 'Owed To Platform', 'Net Profit']];
+    for (const m of a.pnl) rows.push([m.label, m.orders, m.revenue.toFixed(2), m.cogs.toFixed(2), m.shipping.toFixed(2), (m.cogs + m.shipping).toFixed(2), m.net.toFixed(2)]);
     downloadCsv(rows, `profit-and-loss-${new Date().toISOString().slice(0, 10)}.csv`);
   }, [a.pnl, downloadCsv]);
 
   if (loading) return <div style={{ padding: 'var(--space-6)', color: 'var(--silver)' }}>Loading Live Sales Data...</div>;
   if (error) return <div style={{ padding: 'var(--space-6)', color: 'var(--red)' }}>Error: {error}</div>;
 
-  const isSub = !!(userProfile?.tier && String(userProfile.tier).includes('sub-agent'));
+  const isSub = userProfile?.is_sub_agent === true;
   const showCommission = !!(commission?.has || userProfile?.is_super_agent || userProfile?.is_sub_agent);
   const tabHref = (tab: string) => `/dashboard/agent?tab=${encodeURIComponent(tab)}`;
   const PROFIT_HELP = 'Profit = what the customer paid, minus your product cost and the shipping the platform bills you.';
@@ -726,7 +740,7 @@ export default function AgentSales({ orders, setOrders, agentId, userProfile }: 
             <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
               <table className="sa-table">
                 <thead>
-                  <tr><th>Month</th><th>Orders</th><th>Revenue</th><th>COGS</th><th>Shipping</th><th>Net Profit</th></tr>
+                  <tr><th>Month</th><th>Orders</th><th>Revenue</th><th>COGS</th><th>Shipping</th><th title="What You Owe The Platform This Month: Product Cost + Shipping">Owed</th><th>Net Profit</th></tr>
                 </thead>
                 <tbody>
                   {a.pnl.map((m) => (
@@ -736,6 +750,7 @@ export default function AgentSales({ orders, setOrders, agentId, userProfile }: 
                       <td>{fmt(m.revenue)}</td>
                       <td>{fmt(m.cogs)}</td>
                       <td>{fmt(m.shipping)}</td>
+                      <td style={{ color: '#FFB020' }}>{fmt(m.cogs + m.shipping)}</td>
                       <td style={{ color: '#00FF9D', fontWeight: 800 }}>{fmt(m.net)}</td>
                     </tr>
                   ))}
