@@ -17,7 +17,7 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
   }
 
-  const svc = createServiceClient();
+  const svc = await createServiceClient();
   const today = new Date().toISOString().slice(0, 10);
 
   // Idempotency: short-circuit if already ran today

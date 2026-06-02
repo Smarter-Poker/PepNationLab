@@ -16,7 +16,7 @@ export async function GET() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
-  const svc = createServiceClient();
+  const svc = await createServiceClient();
   const { data } = await svc
     .from('credit_increase_requests')
     .select('id, current_limit, requested_limit, reason, status, decided_at, decision_note, created_at')
@@ -38,7 +38,7 @@ export async function POST(req: Request) {
   try { body = Body.parse(await req.json()); }
   catch (e: any) { return NextResponse.json({ error: 'bad_request', details: e.errors }, { status: 400 }); }
 
-  const svc = createServiceClient();
+  const svc = await createServiceClient();
 
   // Daily rate-limit: max 3 pending requests per day
   const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();

@@ -14,7 +14,7 @@ export async function GET() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
 
-  const svc = createServiceClient();
+  const svc = await createServiceClient();
   const insights: Insight[] = [];
 
   // Low stock (real column: stock_count)

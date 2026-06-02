@@ -19,7 +19,7 @@ export async function GET(req: Request) {
   const start = `${year}-01-01T00:00:00Z`;
   const end = `${year + 1}-01-01T00:00:00Z`;
 
-  const svc = createServiceClient();
+  const svc = await createServiceClient();
   const { data: rows } = await svc
     .from('agent_commissions')
     .select('commission_amount, status, created_at')

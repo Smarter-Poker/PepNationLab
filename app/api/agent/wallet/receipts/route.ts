@@ -14,7 +14,7 @@ export async function GET(req: Request) {
   const limit = Math.min(parseInt(url.searchParams.get('limit') ?? '100', 10) || 100, 500);
   const offset = parseInt(url.searchParams.get('offset') ?? '0', 10) || 0;
 
-  const svc = createServiceClient();
+  const svc = await createServiceClient();
   // Get all payment_proofs for orders where this user is the agent OR buyer
   const { data: agentOrders } = await svc.from('orders').select('id').eq('agent_id', user.id);
   const orderIds = (agentOrders ?? []).map((o: any) => o.id);

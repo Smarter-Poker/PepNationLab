@@ -11,7 +11,7 @@ export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> 
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
 
-  const svc = createServiceClient();
+  const svc = await createServiceClient();
   const { data: stmt } = await svc
     .from('weekly_statements')
     .select('id, agent_id, week_start, week_end, total_cogs, total_shipping, total_owed, status, paid_at, payment_method, due_date, disputed_at, dispute_reason')

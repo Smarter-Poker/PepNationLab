@@ -12,7 +12,7 @@ export async function GET(req: Request) {
   if (!user) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
 
   const { start, end } = parseRange(new URL(req.url).searchParams);
-  const svc = createServiceClient();
+  const svc = await createServiceClient();
   const { data: orders, error } = await svc
     .from('orders')
     .select('created_at')

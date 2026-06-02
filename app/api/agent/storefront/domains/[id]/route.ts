@@ -12,7 +12,7 @@ export async function DELETE(req: Request, ctx: { params: Promise<{ id: string }
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
-  const svc = createServiceClient();
+  const svc = await createServiceClient();
   const { error } = await svc
     .from('agent_domains')
     .delete()

@@ -11,7 +11,7 @@ export async function GET() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
-  const svc = createServiceClient();
+  const svc = await createServiceClient();
   const { data } = await svc
     .from('agent_domains')
     .select('id, hostname, status, verified_at, created_at')
@@ -33,7 +33,7 @@ export async function POST(req: Request) {
   let body: z.infer<typeof Body>;
   try { body = Body.parse(await req.json()); }
   catch (e: any) { return NextResponse.json({ error: 'bad_request', details: e.errors }, { status: 400 }); }
-  const svc = createServiceClient();
+  const svc = await createServiceClient();
   const { data, error } = await svc
     .from('agent_domains')
     .insert({ agent_id: user.id, hostname: body.hostname.toLowerCase(), status: 'pending' })

@@ -40,11 +40,12 @@ export default function MyQRCodeModal({
     setErr(null);
     fetch('/api/agent/my-qr', { cache: 'no-store' })
       .then(async r => {
+        const j = await r.json().catch(() => ({}));
         if (!r.ok) {
-          const j = await r.json().catch(() => ({}));
-          throw new Error(j.message || 'Could Not Load QR');
+          // Surface the actual server message so the user knows WHY it failed.
+          throw new Error(j.message || `Could Not Load QR (HTTP ${r.status})`);
         }
-        return r.json();
+        return j;
       })
       .then(setData)
       .catch(e => setErr(e.message || 'Could Not Load QR'));

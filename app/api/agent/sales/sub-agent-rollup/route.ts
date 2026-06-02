@@ -13,7 +13,7 @@ export async function GET(req: Request) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
 
-  const svc = createServiceClient();
+  const svc = await createServiceClient();
   const { data: profile } = await svc
     .from('profiles')
     .select('id, is_super_agent, role')

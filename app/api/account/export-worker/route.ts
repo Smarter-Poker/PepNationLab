@@ -14,7 +14,7 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
   }
 
-  const svc = createServiceClient();
+  const svc = await createServiceClient();
   const { data: job } = await svc
     .from('account_export_jobs')
     .select('id, user_id')

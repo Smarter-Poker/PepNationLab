@@ -11,7 +11,7 @@ export async function GET() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
 
-  const svc = createServiceClient();
+  const svc = await createServiceClient();
   const { data: rows, error } = await svc
     .from('agent_commissions')
     .select('id, agent_id, order_id, commission_rate, commission_amount, status, created_at')

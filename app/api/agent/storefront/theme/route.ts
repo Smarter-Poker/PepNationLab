@@ -11,7 +11,7 @@ export async function GET() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
-  const svc = createServiceClient();
+  const svc = await createServiceClient();
   const { data } = await svc
     .from('agent_profiles')
     .select('primary_color, secondary_color, accent_color, tagline, hero_image_url, theme_config, logo_url, slug, display_name')
@@ -38,7 +38,7 @@ export async function PATCH(req: Request) {
   let body: z.infer<typeof Body>;
   try { body = Body.parse(await req.json()); }
   catch (e: any) { return NextResponse.json({ error: 'bad_request', details: e.errors }, { status: 400 }); }
-  const svc = createServiceClient();
+  const svc = await createServiceClient();
   const { error } = await svc
     .from('agent_profiles')
     .update(body)
