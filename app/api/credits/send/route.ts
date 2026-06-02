@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient, createServiceClient } from '@/lib/supabase/server';
 import { requireAgent } from '@/lib/admin-auth';
 import { assertSameOrigin } from '@/lib/csrf';
-import { rateLimit } from '@/lib/rate-limit';
 
 export const dynamic = 'force-dynamic';
 
@@ -31,17 +30,6 @@ export async function POST(req: NextRequest) {
   const gate = await requireAgent();
   if (!gate.ok) return gate.response;
   const issuerId = gate.user.id;
-
-  // Light abuse guard.
-  const limited = await rateLimit({
-    key: 'credit_send',
-    limit: 20,
-    windowSeconds: 60,
-    identifier: issuerId,
-  });
-  if (!limited.allowed) {
-    return NextResponse.json({ error: 'Too Many Requests. Please Wait And Try Again.' }, { status: 429 });
-  }
 
   // requireAgent uses the auth client to gate; use the service client for the
   // hierarchy reads + the SECURITY DEFINER RPC.
