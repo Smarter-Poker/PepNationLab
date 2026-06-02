@@ -5,7 +5,8 @@ import { AlertTriangle, Info, ShieldAlert } from 'lucide-react';
 import type { CartWarning } from '@/lib/compounds';
 
 interface CartWarningsProps {
-  slugs: string[];
+  slugs?: string[];
+  productIds?: string[];
 }
 
 const LEVEL_STYLE: Record<
@@ -23,13 +24,17 @@ function LevelIcon({ level }: { level: CartWarning['level'] }) {
   return <Info size={18} aria-hidden="true" />;
 }
 
-export default function CartWarnings({ slugs }: CartWarningsProps) {
+export default function CartWarnings({ slugs, productIds }: CartWarningsProps) {
   const [warnings, setWarnings] = useState<CartWarning[]>([]);
+
+  const slugKey = (slugs ?? []).join(',');
+  const productKey = (productIds ?? []).join(',');
 
   useEffect(() => {
     let cancelled = false;
-    const unique = Array.from(new Set(slugs)).filter(Boolean);
-    if (unique.length === 0) {
+    const uniqueSlugs = Array.from(new Set(slugs ?? [])).filter(Boolean);
+    const uniqueProductIds = Array.from(new Set(productIds ?? [])).filter(Boolean);
+    if (uniqueSlugs.length === 0 && uniqueProductIds.length === 0) {
       setWarnings([]);
       return;
     }
@@ -38,7 +43,7 @@ export default function CartWarnings({ slugs }: CartWarningsProps) {
         const res = await fetch('/api/research/cart-warnings', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ slugs: unique }),
+          body: JSON.stringify({ slugs: uniqueSlugs, productIds: uniqueProductIds }),
         });
         const data = (await res.json()) as { warnings?: CartWarning[] };
         if (!cancelled) setWarnings(data.warnings ?? []);
@@ -49,9 +54,9 @@ export default function CartWarnings({ slugs }: CartWarningsProps) {
     return () => {
       cancelled = true;
     };
-  }, [slugs]);
+  }, [slugKey, productKey, slugs, productIds]);
 
-  if (slugs.length === 0 || warnings.length === 0) return null;
+  if (warnings.length === 0) return null;
 
   return (
     <div style={{ display: 'grid', gap: 'var(--space-3)', margin: 'var(--space-4) 0' }}>

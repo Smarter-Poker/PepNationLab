@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { createClient } from '@/lib/supabase/server';
 import {
   Bell, ShieldCheck, Heart, History, MapPin, Gift, Wallet, ChevronRight,
-  User, RotateCcw, FileCheck, LifeBuoy,
+  User, RotateCcw, FileCheck, LifeBuoy, FlaskConical, Clock,
 } from 'lucide-react';
 
 export const dynamic = 'force-dynamic';
@@ -87,6 +87,8 @@ export default async function AccountHubPage() {
     { href: '/account/wishlist', label: 'Wishlist', description: 'Products You Saved For Later.', Icon: Heart },
     { href: '/account/recently-viewed', label: 'Recently Viewed', description: 'The Last 50 Products You Browsed.', Icon: History },
     { href: '/account/refills', label: 'Order History And Reorders', description: 'Browse Past Orders And Reorder In One Tap.', Icon: RotateCcw },
+    { href: '/research', label: 'Research Library', description: 'Mechanism, Evidence, Storage, And Safety For Every Compound.', Icon: FlaskConical },
+    { href: '/account/shelf-life', label: 'Reconstitution & Shelf Life', description: 'Log Reconstitution Dates And Track Remaining Shelf Life.', Icon: Clock },
     ...(isResearcher
       ? [{ href: '/account/referrals', label: 'Referrals', description: 'Share Your Code And Earn Store Credit.', Icon: Gift }]
       : []),
