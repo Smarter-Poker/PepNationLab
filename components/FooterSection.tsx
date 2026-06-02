@@ -101,7 +101,7 @@ export default function FooterSection() {
               fontSize: '0.75rem'
             }}>Contact</h6>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
-              <a href="mailto:research@pepnationlab.com" style={{ 
+              <a href="mailto:support@pepnationlab.com" style={{ 
                 fontSize: '0.85rem', color: 'var(--grey-400)', 
                 display: 'flex', alignItems: 'center', gap: 'var(--space-2)',
                 transition: 'color 0.2s'
@@ -112,7 +112,7 @@ export default function FooterSection() {
                   <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
                   <polyline points="22,6 12,13 2,6"/>
                 </svg>
-                research@pepnationlab.com
+                support@pepnationlab.com
               </a>
               <p style={{ fontSize: '0.82rem', color: 'var(--grey-600)', lineHeight: 1.5 }}>
                 Qualified Researchers Only. All Inquiries Are Verified Before Account Approval.

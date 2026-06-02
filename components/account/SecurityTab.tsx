@@ -122,6 +122,7 @@ export default function SecurityTab({ userEmail }: Props) {
             display: 'grid',
             gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
             gap: 'var(--space-4)',
+            alignItems: 'end',
           }}
         >
           <div className="form-group">

@@ -835,7 +835,7 @@ async function resolveOrigin(
         zip,
         country: String(wh.country || 'US'),
         phone: String(wh.phone || '0000000000'),
-        email: String(wh.email || 'ops@pepnationlab.com'),
+        email: String(wh.email || 'support@pepnationlab.com'),
         is_default: false,
         is_active: true,
       };

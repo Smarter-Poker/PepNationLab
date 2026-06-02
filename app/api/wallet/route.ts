@@ -121,16 +121,23 @@ export async function GET() {
     'withdrawal',
     'payout',
     'statement_payment',
+    'transfer_out',
+    'transfer_out_credit',
   ]);
   const walletTxns: WalletTxn[] = (btRows ?? []).map((r) => {
-    // Prefer the exact ledger delta when both snapshots are present; otherwise
-    // derive the sign from the transaction type (amount is stored positive).
+    const type = (r.type as string) || '';
+    // A credit-line transfer bills the credit line, so the prepaid-balance
+    // snapshots don't move (delta 0) — the true debit is the full amount.
+    // For everything else prefer the exact ledger delta when it is non-zero,
+    // otherwise derive the sign from the transaction type.
     const hasSnaps = r.balance_before != null && r.balance_after != null;
     const delta = hasSnaps ? num(r.balance_after) - num(r.balance_before) : null;
     const signed =
-      delta != null
-        ? delta
-        : (NEGATIVE_BT_TYPES.has((r.type as string) || '') ? -1 : 1) * num(r.amount);
+      type === 'transfer_out_credit'
+        ? -num(r.amount)
+        : delta != null && delta !== 0
+          ? delta
+          : (NEGATIVE_BT_TYPES.has(type) ? -1 : 1) * num(r.amount);
     return {
       id: `bt_${r.id}`,
       ledger: 'wallet',

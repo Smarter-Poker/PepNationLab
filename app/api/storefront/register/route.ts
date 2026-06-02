@@ -16,7 +16,7 @@ import { assertSameOrigin } from '@/lib/csrf';
  * profiles.referring_sub_agent_id so every order the researcher places
  * later attributes commission to that sub-agent.
  *
- * Body: { slug, username, email?, password, fullName, subAgentId?, referralCode? }
+ * Body: { slug, username, email?, password, firstName, lastName, subAgentId?, referralCode? }
  *
  * Rate limited to 5 requests / IP / hour. Uses Upstash when available
  * (cluster-wide) and falls back to an in-memory ring buffer when not.
@@ -41,11 +41,11 @@ export async function POST(req: NextRequest) {
   }
 
   const body = await req.json().catch(() => ({}));
-  const { slug, username, email, password, fullName, referralCode, subAgentId } = body || {};
+  const { slug, username, email, password, firstName, lastName, referralCode, subAgentId } = body || {};
 
-  if (!slug || !username || !password || !fullName) {
+  if (!slug || !username || !password || !firstName || !lastName) {
     return NextResponse.json(
-      { error: 'Slug, Username, Full Name, And Password Are Required.' },
+      { error: 'Slug, Username, First Name, Last Name, And Password Are Required.' },
       { status: 400 }
     );
   }
@@ -122,14 +122,18 @@ export async function POST(req: NextRequest) {
   }
 
   // Internal email is what Supabase auth indexes against. Keep the
-  // username@pepnationlab.com convention so the existing username login path
+  // username@internal.auth convention so the existing username login path
   // keeps working.
-  const internalEmail = `${usernameClean}@pepnationlab.com`;
+  const internalEmail = `${usernameClean}@internal.auth`;
 
   const { data: authData, error: authError } = await supabase.auth.admin.createUser({
     email: internalEmail,
     password,
     email_confirm: true,
+    user_metadata: { 
+      username: usernameClean, 
+      full_name: `${String(firstName).trim()} ${String(lastName).trim()}` 
+    },
   });
 
   if (authError || !authData?.user) {
@@ -144,9 +148,11 @@ export async function POST(req: NextRequest) {
 
   const profilePayload: Record<string, any> = {
     id: newUserId,
-    email: internalEmail,
+    email: null,
     username: usernameClean,
-    full_name: String(fullName).trim(),
+    full_name: `${String(firstName).trim()} ${String(lastName).trim()}`,
+    first_name: String(firstName).trim(),
+    last_name: String(lastName).trim(),
     role: 'researcher',
     referring_agent_id: agent.id,
     is_active: true,

@@ -56,6 +56,10 @@ export async function GET() {
     .from('saved_addresses')
     .select('id, label, full_name, street1, street2, city, state, zip, country, is_default, created_at, updated_at')
     .eq('user_id', auth.userId)
+    // Round 25: checkout only wants SHIP-TO eligible addresses. Researchers may
+    // now save ship-from-only addresses from /account/addresses; those would
+    // otherwise pollute the checkout picker.
+    .eq('is_ship_to', true)
     .order('is_default', { ascending: false })
     .order('updated_at', { ascending: false });
 

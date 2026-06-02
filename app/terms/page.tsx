@@ -116,7 +116,7 @@ export default function TermsPage() {
           {
             heading: 'Contact',
             body: [
-              'Questions about these Terms may be directed to research@pepnationlab.com.',
+              'Questions about these Terms may be directed to support@pepnationlab.com.',
             ],
           },
         ]}

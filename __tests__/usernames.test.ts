@@ -7,7 +7,7 @@ import { sanitizeUsername, validateUsername } from '@/lib/usernames';
  * These are the single source of truth used by every account entry
  * point: admin create-agent, agent create-researcher, storefront
  * self-register, and AccountForm. A regression here silently breaks
- * lookups via the synthetic `${username}@pepnationlab.com` Supabase
+ * lookups via the synthetic `${username}@internal.auth` Supabase
  * identity, which is unrecoverable without manual DB intervention.
  */
 

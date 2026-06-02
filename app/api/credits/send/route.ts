@@ -85,13 +85,18 @@ export async function POST(req: NextRequest) {
   }
   const isAdmin = issuer.role === 'admin';
 
-  // Resolve the recipient.
+  // Resolve the recipient by id, email, or username. Researchers created by an
+  // agent often sign in with a username (no real email), so accept either.
   let recipientQuery = service
     .from('profiles')
-    .select('id, role, full_name, email, referring_agent_id, parent_agent_id, referring_sub_agent_id');
-  recipientQuery = recipientIdRaw
-    ? recipientQuery.eq('id', recipientIdRaw)
-    : recipientQuery.ilike('email', recipientEmailRaw);
+    .select('id, role, full_name, email, username, referring_agent_id, parent_agent_id, referring_sub_agent_id');
+  if (recipientIdRaw) {
+    recipientQuery = recipientQuery.eq('id', recipientIdRaw);
+  } else if (recipientEmailRaw.includes('@')) {
+    recipientQuery = recipientQuery.ilike('email', recipientEmailRaw);
+  } else {
+    recipientQuery = recipientQuery.ilike('username', recipientEmailRaw);
+  }
   const { data: recipient } = await recipientQuery.maybeSingle();
 
   if (!recipient) {
@@ -128,31 +133,45 @@ export async function POST(req: NextRequest) {
 
   const issuerName = issuer.full_name || (issuer.email ? String(issuer.email).split('@')[0] : 'Your Team');
   const description = note
-    ? `Credit From ${issuerName}: ${note}`
-    : `Credit From ${issuerName}`;
+    ? `${issuerName}: ${note}`
+    : `From ${issuerName}`;
 
-  // Issue the credit atomically.
-  const { data: newBalance, error: issueErr } = await service.rpc('issue_store_credit', {
-    p_user_id: recipient.id,
+  // Move the funds atomically: debit the sender (their wallet balance, or — for
+  // credit-line agents — billed to their credit line so they owe it on their
+  // weekly statement) and credit the recipient's wallet. Records a transaction
+  // on BOTH sides. Admin sends are debited from the admin wallet too.
+  const { data: transfer, error: transferErr } = await service.rpc('wallet_transfer', {
+    p_sender: issuerId,
+    p_recipient: recipient.id,
     p_amount: amount,
-    p_created_by: issuerId,
-    p_description: description,
+    p_note: description,
   });
-  if (issueErr) {
-    console.error('issue_store_credit failed:', issueErr.message);
-    return NextResponse.json({ error: 'Failed To Issue Credit. Please Try Again.' }, { status: 500 });
+  if (transferErr) {
+    // The RPC raises check_violation for self-send / bad amount / insufficient
+    // funds or credit — surface those as a clean 400 to the sender.
+    const msg = String(transferErr.message || '');
+    const isGuard = /check_violation|Insufficient|Cannot Send|Greater Than Zero|Not Found/i.test(msg);
+    console.error('wallet_transfer failed:', msg);
+    return NextResponse.json(
+      { error: isGuard ? msg.replace(/^.*?:\s*/, '') || 'Transfer Rejected.' : 'Failed To Send Funds. Please Try Again.' },
+      { status: isGuard ? 400 : 500 },
+    );
   }
+  const newBalance =
+    transfer && typeof transfer === 'object' && 'recipient_balance' in (transfer as Record<string, unknown>)
+      ? Number((transfer as Record<string, unknown>).recipient_balance)
+      : null;
 
   // Audit trail (best-effort).
   try {
     await service.from('admin_audit_log').insert({
       actor_id: issuerId,
-      action: 'credit_issued',
+      action: 'wallet_transfer',
       entity_type: 'profile',
       entity_id: recipient.id,
       changes: {
         amount,
-        funded_by: isAdmin ? 'platform' : 'agent',
+        drew_from: (transfer as Record<string, unknown>)?.drew_from ?? null,
         issuer_role: issuer.role,
         recipient_role: recipient.role,
         note: note || null,
@@ -166,10 +185,10 @@ export async function POST(req: NextRequest) {
   try {
     await service.from('notifications').insert({
       user_id: recipient.id,
-      title: 'Lab Wallet Credit Received',
-      body: `You Received $${amount.toFixed(2)} In Lab Wallet Credit From ${issuerName}.`,
+      title: 'Funds Received',
+      body: `You Received $${amount.toFixed(2)} In Your Wallet From ${issuerName}.`,
       type: 'system',
-      url: '/dashboard',
+      url: '/wallet',
     });
   } catch {
     /* notification is non-critical */

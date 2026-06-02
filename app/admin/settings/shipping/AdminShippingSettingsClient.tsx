@@ -677,7 +677,7 @@ export default function AdminShippingSettingsClient() {
               </div>
               <div>
                 <label style={{ display: 'block', color: 'var(--silver)', fontSize: '0.78rem', marginBottom: 4 }}>Email</label>
-                <input id="origin-email" className="input" type="email" placeholder="ops@pepnationlab.com" value={originForm.email} onChange={(e) => setOriginForm(f => ({ ...f, email: e.target.value }))} required />
+                <input id="origin-email" className="input" type="email" placeholder="support@pepnationlab.com" value={originForm.email} onChange={(e) => setOriginForm(f => ({ ...f, email: e.target.value }))} required />
               </div>
             </div>
             <label style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', cursor: 'pointer', color: 'var(--silver)', fontSize: '0.88rem' }}>

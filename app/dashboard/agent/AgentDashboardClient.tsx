@@ -224,10 +224,14 @@ export default function AgentDashboardClient({
     setCrError('');
     setCrSuccess('');
     try {
+      const names = crFullName.trim().split(' ');
+      const firstName = names[0] || '';
+      const lastName = names.slice(1).join(' ') || '';
+
       const res = await fetch('/api/agent/create-researcher', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ full_name: crFullName, username: crUsername, password: crPassword }),
+        body: JSON.stringify({ firstName, lastName, username: crUsername, password: crPassword }),
       });
       const json = await res.json();
       if (!res.ok) {
@@ -1043,6 +1047,40 @@ export default function AgentDashboardClient({
 
                     <form onSubmit={handleCreateResearcher} style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
 
+                      {/* Submit button at the very top middle */}
+                      <button
+                        type="submit"
+                        disabled={crLoading}
+                        style={{
+                          width: '80%',
+                          margin: '0 auto 20px auto',
+                          padding: '15px',
+                          background: 'linear-gradient(180deg, #2a3350 0%, #1e2640 50%, #161c30 100%)',
+                          border: '1px solid #3a4560',
+                          borderRadius: 8,
+                          color: '#ffffff',
+                          fontSize: '1rem',
+                          fontWeight: 700,
+                          cursor: crLoading ? 'not-allowed' : 'pointer',
+                          opacity: crLoading ? 0.65 : 1,
+                          letterSpacing: '0.02em',
+                          boxShadow: '0 2px 8px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.06)',
+                          transition: 'background 0.15s, box-shadow 0.15s',
+                        }}
+                        onMouseEnter={e => {
+                          if (!crLoading) {
+                            e.currentTarget.style.background = 'linear-gradient(180deg, #354068 0%, #263050 50%, #1a2240 100%)';
+                            e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,196,188,0.15), inset 0 1px 0 rgba(255,255,255,0.08)';
+                          }
+                        }}
+                        onMouseLeave={e => {
+                          e.currentTarget.style.background = 'linear-gradient(180deg, #2a3350 0%, #1e2640 50%, #161c30 100%)';
+                          e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.06)';
+                        }}
+                      >
+                        {crLoading ? 'Creating Account...' : 'Create Researcher Account'}
+                      </button>
+
                       {/* Full Name */}
                       <div style={{ marginBottom: 18 }}>
                         <label style={{
@@ -1135,38 +1173,7 @@ export default function AgentDashboardClient({
                         </p>
                       </div>
 
-                      {/* Submit button */}
-                      <button
-                        type="submit"
-                        disabled={crLoading}
-                        style={{
-                          width: '100%',
-                          padding: '15px',
-                          background: 'linear-gradient(180deg, #2a3350 0%, #1e2640 50%, #161c30 100%)',
-                          border: '1px solid #3a4560',
-                          borderRadius: 8,
-                          color: '#ffffff',
-                          fontSize: '1rem',
-                          fontWeight: 700,
-                          cursor: crLoading ? 'not-allowed' : 'pointer',
-                          opacity: crLoading ? 0.65 : 1,
-                          letterSpacing: '0.02em',
-                          boxShadow: '0 2px 8px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.06)',
-                          transition: 'background 0.15s, box-shadow 0.15s',
-                        }}
-                        onMouseEnter={e => {
-                          if (!crLoading) {
-                            e.currentTarget.style.background = 'linear-gradient(180deg, #354068 0%, #263050 50%, #1a2240 100%)';
-                            e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,196,188,0.15), inset 0 1px 0 rgba(255,255,255,0.08)';
-                          }
-                        }}
-                        onMouseLeave={e => {
-                          e.currentTarget.style.background = 'linear-gradient(180deg, #2a3350 0%, #1e2640 50%, #161c30 100%)';
-                          e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.06)';
-                        }}
-                      >
-                        {crLoading ? 'Creating Account...' : 'Create Researcher Account'}
-                      </button>
+
 
                     </form>
                   </div>

@@ -95,7 +95,7 @@ export default function PrivacyPage() {
           {
             heading: 'Contact',
             body: [
-              'Questions or privacy requests may be directed to research@pepnationlab.com.',
+              'Questions or privacy requests may be directed to support@pepnationlab.com.',
             ],
           },
         ]}

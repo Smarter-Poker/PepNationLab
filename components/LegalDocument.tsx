@@ -172,8 +172,8 @@ export default function LegalDocument({
             }}
           >
             Questions About This Document?{' '}
-            <a href="mailto:research@pepnationlab.com" style={{ color: 'var(--teal)' }}>
-              research@pepnationlab.com
+            <a href="mailto:support@pepnationlab.com" style={{ color: 'var(--teal)' }}>
+              support@pepnationlab.com
             </a>
           </div>
         </div>

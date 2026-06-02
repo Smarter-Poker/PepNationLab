@@ -41,12 +41,12 @@ export async function POST(req: NextRequest) {
 
   const { data } = await supabase
     .from('profiles')
-    .select('email')
+    .select('email, username')
     .ilike('username', username)
     .eq('is_active', true)
     .maybeSingle();
 
-  if (!data?.email) {
+  if (!data) {
     // Do NOT reveal whether the username exists. Return a synthetic email so
     // the downstream password check fails uniformly with the same shape as a
     // wrong-password attempt on a real account.
@@ -54,5 +54,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ email: `${safeUsername}@nodom.invalid` });
   }
 
-  return NextResponse.json({ email: data.email });
+  // If the user hasn't set a real email, their Auth email is the synthetic one.
+  const resolvedEmail = data.email || `${data.username.toLowerCase()}@internal.auth`;
+
+  return NextResponse.json({ email: resolvedEmail });
 }

@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
-import AccountClient from '@/components/account/AccountClient';
+import AccountClient, { type AccountProfile } from '@/components/account/AccountClient';
 
 export const dynamic = 'force-dynamic';
 
@@ -17,8 +17,8 @@ export default async function AccountSettingsPage() {
   const { data: profile } = await supabase
     .from('profiles')
     .select(
-      'id, full_name, email, username, role, phone, timezone, locale, bio, ' +
-      'pronouns, avatar_url, username_changed_at, phone_verified_at, ' +
+      'id, full_name, first_name, last_name, email, username, role, phone, timezone, ' +
+      'avatar_url, username_changed_at, phone_verified_at, ' +
       'deactivated_at, is_active, disclaimer_v1_accepted, disclaimer_accepted_at',
     )
     .eq('id', user.id)
@@ -27,7 +27,7 @@ export default async function AccountSettingsPage() {
   return (
     <AccountClient
       userId={user.id}
-      initialProfile={profile ?? null}
+      initialProfile={(profile as unknown as AccountProfile) ?? null}
       userEmail={user.email ?? ''}
       basePath="/account/settings"
     />

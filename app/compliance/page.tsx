@@ -70,13 +70,13 @@ export default function CompliancePage() {
           {
             heading: 'Reporting Concerns',
             body: [
-              'If you become aware of misuse, prohibited sales, or any compliance concern involving the Platform or an agent, please report it to research@pepnationlab.com so we can investigate.',
+              'If you become aware of misuse, prohibited sales, or any compliance concern involving the Platform or an agent, please report it to support@pepnationlab.com so we can investigate.',
             ],
           },
           {
             heading: 'Contact',
             body: [
-              'Compliance questions may be directed to research@pepnationlab.com.',
+              'Compliance questions may be directed to support@pepnationlab.com.',
             ],
           },
         ]}

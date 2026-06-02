@@ -91,10 +91,10 @@ export async function POST(req: NextRequest) {
   }
 
   const body = await req.json().catch(() => ({}));
-  const { full_name, username, password } = body;
+  const { username, password, firstName, lastName, phone } = body || {};
 
-  if (!full_name || !username || !password) {
-    return NextResponse.json({ error: 'Full Name, Username, And Password Are Required' }, { status: 400 });
+  if (!username || !password || !firstName || !lastName) {
+    return NextResponse.json({ error: 'Username, password, first name, and last name are required.' }, { status: 400 });
   }
 
   if (password.length < 8) {
@@ -119,7 +119,9 @@ export async function POST(req: NextRequest) {
   }
 
   // Email is always lowercase (sanitizeUsername lowercases the username)
-  const internalEmail = `${usernameClean}@pepnationlab.com`;
+  const internalEmail = `${usernameClean}@internal.auth`;
+
+  const fullName = `${String(firstName).trim()} ${String(lastName).trim()}`;
 
   // Create the auth user. The handle_new_user trigger fires and auto-creates
   // a partial profile row. We pass metadata so the trigger sets username + full_name.
@@ -127,7 +129,7 @@ export async function POST(req: NextRequest) {
     email: internalEmail,
     password,
     email_confirm: true,
-    user_metadata: { username: usernameClean, full_name },
+    user_metadata: { username: usernameClean, full_name: fullName },
   });
 
   if (authError || !authData?.user) {
@@ -145,9 +147,11 @@ export async function POST(req: NextRequest) {
   // createAdminClient() bypasses RLS so this always succeeds regardless of policies.
   const profilePayload: Record<string, unknown> = {
     id: newUserId,
-    email: '',
+    email: null,
     username: usernameClean,
-    full_name,
+    full_name: fullName,
+    first_name: String(firstName).trim(),
+    last_name: String(lastName).trim(),
     role: 'researcher',
     referring_agent_id: referringAgentId,
     // Provisioning attribution (2026-06-01)
@@ -208,6 +212,9 @@ export async function POST(req: NextRequest) {
           referring_agent_id: referringAgentId,
           referring_sub_agent_id: referringSubAgentId,
           username: usernameClean,
+          full_name: fullName,
+          first_name: String(firstName).trim(),
+          last_name: String(lastName).trim(),
         },
       });
     } catch (e) {
@@ -217,13 +224,13 @@ export async function POST(req: NextRequest) {
 
   // Fire-and-forget: notify the storefront-owning agent (parent for sub-agent
   // callers, caller for regular agents) that a new researcher joined.
-  void notifyNewResearcher(admin, referringAgentId, full_name).catch(() => { /* ignore */ });
+  void notifyNewResearcher(admin, referringAgentId, fullName).catch(() => { /* ignore */ });
 
   return NextResponse.json({
     success: true,
     userId: newUserId,
     username: usernameClean,
-    full_name,
+    full_name: fullName,
     referring_agent_id: referringAgentId,
     referring_sub_agent_id: referringSubAgentId,
     sub_agent_tagged: !!referringSubAgentId,

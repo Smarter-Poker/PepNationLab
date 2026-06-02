@@ -38,12 +38,11 @@ const COMMON_TIMEZONES: string[] = [
 ];
 
 const REQUIRED_FIELDS: Array<keyof AccountProfile> = [
-  'full_name',
+  'first_name',
+  'last_name',
+  'email',
   'phone',
   'timezone',
-  'locale',
-  'bio',
-  'pronouns',
   'avatar_url',
 ];
 
@@ -60,12 +59,11 @@ function completenessPercent(p: AccountProfile | null): number {
 
 export default function AccountOverview({ userEmail, profile, onProfileChange }: Props) {
   const [draft, setDraft] = useState({
-    full_name: profile?.full_name ?? '',
-    phone:     profile?.phone ?? '',
-    timezone:  profile?.timezone ?? 'America/New_York',
-    locale:    profile?.locale ?? 'en',
-    bio:       profile?.bio ?? '',
-    pronouns:  profile?.pronouns ?? '',
+    first_name: profile?.first_name ?? '',
+    last_name:  profile?.last_name ?? '',
+    email:      profile?.email ?? '',
+    phone:      profile?.phone ?? '',
+    timezone:   profile?.timezone ?? 'America/New_York',
   });
   const [saving, setSaving] = useState(false);
   const [usernameModalOpen, setUsernameModalOpen] = useState(false);
@@ -77,12 +75,11 @@ export default function AccountOverview({ userEmail, profile, onProfileChange }:
     try {
       const body: Record<string, unknown> = {};
       const map: Array<[keyof typeof draft, keyof AccountProfile]> = [
-        ['full_name', 'full_name'],
-        ['phone',     'phone'],
-        ['timezone',  'timezone'],
-        ['locale',    'locale'],
-        ['bio',       'bio'],
-        ['pronouns',  'pronouns'],
+        ['first_name', 'first_name'],
+        ['last_name',  'last_name'],
+        ['email',      'email'],
+        ['phone',      'phone'],
+        ['timezone',   'timezone'],
       ];
       for (const [d, p] of map) {
         const next = draft[d].trim();
@@ -180,20 +177,33 @@ export default function AccountOverview({ userEmail, profile, onProfileChange }:
           }}
         >
           <div className="form-group">
-            <label className="form-label" htmlFor="full-name">Full Name</label>
+            <label className="form-label" htmlFor="first-name">First Name</label>
             <input
-              id="full-name"
+              id="first-name"
               type="text"
               className="form-input"
-              value={draft.full_name}
-              onChange={(e) => setDraft((d) => ({ ...d, full_name: e.target.value }))}
-              maxLength={120}
-              autoComplete="name"
+              value={draft.first_name}
+              onChange={(e) => setDraft((d) => ({ ...d, first_name: e.target.value }))}
+              maxLength={60}
+              autoComplete="given-name"
             />
           </div>
 
           <div className="form-group">
-            <label className="form-label" htmlFor="phone">Phone</label>
+            <label className="form-label" htmlFor="last-name">Last Name</label>
+            <input
+              id="last-name"
+              type="text"
+              className="form-input"
+              value={draft.last_name}
+              onChange={(e) => setDraft((d) => ({ ...d, last_name: e.target.value }))}
+              maxLength={60}
+              autoComplete="family-name"
+            />
+          </div>
+
+          <div className="form-group">
+            <label className="form-label" htmlFor="phone">Phone Number</label>
             <input
               id="phone"
               type="tel"
@@ -208,67 +218,32 @@ export default function AccountOverview({ userEmail, profile, onProfileChange }:
           </div>
 
           <div className="form-group">
-            <label className="form-label" htmlFor="timezone">Timezone</label>
+            <label className="form-label" htmlFor="email">Email Address</label>
             <input
-              id="timezone"
-              type="text"
+              id="email"
+              type="email"
               className="form-input"
-              list="account-tz-list"
+              value={draft.email}
+              onChange={(e) => setDraft((d) => ({ ...d, email: e.target.value }))}
+              placeholder="Your Real Email"
+              maxLength={120}
+              autoComplete="email"
+            />
+          </div>
+
+          <div className="form-group">
+            <label className="form-label" htmlFor="timezone">Timezone</label>
+            <select
+              id="timezone"
+              className="form-input"
               value={draft.timezone}
               onChange={(e) => setDraft((d) => ({ ...d, timezone: e.target.value }))}
-              maxLength={60}
-              autoComplete="off"
-              spellCheck={false}
-            />
-            <datalist id="account-tz-list">
-              {COMMON_TIMEZONES.map((tz) => (
-                <option key={tz} value={tz} />
-              ))}
-            </datalist>
-          </div>
-
-          <div className="form-group">
-            <label className="form-label" htmlFor="locale">Language</label>
-            <select
-              id="locale"
-              className="form-input"
-              value={draft.locale}
-              onChange={(e) => setDraft((d) => ({ ...d, locale: e.target.value }))}
             >
-              {LOCALES.map((l) => (
-                <option key={l.value} value={l.value}>{l.label}</option>
+              <option value="" disabled>Select Timezone</option>
+              {COMMON_TIMEZONES.map((tz) => (
+                <option key={tz} value={tz}>{tz}</option>
               ))}
             </select>
-          </div>
-
-          <div className="form-group">
-            <label className="form-label" htmlFor="pronouns">Pronouns</label>
-            <input
-              id="pronouns"
-              type="text"
-              className="form-input"
-              value={draft.pronouns}
-              onChange={(e) => setDraft((d) => ({ ...d, pronouns: e.target.value }))}
-              placeholder="e.g. She/Her"
-              maxLength={40}
-              autoComplete="off"
-            />
-          </div>
-
-          <div className="form-group" style={{ gridColumn: '1 / -1' }}>
-            <label className="form-label" htmlFor="bio">Bio</label>
-            <textarea
-              id="bio"
-              className="form-input"
-              rows={3}
-              value={draft.bio}
-              onChange={(e) => setDraft((d) => ({ ...d, bio: e.target.value }))}
-              maxLength={600}
-              placeholder="A Short Note Other Researchers Will See."
-            />
-            <div style={{ marginTop: 4, textAlign: 'right', fontSize: '0.7rem', color: 'var(--silver)' }}>
-              {draft.bio.length}/600
-            </div>
           </div>
         </div>
 

@@ -39,7 +39,8 @@ export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => ({}));
 
   const {
-    full_name,
+    firstName,
+    lastName,
     username,
     password,
     tier,
@@ -54,7 +55,7 @@ export async function POST(req: NextRequest) {
 
   const isResearcher = account_role === 'researcher';
 
-  if (!full_name || !username || !password) {
+  if (!firstName || !lastName || !username || !password) {
     return NextResponse.json({ error: 'Missing Required Fields' }, { status: 400 });
   }
   if (!isResearcher && (!tier || !account_type || !slug || !display_name)) {
@@ -87,7 +88,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Invalid Username' }, { status: 400 });
   }
 
-  const internalEmail = `${usernameClean}@pepnationlab.com`;
+  const internalEmail = `${usernameClean}@internal.auth`;
 
   if (!isResearcher) {
     const slugRegex = /^[a-z0-9\-]+$/;
@@ -111,7 +112,10 @@ export async function POST(req: NextRequest) {
   const { data: authData, error: authError } = await supabase.auth.admin.createUser({
     email: internalEmail,
     password,
-    email_confirm: true,
+    user_metadata: { 
+      username: usernameClean, 
+      full_name: `${String(firstName).trim()} ${String(lastName).trim()}`
+    },
   });
 
   if (authError || !authData.user) {
@@ -122,9 +126,11 @@ export async function POST(req: NextRequest) {
   const profileRole = account_role === 'super_agent' ? 'agent' : account_role;
   const profileData: Record<string, any> = {
     id: userId,
-    email: internalEmail,
+    email: null,
     username: usernameClean,
-    full_name,
+    full_name: `${String(firstName).trim()} ${String(lastName).trim()}`,
+    first_name: String(firstName).trim(),
+    last_name: String(lastName).trim(),
     role: profileRole,
     disclaimer_v1_accepted: true,
     disclaimer_accepted_at: new Date().toISOString(),

@@ -25,7 +25,8 @@ export default function AdminAgents() {
   // Modal State — Edit Account Details
   const [editingAccountAgent, setEditingAccountAgent] = useState<any | null>(null);
   const [accountForm, setAccountForm] = useState({
-    full_name: '',
+    firstName: '',
+    lastName: '',
     is_active: true,
     account_type: 'prepaid',
     credit_limit: '',
@@ -43,8 +44,8 @@ export default function AdminAgents() {
   // Modal State — Create Agent
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [createForm, setCreateForm] = useState({
-    full_name: '',
-    username: '',
+    firstName: '',
+    lastName: '',
     password: '',
     tier: 'tier_3',
     account_type: 'prepaid',
@@ -155,17 +156,19 @@ export default function AdminAgents() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ...createForm,
+          firstName: createForm.firstName.trim(),
+          lastName: createForm.lastName.trim(),
           username: createForm.username.toLowerCase().replace(/[^a-z0-9_]/g, ''),
           slug: createForm.slug.toLowerCase().replace(/[^a-z0-9-]/g, ''),
         }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed To Create Agent');
-      toast.success(`${createForm.account_role === 'researcher' ? 'Researcher' : 'Agent'} "${createForm.full_name}" Created Successfully`);
+      toast.success(`${createForm.account_role === 'researcher' ? 'Researcher' : 'Agent'} "${createForm.firstName} ${createForm.lastName}" Created Successfully`);
       setShowCreateModal(false);
       setCreateForm({
-        full_name: '',
-        username: '',
+        firstName: '',
+        lastName: '',
         password: '',
         tier: 'tier_3',
         account_type: 'prepaid',
@@ -175,6 +178,7 @@ export default function AdminAgents() {
         display_name: '',
         account_role: 'agent',
         parent_agent_id: '',
+        username: '',
       });
       setUsernameStatus('idle');
       setSlugStatus('idle');
@@ -219,7 +223,7 @@ export default function AdminAgents() {
 
   const openEditModal = (agent: any) => {
     setEditingAgent(agent);
-    setEditEmail(agent.email?.includes('@pepnationlab.com') ? '' : (agent.email || ''));
+    setEditEmail(agent.email?.includes('@internal.auth') ? '' : (agent.email || ''));
     setEditPhone(agent.phone || '');
   };
 
@@ -253,7 +257,8 @@ export default function AdminAgents() {
   const openEditAccountModal = (agent: any) => {
     setEditingAccountAgent(agent);
     setAccountForm({
-      full_name: agent.full_name || '',
+      firstName: agent.first_name || agent.full_name?.split(' ')[0] || '',
+      lastName: agent.last_name || agent.full_name?.split(' ').slice(1).join(' ') || '',
       is_active: agent.is_active,
       account_type: agent.account_type || 'prepaid',
       credit_limit: agent.credit_limit !== null ? String(agent.credit_limit) : '',
@@ -271,7 +276,13 @@ export default function AdminAgents() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           id: editingAccountAgent.id,
-          ...accountForm
+          firstName: accountForm.firstName.trim(),
+          lastName: accountForm.lastName.trim(),
+          full_name: `${accountForm.firstName.trim()} ${accountForm.lastName.trim()}`,
+          is_active: accountForm.is_active,
+          account_type: accountForm.account_type,
+          credit_limit: accountForm.credit_limit,
+          prepaid_balance: accountForm.prepaid_balance,
         })
       });
       const data = await res.json();
@@ -355,7 +366,7 @@ export default function AdminAgents() {
           <div style={{ textAlign: 'center', padding: 'var(--space-6)', opacity: 0.5 }}>No agents found.</div>
         ) : (
           agents.map(agent => {
-            const isDefaultEmail = agent.email?.includes('@pepnationlab.com');
+            const isDefaultEmail = agent.email?.includes('@internal.auth');
             return (
               <div 
                 key={agent.id}
@@ -628,7 +639,7 @@ export default function AdminAgents() {
                     className="form-input" 
                     value={editEmail} 
                     onChange={e => setEditEmail(e.target.value)} 
-                    placeholder={editingAgent.email?.includes('@pepnationlab.com') ? 'Enter real email...' : editingAgent.email}
+                    placeholder={editingAgent.email?.includes('@internal.auth') ? 'Enter real email...' : editingAgent.email}
                   />
                 </div>
                 <div className="form-group" style={{ marginBottom: 'var(--space-6)' }}>
@@ -732,12 +743,22 @@ export default function AdminAgents() {
               </h3>
               <form onSubmit={handleSaveAccount}>
                 <div className="form-group" style={{ marginBottom: 'var(--space-4)' }}>
-                  <label className="form-label">Full Name</label>
+                  <label className="form-label">First Name</label>
                   <input 
                     type="text" 
                     className="form-input" 
-                    value={accountForm.full_name} 
-                    onChange={e => setAccountForm(prev => ({ ...prev, full_name: e.target.value }))} 
+                    value={accountForm.firstName} 
+                    onChange={e => setAccountForm(prev => ({ ...prev, firstName: e.target.value }))} 
+                    required
+                  />
+                </div>
+                <div className="form-group" style={{ marginBottom: 'var(--space-4)' }}>
+                  <label className="form-label">Last Name</label>
+                  <input 
+                    type="text" 
+                    className="form-input" 
+                    value={accountForm.lastName} 
+                    onChange={e => setAccountForm(prev => ({ ...prev, lastName: e.target.value }))} 
                     required
                   />
                 </div>

@@ -2,7 +2,7 @@
  * Username helpers.
  *
  * Usernames are stored lowercase and restricted to `[a-z0-9_]` so they map
- * one-to-one with the synthetic `${username}@pepnationlab.com` Supabase auth
+ * one-to-one with the synthetic `${username}@internal.auth` Supabase auth
  * identity. Centralizing the sanitizer keeps every entry point — admin
  * create-agent, agent create-researcher, storefront self-register, and the
  * client-side controlled inputs — in agreement on what a "valid" username

@@ -10,15 +10,14 @@ import DangerZoneTab from './DangerZoneTab';
 
 export interface AccountProfile {
   id: string;
+  first_name: string | null;
+  last_name: string | null;
   full_name: string | null;
   email: string | null;
   username: string | null;
   role: string | null;
   phone: string | null;
   timezone: string | null;
-  locale: string | null;
-  bio: string | null;
-  pronouns: string | null;
   avatar_url: string | null;
   username_changed_at: string | null;
   phone_verified_at: string | null;

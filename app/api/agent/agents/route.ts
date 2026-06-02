@@ -153,7 +153,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Invalid Username' }, { status: 400 });
     }
 
-    const internalEmail = `${usernameClean}@pepnationlab.com`;
+    const internalEmail = `${usernameClean}@internal.auth`;
 
     const slugRegex = /^[a-z0-9\-]+$/;
     if (!slugRegex.test(slug)) {

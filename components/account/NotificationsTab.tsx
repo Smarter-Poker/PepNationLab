@@ -20,6 +20,23 @@ interface PushTypeState {
   push_type_prefs: Record<string, boolean>;
 }
 
+const COMMON_TIMEZONES: string[] = [
+  'America/New_York',
+  'America/Chicago',
+  'America/Denver',
+  'America/Phoenix',
+  'America/Los_Angeles',
+  'America/Anchorage',
+  'America/Honolulu',
+  'America/Sao_Paulo',
+  'Europe/London',
+  'Europe/Madrid',
+  'Asia/Tokyo',
+  'Asia/Singapore',
+  'Australia/Sydney',
+  'UTC',
+];
+
 const EVENTS: Array<{
   key: string;
   label: string;
@@ -298,6 +315,7 @@ export default function NotificationsTab() {
             display: 'grid',
             gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
             gap: 'var(--space-3)',
+            alignItems: 'end',
           }}
         >
           <div className="form-group">
@@ -322,16 +340,27 @@ export default function NotificationsTab() {
           </div>
           <div className="form-group">
             <label className="form-label" htmlFor="qh-tz">Timezone</label>
-            <input
+            <select
               id="qh-tz"
-              type="text"
               className="form-input"
               value={quietHours.timezone}
               onChange={(e) => saveQuietHours({ timezone: e.target.value })}
-              autoComplete="off"
-              spellCheck={false}
-            />
+            >
+              <option value="" disabled>Select Timezone</option>
+              {COMMON_TIMEZONES.map((tz) => (
+                <option key={tz} value={tz}>{tz}</option>
+              ))}
+            </select>
           </div>
+        </div>
+        <div style={{ marginTop: 'var(--space-4)', display: 'flex', justifyContent: 'flex-end' }}>
+          <button
+            type="button"
+            className="btn btn-primary"
+            onClick={() => toast.success('Quiet Hours Saved.')}
+          >
+            Save Changes
+          </button>
         </div>
       </div>
 

@@ -23,7 +23,8 @@ export default function AgentStorefrontLogin({
   const [mode, setMode] = useState<'login' | 'register'>('login');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  const [fullName, setFullName] = useState('');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(errorMessage || null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -146,7 +147,7 @@ export default function AgentStorefrontLogin({
     setSuccess(null);
 
     try {
-      if (!fullName.trim() || !username.trim() || !password.trim()) {
+      if (!firstName.trim() || !lastName.trim() || !username.trim() || !password.trim()) {
         throw new Error('All Fields Are Required');
       }
       if (password.length < 8) {
@@ -164,7 +165,8 @@ export default function AgentStorefrontLogin({
           slug: agentSlug,
           username: username.trim(),
           password: password.trim(),
-          fullName: fullName.trim(),
+          firstName: firstName.trim(),
+          lastName: lastName.trim(),
           referralCode: referralCode || undefined,
           subAgentId: subAgentId || undefined,
         }),
@@ -175,7 +177,7 @@ export default function AgentStorefrontLogin({
       }
 
       // Account created — now sign them in
-      const email = data.email || `${username.trim()}@pepnationlab.com`;
+      const email = data.email || `${username.trim()}@internal.auth`;
       const supabase = createClient();
       const { error: authError } = await supabase.auth.signInWithPassword({
         email,
@@ -302,17 +304,30 @@ export default function AgentStorefrontLogin({
         {/* REGISTER FORM */}
         {mode === 'register' && (
           <form onSubmit={handleRegister} style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
-            <div className="form-group">
-              <label className="form-label" style={{ color: primaryColor }}>Full Name</label>
-              <input
-                type="text"
-                className="form-input"
-                placeholder="Your Full Name"
-                value={fullName}
-                onChange={e => setFullName(e.target.value)}
-                required
-                autoFocus
-              />
+            <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
+              <div className="form-group" style={{ flex: 1 }}>
+                <label className="form-label" style={{ color: primaryColor }}>First Name</label>
+                <input
+                  type="text"
+                  className="form-input"
+                  placeholder="First"
+                  value={firstName}
+                  onChange={e => setFirstName(e.target.value)}
+                  required
+                  autoFocus
+                />
+              </div>
+              <div className="form-group" style={{ flex: 1 }}>
+                <label className="form-label" style={{ color: primaryColor }}>Last Name</label>
+                <input
+                  type="text"
+                  className="form-input"
+                  placeholder="Last"
+                  value={lastName}
+                  onChange={e => setLastName(e.target.value)}
+                  required
+                />
+              </div>
             </div>
             <div className="form-group">
               <label className="form-label" style={{ color: primaryColor }}>Choose A Username</label>

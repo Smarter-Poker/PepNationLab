@@ -80,7 +80,7 @@ export async function POST(req: NextRequest) {
 
   const nowIso = new Date().toISOString();
   const oldUsername = profile.username;
-  const syntheticEmail = `${candidate}@pepnationlab.com`;
+  const syntheticEmail = `${candidate}@internal.auth`;
 
   const { error: updErr } = await service
     .from('profiles')

@@ -7,17 +7,16 @@ export const dynamic = 'force-dynamic';
 
 const ProfilePatchSchema = z
   .object({
-    full_name: z.string().trim().min(1).max(120).optional(),
-    phone:     z.string().trim().max(40).nullable().optional(),
-    timezone:  z.string().trim().min(1).max(60).optional(),
-    locale:    z.string().trim().min(2).max(10).optional(),
-    bio:       z.string().trim().max(600).nullable().optional(),
-    pronouns:  z.string().trim().max(40).nullable().optional(),
+    first_name: z.string().trim().min(1).max(60).optional(),
+    last_name:  z.string().trim().min(1).max(60).optional(),
+    email:      z.union([z.string().trim().email().max(120), z.literal('')]).nullable().optional(),
+    phone:      z.string().trim().max(40).nullable().optional(),
+    timezone:   z.string().trim().min(1).max(60).optional(),
   })
   .strict();
 
 const PROFILE_COLUMNS =
-  'id, full_name, phone, timezone, locale, bio, pronouns, ' +
+  'id, full_name, first_name, last_name, email, phone, timezone, ' +
   'avatar_url, username, username_changed_at, phone_verified_at';
 
 export async function GET() {
@@ -63,8 +62,26 @@ export async function PATCH(req: NextRequest) {
   const changedKeys: string[] = [];
   for (const [k, v] of Object.entries(parsed.data)) {
     if (typeof v === 'undefined') continue;
-    updates[k] = v;
+    let val = v;
+    if (k === 'email' && val === '') val = null;
+    updates[k] = val;
     changedKeys.push(k);
+  }
+  
+  if (updates.first_name !== undefined || updates.last_name !== undefined) {
+    const { data: currentProfile } = await supabase
+      .from('profiles')
+      .select('first_name, last_name')
+      .eq('id', user.id)
+      .single();
+      
+    const currentFirst = currentProfile?.first_name || '';
+    const currentLast = currentProfile?.last_name || '';
+    
+    const newFirst = updates.first_name !== undefined ? (updates.first_name || '') : currentFirst;
+    const newLast = updates.last_name !== undefined ? (updates.last_name || '') : currentLast;
+    
+    updates.full_name = `${String(newFirst).trim()} ${String(newLast).trim()}`.trim();
   }
 
   if (changedKeys.length === 0) {

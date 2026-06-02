@@ -35,7 +35,7 @@ const ORIGIN_FALLBACK: AddressInput = {
   zip: '90001',
   country: 'US',
   phone: '3105550000',
-  email: 'ops@pepnationlab.com',
+  email: 'support@pepnationlab.com',
 };
 
 export async function POST(req: NextRequest) {
@@ -177,7 +177,7 @@ export async function POST(req: NextRequest) {
             zip,
             country: String(wh.country ?? 'US') || 'US',
             phone: typeof wh.phone === 'string' ? wh.phone : '0000000000',
-            email: typeof wh.email === 'string' && wh.email.includes('@') ? wh.email : 'ops@pepnationlab.com',
+            email: typeof wh.email === 'string' && wh.email.includes('@') ? wh.email : 'support@pepnationlab.com',
           };
         }
       }
