@@ -305,7 +305,7 @@ export default function MyQRCodeModal({
                     url={data.url}
                     qrCodeData={data.qrCodeData ?? null}
                     size={240}
-                    fgColor="#1D4ED8"
+                    fgColor="#1F2937"
                     bgColor="#FFFFFF"
                   />
                 </div>
