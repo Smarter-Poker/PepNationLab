@@ -13,7 +13,16 @@ export default async function AccountHelpPage() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect('/login');
 
-  return <HelpSupportClient />;
+  // Resolve viewer role so the For Agents FAQ section can be conditionally
+  // rendered. Researchers see audience='all' items only; agents and admin
+  // see everything including the agent-specific block.
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('role')
+    .eq('id', user.id)
+    .maybeSingle();
+
+  return <HelpSupportClient role={profile?.role ?? null} />;
 }
 
 export const metadata = {
