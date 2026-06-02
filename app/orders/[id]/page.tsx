@@ -7,6 +7,7 @@ import PaymentProofUpload from '@/components/PaymentProofUpload';
 import RecommendationStrip, { type RecommendationItem } from '@/components/RecommendationStrip';
 import ReceiptButton from './ReceiptButton';
 import SubscribeReplenishButton from './SubscribeReplenishButton';
+import ReorderOrderButton from './ReorderOrderButton';
 import ChangePaymentMethod from '@/components/ChangePaymentMethod';
 import { paymentMethodLabel } from '@/lib/payment-method-labels';
 
@@ -48,6 +49,8 @@ interface OrderItem {
   quantity: number;
   unit_retail_price: number | string;
   unit_cost_price: number | string;
+  lot_number: string | null;
+  coa_url: string | null;
 }
 
 interface Order {
@@ -88,7 +91,7 @@ export default async function OrderDetailPage(
       id, status, created_at, payment_method, fulfillment_method,
       subtotal, discount_amount, coupon_code, shipping_cost, total,
       tracking_number, label_url, shipping_address, agent_id, buyer_id,
-      order_items (id, agent_product_id, product_id, product_name, quantity, unit_retail_price, unit_cost_price),
+      order_items (id, agent_product_id, product_id, product_name, quantity, unit_retail_price, unit_cost_price, lot_number, coa_url),
       profiles:buyer_id (full_name, email)
     `)
     .eq('id', id)
@@ -149,7 +152,7 @@ export default async function OrderDetailPage(
     }
   }
 
-  // ─── Recommendations ("You May Also Like") ─────────────────────────
+  // ─── Recommendations ("You May Also Like") ───────────────────
   // Seed from the FIRST eligible order_item.product_id. Service client used
   // so the SECURITY DEFINER RPC + materialized view reads work regardless
   // of the researcher's row-level role. We intersect the candidate ids
@@ -347,6 +350,7 @@ export default async function OrderDetailPage(
                     }))}
                   />
                 )}
+                <ReorderOrderButton orderId={order.id} />
                 <ReceiptButton
                   orderId={order.id}
                   createdAt={order.created_at}
@@ -577,6 +581,57 @@ export default async function OrderDetailPage(
               )}
             </div>
           )}
+
+          {/* Lot Numbers & COA (R26 placeholder — wired to order_items.lot_number / coa_url;
+              real values are stamped at fulfillment time. Until then, each line item
+              shows "Pending" so buyers know the surface exists.) */}
+          <div className="card-metal hover-lift stagger-fade-in" style={{ padding: 'var(--space-6)', animationDelay: '0.55s' }}>
+            <h2 style={{ fontSize: '0.95rem', color: 'var(--silver)', marginBottom: 'var(--space-2)' }}>
+              Lot Numbers & COA
+            </h2>
+            <p style={{ fontSize: '0.78rem', color: 'var(--grey-500)', marginBottom: 'var(--space-4)' }}>
+              Lot/Batch Number And Certificate Of Analysis For Each Compound In This Order. Stamped At Fulfillment.
+            </p>
+            <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
+              {order.order_items.map((it) => (
+                <li
+                  key={it.id}
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    flexWrap: 'wrap',
+                    gap: 'var(--space-3)',
+                    padding: 'var(--space-3)',
+                    background: 'rgba(255,255,255,0.03)',
+                    borderRadius: 'var(--radius-md)',
+                  }}
+                >
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ color: 'var(--white)', fontWeight: 600, fontSize: '0.9rem' }}>
+                      {it.product_name} <span style={{ color: 'var(--grey-500)', fontWeight: 400 }}>x{it.quantity}</span>
+                    </div>
+                    <div style={{ color: 'var(--silver)', fontSize: '0.78rem', marginTop: 2, wordBreak: 'break-all', textTransform: 'none' }}>
+                      Lot: {it.lot_number ? <span style={{ color: 'var(--teal)', fontFamily: 'var(--font-brand)' }}>{it.lot_number}</span> : <span style={{ color: 'var(--grey-500)' }}>Pending</span>}
+                    </div>
+                  </div>
+                  {it.coa_url ? (
+                    <a
+                      href={it.coa_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="btn btn-secondary btn-sm"
+                      style={{ fontSize: '0.78rem' }}
+                    >
+                      View COA
+                    </a>
+                  ) : (
+                    <span style={{ color: 'var(--grey-500)', fontSize: '0.78rem' }}>COA Pending</span>
+                  )}
+                </li>
+              ))}
+            </ul>
+          </div>
         </div>
       </section>
     </PageShell>
