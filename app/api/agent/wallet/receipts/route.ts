@@ -22,7 +22,7 @@ export async function GET(req: Request) {
 
   const { data, count, error } = await svc
     .from('payment_proofs')
-    .select('id, order_id, storage_path, file_name, uploaded_at, uploaded_by', { count: 'exact' })
+    .select('id, order_id, storage_key, mime_type, size_bytes, uploaded_at, uploader_id, verified_at', { count: 'exact' })
     .in('order_id', orderIds)
     .order('uploaded_at', { ascending: false })
     .range(offset, offset + limit - 1);

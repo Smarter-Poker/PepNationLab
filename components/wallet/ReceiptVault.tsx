@@ -25,8 +25,9 @@ export default function ReceiptVault() {
               border: '1px solid rgba(255,255,255,0.06)',
             }}>
               <div style={{ color: 'var(--white)', fontSize: '0.82rem', fontWeight: 700, wordBreak: 'break-word' }}>
-                {r.file_name || 'Receipt'}
+                {r.storage_key?.split('/').pop() || 'Receipt'}
               </div>
+              <div style={{ color: 'var(--grey-500)', fontSize: '0.68rem' }}>{r.mime_type || ''}</div>
               <div style={{ color: 'var(--grey-400)', fontSize: '0.72rem', marginTop: 4 }}>
                 {r.uploaded_at ? new Date(r.uploaded_at).toLocaleDateString() : ''}
               </div>

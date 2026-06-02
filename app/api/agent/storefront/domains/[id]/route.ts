@@ -6,8 +6,8 @@ export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
 export async function DELETE(req: Request, ctx: { params: Promise<{ id: string }> }) {
-  try { assertSameOrigin(req); }
-  catch { return NextResponse.json({ error: 'csrf' }, { status: 403 }); }
+  const csrf = assertSameOrigin(req as any);
+  if (csrf) return csrf;
   const { id } = await ctx.params;
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();

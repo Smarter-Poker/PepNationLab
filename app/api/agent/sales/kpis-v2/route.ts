@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { createClient, createServiceClient } from '@/lib/supabase/server';
+import { createClient } from '@/lib/supabase/server';
 import { parseRange, priorPeriod } from '@/lib/sales-range';
 
 export const dynamic = 'force-dynamic';
@@ -14,10 +14,10 @@ export async function GET(req: Request) {
   const { start, end } = parseRange(url.searchParams);
   const prior = priorPeriod(start, end);
 
-  const svc = createServiceClient();
+  // R24 hotfix: RPCs require auth.uid(); call via user-authed client.
   const [{ data: current }, { data: previous }] = await Promise.all([
-    svc.rpc('agent_sales_kpis', { p_agent_id: user.id, p_start: start.toISOString(), p_end: end.toISOString() }),
-    svc.rpc('agent_sales_kpis', { p_agent_id: user.id, p_start: prior.start.toISOString(), p_end: prior.end.toISOString() }),
+    supabase.rpc('agent_sales_kpis', { p_agent_id: user.id, p_start: start.toISOString(), p_end: end.toISOString() }),
+    supabase.rpc('agent_sales_kpis', { p_agent_id: user.id, p_start: prior.start.toISOString(), p_end: prior.end.toISOString() }),
   ]);
 
   const c = current?.[0] ?? { revenue_cents: 0, profit_cents: 0, orders_count: 0, aov_cents: 0, new_researchers: 0, cancelled_count: 0 };

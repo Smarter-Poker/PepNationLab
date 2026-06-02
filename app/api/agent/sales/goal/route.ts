@@ -31,8 +31,8 @@ export async function GET() {
 const PostBody = z.object({ target_cents: z.number().int().positive().max(100_000_000_000) });
 
 export async function POST(req: Request) {
-  try { assertSameOrigin(req); }
-  catch { return NextResponse.json({ error: 'csrf' }, { status: 403 }); }
+  const csrf = assertSameOrigin(req as any);
+  if (csrf) return csrf;
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });

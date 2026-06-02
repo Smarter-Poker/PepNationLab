@@ -30,8 +30,8 @@ const Body = z.object({
 });
 
 export async function PATCH(req: Request) {
-  try { assertSameOrigin(req); }
-  catch { return NextResponse.json({ error: 'csrf' }, { status: 403 }); }
+  const csrf = assertSameOrigin(req as any);
+  if (csrf) return csrf;
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });

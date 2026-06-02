@@ -43,7 +43,8 @@ export async function GET() {
 
   // Forecast WIP this week
   let forecastNext = 0;
-  const { data: forecast } = await svc.rpc('forecast_next_statement', { p_agent_id: user.id });
+  // R24 hotfix: forecast RPC requires auth.uid(); call via user-authed client.
+  const { data: forecast } = await supabase.rpc('forecast_next_statement', { p_agent_id: user.id });
   if (typeof forecast === 'number') forecastNext = forecast;
 
   const isPrepaid = profile.account_type === 'prepaid';

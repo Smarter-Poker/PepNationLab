@@ -21,12 +21,12 @@ export async function GET() {
 }
 
 const Body = z.object({
-  hostname: z.string().regex(/^[a-z0-9.-]+\.[a-z]{2,}$/i).max(253),
+  hostname: z.string().regex(/^(?=.{1,253}$)([a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)+)$/i).max(253),
 });
 
 export async function POST(req: Request) {
-  try { assertSameOrigin(req); }
-  catch { return NextResponse.json({ error: 'csrf' }, { status: 403 }); }
+  const csrf = assertSameOrigin(req as any);
+  if (csrf) return csrf;
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });

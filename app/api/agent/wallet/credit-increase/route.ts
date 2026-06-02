@@ -27,8 +27,8 @@ export async function GET() {
 }
 
 export async function POST(req: Request) {
-  try { assertSameOrigin(req); }
-  catch { return NextResponse.json({ error: 'csrf' }, { status: 403 }); }
+  const csrf = assertSameOrigin(req as any);
+  if (csrf) return csrf;
 
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -46,6 +46,7 @@ export async function POST(req: Request) {
     .from('credit_increase_requests')
     .select('id', { count: 'exact', head: true })
     .eq('agent_id', user.id)
+    .eq('status', 'pending')
     .gte('created_at', oneDayAgo);
   if ((count ?? 0) >= 3) {
     return NextResponse.json({ error: 'rate_limited' }, { status: 429 });

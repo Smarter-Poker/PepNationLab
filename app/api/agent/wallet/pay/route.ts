@@ -16,8 +16,8 @@ const Body = z.object({
 });
 
 export async function POST(req: Request) {
-  try { assertSameOrigin(req); }
-  catch { return NextResponse.json({ error: 'csrf' }, { status: 403 }); }
+  const csrf = assertSameOrigin(req as any);
+  if (csrf) return csrf;
 
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -27,8 +27,8 @@ export async function POST(req: Request) {
   try { body = Body.parse(await req.json()); }
   catch (e: any) { return NextResponse.json({ error: 'bad_request', details: e.errors }, { status: 400 }); }
 
-  const svc = createServiceClient();
-  const { data, error } = await svc.rpc('pay_weekly_statement', {
+  // R24 hotfix: pay_weekly_statement requires auth.uid(); call via user-authed client.
+  const { data, error } = await supabase.rpc('pay_weekly_statement', {
     p_statement_id: body.statement_id,
     p_handle: body.handle,
     p_amount: body.amount,

@@ -52,7 +52,7 @@ export default function WalletPage({
   ];
 
   return (
-    <div style={{ paddingTop: 'var(--nav-offset, 60px)', padding: '12px', minHeight: '100dvh', background: 'var(--black)' }}>
+    <div style={{ paddingTop: 'calc(var(--nav-offset, 60px) + 12px)', paddingRight: 12, paddingBottom: 12, paddingLeft: 12, minHeight: '100dvh', background: 'var(--black)' }}>
       <div style={{ maxWidth: 960, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 16 }}>
         <header>
           <h1 style={{ fontSize: '1.6rem', color: 'var(--white)', margin: 0, fontFamily: 'var(--font-brand)' }}>Wallet</h1>

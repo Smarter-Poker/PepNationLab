@@ -1,4 +1,5 @@
-// Round 24 Wallet — commissions tab
+// R24 hotfix — Wallet commissions. Uses real agent_commissions schema
+// (agent_id, commission_amount NUMERIC dollars, status enum: pending/approved/paid/void).
 import { NextResponse } from 'next/server';
 import { createClient, createServiceClient } from '@/lib/supabase/server';
 
@@ -11,34 +12,22 @@ export async function GET() {
   if (!user) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
 
   const svc = createServiceClient();
-  // Try sub_agent_commissions first; fall back to agent_commissions.
-  const sources = ['sub_agent_commissions', 'agent_commissions'];
-  let rows: any[] = [];
-  let source: string | null = null;
+  const { data: rows, error } = await svc
+    .from('agent_commissions')
+    .select('id, agent_id, order_id, commission_rate, commission_amount, status, created_at')
+    .eq('agent_id', user.id)
+    .order('created_at', { ascending: false })
+    .limit(500);
 
-  for (const tbl of sources) {
-    const { data, error } = await svc
-      .from(tbl)
-      .select('*')
-      .or(`sub_agent_id.eq.${user.id},super_agent_id.eq.${user.id},agent_id.eq.${user.id}`)
-      .order('created_at', { ascending: false })
-      .limit(500);
-    if (!error && data && data.length >= 0) {
-      rows = data;
-      source = tbl;
-      break;
-    }
-  }
+  if (error) return NextResponse.json({ pending: [], settled: [], totals: { pending: 0, settled: 0 } });
 
-  const pending = rows.filter(r => (r.status ?? 'pending') !== 'settled' && (r.status ?? 'pending') !== 'paid');
-  const settled = rows.filter(r => (r.status ?? '') === 'settled' || (r.status ?? '') === 'paid');
-  const totalPendingCents = pending.reduce((s: number, r: any) => s + Number(r.amount_cents ?? r.amount ?? 0), 0);
-  const totalSettledCents = settled.reduce((s: number, r: any) => s + Number(r.amount_cents ?? r.amount ?? 0), 0);
+  const pending = (rows ?? []).filter((r: any) => ['pending', 'approved'].includes(r.status));
+  const settled = (rows ?? []).filter((r: any) => r.status === 'paid');
+  const totalPending = pending.reduce((s: number, r: any) => s + Number(r.commission_amount ?? 0), 0);
+  const totalSettled = settled.reduce((s: number, r: any) => s + Number(r.commission_amount ?? 0), 0);
 
   return NextResponse.json({
-    source,
-    pending,
-    settled,
-    totals: { pendingCents: totalPendingCents, settledCents: totalSettledCents },
+    pending, settled,
+    totals: { pending: totalPending, settled: totalSettled },
   });
 }

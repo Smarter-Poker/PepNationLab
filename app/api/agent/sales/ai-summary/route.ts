@@ -3,7 +3,7 @@
 // Uses Anthropic Claude API if ANTHROPIC_API_KEY is set; otherwise returns a
 // deterministic rule-based summary so the feature still ships without keys.
 import { NextResponse } from 'next/server';
-import { createClient, createServiceClient } from '@/lib/supabase/server';
+import { createClient } from '@/lib/supabase/server';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -16,7 +16,6 @@ export async function GET() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
 
-  const svc = createServiceClient();
   const now = new Date();
   const thisStart = new Date(now);
   thisStart.setUTCDate(thisStart.getUTCDate() - 7);
@@ -24,8 +23,8 @@ export async function GET() {
   priorStart.setUTCDate(priorStart.getUTCDate() - 14);
 
   const [{ data: cur }, { data: prev }] = await Promise.all([
-    svc.rpc('agent_sales_kpis', { p_agent_id: user.id, p_start: thisStart.toISOString(), p_end: now.toISOString() }),
-    svc.rpc('agent_sales_kpis', { p_agent_id: user.id, p_start: priorStart.toISOString(), p_end: thisStart.toISOString() }),
+    supabase.rpc('agent_sales_kpis', { p_agent_id: user.id, p_start: thisStart.toISOString(), p_end: now.toISOString() }),
+    supabase.rpc('agent_sales_kpis', { p_agent_id: user.id, p_start: priorStart.toISOString(), p_end: thisStart.toISOString() }),
   ]);
 
   const c = cur?.[0] ?? { revenue_cents: 0, orders_count: 0 };

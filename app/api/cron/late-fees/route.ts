@@ -21,11 +21,11 @@ export async function GET(req: Request) {
   const today = new Date().toISOString().slice(0, 10);
 
   // Idempotency: short-circuit if already ran today
-  const runName = `late_fees:${today}`;
   const { data: existing } = await svc
     .from('cron_runs')
-    .select('run_name')
-    .eq('run_name', runName)
+    .select('id')
+    .eq('job_name', 'late_fees')
+    .eq('partition_key', today)
     .maybeSingle();
   if (existing) return NextResponse.json({ ok: true, deduped: true });
 
@@ -44,6 +44,17 @@ export async function GET(req: Request) {
 
   let applied = 0;
   for (const stmt of overdue ?? []) {
+    // R24 hotfix: dedupe per-statement — only insert if no prior late-fee adjustment
+    // exists for this statement in the last 7 days.
+    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+    const { count } = await svc
+      .from('balance_transactions')
+      .select('id', { count: 'exact', head: true })
+      .eq('reference_id', stmt.id)
+      .eq('type', 'adjustment')
+      .like('description', 'Late fee on statement%')
+      .gte('created_at', sevenDaysAgo);
+    if ((count ?? 0) > 0) continue;
     const { error: insErr } = await svc
       .from('balance_transactions')
       .insert({
@@ -59,6 +70,6 @@ export async function GET(req: Request) {
     if (!insErr) applied++;
   }
 
-  await svc.from('cron_runs').insert({ run_name: runName, payload: { applied } });
+  await svc.from('cron_runs').insert({ job_name: 'late_fees', partition_key: today, status: 'succeeded', notes: JSON.stringify({ applied }) });
   return NextResponse.json({ ok: true, applied });
 }

@@ -11,12 +11,12 @@ export default function CommissionsTab() {
     fetch('/api/agent/wallet/commissions', { cache: 'no-store' })
       .then(r => r.ok ? r.json() : Promise.reject())
       .then(setData)
-      .catch(() => setData({ pending: [], settled: [], totals: { pendingCents: 0, settledCents: 0 } }));
+      .catch(() => setData({ pending: [], settled: [], totals: { pending: 0, settled: 0 } }));
   }, []);
 
   if (!data) return <div style={{ color: 'var(--grey-400)', padding: 16 }}>Loading...</div>;
 
-  const fmt = (cents: number) => money(cents / 100);
+  const fmtDollars = (n: number) => money(Number(n) || 0);
 
   return (
     <section className="card-glass" style={{ padding: 16, borderRadius: 12 }}>
@@ -24,11 +24,11 @@ export default function CommissionsTab() {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 12, marginBottom: 16 }}>
         <div style={{ padding: 12, background: 'rgba(255,184,0,0.08)', borderRadius: 8 }}>
           <div style={{ color: 'var(--grey-400)', fontSize: '0.72rem' }}>Pending</div>
-          <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#ffb800' }}>{fmt(data.totals.pendingCents)}</div>
+          <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#ffb800' }}>{fmtDollars(data.totals.pending)}</div>
         </div>
         <div style={{ padding: 12, background: 'rgba(46,213,115,0.08)', borderRadius: 8 }}>
           <div style={{ color: 'var(--grey-400)', fontSize: '0.72rem' }}>Settled</div>
-          <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#2ed573' }}>{fmt(data.totals.settledCents)}</div>
+          <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#2ed573' }}>{fmtDollars(data.totals.settled)}</div>
         </div>
       </div>
 
@@ -43,7 +43,7 @@ export default function CommissionsTab() {
               background: 'rgba(255,255,255,0.03)', borderRadius: 6, color: 'var(--white)', fontSize: '0.85rem',
             }}>
               <span>{r.created_at ? new Date(r.created_at).toLocaleDateString() : '—'}</span>
-              <span>{fmt(Number(r.amount_cents ?? r.amount ?? 0))}</span>
+              <span>{fmtDollars(Number(r.commission_amount ?? 0))}</span>
             </li>
           ))}
         </ul>
@@ -60,7 +60,7 @@ export default function CommissionsTab() {
               background: 'rgba(46,213,115,0.05)', borderRadius: 6, color: 'var(--white)', fontSize: '0.85rem',
             }}>
               <span>{r.created_at ? new Date(r.created_at).toLocaleDateString() : '—'}</span>
-              <span>{fmt(Number(r.amount_cents ?? r.amount ?? 0))}</span>
+              <span>{fmtDollars(Number(r.commission_amount ?? 0))}</span>
             </li>
           ))}
         </ul>

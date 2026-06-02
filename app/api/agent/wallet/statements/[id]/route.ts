@@ -19,7 +19,8 @@ export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> 
     .single();
   if (!stmt) return NextResponse.json({ error: 'not_found' }, { status: 404 });
 
-  const { data: orders, error } = await svc.rpc('get_statement_detail', { p_statement_id: id });
+  // R24 hotfix: get_statement_detail requires auth.uid(); call via user-authed client.
+  const { data: orders, error } = await supabase.rpc('get_statement_detail', { p_statement_id: id });
   if (error) return NextResponse.json({ error: error.message }, { status: 400 });
 
   return NextResponse.json({ statement: stmt, orders: orders ?? [] });

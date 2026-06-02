@@ -15,7 +15,7 @@ export async function GET() {
   const { data } = await svc
     .from('agent_profiles')
     .select('primary_color, secondary_color, accent_color, tagline, hero_image_url, theme_config, logo_url, slug, display_name')
-    .eq('user_id', user.id)
+    .eq('id', user.id)
     .maybeSingle();
   return NextResponse.json({ theme: data ?? null });
 }
@@ -30,8 +30,8 @@ const Body = z.object({
 });
 
 export async function PATCH(req: Request) {
-  try { assertSameOrigin(req); }
-  catch { return NextResponse.json({ error: 'csrf' }, { status: 403 }); }
+  const csrf = assertSameOrigin(req as any);
+  if (csrf) return csrf;
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
@@ -42,7 +42,7 @@ export async function PATCH(req: Request) {
   const { error } = await svc
     .from('agent_profiles')
     .update(body)
-    .eq('user_id', user.id);
+    .eq('id', user.id);
   if (error) return NextResponse.json({ error: error.message }, { status: 400 });
   return NextResponse.json({ ok: true });
 }
