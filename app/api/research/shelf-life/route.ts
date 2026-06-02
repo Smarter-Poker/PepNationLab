@@ -103,7 +103,13 @@ export async function DELETE(req: NextRequest) {
   const id = req.nextUrl.searchParams.get('id');
   if (!id) return NextResponse.json({ error: 'Log Id Is Required' }, { status: 400 });
 
-  const { error } = await supabase.from('reconstitution_logs').delete().eq('id', id);
+  // Owner RLS already restricts this; the explicit user_id filter is
+  // defense-in-depth so a row can never be deleted by id alone.
+  const { error } = await supabase
+    .from('reconstitution_logs')
+    .delete()
+    .eq('id', id)
+    .eq('user_id', user.id);
   if (error) return NextResponse.json({ error: 'Failed To Delete Log' }, { status: 500 });
 
   return NextResponse.json({ ok: true });

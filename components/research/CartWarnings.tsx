@@ -32,8 +32,8 @@ export default function CartWarnings({ slugs, productIds }: CartWarningsProps) {
 
   useEffect(() => {
     let cancelled = false;
-    const uniqueSlugs = Array.from(new Set(slugs ?? [])).filter(Boolean);
-    const uniqueProductIds = Array.from(new Set(productIds ?? [])).filter(Boolean);
+    const uniqueSlugs = slugKey ? Array.from(new Set(slugKey.split(','))).filter(Boolean) : [];
+    const uniqueProductIds = productKey ? Array.from(new Set(productKey.split(','))).filter(Boolean) : [];
     if (uniqueSlugs.length === 0 && uniqueProductIds.length === 0) {
       setWarnings([]);
       return;
@@ -54,7 +54,9 @@ export default function CartWarnings({ slugs, productIds }: CartWarningsProps) {
     return () => {
       cancelled = true;
     };
-  }, [slugKey, productKey, slugs, productIds]);
+    // Depend only on the stable joined-string keys; the raw arrays are new
+    // references each render (e.g. cart.map(...) inline) and would loop.
+  }, [slugKey, productKey]);
 
   if (warnings.length === 0) return null;
 
