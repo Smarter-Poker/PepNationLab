@@ -1882,7 +1882,7 @@ export default function AgentStorefrontGrid({
                   // Agent direct (tier) pricing applies at 10+ vials using cost_price.
                   // Below 10 vials the standard retail dynamic pricing applies.
                   // This is enforced here (display) AND server-side (API).
-                  const agentQualifiesForDiscount = isStorefrontOwner && qty >= 10;
+                  const agentQualifiesForDiscount = isStorefrontOwner;
 
                   // Dynamic pricing tiers:
                   // Agents see tiered pricing with 10+ labeled "Agent Direct Price".
@@ -1890,10 +1890,9 @@ export default function AgentStorefrontGrid({
                   // Researchers see tiers only when volumePricingEnabled.
                   const tiers = isStorefrontOwner
                     ? [
-                        { label: '1–2 Vials', min: 1, max: 2, pct: 20 },
-                        { label: '3–5 Vials', min: 3, max: 5, pct: 15 },
-                        { label: '6–9 Vials', min: 6, max: 9, pct: 10 },
-                        { label: '10+ Vials — Agent Direct Price', min: 10, max: Infinity, pct: 0 },
+                        // Agents and storefront owners always pay tier cost on every
+                        // quantity — dynamic/bulk pricing is for researchers only.
+                        { label: 'All Quantities — Agent Direct Price', min: 1, max: Infinity, pct: 0 },
                       ]
                     : volumePricingEnabled
                       ? [
@@ -1907,9 +1906,10 @@ export default function AgentStorefrontGrid({
                         ];
 
                   const getUnitPrice = (q: number) => {
-                    // Agent self-buy at 10+ vials → use admin-configured cost price (tier price)
-                    if (isStorefrontOwner && q >= 10) return agentCostPerVial;
-                    // Below 10 (agent) or all quantities (researcher) → retail + tiered markup
+                    // Storefront owner (agent) always pays admin-configured tier cost,
+                    // regardless of quantity. No retail markup, no volume bracket switch.
+                    if (isStorefrontOwner) return agentCostPerVial;
+                    // Researcher: retail + tiered markup (or flat when volume pricing off).
                     const t = tiers.find(t => q >= t.min && q <= t.max);
                     return t ? parseFloat((basePrice * (1 + t.pct / 100)).toFixed(2)) : basePrice;
                   };
@@ -1970,7 +1970,7 @@ export default function AgentStorefrontGrid({
                               borderRadius: 'var(--radius-full)', padding: '2px 10px',
                               display: 'inline-block', marginBottom: 8
                             }}>
-                              Default 10 Vials · Fewer Vials = Dynamic Pricing
+                              Agent Direct Price · All Quantities
                             </div>
                           )}
                           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -2020,16 +2020,10 @@ export default function AgentStorefrontGrid({
 
                         {qty > 0 && (
                           <div style={{ flex: 1, textAlign: 'right' }}>
-                            {isStorefrontOwner && agentQualifiesForDiscount && (
+                            {isStorefrontOwner && (
                               <div style={{ fontSize: '0.7rem', color: '#68D391', fontWeight: 700,
                                 textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 2 }}>
                                 Agent Direct Price Applied
-                              </div>
-                            )}
-                            {isStorefrontOwner && !agentQualifiesForDiscount && (
-                              <div style={{ fontSize: '0.7rem', color: '#FC8181', fontWeight: 700,
-                                textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 2 }}>
-                                Retail Pricing — Add {10 - qty} More For Agent Rate
                               </div>
                             )}
                             <div style={{ fontSize: '0.78rem', color: 'var(--grey-400)', marginBottom: 2 }}>
@@ -2037,9 +2031,9 @@ export default function AgentStorefrontGrid({
                             </div>
                             <div style={{
                               fontSize: '1.5rem', fontWeight: 800,
-                              color: isStorefrontOwner && !agentQualifiesForDiscount ? '#FC8181' : primaryColor,
+                              color: primaryColor,
                               fontFamily: 'var(--font-brand)',
-                              textShadow: `0 0 10px ${isStorefrontOwner && !agentQualifiesForDiscount ? 'rgba(252,129,129,0.4)' : primaryColor + '40'}`
+                              textShadow: `0 0 10px ${primaryColor}40`
                             }}>
                               ${lineTotal.toFixed(2)}
                             </div>

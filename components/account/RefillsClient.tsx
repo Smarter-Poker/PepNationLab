@@ -104,7 +104,7 @@ export default function RefillsClient() {
       // preserved in every case.
       const cartKey = agentSlug ? `pnl_storefront_cart_${agentSlug}` : 'pnl_storefront_cart';
       try {
-        // 1) Full item objects -> the checkout-review cart (additive by product id).
+        // 1) Full item objects → the checkout-review cart (additive by product id).
         let existing: any[] = [];
         const raw = localStorage.getItem(cartKey);
         if (raw) {
@@ -119,7 +119,7 @@ export default function RefillsClient() {
         }
         localStorage.setItem(cartKey, JSON.stringify({ items: Array.from(byId.values()), _savedAt: Date.now() }));
 
-        // 2) Quantity map -> the storefront grid cart (additive by agent_product id).
+        // 2) Quantity map → the storefront grid cart (additive by agent_product id).
         if (agentSlug && Object.keys(cartMap).length > 0) {
           let m: Record<string, number> = {};
           const rawMap = localStorage.getItem(`cart_${agentSlug}`);
