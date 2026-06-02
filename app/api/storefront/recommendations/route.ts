@@ -170,12 +170,15 @@ export async function GET(req: NextRequest) {
   let candidateNames = Array.from(new Set(candidatesProducts?.map(p => p.name) || []));
 
   // Guarantee BAC water is at the very front
-  const bacIdx = candidateNames.findIndex(n => n.toLowerCase().includes('bacteriostatic water'));
+  const bacIdx = candidateNames.findIndex(n => {
+    const lower = n.toLowerCase();
+    return lower.includes('bacteriostatic water') || lower.includes('bac water');
+  });
   if (bacIdx > -1) {
     const [bac] = candidateNames.splice(bacIdx, 1);
     candidateNames.unshift(bac);
   } else {
-    candidateNames.unshift('Bacteriostatic Water');
+    candidateNames.unshift('Bac Water');
   }
 
   // 7) Fetch ALL variants for these candidate names
