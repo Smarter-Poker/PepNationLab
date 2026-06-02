@@ -1,5 +1,5 @@
 'use client';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useMessengerStore } from '@/stores/messengerStore';
 import ConversationItem from './ConversationItem';
 import { MessageSquare, ChevronRight, ChevronLeft } from 'lucide-react';
@@ -33,10 +33,15 @@ export default function ConversationList({ selfId }: Props) {
   const setLoading = useMessengerStore((s) => s.setLoadingConversations);
   const loading = useMessengerStore((s) => s.loadingConversations);
 
-  // Drill-down stack. Each frame represents a level we've descended
-  // INTO from the root view. Empty stack = root.
   const [drill, setDrill] = useState<DrillFrame[]>([]);
   const currentParent = drill.length > 0 ? drill[drill.length - 1] : null;
+
+  // Per-counterparty in-flight set. Without this, a rapid double-click on a
+  // `new:<id>` stub fires start-conversation twice, fn_find_direct_conversation
+  // can't see the just-inserted row yet, and a SECOND empty conversation
+  // gets created. This is exactly how the inbox accumulated orphan
+  // "Direct Message / No Messages Yet" rows.
+  const inFlight = useRef<Set<string>>(new Set());
 
   const fetchConversations = useCallback(async (parentId: string | null) => {
     setLoading(true);
@@ -50,11 +55,6 @@ export default function ConversationList({ selfId }: Props) {
       const json = (await res.json()) as { conversations?: unknown };
       const list = Array.isArray(json.conversations) ? (json.conversations as never[]) : [];
       setConversations(list);
-      // round-22b: clear activeId when the previously open conversation
-      // is no longer in the new list (admin drilled into a different
-      // sub-tree, etc). Without this, the right pane keeps fetching the
-      // old conversation and the auto-select on width>768 fires
-      // unpredictably.
       const currentActive = useMessengerStore.getState().activeConversationId;
       if (currentActive) {
         const ids = new Set(list.map((c: { conversation_id?: string }) => c.conversation_id));
@@ -72,7 +72,6 @@ export default function ConversationList({ selfId }: Props) {
   const handleDrillInto = useCallback((c: { counterparty_id?: string | null; counterparty_full_name?: string | null; counterparty_username?: string | null; counterparty_role?: string | null }) => {
     if (!c.counterparty_id) return;
     const role = (c.counterparty_role ?? '').toString();
-    // Only agents/super_agents are drillable. Researchers are leaves.
     if (role !== 'agent' && role !== 'super_agent') return;
     setDrill((stack) => [
       ...stack,
@@ -84,15 +83,16 @@ export default function ConversationList({ selfId }: Props) {
     setActive(null);
   }, [setActive]);
 
-  // Opening a row. Downline members with no existing thread arrive as a
-  // `new:<memberId>` sentinel — start (or find) the direct conversation,
-  // refresh the drilled list so the real thread replaces the sentinel,
-  // then open it. Existing rows just activate.
   const handleOpen = useCallback(async (c: { conversation_id?: string; counterparty_id?: string | null }) => {
     const cid = (c.conversation_id ?? '').toString();
     if (cid.startsWith('new:')) {
       const counterpartyId = (c.counterparty_id ?? cid.slice(4)).toString();
       if (!counterpartyId) return;
+      // Dedupe rapid clicks on the same downline person. Without this,
+      // every click during the start-conversation round-trip would fire
+      // ANOTHER start-conversation and accumulate empty rows.
+      if (inFlight.current.has(counterpartyId)) return;
+      inFlight.current.add(counterpartyId);
       try {
         const res = await fetch('/api/messenger/start-conversation', {
           method: 'POST',
@@ -107,6 +107,8 @@ export default function ConversationList({ selfId }: Props) {
         }
       } catch {
         /* leave the list as-is on failure */
+      } finally {
+        inFlight.current.delete(counterpartyId);
       }
       return;
     }

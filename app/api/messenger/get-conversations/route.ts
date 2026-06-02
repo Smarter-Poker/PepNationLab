@@ -121,25 +121,35 @@ async function buildDownlineRows(
     }
   }
 
-  // Preserve existing conversations with Admins or non-direct members
+  // Preserve existing conversations with admins, groups, and announcements.
+  // Direct conversations whose counterparty did not resolve (typeof !==
+  // 'string') are ORPHANS — either a half-created row or a deleted partner
+  // — and rendering them as a generic "Direct Message" row encouraged users
+  // to click them, which created MORE orphans. We drop them silently. The
+  // database-side fn_get_user_conversations RPC already filters most of
+  // these out at the source; this is belt-and-braces.
   for (const c of existing) {
     if (typeof c.counterparty_id === 'string' && byCounterparty.has(c.counterparty_id)) {
       const cRole = (c.counterparty_role ?? '').toString();
       const isDirect = (c.type ?? '').toString() === 'direct';
-      // If it's a group chat, it's not direct. We include groups if they exist.
       if (!isDirect) {
         rows.push(c);
       } else if (cRole === 'admin') {
         rows.push(c);
       }
     } else if (typeof c.counterparty_id !== 'string') {
-      // e.g. groups without counterparty_id
+      // No resolvable counterparty.
+      const isDirect = (c.type ?? '').toString() === 'direct';
+      if (isDirect) {
+        // Orphan direct conversation. Suppress.
+        continue;
+      }
+      // Groups and announcements legitimately have no counterparty_id; keep.
       rows.push(c);
     }
   }
 
   rows.sort((a, b) => {
-    // Keep admin chats at the top if we want, or just alphabetical
     const aAdmin = a.counterparty_role === 'admin' ? 0 : 1;
     const bAdmin = b.counterparty_role === 'admin' ? 0 : 1;
     if (aAdmin !== bAdmin) return aAdmin - bAdmin;
@@ -164,12 +174,9 @@ async function shouldUseHierarchy(
 ): Promise<boolean> {
   if (caller.role === 'admin') return true;
   if (caller.is_super_agent === true) return true;
-  // Sub-agents never get hierarchical view — their researchers attach
-  // to the parent's storefront, and they don't manage anyone.
   if (caller.is_sub_agent === true) return false;
   if (caller.role !== 'agent' && caller.role !== 'super_agent') return false;
 
-  // Plain agent: only enable hierarchy if they actually have downline.
   const { data, error } = await svc
     .from('profiles')
     .select('id', { count: 'exact', head: false })
@@ -191,7 +198,6 @@ export async function POST(req: NextRequest) {
   const limited = await messengerRateLimit('read', user.id);
   if (!limited.allowed) return messengerRateLimitResponse(limited);
 
-  // Parse optional parentId for drill-down.
   let parentId: string | null = null;
   try {
     const body = (await req.json()) as { parentId?: string | null } | null;
@@ -204,7 +210,6 @@ export async function POST(req: NextRequest) {
 
   const svc = await createServiceClient();
 
-  // Fetch caller role + sub/super flags so we can decide hierarchy mode.
   const { data: me } = await svc
     .from('profiles')
     .select('id, role, is_super_agent, is_sub_agent')
@@ -227,29 +232,33 @@ export async function POST(req: NextRequest) {
 
     if (hierarchical) {
       if (parentId) {
-        // DRILL: surface EVERY downline member as an openable row, so the
-        // arrow is always connected even before a DM exists. Authorized
-        // with the same canInvite() network check used to start the DM.
         const allowed = role === 'admin' || parentId === user.id || (await canInvite(user.id, parentId));
         if (allowed) {
           conversations = await buildDownlineRows(svc, user.id, parentId, role, conversations);
         } else {
-          // Out of network — fall back to the safe filtered view without sentinels.
           const membersData = await buildDownlineRows(svc, user.id, parentId, role, []);
           const downlineIds = new Set(membersData.map(m => m.counterparty_id));
           conversations = conversations.filter((c) => {
             const cp = c.counterparty_id;
             const isDirect = (c.type ?? '').toString() === 'direct';
             if (!isDirect) return true;
-            if (typeof cp !== 'string') return true;
+            if (typeof cp !== 'string') return false;
             if ((c.counterparty_role ?? '').toString() === 'admin') return true;
             return downlineIds.has(cp);
           });
         }
       } else {
-        // ROOT: inject all direct downline members as openable rows (sentinels if needed).
         conversations = await buildDownlineRows(svc, user.id, null, role, conversations);
       }
+    } else {
+      // Flat-mode caller (plain agent with no downline). Still drop direct
+      // orphans with no resolvable counterparty so they can't pollute the
+      // inbox after a half-created insert.
+      conversations = conversations.filter((c) => {
+        const isDirect = (c.type ?? '').toString() === 'direct';
+        if (!isDirect) return true;
+        return typeof c.counterparty_id === 'string';
+      });
     }
   }
 
