@@ -54,7 +54,7 @@ const METHODS: MethodSpec[] = [
   { id: 'chime', label: 'Chime', description: 'Chime Pay Anyone Transfer.', handleLabel: 'Chime Sign In (Email Or Phone)', placeholder: 'you@email.com' },
 ];
 
-const iconStyle = { height: 28, width: 'auto', objectFit: 'contain' as const, maxWidth: 36 };
+const iconStyle = { height: 28, width: 'auto', objectFit: 'contain' as const };
 
 const PAYMENT_ICONS: Record<MethodId, React.ReactNode> = {
   zelle: <img src="/payment-logos/zelle.svg" alt="Zelle" style={iconStyle} />,
@@ -170,7 +170,7 @@ export default function PaymentMethodClient({ initialDefault, initialHandles }: 
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 'var(--space-3)', flexWrap: 'wrap' }}>
               <div style={{ minWidth: 0, display: 'flex', gap: 'var(--space-3)' }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 48, height: 48, background: 'rgba(255,255,255,0.05)', borderRadius: 'var(--radius-sm)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 44, height: 32 }}>
                   {PAYMENT_ICONS[opt.id]}
                 </div>
                 <div>

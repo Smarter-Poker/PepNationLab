@@ -45,7 +45,7 @@ export default async function PaymentMethodPage() {
           Payment Methods
         </h1>
         <p style={{ color: 'var(--silver)', fontSize: '0.92rem', marginBottom: 'var(--space-5)' }}>
-          Pre-Select The Payment Method To Use At Checkout And Save Your Handle Or Contact For Each One. You Can Still Change The Method On Any Single Order. We Do Not Store Card Numbers. Payment Is Settled Via Zelle, Venmo, Cash App, Or Apple Pay With Your Agent.
+          These Are Your Preferred Payment Methods To Get Paid At Checkout.
         </p>
         <PaymentMethodClient
           initialDefault={profile?.default_payment_method ?? null}
