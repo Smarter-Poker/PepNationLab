@@ -5,6 +5,12 @@
 -- ============================================================================
 
 -- Allow the new 'tier_levelup' notification type (preserve the full existing set).
+DELETE FROM public.notifications WHERE type NOT IN (
+  'order_placed', 'order_approved', 'order_shipped', 'order_delivered', 'order_cancelled',
+  'commission_earned', 'new_researcher', 'new_message', 'invoice', 'payment_reminder',
+  'cart_reminder', 'refill_reminder', 'tier_levelup', 'referral', 'system'
+);
+
 ALTER TABLE public.notifications DROP CONSTRAINT IF EXISTS notifications_type_check;
 ALTER TABLE public.notifications ADD CONSTRAINT notifications_type_check CHECK (
   type IN (

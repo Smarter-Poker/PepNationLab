@@ -56,6 +56,8 @@ EXCEPTION WHEN OTHERS THEN
 END $$;
 
 -- 5. Update profiles to set email = NULL for those that were synthetic
+ALTER TABLE profiles ALTER COLUMN email DROP NOT NULL;
+
 UPDATE profiles 
 SET email = NULL 
 WHERE email LIKE '%@pepnationlab.com' 

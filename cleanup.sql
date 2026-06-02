@@ -1,0 +1,1 @@
+DELETE FROM notifications WHERE type NOT IN ('order_placed', 'order_approved', 'order_shipped', 'order_delivered', 'order_cancelled', 'commission_earned', 'new_researcher', 'new_message', 'invoice', 'payment_reminder', 'cart_reminder', 'refill_reminder', 'tier_levelup', 'referral', 'system');
