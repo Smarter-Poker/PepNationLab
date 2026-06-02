@@ -49,6 +49,7 @@ interface InboxRow {
     role: string | null;
   } | null;
   last_message: {
+    id: string;
     text: string | null;
     message_type: string | null;
     sender_id: string;
@@ -246,6 +247,22 @@ export default function CustomerSupportWidget() {
     }
   }, []);
 
+  // Force the unread badge to 0 for whichever conversation is currently
+  // active in the messenger store. The server sometimes returns a stale
+  // unread_count for a conversation the admin is actively viewing — e.g.
+  // when realtime fires fetchInbox INSIDE MessagePane's 1s mark-read
+  // debounce window. This helper guarantees the UI never re-lights the
+  // red chip on the thread the admin is looking at, even on subsequent
+  // fetches.
+  const applyInboxRows = useCallback((incoming: InboxRow[]) => {
+    const activeId = useMessengerStore.getState().activeConversationId;
+    setRows(incoming.map((r) => (
+      activeId && r.conversation_id === activeId && (r.unread_count ?? 0) > 0
+        ? { ...r, unread_count: 0 }
+        : r
+    )));
+  }, []);
+
   const fetchInbox = useCallback(async () => {
     setLoading(true);
     setErr(null);
@@ -256,12 +273,37 @@ export default function CustomerSupportWidget() {
         return;
       }
       const json = await res.json();
-      setRows(Array.isArray(json.conversations) ? json.conversations : []);
+      applyInboxRows(Array.isArray(json.conversations) ? json.conversations : []);
     } catch {
       setErr('Network Error');
     } finally {
       setLoading(false);
     }
+  }, [applyInboxRows]);
+
+  // Synchronously mark a support thread read on the server. Uses the
+  // last_message.id surfaced by /api/messenger/support/inbox so we no
+  // longer rely on MessagePane's 1s debounced mark-read (which lost races
+  // against realtime fetchInbox callbacks). Optimistic UI clear first,
+  // then network call.
+  const markRowRead = useCallback(async (conversationId: string) => {
+    let lastMsgId: string | null = null;
+    setRows((prev) => {
+      const next = prev.map((r) => {
+        if (r.conversation_id !== conversationId) return r;
+        if (r.last_message?.id) lastMsgId = r.last_message.id;
+        return (r.unread_count ?? 0) > 0 ? { ...r, unread_count: 0 } : r;
+      });
+      return next;
+    });
+    if (!lastMsgId) return;
+    try {
+      await fetch('/api/messenger/mark-read', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ conversationId, lastReadMessageId: lastMsgId }),
+      });
+    } catch { /* best-effort — next inbox poll will reconcile */ }
   }, []);
 
   useEffect(() => {
@@ -354,10 +396,16 @@ export default function CustomerSupportWidget() {
         rows.find((r) => (r.unread_count || 0) > 0)?.conversation_id ??
         rows[0]?.conversation_id ??
         null;
-      if (target) setMessengerActive(target);
+      if (target) {
+        setMessengerActive(target);
+        // Auto-open path bypasses goToConversation, so fire mark-read here
+        // explicitly — otherwise the auto-opened thread keeps its unread
+        // badge lit even though the admin is actively viewing it.
+        void markRowRead(target);
+      }
     }
     autoOpenedThisCycleRef.current = true;
-  }, [open, rows, setMessengerActive]);
+  }, [open, rows, setMessengerActive, markRowRead]);
 
 
   useEffect(() => {
@@ -434,24 +482,27 @@ export default function CustomerSupportWidget() {
     // restores the messenger's previous active conversation.
     setStatusPopoverFor(null);
     setSnoozePopoverFor(null);
-    // Optimistically clear the unread badge on this row. MessagePane will
-    // POST /api/messenger/mark-read shortly, but the support inbox keeps its
-    // OWN `rows` state (independent of the messenger store's conversations
-    // array, which is what the messenger's auto-clear effect targets), so
-    // without this line the red unread chip stayed lit until the next inbox
-    // refetch.
-    setRows((prev) => prev.map((r) => (
-      r.conversation_id === id && (r.unread_count ?? 0) > 0
-        ? { ...r, unread_count: 0 }
-        : r
-    )));
     setMessengerActive(id);
     setContextCollapsed(false);
+    // Fire mark-read SYNCHRONOUSLY (optimistic UI + server POST). Replaces
+    // the prior approach which relied on MessagePane's 1s debounced mark-read
+    // and lost races against realtime fetchInbox callbacks.
+    void markRowRead(id);
   }
 
   async function setStatus(conversationId: string, status: SupportStatus) {
-    setRows((prev) => prev.map((r) => r.conversation_id === conversationId ? { ...r, support_status: status } : r));
+    // Resolving a thread also clears its unread badge — the admin has
+    // explicitly worked the conversation, so no point keeping the red chip.
+    setRows((prev) => prev.map((r) => {
+      if (r.conversation_id !== conversationId) return r;
+      const next = { ...r, support_status: status } as InboxRow;
+      if (status === 'resolved') next.unread_count = 0;
+      return next;
+    }));
     setStatusPopoverFor(null);
+    if (status === 'resolved') {
+      void markRowRead(conversationId);
+    }
     try {
       const res = await fetch(`/api/messenger/support/${encodeURIComponent(conversationId)}/status`, {
         method: 'PATCH',
