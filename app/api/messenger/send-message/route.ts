@@ -7,7 +7,7 @@ import { SendMessageSchema } from '@/lib/messenger/schemas';
 import { sanitizeMessageText } from '@/lib/messenger/sanitize';
 import { hasAdminMention, recordAdminMention } from '@/lib/messenger/admin-mentions';
 import { enqueuePush } from '@/lib/push-enqueue';
-import { notifyNewMessage } from '@/lib/notify';
+import { notifyNewMessage, notifySupportMessage } from '@/lib/notify';
 import { sendBroadcast } from '@/lib/messenger/broadcast';
 
 export const runtime = 'nodejs';
@@ -155,13 +155,14 @@ export async function POST(req: NextRequest) {
   // Awaited in-app notification + push to all OTHER conversation participants.
   // Never blocks the response — notification side-effects must not slow sends.
   try {
-    // Get sender display name
+    // Get sender display name + role (role drives the support-notification branch)
     const { data: senderProfile } = await svc
       .from('profiles')
-      .select('full_name')
+      .select('full_name, role')
       .eq('id', user.id)
       .maybeSingle();
     const senderName = senderProfile?.full_name || 'Someone';
+    const senderRole = (senderProfile as { role?: string } | null)?.role ?? null;
 
     // Get all OTHER participants in this conversation (fetched after insert so unread_count is updated by trigger)
     const { data: participants } = await svc
@@ -170,10 +171,27 @@ export async function POST(req: NextRequest) {
       .eq('conversation_id', parsed.data.conversationId)
       .neq('user_id', user.id);
 
+    // Customer Support v2: if this is a support thread AND the sender is not
+    // admin, fire a dedicated support_message notification to the admin
+    // participant(s) so the bell + push announce a researcher reply. The
+    // standard new_message notification continues firing alongside this —
+    // the support_message helper gives admins a distinct, jump-to-thread bell
+    // entry titled "Support — <name>" so the support inbox is the canonical
+    // surface and is not buried under generic chat noise.
+    let isSupport = false;
+    if (senderRole !== 'admin') {
+      const { data: conv } = await svc
+        .from('messenger_conversations')
+        .select('is_support')
+        .eq('id', parsed.data.conversationId)
+        .maybeSingle();
+      isSupport = Boolean((conv as { is_support?: boolean } | null)?.is_support);
+    }
+
     if (participants && participants.length > 0) {
       // Build notification body — truncate long messages
       const isMedia = !cleanText && parsed.data.mediaUrl;
-      const rawBody = cleanText ?? (isMedia ? '📎 Media' : 'New Message');
+      const rawBody = cleanText ?? (isMedia ? 'Media Attachment' : 'New Message');
       const body = rawBody.length > 120 ? `${rawBody.slice(0, 117)}…` : rawBody;
       const url = `/messenger?conv=${parsed.data.conversationId}`;
       const tag = `msg-${parsed.data.conversationId}`;
@@ -183,6 +201,26 @@ export async function POST(req: NextRequest) {
         participants.map(async (p: any) => {
           // In-app notification (shows in bell immediately via Realtime)
           await notifyNewMessage(svc, p.user_id, senderName, rawBody, parsed.data.conversationId);
+
+          // Customer Support v2: extra dedicated support_message bell entry
+          // for admin recipients on is_support threads. Wrapped tightly so a
+          // failure here never blocks the rest of the notification fanout.
+          if (isSupport) {
+            try {
+              const { data: recipientProfile } = await svc
+                .from('profiles')
+                .select('role')
+                .eq('id', p.user_id)
+                .maybeSingle();
+              const recipientRole = (recipientProfile as { role?: string } | null)?.role ?? null;
+              if (recipientRole === 'admin') {
+                await notifySupportMessage(svc, p.user_id, senderName, rawBody, parsed.data.conversationId);
+              }
+            } catch {
+              // notification is best-effort
+            }
+          }
+
           // Web push (background, requires subscription + permission)
           await enqueuePush(svc, {
             userId: p.user_id,
