@@ -101,9 +101,6 @@ const NAME_TO_IMAGE = [
   ['ss-31',                 '/images/products/epithalon.png'],  // best fallback
 
   // Skin / Cosmetics — GREEN cap
-  ['mt-2',                  '/images/products/mt-2.png'],
-  ['mt-1',                  '/images/products/mt-2.png'],
-  ['melanotan',             '/images/products/mt-2.png'],
   ['glow',                  '/images/products/glow-blend.png'],
   ['klow',                  '/images/products/klow-blend.png'],
   ['snap-8',                '/images/products/snap-8.png'],

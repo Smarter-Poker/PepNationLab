@@ -22,7 +22,7 @@ export default function AgentStatements() {
   const fetchStatements = async () => {
     try {
       const res = await fetch(`/api/agent/statements?t=${Date.now()}`, { cache: 'no-store' });
-      if (!res.ok) throw new Error('Failed to load statements');
+      if (!res.ok) throw new Error('Failed To Load Statements');
       const json = await res.json();
       if (json.error) throw new Error(json.error);
       setStatements(json.data || []);
@@ -64,7 +64,7 @@ export default function AgentStatements() {
         <div className="metal-content">
           <h2 className="metal-text" style={{ fontSize: '1.25rem', fontFamily: 'var(--font-brand)', marginBottom: 'var(--space-4)' }}>Admin Statements</h2>
           <div style={{ padding: 'var(--space-6)', textAlign: 'center' }}>
-            <p style={{ color: 'var(--silver-light)' }}>No statements found. Statements are generated weekly for your fulfillment costs.</p>
+            <p style={{ color: 'var(--silver-light)' }}>No Statements Found. Statements Are Generated Weekly For Your Fulfillment Costs.</p>
           </div>
         </div>
       </div>
@@ -76,7 +76,7 @@ export default function AgentStatements() {
       <div className="metal-content">
         <h2 className="metal-text" style={{ fontSize: '1.25rem', fontFamily: 'var(--font-brand)', marginBottom: 'var(--space-4)' }}>Admin Statements</h2>
         <p style={{ color: 'var(--silver-light)', fontSize: '0.9rem', marginBottom: 'var(--space-6)' }}>
-          These statements represent your wholesale cost (COGS) and shipping costs owed to the Admin for fulfillment.
+          These Statements Represent Your Wholesale Cost (COGS) And Shipping Costs Owed To The Admin For Fulfillment.
         </p>
 
         <div style={{ overflowX: 'auto' }}>
@@ -101,7 +101,7 @@ export default function AgentStatements() {
                       {new Date(stmt.week_start).toLocaleDateString()}
                     </div>
                     <div style={{ fontSize: '0.75rem', color: 'var(--silver-light)' }}>
-                      to {new Date(stmt.week_end).toLocaleDateString()}
+                      To {new Date(stmt.week_end).toLocaleDateString()}
                     </div>
                   </td>
                   <td style={{ textAlign: 'center' }}>{orderCount}</td>

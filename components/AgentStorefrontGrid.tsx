@@ -166,7 +166,6 @@ const POPULAR_ORDER: string[] = [
   'Retatrutide',                              // #8  - Next-Gen Triple Agonist
   'GLOW (TB10+BPC10+GHK50)',                  // #9  - Esthetic/Repair Stack
   'PT-141',                                   // #10 - Lifestyle Standard
-  'MT-2 (Melanotan 2 Acetate)',               // #11 - Niche Tanning Favorite
   'Ipamorelin',                               // #12 - Core Growth Peptide
   'KLOW (TB10+BPC10+GHK50+KPV10)',            // #13 - Advanced Evolution Stack
   'Tesamorelin',                              // #14 - Visceral Fat Burner

@@ -136,10 +136,6 @@ const PRODUCT_IMAGE_MAP: Record<string, string> = {
   'vilon':                                    '/images/products/vilon.png',
 
   // ── Skin, Hair & Cosmetics — EMERALD GREEN cap ──────────────────────────────
-  'mt-2':                                     '/images/products/mt-2.png',
-  'mt2':                                      '/images/products/mt-2.png',
-  'melanotan ii':                             '/images/products/mt-2.png',
-  'melanotan 2':                              '/images/products/mt-2.png',
   'glow blend':                               '/images/products/glow-blend.png',
   'klow blend':                               '/images/products/klow-blend.png',
   'snap-8':                                   '/images/products/snap-8.png',
@@ -219,7 +215,7 @@ const PRESERVE_UPPERCASE = new Set([
   // Sexual health
   'PT', 'HCG',
   // Skin / cosmetics
-  'MT', 'SNAP',
+  'SNAP',
   // Nootropics
   'MK', 'VIP', 'SS',
   // Blends
@@ -228,7 +224,6 @@ const PRESERVE_UPPERCASE = new Set([
   'DSIP', 'MOTS', 'MQ', 'AHK', 'AICAR', 'FOXO', 'DRI', 'LR3',
   // Numbers embedded in names (all-alpha portion)
   'MQ',   // 1MQ in 5-Amino-1MQ
-  'AA',   // 191AA in HGH 191AA
 ]);
 
 export function toTitleCase(name: string): string {

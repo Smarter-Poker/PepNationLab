@@ -371,22 +371,7 @@ export default function AgentDownline({ agentId }: { agentId?: string }) {
                     </label>
                     <label style={{ flex: 1, padding: '10px', background: 'var(--bg-metal-dark)', border: `1px solid ${caCommissionMode === 'gamified' ? 'var(--teal)' : 'rgba(0,0,0,0.8)'}`, color: 'var(--white)', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}>
                       <input type="radio" checked={caCommissionMode === 'gamified'} onChange={() => setCaCommissionMode('gamified')} />
-                      <span style={{ flex: 1 }}>Gamification Scale</span>
-                      <button
-                        type="button"
-                        aria-label="How The Gamification Scale Works"
-                        title="How The Gamification Scale Works"
-                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); setShowGamificationInfo(true); }}
-                        style={{
-                          flex: '0 0 auto', width: 20, height: 20, borderRadius: '50%',
-                          border: '1px solid var(--teal)', background: 'transparent',
-                          color: 'var(--teal)', fontSize: '0.72rem', fontWeight: 800,
-                          lineHeight: 1, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                          fontStyle: 'italic', fontFamily: 'Georgia, serif',
-                        }}
-                      >
-                        i
-                      </button>
+                      Gamification Scale
                     </label>
                   </div>
 
@@ -423,27 +408,10 @@ export default function AgentDownline({ agentId }: { agentId?: string }) {
                       </div>
                     </div>
                   ) : (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 'var(--space-2)', marginBottom: '4px' }}>
-                        <span style={{ fontSize: '0.75rem', color: 'var(--grey-400)', textTransform: 'uppercase' }}>Level</span>
-                        <span style={{ fontSize: '0.75rem', color: 'var(--grey-400)', textTransform: 'uppercase' }}>Min Monthly Vol ($)</span>
-                        <span style={{ fontSize: '0.75rem', color: 'var(--grey-400)', textTransform: 'uppercase' }}>Markup Rate (%)</span>
-                      </div>
-                      {caCustomSteps.map((step, idx) => (
-                        <div key={idx} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 'var(--space-2)', alignItems: 'center' }}>
-                          <span style={{ fontSize: '0.85rem', color: 'var(--white)', fontWeight: 600 }}>{step.level}. {step.name}</span>
-                          <input type="number" min="0" step="0.01" value={step.min_volume} disabled={idx === 0} onChange={e => {
-                            const newSteps = [...caCustomSteps];
-                            newSteps[idx].min_volume = Number(e.target.value);
-                            setCaCustomSteps(newSteps);
-                          }} style={{ width: '100%', padding: '8px', background: 'var(--bg-metal-dark)', border: '1px solid rgba(0,0,0,0.8)', color: 'var(--white)', borderRadius: '6px', opacity: idx === 0 ? 0.5 : 1 }} />
-                          <input type="number" min="0" max="40" step="0.1" value={step.bonus_pct} onChange={e => {
-                            const newSteps = [...caCustomSteps];
-                            newSteps[idx].bonus_pct = Number(e.target.value);
-                            setCaCustomSteps(newSteps);
-                          }} style={{ width: '100%', padding: '8px', background: 'var(--bg-metal-dark)', border: '1px solid rgba(0,0,0,0.8)', color: 'var(--white)', borderRadius: '6px' }} />
-                        </div>
-                      ))}
+                    <div>
+                      <button type="button" className="btn-silver" style={{ fontSize: '0.8rem', padding: '6px 12px' }} onClick={(e) => { e.preventDefault(); e.stopPropagation(); setShowGamificationInfo(true); }}>
+                        See The Gamification Levels
+                      </button>
                     </div>
                   )}
                   <p style={{ fontSize: '0.72rem', color: 'var(--grey-500)', margin: '6px 0 0', lineHeight: 1.4 }}>
@@ -536,56 +504,115 @@ export default function AgentDownline({ agentId }: { agentId?: string }) {
       {showGamificationInfo && (
         <div style={{
           position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-          background: 'rgba(0,0,0,0.8)', zIndex: 1200,
-          display: 'flex', alignItems: 'center', justifyContent: 'center'
+          background: 'rgba(0,0,0,0.85)', zIndex: 1200,
+          display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 'var(--space-4)'
         }}>
           <div className="metal-frame" style={{ width: '100%', maxWidth: 700, maxHeight: '90vh', display: 'flex', flexDirection: 'column' }}>
             <div className="metal-content" style={{ padding: 'var(--space-6)', overflowY: 'auto' }}>
-              <h2 className="metal-text" style={{ marginTop: 0, marginBottom: 'var(--space-4)', fontSize: '1.4rem' }}>
-                How The Gamification Scale Works
+              <h2 className="metal-text" style={{ marginTop: 0, marginBottom: 'var(--space-2)', fontSize: '1.4rem' }}>
+                Gamification Scale
               </h2>
-              <div style={{ fontSize: '0.9rem', color: 'var(--silver)', lineHeight: 1.6, marginBottom: 'var(--space-6)' }}>
-                <p style={{ marginBottom: 'var(--space-4)' }}>
-                  The Gamification Scale is an incentive ladder that rewards your agents as they sell more. By setting minimum monthly sales volumes, your markup automatically drops up to 5 levels (from Level 1 Rookie all the way to Level 5 Apex), passing better wholesale prices down to your agent.
-                </p>
-                
-                <h4 style={{ color: 'var(--white)', margin: '0 0 var(--space-2)' }}>Default House Scale vs Custom Scale</h4>
-                <p style={{ marginBottom: 'var(--space-4)' }}>
-                  If you choose the <strong>Default Scale</strong>, your agent will be enrolled in the standard House Milestone Ladder. You just set their Base Rate and the Maximum Cap they can reach. <br/><br/>
-                  If you choose the <strong>Custom Scale</strong>, you have full control over all 5 tiers. You can specify exactly what minimum volume is required for each tier, and exactly what commission percentage they will earn when they hit it. The Max Cap is automatically set to the Level 5 percentage.
-                </p>
-
-                <h4 style={{ color: 'var(--white)', margin: '0 0 var(--space-2)' }}>The 5 Tiers</h4>
-                <div style={{ display: 'grid', gap: 'var(--space-2)', marginBottom: 'var(--space-4)' }}>
-                  <div style={{ background: 'linear-gradient(90deg, rgba(0, 229, 255, 0.05), transparent)', padding: 'var(--space-3)', borderRadius: '6px', borderLeft: '2px solid var(--teal)' }}>
-                    <strong>Level 1 - Rookie:</strong> The starting base tier.
-                  </div>
-                  <div style={{ background: 'linear-gradient(90deg, rgba(0, 229, 255, 0.05), transparent)', padding: 'var(--space-3)', borderRadius: '6px', borderLeft: '2px solid var(--teal)' }}>
-                    <strong>Level 2 - Established:</strong> The first volume milestone reached.
-                  </div>
-                  <div style={{ background: 'linear-gradient(90deg, rgba(0, 229, 255, 0.05), transparent)', padding: 'var(--space-3)', borderRadius: '6px', borderLeft: '2px solid var(--teal)' }}>
-                    <strong>Level 3 - Pro:</strong> A proven volume producer.
-                  </div>
-                  <div style={{ background: 'linear-gradient(90deg, rgba(0, 229, 255, 0.05), transparent)', padding: 'var(--space-3)', borderRadius: '6px', borderLeft: '2px solid var(--teal)' }}>
-                    <strong>Level 4 - Elite:</strong> Very high volume producer.
-                  </div>
-                  <div style={{ background: 'linear-gradient(90deg, rgba(0, 229, 255, 0.05), transparent)', padding: 'var(--space-3)', borderRadius: '6px', borderLeft: '2px solid var(--teal)' }}>
-                    <strong>Level 5 - Apex:</strong> The absolute top-tier, representing your Max Cap limit.
-                  </div>
+              <p style={{ color: 'var(--grey-400)', fontSize: '0.85rem', marginBottom: 'var(--space-4)' }}>
+                {caScaleType === 'custom' ? 'Customize the 5 levels of gamification for this agent.' : 'The standard house milestone ladder.'}
+              </p>
+              
+              <div style={{ border: '1px solid rgba(0,196,188,0.35)', borderRadius: 10, overflow: 'hidden', marginBottom: 'var(--space-4)' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1.6fr 0.8fr 1fr', background: 'rgba(0,196,188,0.12)', padding: '12px', fontSize: '0.7rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--teal)' }}>
+                  <span>Level</span>
+                  <span>Monthly Sales</span>
+                  <span style={{ textAlign: 'center' }}>Bonus</span>
+                  <span style={{ textAlign: 'right' }}>Commission</span>
                 </div>
-
-                <p style={{ marginBottom: 0, fontStyle: 'italic', color: 'var(--grey-400)' }}>
-                  Note: Commission rates cannot exceed 40% due to House platform limits. Sales volumes are measured in Retail Sold per calendar month.
-                </p>
+                
+                {caCustomSteps.map((step, idx) => {
+                  const isEditable = caScaleType === 'custom';
+                  const min = step.min_volume;
+                  const max = idx < 4 ? caCustomSteps[idx+1].min_volume - 0.01 : null;
+                  
+                  // For the bonus column
+                  const baseRate = caCustomSteps[0].bonus_pct;
+                  const delta = step.bonus_pct - baseRate;
+                  const bonusText = idx === 0 ? 'Base' : `+${delta.toLocaleString('en-US', {minimumFractionDigits:0, maximumFractionDigits:2})}%`;
+                  
+                  return (
+                    <div
+                      key={idx}
+                      style={{
+                        display: 'grid', gridTemplateColumns: '1.2fr 1.6fr 0.8fr 1fr', alignItems: 'center',
+                        padding: '12px', fontSize: '0.85rem',
+                        borderTop: '1px solid rgba(255,255,255,0.06)',
+                        background: idx % 2 === 0 ? 'rgba(255,255,255,0.02)' : 'transparent',
+                      }}
+                    >
+                      <span style={{ color: 'var(--white)', fontWeight: 600 }}>
+                        {step.level}. {step.name}
+                      </span>
+                      
+                      <span style={{ color: 'var(--silver)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        {isEditable && idx > 0 ? (
+                          <>
+                            <span style={{ color: 'var(--grey-500)' }}>$</span>
+                            <input
+                              type="number"
+                              min="0"
+                              step="0.01"
+                              value={step.min_volume}
+                              onChange={e => {
+                                const val = Number(e.target.value);
+                                const newSteps = [...caCustomSteps];
+                                newSteps[idx].min_volume = val;
+                                setCaCustomSteps(newSteps);
+                              }}
+                              style={{ width: '80px', padding: '4px 6px', background: 'var(--bg-metal-dark)', border: '1px solid rgba(0,0,0,0.8)', color: 'var(--white)', borderRadius: '4px', fontSize: '0.8rem' }}
+                            />
+                            {max != null ? <span style={{ color: 'var(--grey-500)' }}> - ${max.toLocaleString('en-US', {minimumFractionDigits:0, maximumFractionDigits:0})}</span> : <span style={{ color: 'var(--grey-500)' }}>+</span>}
+                          </>
+                        ) : (
+                          <span>
+                            ${min.toLocaleString('en-US')} {max != null ? ` - $${max.toLocaleString('en-US', {minimumFractionDigits:0, maximumFractionDigits:0})}` : '+'}
+                          </span>
+                        )}
+                      </span>
+                      
+                      <span style={{ textAlign: 'center', color: idx === 0 ? 'var(--grey-500)' : '#00FF9D', fontWeight: 700 }}>
+                        {bonusText}
+                      </span>
+                      
+                      <span style={{ textAlign: 'right', display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
+                        {isEditable ? (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                            <input
+                              type="number"
+                              min="0"
+                              max="40"
+                              step="0.1"
+                              value={step.bonus_pct}
+                              onChange={e => {
+                                const val = Number(e.target.value);
+                                const newSteps = [...caCustomSteps];
+                                newSteps[idx].bonus_pct = val;
+                                setCaCustomSteps(newSteps);
+                              }}
+                              style={{ width: '60px', padding: '4px 6px', background: 'var(--bg-metal-dark)', border: '1px solid rgba(0,0,0,0.8)', color: 'var(--white)', borderRadius: '4px', fontSize: '0.8rem', textAlign: 'right' }}
+                            />
+                            <span style={{ color: 'var(--grey-500)' }}>%</span>
+                          </div>
+                        ) : (
+                          <span style={{ color: 'var(--white)', fontWeight: 800 }}>{step.bonus_pct}%</span>
+                        )}
+                      </span>
+                    </div>
+                  );
+                })}
               </div>
 
               <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
                 <button
                   type="button"
-                  className="btn-glass"
+                  className="btn-neon-cyan"
                   onClick={() => setShowGamificationInfo(false)}
                 >
-                  Close
+                  {caScaleType === 'custom' ? 'Save Levels' : 'Close'}
                 </button>
               </div>
             </div>
