@@ -219,7 +219,10 @@ export default function AgentAccountDetail({
     }
     setSaving(true);
     try {
-      const baseVal = commissionPct === '' ? 0 : commissionPct;
+      let baseVal = commissionPct === '' ? 0 : commissionPct;
+      if (commissionMode === 'gamified' && scaleType === 'custom') {
+        baseVal = customSteps[0].bonus_pct;
+      }
       const payload: Record<string, any> = {
         full_name: fullName,
         email,
@@ -236,8 +239,9 @@ export default function AgentAccountDetail({
         payload.velocity_cap = null;
       } else {
         // Gamification scale: cap above base lets the ladder lift the rate.
-        payload.commission_max_pct = maxCap === '' ? null : maxCap;
+        payload.commission_max_pct = scaleType === 'custom' ? customSteps[4].bonus_pct : (maxCap === '' ? null : maxCap);
         payload.velocity_cap = velocityCap === '' ? null : velocityCap;
+        payload.custom_commission_scale = scaleType === 'custom' ? customSteps.map(s => ({ min_volume: s.min_volume, bonus_pct: s.bonus_pct })) : undefined;
       }
       if (accountType === 'credit') payload.credit_limit = creditLimit === '' ? 0 : creditLimit;
 
@@ -505,29 +509,65 @@ export default function AgentAccountDetail({
                       </label>
                     </div>
 
-                    {commissionMode === 'fixed' ? (
-                      <div style={{ maxWidth: 240 }}>
-                        <label style={labelStyle}>Commission Rate (%)</label>
-                        <input style={inputStyle} type="number" min="0" max="100" step="0.1" value={commissionPct} onChange={(e) => setCommissionPct(e.target.value)} placeholder="0" />
-                      </div>
-                    ) : (
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 'var(--space-3)' }}>
-                        <div>
-                          <label style={labelStyle}>Base Rate (%)</label>
-                          <input style={inputStyle} type="number" min="0" max="40" step="0.1" value={commissionPct} onChange={(e) => setCommissionPct(e.target.value)} placeholder="0" />
-                        </div>
-                        <div>
-                          <label style={labelStyle}>Max Cap (%, Max 40)</label>
-                          <input style={inputStyle} type="number" min="0" max="40" step="0.1" value={maxCap} onChange={(e) => setMaxCap(e.target.value)} placeholder="Up To 40" />
-                        </div>
-                        <div>
-                          <label style={labelStyle}>Velocity Cap ($, Optional)</label>
-                          <input style={inputStyle} type="number" min="0" step="0.01" value={velocityCap} onChange={(e) => setVelocityCap(e.target.value)} placeholder="None" />
-                        </div>
+                    {commissionMode === 'gamified' && (
+                      <div style={{ display: 'flex', gap: 'var(--space-3)', marginBottom: 'var(--space-3)' }}>
+                        <label style={{ flex: 1, padding: '10px', background: 'linear-gradient(180deg, #0b0f16 0%, #121822 100%)', border: `1px solid ${scaleType === 'default' ? 'var(--teal)' : 'rgba(0,0,0,0.8)'}`, color: 'var(--white)', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <input type="radio" checked={scaleType === 'default'} onChange={() => setScaleType('default')} />
+                          Use Default Scale
+                        </label>
+                        <label style={{ flex: 1, padding: '10px', background: 'linear-gradient(180deg, #0b0f16 0%, #121822 100%)', border: `1px solid ${scaleType === 'custom' ? 'var(--teal)' : 'rgba(0,0,0,0.8)'}`, color: 'var(--white)', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <input type="radio" checked={scaleType === 'custom'} onChange={() => setScaleType('custom')} />
+                          Use Custom Scale
+                        </label>
                       </div>
                     )}
-                    <p style={{ fontSize: '0.7rem', color: 'var(--grey-500)', margin: '8px 0 0', lineHeight: 1.4 }}>
-                      Fixed Percentage Pays A Flat Rate. Gamification Scale Climbs Through 5 Levels As Monthly Sales Grow, Up To The Max Cap (40% Maximum).{' '}
+
+                    {commissionMode === 'fixed' ? (
+                      <div>
+                        <label style={{ display: 'block', marginBottom: '8px', color: 'var(--grey-300)', fontSize: '0.85rem' }}>Commission Rate (%)</label>
+                        <input type="number" min="0" max="100" step="0.1" style={{ width: '100%', padding: '10px', background: 'linear-gradient(180deg, #0b0f16 0%, #121822 100%)', border: '1px solid rgba(0,0,0,0.8)', color: 'var(--white)', borderRadius: '6px' }} value={commissionPct} onChange={e => setCommissionPct(e.target.value)} placeholder="e.g. 20" />
+                      </div>
+                    ) : scaleType === 'default' ? (
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: 'var(--space-3)' }}>
+                        <div>
+                          <label style={{ display: 'block', marginBottom: '8px', color: 'var(--grey-300)', fontSize: '0.85rem' }}>Base Rate (%)</label>
+                          <input type="number" min="0" max="40" step="0.1" style={{ width: '100%', padding: '10px', background: 'linear-gradient(180deg, #0b0f16 0%, #121822 100%)', border: '1px solid rgba(0,0,0,0.8)', color: 'var(--white)', borderRadius: '6px' }} value={commissionPct} onChange={e => setCommissionPct(e.target.value)} placeholder="e.g. 15" />
+                        </div>
+                        <div>
+                          <label style={{ display: 'block', marginBottom: '8px', color: 'var(--grey-300)', fontSize: '0.85rem' }}>Max Cap (%)</label>
+                          <input type="number" min="0" max="40" step="0.1" style={{ width: '100%', padding: '10px', background: 'linear-gradient(180deg, #0b0f16 0%, #121822 100%)', border: '1px solid rgba(0,0,0,0.8)', color: 'var(--white)', borderRadius: '6px' }} value={maxCap} onChange={e => setMaxCap(e.target.value)} placeholder="No Cap" />
+                        </div>
+                        <div>
+                          <label style={{ display: 'block', marginBottom: '8px', color: 'var(--grey-300)', fontSize: '0.85rem' }}>Velocity Cap ($)</label>
+                          <input type="number" min="0" step="0.01" style={{ width: '100%', padding: '10px', background: 'linear-gradient(180deg, #0b0f16 0%, #121822 100%)', border: '1px solid rgba(0,0,0,0.8)', color: 'var(--white)', borderRadius: '6px' }} value={velocityCap} onChange={e => setVelocityCap(e.target.value)} placeholder="None" />
+                        </div>
+                      </div>
+                    ) : (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 'var(--space-2)', marginBottom: '4px' }}>
+                          <span style={{ fontSize: '0.75rem', color: 'var(--grey-400)', textTransform: 'uppercase' }}>Level</span>
+                          <span style={{ fontSize: '0.75rem', color: 'var(--grey-400)', textTransform: 'uppercase' }}>Min Monthly Vol ($)</span>
+                          <span style={{ fontSize: '0.75rem', color: 'var(--grey-400)', textTransform: 'uppercase' }}>Commission Rate (%)</span>
+                        </div>
+                        {customSteps.map((step, idx) => (
+                          <div key={idx} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 'var(--space-2)', alignItems: 'center' }}>
+                            <span style={{ fontSize: '0.85rem', color: 'var(--white)', fontWeight: 600 }}>{step.level}. {step.name}</span>
+                            <input type="number" min="0" step="0.01" value={step.min_volume} disabled={idx === 0} onChange={e => {
+                              const newSteps = [...customSteps];
+                              newSteps[idx].min_volume = Number(e.target.value);
+                              setCustomSteps(newSteps);
+                            }} style={{ width: '100%', padding: '8px', background: 'linear-gradient(180deg, #0b0f16 0%, #121822 100%)', border: '1px solid rgba(0,0,0,0.8)', color: 'var(--white)', borderRadius: '6px', opacity: idx === 0 ? 0.5 : 1 }} />
+                            <input type="number" min="0" max="40" step="0.1" value={step.bonus_pct} onChange={e => {
+                              const newSteps = [...customSteps];
+                              newSteps[idx].bonus_pct = Number(e.target.value);
+                              setCustomSteps(newSteps);
+                            }} style={{ width: '100%', padding: '8px', background: 'linear-gradient(180deg, #0b0f16 0%, #121822 100%)', border: '1px solid rgba(0,0,0,0.8)', color: 'var(--white)', borderRadius: '6px' }} />
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    <p style={{ fontSize: '0.75rem', color: 'var(--grey-500)', margin: '8px 0 0', lineHeight: 1.5 }}>
+                      Fixed Percentage Pays A Flat Rate. Gamification Scale Climbs Through 5 Levels As Monthly Sales Grow.
                       <button
                         type="button"
                         onClick={() => setShowGamificationInfo(true)}
