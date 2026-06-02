@@ -29,6 +29,11 @@ type Detail = {
     // here so the drawer can gate role-specific UI (e.g. super_agents do not
     // see Markup Structure — they use Tier 1/2/3 multipliers).
     role: string | null;
+    // R33: super_agents store role='agent' with is_super_agent=true. The R32
+    // gate `role === 'agent'` alone couldn't distinguish them from regular
+    // agents, so super_agents were still seeing the Markup ladder. Carry the
+    // flag from the API response so the UI gate can exclude them.
+    is_super_agent?: boolean;
     username: string | null;
     email: string | null;
     phone: string | null;
@@ -471,7 +476,9 @@ export default function AgentAccountDetail({
                   {/* R32: Markup Structure is for full agents only. Super-
                       agents earn off the platform Tier 1/2/3 multiplier and have
                       no need for a fixed/gamified markup ladder. */}
-                  {detail?.agent?.role === 'agent' && (
+                  {detail?.agent?.role === 'agent'
+                    && detail?.agent?.is_super_agent !== true
+                    && detail?.agent?.is_sub_agent !== true && (
                   <div style={{ gridColumn: '1 / -1' }}>
                     <label style={labelStyle}>Markup Structure</label>
                     <div style={{ display: 'flex', gap: 'var(--space-2)', marginBottom: 'var(--space-3)' }}>
