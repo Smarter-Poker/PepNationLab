@@ -236,8 +236,7 @@ export default function MessageBell({ onViewAll, dropUp }: { onViewAll: () => vo
           alignItems: 'center',
           transition: 'background 0.2s',
         }}
-        onMouseEnter={e => { if (!open) e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; }}
-        onMouseLeave={e => { if (!open) e.currentTarget.style.background = 'none'; }}
+        className={`message-bell-btn ${open ? 'open' : ''}`}
       >
         <img src="/images/messenger-icon.png" alt="Messages" width={42} height={42} style={{ transition: 'opacity 0.2s', display: 'block' }} />
         {unreadCount > 0 && !isMessengerActive && (
@@ -293,8 +292,7 @@ export default function MessageBell({ onViewAll, dropUp }: { onViewAll: () => vo
                 cursor: 'pointer', fontWeight: 600, padding: '4px 12px',
                 transition: 'background 0.2s',
               }}
-              onMouseEnter={e => (e.currentTarget.style.background = 'rgba(192,184,168,0.12)')}
-              onMouseLeave={e => (e.currentTarget.style.background = 'rgba(192,184,168,0.06)')}
+              className="message-view-all"
             >
               View All
             </button>
@@ -341,8 +339,7 @@ export default function MessageBell({ onViewAll, dropUp }: { onViewAll: () => vo
                     position: 'relative',
                   }}
                   onClick={() => { setOpen(false); onViewAll(); }}
-                  onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.03)')}
-                  onMouseLeave={e => (e.currentTarget.style.background = !msg.is_read ? 'rgba(192,184,168,0.03)' : 'transparent')}
+                  className="message-item"
                 >
                   {/* Avatar */}
                   <div style={{
@@ -411,6 +408,9 @@ export default function MessageBell({ onViewAll, dropUp }: { onViewAll: () => vo
         @keyframes spin { to { transform: rotate(360deg); } }
         @keyframes badgePop { 0% { transform: scale(0); } 60% { transform: scale(1.2); } 100% { transform: scale(1); } }
         @keyframes dropdownSlide { from { opacity: 0; transform: translateY(${dropUp ? '8px' : '-8px'}); } to { opacity: 1; transform: translateY(0); } }
+        .message-bell-btn:not(.open):hover { background: rgba(255,255,255,0.05) !important; }
+        .message-view-all:hover { background: rgba(192,184,168,0.12) !important; }
+        .message-item:hover { background: rgba(255,255,255,0.03) !important; }
       `}</style>
     </div>
   );

@@ -43,15 +43,16 @@ export default function NavbarWalletBadge() {
       href={linkHref}
       aria-label="Open Wallet"
       title="View Wallet & Accounting"
+      className="hover-scale-105"
       style={{
         display: 'flex',
         alignItems: 'center',
-        gap: '8px',
-        textDecoration: 'none',
-        transition: 'transform 0.2s',
+        background: 'none',
+        flexShrink: 0,
+        position: 'relative',
+        left: -8,
+        padding: 4
       }}
-      onMouseEnter={e => (e.currentTarget.style.transform = 'scale(1.05)')}
-      onMouseLeave={e => (e.currentTarget.style.transform = 'scale(1)')}
     >
       <img src="/nav-icons/wallet-icon.png" alt="Wallet" width={84} height={84} style={{ display: 'block' }} />
     </Link>

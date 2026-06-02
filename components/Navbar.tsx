@@ -348,7 +348,7 @@ export default function Navbar({ onMenuClick, isOpen, title }: { onMenuClick?: (
               }}
             >
               <div style={{ width: 36, height: 36, overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ filter: 'drop-shadow(0px 2px 4px rgba(0,0,0,0.5))', transition: 'opacity 0.2s', display: 'block' }} onMouseEnter={e => (e.currentTarget.style.opacity = '0.8')} onMouseLeave={e => (e.currentTarget.style.opacity = '1')}>
+                <svg className="hover-fade" width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ filter: 'drop-shadow(0px 2px 4px rgba(0,0,0,0.5))', display: 'block' }}>
                   <defs>
                     <linearGradient id="premium-metal-body" x1="0%" y1="0%" x2="0%" y2="100%">
                       <stop offset="0%" stopColor="#E2E8F0" />
@@ -384,7 +384,7 @@ export default function Navbar({ onMenuClick, isOpen, title }: { onMenuClick?: (
             <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'var(--surface-2)' }} className="skeleton" />
           ) : user ? (
             <>
-              <Link href={dashLink} aria-label={dashLabel} style={{ display: 'flex', alignItems: 'center', padding: 4, transition: 'transform 0.2s', background: 'none', flexShrink: 0, marginRight: 4, position: 'relative', left: -8 }} onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.05)'} onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}>
+              <Link href={dashLink} aria-label={dashLabel} className="hover-scale-105" style={{ display: 'flex', alignItems: 'center', padding: 4, background: 'none', flexShrink: 0, marginRight: 4, position: 'relative', left: -8 }}>
                 <img
                   src={
                     role === 'admin' ? '/nav-icons/admin-dashboard.png' :

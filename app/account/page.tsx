@@ -1,7 +1,6 @@
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/server';
-import {
   Bell, ShieldCheck, Heart, History, MapPin, Package, Gift, Wallet, ChevronRight,
   User, RotateCcw, FileCheck, LifeBuoy,
 } from 'lucide-react';
@@ -105,10 +104,10 @@ export default async function AccountHubPage() {
           {isResearcher && (
             <NavRow index={5} href="/account/referrals" label="Referrals" description="Share Your Code And Earn Store Credit." Icon={Gift} />
           )}
-          <NavRow index={6} href="/account/notifications" label="Notifications" description="Push And In-App Notification Preferences." Icon={Bell} />
-          <NavRow index={7} href="/account/security" label="Security" description="Password, 2FA, And Login Sessions." Icon={ShieldCheck} />
-          <NavRow index={8} href="/account/addresses" label="Saved Addresses" description="Manage Shipping Addresses Used At Checkout." Icon={MapPin} />
-          <NavRow index={9} href="/account/payment-method" label="Default Payment Method" description="Pre-Select Zelle, Venmo, Cash App, Or Apple Pay." Icon={Wallet} />
+          <NavRow index={6} href="/account/notifications" label="Notifications" description="Choose Which Alerts You Receive. The Bell In The Header Shows Your Live Feed." Icon={Bell} />
+          <NavRow index={7} href="/account/security" label="Security" description="Password, Two-Factor, Active Sessions, And Sign-In Activity." Icon={ShieldCheck} />
+          <NavRow index={8} href="/account/addresses" label="Saved Addresses" description="Ship-To And Ship-From Addresses Used At Checkout And On Outbound Labels." Icon={MapPin} />
+          <NavRow index={9} href="/account/payment-method" label="Payment Methods" description="Default Method Plus Your Handle Or Contact For Each One You Use." Icon={Wallet} />
           <NavRow index={10} href="/account/compliance" label="Compliance & Disclaimers" description="Review And Re-Acknowledge The Research-Only Disclaimer." Icon={FileCheck} />
           <NavRow index={11} href="/account/help" label="Help & Support" description="Browse FAQs Or Send Our Team A Message." Icon={LifeBuoy} />
         </div>

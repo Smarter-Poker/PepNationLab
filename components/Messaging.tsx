@@ -545,8 +545,7 @@ export default function Messaging({
                           {EMOJI_FULL.map(em => (
                             <button key={em} onClick={() => handleReaction(m.id, em)}
                               style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '3px 4px', fontSize: '0.9rem', borderRadius: 4 }}
-                              onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.1)')}
-                              onMouseLeave={e => (e.currentTarget.style.background = 'none')}>
+                              className="msg-emoji-btn">
                               {em}
                             </button>
                           ))}
@@ -577,14 +576,12 @@ export default function Messaging({
             if (msg) { setEditingMsg(msg); setEditBody(msg.body); }
             setContextMenu(null);
           }} style={{ display: 'block', width: '100%', textAlign: 'left', background: 'none', border: 'none', padding: '8px 12px', color: '#fff', fontSize: '0.8rem', cursor: 'pointer', borderRadius: 6 }}
-            onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.05)')}
-            onMouseLeave={e => (e.currentTarget.style.background = 'none')}>
+            className="msg-context-btn">
             ✏️ Edit Message
           </button>
           <button onClick={() => handleDelete(contextMenu.msgId)}
             style={{ display: 'block', width: '100%', textAlign: 'left', background: 'none', border: 'none', padding: '8px 12px', color: '#FC8181', fontSize: '0.8rem', cursor: 'pointer', borderRadius: 6 }}
-            onMouseEnter={e => (e.currentTarget.style.background = 'rgba(229,62,62,0.05)')}
-            onMouseLeave={e => (e.currentTarget.style.background = 'none')}>
+            className="msg-context-delete-btn">
             🗑 Delete Message
           </button>
         </div>
@@ -649,8 +646,7 @@ export default function Messaging({
                 {EMOJI_FULL.map(em => (
                   <button key={em} type="button" onClick={() => { setBody(prev => prev + em); setShowFullEmoji(false); inputRef.current?.focus(); }}
                     style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px 5px', fontSize: '1.1rem', borderRadius: 4 }}
-                    onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.08)')}
-                    onMouseLeave={e => (e.currentTarget.style.background = 'none')}>
+                    className="msg-emoji-picker-btn">
                     {em}
                   </button>
                 ))}
@@ -690,6 +686,10 @@ export default function Messaging({
       <style>{`
         @keyframes spin { to { transform: rotate(360deg); } }
         div:hover > .msg-hover-actions { display: flex !important; }
+        .msg-emoji-btn:hover { background: rgba(255,255,255,0.1) !important; }
+        .msg-context-btn:hover { background: rgba(255,255,255,0.05) !important; }
+        .msg-context-delete-btn:hover { background: rgba(229,62,62,0.05) !important; }
+        .msg-emoji-picker-btn:hover { background: rgba(255,255,255,0.08) !important; }
       `}</style>
     </div>
   );

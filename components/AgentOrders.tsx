@@ -309,15 +309,7 @@ export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
                   transition: 'transform 0.2s ease, box-shadow 0.2s ease',
                   marginBottom: '16px',
                 }}
-                className="message-card-hover"
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.transform = 'translateY(-2px)';
-                  e.currentTarget.style.boxShadow = '0 12px 40px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255,255,255,0.4), inset 0 -1px 0 rgba(0,0,0,0.4)';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.transform = 'none';
-                  e.currentTarget.style.boxShadow = '0 8px 30px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.35), inset 0 -1px 0 rgba(0,0,0,0.4)';
-                }}
+                className="message-card-hover hover-lift-metal"
               >
                 <div style={{
                   background: 'linear-gradient(180deg, #1a1f2e 0%, #141820 40%, #111520 100%)',

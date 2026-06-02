@@ -1272,7 +1272,7 @@ export default function AgentStorefrontGrid({
         <div
           role="button"
           tabIndex={0}
-          className="floating-cart-wrapper"
+          className="floating-cart-wrapper hover-cart-float"
           onClick={() => {
             if (totalCartItems === 0) {
               setCartToast(true);
@@ -1280,14 +1280,6 @@ export default function AgentStorefrontGrid({
             } else {
               setShowCartFloat(!showCartFloat);
             }
-          }}
-          onMouseEnter={e => { 
-            e.currentTarget.style.transform = 'scale(1.05)'; 
-            e.currentTarget.style.filter = 'drop-shadow(0 12px 24px rgba(0,0,0,0.9)) brightness(1.2)';
-          }}
-          onMouseLeave={e => { 
-            e.currentTarget.style.transform = ''; 
-            e.currentTarget.style.filter = '';
           }}
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -1552,8 +1544,7 @@ export default function AgentStorefrontGrid({
                       justifyContent: 'center', boxSizing: 'border-box', flexShrink: 0,
                       transition: 'background 0.15s ease',
                     }}
-                    onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.16)'; }}
-                    onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.08)'; }}
+                    className="hover-bg-glass"
                   >
                     <X size={14} stroke="#ffffff" strokeWidth={2.5} aria-hidden="true" />
                   </button>

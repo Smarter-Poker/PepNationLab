@@ -150,24 +150,7 @@ function MenuButton({ onClick, icon, title, subtitle }: {
         transition: 'background 0.15s, transform 0.1s, box-shadow 0.1s',
         WebkitTapHighlightColor: 'transparent',
       }}
-      onMouseEnter={e => {
-        e.currentTarget.style.background = 'linear-gradient(180deg, #252840 0%, #1e2235 50%, #191d30 100%)';
-        e.currentTarget.style.boxShadow = 'inset 0 1px 0 rgba(255,255,255,0.1), 0 4px 16px rgba(0,0,0,0.6)';
-      }}
-      onMouseLeave={e => {
-        e.currentTarget.style.background = 'linear-gradient(180deg, #1e2233 0%, #181c2a 50%, #141820 100%)';
-        e.currentTarget.style.boxShadow = 'inset 0 1px 0 rgba(255,255,255,0.06), 0 2px 8px rgba(0,0,0,0.5)';
-      }}
-      onMouseDown={e => { e.currentTarget.style.transform = 'scale(0.98)'; }}
-      onMouseUp={e => { e.currentTarget.style.transform = 'scale(1)'; }}
-      onTouchStart={e => {
-        e.currentTarget.style.background = 'linear-gradient(180deg, #252840 0%, #1e2235 50%, #191d30 100%)';
-        e.currentTarget.style.transform = 'scale(0.98)';
-      }}
-      onTouchEnd={e => {
-        e.currentTarget.style.background = 'linear-gradient(180deg, #1e2233 0%, #181c2a 50%, #141820 100%)';
-        e.currentTarget.style.transform = 'scale(1)';
-      }}
+      className="hover-menu-btn"
     >
       <div style={{
         flexShrink: 0, width: 60, height: 60,
@@ -548,8 +531,7 @@ export default function ResearcherDashboard({ userId, userName, userEmail, agent
                       WebkitTapHighlightColor: 'transparent',
                       borderRadius: 8,
                     }}
-                    onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.background = 'rgba(255,255,255,0.06)'; }}
-                    onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.background = 'transparent'; }}
+                    className="hover-bg-glass"
                   />
                 ))}
               </div>
@@ -615,14 +597,7 @@ export default function ResearcherDashboard({ userId, userName, userEmail, agent
                         boxShadow: '0 8px 30px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.35), inset 0 -1px 0 rgba(0,0,0,0.4)',
                         transition: 'transform 0.2s ease, box-shadow 0.2s ease',
                       }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.transform = 'translateY(-2px)';
-                        e.currentTarget.style.boxShadow = '0 12px 40px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255,255,255,0.4), inset 0 -1px 0 rgba(0,0,0,0.4)';
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.transform = 'none';
-                        e.currentTarget.style.boxShadow = '0 8px 30px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.35), inset 0 -1px 0 rgba(0,0,0,0.4)';
-                      }}
+                      className="hover-lift-metal"
                     >
                       <div style={{
                         background: 'linear-gradient(180deg, #1a1f2e 0%, #141820 40%, #111520 100%)',
