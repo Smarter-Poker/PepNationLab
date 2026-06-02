@@ -20,13 +20,14 @@ import MessagePane from './MessagePane';
 import SupportContextSidebar from './SupportContextSidebar';
 
 /**
- * Admin Customer Support widget — v5 (full-screen modal).
+ * Admin Customer Support widget — v6 (full-screen modal).
  *
  * Visible only on /messenger to a user whose profile.role === 'admin'.
  * Bottom bar opens a fixed inset:0 overlay that mounts the real messenger
  * MessagePane in the center column, so admin gets the full feature set —
- * text, photos, videos, voice, files, links, emoji, gif, calls, threads,
- * reactions, pins, expiry, scheduled send — for free, by reuse.
+ * text, photos, videos, voice, files, links, calls, threads, reactions,
+ * pins, expiry — for free, by reuse. Emoji + schedule-send buttons are
+ * intentionally hidden inside the modal (see global CSS at the bottom).
  */
 
 type SupportStatus = 'open' | 'in_progress' | 'waiting_on_researcher' | 'resolved';
@@ -402,6 +403,15 @@ export default function CustomerSupportWidget() {
     }
   }, [rows, tab]);
 
+  // When a support thread is selected, the left column collapses to ONLY
+  // show that customer's row + their researcher context. Click "All Threads"
+  // in the new header strip to expand the full list back.
+  const focusedRow = useMemo(() => {
+    if (!messengerActiveId) return null;
+    return visibleRows.find((r) => r.conversation_id === messengerActiveId) ?? null;
+  }, [visibleRows, messengerActiveId]);
+  const focusedList = focusedRow ? [focusedRow] : visibleRows;
+
   const tabCounts = useMemo(() => {
     let unread = 0, openCount = 0, snoozed = 0, resolved = 0, all = 0;
     for (const r of rows) {
@@ -480,6 +490,7 @@ export default function CustomerSupportWidget() {
               borderBottom: `1px solid ${NICKEL_BORDER}`,
               background: 'linear-gradient(180deg, #0E1A24 0%, #0A1219 100%)',
               flexShrink: 0,
+              position: 'relative',
             }}
           >
             <button
@@ -503,7 +514,7 @@ export default function CustomerSupportWidget() {
             >
               {sidebarCollapsed ? <PanelLeftOpen size={16} aria-hidden="true" /> : <PanelLeftClose size={16} aria-hidden="true" />}
             </button>
-            <strong style={{ color: 'var(--white, #fff)', fontSize: '1.02rem', flex: 1, textAlign: 'center' }}>
+            <strong style={{ color: 'var(--white, #fff)', fontSize: '1.02rem', flex: 1, textAlign: 'center', position: 'absolute', left: 0, right: 0, pointerEvents: 'none' }}>
               Customer Support
             </strong>
             <button
@@ -529,6 +540,7 @@ export default function CustomerSupportWidget() {
                 color: '#FF9C9C',
                 cursor: 'pointer',
                 flexShrink: 0,
+                marginLeft: 'auto',
               }}
             >
               <X size={16} aria-hidden="true" />
@@ -647,6 +659,39 @@ export default function CustomerSupportWidget() {
             })}
           </div>
 
+          {focusedRow && (
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                padding: '8px 12px',
+                borderBottom: '1px solid rgba(255,255,255,0.06)',
+                background: 'rgba(0,196,188,0.04)',
+                fontSize: '0.74rem',
+                flexShrink: 0,
+              }}
+            >
+              <span style={{ color: 'var(--silver, #C0B8A8)' }}>
+                Viewing Single Thread
+              </span>
+              <button
+                type="button"
+                onClick={() => setMessengerActive(null)}
+                style={{
+                  background: 'transparent',
+                  border: '1px solid rgba(255,255,255,0.12)',
+                  color: 'var(--white, #fff)',
+                  padding: '3px 8px',
+                  borderRadius: 6,
+                  fontSize: '0.72rem',
+                  cursor: 'pointer',
+                }}
+              >
+                ← All Threads
+              </button>
+            </div>
+          )}
           <div style={{ overflowY: 'auto', flex: 1, minHeight: 0 }}>
             {loading && rows.length === 0 ? (
               <div
@@ -704,7 +749,7 @@ export default function CustomerSupportWidget() {
               </div>
             ) : (
               <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
-                {visibleRows.map((row) => {
+                {focusedList.map((row) => {
                   const status: SupportStatus = (row.support_status as SupportStatus) || 'open';
                   const slaSec = row.sla_waiting_seconds || 0;
                   const overdue = slaSec > 1800;
@@ -1166,7 +1211,7 @@ export default function CustomerSupportWidget() {
                     padding: '0 4px 8px',
                   }}
                 >
-                  <SupportContextSidebar conversationId={messengerActiveId} />
+                  <SupportContextSidebar conversationId={messengerActiveId} inline hideOwnHeader />
                 </div>
               )}
             </div>
@@ -1367,6 +1412,16 @@ export default function CustomerSupportWidget() {
       <style jsx global>{`
         .messenger-sidebar {
           padding-bottom: calc(60px + env(safe-area-inset-bottom)) !important;
+        }
+        /* Customer Support v6: hide the composer's emoji + schedule-send buttons
+           while the modal is open. Admins reply through the support modal
+           with text/photo/video/file only — emoji and scheduled-send are
+           noise here. The selectors target the composer buttons by their
+           stable aria-labels so we don't need to fork MessageComposer. */
+        .cs-widget-overlay button[aria-label="Insert Emoji"],
+        .cs-widget-overlay button[aria-label="Add Emoji"],
+        .cs-widget-overlay button[aria-label="Schedule Send"] {
+          display: none !important;
         }
       `}</style>
     </>
