@@ -15,12 +15,14 @@ import {
 } from 'lucide-react';
 
 /**
- * Admin Customer Support widget — v2.
+ * Admin Customer Support widget — v3.
  *
  * Visible only on /messenger to a user whose profile.role === 'admin'.
- * Renders a fixed-position, EDGE-TO-EDGE locked bar at the very bottom
- * of the messenger viewport. Contents are centered. A global rule pads
- * `.messenger-sidebar` so the conversation list rows stop above the bar.
+ * Renders a fixed bottom-anchored bar with a slim teal accent line, a
+ * lifebuoy badge anchored left, centered title + thread count, and an
+ * affordance arrow on the right. Tapping it opens the support inbox panel
+ * above the bar. A global rule pads `.messenger-sidebar` so the
+ * conversation list rows stop above the bar (no overlap).
  */
 
 type SupportStatus = 'open' | 'in_progress' | 'waiting_on_researcher' | 'resolved';
@@ -173,7 +175,7 @@ function playChime() {
     osc.stop(ctx.currentTime + 0.32);
     osc.onended = () => { try { ctx.close(); } catch {} };
   } catch {
-    /* sound is best-effort */
+    /* best-effort */
   }
 }
 
@@ -191,12 +193,8 @@ export default function CustomerSupportWidget() {
   const channelRef = useRef<ReturnType<ReturnType<typeof createClient>['channel']> | null>(null);
   const adminIdRef = useRef<string | null>(null);
   const originalTitleRef = useRef<string | null>(null);
-  // Seed at -1 so the FIRST useEffect run (where totalUnread becomes whatever
-  // the inbox already has) is treated as the baseline and does NOT trigger
-  // a chime. Subsequent increases will.
   const prevUnreadRef = useRef<number>(-1);
 
-  // Mount: gate visibility to admins on /messenger only.
   useEffect(() => {
     if (typeof window === 'undefined') return;
     if (!window.location.pathname.startsWith('/messenger')) return;
@@ -216,7 +214,7 @@ export default function CustomerSupportWidget() {
           adminIdRef.current = user.id;
           setShow(true);
         }
-      } catch { /* hide on any error */ }
+      } catch {}
     })();
     return () => { cancelled = true; };
   }, []);
@@ -299,7 +297,6 @@ export default function CustomerSupportWidget() {
     const base = originalTitleRef.current || document.title.replace(/^\(\d+\)\s+/, '');
     document.title = totalUnread > 0 ? `(${totalUnread}) ${base}` : base;
 
-    // First settle is the baseline — don't chime on mount.
     if (prevUnreadRef.current === -1) {
       prevUnreadRef.current = totalUnread;
       return;
@@ -310,8 +307,6 @@ export default function CustomerSupportWidget() {
     prevUnreadRef.current = totalUnread;
   }, [totalUnread]);
 
-  // Restore the original document title when the widget unmounts so we
-  // don't leave a stale '(N)' prefix on the page after navigation.
   useEffect(() => {
     return () => {
       if (typeof document === 'undefined') return;
@@ -417,7 +412,7 @@ export default function CustomerSupportWidget() {
             position: 'fixed',
             left: 0,
             right: 0,
-            bottom: 60,
+            bottom: 64,
             zIndex: 101,
             maxHeight: 'min(60dvh, 560px)',
             display: 'flex',
@@ -980,6 +975,7 @@ export default function CustomerSupportWidget() {
         </div>
       )}
 
+      {/* Collapsed bar — v3 design */}
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
@@ -995,99 +991,138 @@ export default function CustomerSupportWidget() {
           zIndex: 100,
           display: 'flex',
           alignItems: 'center',
-          justifyContent: 'center',
           gap: 12,
-          padding: '12px 16px',
-          paddingBottom: 'calc(12px + env(safe-area-inset-bottom))',
-          minHeight: 60,
+          padding: '10px 14px',
+          paddingBottom: 'calc(10px + env(safe-area-inset-bottom))',
+          minHeight: 64,
           width: '100%',
-          background: 'linear-gradient(180deg, #0F1923 0%, #1D2D3E 100%)',
+          background:
+            'linear-gradient(180deg, #0E1A24 0%, #0A1219 100%)',
           color: 'var(--white, #fff)',
-          borderTop: '1px solid #C0B8A8',
-          borderLeft: 'none',
-          borderRight: 'none',
-          borderBottom: 'none',
+          border: 'none',
+          borderTop: '1px solid rgba(0,196,188,0.55)',
           borderRadius: 0,
           fontSize: '0.9rem',
           fontWeight: 700,
-          letterSpacing: '0.02em',
+          letterSpacing: '0.01em',
           boxShadow:
-            '0 -6px 20px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255,255,255,0.18), inset 0 -2px 4px rgba(0,0,0,0.45)',
+            '0 -10px 28px rgba(0,0,0,0.55), 0 -1px 0 0 rgba(0,196,188,0.15) inset',
           cursor: 'pointer',
-          textAlign: 'center',
+          textAlign: 'left',
         }}
       >
+        {/* Lifebuoy badge — glassmorphic teal */}
         <span
           aria-hidden
           style={{
             display: 'inline-flex',
             alignItems: 'center',
             justifyContent: 'center',
-            width: 32,
-            height: 32,
-            borderRadius: 8,
+            width: 40,
+            height: 40,
+            borderRadius: 12,
             background:
-              'linear-gradient(135deg, rgba(0,196,188,0.30) 0%, rgba(0,196,188,0.10) 100%)',
+              'linear-gradient(135deg, rgba(0,196,188,0.38) 0%, rgba(0,196,188,0.10) 100%)',
             border: '1px solid rgba(0,196,188,0.55)',
-            color: 'var(--teal, #00C4BC)',
+            color: '#7AF0EA',
             flexShrink: 0,
+            boxShadow:
+              '0 0 0 1px rgba(0,196,188,0.10), 0 6px 14px rgba(0,196,188,0.18), inset 0 1px 0 rgba(255,255,255,0.12)',
           }}
         >
-          <LifeBuoy size={16} aria-hidden="true" />
+          <LifeBuoy size={20} aria-hidden="true" />
         </span>
+
+        {/* Title + meta — centered horizontally between badge and chevron */}
         <span
           style={{
             display: 'flex',
             flexDirection: 'column',
-            lineHeight: 1.15,
-            alignItems: 'center',
-            textAlign: 'center',
+            lineHeight: 1.2,
+            alignItems: 'flex-start',
             minWidth: 0,
+            flex: 1,
+            textAlign: 'left',
           }}
         >
-          <span style={{ fontSize: '0.92rem', fontWeight: 800 }}>Customer Support</span>
-          <span style={{ fontSize: '0.72rem', color: 'var(--grey-400, #A8B4C0)', fontWeight: 500 }}>
-            {totalUnread > 0
-              ? `${totalUnread > 99 ? '99+' : totalUnread} Unread Thread${totalUnread === 1 ? '' : 's'}`
-              : `${rows.length} Thread${rows.length === 1 ? '' : 's'}`}
+          <span style={{ fontSize: '0.96rem', fontWeight: 800, color: 'var(--white, #fff)' }}>
+            Customer Support
+          </span>
+          <span
+            style={{
+              fontSize: '0.74rem',
+              color: totalUnread > 0 ? '#FFB4B4' : 'var(--grey-400, #A8B4C0)',
+              fontWeight: totalUnread > 0 ? 700 : 500,
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 6,
+              marginTop: 2,
+            }}
+          >
+            {totalUnread > 0 ? (
+              <>
+                <span
+                  aria-hidden
+                  style={{
+                    width: 6,
+                    height: 6,
+                    borderRadius: '50%',
+                    background: '#E53E3E',
+                    boxShadow: '0 0 6px rgba(229,62,62,0.65)',
+                    display: 'inline-block',
+                  }}
+                />
+                {`${totalUnread > 99 ? '99+' : totalUnread} Unread Thread${totalUnread === 1 ? '' : 's'}`}
+              </>
+            ) : (
+              `${rows.length} Thread${rows.length === 1 ? '' : 's'}`
+            )}
           </span>
         </span>
+
+        {/* Unread chip + chevron — right-anchored */}
         {totalUnread > 0 && (
           <span
             aria-hidden
             style={{
-              minWidth: 22,
+              minWidth: 24,
               height: 22,
-              padding: '0 7px',
-              borderRadius: 6,
+              padding: '0 8px',
+              borderRadius: 7,
               background: '#E53E3E',
               color: '#fff',
-              fontSize: '0.72rem',
+              fontSize: '0.74rem',
               fontWeight: 800,
               display: 'inline-flex',
               alignItems: 'center',
               justifyContent: 'center',
               flexShrink: 0,
-              boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.25)',
+              boxShadow:
+                '0 0 0 1px rgba(229,62,62,0.30), inset 0 1px 0 rgba(255,255,255,0.30)',
             }}
           >
             {totalUnread > 99 ? '99+' : totalUnread}
           </span>
         )}
-        <ChevronUp
-          size={16}
-          aria-hidden="true"
+        <span
+          aria-hidden
           style={{
-            position: 'absolute',
-            right: 14,
-            top: '50%',
-            transform: open ? 'translateY(-50%) rotate(180deg)' : 'translateY(-50%) rotate(0deg)',
+            display: 'inline-flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            width: 30,
+            height: 30,
+            borderRadius: 8,
+            background: 'rgba(255,255,255,0.04)',
+            border: '1px solid rgba(255,255,255,0.10)',
             color: 'var(--silver, #C0B8A8)',
-            opacity: 0.85,
             flexShrink: 0,
             transition: 'transform 160ms ease',
+            transform: open ? 'rotate(180deg)' : 'rotate(0deg)',
           }}
-        />
+        >
+          <ChevronUp size={16} aria-hidden="true" />
+        </span>
       </button>
 
       <style jsx>{`
@@ -1097,7 +1132,7 @@ export default function CustomerSupportWidget() {
           .cs-widget-bar {
             right: auto !important;
             width: 320px !important;
-            border-right: 1px solid #C0B8A8 !important;
+            border-right: 1px solid rgba(0,196,188,0.18) !important;
           }
           .cs-widget-panel {
             right: auto !important;
@@ -1108,7 +1143,7 @@ export default function CustomerSupportWidget() {
       `}</style>
       <style jsx global>{`
         .messenger-sidebar {
-          padding-bottom: calc(60px + env(safe-area-inset-bottom)) !important;
+          padding-bottom: calc(64px + env(safe-area-inset-bottom)) !important;
         }
       `}</style>
     </>

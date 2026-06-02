@@ -22,26 +22,20 @@ interface RawConv {
 }
 
 /**
- * round-22 (admin) → round-23 (super_agent + agent-with-downline) →
- * round-24 (always-connected drill): the messenger sidebar is a
- * HIERARCHICAL view of the caller's downline, not a flat dump.
- *
- * Roles that trigger hierarchical mode:
- *   - admin                                         (always)
- *   - role='super_agent' OR is_super_agent=true     (always)
- *   - role='agent' AND has at least one downline    (i.e. parent of a
- *     sub-agent / referred researcher) — opt-in by data shape, so a
- *     plain agent with no downline keeps the flat list.
- *
- * Default (no parentId): conversations with the caller's direct downline.
- *
- * Drill-down (parentId in body): EVERY direct downline member of the
- * chosen user (parent_agent_id = parentId OR referring_agent_id = parentId
- * OR referring_sub_agent_id = parentId) is returned as an openable row —
- * not just members the caller has already DM'd. Members with an existing
- * thread reuse it; members without one come back as `new:<memberId>`
- * sentinels the client starts on tap, so every arrow is always connected
- * to the chat display.
+ * A counterparty/member is "nameless" when both username AND full_name are
+ * absent. Such rows render as a generic "Direct Message" pill which looks
+ * broken and invites accidental clicks that create more orphan threads.
+ * Skip them everywhere.
+ */
+function nameless(name: { full_name?: string | null; username?: string | null } | undefined | null): boolean {
+  const fn = (name?.full_name ?? '').toString().trim();
+  const un = (name?.username ?? '').toString().trim();
+  return fn.length === 0 && un.length === 0;
+}
+
+/**
+ * round-22 / round-23 / round-24: hierarchical view of the downline tree
+ * with always-connected drill-down. Drops orphan and nameless rows.
  */
 async function buildDownlineRows(
   svc: Awaited<ReturnType<typeof createServiceClient>>,
@@ -92,7 +86,11 @@ async function buildDownlineRows(
 
   const members = new Map<string, typeof membersData[0]>();
   for (const m of membersData) {
-    if (m.id !== viewerId) members.set(m.id, m);
+    if (m.id === viewerId) continue;
+    // Skip downline members with no usable identity — they were almost
+    // certainly created by an E2E/test path and should not render.
+    if (nameless(m)) continue;
+    members.set(m.id, m);
   }
 
   const rows: RawConv[] = [];
@@ -122,30 +120,27 @@ async function buildDownlineRows(
   }
 
   // Preserve existing conversations with admins, groups, and announcements.
-  // Direct conversations whose counterparty did not resolve (typeof !==
-  // 'string') are ORPHANS — either a half-created row or a deleted partner
-  // — and rendering them as a generic "Direct Message" row encouraged users
-  // to click them, which created MORE orphans. We drop them silently. The
-  // database-side fn_get_user_conversations RPC already filters most of
-  // these out at the source; this is belt-and-braces.
+  // Direct conversations whose counterparty did not resolve OR is nameless
+  // are dropped silently — they were the source of the "Direct Message /
+  // No Messages Yet" mess.
   for (const c of existing) {
     if (typeof c.counterparty_id === 'string' && byCounterparty.has(c.counterparty_id)) {
       const cRole = (c.counterparty_role ?? '').toString();
       const isDirect = (c.type ?? '').toString() === 'direct';
+      const cpNameless = nameless({
+        full_name: c.counterparty_full_name,
+        username: c.counterparty_username,
+      });
+      if (cpNameless) continue;
       if (!isDirect) {
         rows.push(c);
       } else if (cRole === 'admin') {
         rows.push(c);
       }
     } else if (typeof c.counterparty_id !== 'string') {
-      // No resolvable counterparty.
       const isDirect = (c.type ?? '').toString() === 'direct';
-      if (isDirect) {
-        // Orphan direct conversation. Suppress.
-        continue;
-      }
-      // Groups and announcements legitimately have no counterparty_id; keep.
-      rows.push(c);
+      if (isDirect) continue; // orphan direct, suppress
+      rows.push(c); // groups / announcements without counterparty
     }
   }
 
@@ -162,12 +157,6 @@ async function buildDownlineRows(
   return rows;
 }
 
-/**
- * Decide whether hierarchical mode applies. Admin and super_agent always
- * qualify. Plain agents qualify only if they have at least one downline
- * row (sub-agent or referred researcher) — otherwise their conversation
- * list is short enough that flat is friendlier.
- */
 async function shouldUseHierarchy(
   svc: Awaited<ReturnType<typeof createServiceClient>>,
   caller: { id: string; role: string; is_super_agent: boolean; is_sub_agent: boolean },
@@ -205,7 +194,7 @@ export async function POST(req: NextRequest) {
       parentId = body.parentId;
     }
   } catch {
-    /* no body — keep parentId null */
+    /* no body */
   }
 
   const svc = await createServiceClient();
@@ -243,6 +232,7 @@ export async function POST(req: NextRequest) {
             const isDirect = (c.type ?? '').toString() === 'direct';
             if (!isDirect) return true;
             if (typeof cp !== 'string') return false;
+            if (nameless({ full_name: c.counterparty_full_name, username: c.counterparty_username })) return false;
             if ((c.counterparty_role ?? '').toString() === 'admin') return true;
             return downlineIds.has(cp);
           });
@@ -251,13 +241,13 @@ export async function POST(req: NextRequest) {
         conversations = await buildDownlineRows(svc, user.id, null, role, conversations);
       }
     } else {
-      // Flat-mode caller (plain agent with no downline). Still drop direct
-      // orphans with no resolvable counterparty so they can't pollute the
-      // inbox after a half-created insert.
+      // Flat-mode caller. Drop direct orphans (no counterparty) and nameless
+      // partners so the inbox can't show "Direct Message" rows here either.
       conversations = conversations.filter((c) => {
         const isDirect = (c.type ?? '').toString() === 'direct';
         if (!isDirect) return true;
-        return typeof c.counterparty_id === 'string';
+        if (typeof c.counterparty_id !== 'string') return false;
+        return !nameless({ full_name: c.counterparty_full_name, username: c.counterparty_username });
       });
     }
   }
