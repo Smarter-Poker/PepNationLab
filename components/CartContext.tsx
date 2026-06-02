@@ -15,6 +15,11 @@ export interface CartItem {
   bulkCostPrice?: number | null; // Price paid if threshold is met
   bulkThreshold?: number; // Quantity needed to trigger bulk discount
   weightOz: number;
+  // True when this line item is an agent/super-agent buying on their own
+  // storefront. Wholesale buyers always pay tier cost flat — bulk volume
+  // discounts and retail markup never apply to them, matching the server-side
+  // order-route pricing in app/api/orders/route.ts.
+  agentSelfBuy?: boolean;
 }
 
 interface CartContextType {
@@ -258,9 +263,10 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
   const cartCount = cart.reduce((acc, item) => acc + item.quantity, 0);
   const cartSubtotal = cart.reduce((acc, item) => {
-    const activePrice = (item.bulkCostPrice && item.bulkThreshold && item.quantity >= item.bulkThreshold)
-      ? item.bulkCostPrice
-      : item.costPrice;
+    // Wholesale (agent self-buy) lines always pay tier costPrice flat. Volume
+    // bulk pricing only applies to researcher/sub-agent-paying-retail flows.
+    const bulkEligible = !item.agentSelfBuy && item.bulkCostPrice && item.bulkThreshold && item.quantity >= item.bulkThreshold;
+    const activePrice = bulkEligible ? (item.bulkCostPrice as number) : item.costPrice;
     return acc + activePrice * item.quantity;
   }, 0);
 
@@ -503,9 +509,9 @@ function CartDrawer() {
 
                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
                       <div style={{ fontSize: '0.9rem', color: 'var(--white)', fontWeight: 600, fontFamily: 'var(--font-brand)' }}>
-                        ${((item.bulkCostPrice && item.bulkThreshold && item.quantity >= item.bulkThreshold ? item.bulkCostPrice : item.costPrice) * item.quantity).toFixed(2)}
+                        ${((!item.agentSelfBuy && item.bulkCostPrice && item.bulkThreshold && item.quantity >= item.bulkThreshold ? item.bulkCostPrice : item.costPrice) * item.quantity).toFixed(2)}
                       </div>
-                      {item.bulkCostPrice && item.bulkThreshold && item.quantity >= item.bulkThreshold && (
+                      {!item.agentSelfBuy && item.bulkCostPrice && item.bulkThreshold && item.quantity >= item.bulkThreshold && (
                         <div style={{ fontSize: '0.65rem', color: 'var(--teal)' }}>
                           Bulk Discount Applied! (${item.bulkCostPrice.toFixed(2)}/ea)
                         </div>
