@@ -371,22 +371,7 @@ export default function AgentDownline({ agentId }: { agentId?: string }) {
                     </label>
                     <label style={{ flex: 1, padding: '10px', background: 'var(--bg-metal-dark)', border: `1px solid ${caCommissionMode === 'gamified' ? 'var(--teal)' : 'rgba(0,0,0,0.8)'}`, color: 'var(--white)', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}>
                       <input type="radio" checked={caCommissionMode === 'gamified'} onChange={() => setCaCommissionMode('gamified')} />
-                      <span style={{ flex: 1 }}>Gamification Scale</span>
-                      <button
-                        type="button"
-                        aria-label="How The Gamification Scale Works"
-                        title="How The Gamification Scale Works"
-                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); setShowGamificationInfo(true); }}
-                        style={{
-                          flex: '0 0 auto', width: 20, height: 20, borderRadius: '50%',
-                          border: '1px solid var(--teal)', background: 'transparent',
-                          color: 'var(--teal)', fontSize: '0.72rem', fontWeight: 800,
-                          lineHeight: 1, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                          fontStyle: 'italic', fontFamily: 'Georgia, serif',
-                        }}
-                      >
-                        i
-                      </button>
+                      Gamification Scale
                     </label>
                   </div>
 
@@ -424,7 +409,7 @@ export default function AgentDownline({ agentId }: { agentId?: string }) {
                     </div>
                   ) : (
                     <div>
-                      <button type="button" className="btn-silver" style={{ fontSize: '0.8rem', padding: '6px 12px' }} onClick={() => setShowGamificationInfo(true)}>
+                      <button type="button" className="btn-silver" style={{ fontSize: '0.8rem', padding: '6px 12px' }} onClick={(e) => { e.preventDefault(); e.stopPropagation(); setShowGamificationInfo(true); }}>
                         See The Gamification Levels
                       </button>
                     </div>

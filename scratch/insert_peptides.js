@@ -16,12 +16,9 @@ TSM10	Tesamorelin	10mg × 10 vials	$180	$168	Custom Fixed Price
 RT20	Retatrutide	20mg × 10 vials	$200	$130	Custom Fixed Price
 XA10	Semax	10mg × 10 vials	$85	$80	Custom Fixed Price
 BA10	Bac. water	10ml × 10 vials	$15	$15	Custom (3 Boxes = $45)
-H10	HGH 191AA (Somatropin)	10iu × 10 vials	$58	$49	Adjusted (-15% Flat Disc.)
-H15	HGH 191AA (Somatropin)	15iu × 10 vials	$80	$68	Adjusted (-15% Flat Disc.)
-H24	HGH 191AA (Somatropin)	24iu × 10 vials	$120	$102	Adjusted (-15% Flat Disc.)
-H36	HGH 191AA (Somatropin)	36iu × 10 vials	$160	$136	Adjusted (-15% Flat Disc.)
+
 MT1	MT-1	10mg × 10 vials	$60	$51	Adjusted (-15% Flat Disc.)
-ML10	MT-2 (Melanotan 2 Acetate)	10mg × 10 vials	$60	$51	Adjusted (-15% Flat Disc.)
+
 P41	PT-141	10mg × 10 vials	$80	$68	Adjusted (-15% Flat Disc.)
 DS5	DSIP	5mg × 10 vials	$50	$42	Adjusted (-15% Flat Disc.)
 DS10	DSIP	10mg × 10 vials	$90	$76	Adjusted (-15% Flat Disc.)
@@ -39,7 +36,7 @@ BT10	TB500 (Thymosin B4 Acetate)	10mg × 10 vials	$140	$119	Adjusted (-15% Flat 
 BB10	BPC 5mg + TB 5mg	10mg × 10 vials	$115	$97	Adjusted (-15% Flat Disc.)
 BB20	BPC 10mg + TB 10mg	20mg × 10 vials	$220	$187	Adjusted (-15% Flat Disc.)
 AR50	AICAR	50mg × 10 vials	$75	$63	Adjusted (-15% Flat Disc.)
-AP5	Adipotide	5mg × 10 vials	$150	$127	Adjusted (-15% Flat Disc.)
+
 SM5	Semaglutide	5mg × 10 vials	$45	$38	Adjusted (-15% Flat Disc.)
 SM10	Semaglutide	10mg × 10 vials	$60	$51	Adjusted (-15% Flat Disc.)
 SM15	Semaglutide	15mg × 10 vials	$80	$68	Adjusted (-15% Flat Disc.)
@@ -101,8 +98,7 @@ RT50	Retatrutide	50mg × 10 vials	$310	$201	Adjusted (-35% Reta Disc.)
 RT60	Retatrutide	60mg × 10 vials	$330	$214	Adjusted (-35% Reta Disc.)
 MT10	Melatonin	10mg × 10 vials	$70	$59	Adjusted (-15% Flat Disc.)
 FR5	HGH Fragment 176-191	5mg × 10 vials	$105	$89	Adjusted (-15% Flat Disc.)
-DR5	Dermorphin	5mg × 10 vials	$45	$38	Adjusted (-15% Flat Disc.)
-DR10	Dermorphin	10mg × 10 vials	$75	$63	Adjusted (-15% Flat Disc.)
+
 GTT	Glutathione	100mg × 10 vials	$50	$42	Adjusted (-15% Flat Disc.)
 BA3	Bac. water	3ml × 10 vials	$7	$7	Standard
 AA10	Acetic Acid 0.6%	10ml × 10 vials	$15	$15	Standard

@@ -375,17 +375,6 @@ No controlled human combination-trial evidence exists; combining compounds compo
 - **Regulatory:** Not approved; research reagent/investigational.
 - **Sources:** en.wikipedia.org/wiki/Cathelicidin_antimicrobial_peptide; ncbi.nlm.nih.gov/pmc/articles/PMC9821026
 
-### Dermorphin
-- **Class / type:** Natural opioid heptapeptide (Phyllomedusa frog skin); extremely potent, highly selective mu-opioid agonist; contains D-alanine. Research-only / high-risk.
-- **Identity:** H-Tyr-D-Ala-Phe-Gly-Tyr-Pro-Ser-NH2 (D-Ala at 2, C-terminal amide); ~803 Da; CAS 77614-16-5.
-- **Mechanism / target:** Among the most potent/selective natural mu-opioid agonists (~30-40x morphine analgesia, >1000-fold mu selectivity); D-Ala confers peptidase resistance; limited BBB penetration (central + peripheral effects).
-- **Research use cases:** Opioid-receptor pharmacology, potent-analgesia and SAR research; notorious doping agent.
-- **Reported benefits:** Animal/in-vitro -- extremely potent, long-lasting analgesia, high mu selectivity; benchmark tool. No legitimate approved human use.
-- **Side effects:** SAFETY FLAG -- full opioid risk dominated by OVERDOSE and RESPIRATORY DEPRESSION; sedation, dependence; potency far exceeding morphine means a very small dosing-error margin.
-- **Warnings/limitations:** SAFETY FLAG -- life-threatening respiratory depression/overdose risk. Used ILLICITLY in horse racing (kills pain, suppresses exhaustion); prohibited in racing, with LC-MS/MS detection and harsh penalties. No human/veterinary therapeutic use.
-- **Handling:** Lyophilized; store desiccated/frozen/dark; D-Ala makes it unusually stable/long-acting (compounds overdose risk); handle as a high-potency opioid (avoid skin/mucosal exposure).
-- **Regulatory:** Not approved anywhere; research-only opioid peptide; banned in equine/human sport; restricted/high-risk in racing jurisdictions.
-- **Sources:** en.wikipedia.org/wiki/Dermorphin; pubmed.ncbi.nlm.nih.gov/23571464; bloodhorse.com (dermorphin penalties)
 
 ---
 ---
@@ -500,17 +489,7 @@ Cited as a dual-pathway GH-stimulation model recruiting two distinct somatotroph
 
 > All five are WADA-banned (S2/S4) at all times. Only somatropin is an approved medicine.
 
-### HGH 191AA (Somatropin, recombinant hGH)
-- **Class / type:** Recombinant 191-aa polypeptide hormone (somatotropin); peptide hormone/growth factor. FDA-approved biologic.
-- **Identity:** Single-chain 191-residue four-helix bundle, two disulfides; ~22,124 Da; CAS 12629-01-5. Sequence-identical to pituitary GH-N.
-- **Mechanism / target:** Binds GHR, induces dimerization, activates JAK2->STAT5 (plus STAT1/3, MAPK, PI3K); most anabolic effects via hepatic/peripheral IGF-1; direct GH effects include lipolysis and anti-insulin (diabetogenic) actions.
-- **Research use cases:** GHR binding/dimerization/JAK-STAT5 signaling, IGF-1 axis, body-composition/lipid metabolism, bone turnover; clinically for GH deficiency/growth disorders.
-- **Reported benefits:** Human -- well-established linear growth in GHD children; improved lean mass, reduced fat, improved bone density in GHD adults (extensive RCT/surveillance). In-vitro -- STAT5/IGF-1 induction. Strongest in deficiency states; GH-sufficient benefit not equivalent and not approved.
-- **Side effects:** Fluid retention/edema, arthralgia/myalgia, carpal tunnel/paresthesia, glucose intolerance/insulin resistance/diabetes risk, intracranial hypertension, SCFE/scoliosis progression (children), injection-site reactions; chronic overdose -> acromegaly/gigantism.
-- **Warnings/limitations:** Contraindicated in active malignancy, acute critical illness (excess ICU mortality), proliferative/severe diabetic retinopathy, Prader-Willi with severe obesity/respiratory impairment (deaths). Caution diabetes, hypothyroidism, adrenal insufficiency.
-- **Handling:** Lyophilized; protect from light, do not freeze; reconstitute gently (run diluent down wall, avoid foaming/shear/freeze-thaw); refrigerate 2-8C; usable window formulation-dependent (e.g., Genotropin up to 28 d, Omnitrope up to 21 d). Discard if cloudy.
-- **Regulatory:** FDA-approved biologic (Genotropin, Norditropin, Humatrope, Omnitrope, etc.) for multiple indications. Not DEA-controlled, but FDCA restricts GH distribution to approved indications (non-medical distribution is a statutory offense). WADA S2.
-- **Sources:** en.wikipedia.org/wiki/Growth_hormone; pubmed.ncbi.nlm.nih.gov/29489209; accessdata.fda.gov (somatropin label)
+
 
 ### HGH Fragment 176-191 (Frag 176-191)
 - **Class / type:** Synthetic 16-residue C-terminal GH fragment (lipolytic class); related to AOD9604. Research-chemical only.
@@ -637,17 +616,6 @@ Cited as a dual-pathway GH-stimulation model recruiting two distinct somatotroph
 - **Regulatory:** EMA-approved (2014), FDA-approved (2019, Scenesse) for EPP -- distinct from unregulated melanotan products. Melanocortin agonists draw WADA attention.
 - **Sources:** go.drugbank.com/drugs/DB04931; ema.europa.eu/en/medicines/human/EPAR/scenesse
 
-### MT-2 (Melanotan II)
-- **Class / type:** Synthetic cyclic heptapeptide; non-selective melanocortin agonist (alpha-MSH analog); parent of bremelanotide. NOT approved.
-- **Identity:** Ac-Nle-cyclo(Asp-His-D-Phe-Arg-Trp-Lys)-NH2; ~1024.2 Da; CAS 121062-08-6.
-- **Mechanism / target:** Broad melanocortin agonist (MC1R/MC3R/MC4R/MC5R); MC1R -> melanogenesis/tanning; CNS MC4R/MC3R -> appetite suppression and sexual-arousal/erectogenic effects; longer-acting than native alpha-MSH.
-- **Research use cases:** Originally "sunless tanning"/photoprotection candidate; ED and appetite/sexual-function research; now mainly research compound (illicitly sold for tanning).
-- **Reported benefits:** Human -- small early studies showed increased tanning with less UV and erectogenic effects. Animal/in-vitro -- melanogenesis, CNS appetite/sexual effects. Limited, mostly small/preclinical; no completed efficacy/safety program.
-- **Side effects (candid):** Nausea/vomiting (common, dose-related), facial flushing, spontaneous erections, decreased appetite, transient BP changes, injection-site reactions, darkening/proliferation of moles and new nevi. MELANOMA CONCERN: multiple case reports of new/changing melanocytic lesions and melanomas in users (causation not proven, but unrestricted melanocyte stimulation is a plausible mechanism and consistent signal); also rhabdomyolysis reports and infection risk from unsterile/shared injecting.
-- **Warnings/limitations:** Not approved; black-market product impurity/dosing/sterility uncontrolled; major risk with numerous/atypical nevi, melanoma history, CVD; baseline/periodic full-skin exams advised; evaluate any changing lesion.
-- **Handling:** Lyophilized; frozen/desiccated (-20C), refrigerated short-term; reconstitute bacteriostatic water, refrigerate, dark, avoid freeze-thaw (Trp oxidation-prone). No pharmaceutical QC for illicit product.
-- **Regulatory:** NOT approved by FDA/EMA or any major regulator; FDA/MHRA/TGA safety warnings; sale for human use illegal/unauthorized in many jurisdictions. Research chemical.
-- **Sources:** webmd.com/vitamins/ai/ingredientmono-884/melanotan; en.wikipedia.org/wiki/Melanotan_II; case reports (nevi/melanoma/rhabdomyolysis)
 
 ### SNAP-8 (Acetyl Octapeptide-3)
 - **Class / type:** Synthetic topical cosmeceutical octapeptide; competitive SNARE inhibitor ("topical neuromodulator"); Argireline extension. Cosmetic ingredient.
@@ -732,17 +700,6 @@ Cited as a dual-pathway GH-stimulation model recruiting two distinct somatotroph
 Investigational fixed combination (cagrilintide 2.4 mg + semaglutide 2.4 mg) exploiting amylin + incretin synergy via complementary, non-redundant satiety pathways. Phase 1b (Enebo, Lancet 2021) established tolerability/PK; Phase 2 ~-15.6% at 32 wk. Phase 3 REDEFINE (NEJM, June 2025): REDEFINE 1 (68 wk, 3,417, obesity/overweight) -- CagriSema -20.4% vs -11.5% cagrilintide, -14.9% semaglutide, -3.0% placebo; REDEFINE 2 (68 wk, 1,206, T2D) -- -13.7% vs -3.1% placebo. AEs predominantly GI. Investigational (Novo Nordisk); not FDA-approved.
 - **Sources:** en.wikipedia.org/wiki/Cagrilintide/semaglutide; pubmed 40544433 (REDEFINE 1); 40544432 (REDEFINE 2); 33894838 (Enebo)
 
-### Adipotide (Prohibitin-Targeting Peptide 1; TP01)
-- **Class / type:** Preclinical proapoptotic peptidomimetic targeting adipose-tissue vasculature. Preclinical only -- discontinued.
-- **Identity:** CKGGRAKDC-GG-D(KLAKLAK)2 -- homing motif + D-amino-acid proapoptotic domain; NCI Drug Dictionary TP01.
-- **Mechanism / target:** CKGGRAKDC binds prohibitin/ANXA2 on white-adipose-feeding endothelium; internalized (KLAKLAK)2 disrupts mitochondria, causing endothelial apoptosis, vessel regression, and death of dependent fat cells -- targeted vasculature ablation (not a metabolic/appetite mechanism).
-- **Research use cases:** Targeted adipose ablation and insulin-resistance improvement in animal models.
-- **Reported benefits:** Animal only -- rapid weight loss in obese mice (Kolonin, Nat Med 2004) and obese rhesus monkeys with improved insulin resistance (Barnhart, Sci Transl Med 2011). NO human efficacy data.
-- **Side effects:** Dose-dependent NEPHROTOXICITY (renal tubular changes) in the primate study -- the central safety-limiting signal and a major reason it did not advance.
-- **Warnings/limitations:** EMPHASIS -- strictly preclinical; never completed human trials; documented primate nephrotoxicity; clinical development discontinued (as of 2019). No human safety/dosing/efficacy basis; cytotoxic experimental reagent only.
-- **Handling:** Lyophilized; store frozen/desiccated, dark; reconstitute sterile/bacteriostatic water, refrigerate; avoid freeze-thaw; D-amino-acid design resists proteolysis but is cytotoxic -- handle accordingly.
-- **Regulatory:** Preclinical only; never FDA-approved; development discontinued. Research-use-only experimental compound.
-- **Sources:** en.wikipedia.org/wiki/Prohibitin-targeting_peptide_1; pubmed 15133506; 22072637
 
 ### MOTS-c (Mitochondrial ORF of 12S rRNA type-c)
 - **Class / type:** Mitochondrial-derived peptide (MDP); endogenous 16-aa microprotein; studied as exercise mimetic. Research-only; WADA-banned.
@@ -798,11 +755,11 @@ Investigational fixed combination (cagrilintide 2.4 mg + semaglutide 2.4 mg) exp
 
 ## Evidence Strength At A Glance
 
-**Approved drugs (robust human data):** Somatropin (HGH 191AA), Tesamorelin, Sermorelin (was approved; now compounded), Thymosin Alpha-1 (approved abroad), SS-31/Elamipretide (Barth syndrome, 2025), Semaglutide, Tirzepatide, HCG, HMG, Oxytocin, Bremelanotide (PT-141), Afamelanotide (MT-1), Vitamin B12, Levocarnitine, Melatonin (Rx abroad / OTC US), Cerebrolysin (abroad).
+**Approved drugs (robust human data):** Tesamorelin, Sermorelin (was approved; now compounded), Thymosin Alpha-1 (approved abroad), SS-31/Elamipretide (Barth syndrome, 2025), Semaglutide, Tirzepatide, HCG, HMG, Oxytocin, Bremelanotide (PT-141), Afamelanotide (MT-1), Vitamin B12, Levocarnitine, Melatonin (Rx abroad / OTC US), Cerebrolysin (abroad).
 
 **Investigational (in human trials, not approved):** Retatrutide, Survodutide, Cagrilintide (+ CagriSema), VIP/Aviptadil, ARA-290/Cibinetide, Kisspeptin-10, GHRP-2 (Japan diagnostic).
 
-**Preliminary / preclinical / single-group human:** Epithalon, Pinealon, Thymalin, FOXO4-DRI (preclinical), DSIP, Selank, Semax, BPC-157, TB-500/Tbeta4, KPV, Follistatin, IGF-1 LR3, HGH Frag 176-191, Adipotide (preclinical, nephrotoxic, discontinued), MOTS-c, 5-Amino-1MQ, LL-37 (research reagent).
+**Preliminary / preclinical / single-group human:** Epithalon, Pinealon, Thymalin, FOXO4-DRI (preclinical), DSIP, Selank, Semax, BPC-157, TB-500/Tbeta4, KPV, Follistatin, IGF-1 LR3, HGH Frag 176-191, MOTS-c, 5-Amino-1MQ, LL-37 (research reagent).
 
 **Failed pivotal trial:** AOD9604 (Phase 2b obesity endpoint not met; discontinued).
 
@@ -816,10 +773,7 @@ All GH secretagogues/GHRH analogs (CJC-1295 +/-DAC, Sermorelin, Tesamorelin, GHR
 
 ## Notable Safety Flags
 
-- **Dermorphin:** ultra-potent mu-opioid -- respiratory depression/overdose risk; racing doping agent.
-- **Melanotan II (MT-2):** documented melanoma/nevus case-report signal; unapproved, unregulated supply.
 - **VIP/Aviptadil:** infusion hypotension; severe secretory diarrhea at high dose.
-- **Adipotide:** primate nephrotoxicity; preclinical/discontinued.
 - **IGF-1 LR3:** hypoglycemia and proliferative/neoplasia caveat amplified by long half-life.
 - **Incretins:** thyroid C-cell/MTC boxed warning, pancreatitis/gallbladder signals.
 - **HGH:** acromegaly with overdose; contraindicated in malignancy/critical illness.
@@ -828,4 +782,4 @@ All GH secretagogues/GHRH analogs (CJC-1295 +/-DAC, Sermorelin, Tesamorelin, GHR
 
 ---
 
-> **Identity/data caveats to resolve before any public-facing publication:** verify CAS numbers and molecular weights for the less-common compounds (notably 5-Amino-1MQ salt, AHK-Cu, Pinealon) against supplier certificates of analysis, and resolve the Thymalin identity ambiguity (historical thymus-extract complex vs vendor "Glu-Trp" dipeptide). Pin specific PubMed PMIDs for MT-2 case reports and RECONNECT/Scenesse Phase 3 trials.
+> **Identity/data caveats to resolve before any public-facing publication:** verify CAS numbers and molecular weights for the less-common compounds (notably 5-Amino-1MQ salt, AHK-Cu, Pinealon) against supplier certificates of analysis, and resolve the Thymalin identity ambiguity (historical thymus-extract complex vs vendor "Glu-Trp" dipeptide).

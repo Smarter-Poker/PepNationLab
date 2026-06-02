@@ -147,25 +147,25 @@ interface GroupedProduct {
 }
 
 const POPULAR_ORDER: string[] = [
-  'Tirzepatide',
-  'Semaglutide',
-  'BPC 157',
-  'CJC-1295 without DAC 5mg + IPA 5mg',
-  'TB500 (Thymosin B4 Acetate)',
-  'BPC 10mg + TB 10mg',
-  'GHK-CU',
-  'Retatrutide',
-  'GLOW (TB10+BPC10+GHK50)',
-  'PT-141',
-  'Ipamorelin',
-  'KLOW (TB10+BPC10+GHK50+KPV10)',
-  'Tesamorelin',
-  'AOD9604',
-  'Sermorelin Acetate',
-  'HGH Fragment 176-191',
-  'KPV',
-  'Semax',
-  'Selank',
+  'Tirzepatide',                              // #1  - Mainstream Giant
+  'Semaglutide',                              // #2  - Household Name
+  'BPC 157',                                  // #3  - The Healing Standard
+  'CJC-1295 without DAC 5mg + IPA 5mg',      // #4  - Premier Anti-Aging Combo
+  'TB500 (Thymosin B4 Acetate)',              // #5  - Elite Recovery
+  'BPC 10mg + TB 10mg',                       // #6  - The "Wolverine" Blend
+  'GHK-CU',                                   // #7  - Cosmetics & Hair Leader
+  'Retatrutide',                              // #8  - Next-Gen Triple Agonist
+  'GLOW (TB10+BPC10+GHK50)',                  // #9  - Esthetic/Repair Stack
+  'PT-141',                                   // #10 - Lifestyle Standard
+  'Ipamorelin',                               // #12 - Core Growth Peptide
+  'KLOW (TB10+BPC10+GHK50+KPV10)',            // #13 - Advanced Evolution Stack
+  'Tesamorelin',                              // #14 - Visceral Fat Burner
+  'AOD9604',                                  // #15 - Pure Lipolysis
+  'Sermorelin Acetate',                       // #16 - Trusted Vintage Choice
+  'HGH Fragment 176-191',                     // #17 - Bodybuilding Staple
+  'KPV',                                      // #18 - GI & Autoimmune Specialist
+  'Semax',                                    // #19 - Nootropic Focus
+  'Selank',                                   // #20 - Nootropic Anxiety Relief
 ];
 
 function fuzzyMatch(query: string, text: string): boolean {
