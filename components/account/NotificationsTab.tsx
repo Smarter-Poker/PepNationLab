@@ -318,7 +318,7 @@ export default function NotificationsTab() {
             alignItems: 'end',
           }}
         >
-          <div className="form-group">
+          <div className="form-group" style={{ margin: 0 }}>
             <label className="form-label" htmlFor="qh-start">Start</label>
             <input
               id="qh-start"
@@ -328,7 +328,7 @@ export default function NotificationsTab() {
               onChange={(e) => saveQuietHours({ start: e.target.value })}
             />
           </div>
-          <div className="form-group">
+          <div className="form-group" style={{ margin: 0 }}>
             <label className="form-label" htmlFor="qh-end">End</label>
             <input
               id="qh-end"
@@ -338,7 +338,7 @@ export default function NotificationsTab() {
               onChange={(e) => saveQuietHours({ end: e.target.value })}
             />
           </div>
-          <div className="form-group">
+          <div className="form-group" style={{ margin: 0 }}>
             <label className="form-label" htmlFor="qh-tz">Timezone</label>
             <select
               id="qh-tz"
@@ -352,15 +352,16 @@ export default function NotificationsTab() {
               ))}
             </select>
           </div>
-        </div>
-        <div style={{ marginTop: 'var(--space-4)', display: 'flex', justifyContent: 'flex-end' }}>
-          <button
-            type="button"
-            className="btn btn-primary"
-            onClick={() => toast.success('Quiet Hours Saved.')}
-          >
-            Save Changes
-          </button>
+          <div style={{ margin: 0 }}>
+            <button
+              type="button"
+              className="btn btn-primary"
+              style={{ width: '100%', height: '42px', maxWidth: 'none' }}
+              onClick={() => toast.success('Quiet Hours Saved.')}
+            >
+              Save Changes
+            </button>
+          </div>
         </div>
       </div>
 

@@ -125,7 +125,7 @@ export default function SecurityTab({ userEmail }: Props) {
             alignItems: 'end',
           }}
         >
-          <div className="form-group">
+          <div className="form-group" style={{ margin: 0 }}>
             <label className="form-label" htmlFor="pw-new">New Password</label>
             <input
               id="pw-new"
@@ -137,7 +137,7 @@ export default function SecurityTab({ userEmail }: Props) {
               minLength={12}
             />
           </div>
-          <div className="form-group">
+          <div className="form-group" style={{ margin: 0 }}>
             <label className="form-label" htmlFor="pw-confirm">Confirm New Password</label>
             <input
               id="pw-confirm"

@@ -112,7 +112,7 @@ function agentLinks(isSuper: boolean, storefrontHref: string): RoleNavLink[] {
     { href: '/wallet', label: 'Wallet', icon: <svg {...ip}><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4" /><path d="M3 5v14a2 2 0 0 0 2 2h16v-5" /><path d="M18 12a2 2 0 0 0 0 4h4v-4Z" /></svg> },
     { href: '#SHOW_QR', label: 'My QR Code', icon: ICON.qr },
     { href: '/messenger', label: 'Messenger', icon: <svg {...ip}><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg> },
-    { href: '/account', label: 'Account Settings', icon: <svg {...ip}><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /></svg> },
+    { href: '/account', label: 'Account Settings', icon: ICON.gear },
   ];
 }
 

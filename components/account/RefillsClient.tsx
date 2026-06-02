@@ -81,7 +81,10 @@ export default function RefillsClient() {
   async function reorder(orderId: string) {
     setReordering(orderId);
     try {
-      const res = await fetch(`/api/researcher/orders/${orderId}/reorder`, {
+      // Resolve the past order's items against the CURRENT catalog/pricing — this
+      // does NOT create an order. We then drop the items into the storefront cart
+      // and send the buyer to checkout to review, edit, add more, and pay.
+      const res = await fetch(`/api/researcher/orders/${orderId}/reorder-cart`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
@@ -89,14 +92,54 @@ export default function RefillsClient() {
       const json = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(json?.error || 'Reorder Failed.');
 
+      const agentSlug: string | null = json.agentSlug ?? null;
+      const items: Array<{ id: string; name: string; sku: string; quantity: number; retailPrice: number; costPrice: number; weightOz: number; agentSelfBuy: boolean }> =
+        Array.isArray(json.items) ? json.items : [];
+      const cartMap: Record<string, number> = json.cartMap && typeof json.cartMap === 'object' ? json.cartMap : {};
       const skipped: Array<{ product_name: string; reason: string }> = json.skipped ?? [];
+
+      if (items.length === 0) throw new Error('No Items Available To Reorder.');
+
+      const cartKey = agentSlug ? `pnl_storefront_cart_${agentSlug}` : 'pnl_storefront_cart';
+
+      // Merge into any existing storefront cart for this agent (combine quantities).
+      try {
+        let existing: any[] = [];
+        const raw = localStorage.getItem(cartKey);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          existing = Array.isArray(parsed?.items) ? parsed.items : Array.isArray(parsed) ? parsed : [];
+        }
+        const byId = new Map<string, any>(existing.map((i) => [i.id, { ...i }]));
+        for (const it of items) {
+          const ex = byId.get(it.id);
+          if (ex) ex.quantity = (Number(ex.quantity) || 0) + it.quantity;
+          else byId.set(it.id, it);
+        }
+        localStorage.setItem(cartKey, JSON.stringify({ items: Array.from(byId.values()), _savedAt: Date.now() }));
+
+        // Keep the storefront grid's own cart map in sync so "add more" shows these.
+        if (agentSlug) {
+          let m: Record<string, number> = {};
+          const rawMap = localStorage.getItem(`cart_${agentSlug}`);
+          if (rawMap) { try { m = JSON.parse(rawMap) || {}; } catch { m = {}; } }
+          for (const [apId, qty] of Object.entries(cartMap)) m[apId] = (Number(m[apId]) || 0) + Number(qty);
+          localStorage.setItem(`cart_${agentSlug}`, JSON.stringify(m));
+
+          // Prevent cross-agent cart contamination (a buyer has one storefront).
+          Object.keys(localStorage)
+            .filter((k) => k.startsWith('pnl_storefront_cart_') && k !== cartKey)
+            .forEach((k) => localStorage.removeItem(k));
+        }
+      } catch { /* localStorage may be unavailable — fall through to redirect */ }
+
       if (skipped.length > 0) {
         toast.message('Some Items Were Not Available', {
           description: skipped.map((s) => `${s.product_name}: ${s.reason}`).join(', '),
         });
       }
-      toast.success('Reorder Created. Review And Send Payment To Confirm.');
-      if (json.orderId) router.push(`/orders/${json.orderId}`);
+      toast.success('Added To Cart. Review And Check Out.');
+      router.push(agentSlug ? `/checkout?agent=${encodeURIComponent(agentSlug)}` : '/checkout');
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Reorder Failed.');
     } finally {
@@ -151,7 +194,7 @@ export default function RefillsClient() {
               disabled={reordering === dueOrder.id}
               onClick={() => reorder(dueOrder.id)}
             >
-              {reordering === dueOrder.id ? 'Working...' : 'Reorder Now'}
+              {reordering === dueOrder.id ? 'Adding...' : 'Reorder Now'}
             </button>
           </div>
         )}
@@ -231,7 +274,7 @@ export default function RefillsClient() {
                       style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}
                     >
                       <RotateCcw size={16} aria-hidden />
-                      {reordering === o.id ? 'Working...' : 'Reorder'}
+                      {reordering === o.id ? 'Adding...' : 'Reorder'}
                     </button>
                   </div>
                 </div>

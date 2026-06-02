@@ -223,7 +223,7 @@ export default function AdminAgents() {
 
   const openEditModal = (agent: any) => {
     setEditingAgent(agent);
-    setEditEmail(agent.email?.includes('@internal.auth') ? '' : (agent.email || ''));
+    setEditEmail(agent.email?.includes('@internal.auth') || agent.email?.includes('@pepnationlab.com') ? '' : (agent.email || ''));
     setEditPhone(agent.phone || '');
   };
 
@@ -465,7 +465,7 @@ export default function AdminAgents() {
                         + Add Email
                       </button>
                     ) : (
-                      <span style={{ fontSize: '0.85rem', color: 'var(--silver)' }}>{agent.email}</span>
+                      <span style={{ fontSize: '0.85rem', color: 'var(--silver)' }}>{agent.email?.includes('@internal.auth') || agent.email?.includes('@pepnationlab.com') ? '' : agent.email}</span>
                     )}
                     
                     {agent.phone ? (
@@ -639,7 +639,7 @@ export default function AdminAgents() {
                     className="form-input" 
                     value={editEmail} 
                     onChange={e => setEditEmail(e.target.value)} 
-                    placeholder={editingAgent.email?.includes('@internal.auth') ? 'Enter real email...' : editingAgent.email}
+                    placeholder={editingAgent.email?.includes('@internal.auth') || editingAgent.email?.includes('@pepnationlab.com') ? 'Enter real email...' : editingAgent.email}
                   />
                 </div>
                 <div className="form-group" style={{ marginBottom: 'var(--space-6)' }}>

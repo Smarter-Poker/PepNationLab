@@ -405,7 +405,7 @@ export default function AgentSubAgents({ agentId }: { agentId?: string }) {
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', minWidth: '150px' }}>
                     <span style={{ fontSize: '0.75rem', color: 'var(--grey-400)', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>Credentials</span>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                      <span style={{ fontFamily: 'monospace', fontSize: '0.82rem', color: '#00E5FF' }}>{agent.username || agent.email}</span>
+                      <span style={{ fontFamily: 'monospace', fontSize: '0.82rem', color: '#00E5FF' }}>{agent.username || (agent.email?.includes('@internal.auth') || agent.email?.includes('@pepnationlab.com') ? '' : agent.email)}</span>
                       <button
                         onClick={() => setResetPwUser({ id: agent.id, name: agent.full_name || 'Sub-Agent', username: agent.username || agent.email })}
                         style={{ fontSize: '0.7rem', color: 'var(--grey-400)', background: 'none', border: 'none', cursor: 'pointer', padding: 0, textDecoration: 'underline', textAlign: 'left' }}
@@ -415,7 +415,7 @@ export default function AgentSubAgents({ agentId }: { agentId?: string }) {
                       <button
                         onClick={() => {
                           setEditContactUser({ id: agent.id, name: agent.full_name || 'Sub-Agent', email: agent.email || '', phone: agent.phone || '' });
-                          setEditEmail(agent.email || '');
+                          setEditEmail(agent.email?.includes('@internal.auth') || agent.email?.includes('@pepnationlab.com') ? '' : (agent.email || ''));
                           setEditPhone(agent.phone || '');
                         }}
                         style={{ fontSize: '0.7rem', color: 'var(--grey-400)', background: 'none', border: 'none', cursor: 'pointer', padding: 0, textDecoration: 'underline', textAlign: 'left' }}

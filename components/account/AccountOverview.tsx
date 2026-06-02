@@ -11,6 +11,7 @@ interface Props {
   userId: string;
   userEmail: string;
   profile: AccountProfile | null;
+  agentProfile?: any;
   onProfileChange: (next: AccountProfile) => void;
 }
 
@@ -46,29 +47,45 @@ const REQUIRED_FIELDS: Array<keyof AccountProfile> = [
   'avatar_url',
 ];
 
-function completenessPercent(p: AccountProfile | null): number {
+function completenessPercent(p: AccountProfile | null, ap?: any): number {
   if (!p) return 0;
-  const filled = REQUIRED_FIELDS.reduce((n, key) => {
+  
+  let requiredCount = REQUIRED_FIELDS.length;
+  let filled = REQUIRED_FIELDS.reduce((n, key) => {
     const v = p[key];
     if (typeof v === 'string' && v.trim().length > 0) return n + 1;
     if (v) return n + 1;
     return n;
   }, 0);
-  return Math.round((filled / REQUIRED_FIELDS.length) * 100);
+
+  if (ap) {
+    requiredCount += 4; // slug, warehouse, payment, active
+    const slugMissing = !ap.slug || /^agent(?:-|$)/i.test(ap.slug);
+    if (!slugMissing) filled += 1;
+    const warehouse = ap.warehouse_address;
+    const warehouseEmpty = !warehouse || !warehouse.street1 || !warehouse.city || !warehouse.state || !warehouse.zip;
+    if (!warehouseEmpty) filled += 1;
+    const handles = ap.payment_handles;
+    const handlesEmpty = !handles || Object.keys(handles).every((k) => !handles[k]);
+    if (!handlesEmpty) filled += 1;
+    if (ap.is_active) filled += 1;
+  }
+
+  return Math.round((filled / requiredCount) * 100);
 }
 
-export default function AccountOverview({ userEmail, profile, onProfileChange }: Props) {
+export default function AccountOverview({ userEmail, profile, agentProfile, onProfileChange }: Props) {
   const [draft, setDraft] = useState({
     first_name: profile?.first_name ?? '',
     last_name:  profile?.last_name ?? '',
-    email:      profile?.email ?? '',
+    email:      profile?.email?.includes('@internal.auth') || profile?.email?.includes('@pepnationlab.com') ? '' : (profile?.email ?? ''),
     phone:      profile?.phone ?? '',
     timezone:   profile?.timezone ?? 'America/New_York',
   });
   const [saving, setSaving] = useState(false);
   const [usernameModalOpen, setUsernameModalOpen] = useState(false);
 
-  const completeness = useMemo(() => completenessPercent(profile), [profile]);
+  const completeness = useMemo(() => completenessPercent(profile, agentProfile), [profile, agentProfile]);
 
   const handleSave = useCallback(async () => {
     setSaving(true);
@@ -176,7 +193,7 @@ export default function AccountOverview({ userEmail, profile, onProfileChange }:
             gap: 'var(--space-4)',
           }}
         >
-          <div className="form-group">
+          <div className="form-group" style={{ margin: 0 }}>
             <label className="form-label" htmlFor="first-name">First Name</label>
             <input
               id="first-name"
@@ -189,7 +206,7 @@ export default function AccountOverview({ userEmail, profile, onProfileChange }:
             />
           </div>
 
-          <div className="form-group">
+          <div className="form-group" style={{ margin: 0 }}>
             <label className="form-label" htmlFor="last-name">Last Name</label>
             <input
               id="last-name"
@@ -202,7 +219,7 @@ export default function AccountOverview({ userEmail, profile, onProfileChange }:
             />
           </div>
 
-          <div className="form-group">
+          <div className="form-group" style={{ margin: 0 }}>
             <label className="form-label" htmlFor="phone">Phone Number</label>
             <input
               id="phone"
@@ -217,7 +234,7 @@ export default function AccountOverview({ userEmail, profile, onProfileChange }:
             />
           </div>
 
-          <div className="form-group">
+          <div className="form-group" style={{ margin: 0 }}>
             <label className="form-label" htmlFor="email">Email Address</label>
             <input
               id="email"
@@ -231,7 +248,7 @@ export default function AccountOverview({ userEmail, profile, onProfileChange }:
             />
           </div>
 
-          <div className="form-group">
+          <div className="form-group" style={{ margin: 0 }}>
             <label className="form-label" htmlFor="timezone">Timezone</label>
             <select
               id="timezone"

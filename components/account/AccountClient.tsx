@@ -31,6 +31,7 @@ interface Props {
   userId: string;
   userEmail: string;
   initialProfile: AccountProfile | null;
+  initialAgentProfile?: any;
   basePath?: string;
 }
 
@@ -52,6 +53,7 @@ export default function AccountClient({
   userId,
   userEmail,
   initialProfile,
+  initialAgentProfile,
   basePath = '/account/settings',
 }: Props) {
   const router = useRouter();
@@ -148,13 +150,14 @@ export default function AccountClient({
         <section
           role="tabpanel"
           aria-label={TABS.find((t) => t.id === activeTab)?.label}
-          style={{ animation: 'fadeIn 0.25s ease-out' }}
+          style={{ animation: 'fadeInUp 0.3s ease' }}
         >
           {activeTab === 'overview' && (
             <AccountOverview
               userId={userId}
               userEmail={userEmail}
               profile={profile}
+              agentProfile={initialAgentProfile}
               onProfileChange={setProfile}
             />
           )}

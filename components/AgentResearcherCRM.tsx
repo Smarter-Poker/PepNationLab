@@ -96,7 +96,7 @@ export default function AgentResearcherCRM() {
     }
     setOpenId(row.id);
     setDraft(row.note ?? '');
-    setEmailDraft(row.email ?? '');
+    setEmailDraft(row.email?.includes('@internal.auth') || row.email?.includes('@pepnationlab.com') ? '' : (row.email ?? ''));
     setPhoneDraft(row.phone ?? '');
   };
 
@@ -209,7 +209,7 @@ export default function AgentResearcherCRM() {
                       <td style={{ padding: 'var(--space-3) 8px var(--space-3) 0' }}>
                         <div style={{ fontWeight: 600, color: 'var(--white)' }}>{r.full_name || 'Anonymous Researcher'}</div>
                         <div style={{ fontFamily: 'monospace', fontSize: '0.74rem', color: 'var(--teal)' }}>
-                          @{r.username ?? (r.email ? r.email.split('@')[0] : 'researcher')}
+                          @{r.username ?? (r.email && !r.email.includes('@internal.auth') && !r.email.includes('@pepnationlab.com') ? r.email.split('@')[0] : 'researcher')}
                         </div>
                       </td>
                       <td style={{ padding: 'var(--space-3) 8px', textAlign: 'right', fontWeight: 700, color: 'var(--white)' }}>{money(r.total_spent)}</td>

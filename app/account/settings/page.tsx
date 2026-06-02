@@ -24,10 +24,21 @@ export default async function AccountSettingsPage() {
     .eq('id', user.id)
     .maybeSingle();
 
+  let agentProfile = null;
+  if (profile?.role && ['super_agent', 'agent', 'sub_agent'].includes(profile.role)) {
+    const { data } = await supabase
+      .from('agent_profiles')
+      .select('slug, warehouse_address, payment_handles, is_active')
+      .eq('id', user.id)
+      .maybeSingle();
+    agentProfile = data;
+  }
+
   return (
     <AccountClient
       userId={user.id}
       initialProfile={(profile as unknown as AccountProfile) ?? null}
+      initialAgentProfile={agentProfile}
       userEmail={user.email ?? ''}
       basePath="/account/settings"
     />

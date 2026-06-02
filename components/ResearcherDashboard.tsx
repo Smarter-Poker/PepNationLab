@@ -466,6 +466,25 @@ export default function ResearcherDashboard({ userId, userName, userEmail, agent
               Browse Store
             </a>
           )}
+
+          <div style={{ height: 1, background: 'rgba(192,184,168,0.08)', margin: '8px 0' }} />
+
+          <a
+            href="/account/help"
+            style={{
+              display: 'flex', alignItems: 'center', gap: 8,
+              padding: '9px 12px', borderRadius: 8,
+              background: 'none',
+              border: '1px solid transparent',
+              color: 'var(--silver)', fontSize: '0.78rem', fontWeight: 600,
+              textDecoration: 'none', marginBottom: 8,
+              transition: 'background 0.15s',
+            }}
+          >
+            <svg {...IP}><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="4"/><line x1="4.93" y1="4.93" x2="9.17" y2="9.17"/><line x1="14.83" y1="14.83" x2="19.07" y2="19.07"/><line x1="14.83" y1="9.17" x2="19.07" y2="4.93"/><line x1="4.93" y1="19.07" x2="9.17" y2="14.83"/></svg>
+            Help & Support
+          </a>
+
           <form action="/api/auth/signout" method="POST">
             <button type="submit" style={{
               width: '100%', display: 'flex', alignItems: 'center', gap: 8,
