@@ -756,18 +756,31 @@ export default function AdminAgents() {
                 This will create a new agent account with auth credentials and a storefront.
               </p>
             <form onSubmit={handleCreateAgent}>
-              {/* Full Name */}
-              <div className="form-group" style={{ marginBottom: 'var(--space-4)' }}>
-                <label className="form-label" style={{ display: 'block', marginBottom: 'var(--space-1)' }}>Full Name</label>
-                <input
-                  type="text"
-                  className="form-input"
-                  value={createForm.full_name}
-                  onChange={e => handleCreateFormChange('full_name', e.target.value)}
-                  placeholder="e.g. John Smith"
-                  required
-                  style={{ width: '100%' }}
-                />
+              {/* First + Last Name */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-4)', marginBottom: 'var(--space-4)' }}>
+                <div className="form-group" style={{ marginBottom: 0 }}>
+                  <label className="form-label" style={{ display: 'block', marginBottom: 'var(--space-1)' }}>First Name</label>
+                  <input
+                    type="text"
+                    className="form-input"
+                    value={createForm.firstName}
+                    onChange={e => handleCreateFormChange('firstName', e.target.value)}
+                    placeholder="e.g. John"
+                    required
+                    style={{ width: '100%' }}
+                  />
+                </div>
+                <div className="form-group" style={{ marginBottom: 0 }}>
+                  <label className="form-label" style={{ display: 'block', marginBottom: 'var(--space-1)' }}>Last Name</label>
+                  <input
+                    type="text"
+                    className="form-input"
+                    value={createForm.lastName}
+                    onChange={e => handleCreateFormChange('lastName', e.target.value)}
+                    placeholder="e.g. Smith"
+                    style={{ width: '100%' }}
+                  />
+                </div>
               </div>
 
               {/* Account Role */}
