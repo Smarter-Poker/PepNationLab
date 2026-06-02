@@ -10,6 +10,22 @@ import SubscribeReplenishButton from './SubscribeReplenishButton';
 import ReorderOrderButton from './ReorderOrderButton';
 import ChangePaymentMethod from '@/components/ChangePaymentMethod';
 import { paymentMethodLabel } from '@/lib/payment-method-labels';
+import HelpHint from '@/components/help/HelpHint';
+
+// R28: map order status → matching FAQ id so the contextual help pill lands
+// the buyer on the exact answer for their state (not the FAQ root). Every id
+// here is verified against the FAQ_ITEMS catalog in lib/help-faq.ts.
+const STATUS_FAQ_ID: Record<string, string> = {
+  pending_customer_payment: 'how-do-i-pay-for-an-order',
+  agent_approval_pending: 'order-stuck-in-approval',
+  admin_approval_pending: 'order-stuck-in-approval',
+  approved_ship: 'order-statuses-explained',
+  approved_pickup: 'ship-vs-pickup',
+  in_fulfillment: 'when-will-my-order-ship',
+  shipped: 'when-will-my-order-ship',
+  delivered: 'order-wrong-or-missing',
+  cancelled: 'cancelled-why',
+};
 
 export const dynamic = 'force-dynamic';
 
@@ -394,6 +410,13 @@ export default async function OrderDetailPage(
                 }}>
                   {STATUS_LABELS[order.status] ?? order.status}
                 </span>
+                {STATUS_FAQ_ID[order.status] ? (
+                  <HelpHint
+                    faqId={STATUS_FAQ_ID[order.status]}
+                    label="What Does This Mean?"
+                    source="order-detail-status"
+                  />
+                ) : null}
               </div>
             </div>
           </div>
