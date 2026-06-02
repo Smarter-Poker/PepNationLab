@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { createClient, createServiceClient } from '@/lib/supabase/server';
 import { assertSameOrigin } from '@/lib/csrf';
+import { notify } from '@/lib/notify';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -52,7 +53,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'rate_limited' }, { status: 429 });
   }
 
-  const { data: profile } = await svc.from('profiles').select('credit_limit').eq('id', user.id).single();
+  const { data: profile } = await svc.from('profiles').select('credit_limit, full_name, email, parent_agent_id').eq('id', user.id).single();
   const current = Number(profile?.credit_limit ?? 0);
 
   if (body.requested_limit <= current) {
@@ -71,5 +72,38 @@ export async function POST(req: Request) {
     .select()
     .single();
   if (error) return NextResponse.json({ error: error.message }, { status: 400 });
+
+  // Notify the reviewers: every admin (who approve/deny on /admin/credit-increases)
+  // plus the requester's parent super-agent (FYI), with an in-app bell entry AND a
+  // gated web push. Best-effort — a notification failure must not fail the request.
+  try {
+    const requesterName =
+      (profile?.full_name && String(profile.full_name).trim()) ||
+      (profile?.email ? String(profile.email).split('@')[0] : '') ||
+      'An Agent';
+    const title = 'Credit Increase Requested';
+    const bodyMsg = `${requesterName} Requested A Limit Of $${Number(body.requested_limit).toFixed(2)} (Current $${current.toFixed(2)}).`;
+
+    const recipientIds = new Set<string>();
+    const { data: admins } = await svc.from('profiles').select('id').eq('role', 'admin');
+    for (const a of admins ?? []) recipientIds.add(a.id);
+    if (profile?.parent_agent_id) recipientIds.add(profile.parent_agent_id as string);
+    recipientIds.delete(user.id);
+
+    await Promise.all(
+      Array.from(recipientIds).map((rid) =>
+        notify(svc, {
+          userId: rid,
+          type: 'system',
+          title,
+          body: bodyMsg,
+          url: '/admin/credit-increases',
+        }).catch(() => {}),
+      ),
+    );
+  } catch (e) {
+    console.error('[credit-increase] notify failed:', e);
+  }
+
   return NextResponse.json({ ok: true, request: data });
 }
