@@ -18,21 +18,9 @@ import {
  * Admin Customer Support widget — v2.
  *
  * Visible only on /messenger to a user whose profile.role === 'admin'.
- *
  * Renders a fixed-position, EDGE-TO-EDGE locked bar at the very bottom
- * of the messenger viewport. The bar is the persistent collapsed state;
- * clicking it toggles an inbox panel that floats directly above it.
- *
- * The bar would otherwise overlap the bottom rows of the messenger
- * sidebar's conversation list — a `<style jsx global>` block below adds
- * bottom padding to `.messenger-sidebar` so list rows naturally stop
- * above the bar.
- *
- * v2 surfaces every support_status / snooze / SLA / notes-count / topic /
- * linked-order field that the underlying /api/messenger/support/inbox now
- * returns, plus filter tabs, per-row status pill, per-row snooze popover,
- * Supabase Realtime subscription (with 60s fallback poll), a chime sound,
- * and a tab-title unread alert.
+ * of the messenger viewport. Contents are centered. A global rule pads
+ * `.messenger-sidebar` so the conversation list rows stop above the bar.
  */
 
 type SupportStatus = 'open' | 'in_progress' | 'waiting_on_researcher' | 'resolved';
@@ -203,7 +191,10 @@ export default function CustomerSupportWidget() {
   const channelRef = useRef<ReturnType<ReturnType<typeof createClient>['channel']> | null>(null);
   const adminIdRef = useRef<string | null>(null);
   const originalTitleRef = useRef<string | null>(null);
-  const prevUnreadRef = useRef<number>(0);
+  // Seed at -1 so the FIRST useEffect run (where totalUnread becomes whatever
+  // the inbox already has) is treated as the baseline and does NOT trigger
+  // a chime. Subsequent increases will.
+  const prevUnreadRef = useRef<number>(-1);
 
   // Mount: gate visibility to admins on /messenger only.
   useEffect(() => {
@@ -230,7 +221,6 @@ export default function CustomerSupportWidget() {
     return () => { cancelled = true; };
   }, []);
 
-  // Capture the original document title once so we can restore it.
   useEffect(() => {
     if (typeof document === 'undefined') return;
     if (originalTitleRef.current === null) {
@@ -256,14 +246,11 @@ export default function CustomerSupportWidget() {
     }
   }, []);
 
-  // Initial load once visibility flips on.
   useEffect(() => {
     if (!show) return;
     fetchInbox();
   }, [show, fetchInbox]);
 
-  // Realtime subscription on messenger_messages + messenger_conversations
-  // when widget is visible. Single shared channel; tear down on unmount.
   useEffect(() => {
     if (!show) return;
     const supabase = createClient();
@@ -272,10 +259,7 @@ export default function CustomerSupportWidget() {
       .on(
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'messenger_messages' },
-        () => {
-          // Cheap re-fetch — server filters to support threads the admin participates in.
-          fetchInbox();
-        },
+        () => { fetchInbox(); },
       )
       .on(
         'postgres_changes',
@@ -285,7 +269,6 @@ export default function CustomerSupportWidget() {
       .subscribe();
     channelRef.current = ch;
 
-    // Safety-net 60s fallback poll in case realtime is dropped.
     pollRef.current = setInterval(fetchInbox, 60_000);
 
     return () => {
@@ -296,7 +279,6 @@ export default function CustomerSupportWidget() {
     };
   }, [show, fetchInbox]);
 
-  // Close on ESC.
   useEffect(() => {
     if (!open) return;
     function onKey(e: KeyboardEvent) {
@@ -312,26 +294,32 @@ export default function CustomerSupportWidget() {
 
   const totalUnread = rows.reduce((a, r) => a + (r.unread_count || 0), 0);
 
-  // Tab-title alert + chime on unread delta increase.
   useEffect(() => {
     if (typeof document === 'undefined') return;
     const base = originalTitleRef.current || document.title.replace(/^\(\d+\)\s+/, '');
     document.title = totalUnread > 0 ? `(${totalUnread}) ${base}` : base;
 
+    // First settle is the baseline — don't chime on mount.
+    if (prevUnreadRef.current === -1) {
+      prevUnreadRef.current = totalUnread;
+      return;
+    }
     if (totalUnread > prevUnreadRef.current) {
-      // Only chime when there was already a baseline observed (skip mount tick)
-      // or when the page isn't the active tab.
-      const wentUp = prevUnreadRef.current >= 0;
-      if (wentUp && typeof document !== 'undefined' && document.hidden !== false) {
-        playChime();
-      } else if (wentUp && prevUnreadRef.current > 0) {
-        playChime();
-      }
+      playChime();
     }
     prevUnreadRef.current = totalUnread;
   }, [totalUnread]);
 
-  // Filter + sort rows according to the active tab.
+  // Restore the original document title when the widget unmounts so we
+  // don't leave a stale '(N)' prefix on the page after navigation.
+  useEffect(() => {
+    return () => {
+      if (typeof document === 'undefined') return;
+      const base = originalTitleRef.current;
+      if (base) document.title = base;
+    };
+  }, []);
+
   const visibleRows = useMemo(() => {
     const sorted = [...rows].sort((a, b) => {
       const ta = a.last_message_at ? Date.parse(a.last_message_at) : 0;
@@ -405,7 +393,6 @@ export default function CustomerSupportWidget() {
 
   return (
     <>
-      {/* Backdrop — only when panel is expanded */}
       {open && (
         <div
           aria-hidden
@@ -420,7 +407,6 @@ export default function CustomerSupportWidget() {
         />
       )}
 
-      {/* The expanded panel floats directly above the docked bar. */}
       {open && (
         <div
           role="dialog"
@@ -482,7 +468,6 @@ export default function CustomerSupportWidget() {
             </button>
           </header>
 
-          {/* Filter tabs */}
           <div
             role="tablist"
             aria-label="Support Inbox Filter"
@@ -534,7 +519,6 @@ export default function CustomerSupportWidget() {
             })}
           </div>
 
-          {/* Body */}
           <div style={{ overflowY: 'auto', flex: 1 }}>
             {loading && rows.length === 0 ? (
               <div
@@ -996,15 +980,6 @@ export default function CustomerSupportWidget() {
         </div>
       )}
 
-      {/* Edge-to-edge docked bottom bar — collapsed state.
-          - Spans full viewport width on mobile.
-          - On desktop, constrained to the messenger sidebar's width (320px)
-            via the media query in <style jsx> below so it sits ALONGSIDE
-            the chat pane instead of overlapping it.
-          - Contents are CENTERED inside the bar.
-          - A global rule pads `.messenger-sidebar` with bottom space equal
-            to the bar's height so the conversation list rows naturally
-            stop above this bar instead of being hidden behind it. */}
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
@@ -1115,11 +1090,6 @@ export default function CustomerSupportWidget() {
         />
       </button>
 
-      {/* Local panel/spin animations + responsive width.
-          Desktop matches the messenger sidebar's actual 320px width so
-          the bar sits next to (not overlapping) the chat pane.
-          The global rule pads `.messenger-sidebar` so the conversation
-          list rows stop above the bar instead of being hidden behind it. */}
       <style jsx>{`
         .spin { animation: cs-spin 1s linear infinite; }
         @keyframes cs-spin { to { transform: rotate(360deg); } }
@@ -1137,10 +1107,6 @@ export default function CustomerSupportWidget() {
         }
       `}</style>
       <style jsx global>{`
-        /* Reserve space at the bottom of the messenger sidebar so its
-           conversation list rows stop ABOVE the fixed Customer Support
-           bar instead of being hidden behind it. The value matches the
-           bar's min-height + safe-area inset. */
         .messenger-sidebar {
           padding-bottom: calc(60px + env(safe-area-inset-bottom)) !important;
         }
