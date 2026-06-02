@@ -3,9 +3,10 @@
 /**
  * ProductMonograph — research access shown inside the storefront product detail
  * modal. For the enhanced (Tirzepatide) layout, the research data is reached
- * through a single brushed-metal bezel toolbar of five embossed buttons:
- * Research, Findings, Preparation, Spec Sheet, FAQs. Each button opens the
- * ProductResearchPanel INSIDE the popup showing ONLY that one section.
+ * through a row of five buttons — Research, Findings, Preparation, Spec Sheet,
+ * FAQs — styled to match the rest of the product modal (thin teal-tinted
+ * buttons, no heavy bezel). Each button opens the ProductResearchPanel INSIDE
+ * the popup showing ONLY that one section.
  *
  * Non-enhanced compounds keep the compact collapsed summary that links out to
  * /research/[slug] until the new layout is rolled out platform-wide.
@@ -49,53 +50,33 @@ export default function ProductMonograph({ compound, primaryColor = '#00C4BC' }:
   if (enhanced) {
     return (
       <div style={{ marginBottom: 'var(--space-6)' }}>
-        {/* Brushed-metal bezel toolbar */}
-        <div
-          style={{
-            borderRadius: 16,
-            padding: 9,
-            background: 'linear-gradient(180deg, #e6dfd2 0%, #9a9389 16%, #4c4843 50%, #9a9389 84%, #e6dfd2 100%)',
-            boxShadow: '0 12px 30px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.55), inset 0 -2px 4px rgba(0,0,0,0.55)',
-          }}
-        >
-          <div
-            style={{
-              display: 'flex',
-              flexWrap: 'wrap',
-              gap: 8,
-              padding: 8,
-              borderRadius: 11,
-              background: 'linear-gradient(180deg, #2a2622 0%, #17140f 100%)',
-              boxShadow: 'inset 0 2px 9px rgba(0,0,0,0.85)',
-            }}
-          >
-            {PANEL_BUTTONS.map((b) => (
-              <button
-                key={b.key}
-                type="button"
-                onClick={() => setPanelSection(b.key)}
-                style={{
-                  flex: '1 1 84px',
-                  minWidth: 80,
-                  padding: '13px 8px',
-                  borderRadius: 9,
-                  border: 'none',
-                  cursor: 'pointer',
-                  background: 'linear-gradient(180deg, #c2bbac 0%, #948d80 46%, #6f685d 56%, #a39c90 100%)',
-                  boxShadow: '0 2px 5px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.55), inset 0 -2px 3px rgba(0,0,0,0.45)',
-                  color: '#f4eedd',
-                  fontWeight: 800,
-                  fontSize: '0.82rem',
-                  letterSpacing: '0.02em',
-                  textAlign: 'center',
-                  whiteSpace: 'nowrap',
-                  textShadow: '0 1px 0 rgba(0,0,0,0.55), 0 -1px 0 rgba(255,255,255,0.18)',
-                }}
-              >
-                {b.label}
-              </button>
-            ))}
-          </div>
+        {/* Buttons styled to match the rest of the product modal (no heavy bezel) */}
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+          {PANEL_BUTTONS.map((b) => (
+            <button
+              key={b.key}
+              type="button"
+              onClick={() => setPanelSection(b.key)}
+              style={{
+                flex: '1 1 84px',
+                minWidth: 80,
+                padding: '11px 10px',
+                borderRadius: 'var(--radius-md)',
+                border: `1px solid ${primaryColor}30`,
+                background: `${primaryColor}12`,
+                color: primaryColor,
+                fontWeight: 700,
+                fontSize: '0.85rem',
+                letterSpacing: '0.01em',
+                textAlign: 'center',
+                whiteSpace: 'nowrap',
+                cursor: 'pointer',
+                transition: 'background 0.15s ease, border-color 0.15s ease',
+              }}
+            >
+              {b.label}
+            </button>
+          ))}
         </div>
 
         {panelSection && typeof document !== 'undefined'
