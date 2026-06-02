@@ -524,8 +524,8 @@ export default function AdminAgents() {
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', minWidth: '120px' }}>
                   <span style={{ fontSize: '0.75rem', color: 'var(--grey-400)', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>Storefront</span>
                   {agent.agent_profiles?.[0]?.slug ? (
-                    <a href={`/${agent.agent_profiles[0].slug}`} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--teal)', textDecoration: 'none', fontWeight: 600, fontSize: '0.9rem' }}>
-                      /{agent.agent_profiles[0].slug}
+                    <a href={`/${agent.agent_profiles[0].slug}`} style={{ color: 'var(--teal)', textDecoration: 'none', fontWeight: 600, fontSize: '0.9rem' }}>
+                      {agent.agent_profiles[0].slug}
                     </a>
                   ) : (
                     <span style={{ color: 'var(--grey-400)', fontSize: '0.85rem' }}>No storefront</span>

@@ -186,6 +186,34 @@ export async function POST(req: NextRequest) {
         .eq('id', parsed.data.conversationId)
         .maybeSingle();
       isSupport = Boolean((conv as { is_support?: boolean } | null)?.is_support);
+
+      if (isSupport) {
+        const { count } = await svc
+          .from('messenger_messages')
+          .select('id', { count: 'exact', head: true })
+          .eq('conversation_id', parsed.data.conversationId)
+          .eq('sender_id', user.id);
+
+        if (count === 1 && participants && participants.length > 0) {
+          const adminParticipant = participants.find((p: any) => p.role === 'admin') || participants[0];
+          const autoAckText = "Thanks for reaching out to Help & Support. Someone from our customer service team will respond shortly. Average reply time is under an hour. If this is urgent, please include your order number or any other helpful information in your next message";
+          const { data: autoAckMsg } = await svc.from('messenger_messages').insert({
+            conversation_id: parsed.data.conversationId,
+            sender_id: adminParticipant.user_id,
+            text: autoAckText,
+            message_type: 'text',
+            metadata: { auto_ack: true }
+          }).select('*').maybeSingle();
+
+          if (autoAckMsg) {
+            sendBroadcast({
+              topic: `conversation:${parsed.data.conversationId}`,
+              event: 'new_message',
+              payload: { message: autoAckMsg },
+            }).catch(() => {});
+          }
+        }
+      }
     }
 
     if (participants && participants.length > 0) {

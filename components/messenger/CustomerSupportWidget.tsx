@@ -307,12 +307,15 @@ export default function CustomerSupportWidget() {
     return () => window.removeEventListener('keydown', onKey);
   }, [open, setMessengerActive]);
 
-  // Snapshot the messenger's active conversation on the rising edge of `open`
-  // so the X / Escape close paths can restore it.
+  // Snapshot the messenger's active conversation when the modal opens so we
+  // can restore it on close. Capturing on the rising edge of `open`.
   useEffect(() => {
     if (open) {
       prevActiveBeforeOpenRef.current = useMessengerStore.getState().activeConversationId;
     }
+    // We intentionally do NOT auto-restore on `open=false` here; the explicit
+    // close paths (X button, Escape, backdrop) handle restoration so a
+    // researcher who clicked into a thread doesn't lose their context.
   }, [open]);
 
   const totalUnread = rows.reduce((a, r) => a + (r.unread_count || 0), 0);

@@ -949,7 +949,7 @@ function ResearchersAdminPageInner() {
               <a href={resolvedAgentProfile.qr_code_url || '#'} download={`${resolvedAgentProfile.slug}-qr.png`} target="_blank" rel="noreferrer" className="btn-neon-cyan" style={{ width: '100%', justifyContent: 'center' }}>
                 Download QR Code
               </a>
-              <a href={`/${resolvedAgentProfile.slug}`} target="_blank" rel="noreferrer" className="btn-silver" style={{ width: '100%', justifyContent: 'center' }}>
+              <a href={`/${resolvedAgentProfile.slug}`} rel="noreferrer" className="btn-silver" style={{ width: '100%', justifyContent: 'center' }}>
                 Visit Storefront
               </a>
               <button type="button" className="btn-silver" onClick={closeModal}>Close</button>
