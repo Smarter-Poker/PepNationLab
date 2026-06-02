@@ -161,44 +161,43 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ recommendations: [] });
   }
 
-  // 6) Resolve product rows — filter active, non-banned, not the seed, and deduplicate by name!
-  const { data: productsRaw } = await supabase
+  // 6) Get the names of the candidate products
+  const { data: candidatesProducts } = await supabase
     .from('products')
-    .select('id, name, slug, category, image_url, is_active, is_banned, unit_size, unit_measure')
+    .select('name')
     .in('id', candidateArray);
-  
-  const productMap = new Map<string, ProductRow>();
-  const seenNames = new Set<string>();
-  if (seedName) seenNames.add(seedName.toLowerCase()); // Don't recommend any other variant of the seed product
 
-  // Sort candidateArray according to the order we inserted them (Bac Water, Copurchase, Same Cat, Popular)
-  for (const cid of candidateArray) {
-    const p = productsRaw?.find(r => r.id === cid) as ProductRow | undefined;
-    if (!p || p.is_active === false || p.is_banned === true || p.id === productId) continue;
-    
-    // Deduplicate by name
-    const lowerName = p.name.toLowerCase();
-    if (seenNames.has(lowerName)) continue;
-    seenNames.add(lowerName);
-    
-    productMap.set(p.id, p);
+  let candidateNames = Array.from(new Set(candidatesProducts?.map(p => p.name) || []));
+
+  // Guarantee BAC water is at the very front
+  const bacIdx = candidateNames.findIndex(n => n.toLowerCase().includes('bacteriostatic water'));
+  if (bacIdx > -1) {
+    const [bac] = candidateNames.splice(bacIdx, 1);
+    candidateNames.unshift(bac);
+  } else {
+    candidateNames.unshift('Bacteriostatic Water');
   }
 
-  // 4) If an agent is in play, intersect with their visible catalog and use
-  //    their retail_price. Otherwise just use the master product info.
+  // 7) Fetch ALL variants for these candidate names
+  const { data: allVariants } = await supabase
+    .from('products')
+    .select('id, name, slug, category, image_url, is_active, is_banned, unit_size, unit_measure')
+    .in('name', candidateNames);
+
+  // 8) If an agent is in play, intersect with their visible catalog
   const agentPriceMap = new Map<string, number>();
   const agentVisible = new Set<string>();
-  if (agentId) {
+  if (agentId && allVariants?.length) {
     const { data: aps } = await supabase
       .from('agent_products')
       .select('product_id, retail_price, is_visible, is_on_sale, sale_price')
       .eq('agent_id', agentId)
-      .in('product_id', Array.from(productMap.keys()));
+      .in('product_id', allVariants.map(v => v.id));
     for (const ap of (aps ?? []) as AgentProductRow[]) {
       if (!ap?.product_id) continue;
       if (ap.is_visible === false) continue;
       agentVisible.add(ap.product_id);
-      // retail_price is stored as a 10-pack price — divide by 10 for per-vial.
+      
       const raw = ap.is_on_sale && ap.sale_price != null
         ? Number(ap.sale_price)
         : Number(ap.retail_price);
@@ -207,7 +206,25 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  // 7) Preserve the candidate ordering (co-purchase first, then popular).
+  // 9) Pick the best variant for each name (smallest unit_size)
+  const bestVariants = new Map<string, ProductRow>();
+  for (const v of (allVariants || []) as ProductRow[]) {
+    if (v.is_active === false || v.is_banned === true || v.id === productId) continue;
+    if (agentId && !agentVisible.has(v.id)) continue;
+
+    const existing = bestVariants.get(v.name);
+    if (!existing) {
+      bestVariants.set(v.name, v);
+    } else {
+      const sizeV = parseFloat(v.unit_size || '999');
+      const sizeE = parseFloat(existing.unit_size || '999');
+      if (sizeV < sizeE) {
+        bestVariants.set(v.name, v);
+      }
+    }
+  }
+
+  // 10) Assemble final output preserving order
   const out: Array<{
     id: string;
     name: string;
@@ -218,20 +235,24 @@ export async function GET(req: NextRequest) {
     unit_size: string | null;
     unit_measure: string | null;
   }> = [];
-  for (const cid of candidateArray) {
+
+  for (const n of candidateNames) {
     if (out.length >= limit) break;
-    const p = productMap.get(cid);
-    if (!p) continue;
-    if (agentId && !agentVisible.has(cid)) continue;
+    // Never recommend the seed product itself
+    if (seedName && n.toLowerCase() === seedName.toLowerCase()) continue;
+
+    const best = bestVariants.get(n);
+    if (!best) continue;
+
     out.push({
-      id: p.id,
-      name: p.name,
-      slug: p.slug,
-      category: p.category,
-      image_url: p.image_url,
-      unit_size: p.unit_size,
-      unit_measure: p.unit_measure,
-      ...(agentPriceMap.has(cid) ? { retail_price: agentPriceMap.get(cid)! } : {}),
+      id: best.id,
+      name: best.name,
+      slug: best.slug,
+      category: best.category,
+      image_url: best.image_url,
+      unit_size: best.unit_size,
+      unit_measure: best.unit_measure,
+      ...(agentPriceMap.has(best.id) ? { retail_price: agentPriceMap.get(best.id)! } : {}),
     });
   }
 

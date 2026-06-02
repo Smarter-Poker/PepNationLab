@@ -116,16 +116,23 @@ export default function RecommendationStrip({
                       justifyContent: 'center',
                     }}
                   >
-                    {item.image_url || getProductImage(item.name, item.slug || '') ? (
+                    {getProductImage(item.image_url, item.category || 'Other', item.name) ? (
                       /* eslint-disable-next-line @next/next/no-img-element */
                       <img
-                        src={item.image_url || getProductImage(item.name, item.slug || '')}
+                        src={getProductImage(item.image_url, item.category || 'Other', item.name)}
                         alt={item.name}
                         style={{
                           width: '100%',
                           height: '100%',
                           objectFit: 'contain',
                           padding: 8,
+                        }}
+                        onError={(e) => {
+                          const target = e.target as HTMLImageElement;
+                          const fallback = getProductImage(null, item.category || 'Other', item.name);
+                          if (target.src !== fallback) {
+                            target.src = fallback;
+                          }
                         }}
                       />
                     ) : (
