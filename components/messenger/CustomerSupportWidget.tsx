@@ -9,9 +9,9 @@ import { LifeBuoy, X, ChevronRight, Loader2 } from 'lucide-react';
  * Admin Customer Support widget.
  *
  * Visible only on /messenger to a user whose profile.role === 'admin'.
- * Renders a fixed-position pill at the bottom-LEFT of the messenger
- * (over the conversation list, not the chat pane), exactly where the
- * admin's agent / super-agent list sits today.
+ * Renders a fixed-position locked box at the bottom-LEFT of the
+ * messenger (over the conversation list, not the chat pane), exactly
+ * where the admin's agent / super-agent list sits today.
  *
  * Click opens an inline panel that lists every is_support=true
  * conversation the admin participates in (driven by
@@ -186,11 +186,12 @@ export default function CustomerSupportWidget() {
         />
       )}
 
-      {/* The pill button (collapsed state) */}
+      {/* Collapsed state — a locked rectangular BOX, not a pill. */}
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
         aria-label={open ? 'Close Customer Support Inbox' : 'Open Customer Support Inbox'}
+        aria-expanded={open}
         title="Customer Support Inbox"
         style={{
           position: 'fixed',
@@ -199,36 +200,66 @@ export default function CustomerSupportWidget() {
           zIndex: 100,
           display: 'inline-flex',
           alignItems: 'center',
-          gap: 8,
-          padding: '10px 14px',
-          borderRadius: 999,
+          gap: 10,
+          padding: '12px 16px',
+          minHeight: 48,
+          minWidth: 220,
+          borderRadius: 10,
           background: 'linear-gradient(180deg, #0F1923 0%, #1D2D3E 100%)',
           color: 'var(--white, #fff)',
           border: '1px solid #C0B8A8',
-          fontSize: '0.85rem',
+          fontSize: '0.9rem',
           fontWeight: 700,
           letterSpacing: '0.02em',
-          boxShadow: '0 4px 18px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255,255,255,0.15)',
+          boxShadow:
+            '0 6px 20px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(192,184,168,0.18), inset 0 1px 0 rgba(255,255,255,0.18), inset 0 -2px 4px rgba(0,0,0,0.45)',
           cursor: 'pointer',
+          textAlign: 'left',
         }}
       >
-        <LifeBuoy size={16} aria-hidden="true" style={{ color: 'var(--teal, #00C4BC)' }} />
-        Customer Support
+        <span
+          aria-hidden
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            width: 30,
+            height: 30,
+            borderRadius: 8,
+            background:
+              'linear-gradient(135deg, rgba(0,196,188,0.30) 0%, rgba(0,196,188,0.10) 100%)',
+            border: '1px solid rgba(0,196,188,0.55)',
+            color: 'var(--teal, #00C4BC)',
+            flexShrink: 0,
+          }}
+        >
+          <LifeBuoy size={16} aria-hidden="true" />
+        </span>
+        <span style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.15, flex: 1 }}>
+          <span style={{ fontSize: '0.92rem', fontWeight: 800 }}>Customer Support</span>
+          <span style={{ fontSize: '0.72rem', color: 'var(--grey-400, #A8B4C0)', fontWeight: 500 }}>
+            {totalUnread > 0
+              ? `${totalUnread > 99 ? '99+' : totalUnread} Unread Thread${totalUnread === 1 ? '' : 's'}`
+              : `${rows.length} Thread${rows.length === 1 ? '' : 's'}`}
+          </span>
+        </span>
         {totalUnread > 0 && (
           <span
+            aria-hidden
             style={{
-              minWidth: 20,
-              height: 20,
-              padding: '0 6px',
-              borderRadius: 999,
+              minWidth: 22,
+              height: 22,
+              padding: '0 7px',
+              borderRadius: 6,
               background: '#E53E3E',
               color: '#fff',
-              fontSize: '0.7rem',
+              fontSize: '0.72rem',
               fontWeight: 800,
               display: 'inline-flex',
               alignItems: 'center',
               justifyContent: 'center',
-              marginLeft: 2,
+              flexShrink: 0,
+              boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.25)',
             }}
           >
             {totalUnread > 99 ? '99+' : totalUnread}
@@ -245,10 +276,10 @@ export default function CustomerSupportWidget() {
           style={{
             position: 'fixed',
             left: 'max(16px, env(safe-area-inset-left))',
-            bottom: 'calc(max(16px, env(safe-area-inset-bottom)) + 68px)',
+            bottom: 'calc(max(16px, env(safe-area-inset-bottom)) + 76px)',
             zIndex: 101,
             width: 'min(380px, calc(100vw - 32px))',
-            maxHeight: 'min(560px, calc(100dvh - 140px))',
+            maxHeight: 'min(560px, calc(100dvh - 160px))',
             display: 'flex',
             flexDirection: 'column',
             background: 'linear-gradient(180deg, #0F1923 0%, #050A0F 100%)',
@@ -283,7 +314,7 @@ export default function CustomerSupportWidget() {
                 display: 'inline-flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                borderRadius: 999,
+                borderRadius: 8,
                 background: 'rgba(255,255,255,0.06)',
                 border: '1px solid rgba(255,255,255,0.12)',
                 color: 'var(--silver, #C0B8A8)',
@@ -444,7 +475,7 @@ export default function CustomerSupportWidget() {
                             minWidth: 22,
                             height: 22,
                             padding: '0 7px',
-                            borderRadius: 999,
+                            borderRadius: 6,
                             background: '#E53E3E',
                             color: '#fff',
                             fontSize: '0.72rem',
