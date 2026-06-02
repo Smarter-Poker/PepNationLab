@@ -1,20 +1,20 @@
 'use client';
 
 /**
- * ProductResearchPanel — ONE research section, opened INSIDE the product detail
- * modal (no route navigation). Premium thick brushed-nickel frame, the same back
- * arrow used in the global header, short paragraphs, Title Case prose.
+ * ProductResearchPanel — research content shown INSIDE the product detail modal
+ * as an in-app popup (no route navigation, no new browser tab). Premium thick
+ * brushed-nickel frame, the global back arrow, short paragraphs, Title Case prose.
  *
- * Each toolbar button in ProductMonograph opens this panel at exactly one
- * section (`initialSection`): Research, Findings, Preparation, Spec Sheet, FAQs.
- * There is no cross-section tab nav — the back arrow returns to the modal.
- *
- * Links that leave the store (full research page, printable spec sheet) open in
- * a NEW TAB so the store and the product modal stay intact behind the panel.
+ * Each toolbar button in ProductMonograph opens this panel at one section
+ * (`initialSection`): Research, Findings, Preparation, Spec Sheet, FAQs. From the
+ * FAQ section, 'View The Full Research Page' switches to an in-app 'full' view
+ * that stacks every section; its Back arrow returns to the FAQ (true back). The
+ * top back arrow otherwise returns to the product modal.
  *
  * Research-Use-Only. Storage temperatures render in Fahrenheit. FAQ answers are
  * stripped of em/en dashes.
  */
+import { useState } from 'react';
 import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
 import {
@@ -27,6 +27,7 @@ import {
 import ReconstitutionCalculator from '@/components/research/ReconstitutionCalculator';
 
 export type ResearchSection = 'profile' | 'findings' | 'prep' | 'spec' | 'faq';
+type View = ResearchSection | 'full';
 
 interface Props {
   compound: Compound;
@@ -37,12 +38,13 @@ interface Props {
 
 const cap: React.CSSProperties = { textTransform: 'capitalize' };
 
-const SECTION_TITLE: Record<ResearchSection, string> = {
+const VIEW_TITLE: Record<View, string> = {
   profile: 'Research Profile',
   findings: 'Reported Findings',
   prep: 'Preparation',
   spec: 'Spec Sheet',
   faq: 'Frequently Asked Questions',
+  full: 'Full Research Profile',
 };
 
 // Convert Celsius temperatures embedded in free text to Fahrenheit.
@@ -82,6 +84,14 @@ function Label({ children }: { children: React.ReactNode }) {
   );
 }
 
+function SectionHeading({ children }: { children: React.ReactNode }) {
+  return (
+    <h2 style={{ fontSize: '1.05rem', fontWeight: 900, color: 'var(--white)', margin: '0 0 var(--space-3)', paddingBottom: 6, borderBottom: '2px solid var(--teal)' }}>
+      {children}
+    </h2>
+  );
+}
+
 function Fact({ label, value, capValue = true }: { label: string; value: React.ReactNode; capValue?: boolean }) {
   if (value == null || value === '') return null;
   return (
@@ -105,12 +115,19 @@ function Chips({ items, color }: { items: string[]; color: string }) {
 }
 
 export default function ProductResearchPanel({ compound, primaryColor = '#00C4BC', onClose, initialSection = 'profile' }: Props) {
+  const [view, setView] = useState<View>(initialSection);
   const tier = evidenceTier(compound.evidence_tier);
   const risk = RISK_META[compound.risk_level];
   const isHighRisk = compound.risk_level === 'critical' || compound.risk_level === 'high';
   const id = compound.identity ?? {};
   const h = compound.handling ?? {};
-  const section = initialSection;
+  const full = view === 'full';
+  const show = (k: ResearchSection) => view === k || full;
+
+  const handleBack = () => {
+    if (full) setView('faq');
+    else onClose();
+  };
 
   const badge = (label: string, color: string) => (
     <span style={{ fontSize: '0.7rem', fontWeight: 800, letterSpacing: '0.04em', textTransform: 'uppercase', padding: '5px 13px', borderRadius: 9999, background: `${color}1A`, border: `1px solid ${color}66`, color }}>
@@ -145,7 +162,7 @@ export default function ProductResearchPanel({ compound, primaryColor = '#00C4BC
     <div
       role="dialog"
       aria-modal="true"
-      aria-label={`${compound.display_name} ${SECTION_TITLE[section]}`}
+      aria-label={`${compound.display_name} ${VIEW_TITLE[view]}`}
       style={{
         position: 'fixed',
         inset: 0,
@@ -177,11 +194,11 @@ export default function ProductResearchPanel({ compound, primaryColor = '#00C4BC
           maxHeight: '94dvh',
         }}
       >
-        {/* Top bar: global back arrow + section title */}
+        {/* Top bar: back arrow + view title */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '14px 18px', borderBottom: '1px solid rgba(255,255,255,0.08)', flexShrink: 0, background: 'linear-gradient(180deg, rgba(255,255,255,0.05), transparent)' }}>
           <button
             type="button"
-            onClick={onClose}
+            onClick={handleBack}
             aria-label="Back"
             style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: 'transparent', border: 'none', cursor: 'pointer', padding: 0, color: 'var(--white)', fontWeight: 700, fontSize: '0.9rem' }}
           >
@@ -190,7 +207,7 @@ export default function ProductResearchPanel({ compound, primaryColor = '#00C4BC
             Back
           </button>
           <span style={{ marginLeft: 'auto', fontSize: '0.78rem', fontWeight: 800, letterSpacing: '0.05em', textTransform: 'uppercase', color: 'var(--silver)' }}>
-            {SECTION_TITLE[section]}
+            {VIEW_TITLE[view]}
           </span>
         </div>
 
@@ -215,8 +232,9 @@ export default function ProductResearchPanel({ compound, primaryColor = '#00C4BC
           </header>
 
           <section style={{ minHeight: 160 }}>
-            {section === 'profile' && (
-              <div>
+            {show('profile') && (
+              <div style={{ marginBottom: full ? 'var(--space-6)' : 0 }}>
+                {full && <SectionHeading>Research Profile</SectionHeading>}
                 {compound.plain_summary && <Para>{compound.plain_summary}</Para>}
                 <div style={{ marginTop: 'var(--space-3)', marginBottom: 'var(--space-5)' }}>
                   <Fact label="Class" value={compound.compound_class} />
@@ -247,8 +265,9 @@ export default function ProductResearchPanel({ compound, primaryColor = '#00C4BC
               </div>
             )}
 
-            {section === 'findings' && (
-              <div>
+            {show('findings') && (
+              <div style={{ marginBottom: full ? 'var(--space-6)' : 0 }}>
+                {full && <SectionHeading>Reported Findings</SectionHeading>}
                 {compound.benefits && (
                   <div style={{ marginBottom: 'var(--space-5)' }}>
                     <Label>Reported Findings</Label>
@@ -273,9 +292,9 @@ export default function ProductResearchPanel({ compound, primaryColor = '#00C4BC
               </div>
             )}
 
-            {section === 'prep' && (
-              <div>
-                <Label>Handling, Storage & Reconstitution</Label>
+            {show('prep') && (
+              <div style={{ marginBottom: full ? 'var(--space-6)' : 0 }}>
+                {full ? <SectionHeading>Preparation</SectionHeading> : <Label>Handling, Storage & Reconstitution</Label>}
                 <div style={{ marginBottom: 'var(--space-5)' }}>
                   <Fact label="Form" value={h.form} />
                   <Fact label="Diluent" value={h.diluent} />
@@ -298,9 +317,9 @@ export default function ProductResearchPanel({ compound, primaryColor = '#00C4BC
               </div>
             )}
 
-            {section === 'spec' && (
-              <div>
-                <Label>Technical Spec Sheet</Label>
+            {show('spec') && (
+              <div style={{ marginBottom: full ? 'var(--space-6)' : 0 }}>
+                {full ? <SectionHeading>Spec Sheet</SectionHeading> : <Label>Technical Spec Sheet</Label>}
                 <div style={{ marginBottom: 'var(--space-5)' }}>
                   <Fact label="Evidence Tier" value={tier.label} />
                   <Fact label="Category" value={compound.category} />
@@ -318,8 +337,6 @@ export default function ProductResearchPanel({ compound, primaryColor = '#00C4BC
                 </div>
                 <Link
                   href={`/research/${compound.slug}/spec`}
-                  target="_blank"
-                  rel="noopener noreferrer"
                   style={{
                     display: 'inline-flex',
                     alignItems: 'center',
@@ -339,8 +356,9 @@ export default function ProductResearchPanel({ compound, primaryColor = '#00C4BC
               </div>
             )}
 
-            {section === 'faq' && (
+            {show('faq') && (
               <div>
+                {full && <SectionHeading>Frequently Asked Questions</SectionHeading>}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                   {faqs.map((f, i) => (
                     <div
@@ -361,28 +379,30 @@ export default function ProductResearchPanel({ compound, primaryColor = '#00C4BC
                     </div>
                   ))}
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'center', marginTop: 'var(--space-5)' }}>
-                  <Link
-                    href={`/research/${compound.slug}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    style={{
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: 8,
-                      padding: '12px 20px',
-                      borderRadius: 'var(--radius-md)',
-                      background: primaryColor,
-                      color: '#04221F',
-                      fontWeight: 800,
-                      fontSize: '0.88rem',
-                      textDecoration: 'none',
-                    }}
-                  >
-                    View The Full {compound.display_name} Research Page
-                    <ArrowRight size={15} aria-hidden="true" />
-                  </Link>
-                </div>
+                {!full && (
+                  <div style={{ display: 'flex', justifyContent: 'center', marginTop: 'var(--space-5)' }}>
+                    <button
+                      type="button"
+                      onClick={() => setView('full')}
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 8,
+                        padding: '12px 20px',
+                        borderRadius: 'var(--radius-md)',
+                        background: primaryColor,
+                        color: '#04221F',
+                        fontWeight: 800,
+                        fontSize: '0.88rem',
+                        border: 'none',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      View The Full {compound.display_name} Research Page
+                      <ArrowRight size={15} aria-hidden="true" />
+                    </button>
+                  </div>
+                )}
               </div>
             )}
           </section>
