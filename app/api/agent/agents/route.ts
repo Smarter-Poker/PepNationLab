@@ -219,7 +219,7 @@ export async function POST(req: NextRequest) {
     if (Array.isArray(custom_commission_scale)) {
       await supabase.from('sub_agent_commission_plan').upsert({
         sub_agent_id: userId,
-        super_agent_id: callerId,
+        parent_agent_id: callerId,
         steps: custom_commission_scale,
         updated_at: new Date().toISOString(),
       });

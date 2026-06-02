@@ -234,7 +234,7 @@ export default async function proxy(request: NextRequest) {
     }
     const url = request.nextUrl.clone();
     url.pathname = '/login';
-    url.searchParams.set('redirect', pathname);
+    url.searchParams.set('redirect', pathname + request.nextUrl.search);
     return redirectWithCookies(url);
   }
 

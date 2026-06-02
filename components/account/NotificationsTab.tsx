@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { toast } from 'sonner';
+import PushNotificationToggle from '@/components/PushNotificationToggle';
 
 interface Prefs {
   events_order_approved: boolean;
@@ -181,6 +182,8 @@ export default function NotificationsTab() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
+      <PushNotificationToggle showTypePrefs={false} />
+
       <div className="card-metal" style={{ padding: 'var(--space-6)' }}>
         <h3 style={{ marginTop: 0, marginBottom: 'var(--space-2)', color: 'var(--teal)' }}>Notifications</h3>
         <p style={{ color: 'var(--silver)', fontSize: '0.85rem', margin: '0 0 var(--space-4)', lineHeight: 1.6 }}>
