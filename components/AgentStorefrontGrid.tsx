@@ -1394,18 +1394,23 @@ export default function AgentStorefrontGrid({
               }}
             >
               <div onClick={(e) => e.stopPropagation()} style={{
-                width: '100%', maxWidth: 620, margin: 'auto 0', display: 'flex', flexDirection: 'column',
-                background: 'var(--surface-2)', border: '1px solid rgba(255,255,255,0.1)',
-                borderRadius: 'var(--radius-lg)', boxShadow: '0 24px 64px rgba(0,0,0,0.7)',
+                width: '100%', maxWidth: 680, margin: 'auto 0', display: 'flex', flexDirection: 'column',
+                background: 'linear-gradient(180deg, #131b24 0%, #0a0f14 100%)',
+                border: '3px solid transparent', backgroundClip: 'padding-box',
+                borderRadius: 24,
+                // Thick brushed-nickel frame (matches the premium product detail modal):
+                // dark/light/dark beveled metal ring + deep ambient shadow.
+                boxShadow: '0 0 0 2px #5d6166, 0 0 0 4px #b9bdc2, 0 0 0 6px #6c7075, inset 0 1px 0 rgba(255,255,255,0.10), 0 30px 90px rgba(0,0,0,0.85), 0 6px 28px rgba(160,168,176,0.14)',
                 overflow: 'hidden', maxHeight: '92dvh'
               }}>
-              <div style={{ padding: '16px 18px', borderBottom: '1px solid rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <span style={{ fontWeight: 800, color: 'var(--white)', fontSize: '1.05rem' }}>
+              <div style={{ padding: '20px 22px', borderBottom: '1px solid rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'linear-gradient(180deg, rgba(255,255,255,0.05), transparent)' }}>
+                <span style={{ fontWeight: 800, color: 'var(--white)', fontSize: '1.2rem', letterSpacing: '0.01em' }}>
                   Your Cart ({totalCartItems} {totalCartItems === 1 ? 'Item' : 'Items'})
                 </span>
                 <button onClick={() => setShowCartFloat(false)} aria-label="Close Cart" style={{
-                  background: 'rgba(255,255,255,0.08)', border: 'none', color: 'var(--white)',
-                  width: 36, height: 36, borderRadius: '50%', cursor: 'pointer', fontSize: '1rem', flexShrink: 0
+                  background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.14)', color: 'var(--white)',
+                  width: 38, height: 38, borderRadius: '50%', cursor: 'pointer', fontSize: '1rem', flexShrink: 0,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center'
                 }}>X</button>
               </div>
               <div style={{ flex: 1, overflowY: 'auto', padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -1432,6 +1437,11 @@ export default function AgentStorefrontGrid({
                         width={64}
                         height={64}
                         style={{ width: 64, height: 64, borderRadius: 10, objectFit: 'cover', flexShrink: 0, background: '#0F1923' }}
+                        onError={(e) => {
+                          const target = e.target as HTMLImageElement;
+                          const fallback = getProductImage(null, item.products?.category || 'Other', name);
+                          if (target.src !== fallback) target.src = fallback;
+                        }}
                       />
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ fontSize: '0.9rem', color: 'var(--white)', fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
@@ -1548,6 +1558,11 @@ export default function AgentStorefrontGrid({
                             width={56}
                             height={56}
                             style={{ width: 56, height: 56, borderRadius: 10, objectFit: 'cover', flexShrink: 0, background: '#0F1923', opacity: 0.9 }}
+                            onError={(e) => {
+                              const target = e.target as HTMLImageElement;
+                              const fallback = getProductImage(null, item.products?.category || 'Other', name);
+                              if (target.src !== fallback) target.src = fallback;
+                            }}
                           />
                           <div style={{ flex: 1, minWidth: 0 }}>
                             <div style={{ fontSize: '0.86rem', color: 'var(--white)', fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
@@ -1587,10 +1602,10 @@ export default function AgentStorefrontGrid({
                   </div>
                 )}
               </div>
-              <div style={{ padding: '12px 16px', borderTop: '1px solid rgba(255,255,255,0.06)', display: 'flex', flexDirection: 'column', gap: 8 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', color: 'var(--grey-400)', marginBottom: 4 }}>
-                  <span>Total</span>
-                  <span style={{ color: 'var(--white)', fontWeight: 700 }}>
+              <div style={{ padding: '16px 20px calc(18px + env(safe-area-inset-bottom, 0px))', borderTop: '1px solid rgba(255,255,255,0.10)', display: 'flex', flexDirection: 'column', gap: 10, background: 'linear-gradient(180deg, transparent, rgba(0,0,0,0.25))' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', fontSize: '0.9rem', color: 'var(--grey-300)', marginBottom: 4 }}>
+                  <span style={{ fontWeight: 700 }}>Total</span>
+                  <span style={{ color: 'var(--white)', fontWeight: 800, fontSize: '1.25rem', letterSpacing: '0.01em' }}>
                     ${Object.entries(cartItems).reduce((sum, [vId, qty]) => {
                       const item = products.find(p => p.id === vId);
                       return sum + (item ? (item.retail_price / 10) * qty : 0);
@@ -1651,9 +1666,11 @@ export default function AgentStorefrontGrid({
                       window.location.href = `/checkout?agent=${encodeURIComponent(agentSlug)}`;
                     }}
                     style={{
-                      display: 'block', width: '100%', textAlign: 'center', padding: '14px',
-                      background: primaryColor, color: 'var(--white)', borderRadius: 'var(--radius-md)',
-                      fontWeight: 800, fontSize: '0.95rem', border: 'none', cursor: 'pointer', minHeight: 50
+                      display: 'block', width: '100%', textAlign: 'center', padding: '16px',
+                      background: primaryColor, color: 'var(--white)', borderRadius: 14,
+                      fontWeight: 800, fontSize: '1.02rem', letterSpacing: '0.02em',
+                      border: '1px solid rgba(255,255,255,0.25)', cursor: 'pointer', minHeight: 56,
+                      boxShadow: `0 8px 22px ${primaryColor}55, inset 0 1px 0 rgba(255,255,255,0.30)`
                     }}
                   >
                     Go To Checkout
@@ -1661,18 +1678,19 @@ export default function AgentStorefrontGrid({
                   <button
                     onClick={() => setShowCartFloat(false)}
                     style={{
-                      display: 'block', width: '100%', textAlign: 'center', padding: '9px',
-                      background: 'transparent', color: 'var(--silver)', borderRadius: 'var(--radius-md)',
-                      fontWeight: 600, fontSize: '0.82rem', border: '1px solid rgba(255,255,255,0.15)', cursor: 'pointer'
+                      display: 'block', width: '100%', textAlign: 'center', padding: '13px',
+                      background: 'rgba(255,255,255,0.07)', color: 'var(--white)', borderRadius: 12,
+                      fontWeight: 700, fontSize: '0.9rem', border: '1.5px solid rgba(255,255,255,0.22)',
+                      cursor: 'pointer', minHeight: 48
                     }}
                   >
                     Keep Shopping
                   </button>
                   <button onClick={() => { setCartItems({}); setShowCartFloat(false); }}
                     style={{
-                      display: 'block', width: '100%', textAlign: 'center', padding: '8px',
-                      background: 'transparent', color: 'var(--grey-400)', borderRadius: 'var(--radius-md)',
-                      fontWeight: 500, fontSize: '0.78rem', border: '1px solid rgba(255,255,255,0.08)', cursor: 'pointer'
+                      display: 'block', width: '100%', textAlign: 'center', padding: '11px',
+                      background: 'rgba(229,62,62,0.08)', color: '#F08A8A', borderRadius: 12,
+                      fontWeight: 700, fontSize: '0.82rem', border: '1.5px solid rgba(229,62,62,0.32)', cursor: 'pointer'
                     }}
                   >
                     Clear Cart
@@ -1750,7 +1768,15 @@ export default function AgentStorefrontGrid({
                   src={detailProduct.imageUrl ?? undefined}
                   alt={detailProduct.name}
                   style={{ width: '100%', height: '100%', objectFit: 'contain', objectPosition: 'center', padding: '16px', transition: 'transform 0.4s ease' }}
-                  onError={e => { (e.target as HTMLImageElement).style.opacity = '0.3'; }}
+                  onError={(e) => {
+                    const target = e.target as HTMLImageElement;
+                    const fallback = getProductImage(null, detailProduct.category || 'Other', detailProduct.name);
+                    if (target.src !== fallback) {
+                      target.src = fallback;
+                    } else {
+                      target.style.opacity = '0.3';
+                    }
+                  }}
                 />
                 <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 60, background: 'linear-gradient(transparent, var(--surface-2))' }} />
               </div>
