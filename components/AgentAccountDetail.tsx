@@ -32,6 +32,7 @@ type Detail = {
     commission_pct: number | null;
     commission_max_pct: number | null;
     velocity_cap: number | null;
+    commission_ladder_config?: any[];
     commission_active_since: string | null;
     is_active: boolean;
     is_sub_agent?: boolean;
@@ -129,6 +130,14 @@ export default function AgentAccountDetail({
   const [commissionMode, setCommissionMode] = useState<'fixed' | 'gamified'>('fixed');
   const [maxCap, setMaxCap] = useState('');
   const [velocityCap, setVelocityCap] = useState('');
+  const [scaleType, setScaleType] = useState<'default' | 'custom'>('default');
+  const [customSteps, setCustomSteps] = useState([
+    { level: 1, name: 'Rookie', min_volume: 0, bonus_pct: 0 },
+    { level: 2, name: 'Established', min_volume: 2500, bonus_pct: 3 },
+    { level: 3, name: 'Pro', min_volume: 7500, bonus_pct: 7 },
+    { level: 4, name: 'Elite', min_volume: 20000, bonus_pct: 12 },
+    { level: 5, name: 'Apex', min_volume: 50000, bonus_pct: 20 },
+  ]);
   // Opens the full-screen Gamification Scale explainer.
   const [showGamificationInfo, setShowGamificationInfo] = useState(false);
   const [isActive, setIsActive] = useState(true);
@@ -167,6 +176,26 @@ export default function AgentAccountDetail({
       setCommissionMode(capPct != null && Number(capPct) > basePct ? 'gamified' : 'fixed');
       setMaxCap(capPct != null ? String(capPct) : '');
       setVelocityCap(d.agent.velocity_cap != null ? String(d.agent.velocity_cap) : '');
+      
+      const hasCustomSteps = Array.isArray(d.agent.commission_ladder_config) && d.agent.commission_ladder_config.length > 0;
+      if (hasCustomSteps) {
+        setScaleType('custom');
+        const defaultNames = ['Rookie', 'Established', 'Pro', 'Elite', 'Apex'];
+        const mappedSteps = d.agent.commission_ladder_config!.map((s, idx) => ({
+          level: idx + 1,
+          name: defaultNames[idx] || `Level ${idx + 1}`,
+          min_volume: s.min_volume || 0,
+          bonus_pct: s.bonus_pct || 0
+        }));
+        while (mappedSteps.length < 5) {
+          const idx = mappedSteps.length;
+          mappedSteps.push({ level: idx + 1, name: defaultNames[idx] || `Level ${idx + 1}`, min_volume: 0, bonus_pct: 0 });
+        }
+        setCustomSteps(mappedSteps.slice(0, 5));
+      } else {
+        setScaleType('default');
+      }
+
       setIsActive(!!d.agent.is_active);
     } catch (err: any) {
       setError(err.message || 'Failed To Load Agent.');

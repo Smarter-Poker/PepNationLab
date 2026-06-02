@@ -96,6 +96,7 @@ export async function POST(req: NextRequest) {
       commission_pct,
       commission_max_pct,
       velocity_cap,
+      custom_commission_scale,
     } = body;
 
     if (!full_name || !username || !password || !account_type || !slug || !display_name) {
@@ -206,12 +207,22 @@ export async function POST(req: NextRequest) {
       commission_pct: commPct,
       commission_max_pct: commMax,
       velocity_cap: velCap,
+      commission_ladder_config: Array.isArray(custom_commission_scale) ? custom_commission_scale : undefined,
     };
 
     const { error: profileError } = await supabase.from('profiles').upsert(profileData);
     if (profileError) {
       await supabase.auth.admin.deleteUser(userId);
       return NextResponse.json({ error: 'An unexpected error occurred saving profile.' }, { status: 500 });
+    }
+
+    if (Array.isArray(custom_commission_scale)) {
+      await supabase.from('sub_agent_commission_plan').upsert({
+        sub_agent_id: userId,
+        super_agent_id: callerId,
+        steps: custom_commission_scale,
+        updated_at: new Date().toISOString(),
+      });
     }
 
     const storefrontUrl = `${APP_URL}/${slug}`;

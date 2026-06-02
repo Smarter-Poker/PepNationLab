@@ -112,6 +112,13 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ id: string
       .eq('is_sub_agent', true)
       .order('created_at', { ascending: false });
 
+    // Custom Gamification Ladder
+    const { data: planData } = await supabase
+      .from('sub_agent_commission_plan')
+      .select('steps')
+      .eq('sub_agent_id', id)
+      .maybeSingle();
+
     const commissionMaxPct = (agent as { commission_max_pct?: number | null }).commission_max_pct;
     const velocityCap = (agent as { velocity_cap?: number | null }).velocity_cap;
 
@@ -128,6 +135,7 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ id: string
         commission_pct: agent.commission_pct != null ? num(agent.commission_pct) : null,
         commission_max_pct: commissionMaxPct != null ? num(commissionMaxPct) : null,
         velocity_cap: velocityCap != null ? num(velocityCap) : null,
+        commission_ladder_config: planData?.steps ?? [],
         commission_active_since: agent.commission_active_since,
         is_active: !!agent.is_active,
         is_sub_agent: (agent as { is_sub_agent?: boolean }).is_sub_agent === true,
@@ -285,6 +293,11 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
       changes.velocity_cap = vc;
     }
 
+    if (Array.isArray(body.custom_commission_scale)) {
+      updates.commission_ladder_config = body.custom_commission_scale;
+      changes.commission_ladder_config = body.custom_commission_scale;
+    }
+
     if (typeof body.is_active === 'boolean') {
       updates.is_active = body.is_active;
       changes.is_active = body.is_active;
@@ -319,6 +332,15 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
       if (upErr) {
         console.error('[PATCH agent] profile update error:', upErr);
         return NextResponse.json({ error: 'Failed To Update Agent.' }, { status: 500 });
+      }
+      
+      if (Array.isArray(body.custom_commission_scale)) {
+        await supabase.from('sub_agent_commission_plan').upsert({
+          sub_agent_id: id,
+          super_agent_id: gate.callerId,
+          steps: body.custom_commission_scale,
+          updated_at: new Date().toISOString(),
+        });
       }
       
       if (updates.email) {
