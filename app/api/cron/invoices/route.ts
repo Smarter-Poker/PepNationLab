@@ -102,9 +102,9 @@ export async function GET(req: Request) {
 
         // Never overwrite an already-paid invoice.
         const { data: existingInvoice } = await supabase
-          .from('sub_agent_invoices')
+          .from('agent_invoices')
           .select('id, status')
-          .eq('sub_agent_id', subAgent.id)
+          .eq('agent_id', subAgent.id)
           .eq('week_start', weekStart)
           .maybeSingle();
 
@@ -160,11 +160,11 @@ export async function GET(req: Request) {
         const totalOwed = Math.round((totalCogs + totalShipping) * 100) / 100;
 
         const { data: invoice } = await supabase
-          .from('sub_agent_invoices')
+          .from('agent_invoices')
           .upsert(
             {
               super_agent_id: subAgent.parent_agent_id,
-              sub_agent_id: subAgent.id,
+              agent_id: subAgent.id,
               week_start: weekStart,
               week_end: weekEnd,
               total_cogs: cogsRound,
@@ -173,7 +173,7 @@ export async function GET(req: Request) {
               status: 'open',
               updated_at: new Date().toISOString(),
             },
-            { onConflict: 'sub_agent_id,week_start' }
+            { onConflict: 'agent_id,week_start' }
           )
           .select('id')
           .single();

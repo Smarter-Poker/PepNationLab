@@ -363,7 +363,7 @@ export default function NavbarNotificationBell() {
                 </button>
               )}
               <Link
-                href="/account/notifications"
+                href="/account?tab=notifications"
                 onClick={() => setOpen(false)}
                 style={{ color: 'rgba(192,184,168,0.6)', fontSize: '0.72rem', textDecoration: 'none', marginRight: 8 }}
               >
@@ -491,7 +491,7 @@ export default function NavbarNotificationBell() {
             paddingBottom: 'max(10px, env(safe-area-inset-bottom))'
           }}>
             <Link
-              href="/account/notifications"
+              href="/account?tab=notifications"
               onClick={() => setOpen(false)}
               style={{
                 color: 'var(--teal)',

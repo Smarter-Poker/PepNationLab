@@ -30,7 +30,7 @@ export async function POST(req: NextRequest) {
 
     // Verify the caller is the super_agent for this invoice, or an admin
     const { data: invoice, error: invoiceError } = await supabase
-      .from('sub_agent_invoices')
+      .from('agent_invoices')
       .select('id, super_agent_id, status')
       .eq('id', invoice_id)
       .single();
@@ -54,7 +54,7 @@ export async function POST(req: NextRequest) {
 
     // Update the invoice status
     const { error: updateError } = await supabase
-      .from('sub_agent_invoices')
+      .from('agent_invoices')
       .update({ status: 'paid', updated_at: new Date().toISOString() })
       .eq('id', invoice_id);
 

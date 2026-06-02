@@ -5,7 +5,7 @@ import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import AgentOrders from './AgentOrders';
 import { createClient } from '@/lib/supabase/client';
 import AgentStatements from './AgentStatements';
-import AgentSubInvoices from './AgentSubInvoices';
+import AgentDownlineInvoices from './AgentDownlineInvoices';
 import AgentTierWidget from './AgentTierWidget';
 import WalletCard from './WalletCard';
 
@@ -314,7 +314,7 @@ export default function AgentSales({ orders, setOrders, agentId, userProfile }: 
             )}
             {(userProfile?.is_super_agent || userProfile?.tier?.includes('sub-agent')) && (
               <div style={{ animation: 'fadeIn 0.3s ease-out' }}>
-                <AgentSubInvoices isSuperAgent={!!userProfile?.is_super_agent} />
+                <AgentDownlineInvoices isSuperAgent={!!userProfile?.is_super_agent} />
               </div>
             )}
           </div>

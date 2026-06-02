@@ -47,10 +47,11 @@ export default async function RecentlyViewedPage() {
 
   const { data: profile } = await service
     .from('profiles')
-    .select('referring_agent_id')
+    .select('role, referring_agent_id')
     .eq('id', user.id)
     .maybeSingle();
   const referringAgentId = profile?.referring_agent_id ?? null;
+  const isResearcher = profile?.role === 'researcher';
 
   let storefrontSlug: string | null = null;
   if (referringAgentId) {
@@ -162,10 +163,12 @@ export default async function RecentlyViewedPage() {
             <ShieldCheck size={12} aria-hidden="true" />
             Security
           </Link>
-          <Link href="/account/referrals" className="btn btn-ghost btn-sm" style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-            <Gift size={12} aria-hidden="true" />
-            Referrals
-          </Link>
+          {isResearcher && (
+            <Link href="/account/referrals" className="btn btn-ghost btn-sm" style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+              <Gift size={12} aria-hidden="true" />
+              Referrals
+            </Link>
+          )}
         </div>
 
         {items.length === 0 ? (

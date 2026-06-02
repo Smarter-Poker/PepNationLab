@@ -3,10 +3,10 @@
 import React, { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
-interface SubAgentInvoice {
+interface AgentInvoice {
   id: string;
   super_agent_id: string;
-  sub_agent_id: string;
+  agent_id: string;
   week_start: string;
   week_end: string;
   total_cogs: number;
@@ -20,8 +20,8 @@ interface SubAgentInvoice {
   } | null;
 }
 
-export default function AgentSubInvoices({ isSuperAgent }: { isSuperAgent: boolean }) {
-  const [invoices, setInvoices] = useState<SubAgentInvoice[]>([]);
+export default function AgentDownlineInvoices({ isSuperAgent }: { isSuperAgent: boolean }) {
+  const [invoices, setInvoices] = useState<AgentInvoice[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -79,7 +79,7 @@ export default function AgentSubInvoices({ isSuperAgent }: { isSuperAgent: boole
       <div className="metal-frame">
         <div className="metal-content">
           <h2 className="metal-text" style={{ fontSize: '1.25rem', fontFamily: 'var(--font-brand)', marginBottom: 'var(--space-4)' }}>
-            {isSuperAgent ? 'Sub-Agent Invoices' : 'My Invoices (Owed To Super Agent)'}
+            {isSuperAgent ? 'Agent Invoices' : 'My Invoices (Owed To Super Agent)'}
           </h2>
           <div style={{ padding: 'var(--space-6)', textAlign: 'center' }}>
             <p style={{ color: 'var(--silver-light)' }}>No invoices found.</p>
@@ -93,7 +93,7 @@ export default function AgentSubInvoices({ isSuperAgent }: { isSuperAgent: boole
     <div className="metal-frame">
       <div className="metal-content">
         <h2 className="metal-text" style={{ fontSize: '1.25rem', fontFamily: 'var(--font-brand)', marginBottom: 'var(--space-4)' }}>
-          {isSuperAgent ? 'Sub-Agent Invoices' : 'My Invoices (Owed To Super Agent)'}
+          {isSuperAgent ? 'Agent Invoices' : 'My Invoices (Owed To Super Agent)'}
         </h2>
       <div style={{ overflowX: 'auto' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem' }}>
@@ -101,7 +101,7 @@ export default function AgentSubInvoices({ isSuperAgent }: { isSuperAgent: boole
             <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
               <th style={{ textAlign: 'center', padding: 'var(--space-3)', color: 'var(--silver)' }}>Billing Period</th>
               {isSuperAgent && (
-                <th style={{ textAlign: 'center', padding: 'var(--space-3)', color: 'var(--silver)' }}>Sub-Agent</th>
+                <th style={{ textAlign: 'center', padding: 'var(--space-3)', color: 'var(--silver)' }}>Agent</th>
               )}
               <th style={{ textAlign: 'center', padding: 'var(--space-3)', color: 'var(--silver)' }}>COGS</th>
               <th style={{ textAlign: 'center', padding: 'var(--space-3)', color: 'var(--silver)' }}>Shipping</th>

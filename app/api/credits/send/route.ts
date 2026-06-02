@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient, createServiceClient } from '@/lib/supabase/server';
 import { requireAgent } from '@/lib/admin-auth';
 import { assertSameOrigin } from '@/lib/csrf';
-import { isAgentAncestorOf } from '@/lib/agent-auth';
 import { rateLimit } from '@/lib/rate-limit';
 
 export const dynamic = 'force-dynamic';
@@ -12,9 +11,10 @@ export const dynamic = 'force-dynamic';
  *
  * Send real wallet funds to a recipient account.
  *
- * Who may send:
- *   - admin            → any account (debited from the admin wallet).
- *   - agent/super_agent/sub_agent → only accounts in their own downline.
+ * Who may send: admin, super_agent, agent, or sub_agent (researchers cannot send).
+ * No network or amount restriction — any valid sender may send to ANY account as
+ * long as their wallet balance (or credit line) covers it. wallet_transfer is the
+ * sole funds gate.
  *
  * Money model: wallet_transfer debits the sender (their wallet balance, or — for
  * credit-line agents — billed to their credit line so they owe it on their weekly
@@ -23,8 +23,6 @@ export const dynamic = 'force-dynamic';
  *
  * Body: { recipientId?: uuid, recipientEmail?: string, amount: number, note?: string }
  */
-
-const MAX_CREDIT = 2000; // per-send safety cap
 
 export async function POST(req: NextRequest) {
   const csrf = assertSameOrigin(req);
@@ -65,9 +63,6 @@ export async function POST(req: NextRequest) {
   if (!Number.isFinite(amount) || amount <= 0) {
     return NextResponse.json({ error: 'Enter A Credit Amount Greater Than $0.' }, { status: 400 });
   }
-  if (amount > MAX_CREDIT) {
-    return NextResponse.json({ error: `Credits Are Capped At $${MAX_CREDIT.toFixed(2)} Per Send.` }, { status: 400 });
-  }
   if (!recipientIdRaw && !recipientEmailRaw) {
     return NextResponse.json({ error: 'A Recipient Is Required.' }, { status: 400 });
   }
@@ -81,7 +76,6 @@ export async function POST(req: NextRequest) {
   if (!issuer) {
     return NextResponse.json({ error: 'Issuer Profile Not Found.' }, { status: 404 });
   }
-  const isAdmin = issuer.role === 'admin';
 
   // Resolve the recipient by id, email, or username. Researchers created by an
   // agent often sign in with a username (no real email), so accept either.
@@ -101,33 +95,11 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Recipient Account Not Found.' }, { status: 404 });
   }
   if (recipient.id === issuerId) {
-    return NextResponse.json({ error: 'You Cannot Send Credit To Your Own Account.' }, { status: 400 });
+    return NextResponse.json({ error: 'You Cannot Send Funds To Your Own Account.' }, { status: 400 });
   }
 
-  // Authorization: admin can credit anyone; everyone else only their downline.
-  let authorized = isAdmin;
-  if (!authorized) {
-    if (
-      recipient.referring_agent_id === issuerId ||
-      recipient.parent_agent_id === issuerId ||
-      recipient.referring_sub_agent_id === issuerId
-    ) {
-      authorized = true;
-    } else if (recipient.referring_agent_id) {
-      // Super-agent issuing to a researcher who belongs to one of their agents.
-      authorized = await isAgentAncestorOf(service, issuerId, recipient.referring_agent_id as string);
-    }
-    if (!authorized) {
-      // Last check: the recipient is a sub-agent somewhere in the issuer's tree.
-      authorized = await isAgentAncestorOf(service, issuerId, recipient.id as string);
-    }
-  }
-  if (!authorized) {
-    return NextResponse.json(
-      { error: 'You Can Only Send Credit To Accounts In Your Own Network.' },
-      { status: 403 },
-    );
-  }
+  // No network restriction: any valid sender may send to any account. The only
+  // gate is funds availability, enforced atomically inside wallet_transfer.
 
   const issuerName = issuer.full_name || (issuer.email ? String(issuer.email).split('@')[0] : 'Your Team');
   const description = note

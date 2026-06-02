@@ -27,14 +27,14 @@ export async function GET(req: NextRequest) {
       .single();
 
     let query = supabase
-      .from('sub_agent_invoices')
-      .select('*, profiles!sub_agent_invoices_sub_agent_id_fkey(full_name, email)')
+      .from('agent_invoices')
+      .select('*, profiles!agent_id(full_name, email)')
       .order('week_start', { ascending: false });
 
     if (profile?.is_super_agent) {
       query = query.eq('super_agent_id', agentId);
     } else {
-      query = query.eq('sub_agent_id', agentId);
+      query = query.eq('agent_id', agentId);
     }
 
     const { data: invoices, error } = await query;
@@ -99,9 +99,9 @@ export async function POST(req: NextRequest) {
     // explicitly opts in with force=true. A paid invoice is settled history;
     // overwriting it would silently revert the sub-agent's balance.
     const { data: existingInvoice } = await supabase
-      .from('sub_agent_invoices')
+      .from('agent_invoices')
       .select('id, status')
-      .eq('sub_agent_id', sub_agent_id)
+      .eq('agent_id', sub_agent_id)
       .eq('week_start', week_start)
       .maybeSingle();
 
@@ -174,11 +174,11 @@ export async function POST(req: NextRequest) {
     const totalOwed = Math.round((totalCogs + totalShipping) * 100) / 100;
 
     const { data: invoice, error: invoiceError } = await supabase
-      .from('sub_agent_invoices')
+      .from('agent_invoices')
       .upsert(
         {
           super_agent_id: superAgentId,
-          sub_agent_id,
+          agent_id: sub_agent_id,
           week_start,
           week_end: weekEnd,
           total_cogs: cogsRound,
@@ -187,7 +187,7 @@ export async function POST(req: NextRequest) {
           status: 'open',
           updated_at: new Date().toISOString()
         },
-        { onConflict: 'sub_agent_id,week_start' }
+        { onConflict: 'agent_id,week_start' }
       )
       .select('id')
       .single();

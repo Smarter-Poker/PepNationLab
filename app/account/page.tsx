@@ -80,6 +80,24 @@ export default async function AccountHubPage() {
 
   const isResearcher = profile?.role === 'researcher';
 
+  // Built as a filtered array so the stagger animation index stays contiguous
+  // (no timing gap) regardless of which role-gated rows are present.
+  const rows: Array<{ href: string; label: string; description: string; Icon: NavRowProps['Icon'] }> = [
+    { href: '/account/profile', label: 'Profile', description: 'Your Name, Avatar, Username, And Contact Details.', Icon: User },
+    { href: '/account/wishlist', label: 'Wishlist', description: 'Products You Saved For Later.', Icon: Heart },
+    { href: '/account/recently-viewed', label: 'Recently Viewed', description: 'The Last 50 Products You Browsed.', Icon: History },
+    { href: '/account/refills', label: 'Refills & Reorders', description: 'Reorder A Past Protocol In One Tap.', Icon: RotateCcw },
+    ...(isResearcher
+      ? [{ href: '/account/referrals', label: 'Referrals', description: 'Share Your Code And Earn Store Credit.', Icon: Gift }]
+      : []),
+    { href: '/account/notifications', label: 'Notifications', description: 'Choose Which Alerts You Receive. The Bell In The Header Shows Your Live Feed.', Icon: Bell },
+    { href: '/account/security', label: 'Security', description: 'Password, Two-Factor, Active Sessions, And Sign-In Activity.', Icon: ShieldCheck },
+    { href: '/account/addresses', label: 'Saved Addresses', description: 'Ship-To And Ship-From Addresses Used At Checkout And On Outbound Labels.', Icon: MapPin },
+    { href: '/account/payment-method', label: 'Payment Methods', description: 'Default Method Plus Your Handle Or Contact For Each One You Use.', Icon: Wallet },
+    { href: '/account/compliance', label: 'Compliance & Disclaimers', description: 'Review And Re-Acknowledge The Research-Only Disclaimer.', Icon: FileCheck },
+    { href: '/account/help', label: 'Help & Support', description: 'Browse FAQs Or Send Our Team A Message.', Icon: LifeBuoy },
+  ];
+
   return (
     <div style={{ minHeight: '100dvh', background: 'var(--black)', padding: 'var(--space-6) var(--space-4)' }}>
       <div className="container" style={{ maxWidth: 760 }}>
@@ -97,19 +115,9 @@ export default async function AccountHubPage() {
             gap: 'var(--space-3)',
           }}
         >
-          <NavRow index={0} href="/account/profile" label="Profile" description="Your Name, Avatar, Username, And Contact Details." Icon={User} />
-          <NavRow index={1} href="/account/wishlist" label="Wishlist" description="Products You Saved For Later." Icon={Heart} />
-          <NavRow index={2} href="/account/recently-viewed" label="Recently Viewed" description="The Last 50 Products You Browsed." Icon={History} />
-          <NavRow index={3} href="/account/refills" label="Refills & Reorders" description="Reorder A Past Protocol In One Tap." Icon={RotateCcw} />
-          {isResearcher && (
-            <NavRow index={4} href="/account/referrals" label="Referrals" description="Share Your Code And Earn Store Credit." Icon={Gift} />
-          )}
-          <NavRow index={5} href="/account/notifications" label="Notifications" description="Choose Which Alerts You Receive. The Bell In The Header Shows Your Live Feed." Icon={Bell} />
-          <NavRow index={6} href="/account/security" label="Security" description="Password, Two-Factor, Active Sessions, And Sign-In Activity." Icon={ShieldCheck} />
-          <NavRow index={7} href="/account/addresses" label="Saved Addresses" description="Ship-To And Ship-From Addresses Used At Checkout And On Outbound Labels." Icon={MapPin} />
-          <NavRow index={8} href="/account/payment-method" label="Payment Methods" description="Default Method Plus Your Handle Or Contact For Each One You Use." Icon={Wallet} />
-          <NavRow index={9} href="/account/compliance" label="Compliance & Disclaimers" description="Review And Re-Acknowledge The Research-Only Disclaimer." Icon={FileCheck} />
-          <NavRow index={10} href="/account/help" label="Help & Support" description="Browse FAQs Or Send Our Team A Message." Icon={LifeBuoy} />
+          {rows.map((r, i) => (
+            <NavRow key={r.href} index={i} href={r.href} label={r.label} description={r.description} Icon={r.Icon} />
+          ))}
         </div>
       </div>
     </div>

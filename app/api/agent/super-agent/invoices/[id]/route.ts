@@ -24,10 +24,10 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ id: string
     }
 
     const { data: invoice, error } = await supabase
-      .from('sub_agent_invoices')
+      .from('agent_invoices')
       .select(`*,
-        sub_agent:profiles!sub_agent_invoices_sub_agent_id_fkey(full_name, email, username),
-        super_agent:profiles!sub_agent_invoices_super_agent_id_fkey(full_name, email, username)`)
+        agent:profiles!agent_id(full_name, email, username),
+        super_agent:profiles!super_agent_id(full_name, email, username)`)
       .eq('id', id)
       .single();
 

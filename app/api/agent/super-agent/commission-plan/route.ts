@@ -115,8 +115,8 @@ export async function POST(req: NextRequest) {
   // ---- persist ----
   const { error: planErr } = await svc.from('sub_agent_commission_plan').upsert({
     sub_agent_id: subAgentId,
-    super_agent_id: gate.user.id,
-    steps,
+    parent_agent_id: gate.user.id,
+    steps: body.steps,
     updated_at: new Date().toISOString(),
   }, { onConflict: 'sub_agent_id' });
   if (planErr) {

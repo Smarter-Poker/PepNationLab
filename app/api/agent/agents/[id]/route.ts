@@ -341,7 +341,7 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
       if (Array.isArray(body.custom_commission_scale)) {
         await supabase.from('sub_agent_commission_plan').upsert({
           sub_agent_id: id,
-          super_agent_id: target.parent_agent_id || gate.callerId,
+          parent_agent_id: target.parent_agent_id || gate.callerId,
           steps: body.custom_commission_scale,
           updated_at: new Date().toISOString(),
         });
