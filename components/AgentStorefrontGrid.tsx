@@ -6,6 +6,8 @@ import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { motion, Variants, AnimatePresence } from 'framer-motion';
 import { Star, X, Heart, FileText, Search, SlidersHorizontal, RotateCcw, Check } from 'lucide-react';
 import RecommendationStrip, { type RecommendationItem } from './RecommendationStrip';
+import ProductMonograph from './research/ProductMonograph';
+import { evidenceTier, type Compound } from '@/lib/compounds';
 import { getProductImage, toTitleCase } from '@/lib/categoryImage';
 import PeptideVialCard from '@/components/PeptideVialCard';
 import { toast } from 'sonner';
@@ -28,6 +30,7 @@ interface ProductItem {
     weight_oz: number | null;
     inventory_count?: number | null;
     low_stock_threshold?: number | null;
+    compound_slug?: string | null;
   };
 }
 
@@ -125,6 +128,8 @@ interface Props {
   viewerTier?: string;
   minOrderQty?: number;
   minOverallQty?: number;
+  /** Compound research data keyed by products.compound_slug — powers the embedded monograph. */
+  compoundsBySlug?: Record<string, Compound>;
 }
 
 const containerVariants: Variants = {
@@ -146,6 +151,7 @@ interface GroupedProduct {
   lowestPrice: number;
   popularity: number;
   defaultVariantId: string;
+  compoundSlug: string | null;
 }
 
 // Top 20 most popular peptides (definitive ranking by market demand)
@@ -251,6 +257,7 @@ export default function AgentStorefrontGrid({
   viewerTier,
   minOrderQty = 1,
   minOverallQty = 1,
+  compoundsBySlug = {},
 }: Props) {
   const [mounted, setMounted] = useState(false);
   useEffect(() => { setMounted(true); }, []);
@@ -655,6 +662,7 @@ export default function AgentStorefrontGrid({
           lowestPrice: Infinity,
           popularity: POPULAR_ORDER.indexOf(name),
           defaultVariantId: '',
+          compoundSlug: item.products?.compound_slug ?? null,
         });
       }
       const group = map.get(name)!;
@@ -1847,6 +1855,21 @@ export default function AgentStorefrontGrid({
                         Sale
                       </span>
                     )}
+                    {(() => {
+                      const c = detailProduct.compoundSlug ? compoundsBySlug[detailProduct.compoundSlug] : undefined;
+                      if (!c) return null;
+                      const t = evidenceTier(c.evidence_tier);
+                      return (
+                        <span title={t.blurb} style={{
+                          fontSize: '0.7rem', padding: '4px 12px', borderRadius: 'var(--radius-full)',
+                          background: `${t.color}1A`, color: t.color, fontWeight: 700,
+                          textTransform: 'uppercase', letterSpacing: '0.05em', whiteSpace: 'nowrap',
+                          border: `1px solid ${t.color}55`
+                        }}>
+                          {t.label}
+                        </span>
+                      );
+                    })()}
                     <span style={{
                       fontSize: '0.7rem', padding: '4px 12px', borderRadius: 'var(--radius-full)',
                       background: `${primaryColor}20`, color: primaryColor, fontWeight: 700,
@@ -1919,6 +1942,15 @@ export default function AgentStorefrontGrid({
                       </a>
                     </div>
                   );
+                })()}
+
+                {/* Embedded Research Monograph — full compound profile */}
+                {(() => {
+                  const compound = detailProduct.compoundSlug
+                    ? compoundsBySlug[detailProduct.compoundSlug]
+                    : undefined;
+                  if (!compound) return null;
+                  return <ProductMonograph compound={compound} primaryColor={primaryColor} />;
                 })()}
 
                 {/* Size & Quantity Selector */}

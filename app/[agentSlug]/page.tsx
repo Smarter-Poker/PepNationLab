@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server';
 import Link from 'next/link';
 import AgentStorefrontGrid from '@/components/AgentStorefrontGrid';
 import AgentStorefrontLogin from '@/components/AgentStorefrontLogin';
+import { getCompoundsBySlugs } from '@/lib/compounds-server';
 import CouponLinkCapture from '@/components/CouponLinkCapture';
 import StorefrontRenameBanner from '@/components/StorefrontRenameBanner';
 
@@ -84,7 +85,8 @@ export default async function AgentStorefrontPage({ params }: Props) {
         weight_oz,
         inventory_count,
         low_stock_threshold,
-        base_cost
+        base_cost,
+        compound_slug
       )
     `)
     .eq('agent_id', agent.id)
@@ -218,6 +220,13 @@ export default async function AgentStorefrontPage({ params }: Props) {
       : null;
     return { ...p, cost_price: costPrice };
   });
+
+  // Research monograph data for the product detail modal: fetch every compound
+  // referenced by a product on this storefront, keyed by slug. Server-side so
+  // the modal renders the full profile with no client round-trip.
+  const compoundsBySlug = await getCompoundsBySlugs(
+    (products ?? []).map((p) => (p.products as { compound_slug?: string | null })?.compound_slug)
+  );
 
   const primaryColor = agent.primary_color ?? '#00C4BC';
   const displayName = agent.display_name;
@@ -354,6 +363,7 @@ export default async function AgentStorefrontPage({ params }: Props) {
               viewerTier={(userProfile as any)?.tier ?? 'tier_3'}
               minOrderQty={agent.min_order_qty ?? 1}
               minOverallQty={agent.min_overall_qty ?? 1}
+              compoundsBySlug={compoundsBySlug}
             />
           </Suspense>
         </div>
