@@ -1,5 +1,5 @@
 /**
- * R28 — Guardrail tests for the FAQ catalog.
+ * R28 - Guardrail tests for the FAQ catalog.
  *
  * Cheap drift catches that run with `npx vitest run lib/help-faq.test.ts`.
  * Asserts platform invariants the client and the help page assume:
@@ -12,6 +12,7 @@
  *   - audience='admin' items live only in admin-audience categories
  *   - Role gating: researcher / agent / admin visibility filters work
  *   - searchFaq and suggestFaq return sensible results
+ *   - R29.1: no em-dash (U+2014) anywhere in q / a / link labels
  */
 
 import { describe, it, expect } from 'vitest';
@@ -47,7 +48,12 @@ const ALLOWED_QUERY_TABS = new Set([
   '/account?tab=notifications',
 ]);
 
-describe('FAQ catalog — structural invariants', () => {
+// R29.1: em-dash is banned from all user-facing FAQ copy. Test runs against
+// every q, every a, every links[].label so accidental paste-ins are caught
+// in CI before they reach production.
+const EM_DASH = '—';
+
+describe('FAQ catalog structural invariants', () => {
   it('every category has at least one item', () => {
     const categoriesWithItems = new Set(FAQ_ITEMS.map((it) => it.category));
     for (const cat of FAQ_CATEGORIES) {
@@ -89,7 +95,7 @@ describe('FAQ catalog — structural invariants', () => {
           ALLOWED_QUERY_TABS.has(link.href);
         expect(
           known,
-          `Item "${it.id}" link href "${link.href}" is not on the allow-list — add it to ALLOWED_INTERNAL_ROUTES / ALLOWED_QUERY_TABS or fix the route`,
+          `Item "${it.id}" link href "${link.href}" is not on the allow-list. Add it to ALLOWED_INTERNAL_ROUTES / ALLOWED_QUERY_TABS or fix the route.`,
         ).toBe(true);
       }
     }
@@ -124,6 +130,34 @@ describe('FAQ catalog — structural invariants', () => {
     expect(faqDeepLink('how-do-i-sign-up')).toBe(
       '/account/help#faq-how-do-i-sign-up',
     );
+  });
+
+  it('no em-dash (U+2014) appears in any FAQ question, answer, or link label', () => {
+    for (const it of FAQ_ITEMS) {
+      expect(
+        it.q.includes(EM_DASH),
+        `Question "${it.id}" contains a banned em-dash. Use a regular hyphen "-" or split into two sentences.`,
+      ).toBe(false);
+      expect(
+        it.a.includes(EM_DASH),
+        `Answer "${it.id}" contains a banned em-dash. Use a regular hyphen "-" or split into two sentences.`,
+      ).toBe(false);
+      for (const link of it.links ?? []) {
+        expect(
+          link.label.includes(EM_DASH),
+          `Item "${it.id}" link label "${link.label}" contains a banned em-dash.`,
+        ).toBe(false);
+      }
+    }
+  });
+
+  it('no em-dash (U+2014) appears in any FAQ category label', () => {
+    for (const cat of FAQ_CATEGORIES) {
+      expect(
+        cat.label.includes(EM_DASH),
+        `Category "${cat.id}" label "${cat.label}" contains a banned em-dash.`,
+      ).toBe(false);
+    }
   });
 });
 
