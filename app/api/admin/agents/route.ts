@@ -41,6 +41,7 @@ export async function POST(req: NextRequest) {
   const {
     firstName,
     lastName,
+    full_name,
     username,
     password,
     tier,
@@ -51,11 +52,32 @@ export async function POST(req: NextRequest) {
     display_name,
     account_role = 'agent',
     parent_agent_id,
+    commission_pct,
+    commission_max_pct,
+    velocity_cap,
   } = body;
 
   const isResearcher = account_role === 'researcher';
 
-  if (!firstName || !lastName || !username || !password) {
+  // Platform rule: no commission / gamification level may exceed 40%.
+  const MAX_CAP_LIMIT = 40;
+
+  // The admin create form uses a single "Full Name" field, while older callers
+  // send firstName/lastName separately. Accept either: derive the missing pieces
+  // from full_name so a single name field works. A single-word name is allowed.
+  const rawFull = String(full_name ?? '').trim();
+  const fnRaw = String(firstName ?? '').trim();
+  const lnRaw = String(lastName ?? '').trim();
+  let effFirst = fnRaw;
+  let effLast = lnRaw;
+  if ((!effFirst || !effLast) && rawFull) {
+    const parts = rawFull.split(/\s+/).filter(Boolean);
+    if (!effFirst) effFirst = parts[0] || '';
+    if (!effLast) effLast = parts.slice(1).join(' ');
+  }
+  const effFullName = rawFull || [effFirst, effLast].filter(Boolean).join(' ').trim();
+
+  if (!effFullName || !username || !password) {
     return NextResponse.json({ error: 'Missing Required Fields' }, { status: 400 });
   }
   if (!isResearcher && (!tier || !account_type || !slug || !display_name)) {
@@ -80,6 +102,38 @@ export async function POST(req: NextRequest) {
     const pb = Number(prepaid_balance);
     if (!Number.isFinite(pb) || pb < 0) {
       return NextResponse.json({ error: 'Prepaid Balance Must Be Zero Or Greater' }, { status: 400 });
+    }
+  }
+
+  // Commission / markup structure (agents only). Mirrors POST /api/agent/agents.
+  // Fixed markup -> base == cap (flat effective rate). Gamification -> base is
+  // the entry rate, cap is the ceiling; the house ladder lifts the rate between
+  // them. DB CHECK profiles_commission_pct_range caps commission_pct at 40, so
+  // validate here for a clean 400 instead of a constraint-violation 500.
+  let commPct: number | null = null;
+  let commMax: number | null = null;
+  let velCap: number | null = null;
+  if (!isResearcher) {
+    if (commission_pct !== undefined && commission_pct !== null && commission_pct !== '') {
+      commPct = Number(commission_pct);
+      if (!Number.isFinite(commPct) || commPct < 0 || commPct > MAX_CAP_LIMIT) {
+        return NextResponse.json({ error: 'Commission Rate Cannot Exceed 40%' }, { status: 400 });
+      }
+    }
+    if (commission_max_pct !== undefined && commission_max_pct !== null && commission_max_pct !== '') {
+      commMax = Number(commission_max_pct);
+      if (!Number.isFinite(commMax) || commMax < 0 || commMax > MAX_CAP_LIMIT) {
+        return NextResponse.json({ error: 'Max Commission Cap Cannot Exceed 40%' }, { status: 400 });
+      }
+      if (commPct != null && commMax < commPct) {
+        return NextResponse.json({ error: 'Max Commission Cap Cannot Be Below The Base Rate' }, { status: 400 });
+      }
+    }
+    if (velocity_cap !== undefined && velocity_cap !== null && velocity_cap !== '') {
+      velCap = Number(velocity_cap);
+      if (!Number.isFinite(velCap) || velCap < 0) {
+        return NextResponse.json({ error: 'Velocity Cap Must Be Zero Or Greater' }, { status: 400 });
+      }
     }
   }
 
@@ -112,9 +166,13 @@ export async function POST(req: NextRequest) {
   const { data: authData, error: authError } = await supabase.auth.admin.createUser({
     email: internalEmail,
     password,
-    user_metadata: { 
-      username: usernameClean, 
-      full_name: `${String(firstName).trim()} ${String(lastName).trim()}`
+    // internal.auth accounts have no real inbox to confirm, so mark the email
+    // confirmed immediately — otherwise password sign-in is rejected with
+    // "email_not_confirmed" and the new agent/super-agent can never log in.
+    email_confirm: true,
+    user_metadata: {
+      username: usernameClean,
+      full_name: effFullName
     },
   });
 
@@ -128,9 +186,9 @@ export async function POST(req: NextRequest) {
     id: userId,
     email: null,
     username: usernameClean,
-    full_name: `${String(firstName).trim()} ${String(lastName).trim()}`,
-    first_name: String(firstName).trim(),
-    last_name: String(lastName).trim(),
+    full_name: effFullName,
+    first_name: effFirst,
+    last_name: effLast,
     role: profileRole,
     disclaimer_v1_accepted: true,
     disclaimer_accepted_at: new Date().toISOString(),
@@ -150,10 +208,20 @@ export async function POST(req: NextRequest) {
     profileData.credit_limit = account_type === 'credit' ? (Number(credit_limit) || null) : null;
     profileData.prepaid_balance = account_type === 'prepaid' ? (Number(prepaid_balance) || 0) : 0;
     profileData.is_super_agent = account_role === 'super_agent';
+    // Persist the commission/markup the admin chose. fn_agent_effective_markup
+    // reads commission_pct (base) and commission_max_pct (floor); a NULL base
+    // means 0 markup, so without this the admin's Fixed/Gamification choice was
+    // silently dropped. Custom per-step ladders for top-level agents are not
+    // stored here (sub_agent_commission_plan requires a parent agent); the house
+    // default ladder fills the curve between base and cap.
+    profileData.commission_pct = commPct;
+    profileData.commission_max_pct = commMax;
+    profileData.velocity_cap = velCap;
   }
 
   const { error: profileError } = await supabase.from('profiles').upsert(profileData);
   if (profileError) {
+    console.error('[admin/agents] profile upsert failed:', profileError);
     await supabase.auth.admin.deleteUser(userId);
     return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
   }
@@ -168,15 +236,21 @@ export async function POST(req: NextRequest) {
       qrCodeData = null;
     }
 
-    const { error: agentError } = await supabase.from('agent_profiles').insert({
+    // A DB trigger (provision_agent_storefront) auto-creates an agent_profiles
+    // row the moment the profile role becomes 'agent' (during the upsert above),
+    // using a username-derived slug. So a row with this id may already exist.
+    // Upsert (not insert) so the admin's chosen slug + display name win and we
+    // never hit a primary-key collision.
+    const { error: agentError } = await supabase.from('agent_profiles').upsert({
       id: userId,
       slug,
       display_name,
       qr_code_data: qrCodeData,
       is_active: true,
-    });
+    }, { onConflict: 'id' });
 
     if (agentError) {
+      console.error('[admin/agents] agent_profiles upsert failed:', agentError);
       await supabase.auth.admin.deleteUser(userId);
       return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
     }

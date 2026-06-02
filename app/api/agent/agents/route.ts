@@ -126,8 +126,11 @@ export async function POST(req: NextRequest) {
     let commPct: number | null = null;
     if (commission_pct !== undefined && commission_pct !== null && commission_pct !== '') {
       commPct = Number(commission_pct);
-      if (!Number.isFinite(commPct) || commPct < 0 || commPct > 100) {
-        return NextResponse.json({ error: 'Commission Rate Must Be Between 0 And 100' }, { status: 400 });
+      // DB CHECK profiles_commission_pct_range caps this at 40, matching the
+      // platform's hard 40% rule. Validate here so an out-of-range value gives a
+      // clean 400 instead of a constraint-violation 500 on the profile upsert.
+      if (!Number.isFinite(commPct) || commPct < 0 || commPct > MAX_CAP_LIMIT) {
+        return NextResponse.json({ error: 'Commission Rate Cannot Exceed 40%' }, { status: 400 });
       }
     }
     let commMax: number | null = null;
@@ -185,7 +188,9 @@ export async function POST(req: NextRequest) {
     // The user gets 'agent' role, and is_sub_agent = false, parent_agent_id = callerId
     const profileData: Record<string, any> = {
       id: userId,
-      email: '',
+      // Must be NULL, not '' — the profiles_email_not_blank CHECK rejects a blank
+      // string (internal.auth accounts carry no real email).
+      email: null,
       username: usernameClean,
       full_name,
       role: 'agent',
@@ -199,7 +204,11 @@ export async function POST(req: NextRequest) {
       disclaimer_accepted_at: new Date().toISOString(),
       is_active: true,
       updated_at: new Date().toISOString(),
-      tier: 'Level 1', // Doesn't matter much for nested agents, but needed by some queries maybe.
+      // profiles.tier is the agent_tier enum (tier_1|tier_2|tier_3). It must be a
+      // valid enum label or the whole upsert fails. Full agents under a super
+      // agent are priced via super_agent_pricing, not this tier, so default to
+      // tier_3 (entry) purely to satisfy the column.
+      tier: 'tier_3',
       account_type: account_type,
       credit_limit: account_type === 'credit' ? (Number(credit_limit) || null) : null,
       prepaid_balance: account_type === 'prepaid' ? (Number(prepaid_balance) || 0) : 0,
@@ -212,6 +221,7 @@ export async function POST(req: NextRequest) {
 
     const { error: profileError } = await supabase.from('profiles').upsert(profileData);
     if (profileError) {
+      console.error('[agent/agents] profile upsert failed:', profileError);
       await supabase.auth.admin.deleteUser(userId);
       return NextResponse.json({ error: 'An unexpected error occurred saving profile.' }, { status: 500 });
     }
@@ -233,15 +243,21 @@ export async function POST(req: NextRequest) {
       console.error('QR generation failed:', qrErr);
     }
 
-    const { error: agentError } = await supabase.from('agent_profiles').insert({
+    // A DB trigger (provision_agent_storefront) auto-creates an agent_profiles
+    // row the moment the profile role becomes 'agent' (during the upsert above),
+    // using a username-derived slug. So a row with this id already exists here.
+    // Upsert (not insert) so the chosen slug + display name win and we never hit
+    // a primary-key collision.
+    const { error: agentError } = await supabase.from('agent_profiles').upsert({
       id: userId,
       slug,
       display_name,
       qr_code_data: qrCodeData,
       is_active: true,
-    });
+    }, { onConflict: 'id' });
 
     if (agentError) {
+      console.error('[agent/agents] agent_profiles upsert failed:', agentError);
       await supabase.auth.admin.deleteUser(userId);
       return NextResponse.json({ error: 'An unexpected error occurred saving storefront.' }, { status: 500 });
     }
