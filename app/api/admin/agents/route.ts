@@ -128,6 +128,10 @@ export async function POST(req: NextRequest) {
   const { data: authData, error: authError } = await supabase.auth.admin.createUser({
     email: internalEmail,
     password,
+    // internal.auth accounts have no real inbox to confirm, so mark the email
+    // confirmed immediately — otherwise password sign-in is rejected with
+    // "email_not_confirmed" and the new agent/super-agent can never log in.
+    email_confirm: true,
     user_metadata: {
       username: usernameClean,
       full_name: effFullName
