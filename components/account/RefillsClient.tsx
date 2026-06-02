@@ -165,7 +165,7 @@ export default function RefillsClient() {
           Refills & Reorders
         </h1>
         <p style={{ color: 'var(--silver)', fontSize: '0.92rem', marginBottom: 'var(--space-6)' }}>
-          Reorder A Past Protocol In One Tap. Prices Are Re-Checked Against Current Catalog At Reorder.
+          Tap Reorder To Add A Past Protocol To Your Cart, Then Review, Edit, And Check Out. Prices Are Re-Checked Against The Current Catalog.
         </p>
 
         {dueOrder && (
