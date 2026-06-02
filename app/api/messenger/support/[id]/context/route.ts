@@ -40,9 +40,14 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ id: string
   const researcherId = (parts ?? []).map((p) => p.user_id as string).find((u) => u !== user.id);
   if (!researcherId) return NextResponse.json({ error: 'Researcher Not Found' }, { status: 404 });
 
+  // NOTE: `is_super_agent` is included so the sidebar can render the
+  // effective role label correctly. Super agents in this codebase have
+  // role='agent' (or sometimes 'super_agent') AND is_super_agent=true; the
+  // boolean flag is the source of truth. The sidebar derives "Super Agent"
+  // from this flag rather than relying on the enum.
   const { data: prof } = await svc
     .from('profiles')
-    .select('id, email, full_name, username, role, created_at, referring_agent_id, parent_agent_id, last_sign_in_at, tier, account_type')
+    .select('id, email, full_name, username, role, is_super_agent, is_sub_agent, created_at, referring_agent_id, parent_agent_id, last_sign_in_at, tier, account_type')
     .eq('id', researcherId)
     .maybeSingle();
 
