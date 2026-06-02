@@ -125,7 +125,7 @@ function Spinner() {
   );
 }
 
-// ── Brushed-steel overview menu components ───────────────────────────────────────────
+// ── Brushed-steel overview menu components ─────────────────────────────
 
 function MenuButton({ onClick, icon, title, subtitle }: {
   onClick: () => void;
@@ -264,7 +264,7 @@ function SettingsIcon() {
   );
 }
 
-// ──────────────────────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────
 
 export default function ResearcherDashboard({ userId, userName, userEmail, agentId, agentName, agentSlug, profile }: ResearcherDashboardProps) {
   const [tab, setTab] = useState<TabKey>('overview');
