@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 import { useMessengerStore } from '@/stores/messengerStore';
 import type { Message, MessageType } from '@/lib/messenger/types';
 import EmojiPicker from './EmojiPicker';
+import FaqSuggestions from './FaqSuggestions';
 import ReplyChip from './ReplyChip';
 import AttachMenu from './AttachMenu';
 import VoiceRecorder from './VoiceRecorder';
@@ -137,6 +138,14 @@ export default function MessageComposer({ conversationId, selfId, replyTo, onCle
   }, [closeAllPopovers]);
 
   const adminMention = useMemo(() => ADMIN_MENTION_RE.test(text), [text]);
+
+  // R28.1: detect if the user is composing into their support thread so we
+  // can offer self-serve FAQ suggestions before they send. The support
+  // thread is the only conversation where the counterparty is admin.
+  const isSupportThread = useMessengerStore((s) => {
+    const conv = s.conversations.find((c) => c.conversation_id === conversationId);
+    return conv?.counterparty_role === 'admin';
+  });
 
   const onTypingRef = useRef(onTyping);
   useEffect(() => {
@@ -504,6 +513,8 @@ export default function MessageComposer({ conversationId, selfId, replyTo, onCle
           >Clear</button>
         </div>
       )}
+
+      <FaqSuggestions draft={text} enabled={isSupportThread && !voiceMode} />
 
       {voiceMode ? (
         <VoiceRecorder
