@@ -48,7 +48,6 @@ function computeStockState(
 ): StockState {
   if (agentCount > threshold) return { kind: 'in_stock' };
   if (agentCount > 0) return { kind: 'low_stock', count: agentCount };
-  // agentCount === 0 (or negative - clamp to 0 for display)
   if (masterInventory > 0) return { kind: 'in_stock' };
   if (backorderDays > 0) return { kind: 'backorder', days: backorderDays };
   return { kind: 'out_of_stock' };
@@ -514,6 +513,8 @@ export default function AgentStorefrontGrid({
   const selfBuyStep = 1;
   const selfBuyMin  = minOrderQty ?? 1;
   const overallMin  = minOverallQty ?? 1;
+  // Bac. water is sold only in 10-packs (increments of 10), storewide.
+  const isBacWaterItem = (name, slug) => slug === 'bac-water' || /bac\.?\s*water/i.test(name || '');
 
   useEffect(() => {
     if (!detailProduct) {
@@ -796,7 +797,8 @@ export default function AgentStorefrontGrid({
             (a, b) =>
               parseFloat(a.products?.unit_size || '0') - parseFloat(b.products?.unit_size || '0')
           )[0] || matches[0];
-      setCartItems((prev) => ({ ...prev, [pick.id]: (prev[pick.id] || 0) + 1 }));
+      const addQty = isBacWaterItem(pick.products?.name, pick.products?.compound_slug) ? 10 : 1;
+      setCartItems((prev) => ({ ...prev, [pick.id]: (prev[pick.id] || 0) + addQty }));
       setShowCartFloat(true);
       toast.success(`${pick.products?.name || name} Added To Cart.`);
     };
@@ -1154,7 +1156,8 @@ export default function AgentStorefrontGrid({
                 logRecentlyViewed(activeVariant.product_id);
                 const defaultVId = group.defaultVariantId || group.variants[0]?.id;
                 const existingQty = defaultVId ? cartItems[defaultVId] : undefined;
-                setPendingQty(existingQty ?? (isStorefrontOwner ? Math.max(10, selfBuyMin) : selfBuyMin));
+                const bw = isBacWaterItem(group.name, group.compoundSlug);
+                setPendingQty(existingQty ?? (bw ? 10 : (isStorefrontOwner ? Math.max(10, selfBuyMin) : selfBuyMin)));
               }}
             >
               <div className="metal-content" style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden', padding: 0 }}>
@@ -1734,7 +1737,6 @@ export default function AgentStorefrontGrid({
               </div>
 
               <div className="sf-modal-body">
-                {/* Centered header: title, then badges, then short description */}
                 <div style={{ textAlign: 'center', marginBottom: 'var(--space-3)' }}>
                   {(() => {
                     const { main, subtitle } = splitProductName(toTitleCase(detailProduct.name));
@@ -1749,6 +1751,16 @@ export default function AgentStorefrontGrid({
                           </div>
                         )}
                       </>
+                    );
+                  })()}
+
+                  {(() => {
+                    const c = detailProduct.compoundSlug ? compoundsBySlug[detailProduct.compoundSlug] : undefined;
+                    if (!c || !c.aliases || c.aliases.length === 0) return null;
+                    return (
+                      <p style={{ fontSize: '0.82rem', color: 'var(--silver)', margin: '8px 0 0' }}>
+                        Also Known As: {c.aliases.join(', ')}
+                      </p>
                     );
                   })()}
 
@@ -1862,6 +1874,9 @@ export default function AgentStorefrontGrid({
                   const selectedVId = selectedVariants[detailProduct.name] || detailProduct.defaultVariantId;
                   const activeV = detailProduct.variants.find(v => v.id === selectedVId) || detailProduct.variants[0];
                   const qty = pendingQty;
+                  const isBW = isBacWaterItem(detailProduct.name, detailProduct.compoundSlug);
+                  const step = isBW ? 10 : selfBuyStep;
+                  const minQ = isBW ? 10 : selfBuyMin;
                   const rawPrice = (activeV as any).is_on_sale && (activeV as any).sale_price
                     ? (activeV as any).sale_price
                     : activeV.retail_price;
@@ -1870,8 +1885,6 @@ export default function AgentStorefrontGrid({
                   const agentCostPerVial = isStorefrontOwner && (activeV as any).cost_price != null
                     ? Number((activeV as any).cost_price) / 10
                     : basePrice;
-
-                  const agentQualifiesForDiscount = isStorefrontOwner;
 
                   const tiers = isStorefrontOwner
                     ? [
@@ -1936,15 +1949,20 @@ export default function AgentStorefrontGrid({
                           <label style={{ fontSize: '0.8rem', color: 'var(--silver)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block', marginBottom: 6 }}>
                             Quantity (Vials)
                           </label>
+                          {isBW && (
+                            <div style={{ fontSize: '0.7rem', color: 'var(--silver)', marginBottom: 6 }}>
+                              Sold In 10-Packs (Increments Of 10)
+                            </div>
+                          )}
                           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                             <button
-                              onClick={() => setPendingQty(prev => Math.max(selfBuyMin, prev - selfBuyStep))}
-                              disabled={qty <= selfBuyMin}
+                              onClick={() => setPendingQty(prev => Math.max(minQ, prev - step))}
+                              disabled={qty <= minQ}
                               style={{
                                 width: 36, height: 36, borderRadius: 'var(--radius-md)',
                                 border: '1px solid rgba(255,255,255,0.2)', background: 'transparent',
-                                color: qty <= selfBuyMin ? 'var(--grey-600)' : 'var(--white)',
-                                cursor: qty <= selfBuyMin ? 'not-allowed' : 'pointer',
+                                color: qty <= minQ ? 'var(--grey-600)' : 'var(--white)',
+                                cursor: qty <= minQ ? 'not-allowed' : 'pointer',
                                 fontSize: '1.1rem', display: 'flex', alignItems: 'center', justifyContent: 'center'
                               }}
                             >-</button>
@@ -1954,13 +1972,14 @@ export default function AgentStorefrontGrid({
                               onChange={e => {
                                 const val = parseInt(e.target.value, 10);
                                 if (!isNaN(val)) {
-                                  setPendingQty(Math.max(selfBuyMin, val));
+                                  setPendingQty(Math.max(minQ, val));
                                 } else if (e.target.value === '') {
                                   setPendingQty(0);
                                 }
                               }}
                               onBlur={() => {
-                                if (qty < selfBuyMin) setPendingQty(selfBuyMin);
+                                if (qty < minQ) setPendingQty(minQ);
+                                else if (isBW) setPendingQty(Math.max(10, Math.round(qty / 10) * 10));
                               }}
                               style={{
                                 width: 54, textAlign: 'center', fontSize: '1.2rem', fontWeight: 800,
@@ -1970,7 +1989,7 @@ export default function AgentStorefrontGrid({
                               }}
                             />
                             <button
-                              onClick={() => setPendingQty(prev => prev + selfBuyStep)}
+                              onClick={() => setPendingQty(prev => prev + step)}
                               style={{
                                 width: 36, height: 36, borderRadius: 'var(--radius-md)',
                                 border: 'none', background: primaryColor, color: 'var(--white)',
@@ -2004,7 +2023,7 @@ export default function AgentStorefrontGrid({
                         )}
                       </div>
 
-                      {(volumePricingEnabled || isStorefrontOwner) && (
+                      {(volumePricingEnabled && !isStorefrontOwner) && (
                         <div style={{
                           marginTop: 'var(--space-5)', border: '1px solid rgba(255,255,255,0.08)',
                           borderRadius: 'var(--radius-md)', overflow: 'hidden'
@@ -2095,13 +2114,25 @@ export default function AgentStorefrontGrid({
                                 <span style={{ fontSize: '0.85rem', color: 'var(--grey-400)' }}>
                                   {tier.min}+ Vials <span style={{ color: '#68D391', marginLeft: 8, fontSize: '0.75rem' }}>{tier.pct}% Off</span>
                                 </span>
-                                <span style={{ fontSize: '0.9rem', fontWeight: 700, fontFamily: 'var(--font-brand)', color: 'var(--grey-300)' }}>${dp.toFixed(2)}/ea</span>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                                  <span style={{ fontSize: '0.9rem', fontWeight: 700, fontFamily: 'var(--font-brand)', color: 'var(--grey-300)' }}>${dp.toFixed(2)}/ea</span>
+                                  <button
+                                    type="button"
+                                    aria-label={`Add ${tier.min} Vials To Cart`}
+                                    onClick={() => {
+                                      setCartItems(prev => ({ ...prev, [selVId2]: (prev[selVId2] || 0) + tier.min }));
+                                      setShowBulkPricing(false);
+                                      setShowCartFloat(true);
+                                    }}
+                                    style={{ width: 28, height: 28, borderRadius: '50%', border: 'none', background: primaryColor, color: '#fff', cursor: 'pointer', fontWeight: 800, fontSize: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}
+                                  >+</button>
+                                </div>
                               </div>
                             );
                           });
                         })()}
                         <div style={{ padding: '8px 16px', borderTop: '1px solid rgba(255,255,255,0.04)', fontSize: '0.72rem', color: 'var(--grey-500)' }}>
-                          Contact Your Agent To Place A Bulk Order Of 100+ Vials.
+                          Contact Your Agent To Place A Bulk Order Of 500+ Vials.
                         </div>
                       </div>
                     )}
