@@ -461,21 +461,27 @@ export default function AgentSales({ orders, setOrders, agentId, userProfile }: 
         .sa-table th { text-align: right; color: var(--grey-400); font-weight: 700; padding: 8px 10px; border-bottom: 1px solid rgba(255,255,255,0.1); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.04em; }
         .sa-table th:first-child, .sa-table td:first-child { text-align: left; }
         .sa-table td { text-align: right; padding: 9px 10px; border-bottom: 1px solid rgba(255,255,255,0.05); color: var(--silver); }
+        .sa-box-centered { display: flex; flex-direction: column; align-items: center; text-align: center; }
+        .sa-capitalize-all { text-transform: capitalize; }
+        .sa-capitalize-all text { text-transform: capitalize; }
         @keyframes sa-pulse { 0%,100% { box-shadow: 0 0 0 0 rgba(0,255,157,0.0);} 50% { box-shadow: 0 0 0 6px rgba(0,255,157,0.12);} }
         @keyframes pnl-confetti { from { opacity: 1; transform: translateY(0) rotate(0deg);} to { opacity: 0; transform: translateY(72vh) rotate(540deg);} }
       `}} />
 
+      {/* ─────────────── GLOBAL HEADER ─────────────── */}
+      <h2 style={{ fontSize: '1.4rem', margin: '0 0 var(--space-2) 0', fontFamily: 'var(--font-brand)' }}>Sales Performance</h2>
+
       {/* ─────────────── ACCOUNTING / MONEY STRIP ─────────────── */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 'var(--space-4)' }}>
+      <div className="sa-capitalize-all" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 'var(--space-4)' }}>
         <div className="metal-frame">
-          <div className="metal-content" style={{ padding: 'var(--space-5)' }}>
+          <div className="metal-content sa-box-centered" style={{ padding: 'var(--space-5)' }}>
             <div className="sa-label">{wallet?.primaryLabel || 'Available'}</div>
             <div className="sa-stat" style={{ color: '#00E5FF', marginTop: 6 }}>{fmt(wallet?.primary ?? 0)}</div>
             <a href="/wallet" style={{ color: 'var(--teal)', fontSize: '0.76rem', fontWeight: 700, marginTop: 8, display: 'inline-block' }}>Open Wallet</a>
           </div>
         </div>
         <div className="metal-frame">
-          <div className="metal-content" style={{ padding: 'var(--space-5)' }}>
+          <div className="metal-content sa-box-centered" style={{ padding: 'var(--space-5)' }}>
             <div className="sa-label">Owed This Week</div>
             <div className="sa-stat" style={{ color: (wallet?.owedThisWeek ?? 0) > 0 ? '#FF6B81' : 'var(--white)', marginTop: 6 }}>{fmt(wallet?.owedThisWeek ?? 0)}</div>
             <div style={{ color: 'var(--grey-400)', fontSize: '0.74rem', marginTop: 8 }}>
@@ -484,14 +490,14 @@ export default function AgentSales({ orders, setOrders, agentId, userProfile }: 
           </div>
         </div>
         <div className="metal-frame">
-          <div className="metal-content" style={{ padding: 'var(--space-5)' }}>
+          <div className="metal-content sa-box-centered" style={{ padding: 'var(--space-5)' }}>
             <div className="sa-label">Profit This Month<span className="sa-info" title={PROFIT_HELP}>i</span></div>
             <div className="sa-stat" style={{ color: '#00FF9D', marginTop: 6 }}>{fmt(a.monthProfit)}</div>
             <div style={{ color: 'var(--grey-400)', fontSize: '0.74rem', marginTop: 8 }}>{fmt(a.monthRevenue)} Revenue</div>
           </div>
         </div>
         <div className="metal-frame">
-          <div className="metal-content" style={{ padding: 'var(--space-5)' }}>
+          <div className="metal-content sa-box-centered" style={{ padding: 'var(--space-5)' }}>
             <div className="sa-label">Lifetime Profit<span className="sa-info" title={PROFIT_HELP}>i</span></div>
             <div className="sa-stat" style={{ marginTop: 6 }}>{fmt(a.lifetimeProfit)}</div>
             <div style={{ color: 'var(--grey-400)', fontSize: '0.74rem', marginTop: 8 }}>{a.margin.toFixed(0)}% Margin</div>
@@ -499,7 +505,7 @@ export default function AgentSales({ orders, setOrders, agentId, userProfile }: 
         </div>
         {showCommission && (
           <div className="metal-frame">
-            <div className="metal-content" style={{ padding: 'var(--space-5)' }}>
+            <div className="metal-content sa-box-centered" style={{ padding: 'var(--space-5)' }}>
               <div className="sa-label">Commission Earned</div>
               <div className="sa-stat" style={{ color: '#7C5CFF', marginTop: 6 }}>{fmt(commission?.thisMonth ?? 0)}</div>
               <div style={{ color: 'var(--grey-400)', fontSize: '0.74rem', marginTop: 8 }}>This Month · {fmt(commission?.lifetime ?? 0)} Lifetime</div>
@@ -525,7 +531,7 @@ export default function AgentSales({ orders, setOrders, agentId, userProfile }: 
       )}
 
       {/* ─────────────── GOAL + STREAK + FORECAST ─────────────── */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 'var(--space-4)' }}>
+      <div className="sa-capitalize-all" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 'var(--space-4)' }}>
         <div className="metal-frame" style={goal > 0 && goalPct >= 100 ? { animation: 'sa-pulse 2.4s ease-in-out infinite' } : undefined}>
           <div className="metal-content" style={{ padding: 'var(--space-6)', display: 'flex', gap: 'var(--space-5)', alignItems: 'center' }}>
             <GoalRing pct={goalPct} hit={goalPct >= 100} />
@@ -624,7 +630,7 @@ export default function AgentSales({ orders, setOrders, agentId, userProfile }: 
       </div>
 
       {/* ─────────────── KPI SNAPSHOT ─────────────── */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 'var(--space-4)' }}>
+      <div className="sa-capitalize-all" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 'var(--space-4)' }}>
         <KpiCard label="Collected Revenue" value={fmt(a.lifetimeRevenue)} delta={a.revDelta30} deltaLabel="Vs Prior 30d" />
         <KpiCard label="Total Profit" value={fmt(a.lifetimeProfit)} color="#00FF9D" help={PROFIT_HELP} />
         <KpiCard label="Orders" value={String(a.lifetimeOrders)} delta={a.ordersDelta30} deltaLabel="Vs Prior 30d" color="#00E5FF" />
@@ -795,11 +801,11 @@ export default function AgentSales({ orders, setOrders, agentId, userProfile }: 
 function KpiCard({ label, value, delta, deltaLabel, sub, color, help }: { label: string; value: string; delta?: number; deltaLabel?: string; sub?: string; color?: string; help?: string }) {
   return (
     <div className="metal-frame">
-      <div className="metal-content" style={{ padding: 'var(--space-5)' }}>
+      <div className="metal-content sa-box-centered" style={{ padding: 'var(--space-5)' }}>
         <div className="sa-label">{label}{help && <span className="sa-info" title={help}>i</span>}</div>
         <div className="sa-stat" style={{ marginTop: 6, color: color || 'var(--white)' }}>{value}</div>
         {typeof delta === 'number' && (
-          <div className={delta >= 0 ? 'sa-delta-up' : 'sa-delta-down'} style={{ marginTop: 6, display: 'flex', alignItems: 'center', gap: 4 }}>
+          <div className={delta >= 0 ? 'sa-delta-up' : 'sa-delta-down'} style={{ marginTop: 6, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
             {delta >= 0 ? <ArrowUp size={12} aria-hidden /> : <ArrowDown size={12} aria-hidden />} {Math.abs(delta).toFixed(0)}% <span style={{ color: 'var(--grey-500)', fontWeight: 600 }}>{deltaLabel}</span>
           </div>
         )}
