@@ -17,6 +17,12 @@ import React from 'react';
  *
  * The /account/* pages are role-agnostic, so sub-agents and researchers reach
  * their full account + notification settings through them.
+ *
+ * Note: direct entries for `/account/security` and `/account/notifications`
+ * are intentionally NOT surfaced in the hamburger menu — both are tabs inside
+ * the /account (Account Settings) page, so duplicating them in the drawer just
+ * adds visual noise. The underlying pages are still routed and reachable from
+ * the Account Settings UI.
  */
 
 export interface RoleNavLink {
@@ -107,7 +113,6 @@ function agentLinks(isSuper: boolean, storefrontHref: string): RoleNavLink[] {
     { href: '#SHOW_QR', label: 'My QR Code', icon: ICON.qr },
     { href: '/messenger', label: 'Messenger', icon: <svg {...ip}><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg> },
     { href: '/account', label: 'Account Settings', icon: <svg {...ip}><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /></svg> },
-    { href: '/account/security', label: 'Account Security', icon: <svg {...ip}><rect x="3" y="11" width="18" height="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></svg> },
   ];
 }
 
@@ -120,7 +125,6 @@ const SUBAGENT_LINKS: RoleNavLink[] = [
   { href: subTab('Sales & Accounting'), label: 'Sales & Accounting', icon: ICON.sales },
   { href: '/messenger', label: 'Messenger', icon: ICON.messenger },
   { href: '/account', label: 'Account Settings', icon: ICON.gear },
-  { href: '/account/security', label: 'Account Security', icon: ICON.lock },
 ];
 
 // Researcher (customer) menu. Their account lives entirely in the role-agnostic
@@ -142,8 +146,6 @@ function researcherLinks(storefrontHref?: string): RoleNavLink[] {
     { href: '/account/addresses', label: 'Saved Addresses', icon: ICON.pin },
     { href: '/account/payment-method', label: 'Payment Method', icon: ICON.card },
     { href: '/account/referrals', label: 'Referrals', icon: ICON.gift },
-    { href: '/account/notifications', label: 'Notification Settings', icon: ICON.bell },
-    { href: '/account/security', label: 'Account Security', icon: ICON.lock },
     { href: '/account', label: 'Account Settings', icon: ICON.gear },
   );
   return links;
