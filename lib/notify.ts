@@ -29,7 +29,8 @@ export type NotificationType =
   | 'tier_levelup'
   | 'referral'
   | 'system'
-  | 'coupon_redeemed';
+  | 'coupon_redeemed'
+  | 'support_message';
 
 export interface NotifyOptions {
   userId: string;
@@ -518,5 +519,23 @@ export async function notifyCouponRedeemed(
     title: `Coupon ${code} Redeemed`,
     body: `A researcher used ${code} on order #${shortId} — ${discount} off a ${total} order.`,
     url: `/dashboard/agent?tab=Coupons`,
+  });
+}
+
+/** Notify the admin that a researcher sent a new message in a support thread. */
+export async function notifySupportMessage(
+  supabase: SupabaseClient,
+  adminId: string,
+  senderName: string,
+  preview: string,
+  conversationId: string,
+) {
+  const body = preview.length > 80 ? `${preview.slice(0, 77)}…` : preview;
+  await notify(supabase, {
+    userId: adminId,
+    type: 'support_message',
+    title: `Support — ${senderName}`,
+    body,
+    url: `/messenger?conversation=${conversationId}`,
   });
 }
