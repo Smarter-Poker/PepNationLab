@@ -199,7 +199,11 @@ export async function POST(req: NextRequest) {
       disclaimer_accepted_at: new Date().toISOString(),
       is_active: true,
       updated_at: new Date().toISOString(),
-      tier: 'Level 1', // Doesn't matter much for nested agents, but needed by some queries maybe.
+      // profiles.tier is the agent_tier enum (tier_1|tier_2|tier_3). It must be a
+      // valid enum label or the whole upsert fails. Full agents under a super
+      // agent are priced via super_agent_pricing, not this tier, so default to
+      // tier_3 (entry) purely to satisfy the column.
+      tier: 'tier_3',
       account_type: account_type,
       credit_limit: account_type === 'credit' ? (Number(credit_limit) || null) : null,
       prepaid_balance: account_type === 'prepaid' ? (Number(prepaid_balance) || 0) : 0,
@@ -212,6 +216,7 @@ export async function POST(req: NextRequest) {
 
     const { error: profileError } = await supabase.from('profiles').upsert(profileData);
     if (profileError) {
+      console.error('[agent/agents] profile upsert failed:', profileError);
       await supabase.auth.admin.deleteUser(userId);
       return NextResponse.json({ error: 'An unexpected error occurred saving profile.' }, { status: 500 });
     }
@@ -233,15 +238,21 @@ export async function POST(req: NextRequest) {
       console.error('QR generation failed:', qrErr);
     }
 
-    const { error: agentError } = await supabase.from('agent_profiles').insert({
+    // A DB trigger (provision_agent_storefront) auto-creates an agent_profiles
+    // row the moment the profile role becomes 'agent' (during the upsert above),
+    // using a username-derived slug. So a row with this id already exists here.
+    // Upsert (not insert) so the chosen slug + display name win and we never hit
+    // a primary-key collision.
+    const { error: agentError } = await supabase.from('agent_profiles').upsert({
       id: userId,
       slug,
       display_name,
       qr_code_data: qrCodeData,
       is_active: true,
-    });
+    }, { onConflict: 'id' });
 
     if (agentError) {
+      console.error('[agent/agents] agent_profiles upsert failed:', agentError);
       await supabase.auth.admin.deleteUser(userId);
       return NextResponse.json({ error: 'An unexpected error occurred saving storefront.' }, { status: 500 });
     }
