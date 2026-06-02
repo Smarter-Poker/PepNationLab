@@ -514,7 +514,7 @@ export default function AgentStorefrontGrid({
   const selfBuyMin  = minOrderQty ?? 1;
   const overallMin  = minOverallQty ?? 1;
   // Bac. water is sold only in 10-packs (increments of 10), storewide.
-  const isBacWaterItem = (name, slug) => slug === 'bac-water' || /bac\.?\s*water/i.test(name || '');
+  const isBacWaterItem = (name: string | null | undefined, slug: string | null | undefined) => slug === 'bac-water' || /bac\.?\s*water/i.test(name || '');
 
   useEffect(() => {
     if (!detailProduct) {

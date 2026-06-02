@@ -248,7 +248,7 @@ export default function AgentDashboardClient({
           full_name: json.full_name,
           created_at: new Date().toISOString(),
         }]);
-        setCrFullName('');
+        setCrFirstName(''); setCrLastName('');
         setCrUsername('');
         setCrPassword('');
         setTimeout(() => { setShowCreateResearcher(false); setCrSuccess(''); }, 2000);

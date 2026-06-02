@@ -128,7 +128,7 @@ export async function POST(request: NextRequest) {
         superAgentProfile = sap;
       }
     } else if (profile.referring_agent_id) {
-      const { data: ap } = await serviceSupabase.from('profiles').select('id, role, tier, parent_agent_id, auto_approve_orders').eq('id', profile.referring_agent_id).single();
+      const { data: ap } = await serviceSupabase.from('profiles').select('id, role, tier, parent_agent_id, auto_approve_orders, is_sub_agent, referring_sub_agent_id').eq('id', profile.referring_agent_id).single();
       agentProfile = ap;
       if (ap?.parent_agent_id) {
         const { data: sap } = await serviceSupabase.from('profiles').select('id, tier, account_type, prepaid_balance, credit_limit, auto_approve_orders').eq('id', ap.parent_agent_id).single();
