@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import AgentAccountDetail from '@/components/AgentAccountDetail';
+import { freshDefaultLadder, GAMIFICATION_MAX_PCT } from '@/lib/gamification';
 
 export default function AgentDownline({ agentId }: { agentId?: string }) {
   const [agents, setAgents] = useState<any[]>([]);
@@ -23,16 +24,9 @@ export default function AgentDownline({ agentId }: { agentId?: string }) {
   // volume up to a max cap via the house milestone ladder.
   const [caCommissionMode, setCaCommissionMode] = useState<'fixed' | 'gamified'>('fixed');
   const [caCommissionPct, setCaCommissionPct] = useState('');
-  const [caMaxCap, setCaMaxCap] = useState('');
-  const [caVelocityCap, setCaVelocityCap] = useState('');
+  // 'default' = read-only house ladder (20% → 40%); 'custom' = fully adjustable.
   const [caScaleType, setCaScaleType] = useState<'default' | 'custom'>('default');
-  const [caCustomSteps, setCaCustomSteps] = useState([
-    { level: 1, name: 'Rookie', min_volume: 0, bonus_pct: 0 },
-    { level: 2, name: 'Established', min_volume: 2500, bonus_pct: 3 },
-    { level: 3, name: 'Pro', min_volume: 7500, bonus_pct: 7 },
-    { level: 4, name: 'Elite', min_volume: 20000, bonus_pct: 12 },
-    { level: 5, name: 'Apex', min_volume: 50000, bonus_pct: 20 },
-  ]);
+  const [caCustomSteps, setCaCustomSteps] = useState(freshDefaultLadder());
   const [showGamificationInfo, setShowGamificationInfo] = useState(false);
   const [caLoading, setCaLoading] = useState(false);
   const [caError, setCaError] = useState('');
@@ -66,6 +60,13 @@ export default function AgentDownline({ agentId }: { agentId?: string }) {
   const handleCreateAgent = async (e: React.FormEvent) => {
     e.preventDefault();
     setCaError('');
+
+    // Platform rule: no gamification level may exceed 40%.
+    if (caCommissionMode === 'gamified' && caCustomSteps.some(s => Number(s.bonus_pct) > GAMIFICATION_MAX_PCT)) {
+      setCaError('Gamification Levels Cannot Exceed 40%.');
+      return;
+    }
+
     setCaLoading(true);
 
     try {
@@ -81,16 +82,20 @@ export default function AgentDownline({ agentId }: { agentId?: string }) {
           account_type: caAccountType,
           credit_limit: caAccountType === 'credit' ? caCreditLimit : undefined,
           prepaid_balance: caAccountType === 'prepaid' ? caPrepaidBalance : undefined,
-          // Commission structure. Fixed -> cap == base (flat). Gamified -> cap
-          // above base lets the house milestone ladder lift the rate.
+          // Commission structure. Fixed -> flat rate (cap == base). Gamified
+          // (Default or Custom) -> persist the concrete 5-level ladder so the
+          // order-time engine and the UI always agree. base = Rookie (entry)
+          // level, cap = Apex (top) level; stored as bonus-over-base.
           commission_pct: caCommissionMode === 'fixed'
             ? (caCommissionPct === '' ? undefined : caCommissionPct)
-            : (caScaleType === 'custom' ? caCustomSteps[0].bonus_pct : (caCommissionPct === '' ? undefined : caCommissionPct)),
+            : (Number(caCustomSteps[0].bonus_pct) || 0),
           commission_max_pct: caCommissionMode === 'fixed'
             ? (caCommissionPct === '' ? undefined : caCommissionPct)
-            : (caScaleType === 'custom' ? caCustomSteps[4].bonus_pct : (caMaxCap === '' ? null : caMaxCap)),
-          velocity_cap: caCommissionMode === 'gamified' && caVelocityCap !== '' ? caVelocityCap : undefined,
-          custom_commission_scale: caCommissionMode === 'gamified' && caScaleType === 'custom' ? caCustomSteps.map(s => ({ min_volume: s.min_volume, bonus_pct: Math.max(0, s.bonus_pct - caCustomSteps[0].bonus_pct) })) : undefined,
+            : Number(caCustomSteps[caCustomSteps.length - 1].bonus_pct),
+          velocity_cap: undefined,
+          custom_commission_scale: caCommissionMode === 'gamified'
+            ? caCustomSteps.map(s => ({ min_volume: Number(s.min_volume) || 0, bonus_pct: Math.max(0, Number(s.bonus_pct) - Number(caCustomSteps[0].bonus_pct)) }))
+            : undefined,
         })
       });
       const data = await res.json();
@@ -107,8 +112,8 @@ export default function AgentDownline({ agentId }: { agentId?: string }) {
       setCaPrepaidBalance('');
       setCaCommissionMode('fixed');
       setCaCommissionPct('');
-      setCaMaxCap('');
-      setCaVelocityCap('');
+      setCaScaleType('default');
+      setCaCustomSteps(freshDefaultLadder());
       fetchData();
     } catch (err: any) {
       setCaError(err.message);
@@ -375,47 +380,41 @@ export default function AgentDownline({ agentId }: { agentId?: string }) {
                     </label>
                   </div>
 
-                  {caCommissionMode === 'gamified' && (
-                    <div style={{ display: 'flex', gap: 'var(--space-3)', marginBottom: 'var(--space-3)' }}>
-                      <label style={{ flex: 1, padding: '10px', background: 'var(--bg-metal-dark)', border: `1px solid ${caScaleType === 'default' ? 'var(--teal)' : 'rgba(0,0,0,0.8)'}`, color: 'var(--white)', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <input type="radio" checked={caScaleType === 'default'} onChange={() => setCaScaleType('default')} />
-                        Use Default Scale
-                      </label>
-                      <label style={{ flex: 1, padding: '10px', background: 'var(--bg-metal-dark)', border: `1px solid ${caScaleType === 'custom' ? 'var(--teal)' : 'rgba(0,0,0,0.8)'}`, color: 'var(--white)', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <input type="radio" checked={caScaleType === 'custom'} onChange={() => setCaScaleType('custom')} />
-                        Use Custom Scale
-                      </label>
-                    </div>
-                  )}
                   {caCommissionMode === 'fixed' ? (
                     <div>
                       <label style={{ display: 'block', marginBottom: '6px', color: 'var(--grey-300)', fontSize: '0.85rem' }}>Markup Rate (%)</label>
                       <input type="number" min="0" max="100" step="0.1" style={{ width: '100%', padding: '10px', background: 'var(--bg-metal-dark)', border: '1px solid rgba(0,0,0,0.8)', color: 'var(--white)', borderRadius: '6px' }} value={caCommissionPct} onChange={e => setCaCommissionPct(e.target.value)} placeholder="e.g. 20" />
                     </div>
-                  ) : caScaleType === 'default' ? (
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: 'var(--space-3)' }}>
-                      <div>
-                        <label style={{ display: 'block', marginBottom: '6px', color: 'var(--grey-300)', fontSize: '0.85rem' }}>Base Rate (%)</label>
-                        <input type="number" min="0" max="40" step="0.1" style={{ width: '100%', padding: '10px', background: 'var(--bg-metal-dark)', border: '1px solid rgba(0,0,0,0.8)', color: 'var(--white)', borderRadius: '6px' }} value={caCommissionPct} onChange={e => setCaCommissionPct(e.target.value)} placeholder="e.g. 15" />
-                      </div>
-                      <div>
-                        <label style={{ display: 'block', marginBottom: '6px', color: 'var(--grey-300)', fontSize: '0.85rem' }}>Max Cap (%)</label>
-                        <input type="number" min="0" max="40" step="0.1" style={{ width: '100%', padding: '10px', background: 'var(--bg-metal-dark)', border: '1px solid rgba(0,0,0,0.8)', color: 'var(--white)', borderRadius: '6px' }} value={caMaxCap} onChange={e => setCaMaxCap(e.target.value)} placeholder="No Cap" />
-                      </div>
-                      <div>
-                        <label style={{ display: 'block', marginBottom: '6px', color: 'var(--grey-300)', fontSize: '0.85rem' }}>Velocity Cap ($)</label>
-                        <input type="number" min="0" step="0.01" style={{ width: '100%', padding: '10px', background: 'var(--bg-metal-dark)', border: '1px solid rgba(0,0,0,0.8)', color: 'var(--white)', borderRadius: '6px' }} value={caVelocityCap} onChange={e => setCaVelocityCap(e.target.value)} placeholder="None" />
-                      </div>
-                    </div>
                   ) : (
-                    <div>
-                      <button type="button" className="btn-silver" style={{ fontSize: '0.8rem', padding: '6px 12px' }} onClick={(e) => { e.preventDefault(); e.stopPropagation(); setShowGamificationInfo(true); }}>
-                        See The Gamification Levels
+                    <div style={{ display: 'flex', gap: 'var(--space-3)', flexWrap: 'wrap' }}>
+                      <button
+                        type="button"
+                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); setCaScaleType('default'); setCaCustomSteps(freshDefaultLadder()); setShowGamificationInfo(true); }}
+                        style={{
+                          flex: 1, minWidth: 200, padding: '12px', borderRadius: 8, cursor: 'pointer', fontWeight: 700, fontSize: '0.82rem',
+                          background: caScaleType === 'default' ? 'var(--teal)' : 'rgba(255,255,255,0.05)',
+                          color: caScaleType === 'default' ? 'var(--black)' : 'var(--white)',
+                          border: `1px solid ${caScaleType === 'default' ? 'var(--teal)' : 'rgba(255,255,255,0.15)'}`,
+                        }}
+                      >
+                        See Default Gamification Levels
+                      </button>
+                      <button
+                        type="button"
+                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); setCaScaleType('custom'); setShowGamificationInfo(true); }}
+                        style={{
+                          flex: 1, minWidth: 200, padding: '12px', borderRadius: 8, cursor: 'pointer', fontWeight: 700, fontSize: '0.82rem',
+                          background: caScaleType === 'custom' ? 'var(--teal)' : 'rgba(255,255,255,0.05)',
+                          color: caScaleType === 'custom' ? 'var(--black)' : 'var(--white)',
+                          border: `1px solid ${caScaleType === 'custom' ? 'var(--teal)' : 'rgba(255,255,255,0.15)'}`,
+                        }}
+                      >
+                        Customize Gamification Levels
                       </button>
                     </div>
                   )}
                   <p style={{ fontSize: '0.72rem', color: 'var(--grey-500)', margin: '6px 0 0', lineHeight: 1.4 }}>
-                    Fixed Markup Pays A Flat Rate. Gamification Scale Drops Your Markup Through 5 Levels As Their Monthly Sales Grow.
+                    Fixed Markup Pays A Flat Rate. The Default Gamification Scale Starts At 20% And Rises To A 40% Maximum As Monthly Sales Grow. Customize To Set Your Own 5 Levels.
                   </p>
                 </div>
 
@@ -513,7 +512,7 @@ export default function AgentDownline({ agentId }: { agentId?: string }) {
                 Gamification Scale
               </h2>
               <p style={{ color: 'var(--grey-400)', fontSize: '0.85rem', marginBottom: 'var(--space-4)' }}>
-                {caScaleType === 'custom' ? 'Customize the 5 levels of gamification for this agent.' : 'The standard house milestone ladder.'}
+                {caScaleType === 'custom' ? 'Customize The 5 Levels Of Gamification For This Agent.' : 'The Default House Scale — Starts At 20% And Rises To A 40% Maximum. Read Only.'}
               </p>
               
               <div style={{ border: '1px solid rgba(0,196,188,0.35)', borderRadius: 10, overflow: 'hidden', marginBottom: 'var(--space-4)' }}>
