@@ -3,10 +3,10 @@
 /**
  * ProductMonograph — research access shown inside the storefront product detail
  * modal. For the enhanced (Tirzepatide) layout, the research data is reached
- * through a row of five buttons — Research, Findings, Preparation, Spec Sheet,
- * FAQs — styled to match the rest of the product modal (thin teal-tinted
- * buttons, no heavy bezel). Each button opens the ProductResearchPanel INSIDE
- * the popup showing ONLY that one section.
+ * through five premium brushed-metal buttons — Research, Findings, Preparation,
+ * Spec Sheet, FAQs — laid out in an even auto-fit grid so every label is
+ * perfectly centered. Each button opens the ProductResearchPanel INSIDE the
+ * popup showing ONLY that one section.
  *
  * Non-enhanced compounds keep the compact collapsed summary that links out to
  * /research/[slug] until the new layout is rolled out platform-wide.
@@ -35,6 +35,26 @@ const PANEL_BUTTONS: { key: ResearchSection; label: string }[] = [
   { key: 'faq', label: 'FAQs' },
 ];
 
+const premiumMetalButton: React.CSSProperties = {
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  textAlign: 'center',
+  padding: '14px 10px',
+  borderRadius: 12,
+  cursor: 'pointer',
+  border: '1px solid rgba(190,200,210,0.30)',
+  background: 'linear-gradient(180deg, #34424f 0%, #1d2630 55%, #151d26 100%)',
+  boxShadow:
+    'inset 0 1px 0 rgba(255,255,255,0.22), inset 0 -2px 4px rgba(0,0,0,0.5), 0 4px 12px rgba(0,0,0,0.5)',
+  color: '#EAF2F8',
+  fontWeight: 800,
+  fontSize: '0.85rem',
+  letterSpacing: '0.02em',
+  whiteSpace: 'nowrap',
+  lineHeight: 1,
+};
+
 export default function ProductMonograph({ compound, primaryColor = '#00C4BC' }: Props) {
   const [open, setOpen] = useState(false);
   const [panelSection, setPanelSection] = useState<ResearchSection | null>(null);
@@ -50,29 +70,20 @@ export default function ProductMonograph({ compound, primaryColor = '#00C4BC' }:
   if (enhanced) {
     return (
       <div style={{ marginBottom: 'var(--space-6)' }}>
-        {/* Buttons styled to match the rest of the product modal (no heavy bezel) */}
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+        {/* Premium metal buttons in an even auto-fit grid (centered labels) */}
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(96px, 1fr))',
+            gap: 10,
+          }}
+        >
           {PANEL_BUTTONS.map((b) => (
             <button
               key={b.key}
               type="button"
               onClick={() => setPanelSection(b.key)}
-              style={{
-                flex: '1 1 84px',
-                minWidth: 80,
-                padding: '11px 10px',
-                borderRadius: 'var(--radius-md)',
-                border: `1px solid ${primaryColor}30`,
-                background: `${primaryColor}12`,
-                color: primaryColor,
-                fontWeight: 700,
-                fontSize: '0.85rem',
-                letterSpacing: '0.01em',
-                textAlign: 'center',
-                whiteSpace: 'nowrap',
-                cursor: 'pointer',
-                transition: 'background 0.15s ease, border-color 0.15s ease',
-              }}
+              style={premiumMetalButton}
             >
               {b.label}
             </button>
