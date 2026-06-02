@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
+import { useAvailability, availabilityMessage } from '@/lib/useAvailability';
 
 interface Props {
   agentSlug: string;
@@ -34,6 +35,17 @@ export default function AgentStorefrontLogin({
   // can stamp profiles.referring_sub_agent_id on signup. Every order the
   // researcher places afterward attributes commission to that sub-agent.
   const [subAgentId, setSubAgentId] = useState<string>('');
+
+  // Live username availability — only meaningful on the register tab. On the
+  // login tab the user is supplying an EXISTING username, so we set
+  // `disabled: true` to keep the hook idle and avoid noisy /api/availability
+  // hits while someone signs in.
+  const usernameCheck = useAvailability({
+    field: 'username',
+    value: username,
+    disabled: mode !== 'register',
+  });
+  const usernameMsg = availabilityMessage(usernameCheck);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -153,6 +165,13 @@ export default function AgentStorefrontLogin({
       if (password.length < 8) {
         throw new Error('Password Must Be At Least 8 Characters');
       }
+      // Pre-flight collision guard. The live check already turned the
+      // username field red, but defense in depth — block the submit so an
+      // impatient double-click can't sneak through before the debounce
+      // resolved.
+      if (usernameCheck.status === 'taken' || usernameCheck.status === 'invalid') {
+        throw new Error(usernameCheck.reason || 'Username Is Already Taken');
+      }
 
       // Public storefront register endpoint resolves the agent by slug
       // and ties the new researcher to that agent's referring_agent_id.
@@ -216,6 +235,15 @@ export default function AgentStorefrontLogin({
       setLoading(false);
     }
   }
+
+  // Block the register submit whenever the live check is unhappy. 'checking'
+  // is a soft block — the debounce settles within ~400ms and the button
+  // re-enables, so it never permanently traps the user.
+  const blockRegister =
+    loading ||
+    usernameCheck.status === 'taken' ||
+    usernameCheck.status === 'invalid' ||
+    usernameCheck.status === 'checking';
 
   return (
     <div style={{
@@ -337,11 +365,23 @@ export default function AgentStorefrontLogin({
                 placeholder="E.g. John_Doe"
                 value={username}
                 onChange={e => setUsername(e.target.value)}
+                aria-invalid={usernameCheck.status === 'taken' || usernameCheck.status === 'invalid' || undefined}
+                aria-describedby="storefront-register-username-status"
                 required
                 autoCapitalize="none"
                 autoCorrect="off"
                 spellCheck={false}
               />
+              {usernameMsg && (
+                <div
+                  id="storefront-register-username-status"
+                  role="status"
+                  aria-live="polite"
+                  style={{ marginTop: 6, fontSize: '0.78rem', color: usernameMsg.color }}
+                >
+                  {usernameMsg.text}
+                </div>
+              )}
             </div>
             <div className="form-group">
               <label className="form-label" style={{ color: primaryColor }}>Create A Password</label>
@@ -358,12 +398,14 @@ export default function AgentStorefrontLogin({
             <button
               type="submit"
               className="btn btn-primary"
-              disabled={loading}
+              disabled={blockRegister}
               style={{
                 marginTop: 'var(--space-2)',
                 background: `linear-gradient(135deg, ${primaryColor}, ${primaryColor}90)`,
                 color: 'var(--white)',
-                boxShadow: `0 4px 16px ${primaryColor}40`
+                boxShadow: `0 4px 16px ${primaryColor}40`,
+                opacity: blockRegister ? 0.7 : 1,
+                cursor: blockRegister ? 'not-allowed' : 'pointer',
               }}
             >
               {loading ? 'Creating Account...' : 'Create Account & Enter'}
