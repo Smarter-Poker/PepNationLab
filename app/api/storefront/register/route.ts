@@ -16,7 +16,12 @@ import { assertSameOrigin } from '@/lib/csrf';
  * profiles.referring_sub_agent_id so every order the researcher places
  * later attributes commission to that sub-agent.
  *
- * Body: { slug, username, email?, password, firstName, lastName, subAgentId?, referralCode? }
+ * Availability v2: also accepts optional `reservationToken` — when the
+ * caller previously saw "This Name Is Available" on the live check, the
+ * token (90s TTL) is consumed here so a competing signup can't race-in.
+ *
+ * Body: { slug, username, email?, password, firstName, lastName,
+ *         subAgentId?, referralCode?, reservationToken? }
  *
  * Rate limited to 5 requests / IP / hour. Uses Upstash when available
  * (cluster-wide) and falls back to an in-memory ring buffer when not.
@@ -41,7 +46,7 @@ export async function POST(req: NextRequest) {
   }
 
   const body = await req.json().catch(() => ({}));
-  const { slug, username, email, password, firstName, lastName, referralCode, subAgentId } = body || {};
+  const { slug, username, email, password, firstName, lastName, referralCode, subAgentId, reservationToken } = body || {};
 
   if (!slug || !username || !password || !firstName || !lastName) {
     return NextResponse.json(
@@ -105,6 +110,22 @@ export async function POST(req: NextRequest) {
       );
     }
     resolvedSubAgentId = sa.id as string;
+  }
+
+  // Consume a soft reservation if the caller has one. Race winner here keeps
+  // its claim narrowly ahead of any concurrent signup trying the same
+  // username. Stale/expired tokens silently fail; the unique check below is
+  // the final authority.
+  if (typeof reservationToken === 'string' && /^[0-9a-f-]{36}$/i.test(reservationToken)) {
+    try {
+      await supabase.rpc('consume_slug_reservation', {
+        p_token: reservationToken,
+        p_field: 'username',
+        p_normalized: usernameClean,
+      });
+    } catch (err) {
+      console.warn('[storefront/register] consume_slug_reservation failed:', err);
+    }
   }
 
   // Username uniqueness
