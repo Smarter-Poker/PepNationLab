@@ -290,14 +290,14 @@ export default function AgentDownline({ agentId }: { agentId?: string }) {
                   />
                 </div>
                 <div>
-                  <label style={{ display: 'block', marginBottom: '6px', color: 'var(--grey-300)', fontSize: '0.85rem' }}>URL Slug</label>
+                  <label style={{ display: 'block', marginBottom: '6px', color: 'var(--grey-300)', fontSize: '0.85rem' }}>URL Name</label>
                   <input
                     type="text"
                     required
                     style={{ width: '100%', padding: '10px', background: 'linear-gradient(180deg, #0b0f16 0%, #121822 100%)', border: '1px solid rgba(0,0,0,0.8)', color: 'var(--white)', borderRadius: '6px' }}
                     value={caSlug}
                     onChange={e => setCaSlug(e.target.value.toLowerCase().replace(/[^a-z0-9\-]/g, ''))}
-                    placeholder="E.g., john-store"
+                    placeholder="PepNationLab.com/MyStoreNameHere"
                   />
                 </div>
 
