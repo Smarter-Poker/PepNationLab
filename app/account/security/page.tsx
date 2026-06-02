@@ -23,7 +23,7 @@ export default async function AccountSecurityPage({
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('role, full_name')
+    .select('role')
     .eq('id', user.id)
     .maybeSingle();
 
@@ -34,7 +34,6 @@ export default async function AccountSecurityPage({
     <AccountSecurityClient
       userEmail={user.email ?? ''}
       role={profile?.role ?? 'researcher'}
-      fullName={profile?.full_name ?? null}
       reason={reason}
     />
   );
