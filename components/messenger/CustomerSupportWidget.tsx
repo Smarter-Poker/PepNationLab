@@ -11,16 +11,22 @@ import {
   StickyNote,
   Package,
   ZapOff,
+  PanelLeftOpen,
+  PanelLeftClose,
+  Info,
 } from 'lucide-react';
+import { useMessengerStore } from '@/stores/messengerStore';
+import MessagePane from './MessagePane';
+import SupportContextSidebar from './SupportContextSidebar';
 
 /**
- * Admin Customer Support widget — v4.
+ * Admin Customer Support widget — v5 (full-screen modal).
  *
  * Visible only on /messenger to a user whose profile.role === 'admin'.
- * Renders a fixed bottom-anchored bar with the standard platform
- * brushed-nickel top edge (no teal accent, no decorative icon). Tapping
- * the bar opens the support inbox panel above it. A global rule pads
- * `.messenger-sidebar` so the conversation list rows stop above the bar.
+ * Bottom bar opens a fixed inset:0 overlay that mounts the real messenger
+ * MessagePane in the center column, so admin gets the full feature set —
+ * text, photos, videos, voice, files, links, emoji, gif, calls, threads,
+ * reactions, pins, expiry, scheduled send — for free, by reuse.
  */
 
 type SupportStatus = 'open' | 'in_progress' | 'waiting_on_researcher' | 'resolved';
@@ -54,9 +60,6 @@ interface InboxRow {
   internal_notes_count?: number | null;
 }
 
-// Platform brushed-nickel silver, used for the bar's top edge and the
-// panel's surrounding border so the widget matches every other card-metal
-// surface on the site.
 const NICKEL_BORDER = 'rgba(192,184,168,0.55)';
 const NICKEL_SOFT = 'rgba(192,184,168,0.22)';
 
@@ -185,6 +188,14 @@ function playChime() {
 
 export default function CustomerSupportWidget() {
   const router = useRouter();
+  // Shared messenger store. Setting activeConversationId here makes the
+  // embedded <MessagePane /> render the support thread inside the modal,
+  // exactly like the main /messenger view does.
+  const setMessengerActive = useMessengerStore((s) => s.setActive);
+  const messengerActiveId = useMessengerStore((s) => s.activeConversationId);
+  const prevActiveBeforeOpenRef = useRef<string | null>(null);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [contextCollapsed, setContextCollapsed] = useState(false);
   const [show, setShow] = useState(false);
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -288,10 +299,20 @@ export default function CustomerSupportWidget() {
         setOpen(false);
         setStatusPopoverFor(null);
         setSnoozePopoverFor(null);
+        setMessengerActive(prevActiveBeforeOpenRef.current);
+        prevActiveBeforeOpenRef.current = null;
       }
     }
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
+  }, [open, setMessengerActive]);
+
+  // Snapshot the messenger's active conversation on the rising edge of `open`
+  // so the X / Escape close paths can restore it.
+  useEffect(() => {
+    if (open) {
+      prevActiveBeforeOpenRef.current = useMessengerStore.getState().activeConversationId;
+    }
   }, [open]);
 
   const totalUnread = rows.reduce((a, r) => a + (r.unread_count || 0), 0);
@@ -356,10 +377,13 @@ export default function CustomerSupportWidget() {
   }, [rows]);
 
   function goToConversation(id: string) {
-    setOpen(false);
+    // Stay in the full-screen modal — set active in the shared store so the
+    // embedded MessagePane renders this support thread. Closing the modal
+    // restores the messenger's previous active conversation.
     setStatusPopoverFor(null);
     setSnoozePopoverFor(null);
-    router.push(`/messenger?conversation=${encodeURIComponent(id)}`);
+    setMessengerActive(id);
+    setContextCollapsed(false);
   }
 
   async function setStatus(conversationId: string, status: SupportStatus) {
@@ -394,43 +418,100 @@ export default function CustomerSupportWidget() {
     <>
       {open && (
         <div
-          aria-hidden
-          onClick={() => { setOpen(false); setStatusPopoverFor(null); setSnoozePopoverFor(null); }}
-          style={{
-            position: 'fixed',
-            inset: 0,
-            background: 'rgba(5, 10, 15, 0.55)',
-            backdropFilter: 'blur(2px)',
-            zIndex: 90,
-          }}
-        />
-      )}
-
-      {open && (
-        <div
           role="dialog"
           aria-modal="true"
           aria-label="Customer Support Inbox"
-          className="cs-widget-panel"
+          className="cs-widget-overlay"
           style={{
             position: 'fixed',
-            left: 0,
-            right: 0,
-            bottom: 60,
-            zIndex: 101,
-            maxHeight: 'min(60dvh, 560px)',
+            inset: 0,
+            zIndex: 1500,
             display: 'flex',
             flexDirection: 'column',
-            background: 'linear-gradient(180deg, #0F1923 0%, #050A0F 100%)',
-            borderTop: `1px solid ${NICKEL_BORDER}`,
-            borderLeft: `1px solid ${NICKEL_SOFT}`,
-            borderRight: `1px solid ${NICKEL_SOFT}`,
-            borderTopLeftRadius: 14,
-            borderTopRightRadius: 14,
-            boxShadow: '0 -22px 48px rgba(0,0,0,0.65)',
-            overflow: 'hidden',
+            background: 'var(--surface-0, #050A0F)',
           }}
         >
+          {/* Top app-bar: title + close — close returns to the collapsed bar. */}
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 12,
+              padding: '12px 16px',
+              paddingTop: 'calc(12px + env(safe-area-inset-top))',
+              borderBottom: `1px solid ${NICKEL_BORDER}`,
+              background: 'linear-gradient(180deg, #0E1A24 0%, #0A1219 100%)',
+              flexShrink: 0,
+            }}
+          >
+            <button
+              type="button"
+              onClick={() => setSidebarCollapsed((v) => !v)}
+              aria-label={sidebarCollapsed ? 'Show Inbox List' : 'Hide Inbox List'}
+              title={sidebarCollapsed ? 'Show Inbox List' : 'Hide Inbox List'}
+              style={{
+                width: 34,
+                height: 34,
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                borderRadius: 8,
+                background: 'rgba(255,255,255,0.06)',
+                border: '1px solid rgba(255,255,255,0.12)',
+                color: 'var(--silver, #C0B8A8)',
+                cursor: 'pointer',
+                flexShrink: 0,
+              }}
+            >
+              {sidebarCollapsed ? <PanelLeftOpen size={16} aria-hidden="true" /> : <PanelLeftClose size={16} aria-hidden="true" />}
+            </button>
+            <strong style={{ color: 'var(--white, #fff)', fontSize: '1.02rem', flex: 1, textAlign: 'center' }}>
+              Customer Support
+            </strong>
+            <button
+              type="button"
+              onClick={() => {
+                setOpen(false);
+                setStatusPopoverFor(null);
+                setSnoozePopoverFor(null);
+                setMessengerActive(prevActiveBeforeOpenRef.current);
+                prevActiveBeforeOpenRef.current = null;
+              }}
+              aria-label="Close Customer Support"
+              title="Close Customer Support"
+              style={{
+                width: 34,
+                height: 34,
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                borderRadius: 8,
+                background: 'rgba(229,62,62,0.10)',
+                border: '1px solid rgba(229,62,62,0.35)',
+                color: '#FF9C9C',
+                cursor: 'pointer',
+                flexShrink: 0,
+              }}
+            >
+              <X size={16} aria-hidden="true" />
+            </button>
+          </div>
+
+          {/* 3-column row: inbox / messages / context. */}
+          <div style={{ flex: 1, display: 'flex', minHeight: 0, position: 'relative' }}>
+            {!sidebarCollapsed && (
+              <aside
+                className="cs-widget-panel"
+                style={{
+                  width: 'min(360px, 90vw)',
+                  flexShrink: 0,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  background: 'linear-gradient(180deg, #0F1923 0%, #050A0F 100%)',
+                  borderRight: `1px solid ${NICKEL_SOFT}`,
+                  overflow: 'hidden',
+                }}
+              >
           <header
             style={{
               display: 'flex',
@@ -447,8 +528,9 @@ export default function CustomerSupportWidget() {
             </strong>
             <button
               type="button"
-              onClick={() => setOpen(false)}
-              aria-label="Close"
+              onClick={() => setSidebarCollapsed(true)}
+              aria-label="Hide Inbox List"
+              title="Hide Inbox List"
               style={{
                 width: 28,
                 height: 28,
@@ -462,7 +544,7 @@ export default function CustomerSupportWidget() {
                 cursor: 'pointer',
               }}
             >
-              <X size={14} aria-hidden="true" />
+              <PanelLeftClose size={14} aria-hidden="true" />
             </button>
           </header>
 
@@ -591,6 +673,7 @@ export default function CustomerSupportWidget() {
                   const slaMin = Math.floor(slaSec / 60);
                   const notesCount = row.internal_notes_count || 0;
                   const shortOrderId = row.support_order_id ? row.support_order_id.slice(0, 8) : '';
+                  const isActiveRow = messengerActiveId === row.conversation_id;
 
                   return (
                     <li
@@ -598,6 +681,7 @@ export default function CustomerSupportWidget() {
                       style={{
                         borderLeft: overdue ? '4px solid #E53E3E' : '4px solid transparent',
                         position: 'relative',
+                        background: isActiveRow ? 'rgba(192,184,168,0.10)' : 'transparent',
                       }}
                     >
                       <div
@@ -987,6 +1071,116 @@ export default function CustomerSupportWidget() {
               {loading ? 'Refreshing…' : 'Refresh'}
             </button>
           </footer>
+              </aside>
+            )}
+
+            {/* CENTER: messages pane (uses the shared messenger store). */}
+            <main
+              style={{
+                flex: 1,
+                minWidth: 0,
+                display: 'flex',
+                flexDirection: 'column',
+                background: 'var(--surface-1, #0F1923)',
+              }}
+            >
+              {messengerActiveId && adminIdRef.current ? (
+                <MessagePane userId={adminIdRef.current} />
+              ) : (
+                <div
+                  style={{
+                    flex: 1,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexDirection: 'column',
+                    gap: 8,
+                    padding: 24,
+                    color: 'var(--silver, #C0B8A8)',
+                    textAlign: 'center',
+                  }}
+                >
+                  <strong style={{ color: 'var(--white, #fff)', fontSize: '1rem' }}>
+                    No Conversation Selected
+                  </strong>
+                  <p style={{ fontSize: '0.86rem', maxWidth: 380, lineHeight: 1.5, margin: 0 }}>
+                    Pick A Support Thread From The Left To Open It Here. You’ll
+                    Get The Full Messenger — Text, Photos, Videos, Voice Notes,
+                    Files, And Links — Without Leaving Customer Support.
+                  </p>
+                </div>
+              )}
+            </main>
+
+            {/* RIGHT: researcher context (closable). */}
+            {messengerActiveId && !contextCollapsed && (
+              <aside
+                className="cs-context-rail"
+                style={{
+                  width: 'min(380px, 90vw)',
+                  flexShrink: 0,
+                  borderLeft: `1px solid ${NICKEL_SOFT}`,
+                  background: 'var(--surface-1, #0F1923)',
+                  overflowY: 'auto',
+                  position: 'relative',
+                }}
+              >
+                <button
+                  type="button"
+                  onClick={() => setContextCollapsed(true)}
+                  aria-label="Hide Researcher Context"
+                  title="Hide Researcher Context"
+                  style={{
+                    position: 'absolute',
+                    top: 8,
+                    right: 8,
+                    zIndex: 5,
+                    width: 28,
+                    height: 28,
+                    padding: 0,
+                    borderRadius: 8,
+                    background: 'rgba(255,255,255,0.06)',
+                    border: '1px solid rgba(255,255,255,0.12)',
+                    color: 'var(--silver, #C0B8A8)',
+                    cursor: 'pointer',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <X size={14} aria-hidden="true" />
+                </button>
+                <SupportContextSidebar conversationId={messengerActiveId} />
+              </aside>
+            )}
+            {messengerActiveId && contextCollapsed && (
+              <button
+                type="button"
+                onClick={() => setContextCollapsed(false)}
+                aria-label="Show Researcher Context"
+                title="Show Researcher Context"
+                style={{
+                  position: 'absolute',
+                  right: 12,
+                  top: 16,
+                  zIndex: 4,
+                  width: 32,
+                  height: 32,
+                  padding: 0,
+                  borderRadius: 8,
+                  background: 'rgba(192,184,168,0.18)',
+                  border: `1px solid ${NICKEL_BORDER}`,
+                  color: 'var(--white, #fff)',
+                  cursor: 'pointer',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <Info size={16} aria-hidden="true" />
+              </button>
+            )}
+          </div>
         </div>
       )}
 
@@ -1131,11 +1325,6 @@ export default function CustomerSupportWidget() {
         @keyframes cs-spin { to { transform: rotate(360deg); } }
         @media (min-width: 768px) {
           .cs-widget-bar {
-            right: auto !important;
-            width: 320px !important;
-            border-right: 1px solid ${NICKEL_SOFT} !important;
-          }
-          .cs-widget-panel {
             right: auto !important;
             width: 320px !important;
             border-right: 1px solid ${NICKEL_SOFT} !important;
