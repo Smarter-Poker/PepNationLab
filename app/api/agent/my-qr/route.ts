@@ -35,7 +35,7 @@ export async function GET(req: Request) {
   }
 
   if (!lookupId) {
-    return NextResponse.json({ error: 'no_agent', message: 'No Parent Agent Found' }, { status: 404 });
+    return NextResponse.json({ error: 'no_agent', message: 'No Associated Agent Found For Your Account' }, { status: 404 });
   }
 
   const { data: agent } = await svc

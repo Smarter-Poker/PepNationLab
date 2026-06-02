@@ -10,8 +10,6 @@ import MessageBell from '@/components/MessageBell';
 import NavbarWalletBadge from '@/components/NavbarWalletBadge';
 import WalletCard from '@/components/WalletCard';
 import { getRoleNavLinks } from '@/components/roleNavLinks';
-import QRCodeGenerator from '@/components/QRCodeGenerator';
-import { createPortal } from 'react-dom';
 import MyQRCodeModal from './MyQRCodeModal';
 
 function resolveTitle(pathname: string, role: string): string {
@@ -129,7 +127,6 @@ export default function Navbar({ onMenuClick, isOpen, title }: { onMenuClick?: (
   const [user, setUser] = useState<{ id: string; email?: string } | null>(null);
   const [profile, setProfile] = useState<{ full_name?: string | null; role?: string; referring_agent_id?: string | null; is_super_agent?: boolean | null; is_sub_agent?: boolean | null } | null>(null);
   const [agentSlug, setAgentSlug] = useState<string | null>(null);
-  const [qrCodeData, setQrCodeData] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [showQRModal, setShowQRModal] = useState(false);
 
@@ -199,22 +196,20 @@ export default function Navbar({ onMenuClick, isOpen, title }: { onMenuClick?: (
               if (data.role === 'researcher' && data.referring_agent_id) {
                 supabase
                   .from('agent_profiles')
-                  .select('slug, qr_code_data')
+                  .select('slug')
                   .eq('id', data.referring_agent_id)
                   .maybeSingle()
                   .then(({ data: ap }) => {
                     if (ap?.slug) setAgentSlug(ap.slug);
-                    if (ap?.qr_code_data) setQrCodeData(ap.qr_code_data);
                   });
               } else if ((data.role === 'agent' || data.role === 'super_agent') && data.is_sub_agent !== true) {
                 supabase
                   .from('agent_profiles')
-                  .select('slug, qr_code_data')
+                  .select('slug')
                   .eq('id', session.user.id)
                   .maybeSingle()
                   .then(({ data: ap }) => {
                     if (ap?.slug) setAgentSlug(ap.slug);
-                    if (ap?.qr_code_data) setQrCodeData(ap.qr_code_data);
                   });
               }
             }
@@ -238,22 +233,20 @@ export default function Navbar({ onMenuClick, isOpen, title }: { onMenuClick?: (
               if (data.role === 'researcher' && data.referring_agent_id) {
                 supabase
                   .from('agent_profiles')
-                  .select('slug, qr_code_data')
+                  .select('slug')
                   .eq('id', data.referring_agent_id)
                   .maybeSingle()
                   .then(({ data: ap }) => {
                     if (ap?.slug) setAgentSlug(ap.slug);
-                    if (ap?.qr_code_data) setQrCodeData(ap.qr_code_data);
                   });
               } else if ((data.role === 'agent' || data.role === 'super_agent') && data.is_sub_agent !== true) {
                 supabase
                   .from('agent_profiles')
-                  .select('slug, qr_code_data')
+                  .select('slug')
                   .eq('id', session.user.id)
                   .maybeSingle()
                   .then(({ data: ap }) => {
                     if (ap?.slug) setAgentSlug(ap.slug);
-                    if (ap?.qr_code_data) setQrCodeData(ap.qr_code_data);
                   });
               }
             }
@@ -296,10 +289,6 @@ export default function Navbar({ onMenuClick, isOpen, title }: { onMenuClick?: (
 
   // QR popup details — sub-agents recruit via /invite?ref (no storefront);
   // agents/super-agents share their storefront slug.
-  const isSubAgent = profile?.is_sub_agent === true;
-  const qrUrl = typeof window !== 'undefined'
-    ? `${window.location.origin}${isSubAgent ? `/invite?ref=${user?.id ?? ''}` : `/${agentSlug ?? ''}`}`
-    : '';
 
   return (
     <>

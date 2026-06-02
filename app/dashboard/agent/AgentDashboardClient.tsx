@@ -27,7 +27,6 @@ import { useTheme } from '@/components/ThemeProvider';
 import PaymentMethodsPanel from '@/components/PaymentMethodsPanel';
 import AvatarUpload from '@/components/AvatarUpload';
 import { createPortal } from 'react-dom';
-import QRCodeGenerator from '@/components/QRCodeGenerator';
 import MyQRCodeModal from '@/components/MyQRCodeModal';
 
 
