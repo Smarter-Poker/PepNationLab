@@ -13,6 +13,13 @@ export interface RecommendationItem {
   retail_price?: number;
   unit_size?: string | null;
   unit_measure?: string | null;
+  /**
+   * Optional pre-resolved href. Use this when the caller is a Server
+   * Component — passing a `buildHref` function across the server-to-client
+   * boundary throws "Functions cannot be passed directly to Client
+   * Components". Client-side callers can keep using `buildHref`.
+   */
+  href?: string | null;
 }
 
 interface Props {
@@ -181,15 +188,16 @@ export default function RecommendationStrip({
                   ) : null}
                 </>
               );
-              if (buildHref) {
-                const href = buildHref(item.id);
-                if (href) {
-                  return (
-                    <a key={item.id} href={href} style={cardBase}>
-                      {inner}
-                    </a>
-                  );
-                }
+              // Per-item href (server-component safe) takes precedence over
+              // the client-side buildHref function prop.
+              const resolvedHref =
+                (item.href && item.href.length > 0) ? item.href : (buildHref ? buildHref(item.id) : null);
+              if (resolvedHref) {
+                return (
+                  <a key={item.id} href={resolvedHref} style={cardBase}>
+                    {inner}
+                  </a>
+                );
               }
               return (
                 <button
