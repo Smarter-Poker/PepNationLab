@@ -3,7 +3,7 @@
 import React from 'react';
 import { toast } from 'sonner';
 import { createClient } from '@/lib/supabase/client';
-import { useAvailability, availabilityMessage } from '@/lib/useAvailability';
+import UniqueField from '@/components/UniqueField';
 
 interface AgentStorefrontConfigProps {
   displayName: string;
@@ -26,6 +26,18 @@ interface AgentStorefrontConfigProps {
   paymentMethodsNode?: React.ReactNode;
 }
 
+/** Derive a slug-shaped suggestion from a free-form display name. */
+function deriveSlugFromName(name: string): string {
+  return name
+    .toLowerCase()
+    .normalize('NFKD')
+    .replace(/[̀-ͯ]/g, '') // strip diacritics
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '')
+    .slice(0, 30);
+}
+
 export default function AgentStorefrontConfig({
   displayName, setDisplayName,
   slug, setSlug,
@@ -41,24 +53,22 @@ export default function AgentStorefrontConfig({
 }: AgentStorefrontConfigProps) {
   const [loading, setLoading] = React.useState(false);
 
-  // Live uniqueness checks. excludeId is THIS storefront's row id so editing
-  // the existing slug/display_name back to itself does not flag a collision.
-  const slugCheck = useAvailability({ field: 'slug', value: slug, excludeId: agentId });
-  const displayNameCheck = useAvailability({ field: 'display_name', value: displayName, excludeId: agentId });
-  const slugMsg = availabilityMessage(slugCheck);
-  const displayNameMsg = availabilityMessage(displayNameCheck);
+  // Reservation tokens issued by the live availability check. Sent on save.
+  const [slugReservationToken, setSlugReservationToken] = React.useState<string | null>(null);
+  const [displayNameReservationToken, setDisplayNameReservationToken] = React.useState<string | null>(null);
 
-  // Save is blocked when EITHER live check is unhappy. 'checking' is
-  // intentionally a soft block — once the debounce settles it transitions to
-  // available/taken and the button re-enables.
-  const blockSave =
-    loading ||
-    slugCheck.status === 'taken' ||
-    slugCheck.status === 'invalid' ||
-    slugCheck.status === 'checking' ||
-    displayNameCheck.status === 'taken' ||
-    displayNameCheck.status === 'invalid' ||
-    displayNameCheck.status === 'checking';
+  // One-shot slug auto-suggestion. Triggers only when slug is empty and the
+  // user starts typing a display name — once accepted (or once they touch
+  // the slug field), we never overwrite again.
+  const slugWasAutoFilledRef = React.useRef(false);
+  React.useEffect(() => {
+    const derived = deriveSlugFromName(displayName);
+    if (!slug && !slugWasAutoFilledRef.current && derived && derived.length >= 3) {
+      slugWasAutoFilledRef.current = true;
+      setSlug(derived);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [displayName]);
 
   // Warehouse address local state — mirrors agent_profiles.warehouse_address.
   const [whName, setWhName] = React.useState(warehouseAddress?.name ?? '');
@@ -79,7 +89,6 @@ export default function AgentStorefrontConfig({
       .update({ is_active: next })
       .eq('id', agentId);
     if (error) {
-      // Roll back UI on failure.
       setVacationToggle(!next);
       toast.error('Failed To Update Storefront Status');
     } else {
@@ -96,27 +105,20 @@ export default function AgentStorefrontConfig({
       return;
     }
 
-    // Defense in depth — if the live check flagged either field as taken,
-    // refuse the save without round-tripping to the server.
-    if (slugCheck.status === 'taken' || slugCheck.status === 'invalid') {
-      toast.error(slugCheck.reason || 'Slug Is Already Taken');
-      return;
-    }
-    if (displayNameCheck.status === 'taken' || displayNameCheck.status === 'invalid') {
-      toast.error(displayNameCheck.reason || 'Display Name Is Already Taken');
-      return;
-    }
-
     setLoading(true);
     const supabase = createClient();
 
     try {
       // 1) Slug update goes through the server endpoint so it can enforce
-      //    the DB UNIQUE + reserved-word CHECK with a clean 409 surface.
+      //    the DB UNIQUE + reserved-word CHECK with a clean 409 surface,
+      //    and now also consume the soft reservation token.
       const slugRes = await fetch('/api/agent/storefront-slug', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ slug: cleanSlug }),
+        body: JSON.stringify({
+          slug: cleanSlug,
+          reservationToken: slugReservationToken,
+        }),
       });
       const slugJson = await slugRes.json().catch(() => ({}));
       if (!slugRes.ok) {
@@ -145,19 +147,12 @@ export default function AgentStorefrontConfig({
         },
       };
 
-      // Per-agent Shippo key write intentionally removed post-M1.
-      // All labels are purchased through the platform Shippo account.
-      // shippo_api_key on agent_profiles is deprecated and ignored.
-
       const { error: updateError } = await supabase
         .from('agent_profiles')
         .update(updatePayload)
         .eq('id', agentId);
 
       if (updateError) {
-        // 23505 = unique_violation. The DB has a case-insensitive unique index
-        // on lower(trim(display_name)); surface it with the same wording the
-        // live check uses so the message stays consistent.
         if ((updateError as any).code === '23505') {
           throw new Error('Display Name Is Already Taken — Try Another.');
         }
@@ -263,54 +258,25 @@ export default function AgentStorefrontConfig({
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-5)' }}>
           <div className="grid-2">
-            <div className="form-group" style={{ marginTop: 0 }}>
-              <label className="form-label">Display Name</label>
-              <input
-                type="text"
-                className="form-input"
-                value={displayName}
-                onChange={(e) => setDisplayName(e.target.value)}
-                aria-invalid={displayNameCheck.status === 'taken' || displayNameCheck.status === 'invalid' || undefined}
-                aria-describedby="storefront-display-name-status"
-                required
-              />
-              {displayNameMsg && (
-                <div
-                  id="storefront-display-name-status"
-                  role="status"
-                  aria-live="polite"
-                  style={{ marginTop: 6, fontSize: '0.78rem', color: displayNameMsg.color }}
-                >
-                  {displayNameMsg.text}
-                </div>
-              )}
-            </div>
-            <div className="form-group" style={{ marginTop: 0 }}>
-              <label className="form-label">URL Slug</label>
-              <div style={{ display: 'flex', alignItems: 'center', height: 46, background: 'var(--surface-3)', borderRadius: 'var(--radius-md)', border: '1px solid rgba(255,255,255,0.1)', paddingLeft: 'var(--space-3)' }}>
-                <span style={{ fontSize: '0.85rem', color: 'var(--grey-400)' }}>pepnationlab.com/</span>
-                <input
-                  type="text"
-                  className="form-input"
-                  value={slug}
-                  onChange={(e) => setSlug(e.target.value)}
-                  aria-invalid={slugCheck.status === 'taken' || slugCheck.status === 'invalid' || undefined}
-                  aria-describedby="storefront-slug-status"
-                  style={{ background: 'transparent', border: 'none', boxShadow: 'none', height: '100%', paddingTop: 0, paddingBottom: 0 }}
-                  required
-                />
-              </div>
-              {slugMsg && (
-                <div
-                  id="storefront-slug-status"
-                  role="status"
-                  aria-live="polite"
-                  style={{ marginTop: 6, fontSize: '0.78rem', color: slugMsg.color }}
-                >
-                  {slugMsg.text}
-                </div>
-              )}
-            </div>
+            <UniqueField
+              field="display_name"
+              label="Display Name"
+              value={displayName}
+              onChange={setDisplayName}
+              onTokenChange={setDisplayNameReservationToken}
+              excludeId={agentId}
+              required
+            />
+            <UniqueField
+              field="slug"
+              label="URL Slug"
+              value={slug}
+              onChange={setSlug}
+              onTokenChange={setSlugReservationToken}
+              excludeId={agentId}
+              urlPrefix="pepnationlab.com/"
+              required
+            />
           </div>
 
           <div className="grid-2">
@@ -371,14 +337,14 @@ export default function AgentStorefrontConfig({
             <button
               type="button"
               onClick={handleUpdateProfile}
-              disabled={blockSave}
+              disabled={loading}
               className="btn-neon-cyan"
               style={{
                 minWidth: 160,
                 padding: '10px 24px',
                 fontSize: '1rem',
-                cursor: blockSave ? 'not-allowed' : 'pointer',
-                opacity: blockSave ? 0.7 : 1,
+                cursor: loading ? 'not-allowed' : 'pointer',
+                opacity: loading ? 0.7 : 1,
               }}
             >
               {loading ? 'Saving Changes...' : 'Save Configuration'}
@@ -450,14 +416,14 @@ export default function AgentStorefrontConfig({
             <button
               type="button"
               onClick={handleUpdateProfile}
-              disabled={blockSave}
+              disabled={loading}
               className="btn-neon-cyan"
               style={{
                 minWidth: 160,
                 padding: '10px 24px',
                 fontSize: '1rem',
-                cursor: blockSave ? 'not-allowed' : 'pointer',
-                opacity: blockSave ? 0.7 : 1,
+                cursor: loading ? 'not-allowed' : 'pointer',
+                opacity: loading ? 0.7 : 1,
               }}
             >
               {loading ? 'Saving Changes...' : 'Save Warehouse Details'}
