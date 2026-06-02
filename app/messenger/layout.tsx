@@ -14,13 +14,16 @@
  *    keyboard opens. Because this entire column is 100dvh, the composer bar
  *    stays pinned above the keyboard without any JavaScript scroll hacks.
  *
- * Admin Customer Support widget:
- *  - Rendered here so it appears on every /messenger route. The widget
- *    self-gates on profile.role === 'admin' (returns null otherwise),
- *    so non-admin pages incur only the mount-time auth check.
+ * Admin Customer Support widgets:
+ *  - CustomerSupportWidget: edge-to-edge docked bar at the bottom of
+ *    /messenger that opens the support inbox. Admin-only.
+ *  - SupportContextSidebar: right-rail researcher context panel that
+ *    self-gates on admin role + the active conversation being a support
+ *    thread. Reads ?conversation= from the URL via a small client wrapper.
  */
 import Navbar from '@/components/Navbar';
 import CustomerSupportWidget from '@/components/messenger/CustomerSupportWidget';
+import SupportContextMount from '@/components/messenger/SupportContextMount';
 
 export default function MessengerLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -61,8 +64,12 @@ export default function MessengerLayout({ children }: { children: React.ReactNod
         {children}
       </div>
 
-      {/* Bottom-left fixed widget; admin-only, hidden for everyone else. */}
+      {/* Bottom edge-to-edge fixed widget; admin-only, hidden for everyone else. */}
       <CustomerSupportWidget />
+
+      {/* Right-rail researcher context panel; admin-only, hidden unless
+          ?conversation= names a support thread. */}
+      <SupportContextMount />
     </div>
   );
 }
