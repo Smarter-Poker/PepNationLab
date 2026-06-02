@@ -77,15 +77,19 @@ export async function POST(req: NextRequest) {
   }
 
   // ---- validate numeric config ----
+  // Platform rule + DB CHECK profiles_commission_pct_range: base commission can
+  // never exceed 40%. Anything higher would 500 on the profiles update below, so
+  // reject it cleanly here. The cap and the ladder steps are also held to 40%.
+  const MAX_CAP_LIMIT = 40;
   const basePct = body.basePct == null ? 0 : Number(body.basePct);
-  if (!Number.isFinite(basePct) || basePct < 0 || basePct > 100) {
-    return NextResponse.json({ error: 'Base Commission Must Be Between 0 And 100.' }, { status: 400 });
+  if (!Number.isFinite(basePct) || basePct < 0 || basePct > MAX_CAP_LIMIT) {
+    return NextResponse.json({ error: 'Base Commission Cannot Exceed 40%.' }, { status: 400 });
   }
   let capPct: number | null = null;
   if (body.capPct != null && body.capPct !== '') {
     capPct = Number(body.capPct);
-    if (!Number.isFinite(capPct) || capPct < 0 || capPct > 100) {
-      return NextResponse.json({ error: 'Max Commission Cap Must Be Between 0 And 100.' }, { status: 400 });
+    if (!Number.isFinite(capPct) || capPct < 0 || capPct > MAX_CAP_LIMIT) {
+      return NextResponse.json({ error: 'Max Commission Cap Cannot Exceed 40%.' }, { status: 400 });
     }
     if (capPct < basePct) {
       return NextResponse.json({ error: 'Max Commission Cap Cannot Be Below The Base Rate.' }, { status: 400 });
@@ -106,7 +110,7 @@ export async function POST(req: NextRequest) {
       const mv = Number(raw?.min_volume);
       const bp = Number(raw?.bonus_pct);
       if (!Number.isFinite(mv) || mv < 0) return NextResponse.json({ error: 'Each Milestone Needs A Volume Of Zero Or Greater.' }, { status: 400 });
-      if (!Number.isFinite(bp) || bp < 0 || bp > 100) return NextResponse.json({ error: 'Each Milestone Bonus Must Be Between 0 And 100.' }, { status: 400 });
+      if (!Number.isFinite(bp) || bp < 0 || bp > MAX_CAP_LIMIT) return NextResponse.json({ error: 'Each Milestone Bonus Cannot Exceed 40%.' }, { status: 400 });
       steps.push({ min_volume: mv, bonus_pct: bp });
     }
     steps.sort((a, b) => a.min_volume - b.min_volume);
@@ -116,7 +120,8 @@ export async function POST(req: NextRequest) {
   const { error: planErr } = await svc.from('sub_agent_commission_plan').upsert({
     sub_agent_id: subAgentId,
     parent_agent_id: gate.user.id,
-    steps: body.steps,
+    // Persist the validated + sorted steps, not the raw request body.
+    steps,
     updated_at: new Date().toISOString(),
   }, { onConflict: 'sub_agent_id' });
   if (planErr) {

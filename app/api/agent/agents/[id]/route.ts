@@ -249,8 +249,11 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
 
     if (body.commission_pct !== undefined && body.commission_pct !== null && body.commission_pct !== '') {
       const pct = Number(body.commission_pct);
-      if (!Number.isFinite(pct) || pct < 0 || pct > 100) {
-        return NextResponse.json({ error: 'Commission Rate Must Be Between 0 And 100.' }, { status: 400 });
+      // DB CHECK profiles_commission_pct_range caps commission_pct at 40 (the
+      // platform's hard 40% rule). Validate here so an out-of-range value gives a
+      // clean 400 instead of a constraint-violation 500 on the profile update.
+      if (!Number.isFinite(pct) || pct < 0 || pct > MAX_CAP_LIMIT) {
+        return NextResponse.json({ error: 'Commission Rate Cannot Exceed 40%.' }, { status: 400 });
       }
       updates.commission_pct = pct;
       updates.commission_rate = pct;
@@ -295,6 +298,14 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
     }
 
     if (Array.isArray(body.custom_commission_scale)) {
+      // Each ladder step bonus must stay within the platform's 0..40 range.
+      for (const step of body.custom_commission_scale) {
+        const bonus = Number(step?.bonus_pct);
+        const vol = Number(step?.min_volume);
+        if (!Number.isFinite(bonus) || bonus < 0 || bonus > MAX_CAP_LIMIT || !Number.isFinite(vol) || vol < 0) {
+          return NextResponse.json({ error: 'Gamification Levels Must Be Between 0 And 40% With Non-Negative Volumes.' }, { status: 400 });
+        }
+      }
       updates.commission_ladder_config = body.custom_commission_scale;
       changes.commission_ladder_config = body.custom_commission_scale;
     } else if (body.custom_commission_scale === null) {
