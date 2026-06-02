@@ -69,6 +69,12 @@ export default async function AccountHubPage() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect('/login');
 
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('role')
+    .eq('id', user.id)
+    .maybeSingle();
+
   return (
     <div style={{ minHeight: '100dvh', background: 'var(--black)', padding: 'var(--space-6) var(--space-4)' }}>
       <div className="container" style={{ maxWidth: 760 }}>
@@ -89,7 +95,9 @@ export default async function AccountHubPage() {
           <NavRow index={0} href="/account/wishlist" label="Wishlist" description="Products You Saved For Later." Icon={Heart} />
           <NavRow index={1} href="/account/recently-viewed" label="Recently Viewed" description="The Last 50 Products You Browsed." Icon={History} />
           <NavRow index={2} href="/orders" label="Orders" description="Track Past And Pending Orders." Icon={Package} />
-          <NavRow index={3} href="/account/referrals" label="Referrals" description="Share Your Code And Earn Store Credit." Icon={Gift} />
+          {profile?.role === 'researcher' && (
+            <NavRow index={3} href="/account/referrals" label="Referrals" description="Share Your Code And Earn Store Credit." Icon={Gift} />
+          )}
           <NavRow index={4} href="/account/notifications" label="Notifications" description="Push And In-App Notification Preferences." Icon={Bell} />
           <NavRow index={5} href="/account/security" label="Security" description="Password, 2FA, And Login Sessions." Icon={ShieldCheck} />
           <NavRow index={6} href="/account/addresses" label="Saved Addresses" description="Manage Shipping Addresses Used At Checkout." Icon={MapPin} />
