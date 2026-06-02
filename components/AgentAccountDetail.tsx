@@ -10,7 +10,7 @@ import { toast } from 'sonner';
  * agent name. Lets the Super Agent:
  *   - Edit Full Name + Storefront Display Name
  *   - Switch Payment Model (Prepaid / Credit Line) and set the Credit Limit
- *   - Choose the Commission Structure: Fixed Percentage or Gamification Scale
+ *   - Choose the Markup Structure: Fixed Markup or Gamification Scale
  *   - Activate / Deactivate the account (also toggles the storefront)
  *   - Give Wallet Credit (adds to prepaid balance, recorded in the ledger)
  *   - Review Sales History + the Wallet Ledger
@@ -453,12 +453,12 @@ export default function AgentAccountDetail({
                     </div>
                   )}
 
-                  {/* Commission structure: Fixed Percentage vs Gamification Scale */}
+                  {/* Commission structure: Fixed Markup vs Gamification Scale */}
                   <div style={{ gridColumn: '1 / -1' }}>
-                    <label style={labelStyle}>Commission Structure</label>
+                    <label style={labelStyle}>Markup Structure</label>
                     <div style={{ display: 'flex', gap: 'var(--space-2)', marginBottom: 'var(--space-3)' }}>
                       <label style={{ flex: 1, ...inputStyle, display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', borderColor: commissionMode === 'fixed' ? 'var(--teal)' : 'rgba(0,0,0,0.8)' }}>
-                        <input type="radio" checked={commissionMode === 'fixed'} onChange={() => setCommissionMode('fixed')} /> Fixed Percentage
+                        <input type="radio" checked={commissionMode === 'fixed'} onChange={() => setCommissionMode('fixed')} /> Fixed Markup
                       </label>
                       <label style={{ flex: 1, ...inputStyle, display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', borderColor: commissionMode === 'gamified' ? 'var(--teal)' : 'rgba(0,0,0,0.8)' }}>
                         <input type="radio" checked={commissionMode === 'gamified'} onChange={() => setCommissionMode('gamified')} />
@@ -496,7 +496,7 @@ export default function AgentAccountDetail({
 
                     {commissionMode === 'fixed' ? (
                       <div>
-                        <label style={{ display: 'block', marginBottom: '8px', color: 'var(--grey-300)', fontSize: '0.85rem' }}>Commission Rate (%)</label>
+                        <label style={{ display: 'block', marginBottom: '8px', color: 'var(--grey-300)', fontSize: '0.85rem' }}>Markup Rate (%)</label>
                         <input type="number" min="0" max="100" step="0.1" style={{ width: '100%', padding: '10px', background: 'var(--bg-metal-dark)', border: '1px solid rgba(0,0,0,0.8)', color: 'var(--white)', borderRadius: '6px' }} value={commissionPct} onChange={e => setCommissionPct(e.target.value)} placeholder="e.g. 20" />
                       </div>
                     ) : scaleType === 'default' ? (
@@ -519,7 +519,7 @@ export default function AgentAccountDetail({
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 'var(--space-2)', marginBottom: '4px' }}>
                           <span style={{ fontSize: '0.75rem', color: 'var(--grey-400)', textTransform: 'uppercase' }}>Level</span>
                           <span style={{ fontSize: '0.75rem', color: 'var(--grey-400)', textTransform: 'uppercase' }}>Min Monthly Vol ($)</span>
-                          <span style={{ fontSize: '0.75rem', color: 'var(--grey-400)', textTransform: 'uppercase' }}>Commission Rate (%)</span>
+                          <span style={{ fontSize: '0.75rem', color: 'var(--grey-400)', textTransform: 'uppercase' }}>Markup Rate (%)</span>
                         </div>
                         {customSteps.map((step, idx) => (
                           <div key={idx} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 'var(--space-2)', alignItems: 'center' }}>
@@ -539,15 +539,15 @@ export default function AgentAccountDetail({
                       </div>
                     )}
                     <p style={{ fontSize: '0.75rem', color: 'var(--grey-500)', margin: '8px 0 0', lineHeight: 1.5 }}>
-                      Fixed Percentage Pays A Flat Rate. Gamification Scale Climbs Through 5 Levels As Monthly Sales Grow.
-                      <button
-                        type="button"
+                      Fixed Markup Pays A Flat Rate. Gamification Scale Drops Your Markup Through 5 Levels As Their Monthly Sales Grow.
+                    </p>
+                    <div style={{ marginTop: 'var(--space-3)' }}>
+                      <button type="button" className="btn-silver" style={{ fontSize: '0.8rem', padding: '4px 10px' }}
                         onClick={() => setShowGamificationInfo(true)}
-                        style={{ background: 'none', border: 'none', padding: 0, color: 'var(--teal)', cursor: 'pointer', fontWeight: 700, textDecoration: 'underline' }}
                       >
                         See The 5 Levels
-                      </button>.
-                    </p>
+                      </button>
+                    </div>
                   </div>
                 </div>
 

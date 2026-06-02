@@ -363,11 +363,11 @@ export default function AgentDownline({ agentId }: { agentId?: string }) {
                 <hr style={{ border: 'none', borderTop: '1px solid rgba(255,255,255,0.1)', margin: 'var(--space-2) 0' }} />
 
                 <div>
-                  <label style={{ display: 'block', marginBottom: '6px', color: 'var(--grey-300)', fontSize: '0.85rem' }}>Commission Structure</label>
+                  <label style={{ display: 'block', marginBottom: '6px', color: 'var(--grey-300)', fontSize: '0.85rem' }}>Markup Structure</label>
                   <div style={{ display: 'flex', gap: 'var(--space-3)', marginBottom: 'var(--space-3)' }}>
                     <label style={{ flex: 1, padding: '10px', background: 'var(--bg-metal-dark)', border: `1px solid ${caCommissionMode === 'fixed' ? 'var(--teal)' : 'rgba(0,0,0,0.8)'}`, color: 'var(--white)', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}>
                       <input type="radio" checked={caCommissionMode === 'fixed'} onChange={() => setCaCommissionMode('fixed')} />
-                      Fixed Percentage
+                      Fixed Markup
                     </label>
                     <label style={{ flex: 1, padding: '10px', background: 'var(--bg-metal-dark)', border: `1px solid ${caCommissionMode === 'gamified' ? 'var(--teal)' : 'rgba(0,0,0,0.8)'}`, color: 'var(--white)', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}>
                       <input type="radio" checked={caCommissionMode === 'gamified'} onChange={() => setCaCommissionMode('gamified')} />
@@ -404,7 +404,7 @@ export default function AgentDownline({ agentId }: { agentId?: string }) {
                   )}
                   {caCommissionMode === 'fixed' ? (
                     <div>
-                      <label style={{ display: 'block', marginBottom: '6px', color: 'var(--grey-300)', fontSize: '0.85rem' }}>Commission Rate (%)</label>
+                      <label style={{ display: 'block', marginBottom: '6px', color: 'var(--grey-300)', fontSize: '0.85rem' }}>Markup Rate (%)</label>
                       <input type="number" min="0" max="100" step="0.1" style={{ width: '100%', padding: '10px', background: 'var(--bg-metal-dark)', border: '1px solid rgba(0,0,0,0.8)', color: 'var(--white)', borderRadius: '6px' }} value={caCommissionPct} onChange={e => setCaCommissionPct(e.target.value)} placeholder="e.g. 20" />
                     </div>
                   ) : caScaleType === 'default' ? (
@@ -427,7 +427,7 @@ export default function AgentDownline({ agentId }: { agentId?: string }) {
                       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 'var(--space-2)', marginBottom: '4px' }}>
                         <span style={{ fontSize: '0.75rem', color: 'var(--grey-400)', textTransform: 'uppercase' }}>Level</span>
                         <span style={{ fontSize: '0.75rem', color: 'var(--grey-400)', textTransform: 'uppercase' }}>Min Monthly Vol ($)</span>
-                        <span style={{ fontSize: '0.75rem', color: 'var(--grey-400)', textTransform: 'uppercase' }}>Commission Rate (%)</span>
+                        <span style={{ fontSize: '0.75rem', color: 'var(--grey-400)', textTransform: 'uppercase' }}>Markup Rate (%)</span>
                       </div>
                       {caCustomSteps.map((step, idx) => (
                         <div key={idx} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 'var(--space-2)', alignItems: 'center' }}>
@@ -447,7 +447,7 @@ export default function AgentDownline({ agentId }: { agentId?: string }) {
                     </div>
                   )}
                   <p style={{ fontSize: '0.72rem', color: 'var(--grey-500)', margin: '6px 0 0', lineHeight: 1.4 }}>
-                    Fixed Pays A Flat Rate. Gamification Scale Climbs Through 5 Levels As Monthly Sales Grow.
+                    Fixed Markup Pays A Flat Rate. Gamification Scale Drops Your Markup Through 5 Levels As Their Monthly Sales Grow.
                   </p>
                 </div>
 
@@ -546,7 +546,7 @@ export default function AgentDownline({ agentId }: { agentId?: string }) {
               </h2>
               <div style={{ fontSize: '0.9rem', color: 'var(--silver)', lineHeight: 1.6, marginBottom: 'var(--space-6)' }}>
                 <p style={{ marginBottom: 'var(--space-4)' }}>
-                  The Gamification Scale is an incentive ladder that rewards your agents as they sell more. By setting minimum monthly sales volumes, their commission rate automatically climbs up to 5 levels (from Level 1 Rookie all the way to Level 5 Apex). 
+                  The Gamification Scale is an incentive ladder that rewards your agents as they sell more. By setting minimum monthly sales volumes, your markup automatically drops up to 5 levels (from Level 1 Rookie all the way to Level 5 Apex), passing better wholesale prices down to your agent.
                 </p>
                 
                 <h4 style={{ color: 'var(--white)', margin: '0 0 var(--space-2)' }}>Default House Scale vs Custom Scale</h4>
