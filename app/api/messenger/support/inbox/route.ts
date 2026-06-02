@@ -74,12 +74,13 @@ export async function GET() {
   // Recent messages (one query, group client-side)
   const { data: msgs } = await svc
     .from('messenger_messages')
-    .select('conversation_id, sender_id, text, message_type, created_at, is_deleted')
+    .select('id, conversation_id, sender_id, text, message_type, created_at, is_deleted')
     .in('conversation_id', supportConvIds)
     .order('created_at', { ascending: false })
     .limit(500);
 
   type MsgRow = {
+    id: string;
     conversation_id: string; sender_id: string;
     text: string | null; message_type: string | null;
     created_at: string; is_deleted: boolean | null;
@@ -138,6 +139,7 @@ export async function GET() {
         : null,
       last_message: last
         ? {
+            id: last.id,
             text: last.is_deleted ? null : last.text,
             message_type: last.message_type,
             sender_id: last.sender_id,
