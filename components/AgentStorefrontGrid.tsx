@@ -166,7 +166,6 @@ const POPULAR_ORDER: string[] = [
   'Retatrutide',                              // #8  - Next-Gen Triple Agonist
   'GLOW (TB10+BPC10+GHK50)',                  // #9  - Esthetic/Repair Stack
   'PT-141',                                   // #10 - Lifestyle Standard
-  'MT-2 (Melanotan 2 Acetate)',               // #11 - Niche Tanning Favorite
   'Ipamorelin',                               // #12 - Core Growth Peptide
   'KLOW (TB10+BPC10+GHK50+KPV10)',            // #13 - Advanced Evolution Stack
   'Tesamorelin',                              // #14 - Visceral Fat Burner
@@ -316,7 +315,7 @@ export default function AgentStorefrontGrid({
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
-  // ─── Faceted filter state ────────────────────────────────────────────────
+  // ─── Faceted filter state ───────────────────────────────────────────────
   // Initial values come from URL on first mount; if none are present we try
   // localStorage so a researcher who reloads the page keeps their last view.
   const filterStorageKey = `pnl_storefront_filters_${agentSlug}`;
@@ -357,7 +356,7 @@ export default function AgentStorefrontGrid({
   const [inStockOnly, setInStockOnly] = useState<boolean>(getInit('inStock') === '1');
   const [bulkOnly, setBulkOnly] = useState<boolean>(getInit('bulk') === '1');
 
-  // ─── Price + weight bounds (derived from the catalog) ───────────────────
+  // ─── Price + weight bounds (derived from the catalog) ──────────────────────
   const priceBounds = useMemo(() => {
     const prices = products.map(p => Number(p.retail_price)).filter(n => Number.isFinite(n));
     if (prices.length === 0) return { min: 0, max: 0 };
@@ -562,7 +561,7 @@ export default function AgentStorefrontGrid({
   const selfBuyMin  = minOrderQty ?? 1;
   const overallMin  = minOverallQty ?? 1;
 
-  // ─── Recommendations ("Researchers Also Bought") ────────────────────────
+  // ─── Recommendations ("Researchers Also Bought") ───────────────────────
   // When the product detail modal opens, fetch a strip of related products
   // from the co-purchase matrix (falls back to the 60-day popular list when
   // co-purchase data is sparse). Public route — no auth needed.
@@ -920,7 +919,7 @@ export default function AgentStorefrontGrid({
           .sf-toolbar select  { width: auto; min-width: 160px; padding: 9px 12px; font-size: 0.85rem; }
         }
 
-        /* ── Wishlist Heart Button — always a perfect circle ─────────── */
+        /* ── Wishlist Heart Button — always a perfect circle ───────────── */
         .sf-wishlist-btn {
           position: absolute; top: 10px; right: 10px;
           width: 34px; height: 34px; min-width: 34px; min-height: 34px;
@@ -933,7 +932,7 @@ export default function AgentStorefrontGrid({
         }
         .sf-wishlist-btn:hover { transform: scale(1.12); }
 
-        /* ── Product Detail Modal / Bottom Sheet ─────────────────────── */
+        /* ── Product Detail Modal / Bottom Sheet ──────────────────── */
         .sf-modal-overlay {
           position: fixed; top: 0; left: 0; right: 0; bottom: 0;
           background: rgba(0,0,0,0.85); backdrop-filter: blur(8px);
@@ -1826,35 +1825,25 @@ export default function AgentStorefrontGrid({
 
               {/* Modal Body */}
               <div className="sf-modal-body">
-                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 'var(--space-3)', marginBottom: 'var(--space-2)' }}>
-                  <div>
-                    {(() => {
-                      const { main, subtitle } = splitProductName(toTitleCase(detailProduct.name));
-                      return (
-                        <>
-                          <h2 className="sf-modal-h2" style={{ fontFamily: 'var(--font-brand)', color: 'var(--white)', lineHeight: 1.2 }}>
-                            {main}
-                          </h2>
-                          {subtitle && (
-                            <span style={{ fontSize: '0.9rem', color: 'var(--grey-400)', fontWeight: 500 }}>
-                              {subtitle}
-                            </span>
-                          )}
-                        </>
-                      );
-                    })()}
-                  </div>
-                  <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
-                    {detailProduct.variants.some(v => (v as any).is_on_sale) && (
-                      <span style={{
-                        fontSize: '0.7rem', padding: '4px 12px', borderRadius: 'var(--radius-full)',
-                        background: 'rgba(245,101,101,0.15)', color: '#F56565', fontWeight: 700,
-                        textTransform: 'uppercase', letterSpacing: '0.05em', whiteSpace: 'nowrap',
-                        border: '1px solid rgba(245,101,101,0.4)'
-                      }}>
-                        Sale
-                      </span>
-                    )}
+                {/* Centered header: title, then badges, then short description */}
+                <div style={{ textAlign: 'center', marginBottom: 'var(--space-3)' }}>
+                  {(() => {
+                    const { main, subtitle } = splitProductName(toTitleCase(detailProduct.name));
+                    return (
+                      <>
+                        <h2 className="sf-modal-h2" style={{ fontFamily: 'var(--font-brand)', color: 'var(--white)', lineHeight: 1.2, margin: 0 }}>
+                          {main}
+                        </h2>
+                        {subtitle && (
+                          <div style={{ fontSize: '0.9rem', color: 'var(--grey-400)', fontWeight: 500, marginTop: 2 }}>
+                            {subtitle}
+                          </div>
+                        )}
+                      </>
+                    );
+                  })()}
+
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, justifyContent: 'center', marginTop: 'var(--space-3)' }}>
                     {(() => {
                       const c = detailProduct.compoundSlug ? compoundsBySlug[detailProduct.compoundSlug] : undefined;
                       if (!c) return null;
@@ -1878,12 +1867,22 @@ export default function AgentStorefrontGrid({
                     }}>
                       {detailProduct.category}
                     </span>
+                    {detailProduct.variants.some(v => (v as any).is_on_sale) && (
+                      <span style={{
+                        fontSize: '0.7rem', padding: '4px 12px', borderRadius: 'var(--radius-full)',
+                        background: 'rgba(245,101,101,0.15)', color: '#F56565', fontWeight: 700,
+                        textTransform: 'uppercase', letterSpacing: '0.05em', whiteSpace: 'nowrap',
+                        border: '1px solid rgba(245,101,101,0.4)'
+                      }}>
+                        Sale
+                      </span>
+                    )}
                   </div>
-                </div>
 
-                <p style={{ fontSize: '0.9rem', color: 'var(--grey-300)', lineHeight: 1.7, marginBottom: 'var(--space-3)' }}>
-                  {detailProduct.desc || 'Research compound available for academic and laboratory use.'}
-                </p>
+                  <p style={{ fontSize: '0.9rem', color: 'var(--grey-300)', lineHeight: 1.7, marginTop: 'var(--space-3)', marginBottom: 0 }}>
+                    {detailProduct.desc || 'Research Compound Available For Academic And Laboratory Use.'}
+                  </p>
+                </div>
 
                 {/* Agent Local Inventory Badge — show when agent has this product in their own stock */}
                 {(() => {
@@ -1971,7 +1970,7 @@ export default function AgentStorefrontGrid({
                     ? Number((activeV as any).cost_price) / 10
                     : basePrice;
 
-                  // ── AGENT SELF-BUY PRICING RULE ─────────────────────────────────
+                  // ── AGENT SELF-BUY PRICING RULE ────────────────────────────────
                   // Agent direct (tier) pricing applies at 10+ vials using cost_price.
                   // Below 10 vials the standard retail dynamic pricing applies.
                   // This is enforced here (display) AND server-side (API).
