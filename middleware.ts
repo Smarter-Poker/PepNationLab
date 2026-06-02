@@ -27,6 +27,13 @@ const PUBLIC_ROUTES = [
   '/api/auth/verify-agent-access',
   // Liveness probe — must be reachable for monitoring.
   '/api/health',
+  // Live availability probe for slug / username / display_name. Public on
+  // purpose — the storefront self-register page must reach it before the
+  // user has an account, and the storefront-config admin form fires it
+  // before the session cookie is fully propagated. The route handler is
+  // rate-limited per IP and never returns user-owning data (only an
+  // available true/false + a friendly reason string).
+  '/api/availability',
   // Layer 1 (site_entry) disclaimer log is hit by anonymous visitors before login.
   // The route's own handler rejects anything other than site_entry from an
   // unauthenticated caller, so this is safe.
@@ -189,12 +196,9 @@ export default async function proxy(request: NextRequest) {
     {
       cookies: {
         getAll() {
-          const all = request.cookies.getAll();
-          console.log('[DEBUG middleware getAll()]', all);
-          return all;
+          return request.cookies.getAll();
         },
         setAll(cookiesToSet) {
-          console.log('[DEBUG middleware setAll()] cookiesToSet:', cookiesToSet);
           cookiesToSet.forEach(({ name, value, options }) => {
             request.cookies.set({ name, value, ...options });
           });
@@ -209,12 +213,10 @@ export default async function proxy(request: NextRequest) {
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  console.log('[DEBUG middleware getUser()] user:', !!user);
 
   // Helper to preserve cookies on redirect
   const redirectWithCookies = (url: URL) => {
     const redirectResponse = NextResponse.redirect(url);
-    console.log('[redirectWithCookies] setting cookies:', response.cookies.getAll());
     // Only copy cookies that were newly set during this request phase.
     // Copying request.cookies to the redirect response forces Next.js to
     // emit duplicate Set-Cookie headers for everything, often overriding
