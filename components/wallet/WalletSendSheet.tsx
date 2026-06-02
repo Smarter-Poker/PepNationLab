@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 
 /**
@@ -16,28 +16,77 @@ export default function WalletSendSheet({
   onClose: () => void;
   onSent: () => void;
 }) {
-  const [recipient, setRecipient] = useState('');
+  const [recipientMode, setRecipientMode] = useState<'downline' | 'manual'>('downline');
+  const [selectedDownlineId, setSelectedDownlineId] = useState('');
+  const [recipientEmail, setRecipientEmail] = useState('');
   const [amount, setAmount] = useState('');
   const [note, setNote] = useState('');
   const [busy, setBusy] = useState(false);
 
+  const [downlines, setDownlines] = useState<any[]>([]);
+  const [loadingDownlines, setLoadingDownlines] = useState(true);
+
+  useEffect(() => {
+    fetch('/api/agent/team/org-chart')
+      .then(res => res.json())
+      .then(json => {
+        if (json && Array.isArray(json.nodes)) {
+          // Flatten tree into a flat list of potential recipients
+          const list: any[] = [];
+          const traverse = (nodes: any[]) => {
+            nodes.forEach(n => {
+              list.push(n);
+              if (n.children && n.children.length > 0) traverse(n.children);
+            });
+          };
+          traverse(json.nodes);
+          setDownlines(list);
+          if (list.length > 0) {
+            setSelectedDownlineId(list[0].id);
+          } else {
+            setRecipientMode('manual');
+          }
+        }
+      })
+      .catch(() => {})
+      .finally(() => setLoadingDownlines(false));
+  }, []);
+
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     const amt = Math.round((Number(amount) || 0) * 100) / 100;
-    if (!recipient.trim()) { toast.error('Enter A Recipient Email Or Username.'); return; }
-    if (!Number.isFinite(amt) || amt <= 0) { toast.error('Enter An Amount Greater Than $0.'); return; }
+    
+    if (recipientMode === 'downline' && !selectedDownlineId) {
+      toast.error('Please select a recipient from your network.');
+      return;
+    }
+    if (recipientMode === 'manual' && !recipientEmail.trim()) {
+      toast.error('Enter A Recipient Email Or Username.');
+      return;
+    }
+    if (!Number.isFinite(amt) || amt <= 0) {
+      toast.error('Enter An Amount Greater Than $0.');
+      return;
+    }
 
     setBusy(true);
     try {
+      const payload: any = { amount: amt, note: note.trim() || undefined };
+      if (recipientMode === 'downline') {
+        payload.recipientId = selectedDownlineId;
+      } else {
+        payload.recipientEmail = recipientEmail.trim();
+      }
+
       const res = await fetch('/api/credits/send', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({ recipientEmail: recipient.trim(), amount: amt, note: note.trim() || undefined }),
+        body: JSON.stringify(payload),
       });
       const json = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(json?.error || 'Failed To Send Funds.');
-      toast.success(`Sent $${amt.toFixed(2)} To ${json?.recipient?.name || recipient.trim()}.`);
+      toast.success(`Sent $${amt.toFixed(2)} To ${json?.recipient?.name || 'Recipient'}.`);
       onSent();
       onClose();
     } catch (err) {
@@ -65,21 +114,51 @@ export default function WalletSendSheet({
           Send Funds
         </h2>
         <p style={{ color: 'var(--silver)', fontSize: '0.85rem', lineHeight: 1.5, marginTop: 0 }}>
-          Funds Are Deducted From Your Wallet (Or Billed To Your Credit Line) And Added To The Recipient's Wallet. Both Sides Get A Transaction Record.
+          Funds Are Deducted From Your Wallet (Or Billed To Your Credit Line) And Added To The Recipient's Wallet.
         </p>
 
         <form onSubmit={submit} style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)', marginTop: 'var(--space-4)' }}>
+          
           <div className="form-group">
-            <label className="form-label" htmlFor="send-recipient">Recipient Email Or Username</label>
-            <input
-              id="send-recipient"
-              type="text"
-              className="form-input"
-              value={recipient}
-              onChange={(e) => setRecipient(e.target.value)}
-              autoComplete="off"
-              placeholder="Someone In Your Network"
-            />
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+              <label className="form-label" style={{ margin: 0 }}>Recipient</label>
+              {downlines.length > 0 && (
+                <button 
+                  type="button" 
+                  onClick={() => setRecipientMode(m => m === 'downline' ? 'manual' : 'downline')}
+                  style={{ background: 'none', border: 'none', color: 'var(--teal)', fontSize: '0.75rem', cursor: 'pointer', padding: 0 }}
+                >
+                  {recipientMode === 'downline' ? 'Enter Email/Username Manually' : 'Select From Network'}
+                </button>
+              )}
+            </div>
+
+            {loadingDownlines ? (
+              <div className="skeleton" style={{ height: 44, borderRadius: 8, width: '100%' }} />
+            ) : recipientMode === 'downline' && downlines.length > 0 ? (
+              <select
+                className="form-input"
+                value={selectedDownlineId}
+                onChange={(e) => setSelectedDownlineId(e.target.value)}
+                style={{ WebkitAppearance: 'none', appearance: 'none', cursor: 'pointer' }}
+              >
+                {downlines.map(d => (
+                  <option key={d.id} value={d.id}>
+                    {d.full_name || d.username || d.email} ({d.role.replace('_', ' ')})
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <input
+                id="send-recipient"
+                type="text"
+                className="form-input"
+                value={recipientEmail}
+                onChange={(e) => setRecipientEmail(e.target.value)}
+                autoComplete="off"
+                placeholder="Recipient Email Or Username"
+              />
+            )}
           </div>
 
           <div className="form-group">

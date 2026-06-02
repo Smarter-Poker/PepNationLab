@@ -85,7 +85,9 @@ export default function WalletPage({
         const j = await walletRes.json();
         setActivity(Array.isArray(j.transactions) ? j.transactions : []);
         setStoreCredit(typeof j.storeCredit === 'number' ? j.storeCredit : 0);
-        setWalletBalance(typeof j.prepaidBalance === 'number' ? j.prepaidBalance : 0);
+        const prepaid = typeof j.prepaidBalance === 'number' ? j.prepaidBalance : 0;
+        const availableCredit = typeof j.creditAvailable === 'number' ? j.creditAvailable : 0;
+        setWalletBalance(prepaid + availableCredit);
       }
     } catch {
       setError(true);

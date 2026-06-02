@@ -54,18 +54,18 @@ const METHODS: MethodSpec[] = [
   { id: 'chime', label: 'Chime', description: 'Chime Pay Anyone Transfer.', handleLabel: 'Chime Sign In (Email Or Phone)', placeholder: 'you@email.com' },
 ];
 
-const iconStyle = { height: 28, width: 'auto', objectFit: 'contain' as const };
+const baseStyle = { height: 28, width: 'auto', objectFit: 'contain' as const };
+const scaleStyle = (scale: number) => ({ ...baseStyle, transform: `scale(${scale})` });
 
 const PAYMENT_ICONS: Record<MethodId, React.ReactNode> = {
-  zelle: <img src="/payment-logos/zelle.svg" alt="Zelle" style={iconStyle} />,
-  venmo: <img src="/payment-logos/venmo.svg" alt="Venmo" style={iconStyle} />,
-  cashapp: <img src="/payment-logos/cashapp.svg" alt="Cash App" style={iconStyle} />,
-  apple_pay: <img src="/payment-logos/apple_cash.svg" alt="Apple Pay" style={iconStyle} />,
-  apple_cash: <img src="/payment-logos/apple_cash.svg" alt="Apple Cash" style={iconStyle} />,
-  paypal: <img src="/payment-logos/paypal.svg" alt="PayPal" style={iconStyle} />,
-  google_wallet: <img src="/payment-logos/google_wallet.svg" alt="Google Wallet" style={iconStyle} />,
-  wise: <img src="/payment-logos/wise.svg" alt="Wise" style={iconStyle} />,
-  chime: <img src="/payment-logos/chime.svg" alt="Chime" style={iconStyle} />,
+  zelle: <img src="/payment-logos/zelle.svg" alt="Zelle" style={baseStyle} />,
+  venmo: <img src="/payment-logos/venmo.svg" alt="Venmo" style={scaleStyle(1.4)} />,
+  cashapp: <img src="/payment-logos/cashapp.svg" alt="Cash App" style={baseStyle} />,
+  apple_cash: <img src="/payment-logos/apple_cash.svg" alt="Apple Cash" style={scaleStyle(1.4)} />,
+  paypal: <img src="/payment-logos/paypal.svg" alt="PayPal" style={baseStyle} />,
+  google_wallet: <img src="/payment-logos/google_wallet.svg" alt="Google Wallet" style={scaleStyle(1.4)} />,
+  wise: <img src="/payment-logos/wise.svg" alt="Wise" style={baseStyle} />,
+  chime: <img src="/payment-logos/chime.png" alt="Chime" style={scaleStyle(1.6)} />,
 };
 
 interface Props {
