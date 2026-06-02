@@ -86,7 +86,7 @@ export default async function AccountHubPage() {
     { href: '/account/profile', label: 'Profile', description: 'Your Name, Avatar, Username, And Contact Details.', Icon: User },
     { href: '/account/wishlist', label: 'Wishlist', description: 'Products You Saved For Later.', Icon: Heart },
     { href: '/account/recently-viewed', label: 'Recently Viewed', description: 'The Last 50 Products You Browsed.', Icon: History },
-    { href: '/account/refills', label: 'Refills & Reorders', description: 'Reorder A Past Protocol In One Tap.', Icon: RotateCcw },
+    { href: '/account/refills', label: 'Order History And Reorders', description: 'Browse Past Orders And Reorder In One Tap.', Icon: RotateCcw },
     ...(isResearcher
       ? [{ href: '/account/referrals', label: 'Referrals', description: 'Share Your Code And Earn Store Credit.', Icon: Gift }]
       : []),

@@ -4,7 +4,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import {
-  LifeBuoy,
   X,
   ChevronUp,
   Loader2,
@@ -15,14 +14,13 @@ import {
 } from 'lucide-react';
 
 /**
- * Admin Customer Support widget — v3.
+ * Admin Customer Support widget — v4.
  *
  * Visible only on /messenger to a user whose profile.role === 'admin'.
- * Renders a fixed bottom-anchored bar with a slim teal accent line, a
- * lifebuoy badge anchored left, centered title + thread count, and an
- * affordance arrow on the right. Tapping it opens the support inbox panel
- * above the bar. A global rule pads `.messenger-sidebar` so the
- * conversation list rows stop above the bar (no overlap).
+ * Renders a fixed bottom-anchored bar with the standard platform
+ * brushed-nickel top edge (no teal accent, no decorative icon). Tapping
+ * the bar opens the support inbox panel above it. A global rule pads
+ * `.messenger-sidebar` so the conversation list rows stop above the bar.
  */
 
 type SupportStatus = 'open' | 'in_progress' | 'waiting_on_researcher' | 'resolved';
@@ -55,6 +53,12 @@ interface InboxRow {
   sla_waiting_seconds?: number | null;
   internal_notes_count?: number | null;
 }
+
+// Platform brushed-nickel silver, used for the bar's top edge and the
+// panel's surrounding border so the widget matches every other card-metal
+// surface on the site.
+const NICKEL_BORDER = 'rgba(192,184,168,0.55)';
+const NICKEL_SOFT = 'rgba(192,184,168,0.22)';
 
 function relTime(iso: string | null): string {
   if (!iso) return '';
@@ -412,18 +416,18 @@ export default function CustomerSupportWidget() {
             position: 'fixed',
             left: 0,
             right: 0,
-            bottom: 64,
+            bottom: 60,
             zIndex: 101,
             maxHeight: 'min(60dvh, 560px)',
             display: 'flex',
             flexDirection: 'column',
             background: 'linear-gradient(180deg, #0F1923 0%, #050A0F 100%)',
-            borderTop: '1px solid rgba(0, 196, 188, 0.45)',
-            borderLeft: '1px solid rgba(0, 196, 188, 0.18)',
-            borderRight: '1px solid rgba(0, 196, 188, 0.18)',
+            borderTop: `1px solid ${NICKEL_BORDER}`,
+            borderLeft: `1px solid ${NICKEL_SOFT}`,
+            borderRight: `1px solid ${NICKEL_SOFT}`,
             borderTopLeftRadius: 14,
             borderTopRightRadius: 14,
-            boxShadow: '0 -22px 48px rgba(0,0,0,0.65), 0 0 0 1px rgba(0,196,188,0.10)',
+            boxShadow: '0 -22px 48px rgba(0,0,0,0.65)',
             overflow: 'hidden',
           }}
         >
@@ -434,11 +438,10 @@ export default function CustomerSupportWidget() {
               gap: 10,
               padding: '12px 14px',
               borderBottom: '1px solid rgba(255,255,255,0.06)',
-              background:
-                'linear-gradient(135deg, rgba(0,196,188,0.12) 0%, rgba(0,196,188,0.03) 100%)',
+              background: 'rgba(255,255,255,0.02)',
+              flexShrink: 0,
             }}
           >
-            <LifeBuoy size={18} style={{ color: 'var(--teal, #00C4BC)' }} aria-hidden="true" />
             <strong style={{ color: 'var(--white, #fff)', fontSize: '0.95rem', flex: 1 }}>
               Customer Support Inbox
             </strong>
@@ -463,16 +466,18 @@ export default function CustomerSupportWidget() {
             </button>
           </header>
 
+          {/* Filter tabs — equal-width flex, tighter font, no scroll bar */}
           <div
             role="tablist"
             aria-label="Support Inbox Filter"
             style={{
               display: 'flex',
               gap: 4,
-              padding: '8px 10px',
+              padding: '8px 8px',
               borderBottom: '1px solid rgba(255,255,255,0.05)',
               background: 'rgba(255,255,255,0.02)',
-              overflowX: 'auto',
+              overflow: 'hidden',
+              flexShrink: 0,
             }}
           >
             {([
@@ -491,21 +496,29 @@ export default function CustomerSupportWidget() {
                   aria-selected={active}
                   onClick={() => setTab(t.id)}
                   style={{
-                    padding: '6px 10px',
-                    borderRadius: 8,
-                    background: active ? 'rgba(0,196,188,0.18)' : 'rgba(255,255,255,0.04)',
-                    border: `1px solid ${active ? 'rgba(0,196,188,0.55)' : 'rgba(255,255,255,0.08)'}`,
-                    color: active ? '#7AF0EA' : 'var(--silver, #C0B8A8)',
-                    fontSize: '0.74rem',
+                    flex: 1,
+                    minWidth: 0,
+                    padding: '5px 4px',
+                    borderRadius: 7,
+                    background: active ? 'rgba(192,184,168,0.18)' : 'rgba(255,255,255,0.04)',
+                    border: `1px solid ${active ? NICKEL_BORDER : 'rgba(255,255,255,0.08)'}`,
+                    color: active ? 'var(--white, #fff)' : 'var(--silver, #C0B8A8)',
+                    fontSize: '0.66rem',
                     fontWeight: 700,
-                    letterSpacing: '0.02em',
+                    letterSpacing: '0.01em',
                     cursor: 'pointer',
                     whiteSpace: 'nowrap',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: 4,
                   }}
                 >
-                  {t.label}
+                  <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{t.label}</span>
                   {t.n > 0 && (
-                    <span style={{ marginLeft: 6, opacity: 0.85 }}>
+                    <span style={{ opacity: 0.85 }}>
                       {t.n > 99 ? '99+' : t.n}
                     </span>
                   )}
@@ -514,7 +527,7 @@ export default function CustomerSupportWidget() {
             })}
           </div>
 
-          <div style={{ overflowY: 'auto', flex: 1 }}>
+          <div style={{ overflowY: 'auto', flex: 1, minHeight: 0 }}>
             {loading && rows.length === 0 ? (
               <div
                 style={{
@@ -619,7 +632,7 @@ export default function CustomerSupportWidget() {
                             height: 38,
                             borderRadius: '50%',
                             background:
-                              'linear-gradient(135deg, rgba(0,196,188,0.55) 0%, rgba(0,196,188,0.15) 100%)',
+                              'linear-gradient(135deg, rgba(192,184,168,0.45) 0%, rgba(192,184,168,0.12) 100%)',
                             color: 'var(--black, #050A0F)',
                             display: 'inline-flex',
                             alignItems: 'center',
@@ -668,7 +681,7 @@ export default function CustomerSupportWidget() {
                             <span
                               style={{
                                 display: 'block',
-                                color: '#7AF0EA',
+                                color: 'var(--silver, #C0B8A8)',
                                 fontSize: '0.72rem',
                                 fontWeight: 700,
                                 letterSpacing: '0.02em',
@@ -720,7 +733,7 @@ export default function CustomerSupportWidget() {
                                     left: 0,
                                     marginBottom: 6,
                                     background: '#0F1923',
-                                    border: '1px solid rgba(0,196,188,0.45)',
+                                    border: `1px solid ${NICKEL_BORDER}`,
                                     borderRadius: 8,
                                     boxShadow: '0 8px 24px rgba(0,0,0,0.6)',
                                     padding: 4,
@@ -738,9 +751,9 @@ export default function CustomerSupportWidget() {
                                         width: '100%',
                                         textAlign: 'left',
                                         padding: '6px 10px',
-                                        background: status === s ? 'rgba(0,196,188,0.18)' : 'transparent',
+                                        background: status === s ? 'rgba(192,184,168,0.18)' : 'transparent',
                                         border: 'none',
-                                        color: status === s ? '#7AF0EA' : 'var(--white, #fff)',
+                                        color: 'var(--white, #fff)',
                                         fontSize: '0.78rem',
                                         fontWeight: 600,
                                         borderRadius: 6,
@@ -824,7 +837,7 @@ export default function CustomerSupportWidget() {
                                     left: 0,
                                     marginBottom: 6,
                                     background: '#0F1923',
-                                    border: '1px solid rgba(0,196,188,0.45)',
+                                    border: `1px solid ${NICKEL_BORDER}`,
                                     borderRadius: 8,
                                     boxShadow: '0 8px 24px rgba(0,0,0,0.6)',
                                     padding: 4,
@@ -893,9 +906,9 @@ export default function CustomerSupportWidget() {
                                   gap: 3,
                                   padding: '2px 6px',
                                   borderRadius: 999,
-                                  background: 'rgba(0,196,188,0.10)',
-                                  border: '1px solid rgba(0,196,188,0.35)',
-                                  color: '#7AF0EA',
+                                  background: 'rgba(192,184,168,0.12)',
+                                  border: '1px solid rgba(192,184,168,0.35)',
+                                  color: 'var(--silver, #C0B8A8)',
                                   fontSize: '0.66rem',
                                   fontWeight: 800,
                                   letterSpacing: '0.02em',
@@ -938,6 +951,7 @@ export default function CustomerSupportWidget() {
             )}
           </div>
 
+          {/* Footer pinned with flex-shrink:0 — always at bottom of panel column */}
           <footer
             style={{
               padding: '8px 12px',
@@ -949,6 +963,7 @@ export default function CustomerSupportWidget() {
               alignItems: 'center',
               justifyContent: 'space-between',
               gap: 8,
+              flexShrink: 0,
             }}
           >
             <span>
@@ -975,7 +990,7 @@ export default function CustomerSupportWidget() {
         </div>
       )}
 
-      {/* Collapsed bar — v3 design */}
+      {/* Collapsed bar — brushed-nickel top edge, no decorative icon, title-only */}
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
@@ -991,49 +1006,24 @@ export default function CustomerSupportWidget() {
           zIndex: 100,
           display: 'flex',
           alignItems: 'center',
-          gap: 12,
+          gap: 10,
           padding: '10px 14px',
           paddingBottom: 'calc(10px + env(safe-area-inset-bottom))',
-          minHeight: 64,
+          minHeight: 60,
           width: '100%',
-          background:
-            'linear-gradient(180deg, #0E1A24 0%, #0A1219 100%)',
+          background: 'linear-gradient(180deg, #0E1A24 0%, #0A1219 100%)',
           color: 'var(--white, #fff)',
           border: 'none',
-          borderTop: '1px solid rgba(0,196,188,0.55)',
+          borderTop: `1px solid ${NICKEL_BORDER}`,
           borderRadius: 0,
           fontSize: '0.9rem',
           fontWeight: 700,
           letterSpacing: '0.01em',
-          boxShadow:
-            '0 -10px 28px rgba(0,0,0,0.55), 0 -1px 0 0 rgba(0,196,188,0.15) inset',
+          boxShadow: '0 -10px 28px rgba(0,0,0,0.55)',
           cursor: 'pointer',
           textAlign: 'left',
         }}
       >
-        {/* Lifebuoy badge — glassmorphic teal */}
-        <span
-          aria-hidden
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            width: 40,
-            height: 40,
-            borderRadius: 12,
-            background:
-              'linear-gradient(135deg, rgba(0,196,188,0.38) 0%, rgba(0,196,188,0.10) 100%)',
-            border: '1px solid rgba(0,196,188,0.55)',
-            color: '#7AF0EA',
-            flexShrink: 0,
-            boxShadow:
-              '0 0 0 1px rgba(0,196,188,0.10), 0 6px 14px rgba(0,196,188,0.18), inset 0 1px 0 rgba(255,255,255,0.12)',
-          }}
-        >
-          <LifeBuoy size={20} aria-hidden="true" />
-        </span>
-
-        {/* Title + meta — centered horizontally between badge and chevron */}
         <span
           style={{
             display: 'flex',
@@ -1080,7 +1070,6 @@ export default function CustomerSupportWidget() {
           </span>
         </span>
 
-        {/* Unread chip + chevron — right-anchored */}
         {totalUnread > 0 && (
           <span
             aria-hidden
@@ -1132,18 +1121,18 @@ export default function CustomerSupportWidget() {
           .cs-widget-bar {
             right: auto !important;
             width: 320px !important;
-            border-right: 1px solid rgba(0,196,188,0.18) !important;
+            border-right: 1px solid ${NICKEL_SOFT} !important;
           }
           .cs-widget-panel {
             right: auto !important;
             width: 320px !important;
-            border-right: 1px solid rgba(0, 196, 188, 0.18) !important;
+            border-right: 1px solid ${NICKEL_SOFT} !important;
           }
         }
       `}</style>
       <style jsx global>{`
         .messenger-sidebar {
-          padding-bottom: calc(64px + env(safe-area-inset-bottom)) !important;
+          padding-bottom: calc(60px + env(safe-area-inset-bottom)) !important;
         }
       `}</style>
     </>

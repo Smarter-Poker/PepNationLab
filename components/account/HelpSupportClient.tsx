@@ -17,7 +17,7 @@ const FAQ: Array<{ q: string; a: string }> = [
   },
   {
     q: 'How Do Refills And Reorders Work?',
-    a: 'Open Refills & Reorders From Your Account To Re-Order A Past Protocol In One Tap. Prices Are Re-Checked Against The Current Catalog At Reorder Time.',
+    a: 'Open Order History And Reorders From Your Account To Re-Order A Past Protocol In One Tap. Prices Are Re-Checked Against The Current Catalog At Reorder Time And You Land Straight In Checkout To Review.',
   },
   {
     q: 'What Is The Research-Only Disclaimer?',
@@ -38,9 +38,6 @@ export default function HelpSupportClient() {
   const [openFaq, setOpenFaq] = useState<number | null>(0);
   const [busy, setBusy] = useState(false);
 
-  // Contact Support opens (or reuses) the user's live support thread with the
-  // admin team via the shared messenger support channel — the same channel the
-  // admin Customer Support inbox monitors — then routes into that conversation.
   async function contactSupport() {
     if (busy) return;
     setBusy(true);
@@ -78,7 +75,6 @@ export default function HelpSupportClient() {
           </p>
         </div>
 
-        {/* Contact Support */}
         <section className="card-metal" style={{ padding: 'var(--space-5)', borderRadius: 'var(--radius-lg)' }}>
           <h2 style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'var(--teal)', marginTop: 0, fontSize: '1.05rem' }}>
             <MessageSquare size={18} aria-hidden /> Contact Support
@@ -91,7 +87,6 @@ export default function HelpSupportClient() {
           </button>
         </section>
 
-        {/* FAQ */}
         <section className="card-metal" style={{ padding: 'var(--space-5)', borderRadius: 'var(--radius-lg)' }}>
           <h2 style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'var(--teal)', marginTop: 0, fontSize: '1.05rem' }}>
             <LifeBuoy size={18} aria-hidden /> Frequently Asked Questions
