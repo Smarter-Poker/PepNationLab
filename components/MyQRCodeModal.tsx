@@ -2,15 +2,23 @@
 
 /**
  * MyQRCodeModal — R24 unified.
- * Full-screen QR popup with Download + Share + Copy URL.
- * Used by every menu surface (global Navbar drawer + AgentDashboardClient sidebar).
  *
- * Fetches the right URL via /api/agent/my-qr so we get correct behavior for
- * every role including sub-agents (who inherit their parent agent's storefront
- * with a ?ref=<sub_agent_id> query param so attribution credits them).
+ * Why it broke before:
+ *   - The same click that opens the modal can re-fire on the modal's backdrop
+ *     (React 19 portal event delegation), causing the modal to close on the
+ *     same tick it opened, so it visually "does nothing".
+ *
+ * Defenses now in place:
+ *   1. `readyToClose` flag — backdrop click handler is a no-op for the first
+ *      120ms after open, so the open-click cannot accidentally close it.
+ *   2. Explicit X close button (44x44 tap target) — the primary close UX.
+ *   3. Escape key closes.
+ *   4. `data-qr-modal-root` attribute so the trigger button can stopPropagation
+ *      on clicks that aren't ours, without affecting nested buttons inside.
+ *   5. Inline-only hex colors — never depend on CSS vars that might be missing.
  */
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { toast } from 'sonner';
 import QRCodeGenerator from './QRCodeGenerator';
@@ -31,46 +39,73 @@ export default function MyQRCodeModal({
   open,
   onClose,
 }: { open: boolean; onClose: () => void }) {
+  const [mounted, setMounted] = useState(false);
   const [data, setData] = useState<QRPayload | null>(null);
   const [err, setErr] = useState<string | null>(null);
+  const [readyToClose, setReadyToClose] = useState(false);
+  const lastOpenRef = useRef(false);
 
+  // Mount guard for SSR / hydration
+  useEffect(() => { setMounted(true); }, []);
+
+  // Open lifecycle: reset state + arm "ready to close" after a short delay so
+  // the click that opened the modal cannot immediately close it via the backdrop.
   useEffect(() => {
-    if (!open) return;
+    if (!open) {
+      lastOpenRef.current = false;
+      setReadyToClose(false);
+      return;
+    }
+    if (lastOpenRef.current) return; // dedupe
+    lastOpenRef.current = true;
     setData(null);
     setErr(null);
+    setReadyToClose(false);
+    const armId = setTimeout(() => setReadyToClose(true), 120);
+
+    // Fetch the QR payload
     fetch('/api/agent/my-qr', { cache: 'no-store' })
       .then(async r => {
         const j = await r.json().catch(() => ({}));
-        if (!r.ok) {
-          // Surface the actual server message so the user knows WHY it failed.
-          throw new Error(j.message || `Could Not Load QR (HTTP ${r.status})`);
-        }
+        if (!r.ok) throw new Error(j.message || `Could Not Load QR (HTTP ${r.status})`);
         return j;
       })
       .then(setData)
-      .catch(e => setErr(e.message || 'Could Not Load QR'));
+      .catch(e => setErr(e?.message || 'Could Not Load QR'));
+
+    return () => clearTimeout(armId);
   }, [open]);
 
-  // Lock scroll while modal open
+  // Lock body scroll while open + Escape key to close
   useEffect(() => {
     if (!open) return;
     const prev = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
-    return () => { document.body.style.overflow = prev; };
-  }, [open]);
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    window.addEventListener('keydown', onKey);
+    return () => {
+      document.body.style.overflow = prev;
+      window.removeEventListener('keydown', onKey);
+    };
+  }, [open, onClose]);
 
-  if (!open || typeof document === 'undefined') return null;
+  if (!mounted || !open || typeof document === 'undefined') return null;
 
-  function downloadQR() {
-    // Find the rendered canvas/img in the QR container and download it
+  function attemptBackdropClose(e: React.MouseEvent) {
+    if (!readyToClose) return; // ignore the open-click
+    // Only close if the click was on the backdrop itself, NOT bubbled from a child.
+    if (e.target !== e.currentTarget) return;
+    onClose();
+  }
+
+  function downloadQR(e: React.MouseEvent) {
+    e.stopPropagation();
     const container = document.querySelector('[data-qr-container]');
     const canvas = container?.querySelector('canvas') as HTMLCanvasElement | null;
     const img = container?.querySelector('img') as HTMLImageElement | null;
-
     let dataUrl: string | null = null;
     if (canvas) dataUrl = canvas.toDataURL('image/png');
     else if (img?.src) dataUrl = img.src;
-
     if (!dataUrl) { toast.error('QR Not Ready Yet'); return; }
     const a = document.createElement('a');
     a.href = dataUrl;
@@ -81,16 +116,14 @@ export default function MyQRCodeModal({
     toast.success('QR Downloaded');
   }
 
-  async function shareQR() {
+  async function shareQR(e: React.MouseEvent) {
+    e.stopPropagation();
     if (!data?.url) return;
     const shareData: ShareData = {
       title: 'Pep Nation Lab',
-      text: data.isInvite
-        ? 'Join Pep Nation Lab through my invite:'
-        : 'Visit my Pep Nation Lab storefront:',
+      text: data.isInvite ? 'Join Pep Nation Lab through my invite:' : 'Visit my Pep Nation Lab storefront:',
       url: data.url,
     };
-    // Try Web Share with file (QR image) first
     try {
       const container = document.querySelector('[data-qr-container]');
       const canvas = container?.querySelector('canvas') as HTMLCanvasElement | null;
@@ -104,12 +137,8 @@ export default function MyQRCodeModal({
           }
         }
       }
-      if (navigator.share) {
-        await navigator.share(shareData);
-        return;
-      }
+      if (navigator.share) { await navigator.share(shareData); return; }
     } catch {/* fall through to copy */}
-    // Fallback: copy link to clipboard
     try {
       await navigator.clipboard.writeText(data.url);
       toast.success('Link Copied To Clipboard');
@@ -118,7 +147,8 @@ export default function MyQRCodeModal({
     }
   }
 
-  async function copyUrl() {
+  async function copyUrl(e: React.MouseEvent) {
+    e.stopPropagation();
     if (!data?.url) return;
     try {
       await navigator.clipboard.writeText(data.url);
@@ -130,10 +160,11 @@ export default function MyQRCodeModal({
 
   return createPortal(
     <div
+      data-qr-modal-root
       role="dialog"
       aria-modal="true"
       aria-label="My QR Code"
-      onClick={onClose}
+      onClick={attemptBackdropClose}
       style={{
         position: 'fixed', inset: 0, zIndex: 999999,
         background: 'rgba(5,10,15,0.95)',
@@ -145,21 +176,24 @@ export default function MyQRCodeModal({
     >
       <button
         type="button"
-        onClick={onClose}
+        onClick={(e) => { e.stopPropagation(); onClose(); }}
         aria-label="Close"
         style={{
           position: 'absolute', top: 'max(20px, env(safe-area-inset-top))', right: 20,
           background: 'rgba(255,255,255,0.12)', border: '1px solid rgba(255,255,255,0.2)',
           color: '#fff', width: 44, height: 44, borderRadius: '50%',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          cursor: 'pointer', fontSize: '1.1rem', fontWeight: 700,
+          cursor: 'pointer', padding: 0,
         }}
       >
-        ✕
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+          <line x1="6" y1="6" x2="18" y2="18" />
+          <line x1="6" y1="18" x2="18" y2="6" />
+        </svg>
       </button>
 
       <div
-        onClick={e => e.stopPropagation()}
+        onClick={(e) => e.stopPropagation()}
         style={{
           background: '#162230',
           padding: '32px 24px',
@@ -216,33 +250,21 @@ export default function MyQRCodeModal({
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, width: '100%' }}>
-              <button
-                type="button"
-                onClick={downloadQR}
-                style={{
-                  padding: '12px 8px', borderRadius: 10, minHeight: 48, cursor: 'pointer',
-                  background: '#C0B8A8', color: '#0F1923', border: 'none',
-                  fontWeight: 700, fontSize: '0.82rem',
-                }}
-              >Download</button>
-              <button
-                type="button"
-                onClick={shareQR}
-                style={{
-                  padding: '12px 8px', borderRadius: 10, minHeight: 48, cursor: 'pointer',
-                  background: 'rgba(255,255,255,0.08)', color: '#FFFFFF',
-                  border: '1px solid rgba(255,255,255,0.15)', fontWeight: 700, fontSize: '0.82rem',
-                }}
-              >Share</button>
-              <button
-                type="button"
-                onClick={copyUrl}
-                style={{
-                  padding: '12px 8px', borderRadius: 10, minHeight: 48, cursor: 'pointer',
-                  background: 'rgba(255,255,255,0.08)', color: '#FFFFFF',
-                  border: '1px solid rgba(255,255,255,0.15)', fontWeight: 700, fontSize: '0.82rem',
-                }}
-              >Copy Link</button>
+              <button type="button" onClick={downloadQR} style={{
+                padding: '12px 8px', borderRadius: 10, minHeight: 48, cursor: 'pointer',
+                background: '#C0B8A8', color: '#0F1923', border: 'none',
+                fontWeight: 700, fontSize: '0.82rem',
+              }}>Download</button>
+              <button type="button" onClick={shareQR} style={{
+                padding: '12px 8px', borderRadius: 10, minHeight: 48, cursor: 'pointer',
+                background: 'rgba(255,255,255,0.08)', color: '#FFFFFF',
+                border: '1px solid rgba(255,255,255,0.15)', fontWeight: 700, fontSize: '0.82rem',
+              }}>Share</button>
+              <button type="button" onClick={copyUrl} style={{
+                padding: '12px 8px', borderRadius: 10, minHeight: 48, cursor: 'pointer',
+                background: 'rgba(255,255,255,0.08)', color: '#FFFFFF',
+                border: '1px solid rgba(255,255,255,0.15)', fontWeight: 700, fontSize: '0.82rem',
+              }}>Copy Link</button>
             </div>
           </>
         )}
