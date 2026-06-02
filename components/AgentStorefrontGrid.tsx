@@ -147,25 +147,25 @@ interface GroupedProduct {
 }
 
 const POPULAR_ORDER: string[] = [
-  'Tirzepatide',
-  'Semaglutide',
-  'BPC 157',
-  'CJC-1295 without DAC 5mg + IPA 5mg',
-  'TB500 (Thymosin B4 Acetate)',
-  'BPC 10mg + TB 10mg',
-  'GHK-CU',
-  'Retatrutide',
-  'GLOW (TB10+BPC10+GHK50)',
-  'PT-141',
-  'Ipamorelin',
-  'KLOW (TB10+BPC10+GHK50+KPV10)',
-  'Tesamorelin',
-  'AOD9604',
-  'Sermorelin Acetate',
-  'HGH Fragment 176-191',
-  'KPV',
-  'Semax',
-  'Selank',
+  'KLOW (TB10+BPC10+GHK50+KPV10)',            // #1
+  'Tirzepatide',                              // #2
+  'Sermorelin Acetate',                       // #3
+  'Retatrutide',                              // #4
+  'GLOW (TB10+BPC10+GHK50)',                  // #5
+  'BPC 157',                                  // #6
+  'Bac. water',                               // #7
+  'Semaglutide',                              
+  'CJC-1295 without DAC 5mg + IPA 5mg',      
+  'TB500 (Thymosin B4 Acetate)',              
+  'BPC 10mg + TB 10mg',                       
+  'GHK-CU',                                   
+  'PT-141',                                   
+  'Ipamorelin',                               
+  'AOD9604',                                  
+  'HGH Fragment 176-191',                     
+  'KPV',                                      // #18 - GI & Autoimmune Specialist
+  'Semax',                                    // #19 - Nootropic Focus
+  'Selank',                                   // #20 - Nootropic Anxiety Relief
 ];
 
 function fuzzyMatch(query: string, text: string): boolean {
@@ -1283,19 +1283,25 @@ export default function AgentStorefrontGrid({
                     const isOnSale = !isStorefrontOwner && (defaultV as any).is_on_sale && (defaultV as any).sale_price;
                     const perVialDisplay = isOnSale ? (defaultV as any).sale_price / 10 : perVialBase;
                     const perVialOriginal = perVialBase;
+                    
+                    const isBW = isBacWaterItem(group.name, defaultV.products?.compound_slug);
+                    const displayPrice = isBW ? perVialDisplay * 10 : perVialDisplay;
+                    const displayOriginalPrice = isBW ? perVialOriginal * 10 : perVialOriginal;
+                    const displaySizeText = isBW ? `10x ${size}${measure} Viles` : `${size}${measure} Vials`;
+
                     return (
                       <>
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
                           {isOnSale && (
                             <span style={{ fontSize: '0.95rem', color: 'var(--grey-500)', textDecoration: 'line-through', fontWeight: 600 }}>
-                              ${perVialOriginal.toFixed(2)}
+                              ${displayOriginalPrice.toFixed(2)}
                             </span>
                           )}
                           <span style={{
                             fontSize: '1.2rem', fontWeight: 800, color: isOnSale ? '#F56565' : primaryColor,
                             fontFamily: 'var(--font-brand)', textShadow: `0 0 10px ${isOnSale ? 'rgba(245,101,101,0.4)' : primaryColor + '40'}`
                           }}>
-                            {size}{measure} Vials &nbsp;${perVialDisplay.toFixed(2)}
+                            {displaySizeText} &nbsp;${displayPrice.toFixed(2)}
                           </span>
                         </div>
                       </>
@@ -1388,7 +1394,7 @@ export default function AgentStorefrontGrid({
                   // Bac. water sells in fixed 10-packs; show it as packs (10x), not loose vials.
                   const isBW = isBacWaterItem(item.products?.name, item.products?.compound_slug);
                   const packSize = 10;
-                  const lineName = isBW ? 'Bac. Water 10x 10ml' : `${name}${size ? ` (${size})` : ''}`;
+                  const lineName = isBW ? 'Bac. Water 10x 10ml Viles' : `${name}${size ? ` (${size})` : ''}`;
                   const unitPrice = isBW ? perVial * packSize : perVial;
                   const displayCount = isBW ? Math.round(qty / packSize) : qty;
                   return (

@@ -133,7 +133,7 @@ export default function WalletPage({
   }, [role, tab, tabs]);
 
   return (
-    <div style={{ paddingTop: 'calc(var(--nav-offset, 60px) + var(--space-6))', paddingRight: 'var(--space-4)', paddingBottom: 'var(--space-8)', paddingLeft: 'var(--space-4)', minHeight: '100dvh' }}>
+    <div style={{ textTransform: 'capitalize', paddingTop: 'calc(var(--nav-offset, 60px) + var(--space-6))', paddingRight: 'var(--space-4)', paddingBottom: 'var(--space-8)', paddingLeft: 'var(--space-4)', minHeight: '100dvh' }}>
       <div className="metal-frame" style={{ maxWidth: 960, margin: '0 auto', width: '100%' }}>
         <div className="metal-content" style={{ padding: 'var(--space-6)', display: 'flex', flexDirection: 'column', gap: 16 }}>
           <header style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 12 }}>

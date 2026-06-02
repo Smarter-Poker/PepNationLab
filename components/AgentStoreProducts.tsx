@@ -163,7 +163,7 @@ export default function AgentStoreProducts({ agentId }: { agentId: string }) {
     const currentProduct = products.find(p => p.id === editingId);
     const agentCostPer10 = currentProduct?.agent_cost ?? 0;
     if (listedPrice < agentCostPer10) {
-      alert(`Listed price cannot be below your cost ($${(agentCostPer10 / 10).toFixed(2)} / Vial). Please increase your price.`);
+      alert(`Listed price cannot be below your cost ($${(agentCostPer10 / (/bac\.?\s*water/i.test(currentProduct?.products?.name || "") ? 1 : 10)).toFixed(2)} / Vial). Please increase your price.`);
       return;
     }
 
@@ -392,18 +392,18 @@ export default function AgentStoreProducts({ agentId }: { agentId: string }) {
                         <div className="form-group" style={{ marginBottom: 0, flex: 1 }}>
                           <label className="form-label" style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.6)' }}>
                             Listed Price
-                            <span style={{ fontWeight: 400, color: 'rgba(255,255,255,0.4)', marginLeft: 6, fontSize: '0.68rem' }}>$ / Vial</span>
+                            <span style={{ fontWeight: 400, color: 'rgba(255,255,255,0.4)', marginLeft: 6, fontSize: '0.68rem' }}>$ / {/bac\.?\s*water/i.test(p.products?.name || "") ? "10x 10ml Viles" : "Vial"}</span>
                           </label>
                           <div style={{ position: 'relative' }}>
                             <span style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: '#00E5FF', fontWeight: 700, fontSize: '0.9rem', pointerEvents: 'none' }}>$</span>
                             <input
                               type="number"
                               step="0.01"
-                              min={p.agent_cost != null ? (p.agent_cost / 10).toFixed(2) : '0'}
+                              min={p.agent_cost != null ? (p.agent_cost / (/bac\.?\s*water/i.test(p.products?.name || "") ? 1 : 10)).toFixed(2) : '0'}
                               className="form-input"
                               style={{ paddingLeft: 26, background: 'var(--bg-metal-dark)', border: '1px solid rgba(0,0,0,0.8)', boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.5)', color: '#fff' }}
-                              placeholder={(Number(editForm.retail_price) / 10).toFixed(2)}
-                              value={Number((editForm as any).retail_price) >= 0 ? (Number((editForm as any).retail_price) / 10).toFixed(2) : ''}
+                              placeholder={(Number(editForm.retail_price) / (/bac\.?\s*water/i.test(p.products?.name || "") ? 1 : 10)).toFixed(2)}
+                              value={Number((editForm as any).retail_price) >= 0 ? (Number((editForm as any).retail_price) / (/bac\.?\s*water/i.test(p.products?.name || "") ? 1 : 10)).toFixed(2) : ''}
                               onChange={e => {
                                 const perVial = parseFloat(e.target.value) || 0;
                                 const per10 = perVial * 10;
@@ -416,7 +416,7 @@ export default function AgentStoreProducts({ agentId }: { agentId: string }) {
                           </div>
                           {p.agent_cost != null && p.agent_cost >= 0 && (
                             <p style={{ fontSize: '0.68rem', color: 'rgba(255,255,255,0.4)', marginTop: 3, marginBottom: 0 }}>
-                              Min: <strong style={{ color: '#fff' }}>${(p.agent_cost / 10).toFixed(2)} / Vial</strong> (your cost)
+                              Min: <strong style={{ color: '#fff' }}>${(p.agent_cost / (/bac\.?\s*water/i.test(p.products?.name || "") ? 1 : 10)).toFixed(2)} / {/bac\.?\s*water/i.test(p.products?.name || "") ? "10x 10ml Viles" : "Vial"}</strong> (your cost)
                             </p>
                           )}
                         </div>
@@ -489,18 +489,18 @@ export default function AgentStoreProducts({ agentId }: { agentId: string }) {
                             <>
                               <span style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.4)', fontWeight: 500 }}>Your Cost:</span>
                               <span style={{ fontSize: '0.82rem', color: '#68D391', fontWeight: 700 }}>
-                                ${(p.agent_cost / 10).toFixed(2)} / Vial
+                                ${(p.agent_cost / (/bac\.?\s*water/i.test(p.products?.name || "") ? 1 : 10)).toFixed(2)} / {/bac\.?\s*water/i.test(p.products?.name || "") ? "10x 10ml Viles" : "Vial"}
                               </span>
                               <span style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.2)' }}>→</span>
                             </>
                           )}
                           <span style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.4)', fontWeight: 500 }}>Listed:</span>
                           <span style={{ fontSize: '0.85rem', color: '#00E5FF', fontWeight: 800 }}>
-                            ${(Number(p.retail_price) / 10).toFixed(2)} / Vial
+                            ${(Number(p.retail_price) / (/bac\.?\s*water/i.test(p.products?.name || "") ? 1 : 10)).toFixed(2)} / {/bac\.?\s*water/i.test(p.products?.name || "") ? "10x 10ml Viles" : "Vial"}
                           </span>
                           {p.is_on_sale && p.sale_price && (
                             <span style={{ fontSize: '0.7rem', color: '#FC8181', fontWeight: 700, background: 'rgba(229,62,62,0.10)', padding: '2px 8px', borderRadius: '4px', border: '1px solid rgba(229,62,62,0.2)' }}>
-                              On Sale ${(Number(p.sale_price) / 10).toFixed(2)} / Vial
+                              On Sale ${(Number(p.sale_price) / (/bac\.?\s*water/i.test(p.products?.name || "") ? 1 : 10)).toFixed(2)} / {/bac\.?\s*water/i.test(p.products?.name || "") ? "10x 10ml Viles" : "Vial"}
                             </span>
                           )}
                           {p.agent_cost != null && p.agent_cost > 0 && p.retail_price > 0 && (
@@ -597,18 +597,18 @@ export default function AgentStoreProducts({ agentId }: { agentId: string }) {
                               <div className="form-group" style={{ marginBottom: 0, flex: 1 }}>
                                 <label className="form-label" style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.6)' }}>
                                   Listed Price
-                                  <span style={{ fontWeight: 400, color: 'rgba(255,255,255,0.4)', marginLeft: 6, fontSize: '0.68rem' }}>$ / Vial</span>
+                                  <span style={{ fontWeight: 400, color: 'rgba(255,255,255,0.4)', marginLeft: 6, fontSize: '0.68rem' }}>$ / {/bac\.?\s*water/i.test(p.products?.name || "") ? "10x 10ml Viles" : "Vial"}</span>
                                 </label>
                                 <div style={{ position: 'relative' }}>
                                   <span style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: '#00E5FF', fontWeight: 700, fontSize: '0.9rem', pointerEvents: 'none' }}>$</span>
                                   <input
                                     type="number"
                                     step="0.01"
-                                    min={p.agent_cost != null ? (p.agent_cost / 10).toFixed(2) : '0'}
+                                    min={p.agent_cost != null ? (p.agent_cost / (/bac\.?\s*water/i.test(p.products?.name || "") ? 1 : 10)).toFixed(2) : '0'}
                                     className="form-input"
                                     style={{ paddingLeft: 26, background: 'var(--bg-metal-dark)', border: '1px solid rgba(0,0,0,0.8)', boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.5)', color: '#fff' }}
-                                    placeholder={(Number(editForm.retail_price) / 10).toFixed(2)}
-                                    value={Number((editForm as any).retail_price) >= 0 ? (Number((editForm as any).retail_price) / 10).toFixed(2) : ''}
+                                    placeholder={(Number(editForm.retail_price) / (/bac\.?\s*water/i.test(p.products?.name || "") ? 1 : 10)).toFixed(2)}
+                                    value={Number((editForm as any).retail_price) >= 0 ? (Number((editForm as any).retail_price) / (/bac\.?\s*water/i.test(p.products?.name || "") ? 1 : 10)).toFixed(2) : ''}
                                     onChange={e => {
                                       const perVial = parseFloat(e.target.value) || 0;
                                       const per10 = perVial * 10;
@@ -621,7 +621,7 @@ export default function AgentStoreProducts({ agentId }: { agentId: string }) {
                                 </div>
                                 {p.agent_cost != null && p.agent_cost > 0 && (
                                   <p style={{ fontSize: '0.68rem', color: 'rgba(255,255,255,0.4)', marginTop: 3, marginBottom: 0 }}>
-                                    Min: <strong style={{ color: '#fff' }}>${(p.agent_cost / 10).toFixed(2)} / Vial</strong> (your cost)
+                                    Min: <strong style={{ color: '#fff' }}>${(p.agent_cost / (/bac\.?\s*water/i.test(p.products?.name || "") ? 1 : 10)).toFixed(2)} / {/bac\.?\s*water/i.test(p.products?.name || "") ? "10x 10ml Viles" : "Vial"}</strong> (your cost)
                                   </p>
                                 )}
                               </div>
@@ -681,15 +681,15 @@ export default function AgentStoreProducts({ agentId }: { agentId: string }) {
                                 {p.agent_cost != null && p.agent_cost > 0 && (
                                   <>
                                     <span style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.4)', fontWeight: 500 }}>Your Cost:</span>
-                                    <span style={{ fontSize: '0.82rem', color: '#68D391', fontWeight: 700 }}>${(p.agent_cost / 10).toFixed(2)} / Vial</span>
+                                    <span style={{ fontSize: '0.82rem', color: '#68D391', fontWeight: 700 }}>${(p.agent_cost / (/bac\.?\s*water/i.test(p.products?.name || "") ? 1 : 10)).toFixed(2)} / {/bac\.?\s*water/i.test(p.products?.name || "") ? "10x 10ml Viles" : "Vial"}</span>
                                     <span style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.2)' }}>→</span>
                                   </>
                                 )}
                                 <span style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.4)', fontWeight: 500 }}>Listed:</span>
-                                <span style={{ fontSize: '0.85rem', color: '#00E5FF', fontWeight: 800 }}>${(Number(p.retail_price) / 10).toFixed(2)} / Vial</span>
+                                <span style={{ fontSize: '0.85rem', color: '#00E5FF', fontWeight: 800 }}>${(Number(p.retail_price) / (/bac\.?\s*water/i.test(p.products?.name || "") ? 1 : 10)).toFixed(2)} / {/bac\.?\s*water/i.test(p.products?.name || "") ? "10x 10ml Viles" : "Vial"}</span>
                                 {p.is_on_sale && p.sale_price && (
                                   <span style={{ fontSize: '0.7rem', color: '#FC8181', fontWeight: 700, background: 'rgba(229,62,62,0.10)', padding: '2px 8px', borderRadius: '4px', border: '1px solid rgba(229,62,62,0.2)' }}>
-                                    On Sale ${(Number(p.sale_price) / 10).toFixed(2)} / Vial
+                                    On Sale ${(Number(p.sale_price) / (/bac\.?\s*water/i.test(p.products?.name || "") ? 1 : 10)).toFixed(2)} / {/bac\.?\s*water/i.test(p.products?.name || "") ? "10x 10ml Viles" : "Vial"}
                                   </span>
                                 )}
                                 {p.agent_cost != null && p.agent_cost > 0 && p.retail_price > 0 && (
