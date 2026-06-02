@@ -1379,6 +1379,12 @@ export default function AgentStorefrontGrid({
                   const perVial = isStorefrontOwner && (item as any).cost_price != null
                     ? Number((item as any).cost_price) / 10
                     : item.retail_price / 10;
+                  // Bac. water sells in fixed 10-packs; show it as packs (10x), not loose vials.
+                  const isBW = isBacWaterItem(item.products?.name, item.products?.compound_slug);
+                  const packSize = 10;
+                  const lineName = isBW ? 'Bac. Water 10x 10ml' : `${name}${size ? ` (${size})` : ''}`;
+                  const unitPrice = isBW ? perVial * packSize : perVial;
+                  const displayCount = isBW ? Math.round(qty / packSize) : qty;
                   return (
                     <div key={variantId} style={{
                       display: 'flex', alignItems: 'center', gap: 12, padding: 10,
@@ -1403,16 +1409,18 @@ export default function AgentStorefrontGrid({
                       />
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ fontSize: '0.9rem', color: 'var(--white)', fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                          {name} {size && `(${size})`}
+                          {lineName}
                         </div>
                         <div style={{ fontSize: '0.78rem', color: 'var(--grey-400)', marginBottom: 6 }}>
-                          ${formatPrice(perVial)} Each / ${formatPrice(perVial * qty)} Total
+                          ${formatPrice(unitPrice)} Each / ${formatPrice(perVial * qty)} Total
                         </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                         <button onClick={() => setCartItems(prev => {
                           const next = { ...prev };
-                          if (next[variantId] <= 1) delete next[variantId];
-                          else next[variantId]--;
+                          const dec = isBW ? packSize : 1;
+                          const cur = next[variantId] || 0;
+                          if (cur - dec <= 0) delete next[variantId];
+                          else next[variantId] = cur - dec;
                           return next;
                         })} style={{
                           width: 36, height: 36, borderRadius: '50%', border: '1px solid rgba(255,255,255,0.2)',
@@ -1423,7 +1431,7 @@ export default function AgentStorefrontGrid({
                         <input
                           type="number"
                           min="0"
-                          value={qty || ''}
+                          value={displayCount || ''}
                           onChange={(e) => {
                             const val = parseInt(e.target.value, 10);
                             setCartItems(prev => {
@@ -1433,17 +1441,17 @@ export default function AgentStorefrontGrid({
                               }
                               const prodItem = products.find(p => p.id === variantId);
                               const maxQty = prodItem?.products?.inventory_count || 0;
-                              
-                              let boundedVal = val;
-                              if (val > maxQty) {
+
+                              let requested = isBW ? val * packSize : val;
+                              if (requested > maxQty) {
                                 toast.error(`Maximum available stock is ${maxQty}.`);
-                                boundedVal = maxQty;
+                                requested = isBW ? Math.floor(maxQty / packSize) * packSize : maxQty;
                               }
 
-                              if (boundedVal <= 0) {
+                              if (requested <= 0) {
                                 delete next[variantId];
                               } else {
-                                next[variantId] = boundedVal;
+                                next[variantId] = requested;
                               }
                               return next;
                             });
@@ -1459,12 +1467,18 @@ export default function AgentStorefrontGrid({
                           }}
                           style={{ 
                             color: 'var(--white)', fontWeight: 700, fontSize: '0.8rem', 
-                            width: 40, textAlign: 'center', background: 'transparent',
+                            width: 60, textAlign: 'center', background: 'transparent',
                             border: '1px solid rgba(255,255,255,0.2)', borderRadius: 4, padding: '2px',
                             appearance: 'textfield', outline: 'none'
                           }}
                         />
-                        <button onClick={() => addToCart(variantId)} style={{
+                        <button onClick={() => {
+                          if (isBW) {
+                            setCartItems(prev => ({ ...prev, [variantId]: (prev[variantId] || 0) + packSize }));
+                          } else {
+                            addToCart(variantId);
+                          }
+                        }} style={{
                           width: 36, height: 36, borderRadius: '50%', border: 'none',
                           background: primaryColor, color: 'var(--white)', cursor: 'pointer', fontSize: '0.85rem',
                           display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800,
