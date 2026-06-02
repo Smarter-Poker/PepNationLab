@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { money, fmtDate, statusLabel } from './format';
+import { paymentMethodLabel } from '@/lib/payment-method-labels';
 
 export default function StatementDetailModal({
   statementId, onClose,
@@ -94,7 +95,7 @@ export default function StatementDetailModal({
               {cell('Status', statusLabel(stmt.status), paid ? '#2ed573' : 'var(--white)')}
               {stmt.due_date && cell('Due', fmtDate(stmt.due_date))}
               {stmt.paid_at && cell('Paid', fmtDate(stmt.paid_at), '#2ed573')}
-              {stmt.payment_method && cell('Method', statusLabel(stmt.payment_method))}
+              {stmt.payment_method && cell('Method', paymentMethodLabel(stmt.payment_method))}
             </div>
 
             {disputed && (
