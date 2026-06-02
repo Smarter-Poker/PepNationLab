@@ -41,6 +41,7 @@ export async function POST(req: NextRequest) {
   const {
     firstName,
     lastName,
+    full_name,
     username,
     password,
     tier,
@@ -55,7 +56,22 @@ export async function POST(req: NextRequest) {
 
   const isResearcher = account_role === 'researcher';
 
-  if (!firstName || !lastName || !username || !password) {
+  // The admin create form uses a single "Full Name" field, while older callers
+  // send firstName/lastName separately. Accept either: derive the missing pieces
+  // from full_name so a single name field works. A single-word name is allowed.
+  const rawFull = String(full_name ?? '').trim();
+  const fnRaw = String(firstName ?? '').trim();
+  const lnRaw = String(lastName ?? '').trim();
+  let effFirst = fnRaw;
+  let effLast = lnRaw;
+  if ((!effFirst || !effLast) && rawFull) {
+    const parts = rawFull.split(/\s+/).filter(Boolean);
+    if (!effFirst) effFirst = parts[0] || '';
+    if (!effLast) effLast = parts.slice(1).join(' ');
+  }
+  const effFullName = rawFull || [effFirst, effLast].filter(Boolean).join(' ').trim();
+
+  if (!effFullName || !username || !password) {
     return NextResponse.json({ error: 'Missing Required Fields' }, { status: 400 });
   }
   if (!isResearcher && (!tier || !account_type || !slug || !display_name)) {
@@ -112,9 +128,9 @@ export async function POST(req: NextRequest) {
   const { data: authData, error: authError } = await supabase.auth.admin.createUser({
     email: internalEmail,
     password,
-    user_metadata: { 
-      username: usernameClean, 
-      full_name: `${String(firstName).trim()} ${String(lastName).trim()}`
+    user_metadata: {
+      username: usernameClean,
+      full_name: effFullName
     },
   });
 
@@ -128,9 +144,9 @@ export async function POST(req: NextRequest) {
     id: userId,
     email: null,
     username: usernameClean,
-    full_name: `${String(firstName).trim()} ${String(lastName).trim()}`,
-    first_name: String(firstName).trim(),
-    last_name: String(lastName).trim(),
+    full_name: effFullName,
+    first_name: effFirst,
+    last_name: effLast,
     role: profileRole,
     disclaimer_v1_accepted: true,
     disclaimer_accepted_at: new Date().toISOString(),
