@@ -483,7 +483,7 @@ export default function Navbar({ onMenuClick, isOpen, title }: { onMenuClick?: (
           </div>
         )}
 
-        <nav style={{ flex: 1, padding: 'var(--space-3) 0', paddingBottom: 'calc(var(--space-6) + env(safe-area-inset-bottom, 24px))' }}>
+        <nav style={{ flex: 1, padding: 'var(--space-3) 0' }}>
           
           {/* Role-based menu: identical for a given role on EVERY page, so the
               hamburger matches that role's dashboard menu everywhere. Admin /
@@ -572,6 +572,39 @@ export default function Navbar({ onMenuClick, isOpen, title }: { onMenuClick?: (
             </>
           )}
         </nav>
+
+        {user && profile && (
+          <div style={{
+            padding: 'var(--space-4)',
+            paddingBottom: 'max(var(--space-4), env(safe-area-inset-bottom, 16px))',
+            borderTop: '1px solid rgba(255,255,255,0.05)',
+            background: 'rgba(0,0,0,0.2)',
+            marginTop: 'auto',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 'var(--space-3)'
+          }}>
+            <div style={{ 
+              width: 36, height: 36, borderRadius: '50%', 
+              background: 'var(--teal)', color: '#000', 
+              display: 'flex', alignItems: 'center', justifyContent: 'center', 
+              fontWeight: 800, fontSize: '1rem', flexShrink: 0
+            }}>
+              {displayName ? displayName.charAt(0).toUpperCase() : '?'}
+            </div>
+            <div style={{ minWidth: 0 }}>
+              <div style={{ fontSize: '0.65rem', color: 'var(--grey-400)', fontFamily: 'var(--font-brand)', letterSpacing: '0.05em', textTransform: 'uppercase', marginBottom: 2 }}>
+                Logged in as
+              </div>
+              <div style={{ fontSize: '0.85rem', color: '#fff', fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                {displayName || 'User'}
+              </div>
+              <div style={{ fontSize: '0.75rem', color: 'var(--teal)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                {user.email}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
       )} {/* end !onMenuClick drawer panel */}
 

@@ -101,6 +101,8 @@ export function AdminLayoutClient({
           height: 'calc(100dvh - var(--nav-offset, 60px))',
           overflowY: 'auto',
           zIndex: 500,
+          display: 'flex',
+          flexDirection: 'column',
         }}
       >
         <div style={{ padding: '0 var(--space-4) var(--space-3)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -115,7 +117,7 @@ export function AdminLayoutClient({
           <AdminMessageBell />
         </div>
 
-        <nav style={{ display: 'flex', flexDirection: 'column', gap: 2, padding: '0 var(--space-2)' }}>
+        <nav style={{ display: 'flex', flexDirection: 'column', gap: 2, padding: '0 var(--space-2)', flex: 1 }}>
           {NAV.map((item) => {
             const hrefRoute = item.href.split('?')[0];
             const active = !item.action && pathname === hrefRoute;
@@ -145,6 +147,34 @@ export function AdminLayoutClient({
             );
           })}
         </nav>
+
+        <div style={{
+          padding: 'var(--space-4)',
+          paddingBottom: 'max(var(--space-4), env(safe-area-inset-bottom, 16px))',
+          borderTop: '1px solid rgba(255,255,255,0.05)',
+          background: 'rgba(0,0,0,0.2)',
+          marginTop: 'auto',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 'var(--space-3)'
+        }}>
+          <div style={{ 
+            width: 36, height: 36, borderRadius: '50%', 
+            background: 'var(--teal)', color: '#000', 
+            display: 'flex', alignItems: 'center', justifyContent: 'center', 
+            fontWeight: 800, fontSize: '1rem', flexShrink: 0
+          }}>
+            {adminName ? adminName.charAt(0).toUpperCase() : '?'}
+          </div>
+          <div style={{ minWidth: 0 }}>
+            <div style={{ fontSize: '0.65rem', color: 'var(--grey-400)', fontFamily: 'var(--font-brand)', letterSpacing: '0.05em', textTransform: 'uppercase', marginBottom: 2 }}>
+              Logged in as
+            </div>
+            <div style={{ fontSize: '0.85rem', color: '#fff', fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              {adminName || 'Admin'}
+            </div>
+          </div>
+        </div>
       </aside>
 
       <main style={{ flex: 1, minWidth: 0, padding: 'var(--space-4)', boxSizing: 'border-box', maxWidth: '100%' }}>
