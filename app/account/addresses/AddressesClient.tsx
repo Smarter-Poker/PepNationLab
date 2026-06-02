@@ -62,9 +62,7 @@ export default function AddressesClient({ initialAddresses }: { initialAddresses
   const [busy, setBusy] = useState(false);
 
   const counts = useMemo(() => {
-    let to = 0;
-    let from = 0;
-    let both = 0;
+    let to = 0, from = 0, both = 0;
     for (const a of addresses) {
       if (a.is_ship_to) to += 1;
       if (a.is_ship_from) from += 1;
@@ -73,11 +71,7 @@ export default function AddressesClient({ initialAddresses }: { initialAddresses
     return { to, from, both };
   }, [addresses]);
 
-  function reset() {
-    setForm(EMPTY);
-    setEditingId(null);
-    setCreating(false);
-  }
+  function reset() { setForm(EMPTY); setEditingId(null); setCreating(false); }
 
   function beginEdit(a: Address) {
     setEditingId(a.id);
@@ -96,21 +90,16 @@ export default function AddressesClient({ initialAddresses }: { initialAddresses
     });
   }
 
-  function setBoth() {
-    setForm((f) => ({ ...f, is_ship_to: true, is_ship_from: true }));
-  }
+  function setBoth() { setForm((f) => ({ ...f, is_ship_to: true, is_ship_from: true })); }
 
   async function submit() {
-    // Defensive: an address must be at least one kind.
     if (!form.is_ship_to && !form.is_ship_from) {
       toast.error('Pick At Least One: Ship-To, Ship-From, Or Both.');
       return;
     }
     setBusy(true);
     try {
-      const url = editingId
-        ? `/api/account/addresses/${editingId}`
-        : '/api/account/addresses';
+      const url = editingId ? `/api/account/addresses/${editingId}` : '/api/account/addresses';
       const method = editingId ? 'PATCH' : 'POST';
       const res = await fetch(url, {
         method,
@@ -129,9 +118,7 @@ export default function AddressesClient({ initialAddresses }: { initialAddresses
       reset();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Save Failed');
-    } finally {
-      setBusy(false);
-    }
+    } finally { setBusy(false); }
   }
 
   async function remove(id: string) {
@@ -147,9 +134,7 @@ export default function AddressesClient({ initialAddresses }: { initialAddresses
       toast.success('Address Deleted');
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Delete Failed');
-    } finally {
-      setBusy(false);
-    }
+    } finally { setBusy(false); }
   }
 
   async function makeDefault(id: string, kind: 'to' | 'from') {
@@ -171,9 +156,7 @@ export default function AddressesClient({ initialAddresses }: { initialAddresses
       toast.success(kind === 'to' ? 'Default Ship-To Updated' : 'Default Ship-From Updated');
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Update Failed');
-    } finally {
-      setBusy(false);
-    }
+    } finally { setBusy(false); }
   }
 
   return (
@@ -185,11 +168,7 @@ export default function AddressesClient({ initialAddresses }: { initialAddresses
       </div>
 
       {!editingId && !creating && (
-        <button
-          className="btn btn-primary"
-          onClick={() => setCreating(true)}
-          style={{ marginBottom: 'var(--space-4)' }}
-        >
+        <button className="btn btn-primary" onClick={() => setCreating(true)} style={{ marginBottom: 'var(--space-4)' }}>
           Add New Address
         </button>
       )}
@@ -215,39 +194,22 @@ export default function AddressesClient({ initialAddresses }: { initialAddresses
             <legend style={{ color: 'var(--silver)', fontSize: '0.78rem', padding: '0 var(--space-2)' }}>Use This Address For</legend>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
               <label style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', color: 'var(--white)' }}>
-                <input
-                  type="checkbox"
-                  checked={form.is_ship_to}
-                  onChange={(e) => setForm({ ...form, is_ship_to: e.target.checked })}
-                />
+                <input type="checkbox" checked={form.is_ship_to} onChange={(e) => setForm({ ...form, is_ship_to: e.target.checked })} />
                 Ship-To (Receiving Orders)
               </label>
               <label style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', color: 'var(--white)' }}>
-                <input
-                  type="checkbox"
-                  checked={form.is_ship_from}
-                  onChange={(e) => setForm({ ...form, is_ship_from: e.target.checked })}
-                />
+                <input type="checkbox" checked={form.is_ship_from} onChange={(e) => setForm({ ...form, is_ship_from: e.target.checked })} />
                 Ship-From (Return Address On Outbound Labels)
               </label>
-              <button
-                type="button"
-                onClick={setBoth}
-                className="btn btn-ghost btn-sm"
-                style={{ alignSelf: 'flex-start', marginTop: 'var(--space-1)' }}
-              >
+              <button type="button" onClick={setBoth} className="btn btn-ghost btn-sm" style={{ alignSelf: 'flex-start', marginTop: 'var(--space-1)' }}>
                 Save As Both
               </button>
             </div>
           </fieldset>
 
           <div style={{ display: 'flex', gap: 'var(--space-3)', marginTop: 'var(--space-4)', flexWrap: 'wrap' }}>
-            <button className="btn btn-primary" disabled={busy} onClick={submit}>
-              {busy ? 'Saving' : 'Save Address'}
-            </button>
-            <button className="btn btn-secondary" disabled={busy} onClick={reset}>
-              Cancel
-            </button>
+            <button className="btn btn-primary" disabled={busy} onClick={submit}>{busy ? 'Saving' : 'Save Address'}</button>
+            <button className="btn btn-secondary" disabled={busy} onClick={reset}>Cancel</button>
           </div>
         </div>
       )}
@@ -284,21 +246,13 @@ export default function AddressesClient({ initialAddresses }: { initialAddresses
                 </div>
                 <div style={{ display: 'flex', gap: 'var(--space-2)', flexWrap: 'wrap' }}>
                   {a.is_ship_to && !a.is_default && (
-                    <button className="btn btn-ghost btn-sm" disabled={busy} onClick={() => makeDefault(a.id, 'to')}>
-                      Default Ship-To
-                    </button>
+                    <button className="btn btn-ghost btn-sm" disabled={busy} onClick={() => makeDefault(a.id, 'to')}>Default Ship-To</button>
                   )}
                   {a.is_ship_from && !a.is_default_from && (
-                    <button className="btn btn-ghost btn-sm" disabled={busy} onClick={() => makeDefault(a.id, 'from')}>
-                      Default Ship-From
-                    </button>
+                    <button className="btn btn-ghost btn-sm" disabled={busy} onClick={() => makeDefault(a.id, 'from')}>Default Ship-From</button>
                   )}
-                  <button className="btn btn-ghost btn-sm" disabled={busy} onClick={() => beginEdit(a)}>
-                    Edit
-                  </button>
-                  <button className="btn btn-secondary btn-sm" disabled={busy} onClick={() => remove(a.id)}>
-                    Delete
-                  </button>
+                  <button className="btn btn-ghost btn-sm" disabled={busy} onClick={() => beginEdit(a)}>Edit</button>
+                  <button className="btn btn-secondary btn-sm" disabled={busy} onClick={() => remove(a.id)}>Delete</button>
                 </div>
               </div>
             </div>
@@ -309,19 +263,7 @@ export default function AddressesClient({ initialAddresses }: { initialAddresses
   );
 }
 
-function Field({
-  label,
-  value,
-  onChange,
-  required,
-  placeholder,
-}: {
-  label: string;
-  value: string;
-  onChange: (v: string) => void;
-  required?: boolean;
-  placeholder?: string;
-}) {
+function Field({ label, value, onChange, required, placeholder }: { label: string; value: string; onChange: (v: string) => void; required?: boolean; placeholder?: string; }) {
   return (
     <label style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-1)' }}>
       <span style={{ color: 'var(--silver)', fontSize: '0.78rem' }}>{label}{required ? ' *' : ''}</span>
@@ -331,14 +273,7 @@ function Field({
         placeholder={placeholder}
         className="input"
         required={required}
-        style={{
-          background: 'var(--surface-2)',
-          border: '1px solid rgba(255,255,255,0.08)',
-          color: 'var(--white)',
-          padding: '0.6rem 0.75rem',
-          borderRadius: 'var(--radius-md)',
-          fontSize: '0.9rem',
-        }}
+        style={{ background: 'var(--surface-2)', border: '1px solid rgba(255,255,255,0.08)', color: 'var(--white)', padding: '0.6rem 0.75rem', borderRadius: 'var(--radius-md)', fontSize: '0.9rem' }}
       />
     </label>
   );

@@ -42,69 +42,15 @@ interface MethodSpec {
 }
 
 const METHODS: MethodSpec[] = [
-  {
-    id: 'zelle',
-    label: 'Zelle',
-    description: 'Bank-To-Bank Transfer. Common For Larger Orders.',
-    handleLabel: 'Email Or Phone Linked To Your Zelle',
-    placeholder: 'you@email.com or +1 555 555 0123',
-  },
-  {
-    id: 'venmo',
-    label: 'Venmo',
-    description: 'Fast Mobile Settlement. Most Popular.',
-    handleLabel: 'Venmo Username',
-    placeholder: '@yourhandle',
-  },
-  {
-    id: 'cashapp',
-    label: 'Cash App',
-    description: 'Mobile Wallet Settlement.',
-    handleLabel: 'Cash App Cashtag',
-    placeholder: '$yourtag',
-  },
-  {
-    id: 'apple_pay',
-    label: 'Apple Pay',
-    description: 'iPhone, iPad, And Mac Wallet.',
-    handleLabel: 'Apple Pay Contact (Phone Or Email)',
-    placeholder: '+1 555 555 0123 or you@icloud.com',
-  },
-  {
-    id: 'apple_cash',
-    label: 'Apple Cash',
-    description: 'Person-To-Person Payments Through iMessage.',
-    handleLabel: 'Apple Cash Contact (Phone Or Email)',
-    placeholder: '+1 555 555 0123',
-  },
-  {
-    id: 'paypal',
-    label: 'PayPal',
-    description: 'Goods-Or-Services Send To Your Agent.',
-    handleLabel: 'PayPal Email',
-    placeholder: 'you@email.com',
-  },
-  {
-    id: 'google_wallet',
-    label: 'Google Wallet',
-    description: 'Google Pay Transfer Via Email Or Phone.',
-    handleLabel: 'Google Wallet Email Or Phone',
-    placeholder: 'you@gmail.com',
-  },
-  {
-    id: 'wise',
-    label: 'Wise',
-    description: 'International Settlement. Bank Or Email Linked.',
-    handleLabel: 'Wise Account Email',
-    placeholder: 'you@email.com',
-  },
-  {
-    id: 'chime',
-    label: 'Chime',
-    description: 'Chime Pay Anyone Transfer.',
-    handleLabel: 'Chime Sign In (Email Or Phone)',
-    placeholder: 'you@email.com',
-  },
+  { id: 'zelle', label: 'Zelle', description: 'Bank-To-Bank Transfer. Common For Larger Orders.', handleLabel: 'Email Or Phone Linked To Your Zelle', placeholder: 'you@email.com or +1 555 555 0123' },
+  { id: 'venmo', label: 'Venmo', description: 'Fast Mobile Settlement. Most Popular.', handleLabel: 'Venmo Username', placeholder: '@yourhandle' },
+  { id: 'cashapp', label: 'Cash App', description: 'Mobile Wallet Settlement.', handleLabel: 'Cash App Cashtag', placeholder: '$yourtag' },
+  { id: 'apple_pay', label: 'Apple Pay', description: 'iPhone, iPad, And Mac Wallet.', handleLabel: 'Apple Pay Contact (Phone Or Email)', placeholder: '+1 555 555 0123 or you@icloud.com' },
+  { id: 'apple_cash', label: 'Apple Cash', description: 'Person-To-Person Payments Through iMessage.', handleLabel: 'Apple Cash Contact (Phone Or Email)', placeholder: '+1 555 555 0123' },
+  { id: 'paypal', label: 'PayPal', description: 'Goods-Or-Services Send To Your Agent.', handleLabel: 'PayPal Email', placeholder: 'you@email.com' },
+  { id: 'google_wallet', label: 'Google Wallet', description: 'Google Pay Transfer Via Email Or Phone.', handleLabel: 'Google Wallet Email Or Phone', placeholder: 'you@gmail.com' },
+  { id: 'wise', label: 'Wise', description: 'International Settlement. Bank Or Email Linked.', handleLabel: 'Wise Account Email', placeholder: 'you@email.com' },
+  { id: 'chime', label: 'Chime', description: 'Chime Pay Anyone Transfer.', handleLabel: 'Chime Sign In (Email Or Phone)', placeholder: 'you@email.com' },
 ];
 
 interface Props {
@@ -121,15 +67,8 @@ export default function PaymentMethodClient({ initialDefault, initialHandles }: 
   const [draft, setDraft] = useState('');
   const [busy, setBusy] = useState(false);
 
-  function startEdit(id: MethodId) {
-    setEditing(id);
-    setDraft(handles[id] ?? '');
-  }
-
-  function cancelEdit() {
-    setEditing(null);
-    setDraft('');
-  }
+  function startEdit(id: MethodId) { setEditing(id); setDraft(handles[id] ?? ''); }
+  function cancelEdit() { setEditing(null); setDraft(''); }
 
   async function persist(next: { default_payment_method?: MethodId | null; payment_handles?: Record<string, string> }) {
     setBusy(true);
@@ -143,20 +82,15 @@ export default function PaymentMethodClient({ initialDefault, initialHandles }: 
         const j = await res.json().catch(() => ({}));
         throw new Error(j?.error || 'Save Failed');
       }
-    } finally {
-      setBusy(false);
-    }
+    } finally { setBusy(false); }
   }
 
   async function saveHandle() {
     if (!editing) return;
     const trimmed = draft.trim();
     const nextHandles = { ...handles };
-    if (trimmed.length === 0) {
-      delete nextHandles[editing];
-    } else {
-      nextHandles[editing] = trimmed;
-    }
+    if (trimmed.length === 0) delete nextHandles[editing];
+    else nextHandles[editing] = trimmed;
     try {
       await persist({ payment_handles: nextHandles });
       setHandles(nextHandles);
@@ -239,17 +173,13 @@ export default function PaymentMethodClient({ initialDefault, initialHandles }: 
               {!isEditing && (
                 <div style={{ display: 'flex', gap: 'var(--space-2)', flexWrap: 'wrap' }}>
                   {!isDefault && (
-                    <button className="btn btn-ghost btn-sm" disabled={busy} onClick={() => makeDefault(opt.id)}>
-                      Set Default
-                    </button>
+                    <button className="btn btn-ghost btn-sm" disabled={busy} onClick={() => makeDefault(opt.id)}>Set Default</button>
                   )}
                   <button className="btn btn-ghost btn-sm" disabled={busy} onClick={() => startEdit(opt.id)}>
                     {handle ? 'Edit Info' : 'Add Info'}
                   </button>
                   {handle && (
-                    <button className="btn btn-secondary btn-sm" disabled={busy} onClick={() => removeHandle(opt.id)}>
-                      Remove
-                    </button>
+                    <button className="btn btn-secondary btn-sm" disabled={busy} onClick={() => removeHandle(opt.id)}>Remove</button>
                   )}
                 </div>
               )}
@@ -264,24 +194,11 @@ export default function PaymentMethodClient({ initialDefault, initialHandles }: 
                   onChange={(e) => setDraft(e.target.value)}
                   placeholder={opt.placeholder}
                   autoFocus
-                  style={{
-                    width: '100%',
-                    background: 'var(--surface)',
-                    border: '1px solid rgba(255,255,255,0.12)',
-                    borderRadius: 'var(--radius-sm)',
-                    padding: '0.7rem 0.85rem',
-                    color: 'var(--white)',
-                    fontSize: '0.95rem',
-                    textTransform: 'none',
-                  }}
+                  style={{ width: '100%', background: 'var(--surface)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 'var(--radius-sm)', padding: '0.7rem 0.85rem', color: 'var(--white)', fontSize: '0.95rem', textTransform: 'none' }}
                 />
                 <div style={{ display: 'flex', gap: 'var(--space-2)', flexWrap: 'wrap' }}>
-                  <button className="btn btn-primary btn-sm" disabled={busy} onClick={saveHandle}>
-                    {busy ? 'Saving' : 'Save Info'}
-                  </button>
-                  <button className="btn btn-ghost btn-sm" disabled={busy} onClick={cancelEdit}>
-                    Cancel
-                  </button>
+                  <button className="btn btn-primary btn-sm" disabled={busy} onClick={saveHandle}>{busy ? 'Saving' : 'Save Info'}</button>
+                  <button className="btn btn-ghost btn-sm" disabled={busy} onClick={cancelEdit}>Cancel</button>
                 </div>
               </div>
             )}
