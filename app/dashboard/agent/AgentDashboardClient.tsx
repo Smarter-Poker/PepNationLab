@@ -778,8 +778,8 @@ export default function AgentDashboardClient({
         {/* My Agent Accounts Tab */}
         {activeTab === 'My Agent Accounts' && (
           <div style={{ animation: 'fadeIn 0.3s ease-out' }}>
-            <AgentNetworkMap />
             <AgentDownline agentId={userProfile.id} />
+            <AgentNetworkMap />
           </div>
         )}
 
