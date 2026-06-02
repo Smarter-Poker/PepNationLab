@@ -15,7 +15,7 @@ export async function GET(req: NextRequest) {
     // Fetch all active products
     const { data: products, error: productsError } = await supabase
       .from('products')
-      .select('id, name, sku, category')
+      .select('id, name, sku, category, image_url, unit_size, unit_measure')
       .eq('is_active', true);
 
     if (productsError) {

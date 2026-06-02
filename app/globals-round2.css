@@ -1160,14 +1160,11 @@ body > * {
 }
 
 /* --- (3) Product Catalog mobile UX: hide dropdowns, show search --- */
-.agentprod-mobile-search { display: none; }
+/* Search is now visible everywhere, but we still hide the complex toggles on mobile to save space */
 @media (max-width: 768px) {
   .agentprod-view-toggle,
   .agentprod-filter-chips {
     display: none !important;
-  }
-  .agentprod-mobile-search {
-    display: block !important;
   }
   /* The header controls wrapper can hide on mobile since search replaces it */
   .agentprod-header-controls {
