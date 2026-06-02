@@ -1,18 +1,18 @@
 'use client';
 
 /**
- * ProductResearchPanel — the full research profile, opened INSIDE the product
- * detail modal (no route navigation). Premium thick brushed-nickel frame, the
- * same back arrow used in the global header, text-only section nav, short
- * paragraphs, Title Case prose.
+ * ProductResearchPanel — ONE research section, opened INSIDE the product detail
+ * modal (no route navigation). Premium thick brushed-nickel frame, the same back
+ * arrow used in the global header, short paragraphs, Title Case prose.
  *
- * Sections: Research Profile, Reported Findings, Preparation, Spec Sheet, FAQs.
- * Research-Use-Only. Rendered via a portal by ProductMonograph; `onClose`
- * returns the user to the compact product modal. `initialSection` selects which
- * section opens first (set by the button the user clicked).
+ * Each toolbar button in ProductMonograph opens this panel at exactly one
+ * section (`initialSection`): Research, Findings, Preparation, Spec Sheet, FAQs.
+ * There is no cross-section tab nav — the back arrow returns to the modal.
+ *
+ * Research-Use-Only. Storage temperatures render in Fahrenheit.
  */
-import { useState } from 'react';
 import Link from 'next/link';
+import { ArrowRight } from 'lucide-react';
 import {
   type Compound,
   evidenceTier,
@@ -32,6 +32,30 @@ interface Props {
 }
 
 const cap: React.CSSProperties = { textTransform: 'capitalize' };
+
+const SECTION_TITLE: Record<ResearchSection, string> = {
+  profile: 'Research Profile',
+  findings: 'Reported Findings',
+  prep: 'Preparation',
+  spec: 'Spec Sheet',
+  faq: 'Frequently Asked Questions',
+};
+
+// Convert Celsius temperatures embedded in free text to Fahrenheit.
+// Ranges first ("2-8C" -> "36-46°F"), then single values ("-20C" -> "-4°F").
+function toFahrenheit(value?: string | null): string | null {
+  if (!value) return value ?? null;
+  let out = value.replace(/(-?\d+(?:\.\d+)?)\s*-\s*(-?\d+(?:\.\d+)?)\s*°?\s*C\b/gi, (_m, a, b) => {
+    const fa = Math.round(Number(a) * 9 / 5 + 32);
+    const fb = Math.round(Number(b) * 9 / 5 + 32);
+    return `${fa}-${fb}°F`;
+  });
+  out = out.replace(/(-?\d+(?:\.\d+)?)\s*°?\s*C\b/gi, (_m, a) => {
+    const f = Math.round(Number(a) * 9 / 5 + 32);
+    return `${f}°F`;
+  });
+  return out;
+}
 
 function Para({ children }: { children: React.ReactNode }) {
   return (
@@ -71,23 +95,13 @@ function Chips({ items, color }: { items: string[]; color: string }) {
   );
 }
 
-const SECTIONS: { key: ResearchSection; label: string }[] = [
-  { key: 'profile', label: 'Research Profile' },
-  { key: 'findings', label: 'Reported Findings' },
-  { key: 'prep', label: 'Preparation' },
-  { key: 'spec', label: 'Spec Sheet' },
-  { key: 'faq', label: 'FAQs' },
-];
-
 export default function ProductResearchPanel({ compound, primaryColor = '#00C4BC', onClose, initialSection = 'profile' }: Props) {
   const tier = evidenceTier(compound.evidence_tier);
   const risk = RISK_META[compound.risk_level];
   const isHighRisk = compound.risk_level === 'critical' || compound.risk_level === 'high';
   const id = compound.identity ?? {};
   const h = compound.handling ?? {};
-  const [active, setActive] = useState<ResearchSection>(initialSection);
-
-  const withDegrees = (v?: string | null) => (v ? v.replace(/(\d)\s*C\b/g, '$1°C') : v);
+  const section = initialSection;
 
   const badge = (label: string, color: string) => (
     <span style={{ fontSize: '0.7rem', fontWeight: 800, letterSpacing: '0.04em', textTransform: 'uppercase', padding: '5px 13px', borderRadius: 9999, background: `${color}1A`, border: `1px solid ${color}66`, color }}>
@@ -95,11 +109,33 @@ export default function ProductResearchPanel({ compound, primaryColor = '#00C4BC
     </span>
   );
 
+  // --- Build an organized FAQ from the compound's data (works for any compound) ---
+  const shelfDays = compound.reconstitution_shelf_days ?? h.reconstituted_days ?? null;
+  const prepBits: string[] = [];
+  if (h.form) prepBits.push(`Supplied As ${h.form}`);
+  if (h.diluent) prepBits.push(`Reconstituted With ${h.diluent}`);
+  if (h.storage_temp) prepBits.push(`Stored At ${toFahrenheit(h.storage_temp)}`);
+  if (shelfDays != null) prepBits.push(`Used Within ${shelfDays} Days Of Reconstitution`);
+
+  const faqs: { q: string; a: string }[] = [];
+  if (compound.plain_summary) faqs.push({ q: `What Is ${compound.display_name}?`, a: compound.plain_summary });
+  if (compound.mechanism) faqs.push({ q: 'How Does It Work?', a: compound.mechanism });
+  if (compound.studied_for.length > 0) faqs.push({ q: 'What Is It Studied For?', a: compound.studied_for.join(', ') + '.' });
+  if (compound.benefits) faqs.push({ q: 'What Findings Have Been Reported In Research?', a: compound.benefits });
+  if (compound.side_effects) faqs.push({ q: 'What Side Effects Have Been Reported?', a: compound.side_effects });
+  if (compound.warnings) faqs.push({ q: 'What Are The Warnings And Limitations?', a: compound.warnings });
+  if (prepBits.length > 0) faqs.push({ q: 'How Should It Be Stored And Prepared?', a: prepBits.join('; ') + '.' });
+  if (tier.blurb) faqs.push({ q: `What Does The ${tier.label} Evidence Tier Mean?`, a: tier.blurb });
+  if (compound.regulatory || compound.wada_status) {
+    faqs.push({ q: 'What Is Its Regulatory And Anti-Doping Status?', a: `${compound.regulatory ? compound.regulatory + ' ' : ''}${wadaLabel(compound.wada_status)}.` });
+  }
+  faqs.push({ q: 'Is It Approved For Human Use?', a: 'No. Every Product On Pep Nation Lab Is Sold Strictly For Laboratory And Research Use Only — Not For Human Or Veterinary Use.' });
+
   return (
     <div
       role="dialog"
       aria-modal="true"
-      aria-label={`${compound.display_name} Research Profile`}
+      aria-label={`${compound.display_name} ${SECTION_TITLE[section]}`}
       style={{
         position: 'fixed',
         inset: 0,
@@ -131,8 +167,8 @@ export default function ProductResearchPanel({ compound, primaryColor = '#00C4BC
           maxHeight: '94dvh',
         }}
       >
-        {/* Top bar: global back arrow */}
-        <div style={{ display: 'flex', alignItems: 'center', padding: '14px 18px', borderBottom: '1px solid rgba(255,255,255,0.08)', flexShrink: 0, background: 'linear-gradient(180deg, rgba(255,255,255,0.05), transparent)' }}>
+        {/* Top bar: global back arrow + section title */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '14px 18px', borderBottom: '1px solid rgba(255,255,255,0.08)', flexShrink: 0, background: 'linear-gradient(180deg, rgba(255,255,255,0.05), transparent)' }}>
           <button
             type="button"
             onClick={onClose}
@@ -143,6 +179,9 @@ export default function ProductResearchPanel({ compound, primaryColor = '#00C4BC
             <img src="/back-arrow.png" width={38} height={38} alt="Back" style={{ objectFit: 'contain' }} />
             Back
           </button>
+          <span style={{ marginLeft: 'auto', fontSize: '0.78rem', fontWeight: 800, letterSpacing: '0.05em', textTransform: 'uppercase', color: 'var(--silver)' }}>
+            {SECTION_TITLE[section]}
+          </span>
         </div>
 
         {/* Scroll body */}
@@ -165,39 +204,8 @@ export default function ProductResearchPanel({ compound, primaryColor = '#00C4BC
             </div>
           </header>
 
-          {/* Section nav (text-only buttons) */}
-          <div role="tablist" style={{ display: 'flex', flexWrap: 'wrap', gap: 4, borderBottom: '1px solid rgba(192,184,168,0.25)', marginBottom: 'var(--space-5)' }}>
-            {SECTIONS.map((s) => {
-              const isActive = active === s.key;
-              return (
-                <button
-                  key={s.key}
-                  type="button"
-                  role="tab"
-                  aria-selected={isActive}
-                  onClick={() => setActive(s.key)}
-                  style={{
-                    padding: '10px 14px',
-                    border: 'none',
-                    borderBottom: `2px solid ${isActive ? primaryColor : 'transparent'}`,
-                    background: 'transparent',
-                    color: isActive ? 'var(--white)' : 'var(--silver)',
-                    fontWeight: isActive ? 800 : 600,
-                    fontSize: '0.86rem',
-                    cursor: 'pointer',
-                    marginBottom: -1,
-                    whiteSpace: 'nowrap',
-                  }}
-                >
-                  {s.label}
-                </button>
-              );
-            })}
-          </div>
-
-          {/* Panels */}
-          <section role="tabpanel" style={{ minHeight: 160 }}>
-            {active === 'profile' && (
+          <section style={{ minHeight: 160 }}>
+            {section === 'profile' && (
               <div>
                 {compound.plain_summary && <Para>{compound.plain_summary}</Para>}
                 <div style={{ marginTop: 'var(--space-3)', marginBottom: 'var(--space-5)' }}>
@@ -229,7 +237,7 @@ export default function ProductResearchPanel({ compound, primaryColor = '#00C4BC
               </div>
             )}
 
-            {active === 'findings' && (
+            {section === 'findings' && (
               <div>
                 {compound.benefits && (
                   <div style={{ marginBottom: 'var(--space-5)' }}>
@@ -255,18 +263,18 @@ export default function ProductResearchPanel({ compound, primaryColor = '#00C4BC
               </div>
             )}
 
-            {active === 'prep' && (
+            {section === 'prep' && (
               <div>
                 <Label>Handling, Storage & Reconstitution</Label>
                 <div style={{ marginBottom: 'var(--space-5)' }}>
                   <Fact label="Form" value={h.form} />
                   <Fact label="Diluent" value={h.diluent} />
-                  <Fact label="Storage Temperature" value={withDegrees(h.storage_temp)} />
+                  <Fact label="Storage Temperature" value={toFahrenheit(h.storage_temp)} />
                   <Fact label="Light Sensitive" value={h.light_sensitive == null ? null : h.light_sensitive ? 'Yes' : 'No'} />
                   <Fact label="Freeze / Thaw" value={h.freeze_thaw} />
                   <Fact
                     label="Reconstituted Shelf Life"
-                    value={(compound.reconstitution_shelf_days ?? h.reconstituted_days) != null ? `${compound.reconstitution_shelf_days ?? h.reconstituted_days} Days Refrigerated` : null}
+                    value={shelfDays != null ? `${shelfDays} Days Refrigerated` : null}
                   />
                 </div>
                 {h.notes && <Para>{h.notes}</Para>}
@@ -280,7 +288,7 @@ export default function ProductResearchPanel({ compound, primaryColor = '#00C4BC
               </div>
             )}
 
-            {active === 'spec' && (
+            {section === 'spec' && (
               <div>
                 <Label>Technical Spec Sheet</Label>
                 <div style={{ marginBottom: 'var(--space-5)' }}>
@@ -294,7 +302,7 @@ export default function ProductResearchPanel({ compound, primaryColor = '#00C4BC
                   <Fact label="Parent" value={id.parent} />
                   <Fact label="Form" value={h.form} />
                   <Fact label="Diluent" value={h.diluent} />
-                  <Fact label="Storage Temperature" value={withDegrees(h.storage_temp)} />
+                  <Fact label="Storage Temperature" value={toFahrenheit(h.storage_temp)} />
                   <Fact label="Regulatory" value={compound.regulatory} />
                   <Fact label="WADA Status" value={wadaLabel(compound.wada_status)} />
                 </div>
@@ -319,38 +327,47 @@ export default function ProductResearchPanel({ compound, primaryColor = '#00C4BC
               </div>
             )}
 
-            {active === 'faq' && (
+            {section === 'faq' && (
               <div>
-                <div style={{ marginBottom: 'var(--space-5)' }}>
-                  <Label>What Does {tier.label} Mean?</Label>
-                  {tier.blurb && <Para>{tier.blurb}</Para>}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                  {faqs.map((f, i) => (
+                    <div
+                      key={i}
+                      style={{
+                        padding: 'var(--space-4)',
+                        borderRadius: 'var(--radius-md)',
+                        background: 'rgba(255,255,255,0.03)',
+                        border: '1px solid rgba(255,255,255,0.07)',
+                      }}
+                    >
+                      <p style={{ margin: '0 0 6px', fontWeight: 800, fontSize: '0.95rem', color: primaryColor }}>
+                        {f.q}
+                      </p>
+                      <p style={{ ...cap, margin: 0, color: '#C8D2DC', lineHeight: 1.7, fontSize: '0.9rem' }}>
+                        {f.a}
+                      </p>
+                    </div>
+                  ))}
                 </div>
-                <div style={{ marginBottom: 'var(--space-5)' }}>
-                  <Label>Regulatory & Anti-Doping</Label>
-                  {compound.regulatory && <Para>{compound.regulatory}</Para>}
-                  <p style={{ color: 'var(--white)', fontWeight: 700, margin: 0 }}>{wadaLabel(compound.wada_status)}</p>
-                </div>
-                {compound.risk_reasons.length > 0 && (
-                  <div style={{ marginBottom: 'var(--space-5)' }}>
-                    <Label>Handling Considerations</Label>
-                    <Chips items={compound.risk_reasons} color={risk.color} />
-                  </div>
-                )}
-                {compound.sources.length > 0 && (
-                  <div>
-                    <Label>Sources</Label>
-                    <ul style={{ margin: 0, paddingLeft: '1.1rem', display: 'flex', flexDirection: 'column', gap: 8 }}>
-                      {compound.sources.map((src, i) => {
-                        const href = /^https?:\/\//i.test(src) ? src : `https://${src}`;
-                        return (
-                          <li key={i} style={{ wordBreak: 'break-all', fontSize: '0.85rem' }}>
-                            <a href={href} target="_blank" rel="noopener noreferrer" style={{ color: primaryColor }}>{src}</a>
-                          </li>
-                        );
-                      })}
-                    </ul>
-                  </div>
-                )}
+                <Link
+                  href={`/research/${compound.slug}`}
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 8,
+                    marginTop: 'var(--space-5)',
+                    padding: '12px 18px',
+                    borderRadius: 'var(--radius-md)',
+                    background: primaryColor,
+                    color: '#04221F',
+                    fontWeight: 800,
+                    fontSize: '0.88rem',
+                    textDecoration: 'none',
+                  }}
+                >
+                  View The Full {compound.display_name} Research Page
+                  <ArrowRight size={15} aria-hidden="true" />
+                </Link>
               </div>
             )}
           </section>

@@ -6,7 +6,7 @@
  * Research-Use-Only footer. No human dosing.
  *
  * Title Case is applied to every value cell (except Sources URLs). Storage
- * temperatures render with the degree symbol. Premium thick brushed-nickel frame.
+ * temperatures render in Fahrenheit. Premium thick brushed-nickel frame.
  */
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
@@ -26,11 +26,20 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   };
 }
 
-// Insert a degree symbol before a bare Celsius "C" (e.g. "2-8C" -> "2-8°C").
-// Idempotent: skips when a degree symbol already precedes the C.
-function withDegrees(value?: string | null): string | null {
+// Convert Celsius temperatures embedded in free text to Fahrenheit.
+// Ranges first ("2-8C" -> "36-46°F"), then single values ("-20C" -> "-4°F").
+function toFahrenheit(value?: string | null): string | null {
   if (!value) return value ?? null;
-  return value.replace(/(\d)\s*C\b/g, '$1°C');
+  let out = value.replace(/(-?\d+(?:\.\d+)?)\s*-\s*(-?\d+(?:\.\d+)?)\s*°?\s*C\b/gi, (_m, a, b) => {
+    const fa = Math.round(Number(a) * 9 / 5 + 32);
+    const fb = Math.round(Number(b) * 9 / 5 + 32);
+    return `${fa}-${fb}°F`;
+  });
+  out = out.replace(/(-?\d+(?:\.\d+)?)\s*°?\s*C\b/gi, (_m, a) => {
+    const f = Math.round(Number(a) * 9 / 5 + 32);
+    return `${f}°F`;
+  });
+  return out;
 }
 
 function Row({ label, value, cap = true }: { label: string; value: React.ReactNode; cap?: boolean }) {
@@ -158,7 +167,7 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
             />
             <Row label="Form" value={h.form} />
             <Row label="Diluent" value={h.diluent} />
-            <Row label="Storage Temperature" value={withDegrees(h.storage_temp)} />
+            <Row label="Storage Temperature" value={toFahrenheit(h.storage_temp)} />
             <Row label="Light Sensitive" value={h.light_sensitive == null ? null : h.light_sensitive ? 'Yes' : 'No'} />
             <Row label="Freeze / Thaw" value={h.freeze_thaw} />
             <Row

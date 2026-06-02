@@ -2,10 +2,10 @@
 
 /**
  * ProductMonograph — research access shown inside the storefront product detail
- * modal. For the enhanced (Tirzepatide) layout, the old collapsible "Research
- * Profile" pill is replaced by a row of premium brushed-nickel buttons that each
- * open the full ProductResearchPanel INSIDE the popup at a specific section:
- * Research Profile, Reported Findings, Preparation, Spec Sheet, FAQs.
+ * modal. For the enhanced (Tirzepatide) layout, the research data is reached
+ * through a single brushed-metal bezel toolbar of five embossed buttons:
+ * Research, Findings, Preparation, Spec Sheet, FAQs. Each button opens the
+ * ProductResearchPanel INSIDE the popup showing ONLY that one section.
  *
  * Non-enhanced compounds keep the compact collapsed summary that links out to
  * /research/[slug] until the new layout is rolled out platform-wide.
@@ -27,8 +27,8 @@ interface Props {
 const capitalize: React.CSSProperties = { textTransform: 'capitalize' };
 
 const PANEL_BUTTONS: { key: ResearchSection; label: string }[] = [
-  { key: 'profile', label: 'Research Profile' },
-  { key: 'findings', label: 'Reported Findings' },
+  { key: 'profile', label: 'Research' },
+  { key: 'findings', label: 'Findings' },
   { key: 'prep', label: 'Preparation' },
   { key: 'spec', label: 'Spec Sheet' },
   { key: 'faq', label: 'FAQs' },
@@ -49,41 +49,53 @@ export default function ProductMonograph({ compound, primaryColor = '#00C4BC' }:
   if (enhanced) {
     return (
       <div style={{ marginBottom: 'var(--space-6)' }}>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
-          {PANEL_BUTTONS.map((b) => (
-            <button
-              key={b.key}
-              type="button"
-              onClick={() => setPanelSection(b.key)}
-              style={{
-                flex: '1 1 auto',
-                minWidth: 'calc(33.333% - 10px)',
-                padding: 2,
-                borderRadius: 12,
-                background: 'linear-gradient(145deg, #c8c2b8 0%, #8a847c 35%, #5c5852 50%, #8a847c 65%, #c8c2b8 100%)',
-                boxShadow: '0 4px 14px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.3)',
-                border: 'none',
-                cursor: 'pointer',
-              }}
-            >
-              <span
+        {/* Brushed-metal bezel toolbar */}
+        <div
+          style={{
+            borderRadius: 16,
+            padding: 9,
+            background: 'linear-gradient(180deg, #e6dfd2 0%, #9a9389 16%, #4c4843 50%, #9a9389 84%, #e6dfd2 100%)',
+            boxShadow: '0 12px 30px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.55), inset 0 -2px 4px rgba(0,0,0,0.55)',
+          }}
+        >
+          <div
+            style={{
+              display: 'flex',
+              flexWrap: 'wrap',
+              gap: 8,
+              padding: 8,
+              borderRadius: 11,
+              background: 'linear-gradient(180deg, #2a2622 0%, #17140f 100%)',
+              boxShadow: 'inset 0 2px 9px rgba(0,0,0,0.85)',
+            }}
+          >
+            {PANEL_BUTTONS.map((b) => (
+              <button
+                key={b.key}
+                type="button"
+                onClick={() => setPanelSection(b.key)}
                 style={{
-                  display: 'block',
-                  padding: '12px 10px',
-                  borderRadius: 10,
-                  background: 'linear-gradient(180deg, #18222d 0%, #0e1620 100%)',
-                  color: 'var(--white)',
+                  flex: '1 1 84px',
+                  minWidth: 80,
+                  padding: '13px 8px',
+                  borderRadius: 9,
+                  border: 'none',
+                  cursor: 'pointer',
+                  background: 'linear-gradient(180deg, #c2bbac 0%, #948d80 46%, #6f685d 56%, #a39c90 100%)',
+                  boxShadow: '0 2px 5px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.55), inset 0 -2px 3px rgba(0,0,0,0.45)',
+                  color: '#f4eedd',
                   fontWeight: 800,
-                  fontSize: '0.84rem',
-                  letterSpacing: '0.01em',
+                  fontSize: '0.82rem',
+                  letterSpacing: '0.02em',
                   textAlign: 'center',
                   whiteSpace: 'nowrap',
+                  textShadow: '0 1px 0 rgba(0,0,0,0.55), 0 -1px 0 rgba(255,255,255,0.18)',
                 }}
               >
                 {b.label}
-              </span>
-            </button>
-          ))}
+              </button>
+            ))}
+          </div>
         </div>
 
         {panelSection && typeof document !== 'undefined'
