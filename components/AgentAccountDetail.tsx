@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState, useCallback } from 'react';
 import { toast } from 'sonner';
+import { freshDefaultLadder, isDefaultLadder } from '@/lib/gamification';
 
 /**
  * AgentAccountDetail — full management drawer for a single downline FULL agent.
@@ -128,16 +129,12 @@ export default function AgentAccountDetail({
   // Commission structure: 'fixed' = flat rate; 'gamified' = base climbs with
   // volume up to a max cap via the house milestone ladder.
   const [commissionMode, setCommissionMode] = useState<'fixed' | 'gamified'>('fixed');
-  const [maxCap, setMaxCap] = useState('');
-  const [velocityCap, setVelocityCap] = useState('');
+  // Gamification scale: 'default' = the read-only house ladder (20% → 40%);
+  // 'custom' = a fully adjustable 5-level ladder. The button the user opens IS
+  // the selection. customSteps always holds the active ladder (Commission % per
+  // level); for 'default' it equals the canonical default ladder.
   const [scaleType, setScaleType] = useState<'default' | 'custom'>('default');
-  const [customSteps, setCustomSteps] = useState([
-    { level: 1, name: 'Rookie', min_volume: 0, bonus_pct: 0 },
-    { level: 2, name: 'Established', min_volume: 2500, bonus_pct: 3 },
-    { level: 3, name: 'Pro', min_volume: 7500, bonus_pct: 7 },
-    { level: 4, name: 'Elite', min_volume: 20000, bonus_pct: 12 },
-    { level: 5, name: 'Apex', min_volume: 50000, bonus_pct: 20 },
-  ]);
+  const [customSteps, setCustomSteps] = useState(freshDefaultLadder());
   // Opens the full-screen Gamification Scale explainer.
   const [showGamificationInfo, setShowGamificationInfo] = useState(false);
   const [isActive, setIsActive] = useState(true);
@@ -174,26 +171,31 @@ export default function AgentAccountDetail({
       const basePct = d.agent.commission_pct == null ? 0 : Number(d.agent.commission_pct);
       const capPct = d.agent.commission_max_pct;
       setCommissionMode(capPct != null && Number(capPct) > basePct ? 'gamified' : 'fixed');
-      setMaxCap(capPct != null ? String(capPct) : '');
-      setVelocityCap(d.agent.velocity_cap != null ? String(d.agent.velocity_cap) : '');
-      
+
       const hasCustomSteps = Array.isArray(d.agent.commission_ladder_config) && d.agent.commission_ladder_config.length > 0;
       if (hasCustomSteps) {
-        setScaleType('custom');
+        // Stored ladder holds bonus-over-base; rebuild the absolute Commission %
+        // per level (= stored bonus + base) that the table displays.
         const defaultNames = ['Rookie', 'Established', 'Pro', 'Elite', 'Apex'];
         const mappedSteps = d.agent.commission_ladder_config!.map((s, idx) => ({
           level: idx + 1,
           name: defaultNames[idx] || `Level ${idx + 1}`,
-          min_volume: s.min_volume || 0,
-          bonus_pct: (s.bonus_pct || 0) + basePct
+          min_volume: Number(s.min_volume) || 0,
+          bonus_pct: (Number(s.bonus_pct) || 0) + basePct,
         }));
         while (mappedSteps.length < 5) {
           const idx = mappedSteps.length;
           mappedSteps.push({ level: idx + 1, name: defaultNames[idx] || `Level ${idx + 1}`, min_volume: 0, bonus_pct: 0 });
         }
-        setCustomSteps(mappedSteps.slice(0, 5));
+        const finalSteps = mappedSteps.slice(0, 5);
+        setCustomSteps(finalSteps);
+        // A saved ladder identical to the house default shows as Default
+        // (read-only); anything else is a Custom scale.
+        setScaleType(isDefaultLadder(finalSteps) ? 'default' : 'custom');
       } else {
+        // No saved ladder → start on the read-only house Default scale.
         setScaleType('default');
+        setCustomSteps(freshDefaultLadder());
       }
 
       setIsActive(!!d.agent.is_active);
@@ -209,20 +211,21 @@ export default function AgentAccountDetail({
   const isSubAgent = detail?.agent?.is_sub_agent === true;
 
   async function saveChanges() {
-    // Platform rule: the gamification Max Cap can never exceed 40%.
-    if (commissionMode === 'gamified' && maxCap !== '') {
-      const capNum = Number(maxCap);
-      if (Number.isFinite(capNum) && capNum > MAX_CAP_LIMIT) {
-        toast.error('Max Cap Cannot Exceed 40%.');
+    // Platform rule: no gamification level may exceed 40%.
+    if (commissionMode === 'gamified') {
+      const over = customSteps.find(s => Number(s.bonus_pct) > MAX_CAP_LIMIT);
+      if (over) {
+        toast.error('Gamification Levels Cannot Exceed 40%.');
         return;
       }
     }
     setSaving(true);
     try {
-      let baseVal: number = commissionPct === '' ? 0 : Number(commissionPct);
-      if (commissionMode === 'gamified' && scaleType === 'custom') {
-        baseVal = customSteps[0].bonus_pct;
-      }
+      // Base markup = the entry (Rookie) level for a gamified ladder, or the flat
+      // rate for fixed markup.
+      const baseVal: number = commissionMode === 'gamified'
+        ? (Number(customSteps[0].bonus_pct) || 0)
+        : (commissionPct === '' ? 0 : Number(commissionPct));
       const payload: Record<string, any> = {
         full_name: fullName,
         email,
@@ -234,14 +237,19 @@ export default function AgentAccountDetail({
         slug: isSubAgent ? undefined : (slug || undefined),
       };
       if (commissionMode === 'fixed') {
-        // Fixed percentage: cap == base forces a flat effective rate.
+        // Fixed percentage: cap == base forces a flat effective rate; no ladder.
         payload.commission_max_pct = baseVal;
         payload.velocity_cap = null;
+        payload.custom_commission_scale = null;
       } else {
-        // Gamification scale: cap above base lets the ladder lift the rate.
-        payload.commission_max_pct = scaleType === 'custom' ? customSteps[4].bonus_pct : (maxCap === '' ? null : maxCap);
-        payload.velocity_cap = velocityCap === '' ? null : velocityCap;
-        payload.custom_commission_scale = scaleType === 'custom' ? customSteps.map(s => ({ min_volume: s.min_volume, bonus_pct: Math.max(0, s.bonus_pct - baseVal) })) : null;
+        // Gamification scale (Default or Custom): persist the concrete 5-level
+        // ladder as bonus-over-base so the order-time engine and UI always agree.
+        payload.commission_max_pct = Number(customSteps[customSteps.length - 1].bonus_pct);
+        payload.velocity_cap = null;
+        payload.custom_commission_scale = customSteps.map(s => ({
+          min_volume: Number(s.min_volume) || 0,
+          bonus_pct: Math.max(0, Number(s.bonus_pct) - baseVal),
+        }));
       }
       if (accountType === 'credit') payload.credit_limit = creditLimit === '' ? 0 : creditLimit;
 
@@ -310,17 +318,6 @@ export default function AgentAccountDetail({
       setSaving(false);
     }
   }
-
-  // Live effective rate per level from the entered Base + Max Cap (cap clamped to 40%).
-  const baseNumForLadder = commissionPct === '' ? 0 : (Number(commissionPct) || 0);
-  const capRawForLadder = maxCap === '' ? null : Number(maxCap);
-  const capNumForLadder = capRawForLadder != null && Number.isFinite(capRawForLadder)
-    ? Math.min(capRawForLadder, MAX_CAP_LIMIT)
-    : null;
-  const effForBonus = (bonus: number) => {
-    const v = baseNumForLadder + bonus;
-    return capNumForLadder != null ? Math.min(v, capNumForLadder) : v;
-  };
 
   return (
     <>
@@ -481,49 +478,41 @@ export default function AgentAccountDetail({
                       </label>
                     </div>
 
-                    {commissionMode === 'gamified' && (
-                      <div style={{ display: 'flex', gap: 'var(--space-3)', marginBottom: 'var(--space-3)' }}>
-                        <label style={{ flex: 1, padding: '10px', background: 'var(--bg-metal-dark)', border: `1px solid ${scaleType === 'default' ? 'var(--teal)' : 'rgba(0,0,0,0.8)'}`, color: 'var(--white)', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          <input type="radio" checked={scaleType === 'default'} onChange={() => setScaleType('default')} />
-                          Use Default Scale
-                        </label>
-                        <label style={{ flex: 1, padding: '10px', background: 'var(--bg-metal-dark)', border: `1px solid ${scaleType === 'custom' ? 'var(--teal)' : 'rgba(0,0,0,0.8)'}`, color: 'var(--white)', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          <input type="radio" checked={scaleType === 'custom'} onChange={() => setScaleType('custom')} />
-                          Use Custom Scale
-                        </label>
-                      </div>
-                    )}
                     {commissionMode === 'fixed' ? (
                       <div>
                         <label style={{ display: 'block', marginBottom: '8px', color: 'var(--grey-300)', fontSize: '0.85rem' }}>Markup Rate (%)</label>
                         <input type="number" min="0" max="100" step="0.1" style={{ width: '100%', padding: '10px', background: 'var(--bg-metal-dark)', border: '1px solid rgba(0,0,0,0.8)', color: 'var(--white)', borderRadius: '6px' }} value={commissionPct} onChange={e => setCommissionPct(e.target.value)} placeholder="e.g. 20" />
                       </div>
-                    ) : scaleType === 'default' ? (
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: 'var(--space-3)' }}>
-                        <div>
-                          <label style={{ display: 'block', marginBottom: '8px', color: 'var(--grey-300)', fontSize: '0.85rem' }}>Base Rate (%)</label>
-                          <input type="number" min="0" max="40" step="0.1" style={{ width: '100%', padding: '10px', background: 'var(--bg-metal-dark)', border: '1px solid rgba(0,0,0,0.8)', color: 'var(--white)', borderRadius: '6px' }} value={commissionPct} onChange={e => setCommissionPct(e.target.value)} placeholder="e.g. 15" />
-                        </div>
-                        <div>
-                          <label style={{ display: 'block', marginBottom: '8px', color: 'var(--grey-300)', fontSize: '0.85rem' }}>Max Cap (%)</label>
-                          <input type="number" min="0" max="40" step="0.1" style={{ width: '100%', padding: '10px', background: 'var(--bg-metal-dark)', border: '1px solid rgba(0,0,0,0.8)', color: 'var(--white)', borderRadius: '6px' }} value={maxCap} onChange={e => setMaxCap(e.target.value)} placeholder="No Cap" />
-                        </div>
-                        <div>
-                          <label style={{ display: 'block', marginBottom: '8px', color: 'var(--grey-300)', fontSize: '0.85rem' }}>Velocity Cap ($)</label>
-                          <input type="number" min="0" step="0.01" style={{ width: '100%', padding: '10px', background: 'var(--bg-metal-dark)', border: '1px solid rgba(0,0,0,0.8)', color: 'var(--white)', borderRadius: '6px' }} value={velocityCap} onChange={e => setVelocityCap(e.target.value)} placeholder="None" />
-                        </div>
-                      </div>
                     ) : (
-                      <div>
-                        <button type="button" className="btn-silver" style={{ fontSize: '0.8rem', padding: '6px 12px' }}
-                          onClick={() => setShowGamificationInfo(true)}
+                      <div style={{ display: 'flex', gap: 'var(--space-3)', flexWrap: 'wrap' }}>
+                        <button
+                          type="button"
+                          onClick={() => { setScaleType('default'); setCustomSteps(freshDefaultLadder()); setShowGamificationInfo(true); }}
+                          style={{
+                            flex: 1, minWidth: 210, padding: '12px', borderRadius: 8, cursor: 'pointer', fontWeight: 700, fontSize: '0.85rem',
+                            background: scaleType === 'default' ? 'var(--teal)' : 'rgba(255,255,255,0.05)',
+                            color: scaleType === 'default' ? 'var(--black)' : 'var(--white)',
+                            border: `1px solid ${scaleType === 'default' ? 'var(--teal)' : 'rgba(255,255,255,0.15)'}`,
+                          }}
                         >
-                          See The Gamification Levels
+                          See Default Gamification Levels
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => { setScaleType('custom'); setShowGamificationInfo(true); }}
+                          style={{
+                            flex: 1, minWidth: 210, padding: '12px', borderRadius: 8, cursor: 'pointer', fontWeight: 700, fontSize: '0.85rem',
+                            background: scaleType === 'custom' ? 'var(--teal)' : 'rgba(255,255,255,0.05)',
+                            color: scaleType === 'custom' ? 'var(--black)' : 'var(--white)',
+                            border: `1px solid ${scaleType === 'custom' ? 'var(--teal)' : 'rgba(255,255,255,0.15)'}`,
+                          }}
+                        >
+                          Customize Gamification Levels
                         </button>
                       </div>
                     )}
                     <p style={{ fontSize: '0.75rem', color: 'var(--grey-500)', margin: '8px 0 0', lineHeight: 1.5 }}>
-                      Fixed Markup Pays A Flat Rate. Gamification Scale Drops Your Markup Through 5 Levels As Their Monthly Sales Grow.
+                      Fixed Markup Pays A Flat Rate. The Default Gamification Scale Starts At 20% And Rises To A 40% Maximum As Monthly Sales Grow. Customize To Set Your Own 5 Levels.
                     </p>
                   </div>
                 </div>
@@ -668,7 +657,7 @@ export default function AgentAccountDetail({
                 Gamification Scale
               </h2>
               <p style={{ color: 'var(--grey-400)', fontSize: '0.85rem', marginBottom: 'var(--space-4)' }}>
-                {scaleType === 'custom' ? 'Customize the 5 levels of gamification for this agent.' : 'The standard house milestone ladder.'}
+                {scaleType === 'custom' ? 'Customize The 5 Levels Of Gamification For This Agent.' : 'The Default House Scale — Starts At 20% And Rises To A 40% Maximum. Read Only.'}
               </p>
               
               <div style={{ border: '1px solid rgba(0,196,188,0.35)', borderRadius: 10, overflow: 'hidden', marginBottom: 'var(--space-4)' }}>
