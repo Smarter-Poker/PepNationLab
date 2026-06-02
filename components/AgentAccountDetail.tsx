@@ -9,9 +9,10 @@ import { freshDefaultLadder, isDefaultLadder } from '@/lib/gamification';
  *
  * Opened from AgentDownline ("My Agent Accounts") when a Super Agent clicks an
  * agent name. Lets the Super Agent:
- *   - Edit Full Name + Storefront Display Name
+ *   - Edit First/Last Name + Storefront Display Name
  *   - Switch Payment Model (Prepaid / Credit Line) and set the Credit Limit
  *   - Choose the Markup Structure: Fixed Markup or Gamification Scale
+ *     (FULL AGENTS ONLY — super-agents use the Tier 1/2/3 multiplier)
  *   - Activate / Deactivate the account (also toggles the storefront)
  *   - Give Wallet Credit (adds to prepaid balance, recorded in the ledger)
  *   - Review Sales History + the Wallet Ledger
@@ -24,6 +25,10 @@ type Detail = {
   agent: {
     id: string;
     full_name: string | null;
+    // R32: backend already returns role on /api/agent/agents/[id]; expose it
+    // here so the drawer can gate role-specific UI (e.g. super_agents do not
+    // see Markup Structure — they use Tier 1/2/3 multipliers).
+    role: string | null;
     username: string | null;
     email: string | null;
     phone: string | null;
@@ -118,7 +123,10 @@ export default function AgentAccountDetail({
   const [error, setError] = useState<string | null>(null);
 
   // Editable fields
-  const [fullName, setFullName] = useState('');
+  // R32: store first + last separately. On save we join them back into a
+  // single full_name to keep the API/DB contract unchanged.
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [displayName, setDisplayName] = useState('');
@@ -157,7 +165,11 @@ export default function AgentAccountDetail({
       if (!res.ok) throw new Error(json.error || 'Failed To Load Agent.');
       const d = json as Detail;
       setDetail(d);
-      setFullName(d.agent.full_name || '');
+      // R32: parse single-string full_name into First + Last for the UI.
+      const _fn = (d.agent.full_name || '').trim();
+      const _parts = _fn.split(/\s+/);
+      setFirstName(_parts[0] || '');
+      setLastName(_parts.slice(1).join(' ') || '');
       setEmail(d.agent.email || '');
       setPhone(d.agent.phone || '');
       setDisplayName(d.storefront?.display_name || '');
@@ -227,7 +239,7 @@ export default function AgentAccountDetail({
         ? (Number(customSteps[0].bonus_pct) || 0)
         : (commissionPct === '' ? 0 : Number(commissionPct));
       const payload: Record<string, any> = {
-        full_name: fullName,
+        full_name: `${firstName.trim()} ${lastName.trim()}`.trim(),
         email,
         phone,
         account_type: accountType,
@@ -406,8 +418,14 @@ export default function AgentAccountDetail({
 
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 'var(--space-4)' }}>
                   <div>
-                    <label style={labelStyle}>First and Last Name</label>
-                    <input style={inputStyle} value={fullName} onChange={(e) => setFullName(e.target.value)} />
+                    {/* R32: real First + Last name inputs (no more single
+                         "First and Last Name" field that crammed both into one box) */}
+                    <label style={labelStyle}>First Name</label>
+                    <input style={inputStyle} value={firstName} onChange={(e) => setFirstName(e.target.value)} />
+                  </div>
+                  <div>
+                    <label style={labelStyle}>Last Name</label>
+                    <input style={inputStyle} value={lastName} onChange={(e) => setLastName(e.target.value)} />
                   </div>
                   <div>
                     <label style={labelStyle}>Email Address</label>
@@ -450,7 +468,10 @@ export default function AgentAccountDetail({
                     </div>
                   )}
 
-                  {/* Commission structure: Fixed Markup vs Gamification Scale */}
+                  {/* R32: Markup Structure is for full agents only. Super-
+                      agents earn off the platform Tier 1/2/3 multiplier and have
+                      no need for a fixed/gamified markup ladder. */}
+                  {detail?.agent?.role === 'agent' && (
                   <div style={{ gridColumn: '1 / -1' }}>
                     <label style={labelStyle}>Markup Structure</label>
                     <div style={{ display: 'flex', gap: 'var(--space-2)', marginBottom: 'var(--space-3)' }}>
@@ -515,6 +536,7 @@ export default function AgentAccountDetail({
                       Fixed Markup Pays A Flat Rate. The Default Gamification Scale Starts At 20% And Rises To A 40% Maximum As Monthly Sales Grow. Customize To Set Your Own 5 Levels.
                     </p>
                   </div>
+                  )}
                 </div>
 
                 <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
