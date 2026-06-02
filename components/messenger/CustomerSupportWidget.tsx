@@ -23,15 +23,16 @@ import {
  * of the messenger viewport. The bar is the persistent collapsed state;
  * clicking it toggles an inbox panel that floats directly above it.
  *
+ * The bar would otherwise overlap the bottom rows of the messenger
+ * sidebar's conversation list — a `<style jsx global>` block below adds
+ * bottom padding to `.messenger-sidebar` so list rows naturally stop
+ * above the bar.
+ *
  * v2 surfaces every support_status / snooze / SLA / notes-count / topic /
  * linked-order field that the underlying /api/messenger/support/inbox now
  * returns, plus filter tabs, per-row status pill, per-row snooze popover,
  * Supabase Realtime subscription (with 60s fallback poll), a chime sound,
  * and a tab-title unread alert.
- *
- * The conversation, message, and unread mechanics underneath are
- * unchanged — this widget is the admin's surfacing + triage UI for
- * is_support=true conversations.
  */
 
 type SupportStatus = 'open' | 'in_progress' | 'waiting_on_researcher' | 'resolved';
@@ -318,8 +319,8 @@ export default function CustomerSupportWidget() {
     document.title = totalUnread > 0 ? `(${totalUnread}) ${base}` : base;
 
     if (totalUnread > prevUnreadRef.current) {
-      // Only chime when the page is not the active tab — otherwise the admin
-      // already sees it visually. Skip the first mount tick too.
+      // Only chime when there was already a baseline observed (skip mount tick)
+      // or when the page isn't the active tab.
       const wentUp = prevUnreadRef.current >= 0;
       if (wentUp && typeof document !== 'undefined' && document.hidden !== false) {
         playChime();
@@ -375,7 +376,6 @@ export default function CustomerSupportWidget() {
   }
 
   async function setStatus(conversationId: string, status: SupportStatus) {
-    // Optimistic update.
     setRows((prev) => prev.map((r) => r.conversation_id === conversationId ? { ...r, support_status: status } : r));
     setStatusPopoverFor(null);
     try {
@@ -384,13 +384,8 @@ export default function CustomerSupportWidget() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status }),
       });
-      if (!res.ok) {
-        // Re-sync from server if it fails.
-        await fetchInbox();
-      }
-    } catch {
-      await fetchInbox();
-    }
+      if (!res.ok) await fetchInbox();
+    } catch { await fetchInbox(); }
   }
 
   async function snooze(conversationId: string, preset: '1h' | '4h' | 'tomorrow' | 'clear') {
@@ -401,14 +396,9 @@ export default function CustomerSupportWidget() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ preset }),
       });
-      if (!res.ok) {
-        await fetchInbox();
-        return;
-      }
+      if (!res.ok) { await fetchInbox(); return; }
       await fetchInbox();
-    } catch {
-      await fetchInbox();
-    }
+    } catch { await fetchInbox(); }
   }
 
   if (!show) return null;
@@ -724,7 +714,6 @@ export default function CustomerSupportWidget() {
                             {previewText(row)}
                           </span>
 
-                          {/* Meta row: status pill / SLA / snooze / notes / linked order */}
                           <span
                             style={{
                               display: 'flex',
@@ -1007,9 +996,15 @@ export default function CustomerSupportWidget() {
         </div>
       )}
 
-      {/* Edge-to-edge docked bottom bar — collapsed state. Spans full
-          viewport width on mobile; constrained to a sidebar-width column
-          on desktop via the media-query inline style below. */}
+      {/* Edge-to-edge docked bottom bar — collapsed state.
+          - Spans full viewport width on mobile.
+          - On desktop, constrained to the messenger sidebar's width (320px)
+            via the media query in <style jsx> below so it sits ALONGSIDE
+            the chat pane instead of overlapping it.
+          - Contents are CENTERED inside the bar.
+          - A global rule pads `.messenger-sidebar` with bottom space equal
+            to the bar's height so the conversation list rows naturally
+            stop above this bar instead of being hidden behind it. */}
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
@@ -1025,6 +1020,7 @@ export default function CustomerSupportWidget() {
           zIndex: 100,
           display: 'flex',
           alignItems: 'center',
+          justifyContent: 'center',
           gap: 12,
           padding: '12px 16px',
           paddingBottom: 'calc(12px + env(safe-area-inset-bottom))',
@@ -1043,7 +1039,7 @@ export default function CustomerSupportWidget() {
           boxShadow:
             '0 -6px 20px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255,255,255,0.18), inset 0 -2px 4px rgba(0,0,0,0.45)',
           cursor: 'pointer',
-          textAlign: 'left',
+          textAlign: 'center',
         }}
       >
         <span
@@ -1064,7 +1060,16 @@ export default function CustomerSupportWidget() {
         >
           <LifeBuoy size={16} aria-hidden="true" />
         </span>
-        <span style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.15, flex: 1, minWidth: 0 }}>
+        <span
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            lineHeight: 1.15,
+            alignItems: 'center',
+            textAlign: 'center',
+            minWidth: 0,
+          }}
+        >
           <span style={{ fontSize: '0.92rem', fontWeight: 800 }}>Customer Support</span>
           <span style={{ fontSize: '0.72rem', color: 'var(--grey-400, #A8B4C0)', fontWeight: 500 }}>
             {totalUnread > 0
@@ -1098,29 +1103,46 @@ export default function CustomerSupportWidget() {
           size={16}
           aria-hidden="true"
           style={{
+            position: 'absolute',
+            right: 14,
+            top: '50%',
+            transform: open ? 'translateY(-50%) rotate(180deg)' : 'translateY(-50%) rotate(0deg)',
             color: 'var(--silver, #C0B8A8)',
             opacity: 0.85,
             flexShrink: 0,
             transition: 'transform 160ms ease',
-            transform: open ? 'rotate(180deg)' : 'rotate(0deg)',
           }}
         />
       </button>
 
+      {/* Local panel/spin animations + responsive width.
+          Desktop matches the messenger sidebar's actual 320px width so
+          the bar sits next to (not overlapping) the chat pane.
+          The global rule pads `.messenger-sidebar` so the conversation
+          list rows stop above the bar instead of being hidden behind it. */}
       <style jsx>{`
         .spin { animation: cs-spin 1s linear infinite; }
         @keyframes cs-spin { to { transform: rotate(360deg); } }
         @media (min-width: 768px) {
           .cs-widget-bar {
             right: auto !important;
-            width: 360px !important;
+            width: 320px !important;
             border-right: 1px solid #C0B8A8 !important;
           }
           .cs-widget-panel {
             right: auto !important;
-            width: 360px !important;
+            width: 320px !important;
             border-right: 1px solid rgba(0, 196, 188, 0.18) !important;
           }
+        }
+      `}</style>
+      <style jsx global>{`
+        /* Reserve space at the bottom of the messenger sidebar so its
+           conversation list rows stop ABOVE the fixed Customer Support
+           bar instead of being hidden behind it. The value matches the
+           bar's min-height + safe-area inset. */
+        .messenger-sidebar {
+          padding-bottom: calc(60px + env(safe-area-inset-bottom)) !important;
         }
       `}</style>
     </>
