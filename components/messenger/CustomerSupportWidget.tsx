@@ -1,29 +1,41 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
-import { LifeBuoy, X, ChevronRight, Loader2 } from 'lucide-react';
+import {
+  LifeBuoy,
+  X,
+  ChevronUp,
+  Loader2,
+  BellRing,
+  StickyNote,
+  Package,
+  ZapOff,
+} from 'lucide-react';
 
 /**
- * Admin Customer Support widget.
+ * Admin Customer Support widget — v2.
  *
  * Visible only on /messenger to a user whose profile.role === 'admin'.
- * Renders a fixed-position locked box at the bottom-LEFT of the
- * messenger (over the conversation list, not the chat pane), exactly
- * where the admin's agent / super-agent list sits today.
  *
- * Click opens an inline panel that lists every is_support=true
- * conversation the admin participates in (driven by
- * /api/messenger/support/inbox), with the requesting party's name, last
- * message preview, and an unread badge. Clicking a row navigates to
- * /messenger?conversation=ID so the existing messenger surfaces the
- * thread inline — admin replies become customer-support replies
- * automatically because the conversation is already participant-scoped.
+ * Renders a fixed-position, EDGE-TO-EDGE locked bar at the very bottom
+ * of the messenger viewport. The bar is the persistent collapsed state;
+ * clicking it toggles an inbox panel that floats directly above it.
  *
- * This is the secondary-messenger inbox surfacing layer: the underlying
- * thread, message send path, and unread tracking are unchanged.
+ * v2 surfaces every support_status / snooze / SLA / notes-count / topic /
+ * linked-order field that the underlying /api/messenger/support/inbox now
+ * returns, plus filter tabs, per-row status pill, per-row snooze popover,
+ * Supabase Realtime subscription (with 60s fallback poll), a chime sound,
+ * and a tab-title unread alert.
+ *
+ * The conversation, message, and unread mechanics underneath are
+ * unchanged — this widget is the admin's surfacing + triage UI for
+ * is_support=true conversations.
  */
+
+type SupportStatus = 'open' | 'in_progress' | 'waiting_on_researcher' | 'resolved';
+type FilterTab = 'all' | 'unread' | 'open' | 'snoozed' | 'resolved';
 
 interface InboxRow {
   conversation_id: string;
@@ -44,6 +56,13 @@ interface InboxRow {
     created_at: string;
   } | null;
   unread_count: number;
+  support_status?: SupportStatus | null;
+  support_topic?: string | null;
+  support_order_id?: string | null;
+  support_snoozed_until?: string | null;
+  is_snoozed?: boolean;
+  sla_waiting_seconds?: number | null;
+  internal_notes_count?: number | null;
 }
 
 function relTime(iso: string | null): string {
@@ -60,6 +79,13 @@ function relTime(iso: string | null): string {
   const day = Math.floor(hr / 24);
   if (day < 7) return `${day}d`;
   return new Date(iso).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+}
+
+function formatShortTime(iso: string | null | undefined): string {
+  if (!iso) return '';
+  const d = new Date(iso);
+  if (!Number.isFinite(d.getTime())) return '';
+  return d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
 }
 
 function otherName(row: InboxRow): string {
@@ -87,6 +113,81 @@ function previewText(row: InboxRow): string {
   }
 }
 
+const STATUS_LABEL: Record<SupportStatus, string> = {
+  open: 'Open',
+  in_progress: 'In Progress',
+  waiting_on_researcher: 'Waiting',
+  resolved: 'Resolved',
+};
+
+const STATUS_COLOR: Record<SupportStatus, { bg: string; border: string; fg: string }> = {
+  open: { bg: 'rgba(0,196,188,0.15)', border: 'rgba(0,196,188,0.55)', fg: '#7AF0EA' },
+  in_progress: { bg: 'rgba(255,184,0,0.15)', border: 'rgba(255,184,0,0.55)', fg: '#FFD175' },
+  waiting_on_researcher: { bg: 'rgba(120,140,170,0.20)', border: 'rgba(160,180,210,0.55)', fg: '#C4D0E0' },
+  resolved: { bg: 'rgba(80,200,120,0.12)', border: 'rgba(80,200,120,0.55)', fg: '#9BE3B4' },
+};
+
+function StatusPill({
+  status,
+  onClick,
+}: {
+  status: SupportStatus;
+  onClick: (e: React.MouseEvent) => void;
+}) {
+  const c = STATUS_COLOR[status];
+  return (
+    <button
+      type="button"
+      onClick={(e) => { e.stopPropagation(); onClick(e); }}
+      title="Change Status"
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: 4,
+        padding: '2px 8px',
+        borderRadius: 999,
+        background: c.bg,
+        border: `1px solid ${c.border}`,
+        color: c.fg,
+        fontSize: '0.66rem',
+        fontWeight: 800,
+        letterSpacing: '0.04em',
+        textTransform: 'uppercase',
+        lineHeight: 1.4,
+        cursor: 'pointer',
+        whiteSpace: 'nowrap',
+      }}
+    >
+      {STATUS_LABEL[status]}
+    </button>
+  );
+}
+
+function playChime() {
+  if (typeof window === 'undefined') return;
+  try {
+    const AC = (window as unknown as { AudioContext?: typeof AudioContext; webkitAudioContext?: typeof AudioContext }).AudioContext
+      || (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+    if (!AC) return;
+    const ctx = new AC();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(880, ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(1320, ctx.currentTime + 0.12);
+    gain.gain.setValueAtTime(0.0001, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.18, ctx.currentTime + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.28);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start();
+    osc.stop(ctx.currentTime + 0.32);
+    osc.onended = () => { try { ctx.close(); } catch {} };
+  } catch {
+    /* sound is best-effort */
+  }
+}
+
 export default function CustomerSupportWidget() {
   const router = useRouter();
   const [show, setShow] = useState(false);
@@ -94,7 +195,14 @@ export default function CustomerSupportWidget() {
   const [loading, setLoading] = useState(false);
   const [rows, setRows] = useState<InboxRow[]>([]);
   const [err, setErr] = useState<string | null>(null);
+  const [tab, setTab] = useState<FilterTab>('all');
+  const [statusPopoverFor, setStatusPopoverFor] = useState<string | null>(null);
+  const [snoozePopoverFor, setSnoozePopoverFor] = useState<string | null>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const channelRef = useRef<ReturnType<ReturnType<typeof createClient>['channel']> | null>(null);
+  const adminIdRef = useRef<string | null>(null);
+  const originalTitleRef = useRef<string | null>(null);
+  const prevUnreadRef = useRef<number>(0);
 
   // Mount: gate visibility to admins on /messenger only.
   useEffect(() => {
@@ -112,10 +220,21 @@ export default function CustomerSupportWidget() {
           .eq('id', user.id)
           .maybeSingle();
         if (cancelled) return;
-        if (profile?.role === 'admin') setShow(true);
+        if (profile?.role === 'admin') {
+          adminIdRef.current = user.id;
+          setShow(true);
+        }
       } catch { /* hide on any error */ }
     })();
     return () => { cancelled = true; };
+  }, []);
+
+  // Capture the original document title once so we can restore it.
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+    if (originalTitleRef.current === null) {
+      originalTitleRef.current = document.title.replace(/^\(\d+\)\s+/, '');
+    }
   }, []);
 
   const fetchInbox = useCallback(async () => {
@@ -136,25 +255,55 @@ export default function CustomerSupportWidget() {
     }
   }, []);
 
-  // Initial load + when opening the panel, refresh.
+  // Initial load once visibility flips on.
   useEffect(() => {
     if (!show) return;
     fetchInbox();
-    // While panel is open, poll every 25s so the inbox stays fresh.
-    if (open) {
-      pollRef.current = setInterval(fetchInbox, 25000);
-    }
+  }, [show, fetchInbox]);
+
+  // Realtime subscription on messenger_messages + messenger_conversations
+  // when widget is visible. Single shared channel; tear down on unmount.
+  useEffect(() => {
+    if (!show) return;
+    const supabase = createClient();
+    const ch = supabase
+      .channel('cs-widget-support')
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'messenger_messages' },
+        () => {
+          // Cheap re-fetch — server filters to support threads the admin participates in.
+          fetchInbox();
+        },
+      )
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'messenger_conversations' },
+        () => { fetchInbox(); },
+      )
+      .subscribe();
+    channelRef.current = ch;
+
+    // Safety-net 60s fallback poll in case realtime is dropped.
+    pollRef.current = setInterval(fetchInbox, 60_000);
+
     return () => {
+      try { supabase.removeChannel(ch); } catch {}
+      channelRef.current = null;
       if (pollRef.current) clearInterval(pollRef.current);
       pollRef.current = null;
     };
-  }, [show, open, fetchInbox]);
+  }, [show, fetchInbox]);
 
   // Close on ESC.
   useEffect(() => {
     if (!open) return;
     function onKey(e: KeyboardEvent) {
-      if (e.key === 'Escape') setOpen(false);
+      if (e.key === 'Escape') {
+        setOpen(false);
+        setStatusPopoverFor(null);
+        setSnoozePopoverFor(null);
+      }
     }
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
@@ -162,20 +311,115 @@ export default function CustomerSupportWidget() {
 
   const totalUnread = rows.reduce((a, r) => a + (r.unread_count || 0), 0);
 
+  // Tab-title alert + chime on unread delta increase.
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+    const base = originalTitleRef.current || document.title.replace(/^\(\d+\)\s+/, '');
+    document.title = totalUnread > 0 ? `(${totalUnread}) ${base}` : base;
+
+    if (totalUnread > prevUnreadRef.current) {
+      // Only chime when the page is not the active tab — otherwise the admin
+      // already sees it visually. Skip the first mount tick too.
+      const wentUp = prevUnreadRef.current >= 0;
+      if (wentUp && typeof document !== 'undefined' && document.hidden !== false) {
+        playChime();
+      } else if (wentUp && prevUnreadRef.current > 0) {
+        playChime();
+      }
+    }
+    prevUnreadRef.current = totalUnread;
+  }, [totalUnread]);
+
+  // Filter + sort rows according to the active tab.
+  const visibleRows = useMemo(() => {
+    const sorted = [...rows].sort((a, b) => {
+      const ta = a.last_message_at ? Date.parse(a.last_message_at) : 0;
+      const tb = b.last_message_at ? Date.parse(b.last_message_at) : 0;
+      return tb - ta;
+    });
+    switch (tab) {
+      case 'unread':
+        return sorted.filter((r) => (r.unread_count || 0) > 0);
+      case 'open':
+        return sorted.filter((r) =>
+          (r.support_status === 'open' || r.support_status === 'in_progress' || r.support_status === 'waiting_on_researcher')
+          && !r.is_snoozed,
+        );
+      case 'snoozed':
+        return sorted.filter((r) => Boolean(r.is_snoozed));
+      case 'resolved':
+        return sorted.filter((r) => r.support_status === 'resolved');
+      case 'all':
+      default:
+        return sorted.filter((r) => r.support_status !== 'resolved');
+    }
+  }, [rows, tab]);
+
+  const tabCounts = useMemo(() => {
+    let unread = 0, openCount = 0, snoozed = 0, resolved = 0, all = 0;
+    for (const r of rows) {
+      if (r.support_status !== 'resolved') all += 1;
+      if ((r.unread_count || 0) > 0) unread += 1;
+      if ((r.support_status === 'open' || r.support_status === 'in_progress' || r.support_status === 'waiting_on_researcher') && !r.is_snoozed) openCount += 1;
+      if (r.is_snoozed) snoozed += 1;
+      if (r.support_status === 'resolved') resolved += 1;
+    }
+    return { all, unread, open: openCount, snoozed, resolved };
+  }, [rows]);
+
   function goToConversation(id: string) {
     setOpen(false);
+    setStatusPopoverFor(null);
+    setSnoozePopoverFor(null);
     router.push(`/messenger?conversation=${encodeURIComponent(id)}`);
+  }
+
+  async function setStatus(conversationId: string, status: SupportStatus) {
+    // Optimistic update.
+    setRows((prev) => prev.map((r) => r.conversation_id === conversationId ? { ...r, support_status: status } : r));
+    setStatusPopoverFor(null);
+    try {
+      const res = await fetch(`/api/messenger/support/${encodeURIComponent(conversationId)}/status`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status }),
+      });
+      if (!res.ok) {
+        // Re-sync from server if it fails.
+        await fetchInbox();
+      }
+    } catch {
+      await fetchInbox();
+    }
+  }
+
+  async function snooze(conversationId: string, preset: '1h' | '4h' | 'tomorrow' | 'clear') {
+    setSnoozePopoverFor(null);
+    try {
+      const res = await fetch(`/api/messenger/support/${encodeURIComponent(conversationId)}/snooze`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ preset }),
+      });
+      if (!res.ok) {
+        await fetchInbox();
+        return;
+      }
+      await fetchInbox();
+    } catch {
+      await fetchInbox();
+    }
   }
 
   if (!show) return null;
 
   return (
     <>
-      {/* Backdrop — only when panel is expanded, dims the rest of the page */}
+      {/* Backdrop — only when panel is expanded */}
       {open && (
         <div
           aria-hidden
-          onClick={() => setOpen(false)}
+          onClick={() => { setOpen(false); setStatusPopoverFor(null); setSnoozePopoverFor(null); }}
           style={{
             position: 'fixed',
             inset: 0,
@@ -186,106 +430,29 @@ export default function CustomerSupportWidget() {
         />
       )}
 
-      {/* Collapsed state — a locked rectangular BOX, not a pill. */}
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        aria-label={open ? 'Close Customer Support Inbox' : 'Open Customer Support Inbox'}
-        aria-expanded={open}
-        title="Customer Support Inbox"
-        style={{
-          position: 'fixed',
-          left: 'max(16px, env(safe-area-inset-left))',
-          bottom: 'calc(max(16px, env(safe-area-inset-bottom)) + 12px)',
-          zIndex: 100,
-          display: 'inline-flex',
-          alignItems: 'center',
-          gap: 10,
-          padding: '12px 16px',
-          minHeight: 48,
-          minWidth: 220,
-          borderRadius: 10,
-          background: 'linear-gradient(180deg, #0F1923 0%, #1D2D3E 100%)',
-          color: 'var(--white, #fff)',
-          border: '1px solid #C0B8A8',
-          fontSize: '0.9rem',
-          fontWeight: 700,
-          letterSpacing: '0.02em',
-          boxShadow:
-            '0 6px 20px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(192,184,168,0.18), inset 0 1px 0 rgba(255,255,255,0.18), inset 0 -2px 4px rgba(0,0,0,0.45)',
-          cursor: 'pointer',
-          textAlign: 'left',
-        }}
-      >
-        <span
-          aria-hidden
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            width: 30,
-            height: 30,
-            borderRadius: 8,
-            background:
-              'linear-gradient(135deg, rgba(0,196,188,0.30) 0%, rgba(0,196,188,0.10) 100%)',
-            border: '1px solid rgba(0,196,188,0.55)',
-            color: 'var(--teal, #00C4BC)',
-            flexShrink: 0,
-          }}
-        >
-          <LifeBuoy size={16} aria-hidden="true" />
-        </span>
-        <span style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.15, flex: 1 }}>
-          <span style={{ fontSize: '0.92rem', fontWeight: 800 }}>Customer Support</span>
-          <span style={{ fontSize: '0.72rem', color: 'var(--grey-400, #A8B4C0)', fontWeight: 500 }}>
-            {totalUnread > 0
-              ? `${totalUnread > 99 ? '99+' : totalUnread} Unread Thread${totalUnread === 1 ? '' : 's'}`
-              : `${rows.length} Thread${rows.length === 1 ? '' : 's'}`}
-          </span>
-        </span>
-        {totalUnread > 0 && (
-          <span
-            aria-hidden
-            style={{
-              minWidth: 22,
-              height: 22,
-              padding: '0 7px',
-              borderRadius: 6,
-              background: '#E53E3E',
-              color: '#fff',
-              fontSize: '0.72rem',
-              fontWeight: 800,
-              display: 'inline-flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              flexShrink: 0,
-              boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.25)',
-            }}
-          >
-            {totalUnread > 99 ? '99+' : totalUnread}
-          </span>
-        )}
-      </button>
-
-      {/* The expanded panel */}
+      {/* The expanded panel floats directly above the docked bar. */}
       {open && (
         <div
           role="dialog"
           aria-modal="true"
           aria-label="Customer Support Inbox"
+          className="cs-widget-panel"
           style={{
             position: 'fixed',
-            left: 'max(16px, env(safe-area-inset-left))',
-            bottom: 'calc(max(16px, env(safe-area-inset-bottom)) + 76px)',
+            left: 0,
+            right: 0,
+            bottom: 60,
             zIndex: 101,
-            width: 'min(380px, calc(100vw - 32px))',
-            maxHeight: 'min(560px, calc(100dvh - 160px))',
+            maxHeight: 'min(60dvh, 560px)',
             display: 'flex',
             flexDirection: 'column',
             background: 'linear-gradient(180deg, #0F1923 0%, #050A0F 100%)',
-            border: '1px solid rgba(0, 196, 188, 0.45)',
-            borderRadius: 14,
-            boxShadow: '0 22px 48px rgba(0,0,0,0.65), 0 0 0 1px rgba(0,196,188,0.10)',
+            borderTop: '1px solid rgba(0, 196, 188, 0.45)',
+            borderLeft: '1px solid rgba(0, 196, 188, 0.18)',
+            borderRight: '1px solid rgba(0, 196, 188, 0.18)',
+            borderTopLeftRadius: 14,
+            borderTopRightRadius: 14,
+            boxShadow: '0 -22px 48px rgba(0,0,0,0.65), 0 0 0 1px rgba(0,196,188,0.10)',
             overflow: 'hidden',
           }}
         >
@@ -325,12 +492,64 @@ export default function CustomerSupportWidget() {
             </button>
           </header>
 
+          {/* Filter tabs */}
+          <div
+            role="tablist"
+            aria-label="Support Inbox Filter"
+            style={{
+              display: 'flex',
+              gap: 4,
+              padding: '8px 10px',
+              borderBottom: '1px solid rgba(255,255,255,0.05)',
+              background: 'rgba(255,255,255,0.02)',
+              overflowX: 'auto',
+            }}
+          >
+            {([
+              { id: 'all', label: 'All', n: tabCounts.all },
+              { id: 'unread', label: 'Unread', n: tabCounts.unread },
+              { id: 'open', label: 'Open', n: tabCounts.open },
+              { id: 'snoozed', label: 'Snoozed', n: tabCounts.snoozed },
+              { id: 'resolved', label: 'Resolved', n: tabCounts.resolved },
+            ] as { id: FilterTab; label: string; n: number }[]).map((t) => {
+              const active = tab === t.id;
+              return (
+                <button
+                  key={t.id}
+                  type="button"
+                  role="tab"
+                  aria-selected={active}
+                  onClick={() => setTab(t.id)}
+                  style={{
+                    padding: '6px 10px',
+                    borderRadius: 8,
+                    background: active ? 'rgba(0,196,188,0.18)' : 'rgba(255,255,255,0.04)',
+                    border: `1px solid ${active ? 'rgba(0,196,188,0.55)' : 'rgba(255,255,255,0.08)'}`,
+                    color: active ? '#7AF0EA' : 'var(--silver, #C0B8A8)',
+                    fontSize: '0.74rem',
+                    fontWeight: 700,
+                    letterSpacing: '0.02em',
+                    cursor: 'pointer',
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  {t.label}
+                  {t.n > 0 && (
+                    <span style={{ marginLeft: 6, opacity: 0.85 }}>
+                      {t.n > 99 ? '99+' : t.n}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+
           {/* Body */}
           <div style={{ overflowY: 'auto', flex: 1 }}>
             {loading && rows.length === 0 ? (
               <div
                 style={{
-                  padding: 'var(--space-6) var(--space-5)',
+                  padding: '32px 16px',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -357,7 +576,7 @@ export default function CustomerSupportWidget() {
               >
                 {err}
               </div>
-            ) : rows.length === 0 ? (
+            ) : visibleRows.length === 0 ? (
               <div
                 style={{
                   padding: '36px 18px',
@@ -375,128 +594,378 @@ export default function CustomerSupportWidget() {
                     marginBottom: 6,
                   }}
                 >
-                  No Open Support Threads
+                  No Threads In This View
                 </strong>
-                Researchers Who Click The Support Button Will Show Up Here. Their
-                Message Will Open A Thread Directly With You.
+                {tab === 'all'
+                  ? 'Researchers Who Click The Support Button Will Show Up Here.'
+                  : 'Try A Different Filter Tab.'}
               </div>
             ) : (
               <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
-                {rows.map((row) => (
-                  <li key={row.conversation_id}>
-                    <button
-                      type="button"
-                      onClick={() => goToConversation(row.conversation_id)}
+                {visibleRows.map((row) => {
+                  const status: SupportStatus = (row.support_status as SupportStatus) || 'open';
+                  const slaSec = row.sla_waiting_seconds || 0;
+                  const overdue = slaSec > 1800;
+                  const slaMin = Math.floor(slaSec / 60);
+                  const notesCount = row.internal_notes_count || 0;
+                  const shortOrderId = row.support_order_id ? row.support_order_id.slice(0, 8) : '';
+
+                  return (
+                    <li
+                      key={row.conversation_id}
                       style={{
-                        width: '100%',
-                        textAlign: 'left',
-                        padding: '12px 14px',
-                        background: 'transparent',
-                        border: 'none',
-                        borderBottom: '1px solid rgba(255,255,255,0.05)',
-                        color: 'inherit',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 12,
+                        borderLeft: overdue ? '4px solid #E53E3E' : '4px solid transparent',
+                        position: 'relative',
                       }}
                     >
-                      <span
-                        aria-hidden
+                      <div
+                        onClick={() => goToConversation(row.conversation_id)}
+                        role="button"
+                        tabIndex={0}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            goToConversation(row.conversation_id);
+                          }
+                        }}
                         style={{
-                          flexShrink: 0,
-                          width: 38,
-                          height: 38,
-                          borderRadius: '50%',
-                          background:
-                            'linear-gradient(135deg, rgba(0,196,188,0.55) 0%, rgba(0,196,188,0.15) 100%)',
-                          color: 'var(--black, #050A0F)',
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          fontWeight: 800,
-                          fontSize: '0.85rem',
-                          letterSpacing: '0.02em',
-                          textTransform: 'uppercase',
+                          width: '100%',
+                          textAlign: 'left',
+                          padding: '12px 14px',
+                          background: 'transparent',
+                          border: 'none',
+                          borderBottom: '1px solid rgba(255,255,255,0.05)',
+                          color: 'inherit',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'flex-start',
+                          gap: 12,
                         }}
                       >
-                        {otherName(row).slice(0, 2)}
-                      </span>
-                      <span style={{ flex: 1, minWidth: 0 }}>
                         <span
-                          style={{
-                            display: 'flex',
-                            justifyContent: 'space-between',
-                            alignItems: 'center',
-                            gap: 8,
-                          }}
-                        >
-                          <strong
-                            style={{
-                              color: 'var(--white, #fff)',
-                              fontSize: '0.92rem',
-                              fontWeight: row.unread_count > 0 ? 800 : 600,
-                              overflow: 'hidden',
-                              textOverflow: 'ellipsis',
-                              whiteSpace: 'nowrap',
-                            }}
-                          >
-                            {otherName(row)}
-                          </strong>
-                          <span
-                            style={{
-                              fontSize: '0.7rem',
-                              color: 'var(--grey-400, #A8B4C0)',
-                              flexShrink: 0,
-                            }}
-                          >
-                            {relTime(row.last_message_at)}
-                          </span>
-                        </span>
-                        <span
-                          style={{
-                            display: 'block',
-                            color: row.unread_count > 0 ? 'var(--white, #fff)' : 'var(--silver, #C0B8A8)',
-                            fontSize: '0.8rem',
-                            marginTop: 2,
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                            whiteSpace: 'nowrap',
-                            fontWeight: row.unread_count > 0 ? 600 : 400,
-                          }}
-                        >
-                          {previewText(row)}
-                        </span>
-                      </span>
-                      {row.unread_count > 0 ? (
-                        <span
+                          aria-hidden
                           style={{
                             flexShrink: 0,
-                            minWidth: 22,
-                            height: 22,
-                            padding: '0 7px',
-                            borderRadius: 6,
-                            background: '#E53E3E',
-                            color: '#fff',
-                            fontSize: '0.72rem',
-                            fontWeight: 800,
+                            width: 38,
+                            height: 38,
+                            borderRadius: '50%',
+                            background:
+                              'linear-gradient(135deg, rgba(0,196,188,0.55) 0%, rgba(0,196,188,0.15) 100%)',
+                            color: 'var(--black, #050A0F)',
                             display: 'inline-flex',
                             alignItems: 'center',
                             justifyContent: 'center',
+                            fontWeight: 800,
+                            fontSize: '0.85rem',
+                            letterSpacing: '0.02em',
+                            textTransform: 'uppercase',
+                            marginTop: 2,
                           }}
                         >
-                          {row.unread_count > 99 ? '99+' : row.unread_count}
+                          {otherName(row).slice(0, 2)}
                         </span>
-                      ) : (
-                        <ChevronRight
-                          size={16}
-                          aria-hidden="true"
-                          style={{ color: 'var(--silver, #C0B8A8)', opacity: 0.55, flexShrink: 0 }}
-                        />
-                      )}
-                    </button>
-                  </li>
-                ))}
+                        <span style={{ flex: 1, minWidth: 0 }}>
+                          <span
+                            style={{
+                              display: 'flex',
+                              justifyContent: 'space-between',
+                              alignItems: 'center',
+                              gap: 8,
+                            }}
+                          >
+                            <strong
+                              style={{
+                                color: 'var(--white, #fff)',
+                                fontSize: '0.92rem',
+                                fontWeight: row.unread_count > 0 ? 800 : 600,
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                whiteSpace: 'nowrap',
+                              }}
+                            >
+                              {otherName(row)}
+                            </strong>
+                            <span
+                              style={{
+                                fontSize: '0.7rem',
+                                color: 'var(--grey-400, #A8B4C0)',
+                                flexShrink: 0,
+                              }}
+                            >
+                              {relTime(row.last_message_at)}
+                            </span>
+                          </span>
+                          {row.support_topic && (
+                            <span
+                              style={{
+                                display: 'block',
+                                color: '#7AF0EA',
+                                fontSize: '0.72rem',
+                                fontWeight: 700,
+                                letterSpacing: '0.02em',
+                                marginTop: 2,
+                              }}
+                            >
+                              {row.support_topic}
+                            </span>
+                          )}
+                          <span
+                            style={{
+                              display: 'block',
+                              color: row.unread_count > 0 ? 'var(--white, #fff)' : 'var(--silver, #C0B8A8)',
+                              fontSize: '0.8rem',
+                              marginTop: 2,
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                              whiteSpace: 'nowrap',
+                              fontWeight: row.unread_count > 0 ? 600 : 400,
+                            }}
+                          >
+                            {previewText(row)}
+                          </span>
+
+                          {/* Meta row: status pill / SLA / snooze / notes / linked order */}
+                          <span
+                            style={{
+                              display: 'flex',
+                              flexWrap: 'wrap',
+                              alignItems: 'center',
+                              gap: 6,
+                              marginTop: 6,
+                              position: 'relative',
+                            }}
+                          >
+                            <span style={{ position: 'relative' }}>
+                              <StatusPill
+                                status={status}
+                                onClick={() => setStatusPopoverFor(
+                                  statusPopoverFor === row.conversation_id ? null : row.conversation_id,
+                                )}
+                              />
+                              {statusPopoverFor === row.conversation_id && (
+                                <div
+                                  onClick={(e) => e.stopPropagation()}
+                                  role="menu"
+                                  style={{
+                                    position: 'absolute',
+                                    bottom: '100%',
+                                    left: 0,
+                                    marginBottom: 6,
+                                    background: '#0F1923',
+                                    border: '1px solid rgba(0,196,188,0.45)',
+                                    borderRadius: 8,
+                                    boxShadow: '0 8px 24px rgba(0,0,0,0.6)',
+                                    padding: 4,
+                                    zIndex: 5,
+                                    minWidth: 140,
+                                  }}
+                                >
+                                  {(['open', 'in_progress', 'waiting_on_researcher', 'resolved'] as SupportStatus[]).map((s) => (
+                                    <button
+                                      key={s}
+                                      type="button"
+                                      onClick={(e) => { e.stopPropagation(); setStatus(row.conversation_id, s); }}
+                                      style={{
+                                        display: 'block',
+                                        width: '100%',
+                                        textAlign: 'left',
+                                        padding: '6px 10px',
+                                        background: status === s ? 'rgba(0,196,188,0.18)' : 'transparent',
+                                        border: 'none',
+                                        color: status === s ? '#7AF0EA' : 'var(--white, #fff)',
+                                        fontSize: '0.78rem',
+                                        fontWeight: 600,
+                                        borderRadius: 6,
+                                        cursor: 'pointer',
+                                      }}
+                                    >
+                                      {STATUS_LABEL[s]}
+                                    </button>
+                                  ))}
+                                </div>
+                              )}
+                            </span>
+
+                            {overdue && (
+                              <span
+                                title="Overdue"
+                                style={{
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: 4,
+                                  padding: '2px 7px',
+                                  borderRadius: 999,
+                                  background: 'rgba(229,62,62,0.18)',
+                                  border: '1px solid rgba(229,62,62,0.55)',
+                                  color: '#FF9C9C',
+                                  fontSize: '0.66rem',
+                                  fontWeight: 800,
+                                }}
+                              >
+                                <BellRing size={10} aria-hidden="true" />
+                                Waiting {slaMin}m
+                              </span>
+                            )}
+                            {!overdue && slaSec > 0 && (
+                              <span
+                                style={{
+                                  color: 'var(--grey-400, #A8B4C0)',
+                                  fontSize: '0.7rem',
+                                  fontWeight: 600,
+                                }}
+                              >
+                                Waiting {slaMin}m
+                              </span>
+                            )}
+
+                            <span style={{ position: 'relative' }}>
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setSnoozePopoverFor(snoozePopoverFor === row.conversation_id ? null : row.conversation_id);
+                                }}
+                                title="Snooze"
+                                aria-label="Snooze Thread"
+                                style={{
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: 4,
+                                  padding: '2px 7px',
+                                  borderRadius: 999,
+                                  background: row.is_snoozed ? 'rgba(120,140,170,0.20)' : 'rgba(255,255,255,0.04)',
+                                  border: `1px solid ${row.is_snoozed ? 'rgba(160,180,210,0.55)' : 'rgba(255,255,255,0.10)'}`,
+                                  color: row.is_snoozed ? '#C4D0E0' : 'var(--silver, #C0B8A8)',
+                                  fontSize: '0.66rem',
+                                  fontWeight: 800,
+                                  cursor: 'pointer',
+                                }}
+                              >
+                                <ZapOff size={10} aria-hidden="true" />
+                                {row.is_snoozed && row.support_snoozed_until
+                                  ? `Snoozed Til ${formatShortTime(row.support_snoozed_until)}`
+                                  : 'Snooze'}
+                              </button>
+                              {snoozePopoverFor === row.conversation_id && (
+                                <div
+                                  onClick={(e) => e.stopPropagation()}
+                                  role="menu"
+                                  style={{
+                                    position: 'absolute',
+                                    bottom: '100%',
+                                    left: 0,
+                                    marginBottom: 6,
+                                    background: '#0F1923',
+                                    border: '1px solid rgba(0,196,188,0.45)',
+                                    borderRadius: 8,
+                                    boxShadow: '0 8px 24px rgba(0,0,0,0.6)',
+                                    padding: 4,
+                                    zIndex: 5,
+                                    minWidth: 140,
+                                  }}
+                                >
+                                  {([
+                                    { id: '1h' as const, label: '1 Hour' },
+                                    { id: '4h' as const, label: '4 Hours' },
+                                    { id: 'tomorrow' as const, label: 'Tomorrow' },
+                                    { id: 'clear' as const, label: 'Clear Snooze' },
+                                  ]).map((opt) => (
+                                    <button
+                                      key={opt.id}
+                                      type="button"
+                                      onClick={(e) => { e.stopPropagation(); snooze(row.conversation_id, opt.id); }}
+                                      style={{
+                                        display: 'block',
+                                        width: '100%',
+                                        textAlign: 'left',
+                                        padding: '6px 10px',
+                                        background: 'transparent',
+                                        border: 'none',
+                                        color: 'var(--white, #fff)',
+                                        fontSize: '0.78rem',
+                                        fontWeight: 600,
+                                        borderRadius: 6,
+                                        cursor: 'pointer',
+                                      }}
+                                    >
+                                      {opt.label}
+                                    </button>
+                                  ))}
+                                </div>
+                              )}
+                            </span>
+
+                            {notesCount > 0 && (
+                              <span
+                                title={`${notesCount} Internal Note${notesCount === 1 ? '' : 's'}`}
+                                style={{
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: 3,
+                                  padding: '2px 6px',
+                                  borderRadius: 999,
+                                  background: 'rgba(255,184,0,0.12)',
+                                  border: '1px solid rgba(255,184,0,0.40)',
+                                  color: '#FFD175',
+                                  fontSize: '0.66rem',
+                                  fontWeight: 800,
+                                }}
+                              >
+                                <StickyNote size={10} aria-hidden="true" />
+                                {notesCount}
+                              </span>
+                            )}
+
+                            {row.support_order_id && (
+                              <span
+                                title={`Order ${row.support_order_id}`}
+                                style={{
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: 3,
+                                  padding: '2px 6px',
+                                  borderRadius: 999,
+                                  background: 'rgba(0,196,188,0.10)',
+                                  border: '1px solid rgba(0,196,188,0.35)',
+                                  color: '#7AF0EA',
+                                  fontSize: '0.66rem',
+                                  fontWeight: 800,
+                                  letterSpacing: '0.02em',
+                                }}
+                              >
+                                <Package size={10} aria-hidden="true" />
+                                Order #{shortOrderId}
+                              </span>
+                            )}
+                          </span>
+                        </span>
+
+                        {row.unread_count > 0 && (
+                          <span
+                            style={{
+                              flexShrink: 0,
+                              minWidth: 22,
+                              height: 22,
+                              padding: '0 7px',
+                              borderRadius: 6,
+                              background: '#E53E3E',
+                              color: '#fff',
+                              fontSize: '0.72rem',
+                              fontWeight: 800,
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              alignSelf: 'flex-start',
+                              marginTop: 4,
+                            }}
+                          >
+                            {row.unread_count > 99 ? '99+' : row.unread_count}
+                          </span>
+                        )}
+                      </div>
+                    </li>
+                  );
+                })}
               </ul>
             )}
           </div>
@@ -515,7 +984,7 @@ export default function CustomerSupportWidget() {
             }}
           >
             <span>
-              {rows.length} Thread{rows.length === 1 ? '' : 's'}
+              {visibleRows.length} Thread{visibleRows.length === 1 ? '' : 's'}
               {totalUnread > 0 ? ` · ${totalUnread} Unread` : ''}
             </span>
             <button
@@ -538,9 +1007,121 @@ export default function CustomerSupportWidget() {
         </div>
       )}
 
+      {/* Edge-to-edge docked bottom bar — collapsed state. Spans full
+          viewport width on mobile; constrained to a sidebar-width column
+          on desktop via the media-query inline style below. */}
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        aria-label={open ? 'Close Customer Support Inbox' : 'Open Customer Support Inbox'}
+        aria-expanded={open}
+        title="Customer Support Inbox"
+        className="cs-widget-bar"
+        style={{
+          position: 'fixed',
+          left: 0,
+          right: 0,
+          bottom: 0,
+          zIndex: 100,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 12,
+          padding: '12px 16px',
+          paddingBottom: 'calc(12px + env(safe-area-inset-bottom))',
+          minHeight: 60,
+          width: '100%',
+          background: 'linear-gradient(180deg, #0F1923 0%, #1D2D3E 100%)',
+          color: 'var(--white, #fff)',
+          borderTop: '1px solid #C0B8A8',
+          borderLeft: 'none',
+          borderRight: 'none',
+          borderBottom: 'none',
+          borderRadius: 0,
+          fontSize: '0.9rem',
+          fontWeight: 700,
+          letterSpacing: '0.02em',
+          boxShadow:
+            '0 -6px 20px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255,255,255,0.18), inset 0 -2px 4px rgba(0,0,0,0.45)',
+          cursor: 'pointer',
+          textAlign: 'left',
+        }}
+      >
+        <span
+          aria-hidden
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            width: 32,
+            height: 32,
+            borderRadius: 8,
+            background:
+              'linear-gradient(135deg, rgba(0,196,188,0.30) 0%, rgba(0,196,188,0.10) 100%)',
+            border: '1px solid rgba(0,196,188,0.55)',
+            color: 'var(--teal, #00C4BC)',
+            flexShrink: 0,
+          }}
+        >
+          <LifeBuoy size={16} aria-hidden="true" />
+        </span>
+        <span style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.15, flex: 1, minWidth: 0 }}>
+          <span style={{ fontSize: '0.92rem', fontWeight: 800 }}>Customer Support</span>
+          <span style={{ fontSize: '0.72rem', color: 'var(--grey-400, #A8B4C0)', fontWeight: 500 }}>
+            {totalUnread > 0
+              ? `${totalUnread > 99 ? '99+' : totalUnread} Unread Thread${totalUnread === 1 ? '' : 's'}`
+              : `${rows.length} Thread${rows.length === 1 ? '' : 's'}`}
+          </span>
+        </span>
+        {totalUnread > 0 && (
+          <span
+            aria-hidden
+            style={{
+              minWidth: 22,
+              height: 22,
+              padding: '0 7px',
+              borderRadius: 6,
+              background: '#E53E3E',
+              color: '#fff',
+              fontSize: '0.72rem',
+              fontWeight: 800,
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexShrink: 0,
+              boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.25)',
+            }}
+          >
+            {totalUnread > 99 ? '99+' : totalUnread}
+          </span>
+        )}
+        <ChevronUp
+          size={16}
+          aria-hidden="true"
+          style={{
+            color: 'var(--silver, #C0B8A8)',
+            opacity: 0.85,
+            flexShrink: 0,
+            transition: 'transform 160ms ease',
+            transform: open ? 'rotate(180deg)' : 'rotate(0deg)',
+          }}
+        />
+      </button>
+
       <style jsx>{`
         .spin { animation: cs-spin 1s linear infinite; }
         @keyframes cs-spin { to { transform: rotate(360deg); } }
+        @media (min-width: 768px) {
+          .cs-widget-bar {
+            right: auto !important;
+            width: 360px !important;
+            border-right: 1px solid #C0B8A8 !important;
+          }
+          .cs-widget-panel {
+            right: auto !important;
+            width: 360px !important;
+            border-right: 1px solid rgba(0, 196, 188, 0.18) !important;
+          }
+        }
       `}</style>
     </>
   );
