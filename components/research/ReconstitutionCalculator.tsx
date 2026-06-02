@@ -15,7 +15,14 @@ import { drawVolumeMl, reconstitutionVolumeMl } from '@/lib/compounds';
 
 const EXAMPLE_DRAW_MASSES_MG = [0.25, 0.5, 1, 2, 5];
 
-export default function ReconstitutionCalculator({ defaultMassMg }: { defaultMassMg?: number }) {
+export default function ReconstitutionCalculator({
+  defaultMassMg,
+  onAddDiluent,
+}: {
+  defaultMassMg?: number;
+  /** When provided, the diluent CTA becomes an "Add Bacteriostatic Water To Cart" button. */
+  onAddDiluent?: () => void;
+}) {
   const [mode, setMode] = useState<'diluent' | 'target'>('diluent');
   const [massMg, setMassMg] = useState<string>(defaultMassMg != null ? String(defaultMassMg) : '10');
   const [diluentMl, setDiluentMl] = useState<string>('2');
@@ -68,7 +75,7 @@ export default function ReconstitutionCalculator({ defaultMassMg }: { defaultMas
     >
       <div style={{ marginBottom: 'var(--space-2)' }}>
         <strong style={{ color: 'var(--teal)', fontSize: '0.95rem' }}>
-          Lab Preparation Tool — Not Dosing Guidance
+          Lab Preparation Tool - Not Dosing Guidance
         </strong>
       </div>
 
@@ -146,7 +153,7 @@ export default function ReconstitutionCalculator({ defaultMassMg }: { defaultMas
           <p style={{ color: 'var(--silver)', marginBottom: 'var(--space-3)' }}>
             Resulting Concentration:{' '}
             <strong style={{ color: 'var(--teal)' }}>
-              {concentration != null ? `${concentration.toFixed(3)} Mg/Ml` : '—'}
+              {concentration != null ? `${concentration.toFixed(3)} Mg/Ml` : '-'}
             </strong>
           </p>
 
@@ -165,8 +172,8 @@ export default function ReconstitutionCalculator({ defaultMassMg }: { defaultMas
                   return (
                     <tr key={dm}>
                       <td style={tdStyle}>{dm}</td>
-                      <td style={tdStyle}>{vol != null ? vol.toFixed(3) : '—'}</td>
-                      <td style={tdStyle}>{vol != null ? Math.round(vol * 100) : '—'}</td>
+                      <td style={tdStyle}>{vol != null ? vol.toFixed(3) : '-'}</td>
+                      <td style={tdStyle}>{vol != null ? Math.round(vol * 100) : '-'}</td>
                     </tr>
                   );
                 })}
@@ -178,17 +185,40 @@ export default function ReconstitutionCalculator({ defaultMassMg }: { defaultMas
         <p style={{ color: 'var(--silver)' }}>
           Bacteriostatic Water To Add:{' '}
           <strong style={{ color: 'var(--teal)' }}>
-            {targetVolume != null ? `${targetVolume.toFixed(3)} Ml` : '—'}
+            {targetVolume != null ? `${targetVolume.toFixed(3)} Ml` : '-'}
           </strong>
         </p>
       )}
 
-      <p style={{ marginTop: 'var(--space-3)', fontSize: '0.82rem', color: 'var(--silver)' }}>
-        Need Diluent?{' '}
-        <Link href="/research/bac-water" style={{ color: 'var(--teal)', fontWeight: 700 }}>
-          See Bacteriostatic Water.
-        </Link>
-      </p>
+      {onAddDiluent ? (
+        <button
+          type="button"
+          onClick={onAddDiluent}
+          style={{
+            marginTop: 'var(--space-3)',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 8,
+            padding: '10px 16px',
+            borderRadius: 'var(--radius-md)',
+            background: 'var(--teal)',
+            color: '#04221F',
+            border: 'none',
+            fontWeight: 800,
+            fontSize: '0.85rem',
+            cursor: 'pointer',
+          }}
+        >
+          Add Bacteriostatic Water To Cart
+        </button>
+      ) : (
+        <p style={{ marginTop: 'var(--space-3)', fontSize: '0.82rem', color: 'var(--silver)' }}>
+          Need Diluent?{' '}
+          <Link href="/research/bac-water" style={{ color: 'var(--teal)', fontWeight: 700 }}>
+            See Bacteriostatic Water.
+          </Link>
+        </p>
+      )}
     </div>
   );
 }
