@@ -35,9 +35,31 @@ import {
 
 interface Props {
   role?: string | null;
+  /** R28: when set, scroll to this category on mount (from ?cat= query). */
+  initialCategory?: string | null;
 }
 
-export default function HelpSupportClient({ role }: Props) {
+/** R28: Fire-and-forget beacon to /api/analytics/faq-click. Never throws. */
+function fireFaqBeacon(faqId: string, source: string) {
+  try {
+    const body = JSON.stringify({ faqId, source });
+    if (typeof navigator !== 'undefined' && navigator.sendBeacon) {
+      const blob = new Blob([body], { type: 'application/json' });
+      navigator.sendBeacon('/api/analytics/faq-click', blob);
+      return;
+    }
+    void fetch('/api/analytics/faq-click', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body,
+      keepalive: true,
+    }).catch(() => {});
+  } catch {
+    /* telemetry must never block UI */
+  }
+}
+
+export default function HelpSupportClient({ role, initialCategory }: Props) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [query, setQuery] = useState('');
@@ -84,15 +106,32 @@ export default function HelpSupportClient({ role }: Props) {
     return () => window.removeEventListener('hashchange', applyHash);
   }, []);
 
+  // R28: when the URL has no #faq- hash but a ?cat= category is supplied,
+  // scroll to that category section on mount. Hash takes precedence.
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (!initialCategory) return;
+    if (window.location.hash.startsWith('#faq-')) return;
+    if (!categories.some((c) => c.id === initialCategory)) return;
+    requestAnimationFrame(() => {
+      const el = document.getElementById(`faq-cat-${initialCategory}`);
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  }, [initialCategory, categories]);
+
   function openWithLink(id: string) {
     const next = openItem === id ? null : id;
     setOpenItem(next);
-    if (next && typeof window !== 'undefined') {
-      // Update URL hash without scrolling (we already control scroll)
-      try {
-        window.history.replaceState(null, '', `#faq-${id}`);
-      } catch {
-        /* ignore */
+    if (next) {
+      // R28: anonymous beacon — track which answers actually get opened.
+      fireFaqBeacon(id, 'help-page');
+      if (typeof window !== 'undefined') {
+        // Update URL hash without scrolling (we already control scroll)
+        try {
+          window.history.replaceState(null, '', `#faq-${id}`);
+        } catch {
+          /* ignore */
+        }
       }
     }
   }
