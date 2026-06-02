@@ -1,3 +1,5 @@
+'use client';
+
 /**
  * R28 — HelpHint
  *
@@ -14,8 +16,13 @@
  *
  * Tracking: every click fires a beacon to /api/analytics/faq-click. Failures
  * are silent so they never block navigation.
+ *
+ * R33: 'use client' moved above the JSDoc. Turbopack currently allows
+ * directives after pure comments, but the wallet build failure earlier this
+ * session showed an invisible BOM/CR sequence can sneak ahead of the
+ * directive and break the build. Keeping the directive on physical line 1
+ * removes any ambiguity about what the parser sees first.
  */
-'use client';
 
 import Link from 'next/link';
 import { LifeBuoy } from 'lucide-react';
