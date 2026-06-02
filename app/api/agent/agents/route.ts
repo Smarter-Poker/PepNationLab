@@ -185,7 +185,9 @@ export async function POST(req: NextRequest) {
     // The user gets 'agent' role, and is_sub_agent = false, parent_agent_id = callerId
     const profileData: Record<string, any> = {
       id: userId,
-      email: '',
+      // Must be NULL, not '' — the profiles_email_not_blank CHECK rejects a blank
+      // string (internal.auth accounts carry no real email).
+      email: null,
       username: usernameClean,
       full_name,
       role: 'agent',
