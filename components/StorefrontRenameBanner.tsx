@@ -23,23 +23,30 @@ export default function StorefrontRenameBanner({
 }) {
   const [hidden, setHidden] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
 
   if (hidden) return null;
 
   async function keepName() {
     setBusy(true);
+    setErr(null);
     try {
-      // A same-value update to display_name fires the BEFORE-UPDATE trigger
-      // only when the value actually changes — so to stamp renamed_at without
-      // mutating the user-visible name, write a normalized whitespace-trimmed
-      // version that the trigger compares as identical, then explicitly stamp
-      // the timestamp via a direct column write under RLS.
+      // Direct column write under RLS "Agent can manage own profile"
+      // (polcmd='*', polqual = id = auth.uid()). The BEFORE-UPDATE trigger on
+      // agent_profiles only re-stamps storefront_renamed_at when display_name
+      // changes, so an explicit column write here is preserved.
       const supabase = createClient();
-      await supabase
+      const { error } = await supabase
         .from('agent_profiles')
         .update({ storefront_renamed_at: new Date().toISOString() })
         .eq('id', agentId);
+      if (error) {
+        setErr('Could Not Save. Please Try Again.');
+        return;
+      }
       setHidden(true);
+    } catch {
+      setErr('Could Not Save. Please Try Again.');
     } finally {
       setBusy(false);
     }
@@ -96,8 +103,24 @@ export default function StorefrontRenameBanner({
         Your Storefront Name Is Currently Your Username
         {currentName ? <> (&quot;<strong style={{ color: 'var(--teal, #00C4BC)' }}>{currentName}</strong>&quot;)</> : null}.
         Keep It As Is, Or Change It To Something Custom — You Can Update Your Display Name,
-        Slug, Colors, And Logo Any Time From Storefront Settings.
+        URL Name, Colors, And Logo Any Time From Storefront Settings.
       </p>
+      {err ? (
+        <p
+          role="alert"
+          style={{
+            color: '#FFAAAA',
+            background: 'rgba(229, 62, 62, 0.10)',
+            border: '1px solid rgba(229, 62, 62, 0.35)',
+            borderRadius: 8,
+            padding: '6px 10px',
+            fontSize: '0.78rem',
+            margin: 0,
+          }}
+        >
+          {err}
+        </p>
+      ) : null}
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
         <a
           href={settingsUrl}

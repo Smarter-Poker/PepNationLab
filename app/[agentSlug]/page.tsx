@@ -322,7 +322,7 @@ export default async function AgentStorefrontPage({ params }: Props) {
         <StorefrontRenameBanner
           agentId={agent.id}
           currentName={agent.display_name}
-          settingsUrl="/dashboard/agent?tab=storefront"
+          settingsUrl="/dashboard/agent?tab=Storefront+Config"
         />
       ) : null}
 
