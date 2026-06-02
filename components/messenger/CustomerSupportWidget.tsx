@@ -990,7 +990,9 @@ export default function CustomerSupportWidget() {
         </div>
       )}
 
-      {/* Collapsed bar — brushed-nickel top edge, no decorative icon, title-only */}
+      {/* Collapsed bar — brushed-nickel top edge, no decorative icon, title centered.
+            Right-side cluster (unread chip + chevron) is absolutely positioned so the
+            title stays geometrically centered regardless of its width. */}
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
@@ -1006,8 +1008,8 @@ export default function CustomerSupportWidget() {
           zIndex: 100,
           display: 'flex',
           alignItems: 'center',
-          gap: 10,
-          padding: '10px 14px',
+          justifyContent: 'center',
+          padding: '10px 56px',
           paddingBottom: 'calc(10px + env(safe-area-inset-bottom))',
           minHeight: 60,
           width: '100%',
@@ -1021,7 +1023,7 @@ export default function CustomerSupportWidget() {
           letterSpacing: '0.01em',
           boxShadow: '0 -10px 28px rgba(0,0,0,0.55)',
           cursor: 'pointer',
-          textAlign: 'left',
+          textAlign: 'center',
         }}
       >
         <span
@@ -1029,10 +1031,10 @@ export default function CustomerSupportWidget() {
             display: 'flex',
             flexDirection: 'column',
             lineHeight: 1.2,
-            alignItems: 'flex-start',
+            alignItems: 'center',
+            justifyContent: 'center',
             minWidth: 0,
-            flex: 1,
-            textAlign: 'left',
+            textAlign: 'center',
           }}
         >
           <span style={{ fontSize: '0.96rem', fontWeight: 800, color: 'var(--white, #fff)' }}>
@@ -1045,6 +1047,7 @@ export default function CustomerSupportWidget() {
               fontWeight: totalUnread > 0 ? 700 : 500,
               display: 'inline-flex',
               alignItems: 'center',
+              justifyContent: 'center',
               gap: 6,
               marginTop: 2,
             }}
@@ -1074,6 +1077,10 @@ export default function CustomerSupportWidget() {
           <span
             aria-hidden
             style={{
+              position: 'absolute',
+              right: 50,
+              top: '50%',
+              transform: 'translateY(-50%)',
               minWidth: 24,
               height: 22,
               padding: '0 8px',
@@ -1096,6 +1103,12 @@ export default function CustomerSupportWidget() {
         <span
           aria-hidden
           style={{
+            position: 'absolute',
+            right: 14,
+            top: '50%',
+            transform: open
+              ? 'translateY(-50%) rotate(180deg)'
+              : 'translateY(-50%) rotate(0deg)',
             display: 'inline-flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -1107,7 +1120,6 @@ export default function CustomerSupportWidget() {
             color: 'var(--silver, #C0B8A8)',
             flexShrink: 0,
             transition: 'transform 160ms ease',
-            transform: open ? 'rotate(180deg)' : 'rotate(0deg)',
           }}
         >
           <ChevronUp size={16} aria-hidden="true" />
