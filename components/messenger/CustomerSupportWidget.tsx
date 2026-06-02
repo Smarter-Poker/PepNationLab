@@ -14,6 +14,7 @@ import {
   PanelLeftOpen,
   PanelLeftClose,
   Info,
+  CheckCircle2,
 } from 'lucide-react';
 import { useMessengerStore } from '@/stores/messengerStore';
 import MessagePane from './MessagePane';
@@ -124,7 +125,7 @@ const STATUS_LABEL: Record<SupportStatus, string> = {
 
 const STATUS_COLOR: Record<SupportStatus, { bg: string; border: string; fg: string }> = {
   open: { bg: 'rgba(0,196,188,0.15)', border: 'rgba(0,196,188,0.55)', fg: '#7AF0EA' },
-  in_progress: { bg: 'rgba(255,184,0,0.15)', border: 'rgba(255,184,0,0.55)', fg: '#FFD175' },
+  in_progress: { bg: 'rgba(255,255,255,0.06)', border: 'rgba(255,255,255,0.18)', fg: 'var(--white, #fff)' },
   waiting_on_researcher: { bg: 'rgba(120,140,170,0.20)', border: 'rgba(160,180,210,0.55)', fg: '#C4D0E0' },
   resolved: { bg: 'rgba(80,200,120,0.12)', border: 'rgba(80,200,120,0.55)', fg: '#9BE3B4' },
 };
@@ -668,6 +669,7 @@ export default function CustomerSupportWidget() {
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
+                gap: 8,
                 padding: '8px 12px',
                 borderBottom: '1px solid rgba(255,255,255,0.06)',
                 background: 'rgba(0,196,188,0.04)',
@@ -675,24 +677,55 @@ export default function CustomerSupportWidget() {
                 flexShrink: 0,
               }}
             >
-              <span style={{ color: 'var(--silver, #C0B8A8)' }}>
+              <span style={{ color: 'var(--silver, #C0B8A8)', whiteSpace: 'nowrap' }}>
                 Viewing Single Thread
               </span>
-              <button
-                type="button"
-                onClick={() => setMessengerActive(null)}
-                style={{
-                  background: 'transparent',
-                  border: '1px solid rgba(255,255,255,0.12)',
-                  color: 'var(--white, #fff)',
-                  padding: '3px 8px',
-                  borderRadius: 6,
-                  fontSize: '0.72rem',
-                  cursor: 'pointer',
-                }}
-              >
-                ← All Threads
-              </button>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+                {focusedRow.support_status !== 'resolved' && (
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      await setStatus(focusedRow.conversation_id, 'resolved');
+                      setMessengerActive(null);
+                    }}
+                    title="Mark This Thread Resolved And Return To The Inbox"
+                    style={{
+                      background: 'rgba(80,200,120,0.18)',
+                      border: '1px solid rgba(80,200,120,0.55)',
+                      color: '#9BE3B4',
+                      padding: '4px 10px',
+                      borderRadius: 6,
+                      fontSize: '0.72rem',
+                      fontWeight: 800,
+                      letterSpacing: '0.02em',
+                      cursor: 'pointer',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 5,
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
+                    <CheckCircle2 size={13} aria-hidden="true" />
+                    Mark Resolved
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => setMessengerActive(null)}
+                  style={{
+                    background: 'transparent',
+                    border: '1px solid rgba(255,255,255,0.12)',
+                    color: 'var(--white, #fff)',
+                    padding: '4px 10px',
+                    borderRadius: 6,
+                    fontSize: '0.72rem',
+                    cursor: 'pointer',
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  ← All Threads
+                </button>
+              </div>
             </div>
           )}
           <div style={focusedRow ? { flex: '0 0 auto', overflow: 'visible' } : { overflowY: 'auto', flex: 1, minHeight: 0 }}>
@@ -1055,9 +1088,9 @@ export default function CustomerSupportWidget() {
                                   gap: 3,
                                   padding: '2px 6px',
                                   borderRadius: 999,
-                                  background: 'rgba(255,184,0,0.12)',
-                                  border: '1px solid rgba(255,184,0,0.40)',
-                                  color: '#FFD175',
+                                  background: 'rgba(255,255,255,0.06)',
+                                  border: '1px solid rgba(255,255,255,0.20)',
+                                  color: 'var(--white, #fff)',
                                   fontSize: '0.66rem',
                                   fontWeight: 800,
                                 }}
