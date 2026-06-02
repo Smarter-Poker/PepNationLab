@@ -1,6 +1,6 @@
 'use client';
-import Link from "next/link";
 
+import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { money, fmtDate, statusLabel } from './format';
