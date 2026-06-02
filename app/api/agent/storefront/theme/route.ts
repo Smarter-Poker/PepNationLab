@@ -26,7 +26,7 @@ const Body = z.object({
   accent_color: z.string().regex(/^#[0-9a-fA-F]{6}$/).optional().nullable(),
   tagline: z.string().max(200).optional().nullable(),
   hero_image_url: z.string().url().optional().nullable(),
-  theme_config: z.record(z.unknown()).optional(),
+  theme_config: z.record(z.string(), z.unknown()).optional(),
 });
 
 export async function PATCH(req: Request) {

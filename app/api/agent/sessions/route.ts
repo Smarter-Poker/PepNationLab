@@ -57,7 +57,7 @@ export async function DELETE(req: NextRequest) {
     query = query.neq('id', keepRow.id);
   }
 
-  const { error, count } = await query.select('id', { count: 'exact' });
+  const { data, error } = await query.select('id');
 
   if (error) {
     return NextResponse.json({ error: 'sessions_revoke_failed' }, { status: 500 });
@@ -67,9 +67,9 @@ export async function DELETE(req: NextRequest) {
     .rpc('log_account_event', {
       p_user_id: user.id,
       p_event: 'sessions_revoked_all_others',
-      p_details: { kept: keepRow?.id ?? null, revoked_count: count ?? 0 },
+      p_details: { kept: keepRow?.id ?? null, revoked_count: data?.length ?? 0 },
     })
     .then(() => null, () => null);
 
-  return NextResponse.json({ revoked: count ?? 0 });
+  return NextResponse.json({ revoked: data?.length ?? 0 });
 }

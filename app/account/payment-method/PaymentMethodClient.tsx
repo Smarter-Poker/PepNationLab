@@ -54,16 +54,18 @@ const METHODS: MethodSpec[] = [
   { id: 'chime', label: 'Chime', description: 'Chime Pay Anyone Transfer.', handleLabel: 'Chime Sign In (Email Or Phone)', placeholder: 'you@email.com' },
 ];
 
+const iconStyle = { height: 28, width: 'auto', objectFit: 'contain' as const, maxWidth: 36 };
+
 const PAYMENT_ICONS: Record<MethodId, React.ReactNode> = {
-  zelle: <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#753BBD" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 6h16l-8 12h-8z"/></svg>,
-  venmo: <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#008CFF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 4l4 16h4l6-16h-4l-4 12-2-12z"/></svg>,
-  cashapp: <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#00D632" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>,
-  apple_pay: <svg width="32" height="32" viewBox="0 0 24 24" fill="var(--white)" color="var(--white)"><path d="M12.7 7.4c.8-1 1.4-2.4 1.2-3.8-1.2.1-2.7.8-3.6 1.8-.8.9-1.5 2.3-1.3 3.7 1.4.1 2.8-.7 3.7-1.7zm-4.7 13.9c-1.3 0-2.6-.9-3.4-2.1-1.6-2.5-1.9-5.7-1.3-8 .5-1.9 2-3.4 4-3.6 1.4-.2 2.7.8 3.5.8.8 0 2.3-1.1 4-1 .8 0 2.2.3 3.1 1.7-2.6 1.6-2.2 5.5.4 6.7-1 2.3-2.5 4.9-4.7 5-1.2.1-2.3-.7-3.3-.7-1.1.1-2.2.8-3.4.8z"/></svg>,
-  apple_cash: <svg width="32" height="32" viewBox="0 0 24 24" fill="#000" color="#000" style={{ background: '#fff', borderRadius: '4px' }}><path d="M12.7 7.4c.8-1 1.4-2.4 1.2-3.8-1.2.1-2.7.8-3.6 1.8-.8.9-1.5 2.3-1.3 3.7 1.4.1 2.8-.7 3.7-1.7zm-4.7 13.9c-1.3 0-2.6-.9-3.4-2.1-1.6-2.5-1.9-5.7-1.3-8 .5-1.9 2-3.4 4-3.6 1.4-.2 2.7.8 3.5.8.8 0 2.3-1.1 4-1 .8 0 2.2.3 3.1 1.7-2.6 1.6-2.2 5.5.4 6.7-1 2.3-2.5 4.9-4.7 5-1.2.1-2.3-.7-3.3-.7-1.1.1-2.2.8-3.4.8z"/></svg>,
-  paypal: <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#003087" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M7 4h7a4 4 0 0 1 4 4c0 3-2.5 5-5.5 5H9l-2 7H4L7 4z"/><path d="M9.5 9h5.5c2.5 0 4 1.5 4 4 0 2.5-2 4.5-5 4.5h-2l-1 4h-4l2-8z"/></svg>,
-  google_wallet: <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#EA4335" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="5" width="18" height="14" rx="2" /><path d="M16 12h2"/></svg>,
-  wise: <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#00B9FF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 12l4-8 4 8M10 12h10l-4 8"/></svg>,
-  chime: <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#25C85F" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 4v16M8 8l8 8M16 8l-8 8"/></svg>,
+  zelle: <img src="/payment-logos/zelle.svg" alt="Zelle" style={iconStyle} />,
+  venmo: <img src="/payment-logos/venmo.svg" alt="Venmo" style={iconStyle} />,
+  cashapp: <img src="/payment-logos/cashapp.svg" alt="Cash App" style={iconStyle} />,
+  apple_pay: <img src="/payment-logos/apple_cash.svg" alt="Apple Pay" style={iconStyle} />,
+  apple_cash: <img src="/payment-logos/apple_cash.svg" alt="Apple Cash" style={iconStyle} />,
+  paypal: <img src="/payment-logos/paypal.svg" alt="PayPal" style={iconStyle} />,
+  google_wallet: <img src="/payment-logos/google_wallet.svg" alt="Google Wallet" style={iconStyle} />,
+  wise: <img src="/payment-logos/wise.svg" alt="Wise" style={iconStyle} />,
+  chime: <img src="/payment-logos/chime.svg" alt="Chime" style={iconStyle} />,
 };
 
 interface Props {

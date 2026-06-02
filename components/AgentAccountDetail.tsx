@@ -219,7 +219,7 @@ export default function AgentAccountDetail({
     }
     setSaving(true);
     try {
-      let baseVal = commissionPct === '' ? 0 : commissionPct;
+      let baseVal: number = commissionPct === '' ? 0 : Number(commissionPct);
       if (commissionMode === 'gamified' && scaleType === 'custom') {
         baseVal = customSteps[0].bonus_pct;
       }

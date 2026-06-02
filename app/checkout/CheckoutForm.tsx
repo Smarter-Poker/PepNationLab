@@ -78,9 +78,12 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
   // If agentPaymentHandles has no non-empty values, fall back to all methods.
   const availablePaymentMethods = (
     agentPaymentHandles &&
-    Object.values(agentPaymentHandles).some(v => v?.trim())
+    Object.values(agentPaymentHandles).some(v => typeof v === 'string' && v.trim().length > 0)
   )
-    ? ALL_PAYMENT_METHODS.filter(p => (agentPaymentHandles[p.id] ?? '').trim().length > 0)
+    ? ALL_PAYMENT_METHODS.filter(p => {
+        const h = agentPaymentHandles[p.id];
+        return typeof h === 'string' && h.trim().length > 0;
+      })
     : ALL_PAYMENT_METHODS;
   const { cart: contextCart, cartSubtotal: contextSubtotal, clearCart } = useCart();
   const router = useRouter();
@@ -528,7 +531,8 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
   };
 
   const getPaymentDetails = () => {
-    const handle = (agentPaymentHandles?.[paymentMethod] ?? '').trim();
+    const rawHandle = agentPaymentHandles?.[paymentMethod];
+    const handle = typeof rawHandle === 'string' ? rawHandle.trim() : '';
     const noHandle = 'Contact Your Agent For Handle';
     switch (paymentMethod) {
       case 'zelle':

@@ -119,7 +119,7 @@ export default function MyQRCodeModal({
     try {
       const container = document.querySelector('[data-qr-container]');
       const canvas = container?.querySelector('canvas') as HTMLCanvasElement | null;
-      if (canvas && navigator.share) {
+      if (canvas && typeof navigator.share === 'function') {
         const blob = await new Promise<Blob | null>(res => canvas.toBlob(res, 'image/png'));
         if (blob) {
           const file = new File([blob], `pepnationlab-${data.slug}.png`, { type: 'image/png' });

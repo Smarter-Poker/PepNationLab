@@ -17,9 +17,26 @@ export default async function PaymentMethodPage() {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('default_payment_method, payment_handles')
+    .select('role, default_payment_method, payment_handles')
     .eq('id', user.id)
     .maybeSingle();
+
+  let mergedHandles = (profile?.payment_handles as Record<string, string> | null) ?? {};
+
+  if (profile?.role && ['super_agent', 'agent', 'sub_agent'].includes(profile.role)) {
+    const { data: agentProfile } = await supabase
+      .from('agent_profiles')
+      .select('payment_handles')
+      .eq('id', user.id)
+      .maybeSingle();
+    
+    if (agentProfile?.payment_handles) {
+      mergedHandles = {
+        ...(agentProfile.payment_handles as Record<string, string>),
+        ...mergedHandles, // profile overrides agent
+      };
+    }
+  }
 
   return (
     <div style={{ minHeight: '100dvh', background: 'var(--black)', padding: 'var(--space-6) var(--space-4)' }}>
@@ -32,7 +49,7 @@ export default async function PaymentMethodPage() {
         </p>
         <PaymentMethodClient
           initialDefault={profile?.default_payment_method ?? null}
-          initialHandles={(profile?.payment_handles as Record<string, string> | null) ?? {}}
+          initialHandles={mergedHandles}
         />
       </div>
     </div>
