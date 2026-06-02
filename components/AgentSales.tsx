@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
+import { toast } from 'sonner';
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, BarChart, Bar,
@@ -19,7 +20,7 @@ const PENDING = new Set(['pending_customer_payment', 'agent_approval_pending', '
 const DAY_MS = 24 * 60 * 60 * 1000;
 const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
-// Lifetime revenue milestones (collected). Drives the badge ladder.
+// Lifetime revenue milestones (collected). Drives the badge ladder + celebration.
 const MILESTONES = [
   { amount: 1000, label: 'First $1K' },
   { amount: 5000, label: '$5K Club' },
@@ -41,6 +42,25 @@ const fmtCompact = (val: number) => {
 };
 const dayKey = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 
+// Lightweight, dependency-free celebratory confetti burst (balanced tone).
+function burstConfetti() {
+  if (typeof document === 'undefined') return;
+  const colors = ['#00E5FF', '#00FF9D', '#7C5CFF', '#FFB020', '#FF6B81'];
+  const root = document.createElement('div');
+  root.style.cssText = 'position:fixed;left:0;top:0;width:100%;height:0;z-index:100001;pointer-events:none;';
+  document.body.appendChild(root);
+  for (let i = 0; i < 28; i++) {
+    const s = document.createElement('div');
+    const c = colors[i % colors.length];
+    const left = 18 + Math.random() * 64;
+    const delay = Math.random() * 0.15;
+    const dur = 1.1 + Math.random() * 0.8;
+    s.style.cssText = `position:absolute;top:60px;left:${left}%;width:8px;height:13px;background:${c};border-radius:2px;opacity:1;animation:pnl-confetti ${dur}s ${delay}s ease-out forwards;`;
+    root.appendChild(s);
+  }
+  setTimeout(() => root.remove(), 2300);
+}
+
 interface WalletSummary {
   primaryLabel: string;
   primary: number;
@@ -59,25 +79,52 @@ export default function AgentSales({ orders, setOrders, agentId, userProfile }: 
   const [error, setError] = useState<string | null>(null);
   const [insights, setInsights] = useState<any | null>(null);
   const [wallet, setWallet] = useState<WalletSummary | null>(null);
-  const [range, setRange] = useState<7 | 30 | 90>(30);
+  const [commission, setCommission] = useState<{ lifetime: number; thisMonth: number; has: boolean } | null>(null);
+  const [view, setView] = useState<string>('30'); // '7' | '30' | '90' | 'm0' | 'm1' | ...
   const [goal, setGoal] = useState<number>(0);
   const [editingGoal, setEditingGoal] = useState(false);
   const [goalDraft, setGoalDraft] = useState('');
   const supabase = createClient();
   const isFetching = useRef(false);
   const needsRefetch = useRef(false);
+  const celebReady = useRef(false);
 
-  // ── Monthly revenue goal (persisted per-agent in localStorage) ──────────────
+  // ── Monthly revenue goal: durable + cross-device via /api/agent/sales/goal,
+  //    with a localStorage cache for instant first paint. ──────────────────────
   useEffect(() => {
-    try {
-      const raw = localStorage.getItem(`pnl_sales_goal_${agentId}`);
-      setGoal(raw ? Math.max(0, Number(raw) || 0) : 5000);
-    } catch { setGoal(5000); }
+    let cancelled = false;
+    let cache = 5000;
+    try { const raw = localStorage.getItem(`pnl_sales_goal_${agentId}`); if (raw) cache = Math.max(0, Number(raw) || 0); } catch { /* ignore */ }
+    setGoal(cache);
+    (async () => {
+      try {
+        const res = await fetch('/api/agent/sales/goal', { cache: 'no-store' });
+        if (!res.ok) return;
+        const j = await res.json();
+        const cents = j?.goal?.target_cents;
+        if (cents != null && !cancelled) {
+          const dollars = Math.round(Number(cents)) / 100;
+          setGoal(dollars);
+          try { localStorage.setItem(`pnl_sales_goal_${agentId}`, String(dollars)); } catch { /* ignore */ }
+        }
+      } catch { /* offline — keep cache */ }
+    })();
+    return () => { cancelled = true; };
   }, [agentId]);
-  const saveGoal = useCallback((next: number) => {
+
+  const saveGoal = useCallback(async (next: number) => {
     const v = Math.max(0, Math.round(next));
     setGoal(v);
     try { localStorage.setItem(`pnl_sales_goal_${agentId}`, String(v)); } catch { /* ignore */ }
+    if (v > 0) {
+      try {
+        await fetch('/api/agent/sales/goal', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ target_cents: Math.round(v * 100) }),
+        });
+      } catch { /* best-effort — cached locally */ }
+    }
   }, [agentId]);
 
   const fetchSales = useCallback(async () => {
@@ -114,12 +161,25 @@ export default function AgentSales({ orders, setOrders, agentId, userProfile }: 
     let cancelled = false;
     (async () => {
       try {
-        const [iRes, wRes] = await Promise.all([
+        const [iRes, wRes, cRes] = await Promise.all([
           fetch('/api/agent/sales/insights', { cache: 'no-store' }),
           fetch('/api/agent/wallet/summary', { cache: 'no-store' }),
+          fetch('/api/agent/wallet/commissions', { cache: 'no-store' }),
         ]);
         if (iRes.ok) { const j = await iRes.json(); if (!cancelled) setInsights(j); }
         if (wRes.ok) { const j = await wRes.json(); if (!cancelled) setWallet(j); }
+        if (cRes.ok) {
+          const j = await cRes.json();
+          const rows = [...(j.pending || []), ...(j.settled || [])];
+          const lifetime = Number(j?.totals?.pending || 0) + Number(j?.totals?.settled || 0);
+          const now = new Date();
+          const mStart = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
+          const thisMonth = rows.reduce((s: number, r: any) => {
+            const t = new Date(r.date).getTime();
+            return Number.isFinite(t) && t >= mStart ? s + Number(r.commission_amount || 0) : s;
+          }, 0);
+          if (!cancelled) setCommission({ lifetime, thisMonth, has: rows.length > 0 || lifetime > 0 });
+        }
       } catch { /* best-effort */ }
     })();
     return () => { cancelled = true; };
@@ -140,6 +200,8 @@ export default function AgentSales({ orders, setOrders, agentId, userProfile }: 
     const margin = lifetimeRevenue ? (lifetimeProfit / lifetimeRevenue) * 100 : 0;
     const pipeline = sum(pending, 'total');
 
+    const orderCogs = (o: any) => (o.items || []).reduce((s: number, it: any) => s + (Number(it.unit_cost_price) || 0) * (Number(it.quantity) || 0), 0);
+
     // Daily aggregation (collected)
     const daily = new Map<string, { revenue: number; profit: number; orders: number }>();
     for (const o of collected) {
@@ -153,7 +215,6 @@ export default function AgentSales({ orders, setOrders, agentId, userProfile }: 
       daily.set(key, cur);
     }
 
-    // Continuous series for the selected range (fill zero days)
     const series = (days: number) => {
       const out: { date: string; revenue: number; profit: number }[] = [];
       const today = new Date();
@@ -165,88 +226,64 @@ export default function AgentSales({ orders, setOrders, agentId, userProfile }: 
       return out;
     };
 
-    // Window helpers
     const now = Date.now();
     const windowSum = (fromMs: number, toMs: number, k: string) =>
-      collected.filter((o) => {
-        const t = new Date(o.created_at).getTime();
-        return t >= fromMs && t < toMs;
-      }).reduce((s, o) => s + (Number(o[k]) || 0), 0);
+      collected.filter((o) => { const t = new Date(o.created_at).getTime(); return t >= fromMs && t < toMs; })
+        .reduce((s, o) => s + (Number(o[k]) || 0), 0);
     const windowCount = (fromMs: number, toMs: number) =>
-      collected.filter((o) => {
-        const t = new Date(o.created_at).getTime();
-        return t >= fromMs && t < toMs;
-      }).length;
+      collected.filter((o) => { const t = new Date(o.created_at).getTime(); return t >= fromMs && t < toMs; }).length;
 
     const rev30 = windowSum(now - 30 * DAY_MS, now, 'total');
     const revPrev30 = windowSum(now - 60 * DAY_MS, now - 30 * DAY_MS, 'total');
-    const profit30 = windowSum(now - 30 * DAY_MS, now, 'profit');
     const orders30 = windowCount(now - 30 * DAY_MS, now);
     const ordersPrev30 = windowCount(now - 60 * DAY_MS, now - 30 * DAY_MS);
-    const rev7 = windowSum(now - 7 * DAY_MS, now, 'total');
-    const revPrev7 = windowSum(now - 14 * DAY_MS, now - 7 * DAY_MS, 'total');
 
     const pct = (cur: number, prev: number) => (prev > 0 ? ((cur - prev) / prev) * 100 : cur > 0 ? 100 : 0);
 
-    // This calendar month + run-rate projection
+    // Calendar months
     const tnow = new Date();
     const monthStart = new Date(tnow.getFullYear(), tnow.getMonth(), 1).getTime();
+    const lastMonthStart = new Date(tnow.getFullYear(), tnow.getMonth() - 1, 1).getTime();
     const monthRevenue = windowSum(monthStart, now, 'total');
     const monthProfit = windowSum(monthStart, now, 'profit');
+    const lastMonthRevenue = windowSum(lastMonthStart, monthStart, 'total');
+    const momDelta = pct(monthRevenue, lastMonthRevenue);
     const daysInMonth = new Date(tnow.getFullYear(), tnow.getMonth() + 1, 0).getDate();
     const dayOfMonth = tnow.getDate();
     const projectedMonth = dayOfMonth > 0 ? (monthRevenue / dayOfMonth) * daysInMonth : 0;
 
-    // Streak: consecutive days ending today/yesterday with at least one collected order
+    // Streak
     let streak = 0;
     {
       const t0 = new Date();
       let cursor = new Date(t0.getFullYear(), t0.getMonth(), t0.getDate());
       if (!daily.has(dayKey(cursor))) cursor = new Date(cursor.getTime() - DAY_MS);
-      while (daily.has(dayKey(cursor))) {
-        streak += 1;
-        cursor = new Date(cursor.getTime() - DAY_MS);
-      }
+      while (daily.has(dayKey(cursor))) { streak += 1; cursor = new Date(cursor.getTime() - DAY_MS); }
     }
 
     // Personal best day
     let best = { date: '', revenue: 0 };
-    for (const [k, v] of daily.entries()) {
-      if (v.revenue > best.revenue) best = { date: k, revenue: v.revenue };
-    }
+    for (const [k, v] of daily.entries()) if (v.revenue > best.revenue) best = { date: k, revenue: v.revenue };
 
-    // Best weekday by total revenue
+    // Best weekday
     const wd = WEEKDAYS.map(() => ({ revenue: 0 }));
-    for (const o of collected) {
-      const d = new Date(o.created_at);
-      if (isNaN(d.getTime())) continue;
-      wd[d.getDay()].revenue += Number(o.total) || 0;
-    }
+    for (const o of collected) { const d = new Date(o.created_at); if (!isNaN(d.getTime())) wd[d.getDay()].revenue += Number(o.total) || 0; }
     let bestWeekday = -1; let bestWeekdayRev = 0;
     wd.forEach((w, i) => { if (w.revenue > bestWeekdayRev) { bestWeekdayRev = w.revenue; bestWeekday = i; } });
 
     // Repeat buyer rate
     const buyerOrders = new Map<string, number>();
-    for (const o of collected) {
-      const id = o.buyer_id || 'unknown';
-      buyerOrders.set(id, (buyerOrders.get(id) || 0) + 1);
-    }
+    for (const o of collected) { const id = o.buyer_id || 'unknown'; buyerOrders.set(id, (buyerOrders.get(id) || 0) + 1); }
     const distinctBuyers = buyerOrders.size;
-    const repeatBuyers = Array.from(buyerOrders.values()).filter((n) => n > 1).length;
-    const repeatRate = distinctBuyers ? (repeatBuyers / distinctBuyers) * 100 : 0;
+    const repeatRate = distinctBuyers ? (Array.from(buyerOrders.values()).filter((n) => n > 1).length / distinctBuyers) * 100 : 0;
 
-    // Product mix (top by revenue, from item snapshots)
+    // Product mix
     const prodAgg = new Map<string, number>();
-    for (const o of collected) {
-      for (const it of (o.items || [])) {
-        const name = it.product_name || 'Product';
-        const rev = (Number(it.unit_retail_price) || 0) * (Number(it.quantity) || 0);
-        prodAgg.set(name, (prodAgg.get(name) || 0) + rev);
-      }
+    for (const o of collected) for (const it of (o.items || [])) {
+      const name = it.product_name || 'Product';
+      prodAgg.set(name, (prodAgg.get(name) || 0) + (Number(it.unit_retail_price) || 0) * (Number(it.quantity) || 0));
     }
-    const productMix = Array.from(prodAgg.entries())
-      .map(([name, revenue]) => ({ name, revenue }))
-      .sort((x, y) => y.revenue - x.revenue);
+    const productMix = Array.from(prodAgg.entries()).map(([name, revenue]) => ({ name, revenue })).sort((x, y) => y.revenue - x.revenue);
     const topProductSlices = (() => {
       const top = productMix.slice(0, 6);
       const rest = productMix.slice(6).reduce((s, p) => s + p.revenue, 0);
@@ -257,28 +294,65 @@ export default function AgentSales({ orders, setOrders, agentId, userProfile }: 
 
     // Payment method mix
     const payAgg = new Map<string, number>();
+    for (const o of collected) { const m = (o.payment_method || 'Other') as string; payAgg.set(m, (payAgg.get(m) || 0) + (Number(o.total) || 0)); }
+    const payMix = Array.from(payAgg.entries()).map(([method, revenue]) => ({ method: method.replace('_', ' '), revenue: Number(revenue.toFixed(2)) })).sort((x, y) => y.revenue - x.revenue);
+
+    // Monthly P&L (last 12 months, newest first)
+    const pnlMap = new Map<string, { tag: string; label: string; revenue: number; cogs: number; shipping: number; net: number; orders: number; ts: number }>();
     for (const o of collected) {
-      const m = (o.payment_method || 'Other') as string;
-      payAgg.set(m, (payAgg.get(m) || 0) + (Number(o.total) || 0));
+      const d = new Date(o.created_at);
+      if (isNaN(d.getTime())) continue;
+      const tag = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+      const row = pnlMap.get(tag) || { tag, label: d.toLocaleDateString('en-US', { month: 'short', year: 'numeric' }), revenue: 0, cogs: 0, shipping: 0, net: 0, orders: 0, ts: new Date(d.getFullYear(), d.getMonth(), 1).getTime() };
+      row.revenue += Number(o.total) || 0;
+      row.cogs += orderCogs(o);
+      row.shipping += Number(o.shipping_cost) || 0;
+      row.net += Number(o.profit) || 0;
+      row.orders += 1;
+      pnlMap.set(tag, row);
     }
-    const payMix = Array.from(payAgg.entries())
-      .map(([method, revenue]) => ({ method: method.replace('_', ' '), revenue: Number(revenue.toFixed(2)) }))
-      .sort((x, y) => y.revenue - x.revenue);
+    const pnl = Array.from(pnlMap.values()).sort((x, y) => y.ts - x.ts).slice(0, 12);
 
     return {
       hasCollected: collected.length > 0,
       lifetimeRevenue, lifetimeProfit, lifetimeOrders, aov, margin, pipeline,
       pendingCount: pending.length,
-      rev30, revDelta30: pct(rev30, revPrev30), profit30, orders30, ordersDelta30: pct(orders30, ordersPrev30),
-      rev7, revDelta7: pct(rev7, revPrev7),
-      monthRevenue, monthProfit, projectedMonth, daysInMonth, dayOfMonth,
+      rev30, revDelta30: pct(rev30, revPrev30), orders30, ordersDelta30: pct(orders30, ordersPrev30),
+      monthRevenue, monthProfit, lastMonthRevenue, momDelta, projectedMonth, daysInMonth, dayOfMonth,
       streak, best, bestWeekday, bestWeekdayRev, repeatRate, distinctBuyers,
-      productMix, topProductSlices, payMix,
-      series7: series(7), series30: series(30), series90: series(90),
+      productMix, topProductSlices, payMix, pnl,
+      dailyMap: daily, series7: series(7), series30: series(30), series90: series(90),
     };
   }, [orders]);
 
-  const chartData = range === 7 ? a.series7 : range === 30 ? a.series30 : a.series90;
+  // Build chart data from the current view (trailing window or a calendar month).
+  const chartData = useMemo(() => {
+    if (view === '7') return a.series7;
+    if (view === '30') return a.series30;
+    if (view === '90') return a.series90;
+    const k = Number(view.slice(1)) || 0;
+    const base = new Date();
+    const y = base.getFullYear(); const m = base.getMonth() - k;
+    const first = new Date(y, m, 1);
+    const days = new Date(y, m + 1, 0).getDate();
+    const out: { date: string; revenue: number; profit: number }[] = [];
+    for (let i = 1; i <= days; i++) {
+      const d = new Date(first.getFullYear(), first.getMonth(), i);
+      const rec = a.dailyMap.get(dayKey(d));
+      out.push({ date: `${d.getMonth() + 1}/${d.getDate()}`, revenue: rec?.revenue || 0, profit: rec?.profit || 0 });
+    }
+    return out;
+  }, [view, a]);
+
+  const monthOptions = useMemo(() => {
+    const out: { value: string; label: string }[] = [];
+    const now = new Date();
+    for (let k = 0; k < 6; k++) {
+      const d = new Date(now.getFullYear(), now.getMonth() - k, 1);
+      out.push({ value: `m${k}`, label: d.toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) });
+    }
+    return out;
+  }, []);
 
   // Goal pacing
   const goalPct = goal > 0 ? Math.min(100, (a.monthRevenue / goal) * 100) : 0;
@@ -290,29 +364,70 @@ export default function AgentSales({ orders, setOrders, agentId, userProfile }: 
   const nextMilestone = MILESTONES.find((m) => a.lifetimeRevenue < m.amount) || null;
   const achievedMilestones = MILESTONES.filter((m) => a.lifetimeRevenue >= m.amount);
 
-  const exportCsv = useCallback(() => {
-    const rows = [['Order Id', 'Date', 'Status', 'Buyer', 'Payment', 'Revenue', 'Profit']];
-    for (const o of (orders || [])) {
-      rows.push([
-        o.id, new Date(o.created_at).toISOString().slice(0, 10), o.status,
-        (o.buyer_name || '').replace(/,/g, ' '), (o.payment_method || ''),
-        String(Number(o.total) || 0), String(Number(o.profit) || 0),
-      ]);
-    }
+  // ── Celebration: fire once when a new milestone or the monthly goal is crossed.
+  //    Seeds silently on first load so we never burst on initial mount. ─────────
+  useEffect(() => {
+    if (loading) return;
+    const mKey = `pnl_celebrated_milestone_${agentId}`;
+    const gKey = `pnl_goal_hit_${agentId}`;
+    const achievedMax = achievedMilestones.length ? achievedMilestones[achievedMilestones.length - 1].amount : 0;
+    const monthTag = `${new Date().getFullYear()}-${new Date().getMonth()}`;
+    const celebrate = (msg: string) => { try { toast.success(msg); } catch { /* ignore */ } burstConfetti(); };
+    try {
+      if (!celebReady.current) {
+        if (localStorage.getItem(mKey) == null) localStorage.setItem(mKey, String(achievedMax));
+        if (goal > 0 && a.monthRevenue >= goal && localStorage.getItem(gKey) == null) localStorage.setItem(gKey, monthTag);
+        celebReady.current = true;
+        return;
+      }
+      const prevM = Number(localStorage.getItem(mKey) || '0');
+      if (achievedMax > prevM) {
+        const m = MILESTONES.find((x) => x.amount === achievedMax);
+        celebrate(`Milestone Unlocked — ${m?.label ?? fmt(achievedMax)}`);
+        localStorage.setItem(mKey, String(achievedMax));
+      }
+      if (goal > 0 && a.monthRevenue >= goal && localStorage.getItem(gKey) !== monthTag) {
+        celebrate('Monthly Goal Reached — Nice Work!');
+        localStorage.setItem(gKey, monthTag);
+      }
+    } catch { /* ignore */ }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading, a.lifetimeRevenue, a.monthRevenue, goal]);
+
+  const downloadCsv = useCallback((rows: (string | number)[][], name: string) => {
     const csv = rows.map((r) => r.map((c) => `"${String(c ?? '')}"`).join(',')).join('\n');
     const blob = new Blob([csv], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
-    link.href = url;
-    link.download = `sales-${new Date().toISOString().slice(0, 10)}.csv`;
-    link.click();
+    link.href = url; link.download = name; link.click();
     URL.revokeObjectURL(url);
-  }, [orders]);
+  }, []);
+
+  const exportOrdersCsv = useCallback(() => {
+    const rows: (string | number)[][] = [['Order Id', 'Date', 'Status', 'Buyer', 'Payment', 'Revenue', 'Profit']];
+    for (const o of (orders || [])) {
+      rows.push([
+        o.id, new Date(o.created_at).toISOString().slice(0, 10), o.status,
+        (o.buyer_name || '').replace(/,/g, ' '), (o.payment_method || ''),
+        (Number(o.total) || 0).toFixed(2), (Number(o.profit) || 0).toFixed(2),
+      ]);
+    }
+    downloadCsv(rows, `sales-orders-${new Date().toISOString().slice(0, 10)}.csv`);
+  }, [orders, downloadCsv]);
+
+  const exportPnlCsv = useCallback(() => {
+    const rows: (string | number)[][] = [['Month', 'Orders', 'Revenue', 'COGS', 'Shipping', 'Net Profit']];
+    for (const m of a.pnl) rows.push([m.label, m.orders, m.revenue.toFixed(2), m.cogs.toFixed(2), m.shipping.toFixed(2), m.net.toFixed(2)]);
+    downloadCsv(rows, `profit-and-loss-${new Date().toISOString().slice(0, 10)}.csv`);
+  }, [a.pnl, downloadCsv]);
 
   if (loading) return <div style={{ padding: 'var(--space-6)', color: 'var(--silver)' }}>Loading Live Sales Data...</div>;
   if (error) return <div style={{ padding: 'var(--space-6)', color: 'var(--red)' }}>Error: {error}</div>;
 
   const isSub = !!(userProfile?.tier && String(userProfile.tier).includes('sub-agent'));
+  const showCommission = !!(commission?.has || userProfile?.is_super_agent || userProfile?.is_sub_agent);
+  const tabHref = (tab: string) => `/dashboard/agent?tab=${encodeURIComponent(tab)}`;
+  const PROFIT_HELP = 'Profit = what the customer paid, minus your product cost and the shipping the platform bills you.';
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-8)' }}>
@@ -323,12 +438,20 @@ export default function AgentSales({ orders, setOrders, agentId, userProfile }: 
         .sa-delta-down { color: #FF6B81; font-weight: 700; font-size: 0.78rem; }
         .sa-range-btn { padding: 6px 14px; border-radius: 8px; font-size: 0.8rem; font-weight: 700; cursor: pointer; border: 1px solid rgba(255,255,255,0.12); background: rgba(255,255,255,0.04); color: var(--silver); }
         .sa-range-btn.active { background: var(--teal); color: #04201f; border-color: var(--teal); }
+        .sa-month-select { padding: 6px 10px; border-radius: 8px; font-size: 0.8rem; font-weight: 700; border: 1px solid rgba(255,255,255,0.12); background: rgba(0,0,0,0.5); color: var(--silver); cursor: pointer; }
         .sa-badge { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 999px; font-size: 0.74rem; font-weight: 800; }
+        .sa-info { display: inline-flex; align-items: center; justify-content: center; width: 15px; height: 15px; border-radius: 50%; border: 1px solid rgba(255,255,255,0.35); color: var(--grey-300); font-size: 0.62rem; font-weight: 800; cursor: help; margin-left: 6px; vertical-align: middle; }
+        .sa-cta { display: inline-flex; align-items: center; gap: 6px; padding: 10px 16px; border-radius: 10px; font-weight: 800; font-size: 0.85rem; text-decoration: none; }
+        .sa-table { width: 100%; border-collapse: collapse; font-size: 0.84rem; min-width: 520px; }
+        .sa-table th { text-align: right; color: var(--grey-400); font-weight: 700; padding: 8px 10px; border-bottom: 1px solid rgba(255,255,255,0.1); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.04em; }
+        .sa-table th:first-child, .sa-table td:first-child { text-align: left; }
+        .sa-table td { text-align: right; padding: 9px 10px; border-bottom: 1px solid rgba(255,255,255,0.05); color: var(--silver); }
         @keyframes sa-pulse { 0%,100% { box-shadow: 0 0 0 0 rgba(0,255,157,0.0);} 50% { box-shadow: 0 0 0 6px rgba(0,255,157,0.12);} }
+        @keyframes pnl-confetti { from { opacity: 1; transform: translateY(0) rotate(0deg);} to { opacity: 0; transform: translateY(72vh) rotate(540deg);} }
       `}} />
 
       {/* ─────────────── ACCOUNTING / MONEY STRIP ─────────────── */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', gap: 'var(--space-4)' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 'var(--space-4)' }}>
         <div className="metal-frame">
           <div className="metal-content" style={{ padding: 'var(--space-5)' }}>
             <div className="sa-label">{wallet?.primaryLabel || 'Available'}</div>
@@ -347,23 +470,47 @@ export default function AgentSales({ orders, setOrders, agentId, userProfile }: 
         </div>
         <div className="metal-frame">
           <div className="metal-content" style={{ padding: 'var(--space-5)' }}>
-            <div className="sa-label">Profit This Month</div>
+            <div className="sa-label">Profit This Month<span className="sa-info" title={PROFIT_HELP}>i</span></div>
             <div className="sa-stat" style={{ color: '#00FF9D', marginTop: 6 }}>{fmt(a.monthProfit)}</div>
             <div style={{ color: 'var(--grey-400)', fontSize: '0.74rem', marginTop: 8 }}>{fmt(a.monthRevenue)} Revenue</div>
           </div>
         </div>
         <div className="metal-frame">
           <div className="metal-content" style={{ padding: 'var(--space-5)' }}>
-            <div className="sa-label">Lifetime Profit</div>
+            <div className="sa-label">Lifetime Profit<span className="sa-info" title={PROFIT_HELP}>i</span></div>
             <div className="sa-stat" style={{ marginTop: 6 }}>{fmt(a.lifetimeProfit)}</div>
             <div style={{ color: 'var(--grey-400)', fontSize: '0.74rem', marginTop: 8 }}>{a.margin.toFixed(0)}% Margin</div>
           </div>
         </div>
+        {showCommission && (
+          <div className="metal-frame">
+            <div className="metal-content" style={{ padding: 'var(--space-5)' }}>
+              <div className="sa-label">Commission Earned</div>
+              <div className="sa-stat" style={{ color: '#7C5CFF', marginTop: 6 }}>{fmt(commission?.thisMonth ?? 0)}</div>
+              <div style={{ color: 'var(--grey-400)', fontSize: '0.74rem', marginTop: 8 }}>This Month · {fmt(commission?.lifetime ?? 0)} Lifetime</div>
+            </div>
+          </div>
+        )}
       </div>
+
+      {/* ─────────────── GETTING STARTED (no sales yet) ─────────────── */}
+      {!a.hasCollected && (
+        <div className="metal-frame">
+          <div className="metal-content" style={{ padding: 'var(--space-6)' }}>
+            <h2 className="metal-text" style={{ fontSize: '1.15rem', fontFamily: 'var(--font-brand)', margin: '0 0 6px' }}>Let’s Get Your First Sale</h2>
+            <p style={{ color: 'var(--silver)', fontSize: '0.88rem', margin: '0 0 14px' }}>Your stats, charts, streak, and goal all come alive once orders start landing. A few good first moves:</p>
+            <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+              <a className="sa-cta" href={tabHref('Storefront Config')} style={{ background: 'var(--teal)', color: '#04201f' }}>Set Up Storefront</a>
+              <a className="sa-cta" href={tabHref('Store Products')} style={{ background: 'rgba(255,255,255,0.07)', color: 'var(--white)', border: '1px solid rgba(255,255,255,0.18)' }}>Add Products</a>
+              <a className="sa-cta" href={tabHref('Coupons')} style={{ background: 'rgba(255,255,255,0.07)', color: 'var(--white)', border: '1px solid rgba(255,255,255,0.18)' }}>Create A Coupon</a>
+              <a className="sa-cta" href={tabHref('Researchers')} style={{ background: 'rgba(255,255,255,0.07)', color: 'var(--white)', border: '1px solid rgba(255,255,255,0.18)' }}>Invite Researchers</a>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ─────────────── GOAL + STREAK + FORECAST ─────────────── */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 'var(--space-4)' }}>
-        {/* Monthly goal ring */}
         <div className="metal-frame" style={goal > 0 && goalPct >= 100 ? { animation: 'sa-pulse 2.4s ease-in-out infinite' } : undefined}>
           <div className="metal-content" style={{ padding: 'var(--space-6)', display: 'flex', gap: 'var(--space-5)', alignItems: 'center' }}>
             <GoalRing pct={goalPct} hit={goalPct >= 100} />
@@ -393,7 +540,6 @@ export default function AgentSales({ orders, setOrders, agentId, userProfile }: 
           </div>
         </div>
 
-        {/* Streak + best day */}
         <div className="metal-frame">
           <div className="metal-content" style={{ padding: 'var(--space-6)' }}>
             <div className="sa-label">Selling Streak</div>
@@ -413,21 +559,18 @@ export default function AgentSales({ orders, setOrders, agentId, userProfile }: 
           </div>
         </div>
 
-        {/* Forecast / run-rate */}
         <div className="metal-frame">
           <div className="metal-content" style={{ padding: 'var(--space-6)' }}>
             <div className="sa-label">Projected Month-End</div>
             <div className="sa-stat" style={{ color: '#7C5CFF', marginTop: 6 }}>{fmt(a.projectedMonth)}</div>
             <div style={{ color: 'var(--grey-400)', fontSize: '0.8rem', marginTop: 4 }}>Based On {a.dayOfMonth} Of {a.daysInMonth} Days</div>
             <div style={{ height: 1, background: 'rgba(255,255,255,0.06)', margin: '14px 0' }} />
-            <div className="sa-label">Open Pipeline</div>
+            <div className="sa-label">This Month vs Last</div>
             <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginTop: 6 }}>
-              <span style={{ fontSize: '1.3rem', fontWeight: 800, color: 'var(--white)', fontFamily: 'var(--font-brand)' }}>{fmt(a.pipeline)}</span>
-              <span style={{ color: 'var(--grey-400)', fontSize: '0.78rem' }}>{a.pendingCount} Awaiting</span>
+              <span style={{ fontSize: '1.3rem', fontWeight: 800, color: 'var(--white)', fontFamily: 'var(--font-brand)' }}>{fmt(a.monthRevenue)}</span>
+              <span className={a.momDelta >= 0 ? 'sa-delta-up' : 'sa-delta-down'}>{a.momDelta >= 0 ? '▲' : '▼'} {Math.abs(a.momDelta).toFixed(0)}%</span>
             </div>
-            {wallet && wallet.forecastNext > 0 && (
-              <div style={{ color: 'var(--grey-400)', fontSize: '0.74rem', marginTop: 8 }}>Forecast Owed Next Statement: {fmt(wallet.forecastNext)}</div>
-            )}
+            <div style={{ color: 'var(--grey-400)', fontSize: '0.74rem', marginTop: 4 }}>Last Month: {fmt(a.lastMonthRevenue)}</div>
           </div>
         </div>
       </div>
@@ -447,9 +590,7 @@ export default function AgentSales({ orders, setOrders, agentId, userProfile }: 
                   background: hit ? 'rgba(0,255,157,0.12)' : 'rgba(255,255,255,0.04)',
                   color: hit ? '#00FF9D' : 'var(--grey-500)',
                   border: `1px solid ${hit ? 'rgba(0,255,157,0.35)' : 'rgba(255,255,255,0.08)'}`,
-                }}>
-                  {hit ? '★' : '○'} {m.label}
-                </span>
+                }}>{hit ? '★' : '○'} {m.label}</span>
               );
             })}
           </div>
@@ -470,7 +611,7 @@ export default function AgentSales({ orders, setOrders, agentId, userProfile }: 
       {/* ─────────────── KPI SNAPSHOT ─────────────── */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 'var(--space-4)' }}>
         <KpiCard label="Collected Revenue" value={fmt(a.lifetimeRevenue)} delta={a.revDelta30} deltaLabel="vs prior 30d" />
-        <KpiCard label="Total Profit" value={fmt(a.lifetimeProfit)} color="#00FF9D" />
+        <KpiCard label="Total Profit" value={fmt(a.lifetimeProfit)} color="#00FF9D" help={PROFIT_HELP} />
         <KpiCard label="Orders" value={String(a.lifetimeOrders)} delta={a.ordersDelta30} deltaLabel="vs prior 30d" color="#00E5FF" />
         <KpiCard label="Avg Order Value" value={fmt(a.aov)} />
         <KpiCard label="Repeat Buyer Rate" value={`${a.repeatRate.toFixed(0)}%`} sub={`${a.distinctBuyers} Buyers`} />
@@ -481,10 +622,14 @@ export default function AgentSales({ orders, setOrders, agentId, userProfile }: 
         <div className="metal-content" style={{ padding: 'var(--space-6)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10, marginBottom: 'var(--space-4)' }}>
             <h2 className="metal-text" style={{ fontSize: '1.15rem', fontFamily: 'var(--font-brand)', margin: 0 }}>Revenue And Profit</h2>
-            <div style={{ display: 'flex', gap: 6 }}>
-              {[7, 30, 90].map((r) => (
-                <button key={r} className={`sa-range-btn ${range === r ? 'active' : ''}`} onClick={() => setRange(r as 7 | 30 | 90)}>{r}D</button>
+            <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
+              {['7', '30', '90'].map((r) => (
+                <button key={r} className={`sa-range-btn ${view === r ? 'active' : ''}`} onClick={() => setView(r)}>{r}D</button>
               ))}
+              <select className="sa-month-select" value={view.startsWith('m') ? view : ''} onChange={(e) => e.target.value && setView(e.target.value)}>
+                <option value="">By Month…</option>
+                {monthOptions.map((m) => <option key={m.value} value={m.value}>{m.label}</option>)}
+              </select>
             </div>
           </div>
           <div style={{ width: '100%', height: 320 }}>
@@ -510,7 +655,6 @@ export default function AgentSales({ orders, setOrders, agentId, userProfile }: 
 
       {/* ─────────────── BREAKDOWNS ─────────────── */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 'var(--space-4)' }}>
-        {/* Product mix donut */}
         <div className="metal-frame">
           <div className="metal-content" style={{ padding: 'var(--space-6)' }}>
             <h2 className="metal-text" style={{ fontSize: '1.05rem', fontFamily: 'var(--font-brand)', margin: '0 0 12px' }}>Revenue By Product</h2>
@@ -540,7 +684,6 @@ export default function AgentSales({ orders, setOrders, agentId, userProfile }: 
           </div>
         </div>
 
-        {/* Payment method bars */}
         <div className="metal-frame">
           <div className="metal-content" style={{ padding: 'var(--space-6)' }}>
             <h2 className="metal-text" style={{ fontSize: '1.05rem', fontFamily: 'var(--font-brand)', margin: '0 0 12px' }}>Revenue By Payment Method</h2>
@@ -568,6 +711,41 @@ export default function AgentSales({ orders, setOrders, agentId, userProfile }: 
         </div>
       </div>
 
+      {/* ─────────────── MONTHLY PROFIT & LOSS ─────────────── */}
+      <div className="metal-frame">
+        <div className="metal-content" style={{ padding: 'var(--space-6)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8, marginBottom: 14 }}>
+            <h2 className="metal-text" style={{ fontSize: '1.15rem', fontFamily: 'var(--font-brand)', margin: 0 }}>
+              Monthly Profit &amp; Loss<span className="sa-info" title={PROFIT_HELP}>i</span>
+            </h2>
+            {a.pnl.length > 0 && (
+              <button onClick={exportPnlCsv} style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.18)', color: 'var(--white)', borderRadius: 10, padding: '9px 16px', fontWeight: 700, fontSize: '0.82rem', cursor: 'pointer' }}>Download Statement</button>
+            )}
+          </div>
+          {a.pnl.length > 0 ? (
+            <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
+              <table className="sa-table">
+                <thead>
+                  <tr><th>Month</th><th>Orders</th><th>Revenue</th><th>COGS</th><th>Shipping</th><th>Net Profit</th></tr>
+                </thead>
+                <tbody>
+                  {a.pnl.map((m) => (
+                    <tr key={m.tag}>
+                      <td style={{ color: 'var(--white)', fontWeight: 700 }}>{m.label}</td>
+                      <td>{m.orders}</td>
+                      <td>{fmt(m.revenue)}</td>
+                      <td>{fmt(m.cogs)}</td>
+                      <td>{fmt(m.shipping)}</td>
+                      <td style={{ color: '#00FF9D', fontWeight: 800 }}>{fmt(m.net)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : <p style={{ color: 'var(--grey-400)', fontSize: '0.85rem', margin: 0 }}>No Collected Sales Yet. Your Monthly P&amp;L Builds Here Automatically.</p>}
+        </div>
+      </div>
+
       {/* ─────────────── TOP PRODUCTS / RESEARCHERS ─────────────── */}
       {insights && (insights.topProducts?.length > 0 || insights.topBuyers?.length > 0) && (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 'var(--space-4)' }}>
@@ -579,7 +757,7 @@ export default function AgentSales({ orders, setOrders, agentId, userProfile }: 
       {/* ─────────────── ORDERS MANAGER ─────────────── */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
         <h2 className="metal-text" style={{ fontSize: '1.15rem', fontFamily: 'var(--font-brand)', margin: 0 }}>Orders</h2>
-        <button onClick={exportCsv} style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.18)', color: 'var(--white)', borderRadius: 10, padding: '9px 16px', fontWeight: 700, fontSize: '0.82rem', cursor: 'pointer' }}>Export CSV</button>
+        <button onClick={exportOrdersCsv} style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.18)', color: 'var(--white)', borderRadius: 10, padding: '9px 16px', fontWeight: 700, fontSize: '0.82rem', cursor: 'pointer' }}>Export Orders CSV</button>
       </div>
       <div style={{ minWidth: 0 }}>
         <AgentOrders orders={orders} setOrders={setOrders} />
@@ -598,11 +776,11 @@ export default function AgentSales({ orders, setOrders, agentId, userProfile }: 
 }
 
 // ── Small presentational helpers ──────────────────────────────────────────────
-function KpiCard({ label, value, delta, deltaLabel, sub, color }: { label: string; value: string; delta?: number; deltaLabel?: string; sub?: string; color?: string }) {
+function KpiCard({ label, value, delta, deltaLabel, sub, color, help }: { label: string; value: string; delta?: number; deltaLabel?: string; sub?: string; color?: string; help?: string }) {
   return (
     <div className="metal-frame">
       <div className="metal-content" style={{ padding: 'var(--space-5)' }}>
-        <div className="sa-label">{label}</div>
+        <div className="sa-label">{label}{help && <span className="sa-info" title={help}>i</span>}</div>
         <div className="sa-stat" style={{ marginTop: 6, color: color || 'var(--white)' }}>{value}</div>
         {typeof delta === 'number' && (
           <div className={delta >= 0 ? 'sa-delta-up' : 'sa-delta-down'} style={{ marginTop: 6 }}>
