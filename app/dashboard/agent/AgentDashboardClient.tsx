@@ -28,6 +28,7 @@ import PaymentMethodsPanel from '@/components/PaymentMethodsPanel';
 import AvatarUpload from '@/components/AvatarUpload';
 import { createPortal } from 'react-dom';
 import QRCodeGenerator from '@/components/QRCodeGenerator';
+import MyQRCodeModal from '@/components/MyQRCodeModal';
 
 
 interface Profile {
@@ -1651,52 +1652,7 @@ function ThemeToggleCard() {
         </button>
       </div>
 
-      {showQRModal && typeof document !== 'undefined' && createPortal(
-        <div style={{
-          position: 'fixed', inset: 0, zIndex: 999999,
-          background: 'rgba(5,10,15,0.95)',
-          backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)',
-          display: 'flex', flexDirection: 'column',
-          alignItems: 'center', justifyContent: 'center',
-          padding: '24px',
-        }}>
-          <button
-            onClick={() => setShowQRModal(false)}
-            style={{
-              position: 'absolute', top: 'max(24px, env(safe-area-inset-top))', right: 24,
-              background: 'rgba(255,255,255,0.1)', border: 'none', color: '#fff',
-              width: 36, height: 36, borderRadius: '50%',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              cursor: 'pointer', fontSize: '1.2rem'
-            }}
-          >
-            X
-          </button>
-          
-          <div style={{
-            background: 'var(--surface-2)',
-            padding: '40px 32px',
-            borderRadius: '24px',
-            border: '1px solid var(--border)',
-            display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 24,
-            boxShadow: '0 20px 40px rgba(0,0,0,0.5)',
-            maxWidth: 400, width: '100%'
-          }}>
-            <h2 style={{ fontSize: '1.25rem', fontWeight: 700, margin: 0, textAlign: 'center' }}>
-              My QR Code
-            </h2>
-            <QRCodeGenerator
-              url={typeof window !== 'undefined' ? `${window.location.origin}${userProfile?.role === 'sub_agent' ? `/invite?ref=${userProfile?.id}` : `/${agentProfile?.slug}`}` : ''}
-              qrCodeData={agentProfile?.qr_code_data}
-              size={240}
-            />
-            <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--silver)', textAlign: 'center', lineHeight: 1.5 }}>
-              Have your clients scan this code to {userProfile?.role === 'sub_agent' ? 'register under you' : 'visit your storefront'}!
-            </p>
-          </div>
-        </div>,
-        document.body
-      )}
+      <MyQRCodeModal open={showQRModal} onClose={() => setShowQRModal(false)} />
     </div>
   );
 }
