@@ -414,6 +414,14 @@ export async function POST(request: NextRequest) {
              costPrice = superAgentCost;
           }
 
+          // Gamification Markup (Super Agent -> Agent)
+          // The Agent pays the Super Agent's cost + Markup
+          if (agentProfile && !agentProfile.is_sub_agent) {
+             const { data: markupData } = await serviceSupabase.rpc('fn_agent_effective_markup', { p_agent: agentProfile.id });
+             const markupPct = Number(markupData) || 0;
+             costPrice = superAgentCost * (1 + (markupPct / 100));
+          }
+
         } else {
           const agentMultiplier = agentOverrides[dbProduct.id] ?? tierMultipliers[agentTier] ?? 1.7;
           // Agent self-buy at a regular agent's storefront: skip bulk pricing.

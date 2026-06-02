@@ -469,7 +469,7 @@ export default function AgentSales({ orders, setOrders, agentId, userProfile }: 
       `}} />
 
       {/* ─────────────── GLOBAL HEADER ─────────────── */}
-      <h2 style={{ fontSize: '1.4rem', margin: '0 0 var(--space-2) 0', fontFamily: 'var(--font-brand)' }}>Sales Performance</h2>
+      <h2 style={{ fontSize: '1.4rem', margin: '0 0 var(--space-2) 0', fontFamily: 'var(--font-brand)' }}>Sales &amp; Accounting</h2>
 
       {/* ─────────────── ACCOUNTING / MONEY STRIP ─────────────── */}
       <div className="sa-capitalize-all" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 'var(--space-4)' }}>

@@ -30,6 +30,32 @@ export async function getAllCompounds(): Promise<Compound[]> {
   return data.map((row) => coerceCompound(row as Record<string, unknown>));
 }
 
+/**
+ * Fetch many compounds at once, keyed by slug. Used by the storefront product
+ * display to embed the full monograph in each product detail without an extra
+ * client round-trip. Empty / missing slugs are ignored.
+ */
+export async function getCompoundsBySlugs(
+  slugs: Array<string | null | undefined>
+): Promise<Record<string, Compound>> {
+  const unique = Array.from(
+    new Set(slugs.filter((s): s is string => typeof s === 'string' && s.length > 0))
+  );
+  if (unique.length === 0) return {};
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from('compounds')
+    .select('*')
+    .in('slug', unique);
+  if (error || !data) return {};
+  const map: Record<string, Compound> = {};
+  for (const row of data) {
+    const c = coerceCompound(row as Record<string, unknown>);
+    map[c.slug] = c;
+  }
+  return map;
+}
+
 export async function getCompound(slug: string): Promise<Compound | null> {
   const supabase = await createClient();
   const { data, error } = await supabase
