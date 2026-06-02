@@ -49,6 +49,8 @@ interface ContextPayload {
     full_name: string | null;
     username: string | null;
     role: string | null;
+    is_super_agent?: boolean | null;
+    is_sub_agent?: boolean | null;
     email: string | null;
     created_at: string | null;
     last_sign_in_at: string | null;
@@ -101,6 +103,38 @@ function initials(name: string): string {
     .slice(0, 2)
     .map((p) => p[0]?.toUpperCase() || '')
     .join('') || 'R';
+}
+
+/**
+ * Resolve a single human-friendly role label from a profile's role enum +
+ * the is_super_agent / is_sub_agent flags. Super agents in this codebase
+ * have role='agent' AND is_super_agent=true, so the flags are the authority.
+ */
+function resolveRoleLabel(researcher: ContextPayload['researcher']): string | null {
+  if (!researcher) return null;
+  if (researcher.is_super_agent === true) return 'Super Agent';
+  if (researcher.is_sub_agent === true) return 'Sub Agent';
+  const role = (researcher.role || '').toLowerCase();
+  switch (role) {
+    case 'admin':
+      return 'Admin';
+    case 'agent':
+      return 'Agent';
+    case 'researcher':
+      return 'Researcher';
+    case 'super_agent':
+      return 'Super Agent';
+    case 'sub_agent':
+      return 'Sub Agent';
+    default:
+      if (!role) return null;
+      // Fallback: title-case the unknown role with spaces.
+      return role
+        .replace(/_/g, ' ')
+        .split(' ')
+        .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+        .join(' ');
+  }
 }
 
 function StatusPill({ status }: { status: string }) {
@@ -209,6 +243,8 @@ export default function SupportContextSidebar({
       || (r.username && r.username.trim())
       || 'Researcher';
   }, [data]);
+
+  const roleLabel = useMemo(() => resolveRoleLabel(data?.researcher), [data]);
 
   if (!show || !data) return null;
 
@@ -324,14 +360,29 @@ export default function SupportContextSidebar({
                 {initials(fullName)}
               </span>
               <div style={{ minWidth: 0, flex: 1 }}>
-                <div style={{ fontSize: '0.92rem', fontWeight: 800, overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                  {fullName}
-                </div>
-                <div style={{ fontSize: '0.74rem', color: 'var(--silver, #C0B8A8)' }}>
-                  {data.researcher?.username ? `@${data.researcher.username}` : data.researcher?.email || ''}
-                </div>
-                <div style={{ marginTop: 4, display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                  {data.researcher?.role && (
+                {/* Display name + role pill on the same row.
+                    The pill is inline-flex so it never wraps under the name. */}
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 8,
+                    minWidth: 0,
+                  }}
+                >
+                  <span
+                    style={{
+                      fontSize: '0.92rem',
+                      fontWeight: 800,
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap',
+                      minWidth: 0,
+                    }}
+                  >
+                    {fullName}
+                  </span>
+                  {roleLabel && (
                     <span
                       style={{
                         display: 'inline-block',
@@ -344,11 +395,16 @@ export default function SupportContextSidebar({
                         fontWeight: 800,
                         letterSpacing: '0.04em',
                         textTransform: 'uppercase',
+                        whiteSpace: 'nowrap',
+                        flexShrink: 0,
                       }}
                     >
-                      {data.researcher.role.replace(/_/g, ' ')}
+                      {roleLabel}
                     </span>
                   )}
+                </div>
+                <div style={{ fontSize: '0.74rem', color: 'var(--silver, #C0B8A8)' }}>
+                  {data.researcher?.username ? `@${data.researcher.username}` : data.researcher?.email || ''}
                 </div>
               </div>
             </div>
