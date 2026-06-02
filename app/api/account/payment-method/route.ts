@@ -57,15 +57,32 @@ export async function GET() {
 
   const { data, error } = await supabase
     .from('profiles')
-    .select('default_payment_method, payment_handles')
+    .select(`
+      default_payment_method, 
+      payment_handles,
+      agent_profiles ( payment_handles )
+    `)
     .eq('id', user.id)
     .maybeSingle();
 
   if (error) return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
+
+  const profileHandles = (data?.payment_handles as Record<string, string> | null) ?? {};
+  
+  // Safely extract agent handles if they exist (Supabase might return array or object)
+  let agentHandles: Record<string, string> = {};
+  if (data?.agent_profiles) {
+    const ap = Array.isArray(data.agent_profiles) ? data.agent_profiles[0] : data.agent_profiles;
+    agentHandles = (ap?.payment_handles as Record<string, string> | null) ?? {};
+  }
+
+  // Merge so that if they haven't set it in their buyer profile, their agent setup carries over
+  const mergedHandles = { ...agentHandles, ...profileHandles };
+
   return NextResponse.json({
     data: {
       default_payment_method: data?.default_payment_method ?? null,
-      payment_handles: (data?.payment_handles as Record<string, string> | null) ?? {},
+      payment_handles: mergedHandles,
     },
   });
 }
@@ -104,5 +121,14 @@ export async function PUT(req: NextRequest) {
     .eq('id', user.id);
 
   if (error) return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
+
+  // Sync to agent_profiles globally if they are an agent
+  if (update.payment_handles !== undefined) {
+    await supabase
+      .from('agent_profiles')
+      .update({ payment_handles: update.payment_handles })
+      .eq('id', user.id);
+  }
+
   return NextResponse.json({ ok: true });
 }

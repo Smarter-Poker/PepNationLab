@@ -90,7 +90,6 @@ export default function SubAgentDashboardClient({ data, onRefresh }: { data: Ove
     { id: 'Researchers', type: 'tab', label: 'Researchers', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /></svg> },
     { id: 'qr', type: 'action', label: 'My Invite QR', action: () => { setIsMobileMenuOpen(false); requestAnimationFrame(() => setShowQRModal(true)); }, icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" /><rect x="3" y="14" width="7" height="7" /><rect x="14" y="14" width="3" height="3" /><rect x="19" y="14" width="2" height="2" /><rect x="14" y="19" width="2" height="2" /><rect x="19" y="19" width="2" height="2" /></svg> },
     { id: 'Orders', type: 'tab', label: 'Orders', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path><line x1="3" y1="6" x2="21" y2="6"></line><path d="M16 10a4 4 0 0 1-8 0"></path></svg> },
-    { id: 'Sales & Accounting', type: 'tab', label: 'Sales & Accounting', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17" /><polyline points="16 7 22 7 22 13" /></svg> },
     { id: 'wallet', type: 'link', label: 'Wallet', href: '/wallet', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4" /><path d="M3 5v14a2 2 0 0 0 2 2h16v-5" /><path d="M18 12a2 2 0 0 0 0 4h4v-4Z" /></svg> },
     { id: 'messenger', type: 'link', label: 'Messenger', href: '/messenger', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg> },
     { id: 'Settings', type: 'link', label: 'Account Settings', href: '/account', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" /></svg> },
@@ -353,52 +352,6 @@ export default function SubAgentDashboardClient({ data, onRefresh }: { data: Ove
             )}
 
             {/* Sales & Accounting Tab */}
-            {activeTab === 'Sales & Accounting' && (
-              <div style={{ animation: 'fadeIn 0.3s ease-out' }}>
-                <h1 style={{ fontSize: '24px', marginBottom: '16px' }}>Sales & Accounting</h1>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 'var(--space-4)', marginBottom: 'var(--space-6)' }}>
-                  <WalletCard />
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
-                    <div className="metal-frame">
-                      <div className="metal-content" style={{ padding: 'var(--space-6)' }}>
-                        <div style={{ fontSize: '14px', opacity: 0.7, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px' }}>Pending Commission (This Week)</div>
-                        <div style={{ fontSize: '32px', fontWeight: 800, color: 'var(--teal)', textShadow: '0 0 10px rgba(0,196,188,0.3)' }}>{fmtMoney(data.pending_commission)}</div>
-                        <div style={{ fontSize: '12px', opacity: 0.6, marginTop: '8px' }}>Will be settled to your Wallet on Monday at 2am ET.</div>
-                      </div>
-                    </div>
-                    <div className="metal-frame">
-                      <div className="metal-content" style={{ padding: 'var(--space-6)' }}>
-                        <div style={{ fontSize: '14px', opacity: 0.7, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px' }}>Lifetime Commission Earned</div>
-                        <div style={{ fontSize: '24px', fontWeight: 700 }}>{fmtMoney(data.lifetime_commission)}</div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <div className="metal-frame">
-                  <div className="metal-content" style={{ padding: 'var(--space-6)' }}>
-                    <h3 style={{ fontSize: '14px', opacity: 0.7, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '16px' }}>Recent Weekly Settlements</h3>
-                    {data.recent_settlements.length === 0 ? (
-                      <p style={{ opacity: 0.7 }}>No weekly settlements yet.</p>
-                    ) : (
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                        {data.recent_settlements.map(s => (
-                          <div key={s.id} style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: '16px', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
-                            <div>
-                              <div style={{ fontWeight: 600 }}>Week of {fmtDate(s.week_start)}</div>
-                              <div style={{ fontSize: '13px', opacity: 0.7 }}>Settled {fmtDate(s.settled_at)} &bull; {s.orders_count} Orders</div>
-                            </div>
-                            <div style={{ textAlign: 'right' }}>
-                              <div style={{ fontWeight: 600, color: 'var(--teal)' }}>+{fmtMoney(s.total_commission)}</div>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-            )}
-
           </div>
         </div>
       </div>

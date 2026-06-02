@@ -296,6 +296,9 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
     if (Array.isArray(body.custom_commission_scale)) {
       updates.commission_ladder_config = body.custom_commission_scale;
       changes.commission_ladder_config = body.custom_commission_scale;
+    } else if (body.custom_commission_scale === null) {
+      updates.commission_ladder_config = null;
+      changes.commission_ladder_config = null;
     }
 
     if (typeof body.is_active === 'boolean') {
@@ -337,10 +340,12 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
       if (Array.isArray(body.custom_commission_scale)) {
         await supabase.from('sub_agent_commission_plan').upsert({
           sub_agent_id: id,
-          super_agent_id: gate.callerId,
+          super_agent_id: target.parent_agent_id || gate.callerId,
           steps: body.custom_commission_scale,
           updated_at: new Date().toISOString(),
         });
+      } else if (body.custom_commission_scale === null) {
+        await supabase.from('sub_agent_commission_plan').delete().eq('sub_agent_id', id);
       }
       
       if (updates.email) {

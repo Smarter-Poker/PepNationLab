@@ -241,7 +241,7 @@ export default function AgentAccountDetail({
         // Gamification scale: cap above base lets the ladder lift the rate.
         payload.commission_max_pct = scaleType === 'custom' ? customSteps[4].bonus_pct : (maxCap === '' ? null : maxCap);
         payload.velocity_cap = velocityCap === '' ? null : velocityCap;
-        payload.custom_commission_scale = scaleType === 'custom' ? customSteps.map(s => ({ min_volume: s.min_volume, bonus_pct: Math.max(0, s.bonus_pct - baseVal) })) : undefined;
+        payload.custom_commission_scale = scaleType === 'custom' ? customSteps.map(s => ({ min_volume: s.min_volume, bonus_pct: Math.max(0, s.bonus_pct - baseVal) })) : null;
       }
       if (accountType === 'credit') payload.credit_limit = creditLimit === '' ? 0 : creditLimit;
 

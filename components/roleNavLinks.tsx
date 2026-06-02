@@ -122,7 +122,6 @@ const SUBAGENT_LINKS: RoleNavLink[] = [
   { href: '/wallet', label: 'Wallet', icon: ICON.wallet },
   { href: '#SHOW_QR', label: 'My Invite QR', icon: ICON.qr },
   { href: subTab('Orders'), label: 'Orders', icon: ICON.orders },
-  { href: subTab('Sales & Accounting'), label: 'Sales & Accounting', icon: ICON.sales },
   { href: '/messenger', label: 'Messenger', icon: ICON.messenger },
   { href: '/account', label: 'Account Settings', icon: ICON.gear },
 ];

@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 import { createClient } from '@/lib/supabase/client';
 import ViewAsButton from '@/components/ViewAsButton';
 import AdminTierOverrideControl from '@/components/AdminTierOverrideControl';
+import AgentAccountDetail from '@/components/AgentAccountDetail';
 
 export default function AdminAgents() {
   const [agents, setAgents] = useState<any[]>([]);
@@ -23,16 +24,7 @@ export default function AdminAgents() {
   const [passwordSaving, setPasswordSaving] = useState(false);
 
   // Modal State — Edit Account Details
-  const [editingAccountAgent, setEditingAccountAgent] = useState<any | null>(null);
-  const [accountForm, setAccountForm] = useState({
-    firstName: '',
-    lastName: '',
-    is_active: true,
-    account_type: 'prepaid',
-    credit_limit: '',
-    prepaid_balance: '',
-  });
-  const [accountSaving, setAccountSaving] = useState(false);
+  const [editingFullAgent, setEditingFullAgent] = useState<{ id: string; name: string } | null>(null);
 
   // Inline Tier Editing
   const [tierEditing, setTierEditing] = useState<Set<string>>(new Set());
@@ -255,47 +247,7 @@ export default function AdminAgents() {
   };
 
   const openEditAccountModal = (agent: any) => {
-    setEditingAccountAgent(agent);
-    setAccountForm({
-      firstName: agent.first_name || agent.full_name?.split(' ')[0] || '',
-      lastName: agent.last_name || agent.full_name?.split(' ').slice(1).join(' ') || '',
-      is_active: agent.is_active,
-      account_type: agent.account_type || 'prepaid',
-      credit_limit: agent.credit_limit !== null ? String(agent.credit_limit) : '',
-      prepaid_balance: agent.prepaid_balance !== null ? String(agent.prepaid_balance) : '0',
-    });
-  };
-
-  const handleSaveAccount = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!editingAccountAgent) return;
-    setAccountSaving(true);
-    try {
-      const res = await fetch('/api/admin/agents/update-agent', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          id: editingAccountAgent.id,
-          firstName: accountForm.firstName.trim(),
-          lastName: accountForm.lastName.trim(),
-          full_name: `${accountForm.firstName.trim()} ${accountForm.lastName.trim()}`,
-          is_active: accountForm.is_active,
-          account_type: accountForm.account_type,
-          credit_limit: accountForm.credit_limit,
-          prepaid_balance: accountForm.prepaid_balance,
-        })
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed to update agent');
-      
-      toast.success('Agent Details Updated Successfully');
-      setEditingAccountAgent(null);
-      fetchAgents();
-    } catch (err: any) {
-      toast.error(err.message);
-    } finally {
-      setAccountSaving(false);
-    }
+    setEditingFullAgent({ id: agent.id, name: agent.full_name || agent.username || 'Agent' });
   };
 
   const handleToggleTrust = async (targetUserId: string, currentStatus: boolean) => {
@@ -729,98 +681,16 @@ export default function AdminAgents() {
         </div>
       )}
 
-      {/* Edit Account Settings Modal */}
-      {editingAccountAgent && (
-        <div style={{
-          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-          background: 'rgba(0,0,0,0.8)', zIndex: 1000,
-          display: 'flex', alignItems: 'center', justifyContent: 'center'
-        }}>
-          <div className="metal-frame" style={{ width: '100%', maxWidth: 450 }}>
-            <div className="metal-content" style={{ padding: 'var(--space-6)' }}>
-              <h3 className="metal-text" style={{ marginTop: 0, marginBottom: 'var(--space-4)', color: '#fff', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                Edit Agent Details
-              </h3>
-              <form onSubmit={handleSaveAccount}>
-                <div className="form-group" style={{ marginBottom: 'var(--space-4)' }}>
-                  <label className="form-label">First Name</label>
-                  <input 
-                    type="text" 
-                    className="form-input" 
-                    value={accountForm.firstName} 
-                    onChange={e => setAccountForm(prev => ({ ...prev, firstName: e.target.value }))} 
-                    required
-                  />
-                </div>
-                <div className="form-group" style={{ marginBottom: 'var(--space-4)' }}>
-                  <label className="form-label">Last Name</label>
-                  <input 
-                    type="text" 
-                    className="form-input" 
-                    value={accountForm.lastName} 
-                    onChange={e => setAccountForm(prev => ({ ...prev, lastName: e.target.value }))} 
-                    required
-                  />
-                </div>
-                
-                <div className="form-group" style={{ marginBottom: 'var(--space-4)' }}>
-                  <label className="form-label">Account Status</label>
-                  <select 
-                    className="form-input"
-                    value={accountForm.is_active ? 'active' : 'inactive'}
-                    onChange={e => setAccountForm(prev => ({ ...prev, is_active: e.target.value === 'active' }))}
-                  >
-                    <option value="active">Active (Can Login & Sell)</option>
-                    <option value="inactive">Inactive (Suspended)</option>
-                  </select>
-                </div>
-
-                <div className="form-group" style={{ marginBottom: 'var(--space-4)' }}>
-                  <label className="form-label">Account Billing Type</label>
-                  <select 
-                    className="form-input"
-                    value={accountForm.account_type}
-                    onChange={e => setAccountForm(prev => ({ ...prev, account_type: e.target.value }))}
-                  >
-                    <option value="prepaid">Prepaid Balance</option>
-                    <option value="credit">Line of Credit</option>
-                  </select>
-                </div>
-
-                {accountForm.account_type === 'prepaid' ? (
-                  <div className="form-group" style={{ marginBottom: 'var(--space-6)' }}>
-                    <label className="form-label">Prepaid Balance ($)</label>
-                    <input 
-                      type="number" step="0.01"
-                      className="form-input" 
-                      value={accountForm.prepaid_balance} 
-                      onChange={e => setAccountForm(prev => ({ ...prev, prepaid_balance: e.target.value }))} 
-                    />
-                  </div>
-                ) : (
-                  <div className="form-group" style={{ marginBottom: 'var(--space-6)' }}>
-                    <label className="form-label">Credit Limit ($)</label>
-                    <input 
-                      type="number" step="0.01"
-                      className="form-input" 
-                      value={accountForm.credit_limit} 
-                      onChange={e => setAccountForm(prev => ({ ...prev, credit_limit: e.target.value }))} 
-                    />
-                  </div>
-                )}
-
-                <div style={{ display: 'flex', gap: 'var(--space-3)', justifyContent: 'flex-end' }}>
-                  <button type="button" className="btn-silver" onClick={() => setEditingAccountAgent(null)} disabled={accountSaving}>
-                    Cancel
-                  </button>
-                  <button type="submit" className="btn-neon-cyan" disabled={accountSaving}>
-                    {accountSaving ? 'Saving...' : 'Save Changes'}
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        </div>
+      {/* Edit Account Settings Drawer */}
+      {editingFullAgent && (
+        <AgentAccountDetail
+          agentId={editingFullAgent.id}
+          agentName={editingFullAgent.name}
+          onClose={() => setEditingFullAgent(null)}
+          onChanged={() => {
+            fetchAgents();
+          }}
+        />
       )}
 
       {/* Create Agent Modal */}
