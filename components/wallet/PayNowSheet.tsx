@@ -2,9 +2,7 @@
 
 import { useState } from 'react';
 import { toast } from 'sonner';
-
-const money = (n: number) =>
-  new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 2 }).format(Number(n) || 0);
+import { money, fmtDate } from './format';
 
 const HANDLES = ['zelle', 'venmo', 'cashapp', 'apple_pay'] as const;
 type Handle = (typeof HANDLES)[number];
@@ -74,7 +72,7 @@ export default function PayNowSheet({
                   border: '1px solid rgba(255,255,255,0.1)', fontSize: '16px',
                 }}>
                 {openStatements.map((s: any) => (
-                  <option key={s.id} value={s.id}>Week Of {s.week_start} — {money(Number(s.total_owed || 0))}</option>
+                  <option key={s.id} value={s.id}>Week Of {fmtDate(s.week_start)} — {money(Number(s.total_owed || 0))}</option>
                 ))}
               </select>
             </div>

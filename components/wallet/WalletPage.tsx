@@ -7,6 +7,7 @@ import StatementDetailModal from './StatementDetailModal';
 import CommissionsTab from './CommissionsTab';
 import ReceiptVault from './ReceiptVault';
 import CreditIncreaseForm from './CreditIncreaseForm';
+import WalletSettings from './WalletSettings';
 
 const money = (n: number) =>
   new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 2 }).format(Number(n) || 0);
@@ -359,13 +360,7 @@ export default function WalletPage({
 
         {tab === 'commissions' && <CommissionsTab />}
         {tab === 'receipts' && <ReceiptVault />}
-        {tab === 'settings' && (
-          <section className="card-glass" style={{ padding: 16, borderRadius: 12 }}>
-            <h3 style={{ color: 'var(--white)', marginTop: 0 }}>Settings</h3>
-            <p style={{ color: 'var(--grey-400)' }}>Payment Handle Editor And Auto-Pay Toggle Live On The Account Page.</p>
-            <a href="/account/settings" style={{ color: 'var(--teal)', fontWeight: 700 }}>Open Account Settings →</a>
-          </section>
-        )}
+        {tab === 'settings' && <WalletSettings />}
       </div>
 
       {payOpen && (

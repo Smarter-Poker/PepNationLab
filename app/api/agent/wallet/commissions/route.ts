@@ -1,5 +1,7 @@
-// R24 hotfix — Wallet commissions. Uses real agent_commissions schema
-// (agent_id, commission_amount NUMERIC dollars, status enum: pending/approved/paid/void).
+// Wallet commissions — reads the real sub_agent_commission_ledger.
+// Schema: sub_agent_id, order_id, commission_pct, gross_product_subtotal,
+// commission_amount (NUMERIC dollars), status text CHECK in (pending|settled|voided),
+// accrued_at, settled_at, voided_at.
 import { NextResponse } from 'next/server';
 import { createClient, createServiceClient } from '@/lib/supabase/server';
 
@@ -13,16 +15,29 @@ export async function GET() {
 
   const svc = await createServiceClient();
   const { data: rows, error } = await svc
-    .from('agent_commissions')
-    .select('id, agent_id, order_id, commission_rate, commission_amount, status, created_at')
-    .eq('agent_id', user.id)
-    .order('created_at', { ascending: false })
+    .from('sub_agent_commission_ledger')
+    .select('id, order_id, commission_pct, gross_product_subtotal, commission_amount, status, accrued_at, settled_at')
+    .eq('sub_agent_id', user.id)
+    .order('accrued_at', { ascending: false })
     .limit(500);
 
   if (error) return NextResponse.json({ pending: [], settled: [], totals: { pending: 0, settled: 0 } });
 
-  const pending = (rows ?? []).filter((r: any) => ['pending', 'approved'].includes(r.status));
-  const settled = (rows ?? []).filter((r: any) => r.status === 'paid');
+  // Normalize a `date` field (settled rows show settled_at, otherwise accrued_at)
+  // so the client renders one consistent column regardless of bucket.
+  const norm = (r: any) => ({
+    id: r.id,
+    order_id: r.order_id,
+    commission_pct: r.commission_pct,
+    gross_product_subtotal: r.gross_product_subtotal,
+    commission_amount: r.commission_amount,
+    status: r.status,
+    date: r.status === 'settled' ? (r.settled_at ?? r.accrued_at) : r.accrued_at,
+  });
+
+  const all = (rows ?? []).map(norm);
+  const pending = all.filter((r: any) => r.status === 'pending');
+  const settled = all.filter((r: any) => r.status === 'settled');
   const totalPending = pending.reduce((s: number, r: any) => s + Number(r.commission_amount ?? 0), 0);
   const totalSettled = settled.reduce((s: number, r: any) => s + Number(r.commission_amount ?? 0), 0);
 
