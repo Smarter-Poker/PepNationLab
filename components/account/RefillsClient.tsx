@@ -77,8 +77,8 @@ export default function RefillsClient() {
     setReordering(orderId);
     try {
       // Resolve the past order's items against the CURRENT catalog/pricing. This
-      // does NOT create an order. We drop the items into the storefront cart and
-      // send the buyer straight to /checkout for a full-screen review.
+      // does NOT create an order. We merge the items into the storefront cart and
+      // send the buyer to the cart to review, add more, and check out.
       const res = await fetch(`/api/researcher/orders/${orderId}/reorder-cart`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -95,40 +95,47 @@ export default function RefillsClient() {
 
       if (items.length === 0) throw new Error('No Items Available To Reorder.');
 
-      const canStash = !!agentSlug && Object.keys(cartMap).length > 0;
-
       // CRITICAL: a reorder must only ever ADD to the cart — it must NEVER replace
-      // or empty whatever the buyer already has. So we do NOT overwrite the live cart
-      // keys (cart_<slug> / pnl_storefront_cart_<slug>) here, where a stale read could
-      // clobber the existing cart. Instead we stash the additions in a transient key.
-      // The storefront grid, on mount, reads its existing cart as the source of truth
-      // and ADDS this payload on top (see AgentStorefrontGrid mount-merge effect).
+      // or empty whatever the buyer already has. We merge the reorder items into the
+      // existing cart for THIS storefront, combining quantities for items already
+      // present. We write BOTH cart representations so the items show up whether the
+      // buyer lands on the storefront cart (cart_<slug>, qty map) or the checkout
+      // review (pnl_storefront_cart_<slug>, full item objects). Existing entries are
+      // preserved in every case.
+      const cartKey = agentSlug ? `pnl_storefront_cart_${agentSlug}` : 'pnl_storefront_cart';
       try {
-        if (canStash) {
-          let pending: Record<string, number> = {};
-          const rawPending = localStorage.getItem(`pnl_reorder_add_${agentSlug}`);
-          if (rawPending) { try { pending = JSON.parse(rawPending) || {}; } catch { pending = {}; } }
-          for (const [apId, qty] of Object.entries(cartMap)) {
-            pending[apId] = (Number(pending[apId]) || 0) + Number(qty);
-          }
-          localStorage.setItem(`pnl_reorder_add_${agentSlug}`, JSON.stringify(pending));
-        } else {
-          // No storefront slug (or no resolvable storefront variants) — fall back to
-          // the legacy checkout cart, still merging additively into anything present.
-          const cartKey = 'pnl_storefront_cart';
-          let existing: any[] = [];
-          const raw = localStorage.getItem(cartKey);
-          if (raw) {
-            const parsed = JSON.parse(raw);
-            existing = Array.isArray(parsed?.items) ? parsed.items : Array.isArray(parsed) ? parsed : [];
-          }
-          const byId = new Map<string, any>(existing.map((i) => [i.id, { ...i }]));
-          for (const it of items) {
-            const ex = byId.get(it.id);
-            if (ex) ex.quantity = (Number(ex.quantity) || 0) + it.quantity;
-            else byId.set(it.id, it);
-          }
-          localStorage.setItem(cartKey, JSON.stringify({ items: Array.from(byId.values()), _savedAt: Date.now() }));
+        // 1) Full item objects -> the checkout-review cart (additive by product id).
+        let existing: any[] = [];
+        const raw = localStorage.getItem(cartKey);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          existing = Array.isArray(parsed?.items) ? parsed.items : Array.isArray(parsed) ? parsed : [];
+        }
+        const byId = new Map<string, any>(existing.map((i) => [i.id, { ...i }]));
+        for (const it of items) {
+          const ex = byId.get(it.id);
+          if (ex) ex.quantity = (Number(ex.quantity) || 0) + it.quantity;
+          else byId.set(it.id, it);
+        }
+        localStorage.setItem(cartKey, JSON.stringify({ items: Array.from(byId.values()), _savedAt: Date.now() }));
+
+        // 2) Quantity map -> the storefront grid cart (additive by agent_product id).
+        if (agentSlug && Object.keys(cartMap).length > 0) {
+          let m: Record<string, number> = {};
+          const rawMap = localStorage.getItem(`cart_${agentSlug}`);
+          if (rawMap) { try { m = JSON.parse(rawMap) || {}; } catch { m = {}; } }
+          for (const [apId, qty] of Object.entries(cartMap)) m[apId] = (Number(m[apId]) || 0) + Number(qty);
+          localStorage.setItem(`cart_${agentSlug}`, JSON.stringify(m));
+          // Clear any stale transient stash so the grid's mount-merge cannot re-add
+          // these items on top of the cart we just merged (no double-counting).
+          localStorage.removeItem(`pnl_reorder_add_${agentSlug}`);
+        }
+
+        // Prevent cross-agent cart contamination (a buyer transacts with one storefront).
+        if (agentSlug) {
+          Object.keys(localStorage)
+            .filter((k) => k.startsWith('pnl_storefront_cart_') && k !== cartKey)
+            .forEach((k) => localStorage.removeItem(k));
         }
       } catch { /* localStorage may be unavailable — fall through to redirect */ }
 
@@ -138,9 +145,9 @@ export default function RefillsClient() {
         });
       }
       toast.success('Added To Cart. Review Your Order And Add More If You Like.');
-      // Drop the buyer into the full-screen checkout view of their cart so they
-      // immediately see the just-added items + anything they already had.
-      router.push(agentSlug ? `/checkout?agent=${encodeURIComponent(agentSlug)}` : '/checkout');
+      // Land on the agent's storefront with the full-screen cart opened (?cart=1) so the
+      // buyer can review with images, add more, and adjust before checkout.
+      router.push(agentSlug ? `/${encodeURIComponent(agentSlug)}?cart=1` : '/checkout');
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Reorder Failed.');
     } finally {
@@ -166,7 +173,7 @@ export default function RefillsClient() {
           Order History And Reorders
         </h1>
         <p style={{ color: 'var(--silver)', fontSize: '0.92rem', marginBottom: 'var(--space-6)' }}>
-          Browse Your Past Orders. Tap Reorder To Add A Protocol Back To Your Cart — You’ll Drop Straight Into Checkout To Review, Edit, And Add More.
+          Browse Your Past Orders. Tap Reorder To Add A Past Order Back To Your Cart, Then Review, Edit, And Add More Before Checkout.
         </p>
 
         {dueOrder && (
