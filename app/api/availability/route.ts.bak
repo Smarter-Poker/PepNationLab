@@ -129,11 +129,10 @@ async function logFailedAttempt(
 ) {
   // Fire-and-forget — never block the response on the audit write. The
   // route's primary job is to answer the user; the log is best-effort.
-  try {
-    await supabase.from('availability_failed_attempts').insert(payload);
-  } catch (err: any) {
-    console.warn('[availability] audit insert failed:', err?.message || err);
-  }
+  supabase.from('availability_failed_attempts').insert(payload).then(
+    () => {},
+    (err) => console.warn('[availability] audit insert failed:', err?.message || err),
+  );
 }
 
 async function findSimilarExisting(

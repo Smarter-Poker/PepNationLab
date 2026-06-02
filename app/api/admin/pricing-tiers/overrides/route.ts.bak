@@ -84,7 +84,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
   }
 
-  await supabase.from('admin_audit_log').insert({
+  void supabase.from('admin_audit_log').insert({
     actor_id: gate.userId,
     action: 'product_tier_override_set',
     entity_type: 'product_tier_override',
@@ -124,7 +124,7 @@ export async function DELETE(req: NextRequest) {
     return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
   }
 
-  await supabase.from('admin_audit_log').insert({
+  void supabase.from('admin_audit_log').insert({
     actor_id: gate.userId,
     action: 'product_tier_override_removed',
     entity_type: 'product_tier_override',
