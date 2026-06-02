@@ -104,7 +104,7 @@ function agentLinks(isSuper: boolean, storefrontHref: string): RoleNavLink[] {
     { href: agentTab('Research Bundles'), label: 'Bundles + Stacks', icon: <svg {...ip}><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" /><polyline points="3.27 6.96 12 12.01 20.73 6.96" /><line x1="12" y1="22.08" x2="12" y2="12" /></svg> },
     { href: '#SHOW_QR', label: 'My QR Code', icon: ICON.qr },
     { href: '/messenger', label: 'Messenger', icon: <svg {...ip}><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg> },
-    { href: agentTab('Settings'), label: 'Account Settings', icon: <svg {...ip}><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /></svg> },
+    { href: '/account', label: 'Account Settings', icon: <svg {...ip}><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /></svg> },
     { href: '/account/security', label: 'Account Security', icon: <svg {...ip}><rect x="3" y="11" width="18" height="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></svg> },
   ];
 }
@@ -116,7 +116,7 @@ const SUBAGENT_LINKS: RoleNavLink[] = [
   { href: subTab('Orders'), label: 'Orders', icon: ICON.orders },
   { href: subTab('Sales & Accounting'), label: 'Sales & Accounting', icon: ICON.sales },
   { href: '/messenger', label: 'Messenger', icon: ICON.messenger },
-  { href: '/account/notifications', label: 'Account Settings', icon: ICON.gear },
+  { href: '/account', label: 'Account Settings', icon: ICON.gear },
   { href: '/account/security', label: 'Account Security', icon: ICON.lock },
 ];
 
