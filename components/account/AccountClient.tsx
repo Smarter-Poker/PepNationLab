@@ -54,7 +54,7 @@ export default function AccountClient({
   userEmail,
   initialProfile,
   initialAgentProfile,
-  basePath = '/account/settings',
+  basePath = '/account',
 }: Props) {
   const router = useRouter();
   const searchParams = useSearchParams();

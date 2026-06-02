@@ -275,7 +275,7 @@ export async function POST(request: NextRequest) {
     const wholesaleExplicit = explicitWholesale === true &&
       (profile.role === 'agent' || profile.role === 'super_agent') &&
       !isSubAgent;
-    const flashSaleEligible = !isAgentSelfBuy && !wholesaleExplicit;
+    const flashSaleEligible = !isAgentSelfBuy && !isSubAgent && !wholesaleExplicit;
     let flashSaleDiscountPct = 0;
     if (flashSaleEligible) {
       const nowIso = new Date().toISOString();
@@ -364,8 +364,8 @@ export async function POST(request: NextRequest) {
 
       let retailPrice = 0;
 
-      if (isAgentSelfBuy) {
-        // costPrice path; retail will be set below
+      if (isAgentSelfBuy || isSubAgent) {
+        // costPrice path; retail collapses to cost for wholesale buyers below.
       } else if (agentCustomRetail[dbProduct.id]) {
         retailPrice = agentCustomRetail[dbProduct.id];
       } else {
@@ -384,20 +384,28 @@ export async function POST(request: NextRequest) {
 
       let costPrice = retailPrice;
       let superAgentCost = null;
+      // Wholesale buyers (agent self-buy + sub-agents) always pay flat tier
+      // cost — no volume/bulk discount and no retail markup. Dynamic pricing
+      // applies to researchers only.
+      const isWholesalePurchase = isAgentSelfBuy || isSubAgent;
 
       if (agentProfile) {
         if (superAgentProfile) {
           const saMultiplier = superAgentOverrides[dbProduct.id] ?? tierMultipliers[superAgentProfile.tier || 'tier_3'] ?? 1.7;
-          superAgentCost = applyBulkPrice(
-            baseCost * saMultiplier / 10,
-            itemQty,
-            dbProduct.admin_bulk_price != null ? dbProduct.admin_bulk_price / 10 : null,
-            dbProduct.admin_bulk_threshold
-          );
+          superAgentCost = isWholesalePurchase
+            ? (baseCost * saMultiplier / 10)
+            : applyBulkPrice(
+                baseCost * saMultiplier / 10,
+                itemQty,
+                dbProduct.admin_bulk_price != null ? dbProduct.admin_bulk_price / 10 : null,
+                dbProduct.admin_bulk_threshold
+              );
 
           const saConfig = superAgentBaselines[dbProduct.id];
           if (saConfig) {
-             if (saConfig.bulk_baseline_cost !== null && itemQty >= saConfig.bulk_threshold) {
+             // Sub-agents do not get the bulk_baseline_cost break; they always
+             // pay the baseline tier their parent has set.
+             if (!isWholesalePurchase && saConfig.bulk_baseline_cost !== null && itemQty >= saConfig.bulk_threshold) {
                  costPrice = saConfig.bulk_baseline_cost;
              } else {
                  costPrice = saConfig.baseline_cost;
@@ -408,23 +416,24 @@ export async function POST(request: NextRequest) {
 
         } else {
           const agentMultiplier = agentOverrides[dbProduct.id] ?? tierMultipliers[agentTier] ?? 1.7;
-          costPrice = applyBulkPrice(
-            baseCost * agentMultiplier / 10,
-            itemQty,
-            dbProduct.admin_bulk_price != null ? dbProduct.admin_bulk_price / 10 : null,
-            dbProduct.admin_bulk_threshold
-          );
+          // Agent self-buy at a regular agent's storefront: skip bulk pricing.
+          // Researcher buying through the agent: keep bulk pricing.
+          costPrice = isWholesalePurchase
+            ? (baseCost * agentMultiplier / 10)
+            : applyBulkPrice(
+                baseCost * agentMultiplier / 10,
+                itemQty,
+                dbProduct.admin_bulk_price != null ? dbProduct.admin_bulk_price / 10 : null,
+                dbProduct.admin_bulk_threshold
+              );
         }
       }
 
-      if (isAgentSelfBuy) {
-        if (itemQty >= 10) {
-          retailPrice = costPrice;
-        } else {
-          const retailMultiplier = tierMultipliers['tier_3'] ?? 1.7;
-          retailPrice = baseCost * retailMultiplier / 10;
-          costPrice = retailPrice;
-        }
+      // Wholesale buyers always pay tier cost flat. retailPrice collapses to
+      // costPrice so the order line records what they actually paid. Spread on
+      // a sub-agent's sale to a researcher flows via accrue_sub_agent_commission.
+      if (isWholesalePurchase) {
+        retailPrice = costPrice;
       }
 
       // fix-57 #2: Flash sale discount applies to retail buyers, not wholesale.

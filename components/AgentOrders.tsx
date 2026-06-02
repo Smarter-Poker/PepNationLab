@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 import AgentManualOrder from './AgentManualOrder';
 import { carrierInfo } from '@/lib/carrier';
 import AgentPaymentProofs from './AgentPaymentProofs';
+import { paymentMethodLabel } from '@/lib/payment-method-labels';
 
 interface Order {
   id: string;
@@ -52,12 +53,6 @@ const STATUS_LABEL: Record<string, string> = {
   cancelled: 'Cancelled',
 };
 
-const PAYMENT_LABEL: Record<string, string> = {
-  zelle: 'Zelle',
-  venmo: 'Venmo',
-  cashapp: 'Cash App',
-  apple_pay: 'Apple Pay',
-};
 
 function formatAddress(address: any): string {
   if (!address) return 'No Shipping Address Provided';
@@ -430,7 +425,7 @@ export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
                       <span style={{ fontSize: '0.9rem', color: 'var(--silver)' }}>Payment</span>
                       <span style={{ fontSize: '0.9rem', color: 'var(--white)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px' }}>
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"></rect><line x1="2" y1="10" x2="22" y2="10"></line></svg>
-                        {PAYMENT_LABEL[order.payment_method] || order.payment_method}
+                        {paymentMethodLabel(order.payment_method)}
                       </span>
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '12px', paddingTop: '12px', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
@@ -966,7 +961,7 @@ export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
                   Payment Method
                 </div>
                 <div style={{ color: 'var(--white)', fontSize: '1rem', fontWeight: 600 }}>
-                  {PAYMENT_LABEL[detailOrder.payment_method] || detailOrder.payment_method}
+                  {paymentMethodLabel(detailOrder.payment_method)}
                 </div>
 
                 {detailOrder.tracking_number && (() => {

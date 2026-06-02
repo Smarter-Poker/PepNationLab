@@ -8,6 +8,7 @@ import RecommendationStrip, { type RecommendationItem } from '@/components/Recom
 import ReceiptButton from './ReceiptButton';
 import SubscribeReplenishButton from './SubscribeReplenishButton';
 import ChangePaymentMethod from '@/components/ChangePaymentMethod';
+import { paymentMethodLabel } from '@/lib/payment-method-labels';
 
 export const dynamic = 'force-dynamic';
 
@@ -37,18 +38,6 @@ const STATUS_COLORS: Record<string, string> = {
   shipped: 'var(--teal)',
   delivered: '#68D391',
   cancelled: 'var(--grey-400)',
-};
-
-const PAYMENT_LABELS: Record<string, string> = {
-  zelle: 'Zelle',
-  cashapp: 'Cash App',
-  venmo: 'Venmo',
-  apple_pay: 'Apple Pay',
-  paypal: 'PayPal',
-  apple_cash: 'Apple Cash',
-  google_wallet: 'Google Wallet',
-  wise: 'Wise',
-  chime: 'Chime',
 };
 
 interface OrderItem {
@@ -331,7 +320,7 @@ export default async function OrderDetailPage(
                   Order <span style={{ color: 'var(--teal)', fontFamily: 'var(--font-brand)' }}>#{order.id.slice(0, 8).toUpperCase()}</span>
                 </h1>
                 <p style={{ fontSize: '0.85rem', color: 'var(--grey-400)' }}>
-                  Placed {new Date(order.created_at).toLocaleString()} / {PAYMENT_LABELS[order.payment_method] ?? order.payment_method}
+                  Placed {new Date(order.created_at).toLocaleString()} / {paymentMethodLabel(order.payment_method)}
                 </p>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', flexWrap: 'wrap' }}>
@@ -364,7 +353,7 @@ export default async function OrderDetailPage(
                   buyerName={buyer?.full_name || 'Researcher'}
                   buyerEmail={buyer?.email || ''}
                   sellerName={sellerName}
-                  paymentMethodLabel={PAYMENT_LABELS[order.payment_method] ?? order.payment_method}
+                  paymentMethodLabel={paymentMethodLabel(order.payment_method)}
                   paymentHandle={handleForMethod}
                   trackingNumber={order.tracking_number}
                   shippingAddress={
@@ -502,7 +491,7 @@ export default async function OrderDetailPage(
               <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '8px', marginBottom: 'var(--space-3)' }}>
                 <p style={{ fontSize: '0.85rem', color: 'var(--silver)', lineHeight: 1.6, margin: 0 }}>
                   Send <strong style={{ color: 'var(--teal)' }}>${num(order.total).toFixed(2)}</strong> Via{' '}
-                  <strong>{PAYMENT_LABELS[order.payment_method] ?? order.payment_method}</strong> To {sellerName}.
+                  <strong>{paymentMethodLabel(order.payment_method)}</strong> To {sellerName}.
                 </p>
                 <ChangePaymentMethod 
                   orderId={order.id} 
@@ -513,7 +502,7 @@ export default async function OrderDetailPage(
               {handleForMethod ? (
                 <div style={{ padding: 'var(--space-3)', background: 'var(--surface-2)', borderRadius: 'var(--radius-md)', border: 'var(--border-subtle)' }}>
                   <div style={{ fontSize: '0.72rem', color: 'var(--grey-500)', textTransform: 'uppercase', marginBottom: 4 }}>
-                    {PAYMENT_LABELS[order.payment_method] ?? order.payment_method} Contact Info
+                    {paymentMethodLabel(order.payment_method)} Contact Info
                   </div>
                   <div style={{ fontSize: '0.95rem', color: 'var(--white)', fontWeight: 600, fontFamily: 'var(--font-brand)', wordBreak: 'break-all' }}>
                     {handleForMethod}
@@ -533,7 +522,7 @@ export default async function OrderDetailPage(
                         {allEnabled.map(([key, handle]) => (
                           <div key={key} style={{ padding: 'var(--space-3)', background: 'var(--surface-2)', borderRadius: 'var(--radius-md)', border: 'var(--border-subtle)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                             <span style={{ fontSize: '0.78rem', color: 'var(--grey-400)', textTransform: 'uppercase' }}>
-                              {PAYMENT_LABELS[key] ?? key}
+                              {paymentMethodLabel(key)}
                             </span>
                             <span style={{ fontSize: '0.9rem', color: 'var(--white)', fontWeight: 600, fontFamily: 'var(--font-brand)', wordBreak: 'break-all' }}>
                               {handle}

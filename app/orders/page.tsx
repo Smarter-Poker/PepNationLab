@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { createClient } from '@/lib/supabase/server';
 import PageShell from '@/components/PageShell';
 import ReorderButton, { ViewLink } from './OrdersListClient';
+import { paymentMethodLabel } from '@/lib/payment-method-labels';
 
 export const dynamic = 'force-dynamic';
 
@@ -34,13 +35,6 @@ const STATUS_COLORS: Record<string, string> = {
   shipped: 'var(--teal)',
   delivered: '#68D391',
   cancelled: 'var(--grey-400)',
-};
-
-const PAYMENT_LABELS: Record<string, string> = {
-  zelle: 'Zelle',
-  cashapp: 'Cash App',
-  venmo: 'Venmo',
-  apple_pay: 'Apple Pay',
 };
 
 interface OrderItem {
@@ -248,7 +242,7 @@ export default async function OrdersPage({
                         </div>
                         <div style={{ fontSize: '0.8rem', color: 'var(--grey-400)', marginTop: 4 }}>
                           Placed {new Date(order.created_at).toLocaleDateString()} {' / '}
-                          {PAYMENT_LABELS[order.payment_method] ?? order.payment_method}
+                          {paymentMethodLabel(order.payment_method)}
                         </div>
                       </div>
                       <span

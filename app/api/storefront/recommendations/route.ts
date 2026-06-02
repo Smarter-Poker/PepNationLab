@@ -32,6 +32,8 @@ interface ProductRow {
   image_url: string | null;
   is_active: boolean | null;
   is_banned: boolean | null;
+  unit_size: string | null;
+  unit_measure: string | null;
 }
 
 interface AgentProductRow {
@@ -81,18 +83,19 @@ export async function GET(req: NextRequest) {
     agentId = (agentRow?.id as string | undefined) ?? null;
   }
 
-  // 1) Get seed product details (to find category)
+  // 1) Get seed product details (to find category and name for deduplication)
   const { data: seedProduct } = await supabase
     .from('products')
-    .select('id, category')
+    .select('id, name, category')
     .eq('id', productId)
     .single();
 
   const seedCategory = seedProduct?.category;
+  const seedName = seedProduct?.name;
 
   const candidateIds = new Set<string>();
 
-  // 2) Always try to find BAC Water
+  // 2) Always try to find BAC Water and put it FIRST
   try {
     const { data: bacWater } = await supabase
       .from('products')
@@ -106,7 +109,7 @@ export async function GET(req: NextRequest) {
   } catch {}
 
   // 3) Try co-purchase matrix (what people standardly research together)
-  const fetchN = limit + 10;
+  const fetchN = limit + 20; // Fetch extra to account for deduplication
   try {
     const { data: pairs, error: rpcErr } = await supabase.rpc(
       'get_copurchase_recommendations',
@@ -122,7 +125,7 @@ export async function GET(req: NextRequest) {
   } catch {}
 
   // 4) Fallback to same category
-  if (candidateIds.size < limit && seedCategory) {
+  if (candidateIds.size < limit * 2 && seedCategory) {
     try {
       const { data: sameCat } = await supabase
         .from('products')
@@ -137,7 +140,7 @@ export async function GET(req: NextRequest) {
   }
 
   // 5) If we STILL don't have enough, fill from product_popular_60d.
-  if (candidateIds.size < limit) {
+  if (candidateIds.size < limit * 2) {
     try {
       const { data: pop } = await supabase
         .from('product_popular_60d')
@@ -158,14 +161,26 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ recommendations: [] });
   }
 
-  // 6) Resolve product rows — filter active, non-banned, not the seed.
+  // 6) Resolve product rows — filter active, non-banned, not the seed, and deduplicate by name!
   const { data: productsRaw } = await supabase
     .from('products')
-    .select('id, name, slug, category, image_url, is_active, is_banned')
+    .select('id, name, slug, category, image_url, is_active, is_banned, unit_size, unit_measure')
     .in('id', candidateArray);
+  
   const productMap = new Map<string, ProductRow>();
-  for (const p of (productsRaw ?? []) as ProductRow[]) {
+  const seenNames = new Set<string>();
+  if (seedName) seenNames.add(seedName.toLowerCase()); // Don't recommend any other variant of the seed product
+
+  // Sort candidateArray according to the order we inserted them (Bac Water, Copurchase, Same Cat, Popular)
+  for (const cid of candidateArray) {
+    const p = productsRaw?.find(r => r.id === cid) as ProductRow | undefined;
     if (!p || p.is_active === false || p.is_banned === true || p.id === productId) continue;
+    
+    // Deduplicate by name
+    const lowerName = p.name.toLowerCase();
+    if (seenNames.has(lowerName)) continue;
+    seenNames.add(lowerName);
+    
     productMap.set(p.id, p);
   }
 
@@ -200,6 +215,8 @@ export async function GET(req: NextRequest) {
     category: string | null;
     image_url: string | null;
     retail_price?: number;
+    unit_size: string | null;
+    unit_measure: string | null;
   }> = [];
   for (const cid of candidateArray) {
     if (out.length >= limit) break;
@@ -212,6 +229,8 @@ export async function GET(req: NextRequest) {
       slug: p.slug,
       category: p.category,
       image_url: p.image_url,
+      unit_size: p.unit_size,
+      unit_measure: p.unit_measure,
       ...(agentPriceMap.has(cid) ? { retail_price: agentPriceMap.get(cid)! } : {}),
     });
   }

@@ -11,6 +11,8 @@ export interface RecommendationItem {
   image_url: string | null;
   base_cost: number;
   retail_price?: number;
+  unit_size?: string | null;
+  unit_measure?: string | null;
 }
 
 interface Props {
@@ -96,6 +98,10 @@ export default function RecommendationStrip({
               />
             ))
           : recommendations.map((item) => {
+              const displayName = item.unit_size
+                ? `${item.name} ${item.unit_size}${item.unit_measure || ''}`
+                : item.name;
+
               const inner = (
                 <>
                   <div
@@ -140,7 +146,7 @@ export default function RecommendationStrip({
                       overflow: 'hidden',
                     }}
                   >
-                    {item.name}
+                    {displayName}
                   </div>
                   {typeof item.retail_price === 'number' && item.retail_price > 0 ? (
                     <div

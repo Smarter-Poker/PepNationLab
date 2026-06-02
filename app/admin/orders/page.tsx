@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
 import Pagination from "@/components/Pagination";
 import { exportCSV, downloadCSV } from "@/lib/export";
+import { paymentMethodLabel, type PaymentMethodSlug } from "@/lib/payment-method-labels";
 
 const PAGE_SIZE = 25;
 
@@ -30,7 +31,7 @@ interface Order {
     | "delivered"
     | "cancelled";
   fulfillment_method: "ship" | "agent_pickup" | null;
-  payment_method: "zelle" | "cashapp" | "venmo" | "apple_pay";
+  payment_method: PaymentMethodSlug | string;
   shipping_address: any;
   shipping_cost: number;
   subtotal: number;
@@ -893,7 +894,7 @@ function AdminOrdersPageInner() {
                           }}
                         >
                           {new Date(order.created_at).toLocaleDateString()} •{" "}
-                          {order.payment_method?.toUpperCase() ?? "N/A"} • $
+                          {paymentMethodLabel(order.payment_method)} • $
                           {Number(order.total).toFixed(2)}
                         </div>
                       </div>
@@ -1055,8 +1056,8 @@ function AdminOrdersPageInner() {
                   </h4>
                   <div style={{ fontSize: "0.8rem", color: "var(--grey-400)" }}>
                     Method:{" "}
-                    <span style={{ textTransform: "capitalize" }}>
-                      {selectedOrder.payment_method}
+                    <span style={{ textTransform: "none" }}>
+                      {paymentMethodLabel(selectedOrder.payment_method)}
                     </span>
                   </div>
                 </div>
