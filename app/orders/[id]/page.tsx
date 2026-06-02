@@ -503,8 +503,14 @@ export default async function OrderDetailPage(
             <div className="card-metal hover-lift stagger-fade-in" style={{ padding: 'var(--space-6)', marginBottom: 'var(--space-5)', animationDelay: '0.3s' }}>
               <RecommendationStrip
                 title="You May Also Like"
-                recommendations={recommendations}
-                buildHref={(pid) => agentSlug ? `/${agentSlug}?product=${encodeURIComponent(pid)}` : '/orders'}
+                /* Pre-resolve each item href server-side — passing a
+                   `buildHref` function across the server-to-client
+                   component boundary throws "Functions cannot be passed
+                   directly to Client Components" under React 19 + Next 16. */
+                recommendations={recommendations.map((r) => ({
+                  ...r,
+                  href: agentSlug ? `/${agentSlug}?product=${encodeURIComponent(r.id)}` : '/orders',
+                }))}
               />
             </div>
           )}
