@@ -56,6 +56,7 @@ export default function WalletPage({
   const [summary, setSummary] = useState<any>(null);
   const [statements, setStatements] = useState<any[]>([]);
   const [activity, setActivity] = useState<ActivityTxn[]>([]);
+  const [storeCredit, setStoreCredit] = useState<number>(0);
   const [payOpen, setPayOpen] = useState(false);
   const [detailId, setDetailId] = useState<string | null>(null);
   const [creditOpen, setCreditOpen] = useState(false);
@@ -80,6 +81,7 @@ export default function WalletPage({
       if (walletRes.ok) {
         const j = await walletRes.json();
         setActivity(Array.isArray(j.transactions) ? j.transactions : []);
+        setStoreCredit(typeof j.storeCredit === 'number' ? j.storeCredit : 0);
       }
     } catch {
       setError(true);
@@ -242,6 +244,28 @@ export default function WalletPage({
 
         {/* TABS */}
         {tab === 'overview' && (
+          <>
+          <section
+            className="card-metal"
+            style={{ padding: 16, borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}
+          >
+            <div>
+              <div style={{ fontSize: '0.72rem', color: 'var(--grey-400)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                Store Credit Balance
+              </div>
+              <div style={{ fontSize: '1.6rem', fontWeight: 800, color: 'var(--teal)' }}>{money(storeCredit)}</div>
+              <div style={{ fontSize: '0.8rem', color: 'var(--grey-500)', marginTop: 4 }}>
+                Earned From Referrals. Applied Automatically At Checkout.
+              </div>
+            </div>
+            <a
+              href="/account/referrals"
+              className="btn-secondary"
+              style={{ padding: '10px 16px', borderRadius: 10, minHeight: 44, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', whiteSpace: 'nowrap' }}
+            >
+              Earn More Credit
+            </a>
+          </section>
           <section className="card-glass" style={{ padding: 16, borderRadius: 12 }}>
             <h3 style={{ color: 'var(--white)', marginTop: 0, fontSize: '1rem' }}>Open Statements</h3>
             {(summary?.openStatements ?? []).length === 0 ? (
@@ -272,6 +296,7 @@ export default function WalletPage({
               </ul>
             )}
           </section>
+          </>
         )}
 
         {tab === 'activity' && (
