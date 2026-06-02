@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Search, X, Copy, ExternalLink, Filter, AlertTriangle, ChevronRight } from 'lucide-react';
 import { toast } from 'sonner';
+import { paymentMethodLabel, PAYMENT_METHOD_SLUGS } from '@/lib/payment-method-labels';
 
 // fix-52:  ships items #1-5, 9-15 from the global-search deep-dive.
 // fix-52b: abort in-flight fetch on unmount, router.push for Enter-key nav.
@@ -38,7 +39,8 @@ const ORDER_STATUSES = [
   'cancelled',
 ] as const;
 
-const PAYMENT_METHODS = ['zelle', 'cashapp', 'venmo', 'apple_pay'] as const;
+// PAYMENT_METHODS removed in R26 — use PAYMENT_METHOD_SLUGS from @/lib/payment-method-labels
+// (canonical 9-method list keeps this filter dropdown in sync with the rest of the platform).
 
 interface UserHit { id: string; full_name: string | null; username: string | null; email: string | null; role: string; is_super_agent?: boolean | null }
 interface ProductHit { id: string; name: string; slug: string; sku: string | null; base_cost: number | null; is_active: boolean }
@@ -385,7 +387,7 @@ export default function AdminSearchClient() {
 
     const orderItems: FlatItem[] = results.orders.map((o) => {
       const title = o.buyer_name || o.buyer_email || `Order ${o.id.slice(0, 8)}`;
-      const subtitle = `${prettyStatus(o.status)} · ${formatMoney(o.total)}${o.tracking_number ? ' · Tracking ' + o.tracking_number : ''}${o.payment_method ? ' · ' + o.payment_method : ''} · ${new Date(o.created_at).toLocaleDateString()}`;
+      const subtitle = `${prettyStatus(o.status)} · ${formatMoney(o.total)}${o.tracking_number ? ' · Tracking ' + o.tracking_number : ''}${o.payment_method ? ' · ' + paymentMethodLabel(o.payment_method) : ''} · ${new Date(o.created_at).toLocaleDateString()}`;
       return {
         key: 'o:' + o.id,
         type: 'orders',
@@ -692,8 +694,8 @@ export default function AdminSearchClient() {
               <Field label="Payment Method">
                 <select value={filters.payment} onChange={(e) => setFilters({ ...filters, payment: e.target.value })} style={selectStyle}>
                   <option value="">Any</option>
-                  {PAYMENT_METHODS.map((m) => (
-                    <option key={m} value={m}>{prettyStatus(m)}</option>
+                  {PAYMENT_METHOD_SLUGS.map((m) => (
+                    <option key={m} value={m}>{paymentMethodLabel(m)}</option>
                   ))}
                 </select>
               </Field>

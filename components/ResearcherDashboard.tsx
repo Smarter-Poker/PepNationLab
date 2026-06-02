@@ -9,6 +9,7 @@ import { toast } from 'sonner';
 import WalletCard from '@/components/WalletCard';
 import LabToolsCalculators from '@/components/LabToolsCalculators';
 import OrderTimeline from '@/components/OrderTimeline';
+import { paymentMethodLabel } from '@/lib/payment-method-labels';
 
 interface Order {
   id: string;
@@ -637,7 +638,7 @@ export default function ResearcherDashboard({ userId, userName, userEmail, agent
                               <span style={{ margin: '0 6px', color: 'rgba(255,255,255,0.2)' }}>|</span>
                               {o.order_items?.length || 0} items
                               <span style={{ margin: '0 6px', color: 'rgba(255,255,255,0.2)' }}>|</span>
-                              {o.payment_method?.toUpperCase()}
+                              {paymentMethodLabel(o.payment_method)}
                             </div>
                           </div>
                         </div>

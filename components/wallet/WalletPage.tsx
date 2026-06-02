@@ -115,10 +115,11 @@ export default function WalletPage({
   ];
 
   return (
-    <div style={{ paddingTop: 'calc(var(--nav-offset, 60px) + 12px)', paddingRight: 12, paddingBottom: 12, paddingLeft: 12, minHeight: '100dvh', background: 'var(--black)' }}>
-      <div style={{ maxWidth: 960, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 16 }}>
-        <header style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 12 }}>
-          <div>
+    <div style={{ paddingTop: 'calc(var(--nav-offset, 60px) + var(--space-6))', paddingRight: 'var(--space-4)', paddingBottom: 'var(--space-8)', paddingLeft: 'var(--space-4)', minHeight: '100dvh' }}>
+      <div className="metal-frame" style={{ maxWidth: 960, margin: '0 auto', width: '100%' }}>
+        <div className="metal-content" style={{ padding: 'var(--space-6)', display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <header style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 12 }}>
+            <div>
             <h1 style={{ fontSize: '1.6rem', color: 'var(--white)', margin: 0, fontFamily: 'var(--font-brand)' }}>Wallet</h1>
             <p style={{ color: 'var(--grey-400)', fontSize: '0.88rem', margin: '4px 0 0' }}>
               Your Balance, Statements, And Payouts
@@ -395,6 +396,7 @@ export default function WalletPage({
         {tab === 'commissions' && <CommissionsTab />}
         {tab === 'receipts' && <ReceiptVault />}
         {tab === 'settings' && <WalletSettings />}
+        </div>
       </div>
 
       {payOpen && (

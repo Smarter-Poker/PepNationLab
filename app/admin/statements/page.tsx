@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
+import { paymentMethodLabel, PAYMENT_METHOD_SLUGS } from "@/lib/payment-method-labels";
 
 interface AgentOption {
   id: string;
@@ -463,7 +464,7 @@ export default function AdminStatementsPage() {
                               {s.paid_at
                                 ? new Date(s.paid_at).toLocaleDateString()
                                 : ""}
-                              {s.payment_method ? ` / ${s.payment_method}` : ""}
+                              {s.payment_method ? ` / ${paymentMethodLabel(s.payment_method)}` : ""}
                             </div>
                           )}
                         </div>
@@ -621,10 +622,9 @@ export default function AdminStatementsPage() {
                     value={payMethod}
                     onChange={(e) => setPayMethod(e.target.value)}
                   >
-                    <option value="zelle">Zelle</option>
-                    <option value="cashapp">Cash App</option>
-                    <option value="venmo">Venmo</option>
-                    <option value="apple_pay">Apple Pay</option>
+                    {PAYMENT_METHOD_SLUGS.map((slug) => (
+                      <option key={slug} value={slug}>{paymentMethodLabel(slug)}</option>
+                    ))}
                   </select>
                 </div>
 
