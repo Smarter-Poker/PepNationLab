@@ -93,6 +93,9 @@ export default function AgentStoreProducts({ agentId }: { agentId: string }) {
   }
 
   async function toggleVisibility(product: AgentProduct) {
+    if (!product.is_visible) {
+      handleEdit(product);
+    }
     try {
       const res = await fetch('/api/agent/products', {
         method: 'PATCH',
@@ -300,9 +303,8 @@ export default function AgentStoreProducts({ agentId }: { agentId: string }) {
         </div>
       </div>
 
-      {/* Round 9: Mobile-only search bar (hidden on desktop via CSS) */}
+      {/* Search Bar */}
       <input
-        className="agentprod-mobile-search"
         type="search"
         placeholder="Search Products By Name..."
         value={search}
@@ -316,6 +318,7 @@ export default function AgentStoreProducts({ agentId }: { agentId: string }) {
           boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.5)',
           color: '#fff',
           borderRadius: 8,
+          marginBottom: 'var(--space-4)'
         }}
       />
 
