@@ -638,7 +638,7 @@ export default function AdminAgents() {
                     className="form-input" 
                     value={editPhone} 
                     onChange={e => setEditPhone(e.target.value)} 
-                    placeholder="e.g. 555-0123"
+                    placeholder=""
                   />
                 </div>
                 <div style={{ display: 'flex', gap: 'var(--space-3)', justifyContent: 'flex-end' }}>

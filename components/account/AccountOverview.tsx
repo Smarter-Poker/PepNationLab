@@ -200,7 +200,7 @@ export default function AccountOverview({ userEmail, profile, onProfileChange }:
               className="form-input"
               value={draft.phone}
               onChange={(e) => setDraft((d) => ({ ...d, phone: e.target.value }))}
-              placeholder="+1 555 555 5555"
+              placeholder=""
               maxLength={40}
               autoComplete="tel"
               inputMode="tel"

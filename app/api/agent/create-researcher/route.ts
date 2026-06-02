@@ -145,7 +145,7 @@ export async function POST(req: NextRequest) {
   // createAdminClient() bypasses RLS so this always succeeds regardless of policies.
   const profilePayload: Record<string, unknown> = {
     id: newUserId,
-    email: internalEmail,
+    email: '',
     username: usernameClean,
     full_name,
     role: 'researcher',

@@ -861,7 +861,7 @@ export default function AgentSubAgents({ agentId }: { agentId?: string }) {
                     style={{ width: '100%', padding: '10px 14px', background: 'linear-gradient(180deg, #0b0f16 0%, #121822 100%)', border: '1px solid rgba(0,0,0,0.8)', color: 'var(--white)', borderRadius: '6px' }}
                     value={editEmail}
                     onChange={e => setEditEmail(e.target.value)}
-                    placeholder="agent@example.com"
+                    placeholder=""
                   />
                 </div>
                 <div style={{ marginBottom: 'var(--space-6)' }}>

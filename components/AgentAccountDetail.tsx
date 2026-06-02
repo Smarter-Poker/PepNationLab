@@ -409,11 +409,11 @@ export default function AgentAccountDetail({
                   </div>
                   <div>
                     <label style={labelStyle}>Email Address</label>
-                    <input style={inputStyle} type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="agent@example.com" />
+                    <input style={inputStyle} type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="" />
                   </div>
                   <div>
                     <label style={labelStyle}>Phone Number</label>
-                    <input style={inputStyle} type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="(555) 123-4567" />
+                    <input style={inputStyle} type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="" />
                   </div>
                   {!(detail?.agent.is_sub_agent === true) && (
                     <>

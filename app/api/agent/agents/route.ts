@@ -184,7 +184,7 @@ export async function POST(req: NextRequest) {
     // The user gets 'agent' role, and is_sub_agent = false, parent_agent_id = callerId
     const profileData: Record<string, any> = {
       id: userId,
-      email: internalEmail,
+      email: '',
       username: usernameClean,
       full_name,
       role: 'agent',

@@ -243,7 +243,7 @@ export default function AgentResearcherCRM() {
                                   type="email"
                                   value={emailDraft}
                                   onChange={e => setEmailDraft(e.target.value)}
-                                  placeholder="researcher@example.com"
+                                  placeholder=""
                                   style={{
                                     width: '100%', boxSizing: 'border-box',
                                     background: 'var(--surface-3, #1D2D3E)',
