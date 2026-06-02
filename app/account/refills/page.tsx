@@ -5,8 +5,8 @@ import RefillsClient from '@/components/account/RefillsClient';
 export const dynamic = 'force-dynamic';
 
 // /account/refills
-// Refill + one-tap reorder hub for researchers. Data + reorder logic come from
-// the existing /api/researcher/orders and /api/researcher/orders/[id]/reorder.
+// Order history + one-tap reorder hub for researchers. Data + reorder logic come
+// from /api/researcher/orders and /api/researcher/orders/[id]/reorder-cart.
 export default async function AccountRefillsPage() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -16,6 +16,6 @@ export default async function AccountRefillsPage() {
 }
 
 export const metadata = {
-  title: 'Refills & Reorders | Pep Nation Lab',
+  title: 'Order History And Reorders | Pep Nation Lab',
   robots: { index: false, follow: false },
 };
