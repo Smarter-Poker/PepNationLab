@@ -38,6 +38,8 @@ export default function AdminAgents() {
   const [createForm, setCreateForm] = useState({
     firstName: '',
     lastName: '',
+    full_name: '',
+    username: '',
     password: '',
     tier: 'tier_3',
     account_type: 'prepaid',
@@ -161,6 +163,8 @@ export default function AdminAgents() {
       setCreateForm({
         firstName: '',
         lastName: '',
+        full_name: '',
+        username: '',
         password: '',
         tier: 'tier_3',
         account_type: 'prepaid',
@@ -170,7 +174,6 @@ export default function AdminAgents() {
         display_name: '',
         account_role: 'agent',
         parent_agent_id: '',
-        username: '',
       });
       setUsernameStatus('idle');
       setSlugStatus('idle');

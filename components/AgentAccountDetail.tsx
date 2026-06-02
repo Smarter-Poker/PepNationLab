@@ -780,7 +780,7 @@ export default function AgentAccountDetail({
             </div>
 
             <p style={{ fontSize: '0.74rem', color: 'var(--grey-500)', lineHeight: 1.5, margin: 0 }}>
-              Note: A Full Storefront Agent's Own Profit Still Comes From Their Retail Pricing. This Ladder Governs The Commission Paid On Top. Velocity Cap Is Optional And Only Limits How Fast Volume Counts Toward Leveling.
+              Note: Velocity Cap Is Optional And Only Limits How Fast Volume Counts Toward Leveling.
             </p>
           </div>
         </div>

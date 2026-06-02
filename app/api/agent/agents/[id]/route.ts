@@ -253,6 +253,7 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
         return NextResponse.json({ error: 'Commission Rate Must Be Between 0 And 100.' }, { status: 400 });
       }
       updates.commission_pct = pct;
+      updates.commission_rate = pct;
       changes.commission_pct = pct;
     }
 

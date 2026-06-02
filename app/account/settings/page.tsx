@@ -25,7 +25,7 @@ export default async function AccountSettingsPage() {
     .maybeSingle();
 
   let agentProfile = null;
-  if (profile?.role && ['super_agent', 'agent', 'sub_agent'].includes(profile.role)) {
+  if ((profile as any)?.role && ['super_agent', 'agent', 'sub_agent'].includes((profile as any).role)) {
     const { data } = await supabase
       .from('agent_profiles')
       .select('slug, warehouse_address, payment_handles, is_active')

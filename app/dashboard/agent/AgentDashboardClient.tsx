@@ -1430,6 +1430,7 @@ export default function AgentDashboardClient({
         </div>
       )}
 
+      <MyQRCodeModal open={showQRModal} onClose={() => setShowQRModal(false)} />
     </div>
   );
 }
@@ -1581,8 +1582,6 @@ function ThemeToggleCard() {
           }} />
         </button>
       </div>
-
-      <MyQRCodeModal open={showQRModal} onClose={() => setShowQRModal(false)} />
     </div>
   );
 }
