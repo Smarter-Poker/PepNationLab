@@ -8,7 +8,6 @@
  * name, mute indicator, and active-speaker pulse.
  */
 
-import { useEffect, useState } from 'react';
 import {
   useRemoteParticipants,
   useTracks,
