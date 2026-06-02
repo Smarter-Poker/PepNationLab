@@ -86,7 +86,9 @@ function ResearchersAdminPageInner() {
   const [balanceType, setBalanceType] = useState<'add' | 'deduct'>('add');
 
   // Create New Agent fields
-  const [newName, setNewName] = useState('');
+  // R31: split first/last across every create-account form.
+  const [newFirstName, setNewFirstName] = useState('');
+  const [newLastName, setNewLastName] = useState('');
   const [newUsername, setNewUsername] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [newTier, setNewTier] = useState<'tier_1' | 'tier_2' | 'tier_3'>('tier_2');
@@ -195,7 +197,7 @@ function ResearchersAdminPageInner() {
     setModalMode('create_agent');
     setModalError('');
     setModalSuccess('');
-    setNewName(''); setNewUsername(''); setNewPassword('');
+    setNewFirstName(''); setNewLastName(''); setNewUsername(''); setNewPassword('');
     setNewTier('tier_2'); setNewAccountType('prepaid');
     setNewCreditLimit(''); setNewPrepaidBalance('');
     setNewSlug(''); setNewDisplayName('');
@@ -292,7 +294,7 @@ function ResearchersAdminPageInner() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          full_name: newName,
+          full_name: `${newFirstName.trim()} ${newLastName.trim()}`.trim(),
           username: newUsername,
           password: newPassword,
           tier: newTier,
@@ -694,13 +696,36 @@ function ResearchersAdminPageInner() {
 
             <form onSubmit={handleCreateAgent}>
               <h4 style={{ fontSize: '0.88rem', color: 'var(--silver)', marginBottom: 'var(--space-4)' }}>Account Credentials</h4>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-4)', marginBottom: 'var(--space-4)' }}>
+              {/* R31: first/last on top row, username + password below. */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-4)', marginBottom: 'var(--space-4)', alignItems: 'start' }}>
                 <div className="form-group">
-                  <label className="form-label">Full Name</label>
-                  <input type="text" className="form-input" placeholder="E.g. John Smith" value={newName}
-                    onChange={e => { setNewName(e.target.value); setNewDisplayName(e.target.value); setNewSlug(e.target.value.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9\-]/g, '')); }} required />
+                  <label className="form-label">First Name</label>
+                  <input type="text" className="form-input" placeholder="E.g. John" value={newFirstName}
+                    onChange={e => {
+                      const v = e.target.value;
+                      setNewFirstName(v);
+                      // Auto-populate the storefront display name + slug from the
+                      // first name only — far cleaner than dragging the last name
+                      // through .toLowerCase().replace(...) and getting hyphenated
+                      // surnames in the URL.
+                      const combined = `${v} ${newLastName}`.trim();
+                      setNewDisplayName(combined);
+                      setNewSlug(v.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9\-]/g, ''));
+                    }} required />
                 </div>
                 <div className="form-group">
+                  <label className="form-label">Last Name</label>
+                  <input type="text" className="form-input" placeholder="E.g. Smith" value={newLastName}
+                    onChange={e => {
+                      const v = e.target.value;
+                      setNewLastName(v);
+                      const combined = `${newFirstName} ${v}`.trim();
+                      setNewDisplayName(combined);
+                    }} />
+                </div>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 'var(--space-4)', marginBottom: 'var(--space-4)' }}>
+                <div className="form-group" style={{ marginBottom: 0 }}>
                   <label className="form-label">Username</label>
                   <input type="text" className="form-input" placeholder="E.g. midway" value={newUsername}
                     onChange={e => setNewUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))}

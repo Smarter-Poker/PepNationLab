@@ -12,7 +12,10 @@ export default function AgentDownline({ agentId }: { agentId?: string }) {
 
   // Create Agent Modal State
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [caFullName, setCaFullName] = useState('');
+  // R31: split first/last so every Create Account form is consistent.
+  // The /api/agent/agents POST still wants full_name, so we join on submit.
+  const [caFirstName, setCaFirstName] = useState('');
+  const [caLastName, setCaLastName] = useState('');
   const [caUsername, setCaUsername] = useState('');
   const [caPassword, setCaPassword] = useState('');
   const [caDisplayName, setCaDisplayName] = useState('');
@@ -74,7 +77,7 @@ export default function AgentDownline({ agentId }: { agentId?: string }) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          full_name: caFullName,
+          full_name: `${caFirstName.trim()} ${caLastName.trim()}`.trim(),
           username: caUsername,
           password: caPassword,
           display_name: caDisplayName,
@@ -103,7 +106,8 @@ export default function AgentDownline({ agentId }: { agentId?: string }) {
 
       toast.success('Agent Account created successfully!');
       setShowCreateModal(false);
-      setCaFullName('');
+      setCaFirstName('');
+      setCaLastName('');
       setCaUsername('');
       setCaPassword('');
       setCaDisplayName('');
@@ -258,16 +262,31 @@ export default function AgentDownline({ agentId }: { agentId?: string }) {
               {caError && <div style={{ background: 'rgba(255,0,0,0.1)', color: '#FFAAAA', padding: '12px', borderRadius: '6px', marginBottom: 'var(--space-4)', fontSize: '0.85rem', border: '1px solid rgba(255,0,0,0.3)' }}>{caError}</div>}
 
               <form onSubmit={handleCreateAgent} style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
-                <div>
-                  <label style={{ display: 'block', marginBottom: '6px', color: 'var(--grey-300)', fontSize: '0.85rem' }}>Full Name</label>
-                  <input
-                    type="text"
-                    required
-                    style={{ width: '100%', padding: '10px', background: 'var(--bg-metal-dark)', border: '1px solid rgba(0,0,0,0.8)', color: 'var(--white)', borderRadius: '6px' }}
-                    value={caFullName}
-                    onChange={e => setCaFullName(e.target.value)}
-                    placeholder="E.g., John Smith"
-                  />
+                {/* R31: First + Last Name — top-aligned grid so every create-account
+                    form across admin / super-agent / agent looks the same. */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-3)', alignItems: 'start' }}>
+                  <div>
+                    <label style={{ display: 'block', marginBottom: '6px', color: 'var(--grey-300)', fontSize: '0.85rem' }}>First Name</label>
+                    <input
+                      type="text"
+                      required
+                      style={{ width: '100%', boxSizing: 'border-box', padding: '10px', background: 'var(--bg-metal-dark)', border: '1px solid rgba(0,0,0,0.8)', color: 'var(--white)', borderRadius: '6px' }}
+                      value={caFirstName}
+                      onChange={e => setCaFirstName(e.target.value)}
+                      placeholder="E.g., John"
+                    />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', marginBottom: '6px', color: 'var(--grey-300)', fontSize: '0.85rem' }}>Last Name</label>
+                    <input
+                      type="text"
+                      required
+                      style={{ width: '100%', boxSizing: 'border-box', padding: '10px', background: 'var(--bg-metal-dark)', border: '1px solid rgba(0,0,0,0.8)', color: 'var(--white)', borderRadius: '6px' }}
+                      value={caLastName}
+                      onChange={e => setCaLastName(e.target.value)}
+                      placeholder="E.g., Smith"
+                    />
+                  </div>
                 </div>
                 <div>
                   <label style={{ display: 'block', marginBottom: '6px', color: 'var(--grey-300)', fontSize: '0.85rem' }}>Username</label>

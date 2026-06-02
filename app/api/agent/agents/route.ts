@@ -126,8 +126,11 @@ export async function POST(req: NextRequest) {
     let commPct: number | null = null;
     if (commission_pct !== undefined && commission_pct !== null && commission_pct !== '') {
       commPct = Number(commission_pct);
-      if (!Number.isFinite(commPct) || commPct < 0 || commPct > 100) {
-        return NextResponse.json({ error: 'Commission Rate Must Be Between 0 And 100' }, { status: 400 });
+      // DB CHECK profiles_commission_pct_range caps this at 40, matching the
+      // platform's hard 40% rule. Validate here so an out-of-range value gives a
+      // clean 400 instead of a constraint-violation 500 on the profile upsert.
+      if (!Number.isFinite(commPct) || commPct < 0 || commPct > MAX_CAP_LIMIT) {
+        return NextResponse.json({ error: 'Commission Rate Cannot Exceed 40%' }, { status: 400 });
       }
     }
     let commMax: number | null = null;

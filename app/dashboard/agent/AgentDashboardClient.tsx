@@ -174,7 +174,11 @@ export default function AgentDashboardClient({
 
   // Create Researcher Modal State
   const [showCreateResearcher, setShowCreateResearcher] = useState(false);
-  const [crFullName, setCrFullName] = useState('');
+  // R31: split first/last so the Create Researcher form mirrors every other
+  // create-account form on the platform. /api/agent/create-researcher already
+  // accepts firstName + lastName directly.
+  const [crFirstName, setCrFirstName] = useState('');
+  const [crLastName, setCrLastName] = useState('');
   const [crUsername, setCrUsername] = useState('');
   const [crPassword, setCrPassword] = useState('');
   const [crLoading, setCrLoading] = useState(false);
@@ -224,9 +228,8 @@ export default function AgentDashboardClient({
     setCrError('');
     setCrSuccess('');
     try {
-      const names = crFullName.trim().split(' ');
-      const firstName = names[0] || '';
-      const lastName = names.slice(1).join(' ') || '';
+      const firstName = crFirstName.trim();
+      const lastName = crLastName.trim();
 
       const res = await fetch('/api/agent/create-researcher', {
         method: 'POST',
@@ -1115,33 +1118,62 @@ export default function AgentDashboardClient({
                         {crLoading ? 'Creating Account...' : 'Create Researcher Account'}
                       </button>
 
-                      {/* Full Name */}
-                      <div style={{ marginBottom: 18 }}>
-                        <label style={{
-                          display: 'block', fontSize: '0.92rem', fontWeight: 700,
-                          color: '#d0d8e4', marginBottom: 8,
-                        }}>Full Name</label>
-                        <input
-                          type="text"
-                          value={crFullName}
-                          onChange={e => setCrFullName(e.target.value)}
-                          required
-                          placeholder=""
-                          style={{
-                            width: '100%', boxSizing: 'border-box',
-                            background: 'linear-gradient(180deg, #0a0c14 0%, #0d1018 100%)',
-                            border: '1px solid #2a3045',
-                            borderRadius: 8,
-                            padding: '13px 14px',
-                            color: '#ffffff',
-                            fontSize: '0.95rem',
-                            outline: 'none',
-                            boxShadow: 'inset 0 2px 6px rgba(0,0,0,0.7), inset 0 1px 3px rgba(0,0,0,0.5)',
-                            caretColor: '#00C4BC',
-                          }}
-                          onFocus={e => { e.currentTarget.style.border = '1px solid #00C4BC'; }}
-                          onBlur={e => { e.currentTarget.style.border = '1px solid #2a3045'; }}
-                        />
+                      {/* R31: First + Last Name — top-aligned grid */}
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 18, alignItems: 'start' }}>
+                        <div>
+                          <label style={{
+                            display: 'block', fontSize: '0.92rem', fontWeight: 700,
+                            color: '#d0d8e4', marginBottom: 8,
+                          }}>First Name</label>
+                          <input
+                            type="text"
+                            value={crFirstName}
+                            onChange={e => setCrFirstName(e.target.value)}
+                            required
+                            placeholder=""
+                            style={{
+                              width: '100%', boxSizing: 'border-box',
+                              background: 'linear-gradient(180deg, #0a0c14 0%, #0d1018 100%)',
+                              border: '1px solid #2a3045',
+                              borderRadius: 8,
+                              padding: '13px 14px',
+                              color: '#ffffff',
+                              fontSize: '0.95rem',
+                              outline: 'none',
+                              boxShadow: 'inset 0 2px 6px rgba(0,0,0,0.7), inset 0 1px 3px rgba(0,0,0,0.5)',
+                              caretColor: '#00C4BC',
+                            }}
+                            onFocus={e => { e.currentTarget.style.border = '1px solid #00C4BC'; }}
+                            onBlur={e => { e.currentTarget.style.border = '1px solid #2a3045'; }}
+                          />
+                        </div>
+                        <div>
+                          <label style={{
+                            display: 'block', fontSize: '0.92rem', fontWeight: 700,
+                            color: '#d0d8e4', marginBottom: 8,
+                          }}>Last Name</label>
+                          <input
+                            type="text"
+                            value={crLastName}
+                            onChange={e => setCrLastName(e.target.value)}
+                            required
+                            placeholder=""
+                            style={{
+                              width: '100%', boxSizing: 'border-box',
+                              background: 'linear-gradient(180deg, #0a0c14 0%, #0d1018 100%)',
+                              border: '1px solid #2a3045',
+                              borderRadius: 8,
+                              padding: '13px 14px',
+                              color: '#ffffff',
+                              fontSize: '0.95rem',
+                              outline: 'none',
+                              boxShadow: 'inset 0 2px 6px rgba(0,0,0,0.7), inset 0 1px 3px rgba(0,0,0,0.5)',
+                              caretColor: '#00C4BC',
+                            }}
+                            onFocus={e => { e.currentTarget.style.border = '1px solid #00C4BC'; }}
+                            onBlur={e => { e.currentTarget.style.border = '1px solid #2a3045'; }}
+                          />
+                        </div>
                       </div>
 
                       {/* Username */}

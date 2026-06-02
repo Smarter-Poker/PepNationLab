@@ -756,8 +756,8 @@ export default function AdminAgents() {
                 This will create a new agent account with auth credentials and a storefront.
               </p>
             <form onSubmit={handleCreateAgent}>
-              {/* First + Last Name */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-4)', marginBottom: 'var(--space-4)' }}>
+              {/* First + Last Name — top-aligned so both labels sit on the same row */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-4)', marginBottom: 'var(--space-4)', alignItems: 'start' }}>
                 <div className="form-group" style={{ marginBottom: 0 }}>
                   <label className="form-label" style={{ display: 'block', marginBottom: 'var(--space-1)' }}>First Name</label>
                   <input
@@ -849,9 +849,9 @@ export default function AdminAgents() {
                 />
               </div>
 
-              {/* Tier & Billing Mode — side by side (agents only) */}
+              {/* Tier & Billing Mode — top-aligned, side by side (agents + super-agents only) */}
               {createForm.account_role !== 'researcher' && (
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-4)', marginBottom: 'var(--space-4)' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-4)', marginBottom: 'var(--space-4)', alignItems: 'start' }}>
                 <div className="form-group" style={{ marginBottom: 0 }}>
                   <label className="form-label" style={{ display: 'block', marginBottom: 'var(--space-1)' }}>Tier</label>
                   <select
@@ -942,8 +942,11 @@ export default function AdminAgents() {
               </>
               )}
 
-              {/* Commission / Markup Settings (Agents only) */}
-              {createForm.account_role !== 'researcher' && (
+              {/* Commission / Markup Settings — agents only.
+                  Super-agents do NOT see this: they earn purely off the Tier 1/2/3
+                  multiplier on the master catalog. The fixed/gamified markup
+                  ladder is for agents who set their own retail prices. */}
+              {createForm.account_role === 'agent' && (
                 <div style={{ marginTop: 'var(--space-2)', marginBottom: 'var(--space-4)' }}>
                   <label style={{ display: 'block', marginBottom: '6px', color: 'var(--grey-300)', fontSize: '0.85rem', fontWeight: 600, textTransform: 'uppercase' }}>Markup Structure</label>
                   <div style={{ display: 'flex', gap: 'var(--space-3)', marginBottom: 'var(--space-3)' }}>
