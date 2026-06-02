@@ -188,10 +188,30 @@ export default function AgentInventory({ agentId }: { agentId: string }) {
     return true;
   });
 
-  const effectiveViewMode = isMobile ? 'category' : viewMode;
+  const effectiveViewMode = viewMode;
   const searchTerm = search.trim().toLowerCase();
-  const searchFiltered = !searchTerm ? filtered : filtered.filter(p => {
+  const rawSearchFiltered = !searchTerm ? filtered : filtered.filter(p => {
     return p.name.toLowerCase().includes(searchTerm);
+  });
+
+  const getSortWeight = (p: AgentInventoryItem) => {
+    const n = p.name.toLowerCase();
+    if (n.includes('klow')) return 1;
+    if (n.includes('tirzepatide')) return 2;
+    if (n.includes('semaglutide')) return 3;
+    if (n.includes('glow')) return 4;
+    if (n.includes('sermorelin') || n.includes('semorelin')) return 5;
+    if (n.includes('bpc') && n.includes('157')) return 6;
+    const cat = p.category?.toLowerCase() || '';
+    if (cat.includes('popular')) return 10;
+    return 20;
+  };
+
+  const searchFiltered = [...rawSearchFiltered].sort((a, b) => {
+    const wA = getSortWeight(a);
+    const wB = getSortWeight(b);
+    if (wA !== wB) return wA - wB;
+    return a.name.localeCompare(b.name);
   });
 
   const grouped = searchFiltered.reduce<Record<string, AgentInventoryItem[]>>((acc, p) => {
