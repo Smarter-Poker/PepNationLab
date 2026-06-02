@@ -20,7 +20,7 @@ import MessagePane from './MessagePane';
 import SupportContextSidebar from './SupportContextSidebar';
 
 /**
- * Admin Customer Support widget — v6 (full-screen modal).
+ * Admin Customer Support widget — v7 (full-screen modal).
  *
  * Visible only on /messenger to a user whose profile.role === 'admin'.
  * Bottom bar opens a fixed inset:0 overlay that mounts the real messenger
@@ -28,6 +28,9 @@ import SupportContextSidebar from './SupportContextSidebar';
  * text, photos, videos, voice, files, links, calls, threads, reactions,
  * pins, expiry — for free, by reuse. Emoji + schedule-send buttons are
  * intentionally hidden inside the modal (see global CSS at the bottom).
+ *
+ * v7: when a single thread is focused, the Researcher Context expands to
+ * fill the rest of the left column directly under the contact card.
  */
 
 type SupportStatus = 'open' | 'in_progress' | 'waiting_on_researcher' | 'resolved';
@@ -692,7 +695,7 @@ export default function CustomerSupportWidget() {
               </button>
             </div>
           )}
-          <div style={{ overflowY: 'auto', flex: 1, minHeight: 0 }}>
+          <div style={focusedRow ? { flex: '0 0 auto', overflow: 'visible' } : { overflowY: 'auto', flex: 1, minHeight: 0 }}>
             {loading && rows.length === 0 ? (
               <div
                 style={{
@@ -1118,7 +1121,10 @@ export default function CustomerSupportWidget() {
             )}
           </div>
 
-          {/* Footer pinned with flex-shrink:0 — always at bottom of panel column */}
+          {/* Footer pinned with flex-shrink:0 — only shows when the full list is visible.
+              In focused (single-thread) mode we hide it so the Researcher Context can
+              consume all remaining space below the contact card. */}
+          {!focusedRow && (
           <footer
             style={{
               padding: '8px 12px',
@@ -1154,6 +1160,7 @@ export default function CustomerSupportWidget() {
               {loading ? 'Refreshing…' : 'Refresh'}
             </button>
           </footer>
+          )}
 
           {/* Researcher Context — was a separate right-rail panel; now lives
               INSIDE the left column. Only shows when a support thread is
@@ -1166,9 +1173,13 @@ export default function CustomerSupportWidget() {
                 background: 'rgba(255,255,255,0.02)',
                 display: 'flex',
                 flexDirection: 'column',
-                flexShrink: 0,
-                maxHeight: contextCollapsed ? 44 : '46%',
-                minHeight: 44,
+                // When a thread is focused (single-row mode) the Researcher
+                // Context expands to fill all remaining column space.
+                // Otherwise it sits at the bottom capped to 46% so the inbox
+                // list stays legible.
+                ...(focusedRow
+                  ? { flex: '1 1 0', minHeight: 0 }
+                  : { flexShrink: 0, maxHeight: contextCollapsed ? 44 : '46%', minHeight: 44 }),
                 overflow: 'hidden',
                 transition: 'max-height 0.18s ease',
               }}
