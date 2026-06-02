@@ -855,6 +855,9 @@ export default function AgentStorefrontGrid({
           background: linear-gradient(145deg, #c8c2b8 0%, #a09890 30%, #8a847c 50%, #a09890 70%, #c8c2b8 100%);
           box-shadow: 0 8px 30px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.35), inset 0 -1px 0 rgba(0,0,0,0.4);
           margin-bottom: 24px;
+          position: sticky;
+          top: max(16px, var(--safe-top, 16px));
+          z-index: 20;
         }
         /* Inner panel — even 16px padding on every side so the inputs never touch the frame */
         .sf-toolbar-inner {
@@ -995,7 +998,7 @@ export default function AgentStorefrontGrid({
 
       {/* Faceted Search & Filter Toolbar — outer metal frame matches the peptide cards */}
       <div className="sf-toolbar">
-        <div className="sf-toolbar-inner glass-header">
+        <div className="sf-toolbar-inner">
         {/* Search */}
         <div className="sf-toolbar-search">
           <span className="sf-search-icon">
