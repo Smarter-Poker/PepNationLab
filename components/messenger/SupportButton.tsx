@@ -1,9 +1,9 @@
 'use client';
 
-import { Suspense, useCallback, useEffect, useState } from 'react';
+import { Suspense, useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
-import { LifeBuoy, X } from 'lucide-react';
+import { LifeBuoy, X, Clock } from 'lucide-react';
 import { toast } from 'sonner';
 
 /**
@@ -22,6 +22,12 @@ import { toast } from 'sonner';
  * URL hook: when /messenger?openSupport=1 (optionally with &orderId=...) is
  * loaded, the picker auto-opens with the order pre-filled and topic defaulted
  * to "Order Issue". This is how the order-page CTA hands off into the flow.
+ *
+ * After-hours notice: when the user opens the modal outside business hours
+ * in Central Time (5pm–7am Mon–Fri, or anytime Sat/Sun), an amber banner
+ * sets the expectation that the reply may not come until the next business
+ * day. Computed via Intl.DateTimeFormat with timeZone='America/Chicago' so
+ * it's DST-correct year-round.
  */
 
 const TOPIC_OPTIONS = [
@@ -38,6 +44,34 @@ function isUuid(s: string): boolean {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(s.trim());
 }
 
+/**
+ * Returns true when the current moment is outside Pep Nation Lab's business
+ * hours, which are 7:00am–4:59pm Monday–Friday Central Time.
+ * - 5:00pm CT or later (any weekday) → after hours
+ * - Before 7:00am CT (any weekday) → after hours
+ * - Saturday or Sunday (any time) → after hours
+ *
+ * Uses Intl.DateTimeFormat with timeZone='America/Chicago' so it's DST-correct.
+ * Returns false on SSR (no window) to avoid hydration mismatch — the banner
+ * is a non-critical, post-mount add-on.
+ */
+function isAfterHoursCentral(now: Date): boolean {
+  try {
+    const parts = new Intl.DateTimeFormat('en-US', {
+      timeZone: 'America/Chicago',
+      hour: 'numeric',
+      hour12: false,
+      weekday: 'short',
+    }).formatToParts(now);
+    const hour = Number(parts.find((p) => p.type === 'hour')?.value ?? '12');
+    const weekday = parts.find((p) => p.type === 'weekday')?.value ?? '';
+    if (weekday === 'Sat' || weekday === 'Sun') return true;
+    return hour >= 17 || hour < 7;
+  } catch {
+    return false;
+  }
+}
+
 function Inner() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -48,6 +82,18 @@ function Inner() {
   const [description, setDescription] = useState('');
   const [orderId, setOrderId] = useState('');
   const [didAutoOpen, setDidAutoOpen] = useState(false);
+  // Re-evaluates every minute while the modal is open so a thread opened at
+  // 4:59pm CT flips to the after-hours banner cleanly at 5pm without a
+  // page refresh. Mounting it as state lets React render the change.
+  const [nowTick, setNowTick] = useState(() => Date.now());
+
+  useEffect(() => {
+    if (!modalOpen) return;
+    const handle = setInterval(() => setNowTick(Date.now()), 60_000);
+    return () => clearInterval(handle);
+  }, [modalOpen]);
+
+  const afterHours = useMemo(() => isAfterHoursCentral(new Date(nowTick)), [nowTick]);
 
   useEffect(() => {
     // Mount-time visibility check: only on /messenger paths, hide for admins.
@@ -161,13 +207,22 @@ function Inner() {
 
       setModalOpen(false);
       setDescription('');
+      // After-hours nudge: if the researcher submitted outside business
+      // hours, surface the reply-time expectation as a toast so they see it
+      // after the redirect lands them in the thread.
+      if (afterHours) {
+        toast(
+          'Thanks — Your Support Thread Is Open. Requests After 5pm Central Typically Get Answered The Next Business Day.',
+          { duration: 7000 },
+        );
+      }
       router.push(`/messenger?conversation=${encodeURIComponent(conversationId)}`);
     } catch {
       toast.error('Network Error');
     } finally {
       setBusy(false);
     }
-  }, [busy, topic, orderId, description, router]);
+  }, [busy, topic, orderId, description, router, afterHours]);
 
   if (!show) return null;
 
@@ -269,6 +324,34 @@ function Inner() {
             </header>
 
             <div style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 14 }}>
+              {/* After-hours notice: appears at the top of the form when the
+                  current moment is outside business hours in Central Time. */}
+              {afterHours && (
+                <div
+                  role="status"
+                  style={{
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                    gap: 10,
+                    padding: '10px 12px',
+                    borderRadius: 8,
+                    background: 'rgba(255,184,0,0.10)',
+                    border: '1px solid rgba(255,184,0,0.45)',
+                    color: '#FFD175',
+                    fontSize: '0.82rem',
+                    lineHeight: 1.45,
+                  }}
+                >
+                  <Clock size={16} aria-hidden="true" style={{ flexShrink: 0, marginTop: 1 }} />
+                  <span>
+                    <strong style={{ color: '#FFE9B7', display: 'block', marginBottom: 2 }}>
+                      Outside Business Hours
+                    </strong>
+                    Requests Received After 5pm Central Typically Get Answered The Next Business Day. Your Thread Will Still Be Created — We Will Reply As Soon As We Are Back.
+                  </span>
+                </div>
+              )}
+
               <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                 <span style={{ fontSize: '0.74rem', fontWeight: 800, color: 'var(--silver, #C0B8A8)', letterSpacing: '0.04em', textTransform: 'uppercase' }}>
                   Topic
