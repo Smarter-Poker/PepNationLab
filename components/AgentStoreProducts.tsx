@@ -473,6 +473,7 @@ export default function AgentStoreProducts({ agentId }: { agentId: string }) {
                         src={p.custom_image_url || p.products.image_url || '/images/peptide_clear.png'}
                         alt={displayName}
                         style={{ width: 80, height: 80, borderRadius: 8, objectFit: 'cover', background: 'rgba(0,0,0,0.5)', border: '1px solid rgba(255,255,255,0.1)', flexShrink: 0 }}
+                        onError={(e) => { (e.target as HTMLImageElement).src = '/images/peptide_clear.png'; }}
                       />
                       <div className="agentprod-info" style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
@@ -667,7 +668,7 @@ export default function AgentStoreProducts({ agentId }: { agentId: string }) {
                           </form>
                         ) : (
                           <div className="agentprod-card" style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)' }}>
-                            <img src={p.custom_image_url || p.products.image_url || '/images/peptide_clear.png'} alt={displayName} style={{ width: 80, height: 80, borderRadius: 8, objectFit: 'cover', background: 'rgba(0,0,0,0.5)', border: '1px solid rgba(255,255,255,0.1)', flexShrink: 0 }} />
+                            <img src={p.custom_image_url || p.products.image_url || '/images/peptide_clear.png'} alt={displayName} style={{ width: 80, height: 80, borderRadius: 8, objectFit: 'cover', background: 'rgba(0,0,0,0.5)', border: '1px solid rgba(255,255,255,0.1)', flexShrink: 0 }} onError={(e) => { (e.target as HTMLImageElement).src = '/images/peptide_clear.png'; }} />
                             <div className="agentprod-info" style={{ flex: 1, minWidth: 0 }}>
                               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
                                 <span style={{ fontSize: '0.95rem', fontWeight: 700, color: '#fff' }}>{displayName}</span>

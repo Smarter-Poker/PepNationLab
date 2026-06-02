@@ -1247,7 +1247,16 @@ export default function AgentStorefrontGrid({
                   alt={group.name}
                   style={{ width: '100%', height: '100%', objectFit: 'contain', objectPosition: 'center', padding: '8px', transition: 'transform 0.4s ease' }}
                   className="store-image-hover"
-                  onError={e => { (e.target as HTMLImageElement).style.opacity = '0.3'; }}
+                  onError={(e) => {
+                    const target = e.target as HTMLImageElement;
+                    const fallback = getProductImage(null, group.category || 'Other', group.name);
+                    if (target.src !== fallback && target.src !== window.location.origin + fallback) {
+                      target.src = fallback;
+                    } else {
+                      target.src = '/images/peptide_clear.png';
+                      target.style.opacity = '0.9';
+                    }
+                  }}
                 />
 
                 {/* Popular badge — teal */}
@@ -1440,7 +1449,11 @@ export default function AgentStorefrontGrid({
                         onError={(e) => {
                           const target = e.target as HTMLImageElement;
                           const fallback = getProductImage(null, item.products?.category || 'Other', name);
-                          if (target.src !== fallback) target.src = fallback;
+                          if (target.src !== fallback && target.src !== window.location.origin + fallback) {
+                            target.src = fallback;
+                          } else {
+                            target.src = '/images/peptide_clear.png';
+                          }
                         }}
                       />
                       <div style={{ flex: 1, minWidth: 0 }}>
@@ -1561,7 +1574,11 @@ export default function AgentStorefrontGrid({
                             onError={(e) => {
                               const target = e.target as HTMLImageElement;
                               const fallback = getProductImage(null, item.products?.category || 'Other', name);
-                              if (target.src !== fallback) target.src = fallback;
+                              if (target.src !== fallback) {
+                                target.src = fallback;
+                              } else {
+                                target.src = '/images/peptide_clear.png';
+                              }
                             }}
                           />
                           <div style={{ flex: 1, minWidth: 0 }}>
@@ -1771,10 +1788,11 @@ export default function AgentStorefrontGrid({
                   onError={(e) => {
                     const target = e.target as HTMLImageElement;
                     const fallback = getProductImage(null, detailProduct.category || 'Other', detailProduct.name);
-                    if (target.src !== fallback) {
+                    if (target.src !== fallback && target.src !== window.location.origin + fallback) {
                       target.src = fallback;
                     } else {
-                      target.style.opacity = '0.3';
+                      target.src = '/images/peptide_clear.png';
+                      target.style.opacity = '0.9';
                     }
                   }}
                 />
