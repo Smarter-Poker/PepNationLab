@@ -7,6 +7,8 @@ import AgentOverview from '@/components/AgentOverview';
 import PushNotificationToggle from '@/components/PushNotificationToggle';
 import Link from 'next/link';
 import WalletCard from '@/components/WalletCard';
+import Navbar from '@/components/Navbar';
+import MyQRCodeModal from '@/components/MyQRCodeModal';
 
 type Overview = {
   profile: {
@@ -59,6 +61,8 @@ export default function SubAgentDashboardClient({ data, onRefresh }: { data: Ove
   
   const [copiedStorefront, setCopiedStorefront] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [showQRModal, setShowQRModal] = useState(false);
 
   const setActiveTab = (tab: string) => {
     const newParams = new URLSearchParams(searchParams.toString());
@@ -80,186 +84,273 @@ export default function SubAgentDashboardClient({ data, onRefresh }: { data: Ove
   const availableBalance = isCredit
     ? Number(data.profile.credit_limit ?? 0) + Number(data.profile.prepaid_balance ?? 0)
     : Number(data.profile.prepaid_balance ?? 0);
+  
+  const SUBAGENT_SIDEBAR_ITEMS = [
+    { id: 'Overview', type: 'tab', label: 'Overview', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="9" /><rect x="14" y="3" width="7" height="5" /><rect x="14" y="12" width="7" height="9" /><rect x="3" y="16" width="7" height="5" /></svg> },
+    { id: 'Researchers', type: 'tab', label: 'Researchers', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /></svg> },
+    { id: 'qr', type: 'action', label: 'My Invite QR', action: () => { setShowQRModal(true); setIsMobileMenuOpen(false); }, icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" /><rect x="3" y="14" width="7" height="7" /><rect x="14" y="14" width="3" height="3" /><rect x="19" y="14" width="2" height="2" /><rect x="14" y="19" width="2" height="2" /><rect x="19" y="19" width="2" height="2" /></svg> },
+    { id: 'Orders', type: 'tab', label: 'Orders', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path><line x1="3" y1="6" x2="21" y2="6"></line><path d="M16 10a4 4 0 0 1-8 0"></path></svg> },
+    { id: 'Sales & Accounting', type: 'tab', label: 'Sales & Accounting', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17" /><polyline points="16 7 22 7 22 13" /></svg> },
+    { id: 'wallet', type: 'link', label: 'Wallet', href: '/wallet', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4" /><path d="M3 5v14a2 2 0 0 0 2 2h16v-5" /><path d="M18 12a2 2 0 0 0 0 4h4v-4Z" /></svg> },
+    { id: 'messenger', type: 'link', label: 'Messenger', href: '/messenger', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg> },
+    { id: 'Settings', type: 'link', label: 'Account Settings', href: '/account', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /></svg> },
+    { id: 'security', type: 'link', label: 'Account Security', href: '/account/security', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></svg> },
+    ...(data.share_link ? [{ id: 'storefront-display', type: 'storefront-display' }] : []),
+    { id: 'signout', type: 'form', label: 'Sign Out', actionUrl: '/api/auth/signout', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" /><polyline points="16 17 21 12 16 7" /><line x1="21" y1="12" x2="9" y2="12" /></svg>, color: 'var(--red)' }
+  ] as any[];
 
   return (
-    <div className="dashboard-main" style={{ minHeight: '100dvh' }}>
-      <div className="container" style={{ paddingTop: 'var(--space-8)', paddingBottom: activeTab === 'Overview' ? 0 : 'var(--space-12)' }}>
-        
-        {/* Navigation back to Overview if deep linked */}
+    <div style={{ minHeight: '100dvh', background: 'var(--black)' }}>
+      {/* Mobile Top Navbar (Global) */}
+      <Navbar onMenuClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} title={data.profile.full_name || 'SUB-AGENT DASHBOARD'} />
 
-        {/* Overview (Metallic 6-Button Image) */}
-        {activeTab === 'Overview' && (
-          <div style={{
-            animation: 'fadeIn 0.3s ease-out',
-            /* Bust out of the container so the image goes edge-to-edge */
-            marginLeft: 'calc(-1 * var(--container-px, var(--space-6)))',
-            marginRight: 'calc(-1 * var(--container-px, var(--space-6)))',
-            marginTop: 'calc(-1 * var(--space-8))',
-          }}>
-            <AgentOverview 
-              activeResearchersCount={data.referred_researchers_count}
-              activeOrdersCount={data.recent_orders.length}
-              totalRevenue={0} // Not tracked directly on sub-agent overview API
-              storefrontUrl={storefrontUrl}
-              copyStorefrontLink={copyStorefrontLink}
-              copiedStorefront={copiedStorefront}
-              agentProfile={{ slug: data.profile.parent?.storefront_slug }}
-              orders={data.recent_orders}
-              onNavigate={(tab) => {
-                if (tab === 'Store Products' || tab === 'Inventory') {
-                  toast.info('Inventory and Products are managed by your Parent Agent.');
-                } else {
-                  setActiveTab(tab);
-                }
-              }}
-            />
-          </div>
-        )}
+      {/* Overlay to close menu when clicking outside */}
+      {isMobileMenuOpen && (
+        <div 
+          onClick={() => setIsMobileMenuOpen(false)}
+          style={{
+            position: 'fixed',
+            top: 'var(--nav-offset, 60px)',
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0,0,0,0.5)',
+            zIndex: 40,
+            cursor: 'pointer'
+          }}
+        />
+      )}
 
-        {/* Researchers Tab */}
-        {activeTab === 'Researchers' && (
-          <div style={{ animation: 'fadeIn 0.3s ease-out' }}>
-            <h1 style={{ fontSize: '24px', marginBottom: '16px' }}>Researchers</h1>
-            {data.share_link && (
-              <div className="card-glass" style={{ padding: '20px', marginBottom: '24px' }}>
-                <h2 style={{ fontSize: '18px', marginBottom: '12px' }}>Invite Researchers</h2>
-                <div style={{ background: 'rgba(0,196,188,0.06)', border: '1px solid rgba(0,196,188,0.2)', borderRadius: '8px', padding: '14px' }}>
-                  <div style={{ fontSize: '11px', opacity: 0.7, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '6px' }}>Your Referral Link</div>
-                  <div style={{ fontSize: '13px', fontFamily: 'monospace', wordBreak: 'break-all', background: 'rgba(0,0,0,0.3)', padding: '8px', borderRadius: '4px', marginBottom: '8px' }}>
-                    {storefrontUrl}
+      {/* Sidebar */}
+      <div className="sidebar" style={{ 
+        transform: isMobileMenuOpen ? 'translateX(0)' : 'translateX(-100%)',
+        transition: 'transform 0.3s ease',
+        zIndex: 50,
+        display: 'flex',
+        flexDirection: 'column',
+        overflow: 'hidden',
+      }}>
+        <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 2 }}>
+          {SUBAGENT_SIDEBAR_ITEMS.map((item) => {
+            if (item.type === 'tab') {
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => { 
+                    setActiveTab(item.id); 
+                    setIsMobileMenuOpen(false); 
+                  }}
+                  className={`sidebar-nav-item ${activeTab === item.id ? 'active' : ''}`}
+                  style={{ 
+                    background: 'transparent', 
+                    width: '100%', 
+                    textAlign: 'left', 
+                    border: 'none', 
+                    borderLeft: activeTab === item.id ? '3px solid var(--teal)' : '3px solid transparent',
+                    cursor: 'pointer'
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', width: '100%' }}>
+                    {item.icon}
+                    <span style={{ fontSize: '0.85rem', fontFamily: 'var(--font-brand)', letterSpacing: '0.05em' }}>{item.label}</span>
                   </div>
-                  <button
-                    type="button"
-                    onClick={copyStorefrontLink}
-                    className="btn-primary"
-                    style={{ fontSize: '12px', padding: '6px 16px' }}
-                  >
-                    {copiedStorefront ? 'Copied!' : 'Copy Link'}
+                </button>
+              );
+            }
+            if (item.type === 'action') {
+              return (
+                <button
+                  key={item.id}
+                  className="sidebar-nav-item"
+                  onClick={item.action}
+                  style={{ width: '100%', background: 'transparent', border: 'none', textAlign: 'left', borderLeft: '3px solid transparent' }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
+                    {item.icon}
+                    <span style={{ fontSize: '0.85rem', fontFamily: 'var(--font-brand)', letterSpacing: '0.05em', color: item.color || 'currentColor', transition: 'color 0.2s' }}>
+                      {item.label}
+                    </span>
+                  </div>
+                </button>
+              );
+            }
+            if (item.type === 'link') {
+              return (
+                <Link key={item.id} href={item.href!} className="sidebar-nav-item" style={{ display: 'block', textDecoration: 'none', borderLeft: '3px solid transparent' }} onClick={() => setIsMobileMenuOpen(false)}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
+                    {item.icon}
+                    <span style={{ fontSize: '0.85rem', fontFamily: 'var(--font-brand)', letterSpacing: '0.05em' }}>{item.label}</span>
+                  </div>
+                </Link>
+              );
+            }
+            if (item.type === 'form') {
+              return (
+                <form key={item.id} action={item.actionUrl} method="post">
+                  <button type="submit" className="sidebar-nav-item" style={{ width: '100%', background: 'transparent', border: 'none', color: item.color, borderLeft: '3px solid transparent', paddingBottom: 'max(var(--space-8), env(safe-area-inset-bottom, 32px))' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
+                      {item.icon}
+                      <span style={{ fontSize: '0.85rem', fontFamily: 'var(--font-brand)', letterSpacing: '0.05em' }}>{item.label}</span>
+                    </div>
                   </button>
-                  <div style={{ fontSize: '11px', opacity: 0.7, marginTop: '8px' }}>
-                    Share This Link With New Researchers. Sign-Ups Through This Link Are Permanently Tagged To You And Earn You Commission On Every Order.
+                </form>
+              );
+            }
+            return null;
+          })}
+        </div>
+      </div>
+      {/* Main Content */}
+      <div style={{ flex: 1, minWidth: 0, paddingBottom: 'env(safe-area-inset-bottom, 24px)', marginTop: 'var(--nav-offset, 60px)' }}>
+        <div className="dashboard-main" style={{ minHeight: 'calc(100dvh - var(--nav-offset, 60px))' }}>
+          <div className="container" style={{ paddingTop: 'var(--space-8)', paddingBottom: activeTab === 'Overview' ? 0 : 'var(--space-12)' }}>
+            
+            {/* Overview (Metallic 6-Button Image) */}
+            {activeTab === 'Overview' && (
+              <div style={{
+                animation: 'fadeIn 0.3s ease-out',
+                /* Bust out of the container so the image goes edge-to-edge */
+                marginLeft: 'calc(-1 * var(--container-px, var(--space-6)))',
+                marginRight: 'calc(-1 * var(--container-px, var(--space-6)))',
+                marginTop: 'calc(-1 * var(--space-8))',
+              }}>
+                <AgentOverview 
+                  activeResearchersCount={data.referred_researchers_count}
+                  activeOrdersCount={data.recent_orders.length}
+                  totalRevenue={0} // Not tracked directly on sub-agent overview API
+                  storefrontUrl={storefrontUrl}
+                  copyStorefrontLink={copyStorefrontLink}
+                  copiedStorefront={copiedStorefront}
+                  agentProfile={{ slug: data.profile.parent?.storefront_slug }}
+                  orders={data.recent_orders}
+                  onNavigate={(tab) => {
+                    if (tab === 'Store Products' || tab === 'Inventory') {
+                      toast.info('Inventory and Products are managed by your Parent Agent.');
+                    } else {
+                      setActiveTab(tab);
+                      setIsMobileMenuOpen(false);
+                    }
+                  }}
+                />
+              </div>
+            )}
+
+            {/* Researchers Tab */}
+            {activeTab === 'Researchers' && (
+              <div style={{ animation: 'fadeIn 0.3s ease-out' }}>
+                <h1 style={{ fontSize: '24px', marginBottom: '16px' }}>Researchers</h1>
+                {data.share_link && (
+                  <div className="card-glass" style={{ padding: '20px', marginBottom: '24px' }}>
+                    <h2 style={{ fontSize: '18px', marginBottom: '12px' }}>Invite Researchers</h2>
+                    <div style={{ background: 'rgba(0,196,188,0.06)', border: '1px solid rgba(0,196,188,0.2)', borderRadius: '8px', padding: '14px' }}>
+                      <div style={{ fontSize: '11px', opacity: 0.7, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '6px' }}>Your Referral Link</div>
+                      <div style={{ fontSize: '13px', fontFamily: 'monospace', wordBreak: 'break-all', background: 'rgba(0,0,0,0.3)', padding: '8px', borderRadius: '4px', marginBottom: '8px' }}>
+                        {storefrontUrl}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={copyStorefrontLink}
+                        className="btn-primary"
+                        style={{ fontSize: '12px', padding: '6px 16px' }}
+                      >
+                        {copiedStorefront ? 'Copied!' : 'Copy Link'}
+                      </button>
+                      <div style={{ fontSize: '11px', opacity: 0.7, marginTop: '8px' }}>
+                        Share This Link With New Researchers. Sign-Ups Through This Link Are Permanently Tagged To You And Earn You Commission On Every Order.
+                      </div>
+                    </div>
+                  </div>
+                )}
+                <div className="metal-frame">
+                  <div className="metal-content" style={{ padding: 'var(--space-6)' }}>
+                    <div style={{ fontSize: '28px', fontWeight: 700 }}>{data.referred_researchers_count}</div>
+                    <div style={{ fontSize: '14px', opacity: 0.7 }}>Total Researchers Tagged To You</div>
                   </div>
                 </div>
               </div>
             )}
-            <div className="metal-frame">
-              <div className="metal-content" style={{ padding: 'var(--space-6)' }}>
-                <div style={{ fontSize: '28px', fontWeight: 700 }}>{data.referred_researchers_count}</div>
-                <div style={{ fontSize: '14px', opacity: 0.7 }}>Total Researchers Tagged To You</div>
-              </div>
-            </div>
-          </div>
-        )}
 
-        {/* Sales & Accounting Tab */}
-        {activeTab === 'Sales & Accounting' && (
-          <div style={{ animation: 'fadeIn 0.3s ease-out' }}>
-            <div style={{ marginBottom: '24px' }}>
-              <WalletCard />
-            </div>
-
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '16px', marginBottom: '24px' }}>
-              <div className="metal-frame">
-                <div className="metal-content" style={{ padding: 'var(--space-6)', textAlign: 'center', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-                  <div style={{ fontSize: '0.85rem', color: 'var(--grey-400)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '8px', fontWeight: 600 }}>Available Balance</div>
-                  <div style={{ fontSize: '2.5rem', fontWeight: 800, color: 'var(--white)', fontFamily: 'var(--font-brand)', textShadow: '0 0 10px rgba(255,255,255,0.2)', marginTop: '4px' }}>{fmtMoney(availableBalance)}</div>
-                  <div style={{ fontSize: '12px', opacity: 0.7, marginTop: '8px' }}>
-                    {isCredit ? (
-                      <>Credit Line {fmtMoney(data.profile.credit_limit)} + Prepaid {fmtMoney(data.profile.prepaid_balance)}</>
+            {/* Orders Tab */}
+            {activeTab === 'Orders' && (
+              <div style={{ animation: 'fadeIn 0.3s ease-out' }}>
+                <h1 style={{ fontSize: '24px', marginBottom: '16px' }}>Attributed Orders</h1>
+                <div className="metal-frame">
+                  <div className="metal-content" style={{ padding: 'var(--space-6)' }}>
+                    <h3 style={{ fontSize: '14px', opacity: 0.7, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '16px' }}>Recent Order Activity</h3>
+                    {data.recent_orders.length === 0 ? (
+                      <p style={{ opacity: 0.7 }}>No orders yet. Start sharing your referral link!</p>
                     ) : (
-                      <>Prepaid Account</>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                        {data.recent_orders.map(o => (
+                          <div key={o.id} style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: '16px', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+                            <div>
+                              <div style={{ fontWeight: 600 }}>Order #{o.id.split('-')[0].toUpperCase()}</div>
+                              <div style={{ fontSize: '13px', opacity: 0.7 }}>{fmtDate(o.created_at)} &bull; {o.status.toUpperCase()}</div>
+                            </div>
+                            <div style={{ textAlign: 'right' }}>
+                              <div style={{ fontWeight: 600, color: 'var(--teal)' }}>+{fmtMoney(o.sub_agent_commission_amount)}</div>
+                              <div style={{ fontSize: '13px', opacity: 0.7 }}>{o.sub_agent_commission_pct}% Cut</div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
                     )}
                   </div>
                 </div>
               </div>
+            )}
 
-              <div className="metal-frame">
-                <div className="metal-content" style={{ padding: 'var(--space-6)', textAlign: 'center', display: 'flex', flexDirection: 'column', justifyContent: 'center', position: 'relative', overflow: 'hidden' }}>
-                  <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(circle at center, rgba(0, 255, 157, 0.05) 0%, transparent 70%)', pointerEvents: 'none' }} />
-                  <div style={{ fontSize: '0.85rem', color: 'var(--grey-400)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '8px', fontWeight: 600 }}>Pending Commission</div>
-                  <div style={{ fontSize: '2.5rem', fontWeight: 800, color: '#00FF9D', fontFamily: 'var(--font-brand)', textShadow: '0 0 15px rgba(0,255,157,0.3)', marginTop: '4px' }}>{fmtMoney(data.pending_commission)}</div>
-                  <div style={{ fontSize: '12px', opacity: 0.7, marginTop: '8px' }}>
-                    Earning {data.profile.commission_pct ?? 0}% Of Total Sales. Credits Settle Sundays.
+            {/* Sales & Accounting Tab */}
+            {activeTab === 'Sales & Accounting' && (
+              <div style={{ animation: 'fadeIn 0.3s ease-out' }}>
+                <h1 style={{ fontSize: '24px', marginBottom: '16px' }}>Sales & Accounting</h1>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 'var(--space-4)', marginBottom: 'var(--space-6)' }}>
+                  <WalletCard />
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
+                    <div className="metal-frame">
+                      <div className="metal-content" style={{ padding: 'var(--space-6)' }}>
+                        <div style={{ fontSize: '14px', opacity: 0.7, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px' }}>Pending Commission (This Week)</div>
+                        <div style={{ fontSize: '32px', fontWeight: 800, color: 'var(--teal)', textShadow: '0 0 10px rgba(0,196,188,0.3)' }}>{fmtMoney(data.pending_commission)}</div>
+                        <div style={{ fontSize: '12px', opacity: 0.6, marginTop: '8px' }}>Will be settled to your Wallet on Monday at 2am ET.</div>
+                      </div>
+                    </div>
+                    <div className="metal-frame">
+                      <div className="metal-content" style={{ padding: 'var(--space-6)' }}>
+                        <div style={{ fontSize: '14px', opacity: 0.7, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px' }}>Lifetime Commission Earned</div>
+                        <div style={{ fontSize: '24px', fontWeight: 700 }}>{fmtMoney(data.lifetime_commission)}</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div className="metal-frame">
+                  <div className="metal-content" style={{ padding: 'var(--space-6)' }}>
+                    <h3 style={{ fontSize: '14px', opacity: 0.7, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '16px' }}>Recent Weekly Settlements</h3>
+                    {data.recent_settlements.length === 0 ? (
+                      <p style={{ opacity: 0.7 }}>No weekly settlements yet.</p>
+                    ) : (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                        {data.recent_settlements.map(s => (
+                          <div key={s.id} style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: '16px', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+                            <div>
+                              <div style={{ fontWeight: 600 }}>Week of {fmtDate(s.week_start)}</div>
+                              <div style={{ fontSize: '13px', opacity: 0.7 }}>Settled {fmtDate(s.settled_at)} &bull; {s.orders_count} Orders</div>
+                            </div>
+                            <div style={{ textAlign: 'right' }}>
+                              <div style={{ fontWeight: 600, color: 'var(--teal)' }}>+{fmtMoney(s.total_commission)}</div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
+            )}
 
-              <div className="metal-frame">
-                <div className="metal-content" style={{ padding: 'var(--space-6)', textAlign: 'center', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-                  <div style={{ fontSize: '0.85rem', color: 'var(--grey-400)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '8px', fontWeight: 600 }}>Lifetime Earned</div>
-                  <div style={{ fontSize: '2.5rem', fontWeight: 800, color: '#00E5FF', fontFamily: 'var(--font-brand)', textShadow: '0 0 10px rgba(0,229,255,0.2)', marginTop: '4px' }}>{fmtMoney(data.lifetime_commission)}</div>
-                  <div style={{ fontSize: '12px', opacity: 0.7, marginTop: '8px' }}>{data.recent_settlements.length} Settled Weeks</div>
-                </div>
-              </div>
-            </div>
-
-            <div className="metal-frame" style={{ marginBottom: '20px' }}>
-              <div className="metal-content" style={{ padding: 'var(--space-6)' }}>
-                <h2 className="metal-text" style={{ fontSize: '1.25rem', marginBottom: 'var(--space-6)', fontFamily: 'var(--font-brand)' }}>Recent Settlements</h2>
-              {data.recent_settlements.length === 0 ? (
-                <div style={{ opacity: 0.75 }}>No Settled Weeks Yet. Your First Weekly Payout Lands Sunday Night.</div>
-              ) : (
-                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                  <thead>
-                    <tr>
-                      <th style={{ textAlign: 'left', padding: '6px 4px', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>Week Of</th>
-                      <th style={{ textAlign: 'right', padding: '6px 4px', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>Orders</th>
-                      <th style={{ textAlign: 'right', padding: '6px 4px', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>Credited</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {data.recent_settlements.map((s) => (
-                      <tr key={s.id}>
-                        <td style={{ padding: '6px 4px' }}>{fmtDate(s.week_start)}</td>
-                        <td style={{ padding: '6px 4px', textAlign: 'right' }}>{s.orders_count}</td>
-                        <td style={{ padding: '6px 4px', textAlign: 'right' }}>{fmtMoney(s.total_commission)}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              )}
-              </div>
-            </div>
           </div>
-        )}
-
-        {/* Orders & Fulfillment Tab */}
-        {activeTab === 'Orders' && (
-          <div style={{ animation: 'fadeIn 0.3s ease-out' }}>
-            <div className="metal-frame" style={{ marginBottom: '20px' }}>
-              <div className="metal-content" style={{ padding: 'var(--space-6)' }}>
-                <h2 className="metal-text" style={{ fontSize: '1.25rem', marginBottom: 'var(--space-4)', fontFamily: 'var(--font-brand)' }}>Recent Orders Attributed To You</h2>
-                <p style={{ opacity: 0.7, fontSize: '0.85rem', marginBottom: '16px' }}>Orders are fulfilled by your Parent Agent. You earn commission on completed sales.</p>
-              {data.recent_orders.length === 0 ? (
-                <div style={{ opacity: 0.75 }}>No Orders Yet. Once Your Researchers Buy, You&apos;ll See Them Here.</div>
-              ) : (
-                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                  <thead>
-                    <tr>
-                      <th style={{ textAlign: 'left', padding: '6px 4px', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>Date</th>
-                      <th style={{ textAlign: 'left', padding: '6px 4px', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>Status</th>
-                      <th style={{ textAlign: 'right', padding: '6px 4px', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>Total</th>
-                      <th style={{ textAlign: 'right', padding: '6px 4px', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>Your Commission</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {data.recent_orders.map((o) => (
-                      <tr key={o.id}>
-                        <td style={{ padding: '6px 4px' }}>{fmtDate(o.created_at)}</td>
-                        <td style={{ padding: '6px 4px', textTransform: 'capitalize' }}>{(o.status || '').replace(/_/g, ' ')}</td>
-                        <td style={{ padding: '6px 4px', textAlign: 'right' }}>{fmtMoney(o.total)}</td>
-                        <td style={{ padding: '6px 4px', textAlign: 'right' }}>{fmtMoney(o.sub_agent_commission_amount)}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              )}
-              </div>
-            </div>
-          </div>
-        )}
-
+        </div>
       </div>
+      <MyQRCodeModal open={showQRModal} onClose={() => setShowQRModal(false)} />
     </div>
   );
 }

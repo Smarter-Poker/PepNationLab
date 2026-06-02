@@ -126,10 +126,6 @@ export default function SubAgentDashboardPage() {
   }
 
   return (
-    <div style={{ minHeight: '100dvh', background: 'var(--black)' }}>
-      <Navbar />
-      <div style={{ height: 60 }} />
-      <SubAgentDashboardClient data={data} onRefresh={load} />
-    </div>
+    <SubAgentDashboardClient data={data} onRefresh={load} />
   );
 }

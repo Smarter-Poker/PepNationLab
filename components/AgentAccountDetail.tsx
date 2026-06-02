@@ -185,7 +185,7 @@ export default function AgentAccountDetail({
           level: idx + 1,
           name: defaultNames[idx] || `Level ${idx + 1}`,
           min_volume: s.min_volume || 0,
-          bonus_pct: s.bonus_pct || 0
+          bonus_pct: (s.bonus_pct || 0) + basePct
         }));
         while (mappedSteps.length < 5) {
           const idx = mappedSteps.length;
@@ -241,7 +241,7 @@ export default function AgentAccountDetail({
         // Gamification scale: cap above base lets the ladder lift the rate.
         payload.commission_max_pct = scaleType === 'custom' ? customSteps[4].bonus_pct : (maxCap === '' ? null : maxCap);
         payload.velocity_cap = velocityCap === '' ? null : velocityCap;
-        payload.custom_commission_scale = scaleType === 'custom' ? customSteps.map(s => ({ min_volume: s.min_volume, bonus_pct: s.bonus_pct })) : undefined;
+        payload.custom_commission_scale = scaleType === 'custom' ? customSteps.map(s => ({ min_volume: s.min_volume, bonus_pct: Math.max(0, s.bonus_pct - baseVal) })) : undefined;
       }
       if (accountType === 'credit') payload.credit_limit = creditLimit === '' ? 0 : creditLimit;
 

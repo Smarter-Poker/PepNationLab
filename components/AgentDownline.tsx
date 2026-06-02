@@ -90,7 +90,7 @@ export default function AgentDownline({ agentId }: { agentId?: string }) {
             ? (caCommissionPct === '' ? undefined : caCommissionPct)
             : (caScaleType === 'custom' ? caCustomSteps[4].bonus_pct : (caMaxCap === '' ? null : caMaxCap)),
           velocity_cap: caCommissionMode === 'gamified' && caVelocityCap !== '' ? caVelocityCap : undefined,
-          custom_commission_scale: caCommissionMode === 'gamified' && caScaleType === 'custom' ? caCustomSteps.map(s => ({ min_volume: s.min_volume, bonus_pct: s.bonus_pct })) : undefined,
+          custom_commission_scale: caCommissionMode === 'gamified' && caScaleType === 'custom' ? caCustomSteps.map(s => ({ min_volume: s.min_volume, bonus_pct: Math.max(0, s.bonus_pct - caCustomSteps[0].bonus_pct) })) : undefined,
         })
       });
       const data = await res.json();
