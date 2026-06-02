@@ -5,8 +5,9 @@ import HelpSupportClient from '@/components/account/HelpSupportClient';
 export const dynamic = 'force-dynamic';
 
 // /account/help
-// Help & Support: FAQ, a support-request form, and the user's ticket history.
-// Tickets persist via /api/account/support into public.support_requests.
+// Help & Support: FAQ plus a Contact Support action that opens the user's live
+// support thread with admin via the shared messenger channel
+// (POST /api/messenger/support/open), which the admin Customer Support inbox monitors.
 export default async function AccountHelpPage() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();

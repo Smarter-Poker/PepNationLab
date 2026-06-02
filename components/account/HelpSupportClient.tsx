@@ -1,18 +1,10 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
-import { ChevronDown, LifeBuoy, MessageSquare, FileText } from 'lucide-react';
-
-interface Ticket {
-  id: string;
-  subject: string;
-  category: string;
-  message: string;
-  status: string;
-  created_at: string;
-}
+import { ChevronDown, LifeBuoy, MessageSquare } from 'lucide-react';
 
 const FAQ: Array<{ q: string; a: string }> = [
   {
@@ -41,75 +33,33 @@ const FAQ: Array<{ q: string; a: string }> = [
   },
 ];
 
-const CATEGORIES: Array<{ value: string; label: string }> = [
-  { value: 'general',    label: 'General Question' },
-  { value: 'order',      label: 'Order Issue' },
-  { value: 'payment',    label: 'Payment Issue' },
-  { value: 'technical',  label: 'Technical Problem' },
-  { value: 'compliance', label: 'Compliance' },
-  { value: 'account',    label: 'Account' },
-];
-
-const STATUS_LABEL: Record<string, string> = {
-  open: 'Open',
-  in_progress: 'In Progress',
-  resolved: 'Resolved',
-};
-
-const fmtDate = (s: string) => {
-  const d = new Date(s);
-  return isNaN(d.getTime()) ? s : d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-};
-
 export default function HelpSupportClient() {
+  const router = useRouter();
   const [openFaq, setOpenFaq] = useState<number | null>(0);
+  const [busy, setBusy] = useState(false);
 
-  const [subject, setSubject] = useState('');
-  const [category, setCategory] = useState('general');
-  const [message, setMessage] = useState('');
-  const [submitting, setSubmitting] = useState(false);
-
-  const [tickets, setTickets] = useState<Ticket[]>([]);
-  const [loadingTickets, setLoadingTickets] = useState(true);
-
-  async function loadTickets() {
+  // Contact Support opens (or reuses) the user's live support thread with the
+  // admin team via the shared messenger support channel — the same channel the
+  // admin Customer Support inbox monitors — then routes into that conversation.
+  async function contactSupport() {
+    if (busy) return;
+    setBusy(true);
     try {
-      const res = await fetch('/api/account/support', { cache: 'no-store' });
-      const json = await res.json();
-      if (res.ok) setTickets(Array.isArray(json.tickets) ? json.tickets : []);
-    } catch {
-      /* non-fatal */
-    } finally {
-      setLoadingTickets(false);
-    }
-  }
-
-  useEffect(() => { loadTickets(); }, []);
-
-  async function submit(e: React.FormEvent) {
-    e.preventDefault();
-    if (subject.trim().length < 3) { toast.error('Please Add A Short Subject.'); return; }
-    if (message.trim().length < 10) { toast.error('Please Describe Your Issue In A Little More Detail.'); return; }
-
-    setSubmitting(true);
-    try {
-      const res = await fetch('/api/account/support', {
+      const res = await fetch('/api/messenger/support/open', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({ subject: subject.trim(), category, message: message.trim() }),
       });
       const json = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(json?.error || 'Submit Failed.');
-      toast.success('Support Request Submitted. Our Team Will Follow Up.');
-      setSubject('');
-      setMessage('');
-      setCategory('general');
-      if (json.ticket) setTickets((prev) => [json.ticket, ...prev]);
+      if (!res.ok) throw new Error(json?.error || 'Failed To Open Support.');
+      if (json.conversationId) {
+        router.push(`/messenger?conversation=${encodeURIComponent(json.conversationId)}`);
+      } else {
+        router.push('/messenger');
+      }
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Submit Failed.');
+      toast.error(err instanceof Error ? err.message : 'Failed To Open Support.');
     } finally {
-      setSubmitting(false);
+      setBusy(false);
     }
   }
 
@@ -124,10 +74,24 @@ export default function HelpSupportClient() {
             Help & Support
           </h1>
           <p style={{ color: 'var(--silver)', fontSize: '0.92rem', margin: 0 }}>
-            Find Quick Answers Below, Or Send Our Team A Message.
+            Find Quick Answers Below, Or Start A Chat With Our Support Team.
           </p>
         </div>
 
+        {/* Contact Support */}
+        <section className="card-metal" style={{ padding: 'var(--space-5)', borderRadius: 'var(--radius-lg)' }}>
+          <h2 style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'var(--teal)', marginTop: 0, fontSize: '1.05rem' }}>
+            <MessageSquare size={18} aria-hidden /> Contact Support
+          </h2>
+          <p style={{ color: 'var(--silver)', fontSize: '0.88rem', lineHeight: 1.6, margin: '0 0 var(--space-4)' }}>
+            Start A Direct Message With Our Support Team. We Will Reply In Your Messenger Inbox.
+          </p>
+          <button type="button" className="btn btn-primary" disabled={busy} onClick={contactSupport}>
+            {busy ? 'Opening...' : 'Start A Support Chat'}
+          </button>
+        </section>
+
+        {/* FAQ */}
         <section className="card-metal" style={{ padding: 'var(--space-5)', borderRadius: 'var(--radius-lg)' }}>
           <h2 style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'var(--teal)', marginTop: 0, fontSize: '1.05rem' }}>
             <LifeBuoy size={18} aria-hidden /> Frequently Asked Questions
@@ -174,113 +138,6 @@ export default function HelpSupportClient() {
               );
             })}
           </div>
-        </section>
-
-        <section className="card-metal" style={{ padding: 'var(--space-5)', borderRadius: 'var(--radius-lg)' }}>
-          <h2 style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'var(--teal)', marginTop: 0, fontSize: '1.05rem' }}>
-            <MessageSquare size={18} aria-hidden /> Contact Support
-          </h2>
-          <form onSubmit={submit} style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
-            <div className="form-group">
-              <label className="form-label" htmlFor="support-subject">Subject</label>
-              <input
-                id="support-subject"
-                type="text"
-                className="form-input"
-                value={subject}
-                onChange={(e) => setSubject(e.target.value)}
-                maxLength={160}
-                placeholder="Brief Summary Of Your Question"
-              />
-            </div>
-
-            <div className="form-group">
-              <label className="form-label" htmlFor="support-category">Category</label>
-              <select
-                id="support-category"
-                className="form-input"
-                value={category}
-                onChange={(e) => setCategory(e.target.value)}
-              >
-                {CATEGORIES.map((c) => (
-                  <option key={c.value} value={c.value}>{c.label}</option>
-                ))}
-              </select>
-            </div>
-
-            <div className="form-group">
-              <label className="form-label" htmlFor="support-message">How Can We Help?</label>
-              <textarea
-                id="support-message"
-                className="form-input"
-                rows={5}
-                value={message}
-                onChange={(e) => setMessage(e.target.value)}
-                maxLength={4000}
-                placeholder="Describe Your Issue Or Question In Detail."
-              />
-              <div style={{ marginTop: 4, textAlign: 'right', fontSize: '0.7rem', color: 'var(--silver)' }}>
-                {message.length}/4000
-              </div>
-            </div>
-
-            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-              <button type="submit" className="btn btn-primary" disabled={submitting}>
-                {submitting ? 'Sending...' : 'Submit Request'}
-              </button>
-            </div>
-          </form>
-        </section>
-
-        <section className="card-metal" style={{ padding: 'var(--space-5)', borderRadius: 'var(--radius-lg)' }}>
-          <h2 style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'var(--teal)', marginTop: 0, fontSize: '1.05rem' }}>
-            <FileText size={18} aria-hidden /> Your Requests
-          </h2>
-          {loadingTickets ? (
-            <p style={{ color: 'var(--silver)', fontSize: '0.88rem', margin: 0 }}>Loading...</p>
-          ) : tickets.length === 0 ? (
-            <p style={{ color: 'var(--silver)', fontSize: '0.88rem', margin: 0 }}>
-              You Have No Support Requests Yet.
-            </p>
-          ) : (
-            <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
-              {tickets.map((t) => (
-                <li
-                  key={t.id}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    gap: 'var(--space-3)',
-                    padding: '10px 12px',
-                    background: 'rgba(255,255,255,0.03)',
-                    border: '1px solid rgba(255,255,255,0.05)',
-                    borderRadius: 10,
-                  }}
-                >
-                  <span style={{ minWidth: 0 }}>
-                    <span style={{ display: 'block', color: 'var(--white)', fontSize: '0.9rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {t.subject}
-                    </span>
-                    <span style={{ color: 'var(--silver)', fontSize: '0.72rem' }}>{fmtDate(t.created_at)}</span>
-                  </span>
-                  <span
-                    style={{
-                      flexShrink: 0,
-                      fontSize: '0.72rem',
-                      fontWeight: 700,
-                      padding: '2px 8px',
-                      borderRadius: 6,
-                      background: t.status === 'resolved' ? 'rgba(46,213,115,0.18)' : 'rgba(0,196,188,0.16)',
-                      color: t.status === 'resolved' ? '#2ed573' : 'var(--teal)',
-                    }}
-                  >
-                    {STATUS_LABEL[t.status] || 'Open'}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          )}
         </section>
 
         <p style={{ color: 'var(--silver)', fontSize: '0.82rem', textAlign: 'center', margin: 0 }}>
