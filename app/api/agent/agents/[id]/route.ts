@@ -64,7 +64,12 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ id: string
     const { data: agent, error } = await supabase
       .from('profiles')
       .select(
-        'id, full_name, username, email, phone, role, account_type, credit_limit, prepaid_balance, commission_pct, commission_max_pct, velocity_cap, commission_active_since, is_active, is_sub_agent, parent_agent_id, created_at, last_sign_in_at, first_sign_in_at, sign_in_count, agent_profiles(slug, display_name, is_active)',
+        // R33: added is_super_agent so the edit drawer can gate Markup
+        // Structure (super_agents store role='agent' with is_super_agent=true;
+        // role alone can't distinguish them from regular agents, so the R32
+        // gate `role === 'agent'` was incorrectly still showing markup UI
+        // to super_agents in the Edit Agent drawer).
+        'id, full_name, username, email, phone, role, account_type, credit_limit, prepaid_balance, commission_pct, commission_max_pct, velocity_cap, commission_active_since, is_active, is_sub_agent, is_super_agent, parent_agent_id, created_at, last_sign_in_at, first_sign_in_at, sign_in_count, agent_profiles(slug, display_name, is_active)',
       )
       .eq('id', id)
       .single();
@@ -126,6 +131,10 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ id: string
       agent: {
         id: agent.id,
         full_name: agent.full_name,
+        // R33: expose role + is_super_agent so the UI can gate role-specific
+        // sections (Markup Structure shows for regular agents only).
+        role: (agent as { role?: string | null }).role ?? null,
+        is_super_agent: (agent as { is_super_agent?: boolean }).is_super_agent === true,
         username: agent.username,
         email: agent.email,
         phone: (agent as { phone?: string | null }).phone ?? null,
