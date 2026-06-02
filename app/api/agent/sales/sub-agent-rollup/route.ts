@@ -32,14 +32,18 @@ export async function GET(req: Request) {
 
   const { start, end } = parseRange(new URL(req.url).searchParams);
 
-  // Single query: pull all live orders for the sub-agent set, aggregate in JS.
+  // Pull COLLECTED orders for the sub-agent set with line items, aggregate in JS.
+  // Mirrors agent_sales_kpis exactly: collected statuses only (not pending), and
+  // profit = retail - discount - product COGS - shipping (COGS was previously
+  // omitted here, overstating sub-agent profit).
+  const COLLECTED = ['approved_ship', 'approved_pickup', 'in_fulfillment', 'shipped', 'delivered'];
   const { data: orders } = await svc
     .from('orders')
-    .select('agent_id, total, discount_amount, shipping_cost, status, is_wholesale_restock, created_at')
+    .select('agent_id, total, discount_amount, shipping_cost, is_wholesale_restock, order_items(unit_retail_price, unit_cost_price, quantity)')
     .in('agent_id', subIds)
     .gte('created_at', start.toISOString())
     .lt('created_at', end.toISOString())
-    .neq('status', 'cancelled');
+    .in('status', COLLECTED);
 
   const agg: Record<string, { revenue: number; profit: number; orders: number }> = {};
   for (const id of subIds) agg[id] = { revenue: 0, profit: 0, orders: 0 };
@@ -48,9 +52,16 @@ export async function GET(req: Request) {
     const a = agg[o.agent_id];
     if (!a) return;
     const total = Number(o.total || 0);
+    const discount = Number(o.discount_amount || 0);
     const ship = Number(o.shipping_cost || 0);
+    let retail = 0;
+    let cogs = 0;
+    for (const it of (o.order_items || [])) {
+      retail += Number(it.unit_retail_price || 0) * Number(it.quantity || 0);
+      cogs += Number(it.unit_cost_price || 0) * Number(it.quantity || 0);
+    }
     a.revenue += total;
-    a.profit += total - ship; // simplified: revenue net of shipping cost
+    a.profit += retail - discount - cogs - ship;
     a.orders += 1;
   });
 
