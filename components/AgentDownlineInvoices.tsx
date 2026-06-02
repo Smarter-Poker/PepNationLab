@@ -31,7 +31,7 @@ export default function AgentDownlineInvoices({ isSuperAgent }: { isSuperAgent: 
   async function fetchInvoices() {
     try {
       const res = await fetch(`/api/agent/super-agent/invoices?t=${Date.now()}`, { cache: 'no-store' });
-      if (!res.ok) throw new Error('Failed to load invoices');
+      if (!res.ok) throw new Error('Failed To Load Invoices');
       const data = await res.json();
       setInvoices(data.data || []);
     } catch (err: any) {
@@ -42,7 +42,7 @@ export default function AgentDownlineInvoices({ isSuperAgent }: { isSuperAgent: 
   }
 
   async function markPaid(invoiceId: string) {
-    if (!confirm('Are you sure you want to mark this invoice as paid?')) return;
+    if (!confirm('Are You Sure You Want To Mark This Invoice As Paid?')) return;
     
     try {
       const res = await fetch('/api/agent/super-agent/invoices/pay', {
@@ -53,10 +53,10 @@ export default function AgentDownlineInvoices({ isSuperAgent }: { isSuperAgent: 
       
       if (!res.ok) {
         const data = await res.json();
-        throw new Error(data.error || 'Failed to mark paid');
+        throw new Error(data.error || 'Failed To Mark Paid');
       }
       
-      toast.success('Invoice marked as paid');
+      toast.success('Invoice Marked As Paid');
       setInvoices(prev => prev.map(inv => inv.id === invoiceId ? { ...inv, status: 'paid' } : inv));
     } catch (err: any) {
       toast.error(err.message);
@@ -68,7 +68,7 @@ export default function AgentDownlineInvoices({ isSuperAgent }: { isSuperAgent: 
       <div className="metal-frame" style={{ textAlign: 'center' }}>
         <div className="metal-content" style={{ padding: 'var(--space-6)' }}>
           <div className="spinner" style={{ margin: '0 auto', marginBottom: 'var(--space-4)' }} />
-          <p style={{ color: 'var(--silver-light)' }}>Loading invoices...</p>
+          <p style={{ color: 'var(--silver-light)' }}>Loading Invoices...</p>
         </div>
       </div>
     );
@@ -82,7 +82,7 @@ export default function AgentDownlineInvoices({ isSuperAgent }: { isSuperAgent: 
             {isSuperAgent ? 'Agent Invoices' : 'My Invoices (Owed To Super Agent)'}
           </h2>
           <div style={{ padding: 'var(--space-6)', textAlign: 'center' }}>
-            <p style={{ color: 'var(--silver-light)' }}>No invoices found.</p>
+            <p style={{ color: 'var(--silver-light)' }}>No Invoices Found.</p>
           </div>
         </div>
       </div>
@@ -116,7 +116,7 @@ export default function AgentDownlineInvoices({ isSuperAgent }: { isSuperAgent: 
             {invoices.map(inv => (
               <tr key={inv.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
                 <td style={{ padding: 'var(--space-3)', color: 'var(--white)', textAlign: 'center' }}>
-                  {inv.week_start} to {inv.week_end}
+                  {inv.week_start} To {inv.week_end}
                 </td>
                 {isSuperAgent && (
                   <td style={{ padding: 'var(--space-3)', color: 'var(--silver)', textAlign: 'center' }}>
