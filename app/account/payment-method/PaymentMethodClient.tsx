@@ -63,7 +63,7 @@ const PAYMENT_ICONS: Record<MethodId, React.ReactNode> = {
   paypal: <img src="/payment-logos/paypal.svg" alt="PayPal" style={baseStyle} />,
   google_wallet: <img src="/payment-logos/google_wallet.svg" alt="Google Wallet" style={scaleStyle(1.4)} />,
   wise: <img src="/payment-logos/wise.svg" alt="Wise" style={baseStyle} />,
-  chime: <img src="/payment-logos/chime.png" alt="Chime" style={scaleStyle(1.6)} />,
+  chime: <img src="/payment-logos/chime.png" alt="Chime" style={baseStyle} />,
 };
 
 interface Props {

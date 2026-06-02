@@ -861,7 +861,7 @@ export default function AgentStorefrontGrid({
           display: flex;
           flex-direction: column;
           gap: 12px;
-          padding: 16px !important;
+          padding: 16px;
           background: linear-gradient(180deg, var(--surface-1, #0F1923) 0%, var(--surface-2, #162230) 100%);
           border-radius: 15px;
           box-shadow: inset 0 2px 10px rgba(0,0,0,0.6);
@@ -903,7 +903,7 @@ export default function AgentStorefrontGrid({
           display: flex; align-items: center; justify-content: center;
         }
         @media (min-width: 640px) {
-          .sf-toolbar-inner { flex-direction: row; flex-wrap: nowrap; align-items: center; padding: 16px !important; }
+          .sf-toolbar-inner { flex-direction: row; flex-wrap: nowrap; align-items: center; padding: 16px; }
           .sf-toolbar-search  { flex: 1 1 240px; }
           .sf-toolbar-cat     { flex: 0 0 auto; }
           .sf-toolbar select  { width: auto; min-width: 160px; padding: 9px 12px; font-size: 0.85rem; }

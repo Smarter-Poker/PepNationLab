@@ -64,7 +64,7 @@ export const PAYMENT_METHODS = [
     key: 'chime',
     label: 'Chime',
     placeholder: 'Chime Username Or Link',
-    icon: <img src="/payment-logos/chime.png" alt="Chime" style={scaleStyle(1.6)} />,
+    icon: <img src="/payment-logos/chime.png" alt="Chime" style={baseStyle} />,
     color: '#3ABA78',
   },
 ] as const;

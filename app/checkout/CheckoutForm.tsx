@@ -21,7 +21,7 @@ const ALL_PAYMENT_METHODS: { id: PaymentMethodId; name: string; desc: string; ic
   { id: 'apple_cash',    name: 'Apple Cash',      desc: 'Secure Contactless Flow. Fast Settlement.', icon: <img src="/payment-logos/apple_cash.svg" alt="Apple Cash" style={scaleStyle(1.4)} /> },
   { id: 'google_wallet', name: 'Google Wallet',   desc: 'Gmail Address.', icon: <img src="/payment-logos/google_wallet.svg" alt="Google Wallet" style={scaleStyle(1.4)} /> },
   { id: 'wise',          name: 'Wise',            desc: 'Email Or Wise Username.', icon: <img src="/payment-logos/wise.svg" alt="Wise" style={baseStyle} /> },
-  { id: 'chime',         name: 'Chime',           desc: 'Chime Username Or Link.', icon: <img src="/payment-logos/chime.png" alt="Chime" style={scaleStyle(1.6)} /> },
+  { id: 'chime',         name: 'Chime',           desc: 'Chime Username Or Link.', icon: <img src="/payment-logos/chime.png" alt="Chime" style={baseStyle} /> },
 ];
 
 interface Profile {
