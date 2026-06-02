@@ -351,7 +351,7 @@ export default function AgentInventory({ agentId }: { agentId: string }) {
             onMouseOut={(e) => e.currentTarget.style.transform = 'scale(1)'}
           >
             <img 
-              src="/images/inventory-warning.jpg" 
+              src="/images/inventory-warning.png" 
               alt="Important Warning: In-Stock Inventory Priority" 
               style={{ width: '100%', height: 'auto', display: 'block' }} 
             />
