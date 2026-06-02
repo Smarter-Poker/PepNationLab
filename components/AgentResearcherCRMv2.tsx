@@ -1,23 +1,23 @@
 'use client';
 
 /**
- * AgentResearcherCRMv2 — R30 Phase 3
+ * AgentResearcherCRMv2 — R30 Phase 3 + Phase 4
  *
  * The "My Researchers" page rebuilt as a real CRM. Consumes the rich
- * /api/agent/researchers/v2 payload in a single round-trip.
+ * /api/agent/researchers/v2 payload in a single round-trip and adds
+ * advanced views from /api/agent/researchers/insights on demand.
  *
- * Surfaces:
- *  - Goal & streak header (current-month new-researcher target + progress)
- *  - 10 KPI tiles with mini sparklines + WoW delta + click-to-filter
- *  - Insight strip (at-risk count, repeat-rate, commission earned, growth nudge)
- *  - Filter chips: All / VIPs / At-Risk / New This Month / Inactive / Pinned
- *  - Rich researcher table with status badge, lifetime value, orders, last order,
- *    tags, churn risk, source, and per-row Message / Tag / Pin actions
- *  - Inline notes + tags editor in expanded row
- *  - Activity feed (collapsible)
- *  - Empty state with 3-step checklist + Copy Storefront Link
- *  - CSV export button
- *  - Mobile: stacked KPI scroll-strip + card-list rows
+ * Layout:
+ *  - Always-on header: Goal & streak, 10 KPI tiles, Insight strip
+ *  - Tab switcher: Researchers / Kanban / Charts / Acquisition
+ *  - Researchers tab: filter chips, search, CSV/PDF export, bulk select,
+ *    rich table with status badges + per-row Message/Tag/Pin actions,
+ *    expanded row with notes/tags/reminders/contact info
+ *  - Kanban tab: lifecycle columns with cards
+ *  - Charts tab: revenue line, day-of-week heatmap, top customers,
+ *    cohort retention grid
+ *  - Acquisition tab: source attribution + conversion funnel
+ *  - Activity feed always at bottom
  */
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
@@ -29,7 +29,6 @@ import {
   Tag as TagIcon,
   Search,
   Download,
-  Plus,
   AlertTriangle,
   TrendingUp,
   TrendingDown,
@@ -37,13 +36,25 @@ import {
   Sparkles,
   Target,
   Flame,
-  StickyNote,
   X,
   ChevronDown,
   ChevronUp,
   Mail,
   Activity as ActivityIcon,
+  Table as TableIcon,
+  LayoutGrid,
+  BarChart3,
+  GitBranch,
+  Printer,
+  Bell,
 } from 'lucide-react';
+import {
+  KanbanView,
+  ChartsView,
+  AcquisitionView,
+  useInsights,
+  type KanbanResearcher,
+} from './researcher-crm/views';
 
 type Status =
   | 'lead'
@@ -137,6 +148,8 @@ type FilterKey =
 
 type SortKey = 'name' | 'ltv' | 'orders' | 'last' | 'joined' | 'risk';
 
+type TabKey = 'list' | 'kanban' | 'charts' | 'acquisition';
+
 const STATUS_STYLES: Record<
   Status,
   { label: string; bg: string; fg: string; border: string }
@@ -179,11 +192,6 @@ function daysAgo(iso: string | null): string {
   return `${Math.floor(d / 365)} Years Ago`;
 }
 
-/**
- * Renders a compact inline SVG sparkline. Accepts an arbitrary count of points
- * and auto-fits to 60x20 viewport. Used inside KPI tiles. Renders nothing if
- * there is no signal to show — avoids visual noise on empty tiles.
- */
 function Sparkline({ data, color = '#00C4BC' }: { data: number[]; color?: string }) {
   if (!data || data.length === 0) return null;
   const max = Math.max(...data, 1);
@@ -198,13 +206,7 @@ function Sparkline({ data, color = '#00C4BC' }: { data: number[]; color?: string
     .join(' ');
   const area = `0,20 ${points} 60,20`;
   return (
-    <svg
-      viewBox="0 0 60 20"
-      width="60"
-      height="20"
-      style={{ overflow: 'visible' }}
-      aria-hidden
-    >
+    <svg viewBox="0 0 60 20" width="60" height="20" style={{ overflow: 'visible' }} aria-hidden>
       <polygon points={area} fill={color} opacity="0.12" />
       <polyline
         points={points}
@@ -273,7 +275,8 @@ function KpiTile({
         background:
           'linear-gradient(180deg, rgba(22,34,48,0.95) 0%, rgba(15,25,35,0.95) 100%)',
         border: '1px solid rgba(0,196,188,0.18)',
-        boxShadow: '0 1px 0 rgba(255,255,255,0.04) inset, 0 8px 18px rgba(0,0,0,0.30)',
+        boxShadow:
+          '0 1px 0 rgba(255,255,255,0.04) inset, 0 8px 18px rgba(0,0,0,0.30)',
         cursor: interactive ? 'pointer' : 'default',
         display: 'flex',
         flexDirection: 'column',
@@ -282,14 +285,7 @@ function KpiTile({
         minWidth: 0,
       }}
     >
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          gap: 8,
-        }}
-      >
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
         <span
           style={{
             fontSize: '0.66rem',
@@ -306,14 +302,7 @@ function KpiTile({
         </span>
         <DeltaPill pct={delta} />
       </div>
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'flex-end',
-          justifyContent: 'space-between',
-          gap: 8,
-        }}
-      >
+      <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 8 }}>
         <span
           style={{
             fontSize: '1.35rem',
@@ -330,11 +319,7 @@ function KpiTile({
         </span>
         <Sparkline data={spark} color={color} />
       </div>
-      {subtitle && (
-        <span style={{ fontSize: '0.7rem', color: '#D0DAE4', opacity: 0.85 }}>
-          {subtitle}
-        </span>
-      )}
+      {subtitle && <span style={{ fontSize: '0.7rem', color: '#D0DAE4', opacity: 0.85 }}>{subtitle}</span>}
     </button>
   );
 }
@@ -370,33 +355,14 @@ function ChurnRiskBar({ risk }: { risk: number }) {
   return (
     <div
       title={`Churn Risk ${pct}%`}
-      style={{
-        width: 56,
-        height: 6,
-        background: 'rgba(255,255,255,0.06)',
-        borderRadius: 999,
-        overflow: 'hidden',
-      }}
+      style={{ width: 56, height: 6, background: 'rgba(255,255,255,0.06)', borderRadius: 999, overflow: 'hidden' }}
     >
-      <div
-        style={{
-          width: `${pct}%`,
-          height: '100%',
-          background: color,
-          transition: 'width 200ms ease',
-        }}
-      />
+      <div style={{ width: `${pct}%`, height: '100%', background: color, transition: 'width 200ms ease' }} />
     </div>
   );
 }
 
-function GoalHeader({
-  goal,
-  onSetGoal,
-}: {
-  goal: Payload['goal'];
-  onSetGoal: () => void;
-}) {
+function GoalHeader({ goal, onSetGoal }: { goal: Payload['goal']; onSetGoal: () => void }) {
   const pct = Math.max(0, Math.min(100, Math.round(goal.progress_pct)));
   return (
     <div
@@ -416,55 +382,28 @@ function GoalHeader({
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, flex: 1, minWidth: 0 }}>
         <Target size={18} color="#00C4BC" aria-hidden />
         <div style={{ minWidth: 0 }}>
-          <div style={{ fontSize: '0.74rem', color: '#A8B4C0', fontWeight: 600 }}>
-            This Month Goal
-          </div>
+          <div style={{ fontSize: '0.74rem', color: '#A8B4C0', fontWeight: 600 }}>This Month Goal</div>
           <div style={{ fontSize: '1.05rem', color: '#FFFFFF', fontWeight: 800 }}>
             {fmtInt(goal.achieved_count)} Of {fmtInt(goal.target_count || 0)} New Researchers
           </div>
         </div>
       </div>
       <div style={{ flex: 1, minWidth: 160, maxWidth: 360 }}>
-        <div
-          style={{
-            position: 'relative',
-            height: 8,
-            background: 'rgba(255,255,255,0.06)',
-            borderRadius: 999,
-            overflow: 'hidden',
-          }}
-        >
+        <div style={{ position: 'relative', height: 8, background: 'rgba(255,255,255,0.06)', borderRadius: 999, overflow: 'hidden' }}>
           <div
             style={{
               position: 'absolute',
               inset: 0,
               width: `${pct}%`,
-              background:
-                'linear-gradient(90deg, #00C4BC 0%, #2DD4BF 100%)',
+              background: 'linear-gradient(90deg, #00C4BC 0%, #2DD4BF 100%)',
               transition: 'width 300ms ease',
             }}
           />
         </div>
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            marginTop: 4,
-            fontSize: '0.66rem',
-            color: '#A8B4C0',
-          }}
-        >
+        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 4, fontSize: '0.66rem', color: '#A8B4C0' }}>
           <span>{pct}% Complete</span>
           {goal.streak_months > 0 && (
-            <span
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: 3,
-                color: '#F59E0B',
-                fontWeight: 700,
-              }}
-            >
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, color: '#F59E0B', fontWeight: 700 }}>
               <Flame size={11} aria-hidden /> {goal.streak_months} Month Streak
             </span>
           )}
@@ -527,22 +466,11 @@ function InsightStrip({ insights }: { insights: Insight[] }) {
             gap: 4,
           }}
         >
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 6,
-              fontSize: '0.7rem',
-              fontWeight: 700,
-              color: '#D0DAE4',
-            }}
-          >
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.7rem', fontWeight: 700, color: '#D0DAE4' }}>
             {iconFor(it.kind)}
             {it.title}
           </div>
-          <div style={{ fontSize: '0.74rem', color: '#A8B4C0', lineHeight: 1.35 }}>
-            {it.body}
-          </div>
+          <div style={{ fontSize: '0.74rem', color: '#A8B4C0', lineHeight: 1.35 }}>{it.body}</div>
         </div>
       ))}
     </div>
@@ -624,9 +552,7 @@ function EmptyState({ slug }: { slug: string | null }) {
         gap: 14,
       }}
     >
-      <div style={{ fontSize: '1.05rem', color: '#FFFFFF', fontWeight: 800 }}>
-        No Researchers Yet
-      </div>
+      <div style={{ fontSize: '1.05rem', color: '#FFFFFF', fontWeight: 800 }}>No Researchers Yet</div>
       <p style={{ color: '#A8B4C0', fontSize: '0.82rem', maxWidth: 460, lineHeight: 1.45 }}>
         Your CRM Will Light Up The Moment Your First Researcher Joins. Get There In Three Steps:
       </p>
@@ -646,12 +572,7 @@ function EmptyState({ slug }: { slug: string | null }) {
         <li>Pin Your VIPs And Tag Your Repeat Buyers</li>
       </ol>
       {storefrontUrl && (
-        <button
-          type="button"
-          onClick={onCopy}
-          className="btn-primary"
-          style={{ minHeight: 40, padding: '0 18px' }}
-        >
+        <button type="button" onClick={onCopy} className="btn-primary" style={{ minHeight: 40, padding: '0 18px' }}>
           Copy Storefront Link
         </button>
       )}
@@ -689,15 +610,7 @@ function ActivityFeed({ items }: { items: ActivityItem[] }) {
           cursor: 'pointer',
         }}
       >
-        <span
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: 6,
-            fontWeight: 700,
-            fontSize: '0.78rem',
-          }}
-        >
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontWeight: 700, fontSize: '0.78rem' }}>
           <ActivityIcon size={14} color="#00C4BC" aria-hidden /> Recent Activity
         </span>
         {open ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
@@ -720,13 +633,47 @@ function ActivityFeed({ items }: { items: ActivityItem[] }) {
             <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
               <strong style={{ color: '#FFFFFF' }}>{a.researcher_name}</strong> {a.meta}
             </span>
-            <span style={{ color: '#A8B4C0', fontSize: '0.7rem', whiteSpace: 'nowrap' }}>
-              {daysAgo(a.at)}
-            </span>
+            <span style={{ color: '#A8B4C0', fontSize: '0.7rem', whiteSpace: 'nowrap' }}>{daysAgo(a.at)}</span>
           </li>
         ))}
       </ul>
     </div>
+  );
+}
+
+function TabButton({
+  active,
+  onClick,
+  icon,
+  label,
+}: {
+  active: boolean;
+  onClick: () => void;
+  icon: React.ReactNode;
+  label: string;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: 6,
+        padding: '8px 14px',
+        borderRadius: 10,
+        background: active ? 'rgba(0,196,188,0.16)' : 'transparent',
+        border: `1px solid ${active ? 'rgba(0,196,188,0.45)' : 'rgba(255,255,255,0.06)'}`,
+        color: active ? '#00C4BC' : '#D0DAE4',
+        fontSize: '0.78rem',
+        fontWeight: 700,
+        cursor: 'pointer',
+        whiteSpace: 'nowrap',
+      }}
+    >
+      {icon}
+      {label}
+    </button>
   );
 }
 
@@ -739,6 +686,11 @@ export default function AgentResearcherCRMv2() {
   const [sortBy, setSortBy] = useState<SortKey>('ltv');
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [tab, setTab] = useState<TabKey>('list');
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+
+  // Lazy-load /insights when entering Charts or Acquisition tab.
+  const insights = useInsights(tab === 'charts' || tab === 'acquisition');
 
   const refresh = useCallback(async () => {
     try {
@@ -814,9 +766,31 @@ export default function AgentResearcherCRMv2() {
     [refresh],
   );
 
-  const onMessage = useCallback((r: Researcher) => {
+  const onMessage = useCallback((r: Researcher | { id: string }) => {
     window.location.href = `/messenger?participant=${encodeURIComponent(r.id)}`;
   }, []);
+
+  const onAddReminder = useCallback(
+    async (r: Researcher) => {
+      const title = window.prompt('What Do You Want To Be Reminded About?');
+      if (!title) return;
+      const daysRaw = window.prompt('In How Many Days?', '7');
+      const days = Math.max(1, parseInt(daysRaw ?? '7', 10) || 7);
+      const remindAt = new Date(Date.now() + days * 86400000).toISOString();
+      const res = await fetch('/api/agent/researchers/reminders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ researcherId: r.id, title: title.slice(0, 200), remindAt }),
+      });
+      if (!res.ok) {
+        toast.error('Could Not Save Reminder');
+        return;
+      }
+      toast.success(`Reminder Set For ${days} Days From Now`);
+      void refresh();
+    },
+    [refresh],
+  );
 
   const onSetGoal = useCallback(async () => {
     const raw = window.prompt('New Researchers Target For This Month');
@@ -839,8 +813,54 @@ export default function AgentResearcherCRMv2() {
     void refresh();
   }, [refresh]);
 
-  const onExport = useCallback(() => {
+  const onExportCsv = useCallback(() => {
     window.location.href = '/api/agent/researchers/export';
+  }, []);
+
+  const onPrintSnapshot = useCallback(() => {
+    window.print();
+  }, []);
+
+  const onBulkMessage = useCallback(() => {
+    if (selected.size === 0) {
+      toast.error('Select Researchers First');
+      return;
+    }
+    const ids = [...selected].join(',');
+    window.location.href = `/messenger?participants=${encodeURIComponent(ids)}`;
+  }, [selected]);
+
+  const onBulkTag = useCallback(async () => {
+    if (selected.size === 0) {
+      toast.error('Select Researchers First');
+      return;
+    }
+    const tag = window.prompt(`Tag For ${selected.size} Selected Researchers`);
+    if (!tag) return;
+    const trimmed = tag.trim().slice(0, 32);
+    if (!trimmed) return;
+    const results = await Promise.allSettled(
+      [...selected].map((id) =>
+        fetch('/api/agent/researchers/tags', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ researcherId: id, tag: trimmed }),
+        }),
+      ),
+    );
+    const ok = results.filter((r) => r.status === 'fulfilled').length;
+    toast.success(`Tagged ${ok} Of ${selected.size}`);
+    setSelected(new Set());
+    void refresh();
+  }, [selected, refresh]);
+
+  const toggleSelected = useCallback((id: string) => {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
   }, []);
 
   const filtered = useMemo(() => {
@@ -882,14 +902,10 @@ export default function AgentResearcherCRMv2() {
           return (a.orders_count - b.orders_count) * dir;
         case 'last':
           return (
-            (new Date(a.last_order_at ?? 0).getTime() -
-              new Date(b.last_order_at ?? 0).getTime()) *
-            dir
+            (new Date(a.last_order_at ?? 0).getTime() - new Date(b.last_order_at ?? 0).getTime()) * dir
           );
         case 'joined':
-          return (
-            (new Date(a.joined_at).getTime() - new Date(b.joined_at).getTime()) * dir
-          );
+          return (new Date(a.joined_at).getTime() - new Date(b.joined_at).getTime()) * dir;
         case 'risk':
           return (a.churn_risk - b.churn_risk) * dir;
         case 'ltv':
@@ -899,10 +915,22 @@ export default function AgentResearcherCRMv2() {
     });
   }, [data, filter, search, sortBy, sortDir]);
 
+  const kanbanRows: KanbanResearcher[] = useMemo(() => {
+    if (!data) return [];
+    return data.researchers.map((r) => ({
+      id: r.id,
+      full_name: r.full_name,
+      username: r.username,
+      lifetime_value: r.lifetime_value,
+      orders_count: r.orders_count,
+      last_order_at: r.last_order_at,
+      status: r.status,
+      churn_risk: r.churn_risk,
+    }));
+  }, [data]);
+
   if (loading && !data) {
-    return (
-      <div style={{ padding: 24, color: '#A8B4C0' }}>Loading Researcher CRM...</div>
-    );
+    return <div style={{ padding: 24, color: '#A8B4C0' }}>Loading Researcher CRM...</div>;
   }
   if (error) {
     return (
@@ -932,7 +960,7 @@ export default function AgentResearcherCRMv2() {
   const hasAny = data.researchers.length > 0;
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }} className="crm-shell">
       <GoalHeader goal={data.goal} onSetGoal={onSetGoal} />
 
       <div
@@ -942,439 +970,363 @@ export default function AgentResearcherCRMv2() {
           gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
         }}
       >
-        <KpiTile
-          label="Researchers"
-          value={fmtInt(k.researchers_count.value)}
-          spark={k.researchers_count.spark}
-          delta={k.researchers_count.delta_pct}
-          onClick={() => setFilter('all')}
-        />
-        <KpiTile
-          label="Lifetime Value"
-          value={fmtUSD(k.lifetime_value.value)}
-          spark={k.lifetime_value.spark}
-          delta={k.lifetime_value.delta_pct}
-          color="#FACC15"
-        />
-        <KpiTile
-          label="Total Orders"
-          value={fmtInt(k.total_orders.value)}
-          spark={k.total_orders.spark}
-          delta={k.total_orders.delta_pct}
-          color="#60A5FA"
-        />
-        <KpiTile
-          label="Active Buyers"
-          value={fmtInt(k.active_buyers.value)}
-          spark={k.active_buyers.spark}
-          delta={k.active_buyers.delta_pct}
-          onClick={() => setFilter('all')}
-        />
-        <KpiTile
-          label="Avg Order Value"
-          value={fmtUSD(k.avg_order_value.value)}
-          spark={k.avg_order_value.spark}
-          delta={k.avg_order_value.delta_pct}
-          color="#2DD4BF"
-        />
-        <KpiTile
-          label="Repeat Rate"
-          value={`${Math.round(k.repeat_rate.value)}%`}
-          spark={k.repeat_rate.spark}
-          delta={k.repeat_rate.delta_pct}
-          color="#A78BFA"
-        />
-        <KpiTile
-          label="New This Month"
-          value={fmtInt(k.new_this_month.value)}
-          spark={k.new_this_month.spark}
-          delta={k.new_this_month.delta_pct}
-          onClick={() => setFilter('new')}
-        />
-        <KpiTile
-          label="At Risk"
-          value={fmtInt(k.at_risk.value)}
-          spark={k.at_risk.spark}
-          delta={k.at_risk.delta_pct}
-          color="#F59E0B"
-          onClick={() => setFilter('at_risk')}
-        />
-        <KpiTile
-          label="Best Customer"
-          value={k.best_customer.label || '—'}
-          spark={k.best_customer.spark}
-          delta={k.best_customer.delta_pct}
-          color="#FACC15"
-          subtitle={k.best_customer.value > 0 ? fmtUSD(k.best_customer.value) : undefined}
-        />
-        <KpiTile
-          label="Commission Earned"
-          value={fmtUSD(k.lifetime_commission.value)}
-          spark={k.lifetime_commission.spark}
-          delta={k.lifetime_commission.delta_pct}
-          color="#2DD4BF"
-        />
+        <KpiTile label="Researchers" value={fmtInt(k.researchers_count.value)} spark={k.researchers_count.spark} delta={k.researchers_count.delta_pct} onClick={() => { setTab('list'); setFilter('all'); }} />
+        <KpiTile label="Lifetime Value" value={fmtUSD(k.lifetime_value.value)} spark={k.lifetime_value.spark} delta={k.lifetime_value.delta_pct} color="#FACC15" />
+        <KpiTile label="Total Orders" value={fmtInt(k.total_orders.value)} spark={k.total_orders.spark} delta={k.total_orders.delta_pct} color="#60A5FA" />
+        <KpiTile label="Active Buyers" value={fmtInt(k.active_buyers.value)} spark={k.active_buyers.spark} delta={k.active_buyers.delta_pct} onClick={() => { setTab('list'); setFilter('all'); }} />
+        <KpiTile label="Avg Order Value" value={fmtUSD(k.avg_order_value.value)} spark={k.avg_order_value.spark} delta={k.avg_order_value.delta_pct} color="#2DD4BF" />
+        <KpiTile label="Repeat Rate" value={`${Math.round(k.repeat_rate.value)}%`} spark={k.repeat_rate.spark} delta={k.repeat_rate.delta_pct} color="#A78BFA" />
+        <KpiTile label="New This Month" value={fmtInt(k.new_this_month.value)} spark={k.new_this_month.spark} delta={k.new_this_month.delta_pct} onClick={() => { setTab('list'); setFilter('new'); }} />
+        <KpiTile label="At Risk" value={fmtInt(k.at_risk.value)} spark={k.at_risk.spark} delta={k.at_risk.delta_pct} color="#F59E0B" onClick={() => { setTab('list'); setFilter('at_risk'); }} />
+        <KpiTile label="Best Customer" value={k.best_customer.label || '—'} spark={k.best_customer.spark} delta={k.best_customer.delta_pct} color="#FACC15" subtitle={k.best_customer.value > 0 ? fmtUSD(k.best_customer.value) : undefined} />
+        <KpiTile label="Commission Earned" value={fmtUSD(k.lifetime_commission.value)} spark={k.lifetime_commission.spark} delta={k.lifetime_commission.delta_pct} color="#2DD4BF" />
       </div>
 
       <InsightStrip insights={data.insights} />
 
       <div
+        role="tablist"
+        aria-label="Researcher CRM View"
         style={{
           display: 'flex',
-          flexWrap: 'wrap',
-          alignItems: 'center',
-          gap: 8,
+          gap: 6,
+          padding: '4px',
+          background: 'rgba(15,25,35,0.6)',
+          border: '1px solid rgba(255,255,255,0.06)',
+          borderRadius: 12,
+          overflowX: 'auto',
           marginTop: 6,
         }}
       >
-        <FilterChip active={filter === 'all'} onClick={() => setFilter('all')} count={data.researchers.length}>
-          All
-        </FilterChip>
-        <FilterChip
-          active={filter === 'vip'}
-          onClick={() => setFilter('vip')}
-          count={data.kanban_counts.vip}
-        >
-          VIPs
-        </FilterChip>
-        <FilterChip
-          active={filter === 'at_risk'}
-          onClick={() => setFilter('at_risk')}
-          count={(data.kanban_counts.at_risk ?? 0) + (data.kanban_counts.churned ?? 0)}
-        >
-          At Risk
-        </FilterChip>
-        <FilterChip
-          active={filter === 'new'}
-          onClick={() => setFilter('new')}
-          count={(data.kanban_counts.new ?? 0) + (data.kanban_counts.first_order ?? 0)}
-        >
-          New
-        </FilterChip>
-        <FilterChip
-          active={filter === 'inactive'}
-          onClick={() => setFilter('inactive')}
-          count={data.kanban_counts.lead}
-        >
-          Inactive
-        </FilterChip>
-        <FilterChip
-          active={filter === 'pinned'}
-          onClick={() => setFilter('pinned')}
-          count={data.researchers.filter((r) => r.is_pinned).length}
-        >
-          Pinned
-        </FilterChip>
-        <div style={{ flex: 1 }} />
-        <div
-          style={{
-            position: 'relative',
-            display: 'flex',
-            alignItems: 'center',
-            background: 'rgba(255,255,255,0.04)',
-            border: '1px solid rgba(255,255,255,0.10)',
-            borderRadius: 10,
-            padding: '0 10px',
-            minWidth: 200,
-          }}
-        >
-          <Search size={14} color="#A8B4C0" aria-hidden />
-          <input
-            type="search"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search Name, Email, Username"
-            style={{
-              border: 0,
-              background: 'transparent',
-              color: '#FFFFFF',
-              padding: '8px 8px',
-              fontSize: '0.78rem',
-              outline: 'none',
-              minWidth: 0,
-              width: '100%',
-            }}
-          />
-        </div>
-        <button
-          type="button"
-          onClick={onExport}
-          className="btn-ghost"
-          style={{ minHeight: 36, padding: '0 12px', display: 'inline-flex', alignItems: 'center', gap: 6 }}
-        >
-          <Download size={14} aria-hidden /> Export CSV
-        </button>
+        <TabButton active={tab === 'list'} onClick={() => setTab('list')} icon={<TableIcon size={14} aria-hidden />} label="Researchers" />
+        <TabButton active={tab === 'kanban'} onClick={() => setTab('kanban')} icon={<LayoutGrid size={14} aria-hidden />} label="Kanban" />
+        <TabButton active={tab === 'charts'} onClick={() => setTab('charts')} icon={<BarChart3 size={14} aria-hidden />} label="Charts" />
+        <TabButton active={tab === 'acquisition'} onClick={() => setTab('acquisition')} icon={<GitBranch size={14} aria-hidden />} label="Acquisition" />
       </div>
 
-      {!hasAny ? (
-        <EmptyState slug={data.storefront_slug} />
-      ) : (
-        <div
-          style={{
-            borderRadius: 12,
-            border: '1px solid rgba(255,255,255,0.06)',
-            background: 'rgba(15,25,35,0.6)',
-            overflow: 'hidden',
-          }}
-        >
-          <div
-            role="row"
-            style={{
-              display: 'grid',
-              gridTemplateColumns:
-                'minmax(180px,1.6fr) 100px 80px 110px 100px 90px 110px',
-              padding: '8px 10px',
-              fontSize: '0.66rem',
-              fontWeight: 800,
-              textTransform: 'uppercase',
-              letterSpacing: '0.04em',
-              color: '#A8B4C0',
-              borderBottom: '1px solid rgba(255,255,255,0.06)',
-              background: 'rgba(255,255,255,0.02)',
-            }}
-            className="crm-row-head"
-          >
-            <button
-              type="button"
-              onClick={() => {
-                setSortBy('name');
-                setSortDir((d) => (sortBy === 'name' && d === 'asc' ? 'desc' : 'asc'));
+      {tab === 'list' && (
+        <>
+          <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 8, marginTop: 6 }}>
+            <FilterChip active={filter === 'all'} onClick={() => setFilter('all')} count={data.researchers.length}>All</FilterChip>
+            <FilterChip active={filter === 'vip'} onClick={() => setFilter('vip')} count={data.kanban_counts.vip}>VIPs</FilterChip>
+            <FilterChip active={filter === 'at_risk'} onClick={() => setFilter('at_risk')} count={(data.kanban_counts.at_risk ?? 0) + (data.kanban_counts.churned ?? 0)}>At Risk</FilterChip>
+            <FilterChip active={filter === 'new'} onClick={() => setFilter('new')} count={(data.kanban_counts.new ?? 0) + (data.kanban_counts.first_order ?? 0)}>New</FilterChip>
+            <FilterChip active={filter === 'inactive'} onClick={() => setFilter('inactive')} count={data.kanban_counts.lead}>Inactive</FilterChip>
+            <FilterChip active={filter === 'pinned'} onClick={() => setFilter('pinned')} count={data.researchers.filter((r) => r.is_pinned).length}>Pinned</FilterChip>
+            <div style={{ flex: 1 }} />
+            <div
+              style={{
+                position: 'relative',
+                display: 'flex',
+                alignItems: 'center',
+                background: 'rgba(255,255,255,0.04)',
+                border: '1px solid rgba(255,255,255,0.10)',
+                borderRadius: 10,
+                padding: '0 10px',
+                minWidth: 200,
               }}
-              style={{ background: 'transparent', border: 0, color: 'inherit', textAlign: 'left', cursor: 'pointer', font: 'inherit' }}
             >
-              Researcher
+              <Search size={14} color="#A8B4C0" aria-hidden />
+              <input
+                type="search"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search Name, Email, Username"
+                style={{
+                  border: 0,
+                  background: 'transparent',
+                  color: '#FFFFFF',
+                  padding: '8px',
+                  fontSize: '0.78rem',
+                  outline: 'none',
+                  minWidth: 0,
+                  width: '100%',
+                }}
+              />
+            </div>
+            <button type="button" onClick={onExportCsv} className="btn-ghost" style={{ minHeight: 36, padding: '0 12px', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+              <Download size={14} aria-hidden /> CSV
             </button>
-            <button
-              type="button"
-              onClick={() => {
-                setSortBy('ltv');
-                setSortDir((d) => (sortBy === 'ltv' && d === 'desc' ? 'asc' : 'desc'));
-              }}
-              style={{ background: 'transparent', border: 0, color: 'inherit', textAlign: 'right', cursor: 'pointer', font: 'inherit' }}
-            >
-              LTV
+            <button type="button" onClick={onPrintSnapshot} className="btn-ghost" style={{ minHeight: 36, padding: '0 12px', display: 'inline-flex', alignItems: 'center', gap: 6 }} title="Open Print Preview For PDF Snapshot">
+              <Printer size={14} aria-hidden /> PDF
             </button>
-            <button
-              type="button"
-              onClick={() => {
-                setSortBy('orders');
-                setSortDir((d) => (sortBy === 'orders' && d === 'desc' ? 'asc' : 'desc'));
-              }}
-              style={{ background: 'transparent', border: 0, color: 'inherit', textAlign: 'right', cursor: 'pointer', font: 'inherit' }}
-            >
-              Orders
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setSortBy('last');
-                setSortDir((d) => (sortBy === 'last' && d === 'desc' ? 'asc' : 'desc'));
-              }}
-              style={{ background: 'transparent', border: 0, color: 'inherit', textAlign: 'left', cursor: 'pointer', font: 'inherit' }}
-            >
-              Last Order
-            </button>
-            <span>Status</span>
-            <span style={{ textAlign: 'center' }}>Risk</span>
-            <span style={{ textAlign: 'right' }}>Actions</span>
           </div>
 
-          {filtered.map((r) => {
-            const s = STATUS_STYLES[r.status];
-            const isExpanded = expandedId === r.id;
-            return (
-              <div key={r.id} className="crm-row">
-                <div
-                  role="row"
-                  style={{
-                    display: 'grid',
-                    gridTemplateColumns:
-                      'minmax(180px,1.6fr) 100px 80px 110px 100px 90px 110px',
-                    alignItems: 'center',
-                    padding: '10px',
-                    borderTop: '1px solid rgba(255,255,255,0.04)',
-                    borderLeft: `3px solid ${s.border}`,
-                    fontSize: '0.78rem',
-                    color: '#E6EEF6',
-                    cursor: 'pointer',
-                  }}
-                  onClick={() => setExpandedId((id) => (id === r.id ? null : r.id))}
-                >
-                  <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
-                    <span
-                      style={{
-                        fontWeight: 700,
-                        color: '#FFFFFF',
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        whiteSpace: 'nowrap',
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: 6,
-                      }}
-                    >
-                      {r.is_pinned && <Pin size={11} color="#FACC15" aria-hidden />}
-                      {r.full_name || r.username || r.email || 'Researcher'}
-                    </span>
-                    <span style={{ fontSize: '0.68rem', color: '#A8B4C0' }}>
-                      {r.email || r.username || ''}
-                    </span>
-                    {r.tags.length > 0 && (
-                      <div style={{ marginTop: 4, display: 'flex', flexWrap: 'wrap', gap: 4 }}>
-                        {r.tags.map((t) => (
-                          <span
-                            key={t.id}
-                            style={{
-                              fontSize: '0.62rem',
-                              padding: '1px 6px',
-                              borderRadius: 999,
-                              background: 'rgba(0,196,188,0.10)',
-                              border: '1px solid rgba(0,196,188,0.30)',
-                              color: '#00C4BC',
-                              fontWeight: 700,
-                            }}
-                          >
-                            {t.tag}
-                          </span>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                  <span style={{ textAlign: 'right', fontWeight: 700, color: '#FFFFFF' }}>
-                    {fmtUSD(r.lifetime_value)}
-                  </span>
-                  <span style={{ textAlign: 'right' }}>{fmtInt(r.orders_count)}</span>
-                  <span style={{ color: '#D0DAE4' }}>{daysAgo(r.last_order_at)}</span>
-                  <StatusBadge status={r.status} />
-                  <span style={{ display: 'flex', justifyContent: 'center' }}>
-                    <ChurnRiskBar risk={r.churn_risk} />
-                  </span>
-                  <div
-                    style={{
-                      display: 'flex',
-                      justifyContent: 'flex-end',
-                      gap: 4,
-                    }}
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <button
-                      type="button"
-                      onClick={() => onMessage(r)}
-                      title="Message"
-                      className="crm-icon-btn"
-                    >
-                      <MessageSquare size={14} aria-hidden />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => void onAddTag(r)}
-                      title="Add Tag"
-                      className="crm-icon-btn"
-                    >
-                      <TagIcon size={14} aria-hidden />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => void onTogglePin(r)}
-                      title={r.is_pinned ? 'Unpin' : 'Pin'}
-                      className="crm-icon-btn"
-                    >
-                      {r.is_pinned ? <PinOff size={14} aria-hidden /> : <Pin size={14} aria-hidden />}
-                    </button>
-                  </div>
-                </div>
+          {selected.size > 0 && (
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8,
+                padding: '8px 12px',
+                background: 'rgba(0,196,188,0.10)',
+                border: '1px solid rgba(0,196,188,0.30)',
+                borderRadius: 10,
+                fontSize: '0.78rem',
+                color: '#FFFFFF',
+              }}
+            >
+              <strong>{selected.size}</strong> Selected
+              <div style={{ flex: 1 }} />
+              <button type="button" onClick={onBulkMessage} className="btn-ghost" style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                <MessageSquare size={12} aria-hidden /> Message All
+              </button>
+              <button type="button" onClick={onBulkTag} className="btn-ghost" style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                <TagIcon size={12} aria-hidden /> Tag All
+              </button>
+              <button type="button" onClick={() => setSelected(new Set())} className="btn-ghost" aria-label="Clear Selection">
+                <X size={12} aria-hidden />
+              </button>
+            </div>
+          )}
 
-                {isExpanded && (
-                  <div
-                    style={{
-                      padding: '12px 14px',
-                      background: 'rgba(0,196,188,0.04)',
-                      borderTop: '1px solid rgba(0,196,188,0.18)',
-                      display: 'grid',
-                      gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
-                      gap: 12,
-                    }}
-                  >
-                    <div>
-                      <div style={{ fontSize: '0.66rem', color: '#A8B4C0', fontWeight: 700, textTransform: 'uppercase' }}>Joined</div>
-                      <div style={{ fontSize: '0.82rem', color: '#FFFFFF' }}>{daysAgo(r.joined_at)}</div>
-                    </div>
-                    <div>
-                      <div style={{ fontSize: '0.66rem', color: '#A8B4C0', fontWeight: 700, textTransform: 'uppercase' }}>Last Login</div>
-                      <div style={{ fontSize: '0.82rem', color: '#FFFFFF' }}>{daysAgo(r.last_login)}</div>
-                    </div>
-                    <div>
-                      <div style={{ fontSize: '0.66rem', color: '#A8B4C0', fontWeight: 700, textTransform: 'uppercase' }}>Last Contacted</div>
-                      <div style={{ fontSize: '0.82rem', color: '#FFFFFF' }}>{daysAgo(r.last_contacted_at)}</div>
-                    </div>
-                    <div>
-                      <div style={{ fontSize: '0.66rem', color: '#A8B4C0', fontWeight: 700, textTransform: 'uppercase' }}>Source</div>
-                      <div style={{ fontSize: '0.82rem', color: '#FFFFFF' }}>{r.acquisition_source || 'Direct'}</div>
-                    </div>
-                    {r.email && (
-                      <div>
-                        <div style={{ fontSize: '0.66rem', color: '#A8B4C0', fontWeight: 700, textTransform: 'uppercase' }}>Email</div>
-                        <a
-                          href={`mailto:${r.email}`}
+          {!hasAny ? (
+            <EmptyState slug={data.storefront_slug} />
+          ) : (
+            <div
+              style={{
+                borderRadius: 12,
+                border: '1px solid rgba(255,255,255,0.06)',
+                background: 'rgba(15,25,35,0.6)',
+                overflow: 'hidden',
+              }}
+            >
+              <div
+                role="row"
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: '30px minmax(180px,1.6fr) 100px 80px 110px 100px 90px 110px',
+                  padding: '8px 10px',
+                  fontSize: '0.66rem',
+                  fontWeight: 800,
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.04em',
+                  color: '#A8B4C0',
+                  borderBottom: '1px solid rgba(255,255,255,0.06)',
+                  background: 'rgba(255,255,255,0.02)',
+                  alignItems: 'center',
+                }}
+                className="crm-row-head"
+              >
+                <input
+                  type="checkbox"
+                  aria-label="Select All Visible"
+                  checked={filtered.length > 0 && filtered.every((r) => selected.has(r.id))}
+                  onChange={(e) => {
+                    if (e.target.checked) {
+                      const next = new Set(selected);
+                      for (const r of filtered) next.add(r.id);
+                      setSelected(next);
+                    } else {
+                      const next = new Set(selected);
+                      for (const r of filtered) next.delete(r.id);
+                      setSelected(next);
+                    }
+                  }}
+                />
+                <button type="button" onClick={() => { setSortBy('name'); setSortDir((d) => (sortBy === 'name' && d === 'asc' ? 'desc' : 'asc')); }} style={{ background: 'transparent', border: 0, color: 'inherit', textAlign: 'left', cursor: 'pointer', font: 'inherit' }}>Researcher</button>
+                <button type="button" onClick={() => { setSortBy('ltv'); setSortDir((d) => (sortBy === 'ltv' && d === 'desc' ? 'asc' : 'desc')); }} style={{ background: 'transparent', border: 0, color: 'inherit', textAlign: 'right', cursor: 'pointer', font: 'inherit' }}>LTV</button>
+                <button type="button" onClick={() => { setSortBy('orders'); setSortDir((d) => (sortBy === 'orders' && d === 'desc' ? 'asc' : 'desc')); }} style={{ background: 'transparent', border: 0, color: 'inherit', textAlign: 'right', cursor: 'pointer', font: 'inherit' }}>Orders</button>
+                <button type="button" onClick={() => { setSortBy('last'); setSortDir((d) => (sortBy === 'last' && d === 'desc' ? 'asc' : 'desc')); }} style={{ background: 'transparent', border: 0, color: 'inherit', textAlign: 'left', cursor: 'pointer', font: 'inherit' }}>Last Order</button>
+                <span>Status</span>
+                <span style={{ textAlign: 'center' }}>Risk</span>
+                <span style={{ textAlign: 'right' }}>Actions</span>
+              </div>
+
+              {filtered.map((r) => {
+                const s = STATUS_STYLES[r.status];
+                const isExpanded = expandedId === r.id;
+                const isSelected = selected.has(r.id);
+                return (
+                  <div key={r.id} className="crm-row">
+                    <div
+                      role="row"
+                      style={{
+                        display: 'grid',
+                        gridTemplateColumns: '30px minmax(180px,1.6fr) 100px 80px 110px 100px 90px 110px',
+                        alignItems: 'center',
+                        padding: '10px',
+                        borderTop: '1px solid rgba(255,255,255,0.04)',
+                        borderLeft: `3px solid ${s.border}`,
+                        fontSize: '0.78rem',
+                        color: '#E6EEF6',
+                        cursor: 'pointer',
+                        background: isSelected ? 'rgba(0,196,188,0.06)' : 'transparent',
+                      }}
+                      onClick={() => setExpandedId((id) => (id === r.id ? null : r.id))}
+                    >
+                      <input
+                        type="checkbox"
+                        aria-label={`Select ${r.full_name ?? r.username ?? 'Researcher'}`}
+                        checked={isSelected}
+                        onClick={(e) => e.stopPropagation()}
+                        onChange={() => toggleSelected(r.id)}
+                      />
+                      <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+                        <span
                           style={{
-                            fontSize: '0.82rem',
-                            color: '#00C4BC',
-                            textDecoration: 'none',
+                            fontWeight: 700,
+                            color: '#FFFFFF',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap',
                             display: 'inline-flex',
                             alignItems: 'center',
-                            gap: 4,
+                            gap: 6,
                           }}
                         >
-                          <Mail size={12} aria-hidden /> {r.email}
-                        </a>
+                          {r.is_pinned && <Pin size={11} color="#FACC15" aria-hidden />}
+                          {r.has_open_reminder && <Bell size={11} color="#60A5FA" aria-hidden />}
+                          {r.full_name || r.username || r.email || 'Researcher'}
+                        </span>
+                        <span style={{ fontSize: '0.68rem', color: '#A8B4C0' }}>{r.email || r.username || ''}</span>
+                        {r.tags.length > 0 && (
+                          <div style={{ marginTop: 4, display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+                            {r.tags.map((t) => (
+                              <span
+                                key={t.id}
+                                style={{
+                                  fontSize: '0.62rem',
+                                  padding: '1px 6px',
+                                  borderRadius: 999,
+                                  background: 'rgba(0,196,188,0.10)',
+                                  border: '1px solid rgba(0,196,188,0.30)',
+                                  color: '#00C4BC',
+                                  fontWeight: 700,
+                                }}
+                              >
+                                {t.tag}
+                              </span>
+                            ))}
+                          </div>
+                        )}
                       </div>
-                    )}
-                    {r.tags.length > 0 && (
-                      <div style={{ gridColumn: '1 / -1' }}>
-                        <div style={{ fontSize: '0.66rem', color: '#A8B4C0', fontWeight: 700, textTransform: 'uppercase' }}>Tags</div>
-                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginTop: 4 }}>
-                          {r.tags.map((t) => (
-                            <span
-                              key={t.id}
+                      <span style={{ textAlign: 'right', fontWeight: 700, color: '#FFFFFF' }}>{fmtUSD(r.lifetime_value)}</span>
+                      <span style={{ textAlign: 'right' }}>{fmtInt(r.orders_count)}</span>
+                      <span style={{ color: '#D0DAE4' }}>{daysAgo(r.last_order_at)}</span>
+                      <StatusBadge status={r.status} />
+                      <span style={{ display: 'flex', justifyContent: 'center' }}><ChurnRiskBar risk={r.churn_risk} /></span>
+                      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 4 }} onClick={(e) => e.stopPropagation()}>
+                        <button type="button" onClick={() => onMessage(r)} title="Message" className="crm-icon-btn"><MessageSquare size={14} aria-hidden /></button>
+                        <button type="button" onClick={() => void onAddTag(r)} title="Add Tag" className="crm-icon-btn"><TagIcon size={14} aria-hidden /></button>
+                        <button type="button" onClick={() => void onAddReminder(r)} title="Add Reminder" className="crm-icon-btn"><Bell size={14} aria-hidden /></button>
+                        <button type="button" onClick={() => void onTogglePin(r)} title={r.is_pinned ? 'Unpin' : 'Pin'} className="crm-icon-btn">
+                          {r.is_pinned ? <PinOff size={14} aria-hidden /> : <Pin size={14} aria-hidden />}
+                        </button>
+                      </div>
+                    </div>
+
+                    {isExpanded && (
+                      <div
+                        style={{
+                          padding: '12px 14px',
+                          background: 'rgba(0,196,188,0.04)',
+                          borderTop: '1px solid rgba(0,196,188,0.18)',
+                          display: 'grid',
+                          gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+                          gap: 12,
+                        }}
+                      >
+                        <div>
+                          <div style={{ fontSize: '0.66rem', color: '#A8B4C0', fontWeight: 700, textTransform: 'uppercase' }}>Joined</div>
+                          <div style={{ fontSize: '0.82rem', color: '#FFFFFF' }}>{daysAgo(r.joined_at)}</div>
+                        </div>
+                        <div>
+                          <div style={{ fontSize: '0.66rem', color: '#A8B4C0', fontWeight: 700, textTransform: 'uppercase' }}>Last Login</div>
+                          <div style={{ fontSize: '0.82rem', color: '#FFFFFF' }}>{daysAgo(r.last_login)}</div>
+                        </div>
+                        <div>
+                          <div style={{ fontSize: '0.66rem', color: '#A8B4C0', fontWeight: 700, textTransform: 'uppercase' }}>Last Contacted</div>
+                          <div style={{ fontSize: '0.82rem', color: '#FFFFFF' }}>{daysAgo(r.last_contacted_at)}</div>
+                        </div>
+                        <div>
+                          <div style={{ fontSize: '0.66rem', color: '#A8B4C0', fontWeight: 700, textTransform: 'uppercase' }}>Source</div>
+                          <div style={{ fontSize: '0.82rem', color: '#FFFFFF' }}>{r.acquisition_source || 'Direct'}</div>
+                        </div>
+                        {r.email && (
+                          <div>
+                            <div style={{ fontSize: '0.66rem', color: '#A8B4C0', fontWeight: 700, textTransform: 'uppercase' }}>Email</div>
+                            <a
+                              href={`mailto:${r.email}`}
                               style={{
+                                fontSize: '0.82rem',
+                                color: '#00C4BC',
+                                textDecoration: 'none',
                                 display: 'inline-flex',
                                 alignItems: 'center',
                                 gap: 4,
-                                fontSize: '0.68rem',
-                                padding: '2px 8px',
-                                borderRadius: 999,
-                                background: 'rgba(0,196,188,0.10)',
-                                border: '1px solid rgba(0,196,188,0.30)',
-                                color: '#00C4BC',
-                                fontWeight: 700,
                               }}
                             >
-                              {t.tag}
-                              <button
-                                type="button"
-                                onClick={() => void onRemoveTag(r, t.tag)}
-                                aria-label={`Remove Tag ${t.tag}`}
-                                style={{
-                                  background: 'transparent',
-                                  border: 0,
-                                  color: 'inherit',
-                                  cursor: 'pointer',
-                                  padding: 0,
-                                  display: 'inline-flex',
-                                }}
-                              >
-                                <X size={10} aria-hidden />
-                              </button>
-                            </span>
-                          ))}
-                        </div>
+                              <Mail size={12} aria-hidden /> {r.email}
+                            </a>
+                          </div>
+                        )}
+                        {r.tags.length > 0 && (
+                          <div style={{ gridColumn: '1 / -1' }}>
+                            <div style={{ fontSize: '0.66rem', color: '#A8B4C0', fontWeight: 700, textTransform: 'uppercase' }}>Tags</div>
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginTop: 4 }}>
+                              {r.tags.map((t) => (
+                                <span
+                                  key={t.id}
+                                  style={{
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: 4,
+                                    fontSize: '0.68rem',
+                                    padding: '2px 8px',
+                                    borderRadius: 999,
+                                    background: 'rgba(0,196,188,0.10)',
+                                    border: '1px solid rgba(0,196,188,0.30)',
+                                    color: '#00C4BC',
+                                    fontWeight: 700,
+                                  }}
+                                >
+                                  {t.tag}
+                                  <button
+                                    type="button"
+                                    onClick={() => void onRemoveTag(r, t.tag)}
+                                    aria-label={`Remove Tag ${t.tag}`}
+                                    style={{
+                                      background: 'transparent',
+                                      border: 0,
+                                      color: 'inherit',
+                                      cursor: 'pointer',
+                                      padding: 0,
+                                      display: 'inline-flex',
+                                    }}
+                                  >
+                                    <X size={10} aria-hidden />
+                                  </button>
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
-                )}
-              </div>
-            );
-          })}
+                );
+              })}
+            </div>
+          )}
+        </>
+      )}
+
+      {tab === 'kanban' && (
+        <div style={{ marginTop: 6 }}>
+          <KanbanView researchers={kanbanRows} onCardClick={(id) => { setTab('list'); setExpandedId(id); }} />
+        </div>
+      )}
+
+      {tab === 'charts' && (
+        <div style={{ marginTop: 6 }}>
+          <ChartsView revenueSpark={k.lifetime_value.spark} insights={insights} />
+        </div>
+      )}
+
+      {tab === 'acquisition' && (
+        <div style={{ marginTop: 6 }}>
+          <AcquisitionView sourceCounts={data.source_counts} funnel={insights?.funnel ?? null} />
         </div>
       )}
 
@@ -1399,19 +1351,26 @@ export default function AgentResearcherCRMv2() {
           color: #00c4bc;
           border-color: rgba(0, 196, 188, 0.40);
         }
+        @media print {
+          .crm-shell button,
+          .crm-shell input,
+          .crm-shell [role='tablist'] {
+            display: none !important;
+          }
+        }
         @media (max-width: 640px) {
           .crm-row-head {
             display: none !important;
           }
           .crm-row > div[role='row'] {
-            grid-template-columns: 1fr auto !important;
+            grid-template-columns: 30px 1fr auto !important;
             row-gap: 4px;
           }
-          .crm-row > div[role='row'] > *:nth-child(2),
           .crm-row > div[role='row'] > *:nth-child(3),
           .crm-row > div[role='row'] > *:nth-child(4),
           .crm-row > div[role='row'] > *:nth-child(5),
-          .crm-row > div[role='row'] > *:nth-child(6) {
+          .crm-row > div[role='row'] > *:nth-child(6),
+          .crm-row > div[role='row'] > *:nth-child(7) {
             display: none;
           }
         }
