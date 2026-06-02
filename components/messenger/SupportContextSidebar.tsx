@@ -139,17 +139,20 @@ function resolveRoleLabel(researcher: ContextPayload['researcher']): string | nu
 
 function StatusPill({ status }: { status: string }) {
   const lower = (status || '').toLowerCase();
+  // Neutral grey-on-white chrome for "in-progress / awaiting" status
+  // (previously the bright yellow palette — removed per user request).
+  const NEUTRAL = { bg: 'rgba(255,255,255,0.06)', border: 'rgba(255,255,255,0.18)', fg: 'var(--white, #fff)' };
   const palette: Record<string, { bg: string; border: string; fg: string }> = {
     delivered: { bg: 'rgba(80,200,120,0.12)', border: 'rgba(80,200,120,0.55)', fg: '#9BE3B4' },
     shipped: { bg: 'rgba(0,196,188,0.12)', border: 'rgba(0,196,188,0.55)', fg: '#7AF0EA' },
     approved_ship: { bg: 'rgba(0,196,188,0.12)', border: 'rgba(0,196,188,0.55)', fg: '#7AF0EA' },
     approved_pickup: { bg: 'rgba(0,196,188,0.12)', border: 'rgba(0,196,188,0.55)', fg: '#7AF0EA' },
-    in_fulfillment: { bg: 'rgba(255,184,0,0.12)', border: 'rgba(255,184,0,0.45)', fg: '#FFD175' },
-    agent_approval_pending: { bg: 'rgba(255,184,0,0.12)', border: 'rgba(255,184,0,0.45)', fg: '#FFD175' },
-    pending_customer_payment: { bg: 'rgba(255,184,0,0.12)', border: 'rgba(255,184,0,0.45)', fg: '#FFD175' },
+    in_fulfillment: NEUTRAL,
+    agent_approval_pending: NEUTRAL,
+    pending_customer_payment: NEUTRAL,
     cancelled: { bg: 'rgba(229,62,62,0.12)', border: 'rgba(229,62,62,0.45)', fg: '#FF9C9C' },
   };
-  const c = palette[lower] || { bg: 'rgba(255,255,255,0.05)', border: 'rgba(255,255,255,0.15)', fg: '#C0B8A8' };
+  const c = palette[lower] || NEUTRAL;
   return (
     <span
       style={{
@@ -538,14 +541,14 @@ export default function SupportContextSidebar({
                 style={{
                   padding: '10px 12px',
                   borderRadius: 8,
-                  background: 'rgba(255,184,0,0.08)',
-                  border: '1px solid rgba(255,184,0,0.30)',
+                  background: 'rgba(255,255,255,0.05)',
+                  border: '1px solid rgba(255,255,255,0.15)',
                   marginBottom: 12,
                 }}
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
-                  <Package size={14} style={{ color: '#FFD175' }} aria-hidden="true" />
-                  <span style={{ fontSize: '0.7rem', fontWeight: 800, color: '#FFD175', letterSpacing: '0.04em', textTransform: 'uppercase' }}>
+                  <Package size={14} style={{ color: 'var(--silver, #C0B8A8)' }} aria-hidden="true" />
+                  <span style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--white, #fff)', letterSpacing: '0.04em', textTransform: 'uppercase' }}>
                     Linked Order
                   </span>
                 </div>
