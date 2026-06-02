@@ -52,6 +52,15 @@ const PUBLIC_ROUTES = [
   // read-only, no dosing. (Shelf-life API is auth-gated, not listed here.)
   '/api/research/ask',
   '/api/research/cart-warnings',
+  // R28.5: FAQ click beacon. The route handler has its own per-IP rate limit
+  // (60/min), validates faqId against an allow-list built from FAQ_ITEMS,
+  // and writes via the service-role client. Listed here so a sendBeacon()
+  // from a tab whose session cookie hasn't propagated still records the
+  // click — otherwise middleware returns 401 BEFORE the handler runs and
+  // every anonymous chip-click is lost. Authenticated callers still get
+  // their user_id + role stamped because the handler optionally resolves
+  // them inside.
+  '/api/analytics/faq-click',
   // Agent invitation redemption — the token in the URL is the credential.
   '/invite',
   '/api/agent-invitations/redeem',
