@@ -434,6 +434,17 @@ export default function CustomerSupportWidget() {
     // restores the messenger's previous active conversation.
     setStatusPopoverFor(null);
     setSnoozePopoverFor(null);
+    // Optimistically clear the unread badge on this row. MessagePane will
+    // POST /api/messenger/mark-read shortly, but the support inbox keeps its
+    // OWN `rows` state (independent of the messenger store's conversations
+    // array, which is what the messenger's auto-clear effect targets), so
+    // without this line the red unread chip stayed lit until the next inbox
+    // refetch.
+    setRows((prev) => prev.map((r) => (
+      r.conversation_id === id && (r.unread_count ?? 0) > 0
+        ? { ...r, unread_count: 0 }
+        : r
+    )));
     setMessengerActive(id);
     setContextCollapsed(false);
   }
