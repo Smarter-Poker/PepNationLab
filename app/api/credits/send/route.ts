@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient, createServiceClient } from '@/lib/supabase/server';
+import { createServiceClient } from '@/lib/supabase/server';
 import { requireAgent } from '@/lib/admin-auth';
 import { assertSameOrigin } from '@/lib/csrf';
+import { rateLimit } from '@/lib/rate-limit';
 
 export const dynamic = 'force-dynamic';
 
@@ -23,6 +24,15 @@ export const dynamic = 'force-dynamic';
  * Body: { recipientId?: uuid, recipientEmail?: string, amount: number, note?: string }
  */
 
+// PostgREST `.ilike` treats the value as a LIKE pattern — `%` and `_` are
+// wildcards. When we want case-insensitive EQUALITY on a user-supplied email
+// or username we must escape those metacharacters so the lookup matches only
+// the literal string. Without this, "@gmail.com%" would route a transfer to
+// whichever Gmail-domain profile sorted first.
+function escapeLikeLiteral(value: string): string {
+  return value.replace(/\\/g, '\\\\').replace(/[%_]/g, (m) => '\\' + m);
+}
+
 export async function POST(req: NextRequest) {
   const csrf = assertSameOrigin(req);
   if (csrf) return csrf;
@@ -31,9 +41,22 @@ export async function POST(req: NextRequest) {
   if (!gate.ok) return gate.response;
   const issuerId = gate.user.id;
 
-  // requireAgent uses the auth client to gate; use the service client for the
-  // hierarchy reads + the SECURITY DEFINER RPC.
-  await createClient(); // ensure the auth context is initialised consistently
+  // Per-user rate limit. 20 sends per minute is more than any legitimate
+  // operator will need — it primarily defeats scripted drains, double-click
+  // duplicates, and the spam-the-bell denial-of-service vector.
+  const rl = await rateLimit({
+    key: 'credits_send',
+    limit: 20,
+    windowSeconds: 60,
+    identifier: issuerId,
+  });
+  if (!rl.allowed) {
+    return NextResponse.json(
+      { error: 'Too Many Send Requests. Wait A Moment Then Try Again.' },
+      { status: 429, headers: { 'Retry-After': '60' } },
+    );
+  }
+
   const service = await createServiceClient();
 
   let body: any;
@@ -55,27 +78,33 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'A Recipient Is Required.' }, { status: 400 });
   }
 
-  // Resolve the issuer's role.
+  // Resolve the issuer's role. Deactivated/banned senders cannot send funds.
   const { data: issuer } = await service
     .from('profiles')
-    .select('id, role, full_name, email')
+    .select('id, role, full_name, email, is_active')
     .eq('id', issuerId)
     .maybeSingle();
   if (!issuer) {
     return NextResponse.json({ error: 'Issuer Profile Not Found.' }, { status: 404 });
   }
+  if (issuer.is_active === false) {
+    return NextResponse.json({ error: 'Your Account Is Inactive And Cannot Send Funds.' }, { status: 403 });
+  }
 
   // Resolve the recipient by id, email, or username. Researchers created by an
   // agent often sign in with a username (no real email), so accept either.
+  // Use safe equality (case-insensitive, wildcards escaped) so no `%`/`_` in
+  // the input can broaden the match to an unintended account.
   let recipientQuery = service
     .from('profiles')
-    .select('id, role, full_name, email, username, referring_agent_id, parent_agent_id, referring_sub_agent_id');
+    .select('id, role, full_name, email, username, is_active, referring_agent_id, parent_agent_id, referring_sub_agent_id')
+    .eq('is_active', true);
   if (recipientIdRaw) {
     recipientQuery = recipientQuery.eq('id', recipientIdRaw);
   } else if (recipientEmailRaw.includes('@')) {
-    recipientQuery = recipientQuery.ilike('email', recipientEmailRaw);
+    recipientQuery = recipientQuery.ilike('email', escapeLikeLiteral(recipientEmailRaw));
   } else {
-    recipientQuery = recipientQuery.ilike('username', recipientEmailRaw);
+    recipientQuery = recipientQuery.ilike('username', escapeLikeLiteral(recipientEmailRaw));
   }
   const { data: recipient } = await recipientQuery.maybeSingle();
 
@@ -108,7 +137,7 @@ export async function POST(req: NextRequest) {
     // The RPC raises check_violation for self-send / bad amount / insufficient
     // funds or credit — surface those as a clean 400 to the sender.
     const msg = String(transferErr.message || '');
-    const isGuard = /check_violation|Insufficient|Cannot Send|Greater Than Zero|Not Found/i.test(msg);
+    const isGuard = /check_violation|Insufficient|Cannot Send|Greater Than Zero|Account Not Found/i.test(msg);
     console.error('wallet_transfer failed:', msg);
     return NextResponse.json(
       { error: isGuard ? msg.replace(/^.*?:\s*/, '') || 'Transfer Rejected.' : 'Failed To Send Funds. Please Try Again.' },
