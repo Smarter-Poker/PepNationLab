@@ -149,8 +149,14 @@ export function useAvailability(opts: UseAvailabilityOpts): AvailabilityResult {
         setSimilarTo(typeof json.similarTo === 'string' ? json.similarTo : null);
         setSuggestions(Array.isArray(json.suggestions) ? json.suggestions.slice(0, 5) : []);
         if (isAvail) {
-          // Available, with optional similar-name soft warning.
-          setStatus(typeof json.similarTo === 'string' && json.similarTo ? 'similar' : 'available');
+          // Available means available, period. The server may also report a
+          // visually-similar existing name via json.similarTo for analytics
+          // purposes, but we intentionally do NOT surface that as a yellow
+          // "Very Close To..." warning — too many false positives, and the
+          // platform rule is "if the name is free, the user can have it."
+          // The 'similar' status remains in the type definition for any caller
+          // that wants the raw signal, but this hook never produces it.
+          setStatus('available');
         } else if (json.reserved === true) {
           setStatus('reserved');
         } else if (json.reason && !json.reason.toLowerCase().includes('already')) {
@@ -216,13 +222,10 @@ export function availabilityMessage(r: AvailabilityResult): {
     case 'available':
       return { color: '#34D399', text: 'This Name Is Available', tone: 'success' };
     case 'similar':
-      return {
-        color: '#FBBF24',
-        text: r.similarTo
-          ? `Available — But Very Close To "${r.similarTo}". Pick A More Distinct Name.`
-          : 'Available — But Very Close To An Existing Name.',
-        tone: 'warn',
-      };
+      // Platform rule: if the server confirmed the name is available, the user
+      // can have it. We do NOT surface the "Very Close To..." soft warning any
+      // longer. Render the green Available message exactly like 'available'.
+      return { color: '#34D399', text: 'This Name Is Available', tone: 'success' };
     case 'taken':
       return { color: '#FC8181', text: r.reason || 'Already Taken — Try Another.', tone: 'error' };
     case 'reserved':
