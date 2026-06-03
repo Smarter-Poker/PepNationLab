@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
+import PrintButton from '@/components/wallet/PrintButton';
 
 export const dynamic = 'force-dynamic';
 export const metadata = {
@@ -40,8 +41,19 @@ export default async function WalletPrintPage({ searchParams }: { searchParams: 
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect('/login');
 
-  // Read the target row scoped to the caller. RLS enforces ownership; the
-  // print view never exposes data the caller can't already see.
+  // Resolve caller role so admin can print any invoice for support / audit.
+  const { data: callerProfile } = await supabase
+    .from('profiles')
+    .select('role')
+    .eq('id', user.id)
+    .maybeSingle();
+  const isAdmin = callerProfile?.role === 'admin';
+
+  // Load the target row. We let RLS see all rows the caller is entitled to
+  // (admin everywhere; agent on own statements; sub-agent + super-agent on
+  // shared agent_invoices) and then enforce the print-visibility ACL in
+  // JS so the "Invoice Not Found" message doesn't leak which side of the
+  // pair the caller is on.
   let row: any = null;
   let billsFrom = '';
   if (type === 'statement') {
@@ -49,18 +61,16 @@ export default async function WalletPrintPage({ searchParams }: { searchParams: 
       .from('weekly_statements')
       .select('id, agent_id, week_start, week_end, total_cogs, total_shipping, total_owed, status, due_date, paid_at, payment_method, created_at')
       .eq('id', id)
-      .eq('agent_id', user.id)
       .maybeSingle();
-    row = data;
+    if (data && (isAdmin || data.agent_id === user.id)) row = data;
     billsFrom = 'Pep Nation Lab Admin';
   } else {
     const { data } = await supabase
       .from('agent_invoices')
       .select('id, agent_id, super_agent_id, week_start, week_end, total_cogs, total_shipping, total_owed, status, due_date, paid_at, payment_method, created_at')
       .eq('id', id)
-      .eq('agent_id', user.id)
       .maybeSingle();
-    row = data;
+    if (data && (isAdmin || data.agent_id === user.id || data.super_agent_id === user.id)) row = data;
     if (row?.super_agent_id) {
       const { data: superAgent } = await supabase
         .from('profiles')
@@ -138,8 +148,7 @@ export default async function WalletPrintPage({ searchParams }: { searchParams: 
           {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
           <a href="/wallet" style={{ color: '#555', textDecoration: 'none', fontSize: 13, alignSelf: 'center' }}>← Back To Wallet</a>
           <span style={{ flex: 1 }} />
-          {/* eslint-disable-next-line react/no-unknown-property */}
-          <button className="print-btn" onClick={"window.print()" as any}>Print Invoice</button>
+          <PrintButton />
         </div>
 
         <h1>Pep Nation Lab</h1>
