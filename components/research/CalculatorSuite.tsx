@@ -33,50 +33,101 @@ import {
 } from '@/lib/research/calculators';
 
 const RESEARCH_NOTE = 'Research Use Only. Not Intended As Medical Advice Or Human Dosing.';
+// Note: CSS capitalization handles UI rendering
 
-const sectionStyle: React.CSSProperties = {
+const chromeOuterStyle: React.CSSProperties = {
   scrollMarginTop: 100,
-  padding: 24,
-  borderRadius: 14,
-  border: '1px solid rgba(168,180,192,0.2)',
-  background: 'rgba(15,25,35,0.55)',
   marginBottom: 24,
+  borderRadius: 20,
+  padding: 4,
+  background: 'linear-gradient(135deg, #e6e9f0 0%, #8a95a5 50%, #e6e9f0 100%)',
+  boxShadow: '0 8px 32px rgba(0,0,0,0.6)',
+};
+
+const chromeInnerStyle: React.CSSProperties = {
+  borderRadius: 16,
+  padding: 24,
+  background: '#0B0E14',
+  boxShadow: 'inset 0 0 20px rgba(0,0,0,0.8)',
 };
 
 const labelStyle: React.CSSProperties = {
   display: 'block',
-  fontSize: 12,
+  fontSize: 13,
+  fontWeight: 600,
   color: '#A8B4C0',
-  marginBottom: 4,
-  textTransform: 'uppercase',
-  letterSpacing: '0.04em',
+  marginBottom: 6,
+  textTransform: 'capitalize', // Title Case
+  letterSpacing: '0.02em',
 };
 
-const inputStyle: React.CSSProperties = {
+const inputStyleBase: React.CSSProperties = {
   width: '100%',
-  background: '#0F1923',
-  border: '1px solid rgba(168,180,192,0.25)',
-  color: '#FFFFFF',
-  padding: '8px 10px',
+  background: 'rgba(255, 255, 255, 0.05)', // Glassmorphism
+  backdropFilter: 'blur(10px)',
+  border: '1px solid rgba(255, 255, 255, 0.1)',
+  color: '#00C4BC',
+  padding: '10px 12px',
   borderRadius: 8,
-  fontSize: 14,
+  fontSize: 16,
+  fontFamily: 'monospace',
+  outline: 'none',
+  transition: 'all 0.3s ease',
 };
+
+function StyledInput(props: React.InputHTMLAttributes<HTMLInputElement>) {
+  const [focused, setFocused] = useState(false);
+  return (
+    <StyledInput 
+      {...props}
+      onFocus={(e) => { setFocused(true); props.onFocus?.(e); }}
+      onBlur={(e) => { setFocused(false); props.onBlur?.(e); }}
+      style={{
+        ...inputStyleBase,
+        borderColor: focused ? '#00C4BC' : 'rgba(255, 255, 255, 0.1)',
+        boxShadow: focused ? '0 0 10px rgba(0,196,188,0.3), inset 0 2px 4px rgba(0,0,0,0.3)' : 'inset 0 2px 4px rgba(0,0,0,0.3)',
+        ...props.style
+      }}
+    />
+  );
+}
+
+function StyledSelect(props: React.SelectHTMLAttributes<HTMLSelectElement>) {
+  const [focused, setFocused] = useState(false);
+  return (
+    <select 
+      {...props}
+      onFocus={(e) => { setFocused(true); props.onFocus?.(e); }}
+      onBlur={(e) => { setFocused(false); props.onBlur?.(e); }}
+      style={{
+        ...inputStyleBase,
+        borderColor: focused ? '#00C4BC' : 'rgba(255, 255, 255, 0.1)',
+        boxShadow: focused ? '0 0 10px rgba(0,196,188,0.3), inset 0 2px 4px rgba(0,0,0,0.3)' : 'inset 0 2px 4px rgba(0,0,0,0.3)',
+        ...props.style
+      }}
+    />
+  );
+}
 
 const explainerStyle: React.CSSProperties = {
   color: '#A8B4C0',
-  fontSize: 13,
+  fontSize: 14,
   lineHeight: 1.6,
-  margin: '0 0 14px',
+  margin: '0 0 16px',
 };
 
 const resultStyle: React.CSSProperties = {
-  marginTop: 12,
-  padding: 12,
-  borderRadius: 10,
-  background: 'rgba(0,196,188,0.10)',
-  border: '1px solid rgba(0,196,188,0.35)',
-  color: '#FFFFFF',
-  fontSize: 14,
+  marginTop: 16,
+  padding: 16,
+  borderRadius: 12,
+  background: '#080A0F',
+  border: '1px solid rgba(0,196,188,0.5)',
+  boxShadow: '0 0 20px rgba(0,196,188,0.2), inset 0 0 10px rgba(0,196,188,0.1)', // Neon Glow
+  color: '#00C4BC',
+  fontSize: 16,
+  fontFamily: 'monospace',
+  textAlign: 'center',
+  textTransform: 'capitalize', // Title Case
 };
 
 const noteStyle: React.CSSProperties = {
@@ -91,7 +142,7 @@ function CalculatorHeader({ title, why }: { title: string; why: string }) {
   return (
     <>
       <h2 style={{ margin: 0, color: '#FFFFFF', fontSize: 20, fontWeight: 800 }}>{title}</h2>
-      <h3 style={{ margin: '12px 0 4px', color: '#00C4BC', fontSize: 13, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+      <h3 style={{ margin: '12px 0 4px', color: '#00C4BC', fontSize: 13, textTransform: 'capitalize', letterSpacing: '0.06em' }}>
         Why This Matters
       </h3>
       <p style={explainerStyle}>{why}</p>
@@ -109,7 +160,8 @@ function Reconstitution() {
   const drawMl = drawVolumeMl(Number(vialMass), Number(diluentMl), Number(desiredMass));
 
   return (
-    <section id="reconstitution" style={sectionStyle}>
+    <section id="reconstitution" style={chromeOuterStyle}>
+      <div style={chromeInnerStyle}>
       <CalculatorHeader
         title="Reconstitution Calculator"
         why="Most peptides ship freeze-dried. Reconstitution turns the powder into a usable working stock. Get the volume of diluent right and every downstream volume comes out clean."
@@ -117,11 +169,11 @@ function Reconstitution() {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12 }}>
         <label style={{ display: "block" }}>
           <div style={labelStyle}>Vial Mass (mg)</div>
-          <input style={inputStyle} type="number" step="any" min={0} value={vialMass} onChange={(e) => setVialMass(e.target.value)} />
+          <StyledInput  type="number" step="any" min={0} value={vialMass} onChange={(e) => setVialMass(e.target.value)} />
         </label>
         <label style={{ display: "block" }}>
           <div style={labelStyle}>Target Concentration (mg/mL)</div>
-          <input style={inputStyle} type="number" step="any" min={0} value={targetConc} onChange={(e) => setTargetConc(e.target.value)} />
+          <StyledInput  type="number" step="any" min={0} value={targetConc} onChange={(e) => setTargetConc(e.target.value)} />
         </label>
       </div>
       <div style={{ ...resultStyle, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
@@ -149,11 +201,11 @@ function Reconstitution() {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12 }}>
         <label style={{ display: "block" }}>
           <div style={labelStyle}>Diluent Added (mL)</div>
-          <input style={inputStyle} type="number" step="any" min={0} value={diluentMl} onChange={(e) => setDiluentMl(e.target.value)} />
+          <StyledInput  type="number" step="any" min={0} value={diluentMl} onChange={(e) => setDiluentMl(e.target.value)} />
         </label>
         <label style={{ display: "block" }}>
           <div style={labelStyle}>Desired Mass (mg)</div>
-          <input style={inputStyle} type="number" step="any" min={0} value={desiredMass} onChange={(e) => setDesiredMass(e.target.value)} />
+          <StyledInput  type="number" step="any" min={0} value={desiredMass} onChange={(e) => setDesiredMass(e.target.value)} />
         </label>
       </div>
       <div style={resultStyle}>
@@ -163,6 +215,7 @@ function Reconstitution() {
       </div>
 
       <p style={noteStyle}>{RESEARCH_NOTE}</p>
+    </div>
     </section>
   );
 }
@@ -179,7 +232,8 @@ function DilutionSection() {
   });
 
   return (
-    <section id="dilution" style={sectionStyle}>
+    <section id="dilution" style={chromeOuterStyle}>
+      <div style={chromeInnerStyle}>
       <CalculatorHeader
         title="Serial Dilution Series"
         why="Many in-vitro assays need a serial dilution series across log-scale ranges. This generates the per-step concentrations from a stock down to your detection limit."
@@ -187,15 +241,15 @@ function DilutionSection() {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 12 }}>
         <label style={{ display: "block" }}>
           <div style={labelStyle}>Stock Concentration (Units)</div>
-          <input style={inputStyle} type="number" step="any" min={0} value={stock} onChange={(e) => setStock(e.target.value)} />
+          <StyledInput  type="number" step="any" min={0} value={stock} onChange={(e) => setStock(e.target.value)} />
         </label>
         <label style={{ display: "block" }}>
           <div style={labelStyle}>Dilution Factor</div>
-          <input style={inputStyle} type="number" step="any" min={2} value={factor} onChange={(e) => setFactor(e.target.value)} />
+          <StyledInput  type="number" step="any" min={2} value={factor} onChange={(e) => setFactor(e.target.value)} />
         </label>
         <label style={{ display: "block" }}>
           <div style={labelStyle}>Steps</div>
-          <input style={inputStyle} type="number" min={1} max={20} step={1} value={steps} onChange={(e) => setSteps(e.target.value)} />
+          <StyledInput  type="number" min={1} max={20} step={1} value={steps} onChange={(e) => setSteps(e.target.value)} />
         </label>
       </div>
       <div style={{ ...resultStyle, padding: 0, background: 'transparent', border: 'none' }}>
@@ -224,6 +278,7 @@ function DilutionSection() {
         </table>
       </div>
       <p style={noteStyle}>{RESEARCH_NOTE}</p>
+    </div>
     </section>
   );
 }
@@ -254,7 +309,8 @@ function ConcentrationSection() {
   });
 
   return (
-    <section id="concentration" style={sectionStyle}>
+    <section id="concentration" style={chromeOuterStyle}>
+      <div style={chromeInnerStyle}>
       <CalculatorHeader
         title="Concentration Converter"
         why="Studies report concentrations in many units. Convert freely between mass per volume (mg/mL, mcg/mL, ng/mL) and molar (mmol/L, umol/L, nmol/L). Molar conversions require molecular weight."
@@ -262,24 +318,24 @@ function ConcentrationSection() {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 12 }}>
         <label style={{ display: "block" }}>
           <div style={labelStyle}>Value</div>
-          <input style={inputStyle} type="number" step="any" value={value} onChange={(e) => setValue(e.target.value)} />
+          <StyledInput  type="number" step="any" value={value} onChange={(e) => setValue(e.target.value)} />
         </label>
         <label style={{ display: "block" }}>
           <div style={labelStyle}>From Unit</div>
-          <select style={inputStyle} value={from} onChange={(e) => setFrom(e.target.value as ConcentrationUnit)}>
+          <StyledSelect value={from} onChange={(e) => setFrom(e.target.value as ConcentrationUnit)}>
             {UNITS.map((u) => <option key={u} value={u}>{u}</option>)}
-          </select>
+          </StyledSelect>
         </label>
         <label style={{ display: "block" }}>
           <div style={labelStyle}>To Unit</div>
-          <select style={inputStyle} value={to} onChange={(e) => setTo(e.target.value as ConcentrationUnit)}>
+          <StyledSelect value={to} onChange={(e) => setTo(e.target.value as ConcentrationUnit)}>
             {UNITS.map((u) => <option key={u} value={u}>{u}</option>)}
-          </select>
+          </StyledSelect>
         </label>
         {mwRequired && (
           <label style={{ display: "block" }}>
             <div style={labelStyle}>Molecular Weight (Da)</div>
-            <input style={inputStyle} type="number" step="any" value={mw} onChange={(e) => setMw(e.target.value)} />
+            <StyledInput  type="number" step="any" value={mw} onChange={(e) => setMw(e.target.value)} />
           </label>
         )}
       </div>
@@ -292,6 +348,7 @@ function ConcentrationSection() {
         }
       </div>
       <p style={noteStyle}>{RESEARCH_NOTE}</p>
+    </div>
     </section>
   );
 }
@@ -310,7 +367,8 @@ function StabilitySection() {
   });
 
   return (
-    <section id="stability" style={sectionStyle}>
+    <section id="stability" style={chromeOuterStyle}>
+      <div style={chromeInnerStyle}>
       <CalculatorHeader
         title="Arrhenius Stability Estimator"
         why="Predict shelf-life at one temperature given a known shelf-life at another. Useful for comparing fridge versus room-temp storage windows. Default Ea is 83 kJ/mol, a common literature value for lyophilized peptides."
@@ -318,19 +376,19 @@ function StabilitySection() {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 12 }}>
         <label style={{ display: "block" }}>
           <div style={labelStyle}>Known Shelf Days</div>
-          <input style={inputStyle} type="number" step="any" value={shelf} onChange={(e) => setShelf(e.target.value)} />
+          <StyledInput  type="number" step="any" value={shelf} onChange={(e) => setShelf(e.target.value)} />
         </label>
         <label style={{ display: "block" }}>
           <div style={labelStyle}>Known Temperature (C)</div>
-          <input style={inputStyle} type="number" step="any" value={tFrom} onChange={(e) => setTFrom(e.target.value)} />
+          <StyledInput  type="number" step="any" value={tFrom} onChange={(e) => setTFrom(e.target.value)} />
         </label>
         <label style={{ display: "block" }}>
           <div style={labelStyle}>Target Temperature (C)</div>
-          <input style={inputStyle} type="number" step="any" value={tTo} onChange={(e) => setTTo(e.target.value)} />
+          <StyledInput  type="number" step="any" value={tTo} onChange={(e) => setTTo(e.target.value)} />
         </label>
         <label style={{ display: "block" }}>
           <div style={labelStyle}>Activation Energy (kJ/mol)</div>
-          <input style={inputStyle} type="number" step="any" value={ea} onChange={(e) => setEa(e.target.value)} />
+          <StyledInput  type="number" step="any" value={ea} onChange={(e) => setEa(e.target.value)} />
         </label>
       </div>
       <div style={resultStyle}>
@@ -342,6 +400,7 @@ function StabilitySection() {
         }
       </div>
       <p style={noteStyle}>{RESEARCH_NOTE}</p>
+    </div>
     </section>
   );
 }
@@ -358,7 +417,8 @@ function CostSection() {
   });
 
   return (
-    <section id="cost" style={sectionStyle}>
+    <section id="cost" style={chromeOuterStyle}>
+      <div style={chromeInnerStyle}>
       <CalculatorHeader
         title="Cost-Per-Dose Calculator"
         why="Compare cost across vial sizes and dose levels. Useful for planning study budgets when running multi-dose experiments."
@@ -366,15 +426,15 @@ function CostSection() {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 12 }}>
         <label style={{ display: "block" }}>
           <div style={labelStyle}>Vial Price (USD)</div>
-          <input style={inputStyle} type="number" step="any" value={price} onChange={(e) => setPrice(e.target.value)} />
+          <StyledInput  type="number" step="any" value={price} onChange={(e) => setPrice(e.target.value)} />
         </label>
         <label style={{ display: "block" }}>
           <div style={labelStyle}>Vial Mass (mg)</div>
-          <input style={inputStyle} type="number" step="any" value={mass} onChange={(e) => setMass(e.target.value)} />
+          <StyledInput  type="number" step="any" value={mass} onChange={(e) => setMass(e.target.value)} />
         </label>
         <label style={{ display: "block" }}>
           <div style={labelStyle}>Per-Dose Amount (mcg)</div>
-          <input style={inputStyle} type="number" step="any" value={dose} onChange={(e) => setDose(e.target.value)} />
+          <StyledInput  type="number" step="any" value={dose} onChange={(e) => setDose(e.target.value)} />
         </label>
       </div>
       <div style={resultStyle}>
@@ -384,6 +444,7 @@ function CostSection() {
         }
       </div>
       <p style={noteStyle}>{RESEARCH_NOTE}</p>
+    </div>
     </section>
   );
 }
@@ -400,7 +461,8 @@ function PoolingSection() {
   });
 
   return (
-    <section id="pooling" style={sectionStyle}>
+    <section id="pooling" style={chromeOuterStyle}>
+      <div style={chromeInnerStyle}>
       <CalculatorHeader
         title="Vial Pooling"
         why="When pooling multiple vials into a single sterile container, the resulting concentration depends on combined mass and total diluent. Use this to compute the final mg/mL."
@@ -408,15 +470,15 @@ function PoolingSection() {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 12 }}>
         <label style={{ display: "block" }}>
           <div style={labelStyle}>Per-Vial Mass (mg)</div>
-          <input style={inputStyle} type="number" step="any" value={mass} onChange={(e) => setMass(e.target.value)} />
+          <StyledInput  type="number" step="any" value={mass} onChange={(e) => setMass(e.target.value)} />
         </label>
         <label style={{ display: "block" }}>
           <div style={labelStyle}>Vial Count</div>
-          <input style={inputStyle} type="number" min={1} step={1} value={count} onChange={(e) => setCount(e.target.value)} />
+          <StyledInput  type="number" min={1} step={1} value={count} onChange={(e) => setCount(e.target.value)} />
         </label>
         <label style={{ display: "block" }}>
           <div style={labelStyle}>Total Diluent (mL)</div>
-          <input style={inputStyle} type="number" step="any" value={diluent} onChange={(e) => setDiluent(e.target.value)} />
+          <StyledInput  type="number" step="any" value={diluent} onChange={(e) => setDiluent(e.target.value)} />
         </label>
       </div>
       <div style={resultStyle}>
@@ -426,6 +488,7 @@ function PoolingSection() {
         }
       </div>
       <p style={noteStyle}>{RESEARCH_NOTE}</p>
+    </div>
     </section>
   );
 }
@@ -458,7 +521,8 @@ function HplcRtSection() {
   const gradientInvalid = gradient.trim() !== '' && Number(gradient) <= 0;
 
   return (
-    <section id="hplc-rt" style={sectionStyle}>
+    <section id="hplc-rt" style={chromeOuterStyle}>
+      <div style={chromeInnerStyle}>
       <CalculatorHeader
         title="HPLC Retention Time Predictor"
         why="Roughly estimate where a peptide will elute on a C18 reverse-phase column using Bull-Breese hydrophobicity. Useful for planning a purification gradient before injection. Lab estimate, not a clinical prediction."
@@ -466,7 +530,7 @@ function HplcRtSection() {
       <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 12 }}>
         <label style={{ display: "block" }}>
           <div style={labelStyle}>One-Letter Sequence (Standard 20 AA Codes)</div>
-          <input style={inputStyle} type="text" value={seq} maxLength={500} onChange={(e) => setSeq(e.target.value)} />
+          <StyledInput  type="text" value={seq} maxLength={500} onChange={(e) => setSeq(e.target.value)} />
           {unknownChars.length > 0 && (
             <div style={{ marginTop: 6, fontSize: 12, color: '#F6AD55', background: 'rgba(246,173,85,0.10)', border: '1px solid rgba(246,173,85,0.30)', borderRadius: 6, padding: '5px 10px' }}>
               ⚠ Non-standard characters detected: <strong>{unknownChars.join(', ')}</strong>. These are ignored for hydrophobicity, affecting accuracy. Use only: A C D E F G H I K L M N P Q R S T V W Y.
@@ -477,15 +541,15 @@ function HplcRtSection() {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 12, marginTop: 12 }}>
         <label style={{ display: "block" }}>
           <div style={labelStyle}>Gradient Start (%B)</div>
-          <input style={inputStyle} type="number" step="any" value={start} onChange={(e) => setStart(e.target.value)} />
+          <StyledInput  type="number" step="any" value={start} onChange={(e) => setStart(e.target.value)} />
         </label>
         <label style={{ display: "block" }}>
           <div style={labelStyle}>Gradient End (%B)</div>
-          <input style={inputStyle} type="number" step="any" value={end} onChange={(e) => setEnd(e.target.value)} />
+          <StyledInput  type="number" step="any" value={end} onChange={(e) => setEnd(e.target.value)} />
         </label>
         <label style={{ display: "block" }}>
           <div style={labelStyle}>Gradient Length (Min)</div>
-          <input style={inputStyle} type="number" step="any" value={gradient} onChange={(e) => setGradient(e.target.value)} />
+          <StyledInput  type="number" step="any" value={gradient} onChange={(e) => setGradient(e.target.value)} />
         </label>
       </div>
       <div style={resultStyle}>
@@ -501,6 +565,7 @@ function HplcRtSection() {
         }
       </div>
       <p style={noteStyle}>{RESEARCH_NOTE}</p>
+    </div>
     </section>
   );
 }
@@ -529,7 +594,8 @@ function MassSpecSection() {
   });
 
   return (
-    <section id="mass-spec" style={sectionStyle}>
+    <section id="mass-spec" style={chromeOuterStyle}>
+      <div style={chromeInnerStyle}>
       <CalculatorHeader
         title="Mass Spec m/z Predictor"
         why="Predict the expected [M+nH]^n+ peaks for a peptide so you know where to look in the ESI-MS spectrum. Useful for identity confirmation after synthesis."
@@ -537,7 +603,7 @@ function MassSpecSection() {
       <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 12 }}>
         <label style={{ display: "block" }}>
           <div style={labelStyle}>One-Letter Sequence (Standard 20 AA Codes)</div>
-          <input style={inputStyle} type="text" value={seq} maxLength={500} onChange={(e) => setSeq(e.target.value)} />
+          <StyledInput  type="text" value={seq} maxLength={500} onChange={(e) => setSeq(e.target.value)} />
           {unknownChars.length > 0 && (
             <div style={{ marginTop: 6, fontSize: 12, color: '#F6AD55', background: 'rgba(246,173,85,0.10)', border: '1px solid rgba(246,173,85,0.30)', borderRadius: 6, padding: '5px 10px' }}>
               ⚠ Non-standard characters detected: <strong>{unknownChars.join(', ')}</strong>. These are treated as ~110 Da residues and will affect accuracy. Use only: A C D E F G H I K L M N P Q R S T V W Y.
@@ -548,14 +614,14 @@ function MassSpecSection() {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 12, marginTop: 12 }}>
         <label style={{ display: "block" }}>
           <div style={labelStyle}>Ionization Mode</div>
-          <select style={inputStyle} value={mode} onChange={(e) => setMode(e.target.value as 'positive' | 'negative')}>
+          <StyledSelect value={mode} onChange={(e) => setMode(e.target.value as 'positive' | 'negative')}>
             <option value="positive">Positive</option>
             <option value="negative">Negative</option>
-          </select>
+          </StyledSelect>
         </label>
         <label style={{ display: "block" }}>
           <div style={labelStyle}>Max Charge State</div>
-          <input style={inputStyle} type="number" step="any" min={1} value={maxCharge} onChange={(e) => setMaxCharge(e.target.value)} />
+          <StyledInput  type="number" step="any" min={1} value={maxCharge} onChange={(e) => setMaxCharge(e.target.value)} />
         </label>
       </div>
       <div style={{ ...resultStyle, padding: 0, background: 'transparent', border: 'none' }}>
@@ -582,6 +648,7 @@ function MassSpecSection() {
         </table>
       </div>
       <p style={noteStyle}>{RESEARCH_NOTE}</p>
+    </div>
     </section>
   );
 }
@@ -610,7 +677,8 @@ function SppsSection() {
   });
 
   return (
-    <section id="spps-cost" style={sectionStyle}>
+    <section id="spps-cost" style={chromeOuterStyle}>
+      <div style={chromeInnerStyle}>
       <CalculatorHeader
         title="Fmoc-SPPS Cost Estimator"
         why="Plan the cost of synthesizing a peptide via solid-phase Fmoc chemistry. Breaks down amino acid, resin, reagent, cleavage, and labor costs."
@@ -618,7 +686,7 @@ function SppsSection() {
       <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 12 }}>
         <label style={{ display: "block" }}>
           <div style={labelStyle}>One-Letter Sequence</div>
-          <input style={inputStyle} type="text" value={seq} maxLength={500} onChange={(e) => setSeq(e.target.value)} />
+          <StyledInput  type="text" value={seq} maxLength={500} onChange={(e) => setSeq(e.target.value)} />
           {sppsUnknownChars.length > 0 && (
             <div style={{ marginTop: 6, fontSize: 12, color: '#F6AD55', background: 'rgba(246,173,85,0.10)', border: '1px solid rgba(246,173,85,0.30)', borderRadius: 6, padding: '5px 10px' }}>
               ⚠ Non-standard characters: <strong>{sppsUnknownChars.join(', ')}</strong>. Cost estimate may be inaccurate. Use standard 20 AA codes only.
@@ -629,15 +697,15 @@ function SppsSection() {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 12, marginTop: 12 }}>
         <label style={{ display: "block" }}>
           <div style={labelStyle}>Scale (umol)</div>
-          <input style={inputStyle} type="number" step="any" value={scale} onChange={(e) => setScale(e.target.value)} />
+          <StyledInput  type="number" step="any" value={scale} onChange={(e) => setScale(e.target.value)} />
         </label>
         <label style={{ display: "block" }}>
           <div style={labelStyle}>Fmoc AA Cost ($/g)</div>
-          <input style={inputStyle} type="number" step="any" value={aaCost} onChange={(e) => setAaCost(e.target.value)} />
+          <StyledInput  type="number" step="any" value={aaCost} onChange={(e) => setAaCost(e.target.value)} />
         </label>
         <label style={{ display: "block" }}>
           <div style={labelStyle}>Resin Cost ($/g)</div>
-          <input style={inputStyle} type="number" step="any" value={resinCost} onChange={(e) => setResinCost(e.target.value)} />
+          <StyledInput  type="number" step="any" value={resinCost} onChange={(e) => setResinCost(e.target.value)} />
         </label>
       </div>
       <div style={resultStyle}>
@@ -656,6 +724,7 @@ function SppsSection() {
         )}
       </div>
       <p style={noteStyle}>{RESEARCH_NOTE}</p>
+    </div>
     </section>
   );
 }
@@ -674,7 +743,8 @@ function SolubilitySection() {
   });
 
   return (
-    <section id="solubility" style={sectionStyle}>
+    <section id="solubility" style={chromeOuterStyle}>
+      <div style={chromeInnerStyle}>
       <CalculatorHeader
         title="Solubility Predictor"
         why="A heuristic estimate of aqueous solubility using GRAVY (hydrophobicity), distance of pI from solution pH, and sequence length. Useful for guessing whether a peptide will dissolve cleanly in PBS, acetic acid, or DMSO. Get GRAVY and pI from ExPASy ProtParam (web.expasy.org/protparam)."
@@ -686,19 +756,19 @@ function SolubilitySection() {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 12 }}>
         <label style={{ display: "block" }}>
           <div style={labelStyle}>GRAVY</div>
-          <input style={inputStyle} type="number" step="0.01" value={gravy} onChange={(e) => setGravy(e.target.value)} />
+          <StyledInput  type="number" step="0.01" value={gravy} onChange={(e) => setGravy(e.target.value)} />
         </label>
         <label style={{ display: "block" }}>
           <div style={labelStyle}>Isoelectric Point (pI)</div>
-          <input style={inputStyle} type="number" step="0.01" value={pi} onChange={(e) => setPi(e.target.value)} />
+          <StyledInput  type="number" step="0.01" value={pi} onChange={(e) => setPi(e.target.value)} />
         </label>
         <label style={{ display: "block" }}>
           <div style={labelStyle}>Sequence Length</div>
-          <input style={inputStyle} type="number" step={1} min={1} value={len} onChange={(e) => setLen(e.target.value)} />
+          <StyledInput  type="number" step={1} min={1} value={len} onChange={(e) => setLen(e.target.value)} />
         </label>
         <label style={{ display: "block" }}>
           <div style={labelStyle}>Solution pH</div>
-          <input style={inputStyle} type="number" step="0.1" value={pH} onChange={(e) => setPH(e.target.value)} />
+          <StyledInput  type="number" step="0.1" value={pH} onChange={(e) => setPH(e.target.value)} />
         </label>
       </div>
       <div style={resultStyle}>
@@ -710,6 +780,7 @@ function SolubilitySection() {
         )}
       </div>
       <p style={noteStyle}>{RESEARCH_NOTE}</p>
+    </div>
     </section>
   );
 }
@@ -728,7 +799,8 @@ function VialQuantitySection() {
   });
 
   return (
-    <section id="vial-quantity" style={sectionStyle}>
+    <section id="vial-quantity" style={chromeOuterStyle}>
+      <div style={chromeInnerStyle}>
       <CalculatorHeader
         title="Vial Quantity Power Calculator"
         why="Plan vial procurement for a study. Given a sample size, doses per subject, and dose mass, compute the number of vials to order."
@@ -736,19 +808,19 @@ function VialQuantitySection() {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 12 }}>
         <label style={{ display: "block" }}>
           <div style={labelStyle}>Sample Size (n)</div>
-          <input style={inputStyle} type="number" min={1} step={1} value={n} onChange={(e) => setN(e.target.value)} />
+          <StyledInput  type="number" min={1} step={1} value={n} onChange={(e) => setN(e.target.value)} />
         </label>
         <label style={{ display: "block" }}>
           <div style={labelStyle}>Doses Per Subject</div>
-          <input style={inputStyle} type="number" min={1} step={1} value={doses} onChange={(e) => setDoses(e.target.value)} />
+          <StyledInput  type="number" min={1} step={1} value={doses} onChange={(e) => setDoses(e.target.value)} />
         </label>
         <label style={{ display: "block" }}>
           <div style={labelStyle}>Mg Per Dose</div>
-          <input style={inputStyle} type="number" step="0.01" value={mgPerDose} onChange={(e) => setMgPerDose(e.target.value)} />
+          <StyledInput  type="number" step="0.01" value={mgPerDose} onChange={(e) => setMgPerDose(e.target.value)} />
         </label>
         <label style={{ display: "block" }}>
           <div style={labelStyle}>Mg Per Vial</div>
-          <input style={inputStyle} type="number" step="0.01" value={mgPerVial} onChange={(e) => setMgPerVial(e.target.value)} />
+          <StyledInput  type="number" step="0.01" value={mgPerVial} onChange={(e) => setMgPerVial(e.target.value)} />
         </label>
       </div>
       <div style={resultStyle}>
@@ -761,6 +833,7 @@ function VialQuantitySection() {
         )}
       </div>
       <p style={noteStyle}>{RESEARCH_NOTE}</p>
+    </div>
     </section>
   );
 }
