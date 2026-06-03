@@ -246,7 +246,7 @@ export default function CompareTool({
     const lower = searchQuery.toLowerCase();
     return compounds.filter((c) => 
       !selectedSlugs.includes(c.slug) && 
-      (c.display_name.toLowerCase().includes(lower) || c.category.toLowerCase().includes(lower) || c.slug.toLowerCase().includes(lower))
+      (c.display_name.toLowerCase().includes(lower) || (c.category && c.category.toLowerCase().includes(lower)) || c.slug.toLowerCase().includes(lower))
     ).slice(0, 10);
   }, [compounds, searchQuery, selectedSlugs]);
 
@@ -522,7 +522,7 @@ export default function CompareTool({
                     <RechartsTooltip 
                       contentStyle={{ background: '#162230', borderColor: 'rgba(168,180,192,0.2)', borderRadius: '12px', color: '#FFF', boxShadow: '0 10px 25px rgba(0,0,0,0.5)' }}
                       itemStyle={{ fontWeight: 700 }}
-                      formatter={(value: number) => {
+                      formatter={(value: any) => {
                         // Return human-readable label based on score
                         if (value === 5) return 'Very High';
                         if (value === 4) return 'High';

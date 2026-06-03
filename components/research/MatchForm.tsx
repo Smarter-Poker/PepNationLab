@@ -138,6 +138,7 @@ function MatchFormInner() {
   const [step, setStep] = useState(1);
   const [saving, setSaving] = useState(false);
   const [selectedDrawerCompound, setSelectedDrawerCompound] = useState<MatchResult | null>(null);
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
   // Sync state to URL
   useEffect(() => {
@@ -250,7 +251,7 @@ function MatchFormInner() {
 
   return (
     <div className="match-container" style={{ position: 'relative', minHeight: '600px' }}>
-      <CompoundDrawer isOpen={!!selectedDrawerCompound} onClose={() => setSelectedDrawerCompound(null)} result={selectedDrawerCompound} />
+      <CompoundDrawer isOpen={isDrawerOpen} onClose={() => setIsDrawerOpen(false)} result={selectedDrawerCompound} />
 
       <style>{`
         @media print {
@@ -490,7 +491,7 @@ function MatchFormInner() {
                           </div>
                         </div>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }} className="no-print">
-                          <button onClick={() => setSelectedDrawerCompound(r)} className="btn-secondary" style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem', padding: '8px 12px' }}>
+                          <button onClick={() => { setSelectedDrawerCompound(r); setIsDrawerOpen(true); }} className="btn-secondary" style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem', padding: '8px 12px' }}>
                             <Eye size={16} /> Quick View
                           </button>
                           <button onClick={() => setExcludeSlugs(prev => [...prev, r.slug])} style={{ background: 'none', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', color: '#A8B4C0', padding: '8px 12px', cursor: 'pointer', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '6px' }}>

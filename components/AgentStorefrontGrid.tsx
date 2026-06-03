@@ -965,7 +965,7 @@ export default function AgentStorefrontGrid({
           font-weight: 800; font-size: 0.9rem; border: 1px solid var(--teal); cursor: pointer;
           color: #04221F; white-space: nowrap;
           display: inline-flex; align-items: center; justify-content: center; text-align: center;
-          box-shadow: inset 0 1px 0 rgba(255,255,255,0.35), 0 6px 16px rgba(0,196,188,0.40);
+          box-shadow: inset 0 1px 0 rgba(255,255,255,0.35), 0 6px 16px rgba(192,197,206,0.40);
         }
         @media (min-width: 600px) {
           .sf-modal-overlay { align-items: center; padding: 20px; overflow-y: auto; }
@@ -1043,8 +1043,8 @@ export default function AgentStorefrontGrid({
         <div style={{
           display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12,
           padding: '8px 12px', borderRadius: 10,
-          background: 'rgba(0,196,188,0.08)',
-          border: '1px solid rgba(0,196,188,0.32)',
+          background: 'rgba(192,197,206,0.08)',
+          border: '1px solid rgba(192,197,206,0.32)',
         }}>
           <span style={{ color: 'var(--silver, #A8B4C0)', fontSize: '0.78rem', fontWeight: 700 }}>Filtered By Research Area</span>
           <button
@@ -2159,7 +2159,7 @@ export default function AgentStorefrontGrid({
 
                       {(volumePricingEnabled && !isStorefrontOwner) && (
                         <div style={{
-                          marginTop: 'var(--space-5)', border: '1px solid rgba(255,255,255,0.08)',
+                          marginTop: 'var(--space-5)', border: '6px solid #E2E8F0',
                           borderRadius: 'var(--radius-md)', overflow: 'hidden'
                         }}>
                           <div style={{ padding: '8px 16px', background: 'rgba(255,255,255,0.04)', fontSize: '0.75rem', fontWeight: 600, color: 'var(--silver)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
@@ -2254,7 +2254,7 @@ export default function AgentStorefrontGrid({
                     {showBulkPricing && (
                       <div style={{
                         position: 'absolute', bottom: 80, left: 24, right: 24,
-                        border: '1px solid rgba(255,255,255,0.08)',
+                        border: '6px solid #E2E8F0',
                         borderRadius: 'var(--radius-md)', overflow: 'hidden',
                         background: 'var(--surface-2)', zIndex: 10,
                         boxShadow: '0 8px 32px rgba(0,0,0,0.5)'

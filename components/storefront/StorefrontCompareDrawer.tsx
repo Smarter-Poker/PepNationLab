@@ -85,10 +85,10 @@ const labelCellStyle: React.CSSProperties = {
 
 const groupCellStyle: React.CSSProperties = {
   padding: 'var(--space-3, 12px)',
-  background: 'rgba(0,196,188,0.08)',
-  borderTop: '1px solid rgba(0,196,188,0.3)',
-  borderBottom: '1px solid rgba(0,196,188,0.3)',
-  color: 'var(--teal, #00C4BC)',
+  background: 'rgba(192,197,206,0.08)',
+  borderTop: '1px solid rgba(192,197,206,0.3)',
+  borderBottom: '1px solid rgba(192,197,206,0.3)',
+  color: 'var(--teal, #C0C5CE)',
   fontWeight: 800,
   fontSize: '0.72rem',
   letterSpacing: '0.06em',
@@ -508,7 +508,7 @@ export default function StorefrontCompareDrawer({
             </div>
             
             <div style={{ overflowY: 'auto', padding: '24px', flex: 1 }}>
-              <div style={{ borderRadius: 'var(--radius-lg, 12px)', overflowX: 'auto', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.08)' }}>
+              <div style={{ borderRadius: 'var(--radius-lg, 12px)', overflowX: 'auto', background: 'rgba(255,255,255,0.02)', border: '6px solid #E2E8F0' }}>
                 <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '600px', position: 'relative' }}>
                   <thead style={{ position: 'sticky', top: 0, zIndex: 20 }}>
                     <tr>
@@ -549,7 +549,7 @@ export default function StorefrontCompareDrawer({
                       if (row.kind === 'group') {
                         return (
                           <tr key={rIdx}>
-                            <td style={{ ...groupCellStyle, position: 'sticky', left: 0, zIndex: 10, background: 'rgba(0,196,188,0.1)' }} colSpan={pinned.length + 1}>
+                            <td style={{ ...groupCellStyle, position: 'sticky', left: 0, zIndex: 10, background: 'rgba(192,197,206,0.1)' }} colSpan={pinned.length + 1}>
                               {row.label}
                             </td>
                           </tr>

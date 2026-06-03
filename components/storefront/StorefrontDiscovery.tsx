@@ -92,7 +92,7 @@ const getRiskPercent = (risk?: string | null) => {
 };
 
 const getRiskColor = (risk?: string | null) => {
-  if (risk === 'low') return 'linear-gradient(90deg, #00C4BC, #4FD1C5)';
+  if (risk === 'low') return 'linear-gradient(90deg, #C0C5CE, #4FD1C5)';
   if (risk === 'moderate') return 'linear-gradient(90deg, #ED8936, #F6AD55)';
   if (risk === 'high') return 'linear-gradient(90deg, #E53E3E, #FC8181)';
   if (risk === 'critical') return 'linear-gradient(90deg, #9B2C2C, #F56565)';
@@ -313,9 +313,9 @@ function MatchResultsDrawer({
                   type="button"
                   onClick={() => setFilterOralOnly(!filterOralOnly)}
                   style={{
-                    background: filterOralOnly ? 'rgba(0,196,188,0.2)' : 'rgba(255,255,255,0.05)',
-                    border: `1px solid ${filterOralOnly ? '#00C4BC' : 'rgba(255,255,255,0.1)'}`,
-                    color: filterOralOnly ? '#00C4BC' : '#A8B4C0',
+                    background: filterOralOnly ? 'rgba(192,197,206,0.2)' : 'rgba(255,255,255,0.05)',
+                    border: `1px solid ${filterOralOnly ? '#C0C5CE' : 'rgba(255,255,255,0.1)'}`,
+                    color: filterOralOnly ? '#C0C5CE' : '#A8B4C0',
                     padding: '6px 14px', borderRadius: 20, fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer',
                     whiteSpace: 'nowrap', transition: 'all 0.2s ease',
                   }}
@@ -326,9 +326,9 @@ function MatchResultsDrawer({
                   type="button"
                   onClick={() => setFilterHumanOnly(!filterHumanOnly)}
                   style={{
-                    background: filterHumanOnly ? 'rgba(0,196,188,0.2)' : 'rgba(255,255,255,0.05)',
-                    border: `1px solid ${filterHumanOnly ? '#00C4BC' : 'rgba(255,255,255,0.1)'}`,
-                    color: filterHumanOnly ? '#00C4BC' : '#A8B4C0',
+                    background: filterHumanOnly ? 'rgba(192,197,206,0.2)' : 'rgba(255,255,255,0.05)',
+                    border: `1px solid ${filterHumanOnly ? '#C0C5CE' : 'rgba(255,255,255,0.1)'}`,
+                    color: filterHumanOnly ? '#C0C5CE' : '#A8B4C0',
                     padding: '6px 14px', borderRadius: 20, fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer',
                     whiteSpace: 'nowrap', transition: 'all 0.2s ease',
                   }}
@@ -341,10 +341,10 @@ function MatchResultsDrawer({
                     type="button"
                     onClick={() => setCompareOpen(true)}
                     style={{
-                      background: '#00C4BC', color: '#0A1018',
+                      background: '#C0C5CE', color: '#0A1018',
                       border: 'none', padding: '6px 14px', borderRadius: 20,
                       fontSize: '0.75rem', fontWeight: 900, cursor: 'pointer',
-                      whiteSpace: 'nowrap', boxShadow: '0 4px 12px rgba(0,196,188,0.3)',
+                      whiteSpace: 'nowrap', boxShadow: '0 4px 12px rgba(192,197,206,0.3)',
                     }}
                   >
                     Compare ({compareIds.length})
@@ -359,7 +359,7 @@ function MatchResultsDrawer({
                   <div style={{
                     width: 60, height: 60, borderRadius: '50%',
                     border: '3px solid rgba(0, 196, 188, 0.1)',
-                    borderTopColor: '#00C4BC',
+                    borderTopColor: '#C0C5CE',
                     animation: 'spin 1s linear infinite',
                   }} />
                   <style>{`@keyframes spin { 100% { transform: rotate(360deg); } }`}</style>
@@ -418,7 +418,7 @@ function MatchResultsDrawer({
                         position: 'absolute', top: 12, left: 12, zIndex: 10,
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
                         width: 24, height: 24, background: 'rgba(0,0,0,0.4)',
-                        border: `2px solid ${compareIds.includes(r.product_id) ? '#00C4BC' : 'rgba(255,255,255,0.3)'}`,
+                        border: `2px solid ${compareIds.includes(r.product_id) ? '#C0C5CE' : 'rgba(255,255,255,0.3)'}`,
                         borderRadius: 6, cursor: 'pointer',
                       }}>
                         <input
@@ -427,7 +427,7 @@ function MatchResultsDrawer({
                           onChange={() => toggleCompare(r.product_id)}
                           style={{ opacity: 0, position: 'absolute' }}
                         />
-                        {compareIds.includes(r.product_id) && <div style={{ width: 12, height: 12, background: '#00C4BC', borderRadius: 2 }} />}
+                        {compareIds.includes(r.product_id) && <div style={{ width: 12, height: 12, background: '#C0C5CE', borderRadius: 2 }} />}
                       </label>
 
                       {r.image_url ? (
@@ -458,8 +458,8 @@ function MatchResultsDrawer({
                             <span style={{
                               fontSize: '0.62rem', fontWeight: 800, letterSpacing: '0.04em', textTransform: 'uppercase',
                               padding: '3px 7px', borderRadius: 6,
-                              background: 'rgba(0,196,188,0.14)', color: '#00C4BC',
-                              border: '1px solid rgba(0,196,188,0.35)', flexShrink: 0,
+                              background: 'rgba(192,197,206,0.14)', color: '#C0C5CE',
+                              border: '1px solid rgba(192,197,206,0.35)', flexShrink: 0,
                             }}>
                               {r.evidence_tier.replace(/_/g, ' ')}
                             </span>
@@ -507,7 +507,7 @@ function MatchResultsDrawer({
                         </div>
 
                         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 4 }}>
-                          <div style={{ color: '#00C4BC', fontWeight: 900, fontSize: '1rem' }}>
+                          <div style={{ color: '#C0C5CE', fontWeight: 900, fontSize: '1rem' }}>
                             ${(r.price_cents / 100).toFixed(2)}
                           </div>
                           <div style={{ flex: 1 }} />
@@ -528,7 +528,7 @@ function MatchResultsDrawer({
                             type="button"
                             onClick={() => onAddToCart(r.product_id)}
                             style={{
-                              background: '#00C4BC', color: '#0A1018',
+                              background: '#C0C5CE', color: '#0A1018',
                               border: 0, fontWeight: 900, fontSize: '0.82rem',
                               padding: '8px 12px', borderRadius: 10, cursor: 'pointer',
                               display: 'inline-flex', alignItems: 'center', gap: 6,
@@ -621,7 +621,7 @@ function MatchResultsDrawer({
                       <td style={{ padding: 16, borderBottom: '1px solid rgba(255,255,255,0.05)', fontWeight: 700, color: '#A8B4C0' }}>Price</td>
                       {compareIds.map(id => {
                         const item = results.find(r => r.product_id === id);
-                        return <td key={id} style={{ padding: 16, borderBottom: '1px solid rgba(255,255,255,0.05)', fontWeight: 800, color: '#00C4BC' }}>${(item?.price_cents ? item.price_cents / 100 : 0).toFixed(2)}</td>;
+                        return <td key={id} style={{ padding: 16, borderBottom: '1px solid rgba(255,255,255,0.05)', fontWeight: 800, color: '#C0C5CE' }}>${(item?.price_cents ? item.price_cents / 100 : 0).toFixed(2)}</td>;
                       })}
                     </tr>
                     <tr>
@@ -782,7 +782,7 @@ function GuidedDiscoveryWizard({
                 borderTopLeftRadius: 20, borderTopRightRadius: 20,
               }}
             >
-              <Compass size={18} aria-hidden style={{ color: '#00C4BC' }} />
+              <Compass size={18} aria-hidden style={{ color: '#C0C5CE' }} />
               <div style={{ fontWeight: 800, fontSize: '0.98rem', flex: 1 }}>Let Us Guide You</div>
               <button
                 type="button"
@@ -804,7 +804,7 @@ function GuidedDiscoveryWizard({
                   key={i}
                   style={{
                     flex: 1, height: 4, borderRadius: 999,
-                    background: i <= step ? '#00C4BC' : 'rgba(255,255,255,0.10)',
+                    background: i <= step ? '#C0C5CE' : 'rgba(255,255,255,0.10)',
                     transition: 'background 0.3s ease',
                   }}
                 />
@@ -830,9 +830,9 @@ function GuidedDiscoveryWizard({
                             style={{
                               padding: '10px 14px',
                               borderRadius: 12,
-                              background: active ? 'rgba(0,196,188,0.2)' : 'rgba(255,255,255,0.05)',
-                              border: active ? '1px solid #00C4BC' : '1px solid rgba(255,255,255,0.14)',
-                              color: active ? '#00C4BC' : '#FFFFFF',
+                              background: active ? 'rgba(192,197,206,0.2)' : 'rgba(255,255,255,0.05)',
+                              border: active ? '1px solid #C0C5CE' : '1px solid rgba(255,255,255,0.14)',
+                              color: active ? '#C0C5CE' : '#FFFFFF',
                               fontWeight: 700, fontSize: '0.86rem',
                               cursor: 'pointer', minHeight: 44, transition: 'all 0.2s ease',
                             }}
@@ -867,13 +867,13 @@ function GuidedDiscoveryWizard({
                               textAlign: 'left',
                               padding: '14px 16px',
                               borderRadius: 12,
-                              background: active ? 'rgba(0,196,188,0.15)' : 'rgba(255,255,255,0.04)',
-                              border: active ? '1px solid #00C4BC' : '1px solid rgba(255,255,255,0.12)',
+                              background: active ? 'rgba(192,197,206,0.15)' : 'rgba(255,255,255,0.04)',
+                              border: active ? '1px solid #C0C5CE' : '1px solid rgba(255,255,255,0.12)',
                               color: '#FFFFFF',
                               cursor: 'pointer', minHeight: 56, transition: 'all 0.2s ease',
                             }}
                           >
-                            <div style={{ fontWeight: 800, fontSize: '0.96rem', color: active ? '#00C4BC' : '#FFF' }}>{o.label}</div>
+                            <div style={{ fontWeight: 800, fontSize: '0.96rem', color: active ? '#C0C5CE' : '#FFF' }}>{o.label}</div>
                             <div style={{ color: 'var(--silver, #A8B4C0)', fontSize: '0.82rem', marginTop: 2 }}>{o.sub}</div>
                           </button>
                         );
@@ -905,13 +905,13 @@ function GuidedDiscoveryWizard({
                               textAlign: 'left',
                               padding: '14px 16px',
                               borderRadius: 12,
-                              background: active ? 'rgba(0,196,188,0.15)' : 'rgba(255,255,255,0.04)',
-                              border: active ? '1px solid #00C4BC' : '1px solid rgba(255,255,255,0.12)',
+                              background: active ? 'rgba(192,197,206,0.15)' : 'rgba(255,255,255,0.04)',
+                              border: active ? '1px solid #C0C5CE' : '1px solid rgba(255,255,255,0.12)',
                               color: '#FFFFFF',
                               cursor: 'pointer', minHeight: 56, transition: 'all 0.2s ease',
                             }}
                           >
-                            <div style={{ fontWeight: 800, fontSize: '0.96rem', color: active ? '#00C4BC' : '#FFF' }}>{o.label}</div>
+                            <div style={{ fontWeight: 800, fontSize: '0.96rem', color: active ? '#C0C5CE' : '#FFF' }}>{o.label}</div>
                             <div style={{ color: 'var(--silver, #A8B4C0)', fontSize: '0.82rem', marginTop: 2 }}>{o.sub}</div>
                           </button>
                         );
@@ -948,12 +948,12 @@ function GuidedDiscoveryWizard({
                   onClick={() => setStep(step + 1)}
                   style={{
                     flex: 1,
-                    background: '#00C4BC', color: '#0A1018', border: 0,
+                    background: '#C0C5CE', color: '#0A1018', border: 0,
                     fontWeight: 900, fontSize: '0.92rem',
                     padding: '12px 16px', borderRadius: 12, cursor: 'pointer',
                     display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6,
                     minHeight: 48,
-                    boxShadow: '0 4px 12px rgba(0,196,188,0.3)',
+                    boxShadow: '0 4px 12px rgba(192,197,206,0.3)',
                   }}
                 >
                   Next <ArrowRight size={16} aria-hidden />
@@ -964,11 +964,11 @@ function GuidedDiscoveryWizard({
                   onClick={() => onSubmit(state)}
                   style={{
                     flex: 1,
-                    background: '#00C4BC', color: '#0A1018', border: 0,
+                    background: '#C0C5CE', color: '#0A1018', border: 0,
                     fontWeight: 900, fontSize: '0.92rem',
                     padding: '12px 16px', borderRadius: 12, cursor: 'pointer',
                     minHeight: 48,
-                    boxShadow: '0 4px 12px rgba(0,196,188,0.3)',
+                    boxShadow: '0 4px 12px rgba(192,197,206,0.3)',
                   }}
                 >
                   Reveal Top Matches
@@ -1001,7 +1001,7 @@ export default function DiscoveryHero({
   onAddToCart,
   onOpenProduct,
   onSelectArea,
-  primaryColor = '#00C4BC',
+  primaryColor = '#C0C5CE',
 }: DiscoveryHeroProps) {
   const [query, setQuery] = useState('');
   const [wizardOpen, setWizardOpen] = useState(false);
