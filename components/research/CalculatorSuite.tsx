@@ -66,7 +66,7 @@ const inputStyleBase: React.CSSProperties = {
   background: 'rgba(255, 255, 255, 0.05)', // Glassmorphism
   backdropFilter: 'blur(10px)',
   border: '1px solid rgba(255, 255, 255, 0.1)',
-  color: '#00C4BC',
+  color: '#A8B2C1',
   padding: '10px 12px',
   borderRadius: 8,
   fontSize: 16,
@@ -84,8 +84,8 @@ function StyledInput(props: React.InputHTMLAttributes<HTMLInputElement>) {
       onBlur={(e) => { setFocused(false); props.onBlur?.(e); }}
       style={{
         ...inputStyleBase,
-        borderColor: focused ? '#00C4BC' : 'rgba(255, 255, 255, 0.1)',
-        boxShadow: focused ? '0 0 10px rgba(0,196,188,0.3), inset 0 2px 4px rgba(0,0,0,0.3)' : 'inset 0 2px 4px rgba(0,0,0,0.3)',
+        borderColor: focused ? '#A8B2C1' : 'rgba(255, 255, 255, 0.1)',
+        boxShadow: focused ? '0 0 10px rgba(168,178,193,0.3), inset 0 2px 4px rgba(0,0,0,0.3)' : 'inset 0 2px 4px rgba(0,0,0,0.3)',
         ...props.style
       }}
     />
@@ -101,8 +101,8 @@ function StyledSelect(props: React.SelectHTMLAttributes<HTMLSelectElement>) {
       onBlur={(e) => { setFocused(false); props.onBlur?.(e); }}
       style={{
         ...inputStyleBase,
-        borderColor: focused ? '#00C4BC' : 'rgba(255, 255, 255, 0.1)',
-        boxShadow: focused ? '0 0 10px rgba(0,196,188,0.3), inset 0 2px 4px rgba(0,0,0,0.3)' : 'inset 0 2px 4px rgba(0,0,0,0.3)',
+        borderColor: focused ? '#A8B2C1' : 'rgba(255, 255, 255, 0.1)',
+        boxShadow: focused ? '0 0 10px rgba(168,178,193,0.3), inset 0 2px 4px rgba(0,0,0,0.3)' : 'inset 0 2px 4px rgba(0,0,0,0.3)',
         ...props.style
       }}
     />
@@ -121,9 +121,9 @@ const resultStyle: React.CSSProperties = {
   padding: 16,
   borderRadius: 12,
   background: '#080A0F',
-  border: '1px solid rgba(0,196,188,0.5)',
-  boxShadow: '0 0 20px rgba(0,196,188,0.2), inset 0 0 10px rgba(0,196,188,0.1)', // Neon Glow
-  color: '#00C4BC',
+  border: '1px solid rgba(168,178,193,0.5)',
+  boxShadow: '0 0 20px rgba(168,178,193,0.2), inset 0 0 10px rgba(168,178,193,0.1)', // Neon Glow
+  color: '#A8B2C1',
   fontSize: 16,
   fontFamily: 'monospace',
   textAlign: 'center',
@@ -142,7 +142,7 @@ function CalculatorHeader({ title, why }: { title: string; why: string }) {
   return (
     <>
       <h2 style={{ margin: 0, color: '#FFFFFF', fontSize: 20, fontWeight: 800 }}>{title}</h2>
-      <h3 style={{ margin: '12px 0 4px', color: '#00C4BC', fontSize: 13, textTransform: 'capitalize', letterSpacing: '0.06em' }}>
+      <h3 style={{ margin: '12px 0 4px', color: '#A8B2C1', fontSize: 13, textTransform: 'capitalize', letterSpacing: '0.06em' }}>
         Why This Matters
       </h3>
       <p style={explainerStyle}>{why}</p>
@@ -188,8 +188,8 @@ function Reconstitution() {
             onClick={() => setDiluentMl(String(volMl))}
             style={{
               fontSize: 12, fontWeight: 700, padding: '4px 10px', borderRadius: 6,
-              background: 'rgba(0,196,188,0.18)', border: '1px solid rgba(0,196,188,0.45)',
-              color: '#00C4BC', cursor: 'pointer', whiteSpace: 'nowrap',
+              background: 'rgba(168,178,193,0.18)', border: '1px solid rgba(168,178,193,0.45)',
+              color: '#A8B2C1', cursor: 'pointer', whiteSpace: 'nowrap',
             }}
           >
             ↓ Use This Volume Below
@@ -264,7 +264,7 @@ function DilutionSection() {
             {series.map((s) => (
               <tr key={s.stepNumber}>
                 <td style={{ padding: 8, color: '#FFFFFF' }}>{s.stepNumber}</td>
-                <td style={{ padding: 8, color: '#00C4BC', fontWeight: 600 }}>
+                <td style={{ padding: 8, color: '#A8B2C1', fontWeight: 600 }}>
                   {Math.abs(s.concentration) >= 0.001 && Math.abs(s.concentration) < 1e5
                     ? s.concentration.toPrecision(4)
                     : s.concentration.toExponential(3)}
@@ -637,7 +637,7 @@ function MassSpecSection() {
             {peaks.map((p) => (
               <tr key={p.charge}>
                 <td style={{ padding: 8, color: '#FFFFFF' }}>{mode === 'negative' ? `-${p.charge}` : `+${p.charge}`}</td>
-                <td style={{ padding: 8, color: '#00C4BC', fontWeight: 600 }}>{p.mz.toFixed(4)}</td>
+                <td style={{ padding: 8, color: '#A8B2C1', fontWeight: 600 }}>{p.mz.toFixed(4)}</td>
                 <td style={{ padding: 8, color: '#D0DAE4' }}>{p.intensity.toFixed(3)}</td>
               </tr>
             ))}
@@ -751,7 +751,7 @@ function SolubilitySection() {
       />
       <div style={{ marginBottom: 10, fontSize: 12, color: '#A8B4C0' }}>
         💡 GRAVY score and isoelectric point (pI) can be calculated from your sequence at{' '}
-        <a href="https://web.expasy.org/protparam/" target="_blank" rel="noopener noreferrer" style={{ color: '#00C4BC' }}>ExPASy ProtParam</a>.
+        <a href="https://web.expasy.org/protparam/" target="_blank" rel="noopener noreferrer" style={{ color: '#A8B2C1' }}>ExPASy ProtParam</a>.
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 12 }}>
         <label style={{ display: "block" }}>
