@@ -242,6 +242,9 @@ export async function POST(req: NextRequest) {
     // role='agent', so disambiguate via is_super_agent for the dashboard.
     const createdByRole = callerProfile.is_super_agent === true ? 'super_agent' : 'agent';
 
+    // is_sub_agent flag is derived from isPromotingToFullAgent (declared above):
+    // super-agent caller promotes to a full Agent (is_sub_agent: false);
+    // a regular agent caller promotes to a Sub-Agent (is_sub_agent: true).
     const now = new Date().toISOString();
     const updatePayload: Record<string, unknown> = {
       role: 'agent',
