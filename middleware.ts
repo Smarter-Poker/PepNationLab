@@ -1,11 +1,11 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 
-// ─── SITE LOCKDOWN ──────────────────────────────────────────────────────────
+// ─── SITE LOCKDOWN ───────────────────────────────────────────────────
 // The site is locked. Only authenticated users may access any page.
 // New account registration is disabled — /register always redirects to /login.
 // The only public route is /login itself (plus static assets handled by matcher).
-// ────────────────────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────────
 
 // Routes that are always public (no auth required)
 const PUBLIC_ROUTES = [
@@ -21,74 +21,35 @@ const PUBLIC_ROUTES = [
   '/api/auth/resolve',
   '/api/auth/signout',
   '/api/auth/change-password',
-  // Called immediately after signInWithPassword on storefront login.
-  // The session cookie may not be propagated yet at this point (incognito,
-  // mobile race condition) — the route handler validates the userId itself.
   '/api/auth/verify-agent-access',
-  // Liveness probe — must be reachable for monitoring.
   '/api/health',
-  // Live availability probe for slug / username / display_name. Public on
-  // purpose — the storefront self-register page must reach it before the
-  // user has an account, and the storefront-config admin form fires it
-  // before the session cookie is fully propagated. The route handler is
-  // rate-limited per IP and never returns user-owning data (only an
-  // available true/false + a friendly reason string).
   '/api/availability',
-  // Layer 1 (site_entry) disclaimer log is hit by anonymous visitors before login.
-  // The route's own handler rejects anything other than site_entry from an
-  // unauthenticated caller, so this is safe.
   '/api/disclaimer-log',
-  // Storefront-scoped researcher signup (rate-limited inside the route).
   '/api/storefront/register',
-  // Faceted storefront search — public, rate-limited inside the route.
   '/api/storefront/search',
-  // Storefront recommendations ("You May Also Like") — public, rate-limited.
   '/api/storefront/recommendations',
-  // Research Library — public research-use-only compound education (detail,
-  // spec sheets, comparison, stacks, research-area hubs). Compounds RLS is
-  // public-read; /account/shelf-life stays auth-gated (not listed here).
   '/research',
-  // Grounded Ask-the-Lab Q&A and cart compound-warning lookups — public,
-  // read-only, no dosing. (Shelf-life API is auth-gated, not listed here.)
   '/api/research/ask',
   '/api/research/cart-warnings',
-  // Match Me to a Peptide — public suggestion engine that scores compounds
-  // against the researcher's stated goal + evidence-comfort + WADA filter +
-  // risk tolerance. Same posture as /api/research/ask: read-only, no dosing,
-  // rate-limited inside the route, RESEARCH_NOTE framing on every response.
-  // The page at /research/match already loads anonymously via the `/research`
-  // prefix; this entry lets the form's POST reach the engine.
   '/api/research/match',
-  // Research Library v3 Google-grade search engine surfaces. All four are
-  // public, read-only, rate-limited inside their route handlers, and emit
-  // the RESEARCH_NOTE framing on every response. Compounds RLS is
-  // already public-read, so no privileged data leaks here.
-  //   /search          — ranked FTS over compound_search materialized view
-  //   /suggest         — autocomplete (compounds + areas + glossary)
-  //   /instant-answer  — position-0 knowledge-card payload by intent
-  //   /click           — best-effort CTR analytics ping
   '/api/research/search',
   '/api/research/suggest',
   '/api/research/instant-answer',
   '/api/research/click',
-  // R28.5: FAQ click beacon. The route handler has its own per-IP rate limit
-  // (60/min), validates faqId against an allow-list built from FAQ_ITEMS,
-  // and writes via the service-role client. Listed here so a sendBeacon()
-  // from a tab whose session cookie hasn't propagated still records the
-  // click — otherwise middleware returns 401 BEFORE the handler runs and
-  // every anonymous chip-click is lost. Authenticated callers still get
-  // their user_id + role stamped because the handler optionally resolves
-  // them inside.
+  // Research Library v3 Wave 2 public API (bearer-token auth handled in route)
+  '/api/research/public',
+  // Research Library v3 Wave 2 embed widget (iframe-able knowledge card)
+  '/api/research/widget',
+  // Research Library v3 Wave 2 public API docs page
+  '/research/api-docs',
+  // SEO surfaces
+  '/sitemap.xml',
+  '/feed.xml',
   '/api/analytics/faq-click',
-  // Agent invitation redemption — the token in the URL is the credential.
   '/invite',
   '/api/agent-invitations/redeem',
-  // Vercel cron entrypoints — authenticated via CRON_SECRET inside the route
-  // using a constant-time compare, NOT via the session middleware.
   '/api/cron/invoices',
   '/api/cron/reminders',
-  // Tombstone — sms-dispatch has been removed (returns 410 Gone). Public so the
-  // gone status is visible to any straggler caller; the handler does no work.
   '/api/cron/sms-dispatch',
   '/api/cron/abandoned-cart-recovery',
   '/api/cron/apply-price-changes',
@@ -98,45 +59,32 @@ const PUBLIC_ROUTES = [
   '/api/cron/push-dispatch',
   '/api/cron/recommendations-refresh',
   '/api/cron/webhooks-dispatch',
-  // Research Library v3 evidence-sync crons. Each route gates itself with
-  // CRON_SECRET via assertCronAuth, so listing them here only lets the
-  // request reach the handler — the handler still has to authenticate the
-  // caller. Same posture as every other /api/cron entry above.
-  //   /search-refresh — REFRESH MATERIALIZED VIEW CONCURRENTLY compound_search
-  //   /pubmed-sync    — weekly NCBI E-utils citation refresh
-  //   /trials-sync    — weekly ClinicalTrials.gov v2 sync
   '/api/cron/search-refresh',
   '/api/cron/pubmed-sync',
   '/api/cron/trials-sync',
-  // Shippo M1 crons — authenticated via CRON_SECRET inside the route handler.
+  // Research Library v3 Wave 2 evidence-sync crons (CRON_SECRET enforced inside each route)
+  '/api/cron/uniprot-sync',
+  '/api/cron/chembl-sync',
+  '/api/cron/fda-drugs-sync',
+  '/api/cron/dailymed-sync',
+  '/api/cron/wada-archive-sync',
+  '/api/cron/patents-sync',
+  '/api/cron/rxnorm-sync',
+  '/api/cron/europepmc-sync',
+  '/api/cron/biorxiv-watch',
+  '/api/cron/retraction-watch',
+  '/api/cron/companion-papers-compute',
+  '/api/cron/broken-link-crawler',
   '/api/cron/label-jobs',
   '/api/cron/shippo-reconcile',
-  // audit15: messenger crons (process-scheduled, fire-reminders,
-  // expire-messages, mark-missed-calls, cleanup-presence). Each route uses
-  // getCronAuth() which accepts `x-vercel-cron: 1` (Vercel cron's
-  // unforgeable signature) OR `Authorization: Bearer ${CRON_SECRET}`.
-  // These were missing — the previous middleware blocked them with 401 BEFORE
-  // the route handler could run, so the stale-call sweep, scheduled-message
-  // dispatch, reminder firing, message expiry, and presence cleanup were all
-  // silently failing on every cron tick.
   '/api/messenger/cron',
-  // Shippo webhook — authenticated via HMAC-SHA256 (SHIPPO_WEBHOOK_SECRET) inside handler.
   '/api/webhooks/shippo',
-  // PWA manifest — generated by app/manifest.ts and served at this path.
   '/manifest.webmanifest',
-  // Service worker — must be reachable for web push + offline shell.
   '/sw.js',
-  // Public read-only endpoint that hands the VAPID public key to the browser
-  // so PushManager.subscribe() can encrypt with it.
   '/api/push/vapid-public-key',
-  // Public readiness probe — pings DB + cron_runs and renders /status.
   '/api/status',
   '/status',
-  // Storefront analytics telemetry — public, rate-limited per IP in the route.
   '/api/storefront/events',
-  // Shippo M1 storefront quote + address validation — public, rate-limited per
-  // IP inside the route handlers. Anonymous storefront checkout calls these
-  // before login to surface live rates and validate the shipping address.
   '/api/shipping/quote',
   '/api/shipping/validate-address',
   '/api/messenger/call-signal-unload-broadcast',
@@ -154,22 +102,17 @@ function isPublicDynamicRoute(pathname: string): boolean {
     '/disclaimer', '/shipping', '/invite',
   ];
   if (protectedPrefixes.some(p => pathname.startsWith(p))) return false;
-  // A single-segment slug path (e.g. /midway) is a public storefront
-  // A two-segment path where the first segment is NOT a protected prefix
-  // (e.g. /midway/some-product-id) is a storefront product detail page.
   const segments = pathname.split('/').filter(Boolean);
   return segments.length === 1 || segments.length === 2;
 }
 
 export default async function proxy(request: NextRequest) {
-  // Pass through if Supabase env vars not configured yet (early deploy)
   if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
     return NextResponse.next({ request });
   }
 
   const pathname = request.nextUrl.pathname;
 
-  // Registration is permanently disabled — redirect to login
   if (pathname.startsWith('/register')) {
     const url = request.nextUrl.clone();
     url.pathname = '/login';
@@ -177,25 +120,12 @@ export default async function proxy(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  // Already-logged-in users bounce logic must happen before PUBLIC_ROUTES
-  // but we need the session for that. Wait, we don't have the session yet.
-  // Instead, we will handle `/login` bounce after fetching the session.
-  // However, we MUST allow PUBLIC_ROUTES through.
-  // So we remove `/login` from the early exit if they are logged in?
-  // We can just skip the early exit for `/login` and let it hit the session check.
   const isLoginRoute = pathname === '/login';
   if (!isLoginRoute && PUBLIC_ROUTES.some(route => pathname === route || pathname.startsWith(route + '/'))) {
     return NextResponse.next({ request });
   }
 
-  // Agent storefronts are publicly accessible, but we still run the Supabase
-  // session refresh so that a logged-in researcher's JWT is refreshed before
-  // the page's server-side getUser() call. Without this, an expired access
-  // token would cause getUser() to return null even though the researcher has
-  // a valid refresh token in their cookie.
   if (isPublicDynamicRoute(pathname)) {
-    // Run a lightweight Supabase client just to refresh the session cookie.
-    // We do NOT block on auth — if the user isn't logged in, that's fine.
     let storeResponse = NextResponse.next({ request });
     try {
       const storeSupabase = createServerClient(
@@ -216,13 +146,11 @@ export default async function proxy(request: NextRequest) {
           },
         },
       );
-      // getUser() triggers the token refresh — result is intentionally ignored.
       await storeSupabase.auth.getUser();
     } catch { /* ignore — unauthenticated visitors are fine */ }
     return storeResponse;
   }
 
-  // Allow Next internals
   if (
     pathname.startsWith('/_next') ||
     pathname.startsWith('/favicon') ||
@@ -233,7 +161,6 @@ export default async function proxy(request: NextRequest) {
     return NextResponse.next({ request });
   }
 
-  // ─── Authenticated paths ──────────────────────────────────────────────────
   let response = NextResponse.next({ request });
 
   const supabase = createServerClient(
@@ -260,13 +187,8 @@ export default async function proxy(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  // Helper to preserve cookies on redirect
   const redirectWithCookies = (url: URL) => {
     const redirectResponse = NextResponse.redirect(url);
-    // Only copy cookies that were newly set during this request phase.
-    // Copying request.cookies to the redirect response forces Next.js to
-    // emit duplicate Set-Cookie headers for everything, often overriding
-    // the max-age back to Session if options aren't perfectly preserved.
     response.cookies.getAll().forEach((cookie) => {
       redirectResponse.cookies.set(cookie.name, cookie.value);
     });
@@ -278,7 +200,7 @@ export default async function proxy(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
     if (pathname === '/login') {
-      return response; // Allow unauthenticated user to see login
+      return response;
     }
     const url = request.nextUrl.clone();
     url.pathname = '/login';
@@ -286,7 +208,6 @@ export default async function proxy(request: NextRequest) {
     return redirectWithCookies(url);
   }
 
-  // Check the user's is_active flag — deactivated accounts get signed out.
   const { data: profile } = await supabase
     .from('profiles')
     .select('is_active, role, must_change_password')
@@ -304,9 +225,6 @@ export default async function proxy(request: NextRequest) {
     return redirectWithCookies(url);
   }
 
-  // ─── Must-change-password enforcement (researcher first login) ────────────
-  // Researchers created by agents get a temp password and must_change_password=true.
-  // Redirect them to /account/change-password until they save or skip.
   if ((profile as any)?.must_change_password === true && pathname !== '/account/change-password') {
     if (pathname.startsWith('/api/')) {
       return NextResponse.json({ error: 'Must change password' }, { status: 403 });
@@ -317,29 +235,18 @@ export default async function proxy(request: NextRequest) {
     return redirectWithCookies(url);
   }
 
-  // Already-logged-in users land on /login → bounce to their dashboard
   if (pathname === '/login') {
     const url = request.nextUrl.clone();
     url.pathname = profile?.role === 'admin' ? '/admin' : '/dashboard';
     return redirectWithCookies(url);
   }
 
-  // ─── Admin Path Role Enforcement ─────────────────────────────────────────
-  // Only admin users may access /admin/* pages. A non-admin (researcher,
-  // agent, super_agent) who navigates directly to an admin URL gets
-  // redirected to their own dashboard. API routes already enforce
-  // requireAdmin() but this layer prevents non-admins from even seeing the
-  // admin UI shell.
   if (pathname.startsWith('/admin') && profile?.role !== 'admin') {
     const url = request.nextUrl.clone();
     url.pathname = '/dashboard';
     return redirectWithCookies(url);
   }
 
-  // ─── MFA Enforcement (super_agent only) ────────────────────────────────────
-  // Admin (business owner) is intentionally exempt — only super_agent accounts
-  // require a verified TOTP factor. Removing 'admin' here prevents the owner
-  // from being locked out of their own platform.
   const mfaRequiredRoles = new Set(['super_agent']);
   if (profile?.role && mfaRequiredRoles.has(profile.role)) {
     const isMfaExempt =
@@ -350,12 +257,6 @@ export default async function proxy(request: NextRequest) {
       pathname === '/api/health';
 
     if (!isMfaExempt) {
-      // getAuthenticatorAssuranceLevel returns { currentLevel, nextLevel }.
-      // currentLevel === 'aal2' means the current session was MFA-challenged.
-      // nextLevel === 'aal2' only means a factor exists — it does NOT confirm
-      // that this session went through the MFA challenge. We require currentLevel
-      // to be 'aal2' so sessions that bypassed the challenge (e.g. programmatic
-      // tokens) are blocked even if the account has MFA enrolled.
       const { data: aal } =
         await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
       const hasVerifiedFactor = aal?.currentLevel === 'aal2';
@@ -380,13 +281,6 @@ export default async function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
-    /*
-     * Match all request paths except for the ones starting with:
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     * - public files (images, fonts, etc.)
-     */
     '/((?!_next/static|_next/image|favicon.ico|logo.*|.*\\.(?:png|jpg|jpeg|gif|webp|svg|ico|woff|woff2|css|js|map)$).*)',
   ],
 };
