@@ -4,7 +4,7 @@
  * LandingSearchOverlay — the live, in-place search for the image-hotspot research
  * landing page. Renders the search input + button at the baked-in search-bar
  * coordinates, and shows an instant results dropdown as the user types (lazy-
- * loading the universal index from /api/research/search-index on first focus).
+ * loading the universal index from /research/search-index on first focus).
  * Enter or a result click navigates in-app; the button opens the full results
  * page. Research-use-only.
  */
@@ -35,7 +35,7 @@ export default function LandingSearchOverlay() {
     if (fetched.current) return;
     fetched.current = true;
     try {
-      const res = await fetch('/api/research/search-index');
+      const res = await fetch('/research/search-index');
       const json = await res.json();
       if (Array.isArray(json?.docs)) setDocs(json.docs as SearchDoc[]);
     } catch {
