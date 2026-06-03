@@ -508,7 +508,7 @@ export default function StorefrontCompareDrawer({
             </div>
             
             <div style={{ overflowY: 'auto', padding: '24px', flex: 1 }}>
-              <div style={{ borderRadius: 'var(--radius-lg, 12px)', overflowX: 'auto', background: 'rgba(255,255,255,0.02)', border: '6px solid #E2E8F0' }}>
+              <div style={{ borderRadius: 'var(--radius-lg, 12px)', overflowX: 'auto', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.08)' }}>
                 <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '600px', position: 'relative' }}>
                   <thead style={{ position: 'sticky', top: 0, zIndex: 20 }}>
                     <tr>
@@ -549,7 +549,7 @@ export default function StorefrontCompareDrawer({
                       if (row.kind === 'group') {
                         return (
                           <tr key={rIdx}>
-                            <td style={{ ...groupCellStyle, position: 'sticky', left: 0, zIndex: 10, background: 'rgba(192,197,206,0.1)' }} colSpan={pinned.length + 1}>
+                            <td style={{ ...groupCellStyle, position: 'sticky', left: 0, zIndex: 10, background: 'linear-gradient(rgba(192,197,206,0.1), rgba(192,197,206,0.1)), #0F161E' }} colSpan={pinned.length + 1}>
                               {row.label}
                             </td>
                           </tr>
@@ -567,7 +567,7 @@ export default function StorefrontCompareDrawer({
                       if (diffMode) {
                         if (isDiff) {
                           trStyle.background = `${primaryColor}15`;
-                          tdLabelStyle.background = `rgba(0,0,0,0)`;
+                          tdLabelStyle.background = `linear-gradient(${primaryColor}15, ${primaryColor}15), #0F161E`;
                         } else {
                           trStyle.opacity = 0.3;
                         }

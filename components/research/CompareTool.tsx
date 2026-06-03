@@ -479,10 +479,11 @@ export default function CompareTool({
                       subject: 'Evidence Level', 
                       ...selected.reduce((acc, c) => {
                         let score = 1;
-                        if (c.evidence_tier === 'A_APPROVED') score = 5;
-                        else if (c.evidence_tier === 'B_CLINICAL') score = 4;
-                        else if (c.evidence_tier === 'C_IN_VIVO') score = 3;
-                        else if (c.evidence_tier === 'D_IN_VITRO') score = 2;
+                        if (c.evidence_tier === 'approved_drug') score = 5;
+                        else if (c.evidence_tier === 'investigational') score = 4;
+                        else if (c.evidence_tier === 'preclinical') score = 3;
+                        else if (c.evidence_tier === 'research_chemical') score = 2;
+                        else if (c.evidence_tier === 'cosmetic') score = 2;
                         acc[c.display_name] = score;
                         return acc;
                       }, {} as Record<string, number>)
@@ -492,7 +493,9 @@ export default function CompareTool({
                       ...selected.reduce((acc, c) => {
                         let score = 3;
                         if (c.risk_level === 'low') score = 5;
-                        else if (c.risk_level === 'high') score = 1;
+                        else if (c.risk_level === 'moderate') score = 3;
+                        else if (c.risk_level === 'high') score = 2;
+                        else if (c.risk_level === 'critical') score = 1;
                         acc[c.display_name] = score;
                         return acc;
                       }, {} as Record<string, number>)
@@ -604,7 +607,7 @@ export default function CompareTool({
                   if (row.kind === 'group') {
                     return (
                       <tr key={`g-${row.label}`}>
-                        <td className="print-group" style={{ ...groupCellStyle, position: 'sticky', left: 0, zIndex: 10, background: 'rgba(0,196,188,0.1)' }} colSpan={colSpan}>
+                        <td className="print-group" style={{ ...groupCellStyle, position: 'sticky', left: 0, zIndex: 10, background: 'linear-gradient(rgba(0,196,188,0.1), rgba(0,196,188,0.1)), #162230' }} colSpan={colSpan}>
                           {row.label}
                         </td>
                       </tr>
@@ -621,7 +624,7 @@ export default function CompareTool({
                   if (diffMode) {
                     if (isDiff) {
                       trStyle.background = `rgba(0,196,188,0.08)`;
-                      tdLabelStyle.background = `transparent`; // rely on tr background
+                      tdLabelStyle.background = `linear-gradient(rgba(0,196,188,0.08), rgba(0,196,188,0.08)), #162230`;
                     } else {
                       trStyle.opacity = 0.3;
                     }
