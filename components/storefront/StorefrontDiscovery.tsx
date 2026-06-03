@@ -306,6 +306,7 @@ function MatchResultsDrawer({
               borderTop: '6px solid #E2E8F0',
               borderLeft: '6px solid #E2E8F0',
               borderRight: '6px solid #E2E8F0',
+              boxSizing: 'border-box',
               boxShadow: `0 0 40px ${primaryColor}22`,
               maxHeight: 'calc(100dvh - 56px)',
               display: 'flex', flexDirection: 'column',
@@ -727,7 +728,7 @@ function MatchResultsDrawer({
                 </button>
               </div>
 
-              <div style={{ flex: 1, overflowX: 'auto', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 20 }}>
+              <div style={{ flex: 1, overflowX: 'auto', background: 'rgba(255,255,255,0.03)', border: '6px solid #E2E8F0', boxSizing: 'border-box', borderRadius: 20 }}>
                 <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', color: '#E2E8F0', minWidth: 800 }}>
                   <thead>
                     <tr>
@@ -895,7 +896,8 @@ function GuidedDiscoveryWizard({
               width: '100%', maxWidth: 560,
               background: 'rgba(15, 25, 35, 0.85)', color: '#FFFFFF',
               borderRadius: 20,
-              border: '1px solid rgba(255,255,255,0.10)',
+              border: '6px solid #E2E8F0',
+              boxSizing: 'border-box',
               boxShadow: `0 20px 48px ${primaryColor}33`,
               display: 'flex', flexDirection: 'column',
               maxHeight: 'calc(100dvh - 32px)',
