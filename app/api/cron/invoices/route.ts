@@ -13,9 +13,9 @@ function addDays(dateStr: string, days: number): string {
 
 /**
  * Snap the given date to the Monday of the *previous completed week*.
- * The cron runs late Sunday UTC; the week being billed is always the
- * week that just ended, so we subtract seven days from today first,
- * then back up to the Monday of that calendar week. Returns YYYY-MM-DD.
+ * The cron fires Monday 05:59 UTC = Sunday 23:59 CST, so subtract seven
+ * days from today and back up to that calendar week's Monday. Returns
+ * YYYY-MM-DD.
  */
 function previousCompletedWeekStart(today: Date): string {
   const d = new Date(today);
@@ -76,7 +76,22 @@ export async function GET(req: Request) {
         const computed = await computeStatement(supabase, agent.id, weekStart);
         if (computed.ok) {
           const saved = await persistStatement(supabase, agent.id, weekStart, computed.data);
-          if (saved.ok) statementsGenerated++;
+          if (saved.ok) {
+            statementsGenerated++;
+            // Skip notify for $0 statements — pointless ping, common when an
+            // agent had no activity that week.
+            if (computed.data.totalOwed > 0) {
+              await supabase.from('internal_messages').insert({
+                sender_id: null,
+                receiver_id: agent.id,
+                subject: `Weekly Statement For ${weekStart}`,
+                body: `Your weekly statement for the week of ${weekStart} has been generated.\nTotal Owed: $${computed.data.totalOwed.toFixed(2)}\n\nOpen your Wallet to review and pay.`,
+                type: 'invoice',
+              });
+              await notifyInvoiceGenerated(supabase, agent.id, weekStart, computed.data.totalOwed)
+                .catch(() => { /* best-effort */ });
+            }
+          }
         }
       }
     }
@@ -151,13 +166,12 @@ export async function GET(req: Request) {
           }
         }
 
-        // Sub-agents collected shipping at retail from customers. Since the Admin 
-        // bills the Super Agent for this shipping cost on their weekly statement, 
-        // the Super Agent MUST re-bill shipping to the Sub-Agent here, otherwise
-        // the Super Agent loses money paying for the Sub-Agent's shipping.
         const cogsRound = Math.round(totalCogs * 100) / 100;
         const shippingRound = Math.round(totalShipping * 100) / 100;
         const totalOwed = Math.round((totalCogs + totalShipping) * 100) / 100;
+
+        // Skip $0 invoices.
+        if (totalOwed <= 0) continue;
 
         const { data: invoice } = await supabase
           .from('agent_invoices')
@@ -187,7 +201,6 @@ export async function GET(req: Request) {
             body: `Your invoice for the week of ${weekStart} has been generated.\nTotal Owed: $${totalOwed.toFixed(2)}\n\nPlease review your dashboard to make payment.`,
             type: 'invoice',
           });
-          // In-app notification — shows in bell immediately via Realtime
           await notifyInvoiceGenerated(supabase, subAgent.id, weekStart, totalOwed).catch(() => { /* best-effort */ });
         }
       }
