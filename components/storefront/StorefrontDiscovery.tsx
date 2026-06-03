@@ -723,124 +723,72 @@ export default function DiscoveryHero({
     <>
       <div
         style={{
-          background: `linear-gradient(135deg, ${primaryColor}1a 0%, rgba(15,25,35,0.65) 60%)`,
-          border: '1px solid rgba(255,255,255,0.08)',
-          borderRadius: 18,
-          padding: '18px 16px 16px',
-          marginBottom: 18,
-          maxWidth: '100vw',
-          boxSizing: 'border-box',
+          position: 'relative',
+          width: '100%',
+          maxWidth: 1024,
+          margin: '0 auto 18px',
+          aspectRatio: '1024 / 582',
+          backgroundImage: 'url(/images/store_discovery_hero.png)',
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          borderRadius: 22,
+          overflow: 'hidden',
+          boxShadow: '0 16px 40px rgba(0,0,0,0.5)',
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
-          <Sparkles size={18} aria-hidden style={{ color: '#00C4BC' }} />
-          <div style={{ color: 'var(--silver, #A8B4C0)', fontSize: '0.72rem', fontWeight: 800, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
-            Find By Research Goal
-          </div>
-        </div>
+        {/* Match Me Button Overlay */}
+        <button
+          type="button"
+          onClick={submitTypedGoal}
+          disabled={!query.trim()}
+          title="Match Me"
+          style={{
+            position: 'absolute', top: '15%', left: '52%', width: '19%', height: '12%',
+            cursor: query.trim() ? 'pointer' : 'not-allowed', opacity: 0, zIndex: 10
+          }}
+          aria-label="Match Me"
+        />
 
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-          <div style={{
-            flex: '1 1 220px', minWidth: 0, position: 'relative',
-            background: 'rgba(255,255,255,0.04)',
-            border: '1px solid rgba(255,255,255,0.16)',
-            borderRadius: 12,
-          }}>
-            <span style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--silver, #A8B4C0)' }}>
-              <Search size={16} aria-hidden />
-            </span>
-            <input
-              type="text"
-              aria-label="What's Your Research Goal"
-              placeholder="What's Your Research Goal?"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              onKeyDown={(e) => { if (e.key === 'Enter') submitTypedGoal(); }}
-              style={{
-                width: '100%',
-                background: 'transparent', border: 0, outline: 0,
-                color: '#FFFFFF', fontSize: '16px',
-                padding: '14px 14px 14px 38px',
-                borderRadius: 12,
-              }}
-            />
-          </div>
+        {/* Let Us Guide You Button Overlay */}
+        <button
+          type="button"
+          onClick={() => setWizardOpen(true)}
+          title="Let Us Guide You"
+          style={{
+            position: 'absolute', top: '15%', left: '72%', width: '21%', height: '12%',
+            cursor: 'pointer', opacity: 0, zIndex: 10
+          }}
+          aria-label="Let Us Guide You"
+        />
 
-          <button
-            type="button"
-            onClick={submitTypedGoal}
-            disabled={!query.trim()}
-            style={{
-              background: '#00C4BC', color: '#0A1018', border: 0,
-              fontWeight: 900, fontSize: '0.88rem',
-              padding: '0 18px', borderRadius: 12, cursor: query.trim() ? 'pointer' : 'not-allowed',
-              opacity: query.trim() ? 1 : 0.55, minHeight: 48,
-            }}
-          >
-            Match Me
-          </button>
+        {/* Search Input Box */}
+        <input
+          type="text"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          onKeyDown={(e) => { if (e.key === 'Enter') submitTypedGoal(); }}
+          placeholder="What Are You Trying To Research Today?"
+          style={{
+            position: 'absolute', top: '38%', left: '13%', width: '77%', height: '11%',
+            background: '#041322',
+            border: 'none', outline: 'none', color: '#FFFFFF',
+            fontSize: 'max(14px, 1.3vw)',
+            padding: '0 8px',
+            zIndex: 5,
+            fontWeight: 500,
+            letterSpacing: '0.02em',
+          }}
+        />
 
-          <button
-            type="button"
-            onClick={() => setWizardOpen(true)}
-            style={{
-              background: 'rgba(255,255,255,0.06)', color: '#FFFFFF',
-              border: '1px solid rgba(255,255,255,0.18)',
-              fontWeight: 800, fontSize: '0.88rem',
-              padding: '0 14px', borderRadius: 12, cursor: 'pointer',
-              display: 'inline-flex', alignItems: 'center', gap: 6, minHeight: 48,
-            }}
-          >
-            <Compass size={16} aria-hidden /> Let Us Guide You
-          </button>
-        </div>
-
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 12 }}>
-          {EXAMPLE_GOALS.map((g) => (
-            <button
-              key={g.label}
-              type="button"
-              onClick={() => { setQuery(g.goal); void runMatch({ goal: g.goal }, g.label); }}
-              style={{
-                background: 'rgba(255,255,255,0.04)',
-                border: '1px solid rgba(255,255,255,0.14)',
-                color: '#FFFFFF',
-                borderRadius: 999, padding: '6px 12px',
-                fontSize: '0.78rem', fontWeight: 700,
-                cursor: 'pointer', minHeight: 32,
-              }}
-            >
-              {g.label}
-            </button>
-          ))}
-        </div>
-
-        {availableAreas.length > 0 && (
-          <div style={{ marginTop: 14 }}>
-            <div style={{ color: 'var(--silver, #A8B4C0)', fontSize: '0.72rem', fontWeight: 800, letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 6 }}>
-              Browse By Research Area
-            </div>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-              {availableAreas.slice(0, 12).map((area) => (
-                <button
-                  key={area}
-                  type="button"
-                  onClick={() => onSelectArea(area)}
-                  style={{
-                    background: 'rgba(0,196,188,0.08)',
-                    border: '1px solid rgba(0,196,188,0.32)',
-                    color: '#00C4BC',
-                    borderRadius: 999, padding: '6px 12px',
-                    fontSize: '0.78rem', fontWeight: 800,
-                    cursor: 'pointer', minHeight: 32,
-                  }}
-                >
-                  {labelForArea(area)}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
+        {/* Quick Select Buttons */}
+        <button title="Recovery" onClick={() => { setQuery('Recovery'); void runMatch({ goal: 'Recovery' }, 'Recovery'); }} style={{ position: 'absolute', top: '64%', left: '3%', width: '10%', height: '22%', cursor: 'pointer', opacity: 0, zIndex: 10 }} />
+        <button title="Weight Management" onClick={() => { setQuery('Weight Management'); void runMatch({ goal: 'Weight Management' }, 'Weight Management'); }} style={{ position: 'absolute', top: '64%', left: '14.5%', width: '10%', height: '22%', cursor: 'pointer', opacity: 0, zIndex: 10 }} />
+        <button title="Sleep" onClick={() => { setQuery('Sleep'); void runMatch({ goal: 'Sleep' }, 'Sleep'); }} style={{ position: 'absolute', top: '64%', left: '26%', width: '10%', height: '22%', cursor: 'pointer', opacity: 0, zIndex: 10 }} />
+        <button title="Cognitive" onClick={() => { setQuery('Cognitive'); void runMatch({ goal: 'Cognitive' }, 'Cognitive'); }} style={{ position: 'absolute', top: '64%', left: '38%', width: '10%', height: '22%', cursor: 'pointer', opacity: 0, zIndex: 10 }} />
+        <button title="Immune" onClick={() => { setQuery('Immune'); void runMatch({ goal: 'Immune' }, 'Immune'); }} style={{ position: 'absolute', top: '64%', left: '49.5%', width: '10%', height: '22%', cursor: 'pointer', opacity: 0, zIndex: 10 }} />
+        <button title="Metabolic" onClick={() => { setQuery('Metabolic'); void runMatch({ goal: 'Metabolic' }, 'Metabolic'); }} style={{ position: 'absolute', top: '64%', left: '61.5%', width: '10%', height: '22%', cursor: 'pointer', opacity: 0, zIndex: 10 }} />
+        <button title="Longevity" onClick={() => { setQuery('Longevity'); void runMatch({ goal: 'Longevity' }, 'Longevity'); }} style={{ position: 'absolute', top: '64%', left: '73.5%', width: '10%', height: '22%', cursor: 'pointer', opacity: 0, zIndex: 10 }} />
+        <button title="More" onClick={() => { document.querySelector('.sf-toolbar')?.scrollIntoView({ behavior: 'smooth' }); }} style={{ position: 'absolute', top: '64%', left: '85.5%', width: '10%', height: '22%', cursor: 'pointer', opacity: 0, zIndex: 10 }} />
       </div>
 
       <GuidedDiscoveryWizard
