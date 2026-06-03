@@ -1,0 +1,128 @@
+/**
+ * Browse compounds bucketed by route of administration. Server component.
+ */
+
+import type { Metadata } from 'next';
+import Link from 'next/link';
+import { createClient } from '@/lib/supabase/server';
+import { evidenceTier, wadaLabel } from '@/lib/compounds';
+
+export const metadata: Metadata = {
+  title: 'Browse By Route Of Administration | Research Library | Pep Nation Lab',
+  robots: { index: false, follow: false },
+};
+
+export const dynamic = 'force-dynamic';
+
+interface RouteRow {
+  slug: string;
+  display_name: string;
+  category: string | null;
+  evidence_tier: string;
+  wada_status: string;
+  plain_summary: string | null;
+  route_of_admin: string[] | null;
+}
+
+const ROUTE_LABELS: Record<string, string> = {
+  subcutaneous: 'Subcutaneous',
+  intranasal: 'Intranasal',
+  oral: 'Oral',
+  intramuscular: 'Intramuscular',
+  topical: 'Topical',
+  iv: 'Intravenous',
+  unspecified: 'Unspecified',
+};
+
+function normalizeRoute(r: string): string {
+  const lower = r.trim().toLowerCase();
+  if (lower.startsWith('sub')) return 'subcutaneous';
+  if (lower.startsWith('intran') || lower.startsWith('nasal')) return 'intranasal';
+  if (lower.startsWith('oral')) return 'oral';
+  if (lower.startsWith('intram') || lower === 'im') return 'intramuscular';
+  if (lower.startsWith('top')) return 'topical';
+  if (lower === 'iv' || lower.startsWith('intrav')) return 'iv';
+  return lower;
+}
+
+export default async function ResearchByRoutePage() {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from('compounds')
+    .select('slug, display_name, category, evidence_tier, wada_status, plain_summary, route_of_admin')
+    .order('display_name', { ascending: true });
+
+  const rows = (data ?? []) as RouteRow[];
+
+  const buckets = new Map<string, RouteRow[]>();
+  for (const r of rows) {
+    const routes = (r.route_of_admin ?? []).map(normalizeRoute);
+    if (routes.length === 0) {
+      const k = 'unspecified';
+      if (!buckets.has(k)) buckets.set(k, []);
+      buckets.get(k)!.push(r);
+      continue;
+    }
+    for (const route of routes) {
+      if (!buckets.has(route)) buckets.set(route, []);
+      buckets.get(route)!.push(r);
+    }
+  }
+
+  const order = ['subcutaneous', 'intranasal', 'oral', 'intramuscular', 'topical', 'iv', 'unspecified'];
+  const keys = order.filter((k) => buckets.has(k));
+
+  return (
+    <div style={{ maxWidth: '1100px', margin: '0 auto', padding: 'var(--space-6, 32px) var(--space-4, 16px)' }}>
+      <nav style={{ marginBottom: 'var(--space-4, 16px)' }}>
+        <Link href="/research" style={{ color: 'var(--teal, #00C4BC)', fontSize: '0.9rem', textDecoration: 'none' }}>
+          Back To Research Library
+        </Link>
+      </nav>
+      <header style={{ marginBottom: 'var(--space-5, 24px)' }}>
+        <h1 style={{ fontSize: '2rem', fontWeight: 900, color: 'var(--white, #FFFFFF)', margin: 0 }}>
+          Browse By Route Of Administration
+        </h1>
+        <p style={{ color: 'var(--silver, #A8B4C0)', fontSize: '1.05rem', marginTop: 'var(--space-2, 8px)', maxWidth: '760px' }}>
+          Compounds Grouped By Annotated Route Of Administration In The Research Literature.
+        </p>
+      </header>
+
+      {keys.length === 0 && (
+        <div className="card-glass" style={{ padding: 'var(--space-5, 24px)', borderRadius: 'var(--radius-lg, 12px)', color: 'var(--silver, #A8B4C0)' }}>
+          Route Annotations Will Populate Once The DailyMed Sync Cron Runs.
+        </div>
+      )}
+
+      {keys.map((k) => (
+        <section key={k} style={{ marginBottom: 'var(--space-6, 32px)' }}>
+          <h2 style={{ fontSize: '1.3rem', fontWeight: 800, color: 'var(--teal, #00C4BC)', marginBottom: 'var(--space-3, 12px)' }}>
+            {ROUTE_LABELS[k] ?? k} ({buckets.get(k)!.length})
+          </h2>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 'var(--space-3, 12px)' }}>
+            {buckets.get(k)!.map((c) => {
+              const t = evidenceTier(c.evidence_tier);
+              return (
+                <Link
+                  key={c.slug}
+                  href={`/research/${c.slug}`}
+                  className="card-metal"
+                  style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-1, 4px)', padding: 'var(--space-3, 12px) var(--space-4, 16px)', borderRadius: 'var(--radius-lg, 12px)', textDecoration: 'none', color: 'var(--white, #FFFFFF)' }}
+                >
+                  <span style={{ fontSize: '0.7rem', color: t.color, textTransform: 'uppercase', letterSpacing: '0.04em', fontWeight: 700 }}>{t.label}</span>
+                  <span style={{ fontSize: '1rem', fontWeight: 700 }}>{c.display_name}</span>
+                  {c.plain_summary && (
+                    <span style={{ fontSize: '0.78rem', color: 'var(--silver, #A8B4C0)', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{c.plain_summary}</span>
+                  )}
+                  {c.wada_status && c.wada_status !== 'not_listed' && (
+                    <span style={{ fontSize: '0.7rem', color: 'var(--silver, #A8B4C0)', marginTop: '4px' }}>{wadaLabel(c.wada_status)}</span>
+                  )}
+                </Link>
+              );
+            })}
+          </div>
+        </section>
+      ))}
+    </div>
+  );
+}

@@ -1,8 +1,10 @@
 'use client';
 
 /**
- * CalculatorSuite -- six researcher calculators rendered as anchored sections
- * on /research/calculators. Pure math from lib/research/calculators.
+ * CalculatorSuite -- eleven researcher calculators rendered as anchored
+ * sections on /research/calculators. The first six are original (Wave 1);
+ * the last five (HPLC RT, MS m/z, Fmoc-SPPS Cost, Solubility, Vial Quantity
+ * Power) were added in Wave 2.
  *
  * Research use only. Lab-prep math, not human dosing.
  */
@@ -16,6 +18,11 @@ import {
   costPerDose,
   dilutionSeries,
   vialPooling,
+  predictHplcRetentionTime,
+  predictMassSpecPeaks,
+  estimateFmocSppsCost,
+  predictSolubility,
+  vialQuantityPower,
   type ConcentrationUnit,
 } from '@/lib/research/calculators';
 
@@ -382,6 +389,284 @@ function PoolingSection() {
   );
 }
 
+/* ----- Wave 2 calculators ----- */
+
+function HplcRtSection() {
+  const [seq, setSeq] = useState('GIGAVLKVLTTGLPALISWIKRKRQQ');
+  const [start, setStart] = useState('5');
+  const [end, setEnd] = useState('65');
+  const [gradient, setGradient] = useState('20');
+
+  const rt = predictHplcRetentionTime({
+    sequence: seq,
+    gradientPctBStart: Number(start),
+    gradientPctBEnd: Number(end),
+    gradientMin: Number(gradient),
+    c18Column: true,
+  });
+
+  return (
+    <section id="hplc-rt" style={sectionStyle}>
+      <CalculatorHeader
+        title="HPLC Retention Time Predictor"
+        why="Roughly estimate where a peptide will elute on a C18 reverse-phase column using Bull-Breese hydrophobicity. Useful for planning a purification gradient before injection. Lab estimate, not a clinical prediction."
+      />
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 12 }}>
+        <div>
+          <label style={labelStyle}>One-Letter Sequence</label>
+          <input style={inputStyle} type="text" value={seq} onChange={(e) => setSeq(e.target.value)} />
+        </div>
+      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 12, marginTop: 12 }}>
+        <div>
+          <label style={labelStyle}>Gradient Start (%B)</label>
+          <input style={inputStyle} type="number" value={start} onChange={(e) => setStart(e.target.value)} />
+        </div>
+        <div>
+          <label style={labelStyle}>Gradient End (%B)</label>
+          <input style={inputStyle} type="number" value={end} onChange={(e) => setEnd(e.target.value)} />
+        </div>
+        <div>
+          <label style={labelStyle}>Gradient Length (Min)</label>
+          <input style={inputStyle} type="number" value={gradient} onChange={(e) => setGradient(e.target.value)} />
+        </div>
+      </div>
+      <div style={resultStyle}>
+        {rt === null
+          ? 'Enter A Valid One-Letter Sequence.'
+          : <>Predicted Retention Time: <strong>{rt.toFixed(2)} Min</strong> (C18, 0.1% TFA)</>
+        }
+      </div>
+      <p style={noteStyle}>{RESEARCH_NOTE}</p>
+    </section>
+  );
+}
+
+function MassSpecSection() {
+  const [seq, setSeq] = useState('GIGAVLKVLTTGLPALISWIKRKRQQ');
+  const [mode, setMode] = useState<'positive' | 'negative'>('positive');
+  const [maxCharge, setMaxCharge] = useState('4');
+
+  const peaks = predictMassSpecPeaks({
+    sequence: seq,
+    mode,
+    maxCharge: Number(maxCharge),
+  });
+
+  return (
+    <section id="mass-spec" style={sectionStyle}>
+      <CalculatorHeader
+        title="Mass Spec m/z Predictor"
+        why="Predict the expected [M+nH]^n+ peaks for a peptide so you know where to look in the ESI-MS spectrum. Useful for identity confirmation after synthesis."
+      />
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 12 }}>
+        <div>
+          <label style={labelStyle}>One-Letter Sequence</label>
+          <input style={inputStyle} type="text" value={seq} onChange={(e) => setSeq(e.target.value)} />
+        </div>
+      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 12, marginTop: 12 }}>
+        <div>
+          <label style={labelStyle}>Ionization Mode</label>
+          <select style={inputStyle} value={mode} onChange={(e) => setMode(e.target.value as 'positive' | 'negative')}>
+            <option value="positive">Positive</option>
+            <option value="negative">Negative</option>
+          </select>
+        </div>
+        <div>
+          <label style={labelStyle}>Max Charge State</label>
+          <input style={inputStyle} type="number" value={maxCharge} onChange={(e) => setMaxCharge(e.target.value)} />
+        </div>
+      </div>
+      <div style={{ ...resultStyle, padding: 0, background: 'transparent', border: 'none' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14, marginTop: 8 }}>
+          <thead>
+            <tr>
+              <th style={{ textAlign: 'left', padding: 8, color: '#A8B4C0', fontSize: 12 }}>Charge</th>
+              <th style={{ textAlign: 'left', padding: 8, color: '#A8B4C0', fontSize: 12 }}>m/z</th>
+              <th style={{ textAlign: 'left', padding: 8, color: '#A8B4C0', fontSize: 12 }}>Rel Intensity</th>
+            </tr>
+          </thead>
+          <tbody>
+            {peaks.map((p) => (
+              <tr key={p.charge}>
+                <td style={{ padding: 8, color: '#FFFFFF' }}>{`+${p.charge}`}</td>
+                <td style={{ padding: 8, color: '#00C4BC', fontWeight: 600 }}>{p.mz.toFixed(4)}</td>
+                <td style={{ padding: 8, color: '#D0DAE4' }}>{p.intensity.toFixed(3)}</td>
+              </tr>
+            ))}
+            {peaks.length === 0 && (
+              <tr><td colSpan={3} style={{ padding: 8, color: '#A8B4C0' }}>Enter A Valid One-Letter Sequence.</td></tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+      <p style={noteStyle}>{RESEARCH_NOTE}</p>
+    </section>
+  );
+}
+
+function SppsSection() {
+  const [seq, setSeq] = useState('GIGAVLKVLTTGLPALISWIKRKRQQ');
+  const [scale, setScale] = useState('100');
+  const [aaCost, setAaCost] = useState('10');
+  const [resinCost, setResinCost] = useState('20');
+
+  const out = estimateFmocSppsCost({
+    sequence: seq,
+    scaleUmol: Number(scale),
+    fmocAaCostPerGram: Number(aaCost),
+    resinCostPerGram: Number(resinCost),
+    includeReagents: true,
+  });
+
+  return (
+    <section id="spps-cost" style={sectionStyle}>
+      <CalculatorHeader
+        title="Fmoc-SPPS Cost Estimator"
+        why="Plan the cost of synthesizing a peptide via solid-phase Fmoc chemistry. Breaks down amino acid, resin, reagent, cleavage, and labor costs."
+      />
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 12 }}>
+        <div>
+          <label style={labelStyle}>One-Letter Sequence</label>
+          <input style={inputStyle} type="text" value={seq} onChange={(e) => setSeq(e.target.value)} />
+        </div>
+      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 12, marginTop: 12 }}>
+        <div>
+          <label style={labelStyle}>Scale (umol)</label>
+          <input style={inputStyle} type="number" value={scale} onChange={(e) => setScale(e.target.value)} />
+        </div>
+        <div>
+          <label style={labelStyle}>Fmoc AA Cost ($/g)</label>
+          <input style={inputStyle} type="number" value={aaCost} onChange={(e) => setAaCost(e.target.value)} />
+        </div>
+        <div>
+          <label style={labelStyle}>Resin Cost ($/g)</label>
+          <input style={inputStyle} type="number" value={resinCost} onChange={(e) => setResinCost(e.target.value)} />
+        </div>
+      </div>
+      <div style={resultStyle}>
+        {!out ? 'Enter A Valid Sequence.' : (
+          <>
+            Total Estimated Cost: <strong>${out.totalUsd.toFixed(2)}</strong>
+            <div style={{ marginTop: 10 }}>
+              {out.breakdown.map((b) => (
+                <div key={b.label} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: '#D0DAE4' }}>
+                  <span>{b.label}</span>
+                  <span>${b.costUsd.toFixed(2)}</span>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
+      </div>
+      <p style={noteStyle}>{RESEARCH_NOTE}</p>
+    </section>
+  );
+}
+
+function SolubilitySection() {
+  const [gravy, setGravy] = useState('-0.4');
+  const [pi, setPi] = useState('10.2');
+  const [len, setLen] = useState('25');
+  const [pH, setPH] = useState('7.4');
+
+  const out = predictSolubility({
+    gravy: Number(gravy),
+    isoelectricPoint: Number(pi),
+    sequenceLength: Number(len),
+    pH: Number(pH),
+  });
+
+  return (
+    <section id="solubility" style={sectionStyle}>
+      <CalculatorHeader
+        title="Solubility Predictor"
+        why="A heuristic estimate of aqueous solubility using GRAVY (hydrophobicity), distance of pI from solution pH, and sequence length. Useful for guessing whether a peptide will dissolve cleanly in PBS, acetic acid, or DMSO."
+      />
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 12 }}>
+        <div>
+          <label style={labelStyle}>GRAVY</label>
+          <input style={inputStyle} type="number" step="0.01" value={gravy} onChange={(e) => setGravy(e.target.value)} />
+        </div>
+        <div>
+          <label style={labelStyle}>Isoelectric Point (pI)</label>
+          <input style={inputStyle} type="number" step="0.01" value={pi} onChange={(e) => setPi(e.target.value)} />
+        </div>
+        <div>
+          <label style={labelStyle}>Sequence Length</label>
+          <input style={inputStyle} type="number" value={len} onChange={(e) => setLen(e.target.value)} />
+        </div>
+        <div>
+          <label style={labelStyle}>Solution pH</label>
+          <input style={inputStyle} type="number" step="0.1" value={pH} onChange={(e) => setPH(e.target.value)} />
+        </div>
+      </div>
+      <div style={resultStyle}>
+        {!out ? 'Enter Valid Inputs.' : (
+          <>
+            Predicted Solubility: <strong>{out.predictedSolubilityMgMl.toFixed(3)} mg/mL</strong> ({out.classification.toUpperCase()})
+            <div style={{ fontSize: 12, color: '#A8B4C0', marginTop: 6 }}>{out.notes}</div>
+          </>
+        )}
+      </div>
+      <p style={noteStyle}>{RESEARCH_NOTE}</p>
+    </section>
+  );
+}
+
+function VialQuantitySection() {
+  const [n, setN] = useState('30');
+  const [doses, setDoses] = useState('12');
+  const [mgPerDose, setMgPerDose] = useState('0.25');
+  const [mgPerVial, setMgPerVial] = useState('5');
+
+  const out = vialQuantityPower({
+    n: Number(n),
+    dosesPerSubject: Number(doses),
+    mgPerDose: Number(mgPerDose),
+    mgPerVial: Number(mgPerVial),
+  });
+
+  return (
+    <section id="vial-quantity" style={sectionStyle}>
+      <CalculatorHeader
+        title="Vial Quantity Power Calculator"
+        why="Plan vial procurement for a study. Given a sample size, doses per subject, and dose mass, compute the number of vials to order."
+      />
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 12 }}>
+        <div>
+          <label style={labelStyle}>Sample Size (n)</label>
+          <input style={inputStyle} type="number" value={n} onChange={(e) => setN(e.target.value)} />
+        </div>
+        <div>
+          <label style={labelStyle}>Doses Per Subject</label>
+          <input style={inputStyle} type="number" value={doses} onChange={(e) => setDoses(e.target.value)} />
+        </div>
+        <div>
+          <label style={labelStyle}>Mg Per Dose</label>
+          <input style={inputStyle} type="number" step="0.01" value={mgPerDose} onChange={(e) => setMgPerDose(e.target.value)} />
+        </div>
+        <div>
+          <label style={labelStyle}>Mg Per Vial</label>
+          <input style={inputStyle} type="number" step="0.01" value={mgPerVial} onChange={(e) => setMgPerVial(e.target.value)} />
+        </div>
+      </div>
+      <div style={resultStyle}>
+        {!out ? 'Enter Valid Inputs.' : (
+          <>
+            Vials Needed: <strong>{out.vialsNeeded}</strong>{'  '}|{'  '}
+            Per-Subject Mass: <strong>{out.perSubjectMg.toFixed(2)} mg</strong>{'  '}|{'  '}
+            Total Mass: <strong>{out.totalMg.toFixed(2)} mg</strong>
+          </>
+        )}
+      </div>
+      <p style={noteStyle}>{RESEARCH_NOTE}</p>
+    </section>
+  );
+}
+
 export default function CalculatorSuite() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column' }}>
@@ -391,6 +676,11 @@ export default function CalculatorSuite() {
       <StabilitySection />
       <CostSection />
       <PoolingSection />
+      <HplcRtSection />
+      <MassSpecSection />
+      <SppsSection />
+      <SolubilitySection />
+      <VialQuantitySection />
     </div>
   );
 }

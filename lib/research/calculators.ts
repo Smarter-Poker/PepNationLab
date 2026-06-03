@@ -164,3 +164,217 @@ export function vialPooling(opts: {
   const totalMassMg = vialMassMg * vialCount;
   return { totalMassMg, concentrationMgPerMl: totalMassMg / totalDiluentMl };
 }
+
+/* -----------------------------------------------------------
+ * Wave 2 additions -- five new researcher calculators.
+ * All pure math, all framed for laboratory research use only.
+ * --------------------------------------------------------- */
+
+/**
+ * Bull-Breese hydrophobicity coefficients (rough lab estimate, not clinical).
+ * Source: Bull & Breese (1974) hydrophobicity scale.
+ */
+const BULL_BREESE: Record<string, number> = {
+  A: 0.61, R: 0.69, N: 0.89, D: 0.61, C: 0.36, Q: 0.97, E: 0.51,
+  G: 0.81, H: 0.69, I: -1.45, L: -1.65, K: 0.46, M: -0.66, F: -1.52,
+  P: -0.17, S: 0.42, T: 0.29, W: -1.2, Y: -1.43, V: -0.75,
+};
+
+/**
+ * predictHplcRetentionTime -- rough RT estimate for a C18 column based on
+ * Bull-Breese hydrophobicity sum. Returns minutes. Lab estimate, not clinical.
+ */
+export function predictHplcRetentionTime(opts: {
+  sequence: string;
+  gradientPctBStart?: number;
+  gradientPctBEnd?: number;
+  gradientMin?: number;
+  c18Column?: boolean;
+}): number | null {
+  const { sequence } = opts;
+  const start = opts.gradientPctBStart ?? 5;
+  const end = opts.gradientPctBEnd ?? 65;
+  const grad = opts.gradientMin ?? 20;
+  const c18 = opts.c18Column !== false;
+  if (!sequence || typeof sequence !== 'string') return null;
+  const seq = sequence.replace(/\s+/g, '').toUpperCase();
+  if (!seq.length) return null;
+  let hydroSum = 0;
+  for (const aa of seq) {
+    hydroSum += BULL_BREESE[aa] ?? 0;
+  }
+  const hydroPerResidue = hydroSum / seq.length;
+  const targetPctB = Math.min(end, Math.max(start, start + (hydroPerResidue + 1.7) * 18));
+  const range = end - start;
+  if (range <= 0) return null;
+  const rt = ((targetPctB - start) / range) * grad;
+  return Math.max(0.5, c18 ? rt + 1.2 : rt + 0.6);
+}
+
+export interface MassSpecPeak {
+  charge: number;
+  mz: number;
+  intensity: number;
+}
+
+const PROTON_MASS = 1.00728;
+
+/**
+ * Approximate monoisotopic mass from the canonical 20 amino acid residue masses.
+ * (Sum of residue masses + 18.0106 for water.)
+ */
+const RESIDUE_MASS: Record<string, number> = {
+  A: 71.03711, R: 156.10111, N: 114.04293, D: 115.02694, C: 103.00919,
+  E: 129.04259, Q: 128.05858, G: 57.02146, H: 137.05891, I: 113.08406,
+  L: 113.08406, K: 128.09496, M: 131.04049, F: 147.06841, P: 97.05276,
+  S: 87.03203, T: 101.04768, W: 186.07931, Y: 163.06333, V: 99.06841,
+};
+
+/**
+ * predictMassSpecPeaks -- expected [M+nH]^n+ peaks for the given sequence.
+ * Returns an array of charge / m/z / intensity tuples in descending intensity.
+ */
+export function predictMassSpecPeaks(opts: {
+  sequence: string;
+  mode?: 'positive' | 'negative';
+  maxCharge?: number;
+}): MassSpecPeak[] {
+  const seq = (opts.sequence ?? '').replace(/\s+/g, '').toUpperCase();
+  const maxCharge = Math.min(Math.max(opts.maxCharge ?? 4, 1), 10);
+  if (!seq.length) return [];
+  let M = 18.0106;
+  for (const aa of seq) {
+    M += RESIDUE_MASS[aa] ?? 110;
+  }
+  const peaks: MassSpecPeak[] = [];
+  const isPositive = (opts.mode ?? 'positive') === 'positive';
+  for (let n = 1; n <= maxCharge; n++) {
+    const mz = (M + n * (isPositive ? PROTON_MASS : -PROTON_MASS)) / n;
+    const intensity = Math.exp(-Math.abs(n - 2) / 1.5);
+    peaks.push({ charge: n, mz: Number(mz.toFixed(4)), intensity: Number(intensity.toFixed(3)) });
+  }
+  return peaks.sort((a, b) => b.intensity - a.intensity);
+}
+
+export interface FmocSppsCostBreakdownItem {
+  label: string;
+  costUsd: number;
+}
+
+export interface FmocSppsCostResult {
+  totalUsd: number;
+  breakdown: FmocSppsCostBreakdownItem[];
+}
+
+/**
+ * estimateFmocSppsCost -- rough cost estimate for synthesizing a peptide
+ * via Fmoc-SPPS at the given umol scale.
+ */
+export function estimateFmocSppsCost(opts: {
+  sequence: string;
+  scaleUmol?: number;
+  fmocAaCostPerGram?: number;
+  resinCostPerGram?: number;
+  includeReagents?: boolean;
+}): FmocSppsCostResult | null {
+  const seq = (opts.sequence ?? '').replace(/\s+/g, '').toUpperCase();
+  if (!seq.length) return null;
+  const scale = Math.max(1, opts.scaleUmol ?? 100);
+  const fmocCostPerG = Math.max(0, opts.fmocAaCostPerGram ?? 10);
+  const resinCostPerG = Math.max(0, opts.resinCostPerGram ?? 20);
+  const includeReagents = opts.includeReagents !== false;
+
+  const fmocAaGramsTotal = (seq.length * 5 * scale) / 1000;
+  const fmocAaCost = fmocAaGramsTotal * fmocCostPerG;
+  const resinGrams = (scale / 1000) * 1.5;
+  const resinCost = resinGrams * resinCostPerG;
+  const reagentCost = includeReagents ? (seq.length * 0.15 * (scale / 100)) : 0;
+  const cleavageCost = 8 + (scale / 100) * 4;
+  const laborOverhead = 25 + seq.length * 1.5;
+
+  const total = fmocAaCost + resinCost + reagentCost + cleavageCost + laborOverhead;
+
+  return {
+    totalUsd: Number(total.toFixed(2)),
+    breakdown: [
+      { label: 'Fmoc Amino Acids', costUsd: Number(fmocAaCost.toFixed(2)) },
+      { label: 'Resin', costUsd: Number(resinCost.toFixed(2)) },
+      { label: 'Coupling Reagents', costUsd: Number(reagentCost.toFixed(2)) },
+      { label: 'Cleavage Cocktail', costUsd: Number(cleavageCost.toFixed(2)) },
+      { label: 'Lab Labor And Overhead', costUsd: Number(laborOverhead.toFixed(2)) },
+    ],
+  };
+}
+
+export type SolubilityClassification = 'high' | 'moderate' | 'low';
+
+export interface SolubilityResult {
+  predictedSolubilityMgMl: number;
+  classification: SolubilityClassification;
+  notes: string;
+}
+
+/**
+ * predictSolubility -- heuristic solubility prediction. Uses GRAVY,
+ * pI distance from pH, and sequence length.
+ */
+export function predictSolubility(opts: {
+  gravy: number;
+  isoelectricPoint: number;
+  sequenceLength: number;
+  pH?: number;
+}): SolubilityResult | null {
+  const { gravy, isoelectricPoint, sequenceLength } = opts;
+  const pH = opts.pH ?? 7.4;
+  if (!isFinite(gravy) || !isFinite(isoelectricPoint) || !isFinite(sequenceLength)) return null;
+  if (sequenceLength <= 0) return null;
+
+  const pIDistance = Math.abs(isoelectricPoint - pH);
+  const lengthPenalty = Math.max(0, (sequenceLength - 40) / 80);
+
+  const score = (pIDistance * 1.5) - (gravy * 2.5) - lengthPenalty;
+  const predicted = Math.max(0.05, Math.min(50, Math.exp(score - 1.2)));
+
+  let classification: SolubilityClassification = 'moderate';
+  if (predicted >= 5) classification = 'high';
+  else if (predicted < 0.5) classification = 'low';
+
+  const notes = `pI=${isoelectricPoint.toFixed(2)}; |pI - pH|=${pIDistance.toFixed(2)}; GRAVY=${gravy.toFixed(2)}; n=${sequenceLength}. Heuristic Estimate.`;
+
+  return {
+    predictedSolubilityMgMl: Number(predicted.toFixed(3)),
+    classification,
+    notes,
+  };
+}
+
+export interface VialQuantityPowerResult {
+  vialsNeeded: number;
+  totalMg: number;
+  perSubjectMg: number;
+}
+
+/**
+ * vialQuantityPower -- compute the number of vials needed for a study of n
+ * subjects, given a per-subject dose count and per-dose mass.
+ */
+export function vialQuantityPower(opts: {
+  n: number;
+  dosesPerSubject: number;
+  mgPerDose: number;
+  mgPerVial: number;
+}): VialQuantityPowerResult | null {
+  const { n, dosesPerSubject, mgPerDose, mgPerVial } = opts;
+  if (!isFinite(n) || n <= 0) return null;
+  if (!isFinite(dosesPerSubject) || dosesPerSubject <= 0) return null;
+  if (!isFinite(mgPerDose) || mgPerDose <= 0) return null;
+  if (!isFinite(mgPerVial) || mgPerVial <= 0) return null;
+  const perSubjectMg = dosesPerSubject * mgPerDose;
+  const totalMg = perSubjectMg * n;
+  const vialsNeeded = Math.ceil(totalMg / mgPerVial);
+  return {
+    vialsNeeded,
+    totalMg: Number(totalMg.toFixed(3)),
+    perSubjectMg: Number(perSubjectMg.toFixed(3)),
+  };
+}
