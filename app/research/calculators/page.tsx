@@ -5,77 +5,21 @@
  */
 
 import type { Metadata } from 'next';
-import Link from 'next/link';
-import GlobalSearchBar from '@/components/research/GlobalSearchBar';
 import BrowseSurfaceNav from '@/components/research/BrowseSurfaceNav';
 import CalculatorSuite from '@/components/research/CalculatorSuite';
+import DynamicCalculatorHero from '@/components/research/DynamicCalculatorHero';
 
 export const metadata: Metadata = {
   title: 'Researcher Calculators | Research Library | Pep Nation Lab',
   robots: { index: false, follow: false },
 };
 
-const ANCHORS: Array<{ href: string; label: string }> = [
-  { href: '#reconstitution', label: 'Reconstitution' },
-  { href: '#dilution', label: 'Serial Dilution' },
-  { href: '#concentration', label: 'Concentration Converter' },
-  { href: '#stability', label: 'Arrhenius Stability' },
-  { href: '#cost', label: 'Cost Per Dose' },
-  { href: '#pooling', label: 'Vial Pooling' },
-  { href: '#hplc-rt', label: 'HPLC RT Predictor' },
-  { href: '#mass-spec', label: 'Mass Spec m/z' },
-  { href: '#spps-cost', label: 'Fmoc-SPPS Cost' },
-  { href: '#solubility', label: 'Solubility Predictor' },
-  { href: '#vial-quantity', label: 'Vial Quantity Power' },
-];
+
 
 export default function CalculatorsPage() {
   return (
     <div style={{ maxWidth: 1080, margin: '0 auto', padding: '32px 16px 64px' }}>
-      <nav style={{ marginBottom: 16 }}>
-        <Link href="/research" style={{ color: '#00C4BC', fontSize: 13, textDecoration: 'none' }}>
-          Back To Research Library
-        </Link>
-      </nav>
-
-      <header style={{ marginBottom: 24 }}>
-        <h1 style={{ fontSize: 32, fontWeight: 900, color: '#FFFFFF', margin: 0 }}>
-          Researcher Calculators
-        </h1>
-        <p style={{ color: '#A8B4C0', fontSize: 16, marginTop: 8, maxWidth: 700, lineHeight: 1.6 }}>
-          Pure Lab-Prep Math, Built For The Bench. Eleven Calculators: Reconstitution, Serial Dilution,
-          Concentration Conversion, Arrhenius Stability, Cost Per Dose, Vial Pooling, HPLC Retention
-          Time, Mass Spec m/z, Fmoc-SPPS Cost, Solubility Prediction, And Vial Quantity Planning.
-          Research Use Only.
-        </p>
-      </header>
-
-      <div style={{ marginBottom: 20 }}>
-        <GlobalSearchBar compact />
-      </div>
-
-      <nav aria-label="Jump To Calculator" style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 28 }}>
-        {ANCHORS.map((a) => (
-          <a
-            key={a.href}
-            href={a.href}
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              fontSize: 12,
-              fontWeight: 700,
-              color: '#00C4BC',
-              border: '1px solid rgba(0,196,188,0.4)',
-              background: 'rgba(0,196,188,0.08)',
-              padding: '5px 12px',
-              borderRadius: 999,
-              textDecoration: 'none',
-            }}
-          >
-            {a.label}
-          </a>
-        ))}
-      </nav>
+      <DynamicCalculatorHero />
 
       <CalculatorSuite />
 
