@@ -4,25 +4,11 @@ import { computeStatement, persistStatement } from '@/lib/statements';
 import { assertCronAuth, claimCronRun, finishCronRun } from '@/lib/cron';
 import { computeSubAgentBaselineCost } from '@/lib/pricing';
 import { notifyInvoiceGenerated } from '@/lib/notify';
+import { chicagoMidnightIso, previousCompletedWeekStartCst } from '@/lib/time-cst';
 
 function addDays(dateStr: string, days: number): string {
   const d = new Date(`${dateStr}T00:00:00Z`);
   d.setUTCDate(d.getUTCDate() + days);
-  return d.toISOString().slice(0, 10);
-}
-
-/**
- * Snap the given date to the Monday of the *previous completed week*.
- * The cron fires Monday 05:59 UTC = Sunday 23:59 CST, so subtract seven
- * days from today and back up to that calendar week's Monday. Returns
- * YYYY-MM-DD.
- */
-function previousCompletedWeekStart(today: Date): string {
-  const d = new Date(today);
-  d.setUTCDate(d.getUTCDate() - 7);
-  const day = d.getUTCDay(); // 0 = Sun, 1 = Mon, ... 6 = Sat
-  const diff = day === 0 ? -6 : 1 - day;
-  d.setUTCDate(d.getUTCDate() + diff);
   return d.toISOString().slice(0, 10);
 }
 
@@ -31,7 +17,9 @@ export async function GET(req: Request) {
   if (unauth) return unauth;
 
   const today = new Date();
-  const weekStart = previousCompletedWeekStart(today);
+  // Bill weeks live in America/Chicago, not UTC, so the Monday we pick
+  // here is the Monday in Chicago of the most-recently-completed week.
+  const weekStart = previousCompletedWeekStartCst(today);
 
   // Idempotency: at most one successful weekly_invoices run per week_start.
   const claim = await claimCronRun('weekly_invoices', weekStart);
@@ -105,9 +93,12 @@ export async function GET(req: Request) {
       .not('parent_agent_id', 'is', null);
 
     if (!subAgentsError && subAgents) {
-      const rangeStart = `${weekStart}T00:00:00Z`;
+      // CST/CDT-aware billing week. rangeStart = Mon 00:00 Chicago,
+      // rangeEndExclusive = next Mon 00:00 Chicago — exactly the
+      // "Mon → Sun 23:59:59 CT" window the spec calls for.
+      const rangeStart = chicagoMidnightIso(weekStart);
       const weekEnd = addDays(weekStart, 6);
-      const rangeEndExclusive = `${addDays(weekStart, 7)}T00:00:00Z`;
+      const rangeEndExclusive = chicagoMidnightIso(addDays(weekStart, 7));
 
       for (const subAgent of subAgents) {
         if (subAgent.account_type === 'prepaid') {
