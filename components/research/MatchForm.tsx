@@ -112,8 +112,8 @@ function MatchFormInner() {
   const [evidenceComfort, setEvidenceComfort] = useState<EvidenceComfort>((searchParams.get('comfort') as EvidenceComfort) || 'preclinical_ok');
   const [wadaConstraint, setWadaConstraint] = useState<WadaConstraint>((searchParams.get('wada') as WadaConstraint) || 'no_constraint');
   const [riskTolerance, setRiskTolerance] = useState<RiskTolerance>((searchParams.get('risk') as RiskTolerance) || 'moderate_ok');
-  const [excludeInjectables, setExcludeInjectables] = useState<boolean>(searchParams.get('no_injectables') === 'true');
-  const [requireLongHalfLife, setRequireLongHalfLife] = useState<boolean>(searchParams.get('long_half_life') === 'true');
+  const [excludeInjectables, setExcludeInjectables] = useState<boolean>(searchParams.get('no_inject') === 'true');
+  const [requireLongHalfLife, setRequireLongHalfLife] = useState<boolean>(searchParams.get('long_hl') === 'true');
   const [excludeSlugs, setExcludeSlugs] = useState<string[]>(searchParams.getAll('exclude') || []);
 
   const [loading, setLoading] = useState(false);

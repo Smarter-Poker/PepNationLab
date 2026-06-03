@@ -2396,3 +2396,28 @@ html[data-theme="light"] .messenger-back-btn {
   stroke-dashoffset: 1000;
   animation: drawPath 2s ease-out forwards;
 }
+
+/*
+   PRINT STYLES
+*/
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  
+  body {
+    background: white !important;
+    color: black !important;
+  }
+  
+  .glass-panel {
+    background: transparent !important;
+    border: 1px solid #ccc !important;
+    box-shadow: none !important;
+    color: black !important;
+  }
+  
+  .glass-panel * {
+    color: black !important;
+  }
+}
