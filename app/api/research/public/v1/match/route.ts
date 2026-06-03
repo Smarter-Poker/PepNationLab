@@ -48,7 +48,7 @@ async function handle(req: NextRequest, payload: { goal?: string; comfort?: stri
     requireLongHalfLife: payload.require_long_half_life,
     excludeSlugs: payload.exclude_slugs,
   };
-  const data = scoreCompounds(input, compounds).slice(0, limit);
+  const data = scoreCompounds(input, compounds, limit);
   const status = 200;
   await logApiRequest(auth.key_id!, '/api/research/public/v1/match', req.method, status, Date.now() - t0, firstClientIp(req));
   return NextResponse.json({ note: RESEARCH_NOTE, results: data ?? [] }, { status, headers: corsHeaders() });

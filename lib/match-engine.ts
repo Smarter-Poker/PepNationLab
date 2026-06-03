@@ -316,7 +316,11 @@ function scoreOne(input: MatchInput, c: Compound): { score: number; rationale: s
  * candidates, sorted by score desc, then by evidence-tier rank desc, then by
  * display_name ascending (deterministic).
  */
-export function scoreCompounds(input: MatchInput, compounds: Compound[]): MatchResult[] {
+export function scoreCompounds(
+  input: MatchInput,
+  compounds: Compound[],
+  limit: number = 5
+): MatchResult[] {
   const scored: MatchResult[] = [];
   for (const c of compounds) {
     const result = scoreOne(input, c);
@@ -344,23 +348,23 @@ export function scoreCompounds(input: MatchInput, compounds: Compound[]): MatchR
     return a.displayName.localeCompare(b.displayName);
   });
 
-  const top5 = scored.slice(0, 5);
+  const results = scored.slice(0, limit);
 
   // Detect synergistic stack relationships among the top results
-  for (let i = 0; i < top5.length; i++) {
-    for (let j = i + 1; j < top5.length; j++) {
-      const cA = compounds.find(c => c.slug === top5[i].slug);
-      const cB = compounds.find(c => c.slug === top5[j].slug);
+  for (let i = 0; i < results.length; i++) {
+    for (let j = i + 1; j < results.length; j++) {
+      const cA = compounds.find(c => c.slug === results[i].slug);
+      const cB = compounds.find(c => c.slug === results[j].slug);
       if (cA && cB) {
         const aHasB = cA.stack_components?.includes(cB.slug);
         const bHasA = cB.stack_components?.includes(cA.slug);
         if (aHasB || bHasA) {
-          top5[i].isStackPartner = true;
-          top5[j].isStackPartner = true;
+          results[i].isStackPartner = true;
+          results[j].isStackPartner = true;
         }
       }
     }
   }
 
-  return top5;
+  return results;
 }

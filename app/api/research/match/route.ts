@@ -94,9 +94,9 @@ export async function POST(req: NextRequest) {
   const compounds = await getAllCompounds();
   const results = scoreCompounds(input, compounds);
 
-  // Async logging to db (fire and forget)
+  // Analytics log to db (awaited to prevent serverless termination)
   const supabase = await createServiceClient();
-  supabase
+  const { error } = await supabase
     .from('research_match_analytics')
     .insert({
       goal: input.goal,
@@ -105,10 +105,8 @@ export async function POST(req: NextRequest) {
       risk_tolerance: input.riskTolerance,
       exclude_injectables: input.excludeInjectables ?? false,
       require_long_half_life: input.requireLongHalfLife ?? false,
-    })
-    .then(({ error }) => {
-      if (error) console.error('[Match Analytics] Failed to insert', error);
     });
+  if (error) console.error('[Match Analytics] Failed to insert', error);
 
   return NextResponse.json({ results, note: RESEARCH_NOTE });
 }
