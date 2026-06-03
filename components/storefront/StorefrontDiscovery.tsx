@@ -41,6 +41,7 @@ export interface MatchedProduct {
   rationale: string;           // plain-English "why this match"
   image_url: string | null;
   in_stock: boolean;
+  isStackPartner?: boolean;
 }
 
 export interface DiscoveryHeroProps {
@@ -295,6 +296,16 @@ function MatchResultsDrawer({
                           {r.evidence_tier.replace(/_/g, ' ')}
                         </span>
                       )}
+                      {r.isStackPartner && (
+                        <span style={{
+                          fontSize: '0.62rem', fontWeight: 800, letterSpacing: '0.04em', textTransform: 'uppercase',
+                          padding: '3px 7px', borderRadius: 6,
+                          background: 'rgba(246,173,85,0.14)', color: '#F6AD55',
+                          border: '1px solid rgba(246,173,85,0.35)', flexShrink: 0,
+                        }} title="Synergizes well with other matched compounds">
+                          ⚡ Synergistic Stack Partner
+                        </span>
+                      )}
                     </div>
 
                     <div style={{ color: 'var(--silver, #A8B4C0)', fontSize: '0.82rem', lineHeight: 1.4 }}>
@@ -403,7 +414,9 @@ function GuidedDiscoveryWizard({
 
   useEffect(() => {
     if (open) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setStep(0);
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setState(s => ({ ...s, area: availableAreas[0] || 'healing' }));
     }
   }, [open, availableAreas]);
@@ -687,6 +700,7 @@ export default function DiscoveryHero({
     evidenceComfort?: 'strict_human_only' | 'investigational_ok' | 'preclinical_ok' | 'any';
     wadaConstraint?: 'wada_permitted_only' | 'no_constraint';
     riskTolerance?: 'low_only' | 'moderate_ok' | 'any';
+    preference?: 'single' | 'stack' | 'either';
   }, summary: string) => {
     setLoading(true);
     setResults([]);
@@ -702,21 +716,24 @@ export default function DiscoveryHero({
             evidenceComfort: input.evidenceComfort || 'preclinical_ok',
             wadaConstraint: input.wadaConstraint || 'no_constraint',
             riskTolerance: input.riskTolerance || 'moderate_ok',
+            preference: input.preference,
           },
         }),
       });
       const json = await res.json().catch(() => null) as {
-        results?: Array<{ slug: string; rationale?: string }>;
+        results?: Array<{ slug: string; rationale?: string; isStackPartner?: boolean }>;
       } | null;
       const slugs = (json?.results || []).map(r => r.slug).filter(Boolean);
       const rationales = new Map((json?.results || []).map(r => [r.slug, r.rationale || '']));
+      const stackMap = new Map((json?.results || []).map(r => [r.slug, r.isStackPartner || false]));
       const products = resolveProducts(slugs);
-      // Attach rationale by slug when available.
+      // Attach rationale and stack data by slug when available.
       const stitched = products.map(p => ({
         ...p,
-        rationale: p.compound_slug && rationales.get(p.compound_slug)
+        rationale: p.compound_slug && rationales.has(p.compound_slug)
           ? (rationales.get(p.compound_slug) as string)
           : p.rationale,
+        isStackPartner: p.compound_slug ? stackMap.get(p.compound_slug) : false,
       }));
       setResults(stitched);
     } catch {
@@ -887,7 +904,7 @@ export default function DiscoveryHero({
           setWizardOpen(false);
           const goal = `${labelForArea(s.area)} Research`;
           void runMatch(
-            { goal, evidenceComfort: s.comfort },
+            { goal, evidenceComfort: s.comfort, preference: s.preference },
             buildGoalFromWizard(s),
           );
         }}
