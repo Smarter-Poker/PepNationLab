@@ -42,6 +42,8 @@ const PUBLIC_ROUTES = [
   '/api/research/widget',
   // Research Library v3 Wave 2 public API docs page
   '/research/api-docs',
+  // /lab-tools redirects to /research/calculators (which is already public via /research prefix)
+  '/lab-tools',
   // SEO surfaces
   '/sitemap.xml',
   '/feed.xml',

@@ -374,7 +374,7 @@ export function vialQuantityPower(opts: {
   const vialsNeeded = Math.ceil(totalMg / mgPerVial);
   return {
     vialsNeeded,
-    totalMg: Number(totalMg.toFixed(3)),
-    perSubjectMg: Number(perSubjectMg.toFixed(3)),
+    totalMg,
+    perSubjectMg,
   };
 }

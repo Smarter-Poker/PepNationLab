@@ -1,25 +1,114 @@
 /**
- * Focused view: every compound with evidence_tier='approved_drug'.
+ * Approved drugs — compounds with FDA/EMA/other regulatory approval.
+ * Progressive disclosure: category filter tabs.
  */
 
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { getAllCompounds } from '@/lib/compounds-server';
 import { evidenceTier, wadaLabel } from '@/lib/compounds';
+import BrowseFilterShell from '@/components/research/BrowseFilterShell';
 
 export const metadata: Metadata = {
   title: 'Approved Drugs | Research Library | Pep Nation Lab',
   robots: { index: false, follow: false },
 };
 
+export const dynamic = 'force-dynamic';
+
 export default async function ResearchApprovedDrugsPage() {
-  const compounds = (await getAllCompounds()).filter((c) => c.evidence_tier === 'approved_drug');
+  type C = Awaited<ReturnType<typeof getAllCompounds>>[0] & { year_first_approved?: number | null };
+  const compounds = (await getAllCompounds()).filter((c) => c.evidence_tier === 'approved_drug') as C[];
   const sorted = [...compounds].sort((a, b) => {
-    const ay = (a as unknown as { year_first_approved?: number | null }).year_first_approved ?? 0;
-    const by = (b as unknown as { year_first_approved?: number | null }).year_first_approved ?? 0;
+    const ay = a.year_first_approved ?? 0;
+    const by = b.year_first_approved ?? 0;
     if (by !== ay) return by - ay;
     return a.display_name.localeCompare(b.display_name);
   });
+
+  // Group by category
+  const categoryMap = new Map<string, C[]>();
+  for (const c of sorted) {
+    const cat = c.category || 'Uncategorized';
+    if (!categoryMap.has(cat)) categoryMap.set(cat, []);
+    categoryMap.get(cat)!.push(c);
+  }
+  const sortedCategories = Array.from(categoryMap.keys()).sort((a, b) => a.localeCompare(b));
+
+  function ApprovalCard({ c }: { c: C }) {
+    const t = evidenceTier(c.evidence_tier);
+    return (
+      <Link
+        href={`/research/${c.slug}`}
+        className="card-metal"
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 'var(--space-1, 4px)',
+          padding: 'var(--space-4, 16px)',
+          borderRadius: 'var(--radius-lg, 12px)',
+          textDecoration: 'none',
+          color: 'var(--white, #FFFFFF)',
+        }}
+      >
+        <span
+          style={{
+            display: 'inline-flex',
+            alignSelf: 'flex-start',
+            fontSize: '0.7rem',
+            fontWeight: 700,
+            textTransform: 'uppercase',
+            letterSpacing: '0.04em',
+            color: t.color,
+            border: `1px solid ${t.color}`,
+            borderRadius: '999px',
+            padding: '2px 10px',
+          }}
+        >
+          {t.label}
+        </span>
+        <span style={{ fontSize: '1.05rem', fontWeight: 700 }}>{c.display_name}</span>
+        {c.category && <span style={{ fontSize: '0.78rem', color: 'var(--teal, #00C4BC)' }}>{c.category}</span>}
+        {c.year_first_approved && (
+          <span style={{ fontSize: '0.75rem', color: 'var(--silver, #A8B4C0)' }}>Approved {c.year_first_approved}</span>
+        )}
+        {c.plain_summary && (
+          <span style={{ fontSize: '0.78rem', color: 'var(--silver-light, #D0DAE4)', marginTop: '4px' }}>
+            {c.plain_summary}
+          </span>
+        )}
+        {c.wada_status && c.wada_status !== 'not_listed' && (
+          <span style={{ fontSize: '0.72rem', color: 'var(--silver, #A8B4C0)' }}>{wadaLabel(c.wada_status)}</span>
+        )}
+      </Link>
+    );
+  }
+
+  const shellGroups = [
+    {
+      key: 'all',
+      label: 'All Approved',
+      count: sorted.length,
+      children: (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 'var(--space-3, 12px)' }}>
+          {sorted.map((c) => <ApprovalCard key={c.slug} c={c} />)}
+        </div>
+      ),
+    },
+    ...sortedCategories.map((cat) => {
+      const items = categoryMap.get(cat)!;
+      return {
+        key: cat,
+        label: cat,
+        count: items.length,
+        children: (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 'var(--space-3, 12px)' }}>
+            {items.map((c) => <ApprovalCard key={c.slug} c={c} />)}
+          </div>
+        ),
+      };
+    }),
+  ];
 
   return (
     <div style={{ maxWidth: '1100px', margin: '0 auto', padding: 'var(--space-6, 32px) var(--space-4, 16px)' }}>
@@ -33,7 +122,7 @@ export default async function ResearchApprovedDrugsPage() {
           Approved Drugs
         </h1>
         <p style={{ color: 'var(--silver, #A8B4C0)', fontSize: '1.05rem', marginTop: 'var(--space-2, 8px)', maxWidth: '760px' }}>
-          Compounds With FDA, EMA, Or Other Regulatory Approval. Ranked Most-Recent Approval First.
+          Compounds With FDA, EMA, Or Other Regulatory Approval. Filter By Category Below.
         </p>
       </header>
 
@@ -42,27 +131,7 @@ export default async function ResearchApprovedDrugsPage() {
           No Approved Drugs In The Catalog.
         </div>
       ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 'var(--space-3, 12px)' }}>
-          {sorted.map((c) => {
-            const t = evidenceTier(c.evidence_tier);
-            const yr = (c as unknown as { year_first_approved?: number | null }).year_first_approved ?? null;
-            return (
-              <Link
-                key={c.slug}
-                href={`/research/${c.slug}`}
-                className="card-metal"
-                style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-1, 4px)', padding: 'var(--space-4, 16px)', borderRadius: 'var(--radius-lg, 12px)', textDecoration: 'none', color: 'var(--white, #FFFFFF)' }}
-              >
-                <span style={{ display: 'inline-flex', alignSelf: 'flex-start', fontSize: '0.7rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: t.color, border: `1px solid ${t.color}`, borderRadius: '999px', padding: '2px 10px' }}>{t.label}</span>
-                <span style={{ fontSize: '1.05rem', fontWeight: 700 }}>{c.display_name}</span>
-                {c.category && <span style={{ fontSize: '0.78rem', color: 'var(--teal, #00C4BC)' }}>{c.category}</span>}
-                {yr && <span style={{ fontSize: '0.75rem', color: 'var(--silver, #A8B4C0)' }}>Approved {yr}</span>}
-                {c.plain_summary && <span style={{ fontSize: '0.78rem', color: 'var(--silver-light, #D0DAE4)', marginTop: '4px' }}>{c.plain_summary}</span>}
-                {c.wada_status && c.wada_status !== 'not_listed' && <span style={{ fontSize: '0.72rem', color: 'var(--silver, #A8B4C0)' }}>{wadaLabel(c.wada_status)}</span>}
-              </Link>
-            );
-          })}
-        </div>
+        <BrowseFilterShell groups={shellGroups} emptyMessage="No Approved Drugs In This Category." />
       )}
     </div>
   );

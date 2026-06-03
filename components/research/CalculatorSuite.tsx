@@ -124,10 +124,25 @@ function Reconstitution() {
           <input style={inputStyle} type="number" min={0} value={targetConc} onChange={(e) => setTargetConc(e.target.value)} />
         </div>
       </div>
-      <div style={resultStyle}>
-        Add{' '}
-        <strong>{volMl === null ? '-' : volMl.toFixed(2)} mL</strong>{' '}
-        Of Sterile Diluent To Reach The Target Concentration.
+      <div style={{ ...resultStyle, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
+        <span>
+          Add{' '}
+          <strong>{volMl === null ? '-' : volMl.toFixed(2)} mL</strong>{' '}
+          Of Sterile Diluent To Reach The Target Concentration.
+        </span>
+        {volMl !== null && (
+          <button
+            type="button"
+            onClick={() => setDiluentMl(volMl.toFixed(2))}
+            style={{
+              fontSize: 12, fontWeight: 700, padding: '4px 10px', borderRadius: 6,
+              background: 'rgba(0,196,188,0.18)', border: '1px solid rgba(0,196,188,0.45)',
+              color: '#00C4BC', cursor: 'pointer', whiteSpace: 'nowrap',
+            }}
+          >
+            ↓ Use This Volume Below
+          </button>
+        )}
       </div>
 
       <h3 style={{ margin: '20px 0 6px', color: '#FFFFFF', fontSize: 15 }}>Draw Volume Helper</h3>
@@ -314,8 +329,8 @@ function StabilitySection() {
       </div>
       <div style={resultStyle}>
         {days === null
-          ? 'Enter Valid Inputs.'
-          : <>Predicted Shelf: <strong>{days.toFixed(1)} Days</strong> At {tTo} C</>
+          ? 'Enter Valid Inputs (Temperatures Must Be Above −273°C).'
+          : <>Predicted Shelf: <strong>{days.toFixed(1)} Days</strong> At {tTo}°C</>
         }
       </div>
       <p style={noteStyle}>{RESEARCH_NOTE}</p>
@@ -451,8 +466,12 @@ function HplcRtSection() {
       </div>
       <div style={resultStyle}>
         {rt === null
-          ? 'Enter A Valid One-Letter Sequence.'
-          : <>Predicted Retention Time: <strong>{rt.toFixed(2)} Min</strong> (C18, 0.1% TFA)</>
+          ? Number(end) <= Number(start)
+            ? 'Gradient End Must Be Greater Than Gradient Start.'
+            : 'Enter A Valid One-Letter Sequence.'
+          : <>
+              Predicted Retention Time: <strong>{rt.toFixed(2)} Min</strong> (C18, 0.1% TFA)
+            </>
         }
       </div>
       <p style={noteStyle}>{RESEARCH_NOTE}</p>
@@ -525,7 +544,7 @@ function MassSpecSection() {
           <tbody>
             {peaks.map((p) => (
               <tr key={p.charge}>
-                <td style={{ padding: 8, color: '#FFFFFF' }}>{`+${p.charge}`}</td>
+                <td style={{ padding: 8, color: '#FFFFFF' }}>{mode === 'negative' ? `-${p.charge}` : `+${p.charge}`}</td>
                 <td style={{ padding: 8, color: '#00C4BC', fontWeight: 600 }}>{p.mz.toFixed(4)}</td>
                 <td style={{ padding: 8, color: '#D0DAE4' }}>{p.intensity.toFixed(3)}</td>
               </tr>
@@ -696,8 +715,8 @@ function VialQuantitySection() {
         {!out ? 'Enter Valid Inputs.' : (
           <>
             Vials Needed: <strong>{out.vialsNeeded.toLocaleString()}</strong>{'  '}|{'  '}
-            Per-Subject Mass: <strong>{out.perSubjectMg.toFixed(2)} mg</strong>{'  '}|{'  '}
-            Total Mass: <strong>{out.totalMg.toFixed(2)} mg</strong>
+            Per-Subject Mass: <strong>{Number(out.perSubjectMg).toPrecision(4)} mg</strong>{'  '}|{'  '}
+            Total Mass: <strong>{Number(out.totalMg).toPrecision(6)} mg</strong>
           </>
         )}
       </div>

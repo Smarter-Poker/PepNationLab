@@ -1,12 +1,13 @@
 /**
- * Browse compounds clustered by mechanism keyword.
- * Server component.
+ * Browse compounds by mechanism keyword cluster.
+ * Progressive disclosure: mechanism filter tabs.
  */
 
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { getAllCompounds } from '@/lib/compounds-server';
 import { evidenceTier, wadaLabel } from '@/lib/compounds';
+import BrowseFilterShell from '@/components/research/BrowseFilterShell';
 
 export const metadata: Metadata = {
   title: 'Browse By Mechanism | Research Library | Pep Nation Lab',
@@ -15,23 +16,93 @@ export const metadata: Metadata = {
 
 export const dynamic = 'force-dynamic';
 
-function mechanismKey(m: string | null): string {
-  if (!m || !m.trim()) return 'Unspecified Mechanism';
-  const words = m.trim().toLowerCase().split(/\s+/).slice(0, 3).join(' ');
-  return words.replace(/(^|\s)\S/g, (s) => s.toUpperCase());
+function toTitleCase(str: string) {
+  return str.replace(/\w\S*/g, (txt) => txt.charAt(0).toUpperCase() + txt.slice(1).toLowerCase());
+}
+
+function extractMechanismKey(mechanism: string | null | undefined): string {
+  if (!mechanism) return 'Unclassified';
+  const words = mechanism.trim().split(/\s+/).slice(0, 3).join(' ');
+  return toTitleCase(words);
 }
 
 export default async function ResearchByMechanismPage() {
   const all = await getAllCompounds();
-  const sorted = [...all].sort((a, b) => a.display_name.localeCompare(b.display_name));
 
-  const buckets = new Map<string, typeof sorted>();
-  for (const c of sorted) {
-    const key = mechanismKey(c.mechanism);
+  const buckets = new Map<string, typeof all>();
+  for (const c of all) {
+    const key = extractMechanismKey((c as unknown as { mechanism?: string }).mechanism);
     if (!buckets.has(key)) buckets.set(key, []);
     buckets.get(key)!.push(c);
   }
-  const keys = Array.from(buckets.keys()).sort((a, b) => buckets.get(b)!.length - buckets.get(a)!.length || a.localeCompare(b));
+
+  // Sort by descending compound count, then alpha
+  const keys = Array.from(buckets.keys()).sort((a, b) => {
+    const diff = (buckets.get(b)?.length ?? 0) - (buckets.get(a)?.length ?? 0);
+    return diff !== 0 ? diff : a.localeCompare(b);
+  });
+
+  const shellGroups = keys.map((key) => {
+    const items = buckets.get(key)!;
+    return {
+      key,
+      label: key,
+      count: items.length,
+      children: (
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))',
+            gap: 'var(--space-3, 12px)',
+          }}
+        >
+          {items.map((c) => {
+            const t = evidenceTier(c.evidence_tier);
+            return (
+              <Link
+                key={c.slug}
+                href={`/research/${c.slug}`}
+                className="card-metal"
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 'var(--space-1, 4px)',
+                  padding: 'var(--space-3, 12px) var(--space-4, 16px)',
+                  borderRadius: 'var(--radius-lg, 12px)',
+                  textDecoration: 'none',
+                  color: 'var(--white, #FFFFFF)',
+                }}
+              >
+                <span style={{ fontSize: '0.7rem', color: t.color, textTransform: 'uppercase', letterSpacing: '0.04em', fontWeight: 700 }}>
+                  {t.label}
+                </span>
+                <span style={{ fontSize: '1rem', fontWeight: 700 }}>{c.display_name}</span>
+                {c.plain_summary && (
+                  <span
+                    style={{
+                      fontSize: '0.78rem',
+                      color: 'var(--silver, #A8B4C0)',
+                      display: '-webkit-box',
+                      WebkitLineClamp: 2,
+                      WebkitBoxOrient: 'vertical',
+                      overflow: 'hidden',
+                    }}
+                  >
+                    {c.plain_summary}
+                  </span>
+                )}
+                {c.wada_status && c.wada_status !== 'not_listed' && (
+                  <span style={{ fontSize: '0.7rem', color: 'var(--silver, #A8B4C0)', marginTop: '4px' }}>
+                    {wadaLabel(c.wada_status)}
+                  </span>
+                )}
+              </Link>
+            );
+          })}
+        </div>
+      ),
+    };
+  });
 
   return (
     <div style={{ maxWidth: '1100px', margin: '0 auto', padding: 'var(--space-6, 32px) var(--space-4, 16px)' }}>
@@ -45,45 +116,17 @@ export default async function ResearchByMechanismPage() {
           Browse By Mechanism
         </h1>
         <p style={{ color: 'var(--silver, #A8B4C0)', fontSize: '1.05rem', marginTop: 'var(--space-2, 8px)', maxWidth: '760px' }}>
-          Compounds Clustered By Stated Mechanism Of Action.
+          Compounds Clustered By Primary Mechanism Of Action. Select A Mechanism Below.
         </p>
       </header>
 
-      {keys.length === 0 && (
+      {shellGroups.length === 0 ? (
         <div className="card-glass" style={{ padding: 'var(--space-5, 24px)', borderRadius: 'var(--radius-lg, 12px)', color: 'var(--silver, #A8B4C0)' }}>
-          No Mechanism Annotations Are Currently Indexed.
+          Mechanism Data Will Populate As The Catalog Is Enriched.
         </div>
+      ) : (
+        <BrowseFilterShell groups={shellGroups} emptyMessage="No Compounds In This Mechanism Category." />
       )}
-
-      {keys.map((k) => (
-        <section key={k} style={{ marginBottom: 'var(--space-6, 32px)', scrollMarginTop: '90px' }}>
-          <h2 style={{ fontSize: '1.3rem', fontWeight: 800, color: 'var(--teal, #00C4BC)', marginBottom: 'var(--space-3, 12px)' }}>
-            {k} ({buckets.get(k)!.length})
-          </h2>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 'var(--space-3, 12px)' }}>
-            {buckets.get(k)!.map((c) => {
-              const t = evidenceTier(c.evidence_tier);
-              return (
-                <Link
-                  key={c.slug}
-                  href={`/research/${c.slug}`}
-                  className="card-metal"
-                  style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-1, 4px)', padding: 'var(--space-3, 12px) var(--space-4, 16px)', borderRadius: 'var(--radius-lg, 12px)', textDecoration: 'none', color: 'var(--white, #FFFFFF)' }}
-                >
-                  <span style={{ fontSize: '0.7rem', color: t.color, textTransform: 'uppercase', letterSpacing: '0.04em', fontWeight: 700 }}>{t.label}</span>
-                  <span style={{ fontSize: '1rem', fontWeight: 700 }}>{c.display_name}</span>
-                  {c.plain_summary && (
-                    <span style={{ fontSize: '0.78rem', color: 'var(--silver, #A8B4C0)', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{c.plain_summary}</span>
-                  )}
-                  {c.wada_status && c.wada_status !== 'not_listed' && (
-                    <span style={{ fontSize: '0.7rem', color: 'var(--silver, #A8B4C0)', marginTop: '4px' }}>{wadaLabel(c.wada_status)}</span>
-                  )}
-                </Link>
-              );
-            })}
-          </div>
-        </section>
-      ))}
     </div>
   );
 }
