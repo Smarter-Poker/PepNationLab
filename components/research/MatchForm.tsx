@@ -125,9 +125,11 @@ function MatchFormInner() {
   const [requireLongHalfLife, setRequireLongHalfLife] = useState<boolean>(searchParams.get('long_half_life') === 'true');
   const [excludeSlugs, setExcludeSlugs] = useState<string[]>(searchParams.getAll('exclude') || []);
   const [preference, setPreference] = useState<'single' | 'stack' | 'either'>((searchParams.get('preference') as 'single' | 'stack' | 'either') || 'either');
+  const [budget, setBudget] = useState<'conservative' | 'standard' | 'unlimited'>((searchParams.get('budget') as 'conservative' | 'standard' | 'unlimited') || 'standard');
 
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState<MatchResult[] | null>(null);
+  const [excludedCompounds, setExcludedCompounds] = useState<any[]>([]);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [showCompare, setShowCompare] = useState(false);
 
@@ -135,7 +137,7 @@ function MatchFormInner() {
   const [aiLoading, setAiLoading] = useState(false);
 
   // Wizard state
-  const [step, setStep] = useState(1);
+  const [step, setStep] = useState(searchParams.get('run') === 'true' ? 5 : 1);
   const [saving, setSaving] = useState(false);
   const [selectedDrawerCompound, setSelectedDrawerCompound] = useState<MatchResult | null>(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
@@ -150,16 +152,17 @@ function MatchFormInner() {
     if (excludeInjectables) params.set('no_injectables', 'true');
     if (requireLongHalfLife) params.set('long_half_life', 'true');
     if (preference && preference !== 'either') params.set('preference', preference);
+    if (budget && budget !== 'standard') params.set('budget', budget);
     excludeSlugs.forEach(s => params.append('exclude', s));
     router.replace(`${pathname}?${params.toString()}`, { scroll: false });
-  }, [goal, evidenceComfort, wadaConstraint, riskTolerance, excludeInjectables, requireLongHalfLife, preference, excludeSlugs, pathname, router]);
+  }, [goal, evidenceComfort, wadaConstraint, riskTolerance, excludeInjectables, requireLongHalfLife, preference, budget, excludeSlugs, pathname, router]);
 
   async function onSubmit(e?: React.FormEvent, overrides?: any) {
     if (e) e.preventDefault();
     setLoading(true);
     setErrorMsg(null);
     try {
-      const payload = overrides ? overrides : { goal, evidenceComfort, wadaConstraint, riskTolerance, excludeInjectables, requireLongHalfLife, excludeSlugs, preference };
+      const payload = overrides ? overrides : { goal, evidenceComfort, wadaConstraint, riskTolerance, excludeInjectables, requireLongHalfLife, excludeSlugs, preference, budget };
       const res = await fetch('/api/research/match', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -171,6 +174,7 @@ function MatchFormInner() {
         return;
       }
       setResults(data.results ?? []);
+      setExcludedCompounds((data as any).excluded ?? []);
     } catch {
       setErrorMsg('Network Error. Please Try Again.');
     } finally {
@@ -178,9 +182,17 @@ function MatchFormInner() {
     }
   }
 
-  // Trigger search if excludeSlugs change, so exclusion happens immediately
+  // Auto-run if deep linked
   useEffect(() => {
-    if (excludeSlugs.length > 0 && results) {
+    if (searchParams.get('run') === 'true') {
+      onSubmit();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    // Only re-run if we already have results (meaning we are on step 5)
+    if (results !== null) {
       onSubmit();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -209,6 +221,7 @@ function MatchFormInner() {
         if (typeof data.result.excludeInjectables === 'boolean') setExcludeInjectables(data.result.excludeInjectables);
         if (typeof data.result.requireLongHalfLife === 'boolean') setRequireLongHalfLife(data.result.requireLongHalfLife);
         if (data.result.preference) setPreference(data.result.preference);
+        if (data.result.budget) setBudget(data.result.budget);
         setAiPrompt('');
         
         // Use overrides to bypass React closure state delays
@@ -220,6 +233,7 @@ function MatchFormInner() {
           excludeInjectables: typeof data.result.excludeInjectables === 'boolean' ? data.result.excludeInjectables : excludeInjectables,
           requireLongHalfLife: typeof data.result.requireLongHalfLife === 'boolean' ? data.result.requireLongHalfLife : requireLongHalfLife,
           preference: data.result.preference || preference,
+          budget: data.result.budget || budget,
           excludeSlugs
         });
       }
@@ -233,7 +247,7 @@ function MatchFormInner() {
   async function handleSaveMatch() {
     setSaving(true);
     try {
-      const payload = { goal, evidenceComfort, wadaConstraint, riskTolerance, excludeInjectables, requireLongHalfLife, preference, excludeSlugs };
+      const payload = { goal, evidenceComfort, wadaConstraint, riskTolerance, excludeInjectables, requireLongHalfLife, preference, budget, excludeSlugs };
       const res = await saveMatchAction(payload, results || []);
       if (res.error) {
         toast.error(res.error);
@@ -387,6 +401,15 @@ function MatchFormInner() {
                 </select>
               </div>
 
+              <div>
+                <label className="block text-sm font-bold text-white mb-2">Budget Sensitivity</label>
+                <select value={budget} onChange={(e) => setBudget(e.target.value as any)} className="w-full max-w-md p-3 rounded-md border border-[#1D2D3E] bg-[#0F1923] text-white">
+                  <option value="standard">Standard Budget</option>
+                  <option value="conservative">Conservative (Cost-Sensitive)</option>
+                  <option value="unlimited">Unlimited (Ignore Cost)</option>
+                </select>
+              </div>
+
               <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                 <label style={{ display: 'flex', alignItems: 'center', gap: '12px', color: 'white', fontSize: '1.05rem', cursor: 'pointer' }}>
                   <input type="checkbox" checked={excludeInjectables} onChange={e => setExcludeInjectables(e.target.checked)} style={{ width: 20, height: 20 }} />
@@ -431,7 +454,7 @@ function MatchFormInner() {
               </div>
             </div>
 
-            {loading && (
+            {loading && !results && (
               <div style={{ textAlign: 'center', padding: '64px', color: 'var(--teal)' }}>
                 <Sparkles size={48} className="animate-pulse mx-auto mb-4" />
                 <h3 style={{ fontSize: '1.5rem', color: 'white' }}>Running Deterministic Match Engine...</h3>
@@ -439,13 +462,13 @@ function MatchFormInner() {
             )}
 
             {!loading && errorMsg && (
-              <p className="no-print" style={{ color: '#E53E3E', background: 'rgba(229,62,62,0.08)', border: '1px solid rgba(229,62,62,0.3)', borderRadius: '8px', padding: '12px' }}>
+              <p className="no-print" style={{ color: '#E53E3E', background: 'rgba(229,62,62,0.08)', border: '1px solid rgba(229,62,62,0.3)', borderRadius: '8px', padding: '12px', marginBottom: '16px' }}>
                 {errorMsg}
               </p>
             )}
 
-            {!loading && results && stackPartners.length >= 2 && (
-              <div className="glass-panel" style={{ borderColor: 'var(--teal, #00C4BC)', marginBottom: '1.5rem', background: 'rgba(0,196,188,0.05)' }}>
+            {results && stackPartners.length >= 2 && (
+              <div className="glass-panel" style={{ borderColor: 'var(--teal, #00C4BC)', marginBottom: '1.5rem', background: 'rgba(0,196,188,0.05)', opacity: loading ? 0.5 : 1, transition: 'opacity 0.2s' }}>
                 <h4 style={{ display: 'flex', alignItems: 'center', gap: '8px', margin: '0 0 8px 0', color: 'var(--teal, #00C4BC)' }}>
                   <Info size={18} /> Synergistic Stack Detected
                 </h4>
@@ -461,15 +484,27 @@ function MatchFormInner() {
             {!loading && results && results.length === 0 && (
               <div className="glass-panel" style={{ textAlign: 'center', padding: '48px' }}>
                 <p style={{ color: 'var(--silver)', fontSize: '1.2rem', marginBottom: '24px' }}>No Matching Compounds Survived Your Constraints.</p>
-                <button onClick={() => setStep(2)} className="btn-primary">Loosen Constraints</button>
+                <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
+                  <button onClick={() => setStep(2)} className="btn-primary">Loosen Constraints</button>
+                  {excludeSlugs.length > 0 && (
+                    <button onClick={() => setExcludeSlugs([])} className="btn-secondary">Clear Exclusions</button>
+                  )}
+                </div>
               </div>
             )}
 
-            {!loading && results && results.length > 0 && (
-              <>
-                <h3 style={{ fontSize: '1.3rem', fontWeight: 800, color: 'var(--white, #FFFFFF)', margin: '0 0 var(--space-4, 16px)' }}>
-                  Top {results.length} {results.length === 1 ? 'Match' : 'Matches'}
-                </h3>
+            {results && results.length > 0 && (
+              <div style={{ opacity: loading ? 0.5 : 1, transition: 'opacity 0.2s', pointerEvents: loading ? 'none' : 'auto' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-4, 16px)' }}>
+                  <h3 style={{ fontSize: '1.3rem', fontWeight: 800, color: 'var(--white, #FFFFFF)', margin: 0 }}>
+                    Top {results.length} {results.length === 1 ? 'Match' : 'Matches'} {loading && <Sparkles size={16} className="animate-pulse inline" />}
+                  </h3>
+                  {excludeSlugs.length > 0 && (
+                    <button onClick={() => setExcludeSlugs([])} className="no-print" style={{ background: 'rgba(229,62,62,0.1)', color: '#F08A8A', border: '1px solid rgba(229,62,62,0.3)', borderRadius: '8px', padding: '6px 12px', fontSize: '0.8rem', fontWeight: 700, cursor: 'pointer' }}>
+                      Clear Exclusions ({excludeSlugs.length})
+                    </button>
+                  )}
+                </div>
                 <div style={{ display: 'grid', gap: 'var(--space-4, 16px)' }}>
                   {results.map((r, idx) => (
                     <div key={r.slug} className="glass-panel" style={{ position: 'relative', padding: 'var(--space-5, 24px)', borderRadius: 'var(--radius-lg, 12px)' }}>
@@ -528,7 +563,23 @@ function MatchFormInner() {
                     </div>
                   ))}
                 </div>
-              </>
+
+                {excludedCompounds && excludedCompounds.length > 0 && (
+                  <div className="no-print glass-panel" style={{ marginTop: '32px', background: 'rgba(255,255,255,0.02)', padding: '24px', borderRadius: '12px' }}>
+                    <h4 style={{ color: 'var(--silver)', marginBottom: '16px', fontSize: '1rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <Info size={16} /> Famous Compounds Excluded
+                    </h4>
+                    <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      {excludedCompounds.map(ec => (
+                        <li key={ec.slug} style={{ display: 'flex', alignItems: 'center', gap: '12px', fontSize: '0.9rem' }}>
+                          <span style={{ color: 'var(--teal)', fontWeight: 600, minWidth: '120px' }}>{ec.displayName}</span>
+                          <span style={{ color: 'var(--silver)' }}>{ec.reason}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
             )}
           </motion.div>
         )}

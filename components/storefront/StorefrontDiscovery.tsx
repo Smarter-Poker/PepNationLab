@@ -49,6 +49,12 @@ export interface MatchedProduct {
   molecularWeight?: number;
 }
 
+export interface ExcludedCompound {
+  slug: string;
+  displayName: string;
+  reason: string;
+}
+
 export interface DiscoveryHeroProps {
   /** Compound slug -> Compound (the same prop AgentStorefrontGrid already gets). */
   compoundsBySlug: Record<string, Compound>;
@@ -170,6 +176,7 @@ function MatchResultsDrawer({
   open,
   loading,
   results,
+  excluded,
   goalSummary,
   onClose,
   onAddToCart,
@@ -179,7 +186,10 @@ function MatchResultsDrawer({
   open: boolean;
   loading: boolean;
   results: MatchedProduct[];
+  excluded: ExcludedCompound[];
   goalSummary: string;
+  followUp: { question: string; originalGoal: string } | null;
+  submitFollowUp: (answer: string) => void;
   onClose: () => void;
   onAddToCart: (productId: string) => void;
   onOpenProduct: (productId: string) => void;
@@ -1009,7 +1019,9 @@ export default function DiscoveryHero({
   const [showAllAreas, setShowAllAreas] = useState(false);
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState<MatchedProduct[]>([]);
+  const [excluded, setExcluded] = useState<ExcludedCompound[]>([]);
   const [goalSummary, setGoalSummary] = useState('');
+  const [followUp, setFollowUp] = useState<{ question: string; originalGoal: string } | null>(null);
 
   const availableAreas = useMemo(() => deriveAvailableAreas(compoundsBySlug), [compoundsBySlug]);
 
@@ -1019,13 +1031,16 @@ export default function DiscoveryHero({
     wadaConstraint?: 'wada_permitted_only' | 'no_constraint';
     riskTolerance?: 'low_only' | 'moderate_ok' | 'any';
     preference?: 'single' | 'stack' | 'either';
+    budget?: 'conservative' | 'standard' | 'unlimited';
     excludeInjectables?: boolean;
     requireLongHalfLife?: boolean;
   }, summary: string) => {
     setLoading(true);
     setResults([]);
+    setExcluded([]);
     setGoalSummary(summary);
     setDrawerOpen(true);
+    setFollowUp(null);
     try {
       const res = await fetch('/api/research/match', {
         method: 'POST',
@@ -1037,6 +1052,7 @@ export default function DiscoveryHero({
             wadaConstraint: input.wadaConstraint || 'no_constraint',
             riskTolerance: input.riskTolerance || 'moderate_ok',
             preference: input.preference,
+            budget: input.budget || 'standard',
             excludeInjectables: input.excludeInjectables,
             requireLongHalfLife: input.requireLongHalfLife,
           },
@@ -1052,6 +1068,7 @@ export default function DiscoveryHero({
           halfLife?: string;
           molecularWeight?: number;
         }>;
+        excluded?: ExcludedCompound[];
       } | null;
       const slugs = (json?.results || []).map(r => r.slug).filter(Boolean);
       
@@ -1073,6 +1090,7 @@ export default function DiscoveryHero({
         };
       });
       setResults(stitched);
+      setExcluded(json?.excluded || []);
     } catch {
       setResults([]);
     } finally {
@@ -1097,15 +1115,50 @@ export default function DiscoveryHero({
       const data = await res.json().catch(() => null);
       
       if (data?.result) {
-        await runMatch(data.result, g);
+        if (data.result.followUpQuestion) {
+          setFollowUp({ question: data.result.followUpQuestion, originalGoal: g });
+          setLoading(false);
+          // Wait for user to answer
+        } else {
+          await runMatch(data.result, g);
+        }
       } else {
-        await runMatch({ goal: g }, g);
+        setDrawerOpen(false);
+        setLoading(false);
       }
-    } catch (e) {
-      console.error(e);
-      await runMatch({ goal: g }, g);
+    } catch {
+      setDrawerOpen(false);
+      setLoading(false);
     }
   }, [query, runMatch]);
+
+  const submitFollowUp = useCallback(async (answer: string) => {
+    if (!followUp) return;
+    const combined = `${followUp.originalGoal}. Clarification: ${answer}`;
+    
+    setLoading(true);
+    setFollowUp(null);
+    setGoalSummary(combined);
+
+    try {
+      const res = await fetch('/api/research/ai-match', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt: combined })
+      });
+      const data = await res.json().catch(() => null);
+      if (data?.result) {
+        // If it asks ANOTHER follow-up, just force the match without it to prevent loops
+        await runMatch(data.result, combined);
+      } else {
+        setDrawerOpen(false);
+      }
+    } catch {
+      setDrawerOpen(false);
+    } finally {
+      setLoading(false);
+    }
+  }, [followUp, runMatch]);
 
   return (
     <>
@@ -1272,7 +1325,10 @@ export default function DiscoveryHero({
         open={drawerOpen}
         loading={loading}
         results={results}
+        excluded={excluded}
         goalSummary={goalSummary}
+        followUp={followUp}
+        submitFollowUp={submitFollowUp}
         primaryColor={primaryColor}
         onClose={() => setDrawerOpen(false)}
         onAddToCart={(id) => { setDrawerOpen(false); onAddToCart(id); }}

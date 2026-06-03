@@ -11,8 +11,9 @@
 
 import { useEffect, useState, useMemo } from 'react';
 import { createPortal } from 'react-dom';
-import { X, Scale } from 'lucide-react';
+import { X, Scale, ChevronDown, ChevronRight, GripHorizontal, ChevronLeft } from 'lucide-react';
 import { evidenceTier, type Compound, RISK_META, researchAreaLabel, wadaLabel } from '@/lib/compounds';
+import InCellGlossaryTooltip from '../research/InCellGlossaryTooltip';
 
 interface PinnedItem {
   productName: string;
@@ -24,7 +25,7 @@ interface PinnedItem {
 }
 
 const STORAGE_KEY = 'pnl:compare';
-const MAX_PINNED = 3;
+const MAX_PINNED = 4; // bumped to 4
 
 function readPinned(): PinnedItem[] {
   if (typeof window === 'undefined') return [];
@@ -85,7 +86,7 @@ const labelCellStyle: React.CSSProperties = {
 
 const groupCellStyle: React.CSSProperties = {
   padding: 'var(--space-3, 12px)',
-  background: 'rgba(192,197,206,0.08)',
+  background: 'linear-gradient(rgba(192,197,206,0.1), rgba(192,197,206,0.1)), #0F161E',
   borderTop: '1px solid rgba(192,197,206,0.3)',
   borderBottom: '1px solid rgba(192,197,206,0.3)',
   color: 'var(--teal, #C0C5CE)',
@@ -93,6 +94,8 @@ const groupCellStyle: React.CSSProperties = {
   fontSize: '0.72rem',
   letterSpacing: '0.06em',
   textTransform: 'uppercase',
+  cursor: 'pointer',
+  userSelect: 'none',
 };
 
 const NL = 'Not Listed';
@@ -100,6 +103,24 @@ function txt(v: unknown): string {
   const s = (v ?? '').toString().trim();
   return s || NL;
 }
+
+function parseHalfLifeHours(hl: string | null | undefined): number {
+  if (!hl) return 0;
+  const s = hl.toLowerCase();
+  const match = s.match(/(\d+(?:\.\d+)?)/);
+  if (!match) return 0;
+  const num = parseFloat(match[1]);
+  if (s.includes('min')) return num / 60;
+  if (s.includes('day')) return num * 24;
+  if (s.includes('week')) return num * 24 * 7;
+  return num; // assume hours by default
+}
+
+const KNOWN_SYNERGIES = [
+  { pairs: ['bpc-157', 'tb-500'], message: 'Synergy Detected: BPC-157 and TB-500 act highly synergistically for combined systemic and localized tissue/tendon repair.' },
+  { pairs: ['cjc-1295-without-dac', 'ipamorelin'], message: 'Synergy Detected: CJC-1295 + Ipamorelin stack amplifies GH pulse amplitude without spiking cortisol or prolactin.' },
+  { pairs: ['tirzepatide', 'retatrutide'], message: 'Warning: Compounding GLP-1/GIP agonists may lead to severe gastrointestinal distress.' }
+];
 
 export default function StorefrontCompareDrawer({ 
   primaryColor,
@@ -113,6 +134,26 @@ export default function StorefrontCompareDrawer({
   const [collapsed, setCollapsed] = useState(false);
   const [showMatrix, setShowMatrix] = useState(false);
   const [diffMode, setDiffMode] = useState(false);
+  
+  // Accordion State
+  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
+
+  // Mobile View UX
+  const [mobileViewIndex, setMobileViewIndex] = useState<number>(1);
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 768);
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  useEffect(() => {
+    if (mobileViewIndex >= pinned.length && pinned.length > 1) {
+      setMobileViewIndex(pinned.length - 1);
+    }
+  }, [pinned.length, mobileViewIndex]);
 
   useEffect(() => {
     setMounted(true);
@@ -174,11 +215,67 @@ export default function StorefrontCompareDrawer({
     writePinned([]);
   }
 
-  const ROWS = useMemo(() => {
+  const handleDragStart = (e: React.DragEvent, index: number) => {
+    e.dataTransfer.setData('text/plain', index.toString());
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handleDrop = (e: React.DragEvent, targetIndex: number) => {
+    e.preventDefault();
+    const sourceIndex = parseInt(e.dataTransfer.getData('text/plain'), 10);
+    if (sourceIndex === targetIndex || isNaN(sourceIndex)) return;
+    
+    setPinned(prev => {
+      const next = [...prev];
+      const [removed] = next.splice(sourceIndex, 1);
+      next.splice(targetIndex, 0, removed);
+      writePinned(next);
+      return next;
+    });
+  };
+
+  const toggleGroup = (label: string) => {
+    setCollapsedGroups(prev => {
+      const n = new Set(prev);
+      if (n.has(label)) n.delete(label);
+      else n.add(label);
+      return n;
+    });
+  };
+
+  type RowDef =
+    | { kind: 'group'; label: string }
+    | { 
+        kind: 'data'; 
+        label: string; 
+        glossaryTerm?: string;
+        bestLogic?: 'max' | 'min';
+        getRawScore?: (p: PinnedItem) => number;
+        getValue: (p: PinnedItem) => any; 
+        render: (p: PinnedItem) => React.ReactNode 
+      };
+
+  const ROWS: RowDef[] = useMemo(() => {
     return [
+      { kind: 'group', label: 'Commercial' },
+      {
+        kind: 'data', label: 'Price Per Vial',
+        bestLogic: 'min',
+        getRawScore: (p) => p.pricePerVialDollars ?? Infinity,
+        getValue: (p) => p.pricePerVialDollars ?? Infinity,
+        render: (p) => p.pricePerVialDollars != null ? <span style={{ color: primaryColor, fontWeight: 800 }}>${Number(p.pricePerVialDollars).toFixed(2)}</span> : NL
+      },
       { kind: 'group', label: 'Evidence & Risk' },
       {
-        kind: 'data', label: 'Evidence Tier',
+        kind: 'data', label: 'Evidence Tier', glossaryTerm: 'Evidence Tier',
+        bestLogic: 'max',
+        getRawScore: (p) => {
+          if (p.evidenceTierKey === 'approved_drug') return 5;
+          if (p.evidenceTierKey === 'investigational') return 4;
+          if (p.evidenceTierKey === 'preclinical') return 3;
+          if (p.evidenceTierKey === 'research_chemical') return 2;
+          return 1;
+        },
         getValue: (p: PinnedItem) => p.evidenceTierKey || NL,
         render: (p: PinnedItem) => {
           const tier = p.evidenceTierKey ? evidenceTier(p.evidenceTierKey) : null;
@@ -191,6 +288,15 @@ export default function StorefrontCompareDrawer({
       },
       {
         kind: 'data', label: 'Risk Level',
+        bestLogic: 'min',
+        getRawScore: (p) => {
+          const c = p.compoundSlug ? compoundsBySlug[p.compoundSlug] : null;
+          if (c?.risk_level === 'low') return 1;
+          if (c?.risk_level === 'moderate') return 2;
+          if (c?.risk_level === 'high') return 3;
+          if (c?.risk_level === 'critical') return 4;
+          return 5;
+        },
         getValue: (p: PinnedItem) => {
           const c = p.compoundSlug ? compoundsBySlug[p.compoundSlug] : null;
           return c?.risk_level || NL;
@@ -214,7 +320,12 @@ export default function StorefrontCompareDrawer({
       },
       { kind: 'group', label: 'Pharmacology' },
       {
-        kind: 'data', label: 'Half-Life',
+        kind: 'data', label: 'Half-Life', glossaryTerm: 'Half-Life',
+        bestLogic: 'max',
+        getRawScore: (p) => {
+          const c = p.compoundSlug ? compoundsBySlug[p.compoundSlug] : null;
+          return parseHalfLifeHours(c?.half_life);
+        },
         getValue: (p: PinnedItem) => {
           const c = p.compoundSlug ? compoundsBySlug[p.compoundSlug] : null;
           return c?.half_life || NL;
@@ -259,7 +370,7 @@ export default function StorefrontCompareDrawer({
       },
       { kind: 'group', label: 'Handling' },
       {
-        kind: 'data', label: 'Storage Temp',
+        kind: 'data', label: 'Storage Temp', glossaryTerm: 'Storage',
         getValue: (p: PinnedItem) => {
           const c = p.compoundSlug ? compoundsBySlug[p.compoundSlug] : null;
           return txt(c?.handling?.storage_temp);
@@ -271,6 +382,11 @@ export default function StorefrontCompareDrawer({
       },
       {
         kind: 'data', label: 'Reconstituted Shelf Life',
+        bestLogic: 'max',
+        getRawScore: (p) => {
+          const c = p.compoundSlug ? compoundsBySlug[p.compoundSlug] : null;
+          return c?.reconstitution_shelf_days ?? c?.handling?.reconstituted_days ?? 0;
+        },
         getValue: (p: PinnedItem) => {
           const c = p.compoundSlug ? compoundsBySlug[p.compoundSlug] : null;
           const d = c?.reconstitution_shelf_days ?? c?.handling?.reconstituted_days;
@@ -288,6 +404,14 @@ export default function StorefrontCompareDrawer({
   if (!mounted) return null;
   if (pinned.length === 0) return null;
   if (typeof document === 'undefined') return null;
+
+  const displayedPinned = isMobile && pinned.length > 1 
+    ? [pinned[0], pinned[mobileViewIndex]] 
+    : pinned;
+
+  const activeSynergies = KNOWN_SYNERGIES.filter(syn => 
+    syn.pairs.every(slug => pinned.some(p => p.compoundSlug === slug))
+  );
 
   return createPortal(
     <>
@@ -320,11 +444,12 @@ export default function StorefrontCompareDrawer({
             padding: '10px 14px',
             background: `linear-gradient(90deg, ${primaryColor}25, transparent)`,
             borderBottom: '1px solid rgba(255,255,255,0.06)',
+            flexWrap: 'wrap',
           }}>
             <div style={{
               color: primaryColor, fontWeight: 800, fontSize: '0.86rem',
               textTransform: 'uppercase', letterSpacing: '0.05em',
-              flex: 1,
+              flex: 1, minWidth: 150,
             }}>
               Compare ({pinned.length} Of {MAX_PINNED})
             </div>
@@ -382,9 +507,10 @@ export default function StorefrontCompareDrawer({
           </div>
 
           {!collapsed && (
-            <div style={{ padding: 14, display: 'grid', gridTemplateColumns: `repeat(${pinned.length}, 1fr)`, gap: 10 }}>
+            <div style={{ padding: 14, display: 'grid', gridTemplateColumns: `repeat(auto-fit, minmax(180px, 1fr))`, gap: 10 }}>
               {pinned.map((item, i) => {
                 const tier = item.evidenceTierKey ? evidenceTier(item.evidenceTierKey) : null;
+                const c = item.compoundSlug ? compoundsBySlug[item.compoundSlug] : null;
                 return (
                   <div
                     key={item.productName}
@@ -442,6 +568,11 @@ export default function StorefrontCompareDrawer({
                           border: `1px solid ${tier.color}55`,
                         }}>{tier.label}</span>
                       )}
+                      {c?.wada_status !== 'Permitted' && (
+                        <span style={{ background: 'rgba(229,62,62,0.15)', color: '#FC8181', padding: '2px 6px', borderRadius: 4, fontSize: '0.65rem', fontWeight: 800 }}>
+                          WADA 🚫
+                        </span>
+                      )}
                       {item.pricePerVialDollars != null && (
                         <span style={{ fontSize: '0.78rem', fontWeight: 800, color: primaryColor, fontFamily: 'var(--font-brand)' }}>
                           ${Number(item.pricePerVialDollars).toFixed(2)}/Vial
@@ -478,11 +609,13 @@ export default function StorefrontCompareDrawer({
               display: 'flex', alignItems: 'center', justifyContent: 'space-between',
               padding: '16px 24px', borderBottom: '1px solid rgba(255,255,255,0.06)',
               background: `linear-gradient(90deg, ${primaryColor}15, transparent)`,
+              flexWrap: 'wrap',
+              gap: 12,
             }}>
               <h2 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 900, color: 'var(--white)' }}>
                 Compare Products
               </h2>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 24 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 24, flexWrap: 'wrap' }}>
                 {pinned.length >= 2 && (
                   <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', color: 'var(--silver)', fontSize: '0.85rem', fontWeight: 800, userSelect: 'none' }}>
                     <input 
@@ -494,6 +627,17 @@ export default function StorefrontCompareDrawer({
                     Highlight Differences
                   </label>
                 )}
+                <button
+                  type="button"
+                  onClick={() => dispatchAddAllToCart(pinned)}
+                  style={{
+                    background: primaryColor, border: 'none', color: '#04221F',
+                    padding: '8px 16px', borderRadius: 8, fontWeight: 800, fontSize: '0.85rem',
+                    cursor: 'pointer'
+                  }}
+                >
+                  Add All To Cart
+                </button>
                 <button
                   onClick={() => setShowMatrix(false)}
                   style={{
@@ -508,79 +652,163 @@ export default function StorefrontCompareDrawer({
             </div>
             
             <div style={{ overflowY: 'auto', padding: '24px', flex: 1 }}>
+              {activeSynergies.length > 0 && (
+                <div style={{ marginBottom: 24 }}>
+                  {activeSynergies.map((syn, idx) => (
+                    <div key={idx} style={{ background: 'rgba(104,211,145,0.1)', border: '1px solid rgba(104,211,145,0.3)', color: '#68D391', padding: '12px 16px', borderRadius: 8, marginBottom: 8, fontSize: '0.9rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <span>🔥</span> {syn.message}
+                    </div>
+                  ))}
+                </div>
+              )}
+
               <div style={{ borderRadius: 'var(--radius-lg, 12px)', overflowX: 'auto', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.08)' }}>
                 <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '600px', position: 'relative' }}>
                   <thead style={{ position: 'sticky', top: 0, zIndex: 20 }}>
                     <tr>
                       <th style={{ ...labelCellStyle, textAlign: 'left', width: '20%', background: '#0F161E', zIndex: 30 }} scope="col">Product</th>
-                      {pinned.map((p) => (
-                        <th key={p.productName} style={{ ...cellStyle, textAlign: 'left', width: `${80 / pinned.length}%`, background: '#0F161E' }} scope="col">
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                              {p.imageUrl && (
-                                // eslint-disable-next-line @next/next/no-img-element
-                                <img src={p.imageUrl} alt={p.productName} width={48} height={48} style={{ borderRadius: 8, objectFit: 'cover' }} />
-                              )}
-                              <div style={{ fontSize: '1.1rem', fontWeight: 900, color: primaryColor }}>{p.productName}</div>
-                            </div>
-                            {p.pricePerVialDollars != null && (
-                              <div style={{ fontSize: '1rem', fontWeight: 800, color: 'var(--white)' }}>
-                                ${Number(p.pricePerVialDollars).toFixed(2)}/Vial
+                      {displayedPinned.map((p) => {
+                        const originalIndex = pinned.findIndex(x => x.productName === p.productName);
+
+                        return (
+                          <th 
+                            key={p.productName} 
+                            style={{ ...cellStyle, textAlign: 'left', width: `${80 / displayedPinned.length}%`, background: '#0F161E' }} 
+                            scope="col"
+                            draggable={!isMobile}
+                            onDragStart={(e) => handleDragStart(e, originalIndex)}
+                            onDragOver={(e) => e.preventDefault()}
+                            onDrop={(e) => handleDrop(e, originalIndex)}
+                          >
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                {!isMobile && <GripHorizontal size={14} color="rgba(255,255,255,0.2)" style={{ cursor: 'grab' }} />}
+                                
+                                {isMobile && originalIndex !== 0 && pinned.length > 2 && (
+                                  <button
+                                    onClick={() => setMobileViewIndex(prev => prev > 1 ? prev - 1 : pinned.length - 1)}
+                                    style={{ background: 'none', border: 'none', color: 'var(--silver)', cursor: 'pointer', padding: 0 }}
+                                  >
+                                    <ChevronLeft size={18} />
+                                  </button>
+                                )}
+
+                                {p.imageUrl && (
+                                  // eslint-disable-next-line @next/next/no-img-element
+                                  <img src={p.imageUrl} alt={p.productName} width={48} height={48} style={{ borderRadius: 8, objectFit: 'cover' }} />
+                                )}
+                                <div style={{ fontSize: '1.1rem', fontWeight: 900, color: primaryColor }}>{p.productName}</div>
+                                
+                                {isMobile && originalIndex !== 0 && pinned.length > 2 && (
+                                  <button
+                                    onClick={() => setMobileViewIndex(prev => prev < pinned.length - 1 ? prev + 1 : 1)}
+                                    style={{ background: 'none', border: 'none', color: 'var(--silver)', cursor: 'pointer', padding: 0 }}
+                                  >
+                                    <ChevronRight size={18} />
+                                  </button>
+                                )}
                               </div>
-                            )}
-                            <button
-                              type="button"
-                              onClick={() => dispatchAddToCart(p.productName)}
-                              style={{
-                                background: primaryColor, border: 'none', color: '#04221F',
-                                padding: '8px 12px', borderRadius: 8, fontWeight: 800, fontSize: '0.8rem',
-                                cursor: 'pointer', marginTop: 4, width: 'fit-content'
-                              }}
-                            >
-                              Add To Cart
-                            </button>
-                          </div>
-                        </th>
-                      ))}
+                              <button
+                                type="button"
+                                onClick={() => dispatchAddToCart(p.productName)}
+                                style={{
+                                  background: primaryColor, border: 'none', color: '#04221F',
+                                  padding: '8px 12px', borderRadius: 8, fontWeight: 800, fontSize: '0.8rem',
+                                  cursor: 'pointer', marginTop: 4, width: 'fit-content'
+                                }}
+                              >
+                                Add To Cart
+                              </button>
+                            </div>
+                          </th>
+                        );
+                      })}
                     </tr>
                   </thead>
                   <tbody>
                     {ROWS.map((row, rIdx) => {
                       if (row.kind === 'group') {
+                        const isCollapsed = collapsedGroups.has(row.label);
                         return (
-                          <tr key={rIdx}>
-                            <td style={{ ...groupCellStyle, position: 'sticky', left: 0, zIndex: 10, background: 'linear-gradient(rgba(192,197,206,0.1), rgba(192,197,206,0.1)), #0F161E' }} colSpan={pinned.length + 1}>
-                              {row.label}
+                          <tr key={rIdx} onClick={() => toggleGroup(row.label)}>
+                            <td style={{ ...groupCellStyle, position: 'sticky', left: 0, zIndex: 10 }} colSpan={displayedPinned.length + 1}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                {isCollapsed ? <ChevronRight size={14} /> : <ChevronDown size={14} />}
+                                {row.label}
+                              </div>
                             </td>
                           </tr>
                         );
                       }
 
-                      // Check differences
-                      const values = pinned.map(p => row.getValue!(p));
-                      const allSame = values.every(v => v === values[0]);
-                      const isDiff = !allSame && pinned.length > 1;
+                      // Check collapsed state for parent group
+                      let currentGroupLabel = '';
+                      for (let i = rIdx; i >= 0; i--) {
+                        if (ROWS[i].kind === 'group') {
+                          currentGroupLabel = ROWS[i].label;
+                          break;
+                        }
+                      }
 
-                      let trStyle: React.CSSProperties = { transition: 'opacity 0.2s, background 0.2s' };
-                      let tdLabelStyle: React.CSSProperties = { ...labelCellStyle, background: '#0F161E' };
+                      if (collapsedGroups.has(currentGroupLabel)) {
+                        return null;
+                      }
+
+                      // Check differences
+                      const values = displayedPinned.map(p => row.getValue(p));
+                      const allSame = values.every(v => v === values[0]);
+                      const isDiff = !allSame && displayedPinned.length > 1;
+
+                      let trStyle: React.CSSProperties = { transition: 'background 0.2s' };
+                      let tdLabelStyle: React.CSSProperties = { ...labelCellStyle, background: '#0F161E', transition: 'color 0.2s' };
+                      let valueCellStyle: React.CSSProperties = { ...cellStyle, transition: 'opacity 0.2s' };
 
                       if (diffMode) {
                         if (isDiff) {
                           trStyle.background = `${primaryColor}15`;
                           tdLabelStyle.background = `linear-gradient(${primaryColor}15, ${primaryColor}15), #0F161E`;
                         } else {
-                          trStyle.opacity = 0.3;
+                          tdLabelStyle.color = 'rgba(168,180,192,0.3)';
+                          valueCellStyle.opacity = 0.3;
+                        }
+                      }
+
+                      // Winner Engine Calculation
+                      let bestIndices: number[] = [];
+                      if (row.bestLogic && displayedPinned.length > 1 && !allSame) {
+                        const scores = displayedPinned.map(p => row.getRawScore ? row.getRawScore(p) : 0);
+                        const validScores = scores.filter(s => typeof s === 'number' && !isNaN(s) && s !== Infinity);
+                        if (validScores.length > 0) {
+                          const bestValue = row.bestLogic === 'max' ? Math.max(...validScores) : Math.min(...validScores);
+                          scores.forEach((s, idx) => {
+                            if (s === bestValue) bestIndices.push(idx);
+                          });
                         }
                       }
 
                       return (
                         <tr key={rIdx} style={trStyle}>
-                          <td style={tdLabelStyle}>{row.label}</td>
-                          {pinned.map((p, pIdx) => (
-                            <td key={pIdx} style={cellStyle}>
-                              {row.render!(p)}
-                            </td>
-                          ))}
+                          <td style={tdLabelStyle}>
+                            <div style={{ display: 'flex', alignItems: 'center' }}>
+                              {row.label}
+                              {row.glossaryTerm && <InCellGlossaryTooltip term={row.glossaryTerm} />}
+                            </div>
+                          </td>
+                          {displayedPinned.map((p, pIdx) => {
+                            const isWinner = bestIndices.includes(pIdx);
+                            return (
+                              <td key={pIdx} style={{ ...valueCellStyle, position: 'relative' }}>
+                                {isWinner && (
+                                  <div style={{ position: 'absolute', top: 4, right: 4, fontSize: '0.65rem', background: primaryColor, color: '#04221F', padding: '2px 6px', borderRadius: 4, fontWeight: 800 }}>
+                                    BEST VALUE
+                                  </div>
+                                )}
+                                <div style={isWinner ? { borderLeft: `2px solid ${primaryColor}`, paddingLeft: 8, marginLeft: -10 } : {}}>
+                                  {row.render(p)}
+                                </div>
+                              </td>
+                            )
+                          })}
                         </tr>
                       );
                     })}

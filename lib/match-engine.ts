@@ -33,6 +33,7 @@ export interface MatchInput {
   requireLongHalfLife?: boolean;
   excludeSlugs?: string[];
   preference?: 'single' | 'stack' | 'either';
+  budget?: 'conservative' | 'standard' | 'unlimited';
 }
 
 export interface ScoreBreakdown {
@@ -40,6 +41,12 @@ export interface ScoreBreakdown {
   keyword: number;
   evidenceBonus: number;
   classBonus: number;
+}
+
+export interface ExcludedCompound {
+  slug: string;
+  displayName: string;
+  reason: string;
 }
 
 export interface MatchResult {
@@ -249,17 +256,16 @@ function buildRationale(
 // --------------------------------------------------------------------------
 // Top-level scoring.
 // --------------------------------------------------------------------------
-function scoreOne(input: MatchInput, c: Compound): { score: number; rationale: string; breakdown: ScoreBreakdown } | null {
+function scoreOne(input: MatchInput, c: Compound): { score: number; rationale: string; breakdown: ScoreBreakdown } | { failReason: string } {
   // Hard gates first — if any of these fail, the compound is excluded from
-  // results entirely. We model that as returning null rather than a negative
-  // score so callers cannot accidentally surface restricted compounds.
-  if (failsEvidenceGate(c, input.evidenceComfort)) return null;
-  if (failsWadaGate(c, input.wadaConstraint)) return null;
-  if (failsRiskGate(c, input.riskTolerance)) return null;
-  if (failsHandlingGate(c, input.excludeInjectables)) return null;
-  if (failsHalfLifeGate(c, input.requireLongHalfLife)) return null;
-  if (failsPreferenceGate(c, input.preference)) return null;
-  if (input.excludeSlugs && input.excludeSlugs.includes(c.slug)) return null;
+  // results entirely. We model that as returning { failReason } so callers can surface it.
+  if (failsEvidenceGate(c, input.evidenceComfort)) return { failReason: 'Does not meet requested evidence comfort level.' };
+  if (failsWadaGate(c, input.wadaConstraint)) return { failReason: 'Contains WADA-prohibited substances.' };
+  if (failsRiskGate(c, input.riskTolerance)) return { failReason: 'Exceeds requested risk tolerance.' };
+  if (failsHandlingGate(c, input.excludeInjectables)) return { failReason: 'Requires injection (user requested non-injectable).' };
+  if (failsHalfLifeGate(c, input.requireLongHalfLife)) return { failReason: 'Does not meet long half-life requirement.' };
+  if (failsPreferenceGate(c, input.preference)) return { failReason: 'Does not match preference (single/stack).' };
+  if (input.excludeSlugs && input.excludeSlugs.includes(c.slug)) return { failReason: 'Manually excluded.' };
 
   let score = 0;
   const breakdown: ScoreBreakdown = { base: 0, keyword: 0, evidenceBonus: 0, classBonus: 0 };
@@ -308,7 +314,16 @@ function scoreOne(input: MatchInput, c: Compound): { score: number; rationale: s
 
   // If the compound has zero goal-signal at all, do not surface it. This keeps
   // the top-5 list relevant rather than padded by tier-only matches.
-  if (!taggedHit && !keywordHit) return null;
+  if (!taggedHit && !keywordHit) return { failReason: 'Not relevant to your goal.' };
+
+  // Budget penalty for stacks if conservative
+  if (input.budget === 'conservative' && c.is_stack) {
+    score -= 20; // Penalize expensive stacks
+  }
+  // Budget bonus for single compounds if conservative
+  if (input.budget === 'conservative' && !c.is_stack) {
+    score += 10;
+  }
 
   // Clamp to 0..100 for the public score field.
   const clamped = Math.max(0, Math.min(100, score));
@@ -321,19 +336,24 @@ function scoreOne(input: MatchInput, c: Compound): { score: number; rationale: s
 }
 
 /**
- * Score the full catalog against a `MatchInput` and return the top 5 surviving
- * candidates, sorted by score desc, then by evidence-tier rank desc, then by
- * display_name ascending (deterministic).
+ * Score the full catalog against a `MatchInput` and return the top surviving
+ * candidates along with an array of excluded popular compounds and their reason.
  */
 export function scoreCompounds(
   input: MatchInput,
   compounds: Compound[],
   limit: number = 12
-): MatchResult[] {
+): { matches: MatchResult[]; excluded: ExcludedCompound[] } {
   const scored: MatchResult[] = [];
+  const excluded: ExcludedCompound[] = [];
   for (const c of compounds) {
     const result = scoreOne(input, c);
-    if (!result) continue;
+    if ('failReason' in result) {
+      if (result.failReason !== 'Not relevant to your goal.') {
+        excluded.push({ slug: c.slug, displayName: c.display_name, reason: result.failReason });
+      }
+      continue;
+    }
     scored.push({
       slug: c.slug,
       displayName: c.display_name,
@@ -375,5 +395,9 @@ export function scoreCompounds(
     }
   }
 
-  return results;
+  // Sort excluded to prioritize famous compounds that users might be wondering about
+  excluded.sort((a, b) => a.displayName.localeCompare(b.displayName));
+  const topExcluded = excluded.slice(0, 5);
+
+  return { matches: results, excluded: topExcluded };
 }

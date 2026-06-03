@@ -65,6 +65,7 @@ function parseInput(raw: unknown): MatchInput | null {
     excludeInjectables: typeof obj.excludeInjectables === 'boolean' ? obj.excludeInjectables : undefined,
     requireLongHalfLife: typeof obj.requireLongHalfLife === 'boolean' ? obj.requireLongHalfLife : undefined,
     excludeSlugs: Array.isArray(obj.excludeSlugs) ? obj.excludeSlugs.filter((s) => typeof s === 'string') : undefined,
+    budget: typeof obj.budget === 'string' && ['conservative', 'standard', 'unlimited'].includes(obj.budget) ? obj.budget as 'conservative' | 'standard' | 'unlimited' : undefined,
   };
 }
 
@@ -93,7 +94,7 @@ export async function POST(req: NextRequest) {
   }
 
   const compounds = await getAllCompounds();
-  const results = scoreCompounds(input, compounds);
+  const scoredData = scoreCompounds(input, compounds);
 
   // Analytics log to db (awaited to prevent serverless termination)
   const supabase = await createServiceClient();
@@ -110,5 +111,9 @@ export async function POST(req: NextRequest) {
     });
   if (error) console.error('[Match Analytics] Failed to insert', error);
 
-  return NextResponse.json({ results, note: RESEARCH_NOTE });
+  return NextResponse.json({ 
+    results: scoredData.matches, 
+    excluded: scoredData.excluded, 
+    note: RESEARCH_NOTE 
+  });
 }

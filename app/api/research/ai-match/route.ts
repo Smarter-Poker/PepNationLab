@@ -9,6 +9,10 @@ const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 const RESPONSE_SCHEMA = {
   type: Type.OBJECT,
   properties: {
+    followUpQuestion: {
+      type: Type.STRING,
+      description: "If the user's goal is extremely vague (e.g., 'weight loss' without specifying how), ask a short clarifying question here (e.g., 'Do you want appetite suppression or metabolic enhancement?'). If the goal is clear, omit this or leave it empty.",
+    },
     goal: {
       type: Type.STRING,
       description: `The best matching research area. Must be one of the following exact keys: ${Object.keys(RESEARCH_AREAS).join(', ')}, or 'any'. If they want a general overview or don't specify a goal, use 'any'. If none match perfectly, choose the closest or default to 'any'.`,
@@ -36,9 +40,13 @@ const RESPONSE_SCHEMA = {
     preference: {
       type: Type.STRING,
       description: "Must be 'single', 'stack', or 'either'. If they specifically want a pre-blended stack or synergy, use 'stack'. If they want a single compound, use 'single'. Default to 'either'.",
+    },
+    budget: {
+      type: Type.STRING,
+      description: "Must be 'conservative', 'standard', or 'unlimited'. If they mention cost, cheap, budget, use 'conservative'. Default to 'standard'.",
     }
   },
-  required: ['goal', 'evidenceComfort', 'wadaConstraint', 'riskTolerance', 'excludeInjectables', 'requireLongHalfLife', 'preference'],
+  required: ['goal', 'evidenceComfort', 'wadaConstraint', 'riskTolerance', 'excludeInjectables', 'requireLongHalfLife', 'preference', 'budget'],
 };
 
 export async function POST(req: NextRequest) {
