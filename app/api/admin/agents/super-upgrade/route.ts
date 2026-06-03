@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createServiceClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/server';
 import { requireAdmin } from '@/lib/admin-auth';
 import { assertSameOrigin } from '@/lib/csrf';
 import { withIdempotency, readIdempotencyKey } from '@/lib/idempotency';
@@ -25,7 +25,7 @@ export async function POST(req: NextRequest) {
       key: readIdempotencyKey(req),
       request: { agentId, is_super_agent },
       handler: async () => {
-    const supabase = await createServiceClient();
+    const supabase = createAdminClient();
 
     // Prevent making a sub-agent a super-agent
     const { data: agentProfile } = await supabase

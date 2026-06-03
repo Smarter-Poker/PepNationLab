@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createServiceClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/server';
 import { requireAgent } from '@/lib/admin-auth';
 
 /**
@@ -13,7 +13,7 @@ export async function GET(_req: NextRequest) {
     const gate = await requireAgent();
     if (!gate.ok) return gate.response;
 
-    const supabase = await createServiceClient();
+    const supabase = createAdminClient();
     const callerId = gate.user.id;
 
     const { data: callerProfile } = await supabase
@@ -70,7 +70,7 @@ export async function POST(req: NextRequest) {
     const gate = await requireAgent();
     if (!gate.ok) return gate.response;
 
-    const supabase = await createServiceClient();
+    const supabase = createAdminClient();
     const callerId = gate.user.id;
 
     const { data: callerProfile } = await supabase

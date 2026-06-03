@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createServiceClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/server';
 import { requireAdmin } from '@/lib/admin-auth';
 import { generateQrDataUrl } from '@/lib/qr';
 import { sanitizeUsername } from '@/lib/usernames';
@@ -12,7 +12,7 @@ export async function GET(req: NextRequest) {
   const gate = await requireAdmin();
   if (!gate.ok) return gate.response;
 
-  const supabase = await createServiceClient();
+  const supabase = createAdminClient();
 
   const { data, error } = await supabase
     .from('profiles')
@@ -35,7 +35,7 @@ export async function POST(req: NextRequest) {
   const gate = await requireAdmin();
   if (!gate.ok) return gate.response;
 
-  const supabase = await createServiceClient();
+  const supabase = createAdminClient();
   const body = await req.json().catch(() => ({}));
 
   const {

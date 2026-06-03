@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createServiceClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/server';
 import { sanitizeUsername } from '@/lib/usernames';
 import { rateLimit, getClientIp } from '@/lib/rate-limit';
 import { assertSameOrigin } from '@/lib/csrf';
@@ -70,7 +70,7 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const supabase = await createServiceClient();
+  const supabase = createAdminClient();
 
   // Resolve agent by slug (case-insensitive)
   const { data: agent, error: agentErr } = await supabase
