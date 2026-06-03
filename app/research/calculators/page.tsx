@@ -22,6 +22,11 @@ const ANCHORS: Array<{ href: string; label: string }> = [
   { href: '#stability', label: 'Arrhenius Stability' },
   { href: '#cost', label: 'Cost Per Dose' },
   { href: '#pooling', label: 'Vial Pooling' },
+  { href: '#hplc-rt', label: 'HPLC RT Predictor' },
+  { href: '#mass-spec', label: 'Mass Spec m/z' },
+  { href: '#spps-cost', label: 'Fmoc-SPPS Cost' },
+  { href: '#solubility', label: 'Solubility Predictor' },
+  { href: '#vial-quantity', label: 'Vial Quantity Power' },
 ];
 
 export default function CalculatorsPage() {

@@ -95,7 +95,7 @@ const ADMIN_LINKS: RoleNavLink[] = [
   { href: '/admin/settings', label: 'Account Settings', icon: <svg {...ip}><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" /></svg> },
   { href: '/admin/settings/shipping', label: 'Shipping Settings', icon: <svg {...ip}><rect x="1" y="3" width="15" height="13" /><polygon points="16 8 20 8 23 11 23 16 16 16 16 8" /><circle cx="5.5" cy="18.5" r="2.5" /><circle cx="18.5" cy="18.5" r="2.5" /></svg> },
   { href: '/admin/audit', label: 'Audit Log', icon: <svg {...ip}><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg> },
-  { href: '/lab-tools', label: 'Lab Tools Calculator', icon: ICON.labTools },
+  { href: '/research/calculators', label: 'Lab Tools Calculator', icon: ICON.labTools },
 ];
 
 function agentLinks(isSuper: boolean, storefrontHref: string): RoleNavLink[] {
@@ -119,7 +119,7 @@ function agentLinks(isSuper: boolean, storefrontHref: string): RoleNavLink[] {
     { href: '#SHOW_QR', label: 'My QR Code', icon: ICON.qr },
     { href: '/messenger', label: 'Messenger', icon: <svg {...ip}><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg> },
     { href: '/account', label: 'Account Settings', icon: ICON.gear },
-    { href: '/lab-tools', label: 'Lab Tools Calculator', icon: ICON.labTools },
+    { href: '/research/calculators', label: 'Lab Tools Calculator', icon: ICON.labTools },
   ];
 }
 
@@ -132,7 +132,7 @@ const SUBAGENT_LINKS: RoleNavLink[] = [
   { href: subTab('Orders'), label: 'Orders', icon: ICON.orders },
   { href: '/messenger', label: 'Messenger', icon: ICON.messenger },
   { href: '/account', label: 'Account Settings', icon: ICON.gear },
-  { href: '/lab-tools', label: 'Lab Tools Calculator', icon: ICON.labTools },
+  { href: '/research/calculators', label: 'Lab Tools Calculator', icon: ICON.labTools },
 ];
 
 // Researcher (customer) menu. Their account lives entirely in the role-agnostic
@@ -156,7 +156,7 @@ function researcherLinks(storefrontHref?: string): RoleNavLink[] {
     { href: '/account/payment-method', label: 'Payment Method', icon: ICON.card },
     { href: '/account/referrals', label: 'Referrals', icon: ICON.gift },
     { href: '/account', label: 'Account Settings', icon: ICON.gear },
-    { href: '/lab-tools', label: 'Lab Tools Calculator', icon: ICON.labTools },
+    { href: '/research/calculators', label: 'Lab Tools Calculator', icon: ICON.labTools },
   );
   return links;
 }
