@@ -7,6 +7,7 @@ import { motion, Variants, AnimatePresence } from 'framer-motion';
 import { Star, X, Heart, FileText, Search, SlidersHorizontal, RotateCcw, Check } from 'lucide-react';
 import RecommendationStrip, { type RecommendationItem } from './RecommendationStrip';
 import ProductMonograph from './research/ProductMonograph';
+import DiscoveryHero, { type MatchedProduct } from './storefront/StorefrontDiscovery';
 import { evidenceTier, type Compound } from '@/lib/compounds';
 import { getProductImage, toTitleCase } from '@/lib/categoryImage';
 import PeptideVialCard from '@/components/PeptideVialCard';
@@ -327,6 +328,7 @@ export default function AgentStorefrontGrid({
     | 'popular' | 'name_asc' | 'name_desc' | 'price_low' | 'price_high' | 'newest';
   const [sortBy, setSortBy] = useState<typeof initialSort>(initialSort);
   const [filterCategory, setFilterCategory] = useState<string>(getInit('category') || 'all');
+  const [filterArea, setFilterArea] = useState<string>(getInit('area') || '');
   const [showFilterPanel, setShowFilterPanel] = useState(false);
   const [inStockOnly, setInStockOnly] = useState<boolean>(getInit('inStock') === '1');
   const [bulkOnly, setBulkOnly] = useState<boolean>(getInit('bulk') === '1');
@@ -393,6 +395,7 @@ export default function AgentStorefrontGrid({
       const trimmedQ = searchQuery.trim();
       if (trimmedQ) params.set('q', trimmedQ);
       if (filterCategory && filterCategory !== 'all') params.set('category', filterCategory);
+      if (filterArea) params.set('area', filterArea);
       if (sortBy && sortBy !== 'popular') params.set('sort', sortBy);
       if (minPrice !== priceBounds.min) params.set('min', String(minPrice));
       if (maxPrice !== priceBounds.max) params.set('max', String(maxPrice));
@@ -424,7 +427,7 @@ export default function AgentStorefrontGrid({
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
-    searchQuery, filterCategory, sortBy,
+    searchQuery, filterCategory, filterArea, sortBy,
     minPrice, maxPrice, inStockOnly, bulkOnly,
     minWeight, maxWeight,
   ]);
@@ -432,6 +435,7 @@ export default function AgentStorefrontGrid({
   const resetFilters = useCallback(() => {
     setSearchQuery('');
     setFilterCategory('all');
+    setFilterArea('');
     setSortBy('popular');
     setInStockOnly(false);
     setBulkOnly(false);
@@ -696,9 +700,23 @@ export default function AgentStorefrontGrid({
     [filterCategory]
   );
 
+  // R35: research-area filter using compoundsBySlug lookup.
+  const matchesArea = useCallback(
+    (g: GroupedProduct) => {
+      if (!filterArea) return true;
+      const slug = g.compoundSlug;
+      if (!slug) return false;
+      const c = compoundsBySlug?.[slug];
+      if (!c) return false;
+      return (c.research_areas || []).includes(filterArea);
+    },
+    [filterArea, compoundsBySlug]
+  );
+
   const filteredProducts = useMemo(() => {
     let result = grouped.filter(g =>
       matchesCategory(g) &&
+      matchesArea(g) &&
       matchesSearch(g) &&
       matchesPrice(g) &&
       matchesWeight(g) &&
@@ -714,7 +732,7 @@ export default function AgentStorefrontGrid({
       case 'newest': result = [...result].sort((a, b) => a.popularity - b.popularity); break;
     }
     return result;
-  }, [grouped, matchesCategory, matchesSearch, matchesPrice, matchesWeight, matchesInStock, matchesBulk, sortBy]);
+  }, [grouped, matchesCategory, matchesArea, matchesSearch, matchesPrice, matchesWeight, matchesInStock, matchesBulk, sortBy]);
 
   const categoryCounts = useMemo<Record<string, number>>(() => {
     const base = grouped.filter(g =>
@@ -739,6 +757,7 @@ export default function AgentStorefrontGrid({
   const hasActiveFilters =
     !!deferredSearch.trim() ||
     filterCategory !== 'all' ||
+    !!filterArea ||
     sortBy !== 'popular' ||
     minPrice !== priceBounds.min ||
     maxPrice !== priceBounds.max ||
@@ -965,6 +984,78 @@ export default function AgentStorefrontGrid({
           .sf-modal-actions .sf-add-btn { flex: none; padding: 10px 28px; }
         }
       `}} />
+
+      <DiscoveryHero
+        compoundsBySlug={compoundsBySlug || {}}
+        primaryColor={primaryColor}
+        onSelectArea={(area) => {
+          setFilterArea(area);
+          setFilterCategory('all');
+          if (typeof window !== 'undefined') {
+            try { window.scrollTo({ top: 0, behavior: 'smooth' }); } catch {}
+          }
+        }}
+        onAddToCart={(variantId) => addToCart(variantId)}
+        onOpenProduct={(variantId) => {
+          const grp = grouped.find(g => g.variants.some(v => v.id === variantId));
+          if (grp) setDetailProduct(grp);
+        }}
+        resolveProducts={(slugs) => {
+          const out: MatchedProduct[] = [];
+          for (const slug of slugs) {
+            const grp = grouped.find(g => g.compoundSlug === slug);
+            if (!grp) {
+              out.push({
+                product_id: '',
+                display_name: slug.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase()),
+                compound_slug: slug,
+                price_cents: 0,
+                evidence_tier: null,
+                rationale: '',
+                image_url: null,
+                in_stock: false,
+              });
+              continue;
+            }
+            const v0 = grp.variants[0];
+            const priceDollars = grp.lowestPrice || 0;
+            const evTier = compoundsBySlug?.[slug]?.evidence_tier ?? null;
+            out.push({
+              product_id: v0?.id || '',
+              display_name: grp.name,
+              compound_slug: slug,
+              price_cents: Math.round(priceDollars * 100),
+              evidence_tier: evTier,
+              rationale: '',
+              image_url: grp.imageUrl,
+              in_stock: true,
+            });
+          }
+          return out;
+        }}
+      />
+
+      {filterArea && (
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12,
+          padding: '8px 12px', borderRadius: 10,
+          background: 'rgba(0,196,188,0.08)',
+          border: '1px solid rgba(0,196,188,0.32)',
+        }}>
+          <span style={{ color: 'var(--silver, #A8B4C0)', fontSize: '0.78rem', fontWeight: 700 }}>Filtered By Research Area</span>
+          <button
+            type="button"
+            onClick={() => setFilterArea('')}
+            style={{
+              marginLeft: 'auto',
+              background: 'transparent', border: '1px solid rgba(255,255,255,0.18)',
+              color: '#FFFFFF', borderRadius: 8, padding: '6px 10px',
+              fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer',
+              minHeight: 32,
+            }}
+          >Clear</button>
+        </div>
+      )}
 
       <div className="sf-toolbar">
         <div className="sf-toolbar-inner">
