@@ -105,14 +105,13 @@ export default function WalletPage({
     (s: any) => s.due_date && new Date(s.due_date).getTime() < now && s.status !== 'paid'
   );
 
-  // Action gating — every role gets the full Wallet surface. Pay Now stays
-  // tied to having a real open statement (the button auto-disables when
-  // there's nothing to pay). Request Credit Increase only renders when the
-  // user actually has a credit line set — there's no useful action to take
-  // when credit_limit is 0.
+  // Action surface is INVARIANT — every role sees Pay Now, Send Funds, and
+  // Request Credit Increase at all times. Each button auto-disables when the
+  // underlying state is empty (no open statement / no credit line) so the
+  // user always sees where the action lives, and a hint below the row tells
+  // them why it can't fire right now.
+  const hasOpenStatement = !!summary?.hasOpenStatement;
   const hasCreditLine = (summary?.creditLimit ?? 0) > 0;
-  const canPay = true;
-  const canRequestCredit = hasCreditLine;
 
   // Tab list — every role sees the full six tabs. Sub-components handle
   // empty data with their own "No ... Yet" copy.
@@ -220,34 +219,52 @@ export default function WalletPage({
           )}
         </section>
 
-        {/* ACTION BAR — Pay Now is always rendered; it auto-disables when
-            there's nothing to pay. Request Credit Increase only renders
-            when the user has a real credit line. */}
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
-          {canPay && (
+        {/* ACTION BAR — all three buttons always rendered; each one auto-
+            disables when its underlying state is empty so the user always
+            sees where the action lives. */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
             <button
               type="button"
-              disabled={!summary?.hasOpenStatement}
+              disabled={!hasOpenStatement}
               onClick={() => setPayOpen(true)}
               className="btn"
               style={{
-                background: summary?.hasOpenStatement ? 'var(--teal)' : 'rgba(255,255,255,0.05)',
-                color: summary?.hasOpenStatement ? 'var(--black)' : 'var(--grey-500)',
+                background: hasOpenStatement ? 'var(--teal)' : 'rgba(255,255,255,0.05)',
+                color: hasOpenStatement ? 'var(--black)' : 'var(--grey-500)',
                 padding: '12px 18px', borderRadius: 10, border: 'none', fontWeight: 800, fontSize: '0.9rem',
-                minHeight: 44, cursor: summary?.hasOpenStatement ? 'pointer' : 'not-allowed',
+                minHeight: 44, cursor: hasOpenStatement ? 'pointer' : 'not-allowed',
               }}
             >
               Pay Now
             </button>
-          )}
-          {canRequestCredit && (
-            <button type="button" onClick={() => setCreditOpen(true)} className="btn-secondary"
-              style={{ padding: '12px 18px', borderRadius: 10, minHeight: 44 }}>
+            <button
+              type="button"
+              onClick={() => setSendOpen(true)}
+              className="btn btn-primary"
+              style={{ padding: '12px 18px', borderRadius: 10, minHeight: 44, whiteSpace: 'nowrap' }}
+            >
+              Send Funds
+            </button>
+            <button
+              type="button"
+              disabled={!hasCreditLine}
+              onClick={() => setCreditOpen(true)}
+              className="btn-secondary"
+              style={{
+                padding: '12px 18px', borderRadius: 10, minHeight: 44,
+                opacity: hasCreditLine ? 1 : 0.55,
+                cursor: hasCreditLine ? 'pointer' : 'not-allowed',
+              }}
+            >
               Request Credit Increase
             </button>
-          )}
-          {canPay && summary && !summary.hasOpenStatement && !loading && !error && (
-            <span style={{ color: 'var(--grey-500)', fontSize: '0.82rem' }}>You Are All Paid Up.</span>
+          </div>
+          {summary && !loading && !error && (
+            <div style={{ color: 'var(--grey-500)', fontSize: '0.78rem', display: 'flex', flexWrap: 'wrap', gap: 12 }}>
+              {!hasOpenStatement && <span>You Are All Paid Up.</span>}
+              {!hasCreditLine && <span>Credit Increase Available Once You Have An Active Credit Line.</span>}
+            </div>
           )}
         </div>
 
@@ -282,16 +299,14 @@ export default function WalletPage({
                 Real Funds You Can Send Or Spend Across The Network.
               </div>
             </div>
-            {role !== 'researcher' && (
-              <button
-                type="button"
-                onClick={() => setSendOpen(true)}
-                className="btn btn-primary"
-                style={{ padding: '10px 16px', borderRadius: 10, minHeight: 44, whiteSpace: 'nowrap' }}
-              >
-                Send Funds
-              </button>
-            )}
+            <button
+              type="button"
+              onClick={() => setSendOpen(true)}
+              className="btn btn-primary"
+              style={{ padding: '10px 16px', borderRadius: 10, minHeight: 44, whiteSpace: 'nowrap' }}
+            >
+              Send Funds
+            </button>
           </section>
           <section className="card-glass" style={{ padding: 16, borderRadius: 12 }}>
             <h3 style={{ color: 'var(--white)', marginTop: 0, fontSize: '1rem' }}>Open Statements</h3>
