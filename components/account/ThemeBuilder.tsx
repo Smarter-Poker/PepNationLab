@@ -50,7 +50,7 @@ export default function ThemeBuilder() {
   }
 
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: 'minmax(280px, 1fr) minmax(260px, 1fr)', gap: 14 }}>
+    <div className="pnl-themebuilder-grid" style={{ display: 'grid', gridTemplateColumns: 'minmax(min(280px, 100%), 1fr) minmax(min(260px, 100%), 1fr)', gap: 14 }}>
       <section className="card-glass" style={{ padding: 16, borderRadius: 12 }}>
         <h3 style={{ color: 'var(--white)', fontSize: '1rem', marginTop: 0 }}>Storefront Theme</h3>
 

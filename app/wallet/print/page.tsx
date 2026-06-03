@@ -105,6 +105,15 @@ export default async function WalletPrintPage({ searchParams }: { searchParams: 
             body { background: #fff !important; }
           }
           body { font-family: Arial, Helvetica, sans-serif; color: #1a1a1a; background: #fff; margin: 0; padding: 28px; }
+          @media screen and (max-width: 600px) {
+            body { padding: 16px; font-size: 14px; }
+            h1 { font-size: 22px; }
+            .meta-grid { grid-template-columns: 1fr !important; gap: 12px !important; margin-top: 20px !important; }
+            .meta-box { padding: 12px 14px; }
+            table { font-size: 13px; }
+            table th, table td { padding: 7px 9px !important; }
+            .footer { font-size: 10px; }
+          }
           h1 { font-size: 26px; margin: 0 0 4px; letter-spacing: 0.5px; }
           h2 { font-size: 14px; margin: 0 0 12px; color: #555; font-weight: 600; }
           table { width: 100%; border-collapse: collapse; margin-top: 20px; }

@@ -28,14 +28,27 @@ export default function ImageLightbox({ src, onClose }: Props) {
         aria-label="Close"
         title="Close"
         style={{
-          position: 'absolute', top: 16, right: 16, background: 'rgba(0,0,0,0.6)',
-          border: 0, color: '#FFFFFF', cursor: 'pointer', padding: 8, borderRadius: '50%',
+          // R26: lift close button below iPhone notch / Dynamic Island and away
+          // from the right-edge gesture area on landscape iPhones.
+          position: 'absolute',
+          top: 'calc(16px + env(safe-area-inset-top, 0px))',
+          right: 'calc(16px + env(safe-area-inset-right, 0px))',
+          background: 'rgba(0,0,0,0.6)',
+          border: 0, color: '#FFFFFF', cursor: 'pointer',
+          // Touch target: 44x44 minimum on coarse pointers.
+          padding: 12, borderRadius: '50%', minWidth: 44, minHeight: 44,
           display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+          zIndex: 1,
         }}
       >
-        <X size={18} />
+        <X size={20} />
       </button>
-      <img src={src} alt="Preview" style={{ maxWidth: '90vw', maxHeight: '90vh', objectFit: 'contain' }} />
+      {/* R26: dvh accounts for iOS Safari address bar; safe-area reserved on each side. */}
+      <img src={src} alt="Preview" style={{
+        maxWidth: 'calc(100vw - max(16px, env(safe-area-inset-left, 0px)) - max(16px, env(safe-area-inset-right, 0px)))',
+        maxHeight: 'calc(100dvh - max(16px, env(safe-area-inset-top, 0px)) - max(16px, env(safe-area-inset-bottom, 0px)))',
+        objectFit: 'contain',
+      }} />
     </div>
   );
 }
