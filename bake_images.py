@@ -9,7 +9,7 @@ icons_dir = f"{base_dir}/icons"
 template = Image.open(template_path).convert("RGBA")
 W, H = template.size
 
-font_title = ImageFont.truetype("/System/Library/Fonts/Supplemental/Arial Bold.ttf", 95)
+font_title = ImageFont.truetype("/System/Library/Fonts/Supplemental/Arial Bold.ttf", 100)
 
 areas = {
     "tissue_repair": "Tissue Repair",
@@ -38,11 +38,11 @@ for key, title in areas.items():
     icon_path = f"{icons_dir}/{key}.png"
     if os.path.exists(icon_path):
         icon = Image.open(icon_path).convert("RGBA")
-        # Resize to be massive
-        icon = icon.resize((550, 550), Image.Resampling.LANCZOS)
+        # Resize to be absolutely massive
+        icon = icon.resize((650, 650), Image.Resampling.LANCZOS)
         iw, ih = icon.size
-        # Center horizontally, push up to make room for large text
-        icon_y = 110
+        # Center horizontally, push up to top to make room for large text
+        icon_y = 60
         icon_x = (W - iw) // 2
         img.paste(icon, (icon_x, icon_y), icon)
     else:
@@ -50,12 +50,12 @@ for key, title in areas.items():
         
     # 2. Draw Title
     lines = title.split("\n")
-    y_text = 680
+    y_text = 710
     for line in lines:
         bbox = draw.textbbox((0, 0), line, font=font_title)
         lw = bbox[2] - bbox[0]
         draw.text(((W - lw) / 2, y_text), line, font=font_title, fill=(255, 255, 255, 255))
-        y_text += 110 # line height
+        y_text += 115 # line height
 
     img.save(f"{base_dir}/{key}.png")
 
