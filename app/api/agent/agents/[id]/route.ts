@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createServiceClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/server';
 import { requireAgent } from '@/lib/admin-auth';
 import { assertSameOrigin } from '@/lib/csrf';
 
@@ -25,7 +25,7 @@ type CallerCheck =
 async function gateManager(): Promise<CallerCheck> {
   const gate = await requireAgent();
   if (!gate.ok) return { ok: false, response: gate.response };
-  const supabase = await createServiceClient();
+  const supabase = createAdminClient();
   const { data: caller } = await supabase
     .from('profiles')
     .select('role, is_super_agent')
@@ -59,7 +59,7 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ id: string
     const gate = await gateManager();
     if (!gate.ok) return gate.response;
     const { id } = await ctx.params;
-    const supabase = await createServiceClient();
+    const supabase = createAdminClient();
 
     const { data: agent, error } = await supabase
       .from('profiles')
@@ -202,7 +202,7 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
     const gate = await gateManager();
     if (!gate.ok) return gate.response;
     const { id } = await ctx.params;
-    const supabase = await createServiceClient();
+    const supabase = createAdminClient();
 
     const { data: target } = await supabase
       .from('profiles')
