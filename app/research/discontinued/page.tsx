@@ -5,7 +5,7 @@
 
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { createClient } from '@/lib/supabase/server';
+import { getAllCompounds } from '@/lib/compounds-server';
 import { evidenceTier, wadaLabel } from '@/lib/compounds';
 import BrowseFilterShell from '@/components/research/BrowseFilterShell';
 
@@ -79,16 +79,10 @@ function CompoundCard({ c }: { c: DiscontinuedRow }) {
 }
 
 export default async function ResearchDiscontinuedPage() {
-  const supabase = await createClient();
-  const { data } = await supabase
-    .from('compounds')
-    .select(
-      'slug, display_name, evidence_tier, wada_status, category, plain_summary, discontinuation_reason, discontinuation_year'
-    )
-    .eq('is_discontinued', true)
-    .order('discontinuation_year', { ascending: false });
-
-  const rows = (data ?? []) as DiscontinuedRow[];
+  const all = await getAllCompounds();
+  const rows = all
+    .filter((c) => (c as any).is_discontinued === true)
+    .sort((a, b) => ((b as any).discontinuation_year ?? 0) - ((a as any).discontinuation_year ?? 0)) as unknown as DiscontinuedRow[];
 
 
   const decadeOrder = ['2020s', '2010s', '2000s', '1990s', '1980s', 'Pre-1980s', 'Year Unknown'];

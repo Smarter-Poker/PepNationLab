@@ -5,7 +5,7 @@
 
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { createClient } from '@/lib/supabase/server';
+import { getAllCompounds } from '@/lib/compounds-server';
 import { evidenceTier, wadaLabel } from '@/lib/compounds';
 import BrowseFilterShell from '@/components/research/BrowseFilterShell';
 
@@ -53,16 +53,8 @@ const PHASE_COLORS: Record<string, string> = {
 };
 
 export default async function ResearchInPipelinePage() {
-  const supabase = await createClient();
-  const { data } = await supabase
-    .from('compounds')
-    .select(
-      'slug, display_name, evidence_tier, wada_status, pipeline_status, pipeline_phase, pipeline_indication, plain_summary'
-    )
-    .or('pipeline_status.not.is.null,pipeline_phase.not.is.null')
-    .order('display_name', { ascending: true });
-
-  const rows = (data ?? []) as PipelineRow[];
+  const all = await getAllCompounds();
+  const rows = all.filter((c) => (c as any).pipeline_status != null || (c as any).pipeline_phase != null) as unknown as PipelineRow[];
 
   const groups = new Map<string, PipelineRow[]>();
   for (const r of rows) {
