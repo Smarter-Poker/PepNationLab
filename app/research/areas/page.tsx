@@ -183,27 +183,62 @@ export default function TherapeuticAreasPage() {
           }
         }
         
-        /* Full Image Card Link */
-        .full-image-link {
-          display: block;
+        /* AI Template Card Layout */
+        .ai-card-link {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          text-align: center;
           text-decoration: none;
           transition: all 0.2s ease;
-          border-radius: 20px; /* Crops the dark background to match the metal frame curvature */
+          border-radius: 24px;
           overflow: hidden;
-          box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+          box-shadow: 0 10px 30px rgba(0,0,0,0.6);
           aspect-ratio: 1 / 1;
+          background-image: url('/images/areas/blank_card.png');
+          background-size: cover;
+          background-position: center;
+          padding: 12% 8% 8% 8%;
+          position: relative;
         }
         
-        .full-image-link:hover {
+        .ai-card-link:hover {
           transform: translateY(-4px) scale(1.02);
-          box-shadow: 0 16px 32px rgba(0,0,0,0.7);
+          box-shadow: 0 15px 40px rgba(0,0,0,0.8);
         }
         
-        .full-card-image {
-          width: 100%;
-          height: 100%;
-          object-fit: cover;
-          display: block;
+        .ai-card-icon {
+          height: 36%;
+          object-fit: contain;
+          margin-bottom: 6%;
+          filter: drop-shadow(0 15px 15px rgba(0,0,0,0.6));
+          transition: transform 0.3s ease;
+        }
+        
+        .ai-card-link:hover .ai-card-icon {
+          transform: scale(1.08);
+        }
+
+        .ai-card-title {
+          color: #ffffff;
+          font-size: 1.35rem;
+          font-weight: 800;
+          letter-spacing: -0.01em;
+          margin-bottom: 3%;
+          text-shadow: 0 4px 10px rgba(0,0,0,0.9);
+        }
+
+        .ai-card-desc {
+          color: #a3b0be;
+          font-size: 0.85rem;
+          line-height: 1.4;
+          font-weight: 500;
+          max-width: 90%;
+        }
+        
+        @media (max-width: 900px) {
+          .ai-card-title { font-size: 1.25rem; }
+          .ai-card-desc { font-size: 0.8rem; }
         }
       `}</style>
       
@@ -215,9 +250,15 @@ export default function TherapeuticAreasPage() {
               <Link
                 key={key}
                 href={`/research/area/${key}`}
-                className="full-image-link"
+                className="ai-card-link"
               >
-                <img src={`/images/areas/${key}.png`} alt={meta.label} className="full-card-image" />
+                <img src={`/images/areas/icons/${key}.png`} alt={meta.label} className="ai-card-icon" />
+                <span className="ai-card-title">
+                  {toTitleCase(meta.label)}
+                </span>
+                <span className="ai-card-desc">
+                  {toTitleCase(meta.blurb)}
+                </span>
               </Link>
             );
           })}
