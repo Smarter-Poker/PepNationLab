@@ -30,19 +30,7 @@ interface ApiResponse {
   note?: string;
 }
 
-// The engine accepts additional goals beyond the canonical RESEARCH_AREAS map
-// (weight_management, pain_inflammation). Surface them here so researchers can
-// pick from the full goal vocabulary the engine understands.
-const EXTRA_GOALS: Record<string, { label: string; blurb: string }> = {
-  weight_management: {
-    label: 'Weight Management',
-    blurb: 'Compounds studied for satiety, appetite, and weight regulation.',
-  },
-  pain_inflammation: {
-    label: 'Pain & Inflammation',
-    blurb: 'Compounds studied for inflammatory and analgesic pathways.',
-  },
-};
+
 
 const EVIDENCE_OPTIONS: { value: EvidenceComfort; label: string; help: string }[] = [
   { value: 'strict_human_only', label: 'Approved Drugs Only', help: 'FDA / EMA approved compounds with human trial data.' },
@@ -115,10 +103,6 @@ export default function MatchForm() {
     const items: { value: string; label: string; blurb: string }[] = [];
     for (const key of Object.keys(RESEARCH_AREAS)) {
       const meta = RESEARCH_AREAS[key];
-      items.push({ value: key, label: meta.label, blurb: meta.blurb });
-    }
-    for (const key of Object.keys(EXTRA_GOALS)) {
-      const meta = EXTRA_GOALS[key];
       items.push({ value: key, label: meta.label, blurb: meta.blurb });
     }
     return items;

@@ -78,7 +78,7 @@ const inputStyleBase: React.CSSProperties = {
 function StyledInput(props: React.InputHTMLAttributes<HTMLInputElement>) {
   const [focused, setFocused] = useState(false);
   return (
-    <StyledInput 
+    <input 
       {...props}
       onFocus={(e) => { setFocused(true); props.onFocus?.(e); }}
       onBlur={(e) => { setFocused(false); props.onBlur?.(e); }}
