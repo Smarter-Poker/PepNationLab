@@ -340,7 +340,7 @@ export default function SubAgentDashboardClient({ data, onRefresh }: { data: Ove
                             </div>
                             <div style={{ textAlign: 'right' }}>
                               <div style={{ fontWeight: 600, color: 'var(--teal)' }}>+{fmtMoney(o.sub_agent_commission_amount)}</div>
-                              <div style={{ fontSize: '13px', opacity: 0.7 }}>{o.sub_agent_commission_pct}% Profit Share</div>
+                              <div style={{ fontSize: '13px', opacity: 0.7 }}>{o.sub_agent_commission_pct}% Cut</div>
                             </div>
                           </div>
                         ))}

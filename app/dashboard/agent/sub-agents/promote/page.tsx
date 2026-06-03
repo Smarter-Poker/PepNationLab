@@ -155,10 +155,10 @@ export default function PromoteSubAgentPage() {
     <div style={{ padding: '24px', maxWidth: '900px', margin: '0 auto' }}>
       <h1 style={{ fontSize: '28px', marginBottom: '8px' }}>Promote A Researcher To Sub-Agent</h1>
       <p style={{ marginBottom: '24px', opacity: 0.85, lineHeight: 1.6 }}>
-        Sub-Agents Sell On Your Storefront At Your Prices And Earn A Commission Percentage Of Your Gross Profit
-        On Their Sales. You Set The Commission Rate (Up To 40%), Decide Whether They Run On A Credit Line Or
+        Sub-Agents Sell On Your Storefront At Your Prices And Earn A Commission Percentage Of Total
+        Sales. You Set The Commission Rate (Up To 40%), Decide Whether They Run On A Credit Line Or
         Prepaid Balance, And Cap Their Credit. Commission Accrues On Every Order And Settles To
-        Your Main Balance Weekly.
+        Their Account As Digital Credits Every Sunday Night.
       </p>
 
       {/* Share link card — shown only after a successful promotion */}
@@ -229,7 +229,7 @@ export default function PromoteSubAgentPage() {
 
         <div style={{ marginBottom: '16px' }}>
           <label style={{ display: 'block', marginBottom: '4px', fontWeight: 600 }}>
-            Commission Percentage (% Of Gross Profit): {commissionPct}%
+            Commission Percentage (% Of Total Sales): {commissionPct}%
           </label>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             <input
