@@ -12,7 +12,7 @@
  * medical advice.
  */
 
-import { NextResponse, type NextRequest } from 'next/server';
+import { NextResponse, type NextRequest, after } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
 import { parseQuery, buildAutoWildcardTsquery, type ParsedQuery, type FieldFilter } from '@/lib/research/search-parser';
 import { classifyIntent, type IntentMatch } from '@/lib/research/intent';
@@ -207,9 +207,11 @@ async function handle(req: NextRequest, q: string, limit: number, offset: number
   const latencyMs = Date.now() - t0;
   const topSlug = rows[0]?.slug ?? null;
 
-  // Best-effort analytics — never block on it.
+  // Best-effort analytics — run safely in the background using Next.js `after`
   void firstClientIp(req);
-  void logSearchQuery(supabase, parsed, intent, total, topSlug, latencyMs);
+  after(async () => {
+    await logSearchQuery(supabase, parsed, intent, total, topSlug, latencyMs);
+  });
 
   return NextResponse.json(
     {
