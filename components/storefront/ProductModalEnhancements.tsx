@@ -1,42 +1,61 @@
 'use client';
 
 /**
- * R35 Phase 2 — Product modal enhancements for agent storefronts.
+ * R35 Phase 2 + 3 — Product modal enhancements for agent storefronts.
  *
- * Adds four discovery pieces below the existing product modal body:
+ * Sections rendered below the existing product modal body, in order:
  *
- *   1. SuppliesYouNeed          — Bac. Water + Acetic Acid + Alcohol Swabs
- *                                 (we NEVER suggest syringes; that is
- *                                 enforced both by an allow-list and a
- *                                 hard FORBIDDEN_SUPPLY_NAME block).
+ *   PHASE 2
+ *     1. IsThisRightForMe         — collapsible expander that surfaces the
+ *                                   compound's studied_for + research areas +
+ *                                   WADA + cold-chain in a researcher-friendly
+ *                                   "Is This Right For My Research?" panel
+ *                                   (PHASE 3 addition).
+ *     2. StackComponentsCards     — when the current compound is itself a
+ *                                   stack (e.g., KLOW = TB10+BPC10+GHK50+KPV10),
+ *                                   each component is rendered as a tappable
+ *                                   mini-card.
+ *     3. SaveVsSeparately         — for stacks where every component is also
+ *                                   stocked on this storefront, compute the
+ *                                   sum vs the stack price.
+ *     4. SuppliesYouNeed          — Bac. Water + Acetic Acid + Alcohol Swabs.
+ *                                   We NEVER suggest syringes; that is enforced
+ *                                   both by an allow-list and a hard
+ *                                   FORBIDDEN_SUPPLY_NAME block.
+ *     5. CompoundsStudiedWithThis — ranked via lib/compounds.relatedCompounds.
  *
- *   2. StackComponentsCards     — when the current compound is itself a
- *                                 stack (e.g., KLOW = TB10+BPC10+GHK50+KPV10),
- *                                 each component is rendered as a tappable
- *                                 mini-card that opens that compound's modal
- *                                 if it exists on this storefront.
+ *   PHASE 3
+ *     6. ReconstitutionCalc       — inline lab-prep calculator using
+ *                                   lib/compounds.reconstitutionVolumeMl()
+ *                                   and drawVolumeMl(). Optional, collapsible.
  *
- *   3. SaveVsSeparately         — for stacks where every component is also
- *                                 stocked on this storefront, compute the
- *                                 sum of the cheapest variant of each
- *                                 component vs the stack's bundle price and
- *                                 show the dollar / percentage saved.
- *
- *   4. CompoundsStudiedWithThis — ranked list via lib/compounds.relatedCompounds
- *                                 filtered to compounds actually stocked here.
+ *   COMPARE
+ *     7. PinToCompareButton       — renders a small action button that fires
+ *                                   the custom DOM event `pnl:compare-add`
+ *                                   with the current product payload. The
+ *                                   compare drawer (StorefrontCompareDrawer)
+ *                                   listens for these events and tracks state
+ *                                   independently in localStorage.
  *
  * Plus a small <ClickableCategoryBadge> helper that the modal uses to make the
  * inline category badge a filter shortcut (taps it -> modal closes, storefront
  * grid filters to that category).
  *
- * Caller: components/AgentStorefrontGrid.tsx (import at top of file, mounted
- * inside the product detail modal body, replacing the single legacy
- * "Researchers Also Bought" RecommendationStrip).
+ * Caller: components/AgentStorefrontGrid.tsx. Pure presentational client
+ * component — no fs, no fetch.
  */
 
-import { useMemo } from 'react';
-import { ArrowRight, Plus } from 'lucide-react';
-import { evidenceTier, relatedCompounds, type Compound } from '@/lib/compounds';
+import { useMemo, useState, useEffect } from 'react';
+import { ArrowRight, Plus, Beaker, ChevronDown, ChevronUp, BookmarkPlus, AlertCircle, CheckCircle2 } from 'lucide-react';
+import {
+  evidenceTier,
+  relatedCompounds,
+  reconstitutionVolumeMl,
+  drawVolumeMl,
+  researchAreaLabel,
+  wadaLabel,
+  type Compound,
+} from '@/lib/compounds';
 
 export interface ModalGroupedProductRef {
   name: string;
@@ -52,6 +71,9 @@ interface Props {
   currentCompoundSlug: string | null;
   currentProductName: string;
   currentBundlePriceDollars?: number | null;
+  currentDefaultVariantId?: string | null;
+  currentImageUrl?: string | null;
+  currentVialMassMg?: number | null;
   grouped: ModalGroupedProductRef[];
   compoundsBySlug: Record<string, Compound>;
   primaryColor: string;
@@ -81,9 +103,6 @@ function pickSupply(grouped: ModalGroupedProductRef[], pattern: RegExp, currentS
 }
 
 function normalizeStackComponent(token: string): string {
-  // Stack component tokens in the database are typically compound slugs, but a
-  // few legacy rows use display names. Normalize so we can look them up either
-  // way without forcing a migration here.
   return token
     .trim()
     .toLowerCase()
@@ -240,11 +259,325 @@ export function ClickableCategoryBadge({
   );
 }
 
+/* ------------------------------------------------------------------ *
+ * Phase 3: IsThisRightForMe expander                                 *
+ * ------------------------------------------------------------------ */
+function IsThisRightForMe({
+  compound,
+  primaryColor,
+}: {
+  compound: Compound | null;
+  primaryColor: string;
+}) {
+  const [open, setOpen] = useState(false);
+  if (!compound) return null;
+  const studied = (compound.studied_for || []).slice(0, 6);
+  const areas = (compound.research_areas || []).slice(0, 6);
+  const isWadaProhibited = compound.wada_status === 'prohibited' || compound.wada_status === 'prohibited_males';
+  const isTempSensitive = compound.is_temp_sensitive;
+  if (studied.length === 0 && areas.length === 0 && !isWadaProhibited && !isTempSensitive) return null;
+
+  return (
+    <section aria-label="Is This Right For My Research" style={{
+      borderRadius: 12,
+      border: '1px solid rgba(255,255,255,0.10)',
+      background: 'rgba(255,255,255,0.02)',
+      overflow: 'hidden',
+    }}>
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
+        style={{
+          width: '100%', display: 'flex', alignItems: 'center', gap: 10,
+          padding: '12px 14px',
+          background: 'transparent', border: 'none', cursor: 'pointer',
+          color: 'var(--white)', fontWeight: 800, fontSize: '0.9rem',
+          textAlign: 'left',
+        }}
+      >
+        <CheckCircle2 size={18} color={primaryColor} aria-hidden="true" />
+        <span style={{ flex: 1 }}>Is This Right For My Research?</span>
+        {open ? <ChevronUp size={18} aria-hidden="true" /> : <ChevronDown size={18} aria-hidden="true" />}
+      </button>
+      {open && (
+        <div style={{ padding: '0 14px 14px', display: 'flex', flexDirection: 'column', gap: 12 }}>
+          {studied.length > 0 && (
+            <div>
+              <div style={{ fontSize: '0.74rem', color: 'var(--silver)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: 6 }}>
+                Best Studied For
+              </div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                {studied.map((s) => (
+                  <span key={s} style={{
+                    fontSize: '0.74rem', padding: '4px 10px', borderRadius: 9999,
+                    background: `${primaryColor}15`, color: 'var(--white)', fontWeight: 600,
+                    border: `1px solid ${primaryColor}35`,
+                  }}>{s}</span>
+                ))}
+              </div>
+            </div>
+          )}
+          {areas.length > 0 && (
+            <div>
+              <div style={{ fontSize: '0.74rem', color: 'var(--silver)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: 6 }}>
+                Research Areas
+              </div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                {areas.map((a) => (
+                  <span key={a} style={{
+                    fontSize: '0.74rem', padding: '4px 10px', borderRadius: 9999,
+                    background: 'rgba(255,255,255,0.06)', color: 'var(--white)', fontWeight: 600,
+                    border: '1px solid rgba(255,255,255,0.12)',
+                  }}>{researchAreaLabel(a)}</span>
+                ))}
+              </div>
+            </div>
+          )}
+          {(isWadaProhibited || isTempSensitive) && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {isWadaProhibited && (
+                <div style={{
+                  display: 'flex', alignItems: 'center', gap: 8,
+                  padding: '8px 12px', borderRadius: 10,
+                  background: 'rgba(229,62,62,0.10)',
+                  border: '1px solid rgba(229,62,62,0.30)',
+                  color: '#F08A8A', fontSize: '0.82rem', fontWeight: 700,
+                }}>
+                  <AlertCircle size={14} aria-hidden="true" />
+                  {wadaLabel(compound.wada_status)} - Not For Tested Athletes
+                </div>
+              )}
+              {isTempSensitive && (
+                <div style={{
+                  display: 'flex', alignItems: 'center', gap: 8,
+                  padding: '8px 12px', borderRadius: 10,
+                  background: 'rgba(0,229,255,0.08)',
+                  border: '1px solid rgba(0,229,255,0.28)',
+                  color: '#7DD8EE', fontSize: '0.82rem', fontWeight: 700,
+                }}>
+                  <AlertCircle size={14} aria-hidden="true" />
+                  Cold-Chain Handling - Refrigerate On Arrival
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+    </section>
+  );
+}
+
+/* ------------------------------------------------------------------ *
+ * Phase 3: ReconstitutionCalc                                        *
+ * ------------------------------------------------------------------ */
+function ReconstitutionCalc({
+  defaultVialMassMg,
+  primaryColor,
+}: {
+  defaultVialMassMg: number | null | undefined;
+  primaryColor: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const [vialMass, setVialMass] = useState<number>(defaultVialMassMg && defaultVialMassMg > 0 ? defaultVialMassMg : 10);
+  const [targetConc, setTargetConc] = useState<number>(2);
+  const [desiredMass, setDesiredMass] = useState<number>(0.25);
+
+  useEffect(() => {
+    if (defaultVialMassMg && defaultVialMassMg > 0) setVialMass(defaultVialMassMg);
+  }, [defaultVialMassMg]);
+
+  const diluentMl = reconstitutionVolumeMl(vialMass, targetConc);
+  const drawMl = diluentMl ? drawVolumeMl(vialMass, diluentMl, desiredMass) : null;
+
+  return (
+    <section aria-label="Reconstitution Calculator" style={{
+      borderRadius: 12,
+      border: '1px solid rgba(255,255,255,0.10)',
+      background: 'rgba(255,255,255,0.02)',
+      overflow: 'hidden',
+    }}>
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
+        style={{
+          width: '100%', display: 'flex', alignItems: 'center', gap: 10,
+          padding: '12px 14px',
+          background: 'transparent', border: 'none', cursor: 'pointer',
+          color: 'var(--white)', fontWeight: 800, fontSize: '0.9rem',
+          textAlign: 'left',
+        }}
+      >
+        <Beaker size={18} color={primaryColor} aria-hidden="true" />
+        <span style={{ flex: 1 }}>Reconstitution Calculator</span>
+        {open ? <ChevronUp size={18} aria-hidden="true" /> : <ChevronDown size={18} aria-hidden="true" />}
+      </button>
+      {open && (
+        <div style={{ padding: '0 14px 14px', display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <div style={{ fontSize: '0.74rem', color: 'var(--grey-400)', lineHeight: 1.5 }}>
+            Research-Use Lab Prep Only. Volume Of Diluent To Add Equals Mass Divided By Target Concentration.
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(140px, 100%), 1fr))', gap: 10 }}>
+            <label style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+              <span style={{ fontSize: '0.72rem', color: 'var(--silver)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em' }}>Vial Mass (Mg)</span>
+              <input
+                type="number"
+                inputMode="decimal"
+                value={vialMass || ''}
+                onChange={(e) => setVialMass(Number(e.target.value))}
+                style={{
+                  padding: '8px 10px',
+                  background: 'rgba(255,255,255,0.05)',
+                  border: '1px solid rgba(255,255,255,0.14)',
+                  borderRadius: 8, color: 'var(--white)', fontSize: '0.9rem',
+                  outline: 'none', width: '100%', boxSizing: 'border-box',
+                }}
+              />
+            </label>
+            <label style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+              <span style={{ fontSize: '0.72rem', color: 'var(--silver)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em' }}>Target Conc. (Mg/Ml)</span>
+              <input
+                type="number"
+                inputMode="decimal"
+                value={targetConc || ''}
+                onChange={(e) => setTargetConc(Number(e.target.value))}
+                style={{
+                  padding: '8px 10px',
+                  background: 'rgba(255,255,255,0.05)',
+                  border: '1px solid rgba(255,255,255,0.14)',
+                  borderRadius: 8, color: 'var(--white)', fontSize: '0.9rem',
+                  outline: 'none', width: '100%', boxSizing: 'border-box',
+                }}
+              />
+            </label>
+            <label style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+              <span style={{ fontSize: '0.72rem', color: 'var(--silver)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em' }}>Desired Mass (Mg)</span>
+              <input
+                type="number"
+                inputMode="decimal"
+                value={desiredMass || ''}
+                onChange={(e) => setDesiredMass(Number(e.target.value))}
+                style={{
+                  padding: '8px 10px',
+                  background: 'rgba(255,255,255,0.05)',
+                  border: '1px solid rgba(255,255,255,0.14)',
+                  borderRadius: 8, color: 'var(--white)', fontSize: '0.9rem',
+                  outline: 'none', width: '100%', boxSizing: 'border-box',
+                }}
+              />
+            </label>
+          </div>
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(min(180px, 100%), 1fr))',
+            gap: 10,
+          }}>
+            <div style={{
+              padding: 12, borderRadius: 10,
+              background: `${primaryColor}10`,
+              border: `1px solid ${primaryColor}30`,
+            }}>
+              <div style={{ fontSize: '0.72rem', color: primaryColor, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                Diluent To Add
+              </div>
+              <div style={{ fontSize: '1.2rem', color: 'var(--white)', fontWeight: 800, fontFamily: 'var(--font-brand)', marginTop: 4 }}>
+                {diluentMl !== null ? `${diluentMl.toFixed(2)} mL` : 'Enter Mass + Conc.'}
+              </div>
+            </div>
+            <div style={{
+              padding: 12, borderRadius: 10,
+              background: 'rgba(104,211,145,0.10)',
+              border: '1px solid rgba(104,211,145,0.32)',
+            }}>
+              <div style={{ fontSize: '0.72rem', color: '#68D391', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                Volume To Draw
+              </div>
+              <div style={{ fontSize: '1.2rem', color: 'var(--white)', fontWeight: 800, fontFamily: 'var(--font-brand)', marginTop: 4 }}>
+                {drawMl !== null ? `${drawMl.toFixed(3)} mL` : 'Enter Desired Mass'}
+              </div>
+              <div style={{ fontSize: '0.7rem', color: 'var(--grey-400)', marginTop: 4 }}>
+                For {desiredMass} Mg
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </section>
+  );
+}
+
+/* ------------------------------------------------------------------ *
+ * Phase 3: Pin To Compare                                            *
+ * ------------------------------------------------------------------ */
+function PinToCompareButton({
+  productName,
+  imageUrl,
+  pricePerVialDollars,
+  compoundSlug,
+  evidenceTierKey,
+  primaryColor,
+}: {
+  productName: string;
+  imageUrl: string | null;
+  pricePerVialDollars: number | null;
+  compoundSlug: string | null;
+  evidenceTierKey: string | null;
+  primaryColor: string;
+}) {
+  function pin() {
+    if (typeof window === 'undefined') return;
+    const detail = {
+      productName,
+      imageUrl,
+      pricePerVialDollars,
+      compoundSlug,
+      evidenceTierKey,
+      pinnedAt: Date.now(),
+    };
+    try {
+      window.dispatchEvent(new CustomEvent('pnl:compare-add', { detail }));
+    } catch {
+      // ignore — drawer may not be mounted yet, it will catch up via storage poll
+    }
+    try {
+      const raw = window.localStorage.getItem('pnl:compare') || '[]';
+      const list = JSON.parse(raw) as Array<typeof detail>;
+      const filtered = list.filter((x) => x.productName !== productName);
+      filtered.push(detail);
+      const trimmed = filtered.slice(-3);
+      window.localStorage.setItem('pnl:compare', JSON.stringify(trimmed));
+    } catch {
+      // localStorage may be blocked; non-fatal.
+    }
+  }
+  return (
+    <button
+      type="button"
+      onClick={pin}
+      aria-label={`Pin ${productName} To Compare`}
+      style={{
+        display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+        padding: '10px 14px', borderRadius: 10, cursor: 'pointer',
+        border: `1px solid ${primaryColor}55`,
+        background: 'linear-gradient(180deg, #2b3744 0%, #1b242e 100%)',
+        boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.12), 0 3px 8px rgba(0,0,0,0.45)',
+        color: primaryColor, fontSize: '0.82rem', fontWeight: 700,
+      }}
+    >
+      <BookmarkPlus size={14} aria-hidden="true" /> Pin To Compare
+    </button>
+  );
+}
+
 export default function ProductModalEnhancements({
   currentCompound,
   currentCompoundSlug,
   currentProductName,
   currentBundlePriceDollars,
+  currentDefaultVariantId,
+  currentImageUrl,
+  currentVialMassMg,
   grouped,
   compoundsBySlug,
   primaryColor,
@@ -301,9 +634,6 @@ export default function ProductModalEnhancements({
     const allCompounds = Object.values(compoundsBySlug).filter(Boolean) as Compound[];
     if (allCompounds.length === 0) return [];
     const ranked = relatedCompounds(currentCompound, allCompounds, 8);
-    // Filter to compounds we ACTUALLY stock on this storefront, and never echo
-    // back a stack-component (those already render in the StackComponentsCards
-    // section above).
     const stackSlugs = new Set(stackComponents.map((s) => s.compound?.slug).filter(Boolean));
     return ranked
       .map((r) => {
@@ -314,12 +644,15 @@ export default function ProductModalEnhancements({
       .slice(0, 4);
   }, [currentCompound, compoundsBySlug, grouped, stackComponents]);
 
-  const hasAnything =
+  const hasAnythingPhase2 =
     supplies.length > 0 ||
     stackComponents.length > 0 ||
     studiedWith.length > 0 ||
     saveVsSeparately !== null;
-  if (!hasAnything) return null;
+
+  const showPhase3 = currentCompound !== null;
+
+  if (!hasAnythingPhase2 && !showPhase3) return null;
 
   return (
     <div style={{
@@ -328,6 +661,8 @@ export default function ProductModalEnhancements({
       borderTop: '1px solid rgba(255,255,255,0.06)',
       display: 'flex', flexDirection: 'column', gap: 22,
     }}>
+      <IsThisRightForMe compound={currentCompound} primaryColor={primaryColor} />
+
       {stackComponents.length > 0 && (
         <section aria-label="Stack Components">
           <SectionTitle primaryColor={primaryColor}>
@@ -497,6 +832,24 @@ export default function ProductModalEnhancements({
           </div>
         </section>
       )}
+
+      <ReconstitutionCalc
+        defaultVialMassMg={currentVialMassMg ?? null}
+        primaryColor={primaryColor}
+      />
+
+      <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+        <PinToCompareButton
+          productName={currentProductName}
+          imageUrl={currentImageUrl ?? null}
+          pricePerVialDollars={
+            currentBundlePriceDollars != null ? Number(currentBundlePriceDollars) / 10 : null
+          }
+          compoundSlug={currentCompoundSlug ?? null}
+          evidenceTierKey={currentCompound?.evidence_tier ?? null}
+          primaryColor={primaryColor}
+        />
+      </div>
     </div>
   );
 }
