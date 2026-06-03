@@ -61,6 +61,7 @@ function parseInput(raw: unknown): MatchInput | null {
     evidenceComfort: obj.evidenceComfort,
     wadaConstraint: obj.wadaConstraint,
     riskTolerance: obj.riskTolerance,
+    preference: typeof obj.preference === 'string' && ['single', 'stack', 'either'].includes(obj.preference) ? obj.preference as 'single' | 'stack' | 'either' : undefined,
     excludeInjectables: typeof obj.excludeInjectables === 'boolean' ? obj.excludeInjectables : undefined,
     requireLongHalfLife: typeof obj.requireLongHalfLife === 'boolean' ? obj.requireLongHalfLife : undefined,
     excludeSlugs: Array.isArray(obj.excludeSlugs) ? obj.excludeSlugs.filter((s) => typeof s === 'string') : undefined,

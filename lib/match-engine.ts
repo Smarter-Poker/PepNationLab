@@ -32,6 +32,7 @@ export interface MatchInput {
   excludeInjectables?: boolean;
   requireLongHalfLife?: boolean;
   excludeSlugs?: string[];
+  preference?: 'single' | 'stack' | 'either';
 }
 
 export interface ScoreBreakdown {
@@ -188,6 +189,13 @@ function failsHalfLifeGate(c: Compound, requireLongHalfLife: boolean | undefined
   return false;
 }
 
+function failsPreferenceGate(c: Compound, preference: 'single' | 'stack' | 'either' | undefined): boolean {
+  if (!preference || preference === 'either') return false;
+  if (preference === 'single' && c.is_stack) return true;
+  if (preference === 'stack' && !c.is_stack) return true;
+  return false;
+}
+
 // --------------------------------------------------------------------------
 // Rationale composition.
 // --------------------------------------------------------------------------
@@ -250,6 +258,7 @@ function scoreOne(input: MatchInput, c: Compound): { score: number; rationale: s
   if (failsRiskGate(c, input.riskTolerance)) return null;
   if (failsHandlingGate(c, input.excludeInjectables)) return null;
   if (failsHalfLifeGate(c, input.requireLongHalfLife)) return null;
+  if (failsPreferenceGate(c, input.preference)) return null;
   if (input.excludeSlugs && input.excludeSlugs.includes(c.slug)) return null;
 
   let score = 0;
@@ -319,7 +328,7 @@ function scoreOne(input: MatchInput, c: Compound): { score: number; rationale: s
 export function scoreCompounds(
   input: MatchInput,
   compounds: Compound[],
-  limit: number = 5
+  limit: number = 12
 ): MatchResult[] {
   const scored: MatchResult[] = [];
   for (const c of compounds) {

@@ -118,8 +118,8 @@ function MatchFormInner() {
   const [evidenceComfort, setEvidenceComfort] = useState<EvidenceComfort>((searchParams.get('comfort') as EvidenceComfort) || 'preclinical_ok');
   const [wadaConstraint, setWadaConstraint] = useState<WadaConstraint>((searchParams.get('wada') as WadaConstraint) || 'no_constraint');
   const [riskTolerance, setRiskTolerance] = useState<RiskTolerance>((searchParams.get('risk') as RiskTolerance) || 'moderate_ok');
-  const [excludeInjectables, setExcludeInjectables] = useState<boolean>(searchParams.get('no_inject') === 'true');
-  const [requireLongHalfLife, setRequireLongHalfLife] = useState<boolean>(searchParams.get('long_hl') === 'true');
+  const [excludeInjectables, setExcludeInjectables] = useState<boolean>(searchParams.get('no_injectables') === 'true');
+  const [requireLongHalfLife, setRequireLongHalfLife] = useState<boolean>(searchParams.get('long_half_life') === 'true');
   const [excludeSlugs, setExcludeSlugs] = useState<string[]>(searchParams.getAll('exclude') || []);
 
   const [loading, setLoading] = useState(false);
@@ -350,6 +350,9 @@ function MatchFormInner() {
             </h4>
             <p style={{ margin: 0, fontSize: '0.95rem', color: 'var(--silver)' }}>
               The engine detected that <strong>{stackPartners[0].displayName}</strong> and <strong>{stackPartners[1].displayName}</strong> are highly synergistic and frequently researched together as a stack for this protocol.
+              <Link href={`/research/compare?add=${stackPartners[0].slug},${stackPartners[1].slug}`} style={{ color: 'var(--white)', fontWeight: 700, marginLeft: '8px', textDecoration: 'underline' }}>
+                Compare Them Side-by-Side <ChevronRight size={14} style={{ display: 'inline', verticalAlign: 'middle' }} />
+              </Link>
             </p>
           </div>
         )}
