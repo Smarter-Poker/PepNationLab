@@ -27,6 +27,57 @@ interface DiscontinuedRow {
   discontinuation_year: number | null;
 }
 
+function decadeLabel(year: number | null) {
+  if (!year) return 'Year Unknown';
+  if (year < 1980) return 'Pre-1980s';
+  if (year < 1990) return '1980s';
+  if (year < 2000) return '1990s';
+  if (year < 2010) return '2000s';
+  if (year < 2020) return '2010s';
+  return '2020s';
+}
+
+function CompoundCard({ c }: { c: DiscontinuedRow }) {
+  const t = evidenceTier(c.evidence_tier);
+  return (
+    <article
+      className="card-metal"
+      style={{
+        padding: 'var(--space-4, 16px) var(--space-5, 24px)',
+        borderRadius: 'var(--radius-lg, 12px)',
+        borderLeft: '3px solid var(--red-600, #E53E3E)',
+      }}
+    >
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 'var(--space-3, 12px)', flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', minWidth: 0 }}>
+          <Link href={`/research/${c.slug}`} style={{ fontSize: '1.15rem', fontWeight: 800, color: 'var(--white, #FFFFFF)', textDecoration: 'none' }}>
+            {c.display_name}
+          </Link>
+          <span style={{ fontSize: '0.82rem', color: 'var(--silver, #A8B4C0)' }}>
+            {c.category} · <span style={{ color: t.color }}>{t.label}</span>
+            {c.wada_status && c.wada_status !== 'not_listed' ? ` · ${wadaLabel(c.wada_status)}` : ''}
+          </span>
+        </div>
+        {c.discontinuation_year && (
+          <span style={{ fontSize: '0.85rem', color: 'var(--red-600, #E53E3E)', fontWeight: 700, whiteSpace: 'nowrap' }}>
+            Discontinued {c.discontinuation_year}
+          </span>
+        )}
+      </div>
+      {c.discontinuation_reason && (
+        <p style={{ marginTop: 'var(--space-3, 12px)', marginBottom: 0, fontSize: '0.9rem', color: 'var(--silver-light, #D0DAE4)', lineHeight: 1.6 }}>
+          <strong style={{ color: 'var(--white, #FFFFFF)' }}>Reason:</strong> {c.discontinuation_reason}
+        </p>
+      )}
+      {c.plain_summary && (
+        <p style={{ marginTop: 'var(--space-2, 8px)', marginBottom: 0, fontSize: '0.85rem', color: 'var(--silver, #A8B4C0)', lineHeight: 1.6 }}>
+          {c.plain_summary}
+        </p>
+      )}
+    </article>
+  );
+}
+
 export default async function ResearchDiscontinuedPage() {
   const supabase = await createClient();
   const { data } = await supabase
@@ -39,16 +90,6 @@ export default async function ResearchDiscontinuedPage() {
 
   const rows = (data ?? []) as DiscontinuedRow[];
 
-  // Group by discontinuation decade
-  function decadeLabel(year: number | null) {
-    if (!year) return 'Year Unknown';
-    if (year < 1980) return 'Pre-1980s';
-    if (year < 1990) return '1980s';
-    if (year < 2000) return '1990s';
-    if (year < 2010) return '2000s';
-    if (year < 2020) return '2010s';
-    return '2020s';
-  }
 
   const decadeOrder = ['2020s', '2010s', '2000s', '1990s', '1980s', 'Pre-1980s', 'Year Unknown'];
   const decadeMap = new Map<string, DiscontinuedRow[]>();
@@ -57,47 +98,6 @@ export default async function ResearchDiscontinuedPage() {
     const d = decadeLabel(r.discontinuation_year);
     if (!decadeMap.has(d)) decadeMap.set(d, []);
     decadeMap.get(d)!.push(r);
-  }
-
-  function CompoundCard({ c }: { c: DiscontinuedRow }) {
-    const t = evidenceTier(c.evidence_tier);
-    return (
-      <article
-        className="card-metal"
-        style={{
-          padding: 'var(--space-4, 16px) var(--space-5, 24px)',
-          borderRadius: 'var(--radius-lg, 12px)',
-          borderLeft: '3px solid var(--red-600, #E53E3E)',
-        }}
-      >
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 'var(--space-3, 12px)', flexWrap: 'wrap' }}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', minWidth: 0 }}>
-            <Link href={`/research/${c.slug}`} style={{ fontSize: '1.15rem', fontWeight: 800, color: 'var(--white, #FFFFFF)', textDecoration: 'none' }}>
-              {c.display_name}
-            </Link>
-            <span style={{ fontSize: '0.82rem', color: 'var(--silver, #A8B4C0)' }}>
-              {c.category} · <span style={{ color: t.color }}>{t.label}</span>
-              {c.wada_status && c.wada_status !== 'not_listed' ? ` · ${wadaLabel(c.wada_status)}` : ''}
-            </span>
-          </div>
-          {c.discontinuation_year && (
-            <span style={{ fontSize: '0.85rem', color: 'var(--red-600, #E53E3E)', fontWeight: 700, whiteSpace: 'nowrap' }}>
-              Discontinued {c.discontinuation_year}
-            </span>
-          )}
-        </div>
-        {c.discontinuation_reason && (
-          <p style={{ marginTop: 'var(--space-3, 12px)', marginBottom: 0, fontSize: '0.9rem', color: 'var(--silver-light, #D0DAE4)', lineHeight: 1.6 }}>
-            <strong style={{ color: 'var(--white, #FFFFFF)' }}>Reason:</strong> {c.discontinuation_reason}
-          </p>
-        )}
-        {c.plain_summary && (
-          <p style={{ marginTop: 'var(--space-2, 8px)', marginBottom: 0, fontSize: '0.85rem', color: 'var(--silver, #A8B4C0)', lineHeight: 1.6 }}>
-            {c.plain_summary}
-          </p>
-        )}
-      </article>
-    );
   }
 
   const shellGroups = [

@@ -25,6 +25,54 @@ interface CompoundRow {
   display_name: string;
 }
 
+interface CompoundBlockProps {
+  slug: string;
+  name: string;
+  companions: CompanionRow[];
+  nameBySlug: Map<string, string>;
+}
+
+function CompoundBlock({ slug, name, companions, nameBySlug }: CompoundBlockProps) {
+  return (
+    <article
+      className="card-metal"
+      style={{ padding: 'var(--space-4, 16px) var(--space-5, 24px)', borderRadius: 'var(--radius-lg, 12px)' }}
+    >
+      <div style={{ marginBottom: 'var(--space-3, 12px)' }}>
+        <Link href={`/research/${slug}`} style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--white, #FFFFFF)', textDecoration: 'none' }}>
+          {name}
+        </Link>
+        <span style={{ display: 'block', fontSize: '0.82rem', color: 'var(--silver, #A8B4C0)', marginTop: '2px' }}>
+          Most Frequently Co-Cited With:
+        </span>
+      </div>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--space-2, 8px)' }}>
+        {companions.map((co) => (
+          <Link
+            key={co.companion_slug}
+            href={`/research/${co.companion_slug}`}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              padding: '6px 12px',
+              borderRadius: 'var(--radius-md, 8px)',
+              background: 'rgba(0,196,188,0.10)',
+              border: '1px solid rgba(0,196,188,0.25)',
+              textDecoration: 'none',
+              color: 'var(--white, #FFFFFF)',
+              fontSize: '0.85rem',
+            }}
+          >
+            {nameBySlug.get(co.companion_slug) ?? co.companion_slug}
+            <span style={{ color: 'var(--teal, #00C4BC)', fontWeight: 700 }}>{co.co_occurrence_count}</span>
+          </Link>
+        ))}
+      </div>
+    </article>
+  );
+}
+
 export default async function ResearchCorrelatedPage() {
   const supabase = await createClient();
   const { data: companions } = await supabase
@@ -67,48 +115,6 @@ export default async function ResearchCorrelatedPage() {
   }
   const letters = Array.from(letterMap.keys()).sort();
 
-  function CompoundBlock({ slug }: { slug: string }) {
-    const name = nameBySlug.get(slug) ?? slug;
-    const companions = grouped.get(slug)!;
-    return (
-      <article
-        className="card-metal"
-        style={{ padding: 'var(--space-4, 16px) var(--space-5, 24px)', borderRadius: 'var(--radius-lg, 12px)' }}
-      >
-        <div style={{ marginBottom: 'var(--space-3, 12px)' }}>
-          <Link href={`/research/${slug}`} style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--white, #FFFFFF)', textDecoration: 'none' }}>
-            {name}
-          </Link>
-          <span style={{ display: 'block', fontSize: '0.82rem', color: 'var(--silver, #A8B4C0)', marginTop: '2px' }}>
-            Most Frequently Co-Cited With:
-          </span>
-        </div>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--space-2, 8px)' }}>
-          {companions.map((co) => (
-            <Link
-              key={co.companion_slug}
-              href={`/research/${co.companion_slug}`}
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '6px',
-                padding: '6px 12px',
-                borderRadius: 'var(--radius-md, 8px)',
-                background: 'rgba(0,196,188,0.10)',
-                border: '1px solid rgba(0,196,188,0.25)',
-                textDecoration: 'none',
-                color: 'var(--white, #FFFFFF)',
-                fontSize: '0.85rem',
-              }}
-            >
-              {nameBySlug.get(co.companion_slug) ?? co.companion_slug}
-              <span style={{ color: 'var(--teal, #00C4BC)', fontWeight: 700 }}>{co.co_occurrence_count}</span>
-            </Link>
-          ))}
-        </div>
-      </article>
-    );
-  }
 
   const shellGroups = [
     // All
@@ -118,7 +124,15 @@ export default async function ResearchCorrelatedPage() {
       count: allSlugs.length,
       children: (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4, 16px)' }}>
-          {allSlugs.map((slug) => <CompoundBlock key={slug} slug={slug} />)}
+          {allSlugs.map((slug) => (
+            <CompoundBlock
+              key={slug}
+              slug={slug}
+              name={nameBySlug.get(slug) ?? slug}
+              companions={grouped.get(slug)!}
+              nameBySlug={nameBySlug}
+            />
+          ))}
         </div>
       ),
     },
@@ -131,7 +145,15 @@ export default async function ResearchCorrelatedPage() {
         count: slugs.length,
         children: (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4, 16px)' }}>
-            {slugs.map((slug) => <CompoundBlock key={slug} slug={slug} />)}
+            {slugs.map((slug) => (
+              <CompoundBlock
+                key={slug}
+                slug={slug}
+                name={nameBySlug.get(slug) ?? slug}
+                companions={grouped.get(slug)!}
+                nameBySlug={nameBySlug}
+              />
+            ))}
           </div>
         ),
       };

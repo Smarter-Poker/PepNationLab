@@ -76,7 +76,11 @@ function ApprovalCard({ c }: { c: ApprovedDrug }) {
   );
 }
 
-  const compounds = (await getAllCompounds()).filter((c) => c.evidence_tier === 'approved_drug') as ApprovedDrug[];
+export default async function ResearchApprovedDrugsPage() {
+  const compounds = ((await getAllCompounds()).filter(
+    (c) => c.evidence_tier === 'approved_drug'
+  ) as unknown) as ApprovedDrug[];
+
   const sorted = [...compounds].sort((a, b) => {
     const ay = a.year_first_approved ?? 0;
     const by = b.year_first_approved ?? 0;
@@ -84,7 +88,15 @@ function ApprovalCard({ c }: { c: ApprovedDrug }) {
     return a.display_name.localeCompare(b.display_name);
   });
 
+  const categoryMap = new Map<string, ApprovedDrug[]>();
+  for (const c of sorted) {
+    const cat = c.category || 'Uncategorized';
+    if (!categoryMap.has(cat)) categoryMap.set(cat, []);
+    categoryMap.get(cat)!.push(c);
+  }
   const sortedCategories = Array.from(categoryMap.keys()).sort((a, b) => a.localeCompare(b));
+
+  const shellGroups = [
     {
       key: 'all',
       label: 'All Approved',

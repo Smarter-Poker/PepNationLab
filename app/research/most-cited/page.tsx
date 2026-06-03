@@ -85,6 +85,7 @@ export default async function ResearchMostCitedPage() {
   });
 
 
+  const shellGroups = [
     {
       key: 'all',
       label: 'All Compounds',

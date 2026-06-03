@@ -27,6 +27,50 @@ interface OrphanRow {
   ema_approval_year: number | null;
 }
 
+function CompoundCard({ c }: { c: OrphanRow }) {
+  const t = evidenceTier(c.evidence_tier);
+  return (
+    <article
+      className="card-metal"
+      style={{
+        padding: 'var(--space-4, 16px) var(--space-5, 24px)',
+        borderRadius: 'var(--radius-lg, 12px)',
+        borderLeft: '3px solid var(--teal, #00C4BC)',
+      }}
+    >
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 'var(--space-3, 12px)', flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', minWidth: 0 }}>
+          <Link href={`/research/${c.slug}`} style={{ fontSize: '1.15rem', fontWeight: 800, color: 'var(--white, #FFFFFF)', textDecoration: 'none' }}>
+            {c.display_name}
+          </Link>
+          <span style={{ fontSize: '0.82rem', color: 'var(--silver, #A8B4C0)' }}>
+            {c.category} · <span style={{ color: t.color }}>{t.label}</span>
+            {c.wada_status && c.wada_status !== 'not_listed' ? ` · ${wadaLabel(c.wada_status)}` : ''}
+          </span>
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '2px' }}>
+          {c.fda_approval_year && (
+            <span style={{ fontSize: '0.75rem', color: '#68D391', fontWeight: 700 }}>FDA {c.fda_approval_year}</span>
+          )}
+          {c.ema_approval_year && (
+            <span style={{ fontSize: '0.75rem', color: '#63B3ED', fontWeight: 700 }}>EMA {c.ema_approval_year}</span>
+          )}
+        </div>
+      </div>
+      {(c.orphan_indications ?? []).length > 0 && (
+        <ul style={{ margin: 'var(--space-3, 12px) 0 0', padding: '0 0 0 var(--space-4, 16px)', color: 'var(--silver, #A8B4C0)', fontSize: '0.85rem', lineHeight: 1.6 }}>
+          {c.orphan_indications!.map((ind, i) => <li key={i}>{ind}</li>)}
+        </ul>
+      )}
+      {c.plain_summary && (
+        <p style={{ marginTop: 'var(--space-2, 8px)', marginBottom: 0, fontSize: '0.85rem', color: 'var(--silver-light, #D0DAE4)', lineHeight: 1.6 }}>
+          {c.plain_summary}
+        </p>
+      )}
+    </article>
+  );
+}
+
 export default async function ResearchOrphanDrugsPage() {
   const supabase = await createClient();
   const { data } = await supabase
@@ -52,49 +96,6 @@ export default async function ResearchOrphanDrugsPage() {
   const fdaApproved = rows.filter((r) => r.fda_approval_year);
   const emaApproved = rows.filter((r) => r.ema_approval_year);
 
-  function CompoundCard({ c }: { c: OrphanRow }) {
-    const t = evidenceTier(c.evidence_tier);
-    return (
-      <article
-        className="card-metal"
-        style={{
-          padding: 'var(--space-4, 16px) var(--space-5, 24px)',
-          borderRadius: 'var(--radius-lg, 12px)',
-          borderLeft: '3px solid var(--teal, #00C4BC)',
-        }}
-      >
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 'var(--space-3, 12px)', flexWrap: 'wrap' }}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', minWidth: 0 }}>
-            <Link href={`/research/${c.slug}`} style={{ fontSize: '1.15rem', fontWeight: 800, color: 'var(--white, #FFFFFF)', textDecoration: 'none' }}>
-              {c.display_name}
-            </Link>
-            <span style={{ fontSize: '0.82rem', color: 'var(--silver, #A8B4C0)' }}>
-              {c.category} · <span style={{ color: t.color }}>{t.label}</span>
-              {c.wada_status && c.wada_status !== 'not_listed' ? ` · ${wadaLabel(c.wada_status)}` : ''}
-            </span>
-          </div>
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '2px' }}>
-            {c.fda_approval_year && (
-              <span style={{ fontSize: '0.75rem', color: '#68D391', fontWeight: 700 }}>FDA {c.fda_approval_year}</span>
-            )}
-            {c.ema_approval_year && (
-              <span style={{ fontSize: '0.75rem', color: '#63B3ED', fontWeight: 700 }}>EMA {c.ema_approval_year}</span>
-            )}
-          </div>
-        </div>
-        {(c.orphan_indications ?? []).length > 0 && (
-          <ul style={{ margin: 'var(--space-3, 12px) 0 0', padding: '0 0 0 var(--space-4, 16px)', color: 'var(--silver, #A8B4C0)', fontSize: '0.85rem', lineHeight: 1.6 }}>
-            {c.orphan_indications!.map((ind, i) => <li key={i}>{ind}</li>)}
-          </ul>
-        )}
-        {c.plain_summary && (
-          <p style={{ marginTop: 'var(--space-2, 8px)', marginBottom: 0, fontSize: '0.85rem', color: 'var(--silver-light, #D0DAE4)', lineHeight: 1.6 }}>
-            {c.plain_summary}
-          </p>
-        )}
-      </article>
-    );
-  }
 
   const shellGroups = [
     {
