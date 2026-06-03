@@ -56,6 +56,22 @@ function writePinned(list: PinnedItem[]) {
   }
 }
 
+function dispatchAddAllToCart(items: PinnedItem[]) {
+  if (typeof window === 'undefined') return;
+  // Phase 4: Stack Builder — emit a single event the storefront grid listens
+  // for (via existing pnl:add-to-cart-by-name handler in AgentStorefrontGrid).
+  // The handler resolves each name to a product variant and adds 1 vial each.
+  for (const item of items) {
+    try {
+      window.dispatchEvent(new CustomEvent('pnl:add-to-cart-by-name', {
+        detail: { name: item.productName },
+      }));
+    } catch {
+      // ignore
+    }
+  }
+}
+
 export default function StorefrontCompareDrawer({ primaryColor }: { primaryColor: string }) {
   const [pinned, setPinned] = useState<PinnedItem[]>([]);
   const [mounted, setMounted] = useState(false);
@@ -173,6 +189,19 @@ export default function StorefrontCompareDrawer({ primaryColor }: { primaryColor
             }}
           >
             {collapsed ? 'Expand' : 'Collapse'}
+          </button>
+          <button
+            type="button"
+            onClick={() => dispatchAddAllToCart(pinned)}
+            aria-label="Add All Pinned To Cart - Stack Builder"
+            style={{
+              background: primaryColor, border: `1px solid ${primaryColor}`,
+              color: '#04221F', borderRadius: 8, padding: '6px 12px',
+              fontSize: '0.74rem', fontWeight: 800, cursor: 'pointer',
+              boxShadow: `0 2px 8px ${primaryColor}55`,
+            }}
+          >
+            Add All To Cart
           </button>
           <button
             type="button"
