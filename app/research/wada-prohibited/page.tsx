@@ -24,6 +24,57 @@ interface WadaHistoryRow {
   source_url: string | null;
 }
 
+interface WadaCompoundCardProps {
+  c: { slug: string; display_name: string; category: string | null; evidence_tier: string; wada_status: string; };
+  hist: WadaHistoryRow[];
+}
+
+function WadaCompoundCard({ c, hist }: WadaCompoundCardProps) {
+  const t = evidenceTier(c.evidence_tier);
+  return (
+    <article
+      className="card-metal"
+      style={{
+        padding: 'var(--space-4, 16px) var(--space-5, 24px)',
+        borderRadius: 'var(--radius-lg, 12px)',
+        borderLeft: '3px solid var(--red-600, #E53E3E)',
+      }}
+    >
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 'var(--space-3, 12px)', flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', minWidth: 0 }}>
+          <Link href={`/research/${c.slug}`} style={{ fontSize: '1.15rem', fontWeight: 800, color: 'var(--white, #FFFFFF)', textDecoration: 'none' }}>
+            {c.display_name}
+          </Link>
+          <span style={{ fontSize: '0.82rem', color: 'var(--silver, #A8B4C0)' }}>
+            {c.category} · <span style={{ color: t.color }}>{t.label}</span>
+          </span>
+        </div>
+        <span style={{ fontSize: '0.78rem', color: 'var(--red-600, #E53E3E)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', whiteSpace: 'nowrap' }}>
+          {wl(c.wada_status)}
+        </span>
+      </div>
+      {hist.length > 0 && (
+        <div style={{ marginTop: 'var(--space-3, 12px)' }}>
+          <h3 style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--silver-light, #D0DAE4)', margin: 0, marginBottom: 'var(--space-2, 8px)' }}>
+            Prohibition History
+          </h3>
+          <ul style={{ margin: 0, padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+            {hist.map((h, hi) => (
+              <li key={`${h.year}-${hi}`} style={{ fontSize: '0.8rem', color: 'var(--silver, #A8B4C0)' }}>
+                <strong style={{ color: 'var(--white, #FFFFFF)' }}>{h.year}</strong>: {h.status}
+                {h.notes ? ` — ${h.notes}` : ''}
+                {h.source_url && (
+                  <>{' '}<a href={h.source_url} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--teal, #00C4BC)', textDecoration: 'none' }}>Source</a></>
+                )}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </article>
+  );
+}
+
 export default async function ResearchWadaProhibitedPage() {
   const supabase = await createServiceClient();
   const { data: history } = await supabase
