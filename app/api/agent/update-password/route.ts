@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createServiceClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/server';
 import { requireAgent } from '@/lib/admin-auth';
 import { assertSameOrigin } from '@/lib/csrf';
 
@@ -14,7 +14,7 @@ export async function POST(req: NextRequest) {
   const gate = await requireAgent();
   if (!gate.ok) return gate.response;
 
-  const serviceSupabase = await createServiceClient();
+  const serviceSupabase = createAdminClient();
 
   // Verify caller is an agent/super-agent/admin (requireAgent already checks agent/super_agent)
   // so we only need to also allow admin role
