@@ -1,20 +1,24 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import { drawVolumeMl } from '@/lib/compounds';
 
 /**
  * Lab Tools — reconstitution & dosing math.
  *
- * Pure client-side calculators (no network, no data). Helps a researcher work
+ * Pure client-side calculator (no network, no data). Helps a researcher work
  * out how much bacteriostatic water to add to a lyophilised vial and how much
  * to draw for a target amount. For research calculation purposes only — not
  * medical advice and not dosing guidance for use in humans.
  *
+ * All math delegates to the canonical helpers in @/lib/compounds so this
+ * widget stays in sync with the rest of the platform automatically.
+ *
  * Math (U-100 insulin syringe convention: 1 mL = 100 units):
  *   concentration (mg/mL)   = vial_mg / bac_mL
  *   concentration (mcg/unit)= (vial_mg * 10) / bac_mL
- *   draw volume (mL)        = target_mcg * bac_mL / (vial_mg * 1000)
- *   draw (units, U-100)     = target_mcg * bac_mL / (vial_mg * 10)
+ *   draw volume (mL)        = target_mcg / (vial_mg / bac_mL * 1000)
+ *   draw (units, U-100)     = draw_volume_mL * 100
  *   total doses per vial    = (vial_mg * 1000) / target_mcg
  */
 
@@ -23,6 +27,20 @@ const round = (n: number, dp = 2) => {
   const f = Math.pow(10, dp);
   return Math.round(n * f) / f;
 };
+
+/** Format a dose count with commas; show "<1" for fractional sub-unit results. */
+function formatDoseCount(n: number): string {
+  if (n <= 0) return '—';
+  if (n < 1) return '<1';
+  return Math.floor(n).toLocaleString();
+}
+
+/** Format syringe units; show "<1 u" for sub-unit draws instead of "0 u". */
+function formatUnits(units: number): string {
+  if (units <= 0) return '—';
+  if (units < 0.1) return '<0.1 u';
+  return `${round(units, 1)} u`;
+}
 
 function Field({
   label,
@@ -85,6 +103,7 @@ function Stat({ label, value, hero }: { label: string; value: string; hero?: boo
 export default function LabToolsCalculators() {
   const [vialMg, setVialMg] = useState('5');
   const [bacMl, setBacMl] = useState('2');
+  // Target per draw is in mcg so researchers can use standard peptide doses
   const [targetMcg, setTargetMcg] = useState('250');
 
   const r = useMemo(() => {
@@ -92,11 +111,18 @@ export default function LabToolsCalculators() {
     const ml = Number(bacMl) || 0;
     const mcg = Number(targetMcg) || 0;
     const valid = mg > 0 && ml > 0;
-    const concMgMl = valid ? mg / ml : 0; // mg per mL
+
+    const concMgMl = valid ? mg / ml : 0;           // mg per mL
     const concMcgUnit = valid ? (mg * 10) / ml : 0; // mcg per U-100 unit
-    const drawMl = valid && mcg > 0 ? (mcg * ml) / (mg * 1000) : 0;
-    const drawUnits = valid && mcg > 0 ? (mcg * ml) / (mg * 10) : 0;
-    const totalDoses = mcg > 0 ? (mg * 1000) / mcg : 0;
+
+    // Convert mcg target to mg for the canonical drawVolumeMl helper
+    const targetMg = mcg / 1000;
+    const drawMlRaw = (valid && mcg > 0) ? drawVolumeMl(mg, ml, targetMg) : null;
+    const drawMl = drawMlRaw ?? 0;
+    const drawUnits = drawMl * 100; // 1 mL = 100 U-100 units
+
+    const totalDoses = (mg > 0 && mcg > 0) ? (mg * 1000) / mcg : 0;
+
     return { valid, concMgMl, concMcgUnit, drawMl, drawUnits, totalDoses };
   }, [vialMg, bacMl, targetMcg]);
 
@@ -114,13 +140,17 @@ export default function LabToolsCalculators() {
           <Field label="Target Per Draw" value={targetMcg} onChange={setTargetMcg} suffix="mcg" step="5" />
         </div>
 
-        {r.valid ? (
+        {r.valid && Number(targetMcg) > 0 ? (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 'var(--space-3)' }}>
-            <Stat hero label="Units To Draw (U-100)" value={`${round(r.drawUnits, 1)} u`} />
+            <Stat hero label="Units To Draw (U-100)" value={formatUnits(r.drawUnits)} />
             <Stat hero label="Volume To Draw" value={`${round(r.drawMl, 3)} mL`} />
             <Stat label="Concentration" value={`${round(r.concMgMl, 2)} mg/mL`} />
             <Stat label="Per Unit" value={`${round(r.concMcgUnit, 1)} mcg/u`} />
-            <Stat label="Draws Per Vial" value={r.totalDoses > 0 ? `${Math.floor(r.totalDoses)}` : '—'} />
+            <Stat label="Draws Per Vial" value={formatDoseCount(r.totalDoses)} />
+          </div>
+        ) : r.valid ? (
+          <div style={{ padding: 'var(--space-4)', color: 'var(--grey-400)', fontSize: '0.85rem', textAlign: 'center' }}>
+            Enter A Target Per Draw Amount Above To See Your Numbers.
           </div>
         ) : (
           <div style={{ padding: 'var(--space-4)', color: 'var(--grey-400)', fontSize: '0.85rem', textAlign: 'center' }}>
@@ -135,10 +165,10 @@ export default function LabToolsCalculators() {
           How The Math Works
         </h3>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10, fontSize: '0.84rem', color: 'var(--grey-300)', lineHeight: 1.5 }}>
-          <div>Concentration (mg/mL) = Vial Strength / BAC Water Added.</div>
-          <div>On A U-100 Syringe, 1 mL = 100 Units, So Each Unit Holds (Vial Strength x 10) / BAC Water mcg.</div>
-          <div>Units To Draw = Target mcg x BAC Water / (Vial Strength x 10).</div>
-          <div>Draws Per Vial = (Vial Strength x 1000) / Target mcg.</div>
+          <div>Concentration (mg/mL) = Vial Strength ÷ BAC Water Added.</div>
+          <div>On A U-100 Syringe, 1 mL = 100 Units, So Each Unit Holds (Vial Strength × 10) ÷ BAC Water mcg.</div>
+          <div>Units To Draw = Target mcg ÷ (Vial Strength × 10 ÷ BAC Water).</div>
+          <div>Draws Per Vial = (Vial Strength × 1000) ÷ Target mcg.</div>
         </div>
       </div>
 
