@@ -9,7 +9,7 @@
  * content; it produces no dosing or medical advice.
  */
 
-export type SearchType = 'compound' | 'guide' | 'faq' | 'term' | 'area' | 'stack';
+export type SearchType = 'compound' | 'guide' | 'faq' | 'term' | 'area' | 'stack' | 'tool';
 
 export interface SearchDoc {
   id: string;
@@ -36,6 +36,7 @@ const TYPE_WEIGHT: Record<SearchType, number> = {
   compound: 1.0,
   stack: 0.95,
   area: 0.9,
+  tool: 0.9,
   guide: 0.85,
   term: 0.8,
   faq: 0.8,
@@ -143,6 +144,7 @@ export const SEARCH_TYPE_LABEL: Record<SearchType, string> = {
   compound: 'Compound',
   stack: 'Stack',
   area: 'Research Area',
+  tool: 'Tool',
   guide: 'Guide',
   term: 'Glossary',
   faq: 'FAQ',

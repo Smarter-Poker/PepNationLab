@@ -21,6 +21,7 @@ const TYPE_COLOR: Record<SearchType, string> = {
   guide: '#68D391',
   term: '#A8B4C0',
   faq: '#F6AD55',
+  tool: '#E8C07D',
 };
 
 const EXAMPLES = ['Fat Loss', 'BPC-157', 'Half-Life', 'Sleep', 'GLP-1', 'Reconstitution', 'WADA', 'Joint Repair'];

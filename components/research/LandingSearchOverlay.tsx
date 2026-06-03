@@ -21,6 +21,7 @@ const TYPE_COLOR: Record<SearchType, string> = {
   guide: '#68D391',
   term: '#A8B4C0',
   faq: '#F6AD55',
+  tool: '#E8C07D',
 };
 
 export default function LandingSearchOverlay() {
