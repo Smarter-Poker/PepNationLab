@@ -57,7 +57,7 @@ export default function SavedMatches({ userId }: { userId: string }) {
               </div>
             </div>
             <Link 
-              href={`/research/match?goal=${encodeURIComponent(m.match_input.goal || '')}&riskTolerance=${m.match_input.riskTolerance}&preference=${m.match_input.preference}`}
+              href={`/research/match?goal=${encodeURIComponent(m.match_input.goal || '')}&risk=${m.match_input.riskTolerance || 'moderate_ok'}&comfort=${m.match_input.evidenceComfort || 'preclinical_ok'}&wada=${m.match_input.wadaConstraint || 'no_constraint'}&preference=${m.match_input.preference || 'either'}`}
               style={{
                 background: 'rgba(0,196,188,0.1)',
                 color: 'var(--teal, #00C4BC)',
