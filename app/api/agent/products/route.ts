@@ -212,7 +212,6 @@ export async function PATCH(req: NextRequest) {
         { status: 422 }
       );
     }
-    }
   }
 
   // ── Server-side Sub-Agent Margin Safeguard ───────────────────────────────
@@ -221,7 +220,7 @@ export async function PATCH(req: NextRequest) {
   const checkRetailPrice = activeIsOnSale ? activeSalePrice : (resolvedRetailPrice !== undefined ? resolvedRetailPrice : Number(check.retail_price));
   if (checkRetailPrice > 0 && agentCostPer10 > 0) {
     const newMarginPct = ((checkRetailPrice - agentCostPer10) / checkRetailPrice) * 100;
-    
+
     const { data: subAgents } = await supabase
       .from('profiles')
       .select('commission_pct, commission_max_pct')
