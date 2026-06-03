@@ -42,10 +42,10 @@ export default function ResearchLandingPage() {
         {/* 1. The Search Input Field */}
         <form onSubmit={handleSearch} style={{
           position: 'absolute',
-          top: '25.8%',
+          top: '26.8%',
           left: '7.5%',
           width: '71%',
-          height: '4.8%',
+          height: '4.0%',
           zIndex: 10,
           backgroundColor: '#0a1017', // Match the image's dark color to cover baked-in text
           borderRadius: '24px 0 0 24px',
@@ -77,10 +77,10 @@ export default function ResearchLandingPage() {
           onClick={handleSearch}
           style={{
             position: 'absolute',
-            top: '25.8%',
+            top: '26.8%',
             left: '79%',
             width: '13.5%',
-            height: '4.8%',
+            height: '4.0%',
             cursor: 'pointer',
             zIndex: 10,
           }}

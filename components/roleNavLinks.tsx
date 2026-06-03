@@ -65,10 +65,12 @@ const ICON = {
   sales: <svg {...ip}><polyline points="22 7 13.5 15.5 8.5 10.5 2 17" /><polyline points="16 7 22 7 22 13" /></svg>,
   qr: <svg {...ip}><rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" /><rect x="3" y="14" width="7" height="7" /><rect x="14" y="14" width="3" height="3" /><rect x="19" y="14" width="2" height="2" /><rect x="14" y="19" width="2" height="2" /><rect x="19" y="19" width="2" height="2" /></svg>,
   wallet: <svg {...ip}><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4" /><path d="M3 5v14a2 2 0 0 0 2 2h16v-5" /><path d="M18 12a2 2 0 0 0 0 4h4v-4Z" /></svg>,
+  book: <svg {...ip}><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>,
 };
 
 const ADMIN_LINKS: RoleNavLink[] = [
   { href: '/admin', label: 'Dashboard', icon: <svg {...ip}><rect x="3" y="3" width="7" height="9" /><rect x="14" y="3" width="7" height="5" /><rect x="14" y="12" width="7" height="9" /><rect x="3" y="16" width="7" height="5" /></svg> },
+  { href: '/research', label: 'Research Library', icon: ICON.book },
   { href: '/wallet', label: 'Wallet', icon: ICON.wallet },
   { href: '/admin/search', label: 'Global Search', icon: <svg {...ip}><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg> },
   { href: '/admin/products', label: 'Products', icon: <svg {...ip}><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" /><polyline points="3.27 6.96 12 12.01 20.73 6.96" /><line x1="12" y1="22.08" x2="12" y2="12" /></svg> },
@@ -100,6 +102,7 @@ function agentLinks(isSuper: boolean, storefrontHref: string): RoleNavLink[] {
     : { href: agentTab('My Sub-Agents'), label: 'My Sub Agents', icon: <svg {...ip}><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /></svg> };
   return [
     { href: agentTab('Overview'), label: 'Overview', icon: <svg {...ip}><rect x="3" y="3" width="7" height="9" /><rect x="14" y="3" width="7" height="5" /><rect x="14" y="12" width="7" height="9" /><rect x="3" y="16" width="7" height="5" /></svg> },
+    { href: '/research', label: 'Research Library', icon: ICON.book },
     { href: agentTab('Storefront Config'), label: 'Storefront Configure', icon: <svg {...ip}><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" /></svg> },
     { href: agentTab('Store Products'), label: 'Product Manager', icon: <svg {...ip}><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /><line x1="16" y1="13" x2="8" y2="13" /><line x1="16" y1="17" x2="8" y2="17" /></svg> },
     { href: agentTab('Orders'), label: 'Orders & Fulfillment', icon: <svg {...ip}><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z" /><line x1="3" y1="6" x2="21" y2="6" /><path d="M16 10a4 4 0 0 1-8 0" /></svg> },
@@ -119,6 +122,7 @@ function agentLinks(isSuper: boolean, storefrontHref: string): RoleNavLink[] {
 
 const SUBAGENT_LINKS: RoleNavLink[] = [
   { href: subTab('Overview'), label: 'Overview', icon: ICON.grid },
+  { href: '/research', label: 'Research Library', icon: ICON.book },
   { href: subTab('Researchers'), label: 'Researchers', icon: ICON.people },
   { href: '/wallet', label: 'Wallet', icon: ICON.wallet },
   { href: '#SHOW_QR', label: 'My Invite QR', icon: ICON.qr },
@@ -132,6 +136,7 @@ const SUBAGENT_LINKS: RoleNavLink[] = [
 function researcherLinks(storefrontHref?: string): RoleNavLink[] {
   const links: RoleNavLink[] = [
     { href: '/dashboard', label: 'Dashboard', icon: ICON.grid },
+    { href: '/research', label: 'Research Library', icon: ICON.book },
   ];
   // Only show the storefront link when we actually have a real slug (not the
   // generic agent-dashboard fallback the Navbar passes when no slug is known).
