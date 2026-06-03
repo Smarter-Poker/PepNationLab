@@ -127,11 +127,17 @@ export async function POST(req: NextRequest) {
 
     if (profileError || !primaryProfile) return NextResponse.json({ error: 'Failed to retrieve billing profile' }, { status: 500 });
 
-    // Invoice v2 chain check — refuses if THIS tier or ANY ancestor is
-    // transaction-frozen (cascading freeze), and refuses if THIS tier or any
-    // credit-line ancestor would exceed their credit_limit when this order
-    // rolls up. Prepaid balance is checked separately below.
-    const chainCheck = await assertChainCanTransact(supabase, primaryBilledAgentId, totalOwed);
+    // Invoice v2 chain check. The freeze walk MUST start at the transacting
+    // agent (order.agent_id) so a frozen sub-agent's order is blocked even
+    // when the billed root (their super-agent) is unfrozen. The credit walk
+    // stays rooted on the billed agent because credit limits live on the
+    // billed tier, not the transacting one.
+    const chainCheck = await assertChainCanTransact(
+      supabase,
+      primaryBilledAgentId,
+      totalOwed,
+      order.agent_id, // freeze-walk root = transacting agent (sub-agent on sub-agent orders)
+    );
     if (!chainCheck.ok) {
       return NextResponse.json(
         { error: chainCheck.error, detail: chainCheck.detail },
