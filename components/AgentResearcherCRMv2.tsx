@@ -1,406 +1,273 @@
 'use client';
 
 /**
- * AgentResearcherCRMv2 — R30 Phase 3 + Phase 4
+ * AgentResearcherCRMv2 — Premium Rebuild
  *
- * The "My Researchers" page rebuilt as a real CRM. Consumes the rich
- * /api/agent/researchers/v2 payload in a single round-trip and adds
- * advanced views from /api/agent/researchers/insights on demand.
+ * Same API wiring (/api/agent/researchers/v2 + /api/agent/researchers/insights),
+ * completely rebuilt UI to match the metal-frame premium aesthetic of the platform.
  *
- * Layout:
- *  - Always-on header: Goal & streak, 10 KPI tiles, Insight strip
- *  - Tab switcher: Researchers / Kanban / Charts / Acquisition
- *  - Researchers tab: filter chips, search, CSV/PDF export, bulk select,
- *    rich table with status badges + per-row Message/Tag/Pin actions,
- *    expanded row with notes/tags/reminders/contact info
- *  - Kanban tab: lifecycle columns with cards
- *  - Charts tab: revenue line, day-of-week heatmap, top customers,
- *    cohort retention grid
- *  - Acquisition tab: source attribution + conversion funnel
- *  - Activity feed always at bottom
+ * Fixes: NaN display bugs, truncated KPI labels, dense cramped layout.
+ * Upgrade: Metal-framed KPI cards, premium researcher rows, clean typography.
  */
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import {
-  Pin,
-  PinOff,
-  MessageSquare,
-  Tag as TagIcon,
-  Search,
-  Download,
-  AlertTriangle,
-  TrendingUp,
-  TrendingDown,
-  CircleAlert,
-  Sparkles,
-  Target,
-  Flame,
-  X,
-  ChevronDown,
-  ChevronUp,
-  Mail,
-  Activity as ActivityIcon,
-  Table as TableIcon,
-  LayoutGrid,
-  BarChart3,
-  GitBranch,
-  Printer,
-  Bell,
+  Pin, PinOff, MessageSquare, Tag as TagIcon, Search, Download,
+  AlertTriangle, TrendingUp, TrendingDown, CircleAlert, Sparkles,
+  Target, Flame, X, ChevronDown, ChevronUp, Mail, Activity as ActivityIcon,
+  Table as TableIcon, LayoutGrid, BarChart3, GitBranch, Printer, Bell,
 } from 'lucide-react';
 import {
-  KanbanView,
-  ChartsView,
-  AcquisitionView,
-  useInsights,
+  KanbanView, ChartsView, AcquisitionView, useInsights,
   type KanbanResearcher,
 } from './researcher-crm/views';
 
-type Status =
-  | 'lead'
-  | 'new'
-  | 'first_order'
-  | 'active'
-  | 'vip'
-  | 'at_risk'
-  | 'churned';
+/* ── Types ─────────────────────────────────────────────────────────────── */
+
+type Status = 'lead' | 'new' | 'first_order' | 'active' | 'vip' | 'at_risk' | 'churned';
 
 interface Researcher {
-  id: string;
-  full_name: string | null;
-  username: string | null;
-  email: string | null;
-  phone: string | null;
-  joined_at: string;
-  last_login: string | null;
-  orders_count: number;
-  lifetime_value: number;
-  last_order_at: string | null;
-  status: Status;
-  churn_risk: number;
-  sparkline: number[];
-  tags: { id: string; tag: string; color: string | null }[];
-  is_pinned: boolean;
-  last_contacted_at: string | null;
-  acquisition_source: string | null;
-  has_open_reminder: boolean;
+  id: string; full_name: string | null; username: string | null;
+  email: string | null; phone: string | null; joined_at: string;
+  last_login: string | null; orders_count: number; lifetime_value: number;
+  last_order_at: string | null; status: Status; churn_risk: number;
+  sparkline: number[]; tags: { id: string; tag: string; color: string | null }[];
+  is_pinned: boolean; last_contacted_at: string | null;
+  acquisition_source: string | null; has_open_reminder: boolean;
 }
 
-interface Kpi {
-  value: number;
-  spark: number[];
-  delta_pct: number;
-  label?: string;
-}
+interface Kpi { value: number; spark: number[]; delta_pct: number; label?: string; }
 
 interface Insight {
-  id: string;
-  kind: 'at_risk' | 'repeat_rate' | 'commission' | 'no_growth' | 'goal';
-  title: string;
-  body: string;
+  id: string; kind: 'at_risk' | 'repeat_rate' | 'commission' | 'no_growth' | 'goal';
+  title: string; body: string;
   action?: { label: string; filter?: string; href?: string };
 }
 
 interface ActivityItem {
-  id: string;
-  kind: 'order' | 'signup' | 'login' | 'note' | 'message';
-  researcher_id: string;
-  researcher_name: string;
-  at: string;
-  meta?: string;
+  id: string; kind: 'order' | 'signup' | 'login' | 'note' | 'message';
+  researcher_id: string; researcher_name: string; at: string; meta?: string;
 }
 
 interface Payload {
   researchers: Researcher[];
   kpis: {
-    researchers_count: Kpi;
-    lifetime_value: Kpi;
-    total_orders: Kpi;
-    active_buyers: Kpi;
-    avg_order_value: Kpi;
-    repeat_rate: Kpi;
-    new_this_month: Kpi;
-    at_risk: Kpi;
-    best_customer: Kpi & { label: string };
+    researchers_count: Kpi; lifetime_value: Kpi; total_orders: Kpi;
+    active_buyers: Kpi; avg_order_value: Kpi; repeat_rate: Kpi;
+    new_this_month: Kpi; at_risk: Kpi; best_customer: Kpi & { label: string };
     lifetime_commission: Kpi;
   };
-  insights: Insight[];
-  activity: ActivityItem[];
-  goal: {
-    target_count: number;
-    achieved_count: number;
-    progress_pct: number;
-    streak_months: number;
-  };
+  insights: Insight[]; activity: ActivityItem[];
+  goal: { target_count: number; achieved_count: number; progress_pct: number; streak_months: number; };
   kanban_counts: Record<Status, number>;
   source_counts: { source: string; count: number }[];
   storefront_slug: string | null;
 }
 
-type FilterKey =
-  | 'all'
-  | 'vip'
-  | 'at_risk'
-  | 'new'
-  | 'inactive'
-  | 'pinned'
-  | 'with_reminder';
-
+type FilterKey = 'all' | 'vip' | 'at_risk' | 'new' | 'inactive' | 'pinned' | 'with_reminder';
 type SortKey = 'name' | 'ltv' | 'orders' | 'last' | 'joined' | 'risk';
-
 type TabKey = 'list' | 'kanban' | 'charts' | 'acquisition';
 
-const STATUS_STYLES: Record<
-  Status,
-  { label: string; bg: string; fg: string; border: string }
-> = {
-  lead: { label: 'Lead', bg: 'rgba(168,180,192,0.10)', fg: '#A8B4C0', border: 'rgba(168,180,192,0.40)' },
-  new: { label: 'New', bg: 'rgba(96,165,250,0.12)', fg: '#60A5FA', border: 'rgba(96,165,250,0.45)' },
-  first_order: { label: 'First Order', bg: 'rgba(45,212,191,0.12)', fg: '#2DD4BF', border: 'rgba(45,212,191,0.45)' },
-  active: { label: 'Active', bg: 'rgba(0,196,188,0.12)', fg: '#00C4BC', border: 'rgba(0,196,188,0.45)' },
-  vip: { label: 'VIP', bg: 'rgba(250,204,21,0.14)', fg: '#FACC15', border: 'rgba(250,204,21,0.55)' },
-  at_risk: { label: 'At Risk', bg: 'rgba(245,158,11,0.14)', fg: '#F59E0B', border: 'rgba(245,158,11,0.50)' },
-  churned: { label: 'Churned', bg: 'rgba(239,68,68,0.14)', fg: '#EF4444', border: 'rgba(239,68,68,0.50)' },
+/* ── Status styles ──────────────────────────────────────────────────────── */
+
+const STATUS_STYLES: Record<Status, { label: string; bg: string; fg: string; border: string }> = {
+  lead:         { label: 'Lead',        bg: 'rgba(168,180,192,0.10)', fg: '#A8B4C0', border: 'rgba(168,180,192,0.40)' },
+  new:          { label: 'New',         bg: 'rgba(96,165,250,0.12)',  fg: '#60A5FA', border: 'rgba(96,165,250,0.45)' },
+  first_order:  { label: 'First Order', bg: 'rgba(45,212,191,0.12)',  fg: '#2DD4BF', border: 'rgba(45,212,191,0.45)' },
+  active:       { label: 'Active',      bg: 'rgba(0,196,188,0.12)',   fg: '#00C4BC', border: 'rgba(0,196,188,0.45)' },
+  vip:          { label: 'VIP',         bg: 'rgba(250,204,21,0.14)',  fg: '#FACC15', border: 'rgba(250,204,21,0.55)' },
+  at_risk:      { label: 'At Risk',     bg: 'rgba(245,158,11,0.14)',  fg: '#F59E0B', border: 'rgba(245,158,11,0.50)' },
+  churned:      { label: 'Churned',     bg: 'rgba(239,68,68,0.14)',   fg: '#EF4444', border: 'rgba(239,68,68,0.50)' },
 };
 
-function fmtUSD(n: number): string {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-    maximumFractionDigits: 0,
-  }).format(n);
+/* ── Formatters ─────────────────────────────────────────────────────────── */
+
+function safe(n: unknown): number {
+  const v = Number(n);
+  return Number.isFinite(v) ? v : 0;
 }
 
-function fmtInt(n: number): string {
-  return new Intl.NumberFormat('en-US').format(n);
+function fmtUSD(n: unknown): string {
+  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(safe(n));
 }
 
-function fmtPct(n: number): string {
-  const v = Number.isFinite(n) ? n : 0;
+function fmtInt(n: unknown): string {
+  return new Intl.NumberFormat('en-US').format(safe(n));
+}
+
+function fmtPct(n: unknown): string {
+  const v = safe(n);
   return `${v >= 0 ? '+' : ''}${v.toFixed(1)}%`;
 }
 
-function daysAgo(iso: string | null): string {
+function daysAgo(iso: string | null | undefined): string {
   if (!iso) return 'Never';
   const ms = Date.now() - new Date(iso).getTime();
   const d = Math.floor(ms / 86400000);
   if (d <= 0) return 'Today';
   if (d === 1) return 'Yesterday';
-  if (d < 30) return `${d} Days Ago`;
+  if (d < 30) return `${d}d Ago`;
   const m = Math.floor(d / 30);
-  if (m < 12) return `${m} Months Ago`;
-  return `${Math.floor(d / 365)} Years Ago`;
+  if (m < 12) return `${m}mo Ago`;
+  return `${Math.floor(d / 365)}y Ago`;
 }
+
+/* ── Micro-components ───────────────────────────────────────────────────── */
 
 function Sparkline({ data, color = '#00C4BC' }: { data: number[]; color?: string }) {
   if (!data || data.length === 0) return null;
   const max = Math.max(...data, 1);
   const min = Math.min(...data, 0);
   const range = max - min || 1;
-  const points = data
-    .map((d, i) => {
-      const x = (i / Math.max(data.length - 1, 1)) * 60;
-      const y = 20 - ((d - min) / range) * 18 - 1;
-      return `${x.toFixed(1)},${y.toFixed(1)}`;
-    })
-    .join(' ');
+  const points = data.map((d, i) => {
+    const x = (i / Math.max(data.length - 1, 1)) * 60;
+    const y = 20 - ((d - min) / range) * 18 - 1;
+    return `${x.toFixed(1)},${y.toFixed(1)}`;
+  }).join(' ');
   const area = `0,20 ${points} 60,20`;
   return (
     <svg viewBox="0 0 60 20" width="60" height="20" style={{ overflow: 'visible' }} aria-hidden>
       <polygon points={area} fill={color} opacity="0.12" />
-      <polyline
-        points={points}
-        fill="none"
-        stroke={color}
-        strokeWidth="1.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
+      <polyline points={points} fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
 }
 
 function DeltaPill({ pct }: { pct: number }) {
-  const positive = pct >= 0;
+  const v = safe(pct);
+  const positive = v >= 0;
   const color = positive ? '#2DD4BF' : '#EF4444';
   const Icon = positive ? TrendingUp : TrendingDown;
   return (
-    <span
-      style={{
-        display: 'inline-flex',
-        alignItems: 'center',
-        gap: 3,
-        fontSize: '0.65rem',
-        fontWeight: 700,
-        color,
-        background: `${color}1a`,
-        border: `1px solid ${color}55`,
-        borderRadius: 999,
-        padding: '1px 6px',
-      }}
-    >
+    <span style={{
+      display: 'inline-flex', alignItems: 'center', gap: 3,
+      fontSize: '0.65rem', fontWeight: 700, color,
+      background: `${color}1a`, border: `1px solid ${color}55`,
+      borderRadius: 999, padding: '1px 6px',
+    }}>
       <Icon size={10} aria-hidden />
-      {fmtPct(pct)}
+      {fmtPct(v)}
     </span>
   );
 }
 
-function KpiTile({
-  label,
-  value,
-  spark,
-  delta,
-  color = '#00C4BC',
-  onClick,
-  subtitle,
-}: {
-  label: string;
-  value: string;
-  spark: number[];
-  delta: number;
-  color?: string;
-  onClick?: () => void;
-  subtitle?: string;
-}) {
-  const interactive = !!onClick;
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      disabled={!interactive}
-      style={{
-        textAlign: 'left',
-        padding: '12px 14px',
-        borderRadius: 14,
-        background:
-          'linear-gradient(180deg, rgba(22,34,48,0.95) 0%, rgba(15,25,35,0.95) 100%)',
-        border: '1px solid rgba(0,196,188,0.18)',
-        boxShadow:
-          '0 1px 0 rgba(255,255,255,0.04) inset, 0 8px 18px rgba(0,0,0,0.30)',
-        cursor: interactive ? 'pointer' : 'default',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: 6,
-        minHeight: 96,
-        minWidth: 0,
-      }}
-    >
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
-        <span
-          style={{
-            fontSize: '0.66rem',
-            fontWeight: 700,
-            color: '#A8B4C0',
-            letterSpacing: '0.04em',
-            textTransform: 'uppercase',
-            whiteSpace: 'nowrap',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-          }}
-        >
-          {label}
-        </span>
-        <DeltaPill pct={delta} />
-      </div>
-      <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 8 }}>
-        <span
-          style={{
-            fontSize: '1.35rem',
-            fontWeight: 800,
-            color: '#FFFFFF',
-            lineHeight: 1.05,
-            whiteSpace: 'nowrap',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-            maxWidth: '100%',
-          }}
-        >
-          {value}
-        </span>
-        <Sparkline data={spark} color={color} />
-      </div>
-      {subtitle && <span style={{ fontSize: '0.7rem', color: '#D0DAE4', opacity: 0.85 }}>{subtitle}</span>}
-    </button>
-  );
-}
-
 function StatusBadge({ status }: { status: Status }) {
-  const s = STATUS_STYLES[status];
+  const s = STATUS_STYLES[status] ?? STATUS_STYLES.lead;
   return (
-    <span
-      style={{
-        display: 'inline-flex',
-        alignItems: 'center',
-        gap: 4,
-        fontSize: '0.66rem',
-        fontWeight: 800,
-        letterSpacing: '0.03em',
-        color: s.fg,
-        background: s.bg,
-        border: `1px solid ${s.border}`,
-        borderRadius: 999,
-        padding: '2px 8px',
-        textTransform: 'uppercase',
-        whiteSpace: 'nowrap',
-      }}
-    >
+    <span style={{
+      display: 'inline-flex', alignItems: 'center', fontSize: '0.66rem',
+      fontWeight: 800, letterSpacing: '0.03em', color: s.fg,
+      background: s.bg, border: `1px solid ${s.border}`,
+      borderRadius: 999, padding: '3px 10px', textTransform: 'uppercase', whiteSpace: 'nowrap',
+    }}>
       {s.label}
     </span>
   );
 }
 
 function ChurnRiskBar({ risk }: { risk: number }) {
-  const pct = Math.max(0, Math.min(100, Math.round(risk)));
+  const pct = Math.max(0, Math.min(100, Math.round(safe(risk))));
   const color = pct >= 70 ? '#EF4444' : pct >= 40 ? '#F59E0B' : '#2DD4BF';
   return (
-    <div
-      title={`Churn Risk ${pct}%`}
-      style={{ width: 56, height: 6, background: 'rgba(255,255,255,0.06)', borderRadius: 999, overflow: 'hidden' }}
-    >
-      <div style={{ width: `${pct}%`, height: '100%', background: color, transition: 'width 200ms ease' }} />
+    <div title={`Churn Risk ${pct}%`} style={{
+      width: '100%', height: 5, background: 'rgba(255,255,255,0.08)',
+      borderRadius: 999, overflow: 'hidden',
+    }}>
+      <div style={{ width: `${pct}%`, height: '100%', background: color, transition: 'width 250ms ease' }} />
     </div>
   );
 }
 
-function GoalHeader({ goal, onSetGoal }: { goal: Payload['goal']; onSetGoal: () => void }) {
-  const pct = Math.max(0, Math.min(100, Math.round(goal.progress_pct)));
+/* ── KPI Card ───────────────────────────────────────────────────────────── */
+
+function KpiCard({ label, value, spark, delta, color = '#00C4BC', onClick, subtitle }: {
+  label: string; value: string; spark: number[]; delta: number;
+  color?: string; onClick?: () => void; subtitle?: string;
+}) {
   return (
-    <div
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={!onClick}
       style={{
-        padding: '14px 16px',
-        borderRadius: 14,
-        background:
-          'linear-gradient(135deg, rgba(0,196,188,0.10) 0%, rgba(0,196,188,0.02) 100%)',
-        border: '1px solid rgba(0,196,188,0.30)',
-        display: 'flex',
-        flexWrap: 'wrap',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        gap: 12,
+        textAlign: 'left', padding: '16px', borderRadius: 16, cursor: onClick ? 'pointer' : 'default',
+        background: 'linear-gradient(160deg, rgba(26,36,54,0.98) 0%, rgba(15,22,36,0.98) 100%)',
+        border: '1px solid rgba(255,255,255,0.08)',
+        boxShadow: '0 2px 12px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.05)',
+        display: 'flex', flexDirection: 'column', gap: 10, minHeight: 108, minWidth: 0,
+        transition: 'border-color 0.2s, box-shadow 0.2s',
+      }}
+      onMouseEnter={e => {
+        if (onClick) {
+          e.currentTarget.style.borderColor = `${color}55`;
+          e.currentTarget.style.boxShadow = `0 4px 20px rgba(0,0,0,0.4), 0 0 0 1px ${color}22`;
+        }
+      }}
+      onMouseLeave={e => {
+        e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)';
+        e.currentTarget.style.boxShadow = '0 2px 12px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.05)';
       }}
     >
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8 }}>
+        <span style={{
+          fontSize: '0.72rem', fontWeight: 700, color: '#8A9BB0',
+          letterSpacing: '0.04em', textTransform: 'uppercase', lineHeight: 1.3,
+        }}>
+          {label}
+        </span>
+        <DeltaPill pct={delta} />
+      </div>
+      <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 8 }}>
+        <div>
+          <span style={{
+            fontSize: '1.5rem', fontWeight: 800, color: '#FFFFFF', lineHeight: 1.05,
+            letterSpacing: '-0.02em',
+          }}>
+            {value}
+          </span>
+          {subtitle && <div style={{ fontSize: '0.7rem', color, marginTop: 2, fontWeight: 600 }}>{subtitle}</div>}
+        </div>
+        <Sparkline data={spark} color={color} />
+      </div>
+    </button>
+  );
+}
+
+/* ── Goal header ────────────────────────────────────────────────────────── */
+
+function GoalHeader({ goal, onSetGoal }: { goal: Payload['goal']; onSetGoal: () => void }) {
+  const pct = Math.max(0, Math.min(100, Math.round(safe(goal.progress_pct))));
+  return (
+    <div style={{
+      padding: '16px 20px', borderRadius: 16,
+      background: 'linear-gradient(135deg, rgba(0,196,188,0.08) 0%, rgba(0,196,188,0.02) 100%)',
+      border: '1px solid rgba(0,196,188,0.25)',
+      display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 14,
+    }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, flex: 1, minWidth: 0 }}>
-        <Target size={18} color="#00C4BC" aria-hidden />
-        <div style={{ minWidth: 0 }}>
-          <div style={{ fontSize: '0.74rem', color: '#A8B4C0', fontWeight: 600 }}>This Month Goal</div>
-          <div style={{ fontSize: '1.05rem', color: '#FFFFFF', fontWeight: 800 }}>
-            {fmtInt(goal.achieved_count)} Of {fmtInt(goal.target_count || 0)} New Researchers
+        <div style={{
+          width: 38, height: 38, borderRadius: 10, background: 'rgba(0,196,188,0.12)',
+          border: '1px solid rgba(0,196,188,0.30)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+        }}>
+          <Target size={18} color="#00C4BC" aria-hidden />
+        </div>
+        <div>
+          <div style={{ fontSize: '0.72rem', color: '#8A9BB0', fontWeight: 600, letterSpacing: '0.04em', textTransform: 'uppercase' }}>This Month's Goal</div>
+          <div style={{ fontSize: '1.1rem', color: '#FFFFFF', fontWeight: 800, marginTop: 2 }}>
+            {fmtInt(goal.achieved_count)} <span style={{ color: '#8A9BB0', fontWeight: 400 }}>of</span> {fmtInt(goal.target_count || 0)} New Researchers
           </div>
         </div>
       </div>
-      <div style={{ flex: 1, minWidth: 160, maxWidth: 360 }}>
+      <div style={{ flex: 1, minWidth: 180, maxWidth: 380 }}>
         <div style={{ position: 'relative', height: 8, background: 'rgba(255,255,255,0.06)', borderRadius: 999, overflow: 'hidden' }}>
-          <div
-            style={{
-              position: 'absolute',
-              inset: 0,
-              width: `${pct}%`,
-              background: 'linear-gradient(90deg, #00C4BC 0%, #2DD4BF 100%)',
-              transition: 'width 300ms ease',
-            }}
-          />
+          <div style={{
+            position: 'absolute', inset: 0, width: `${pct}%`,
+            background: 'linear-gradient(90deg, #00C4BC 0%, #2DD4BF 100%)',
+            transition: 'width 400ms ease', borderRadius: 999,
+          }} />
         </div>
-        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 4, fontSize: '0.66rem', color: '#A8B4C0' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 6, fontSize: '0.7rem', color: '#8A9BB0' }}>
           <span>{pct}% Complete</span>
           {goal.streak_months > 0 && (
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, color: '#F59E0B', fontWeight: 700 }}>
@@ -413,15 +280,13 @@ function GoalHeader({ goal, onSetGoal }: { goal: Payload['goal']; onSetGoal: () 
         type="button"
         onClick={onSetGoal}
         style={{
-          padding: '6px 12px',
-          borderRadius: 8,
-          background: 'rgba(0,196,188,0.10)',
-          border: '1px solid rgba(0,196,188,0.40)',
-          color: '#00C4BC',
-          fontSize: '0.72rem',
-          fontWeight: 700,
-          cursor: 'pointer',
+          padding: '8px 16px', borderRadius: 10, background: 'rgba(0,196,188,0.10)',
+          border: '1px solid rgba(0,196,188,0.35)', color: '#00C4BC',
+          fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap',
+          transition: 'background 0.2s',
         }}
+        onMouseEnter={e => { e.currentTarget.style.background = 'rgba(0,196,188,0.20)'; }}
+        onMouseLeave={e => { e.currentTarget.style.background = 'rgba(0,196,188,0.10)'; }}
       >
         Set Goal
       </button>
@@ -429,94 +294,31 @@ function GoalHeader({ goal, onSetGoal }: { goal: Payload['goal']; onSetGoal: () 
   );
 }
 
-function InsightStrip({ insights }: { insights: Insight[] }) {
-  if (insights.length === 0) return null;
-  const iconFor = (k: Insight['kind']) =>
-    k === 'at_risk' ? (
-      <AlertTriangle size={14} color="#F59E0B" aria-hidden />
-    ) : k === 'repeat_rate' ? (
-      <Sparkles size={14} color="#FACC15" aria-hidden />
-    ) : k === 'commission' ? (
-      <TrendingUp size={14} color="#2DD4BF" aria-hidden />
-    ) : k === 'no_growth' ? (
-      <CircleAlert size={14} color="#60A5FA" aria-hidden />
-    ) : (
-      <Target size={14} color="#00C4BC" aria-hidden />
-    );
+/* ── Filter chip ────────────────────────────────────────────────────────── */
 
-  return (
-    <div
-      style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
-        gap: 8,
-        marginTop: 12,
-      }}
-    >
-      {insights.map((it) => (
-        <div
-          key={it.id}
-          style={{
-            padding: '10px 12px',
-            borderRadius: 10,
-            background: 'rgba(15,25,35,0.85)',
-            border: '1px solid rgba(255,255,255,0.06)',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: 4,
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.7rem', fontWeight: 700, color: '#D0DAE4' }}>
-            {iconFor(it.kind)}
-            {it.title}
-          </div>
-          <div style={{ fontSize: '0.74rem', color: '#A8B4C0', lineHeight: 1.35 }}>{it.body}</div>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-function FilterChip({
-  active,
-  onClick,
-  children,
-  count,
-}: {
-  active: boolean;
-  onClick: () => void;
-  children: React.ReactNode;
-  count?: number;
+function FilterChip({ active, onClick, children, count }: {
+  active: boolean; onClick: () => void; children: React.ReactNode; count?: number;
 }) {
   return (
     <button
       type="button"
       onClick={onClick}
       style={{
-        padding: '5px 11px',
-        borderRadius: 999,
-        background: active ? 'rgba(0,196,188,0.18)' : 'rgba(255,255,255,0.04)',
-        border: `1px solid ${active ? 'rgba(0,196,188,0.55)' : 'rgba(255,255,255,0.10)'}`,
-        color: active ? '#00C4BC' : '#D0DAE4',
-        fontSize: '0.72rem',
-        fontWeight: 700,
-        cursor: 'pointer',
-        display: 'inline-flex',
-        alignItems: 'center',
-        gap: 6,
-        whiteSpace: 'nowrap',
+        padding: '6px 14px', borderRadius: 999,
+        background: active ? 'rgba(0,196,188,0.15)' : 'rgba(255,255,255,0.04)',
+        border: `1px solid ${active ? 'rgba(0,196,188,0.50)' : 'rgba(255,255,255,0.10)'}`,
+        color: active ? '#00C4BC' : '#C0B8A8',
+        fontSize: '0.74rem', fontWeight: 700, cursor: 'pointer',
+        display: 'inline-flex', alignItems: 'center', gap: 6, whiteSpace: 'nowrap',
+        transition: 'all 0.15s',
       }}
     >
       {children}
       {count !== undefined && (
-        <span
-          style={{
-            background: active ? 'rgba(0,196,188,0.25)' : 'rgba(255,255,255,0.08)',
-            padding: '0 6px',
-            borderRadius: 999,
-            fontSize: '0.65rem',
-          }}
-        >
+        <span style={{
+          background: active ? 'rgba(0,196,188,0.25)' : 'rgba(255,255,255,0.08)',
+          padding: '0 7px', borderRadius: 999, fontSize: '0.66rem', fontWeight: 800,
+        }}>
           {fmtInt(count)}
         </span>
       )}
@@ -524,14 +326,237 @@ function FilterChip({
   );
 }
 
-function EmptyState({ slug }: { slug: string | null }) {
-  const storefrontUrl =
-    typeof window !== 'undefined' && slug
-      ? `${window.location.origin}/${slug}`
-      : slug
-        ? `/${slug}`
-        : null;
+/* ── Tab button ─────────────────────────────────────────────────────────── */
 
+function TabButton({ active, onClick, icon, label }: {
+  active: boolean; onClick: () => void; icon: React.ReactNode; label: string;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      style={{
+        display: 'inline-flex', alignItems: 'center', gap: 6,
+        padding: '9px 16px', borderRadius: 10,
+        background: active ? 'rgba(0,196,188,0.15)' : 'transparent',
+        border: `1px solid ${active ? 'rgba(0,196,188,0.40)' : 'rgba(255,255,255,0.06)'}`,
+        color: active ? '#00C4BC' : '#C0B8A8',
+        fontSize: '0.8rem', fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap',
+        transition: 'all 0.15s',
+      }}
+    >
+      {icon}{label}
+    </button>
+  );
+}
+
+/* ── Researcher row card ─────────────────────────────────────────────────── */
+
+function ResearcherRow({ r, expanded, onExpand, onMessage, onAddTag, onRemoveTag, onAddReminder, onTogglePin }: {
+  r: Researcher; expanded: boolean;
+  onExpand: () => void;
+  onMessage: (r: Researcher) => void;
+  onAddTag: (r: Researcher) => void;
+  onRemoveTag: (r: Researcher, tag: string) => void;
+  onAddReminder: (r: Researcher) => void;
+  onTogglePin: (r: Researcher) => void;
+}) {
+  const s = STATUS_STYLES[r.status] ?? STATUS_STYLES.lead;
+  return (
+    <div style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+      <div
+        onClick={onExpand}
+        role="button"
+        tabIndex={0}
+        onKeyDown={e => e.key === 'Enter' && onExpand()}
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'minmax(200px,2fr) 100px 90px 130px 110px 130px',
+          alignItems: 'center', gap: 8, padding: '14px 16px',
+          cursor: 'pointer', borderLeft: `3px solid ${s.border}`,
+          transition: 'background 0.15s',
+        }}
+        onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.025)'; }}
+        onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}
+      >
+        {/* Name + meta */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 3, minWidth: 0 }}>
+          <span style={{
+            fontWeight: 700, color: '#FFFFFF', fontSize: '0.9rem',
+            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+            display: 'inline-flex', alignItems: 'center', gap: 6,
+          }}>
+            {r.is_pinned && <Pin size={11} color="#FACC15" aria-hidden />}
+            {r.has_open_reminder && <Bell size={11} color="#60A5FA" aria-hidden />}
+            {r.full_name || r.username || r.email || 'Researcher'}
+          </span>
+          <span style={{ fontSize: '0.72rem', color: '#6A7A8A' }}>@{r.username || '—'}</span>
+          {r.tags.length > 0 && (
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginTop: 2 }}>
+              {r.tags.map(t => (
+                <span key={t.id} style={{
+                  fontSize: '0.62rem', padding: '1px 7px', borderRadius: 999,
+                  background: 'rgba(0,196,188,0.10)', border: '1px solid rgba(0,196,188,0.30)',
+                  color: '#00C4BC', fontWeight: 700,
+                }}>{t.tag}</span>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* LTV */}
+        <span style={{ fontWeight: 800, color: '#FFFFFF', fontSize: '0.88rem', textAlign: 'right' }}>
+          {fmtUSD(r.lifetime_value)}
+        </span>
+
+        {/* Orders */}
+        <span style={{ color: '#C0B8A8', fontSize: '0.82rem', textAlign: 'right' }}>
+          {fmtInt(r.orders_count)}
+        </span>
+
+        {/* Last order */}
+        <span style={{ color: '#8A9BB0', fontSize: '0.78rem' }}>
+          {daysAgo(r.last_order_at)}
+        </span>
+
+        {/* Status */}
+        <StatusBadge status={r.status} />
+
+        {/* Actions */}
+        <div
+          style={{ display: 'flex', justifyContent: 'flex-end', gap: 4 }}
+          onClick={e => e.stopPropagation()}
+        >
+          <button type="button" onClick={() => onMessage(r)} title="Message" className="crm-icon-btn"><MessageSquare size={13} /></button>
+          <button type="button" onClick={() => onAddTag(r)} title="Add Tag" className="crm-icon-btn"><TagIcon size={13} /></button>
+          <button type="button" onClick={() => onAddReminder(r)} title="Reminder" className="crm-icon-btn"><Bell size={13} /></button>
+          <button type="button" onClick={() => onTogglePin(r)} title={r.is_pinned ? 'Unpin' : 'Pin'} className="crm-icon-btn">
+            {r.is_pinned ? <PinOff size={13} /> : <Pin size={13} />}
+          </button>
+        </div>
+      </div>
+
+      {/* Expanded detail */}
+      {expanded && (
+        <div style={{
+          padding: '16px 20px 16px 20px', marginLeft: 3,
+          background: 'rgba(0,196,188,0.03)', borderTop: '1px solid rgba(0,196,188,0.12)',
+          display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px,1fr))', gap: 16,
+        }}>
+          {[
+            { label: 'Joined', value: daysAgo(r.joined_at) },
+            { label: 'Last Login', value: daysAgo(r.last_login) },
+            { label: 'Last Contacted', value: daysAgo(r.last_contacted_at) },
+            { label: 'Source', value: r.acquisition_source || 'Direct' },
+          ].map(({ label, value }) => (
+            <div key={label}>
+              <div style={{ fontSize: '0.66rem', color: '#6A7A8A', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: 3 }}>{label}</div>
+              <div style={{ fontSize: '0.85rem', color: '#FFFFFF', fontWeight: 600 }}>{value}</div>
+            </div>
+          ))}
+          {r.email && (
+            <div>
+              <div style={{ fontSize: '0.66rem', color: '#6A7A8A', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: 3 }}>Email</div>
+              <a href={`mailto:${r.email}`} style={{ fontSize: '0.85rem', color: '#00C4BC', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                <Mail size={12} aria-hidden /> {r.email}
+              </a>
+            </div>
+          )}
+          <div>
+            <div style={{ fontSize: '0.66rem', color: '#6A7A8A', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: 3 }}>Churn Risk</div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <ChurnRiskBar risk={r.churn_risk} />
+              <span style={{ fontSize: '0.78rem', color: '#C0B8A8', fontWeight: 700, flexShrink: 0 }}>{Math.round(safe(r.churn_risk))}%</span>
+            </div>
+          </div>
+          {r.tags.length > 0 && (
+            <div style={{ gridColumn: '1 / -1' }}>
+              <div style={{ fontSize: '0.66rem', color: '#6A7A8A', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: 6 }}>Tags</div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
+                {r.tags.map(t => (
+                  <span key={t.id} style={{
+                    display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: '0.72rem',
+                    padding: '3px 10px', borderRadius: 999, background: 'rgba(0,196,188,0.10)',
+                    border: '1px solid rgba(0,196,188,0.30)', color: '#00C4BC', fontWeight: 700,
+                  }}>
+                    {t.tag}
+                    <button type="button" onClick={() => onRemoveTag(r, t.tag)} aria-label={`Remove ${t.tag}`}
+                      style={{ background: 'transparent', border: 0, color: 'inherit', cursor: 'pointer', padding: 0, display: 'inline-flex' }}>
+                      <X size={10} />
+                    </button>
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ── Activity feed ──────────────────────────────────────────────────────── */
+
+function ActivityFeed({ items }: { items: ActivityItem[] }) {
+  const [open, setOpen] = useState(false);
+  if (items.length === 0) return null;
+  const visible = open ? items : items.slice(0, 5);
+  return (
+    <div style={{
+      marginTop: 8, borderRadius: 16,
+      background: 'linear-gradient(160deg, rgba(20,28,44,0.95) 0%, rgba(13,19,30,0.95) 100%)',
+      border: '1px solid rgba(255,255,255,0.07)',
+      overflow: 'hidden',
+    }}>
+      <button
+        type="button"
+        onClick={() => setOpen(v => !v)}
+        style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          width: '100%', background: 'transparent', border: 0, color: '#FFFFFF',
+          padding: '14px 18px', cursor: 'pointer', borderBottom: open ? '1px solid rgba(255,255,255,0.06)' : 'none',
+        }}
+      >
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, fontWeight: 700, fontSize: '0.82rem' }}>
+          <ActivityIcon size={14} color="#00C4BC" aria-hidden />
+          Recent Activity
+          <span style={{ fontSize: '0.68rem', color: '#6A7A8A', fontWeight: 400 }}>({items.length} events)</span>
+        </span>
+        {open ? <ChevronUp size={14} color="#6A7A8A" /> : <ChevronDown size={14} color="#6A7A8A" />}
+      </button>
+      {open && (
+        <ul style={{ listStyle: 'none', padding: '0 18px', margin: 0, display: 'flex', flexDirection: 'column', gap: 0 }}>
+          {visible.map((a, i) => (
+            <li key={a.id} style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
+              padding: '10px 0', borderTop: i > 0 ? '1px solid rgba(255,255,255,0.04)' : 'none',
+              fontSize: '0.78rem', color: '#C0B8A8',
+            }}>
+              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                <strong style={{ color: '#FFFFFF' }}>{a.researcher_name}</strong>
+                {a.meta ? ` — ${a.meta}` : ''}
+              </span>
+              <span style={{ color: '#6A7A8A', fontSize: '0.72rem', whiteSpace: 'nowrap' }}>{daysAgo(a.at)}</span>
+            </li>
+          ))}
+          {!open && items.length > 5 && (
+            <li style={{ padding: '10px 0', textAlign: 'center' }}>
+              <button type="button" onClick={() => setOpen(true)} style={{ background: 'none', border: 'none', color: '#00C4BC', fontSize: '0.74rem', cursor: 'pointer' }}>
+                View All {items.length} Events
+              </button>
+            </li>
+          )}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+/* ── Empty state ────────────────────────────────────────────────────────── */
+
+function EmptyState({ slug }: { slug: string | null }) {
+  const storefrontUrl = typeof window !== 'undefined' && slug
+    ? `${window.location.origin}/${slug}` : slug ? `/${slug}` : null;
   const onCopy = useCallback(() => {
     if (!storefrontUrl) return;
     void navigator.clipboard.writeText(storefrontUrl);
@@ -539,40 +564,32 @@ function EmptyState({ slug }: { slug: string | null }) {
   }, [storefrontUrl]);
 
   return (
-    <div
-      style={{
-        padding: '32px 24px',
-        borderRadius: 14,
-        background: 'rgba(15,25,35,0.6)',
-        border: '1px dashed rgba(0,196,188,0.30)',
-        textAlign: 'center',
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        gap: 14,
-      }}
-    >
-      <div style={{ fontSize: '1.05rem', color: '#FFFFFF', fontWeight: 800 }}>No Researchers Yet</div>
-      <p style={{ color: '#A8B4C0', fontSize: '0.82rem', maxWidth: 460, lineHeight: 1.45 }}>
-        Your CRM Will Light Up The Moment Your First Researcher Joins. Get There In Three Steps:
-      </p>
-      <ol
-        style={{
-          textAlign: 'left',
-          fontSize: '0.78rem',
-          color: '#D0DAE4',
-          lineHeight: 1.55,
-          paddingLeft: 18,
-          margin: 0,
-          maxWidth: 360,
-        }}
-      >
-        <li>Share Your Storefront Link Or QR Code</li>
-        <li>Onboard A Researcher From The Add Researcher Button</li>
-        <li>Pin Your VIPs And Tag Your Repeat Buyers</li>
+    <div style={{
+      padding: '48px 24px', borderRadius: 16,
+      background: 'linear-gradient(160deg, rgba(18,26,42,0.95) 0%, rgba(12,18,30,0.95) 100%)',
+      border: '1px dashed rgba(0,196,188,0.25)', textAlign: 'center',
+      display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16,
+    }}>
+      <div style={{ width: 56, height: 56, borderRadius: 16, background: 'rgba(0,196,188,0.10)', border: '1px solid rgba(0,196,188,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <Sparkles size={24} color="#00C4BC" />
+      </div>
+      <div>
+        <div style={{ fontSize: '1.15rem', color: '#FFFFFF', fontWeight: 800, marginBottom: 8 }}>No Researchers Yet</div>
+        <p style={{ color: '#8A9BB0', fontSize: '0.84rem', maxWidth: 440, lineHeight: 1.55, margin: 0 }}>
+          Your CRM activates the moment your first researcher joins. Share your storefront, onboard a researcher, and track your growth here.
+        </p>
+      </div>
+      <ol style={{ textAlign: 'left', fontSize: '0.8rem', color: '#C0B8A8', lineHeight: 1.6, paddingLeft: 18, margin: 0, maxWidth: 360 }}>
+        <li>Share your storefront link or QR code</li>
+        <li>Onboard a researcher from the button above</li>
+        <li>Pin your VIPs and tag your repeat buyers</li>
       </ol>
       {storefrontUrl && (
-        <button type="button" onClick={onCopy} className="btn-primary" style={{ minHeight: 40, padding: '0 18px' }}>
+        <button type="button" onClick={onCopy} style={{
+          padding: '11px 24px', borderRadius: 10, background: 'rgba(0,196,188,0.12)',
+          border: '1px solid rgba(0,196,188,0.40)', color: '#00C4BC',
+          fontSize: '0.84rem', fontWeight: 700, cursor: 'pointer',
+        }}>
           Copy Storefront Link
         </button>
       )}
@@ -580,102 +597,7 @@ function EmptyState({ slug }: { slug: string | null }) {
   );
 }
 
-function ActivityFeed({ items }: { items: ActivityItem[] }) {
-  const [open, setOpen] = useState(false);
-  if (items.length === 0) return null;
-  const visible = open ? items : items.slice(0, 4);
-  return (
-    <div
-      style={{
-        marginTop: 16,
-        padding: '12px 14px',
-        borderRadius: 12,
-        background: 'rgba(15,25,35,0.7)',
-        border: '1px solid rgba(255,255,255,0.06)',
-      }}
-    >
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          width: '100%',
-          background: 'transparent',
-          border: 0,
-          color: '#FFFFFF',
-          padding: 0,
-          marginBottom: 8,
-          cursor: 'pointer',
-        }}
-      >
-        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontWeight: 700, fontSize: '0.78rem' }}>
-          <ActivityIcon size={14} color="#00C4BC" aria-hidden /> Recent Activity
-        </span>
-        {open ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-      </button>
-      <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: 4 }}>
-        {visible.map((a) => (
-          <li
-            key={a.id}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              gap: 8,
-              padding: '6px 0',
-              borderTop: '1px solid rgba(255,255,255,0.04)',
-              fontSize: '0.74rem',
-              color: '#D0DAE4',
-            }}
-          >
-            <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-              <strong style={{ color: '#FFFFFF' }}>{a.researcher_name}</strong> {a.meta}
-            </span>
-            <span style={{ color: '#A8B4C0', fontSize: '0.7rem', whiteSpace: 'nowrap' }}>{daysAgo(a.at)}</span>
-          </li>
-        ))}
-      </ul>
-    </div>
-  );
-}
-
-function TabButton({
-  active,
-  onClick,
-  icon,
-  label,
-}: {
-  active: boolean;
-  onClick: () => void;
-  icon: React.ReactNode;
-  label: string;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      style={{
-        display: 'inline-flex',
-        alignItems: 'center',
-        gap: 6,
-        padding: '8px 14px',
-        borderRadius: 10,
-        background: active ? 'rgba(0,196,188,0.16)' : 'transparent',
-        border: `1px solid ${active ? 'rgba(0,196,188,0.45)' : 'rgba(255,255,255,0.06)'}`,
-        color: active ? '#00C4BC' : '#D0DAE4',
-        fontSize: '0.78rem',
-        fontWeight: 700,
-        cursor: 'pointer',
-        whiteSpace: 'nowrap',
-      }}
-    >
-      {icon}
-      {label}
-    </button>
-  );
-}
+/* ── Main component ─────────────────────────────────────────────────────── */
 
 export default function AgentResearcherCRMv2() {
   const [data, setData] = useState<Payload | null>(null);
@@ -687,9 +609,7 @@ export default function AgentResearcherCRMv2() {
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [tab, setTab] = useState<TabKey>('list');
-  const [selected, setSelected] = useState<Set<string>>(new Set());
 
-  // Lazy-load /insights when entering Charts or Acquisition tab.
   const insights = useInsights(tab === 'charts' || tab === 'acquisition');
 
   const refresh = useCallback(async () => {
@@ -697,8 +617,7 @@ export default function AgentResearcherCRMv2() {
       setLoading(true);
       const r = await fetch('/api/agent/researchers/v2', { cache: 'no-store' });
       if (!r.ok) throw new Error(`HTTP ${r.status}`);
-      const j = (await r.json()) as Payload;
-      setData(j);
+      setData((await r.json()) as Payload);
       setError(null);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Could Not Load');
@@ -707,248 +626,148 @@ export default function AgentResearcherCRMv2() {
     }
   }, []);
 
-  useEffect(() => {
+  useEffect(() => { void refresh(); }, [refresh]);
+
+  const onTogglePin = useCallback(async (r: Researcher) => {
+    const res = await fetch('/api/agent/researchers/pins', {
+      method: r.is_pinned ? 'DELETE' : 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ researcherId: r.id }),
+    });
+    if (!res.ok) { toast.error('Could Not Update Pin'); return; }
+    toast.success(r.is_pinned ? 'Pin Removed' : 'Researcher Pinned');
     void refresh();
   }, [refresh]);
 
-  const onTogglePin = useCallback(
-    async (r: Researcher) => {
-      const method = r.is_pinned ? 'DELETE' : 'POST';
-      const res = await fetch('/api/agent/researchers/pins', {
-        method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ researcherId: r.id }),
-      });
-      if (!res.ok) {
-        toast.error('Could Not Update Pin');
-        return;
-      }
-      toast.success(r.is_pinned ? 'Pin Removed' : 'Researcher Pinned');
-      void refresh();
-    },
-    [refresh],
-  );
+  const onAddTag = useCallback(async (r: Researcher) => {
+    const tag = window.prompt('Tag For This Researcher (e.g. VIP, Discount Eligible)');
+    if (!tag) return;
+    const trimmed = tag.trim().slice(0, 32);
+    if (!trimmed) return;
+    const res = await fetch('/api/agent/researchers/tags', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ researcherId: r.id, tag: trimmed }),
+    });
+    if (!res.ok) { toast.error('Could Not Save Tag'); return; }
+    toast.success('Tag Added');
+    void refresh();
+  }, [refresh]);
 
-  const onAddTag = useCallback(
-    async (r: Researcher) => {
-      const tag = window.prompt('Tag For This Researcher (e.g. VIP, Discount Eligible)');
-      if (!tag) return;
-      const trimmed = tag.trim().slice(0, 32);
-      if (!trimmed) return;
-      const res = await fetch('/api/agent/researchers/tags', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ researcherId: r.id, tag: trimmed }),
-      });
-      if (!res.ok) {
-        toast.error('Could Not Save Tag');
-        return;
-      }
-      toast.success('Tag Added');
-      void refresh();
-    },
-    [refresh],
-  );
-
-  const onRemoveTag = useCallback(
-    async (r: Researcher, tag: string) => {
-      const res = await fetch('/api/agent/researchers/tags', {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ researcherId: r.id, tag }),
-      });
-      if (!res.ok) {
-        toast.error('Could Not Remove Tag');
-        return;
-      }
-      void refresh();
-    },
-    [refresh],
-  );
+  const onRemoveTag = useCallback(async (r: Researcher, tag: string) => {
+    const res = await fetch('/api/agent/researchers/tags', {
+      method: 'DELETE', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ researcherId: r.id, tag }),
+    });
+    if (!res.ok) { toast.error('Could Not Remove Tag'); return; }
+    void refresh();
+  }, [refresh]);
 
   const onMessage = useCallback((r: Researcher | { id: string }) => {
     window.location.href = `/messenger?participant=${encodeURIComponent(r.id)}`;
   }, []);
 
-  const onAddReminder = useCallback(
-    async (r: Researcher) => {
-      const title = window.prompt('What Do You Want To Be Reminded About?');
-      if (!title) return;
-      const daysRaw = window.prompt('In How Many Days?', '7');
-      const days = Math.max(1, parseInt(daysRaw ?? '7', 10) || 7);
-      const remindAt = new Date(Date.now() + days * 86400000).toISOString();
-      const res = await fetch('/api/agent/researchers/reminders', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ researcherId: r.id, title: title.slice(0, 200), remindAt }),
-      });
-      if (!res.ok) {
-        toast.error('Could Not Save Reminder');
-        return;
-      }
-      toast.success(`Reminder Set For ${days} Days From Now`);
-      void refresh();
-    },
-    [refresh],
-  );
+  const onAddReminder = useCallback(async (r: Researcher) => {
+    const title = window.prompt('What Do You Want To Be Reminded About?');
+    if (!title) return;
+    const daysRaw = window.prompt('In How Many Days?', '7');
+    const days = Math.max(1, parseInt(daysRaw ?? '7', 10) || 7);
+    const remindAt = new Date(Date.now() + days * 86400000).toISOString();
+    const res = await fetch('/api/agent/researchers/reminders', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ researcherId: r.id, title: title.slice(0, 200), remindAt }),
+    });
+    if (!res.ok) { toast.error('Could Not Save Reminder'); return; }
+    toast.success(`Reminder Set For ${days} Days From Now`);
+    void refresh();
+  }, [refresh]);
 
   const onSetGoal = useCallback(async () => {
     const raw = window.prompt('New Researchers Target For This Month');
     if (!raw) return;
     const n = parseInt(raw, 10);
-    if (!Number.isFinite(n) || n < 0) {
-      toast.error('Enter A Whole Number');
-      return;
-    }
+    if (!Number.isFinite(n) || n < 0) { toast.error('Enter A Whole Number'); return; }
     const res = await fetch('/api/agent/researchers/goals', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ targetCount: n }),
     });
-    if (!res.ok) {
-      toast.error('Could Not Save Goal');
-      return;
-    }
+    if (!res.ok) { toast.error('Could Not Save Goal'); return; }
     toast.success('Goal Saved');
     void refresh();
   }, [refresh]);
 
-  const onExportCsv = useCallback(() => {
-    window.location.href = '/api/agent/researchers/export';
-  }, []);
-
-  const onPrintSnapshot = useCallback(() => {
-    window.print();
-  }, []);
-
-  const onBulkMessage = useCallback(() => {
-    if (selected.size === 0) {
-      toast.error('Select Researchers First');
-      return;
-    }
-    const ids = [...selected].join(',');
-    window.location.href = `/messenger?participants=${encodeURIComponent(ids)}`;
-  }, [selected]);
-
-  const onBulkTag = useCallback(async () => {
-    if (selected.size === 0) {
-      toast.error('Select Researchers First');
-      return;
-    }
-    const tag = window.prompt(`Tag For ${selected.size} Selected Researchers`);
-    if (!tag) return;
-    const trimmed = tag.trim().slice(0, 32);
-    if (!trimmed) return;
-    const results = await Promise.allSettled(
-      [...selected].map((id) =>
-        fetch('/api/agent/researchers/tags', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ researcherId: id, tag: trimmed }),
-        }),
-      ),
-    );
-    const ok = results.filter((r) => r.status === 'fulfilled').length;
-    toast.success(`Tagged ${ok} Of ${selected.size}`);
-    setSelected(new Set());
-    void refresh();
-  }, [selected, refresh]);
-
-  const toggleSelected = useCallback((id: string) => {
-    setSelected((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  }, []);
+  const onExportCsv = useCallback(() => { window.location.href = '/api/agent/researchers/export'; }, []);
+  const onPrintSnapshot = useCallback(() => { window.print(); }, []);
 
   const filtered = useMemo(() => {
     if (!data) return [];
     const term = search.trim().toLowerCase();
-    const byFilter = data.researchers.filter((r) => {
+    const byFilter = data.researchers.filter(r => {
       switch (filter) {
-        case 'vip':
-          return r.status === 'vip';
-        case 'at_risk':
-          return r.status === 'at_risk' || r.status === 'churned';
-        case 'new':
-          return r.status === 'new' || r.status === 'first_order';
-        case 'inactive':
-          return r.orders_count === 0;
-        case 'pinned':
-          return r.is_pinned;
-        case 'with_reminder':
-          return r.has_open_reminder;
-        case 'all':
-        default:
-          return true;
+        case 'vip': return r.status === 'vip';
+        case 'at_risk': return r.status === 'at_risk' || r.status === 'churned';
+        case 'new': return r.status === 'new' || r.status === 'first_order';
+        case 'inactive': return r.orders_count === 0;
+        case 'pinned': return r.is_pinned;
+        case 'with_reminder': return r.has_open_reminder;
+        default: return true;
       }
     });
     const bySearch = term
-      ? byFilter.filter(
-          (r) =>
-            (r.full_name ?? '').toLowerCase().includes(term) ||
-            (r.username ?? '').toLowerCase().includes(term) ||
-            (r.email ?? '').toLowerCase().includes(term),
-        )
+      ? byFilter.filter(r =>
+          (r.full_name ?? '').toLowerCase().includes(term) ||
+          (r.username ?? '').toLowerCase().includes(term) ||
+          (r.email ?? '').toLowerCase().includes(term))
       : byFilter;
     const dir = sortDir === 'asc' ? 1 : -1;
     return [...bySearch].sort((a, b) => {
       switch (sortBy) {
-        case 'name':
-          return (a.full_name ?? '').localeCompare(b.full_name ?? '') * dir;
-        case 'orders':
-          return (a.orders_count - b.orders_count) * dir;
-        case 'last':
-          return (
-            (new Date(a.last_order_at ?? 0).getTime() - new Date(b.last_order_at ?? 0).getTime()) * dir
-          );
-        case 'joined':
-          return (new Date(a.joined_at).getTime() - new Date(b.joined_at).getTime()) * dir;
-        case 'risk':
-          return (a.churn_risk - b.churn_risk) * dir;
-        case 'ltv':
-        default:
-          return (a.lifetime_value - b.lifetime_value) * dir;
+        case 'name': return (a.full_name ?? '').localeCompare(b.full_name ?? '') * dir;
+        case 'orders': return (a.orders_count - b.orders_count) * dir;
+        case 'last': return (new Date(a.last_order_at ?? 0).getTime() - new Date(b.last_order_at ?? 0).getTime()) * dir;
+        case 'joined': return (new Date(a.joined_at).getTime() - new Date(b.joined_at).getTime()) * dir;
+        case 'risk': return (a.churn_risk - b.churn_risk) * dir;
+        default: return (a.lifetime_value - b.lifetime_value) * dir;
       }
     });
   }, [data, filter, search, sortBy, sortDir]);
 
   const kanbanRows: KanbanResearcher[] = useMemo(() => {
     if (!data) return [];
-    return data.researchers.map((r) => ({
-      id: r.id,
-      full_name: r.full_name,
-      username: r.username,
-      lifetime_value: r.lifetime_value,
-      orders_count: r.orders_count,
-      last_order_at: r.last_order_at,
-      status: r.status,
-      churn_risk: r.churn_risk,
+    return data.researchers.map(r => ({
+      id: r.id, full_name: r.full_name, username: r.username,
+      lifetime_value: r.lifetime_value, orders_count: r.orders_count,
+      last_order_at: r.last_order_at, status: r.status, churn_risk: r.churn_risk,
     }));
   }, [data]);
 
+  const sortBtn = (key: SortKey, label: string) => (
+    <button
+      type="button"
+      onClick={() => { setSortBy(key); setSortDir(d => sortBy === key && d === 'desc' ? 'asc' : 'desc'); }}
+      style={{
+        background: 'transparent', border: 0, color: sortBy === key ? '#00C4BC' : '#8A9BB0',
+        fontSize: '0.68rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.04em',
+        cursor: 'pointer', font: 'inherit', display: 'inline-flex', alignItems: 'center', gap: 3,
+        textAlign: 'right',
+      }}
+    >
+      {label}{sortBy === key ? (sortDir === 'desc' ? ' ↓' : ' ↑') : ''}
+    </button>
+  );
+
   if (loading && !data) {
-    return <div style={{ padding: 24, color: '#A8B4C0' }}>Loading Researcher CRM...</div>;
+    return (
+      <div style={{ padding: '32px 0', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12, color: '#8A9BB0' }}>
+        <div style={{ width: 20, height: 20, borderRadius: '50%', border: '2px solid #00C4BC', borderTopColor: 'transparent', animation: 'spin 0.8s linear infinite' }} />
+        Loading Researcher CRM...
+      </div>
+    );
   }
   if (error) {
     return (
-      <div style={{ padding: 24, color: '#EF4444' }}>
-        Could Not Load: {error}{' '}
-        <button
-          type="button"
-          onClick={() => void refresh()}
-          style={{
-            marginLeft: 8,
-            padding: '4px 10px',
-            borderRadius: 6,
-            background: 'rgba(0,196,188,0.10)',
-            border: '1px solid rgba(0,196,188,0.40)',
-            color: '#00C4BC',
-            cursor: 'pointer',
-          }}
-        >
+      <div style={{ padding: '24px', color: '#EF4444', display: 'flex', alignItems: 'center', gap: 12 }}>
+        <AlertTriangle size={16} /> Could Not Load: {error}
+        <button type="button" onClick={() => void refresh()} style={{ marginLeft: 8, padding: '6px 14px', borderRadius: 8, background: 'rgba(0,196,188,0.10)', border: '1px solid rgba(0,196,188,0.40)', color: '#00C4BC', cursor: 'pointer', fontSize: '0.78rem', fontWeight: 700 }}>
           Retry
         </button>
       </div>
@@ -960,372 +779,133 @@ export default function AgentResearcherCRMv2() {
   const hasAny = data.researchers.length > 0;
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }} className="crm-shell">
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }} className="crm-shell">
+
+      {/* Goal */}
       <GoalHeader goal={data.goal} onSetGoal={onSetGoal} />
 
-      <div
-        style={{
-          display: 'grid',
-          gap: 10,
-          gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
-        }}
-      >
-        <KpiTile label="Researchers" value={fmtInt(k.researchers_count.value)} spark={k.researchers_count.spark} delta={k.researchers_count.delta_pct} onClick={() => { setTab('list'); setFilter('all'); }} />
-        <KpiTile label="Lifetime Value" value={fmtUSD(k.lifetime_value.value)} spark={k.lifetime_value.spark} delta={k.lifetime_value.delta_pct} color="#FACC15" />
-        <KpiTile label="Total Orders" value={fmtInt(k.total_orders.value)} spark={k.total_orders.spark} delta={k.total_orders.delta_pct} color="#60A5FA" />
-        <KpiTile label="Active Buyers" value={fmtInt(k.active_buyers.value)} spark={k.active_buyers.spark} delta={k.active_buyers.delta_pct} onClick={() => { setTab('list'); setFilter('all'); }} />
-        <KpiTile label="Avg Order Value" value={fmtUSD(k.avg_order_value.value)} spark={k.avg_order_value.spark} delta={k.avg_order_value.delta_pct} color="#2DD4BF" />
-        <KpiTile label="Repeat Rate" value={`${Math.round(k.repeat_rate.value)}%`} spark={k.repeat_rate.spark} delta={k.repeat_rate.delta_pct} color="#A78BFA" />
-        <KpiTile label="New This Month" value={fmtInt(k.new_this_month.value)} spark={k.new_this_month.spark} delta={k.new_this_month.delta_pct} onClick={() => { setTab('list'); setFilter('new'); }} />
-        <KpiTile label="At Risk" value={fmtInt(k.at_risk.value)} spark={k.at_risk.spark} delta={k.at_risk.delta_pct} color="#F59E0B" onClick={() => { setTab('list'); setFilter('at_risk'); }} />
-        <KpiTile label="Best Customer" value={k.best_customer.label || '—'} spark={k.best_customer.spark} delta={k.best_customer.delta_pct} color="#FACC15" subtitle={k.best_customer.value > 0 ? fmtUSD(k.best_customer.value) : undefined} />
-        <KpiTile label="Commission Earned" value={fmtUSD(k.lifetime_commission.value)} spark={k.lifetime_commission.spark} delta={k.lifetime_commission.delta_pct} color="#2DD4BF" />
+      {/* KPI grid — 5-col on desktop, wraps on mobile */}
+      <div style={{ display: 'grid', gap: 12, gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))' }}>
+        <KpiCard label="Total Researchers" value={fmtInt(k.researchers_count.value)} spark={k.researchers_count.spark} delta={k.researchers_count.delta_pct} onClick={() => { setTab('list'); setFilter('all'); }} />
+        <KpiCard label="Lifetime Revenue" value={fmtUSD(k.lifetime_value.value)} spark={k.lifetime_value.spark} delta={k.lifetime_value.delta_pct} color="#FACC15" />
+        <KpiCard label="Total Orders" value={fmtInt(k.total_orders.value)} spark={k.total_orders.spark} delta={k.total_orders.delta_pct} color="#60A5FA" />
+        <KpiCard label="Active Buyers" value={fmtInt(k.active_buyers.value)} spark={k.active_buyers.spark} delta={k.active_buyers.delta_pct} onClick={() => { setTab('list'); setFilter('all'); }} />
+        <KpiCard label="Avg Order Value" value={fmtUSD(k.avg_order_value.value)} spark={k.avg_order_value.spark} delta={k.avg_order_value.delta_pct} color="#2DD4BF" />
+        <KpiCard label="Repeat Rate" value={`${Math.round(safe(k.repeat_rate.value))}%`} spark={k.repeat_rate.spark} delta={k.repeat_rate.delta_pct} color="#A78BFA" />
+        <KpiCard label="New This Month" value={fmtInt(k.new_this_month.value)} spark={k.new_this_month.spark} delta={k.new_this_month.delta_pct} onClick={() => { setTab('list'); setFilter('new'); }} />
+        <KpiCard label="At Risk" value={fmtInt(k.at_risk.value)} spark={k.at_risk.spark} delta={k.at_risk.delta_pct} color="#F59E0B" onClick={() => { setTab('list'); setFilter('at_risk'); }} />
+        <KpiCard label="Best Customer" value={k.best_customer.label || '—'} spark={k.best_customer.spark} delta={k.best_customer.delta_pct} color="#FACC15" subtitle={k.best_customer.value > 0 ? fmtUSD(k.best_customer.value) : undefined} />
+        <KpiCard label="Commission Earned" value={fmtUSD(k.lifetime_commission.value)} spark={k.lifetime_commission.spark} delta={k.lifetime_commission.delta_pct} color="#2DD4BF" />
       </div>
 
-      <InsightStrip insights={data.insights} />
-
-      <div
-        role="tablist"
-        aria-label="Researcher CRM View"
-        style={{
-          display: 'flex',
-          gap: 6,
-          padding: '4px',
-          background: 'rgba(15,25,35,0.6)',
-          border: '1px solid rgba(255,255,255,0.06)',
-          borderRadius: 12,
-          overflowX: 'auto',
-          marginTop: 6,
-        }}
-      >
+      {/* Tab bar */}
+      <div role="tablist" aria-label="Researcher CRM View" style={{
+        display: 'flex', gap: 6, padding: '5px',
+        background: 'rgba(12,18,30,0.8)', border: '1px solid rgba(255,255,255,0.07)',
+        borderRadius: 14, overflowX: 'auto',
+      }}>
         <TabButton active={tab === 'list'} onClick={() => setTab('list')} icon={<TableIcon size={14} aria-hidden />} label="Researchers" />
         <TabButton active={tab === 'kanban'} onClick={() => setTab('kanban')} icon={<LayoutGrid size={14} aria-hidden />} label="Kanban" />
         <TabButton active={tab === 'charts'} onClick={() => setTab('charts')} icon={<BarChart3 size={14} aria-hidden />} label="Charts" />
         <TabButton active={tab === 'acquisition'} onClick={() => setTab('acquisition')} icon={<GitBranch size={14} aria-hidden />} label="Acquisition" />
       </div>
 
+      {/* List tab */}
       {tab === 'list' && (
         <>
-          <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 8, marginTop: 6 }}>
+          {/* Filters + search + export */}
+          <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 8 }}>
             <FilterChip active={filter === 'all'} onClick={() => setFilter('all')} count={data.researchers.length}>All</FilterChip>
             <FilterChip active={filter === 'vip'} onClick={() => setFilter('vip')} count={data.kanban_counts.vip}>VIPs</FilterChip>
             <FilterChip active={filter === 'at_risk'} onClick={() => setFilter('at_risk')} count={(data.kanban_counts.at_risk ?? 0) + (data.kanban_counts.churned ?? 0)}>At Risk</FilterChip>
             <FilterChip active={filter === 'new'} onClick={() => setFilter('new')} count={(data.kanban_counts.new ?? 0) + (data.kanban_counts.first_order ?? 0)}>New</FilterChip>
             <FilterChip active={filter === 'inactive'} onClick={() => setFilter('inactive')} count={data.kanban_counts.lead}>Inactive</FilterChip>
-            <FilterChip active={filter === 'pinned'} onClick={() => setFilter('pinned')} count={data.researchers.filter((r) => r.is_pinned).length}>Pinned</FilterChip>
+            <FilterChip active={filter === 'pinned'} onClick={() => setFilter('pinned')} count={data.researchers.filter(r => r.is_pinned).length}>Pinned</FilterChip>
             <div style={{ flex: 1 }} />
-            <div
-              style={{
-                position: 'relative',
-                display: 'flex',
-                alignItems: 'center',
-                background: 'rgba(255,255,255,0.04)',
-                border: '1px solid rgba(255,255,255,0.10)',
-                borderRadius: 10,
-                padding: '0 10px',
-                minWidth: 200,
-              }}
-            >
-              <Search size={14} color="#A8B4C0" aria-hidden />
+            {/* Search */}
+            <div style={{
+              display: 'flex', alignItems: 'center', gap: 8,
+              background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.10)',
+              borderRadius: 10, padding: '0 12px', minWidth: 220,
+            }}>
+              <Search size={14} color="#8A9BB0" aria-hidden />
               <input
-                type="search"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
+                type="search" value={search}
+                onChange={e => setSearch(e.target.value)}
                 placeholder="Search Name, Email, Username"
-                style={{
-                  border: 0,
-                  background: 'transparent',
-                  color: '#FFFFFF',
-                  padding: '8px',
-                  fontSize: '0.78rem',
-                  outline: 'none',
-                  minWidth: 0,
-                  width: '100%',
-                }}
+                style={{ border: 0, background: 'transparent', color: '#FFFFFF', padding: '9px 0', fontSize: '0.78rem', outline: 'none', minWidth: 0, width: '100%' }}
               />
             </div>
-            <button type="button" onClick={onExportCsv} className="btn-ghost" style={{ minHeight: 36, padding: '0 12px', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-              <Download size={14} aria-hidden /> CSV
+            <button type="button" onClick={onExportCsv} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '9px 14px', borderRadius: 10, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.10)', color: '#C0B8A8', fontSize: '0.74rem', fontWeight: 700, cursor: 'pointer' }}>
+              <Download size={13} /> CSV
             </button>
-            <button type="button" onClick={onPrintSnapshot} className="btn-ghost" style={{ minHeight: 36, padding: '0 12px', display: 'inline-flex', alignItems: 'center', gap: 6 }} title="Open Print Preview For PDF Snapshot">
-              <Printer size={14} aria-hidden /> PDF
+            <button type="button" onClick={onPrintSnapshot} title="Print / Save PDF" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '9px 14px', borderRadius: 10, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.10)', color: '#C0B8A8', fontSize: '0.74rem', fontWeight: 700, cursor: 'pointer' }}>
+              <Printer size={13} /> PDF
             </button>
           </div>
 
-          {selected.size > 0 && (
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 8,
-                padding: '8px 12px',
-                background: 'rgba(0,196,188,0.10)',
-                border: '1px solid rgba(0,196,188,0.30)',
-                borderRadius: 10,
-                fontSize: '0.78rem',
-                color: '#FFFFFF',
-              }}
-            >
-              <strong>{selected.size}</strong> Selected
-              <div style={{ flex: 1 }} />
-              <button type="button" onClick={onBulkMessage} className="btn-ghost" style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                <MessageSquare size={12} aria-hidden /> Message All
-              </button>
-              <button type="button" onClick={onBulkTag} className="btn-ghost" style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                <TagIcon size={12} aria-hidden /> Tag All
-              </button>
-              <button type="button" onClick={() => setSelected(new Set())} className="btn-ghost" aria-label="Clear Selection">
-                <X size={12} aria-hidden />
-              </button>
-            </div>
-          )}
-
+          {/* Table */}
           {!hasAny ? (
             <EmptyState slug={data.storefront_slug} />
           ) : (
-            <div
-              style={{
-                borderRadius: 12,
-                border: '1px solid rgba(255,255,255,0.06)',
-                background: 'rgba(15,25,35,0.6)',
-                overflow: 'hidden',
-              }}
-            >
-              <div
-                role="row"
-                style={{
-                  display: 'grid',
-                  gridTemplateColumns: '30px minmax(180px,1.6fr) 100px 80px 110px 100px 90px 110px',
-                  padding: '8px 10px',
-                  fontSize: '0.66rem',
-                  fontWeight: 800,
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.04em',
-                  color: '#A8B4C0',
-                  borderBottom: '1px solid rgba(255,255,255,0.06)',
-                  background: 'rgba(255,255,255,0.02)',
-                  alignItems: 'center',
-                }}
-                className="crm-row-head"
-              >
-                <input
-                  type="checkbox"
-                  aria-label="Select All Visible"
-                  checked={filtered.length > 0 && filtered.every((r) => selected.has(r.id))}
-                  onChange={(e) => {
-                    if (e.target.checked) {
-                      const next = new Set(selected);
-                      for (const r of filtered) next.add(r.id);
-                      setSelected(next);
-                    } else {
-                      const next = new Set(selected);
-                      for (const r of filtered) next.delete(r.id);
-                      setSelected(next);
-                    }
-                  }}
-                />
-                <button type="button" onClick={() => { setSortBy('name'); setSortDir((d) => (sortBy === 'name' && d === 'asc' ? 'desc' : 'asc')); }} style={{ background: 'transparent', border: 0, color: 'inherit', textAlign: 'left', cursor: 'pointer', font: 'inherit' }}>Researcher</button>
-                <button type="button" onClick={() => { setSortBy('ltv'); setSortDir((d) => (sortBy === 'ltv' && d === 'desc' ? 'asc' : 'desc')); }} style={{ background: 'transparent', border: 0, color: 'inherit', textAlign: 'right', cursor: 'pointer', font: 'inherit' }}>LTV</button>
-                <button type="button" onClick={() => { setSortBy('orders'); setSortDir((d) => (sortBy === 'orders' && d === 'desc' ? 'asc' : 'desc')); }} style={{ background: 'transparent', border: 0, color: 'inherit', textAlign: 'right', cursor: 'pointer', font: 'inherit' }}>Orders</button>
-                <button type="button" onClick={() => { setSortBy('last'); setSortDir((d) => (sortBy === 'last' && d === 'desc' ? 'asc' : 'desc')); }} style={{ background: 'transparent', border: 0, color: 'inherit', textAlign: 'left', cursor: 'pointer', font: 'inherit' }}>Last Order</button>
-                <span>Status</span>
-                <span style={{ textAlign: 'center' }}>Risk</span>
-                <span style={{ textAlign: 'right' }}>Actions</span>
+            <div style={{
+              borderRadius: 16, overflow: 'hidden',
+              background: 'linear-gradient(160deg, rgba(18,26,42,0.98) 0%, rgba(12,18,30,0.98) 100%)',
+              border: '1px solid rgba(255,255,255,0.08)',
+              boxShadow: '0 4px 24px rgba(0,0,0,0.30)',
+            }}>
+              {/* Header */}
+              <div role="row" style={{
+                display: 'grid',
+                gridTemplateColumns: 'minmax(200px,2fr) 100px 90px 130px 110px 130px',
+                alignItems: 'center', gap: 8, padding: '10px 16px',
+                background: 'rgba(255,255,255,0.025)',
+                borderBottom: '1px solid rgba(255,255,255,0.07)',
+              }} className="crm-row-head">
+                <span style={{ fontSize: '0.68rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.04em', color: '#8A9BB0' }}>Researcher</span>
+                <span style={{ textAlign: 'right' }}>{sortBtn('ltv', 'LTV')}</span>
+                <span style={{ textAlign: 'right' }}>{sortBtn('orders', 'Orders')}</span>
+                <span>{sortBtn('last', 'Last Order')}</span>
+                <span style={{ fontSize: '0.68rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.04em', color: '#8A9BB0' }}>Status</span>
+                <span style={{ textAlign: 'right', fontSize: '0.68rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.04em', color: '#8A9BB0' }}>Actions</span>
               </div>
 
-              {filtered.map((r) => {
-                const s = STATUS_STYLES[r.status];
-                const isExpanded = expandedId === r.id;
-                const isSelected = selected.has(r.id);
-                return (
-                  <div key={r.id} className="crm-row">
-                    <div
-                      role="row"
-                      style={{
-                        display: 'grid',
-                        gridTemplateColumns: '30px minmax(180px,1.6fr) 100px 80px 110px 100px 90px 110px',
-                        alignItems: 'center',
-                        padding: '10px',
-                        borderTop: '1px solid rgba(255,255,255,0.04)',
-                        borderLeft: `3px solid ${s.border}`,
-                        fontSize: '0.78rem',
-                        color: '#E6EEF6',
-                        cursor: 'pointer',
-                        background: isSelected ? 'rgba(0,196,188,0.06)' : 'transparent',
-                      }}
-                      onClick={() => setExpandedId((id) => (id === r.id ? null : r.id))}
-                    >
-                      <input
-                        type="checkbox"
-                        aria-label={`Select ${r.full_name ?? r.username ?? 'Researcher'}`}
-                        checked={isSelected}
-                        onClick={(e) => e.stopPropagation()}
-                        onChange={() => toggleSelected(r.id)}
-                      />
-                      <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
-                        <span
-                          style={{
-                            fontWeight: 700,
-                            color: '#FFFFFF',
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                            whiteSpace: 'nowrap',
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: 6,
-                          }}
-                        >
-                          {r.is_pinned && <Pin size={11} color="#FACC15" aria-hidden />}
-                          {r.has_open_reminder && <Bell size={11} color="#60A5FA" aria-hidden />}
-                          {r.full_name || r.username || r.email || 'Researcher'}
-                        </span>
-                        <span style={{ fontSize: '0.68rem', color: '#A8B4C0' }}>{r.email || r.username || ''}</span>
-                        {r.tags.length > 0 && (
-                          <div style={{ marginTop: 4, display: 'flex', flexWrap: 'wrap', gap: 4 }}>
-                            {r.tags.map((t) => (
-                              <span
-                                key={t.id}
-                                style={{
-                                  fontSize: '0.62rem',
-                                  padding: '1px 6px',
-                                  borderRadius: 999,
-                                  background: 'rgba(0,196,188,0.10)',
-                                  border: '1px solid rgba(0,196,188,0.30)',
-                                  color: '#00C4BC',
-                                  fontWeight: 700,
-                                }}
-                              >
-                                {t.tag}
-                              </span>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                      <span style={{ textAlign: 'right', fontWeight: 700, color: '#FFFFFF' }}>{fmtUSD(r.lifetime_value)}</span>
-                      <span style={{ textAlign: 'right' }}>{fmtInt(r.orders_count)}</span>
-                      <span style={{ color: '#D0DAE4' }}>{daysAgo(r.last_order_at)}</span>
-                      <StatusBadge status={r.status} />
-                      <span style={{ display: 'flex', justifyContent: 'center' }}><ChurnRiskBar risk={r.churn_risk} /></span>
-                      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 4 }} onClick={(e) => e.stopPropagation()}>
-                        <button type="button" onClick={() => onMessage(r)} title="Message" className="crm-icon-btn"><MessageSquare size={14} aria-hidden /></button>
-                        <button type="button" onClick={() => void onAddTag(r)} title="Add Tag" className="crm-icon-btn"><TagIcon size={14} aria-hidden /></button>
-                        <button type="button" onClick={() => void onAddReminder(r)} title="Add Reminder" className="crm-icon-btn"><Bell size={14} aria-hidden /></button>
-                        <button type="button" onClick={() => void onTogglePin(r)} title={r.is_pinned ? 'Unpin' : 'Pin'} className="crm-icon-btn">
-                          {r.is_pinned ? <PinOff size={14} aria-hidden /> : <Pin size={14} aria-hidden />}
-                        </button>
-                      </div>
-                    </div>
-
-                    {isExpanded && (
-                      <div
-                        style={{
-                          padding: '12px 14px',
-                          background: 'rgba(0,196,188,0.04)',
-                          borderTop: '1px solid rgba(0,196,188,0.18)',
-                          display: 'grid',
-                          gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
-                          gap: 12,
-                        }}
-                      >
-                        <div>
-                          <div style={{ fontSize: '0.66rem', color: '#A8B4C0', fontWeight: 700, textTransform: 'uppercase' }}>Joined</div>
-                          <div style={{ fontSize: '0.82rem', color: '#FFFFFF' }}>{daysAgo(r.joined_at)}</div>
-                        </div>
-                        <div>
-                          <div style={{ fontSize: '0.66rem', color: '#A8B4C0', fontWeight: 700, textTransform: 'uppercase' }}>Last Login</div>
-                          <div style={{ fontSize: '0.82rem', color: '#FFFFFF' }}>{daysAgo(r.last_login)}</div>
-                        </div>
-                        <div>
-                          <div style={{ fontSize: '0.66rem', color: '#A8B4C0', fontWeight: 700, textTransform: 'uppercase' }}>Last Contacted</div>
-                          <div style={{ fontSize: '0.82rem', color: '#FFFFFF' }}>{daysAgo(r.last_contacted_at)}</div>
-                        </div>
-                        <div>
-                          <div style={{ fontSize: '0.66rem', color: '#A8B4C0', fontWeight: 700, textTransform: 'uppercase' }}>Source</div>
-                          <div style={{ fontSize: '0.82rem', color: '#FFFFFF' }}>{r.acquisition_source || 'Direct'}</div>
-                        </div>
-                        {r.email && (
-                          <div>
-                            <div style={{ fontSize: '0.66rem', color: '#A8B4C0', fontWeight: 700, textTransform: 'uppercase' }}>Email</div>
-                            <a
-                              href={`mailto:${r.email}`}
-                              style={{
-                                fontSize: '0.82rem',
-                                color: '#00C4BC',
-                                textDecoration: 'none',
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                gap: 4,
-                              }}
-                            >
-                              <Mail size={12} aria-hidden /> {r.email}
-                            </a>
-                          </div>
-                        )}
-                        {r.tags.length > 0 && (
-                          <div style={{ gridColumn: '1 / -1' }}>
-                            <div style={{ fontSize: '0.66rem', color: '#A8B4C0', fontWeight: 700, textTransform: 'uppercase' }}>Tags</div>
-                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginTop: 4 }}>
-                              {r.tags.map((t) => (
-                                <span
-                                  key={t.id}
-                                  style={{
-                                    display: 'inline-flex',
-                                    alignItems: 'center',
-                                    gap: 4,
-                                    fontSize: '0.68rem',
-                                    padding: '2px 8px',
-                                    borderRadius: 999,
-                                    background: 'rgba(0,196,188,0.10)',
-                                    border: '1px solid rgba(0,196,188,0.30)',
-                                    color: '#00C4BC',
-                                    fontWeight: 700,
-                                  }}
-                                >
-                                  {t.tag}
-                                  <button
-                                    type="button"
-                                    onClick={() => void onRemoveTag(r, t.tag)}
-                                    aria-label={`Remove Tag ${t.tag}`}
-                                    style={{
-                                      background: 'transparent',
-                                      border: 0,
-                                      color: 'inherit',
-                                      cursor: 'pointer',
-                                      padding: 0,
-                                      display: 'inline-flex',
-                                    }}
-                                  >
-                                    <X size={10} aria-hidden />
-                                  </button>
-                                </span>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
+              {filtered.length === 0 ? (
+                <div style={{ padding: '32px', textAlign: 'center', color: '#6A7A8A', fontSize: '0.84rem' }}>
+                  No researchers match your filter.
+                </div>
+              ) : (
+                filtered.map(r => (
+                  <ResearcherRow
+                    key={r.id}
+                    r={r}
+                    expanded={expandedId === r.id}
+                    onExpand={() => setExpandedId(id => id === r.id ? null : r.id)}
+                    onMessage={onMessage}
+                    onAddTag={onAddTag}
+                    onRemoveTag={onRemoveTag}
+                    onAddReminder={onAddReminder}
+                    onTogglePin={onTogglePin}
+                  />
+                ))
+              )}
             </div>
           )}
         </>
       )}
 
       {tab === 'kanban' && (
-        <div style={{ marginTop: 6 }}>
-          <KanbanView researchers={kanbanRows} onCardClick={(id) => { setTab('list'); setExpandedId(id); }} />
+        <div style={{ marginTop: 4 }}>
+          <KanbanView researchers={kanbanRows} onCardClick={id => { setTab('list'); setExpandedId(id); }} />
         </div>
       )}
-
       {tab === 'charts' && (
-        <div style={{ marginTop: 6 }}>
+        <div style={{ marginTop: 4 }}>
           <ChartsView revenueSpark={k.lifetime_value.spark} insights={insights} />
         </div>
       )}
-
       {tab === 'acquisition' && (
-        <div style={{ marginTop: 6 }}>
+        <div style={{ marginTop: 4 }}>
           <AcquisitionView sourceCounts={data.source_counts} funnel={insights?.funnel ?? null} />
         </div>
       )}
@@ -1334,45 +914,29 @@ export default function AgentResearcherCRMv2() {
 
       <style jsx>{`
         .crm-icon-btn {
-          background: rgba(255, 255, 255, 0.04);
-          border: 1px solid rgba(255, 255, 255, 0.10);
-          color: #d0dae4;
+          background: rgba(255,255,255,0.04);
+          border: 1px solid rgba(255,255,255,0.10);
+          color: #8a9bb0;
           border-radius: 8px;
           padding: 6px;
           cursor: pointer;
           display: inline-flex;
           align-items: center;
           justify-content: center;
-          min-width: 28px;
-          min-height: 28px;
+          min-width: 30px;
+          min-height: 30px;
+          transition: all 0.15s;
         }
         .crm-icon-btn:hover {
-          background: rgba(0, 196, 188, 0.12);
+          background: rgba(0,196,188,0.12);
           color: #00c4bc;
-          border-color: rgba(0, 196, 188, 0.40);
+          border-color: rgba(0,196,188,0.40);
         }
         @media print {
-          .crm-shell button,
-          .crm-shell input,
-          .crm-shell [role='tablist'] {
-            display: none !important;
-          }
+          .crm-shell button, .crm-shell input, .crm-shell [role='tablist'] { display: none !important; }
         }
         @media (max-width: 640px) {
-          .crm-row-head {
-            display: none !important;
-          }
-          .crm-row > div[role='row'] {
-            grid-template-columns: 30px 1fr auto !important;
-            row-gap: 4px;
-          }
-          .crm-row > div[role='row'] > *:nth-child(3),
-          .crm-row > div[role='row'] > *:nth-child(4),
-          .crm-row > div[role='row'] > *:nth-child(5),
-          .crm-row > div[role='row'] > *:nth-child(6),
-          .crm-row > div[role='row'] > *:nth-child(7) {
-            display: none;
-          }
+          .crm-row-head { display: none !important; }
         }
       `}</style>
     </div>

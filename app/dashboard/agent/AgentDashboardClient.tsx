@@ -1087,131 +1087,74 @@ export default function AgentDashboardClient({
             )}
 
 
-            <div style={{
-              borderRadius: 20,
-              padding: 10,
-              background: 'linear-gradient(145deg, #c8c2b8 0%, #a09890 30%, #8a847c 50%, #a09890 70%, #c8c2b8 100%)',
-              boxShadow: '0 8px 48px rgba(0,0,0,0.8), inset 0 1px 0 rgba(255,255,255,0.35), inset 0 -1px 0 rgba(0,0,0,0.4)',
-              marginBottom: 'var(--space-6)'
-            }}>
+            {/* My Researchers — premium header with action + full CRM below */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+
+              {/* Action header */}
               <div style={{
-                borderRadius: 12,
-                background: 'linear-gradient(180deg, #1a1f2e 0%, #141820 40%, #111520 100%)',
-                padding: 'var(--space-6)',
-                boxShadow: 'inset 0 2px 8px rgba(0,0,0,0.6)',
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                flexWrap: 'wrap', gap: 12,
+                padding: '20px 24px', borderRadius: 16,
+                background: 'linear-gradient(160deg, rgba(20,28,44,0.98) 0%, rgba(13,19,30,0.98) 100%)',
+                border: '1px solid rgba(255,255,255,0.08)',
+                boxShadow: '0 4px 24px rgba(0,0,0,0.30)',
               }}>
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', marginBottom: 'var(--space-6)' }}>
-                  <h3 style={{ fontSize: '1.1rem', color: 'var(--white)', fontFamily: 'var(--font-brand)', letterSpacing: '0.05em', textTransform: 'uppercase', marginBottom: 6 }}>My Researchers</h3>
-                  <p style={{ color: 'var(--grey-400)', fontSize: '0.82rem', margin: 0, marginBottom: 'var(--space-4)' }}>All Researcher Accounts You Have Created</p>
-                  <button onClick={() => { setShowCreateResearcher(true); setCrError(''); setCrSuccess(''); }}
-                    className="btn btn-primary" style={{ fontSize: '0.82rem' }}>
+                <div>
+                  <h3 style={{ fontSize: '1.05rem', fontWeight: 800, color: '#FFFFFF', letterSpacing: '-0.01em', margin: 0 }}>My Researchers</h3>
+                  <p style={{ fontSize: '0.78rem', color: '#6A7A8A', margin: '4px 0 0' }}>Your full researcher team — manage, message, and track from here</p>
+                </div>
+                <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+                  {researcherList.length > 0 && (
+                    <span style={{
+                      fontSize: '0.72rem', fontWeight: 700, color: '#00C4BC',
+                      background: 'rgba(0,196,188,0.10)', border: '1px solid rgba(0,196,188,0.30)',
+                      borderRadius: 999, padding: '4px 12px',
+                    }}>
+                      {researcherList.length} Researcher{researcherList.length !== 1 ? 's' : ''}
+                    </span>
+                  )}
+                  {researcherList.some(r => r.last_sign_in_at === null) && (
+                    <span style={{
+                      fontSize: '0.72rem', fontWeight: 700, color: '#F59E0B',
+                      background: 'rgba(245,158,11,0.10)', border: '1px solid rgba(245,158,11,0.25)',
+                      borderRadius: 999, padding: '4px 12px',
+                    }}>
+                      {researcherList.filter(r => !r.last_sign_in_at).length} Never Logged In
+                    </span>
+                  )}
+                  {userProfile.is_super_agent && researcherList.length > 0 && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                      {researcherList.map(res => (
+                        <button
+                          key={res.id}
+                          onClick={() => setResetPwUser({ id: res.id, name: res.full_name || 'Researcher', username: res.username ?? res.email.split('@')[0] })}
+                          style={{ fontSize: '0.68rem', color: '#8A9BB0', background: 'none', border: 'none', cursor: 'pointer', padding: '2px 0', textDecoration: 'underline', textAlign: 'left' }}
+                        >
+                          Reset @{res.username ?? res.email.split('@')[0]} password
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  <button
+                    onClick={() => { setShowCreateResearcher(true); setCrError(''); setCrSuccess(''); }}
+                    style={{
+                      padding: '10px 20px', borderRadius: 10, fontWeight: 700, fontSize: '0.84rem',
+                      background: 'linear-gradient(135deg, #00C4BC 0%, #00a89f 100%)',
+                      border: 'none', color: '#FFFFFF', cursor: 'pointer',
+                      boxShadow: '0 2px 12px rgba(0,196,188,0.30)',
+                      transition: 'opacity 0.15s, transform 0.15s',
+                    }}
+                    onMouseEnter={e => { e.currentTarget.style.opacity = '0.9'; e.currentTarget.style.transform = 'translateY(-1px)'; }}
+                    onMouseLeave={e => { e.currentTarget.style.opacity = '1'; e.currentTarget.style.transform = 'translateY(0)'; }}
+                  >
                     + Create Researcher Account
                   </button>
                 </div>
-
-              {researcherList.length > 0 ? (
-                <div style={{ overflowX: 'auto' }}>
-                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
-                    <thead>
-                      <tr style={{ textAlign: 'left', borderBottom: '1px solid rgba(255,255,255,0.08)', color: 'var(--grey-400)' }}>
-                        <th style={{ padding: 'var(--space-3) 0', fontWeight: 600 }}>Full Name</th>
-                        <th style={{ padding: 'var(--space-3) 0', fontWeight: 600 }}>Credentials</th>
-                        <th style={{ padding: 'var(--space-3) 0', fontWeight: 600 }}>Created</th>
-                        <th style={{ padding: 'var(--space-3) 0', fontWeight: 600 }}>Last Logged In</th>
-                        <th style={{ padding: 'var(--space-3) 0', fontWeight: 600 }}>Status</th>
-                        <th style={{ padding: 'var(--space-3) 0', fontWeight: 600 }}>Auto Approve</th>
-                        {userProfile.is_super_agent && (
-                          <th style={{ padding: 'var(--space-3) 0', fontWeight: 600, textAlign: 'right' }}>Actions</th>
-                        )}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {researcherList.map((res) => (
-                        <tr key={res.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.03)', color: 'var(--silver-light)' }}>
-                          <td style={{ padding: 'var(--space-3) 0', fontWeight: 500 }}>{res.full_name || 'Anonymous Researcher'}</td>
-                          <td style={{ padding: 'var(--space-3) 0' }}>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                              <span style={{ fontFamily: 'monospace', fontSize: '0.82rem', color: 'var(--teal)' }}>@{res.username ?? res.email.split('@')[0]}</span>
-                              <button
-                                onClick={() => setResetPwUser({ id: res.id, name: res.full_name || 'Researcher', username: res.username ?? res.email.split('@')[0] })}
-                                style={{ fontSize: '0.7rem', color: 'var(--grey-400)', background: 'none', border: 'none', cursor: 'pointer', padding: 0, textDecoration: 'underline', textAlign: 'left' }}
-                              >
-                                Edit Password
-                              </button>
-                            </div>
-                          </td>
-                          <td style={{ padding: 'var(--space-3) 0' }}>{new Date(res.created_at).toLocaleDateString()}</td>
-                          <td style={{ padding: 'var(--space-3) 0', color: res.last_sign_in_at ? 'var(--silver-light)' : 'var(--grey-500)', fontStyle: res.last_sign_in_at ? 'normal' : 'italic' }}>
-                            {res.last_sign_in_at ? new Date(res.last_sign_in_at).toLocaleString(undefined, { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' }) : 'Never Logged In'}
-                          </td>
-                          <td style={{ padding: 'var(--space-3) 0' }}>
-                            <span className="badge badge-teal" style={{ fontSize: '0.65rem' }}>Active</span>
-                          </td>
-                          <td style={{ padding: 'var(--space-3) 0' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                              <label style={{
-                                position: 'relative',
-                                display: 'inline-block',
-                                width: '36px',
-                                height: '20px'
-                              }}>
-                                <input 
-                                  type="checkbox" 
-                                  checked={!!res.auto_approve_orders}
-                                  onChange={() => handleToggleTrust(res.id, !!res.auto_approve_orders)}
-                                  disabled={togglingTrust === res.id}
-                                  style={{ opacity: 0, width: 0, height: 0 }} 
-                                />
-                                <span style={{
-                                  position: 'absolute',
-                                  cursor: togglingTrust === res.id ? 'not-allowed' : 'pointer',
-                                  top: 0, left: 0, right: 0, bottom: 0,
-                                  backgroundColor: res.auto_approve_orders ? 'var(--teal)' : 'var(--grey-500)',
-                                  transition: '.4s',
-                                  borderRadius: '20px',
-                                  opacity: togglingTrust === res.id ? 0.5 : 1
-                                }}>
-                                  <span style={{
-                                    position: 'absolute',
-                                    height: '14px',
-                                    width: '14px',
-                                    left: res.auto_approve_orders ? '19px' : '3px',
-                                    bottom: '3px',
-                                    backgroundColor: 'white',
-                                    transition: '.4s',
-                                    borderRadius: '50%'
-                                  }} />
-                                </span>
-                              </label>
-                            </div>
-                          </td>
-                          {userProfile.is_super_agent && (
-                            <td style={{ padding: 'var(--space-3) 0', textAlign: 'right' }}>
-                              <button 
-                                className="btn btn-secondary btn-sm"
-                                style={{ padding: '4px 8px', fontSize: '0.75rem' }}
-                                onClick={() => setPromoteResearcher(res)}
-                              >
-                                {userProfile.is_super_agent ? 'Promote To Agent' : 'Promote To Sub-Agent'}
-                              </button>
-                            </td>
-                          )}
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              ) : (
-                <div style={{ textAlign: 'center', padding: 'var(--space-10) 0', opacity: 0.6 }}>
-                  <h4 style={{ color: 'var(--silver)' }}>No Researchers Yet</h4>
-                  <p style={{ fontSize: '0.78rem', color: 'var(--grey-400)', margin: 0 }}>Click "Create Researcher Account" To Add Your First Researcher.</p>
-                </div>
-              )}
               </div>
-            </div>
 
-            {/* CRM: lifetime value, order history, and private notes per researcher */}
-            <AgentResearcherCRM />
+              {/* Full CRM */}
+              <AgentResearcherCRM />
+            </div>
           </div>
         )}
 
