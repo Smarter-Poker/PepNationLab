@@ -249,7 +249,7 @@ export default function StorefrontCompareDrawer({
         bestLogic?: 'max' | 'min';
         getRawScore?: (p: PinnedItem) => number;
         getValue: (p: PinnedItem) => unknown; 
-        render: (p: PinnedItem) => React.ReactNode 
+        render: (p: PinnedItem, maxHalfLife?: number) => React.ReactNode 
       };
 
   const ROWS: RowDef[] = useMemo(() => {
@@ -327,9 +327,21 @@ export default function StorefrontCompareDrawer({
           const c = p.compoundSlug ? compoundsBySlug[p.compoundSlug] : null;
           return c?.half_life || NL;
         },
-        render: (p: PinnedItem) => {
+        render: (p: PinnedItem, maxHalfLife?: number) => {
           const c = p.compoundSlug ? compoundsBySlug[p.compoundSlug] : null;
-          return c?.half_life ? <span style={{ color: primaryColor, fontWeight: 700 }}>{c.half_life}</span> : NL;
+          if (!c?.half_life) return NL;
+          const hlVal = parseHalfLifeHours(c.half_life);
+          const pct = maxHalfLife && maxHalfLife > 0 ? (hlVal / maxHalfLife) * 100 : 0;
+          return (
+            <div>
+              <div style={{ color: primaryColor, fontWeight: 700, marginBottom: 4 }}>{c.half_life}</div>
+              {pct > 0 && (
+                <div style={{ height: 4, background: 'rgba(255,255,255,0.1)', borderRadius: 2, overflow: 'hidden', width: '100%', maxWidth: 150 }}>
+                  <div style={{ height: '100%', width: `${pct}%`, background: primaryColor }} />
+                </div>
+              )}
+            </div>
+          );
         }
       },
       {
@@ -414,6 +426,13 @@ export default function StorefrontCompareDrawer({
   const activeSynergies = KNOWN_SYNERGIES.filter(syn => 
     syn.pairs.every(slug => pinned.some(p => p.compoundSlug === slug))
   );
+
+  const maxHalfLife = useMemo(() => {
+    return Math.max(...displayedPinned.map(p => {
+      const c = p.compoundSlug ? compoundsBySlug[p.compoundSlug] : null;
+      return parseHalfLifeHours(c?.half_life);
+    }), 0);
+  }, [displayedPinned, compoundsBySlug]);
 
   return createPortal(
     <>
@@ -799,14 +818,14 @@ export default function StorefrontCompareDrawer({
                           {displayedPinned.map((p, pIdx) => {
                             const isWinner = bestIndices.includes(pIdx);
                             return (
-                              <td key={pIdx} style={{ ...valueCellStyle, position: 'relative' }}>
+                              <td key={p.productName} style={{ ...valueCellStyle, position: 'relative' }}>
                                 {isWinner && (
                                   <div style={{ position: 'absolute', top: 4, right: 4, fontSize: '0.65rem', background: primaryColor, color: '#04221F', padding: '2px 6px', borderRadius: 4, fontWeight: 800 }}>
-                                    BEST VALUE
+                                    TOP PICK 👑
                                   </div>
                                 )}
                                 <div style={isWinner ? { borderLeft: `2px solid ${primaryColor}`, paddingLeft: 8, marginLeft: -10 } : {}}>
-                                  {row.render(p)}
+                                  {row.render(p, maxHalfLife)}
                                 </div>
                               </td>
                             )

@@ -415,6 +415,7 @@ export default function CompareTool({
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+    URL.revokeObjectURL(url);
   }
 
   const canAdd = selected.length < MAX_COLUMNS;

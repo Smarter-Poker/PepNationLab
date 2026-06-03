@@ -245,9 +245,10 @@ function MatchResultsDrawer({
   };
 
   return (
-    <AnimatePresence>
-      {open && (
-        <motion.div
+    <>
+      <AnimatePresence>
+        {open && (
+          <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
@@ -366,7 +367,7 @@ function MatchResultsDrawer({
             )}
 
             <div style={{ overflowY: 'auto', padding: '14px 20px 18px', flex: 1 }}>
-              {loading && (
+              {loading ? (
                 <div style={{ padding: '64px 24px', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 24 }}>
                   <div style={{
                     width: 60, height: 60, borderRadius: '50%',
@@ -382,13 +383,54 @@ function MatchResultsDrawer({
                     Our AI Match Engine Is Analyzing Your Research Goal Against All Available Compounds And Data.
                   </div>
                 </div>
-              )}
-
-              {!loading && filteredResults.length === 0 && (
-                <div style={{ padding: '32px 8px', textAlign: 'center', color: 'var(--silver, #A8B4C0)' }}>
-                  No Matches Found With These Filters. Try Expanding Your Search.
+              ) : followUp ? (
+                <div style={{ padding: '32px 16px', display: 'flex', flexDirection: 'column' }}>
+                  <div style={{ marginBottom: 24, padding: 20, background: 'rgba(192,197,206,0.1)', borderRadius: 16, border: '1px solid rgba(192,197,206,0.2)' }}>
+                    <p style={{ color: '#C0C5CE', fontSize: '1.1rem', fontWeight: 600, lineHeight: 1.5 }}>
+                      {followUp.question}
+                    </p>
+                  </div>
+                  <form onSubmit={(e) => { e.preventDefault(); submitFollowUp(followUpInput); }} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                    <input
+                      type="text"
+                      autoFocus
+                      value={followUpInput}
+                      onChange={(e) => setFollowUpInput(e.target.value)}
+                      placeholder="Your answer..."
+                      style={{
+                        width: '100%', padding: '16px 20px', borderRadius: 12,
+                        background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.15)',
+                        color: '#FFF', fontSize: '1rem', outline: 'none'
+                      }}
+                    />
+                    <button
+                      type="submit"
+                      disabled={!followUpInput.trim()}
+                      style={{
+                        background: primaryColor, color: '#0A1018', border: 'none',
+                        padding: '16px', borderRadius: 12, fontWeight: 800, fontSize: '1.05rem',
+                        cursor: followUpInput.trim() ? 'pointer' : 'not-allowed',
+                        opacity: followUpInput.trim() ? 1 : 0.5,
+                      }}
+                    >
+                      Continue Match
+                    </button>
+                  </form>
                 </div>
-              )}
+              ) : filteredResults.length === 0 ? (
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '64px 24px', textAlign: 'center' }}>
+                  <Sparkles size={48} color={primaryColor} style={{ marginBottom: 16, opacity: 0.5 }} />
+                  <h3 style={{ color: '#FFF', fontSize: '1.2rem', fontWeight: 800, marginBottom: 8 }}>0 Matches Found</h3>
+                  <p style={{ color: '#A8B4C0', marginBottom: 24, lineHeight: 1.5 }}>
+                    We couldn't find a protocol matching all of your strict constraints (e.g. Oral-Only, Low-Risk, WADA-Permitted).
+                  </p>
+                  <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', justifyContent: 'center' }}>
+                    <button type="button" onClick={() => setFilterOralOnly(false)} style={{ padding: '10px 16px', background: 'rgba(255,255,255,0.1)', color: '#FFF', border: 'none', borderRadius: 8, cursor: 'pointer', fontWeight: 600 }}>Drop Oral-Only</button>
+                    <button type="button" onClick={() => setFilterHumanOnly(false)} style={{ padding: '10px 16px', background: 'rgba(255,255,255,0.1)', color: '#FFF', border: 'none', borderRadius: 8, cursor: 'pointer', fontWeight: 600 }}>Drop Human-Only</button>
+                    <button type="button" onClick={onClose} style={{ padding: '10px 16px', background: 'transparent', color: primaryColor, border: `1px solid ${primaryColor}`, borderRadius: 8, cursor: 'pointer', fontWeight: 600 }}>Start Over</button>
+                  </div>
+                </div>
+              ) : null}
 
               {/* Stack "Add Protocol to Cart" logic */}
               {!loading && stackItems.length > 1 && !filterOralOnly && !filterHumanOnly && (
@@ -578,7 +620,6 @@ function MatchResultsDrawer({
                     ))}
                   </div>
                 </div>
-                </div>
               )}
 
               {/* Protocol Schedule */}
@@ -627,6 +668,7 @@ function MatchResultsDrawer({
           </motion.div>
         </motion.div>
       )}
+    </AnimatePresence>
 
       {/* Compare Modal */}
       <AnimatePresence>
@@ -729,7 +771,7 @@ function MatchResultsDrawer({
           </motion.div>
         )}
       </AnimatePresence>
-    </AnimatePresence>
+    </>
   );
 }
 
