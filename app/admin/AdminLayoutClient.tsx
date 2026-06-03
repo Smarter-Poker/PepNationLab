@@ -56,41 +56,19 @@ export function AdminLayoutClient({
   children: React.ReactNode;
   adminName: string;
 }) {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
   const pathname = usePathname();
-
-  useEffect(() => { setSidebarOpen(false); }, [pathname]);
-
-  useEffect(() => {
-    document.body.style.overflow = sidebarOpen ? 'hidden' : '';
-    return () => { document.body.style.overflow = ''; };
-  }, [sidebarOpen]);
 
   return (
     <>
       {/* fix-57 #7: global admin Realtime refresher - server components re-fetch on orders/notifications events. */}
       <AdminRealtimeRefresher />
 
-      <Navbar onMenuClick={() => setSidebarOpen(o => !o)} isOpen={sidebarOpen} />
+      <Navbar />
 
       <div style={{ minHeight: '100dvh', background: 'var(--black)', display: 'flex', paddingTop: 'var(--nav-offset, 60px)' }}>
 
-      {sidebarOpen && (
-        <div
-          onClick={() => setSidebarOpen(false)}
-          style={{
-            position: 'fixed',
-            inset: 0,
-            background: 'rgba(5,10,15,0.6)',
-            backdropFilter: 'blur(4px)',
-            WebkitBackdropFilter: 'blur(4px)',
-            zIndex: 490,
-          }}
-        />
-      )}
-
       <aside
-        className={`admin-sidebar${sidebarOpen ? ' open' : ''}`}
+        className="admin-sidebar"
         style={{
           width: 240,
           background: 'var(--black-2)',
