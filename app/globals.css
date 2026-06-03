@@ -242,7 +242,7 @@ html[data-theme="light"] .card-glass {
   box-shadow: var(--shadow-card);
 }
 
-html[data-theme="light"] .glass-panel {
+html[data-theme="light"] .card-metal {
   border: 3px solid transparent;
   background-image: 
     linear-gradient(180deg, #FFFFFF 0%, #F5F0EA 100%), 
@@ -417,7 +417,7 @@ a:hover { color: var(--teal-dark); }
   padding: var(--space-6);
 }
 
-.glass-panel {
+.card-metal {
   background: linear-gradient(180deg, rgba(20,25,30,0.8) 0%, rgba(10,15,20,0.9) 100%);
   border: 1px solid transparent;
   box-shadow: 0 0 0 1.5px #C0B8A8, inset 0 0 0 1px rgba(0,0,0,0.5), 0 8px 24px rgba(0,0,0,0.6);
@@ -439,7 +439,7 @@ a:hover { color: var(--teal-dark); }
 */
 
 /* Outer Silver Frame */
-.glass-panel {
+.metal-frame {
   padding: 3px;
   border-radius: 24px;
   background: linear-gradient(145deg, #c8c2b8 0%, #a09890 30%, #8a847c 50%, #a09890 70%, #c8c2b8 100%);
@@ -449,7 +449,7 @@ a:hover { color: var(--teal-dark); }
 }
 
 /* Inner Navy Gradient */
-. {
+.metal-content {
   background: linear-gradient(180deg, var(--surface-1, #0F1923) 0%, var(--surface-2, #162230) 100%);
   border-radius: 21px; /* 24px - 3px padding */
   padding: var(--space-6);
@@ -460,7 +460,7 @@ a:hover { color: var(--teal-dark); }
 }
 
 /* Deep Embossed Inset Block (for details) */
-.glass-panel {
+.metal-embossed-panel {
   background: linear-gradient(180deg, #0b0f16 0%, #121822 100%);
   border-radius: 12px;
   border-top: 1px solid rgba(0,0,0,0.8);
@@ -900,8 +900,8 @@ a:hover { color: var(--teal-dark); }
 .hover-color-white { transition: color 0.2s ease; }
 .hover-color-white:hover { color: #ffffff !important; }
 
-.hover-lift { transition: transform 0.2s ease, box-shadow 0.2s ease; }
-.hover-lift:hover {
+.hover-lift-metal { transition: transform 0.2s ease, box-shadow 0.2s ease; }
+.hover-lift-metal:hover {
   transform: translateY(-2px);
   box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255,255,255,0.4), inset 0 -1px 0 rgba(0,0,0,0.4) !important;
 }
@@ -1319,7 +1319,7 @@ img, video, svg, iframe {
   }
 
   /* Cards go full-width, less padding */
-  .card, .card-glass, .glass-panel {
+  .card, .card-glass, .card-metal {
     border-radius: var(--radius-md);
     padding: var(--space-4);
   }
@@ -1446,7 +1446,7 @@ img, video, svg, iframe {
   }
 
   /* Storefront login — full width */
-  .glass-panel[style*="max-width: 420"] {
+  .card-metal[style*="max-width: 420"] {
     max-width: 100% !important;
     border-radius: var(--radius-md) !important;
     padding: var(--space-5) !important;
@@ -1469,7 +1469,7 @@ img, video, svg, iframe {
     padding: 0 var(--space-2) !important;
   }
 
-  .card, .card-glass, .glass-panel {
+  .card, .card-glass, .card-metal {
     padding: var(--space-3);
     border-radius: var(--radius-sm);
   }
@@ -1646,7 +1646,7 @@ html, body {
      a small ceiling — only affects mobile so desktop modals are
      untouched. */
   [role="dialog"] .card,
-  [role="dialog"] .glass-panel,
+  [role="dialog"] .card-metal,
   .modal-overlay > div,
   [data-modal-overlay] > div {
     max-height: 88dvh !important;
@@ -1696,7 +1696,7 @@ html {
     opacity: 0.9;
   }
 
-  .card:hover, .card-glass:hover, .glass-panel:hover {
+  .card:hover, .card-glass:hover, .card-metal:hover {
     transform: none;
   }
 
