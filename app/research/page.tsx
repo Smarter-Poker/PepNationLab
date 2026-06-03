@@ -7,7 +7,7 @@
 
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { GitCompare, Layers } from 'lucide-react';
+import { GitCompare, Layers, ShieldCheck } from 'lucide-react';
 import { getAllCompounds } from '@/lib/compounds-server';
 import { RESEARCH_AREAS } from '@/lib/compounds';
 import AskTheLab from '@/components/research/AskTheLab';
@@ -124,6 +124,19 @@ export default async function ResearchLibraryPage() {
         >
           <Layers size={18} aria-hidden="true" />
           Stacks And Combinations
+        </Link>
+        <Link
+          href="/research/evidence"
+          className="btn-secondary"
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 'var(--space-2, 8px)',
+            textDecoration: 'none',
+          }}
+        >
+          <ShieldCheck size={18} aria-hidden="true" />
+          Evidence And Safety
         </Link>
       </section>
 
