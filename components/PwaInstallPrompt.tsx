@@ -74,10 +74,13 @@ export default function PwaInstallPrompt() {
       aria-label="Install Pep Nation Lab As An App"
       style={{
         position: 'fixed',
-        bottom: 16,
-        right: 16,
+        // R25: lift above iPhone home indicator + always 16px clear of right edge
+        // on 320px viewports (iPhone SE 1st gen) so the dialog never touches an edge.
+        bottom: 'calc(max(16px, env(safe-area-inset-bottom)) + 8px)',
+        right: 'max(16px, env(safe-area-inset-right))',
+        left: 'auto',
         zIndex: 1000,
-        maxWidth: 320,
+        maxWidth: 'min(320px, calc(100vw - 32px))',
         background: '#0F1923',
         border: '1px solid rgba(0,196,188,0.35)',
         borderRadius: '0.75rem',
