@@ -298,7 +298,7 @@ describe('scoreCompounds — ranking and cap', () => {
       );
     }
 
-    const { matches: results } = scoreCompounds(baseInput, compounds);
+    const { matches: results } = scoreCompounds(baseInput, compounds, 5);
     expect(results.length).toBe(5);
   });
 
