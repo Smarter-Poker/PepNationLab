@@ -5,7 +5,6 @@
  */
 
 import type { Metadata } from 'next';
-import BrowseSurfaceNav from '@/components/research/BrowseSurfaceNav';
 import CalculatorsClient from '@/components/research/CalculatorsClient';
 
 export const metadata: Metadata = {
@@ -17,7 +16,6 @@ export default function CalculatorsPage() {
   return (
     <div style={{ maxWidth: 1080, margin: '0 auto', padding: '32px 16px 64px' }}>
       <CalculatorsClient />
-      <BrowseSurfaceNav />
     </div>
   );
 }
