@@ -59,6 +59,18 @@ const PUBLIC_ROUTES = [
   // The page at /research/match already loads anonymously via the `/research`
   // prefix; this entry lets the form's POST reach the engine.
   '/api/research/match',
+  // Research Library v3 Google-grade search engine surfaces. All four are
+  // public, read-only, rate-limited inside their route handlers, and emit
+  // the RESEARCH_NOTE framing on every response. Compounds RLS is
+  // already public-read, so no privileged data leaks here.
+  //   /search          — ranked FTS over compound_search materialized view
+  //   /suggest         — autocomplete (compounds + areas + glossary)
+  //   /instant-answer  — position-0 knowledge-card payload by intent
+  //   /click           — best-effort CTR analytics ping
+  '/api/research/search',
+  '/api/research/suggest',
+  '/api/research/instant-answer',
+  '/api/research/click',
   // R28.5: FAQ click beacon. The route handler has its own per-IP rate limit
   // (60/min), validates faqId against an allow-list built from FAQ_ITEMS,
   // and writes via the service-role client. Listed here so a sendBeacon()
@@ -86,6 +98,16 @@ const PUBLIC_ROUTES = [
   '/api/cron/push-dispatch',
   '/api/cron/recommendations-refresh',
   '/api/cron/webhooks-dispatch',
+  // Research Library v3 evidence-sync crons. Each route gates itself with
+  // CRON_SECRET via assertCronAuth, so listing them here only lets the
+  // request reach the handler — the handler still has to authenticate the
+  // caller. Same posture as every other /api/cron entry above.
+  //   /search-refresh — REFRESH MATERIALIZED VIEW CONCURRENTLY compound_search
+  //   /pubmed-sync    — weekly NCBI E-utils citation refresh
+  //   /trials-sync    — weekly ClinicalTrials.gov v2 sync
+  '/api/cron/search-refresh',
+  '/api/cron/pubmed-sync',
+  '/api/cron/trials-sync',
   // Shippo M1 crons — authenticated via CRON_SECRET inside the route handler.
   '/api/cron/label-jobs',
   '/api/cron/shippo-reconcile',

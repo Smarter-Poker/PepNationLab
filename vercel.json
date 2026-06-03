@@ -49,6 +49,18 @@
       "schedule": "0 12 * * *"
     },
     {
+      "path": "/api/cron/search-refresh",
+      "schedule": "0 */4 * * *"
+    },
+    {
+      "path": "/api/cron/pubmed-sync",
+      "schedule": "0 3 * * 1"
+    },
+    {
+      "path": "/api/cron/trials-sync",
+      "schedule": "0 4 * * 1"
+    },
+    {
       "path": "/api/cron/shippo-reconcile",
       "schedule": "0 22 * * 0"
     },
