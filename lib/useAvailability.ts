@@ -8,7 +8,7 @@ export type AvailabilityStatus =
   | 'idle'        // no value, or below min length — render nothing
   | 'checking'    // debounce window active or fetch in flight
   | 'available'   // server says good to go
-  | 'similar'     // server says technically free but visually overlaps an existing name
+  | 'similar'     // (DEPRECATED) the hook no longer produces this; kept in the type for raw-signal callers
   | 'taken'       // server says someone else owns this
   | 'invalid'     // format failed — server returned available=false with a format reason
   | 'reserved'    // server says this string is blocked by platform (RESERVED_SLUGS / profanity / brand)
@@ -27,7 +27,8 @@ export interface AvailabilityResult {
   reservationToken: string | null;
   /** When a name is technically available but visually overlaps an existing
    *  storefront (Levenshtein ≤ 2 or shared prefix), the server returns the
-   *  conflicting name here so the UI can show a soft yellow warning. */
+   *  conflicting name here. We expose it for analytics/telemetry but the
+   *  hook no longer flips status to 'similar' — available means available. */
   similarTo: string | null;
   /** Up to 5 pre-checked alternatives the server suggests on a collision.
    *  Always [] when the field is currently available. */
@@ -202,7 +203,7 @@ export function useAvailability(opts: UseAvailabilityOpts): AvailabilityResult {
  * Color tokens (intentionally bright so the cue is unmissable):
  *   - checking — silver
  *   - available — bright mint #34D399 with explicit success copy
- *   - similar — amber #FBBF24 (soft warning, NOT a block)
+ *   - similar — (DEPRECATED) collapsed onto 'available' — see note below
  *   - taken — red #FC8181
  *   - reserved — red #FC8181 with the platform-reserved reason
  *   - invalid — amber #FFD175 (format failed)
@@ -225,6 +226,9 @@ export function availabilityMessage(r: AvailabilityResult): {
       // Platform rule: if the server confirmed the name is available, the user
       // can have it. We do NOT surface the "Very Close To..." soft warning any
       // longer. Render the green Available message exactly like 'available'.
+      // This is the belt-and-suspenders guard — the hook above no longer
+      // transitions into 'similar', but if any caller produces it out-of-band
+      // (or a stale bundle is still running), the message stays green.
       return { color: '#34D399', text: 'This Name Is Available', tone: 'success' };
     case 'taken':
       return { color: '#FC8181', text: r.reason || 'Already Taken — Try Another.', tone: 'error' };
