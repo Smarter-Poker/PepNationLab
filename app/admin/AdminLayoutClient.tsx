@@ -104,7 +104,7 @@ export function AdminLayoutClient({
               <Link
                 key={item.href}
                 href={item.href}
-                onClick={() => setSidebarOpen(false)}
+                onClick={() => {}}
                 style={{
                   display: 'flex',
                   alignItems: 'center',

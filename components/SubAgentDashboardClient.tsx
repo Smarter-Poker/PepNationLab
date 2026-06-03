@@ -116,7 +116,7 @@ export default function SubAgentDashboardClient({ data, onRefresh }: { data: Ove
                       toast.info('Inventory and Products are managed by your Parent Agent.');
                     } else {
                       setActiveTab(tab);
-                      setIsMobileMenuOpen(false);
+                      // setIsMobileMenuOpen(false);
                     }
                   }}
                 />

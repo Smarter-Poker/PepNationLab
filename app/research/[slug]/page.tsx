@@ -14,9 +14,8 @@
  */
 
 import { notFound } from 'next/navigation';
-import { getCompound, getAllCompounds } from '@/lib/compounds-server';
+import { getCompound, getAllCompounds, getCompoundBindings, getCompoundStructures } from '@/lib/compounds-server';
 import { relatedCompounds } from '@/lib/compounds';
-import { createServiceClient } from '@/lib/supabase/server';
 import MonographTabs from '@/components/research/MonographTabs';
 import CompoundKnowledgePanel from '@/components/research/CompoundKnowledgePanel';
 import SequenceMotifViewer from '@/components/research/SequenceMotifViewer';
@@ -59,20 +58,11 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
   const related = relatedCompounds(compound, all);
 
   // Server-fetch the Wave 2 enriched data (bindings + structures); fail-soft.
-  const supabase = await createServiceClient();
   const [bindingsRes, pdbRes] = await Promise.all([
-    supabase
-      .from('compound_chembl_bindings')
-      .select('target_name, standard_type, standard_value, standard_units, pchembl_value, target_organism')
-      .eq('compound_slug', slug)
-      .limit(40),
-    supabase
-      .from('compound_pdb_structures')
-      .select('pdb_id, source, resolution_a, title, release_year, url')
-      .eq('compound_slug', slug)
-      .limit(8),
+    getCompoundBindings(slug),
+    getCompoundStructures(slug),
   ]);
-  const bindings = (bindingsRes.data ?? []) as Array<{
+  const bindings = bindingsRes as Array<{
     target_name: string;
     standard_type: string | null;
     standard_value: number | null;
@@ -80,7 +70,7 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
     pchembl_value: number | null;
     target_organism: string | null;
   }>;
-  const structures = (pdbRes.data ?? []) as Array<{
+  const structures = pdbRes as Array<{
     pdb_id: string | null;
     source: string;
     resolution_a: number | null;

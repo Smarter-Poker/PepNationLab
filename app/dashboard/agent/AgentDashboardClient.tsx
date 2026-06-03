@@ -586,7 +586,7 @@ export default function AgentDashboardClient({
           {/* First-Time Agent Setup Walkthrough */}
           <AgentSetupChecklist
             agentProfile={agentProfile}
-            onOpenConfig={() => { setActiveTab('Storefront Config'); setIsMobileMenuOpen(false); }}
+            onOpenConfig={() => { setActiveTab('Storefront Config'); }}
           />
 
 
@@ -649,7 +649,7 @@ export default function AgentDashboardClient({
               copiedStorefront={copiedStorefront}
               agentProfile={agentProfile}
               orders={orders}
-              onNavigate={(tab) => { setActiveTab(tab as any); setIsMobileMenuOpen(false); }}
+              onNavigate={(tab) => { setActiveTab(tab as any); }}
             />
           </div>
         )}
@@ -1115,19 +1115,7 @@ export default function AgentDashboardClient({
                       {researcherList.filter(r => !r.last_sign_in_at).length} Never Logged In
                     </span>
                   )}
-                  {userProfile.is_super_agent && researcherList.length > 0 && (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                      {researcherList.map(res => (
-                        <button
-                          key={res.id}
-                          onClick={() => setResetPwUser({ id: res.id, name: res.full_name || 'Researcher', username: res.username ?? res.email.split('@')[0] })}
-                          style={{ fontSize: '0.68rem', color: '#8A9BB0', background: 'none', border: 'none', cursor: 'pointer', padding: '2px 0', textDecoration: 'underline', textAlign: 'left' }}
-                        >
-                          Reset @{res.username ?? res.email.split('@')[0]} password
-                        </button>
-                      ))}
-                    </div>
-                  )}
+
                   <button
                     onClick={() => { setShowCreateResearcher(true); setCrError(''); setCrSuccess(''); }}
                     style={{
@@ -1149,7 +1137,7 @@ export default function AgentDashboardClient({
               <AgentResearcherCRMv2
                 isSuperAgent={userProfile.is_super_agent}
                 onResetPassword={setResetPwUser}
-                onPromote={setPromoteResearcher}
+                onPromote={(r: any) => setPromoteResearcher(r)}
                 onToggleAutoApprove={handleToggleTrust}
               />
             </div>

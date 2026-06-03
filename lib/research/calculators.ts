@@ -123,6 +123,7 @@ export function arrheniusStability(opts: {
   const Ea = opts.activationEnergyKJmol ?? 83;
   if (!isFinite(shelfDaysAtTempC) || shelfDaysAtTempC <= 0) return null;
   if (!isFinite(fromTempC) || !isFinite(toTempC)) return null;
+  if (!isFinite(Ea)) return null;
   const R = 8.314 / 1000;
   const T1 = fromTempC + 273.15;
   const T2 = toTempC + 273.15;
@@ -282,6 +283,7 @@ export function estimateFmocSppsCost(opts: {
   const scale = Math.max(1, opts.scaleUmol ?? 100);
   const fmocCostPerG = Math.max(0, opts.fmocAaCostPerGram ?? 10);
   const resinCostPerG = Math.max(0, opts.resinCostPerGram ?? 20);
+  if (!isFinite(scale) || !isFinite(fmocCostPerG) || !isFinite(resinCostPerG)) return null;
   const includeReagents = opts.includeReagents !== false;
 
   const fmocAaGramsTotal = (seq.length * 5 * scale) / 1000;

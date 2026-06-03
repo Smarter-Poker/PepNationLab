@@ -306,7 +306,7 @@ function StabilitySection() {
     shelfDaysAtTempC: Number(shelf),
     fromTempC: Number(tFrom),
     toTempC: Number(tTo),
-    activationEnergyKJmol: Number(ea) || undefined,
+    activationEnergyKJmol: ea.trim() === '' ? undefined : Number(ea),
   });
 
   return (
