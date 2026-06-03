@@ -1,9 +1,8 @@
-import { createServiceClient } from '@/lib/supabase/service';
+import { createServiceClient } from '@/lib/supabase/server';
 import { notFound } from 'next/navigation';
-import { getAllProducts } from '@/lib/products';
-import { AgentStorefrontGrid } from '@/components/AgentStorefrontGrid';
-import { getAgentConfig } from '@/lib/storefront-config';
-import { AgentHeader } from '@/components/storefront/AgentHeader';
+import { getProductById } from '@/lib/products-server';
+import AgentStorefrontGrid from '@/components/AgentStorefrontGrid';
+import { getStorefrontConfig } from '@/lib/storefront';
 import { DiscoveryHeroProps } from '@/components/storefront/StorefrontDiscovery';
 
 export const revalidate = 0; // Don't cache shared links statically

@@ -25,7 +25,7 @@
  */
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { AgentHeader } from './AgentHeader';
+
 import { ProtocolScheduler } from '../research/ProtocolScheduler';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Sparkles, Search, ArrowRight, X, ShoppingCart, Compass } from 'lucide-react';
@@ -180,6 +180,8 @@ function MatchResultsDrawer({
   results,
   excluded,
   goalSummary,
+  followUp,
+  submitFollowUp,
   onClose,
   onAddToCart,
   onOpenProduct,
@@ -199,8 +201,32 @@ function MatchResultsDrawer({
 }) {
   const [filterOralOnly, setFilterOralOnly] = useState(false);
   const [filterHumanOnly, setFilterHumanOnly] = useState(false);
-  const [compareIds, setCompareIds] = useState<string[]>([]);
   const [compareOpen, setCompareOpen] = useState(false);
+  const [compareIds, setCompareIds] = useState<string[]>([]);
+  const [followUpInput, setFollowUpInput] = useState('');
+  const [shareCopied, setShareCopied] = useState(false);
+
+  const handleShare = async () => {
+    try {
+      const res = await fetch('/api/research/share', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          brandId: window.location.pathname.split('/')[1] || 'pepnation',
+          results,
+          goalSummary
+        })
+      });
+      const data = await res.json();
+      if (data.url) {
+        await navigator.clipboard.writeText(window.location.origin + data.url);
+        setShareCopied(true);
+        setTimeout(() => setShareCopied(false), 2000);
+      }
+    } catch (e) {
+      console.error('Failed to share', e);
+    }
+  };
 
   useEffect(() => {
     if (!open) {
