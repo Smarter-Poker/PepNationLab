@@ -270,6 +270,18 @@ export default function MonographTabs({ compound, related = [] }: Props) {
                 value={(compound.reconstitution_shelf_days ?? h.reconstituted_days) != null ? `${compound.reconstitution_shelf_days ?? h.reconstituted_days} Days Refrigerated` : null}
               />
             </div>
+            {(compound.half_life || compound.pk_summary) && (
+              <div style={{ marginBottom: 'var(--space-4)' }}>
+                <Label>Pharmacokinetics</Label>
+                {compound.half_life && (
+                  <p style={{ margin: '0 0 6px', fontSize: '0.95rem' }}>
+                    <span style={{ color: 'var(--silver)', fontWeight: 700 }}>Half-Life: </span>
+                    <span style={{ color: teal, fontWeight: 800 }}>{compound.half_life}</span>
+                  </p>
+                )}
+                {compound.pk_summary && <Para>{compound.pk_summary}</Para>}
+              </div>
+            )}
             {h.notes && <Para>{h.notes}</Para>}
             <ReconstitutionCalculator />
           </div>

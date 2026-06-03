@@ -54,6 +54,8 @@ export interface Compound {
   risk_reasons: string[];
   recommended_action: 'keep' | 'review' | 'restrict' | 'remove';
   reconstitution_shelf_days: number | null;
+  half_life: string | null;
+  pk_summary: string | null;
 }
 
 export const EVIDENCE_TIER: Record<string, { label: string; color: string; blurb: string }> = {
