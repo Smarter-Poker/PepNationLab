@@ -3,8 +3,8 @@
 import { useMemo, useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
-import { Sparkles, ChevronRight, ShieldCheck, Printer, Brain, X, Info, Scale, Trash2 } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { Sparkles, ChevronRight, ShieldCheck, Printer, Brain, X, Info, Scale, Trash2, ArrowRight, ArrowLeft, Save, Search, Eye } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { RESEARCH_AREAS } from '@/lib/compounds';
 import type {
   EvidenceComfort,
@@ -12,6 +12,9 @@ import type {
   RiskTolerance,
   WadaConstraint,
 } from '@/lib/match-engine';
+import CompoundDrawer from './CompoundDrawer';
+import { saveMatchAction } from '@/app/research/actions';
+import { toast } from 'sonner';
 
 interface ApiResponse {
   results?: MatchResult[];
@@ -131,6 +134,11 @@ function MatchFormInner() {
   const [aiPrompt, setAiPrompt] = useState('');
   const [aiLoading, setAiLoading] = useState(false);
 
+  // Wizard state
+  const [step, setStep] = useState(1);
+  const [saving, setSaving] = useState(false);
+  const [selectedDrawerCompound, setSelectedDrawerCompound] = useState<MatchResult | null>(null);
+
   // Sync state to URL
   useEffect(() => {
     const params = new URLSearchParams();
@@ -221,10 +229,29 @@ function MatchFormInner() {
     }
   }
 
+  async function handleSaveMatch() {
+    setSaving(true);
+    try {
+      const payload = { goal, evidenceComfort, wadaConstraint, riskTolerance, excludeInjectables, requireLongHalfLife, preference };
+      const res = await saveMatchAction(payload, results || []);
+      if (res.error) {
+        toast.error(res.error);
+      } else {
+        toast.success('Match saved to your dashboard!');
+      }
+    } catch (e) {
+      toast.error('Failed to save match.');
+    } finally {
+      setSaving(false);
+    }
+  }
+
   const stackPartners = results?.filter(r => r.isStackPartner) || [];
 
   return (
-    <div className="match-container">
+    <div className="match-container" style={{ position: 'relative', minHeight: '600px' }}>
+      <CompoundDrawer isOpen={!!selectedDrawerCompound} onClose={() => setSelectedDrawerCompound(null)} result={selectedDrawerCompound} />
+
       <style>{`
         @media print {
           body { background: white !important; color: black !important; }
@@ -235,6 +262,22 @@ function MatchFormInner() {
           .match-container { padding: 0 !important; }
         }
         .print-only { display: none; }
+        .step-card {
+          background: #0F1923;
+          border: 1px solid rgba(168,180,192,0.2);
+          border-radius: 12px;
+          padding: 16px;
+          cursor: pointer;
+          transition: all 0.2s;
+        }
+        .step-card:hover {
+          border-color: var(--teal);
+          background: rgba(0,196,188,0.05);
+        }
+        .step-card.selected {
+          border-color: var(--teal);
+          background: rgba(0,196,188,0.1);
+        }
       `}</style>
 
       <div className="print-only">
@@ -244,189 +287,251 @@ function MatchFormInner() {
         <hr />
       </div>
 
-      <div className="glass-panel no-print" style={{ padding: 'var(--space-6, 24px)', marginBottom: 'var(--space-6, 24px)' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3, 12px)', marginBottom: 'var(--space-2, 8px)' }}>
-          <Brain size={22} color="var(--teal, #00C4BC)" />
-          <h2 style={{ margin: 0, color: 'var(--white)', fontSize: '1.2rem', fontWeight: 800 }}>AI Natural Language Match</h2>
-        </div>
-        <p style={{ margin: '0 0 var(--space-4, 16px)', color: 'var(--silver)', fontSize: '0.9rem' }}>
-          Describe your scenario in plain English, and our AI will configure the strict search parameters for you.
-        </p>
-        <div style={{ display: 'flex', gap: '10px' }}>
-          <input 
-            type="text" 
-            value={aiPrompt}
-            onChange={e => setAiPrompt(e.target.value)}
-            placeholder="e.g., I'm looking for a non-WADA banned healing peptide with human data, preferably not injectable."
-            style={{ flex: 1, padding: '0.8rem', borderRadius: '8px', border: '1px solid #1D2D3E', background: '#0F1923', color: 'white' }}
-            onKeyDown={e => e.key === 'Enter' && onAiSubmit()}
-          />
-          <button onClick={onAiSubmit} disabled={aiLoading} className="btn-secondary" style={{ padding: '0 1.5rem' }}>
-            {aiLoading ? 'Thinking...' : 'AI Configure'}
-          </button>
-        </div>
+      <div className="no-print" style={{ display: 'flex', gap: '8px', marginBottom: '24px', justifyContent: 'center' }}>
+        {[1, 2, 3, 4, 5].map(s => (
+          <div key={s} style={{ height: '4px', flex: 1, maxWidth: '60px', background: s <= step ? 'var(--teal)' : 'rgba(255,255,255,0.1)', borderRadius: '2px', transition: 'background 0.3s' }} />
+        ))}
       </div>
 
-      <div className="glass-panel" style={{ padding: 'var(--space-6, 24px)' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3, 12px)', marginBottom: 'var(--space-2, 8px)' }}>
-          <Sparkles size={22} color="var(--teal, #00C4BC)" aria-hidden="true" />
-          <h2 style={{ margin: 0, color: 'var(--white, #FFFFFF)', fontSize: '1.35rem', fontWeight: 800 }}>Match Engine</h2>
-        </div>
-        
-        <form onSubmit={onSubmit}>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 'var(--space-4, 16px)' }}>
-            <div>
-              <label className="block text-sm font-bold text-white mb-2">Primary Research Goal</label>
-              <select value={goal} onChange={(e) => setGoal(e.target.value)} className="w-full p-3 rounded-md border border-[#1D2D3E] bg-[#0F1923] text-white">
-                {goalOptions.map((g) => (<option key={g.value} value={g.value}>{g.label}</option>))}
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-bold text-white mb-2">Evidence Tier Comfort</label>
-              <select value={evidenceComfort} onChange={(e) => setEvidenceComfort(e.target.value as EvidenceComfort)} className="w-full p-3 rounded-md border border-[#1D2D3E] bg-[#0F1923] text-white">
-                {EVIDENCE_OPTIONS.map((o) => (<option key={o.value} value={o.value}>{o.label}</option>))}
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-bold text-white mb-2">WADA Constraint</label>
-              <select value={wadaConstraint} onChange={(e) => setWadaConstraint(e.target.value as WadaConstraint)} className="w-full p-3 rounded-md border border-[#1D2D3E] bg-[#0F1923] text-white">
-                {WADA_OPTIONS.map((o) => (<option key={o.value} value={o.value}>{o.label}</option>))}
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-bold text-white mb-2">Risk Tolerance</label>
-              <select value={riskTolerance} onChange={(e) => setRiskTolerance(e.target.value as RiskTolerance)} className="w-full p-3 rounded-md border border-[#1D2D3E] bg-[#0F1923] text-white">
-                {RISK_OPTIONS.map((o) => (<option key={o.value} value={o.value}>{o.label}</option>))}
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-bold text-white mb-2">Format Preference</label>
-              <select value={preference} onChange={(e) => setPreference(e.target.value as any)} className="w-full p-3 rounded-md border border-[#1D2D3E] bg-[#0F1923] text-white">
-                <option value="either">Any Format</option>
-                <option value="single">Single Compounds Only</option>
-                <option value="stack">Pre-Blended Stacks Only</option>
-              </select>
-            </div>
-          </div>
-
-          <div style={{ marginTop: '1rem', display: 'flex', gap: '1.5rem', flexWrap: 'wrap' }} className="no-print">
-            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--silver)', fontSize: '0.9rem', cursor: 'pointer' }}>
-              <input type="checkbox" checked={excludeInjectables} onChange={e => setExcludeInjectables(e.target.checked)} />
-              Exclude Injectables (Oral/Topical/Nasal Only)
-            </label>
-            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--silver)', fontSize: '0.9rem', cursor: 'pointer' }}>
-              <input type="checkbox" checked={requireLongHalfLife} onChange={e => setRequireLongHalfLife(e.target.checked)} />
-              Require Long Half-Life (Less Frequent Dosing)
-            </label>
-          </div>
-
-          {excludeSlugs.length > 0 && (
-            <div style={{ marginTop: '1rem', color: '#FC8181', fontSize: '0.85rem' }} className="no-print">
-              <strong>Excluded:</strong> {excludeSlugs.join(', ')} 
-              <button type="button" onClick={() => setExcludeSlugs([])} style={{ marginLeft: '10px', textDecoration: 'underline', background: 'none', border: 'none', color: '#FC8181', cursor: 'pointer' }}>Clear</button>
-            </div>
-          )}
-
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--space-3, 12px)', alignItems: 'center', marginTop: 'var(--space-5, 20px)' }} className="no-print">
-            <button type="submit" className="btn-primary" disabled={loading} style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
-              <Sparkles size={18} aria-hidden="true" /> {loading ? 'Matching' : 'Find My Matches'}
-            </button>
-            {results && results.length > 0 && (
-              <button type="button" onClick={() => window.print()} className="btn-secondary" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
-                <Printer size={18} /> Export PDF Report
-              </button>
-            )}
-            {results && results.length >= 2 && (
-              <button type="button" onClick={() => setShowCompare(true)} className="btn-secondary" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
-                <Scale size={18} /> Compare Top 2
-              </button>
-            )}
-          </div>
-        </form>
-      </div>
-
-      <div style={{ marginTop: 'var(--space-6, 24px)' }}>
-        {errorMsg && (
-          <p className="no-print" style={{ color: '#E53E3E', background: 'rgba(229,62,62,0.08)', border: '1px solid rgba(229,62,62,0.3)', borderRadius: '8px', padding: '12px' }}>
-            {errorMsg}
-          </p>
-        )}
-
-        {results && stackPartners.length >= 2 && (
-          <div className="glass-panel" style={{ borderColor: 'var(--teal, #00C4BC)', marginBottom: '1.5rem', background: 'rgba(0,196,188,0.05)' }}>
-            <h4 style={{ display: 'flex', alignItems: 'center', gap: '8px', margin: '0 0 8px 0', color: 'var(--teal, #00C4BC)' }}>
-              <Info size={18} /> Synergistic Stack Detected
-            </h4>
-            <p style={{ margin: 0, fontSize: '0.95rem', color: 'var(--silver)' }}>
-              The engine detected that <strong>{stackPartners[0].displayName}</strong> and <strong>{stackPartners[1].displayName}</strong> are highly synergistic and frequently researched together as a stack for this protocol.
-              <Link href={`/research/compare?add=${stackPartners[0].slug},${stackPartners[1].slug}`} style={{ color: 'var(--white)', fontWeight: 700, marginLeft: '8px', textDecoration: 'underline' }}>
-                Compare Them Side-by-Side <ChevronRight size={14} style={{ display: 'inline', verticalAlign: 'middle' }} />
-              </Link>
-            </p>
-          </div>
-        )}
-
-        {results && results.length === 0 && (
-          <p style={{ color: 'var(--silver, #A8B4C0)' }}>
-            No Matching Compounds Survived Your Constraints. Try Loosening The Evidence Tier Or Risk Tolerance.
-          </p>
-        )}
-
-        {results && results.length > 0 && (
-          <>
-            <h3 style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--white, #FFFFFF)', margin: '0 0 var(--space-3, 12px)' }}>
-              Top {results.length} {results.length === 1 ? 'Match' : 'Matches'}
-            </h3>
-            <div style={{ display: 'grid', gap: 'var(--space-3, 12px)' }}>
-              {results.map((r, idx) => (
-                <div key={r.slug} className="glass-panel" style={{ position: 'relative', padding: 'var(--space-4, 16px)', borderRadius: 'var(--radius-lg, 12px)' }}>
-                  
-                  <button 
-                    onClick={() => setExcludeSlugs(prev => [...prev, r.slug])}
-                    className="no-print"
-                    style={{ position: 'absolute', top: 12, right: 12, background: 'none', border: 'none', color: '#A8B4C0', cursor: 'pointer', opacity: 0.7 }}
-                    title="Exclude this compound"
-                  >
-                    <Trash2 size={16} />
-                  </button>
-
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
-                      <CircularScore score={r.score} />
-                      <Link href={`/research/${r.slug}`} style={{ color: 'var(--teal, #00C4BC)', fontWeight: 800, fontSize: '1.3rem', textDecoration: 'none' }}>
-                        {idx + 1}. {r.displayName}
-                      </Link>
-                      <span style={{ fontSize: '0.7rem', fontWeight: 700, padding: '0.15rem 0.55rem', borderRadius: '999px', color: tierColor(r.evidenceTier), border: `1px solid ${tierColor(r.evidenceTier)}` }}>
-                        {tierLabel(r.evidenceTier)}
-                      </span>
-                      <span style={{ fontSize: '0.7rem', color: 'var(--silver)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '999px', padding: '0.1rem 0.55rem' }}>
-                        {wadaText(r.wadaStatus)}
-                      </span>
-                    </div>
-                  </div>
-                  <p style={{ margin: '12px 0 0', color: 'var(--silver-light, #D0DAE4)', lineHeight: 1.55, fontSize: '0.95rem' }}>
-                    {r.rationale}
-                  </p>
-                  
-                  <details className="no-print" style={{ marginTop: '12px', fontSize: '0.85rem', color: '#A8B4C0' }}>
-                    <summary style={{ cursor: 'pointer', outline: 'none' }}>View Score Breakdown</summary>
-                    <ul style={{ marginTop: '8px', paddingLeft: '20px', listStyleType: 'disc' }}>
-                      {r.scoreBreakdown.base > 0 && <li>Exact Goal Match: +{r.scoreBreakdown.base}</li>}
-                      {r.scoreBreakdown.keyword > 0 && <li>Keyword Mentions: +{r.scoreBreakdown.keyword}</li>}
-                      {r.scoreBreakdown.evidenceBonus > 0 && <li>Evidence Tier Bonus: +{r.scoreBreakdown.evidenceBonus}</li>}
-                      {r.scoreBreakdown.classBonus > 0 && <li>Class/Mechanism Bonus: +{r.scoreBreakdown.classBonus}</li>}
-                    </ul>
-                  </details>
+      <AnimatePresence mode="wait">
+        {step === 1 && (
+          <motion.div key="step1" initial={{ x: -20, opacity: 0 }} animate={{ x: 0, opacity: 1 }} exit={{ x: 20, opacity: 0 }} transition={{ duration: 0.3 }} className="glass-panel no-print" style={{ padding: '32px' }}>
+            <h2 style={{ fontSize: '1.8rem', color: 'white', marginBottom: '8px' }}>What is your primary research goal?</h2>
+            <p style={{ color: 'var(--silver)', marginBottom: '24px' }}>Select the main focus of your protocol to calibrate the engine.</p>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '16px' }}>
+              {goalOptions.map(g => (
+                <div key={g.value} onClick={() => setGoal(g.value)} className={`step-card ${goal === g.value ? 'selected' : ''}`}>
+                  <h3 style={{ color: 'white', fontSize: '1.1rem', margin: '0 0 4px 0' }}>{g.label}</h3>
+                  <p style={{ color: 'var(--silver)', fontSize: '0.85rem', margin: 0 }}>{g.blurb}</p>
                 </div>
               ))}
             </div>
-          </>
+            
+            <div style={{ marginTop: '32px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ width: '40%' }}>
+                <p style={{ color: 'var(--silver)', fontSize: '0.85rem', marginBottom: '8px' }}>Or use AI to configure parameters:</p>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <input type="text" value={aiPrompt} onChange={e => setAiPrompt(e.target.value)} placeholder="Describe your scenario..." style={{ flex: 1, padding: '0.6rem', borderRadius: '8px', border: '1px solid #1D2D3E', background: '#0F1923', color: 'white' }} onKeyDown={e => e.key === 'Enter' && onAiSubmit()} />
+                  <button onClick={onAiSubmit} disabled={aiLoading} className="btn-secondary" style={{ padding: '0 1rem' }}>{aiLoading ? 'Thinking...' : 'AI Configure'}</button>
+                </div>
+              </div>
+              <button onClick={() => setStep(2)} className="btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>Next Step <ArrowRight size={18} /></button>
+            </div>
+          </motion.div>
         )}
-      </div>
+
+        {step === 2 && (
+          <motion.div key="step2" initial={{ x: -20, opacity: 0 }} animate={{ x: 0, opacity: 1 }} exit={{ x: 20, opacity: 0 }} transition={{ duration: 0.3 }} className="glass-panel no-print" style={{ padding: '32px' }}>
+            <h2 style={{ fontSize: '1.8rem', color: 'white', marginBottom: '8px' }}>Evidence Tier Comfort</h2>
+            <p style={{ color: 'var(--silver)', marginBottom: '24px' }}>How much clinical evidence do you require for these compounds?</p>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '16px' }}>
+              {EVIDENCE_OPTIONS.map(o => (
+                <div key={o.value} onClick={() => setEvidenceComfort(o.value)} className={`step-card ${evidenceComfort === o.value ? 'selected' : ''}`}>
+                  <h3 style={{ color: 'white', fontSize: '1.1rem', margin: '0 0 4px 0' }}>{o.label}</h3>
+                  <p style={{ color: 'var(--silver)', fontSize: '0.85rem', margin: 0 }}>{o.help}</p>
+                </div>
+              ))}
+            </div>
+            <div style={{ marginTop: '32px', display: 'flex', justifyContent: 'space-between' }}>
+              <button onClick={() => setStep(1)} className="btn-secondary" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><ArrowLeft size={18} /> Back</button>
+              <button onClick={() => setStep(3)} className="btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>Next Step <ArrowRight size={18} /></button>
+            </div>
+          </motion.div>
+        )}
+
+        {step === 3 && (
+          <motion.div key="step3" initial={{ x: -20, opacity: 0 }} animate={{ x: 0, opacity: 1 }} exit={{ x: 20, opacity: 0 }} transition={{ duration: 0.3 }} className="glass-panel no-print" style={{ padding: '32px' }}>
+            <h2 style={{ fontSize: '1.8rem', color: 'white', marginBottom: '8px' }}>WADA & Risk Tolerance</h2>
+            <p style={{ color: 'var(--silver)', marginBottom: '24px' }}>Set your safety constraints.</p>
+            
+            <h3 style={{ color: 'white', fontSize: '1.2rem', marginBottom: '12px' }}>WADA Constraint</h3>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '32px' }}>
+              {WADA_OPTIONS.map(o => (
+                <div key={o.value} onClick={() => setWadaConstraint(o.value)} className={`step-card ${wadaConstraint === o.value ? 'selected' : ''}`}>
+                  <h3 style={{ color: 'white', fontSize: '1.1rem', margin: '0 0 4px 0' }}>{o.label}</h3>
+                  <p style={{ color: 'var(--silver)', fontSize: '0.85rem', margin: 0 }}>{o.help}</p>
+                </div>
+              ))}
+            </div>
+
+            <h3 style={{ color: 'white', fontSize: '1.2rem', marginBottom: '12px' }}>Risk Tolerance</h3>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '16px' }}>
+              {RISK_OPTIONS.map(o => (
+                <div key={o.value} onClick={() => setRiskTolerance(o.value)} className={`step-card ${riskTolerance === o.value ? 'selected' : ''}`}>
+                  <h3 style={{ color: 'white', fontSize: '1.1rem', margin: '0 0 4px 0' }}>{o.label}</h3>
+                  <p style={{ color: 'var(--silver)', fontSize: '0.85rem', margin: 0 }}>{o.help}</p>
+                </div>
+              ))}
+            </div>
+
+            <div style={{ marginTop: '32px', display: 'flex', justifyContent: 'space-between' }}>
+              <button onClick={() => setStep(2)} className="btn-secondary" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><ArrowLeft size={18} /> Back</button>
+              <button onClick={() => setStep(4)} className="btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>Next Step <ArrowRight size={18} /></button>
+            </div>
+          </motion.div>
+        )}
+
+        {step === 4 && (
+          <motion.div key="step4" initial={{ x: -20, opacity: 0 }} animate={{ x: 0, opacity: 1 }} exit={{ x: 20, opacity: 0 }} transition={{ duration: 0.3 }} className="glass-panel no-print" style={{ padding: '32px' }}>
+            <h2 style={{ fontSize: '1.8rem', color: 'white', marginBottom: '8px' }}>Advanced Preferences</h2>
+            <p style={{ color: 'var(--silver)', marginBottom: '24px' }}>Fine-tune format and handling requirements.</p>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+              <div>
+                <label className="block text-sm font-bold text-white mb-2">Format Preference</label>
+                <select value={preference} onChange={(e) => setPreference(e.target.value as any)} className="w-full max-w-md p-3 rounded-md border border-[#1D2D3E] bg-[#0F1923] text-white">
+                  <option value="either">Any Format</option>
+                  <option value="single">Single Compounds Only</option>
+                  <option value="stack">Pre-Blended Stacks Only</option>
+                </select>
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '12px', color: 'white', fontSize: '1.05rem', cursor: 'pointer' }}>
+                  <input type="checkbox" checked={excludeInjectables} onChange={e => setExcludeInjectables(e.target.checked)} style={{ width: 20, height: 20 }} />
+                  Exclude Injectables (Oral/Topical/Nasal Only)
+                </label>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '12px', color: 'white', fontSize: '1.05rem', cursor: 'pointer' }}>
+                  <input type="checkbox" checked={requireLongHalfLife} onChange={e => setRequireLongHalfLife(e.target.checked)} style={{ width: 20, height: 20 }} />
+                  Require Long Half-Life (Less Frequent Dosing)
+                </label>
+              </div>
+            </div>
+
+            <div style={{ marginTop: '32px', display: 'flex', justifyContent: 'space-between' }}>
+              <button onClick={() => setStep(3)} className="btn-secondary" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><ArrowLeft size={18} /> Back</button>
+              <button onClick={() => { setStep(5); onSubmit(); }} className="btn-primary" disabled={loading} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Sparkles size={18} /> {loading ? 'Matching...' : 'Generate Matches'}
+              </button>
+            </div>
+          </motion.div>
+        )}
+
+        {step === 5 && (
+          <motion.div key="step5" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }} className="no-print">
+              <button onClick={() => setStep(1)} className="btn-secondary" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><ArrowLeft size={18} /> Edit Criteria</button>
+              <div style={{ display: 'flex', gap: '12px' }}>
+                {results && results.length > 0 && (
+                  <>
+                    <button onClick={handleSaveMatch} disabled={saving} className="btn-secondary" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <Save size={18} /> {saving ? 'Saving...' : 'Save Stack'}
+                    </button>
+                    <button onClick={() => window.print()} className="btn-secondary" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <Printer size={18} /> Export PDF
+                    </button>
+                  </>
+                )}
+                {results && results.length >= 2 && (
+                  <button onClick={() => setShowCompare(true)} className="btn-secondary" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <Scale size={18} /> Compare Top 2
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {loading && (
+              <div style={{ textAlign: 'center', padding: '64px', color: 'var(--teal)' }}>
+                <Sparkles size={48} className="animate-pulse mx-auto mb-4" />
+                <h3 style={{ fontSize: '1.5rem', color: 'white' }}>Running Deterministic Match Engine...</h3>
+              </div>
+            )}
+
+            {!loading && errorMsg && (
+              <p className="no-print" style={{ color: '#E53E3E', background: 'rgba(229,62,62,0.08)', border: '1px solid rgba(229,62,62,0.3)', borderRadius: '8px', padding: '12px' }}>
+                {errorMsg}
+              </p>
+            )}
+
+            {!loading && results && stackPartners.length >= 2 && (
+              <div className="glass-panel" style={{ borderColor: 'var(--teal, #00C4BC)', marginBottom: '1.5rem', background: 'rgba(0,196,188,0.05)' }}>
+                <h4 style={{ display: 'flex', alignItems: 'center', gap: '8px', margin: '0 0 8px 0', color: 'var(--teal, #00C4BC)' }}>
+                  <Info size={18} /> Synergistic Stack Detected
+                </h4>
+                <p style={{ margin: 0, fontSize: '0.95rem', color: 'var(--silver)' }}>
+                  The engine detected that <strong>{stackPartners[0].displayName}</strong> and <strong>{stackPartners[1].displayName}</strong> are highly synergistic and frequently researched together as a stack for this protocol.
+                  <Link href={`/research/compare?add=${stackPartners[0].slug},${stackPartners[1].slug}`} style={{ color: 'var(--white)', fontWeight: 700, marginLeft: '8px', textDecoration: 'underline' }}>
+                    Compare Them Side-by-Side <ChevronRight size={14} style={{ display: 'inline', verticalAlign: 'middle' }} />
+                  </Link>
+                </p>
+              </div>
+            )}
+
+            {!loading && results && results.length === 0 && (
+              <div className="glass-panel" style={{ textAlign: 'center', padding: '48px' }}>
+                <p style={{ color: 'var(--silver)', fontSize: '1.2rem', marginBottom: '24px' }}>No Matching Compounds Survived Your Constraints.</p>
+                <button onClick={() => setStep(2)} className="btn-primary">Loosen Constraints</button>
+              </div>
+            )}
+
+            {!loading && results && results.length > 0 && (
+              <>
+                <h3 style={{ fontSize: '1.3rem', fontWeight: 800, color: 'var(--white, #FFFFFF)', margin: '0 0 var(--space-4, 16px)' }}>
+                  Top {results.length} {results.length === 1 ? 'Match' : 'Matches'}
+                </h3>
+                <div style={{ display: 'grid', gap: 'var(--space-4, 16px)' }}>
+                  {results.map((r, idx) => (
+                    <div key={r.slug} className="glass-panel" style={{ position: 'relative', padding: 'var(--space-5, 24px)', borderRadius: 'var(--radius-lg, 12px)' }}>
+                      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '16px' }}>
+                        <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
+                          <CircularScore score={r.score} />
+                          <div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+                              <span style={{ color: 'var(--teal, #00C4BC)', fontWeight: 800, fontSize: '1.4rem' }}>
+                                {idx + 1}. {r.displayName}
+                              </span>
+                              <span style={{ fontSize: '0.75rem', fontWeight: 700, padding: '0.2rem 0.6rem', borderRadius: '999px', color: tierColor(r.evidenceTier), border: `1px solid ${tierColor(r.evidenceTier)}` }}>
+                                {tierLabel(r.evidenceTier)}
+                              </span>
+                            </div>
+                            <p style={{ margin: '8px 0 0', color: 'var(--silver-light, #D0DAE4)', lineHeight: 1.55, fontSize: '1rem' }}>
+                              {r.rationale}
+                            </p>
+                          </div>
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }} className="no-print">
+                          <button onClick={() => setSelectedDrawerCompound(r)} className="btn-secondary" style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem', padding: '8px 12px' }}>
+                            <Eye size={16} /> Quick View
+                          </button>
+                          <button onClick={() => setExcludeSlugs(prev => [...prev, r.slug])} style={{ background: 'none', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', color: '#A8B4C0', padding: '8px 12px', cursor: 'pointer', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <Trash2 size={14} /> Exclude
+                          </button>
+                        </div>
+                      </div>
+                      
+                      <div className="no-print" style={{ marginTop: '16px', background: 'rgba(0,0,0,0.2)', padding: '12px', borderRadius: '8px' }}>
+                        <details style={{ fontSize: '0.9rem', color: '#A8B4C0' }}>
+                          <summary style={{ cursor: 'pointer', outline: 'none', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <Search size={16} /> View Explainable AI Score Breakdown
+                          </summary>
+                          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px', marginTop: '12px' }}>
+                            <div style={{ background: 'rgba(255,255,255,0.03)', padding: '10px', borderRadius: '6px' }}>
+                              <div style={{ fontSize: '0.8rem' }}>Exact Goal Match</div>
+                              <div style={{ color: 'white', fontWeight: 800, fontSize: '1.1rem' }}>+{r.scoreBreakdown.base} pts</div>
+                            </div>
+                            <div style={{ background: 'rgba(255,255,255,0.03)', padding: '10px', borderRadius: '6px' }}>
+                              <div style={{ fontSize: '0.8rem' }}>Keyword Mentions</div>
+                              <div style={{ color: 'var(--teal)', fontWeight: 800, fontSize: '1.1rem' }}>+{r.scoreBreakdown.keyword} pts</div>
+                            </div>
+                            <div style={{ background: 'rgba(255,255,255,0.03)', padding: '10px', borderRadius: '6px' }}>
+                              <div style={{ fontSize: '0.8rem' }}>Evidence Bonus</div>
+                              <div style={{ color: '#63B3ED', fontWeight: 800, fontSize: '1.1rem' }}>+{r.scoreBreakdown.evidenceBonus} pts</div>
+                            </div>
+                            <div style={{ background: 'rgba(255,255,255,0.03)', padding: '10px', borderRadius: '6px' }}>
+                              <div style={{ fontSize: '0.8rem' }}>Class Synergy</div>
+                              <div style={{ color: '#F6AD55', fontWeight: 800, fontSize: '1.1rem' }}>+{r.scoreBreakdown.classBonus} pts</div>
+                            </div>
+                          </div>
+                        </details>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {showCompare && results && results.length >= 2 && (
         <div className="no-print" style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.85)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>

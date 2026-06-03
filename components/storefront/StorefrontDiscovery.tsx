@@ -1019,6 +1019,8 @@ export default function DiscoveryHero({
     wadaConstraint?: 'wada_permitted_only' | 'no_constraint';
     riskTolerance?: 'low_only' | 'moderate_ok' | 'any';
     preference?: 'single' | 'stack' | 'either';
+    excludeInjectables?: boolean;
+    requireLongHalfLife?: boolean;
   }, summary: string) => {
     setLoading(true);
     setResults([]);
@@ -1035,6 +1037,8 @@ export default function DiscoveryHero({
             wadaConstraint: input.wadaConstraint || 'no_constraint',
             riskTolerance: input.riskTolerance || 'moderate_ok',
             preference: input.preference,
+            excludeInjectables: input.excludeInjectables,
+            requireLongHalfLife: input.requireLongHalfLife,
           },
         }),
       });

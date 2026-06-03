@@ -1037,7 +1037,7 @@ export default function AgentStorefrontGrid({
         }}
       />
 
-      <StorefrontCompareDrawer primaryColor={primaryColor} />
+      <StorefrontCompareDrawer primaryColor={primaryColor} compoundsBySlug={compoundsBySlug} />
 
       {filterArea && (
         <div style={{

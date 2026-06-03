@@ -10,6 +10,7 @@ import WalletCard from '@/components/WalletCard';
 import LabToolsCalculators from '@/components/LabToolsCalculators';
 import OrderTimeline from '@/components/OrderTimeline';
 import { paymentMethodLabel } from '@/lib/payment-method-labels';
+import SavedMatches from '@/components/SavedMatches';
 
 interface Order {
   id: string;
@@ -747,6 +748,19 @@ export default function ResearcherDashboard({ userId, userName, userEmail, agent
           {tab === 'wallet' && (
             <div>
               <WalletCard />
+            </div>
+          )}
+
+          {/* ── SAVED MATCHES TAB ── */}
+          {tab === 'matches' && (
+            <div>
+              <h2 style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--white, #FFFFFF)', marginBottom: 'var(--space-1, 4px)' }}>
+                Saved Research Matches
+              </h2>
+              <p style={{ color: 'var(--silver, #A8B4C0)', fontSize: '0.95rem', marginBottom: 'var(--space-6, 32px)' }}>
+                Access the results of your past Match Me engine runs.
+              </p>
+              <SavedMatches userId={userId} />
             </div>
           )}
 

@@ -1,27 +1,18 @@
 'use client';
 
 /**
- * R35 Phase 3 — Compare drawer for agent storefronts.
+ * R35 Phase 3 & 4 — Compare drawer for agent storefronts.
  *
  * Fixed, bottom-anchored drawer that lets a researcher pin up to 3 products
  * from the modal's "Pin To Compare" button and view them side by side.
  *
- * Self-contained:
- *   - State lives in localStorage under the key `pnl:compare`.
- *   - Adds happen via the custom DOM event `pnl:compare-add` dispatched by
- *     ProductModalEnhancements -> PinToCompareButton.
- *   - Renders into document.body via createPortal so it can be mounted from
- *     anywhere in the tree without affecting layout flow.
- *   - When zero items pinned, renders nothing.
- *
- * Caller: components/AgentStorefrontGrid.tsx (one-line mount, no props beyond
- * primaryColor).
+ * Includes a full-screen StorefrontCompareModal that renders the attributes matrix.
  */
 
 import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { X } from 'lucide-react';
-import { evidenceTier } from '@/lib/compounds';
+import { X, Scale } from 'lucide-react';
+import { evidenceTier, type Compound, RISK_META, researchAreaLabel, wadaLabel } from '@/lib/compounds';
 
 interface PinnedItem {
   productName: string;
@@ -56,26 +47,67 @@ function writePinned(list: PinnedItem[]) {
   }
 }
 
-function dispatchAddAllToCart(items: PinnedItem[]) {
+function dispatchAddToCart(productName: string) {
   if (typeof window === 'undefined') return;
-  // Phase 4: Stack Builder — emit a single event the storefront grid listens
-  // for (via existing pnl:add-to-cart-by-name handler in AgentStorefrontGrid).
-  // The handler resolves each name to a product variant and adds 1 vial each.
-  for (const item of items) {
-    try {
-      window.dispatchEvent(new CustomEvent('pnl:add-to-cart-by-name', {
-        detail: { name: item.productName },
-      }));
-    } catch {
-      // ignore
-    }
+  try {
+    window.dispatchEvent(new CustomEvent('pnl:add-to-cart-by-name', {
+      detail: { name: productName },
+    }));
+  } catch {
+    // ignore
   }
 }
 
-export default function StorefrontCompareDrawer({ primaryColor }: { primaryColor: string }) {
+function dispatchAddAllToCart(items: PinnedItem[]) {
+  for (const item of items) {
+    dispatchAddToCart(item.productName);
+  }
+}
+
+const cellStyle: React.CSSProperties = {
+  padding: 'var(--space-3, 12px)',
+  borderBottom: '1px solid rgba(168,180,192,0.18)',
+  verticalAlign: 'top',
+  fontSize: '0.88rem',
+  color: 'var(--white, #FFFFFF)',
+};
+
+const labelCellStyle: React.CSSProperties = {
+  ...cellStyle,
+  color: 'var(--silver, #A8B4C0)',
+  fontWeight: 700,
+  whiteSpace: 'nowrap',
+};
+
+const groupCellStyle: React.CSSProperties = {
+  padding: 'var(--space-3, 12px)',
+  background: 'rgba(0,196,188,0.08)',
+  borderTop: '1px solid rgba(0,196,188,0.3)',
+  borderBottom: '1px solid rgba(0,196,188,0.3)',
+  color: 'var(--teal, #00C4BC)',
+  fontWeight: 800,
+  fontSize: '0.72rem',
+  letterSpacing: '0.06em',
+  textTransform: 'uppercase',
+};
+
+const NL = 'Not Listed';
+function txt(v: unknown): string {
+  const s = (v ?? '').toString().trim();
+  return s || NL;
+}
+
+export default function StorefrontCompareDrawer({ 
+  primaryColor,
+  compoundsBySlug = {}
+}: { 
+  primaryColor: string;
+  compoundsBySlug?: Record<string, Compound>;
+}) {
   const [pinned, setPinned] = useState<PinnedItem[]>([]);
   const [mounted, setMounted] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
+  const [showMatrix, setShowMatrix] = useState(false);
 
   useEffect(() => {
     setMounted(true);
@@ -142,155 +174,340 @@ export default function StorefrontCompareDrawer({ primaryColor }: { primaryColor
   if (typeof document === 'undefined') return null;
 
   return createPortal(
-    <div
-      role="region"
-      aria-label="Compare Pinned Products"
-      style={{
-        position: 'fixed',
-        left: 0, right: 0,
-        bottom: 'env(safe-area-inset-bottom, 0px)',
-        zIndex: 99000,
-        pointerEvents: 'none',
-      }}
-    >
+    <>
       <div
+        role="region"
+        aria-label="Compare Pinned Products"
         style={{
-          margin: '0 auto',
-          maxWidth: 980,
-          pointerEvents: 'auto',
-          background: 'linear-gradient(180deg, #131b24 0%, #0a0f14 100%)',
-          border: `2px solid ${primaryColor}55`,
-          borderBottom: 'none',
-          borderRadius: '16px 16px 0 0',
-          boxShadow: '0 -10px 32px rgba(0,0,0,0.55)',
-          overflow: 'hidden',
+          position: 'fixed',
+          left: 0, right: 0,
+          bottom: 'env(safe-area-inset-bottom, 0px)',
+          zIndex: 99000,
+          pointerEvents: 'none',
         }}
       >
-        <div style={{
-          display: 'flex', alignItems: 'center', gap: 10,
-          padding: '10px 14px',
-          background: `linear-gradient(90deg, ${primaryColor}25, transparent)`,
-          borderBottom: '1px solid rgba(255,255,255,0.06)',
-        }}>
+        <div
+          style={{
+            margin: '0 auto',
+            maxWidth: 980,
+            pointerEvents: 'auto',
+            background: 'linear-gradient(180deg, #131b24 0%, #0a0f14 100%)',
+            border: `2px solid ${primaryColor}55`,
+            borderBottom: 'none',
+            borderRadius: '16px 16px 0 0',
+            boxShadow: '0 -10px 32px rgba(0,0,0,0.55)',
+            overflow: 'hidden',
+          }}
+        >
           <div style={{
-            color: primaryColor, fontWeight: 800, fontSize: '0.86rem',
-            textTransform: 'uppercase', letterSpacing: '0.05em',
-            flex: 1,
+            display: 'flex', alignItems: 'center', gap: 10,
+            padding: '10px 14px',
+            background: `linear-gradient(90deg, ${primaryColor}25, transparent)`,
+            borderBottom: '1px solid rgba(255,255,255,0.06)',
           }}>
-            Compare ({pinned.length} Of {MAX_PINNED})
+            <div style={{
+              color: primaryColor, fontWeight: 800, fontSize: '0.86rem',
+              textTransform: 'uppercase', letterSpacing: '0.05em',
+              flex: 1,
+            }}>
+              Compare ({pinned.length} Of {MAX_PINNED})
+            </div>
+            {pinned.length >= 2 && (
+              <button
+                type="button"
+                onClick={() => setShowMatrix(true)}
+                style={{
+                  background: primaryColor, border: `1px solid ${primaryColor}`,
+                  color: '#04221F', borderRadius: 8, padding: '6px 16px',
+                  fontSize: '0.78rem', fontWeight: 800, cursor: 'pointer',
+                  boxShadow: `0 2px 8px ${primaryColor}55`,
+                  display: 'flex', alignItems: 'center', gap: 6,
+                }}
+              >
+                <Scale size={14} />
+                Compare Attributes
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={() => setCollapsed((v) => !v)}
+              style={{
+                background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.12)',
+                color: 'var(--white)', borderRadius: 8, padding: '6px 12px',
+                fontSize: '0.74rem', fontWeight: 700, cursor: 'pointer',
+              }}
+            >
+              {collapsed ? 'Expand' : 'Collapse'}
+            </button>
+            <button
+              type="button"
+              onClick={() => dispatchAddAllToCart(pinned)}
+              aria-label="Add All Pinned To Cart - Stack Builder"
+              style={{
+                background: 'rgba(255,255,255,0.05)', border: `1px solid rgba(255,255,255,0.12)`,
+                color: 'var(--white)', borderRadius: 8, padding: '6px 12px',
+                fontSize: '0.74rem', fontWeight: 800, cursor: 'pointer',
+              }}
+            >
+              Add All To Cart
+            </button>
+            <button
+              type="button"
+              onClick={clearAll}
+              aria-label="Clear All Pinned"
+              style={{
+                background: 'rgba(229,62,62,0.10)', border: '1px solid rgba(229,62,62,0.32)',
+                color: '#F08A8A', borderRadius: 8, padding: '6px 12px',
+                fontSize: '0.74rem', fontWeight: 700, cursor: 'pointer',
+              }}
+            >
+              Clear All
+            </button>
           </div>
-          <button
-            type="button"
-            onClick={() => setCollapsed((v) => !v)}
-            style={{
-              background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.12)',
-              color: 'var(--white)', borderRadius: 8, padding: '6px 12px',
-              fontSize: '0.74rem', fontWeight: 700, cursor: 'pointer',
-            }}
-          >
-            {collapsed ? 'Expand' : 'Collapse'}
-          </button>
-          <button
-            type="button"
-            onClick={() => dispatchAddAllToCart(pinned)}
-            aria-label="Add All Pinned To Cart - Stack Builder"
-            style={{
-              background: primaryColor, border: `1px solid ${primaryColor}`,
-              color: '#04221F', borderRadius: 8, padding: '6px 12px',
-              fontSize: '0.74rem', fontWeight: 800, cursor: 'pointer',
-              boxShadow: `0 2px 8px ${primaryColor}55`,
-            }}
-          >
-            Add All To Cart
-          </button>
-          <button
-            type="button"
-            onClick={clearAll}
-            aria-label="Clear All Pinned"
-            style={{
-              background: 'rgba(229,62,62,0.10)', border: '1px solid rgba(229,62,62,0.32)',
-              color: '#F08A8A', borderRadius: 8, padding: '6px 12px',
-              fontSize: '0.74rem', fontWeight: 700, cursor: 'pointer',
-            }}
-          >
-            Clear All
-          </button>
-        </div>
 
-        {!collapsed && (
-          <div style={{ padding: 14, display: 'grid', gridTemplateColumns: `repeat(${pinned.length}, 1fr)`, gap: 10 }}>
-            {pinned.map((item, i) => {
-              const tier = item.evidenceTierKey ? evidenceTier(item.evidenceTierKey) : null;
-              return (
-                <div
-                  key={item.productName}
-                  style={{
-                    position: 'relative',
-                    padding: 10, borderRadius: 12,
-                    background: 'rgba(255,255,255,0.04)',
-                    border: '1px solid rgba(255,255,255,0.10)',
-                    display: 'flex', flexDirection: 'column', gap: 8,
-                    minHeight: 130,
-                  }}
-                >
-                  <button
-                    type="button"
-                    onClick={() => removeAt(i)}
-                    aria-label={`Remove ${item.productName} From Compare`}
+          {!collapsed && (
+            <div style={{ padding: 14, display: 'grid', gridTemplateColumns: `repeat(${pinned.length}, 1fr)`, gap: 10 }}>
+              {pinned.map((item, i) => {
+                const tier = item.evidenceTierKey ? evidenceTier(item.evidenceTierKey) : null;
+                return (
+                  <div
+                    key={item.productName}
                     style={{
-                      position: 'absolute', top: 6, right: 6,
-                      width: 24, height: 24, minWidth: 24, minHeight: 24,
-                      borderRadius: '50%', padding: 0,
-                      background: 'rgba(0,0,0,0.55)', border: '1px solid rgba(255,255,255,0.18)',
-                      color: 'var(--white)', cursor: 'pointer',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      position: 'relative',
+                      padding: 10, borderRadius: 12,
+                      background: 'rgba(255,255,255,0.04)',
+                      border: '1px solid rgba(255,255,255,0.10)',
+                      display: 'flex', flexDirection: 'column', gap: 8,
+                      minHeight: 130,
                     }}
                   >
-                    <X size={12} aria-hidden="true" />
-                  </button>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    {item.imageUrl ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
-                        src={item.imageUrl}
-                        alt={item.productName}
-                        width={36}
-                        height={36}
-                        style={{ width: 36, height: 36, borderRadius: 8, objectFit: 'cover', background: '#0F1923' }}
-                      />
-                    ) : (
-                      <div style={{ width: 36, height: 36, borderRadius: 8, background: `${primaryColor}25` }} aria-hidden="true" />
-                    )}
-                    <div style={{
-                      flex: 1, color: 'var(--white)', fontWeight: 800,
-                      fontSize: '0.82rem', lineHeight: 1.2, paddingRight: 22,
-                      overflow: 'hidden', textOverflow: 'ellipsis',
-                    }}>
-                      {item.productName}
+                    <button
+                      type="button"
+                      onClick={() => removeAt(i)}
+                      aria-label={`Remove ${item.productName} From Compare`}
+                      style={{
+                        position: 'absolute', top: 6, right: 6,
+                        width: 24, height: 24, minWidth: 24, minHeight: 24,
+                        borderRadius: '50%', padding: 0,
+                        background: 'rgba(0,0,0,0.55)', border: '1px solid rgba(255,255,255,0.18)',
+                        color: 'var(--white)', cursor: 'pointer',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      }}
+                    >
+                      <X size={12} aria-hidden="true" />
+                    </button>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      {item.imageUrl ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={item.imageUrl}
+                          alt={item.productName}
+                          width={36}
+                          height={36}
+                          style={{ width: 36, height: 36, borderRadius: 8, objectFit: 'cover', background: '#0F1923' }}
+                        />
+                      ) : (
+                        <div style={{ width: 36, height: 36, borderRadius: 8, background: `${primaryColor}25` }} aria-hidden="true" />
+                      )}
+                      <div style={{
+                        flex: 1, color: 'var(--white)', fontWeight: 800,
+                        fontSize: '0.82rem', lineHeight: 1.2, paddingRight: 22,
+                        overflow: 'hidden', textOverflow: 'ellipsis',
+                      }}>
+                        {item.productName}
+                      </div>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                      {tier && (
+                        <span style={{
+                          fontSize: '0.64rem', padding: '3px 8px', borderRadius: 9999,
+                          background: `${tier.color}1A`, color: tier.color, fontWeight: 800,
+                          textTransform: 'uppercase', letterSpacing: '0.04em',
+                          border: `1px solid ${tier.color}55`,
+                        }}>{tier.label}</span>
+                      )}
+                      {item.pricePerVialDollars != null && (
+                        <span style={{ fontSize: '0.78rem', fontWeight: 800, color: primaryColor, fontFamily: 'var(--font-brand)' }}>
+                          ${Number(item.pricePerVialDollars).toFixed(2)}/Vial
+                        </span>
+                      )}
                     </div>
                   </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                    {tier && (
-                      <span style={{
-                        fontSize: '0.64rem', padding: '3px 8px', borderRadius: 9999,
-                        background: `${tier.color}1A`, color: tier.color, fontWeight: 800,
-                        textTransform: 'uppercase', letterSpacing: '0.04em',
-                        border: `1px solid ${tier.color}55`,
-                      }}>{tier.label}</span>
-                    )}
-                    {item.pricePerVialDollars != null && (
-                      <span style={{ fontSize: '0.78rem', fontWeight: 800, color: primaryColor, fontFamily: 'var(--font-brand)' }}>
-                        ${Number(item.pricePerVialDollars).toFixed(2)}/Vial
-                      </span>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
+                );
+              })}
+            </div>
+          )}
+        </div>
       </div>
-    </div>,
+
+      {/* Full-Screen Comparison Modal */}
+      {showMatrix && (
+        <div style={{
+          position: 'fixed', inset: 0, zIndex: 99999,
+          background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(8px)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          padding: 'var(--space-4, 16px)'
+        }}>
+          <div style={{
+            background: '#0F161E',
+            border: `1px solid ${primaryColor}40`,
+            borderRadius: 'var(--radius-xl, 16px)',
+            width: '100%', maxWidth: 1200,
+            maxHeight: '90vh',
+            display: 'flex', flexDirection: 'column',
+            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)',
+            overflow: 'hidden',
+          }}>
+            <div style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              padding: '16px 24px', borderBottom: '1px solid rgba(255,255,255,0.06)',
+              background: `linear-gradient(90deg, ${primaryColor}15, transparent)`,
+            }}>
+              <h2 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 900, color: 'var(--white)' }}>
+                Compare Products
+              </h2>
+              <button
+                onClick={() => setShowMatrix(false)}
+                style={{
+                  background: 'rgba(255,255,255,0.05)', border: 'none', color: 'var(--white)',
+                  width: 32, height: 32, borderRadius: '50%', cursor: 'pointer',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                }}
+              >
+                <X size={18} />
+              </button>
+            </div>
+            
+            <div style={{ overflowY: 'auto', padding: '24px', flex: 1 }}>
+              <div style={{ borderRadius: 'var(--radius-lg, 12px)', overflowX: 'auto', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.08)' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '600px' }}>
+                  <thead>
+                    <tr>
+                      <th style={{ ...labelCellStyle, textAlign: 'left', width: '20%' }} scope="col">Product</th>
+                      {pinned.map((p) => (
+                        <th key={p.productName} style={{ ...cellStyle, textAlign: 'left', width: `${80 / pinned.length}%` }} scope="col">
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                              {p.imageUrl && (
+                                // eslint-disable-next-line @next/next/no-img-element
+                                <img src={p.imageUrl} alt={p.productName} width={48} height={48} style={{ borderRadius: 8, objectFit: 'cover' }} />
+                              )}
+                              <div style={{ fontSize: '1.1rem', fontWeight: 900, color: primaryColor }}>{p.productName}</div>
+                            </div>
+                            {p.pricePerVialDollars != null && (
+                              <div style={{ fontSize: '1rem', fontWeight: 800, color: 'var(--white)' }}>
+                                ${Number(p.pricePerVialDollars).toFixed(2)}/Vial
+                              </div>
+                            )}
+                            <button
+                              type="button"
+                              onClick={() => dispatchAddToCart(p.productName)}
+                              style={{
+                                background: primaryColor, border: 'none', color: '#04221F',
+                                padding: '8px 12px', borderRadius: 8, fontWeight: 800, fontSize: '0.8rem',
+                                cursor: 'pointer', marginTop: 4, width: 'fit-content'
+                              }}
+                            >
+                              Add To Cart
+                            </button>
+                          </div>
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td style={groupCellStyle} colSpan={pinned.length + 1}>Evidence & Risk</td>
+                    </tr>
+                    <tr>
+                      <td style={labelCellStyle}>Evidence Tier</td>
+                      {pinned.map((p, i) => {
+                        const tier = p.evidenceTierKey ? evidenceTier(p.evidenceTierKey) : null;
+                        return (
+                          <td key={i} style={cellStyle}>
+                            {tier ? (
+                              <span style={{ color: tier.color, fontWeight: 700, border: `1px solid ${tier.color}`, padding: '2px 8px', borderRadius: 999, fontSize: '0.7rem' }}>
+                                {tier.label}
+                              </span>
+                            ) : NL}
+                          </td>
+                        );
+                      })}
+                    </tr>
+                    <tr>
+                      <td style={labelCellStyle}>Risk Level</td>
+                      {pinned.map((p, i) => {
+                        const c = p.compoundSlug ? compoundsBySlug[p.compoundSlug] : null;
+                        const r = c?.risk_level ? RISK_META[c.risk_level] : null;
+                        return <td key={i} style={cellStyle}>{r ? <span style={{ color: r.color, fontWeight: 700 }}>{r.label}</span> : NL}</td>;
+                      })}
+                    </tr>
+                    <tr>
+                      <td style={labelCellStyle}>WADA Status</td>
+                      {pinned.map((p, i) => {
+                        const c = p.compoundSlug ? compoundsBySlug[p.compoundSlug] : null;
+                        return <td key={i} style={cellStyle}>{c?.wada_status ? wadaLabel(c.wada_status) : NL}</td>;
+                      })}
+                    </tr>
+                    
+                    <tr>
+                      <td style={groupCellStyle} colSpan={pinned.length + 1}>Pharmacology</td>
+                    </tr>
+                    <tr>
+                      <td style={labelCellStyle}>Half-Life</td>
+                      {pinned.map((p, i) => {
+                        const c = p.compoundSlug ? compoundsBySlug[p.compoundSlug] : null;
+                        return <td key={i} style={cellStyle}>{c?.half_life ? <span style={{ color: primaryColor, fontWeight: 700 }}>{c.half_life}</span> : NL}</td>;
+                      })}
+                    </tr>
+                    <tr>
+                      <td style={labelCellStyle}>Molecular Target</td>
+                      {pinned.map((p, i) => {
+                        const c = p.compoundSlug ? compoundsBySlug[p.compoundSlug] : null;
+                        return <td key={i} style={cellStyle}>{txt(c?.molecular_target)}</td>;
+                      })}
+                    </tr>
+                    <tr>
+                      <td style={labelCellStyle}>Research Areas</td>
+                      {pinned.map((p, i) => {
+                        const c = p.compoundSlug ? compoundsBySlug[p.compoundSlug] : null;
+                        return <td key={i} style={cellStyle}>{c?.research_areas?.length ? c.research_areas.map(researchAreaLabel).join(', ') : NL}</td>;
+                      })}
+                    </tr>
+                    <tr>
+                      <td style={labelCellStyle}>Reported Findings</td>
+                      {pinned.map((p, i) => {
+                        const c = p.compoundSlug ? compoundsBySlug[p.compoundSlug] : null;
+                        return <td key={i} style={cellStyle}>{txt(c?.benefits)}</td>;
+                      })}
+                    </tr>
+
+                    <tr>
+                      <td style={groupCellStyle} colSpan={pinned.length + 1}>Handling</td>
+                    </tr>
+                    <tr>
+                      <td style={labelCellStyle}>Storage Temp</td>
+                      {pinned.map((p, i) => {
+                        const c = p.compoundSlug ? compoundsBySlug[p.compoundSlug] : null;
+                        return <td key={i} style={cellStyle}>{txt(c?.handling?.storage_temp)}</td>;
+                      })}
+                    </tr>
+                    <tr>
+                      <td style={labelCellStyle}>Reconstituted Shelf Life</td>
+                      {pinned.map((p, i) => {
+                        const c = p.compoundSlug ? compoundsBySlug[p.compoundSlug] : null;
+                        const d = c?.reconstitution_shelf_days ?? c?.handling?.reconstituted_days;
+                        return <td key={i} style={cellStyle}>{d != null ? `${d} Days Refrigerated` : NL}</td>;
+                      })}
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </>,
     document.body,
   );
 }
