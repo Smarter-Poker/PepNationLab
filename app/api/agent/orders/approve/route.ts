@@ -3,11 +3,11 @@ import { createServiceClient } from '@/lib/supabase/server';
 import { requireAgent } from '@/lib/admin-auth';
 import { pickOne } from '@/lib/relations';
 import { computeAgentCostForAgent, type AgentTier } from '@/lib/pricing';
-import { enqueueOrderPush, shortOrderId } from '@/lib/push-enqueue';
 import { enqueueWebhook, fetchOrderForWebhook } from '@/lib/webhook-dispatch';
 import { assertSameOrigin } from '@/lib/csrf';
-import { notifyOrderApproved, notifyCommissionEarned } from '@/lib/notify';
 import { withIdempotency, readIdempotencyKey } from '@/lib/idempotency';
+import { shortOrderId } from '@/lib/push-enqueue';
+import { assertChainCanTransact } from '@/lib/billing-chain';
 
 export async function POST(req: NextRequest) {
   const csrf = assertSameOrigin(req);
@@ -23,8 +23,6 @@ export async function POST(req: NextRequest) {
     const { orderId, newStatus, tracking_number } = body;
 
     if (!orderId || !newStatus) return NextResponse.json({ error: 'Order ID and Status required' }, { status: 400 });
-    // BUG-3 FIX: enumerate exact valid values instead of prefix-only check.
-    // Previously any string starting with 'approved_' would pass (e.g. 'approved_garbage').
     const VALID_AGENT_TRANSITIONS = new Set(['approved_ship', 'approved_pickup', 'cancelled']);
     if (!VALID_AGENT_TRANSITIONS.has(newStatus)) {
       return NextResponse.json({ error: 'Invalid agent status transition. Must be approved_ship, approved_pickup, or cancelled.' }, { status: 400 });
@@ -56,7 +54,6 @@ export async function POST(req: NextRequest) {
     }
 
     if (newStatus === 'cancelled') {
-      // BUG-2 FIX: was silently swallowing the cancel update error → false success.
       const { error: cancelError } = await supabase.from('orders').update({ status: 'cancelled', updated_at: new Date().toISOString() }).eq('id', orderId);
       if (cancelError) {
         console.error('Cancel order update failed:', cancelError.message);
@@ -103,8 +100,6 @@ export async function POST(req: NextRequest) {
     let totalCogs = 0;
     const items = (order.order_items as OrderItem[]) || [];
 
-    // Always fetch the billed agent's tier — used by the computeAgentCost fallback
-    // regardless of whether this is a direct or sub-agent order.
     let billedAgentTier: AgentTier = 'tier_3';
     const { data: billedProfile } = await supabase.from('profiles').select('tier').eq('id', primaryBilledAgentId).maybeSingle();
     billedAgentTier = (billedProfile?.tier as AgentTier | null) ?? 'tier_3';
@@ -114,13 +109,10 @@ export async function POST(req: NextRequest) {
       if (qty <= 0) continue;
       if (isSubAgentOrder) {
         const stored = Number(item.unit_super_agent_cost);
-        // unit_super_agent_cost is stored per-vial (since orders/route.ts fix).
-        // The computeAgentCost fallback returns per-10-vial pack, so divide by 10.
         if (Number.isFinite(stored) && stored >= 0) totalCogs += stored * qty;
         else if (item.product_id) totalCogs += (await computeAgentCostForAgent(supabase, item.product_id, primaryBilledAgentId, billedAgentTier) / 10) * qty;
       } else {
         const stored = Number(item.unit_cost_price);
-        // unit_cost_price is stored per-vial (since orders/route.ts fix).
         if (Number.isFinite(stored) && stored >= 0) totalCogs += stored * qty;
         else if (item.product_id) totalCogs += (await computeAgentCostForAgent(supabase, item.product_id, primaryBilledAgentId, billedAgentTier) / 10) * qty;
       }
@@ -135,57 +127,24 @@ export async function POST(req: NextRequest) {
 
     if (profileError || !primaryProfile) return NextResponse.json({ error: 'Failed to retrieve billing profile' }, { status: 500 });
 
+    // Invoice v2 chain check — refuses if THIS tier or ANY ancestor is
+    // transaction-frozen (cascading freeze), and refuses if THIS tier or any
+    // credit-line ancestor would exceed their credit_limit when this order
+    // rolls up. Prepaid balance is checked separately below.
+    const chainCheck = await assertChainCanTransact(supabase, primaryBilledAgentId, totalOwed);
+    if (!chainCheck.ok) {
+      return NextResponse.json(
+        { error: chainCheck.error, detail: chainCheck.detail },
+        { status: chainCheck.status }
+      );
+    }
+
     if (primaryProfile.account_type === 'prepaid') {
       const balance = Number(primaryProfile.prepaid_balance) || 0;
       if (balance < totalOwed) {
         return NextResponse.json({
           error: `Insufficient Prepaid Balance. Requires $${totalOwed.toFixed(2)}, but balance is $${balance.toFixed(2)}. Please recharge your account.`
         }, { status: 402 });
-      }
-    } else if (primaryProfile.account_type === 'credit') {
-      const { data: statements } = await supabase.from('weekly_statements').select('total_owed').eq('agent_id', primaryBilledAgentId).eq('status', 'pending_payment');
-      let currentUnbilled = 0;
-      statements?.forEach((s) => (currentUnbilled += Number(s.total_owed) || 0));
-
-      const { data: approvedOrders } = await supabase
-        .from('orders')
-        .select('id, shipping_cost, statement_orders(statement_id), order_items(quantity, unit_cost_price, unit_super_agent_cost), agent_id')
-        .eq('agent_id', primaryBilledAgentId)
-        // BUG-8 FIX: exclude wholesale restock orders from in-flight COGS.
-        // Restocks inflate the calculation and can incorrectly block customer-order approvals.
-        .eq('is_wholesale_restock', false)
-        .in('status', ['approved_ship', 'approved_pickup', 'in_fulfillment', 'shipped', 'delivered']);
-
-      let inFlight = 0;
-      for (const o of approvedOrders ?? []) {
-        const links = (o.statement_orders as unknown) as Array<{ statement_id: string | null }> | null;
-        if (Array.isArray(links) && links.some((l) => l?.statement_id)) continue;
-        const ship = Number((o as { shipping_cost?: unknown }).shipping_cost) || 0;
-        const its = ((o as { order_items?: unknown }).order_items ?? []) as Array<{ quantity: number; unit_cost_price: number | null; unit_super_agent_cost: number | null; }>;
-        // For sub-agent orders (agent_id !== primaryBilledAgentId), use
-        // unit_super_agent_cost (the super-agent's cost) not unit_cost_price
-        // (the sub-agent's cost). Using the wrong column understates in-flight
-        // COGS and can allow approvals past the credit limit.
-        const isSubOrder = (o as { agent_id?: string | null }).agent_id !== primaryBilledAgentId;
-        let orderCogs = 0;
-        for (const it of its) {
-          const qty = Number(it.quantity) || 0;
-          const superCost = Number(it.unit_super_agent_cost);
-          const agentCost = Number(it.unit_cost_price);
-          const cost = isSubOrder
-            ? (Number.isFinite(superCost) && superCost > 0 ? superCost : agentCost)
-            : agentCost;
-          orderCogs += (Number.isFinite(cost) && cost > 0 ? cost : 0) * qty;
-        }
-        inFlight += orderCogs + ship;
-      }
-
-      const creditLimit = Number(primaryProfile.credit_limit) || 0;
-      const projected = currentUnbilled + inFlight + totalOwed;
-      if (projected > creditLimit) {
-        return NextResponse.json({
-          error: `Credit Limit Exceeded. Approving this order would push outstanding balance to $${projected.toFixed(2)} (Limit: $${creditLimit.toFixed(2)}). Please pay your pending weekly statements.`,
-        }, { status: 403 });
       }
     }
 
@@ -213,14 +172,6 @@ export async function POST(req: NextRequest) {
       prepaidDeducted = true;
     }
 
-    // MANDATORY ADMIN GATE: agent/super-agent approval no longer releases the
-    // order straight to approved_ship / approved_pickup. It parks at
-    // admin_approval_pending. Billing (prepaid deduction / credit check) and
-    // inventory still commit here because the agent is committing the purchase;
-    // an admin then RELEASES the order to approved_* (which is what the shipping
-    // team and pickup fulfillment act on). The fulfillment method the admin
-    // releases to is taken from order.fulfillment_method, so the agent's ship vs
-    // pickup choice is preserved.
     const updatePayload: Record<string, string> = { status: 'admin_approval_pending', agent_approved_at: new Date().toISOString(), updated_at: new Date().toISOString() };
     if (tracking_number && typeof tracking_number === 'string') updatePayload.tracking_number = tracking_number;
 
@@ -234,29 +185,18 @@ export async function POST(req: NextRequest) {
 
     if (prepaidDeducted) {
       const newBalance = oldBalance - totalOwed;
-      // BUG-4 FIX: was silently dropping balance_transactions insert error.
-      // Balance was already deducted and order approved. Log error prominently
-      // for reconciliation — this is a financial audit trail failure.
       const { error: txError } = await supabase.from('balance_transactions').insert({
         agent_id: primaryBilledAgentId, type: 'order_charge', amount: totalOwed,
         balance_before: oldBalance, balance_after: newBalance,
         description: `Charge for Order ${orderId}`, reference_id: orderId, reference_type: 'order', created_by: callerId
       });
       if (txError) {
-        // Balance already deducted and order approved — do NOT fail the request.
-        // Log CRITICAL for manual reconciliation.
         console.error('[CRITICAL] balance_transactions insert failed after prepaid deduction', {
           orderId, agentId: primaryBilledAgentId, amount: totalOwed, error: txError.message
         });
       }
     }
 
-    // The order is now agent-approved and parked at the MANDATORY admin gate.
-    // The buyer is NOT told "approved" yet, NO shipping label is created, and the
-    // order.approved webhook does NOT fire here — all of that happens when an
-    // admin releases the order to approved_ship / approved_pickup (see
-    // app/api/admin/orders). Here we only alert the admins that an order is
-    // waiting for their approval so nothing stalls silently at the gate.
     try {
       const { data: admins } = await supabase.from('profiles').select('id').eq('role', 'admin');
       if (admins && admins.length > 0) {
