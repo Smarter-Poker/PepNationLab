@@ -753,9 +753,9 @@ export default function DiscoveryHero({
         <button
           type="button"
           onClick={() => {
+            onSelectArea(''); // Clear filter
             if (!query.trim()) {
-              const el = document.getElementById('discovery-search-input');
-              if (el) el.focus();
+              setWizardOpen(true);
             } else {
               submitTypedGoal();
             }
@@ -771,7 +771,10 @@ export default function DiscoveryHero({
         {/* Let Us Guide You Button Overlay */}
         <button
           type="button"
-          onClick={() => setShowAllAreas(true)}
+          onClick={() => {
+            onSelectArea(''); // Clear filter
+            setWizardOpen(true);
+          }}
           title="Let Us Guide You"
           style={{
             position: 'absolute', top: '7%', left: '73%', width: '22%', height: '15%',
@@ -786,11 +789,15 @@ export default function DiscoveryHero({
           type="text"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          onKeyDown={(e) => { if (e.key === 'Enter' && query.trim()) submitTypedGoal(); }}
+          onKeyDown={(e) => { 
+            if (e.key === 'Enter' && query.trim()) {
+              onSelectArea(''); // Clear filter
+              submitTypedGoal();
+            }
+          }}
           placeholder="Ask Us Anything About The Peptides You Want To Research..."
           style={{
-            position: 'absolute', top: '41%', left: '9%', width: '89%', height: '18%',
-            transform: 'translateY(-50%)',
+            position: 'absolute', top: '25%', left: '9%', width: '89%', height: '22%',
             background: 'transparent',
             border: 'none', outline: 'none', color: '#FFFFFF',
             fontSize: 'max(15px, 1.4vw)',
@@ -809,7 +816,10 @@ export default function DiscoveryHero({
         <button title="Immune" onClick={() => onSelectArea('immune')} style={{ position: 'absolute', top: '67%', left: '49%', width: '11%', height: '25%', cursor: 'pointer', opacity: 0, zIndex: 10 }} />
         <button title="Metabolic" onClick={() => onSelectArea('metabolic')} style={{ position: 'absolute', top: '67%', left: '61%', width: '11%', height: '25%', cursor: 'pointer', opacity: 0, zIndex: 10 }} />
         <button title="Longevity" onClick={() => onSelectArea('longevity')} style={{ position: 'absolute', top: '67%', left: '73%', width: '11%', height: '25%', cursor: 'pointer', opacity: 0, zIndex: 10 }} />
-        <button title="More" onClick={() => setShowAllAreas(true)} style={{ position: 'absolute', top: '67%', left: '85%', width: '13%', height: '25%', cursor: 'pointer', opacity: 0, zIndex: 10 }} />
+        <button title="More" onClick={() => {
+          onSelectArea(''); // Clear filter
+          setShowAllAreas(true);
+        }} style={{ position: 'absolute', top: '67%', left: '85%', width: '13%', height: '25%', cursor: 'pointer', opacity: 0, zIndex: 10 }} />
         
         {/* Pop Up For All Areas */}
         {showAllAreas && (
