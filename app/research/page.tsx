@@ -7,7 +7,7 @@
 
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { GitCompare, Layers, ShieldCheck, GraduationCap, BookOpen, HelpCircle } from 'lucide-react';
+import { GitCompare, Layers, ShieldCheck, GraduationCap, BookOpen, HelpCircle, Sparkles } from 'lucide-react';
 import { getAllCompounds } from '@/lib/compounds-server';
 import { RESEARCH_AREAS } from '@/lib/compounds';
 import AskTheLab from '@/components/research/AskTheLab';
@@ -42,7 +42,9 @@ export default async function ResearchLibraryPage() {
             maxWidth: '720px',
           }}
         >
-          Factual, Research-Use-Only Reference For Every Compound In The Catalog. For Laboratory Research Only.
+          Factual, Research-Use-Only Reference For Every Compound In The Catalog. Fifteen Research
+          Areas, Every Sold Compound Profiled, And A Match-Me Engine To Suggest Candidates From Your
+          Research Goal. For Laboratory Research Only.
         </p>
       </header>
 
@@ -100,8 +102,21 @@ export default async function ResearchLibraryPage() {
         }}
       >
         <Link
-          href="/research/compare"
+          href="/research/match"
           className="btn-primary"
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 'var(--space-2, 8px)',
+            textDecoration: 'none',
+          }}
+        >
+          <Sparkles size={18} aria-hidden="true" />
+          Match Me To A Peptide
+        </Link>
+        <Link
+          href="/research/compare"
+          className="btn-secondary"
           style={{
             display: 'inline-flex',
             alignItems: 'center',
