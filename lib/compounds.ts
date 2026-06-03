@@ -111,11 +111,7 @@ export function researchAreaLabel(area: string): string {
   return RESEARCH_AREAS[area]?.label ?? area;
 }
 
-/**
- * Reconstitution helper (lab prep, not dosing): given the powder amount in a
- * vial and a target concentration, return the volume of diluent to add.
- * volume (mL) = mass (mg) / concentration (mg/mL).
- */
+/** Reconstitution volume required to hit a target mg/mL concentration. */
 export function reconstitutionVolumeMl(vialMassMg: number, targetConcentrationMgPerMl: number): number | null {
   if (!isFinite(vialMassMg) || !isFinite(targetConcentrationMgPerMl)) return null;
   if (vialMassMg <= 0 || targetConcentrationMgPerMl <= 0) return null;
@@ -124,6 +120,7 @@ export function reconstitutionVolumeMl(vialMassMg: number, targetConcentrationMg
 
 /** Volume (mL) to draw for a given mass, after reconstitution. */
 export function drawVolumeMl(vialMassMg: number, diluentMl: number, desiredMassMg: number): number | null {
+  if (!isFinite(vialMassMg) || !isFinite(diluentMl) || !isFinite(desiredMassMg)) return null;
   if (vialMassMg <= 0 || diluentMl <= 0 || desiredMassMg <= 0) return null;
   const concentration = vialMassMg / diluentMl; // mg/mL
   return desiredMassMg / concentration;
