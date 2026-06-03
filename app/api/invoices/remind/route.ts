@@ -45,7 +45,7 @@ Please remit payment as soon as possible to avoid any service interruptions.`,
   if (sendError) return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
 
   // In-app notification — shows in bell immediately
-  void notifyPaymentReminder(
+  await notifyPaymentReminder(
     service,
     invoice.receiver_id,
     invoice.subject ?? 'Invoice',

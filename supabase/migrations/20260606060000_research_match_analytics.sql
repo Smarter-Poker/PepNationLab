@@ -9,7 +9,8 @@ CREATE TABLE IF NOT EXISTS public.research_match_analytics (
     wada_constraint text NOT NULL,
     risk_tolerance text NOT NULL,
     exclude_injectables boolean DEFAULT false,
-    require_long_half_life boolean DEFAULT false
+    require_long_half_life boolean DEFAULT false,
+    preference text DEFAULT 'either'
 );
 
 -- Service role access only for inserts from the edge/API

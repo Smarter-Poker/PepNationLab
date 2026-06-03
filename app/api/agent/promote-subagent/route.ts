@@ -338,7 +338,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    void Promise.all([
+    await Promise.all([
       notifyPromotedToAgent(admin, researcherId, '', callerProfile.full_name || 'Your Agent'),
       notifyPromotionSuccess(admin, callerId, researcherProfile.full_name || 'Researcher', ''),
     ]).catch(() => { /* best-effort */ });

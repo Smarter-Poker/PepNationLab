@@ -152,7 +152,7 @@ export async function POST(req: NextRequest) {
     },
   });
 
-  void notifyRoleRevoked(supabase, subAgentId, callerProfile.full_name || 'Your Agent')
+  await notifyRoleRevoked(supabase, subAgentId, callerProfile.full_name || 'Your Agent')
     .catch(() => { /* best-effort */ });
 
   return NextResponse.json({ success: true, detached_researcher_count: detachedCount });

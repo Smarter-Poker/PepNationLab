@@ -32,9 +32,13 @@ const RESPONSE_SCHEMA = {
     requireLongHalfLife: {
       type: Type.BOOLEAN,
       description: "True if they want low frequency of administration, e.g., 'once a week' or 'long acting'.",
+    },
+    preference: {
+      type: Type.STRING,
+      description: "Must be 'single', 'stack', or 'either'. If they specifically want a pre-blended stack or synergy, use 'stack'. If they want a single compound, use 'single'. Default to 'either'.",
     }
   },
-  required: ['goal', 'evidenceComfort', 'wadaConstraint', 'riskTolerance', 'excludeInjectables', 'requireLongHalfLife'],
+  required: ['goal', 'evidenceComfort', 'wadaConstraint', 'riskTolerance', 'excludeInjectables', 'requireLongHalfLife', 'preference'],
 };
 
 export async function POST(req: NextRequest) {
@@ -63,10 +67,12 @@ export async function POST(req: NextRequest) {
     const text = response.text;
     if (!text) throw new Error('Empty response from AI');
 
-    const result = JSON.parse(text);
-    return NextResponse.json({ result });
-  } catch (error: any) {
-    console.error('AI Match Error:', error);
-    return NextResponse.json({ error: error.message || 'AI request failed' }, { status: 500 });
-  }
+    try {
+      const cleanText = text.replace(/^```json\n?/, '').replace(/\n?```$/, '').trim();
+      const result = JSON.parse(cleanText);
+      return NextResponse.json({ result });
+    } catch (error: any) {
+      console.error('AI Match Error:', error);
+      return NextResponse.json({ error: error.message || 'AI request failed' }, { status: 500 });
+    }
 }

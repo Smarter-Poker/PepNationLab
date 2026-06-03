@@ -112,7 +112,7 @@ export async function PATCH(req: NextRequest) {
       cancelled: `Your invoice "${invoice.subject}" has been cancelled.`,
       pending:   `Your invoice "${invoice.subject}" status has been updated.`,
     };
-    void notify(service, {
+    await notify(service, {
       userId: invoice.receiver_id,
       type: status === 'overdue' ? 'payment_reminder' : 'invoice',
       title: titleMap[status] ?? 'Invoice Updated',

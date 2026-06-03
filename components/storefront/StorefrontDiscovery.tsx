@@ -42,6 +42,10 @@ export interface MatchedProduct {
   image_url: string | null;
   in_stock: boolean;
   isStackPartner?: boolean;
+  score?: number;
+  riskLevel?: string;
+  halfLife?: string;
+  molecularWeight?: number;
 }
 
 export interface DiscoveryHeroProps {
@@ -62,6 +66,38 @@ export interface DiscoveryHeroProps {
   /** Brand primary colour for the hero gradient. */
   primaryColor?: string;
 }
+
+// --------------------------------------------------------------------------
+// Helpers
+// --------------------------------------------------------------------------
+
+const getTierPercent = (tier?: string | null) => {
+  if (!tier) return 0;
+  if (tier === 'approved_drug') return 100;
+  if (tier === 'investigational') return 80;
+  if (tier === 'preclinical') return 60;
+  if (tier === 'research_chemical') return 40;
+  if (tier === 'cosmetic') return 20;
+  return 0;
+};
+
+const getRiskPercent = (risk?: string | null) => {
+  if (!risk) return 0;
+  if (risk === 'low') return 100;
+  if (risk === 'moderate') return 70;
+  if (risk === 'high') return 40;
+  if (risk === 'critical') return 15;
+  return 0;
+};
+
+const getRiskColor = (risk?: string | null) => {
+  if (risk === 'low') return 'linear-gradient(90deg, #00C4BC, #4FD1C5)';
+  if (risk === 'moderate') return 'linear-gradient(90deg, #ED8936, #F6AD55)';
+  if (risk === 'high') return 'linear-gradient(90deg, #E53E3E, #FC8181)';
+  if (risk === 'critical') return 'linear-gradient(90deg, #9B2C2C, #F56565)';
+  return '#A8B4C0';
+};
+
 
 // --------------------------------------------------------------------------
 // Internal helpers
@@ -311,6 +347,31 @@ function MatchResultsDrawer({
                     <div style={{ color: 'var(--silver, #A8B4C0)', fontSize: '0.82rem', lineHeight: 1.4 }}>
                       <span style={{ color: 'var(--grey-400, #C8D2DD)', fontWeight: 700 }}>Why This Match: </span>
                       {r.rationale}
+                    </div>
+
+                    {/* Visualizations */}
+                    <div style={{ display: 'flex', gap: 16, marginTop: 6, marginBottom: 6 }}>
+                      {/* Efficacy */}
+                      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 4 }}>
+                        <div style={{ fontSize: '0.65rem', fontWeight: 800, color: 'var(--silver)', textTransform: 'uppercase' }}>Target Efficacy</div>
+                        <div style={{ width: '100%', height: 6, background: 'rgba(255,255,255,0.1)', borderRadius: 4, overflow: 'hidden' }}>
+                          <div style={{ width: `${r.score || 0}%`, height: '100%', background: 'linear-gradient(90deg, #3182ce, #63b3ed)', borderRadius: 4 }} />
+                        </div>
+                      </div>
+                      {/* Evidence */}
+                      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 4 }}>
+                        <div style={{ fontSize: '0.65rem', fontWeight: 800, color: 'var(--silver)', textTransform: 'uppercase' }}>Human Data</div>
+                        <div style={{ width: '100%', height: 6, background: 'rgba(255,255,255,0.1)', borderRadius: 4, overflow: 'hidden' }}>
+                          <div style={{ width: `${getTierPercent(r.evidence_tier)}%`, height: '100%', background: 'linear-gradient(90deg, #805ad5, #b794f4)', borderRadius: 4 }} />
+                        </div>
+                      </div>
+                      {/* Safety */}
+                      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 4 }}>
+                        <div style={{ fontSize: '0.65rem', fontWeight: 800, color: 'var(--silver)', textTransform: 'uppercase' }}>Safety Profile</div>
+                        <div style={{ width: '100%', height: 6, background: 'rgba(255,255,255,0.1)', borderRadius: 4, overflow: 'hidden' }}>
+                          <div style={{ width: `${getRiskPercent(r.riskLevel)}%`, height: '100%', background: getRiskColor(r.riskLevel), borderRadius: 4 }} />
+                        </div>
+                      </div>
                     </div>
 
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 4 }}>
@@ -721,20 +782,35 @@ export default function DiscoveryHero({
         }),
       });
       const json = await res.json().catch(() => null) as {
-        results?: Array<{ slug: string; rationale?: string; isStackPartner?: boolean }>;
+        results?: Array<{ 
+          slug: string; 
+          rationale?: string; 
+          isStackPartner?: boolean;
+          score?: number;
+          riskLevel?: string;
+          halfLife?: string;
+          molecularWeight?: number;
+        }>;
       } | null;
       const slugs = (json?.results || []).map(r => r.slug).filter(Boolean);
-      const rationales = new Map((json?.results || []).map(r => [r.slug, r.rationale || '']));
-      const stackMap = new Map((json?.results || []).map(r => [r.slug, r.isStackPartner || false]));
+      
+      const detailsMap = new Map((json?.results || []).map(r => [r.slug, r]));
+      
       const products = resolveProducts(slugs);
+      
       // Attach rationale and stack data by slug when available.
-      const stitched = products.map(p => ({
-        ...p,
-        rationale: p.compound_slug && rationales.has(p.compound_slug)
-          ? (rationales.get(p.compound_slug) as string)
-          : p.rationale,
-        isStackPartner: p.compound_slug ? stackMap.get(p.compound_slug) : false,
-      }));
+      const stitched = products.map(p => {
+        const details = p.compound_slug ? detailsMap.get(p.compound_slug) : null;
+        return {
+          ...p,
+          rationale: details?.rationale || p.rationale,
+          isStackPartner: details?.isStackPartner || false,
+          score: details?.score,
+          riskLevel: details?.riskLevel,
+          halfLife: details?.halfLife,
+          molecularWeight: details?.molecularWeight,
+        };
+      });
       setResults(stitched);
     } catch {
       setResults([]);
@@ -743,10 +819,31 @@ export default function DiscoveryHero({
     }
   }, [resolveProducts]);
 
-  const submitTypedGoal = useCallback(() => {
+  const submitTypedGoal = useCallback(async () => {
     const g = query.trim();
     if (!g) return;
-    void runMatch({ goal: g }, g);
+    
+    setLoading(true);
+    setDrawerOpen(true);
+    setSummary(g);
+
+    try {
+      const res = await fetch('/api/research/ai-match', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt: g })
+      });
+      const data = await res.json().catch(() => null);
+      
+      if (data?.result) {
+        await runMatch(data.result, g);
+      } else {
+        await runMatch({ goal: g }, g);
+      }
+    } catch (e) {
+      console.error(e);
+      await runMatch({ goal: g }, g);
+    }
   }, [query, runMatch]);
 
   return (

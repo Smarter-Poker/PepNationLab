@@ -119,7 +119,7 @@ export async function POST(req: NextRequest) {
       .maybeSingle();
     if (insErr || !inserted) return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
 
-    void recordCallTelemetry('messenger_call.start', user.id, {
+    await recordCallTelemetry('messenger_call.start', user.id, {
       call_id: (inserted as CallRow).id,
       conversation_id: (inserted as CallRow).conversation_id,
       initiator_id: (inserted as CallRow).initiator_id,
@@ -152,7 +152,7 @@ export async function POST(req: NextRequest) {
       };
 
       for (const p of otherList) {
-        void broadcastCallSignalServer(p.user_id, 'incoming_call', enrichedPayload);
+        await broadcastCallSignalServer(p.user_id, 'incoming_call', enrichedPayload);
       }
 
       const targetIds = otherList.map((p) => p.user_id);
@@ -163,8 +163,8 @@ export async function POST(req: NextRequest) {
         callerName,
         conversationId: (inserted as CallRow).conversation_id,
       };
-      void enqueueCallRingPush(pushInput);
-      void sendCallRingPushNow(pushInput);
+      await enqueueCallRingPush(pushInput);
+      await sendCallRingPushNow(pushInput);
     }
 
     return NextResponse.json({ call: inserted });
@@ -207,7 +207,7 @@ export async function POST(req: NextRequest) {
 
     const startedAt = new Date((updated as CallRow).started_at).getTime();
     const answeredAt = new Date((updated as CallRow).answered_at!).getTime();
-    void recordCallTelemetry('messenger_call.accept', user.id, {
+    await recordCallTelemetry('messenger_call.accept', user.id, {
       call_id: (updated as CallRow).id,
       conversation_id: (updated as CallRow).conversation_id,
       initiator_id: (updated as CallRow).initiator_id,
@@ -249,7 +249,7 @@ export async function POST(req: NextRequest) {
       metadata: { call_id: (updated as CallRow).id, status: 'declined' }
     });
 
-    void recordCallTelemetry('messenger_call.decline', user.id, {
+    await recordCallTelemetry('messenger_call.decline', user.id, {
       call_id: (updated as CallRow).id,
       conversation_id: (updated as CallRow).conversation_id,
       initiator_id: (updated as CallRow).initiator_id,
@@ -299,7 +299,7 @@ export async function POST(req: NextRequest) {
          metadata: { call_id: u.id, status: 'ended', duration: diffSecs }
        });
 
-       void recordCallTelemetry('messenger_call.hangup', user.id, {
+       await recordCallTelemetry('messenger_call.hangup', user.id, {
          call_id: u.id,
          conversation_id: u.conversation_id,
          initiator_id: u.initiator_id,
@@ -317,7 +317,7 @@ export async function POST(req: NextRequest) {
          metadata: { call_id: u.id, status: 'ended_before_answer' }
        });
 
-       void recordCallTelemetry('messenger_call.hangup', user.id, {
+       await recordCallTelemetry('messenger_call.hangup', user.id, {
          call_id: u.id,
          conversation_id: u.conversation_id,
          initiator_id: u.initiator_id,

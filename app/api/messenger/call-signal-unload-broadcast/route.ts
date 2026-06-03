@@ -91,7 +91,7 @@ export async function POST(req: NextRequest) {
       payload,
     });
 
-    void svc.removeChannel(channel);
+    await svc.removeChannel(channel);
 
     return NextResponse.json({ ok: true });
   } catch (err) {

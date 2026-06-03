@@ -106,6 +106,7 @@ export async function POST(req: NextRequest) {
       risk_tolerance: input.riskTolerance,
       exclude_injectables: input.excludeInjectables ?? false,
       require_long_half_life: input.requireLongHalfLife ?? false,
+      preference: input.preference ?? 'either',
     });
   if (error) console.error('[Match Analytics] Failed to insert', error);
 

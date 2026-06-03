@@ -121,6 +121,7 @@ function MatchFormInner() {
   const [excludeInjectables, setExcludeInjectables] = useState<boolean>(searchParams.get('no_injectables') === 'true');
   const [requireLongHalfLife, setRequireLongHalfLife] = useState<boolean>(searchParams.get('long_half_life') === 'true');
   const [excludeSlugs, setExcludeSlugs] = useState<string[]>(searchParams.getAll('exclude') || []);
+  const [preference, setPreference] = useState<'single' | 'stack' | 'either'>((searchParams.get('preference') as 'single' | 'stack' | 'either') || 'either');
 
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState<MatchResult[] | null>(null);
@@ -139,16 +140,17 @@ function MatchFormInner() {
     if (riskTolerance) params.set('risk', riskTolerance);
     if (excludeInjectables) params.set('no_injectables', 'true');
     if (requireLongHalfLife) params.set('long_half_life', 'true');
+    if (preference && preference !== 'either') params.set('preference', preference);
     excludeSlugs.forEach(s => params.append('exclude', s));
     router.replace(`${pathname}?${params.toString()}`, { scroll: false });
-  }, [goal, evidenceComfort, wadaConstraint, riskTolerance, excludeInjectables, requireLongHalfLife, excludeSlugs, pathname, router]);
+  }, [goal, evidenceComfort, wadaConstraint, riskTolerance, excludeInjectables, requireLongHalfLife, preference, excludeSlugs, pathname, router]);
 
   async function onSubmit(e?: React.FormEvent, overrides?: any) {
     if (e) e.preventDefault();
     setLoading(true);
     setErrorMsg(null);
     try {
-      const payload = overrides ? overrides : { goal, evidenceComfort, wadaConstraint, riskTolerance, excludeInjectables, requireLongHalfLife, excludeSlugs };
+      const payload = overrides ? overrides : { goal, evidenceComfort, wadaConstraint, riskTolerance, excludeInjectables, requireLongHalfLife, excludeSlugs, preference };
       const res = await fetch('/api/research/match', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -197,6 +199,7 @@ function MatchFormInner() {
         if (data.result.riskTolerance) setRiskTolerance(data.result.riskTolerance);
         if (typeof data.result.excludeInjectables === 'boolean') setExcludeInjectables(data.result.excludeInjectables);
         if (typeof data.result.requireLongHalfLife === 'boolean') setRequireLongHalfLife(data.result.requireLongHalfLife);
+        if (data.result.preference) setPreference(data.result.preference);
         setAiPrompt('');
         
         // Use overrides to bypass React closure state delays
@@ -207,6 +210,7 @@ function MatchFormInner() {
           riskTolerance: data.result.riskTolerance || riskTolerance,
           excludeInjectables: typeof data.result.excludeInjectables === 'boolean' ? data.result.excludeInjectables : excludeInjectables,
           requireLongHalfLife: typeof data.result.requireLongHalfLife === 'boolean' ? data.result.requireLongHalfLife : requireLongHalfLife,
+          preference: data.result.preference || preference,
           excludeSlugs
         });
       }
@@ -296,6 +300,15 @@ function MatchFormInner() {
               <label className="block text-sm font-bold text-white mb-2">Risk Tolerance</label>
               <select value={riskTolerance} onChange={(e) => setRiskTolerance(e.target.value as RiskTolerance)} className="w-full p-3 rounded-md border border-[#1D2D3E] bg-[#0F1923] text-white">
                 {RISK_OPTIONS.map((o) => (<option key={o.value} value={o.value}>{o.label}</option>))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-bold text-white mb-2">Format Preference</label>
+              <select value={preference} onChange={(e) => setPreference(e.target.value as any)} className="w-full p-3 rounded-md border border-[#1D2D3E] bg-[#0F1923] text-white">
+                <option value="either">Any Format</option>
+                <option value="single">Single Compounds Only</option>
+                <option value="stack">Pre-Blended Stacks Only</option>
               </select>
             </div>
           </div>
