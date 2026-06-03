@@ -21,14 +21,7 @@ const dash = (v: unknown) => {
   return s || '—';
 };
 
-// Columns added in research_v3 foundation; not yet on the Compound TS type.
-type CompoundExtras = {
-  molecular_weight_da?: number | null;
-  pubmed_citation_count?: number | null;
-  active_trial_count?: number | null;
-  completed_trial_count?: number | null;
-  year_discovered?: number | null;
-};
+// Compound numeric columns have been merged directly onto Compound.
 
 export default async function ResearchDataPage() {
   const compounds = await getAllCompounds();
@@ -36,8 +29,7 @@ export default async function ResearchDataPage() {
   const rows: DataRow[] = compounds.map((c) => {
     const tier = evidenceTier(c.evidence_tier);
     const risk = RISK_META[c.risk_level];
-    const x = c as unknown as CompoundExtras;
-    const trials = (x.active_trial_count ?? 0) + (x.completed_trial_count ?? 0);
+    const trials = (c.active_trial_count ?? 0) + (c.completed_trial_count ?? 0);
     return {
       slug: c.slug,
       name: c.display_name,
@@ -50,10 +42,10 @@ export default async function ResearchDataPage() {
       wada: wadaLabel(c.wada_status),
       risk: risk?.label ?? '—',
       riskColor: risk?.color ?? '#A8B4C0',
-      mw: x.molecular_weight_da ?? null,
-      citations: x.pubmed_citation_count ?? null,
+      mw: c.molecular_weight_da ?? null,
+      citations: c.pubmed_citation_count ?? null,
       trials: trials > 0 ? trials : null,
-      year: x.year_discovered ?? null,
+      year: c.year_discovered ?? null,
     };
   });
 

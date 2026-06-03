@@ -9,10 +9,10 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 
 interface Binding {
   target_name: string;
-  standard_type: string;
-  standard_value: number;
-  standard_units: string;
-  pchembl_value: number;
+  standard_type: string | null;
+  standard_value: number | null;
+  standard_units: string | null;
+  pchembl_value: number | null;
 }
 
 interface Props {

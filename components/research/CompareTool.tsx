@@ -66,7 +66,7 @@ const ROWS: Row[] = [
   { kind: 'data', label: 'Class', render: (c) => txt(c.compound_class) },
   { kind: 'data', label: 'Molecular Target', render: (c) => txt(c.molecular_target) },
   { kind: 'data', label: 'Sequence', render: (c) => txt(c.identity?.sequence) },
-  { kind: 'data', label: 'Molecular Weight', render: (c) => txt(c.identity?.molecular_weight) },
+  { kind: 'data', label: 'Molecular Weight', render: (c) => c.molecular_weight_da ? `${c.molecular_weight_da} Da` : txt(c.identity?.molecular_weight) },
   { kind: 'data', label: 'CAS Number', render: (c) => txt(c.identity?.cas) },
 
   { kind: 'group', label: 'Evidence & Regulatory' },
@@ -107,6 +107,16 @@ const ROWS: Row[] = [
     kind: 'data',
     label: 'Research Areas',
     render: (c) => ((c.research_areas ?? []).length ? c.research_areas.map(researchAreaLabel).join(', ') : NL),
+  },
+  { kind: 'data', label: 'Discovered', render: (c) => txt(c.year_discovered) },
+  { kind: 'data', label: 'PubMed Citations', render: (c) => c.pubmed_citation_count ? c.pubmed_citation_count.toLocaleString() : NL },
+  { 
+    kind: 'data', 
+    label: 'Clinical Trials', 
+    render: (c) => {
+      const trials = (c.active_trial_count ?? 0) + (c.completed_trial_count ?? 0);
+      return trials > 0 ? trials.toLocaleString() : NL;
+    }
   },
   { kind: 'data', label: 'Regulatory', render: (c) => txt(c.regulatory) },
   { kind: 'data', label: 'WADA Status', render: (c) => wadaLabel(c.wada_status) },

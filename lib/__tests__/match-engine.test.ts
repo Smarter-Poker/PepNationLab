@@ -41,6 +41,8 @@ function makeCompound(overrides: Partial<Compound> & { slug: string; display_nam
     risk_reasons: [],
     recommended_action: 'keep',
     reconstitution_shelf_days: null,
+    half_life: null,
+    pk_summary: null,
   };
   return { ...base, ...overrides };
 }

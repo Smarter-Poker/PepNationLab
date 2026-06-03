@@ -56,6 +56,11 @@ export interface Compound {
   reconstitution_shelf_days: number | null;
   half_life: string | null;
   pk_summary: string | null;
+  molecular_weight_da?: number | null;
+  pubmed_citation_count?: number | null;
+  active_trial_count?: number | null;
+  completed_trial_count?: number | null;
+  year_discovered?: number | null;
 }
 
 export const EVIDENCE_TIER: Record<string, { label: string; color: string; blurb: string }> = {

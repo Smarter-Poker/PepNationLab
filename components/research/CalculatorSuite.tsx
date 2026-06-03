@@ -175,7 +175,7 @@ function DilutionSection() {
   const series = dilutionSeries({
     stockConcentration: Number(stock),
     dilutionFactor: Number(factor),
-    steps: Number(steps),
+    steps: Math.max(1, Math.floor(Number(steps) || 1)),
   });
 
   return (
@@ -195,7 +195,7 @@ function DilutionSection() {
         </div>
         <div>
           <label style={labelStyle}>Steps</label>
-          <input style={inputStyle} type="number" min={1} max={20} value={steps} onChange={(e) => setSteps(e.target.value)} />
+          <input style={inputStyle} type="number" min={1} max={20} step={1} value={steps} onChange={(e) => setSteps(e.target.value)} />
         </div>
       </div>
       <div style={{ ...resultStyle, padding: 0, background: 'transparent', border: 'none' }}>
@@ -395,7 +395,7 @@ function PoolingSection() {
 
   const out = vialPooling({
     vialMassMg: Number(mass),
-    vialCount: Number(count),
+    vialCount: Math.max(1, Math.floor(Number(count) || 1)),
     totalDiluentMl: Number(diluent),
   });
 
@@ -412,7 +412,7 @@ function PoolingSection() {
         </div>
         <div>
           <label style={labelStyle}>Vial Count</label>
-          <input style={inputStyle} type="number" min={1} step={1} value={count} onChange={(e) => setCount(String(Math.max(1, Math.floor(Number(e.target.value) || 1))))} />
+          <input style={inputStyle} type="number" min={1} step={1} value={count} onChange={(e) => setCount(e.target.value)} />
         </div>
         <div>
           <label style={labelStyle}>Total Diluent (mL)</label>
@@ -669,7 +669,7 @@ function SolubilitySection() {
   const out = predictSolubility({
     gravy: Number(gravy),
     isoelectricPoint: Number(pi),
-    sequenceLength: Number(len),
+    sequenceLength: Math.max(1, Math.floor(Number(len) || 1)),
     pH: Number(pH),
   });
 
@@ -694,7 +694,7 @@ function SolubilitySection() {
         </div>
         <div>
           <label style={labelStyle}>Sequence Length</label>
-          <input style={inputStyle} type="number" step={1} min={1} value={len} onChange={(e) => setLen(String(Math.max(1, Math.floor(Number(e.target.value) || 1))))} />
+          <input style={inputStyle} type="number" step={1} min={1} value={len} onChange={(e) => setLen(e.target.value)} />
         </div>
         <div>
           <label style={labelStyle}>Solution pH</label>
@@ -721,8 +721,8 @@ function VialQuantitySection() {
   const [mgPerVial, setMgPerVial] = useState('5');
 
   const out = vialQuantityPower({
-    n: Number(n),
-    dosesPerSubject: Number(doses),
+    n: Math.max(1, Math.floor(Number(n) || 1)),
+    dosesPerSubject: Math.max(1, Math.floor(Number(doses) || 1)),
     mgPerDose: Number(mgPerDose),
     mgPerVial: Number(mgPerVial),
   });
@@ -736,11 +736,11 @@ function VialQuantitySection() {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 12 }}>
         <div>
           <label style={labelStyle}>Sample Size (n)</label>
-          <input style={inputStyle} type="number" value={n} onChange={(e) => setN(e.target.value)} />
+          <input style={inputStyle} type="number" min={1} step={1} value={n} onChange={(e) => setN(e.target.value)} />
         </div>
         <div>
           <label style={labelStyle}>Doses Per Subject</label>
-          <input style={inputStyle} type="number" value={doses} onChange={(e) => setDoses(e.target.value)} />
+          <input style={inputStyle} type="number" min={1} step={1} value={doses} onChange={(e) => setDoses(e.target.value)} />
         </div>
         <div>
           <label style={labelStyle}>Mg Per Dose</label>
