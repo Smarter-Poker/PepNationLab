@@ -1,17 +1,20 @@
+# PepNationLab — Research Library is public; commerce + admin surfaces are not.
+
 User-agent: *
-Allow: /
 Allow: /research
 Allow: /research/
+Allow: /sitemap.xml
+Allow: /feed.xml
 Disallow: /admin
 Disallow: /admin/
 Disallow: /api
 Disallow: /api/
 Disallow: /dashboard
-Disallow: /dashboard/
 Disallow: /checkout
 Disallow: /orders
 Disallow: /messages
 Disallow: /messenger
 Disallow: /account
+Disallow: /invite
 
 Sitemap: https://pepnationlab.com/sitemap.xml
