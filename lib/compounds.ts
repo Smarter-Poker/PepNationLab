@@ -92,7 +92,7 @@ export const RESEARCH_AREAS: Record<string, { label: string; blurb: string }> = 
   immune: { label: 'Immune', blurb: 'Compounds studied for immune modulation and host defense.' },
   gut_health: { label: 'Gut Health & GI Repair', blurb: 'Mucosal repair, tight-junction integrity, and GI cytoprotection literature (BPC-157, KPV, VIP).' },
   pain_inflammation: { label: 'Pain & Inflammation', blurb: 'Cross-class anti-inflammatory and analgesic mechanisms (BPC-157, TB-500, LL-37, ARA-290).' },
-  bone_joint: { label: 'Bone Health & Joint Support', blurb: 'Bone density, cartilage maintenance, and joint repair pathways (BPC-157, TB-500, GHK-Cu, IGF-1).' },
+  bone_joint: { label: 'Joint & Bone Support', blurb: 'Bone density, cartilage maintenance, and joint repair pathways (BPC-157, TB-500, GHK-Cu, IGF-1).' },
   sexual_health: { label: 'Sexual Health & Hormones', blurb: 'Compounds studied for reproductive and sexual-health pathways.' },
   performance: { label: 'Performance', blurb: 'Compounds studied for the growth-hormone and anabolic axes.' },
   sleep: { label: 'Sleep', blurb: 'Compounds studied for sleep and circadian regulation.' },

@@ -34,30 +34,44 @@ export default function TherapeuticAreasPage() {
         </p>
       </header>
 
+      <style>{`
+        .areas-grid {
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          grid-auto-rows: 1fr;
+          gap: var(--space-4, 16px);
+        }
+        @media (max-width: 900px) {
+          .areas-grid {
+            grid-template-columns: repeat(2, 1fr);
+          }
+        }
+        @media (max-width: 600px) {
+          .areas-grid {
+            grid-template-columns: 1fr;
+            grid-auto-rows: auto;
+          }
+        }
+        .area-card {
+          display: flex;
+          flex-direction: column;
+          gap: var(--space-2, 8px);
+          padding: var(--space-4, 16px);
+          border-radius: var(--radius-lg, 12px);
+          text-decoration: none;
+          color: var(--white, #FFFFFF);
+          height: 100%;
+        }
+      `}</style>
       <section style={{ marginBottom: 'var(--space-7, 48px)' }}>
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))',
-            gap: 'var(--space-4, 16px)',
-          }}
-        >
+        <div className="areas-grid">
           {Object.keys(RESEARCH_AREAS).map((key) => {
             const meta = RESEARCH_AREAS[key];
             return (
               <Link
                 key={key}
                 href={`/research/area/${key}`}
-                className="card-metal"
-                style={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: 'var(--space-2, 8px)',
-                  padding: 'var(--space-4, 16px)',
-                  borderRadius: 'var(--radius-lg, 12px)',
-                  textDecoration: 'none',
-                  color: 'var(--white, #FFFFFF)',
-                }}
+                className="card-metal area-card"
               >
                 <span style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--teal, #00C4BC)' }}>
                   {meta.label}

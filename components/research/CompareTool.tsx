@@ -1,15 +1,16 @@
 'use client';
 
 /**
- * Compare Tool — side-by-side comparison of up to three compounds.
- * Pure presentation over an in-memory Compound[] passed by the parent server
- * component. Research-use-only: presents factual lab and literature fields.
+ * Compare Tool — comprehensive side-by-side comparison of up to three compounds,
+ * grouped into Identity, Evidence & Regulatory, Pharmacology, and Handling
+ * sections. Pure presentation over an in-memory Compound[] from the parent
+ * server component. Research-use-only: factual lab and literature fields only.
  */
 
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { X } from 'lucide-react';
-import { type Compound, evidenceTier, wadaLabel } from '@/lib/compounds';
+import { type Compound, evidenceTier, wadaLabel, researchAreaLabel, RISK_META } from '@/lib/compounds';
 
 const MAX_COLUMNS = 3;
 
@@ -37,10 +38,40 @@ const labelCellStyle: React.CSSProperties = {
   whiteSpace: 'nowrap',
 };
 
-type RowDef = { label: string; render: (c: Compound) => React.ReactNode };
+const groupCellStyle: React.CSSProperties = {
+  padding: 'var(--space-3, 12px)',
+  background: 'rgba(0,196,188,0.08)',
+  borderTop: '1px solid rgba(0,196,188,0.3)',
+  borderBottom: '1px solid rgba(0,196,188,0.3)',
+  color: 'var(--teal, #00C4BC)',
+  fontWeight: 800,
+  fontSize: '0.72rem',
+  letterSpacing: '0.06em',
+  textTransform: 'uppercase',
+};
 
-const ROWS: RowDef[] = [
+const NL = 'Not Listed';
+function txt(v: unknown): string {
+  const s = (v ?? '').toString().trim();
+  return s || NL;
+}
+
+type Row =
+  | { kind: 'group'; label: string }
+  | { kind: 'data'; label: string; render: (c: Compound) => React.ReactNode };
+
+const ROWS: Row[] = [
+  { kind: 'group', label: 'Identity' },
+  { kind: 'data', label: 'Category', render: (c) => txt(c.category) },
+  { kind: 'data', label: 'Class', render: (c) => txt(c.compound_class) },
+  { kind: 'data', label: 'Molecular Target', render: (c) => txt(c.molecular_target) },
+  { kind: 'data', label: 'Sequence', render: (c) => txt(c.identity?.sequence) },
+  { kind: 'data', label: 'Molecular Weight', render: (c) => txt(c.identity?.molecular_weight) },
+  { kind: 'data', label: 'CAS Number', render: (c) => txt(c.identity?.cas) },
+
+  { kind: 'group', label: 'Evidence & Regulatory' },
   {
+    kind: 'data',
     label: 'Evidence Tier',
     render: (c) => {
       const t = evidenceTier(c.evidence_tier);
@@ -63,16 +94,52 @@ const ROWS: RowDef[] = [
       );
     },
   },
-  { label: 'Class', render: (c) => c.compound_class || 'Not Listed' },
-  { label: 'Molecular Target', render: (c) => c.molecular_target || 'Not Listed' },
   {
-    label: 'Studied For',
-    render: (c) => ((c.studied_for ?? []).length ? c.studied_for.join(', ') : 'Not Listed'),
+    kind: 'data',
+    label: 'Risk Level',
+    render: (c) => {
+      const r = RISK_META[c.risk_level];
+      return r ? <span style={{ color: r.color, fontWeight: 700 }}>{r.label}</span> : NL;
+    },
   },
-  { label: 'Reported Findings', render: (c) => c.benefits || 'Not Listed' },
-  { label: 'Side Effects', render: (c) => c.side_effects || 'Not Listed' },
-  { label: 'Storage Form', render: (c) => c.handling?.form || 'Not Listed' },
-  { label: 'WADA Status', render: (c) => wadaLabel(c.wada_status) },
+  { kind: 'data', label: 'Studied For', render: (c) => ((c.studied_for ?? []).length ? c.studied_for.join(', ') : NL) },
+  {
+    kind: 'data',
+    label: 'Research Areas',
+    render: (c) => ((c.research_areas ?? []).length ? c.research_areas.map(researchAreaLabel).join(', ') : NL),
+  },
+  { kind: 'data', label: 'Regulatory', render: (c) => txt(c.regulatory) },
+  { kind: 'data', label: 'WADA Status', render: (c) => wadaLabel(c.wada_status) },
+
+  { kind: 'group', label: 'Pharmacology' },
+  {
+    kind: 'data',
+    label: 'Half-Life',
+    render: (c) => (c.half_life ? <span style={{ color: 'var(--teal, #00C4BC)', fontWeight: 700 }}>{c.half_life}</span> : NL),
+  },
+  { kind: 'data', label: 'PK Summary', render: (c) => txt(c.pk_summary) },
+  { kind: 'data', label: 'Reported Findings', render: (c) => txt(c.benefits) },
+  { kind: 'data', label: 'Side Effects', render: (c) => txt(c.side_effects) },
+  { kind: 'data', label: 'Warnings', render: (c) => txt(c.warnings) },
+
+  { kind: 'group', label: 'Handling & Storage' },
+  { kind: 'data', label: 'Form', render: (c) => txt(c.handling?.form) },
+  { kind: 'data', label: 'Diluent', render: (c) => txt(c.handling?.diluent) },
+  { kind: 'data', label: 'Storage Temperature', render: (c) => txt(c.handling?.storage_temp) },
+  {
+    kind: 'data',
+    label: 'Light Sensitive',
+    render: (c) => (c.handling?.light_sensitive == null ? NL : c.handling.light_sensitive ? 'Yes' : 'No'),
+  },
+  { kind: 'data', label: 'Freeze / Thaw', render: (c) => txt(c.handling?.freeze_thaw) },
+  {
+    kind: 'data',
+    label: 'Reconstituted Shelf Life',
+    render: (c) => {
+      const d = c.reconstitution_shelf_days ?? c.handling?.reconstituted_days;
+      return d != null ? `${d} Days Refrigerated` : NL;
+    },
+  },
 ];
 
 export default function CompareTool({ compounds }: { compounds: Compound[] }) {
@@ -104,6 +171,7 @@ export default function CompareTool({ compounds }: { compounds: Compound[] }) {
   }
 
   const canAdd = selected.length < MAX_COLUMNS;
+  const colSpan = selected.length + 1;
 
   return (
     <div>
@@ -147,7 +215,7 @@ export default function CompareTool({ compounds }: { compounds: Compound[] }) {
             borderRadius: 'var(--radius-lg, 12px)',
           }}
         >
-          Select Up To Three Compounds To Compare Them Side By Side.
+          Select Up To Three Compounds To Compare Every Attribute Side By Side.
         </div>
       ) : (
         <div className="card-glass" style={{ borderRadius: 'var(--radius-lg, 12px)', overflowX: 'auto' }}>
@@ -199,16 +267,24 @@ export default function CompareTool({ compounds }: { compounds: Compound[] }) {
               </tr>
             </thead>
             <tbody>
-              {ROWS.map((row) => (
-                <tr key={row.label}>
-                  <td style={labelCellStyle}>{row.label}</td>
-                  {selected.map((c) => (
-                    <td key={c.slug} style={cellStyle}>
-                      {row.render(c)}
+              {ROWS.map((row) =>
+                row.kind === 'group' ? (
+                  <tr key={`g-${row.label}`}>
+                    <td style={groupCellStyle} colSpan={colSpan}>
+                      {row.label}
                     </td>
-                  ))}
-                </tr>
-              ))}
+                  </tr>
+                ) : (
+                  <tr key={row.label}>
+                    <td style={labelCellStyle}>{row.label}</td>
+                    {selected.map((c) => (
+                      <td key={c.slug} style={cellStyle}>
+                        {row.render(c)}
+                      </td>
+                    ))}
+                  </tr>
+                ),
+              )}
             </tbody>
           </table>
         </div>
