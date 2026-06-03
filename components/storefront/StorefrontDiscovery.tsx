@@ -727,8 +727,8 @@ export default function DiscoveryHero({
           width: '100%',
           maxWidth: 1024,
           margin: '0 auto 18px',
-          aspectRatio: '1024 / 582',
-          backgroundImage: 'url(/images/store_discovery_hero.png)',
+          aspectRatio: '1024 / 576',
+          backgroundImage: 'url(/images/store_discovery_hero_v2.png)',
           backgroundSize: 'cover',
           backgroundPosition: 'center',
           borderRadius: 22,
@@ -769,11 +769,11 @@ export default function DiscoveryHero({
           onKeyDown={(e) => { if (e.key === 'Enter') submitTypedGoal(); }}
           placeholder="What Are You Trying To Research Today?"
           style={{
-            position: 'absolute', top: '38%', left: '13%', width: '77%', height: '11%',
-            background: '#041322',
+            position: 'absolute', top: '38%', left: '11%', width: '85%', height: '11%',
+            background: 'transparent',
             border: 'none', outline: 'none', color: '#FFFFFF',
-            fontSize: 'max(14px, 1.3vw)',
-            padding: '0 8px',
+            fontSize: 'max(14px, 1.4vw)',
+            padding: '0 10px',
             zIndex: 5,
             fontWeight: 500,
             letterSpacing: '0.02em',
