@@ -570,6 +570,45 @@ function PinToCompareButton({
   );
 }
 
+/* ------------------------------------------------------------------ *
+ * Phase 4: Recently Viewed strip (localStorage-backed)               *
+ * ------------------------------------------------------------------ */
+const RECENTLY_VIEWED_KEY = 'pnl:recently-viewed';
+const RECENTLY_VIEWED_MAX = 6;
+
+interface RecentItem {
+  name: string;
+  imageUrl: string | null;
+  pricePerVialDollars: number | null;
+  viewedAt: number;
+}
+
+function readRecentlyViewed(): RecentItem[] {
+  if (typeof window === 'undefined') return [];
+  try {
+    const raw = window.localStorage.getItem(RECENTLY_VIEWED_KEY) || '[]';
+    const list = JSON.parse(raw);
+    if (!Array.isArray(list)) return [];
+    return list.slice(-RECENTLY_VIEWED_MAX);
+  } catch {
+    return [];
+  }
+}
+
+function writeRecentlyViewed(item: RecentItem) {
+  if (typeof window === 'undefined') return;
+  try {
+    const list = readRecentlyViewed().filter((r) => r.name !== item.name);
+    list.push(item);
+    window.localStorage.setItem(
+      RECENTLY_VIEWED_KEY,
+      JSON.stringify(list.slice(-RECENTLY_VIEWED_MAX)),
+    );
+  } catch {
+    // ignore
+  }
+}
+
 export default function ProductModalEnhancements({
   currentCompound,
   currentCompoundSlug,
@@ -585,6 +624,19 @@ export default function ProductModalEnhancements({
   onOpenProductByName,
   onAddVariantToCart,
 }: Props) {
+  // Phase 4: track current product to recently-viewed, and surface up to 5
+  // OTHERS that the same researcher recently looked at.
+  const [recentlyViewed, setRecentlyViewed] = useState<RecentItem[]>([]);
+  useEffect(() => {
+    if (!currentProductName) return;
+    writeRecentlyViewed({
+      name: currentProductName,
+      imageUrl: currentImageUrl ?? null,
+      pricePerVialDollars: currentBundlePriceDollars != null ? Number(currentBundlePriceDollars) / 10 : null,
+      viewedAt: Date.now(),
+    });
+    setRecentlyViewed(readRecentlyViewed().filter((r) => r.name !== currentProductName).slice(-5));
+  }, [currentProductName, currentImageUrl, currentBundlePriceDollars]);
   const supplies = useMemo(() => {
     return SUPPLY_PATTERNS.map(({ key, pattern, label }) => ({
       key,
@@ -850,6 +902,61 @@ export default function ProductModalEnhancements({
           primaryColor={primaryColor}
         />
       </div>
+
+      {recentlyViewed.length > 0 && (
+        <section aria-label="Recently Viewed">
+          <SectionTitle primaryColor={primaryColor}>
+            Recently Viewed
+          </SectionTitle>
+          <div style={{
+            display: 'flex', gap: 10, overflowX: 'auto', paddingBottom: 4,
+            scrollSnapType: 'x mandatory',
+          }}>
+            {recentlyViewed.slice().reverse().map((r) => (
+              <button
+                key={r.name}
+                type="button"
+                onClick={() => onOpenProductByName(r.name)}
+                style={{
+                  flex: '0 0 auto', scrollSnapAlign: 'start',
+                  display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4,
+                  padding: 8, borderRadius: 12,
+                  background: 'rgba(255,255,255,0.04)',
+                  border: '1px solid rgba(255,255,255,0.10)',
+                  cursor: 'pointer', minWidth: 110, maxWidth: 140,
+                  color: 'var(--white)',
+                }}
+              >
+                {r.imageUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={r.imageUrl}
+                    alt={r.name}
+                    width={56}
+                    height={56}
+                    style={{ width: 56, height: 56, borderRadius: 10, objectFit: 'cover', background: '#0F1923' }}
+                  />
+                ) : (
+                  <div style={{ width: 56, height: 56, borderRadius: 10, background: `${primaryColor}20` }} aria-hidden="true" />
+                )}
+                <span style={{
+                  fontSize: '0.72rem', fontWeight: 700, lineHeight: 1.15,
+                  textAlign: 'center', maxWidth: 124,
+                  overflow: 'hidden', display: '-webkit-box',
+                  WebkitLineClamp: 2, WebkitBoxOrient: 'vertical',
+                }}>
+                  {r.name}
+                </span>
+                {r.pricePerVialDollars != null && (
+                  <span style={{ fontSize: '0.72rem', color: primaryColor, fontWeight: 800 }}>
+                    ${Number(r.pricePerVialDollars).toFixed(2)}/Vial
+                  </span>
+                )}
+              </button>
+            ))}
+          </div>
+        </section>
+      )}
     </div>
   );
 }
