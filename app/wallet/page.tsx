@@ -19,7 +19,10 @@ export default async function WalletRoute() {
     .eq('id', user.id)
     .single();
   if (!profile) redirect('/login');
-  const allowed = ['agent', 'super_agent', 'sub_agent', 'admin'].includes(profile.role);
+  // Every signed-in role can reach /wallet. Empty data states are handled
+  // gracefully by each tab's "No ... Yet" copy when the underlying scope
+  // returns nothing.
+  const allowed = ['researcher', 'agent', 'super_agent', 'admin'].includes(profile.role);
   if (!allowed) redirect('/dashboard');
   return <WalletPage userId={user.id} role={profile.role} isSuperAgent={!!profile.is_super_agent} />;
 }
