@@ -68,9 +68,7 @@ function parseHalfLifeHours(hl: string | null | undefined): number {
   return num; // assume hours by default
 }
 
-function getPriceNumber(c: any): number {
-  return c.retail_price ? Number(c.retail_price) : Infinity;
-}
+
 
 type Row =
   | { kind: 'group'; label: string }
@@ -80,7 +78,7 @@ type Row =
       glossaryTerm?: string;
       bestLogic?: 'max' | 'min';
       getRawScore?: (c: Compound) => number;
-      getValue: (c: Compound) => any; 
+      getValue: (c: Compound) => unknown; 
       render: (c: Compound, maxHl?: number) => React.ReactNode 
     };
 
@@ -296,12 +294,12 @@ export default function CompareTool({
     }
     const target = `${pathname}?${params.toString()}`;
     router.replace(target, { scroll: false });
+  }, [selectedSlugs, pathname, searchParams, router]);
 
-    // adjust mobile index if bounds change
-    if (mobileViewIndex >= selectedSlugs.length && selectedSlugs.length > 1) {
-      setMobileViewIndex(selectedSlugs.length - 1);
-    }
-  }, [selectedSlugs, pathname, searchParams, router, mobileViewIndex]);
+  let clampedMobileIndex = mobileViewIndex;
+  if (clampedMobileIndex >= selectedSlugs.length && selectedSlugs.length > 1) {
+    clampedMobileIndex = selectedSlugs.length - 1;
+  }
 
   // Click outside to close search
   useEffect(() => {
@@ -325,9 +323,11 @@ export default function CompareTool({
     [selectedSlugs, bySlug],
   );
 
-  const displayedSelected = isMobile && selected.length > 1 
-    ? [selected[0], selected[mobileViewIndex]]
-    : selected;
+  const displayedSelected = useMemo(() => {
+    return isMobile && selected.length > 1 
+      ? [selected[0], selected[clampedMobileIndex]]
+      : selected;
+  }, [isMobile, selected, clampedMobileIndex]);
 
   const maxHalfLife = useMemo(() => {
     return Math.max(...displayedSelected.map(c => parseHalfLifeHours(c.half_life)), 0);
@@ -579,7 +579,7 @@ export default function CompareTool({
                 </ul>
               ) : (
                 <div style={{ padding: '16px', textAlign: 'center', color: 'var(--silver, #A8B4C0)', fontSize: '0.9rem' }}>
-                  No compounds found matching "{searchQuery}"
+                  No compounds found matching &quot;{searchQuery}&quot;
                 </div>
               )}
             </div>
@@ -836,9 +836,9 @@ export default function CompareTool({
                   const allSame = values.every(v => v === values[0]);
                   const isDiff = !allSame && displayedSelected.length > 1;
 
-                  let trStyle: React.CSSProperties = { transition: 'background 0.2s' };
-                  let tdLabelStyle: React.CSSProperties = { ...labelCellStyle, background: '#162230', transition: 'color 0.2s' };
-                  let valueCellStyle: React.CSSProperties = { ...cellStyle, transition: 'opacity 0.2s' };
+                  const trStyle: React.CSSProperties = { transition: 'background 0.2s' };
+                  const tdLabelStyle: React.CSSProperties = { ...labelCellStyle, background: '#162230', transition: 'color 0.2s' };
+                  const valueCellStyle: React.CSSProperties = { ...cellStyle, transition: 'opacity 0.2s' };
 
                   if (diffMode) {
                     if (isDiff) {
@@ -851,7 +851,7 @@ export default function CompareTool({
                   }
 
                   // Winner Engine Calculation
-                  let bestIndices: number[] = [];
+                  const bestIndices: number[] = [];
                   if (row.bestLogic && displayedSelected.length > 1 && !allSame) {
                     const scores = displayedSelected.map(c => row.getRawScore ? row.getRawScore(c) : 0);
                     const validScores = scores.filter(s => typeof s === 'number' && !isNaN(s) && s !== Infinity);

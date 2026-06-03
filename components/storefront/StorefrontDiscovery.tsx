@@ -25,6 +25,8 @@
  */
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { AgentHeader } from './AgentHeader';
+import { ProtocolScheduler } from '../research/ProtocolScheduler';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Sparkles, Search, ArrowRight, X, ShoppingCart, Compass } from 'lucide-react';
 import type { Compound } from '@/lib/compounds';
@@ -576,8 +578,52 @@ function MatchResultsDrawer({
                     ))}
                   </div>
                 </div>
+                </div>
               )}
+
+              {/* Protocol Schedule */}
+              {!loading && !followUp && filteredResults.length > 0 && (
+                <ProtocolScheduler results={filteredResults} primaryColor={primaryColor} />
+              )}
+
+              {/* Excluded Compounds */}
+              {!loading && !followUp && excluded && excluded.length > 0 && (
+                <div style={{ marginTop: 32, padding: 20, background: 'rgba(255,0,0,0.03)', border: '1px solid rgba(255,0,0,0.1)', borderRadius: 12 }}>
+                  <h4 style={{ color: '#FC8181', fontSize: '0.9rem', fontWeight: 800, textTransform: 'uppercase', marginBottom: 12, letterSpacing: '0.05em' }}>Excluded From Results</h4>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    {excluded.map((e, idx) => (
+                      <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                        <span style={{ color: '#FFF', fontWeight: 600, fontSize: '0.9rem' }}>{e.displayName}</span>
+                        <span style={{ color: '#A8B4C0', fontSize: '0.85rem' }}>— {e.reason}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div style={{ height: 100 }} />
             </div>
+
+            {/* Sticky Drawer Footer */}
+            {!loading && !followUp && filteredResults.length > 0 && (
+              <div style={{ padding: '16px 20px', borderTop: '1px solid rgba(255,255,255,0.08)', background: '#0A1018', display: 'flex', gap: 12, paddingBottom: 'max(16px, env(safe-area-inset-bottom, 0px))' }}>
+                <button
+                  onClick={handleShare}
+                  style={{ flex: 1, padding: '14px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', color: '#FFF', borderRadius: 8, fontWeight: 800, cursor: 'pointer', transition: 'all 0.2s' }}
+                >
+                  {shareCopied ? 'Copied Link!' : 'Share Protocol'}
+                </button>
+                {stackItems.length > 0 && (
+                  <button
+                    onClick={handleAddStack}
+                    style={{ flex: 2, padding: '14px', background: primaryColor, border: 'none', color: '#0A1018', borderRadius: 8, fontWeight: 900, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
+                  >
+                    <ShoppingCart size={18} />
+                    Add Full Stack To Cart
+                  </button>
+                )}
+              </div>
+            )}
           </motion.div>
         </motion.div>
       )}
@@ -695,12 +741,14 @@ interface WizardState {
   area: string;             // research_area key
   preference: 'single' | 'stack' | 'either';
   comfort: 'strict_human_only' | 'investigational_ok' | 'preclinical_ok' | 'any';
+  budget: 'conservative' | 'standard' | 'unlimited';
 }
 
 const DEFAULT_WIZARD: WizardState = {
   area: 'healing',
   preference: 'either',
   comfort: 'preclinical_ok',
+  budget: 'standard',
 };
 
 function GuidedDiscoveryWizard({
@@ -740,7 +788,7 @@ function GuidedDiscoveryWizard({
     };
   }, [open, onClose]);
 
-  const TOTAL_STEPS = 3;
+  const TOTAL_STEPS = 4;
 
   const variants = {
     initial: { x: 20, opacity: 0 },
@@ -911,6 +959,43 @@ function GuidedDiscoveryWizard({
                             key={o.v}
                             type="button"
                             onClick={() => setState(s => ({ ...s, comfort: o.v }))}
+                            style={{
+                              textAlign: 'left',
+                              padding: '14px 16px',
+                              borderRadius: 12,
+                              background: active ? 'rgba(192,197,206,0.15)' : 'rgba(255,255,255,0.04)',
+                              border: active ? '1px solid #C0C5CE' : '1px solid rgba(255,255,255,0.12)',
+                              color: '#FFFFFF',
+                              cursor: 'pointer', minHeight: 56, transition: 'all 0.2s ease',
+                            }}
+                          >
+                            <div style={{ fontWeight: 800, fontSize: '0.96rem', color: active ? '#C0C5CE' : '#FFF' }}>{o.label}</div>
+                            <div style={{ color: 'var(--silver, #A8B4C0)', fontSize: '0.82rem', marginTop: 2 }}>{o.sub}</div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </motion.div>
+                )}
+
+                {step === 3 && (
+                  <motion.div key="step-3" variants={variants} initial="initial" animate="animate" exit="exit" style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+                    <div style={{ color: 'var(--silver, #A8B4C0)', fontSize: '0.85rem', fontWeight: 800, letterSpacing: '0.04em', textTransform: 'uppercase', marginBottom: 12 }}>
+                      Step 4 of 4
+                    </div>
+                    <h3 style={{ margin: '0 0 16px 0', fontSize: '1.25rem', fontWeight: 800 }}>What is your budget appetite?</h3>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                      {[
+                        { v: 'conservative', label: 'Conservative', sub: 'Prioritize single, foundational compounds' },
+                        { v: 'standard', label: 'Standard', sub: 'Balanced recommendations' },
+                        { v: 'unlimited', label: 'Unlimited', sub: 'Show me the absolute best, regardless of price' },
+                      ].map(o => {
+                        const active = state.budget === o.v;
+                        return (
+                          <button
+                            key={o.v}
+                            type="button"
+                            onClick={() => setState(s => ({ ...s, budget: o.v as any }))}
                             style={{
                               textAlign: 'left',
                               padding: '14px 16px',
@@ -1315,7 +1400,7 @@ export default function DiscoveryHero({
           setWizardOpen(false);
           const goal = `${labelForArea(s.area)} Research`;
           void runMatch(
-            { goal, evidenceComfort: s.comfort, preference: s.preference },
+            { goal, evidenceComfort: s.comfort, preference: s.preference, budget: s.budget },
             buildGoalFromWizard(s),
           );
         }}

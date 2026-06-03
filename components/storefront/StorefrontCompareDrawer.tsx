@@ -149,13 +149,10 @@ export default function StorefrontCompareDrawer({
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  useEffect(() => {
-    if (mobileViewIndex >= pinned.length && pinned.length > 1) {
-      setMobileViewIndex(pinned.length - 1);
-    }
-  }, [pinned.length, mobileViewIndex]);
+
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setMounted(true);
     setPinned(readPinned());
 
@@ -251,7 +248,7 @@ export default function StorefrontCompareDrawer({
         glossaryTerm?: string;
         bestLogic?: 'max' | 'min';
         getRawScore?: (p: PinnedItem) => number;
-        getValue: (p: PinnedItem) => any; 
+        getValue: (p: PinnedItem) => unknown; 
         render: (p: PinnedItem) => React.ReactNode 
       };
 
@@ -405,8 +402,13 @@ export default function StorefrontCompareDrawer({
   if (pinned.length === 0) return null;
   if (typeof document === 'undefined') return null;
 
+  let clampedMobileIndex = mobileViewIndex;
+  if (clampedMobileIndex >= pinned.length && pinned.length > 1) {
+    clampedMobileIndex = pinned.length - 1;
+  }
+
   const displayedPinned = isMobile && pinned.length > 1 
-    ? [pinned[0], pinned[mobileViewIndex]] 
+    ? [pinned[0], pinned[clampedMobileIndex]] 
     : pinned;
 
   const activeSynergies = KNOWN_SYNERGIES.filter(syn => 
@@ -759,9 +761,9 @@ export default function StorefrontCompareDrawer({
                       const allSame = values.every(v => v === values[0]);
                       const isDiff = !allSame && displayedPinned.length > 1;
 
-                      let trStyle: React.CSSProperties = { transition: 'background 0.2s' };
-                      let tdLabelStyle: React.CSSProperties = { ...labelCellStyle, background: '#0F161E', transition: 'color 0.2s' };
-                      let valueCellStyle: React.CSSProperties = { ...cellStyle, transition: 'opacity 0.2s' };
+                      const trStyle: React.CSSProperties = { transition: 'background 0.2s' };
+                      const tdLabelStyle: React.CSSProperties = { ...labelCellStyle, background: '#0F161E', transition: 'color 0.2s' };
+                      const valueCellStyle: React.CSSProperties = { ...cellStyle, transition: 'opacity 0.2s' };
 
                       if (diffMode) {
                         if (isDiff) {
@@ -774,7 +776,7 @@ export default function StorefrontCompareDrawer({
                       }
 
                       // Winner Engine Calculation
-                      let bestIndices: number[] = [];
+                      const bestIndices: number[] = [];
                       if (row.bestLogic && displayedPinned.length > 1 && !allSame) {
                         const scores = displayedPinned.map(p => row.getRawScore ? row.getRawScore(p) : 0);
                         const validScores = scores.filter(s => typeof s === 'number' && !isNaN(s) && s !== Infinity);
