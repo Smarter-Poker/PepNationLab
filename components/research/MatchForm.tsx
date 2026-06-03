@@ -101,11 +101,17 @@ function MatchFormInner() {
   const searchParams = useSearchParams();
 
   const goalOptions = useMemo(() => {
-    return Object.keys(RESEARCH_AREAS).map(key => ({
+    const opts = Object.keys(RESEARCH_AREAS).map(key => ({
       value: key,
       label: RESEARCH_AREAS[key as keyof typeof RESEARCH_AREAS].label,
       blurb: RESEARCH_AREAS[key as keyof typeof RESEARCH_AREAS].blurb
     }));
+    opts.unshift({ 
+      value: 'any', 
+      label: 'Any Goal (Explore All)', 
+      blurb: 'Do not restrict by a specific research area. Explore top compounds by evidence tier.' 
+    });
+    return opts;
   }, []);
 
   const [goal, setGoal] = useState<string>(searchParams.get('goal') || goalOptions[0]?.value || 'tissue_repair');

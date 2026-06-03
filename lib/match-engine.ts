@@ -222,11 +222,13 @@ function buildRationale(
   keywordHit: boolean,
 ): string {
   const tier = evidenceLabel(c.evidence_tier);
-  const reason = taggedHit
-    ? `Tagged In Research Area ${goalLabel(goal)}`
-    : keywordHit
-      ? `Studied For Topics Related To ${goalLabel(goal)}`
-      : `Related To ${goalLabel(goal)}`;
+  const reason = goal === 'any'
+    ? 'Matches Explore Criteria'
+    : taggedHit
+      ? `Tagged In Research Area ${goalLabel(goal)}`
+      : keywordHit
+        ? `Studied For Topics Related To ${goalLabel(goal)}`
+        : `Related To ${goalLabel(goal)}`;
   const tail =
     c.plain_summary && c.plain_summary.length > 0
       ? c.plain_summary.split('.')[0].trim()
@@ -253,15 +255,22 @@ function scoreOne(input: MatchInput, c: Compound): { score: number; rationale: s
   let score = 0;
   const breakdown: ScoreBreakdown = { base: 0, keyword: 0, evidenceBonus: 0, classBonus: 0 };
 
-  // +50 for an exact research-area tag match.
-  const taggedHit = Array.isArray(c.research_areas) && c.research_areas.includes(input.goal);
+  // +50 for an exact research-area tag match (or 'any' goal grants base +50 to all).
+  const taggedHit = input.goal === 'any' || (Array.isArray(c.research_areas) && c.research_areas.includes(input.goal));
   if (taggedHit) {
     score += 50;
     breakdown.base = 50;
   }
 
   // +20 if the goal's keywords appear in category / class / mechanism / studied_for.
-  const keywordBonus = goalMentionsBonus(input.goal, c);
+  let keywordBonus = 0;
+  if (input.goal === 'any') {
+    // If 'any' is selected, everyone gets a free keyword bump to level the playing field.
+    keywordBonus = 20;
+  } else {
+    keywordBonus = goalMentionsBonus(input.goal, c);
+  }
+  
   if (keywordBonus > 0) {
     score += keywordBonus;
     breakdown.keyword = keywordBonus;

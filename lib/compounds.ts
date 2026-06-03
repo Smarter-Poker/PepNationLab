@@ -98,10 +98,10 @@ export const RESEARCH_AREAS: Record<string, { label: string; blurb: string }> = 
   gut_health: { label: 'Gut Health & GI Repair', blurb: 'Mucosal repair, tight-junction integrity, and GI cytoprotection literature (BPC-157, KPV, VIP).' },
   pain_inflammation: { label: 'Pain & Inflammation', blurb: 'Cross-class anti-inflammatory and analgesic mechanisms (BPC-157, TB-500, LL-37, ARA-290).' },
   bone_joint: { label: 'Joint & Bone Support', blurb: 'Bone density, cartilage maintenance, and joint repair pathways (BPC-157, TB-500, GHK-Cu, IGF-1).' },
-  sexual_health: { label: 'Sexual Health & Hormones', blurb: 'Compounds studied for reproductive and sexual-health pathways.' },
-  performance: { label: 'Performance', blurb: 'Compounds studied for the growth-hormone and anabolic axes.' },
-  sleep: { label: 'Sleep', blurb: 'Compounds studied for sleep and circadian regulation.' },
-  mitochondrial: { label: 'Mitochondrial', blurb: 'Compounds studied for mitochondrial function and energy.' },
+  sexual_health: { label: 'Sexual Health & Libido', blurb: 'Compounds studied for arousal, erectile function, and libido (PT-141, Kisspeptin).' },
+  performance: { label: 'Performance & Muscle', blurb: 'Growth hormone secretagogues and anabolic pathways (Ipamorelin, Tesamorelin, CJC-1295).' },
+  sleep: { label: 'Sleep & Circadian', blurb: 'Compounds studied for sleep architecture and circadian rhythms (Epitalon, DSIP).' },
+  mitochondrial: { label: 'Mitochondrial Function', blurb: 'Energy, mitophagy, and cellular optimization (MOTS-c, SS-31, 5-Amino-1MQ).' },
 };
 
 export function evidenceTier(tier: string) {

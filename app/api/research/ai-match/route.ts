@@ -11,7 +11,7 @@ const RESPONSE_SCHEMA = {
   properties: {
     goal: {
       type: Type.STRING,
-      description: `The best matching research area. Must be one of the following exact keys: ${Object.keys(RESEARCH_AREAS).join(', ')}. If none match perfectly, choose the closest or default to 'healing'.`,
+      description: `The best matching research area. Must be one of the following exact keys: ${Object.keys(RESEARCH_AREAS).join(', ')}, or 'any'. If they want a general overview or don't specify a goal, use 'any'. If none match perfectly, choose the closest or default to 'any'.`,
     },
     evidenceComfort: {
       type: Type.STRING,
