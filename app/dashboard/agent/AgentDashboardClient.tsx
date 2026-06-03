@@ -28,6 +28,7 @@ import PaymentMethodsPanel from '@/components/PaymentMethodsPanel';
 import AvatarUpload from '@/components/AvatarUpload';
 import { createPortal } from 'react-dom';
 import MyQRCodeModal from '@/components/MyQRCodeModal';
+import { useAvailability, availabilityMessage } from '@/lib/useAvailability';
 
 
 interface Profile {
@@ -181,6 +182,14 @@ export default function AgentDashboardClient({
   const [crLastName, setCrLastName] = useState('');
   const [crUsername, setCrUsername] = useState('');
   const [crPassword, setCrPassword] = useState('');
+  // R36: live username availability check for the Create Researcher modal.
+  // Mirrors the pattern used by the public storefront register form.
+  const crUsernameCheck = useAvailability({ field: 'username', value: crUsername, minLength: 2 });
+  const crUsernameMsg = availabilityMessage(crUsernameCheck);
+  const crUsernameBlocked =
+    crUsernameCheck.status === 'taken' ||
+    crUsernameCheck.status === 'reserved' ||
+    crUsernameCheck.status === 'invalid';
   const [crLoading, setCrLoading] = useState(false);
   const [crError, setCrError] = useState('');
   const [crSuccess, setCrSuccess] = useState('');
@@ -861,7 +870,7 @@ export default function AgentDashboardClient({
                       {/* Submit button at the very top middle */}
                       <button
                         type="submit"
-                        disabled={crLoading}
+                        disabled={crLoading || crUsernameBlocked || crUsernameCheck.status === 'checking'}
                         style={{
                           width: '80%',
                           margin: '0 auto 20px auto',
@@ -889,7 +898,7 @@ export default function AgentDashboardClient({
                           e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.06)';
                         }}
                       >
-                        {crLoading ? 'Creating Account...' : 'Create Researcher Account'}
+                        {crLoading ? 'Creating Account...' : (crUsernameBlocked ? 'Pick A Different Username' : (crUsernameCheck.status === 'checking' ? 'Checking Username…' : 'Create Researcher Account'))}
                       </button>
 
                       {/* R31: First + Last Name — top-aligned grid */}
@@ -964,10 +973,16 @@ export default function AgentDashboardClient({
                           autoCapitalize="none"
                           spellCheck={false}
                           placeholder=""
+                          aria-invalid={crUsernameBlocked || undefined}
+                          aria-describedby="cr-username-status"
                           style={{
                             width: '100%', boxSizing: 'border-box',
                             background: 'linear-gradient(180deg, #0a0c14 0%, #0d1018 100%)',
-                            border: '1px solid #2a3045',
+                            border: '1px solid ' + (
+                              crUsernameCheck.status === 'available' ? '#34D399'
+                              : crUsernameBlocked ? '#FC8181'
+                              : '#2a3045'
+                            ),
                             borderRadius: 8,
                             padding: '13px 14px',
                             color: '#ffffff',
@@ -976,9 +991,61 @@ export default function AgentDashboardClient({
                             boxShadow: 'inset 0 2px 6px rgba(0,0,0,0.7), inset 0 1px 3px rgba(0,0,0,0.5)',
                             caretColor: '#00C4BC',
                           }}
-                          onFocus={e => { e.currentTarget.style.border = '1px solid #00C4BC'; }}
-                          onBlur={e => { e.currentTarget.style.border = '1px solid #2a3045'; }}
+                          onFocus={e => {
+                            if (crUsernameCheck.status !== 'available' && !crUsernameBlocked) {
+                              e.currentTarget.style.border = '1px solid #00C4BC';
+                            }
+                          }}
+                          onBlur={e => {
+                            if (crUsernameCheck.status === 'available') e.currentTarget.style.border = '1px solid #34D399';
+                            else if (crUsernameBlocked) e.currentTarget.style.border = '1px solid #FC8181';
+                            else e.currentTarget.style.border = '1px solid #2a3045';
+                          }}
                         />
+                        {/* Live availability status row — green/red/amber/silver */}
+                        {crUsernameMsg && (
+                          <div
+                            id="cr-username-status"
+                            role="status"
+                            aria-live="polite"
+                            style={{
+                              marginTop: 6,
+                              fontSize: '0.78rem',
+                              color: crUsernameMsg.color,
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: 6,
+                              lineHeight: 1.3,
+                            }}
+                          >
+                            {crUsernameMsg.tone === 'success' && (
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={crUsernameMsg.color} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                                <polyline points="20 6 9 17 4 12" />
+                              </svg>
+                            )}
+                            {crUsernameMsg.tone === 'error' && (
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={crUsernameMsg.color} strokeWidth="3" strokeLinecap="round" aria-hidden>
+                                <line x1="18" y1="6" x2="6" y2="18" />
+                                <line x1="6" y1="6" x2="18" y2="18" />
+                              </svg>
+                            )}
+                            {crUsernameMsg.tone === 'warn' && (
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={crUsernameMsg.color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                                <line x1="12" y1="9" x2="12" y2="13" />
+                                <circle cx="12" cy="17" r="0.5" />
+                              </svg>
+                            )}
+                            {crUsernameMsg.tone === 'info' && (
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={crUsernameMsg.color} strokeWidth="2" strokeLinecap="round" aria-hidden>
+                                <circle cx="12" cy="12" r="9" />
+                                <line x1="12" y1="7" x2="12" y2="13" />
+                                <circle cx="12" cy="17" r="0.5" />
+                              </svg>
+                            )}
+                            <span>{crUsernameMsg.text}</span>
+                          </div>
+                        )}
                       </div>
 
                       {/* Temporary Password */}
