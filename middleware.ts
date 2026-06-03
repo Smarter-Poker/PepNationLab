@@ -52,6 +52,13 @@ const PUBLIC_ROUTES = [
   // read-only, no dosing. (Shelf-life API is auth-gated, not listed here.)
   '/api/research/ask',
   '/api/research/cart-warnings',
+  // Match Me to a Peptide — public suggestion engine that scores compounds
+  // against the researcher's stated goal + evidence-comfort + WADA filter +
+  // risk tolerance. Same posture as /api/research/ask: read-only, no dosing,
+  // rate-limited inside the route, RESEARCH_NOTE framing on every response.
+  // The page at /research/match already loads anonymously via the `/research`
+  // prefix; this entry lets the form's POST reach the engine.
+  '/api/research/match',
   // R28.5: FAQ click beacon. The route handler has its own per-IP rate limit
   // (60/min), validates faqId against an allow-list built from FAQ_ITEMS,
   // and writes via the service-role client. Listed here so a sendBeacon()
