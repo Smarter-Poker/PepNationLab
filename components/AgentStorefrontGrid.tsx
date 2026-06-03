@@ -8,6 +8,7 @@ import { Star, X, Heart, FileText, Search, SlidersHorizontal, RotateCcw, Check }
 import RecommendationStrip, { type RecommendationItem } from './RecommendationStrip';
 import ProductMonograph from './research/ProductMonograph';
 import DiscoveryHero, { type MatchedProduct } from './storefront/StorefrontDiscovery';
+import ProductModalEnhancements, { ClickableCategoryBadge, type ModalGroupedProductRef } from './storefront/ProductModalEnhancements';
 import { evidenceTier, type Compound } from '@/lib/compounds';
 import { getProductImage, toTitleCase } from '@/lib/categoryImage';
 import PeptideVialCard from '@/components/PeptideVialCard';
@@ -1900,14 +1901,14 @@ export default function AgentStorefrontGrid({
                         </span>
                       );
                     })()}
-                    <span style={{
-                      fontSize: '0.7rem', padding: '4px 12px', borderRadius: 'var(--radius-full)',
-                      background: `${primaryColor}20`, color: primaryColor, fontWeight: 700,
-                      textTransform: 'uppercase', letterSpacing: '0.05em', whiteSpace: 'nowrap',
-                      border: `1px solid ${primaryColor}40`
-                    }}>
-                      {detailProduct.category}
-                    </span>
+                    <ClickableCategoryBadge
+                      category={detailProduct.category}
+                      primaryColor={primaryColor}
+                      onClick={() => {
+                        setFilterCategory(detailProduct.category);
+                        setDetailProduct(null);
+                      }}
+                    />
                     {detailProduct.variants.some(v => (v as any).is_on_sale) && (
                       <span style={{
                         fontSize: '0.7rem', padding: '4px 12px', borderRadius: 'var(--radius-full)',
@@ -2189,6 +2190,40 @@ export default function AgentStorefrontGrid({
                   );
                 })()}
 
+                <ProductModalEnhancements
+                  currentCompound={detailProduct.compoundSlug ? (compoundsBySlug?.[detailProduct.compoundSlug] ?? null) : null}
+                  currentCompoundSlug={detailProduct.compoundSlug ?? null}
+                  currentProductName={detailProduct.name}
+                  currentBundlePriceDollars={detailProduct.lowestPrice ?? null}
+                  grouped={grouped.map<ModalGroupedProductRef>((g) => ({
+                    name: g.name,
+                    category: g.category,
+                    imageUrl: g.imageUrl,
+                    lowestPrice: g.lowestPrice,
+                    defaultVariantId: g.defaultVariantId,
+                    compoundSlug: g.compoundSlug,
+                  }))}
+                  compoundsBySlug={compoundsBySlug || {}}
+                  primaryColor={primaryColor}
+                  onOpenProductBySlug={(slug) => {
+                    const grp = grouped.find((g) => g.compoundSlug === slug);
+                    if (grp) {
+                      setDetailProduct(grp);
+                      setPendingQty(isStorefrontOwner ? Math.max(10, selfBuyMin) : selfBuyMin);
+                    }
+                  }}
+                  onOpenProductByName={(name) => {
+                    const grp = grouped.find((g) => g.name === name);
+                    if (grp) {
+                      setDetailProduct(grp);
+                      setPendingQty(isStorefrontOwner ? Math.max(10, selfBuyMin) : selfBuyMin);
+                    }
+                  }}
+                  onAddVariantToCart={(variantId, qty) => {
+                    setCartItems((prev) => ({ ...prev, [variantId]: (prev[variantId] || 0) + qty }));
+                    setShowCartFloat(true);
+                  }}
+                />
 
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 'var(--space-3)', marginTop: 'var(--space-5)' }}>
                   <div>
@@ -2269,20 +2304,6 @@ export default function AgentStorefrontGrid({
                       </div>
                     )}
                   </div>
-
-                  <RecommendationStrip
-                    title="Researchers Also Bought"
-                    recommendations={recommendations}
-                    loading={recommendationsLoading}
-                    primaryColor={primaryColor}
-                    onSelect={(pid) => {
-                      const nextGroup = groupByProductId.get(pid);
-                      if (nextGroup) {
-                        setDetailProduct(nextGroup);
-                        setPendingQty(isStorefrontOwner ? Math.max(10, selfBuyMin) : selfBuyMin);
-                      }
-                    }}
-                  />
 
                   <div className="sf-modal-actions">
                     <button

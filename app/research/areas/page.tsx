@@ -3,25 +3,25 @@
 import React from 'react';
 import Link from 'next/link';
 import { RESEARCH_AREAS } from '@/lib/compounds';
-import { ShieldCheck, ChevronRight, Activity, HeartPulse, Flame, Infinity, Sparkles, Brain, Shield, Crosshair, Sun, Bone, Users, PersonStanding, Moon, Dna, Search } from 'lucide-react';
+import { ShieldCheck, ChevronRight, Activity, HeartPulse, Flame, Infinity, Sparkles, Brain, Shield, Target, Sun, Bone, Users, PersonStanding, Moon, Dna, Search } from 'lucide-react';
 import LandingSearchOverlay from '@/components/research/LandingSearchOverlay';
 
 const ICON_MAP: Record<string, React.ReactNode> = {
-  tissue_repair: <Dna size={28} strokeWidth={1.5} />,
-  healing: <HeartPulse size={28} strokeWidth={1.5} />,
-  metabolic: <Flame size={28} strokeWidth={1.5} />,
-  weight_management: <Infinity size={28} strokeWidth={1.5} />,
-  longevity: <Infinity size={28} strokeWidth={1.5} />,
-  cosmetic: <Sparkles size={28} strokeWidth={1.5} />,
-  cognitive: <Brain size={28} strokeWidth={1.5} />,
-  immune: <Shield size={28} strokeWidth={1.5} />,
-  gut_health: <Crosshair size={28} strokeWidth={1.5} />,
-  pain_inflammation: <Sun size={28} strokeWidth={1.5} />,
-  bone_joint: <Bone size={28} strokeWidth={1.5} />,
-  sexual_health: <Users size={28} strokeWidth={1.5} />,
-  performance: <PersonStanding size={28} strokeWidth={1.5} />,
-  sleep: <Moon size={28} strokeWidth={1.5} />,
-  mitochondrial: <Activity size={28} strokeWidth={1.5} />,
+  tissue_repair: <Dna size={26} strokeWidth={1.5} />,
+  healing: <HeartPulse size={26} strokeWidth={1.5} />,
+  metabolic: <Flame size={26} strokeWidth={1.5} />,
+  weight_management: <Infinity size={26} strokeWidth={1.5} />,
+  longevity: <Infinity size={26} strokeWidth={1.5} />,
+  cosmetic: <Sparkles size={26} strokeWidth={1.5} />,
+  cognitive: <Brain size={26} strokeWidth={1.5} />,
+  immune: <Shield size={26} strokeWidth={1.5} />,
+  gut_health: <Target size={26} strokeWidth={1.5} />,
+  pain_inflammation: <Sun size={26} strokeWidth={1.5} />,
+  bone_joint: <Bone size={26} strokeWidth={1.5} />,
+  sexual_health: <Users size={26} strokeWidth={1.5} />,
+  performance: <PersonStanding size={26} strokeWidth={1.5} />,
+  sleep: <Moon size={26} strokeWidth={1.5} />,
+  mitochondrial: <Activity size={26} strokeWidth={1.5} />,
 };
 
 function toTitleCase(str: string) {
@@ -72,7 +72,7 @@ export default function TherapeuticAreasPage() {
           </div>
 
           <Link href="/research/about-areas" style={{ textDecoration: 'none' }}>
-            <div className="nickel-card" style={{
+            <div className="slate-card" style={{
               display: 'flex',
               alignItems: 'center',
               gap: '16px',
@@ -97,9 +97,9 @@ export default function TherapeuticAreasPage() {
 
       {/* Universal Search Integration */}
       <div style={{ position: 'relative', marginBottom: '40px', zIndex: 50 }}>
-        <div className="nickel-card" style={{
+        <div className="slate-card" style={{
           padding: '24px',
-          borderRadius: '16px',
+          borderRadius: '12px',
           display: 'flex',
           flexDirection: 'column',
           gap: '16px'
@@ -108,17 +108,17 @@ export default function TherapeuticAreasPage() {
             <Sparkles size={18} />
             <span>Search For Anything Related To Therapeutic Areas</span>
           </div>
-          <div style={{ position: 'relative', height: '56px' }}>
+          <div style={{ position: 'relative', height: '52px' }}>
             {/* The LandingSearchOverlay relies on absolute positioning inside a relative container. We provide standard positioning. */}
             <LandingSearchOverlay 
               formStyle={{
                 top: 0,
                 left: 0,
-                width: 'calc(100% - 140px)',
+                width: 'calc(100% - 130px)',
                 height: '100%',
-                backgroundColor: '#0a1017',
-                border: '1px solid rgba(255,255,255,0.08)',
-                borderRadius: '12px',
+                backgroundColor: '#0a0e14',
+                border: '1px solid rgba(255,255,255,0.05)',
+                borderRadius: '8px',
               }}
               buttonStyle={{
                 top: 0,
@@ -126,14 +126,15 @@ export default function TherapeuticAreasPage() {
                 left: 'auto',
                 width: '120px',
                 height: '100%',
-                backgroundColor: '#d6c4a5', // metallic gold/nickel accent for Ask button
-                borderRadius: '12px',
+                backgroundColor: '#e6d3ba', // metallic gold/beige accent for Ask button
+                borderRadius: '8px',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                color: '#000',
+                color: '#1a1e24',
                 fontWeight: 800,
-                fontSize: '1.05rem'
+                fontSize: '1.05rem',
+                border: 'none',
               }}
               resultsStyle={{
                 top: 'calc(100% + 8px)',
@@ -157,7 +158,7 @@ export default function TherapeuticAreasPage() {
               fontWeight: 800,
               zIndex: 25,
             }}>
-              <Search size={16} /> Ask
+              <Search size={18} strokeWidth={2.5} /> Ask
             </div>
           </div>
         </div>
@@ -182,40 +183,20 @@ export default function TherapeuticAreasPage() {
           }
         }
         
-        /* Premium Thick Brushed Nickel */
-        .nickel-card {
-          background: linear-gradient(160deg, #2b303a 0%, #1e2229 50%, #13161c 100%);
-          border-top: 1px solid rgba(255, 255, 255, 0.12);
-          border-left: 1px solid rgba(255, 255, 255, 0.06);
-          border-right: 1px solid rgba(0, 0, 0, 0.8);
-          border-bottom: 2px solid rgba(0, 0, 0, 0.9);
-          box-shadow: 
-            inset 0 1px 0 rgba(255, 255, 255, 0.05),
-            0 8px 24px rgba(0,0,0,0.6);
+        /* Dark Slate Card mimicking the image */
+        .slate-card {
+          background: #1c1f26; /* Deep slate blue/grey */
+          border: 1px solid rgba(255, 255, 255, 0.04);
+          box-shadow: 0 4px 20px rgba(0,0,0,0.3);
           position: relative;
           overflow: hidden;
-          transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+          transition: all 0.2s ease;
         }
         
-        .nickel-card::before {
-          content: '';
-          position: absolute;
-          top: 0; left: -150%; width: 50%; height: 100%;
-          background: linear-gradient(to right, rgba(255,255,255,0) 0%, rgba(255,255,255,0.03) 50%, rgba(255,255,255,0) 100%);
-          transform: skewX(-25deg);
-          transition: all 0.6s ease;
-        }
-        
-        .nickel-card:hover {
-          transform: translateY(-4px);
-          box-shadow: 
-            inset 0 1px 0 rgba(255, 255, 255, 0.1),
-            0 12px 32px rgba(0,0,0,0.8);
-          border-top: 1px solid rgba(255, 255, 255, 0.2);
-        }
-        
-        .nickel-card:hover::before {
-          left: 200%;
+        .slate-card:hover {
+          background: #20242c;
+          border-color: rgba(255, 255, 255, 0.08);
+          box-shadow: 0 6px 24px rgba(0,0,0,0.4);
         }
 
         .area-card {
@@ -225,23 +206,33 @@ export default function TherapeuticAreasPage() {
           text-align: center;
           gap: 12px;
           padding: 32px 24px;
-          border-radius: 16px;
+          border-radius: 12px;
           text-decoration: none;
           height: 100%;
         }
         
         .icon-circle {
-          width: 64px;
-          height: 64px;
+          width: 56px;
+          height: 56px;
           border-radius: 50%;
-          background: #0a1017;
-          border: 1px solid rgba(0, 196, 188, 0.3);
+          background: #0d1219;
+          border: 1px solid rgba(0, 196, 188, 0.15);
           display: flex;
           align-items: center;
-          justifyContent: center;
+          justify-content: center;
           margin-bottom: 8px;
           color: #00C4BC;
-          box-shadow: inset 0 4px 12px rgba(0,0,0,0.5), 0 4px 12px rgba(0,196,188,0.15);
+          box-shadow: 
+            inset 0 0 15px rgba(0, 196, 188, 0.1), 
+            0 0 20px rgba(0, 196, 188, 0.05);
+          transition: all 0.3s ease;
+        }
+        
+        .area-card:hover .icon-circle {
+          box-shadow: 
+            inset 0 0 20px rgba(0, 196, 188, 0.2), 
+            0 0 30px rgba(0, 196, 188, 0.1);
+          transform: scale(1.05);
         }
       `}</style>
       
@@ -253,15 +244,15 @@ export default function TherapeuticAreasPage() {
               <Link
                 key={key}
                 href={`/research/area/${key}`}
-                className="nickel-card area-card"
+                className="slate-card area-card"
               >
-                <div className="icon-circle" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-                  {ICON_MAP[key] || <Activity size={28} strokeWidth={1.5} />}
+                <div className="icon-circle">
+                  {ICON_MAP[key] || <Activity size={26} strokeWidth={1.5} />}
                 </div>
-                <span style={{ fontSize: '1.1rem', fontWeight: 800, color: '#FFFFFF', letterSpacing: '0.02em' }}>
+                <span style={{ fontSize: '1.15rem', fontWeight: 800, color: '#FFFFFF', letterSpacing: '0.01em' }}>
                   {toTitleCase(meta.label)}
                 </span>
-                <span style={{ fontSize: '0.85rem', color: '#A8B4C0', lineHeight: 1.5 }}>
+                <span style={{ fontSize: '0.85rem', color: '#8b96a5', lineHeight: 1.5, padding: '0 4px' }}>
                   {toTitleCase(meta.blurb)}
                 </span>
               </Link>
