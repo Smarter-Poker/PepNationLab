@@ -411,10 +411,6 @@ export default function StorefrontCompareDrawer({
     ];
   }, [compoundsBySlug, primaryColor]);
 
-  if (!mounted) return null;
-  if (pinned.length === 0) return null;
-  if (typeof document === 'undefined') return null;
-
   let clampedMobileIndex = mobileViewIndex;
   if (clampedMobileIndex >= pinned.length && pinned.length > 1) {
     clampedMobileIndex = pinned.length - 1;
@@ -423,10 +419,6 @@ export default function StorefrontCompareDrawer({
   const displayedPinned = isMobile && pinned.length > 1 
     ? [pinned[0], pinned[clampedMobileIndex]] 
     : pinned;
-
-  const activeSynergies = KNOWN_SYNERGIES.filter(syn => 
-    syn.pairs.every(slug => pinned.some(p => p.compoundSlug === slug))
-  );
 
   const maxHalfLife = useMemo(() => {
     return Math.max(...displayedPinned.map(p => {
@@ -504,6 +496,14 @@ export default function StorefrontCompareDrawer({
       }
     ];
   }, [pinned, compoundsBySlug, maxCitations, maxHalfLife]);
+
+  if (!mounted) return null;
+  if (pinned.length === 0) return null;
+  if (typeof document === 'undefined') return null;
+
+  const activeSynergies = KNOWN_SYNERGIES.filter(syn => 
+    syn.pairs.every(slug => pinned.some(p => p.compoundSlug === slug))
+  );
 
   return createPortal(
     <>

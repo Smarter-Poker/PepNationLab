@@ -230,10 +230,12 @@ function MatchResultsDrawer({
 
   useEffect(() => {
     if (!open) {
-      setFilterOralOnly(false);
-      setFilterHumanOnly(false);
-      setCompareIds([]);
-      setCompareOpen(false);
+      setTimeout(() => {
+        setFilterOralOnly(false);
+        setFilterHumanOnly(false);
+        setCompareIds([]);
+        setCompareOpen(false);
+      }, 0);
       return;
     }
     const prev = document.body.style.overflow;
@@ -301,9 +303,9 @@ function MatchResultsDrawer({
               width: '100%', maxWidth: 760,
               background: 'rgba(15, 20, 25, 0.85)',
               borderTopLeftRadius: 24, borderTopRightRadius: 24,
-              borderTop: '1px solid rgba(255,255,255,0.1)',
-              borderLeft: '1px solid rgba(255,255,255,0.1)',
-              borderRight: '1px solid rgba(255,255,255,0.1)',
+              borderTop: '6px solid #E2E8F0',
+              borderLeft: '6px solid #E2E8F0',
+              borderRight: '6px solid #E2E8F0',
               boxShadow: `0 0 40px ${primaryColor}22`,
               maxHeight: 'calc(100dvh - 56px)',
               display: 'flex', flexDirection: 'column',
@@ -397,7 +399,7 @@ function MatchResultsDrawer({
                 <div style={{ padding: '64px 24px', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 24 }}>
                   <div style={{
                     width: 60, height: 60, borderRadius: '50%',
-                    border: '3px solid rgba(0, 196, 188, 0.1)',
+                    border: '3px solid rgba(192, 197, 206, 0.2)',
                     borderTopColor: '#C0C5CE',
                     animation: 'spin 1s linear infinite',
                   }} />
@@ -448,7 +450,7 @@ function MatchResultsDrawer({
                   <Sparkles size={48} color={primaryColor} style={{ marginBottom: 16, opacity: 0.5 }} />
                   <h3 style={{ color: '#FFF', fontSize: '1.2rem', fontWeight: 800, marginBottom: 8 }}>0 Matches Found</h3>
                   <p style={{ color: '#A8B4C0', marginBottom: 24, lineHeight: 1.5 }}>
-                    We couldn't find a protocol matching all of your strict constraints (e.g. Oral-Only, Low-Risk, WADA-Permitted).
+                    We couldn&apos;t find a protocol matching all of your strict constraints (e.g. Oral-Only, Low-Risk, WADA-Permitted).
                   </p>
                   <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', justifyContent: 'center' }}>
                     <button type="button" onClick={() => setFilterOralOnly(false)} style={{ padding: '10px 16px', background: 'rgba(255,255,255,0.1)', color: '#FFF', border: 'none', borderRadius: 8, cursor: 'pointer', fontWeight: 600 }}>Drop Oral-Only</button>
@@ -1063,7 +1065,7 @@ function GuidedDiscoveryWizard({
                           <button
                             key={o.v}
                             type="button"
-                            onClick={() => setState(s => ({ ...s, budget: o.v as any }))}
+                            onClick={() => setState(s => ({ ...s, budget: o.v as 'conservative' | 'standard' | 'unlimited' }))}
                             style={{
                               textAlign: 'left',
                               padding: '14px 16px',

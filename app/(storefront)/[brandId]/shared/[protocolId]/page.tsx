@@ -55,7 +55,7 @@ export default async function SharedProtocolPage({
   return (
     <main style={{ minHeight: '100dvh', background: '#0A1018', color: '#FFF' }}>
       <div style={{ maxWidth: 800, margin: '0 auto', padding: '40px 20px' }}>
-        <h1 style={{ fontSize: '2rem', fontWeight: 900, marginBottom: 8, color: config.primary_color || '#00C4BC' }}>
+        <h1 style={{ fontSize: '2rem', fontWeight: 900, marginBottom: 8, color: config.primary_color || '#C0C5CE' }}>
           Shared AI Match Protocol
         </h1>
         <p style={{ color: '#A8B4C0', fontSize: '1.1rem', marginBottom: 40, lineHeight: 1.5 }}>
@@ -85,7 +85,7 @@ export default async function SharedProtocolPage({
                       )}
                     </div>
                   </div>
-                  <div style={{ fontSize: '1.25rem', fontWeight: 900, color: config.primary_color || '#00C4BC' }}>
+                  <div style={{ fontSize: '1.25rem', fontWeight: 900, color: config.primary_color || '#C0C5CE' }}>
                     ${(product.retail_price / 100).toFixed(2)}
                   </div>
                 </div>
@@ -106,7 +106,7 @@ export default async function SharedProtocolPage({
                 <a 
                   href={`/${brandId}?add=${product.id}`}
                   style={{
-                    display: 'inline-flex', padding: '12px 24px', background: config.primary_color || '#00C4BC',
+                    display: 'inline-flex', padding: '12px 24px', background: config.primary_color || '#C0C5CE',
                     color: '#0A1018', fontWeight: 800, borderRadius: 12, textDecoration: 'none'
                   }}
                 >
@@ -134,7 +134,7 @@ export default async function SharedProtocolPage({
         <div style={{ marginTop: 48, textAlign: 'center' }}>
           <a 
             href={`/${brandId}`}
-            style={{ color: config.primary_color || '#00C4BC', fontWeight: 700, textDecoration: 'none' }}
+            style={{ color: config.primary_color || '#C0C5CE', fontWeight: 700, textDecoration: 'none' }}
           >
             ← Back to Storefront
           </a>
