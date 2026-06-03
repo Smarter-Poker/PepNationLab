@@ -17,7 +17,7 @@ import AgentOverview from '@/components/AgentOverview';
 import AgentStorefrontConfig from '@/components/AgentStorefrontConfig';
 import AgentOrders from '@/components/AgentOrders';
 import AgentBundles from '@/components/AgentBundles';
-import AgentResearcherCRM from '@/components/AgentResearcherCRM';
+import AgentResearcherCRMv2 from '@/components/AgentResearcherCRMv2';
 import AgentNetworkMap from '@/components/AgentNetworkMap';
 import AgentSetupChecklist from '@/components/AgentSetupChecklist';
 import MessageBell from '@/components/MessageBell';
@@ -1153,7 +1153,12 @@ export default function AgentDashboardClient({
               </div>
 
               {/* Full CRM */}
-              <AgentResearcherCRM />
+              <AgentResearcherCRMv2
+                isSuperAgent={userProfile.is_super_agent}
+                onResetPassword={setResetPwUser}
+                onPromote={setPromoteResearcher}
+                onToggleAutoApprove={handleToggleTrust}
+              />
             </div>
           </div>
         )}

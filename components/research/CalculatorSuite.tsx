@@ -407,7 +407,7 @@ function PoolingSection() {
       />
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 12 }}>
         <div>
-          <label style={labelStyle}>Vial Mass (mg)</label>
+          <label style={labelStyle}>Per-Vial Mass (mg)</label>
           <input style={inputStyle} type="number" value={mass} onChange={(e) => setMass(e.target.value)} />
         </div>
         <div>
@@ -600,15 +600,6 @@ function SppsSection() {
     }
     return [...chars];
   }, [cleanSppsSeq]);
-
-  const cleanSeq = seq.replace(/\s+/g, '').toUpperCase();
-  const unknownChars = useMemo(() => {
-    const chars = new Set<string>();
-    for (const c of cleanSeq) {
-      if (!STANDARD_AA.has(c)) chars.add(c);
-    }
-    return [...chars];
-  }, [cleanSeq]);
 
   const out = estimateFmocSppsCost({
     sequence: seq,
