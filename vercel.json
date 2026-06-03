@@ -1,100 +1,40 @@
 {
   "crons": [
-    {
-      "path": "/api/cron/abandoned-cart-recovery",
-      "schedule": "0 */6 * * *"
-    },
-    {
-      "path": "/api/cron/cancel-stale-pending",
-      "schedule": "45 3 * * *"
-    },
-    {
-      "path": "/api/cron/coupons-expire",
-      "schedule": "15 4 * * *"
-    },
-    {
-      "path": "/api/cron/idempotency-sweep",
-      "schedule": "30 3 * * *"
-    },
-    {
-      "path": "/api/cron/invoices",
-      "schedule": "59 5 * * 1"
-    },
-    {
-      "path": "/api/cron/label-jobs",
-      "schedule": "*/5 * * * *"
-    },
-    {
-      "path": "/api/cron/push-dispatch",
-      "schedule": "*/5 * * * *"
-    },
-    {
-      "path": "/api/cron/recommendations-refresh",
-      "schedule": "0 4 * * *"
-    },
-    {
-      "path": "/api/cron/refill-reminders",
-      "schedule": "0 15 * * *"
-    },
-    {
-      "path": "/api/cron/tier-recompute",
-      "schedule": "0 8 * * *"
-    },
-    {
-      "path": "/api/cron/referrals-fulfil",
-      "schedule": "30 * * * *"
-    },
-    {
-      "path": "/api/cron/reminders",
-      "schedule": "0 12 * * *"
-    },
-    {
-      "path": "/api/cron/search-refresh",
-      "schedule": "0 */4 * * *"
-    },
-    {
-      "path": "/api/cron/pubmed-sync",
-      "schedule": "0 3 * * 1"
-    },
-    {
-      "path": "/api/cron/trials-sync",
-      "schedule": "0 4 * * 1"
-    },
-    {
-      "path": "/api/cron/shippo-reconcile",
-      "schedule": "0 22 * * 0"
-    },
-    {
-      "path": "/api/cron/sub-agent-settle",
-      "schedule": "49 5 * * 1"
-    },
-    {
-      "path": "/api/cron/inventory-alerts",
-      "schedule": "0 9 * * *"
-    },
-    {
-      "path": "/api/cron/webhooks-dispatch",
-      "schedule": "*/5 * * * *"
-    },
-    {
-      "path": "/api/messenger/cron/cleanup-presence",
-      "schedule": "*/5 * * * *"
-    },
-    {
-      "path": "/api/messenger/cron/expire-messages",
-      "schedule": "*/5 * * * *"
-    },
-    {
-      "path": "/api/messenger/cron/fire-reminders",
-      "schedule": "* * * * *"
-    },
-    {
-      "path": "/api/messenger/cron/mark-missed-calls",
-      "schedule": "* * * * *"
-    },
-    {
-      "path": "/api/messenger/cron/process-scheduled",
-      "schedule": "* * * * *"
-    }
+    { "path": "/api/cron/abandoned-cart-recovery", "schedule": "0 */6 * * *" },
+    { "path": "/api/cron/cancel-stale-pending", "schedule": "45 3 * * *" },
+    { "path": "/api/cron/coupons-expire", "schedule": "15 4 * * *" },
+    { "path": "/api/cron/idempotency-sweep", "schedule": "30 3 * * *" },
+    { "path": "/api/cron/invoices", "schedule": "59 5 * * 1" },
+    { "path": "/api/cron/label-jobs", "schedule": "*/5 * * * *" },
+    { "path": "/api/cron/push-dispatch", "schedule": "*/5 * * * *" },
+    { "path": "/api/cron/recommendations-refresh", "schedule": "0 4 * * *" },
+    { "path": "/api/cron/refill-reminders", "schedule": "0 15 * * *" },
+    { "path": "/api/cron/tier-recompute", "schedule": "0 8 * * *" },
+    { "path": "/api/cron/referrals-fulfil", "schedule": "30 * * * *" },
+    { "path": "/api/cron/reminders", "schedule": "0 12 * * *" },
+    { "path": "/api/cron/search-refresh", "schedule": "0 */4 * * *" },
+    { "path": "/api/cron/pubmed-sync", "schedule": "0 3 * * 1" },
+    { "path": "/api/cron/trials-sync", "schedule": "0 4 * * 1" },
+    { "path": "/api/cron/shippo-reconcile", "schedule": "0 22 * * 0" },
+    { "path": "/api/cron/sub-agent-settle", "schedule": "49 5 * * 1" },
+    { "path": "/api/cron/inventory-alerts", "schedule": "0 9 * * *" },
+    { "path": "/api/cron/webhooks-dispatch", "schedule": "*/5 * * * *" },
+    { "path": "/api/messenger/cron/cleanup-presence", "schedule": "*/5 * * * *" },
+    { "path": "/api/messenger/cron/expire-messages", "schedule": "*/5 * * * *" },
+    { "path": "/api/messenger/cron/fire-reminders", "schedule": "* * * * *" },
+    { "path": "/api/messenger/cron/mark-missed-calls", "schedule": "* * * * *" },
+    { "path": "/api/messenger/cron/process-scheduled", "schedule": "* * * * *" },
+    { "path": "/api/cron/uniprot-sync", "schedule": "0 3 * * 2" },
+    { "path": "/api/cron/chembl-sync", "schedule": "0 4 * * 2" },
+    { "path": "/api/cron/fda-drugs-sync", "schedule": "0 5 * * 2" },
+    { "path": "/api/cron/dailymed-sync", "schedule": "0 6 * * 2" },
+    { "path": "/api/cron/wada-archive-sync", "schedule": "0 7 1 * *" },
+    { "path": "/api/cron/patents-sync", "schedule": "0 8 1 * *" },
+    { "path": "/api/cron/rxnorm-sync", "schedule": "0 3 * * 3" },
+    { "path": "/api/cron/europepmc-sync", "schedule": "0 4 * * 3" },
+    { "path": "/api/cron/biorxiv-watch", "schedule": "0 9 * * *" },
+    { "path": "/api/cron/retraction-watch", "schedule": "0 5 * * 3" },
+    { "path": "/api/cron/companion-papers-compute", "schedule": "0 10 * * 0" },
+    { "path": "/api/cron/broken-link-crawler", "schedule": "0 12 * * 6" }
   ]
 }

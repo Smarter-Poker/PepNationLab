@@ -1,0 +1,17 @@
+User-agent: *
+Allow: /
+Allow: /research
+Allow: /research/
+Disallow: /admin
+Disallow: /admin/
+Disallow: /api
+Disallow: /api/
+Disallow: /dashboard
+Disallow: /dashboard/
+Disallow: /checkout
+Disallow: /orders
+Disallow: /messages
+Disallow: /messenger
+Disallow: /account
+
+Sitemap: https://pepnationlab.com/sitemap.xml

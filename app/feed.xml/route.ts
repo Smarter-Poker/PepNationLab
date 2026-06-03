@@ -1,0 +1,95 @@
+/**
+ * GET /feed.xml
+ * RSS feed of the 50 most recent compounds and the 50 most recent
+ * compound_references rows.
+ */
+import { createServiceClient } from '@/lib/supabase/server';
+
+export const dynamic = 'force-dynamic';
+
+const BASE = 'https://pepnationlab.com';
+
+function esc(s: string | null | undefined): string {
+  if (!s) return '';
+  return String(s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function toRfc822(iso: string | null): string {
+  if (!iso) return new Date().toUTCString();
+  const d = new Date(iso);
+  return Number.isNaN(d.getTime()) ? new Date().toUTCString() : d.toUTCString();
+}
+
+export async function GET() {
+  const supabase = await createServiceClient();
+  const items: Array<{ title: string; link: string; pubDate: string; description: string; guid: string }> = [];
+
+  try {
+    const { data: compounds } = await supabase
+      .from('compounds')
+      .select('slug, display_name, plain_summary, created_at')
+      .order('created_at', { ascending: false })
+      .limit(50);
+    for (const c of ((compounds ?? []) as Array<{ slug: string; display_name: string; plain_summary: string | null; created_at: string | null }>)) {
+      items.push({
+        title: `New Compound: ${c.display_name}`,
+        link: `${BASE}/research/compounds/${c.slug}`,
+        pubDate: toRfc822(c.created_at),
+        description: c.plain_summary ?? '',
+        guid: `${BASE}/research/compounds/${c.slug}#compound`,
+      });
+    }
+  } catch {
+    // best-effort
+  }
+
+  try {
+    const { data: refs } = await supabase
+      .from('compound_references')
+      .select('compound_slug, title, source_type, url, added_at')
+      .order('added_at', { ascending: false })
+      .limit(50);
+    for (const r of ((refs ?? []) as Array<{ compound_slug: string; title: string | null; source_type: string; url: string | null; added_at: string | null }>)) {
+      items.push({
+        title: `New Evidence (${r.source_type}): ${r.title ?? r.compound_slug}`,
+        link: r.url ?? `${BASE}/research/compounds/${r.compound_slug}`,
+        pubDate: toRfc822(r.added_at),
+        description: `New ${r.source_type} Reference Added For ${r.compound_slug}.`,
+        guid: `${BASE}/research/compounds/${r.compound_slug}#${r.source_type}-${r.added_at}`,
+      });
+    }
+  } catch {
+    // best-effort
+  }
+
+  const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0">
+  <channel>
+    <title>Pep Nation Lab Research Library</title>
+    <link>${BASE}/research</link>
+    <description>New Compounds And Evidence Updates From The Pep Nation Lab Research Library.</description>
+    <language>en-us</language>
+    <lastBuildDate>${new Date().toUTCString()}</lastBuildDate>
+${items.map((it) => `    <item>
+      <title>${esc(it.title)}</title>
+      <link>${esc(it.link)}</link>
+      <guid isPermaLink="false">${esc(it.guid)}</guid>
+      <pubDate>${it.pubDate}</pubDate>
+      <description>${esc(it.description)}</description>
+    </item>`).join('\n')}
+  </channel>
+</rss>
+`;
+  return new Response(xml, {
+    status: 200,
+    headers: {
+      'Content-Type': 'application/rss+xml; charset=utf-8',
+      'Cache-Control': 'public, max-age=900',
+    },
+  });
+}
