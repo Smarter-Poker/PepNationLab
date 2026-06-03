@@ -7,7 +7,7 @@
 
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { GitCompare, Layers, ShieldCheck } from 'lucide-react';
+import { GitCompare, Layers, ShieldCheck, GraduationCap, BookOpen, HelpCircle } from 'lucide-react';
 import { getAllCompounds } from '@/lib/compounds-server';
 import { RESEARCH_AREAS } from '@/lib/compounds';
 import AskTheLab from '@/components/research/AskTheLab';
@@ -138,25 +138,37 @@ export default async function ResearchLibraryPage() {
           <ShieldCheck size={18} aria-hidden="true" />
           Evidence And Safety
         </Link>
+        <Link
+          href="/research/learn"
+          className="btn-secondary"
+          style={{ display: 'inline-flex', alignItems: 'center', gap: 'var(--space-2, 8px)', textDecoration: 'none' }}
+        >
+          <GraduationCap size={18} aria-hidden="true" />
+          Learn
+        </Link>
+        <Link
+          href="/research/glossary"
+          className="btn-secondary"
+          style={{ display: 'inline-flex', alignItems: 'center', gap: 'var(--space-2, 8px)', textDecoration: 'none' }}
+        >
+          <BookOpen size={18} aria-hidden="true" />
+          Glossary
+        </Link>
+        <Link
+          href="/research/faq"
+          className="btn-secondary"
+          style={{ display: 'inline-flex', alignItems: 'center', gap: 'var(--space-2, 8px)', textDecoration: 'none' }}
+        >
+          <HelpCircle size={18} aria-hidden="true" />
+          FAQ
+        </Link>
       </section>
 
       <section style={{ marginBottom: 'var(--space-7, 48px)' }}>
         <AskTheLab />
       </section>
 
-      <section>
-        <h2
-          style={{
-            fontSize: '1.35rem',
-            fontWeight: 800,
-            color: 'var(--white, #FFFFFF)',
-            marginBottom: 'var(--space-4, 16px)',
-          }}
-        >
-          Browse The Full Catalog
-        </h2>
-        <ResearchBrowser compounds={compounds} />
-      </section>
+      <ResearchBrowser compounds={compounds} />
     </div>
   );
 }
