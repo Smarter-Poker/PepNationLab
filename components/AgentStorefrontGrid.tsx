@@ -9,6 +9,7 @@ import RecommendationStrip, { type RecommendationItem } from './RecommendationSt
 import ProductMonograph from './research/ProductMonograph';
 import DiscoveryHero, { type MatchedProduct } from './storefront/StorefrontDiscovery';
 import ProductModalEnhancements, { ClickableCategoryBadge, type ModalGroupedProductRef } from './storefront/ProductModalEnhancements';
+import StorefrontCompareDrawer from './storefront/StorefrontCompareDrawer';
 import { evidenceTier, type Compound } from '@/lib/compounds';
 import { getProductImage, toTitleCase } from '@/lib/categoryImage';
 import PeptideVialCard from '@/components/PeptideVialCard';
@@ -1035,6 +1036,8 @@ export default function AgentStorefrontGrid({
           return out;
         }}
       />
+
+      <StorefrontCompareDrawer primaryColor={primaryColor} />
 
       {filterArea && (
         <div style={{
@@ -2195,6 +2198,13 @@ export default function AgentStorefrontGrid({
                   currentCompoundSlug={detailProduct.compoundSlug ?? null}
                   currentProductName={detailProduct.name}
                   currentBundlePriceDollars={detailProduct.lowestPrice ?? null}
+                  currentDefaultVariantId={detailProduct.defaultVariantId ?? null}
+                  currentImageUrl={detailProduct.imageUrl ?? null}
+                  currentVialMassMg={(() => {
+                    const v = detailProduct.variants.find(x => x.id === detailProduct.defaultVariantId) || detailProduct.variants[0];
+                    const n = Number(v?.products?.unit_size);
+                    return Number.isFinite(n) && n > 0 ? n : null;
+                  })()}
                   grouped={grouped.map<ModalGroupedProductRef>((g) => ({
                     name: g.name,
                     category: g.category,
