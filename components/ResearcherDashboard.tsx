@@ -580,14 +580,11 @@ export default function ResearcherDashboard({ userId, userName, userEmail, agent
           {tab === 'orders' && (
             <div>
               {loadingOrders ? <Spinner /> : orders.length === 0 ? (
-            <div style={{ 
+            <div className="glass-panel" style={{ 
               textAlign: 'center', 
               padding: '60px 20px', 
               color: 'var(--grey-400)',
-              background: 'linear-gradient(180deg, rgba(11,15,22,0.5) 0%, rgba(18,24,34,0.5) 100%)',
               borderRadius: '21px',
-              border: '1px solid rgba(255,255,255,0.03)',
-              boxShadow: 'inset 0 4px 20px rgba(0,0,0,0.5)',
               marginTop: '16px'
             }}>
               <div style={{ 
@@ -620,20 +617,13 @@ export default function ResearcherDashboard({ userId, userName, userEmail, agent
                     <div
                       key={o.id}
                       style={{
-                        padding: '3px',
                         borderRadius: '18px',
-                        background: 'linear-gradient(145deg, #c8c2b8 0%, #a09890 30%, #8a847c 50%, #a09890 70%, #c8c2b8 100%)',
-                        boxShadow: '0 8px 30px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.35), inset 0 -1px 0 rgba(0,0,0,0.4)',
-                        transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+                        overflow: 'hidden',
+                        marginBottom: '8px'
                       }}
-                      className="hover-lift-metal"
+                      className="glass-panel hover-lift"
                     >
-                      <div style={{
-                        background: 'linear-gradient(180deg, #1a1f2e 0%, #141820 40%, #111520 100%)',
-                        borderRadius: '15px',
-                        boxShadow: 'inset 0 2px 8px rgba(0,0,0,0.6)',
-                        overflow: 'hidden'
-                      }}>
+                      <div>
                       <button onClick={() => setExpandedOrder(expandedOrder === o.id ? null : o.id)}
                         style={{ width: '100%', textAlign: 'left', background: 'none', border: 'none', cursor: 'pointer', padding: 'var(--space-6)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', color: '#fff' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
@@ -766,7 +756,7 @@ export default function ResearcherDashboard({ userId, userName, userEmail, agent
           {tab === 'messages' && (
             <div>
               {agentId ? (
-                <div className="card-metal" style={{ overflow: 'hidden' }}>
+                <div className="glass-panel" style={{ overflow: 'hidden', borderRadius: '16px' }}>
                   <div style={{ padding: '12px 16px', borderBottom: '1px solid rgba(255,255,255,0.04)', background: 'rgba(255,255,255,0.01)' }}>
                     <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#fff', display: 'flex', alignItems: 'center', gap: 8 }}>
                       <svg {...IP}><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
@@ -776,7 +766,7 @@ export default function ResearcherDashboard({ userId, userName, userEmail, agent
                   <Messaging selfId={userId} counterpartId={agentId} counterpartName={agentName || 'Agent'} />
                 </div>
               ) : (
-                <div className="card-metal" style={{ textAlign: 'center', padding: 48 }}>
+                <div className="glass-panel" style={{ textAlign: 'center', padding: 48, borderRadius: '16px' }}>
                   <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 12, opacity: 0.3 }}>
                     <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
                   </div>

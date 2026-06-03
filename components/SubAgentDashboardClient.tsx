@@ -128,7 +128,7 @@ export default function SubAgentDashboardClient({ data, onRefresh }: { data: Ove
               <div style={{ animation: 'fadeIn 0.3s ease-out' }}>
                 <h1 style={{ fontSize: '24px', marginBottom: '16px' }}>Researchers</h1>
                 {data.share_link && (
-                  <div className="card-metal" style={{ padding: '20px', marginBottom: '24px' }}>
+                  <div className="glass-panel stagger-fade-in" style={{ padding: '20px', marginBottom: '24px', borderRadius: '16px' }}>
                     <h2 style={{ fontSize: '18px', marginBottom: '12px' }}>Invite Researchers</h2>
                     <div style={{ background: 'rgba(0,196,188,0.06)', border: '1px solid rgba(0,196,188,0.2)', borderRadius: '8px', padding: '14px' }}>
                       <div style={{ fontSize: '11px', opacity: 0.7, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '6px' }}>Your Referral Link</div>
@@ -149,8 +149,8 @@ export default function SubAgentDashboardClient({ data, onRefresh }: { data: Ove
                     </div>
                   </div>
                 )}
-                <div className="metal-frame">
-                  <div className="metal-content" style={{ padding: 'var(--space-6)' }}>
+                <div className="glass-panel stagger-fade-in" style={{ padding: 'var(--space-6)', borderRadius: '16px' }}>
+                  <div>
                     <div style={{ fontSize: '28px', fontWeight: 700 }}>{data.referred_researchers_count}</div>
                     <div style={{ fontSize: '14px', opacity: 0.7 }}>Total Researchers Tagged To You</div>
                   </div>
@@ -162,8 +162,8 @@ export default function SubAgentDashboardClient({ data, onRefresh }: { data: Ove
             {activeTab === 'Orders' && (
               <div style={{ animation: 'fadeIn 0.3s ease-out' }}>
                 <h1 style={{ fontSize: '24px', marginBottom: '16px' }}>Attributed Orders</h1>
-                <div className="metal-frame">
-                  <div className="metal-content" style={{ padding: 'var(--space-6)' }}>
+                <div className="glass-panel stagger-fade-in" style={{ padding: 'var(--space-6)', borderRadius: '16px' }}>
+                  <div>
                     <h3 style={{ fontSize: '14px', opacity: 0.7, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '16px' }}>Recent Order Activity</h3>
                     {data.recent_orders.length === 0 ? (
                       <p style={{ opacity: 0.7 }}>No orders yet. Start sharing your referral link!</p>

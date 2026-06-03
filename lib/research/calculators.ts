@@ -197,6 +197,7 @@ export function predictHplcRetentionTime(opts: {
   const end = opts.gradientPctBEnd ?? 65;
   const grad = opts.gradientMin ?? 20;
   const c18 = opts.c18Column !== false;
+  if (!isFinite(start) || !isFinite(end) || !isFinite(grad)) return null;
   if (!sequence || typeof sequence !== 'string') return null;
   const seq = sequence.replace(/\s+/g, '').toUpperCase();
   if (!seq.length) return null;
@@ -241,7 +242,9 @@ export function predictMassSpecPeaks(opts: {
   maxCharge?: number;
 }): MassSpecPeak[] {
   const seq = (opts.sequence ?? '').replace(/\s+/g, '').toUpperCase();
-  const maxCharge = Math.min(Math.max(opts.maxCharge ?? 4, 1), 10);
+  const rawCharge = opts.maxCharge ?? 4;
+  if (!isFinite(rawCharge)) return [];
+  const maxCharge = Math.min(Math.max(rawCharge, 1), 10);
   if (!seq.length) return [];
   let M = 18.0106;
   for (const aa of seq) {
@@ -328,7 +331,7 @@ export function predictSolubility(opts: {
 }): SolubilityResult | null {
   const { gravy, isoelectricPoint, sequenceLength } = opts;
   const pH = opts.pH ?? 7.4;
-  if (!isFinite(gravy) || !isFinite(isoelectricPoint) || !isFinite(sequenceLength)) return null;
+  if (!isFinite(gravy) || !isFinite(isoelectricPoint) || !isFinite(sequenceLength) || !isFinite(pH)) return null;
   if (sequenceLength <= 0) return null;
 
   const pIDistance = Math.abs(isoelectricPoint - pH);
@@ -367,10 +370,8 @@ export function vialQuantityPower(opts: {
   mgPerVial: number;
 }): VialQuantityPowerResult | null {
   const { n, dosesPerSubject, mgPerDose, mgPerVial } = opts;
-  if (!isFinite(n) || n <= 0) return null;
-  if (!isFinite(dosesPerSubject) || dosesPerSubject <= 0) return null;
-  if (!isFinite(mgPerDose) || mgPerDose <= 0) return null;
-  if (!isFinite(mgPerVial) || mgPerVial <= 0) return null;
+  if (!isFinite(n) || !isFinite(dosesPerSubject) || !isFinite(mgPerDose) || !isFinite(mgPerVial)) return null;
+  if (n <= 0 || dosesPerSubject <= 0 || mgPerDose <= 0 || mgPerVial <= 0) return null;
   const perSubjectMg = dosesPerSubject * mgPerDose;
   const totalMg = perSubjectMg * n;
   const vialsNeeded = Math.ceil(totalMg / mgPerVial);
