@@ -43,7 +43,14 @@ export default function DynamicCalculatorHero({ onSelect }: { onSelect?: (id: st
     onSelect?.(id);
   };
 
-  const buttonStyle = { background: 'transparent', border: 'none', cursor: 'pointer' };
+  const buttonStyle: React.CSSProperties = { 
+    background: 'transparent', 
+    border: 'none', 
+    cursor: 'pointer',
+    width: '100%',
+    height: '100%',
+    display: 'block'
+  };
 
   return (
     <div style={{ position: 'relative', width: '100%', maxWidth: 1024, aspectRatio: '1024/564', margin: '0 auto 40px' }}>
@@ -59,7 +66,7 @@ export default function DynamicCalculatorHero({ onSelect }: { onSelect?: (id: st
       <Link 
         href="/research"
         aria-label="Back To Research Library"
-        style={{ position: 'absolute', top: '17%', right: '5%', width: '25%', height: '10%', zIndex: 10 }}
+        style={{ position: 'absolute', top: '17%', right: '5%', width: '25%', height: '10%', zIndex: 10, display: 'block' }}
       />
 
       {/* Search Bar Wrapper */}
