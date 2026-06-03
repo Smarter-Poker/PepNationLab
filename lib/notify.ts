@@ -539,3 +539,18 @@ export async function notifySupportMessage(
     url: `/messenger?conversation=${conversationId}`,
   });
 }
+
+/** Notify agent that their sub-agent is earning a higher profit margin than them. */
+export async function notifyMarginWarning(
+  supabase: SupabaseClient,
+  agentId: string,
+) {
+  await notify(supabase, {
+    userId: agentId,
+    type: 'system',
+    title: `Low Margin Warning`,
+    body: `Your Sub-Agents are currently earning a higher profit than you on some products. While you are still making the minimum 10% profit, you should consider raising your retail prices.`,
+    url: `/dashboard/agent?tab=products`,
+  });
+}
+

@@ -173,7 +173,7 @@ export async function verifyCommissionSafeguard(
   supabase: ServiceClient,
   agentId: string,
   desiredCommissionPct?: number
-): Promise<{ safe: true } | { safe: false; error: string }> {
+): Promise<{ safe: true; warning: boolean } | { safe: false; error: string }> {
   // Find highest sub-agent commission if not explicitly provided
   let checkPct = desiredCommissionPct;
   if (checkPct === undefined) {
@@ -194,7 +194,7 @@ export async function verifyCommissionSafeguard(
     checkPct = maxExisting;
   }
 
-  if (!checkPct || checkPct <= 0) return { safe: true };
+  if (!checkPct || checkPct <= 0) return { safe: true, warning: false };
 
   // Pull all active agent products
   const { data: products } = await supabase
@@ -203,7 +203,7 @@ export async function verifyCommissionSafeguard(
     .eq('agent_id', agentId)
     .eq('is_visible', true);
 
-  if (!products || products.length === 0) return { safe: true };
+  if (!products || products.length === 0) return { safe: true, warning: false };
 
   // Need legacy tier for computeAgentCostForAgent
   const { data: agentProfile } = await supabase
@@ -213,30 +213,34 @@ export async function verifyCommissionSafeguard(
     .maybeSingle();
   const legacyTier = (agentProfile?.tier as AgentTier | null) ?? 'tier_3';
 
+  let hasWarning = false;
+
   for (const p of products) {
     const retail = Number(p.retail_price);
     if (retail <= 0) continue;
 
     const cost = await computeAgentCostForAgent(supabase, p.product_id, agentId, legacyTier);
     
-    // Agent Net Profit before Commission = Retail - Cost
-    // Sub-Agent Commission = Retail * (checkPct / 100)
-    // Rule: Sub-Agent Commission <= Agent Net Profit / 2
-    // Which means: Retail * (checkPct / 100) <= (Retail - Cost) / 2
-    // checkPct <= ((Retail - Cost) / 2 / Retail) * 100
-    
-    const marginPct = ((retail - cost) / retail) * 100;
-    const maxSafePct = marginPct / 2;
+    // Agent Net Profit Pct = (Retail - Cost) / Retail * 100 - Commission Pct
+    const grossMarginPct = ((retail - cost) / retail) * 100;
+    const netMarginPct = grossMarginPct - checkPct;
 
-    if (checkPct > maxSafePct) {
+    // Hard Rule: Agent MUST make at least 10% Net Profit Margin
+    if (netMarginPct < 10) {
+      const minRequiredGross = checkPct + 10;
       return { 
         safe: false, 
-        error: `Cannot proceed: A commission rate of ${checkPct}% would cause you to lose money or be out-earned by the sub-agent on at least one active product. Your lowest margin dictates a maximum safe commission of ${Math.floor(maxSafePct * 10) / 10}%. Please raise your retail prices before setting this commission.`
+        error: `Cannot proceed: A commission rate of ${checkPct}% requires you to maintain at least a ${minRequiredGross}% Gross Margin across all active products to ensure a minimum 10% Net Profit. Please raise your retail prices before setting this commission.`
       };
+    }
+
+    // Soft Rule: Sub-Agent should not out-earn the Agent
+    if (checkPct > netMarginPct) {
+      hasWarning = true;
     }
   }
 
-  return { safe: true };
+  return { safe: true, warning: hasWarning };
 }
 
 export { createServiceClient };

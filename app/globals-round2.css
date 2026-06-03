@@ -1433,3 +1433,272 @@ body > div.pnl-page:not(.pnl-page-with-navbar) {
    END ROUND 2 + ROUND 3 + ROUND 4 + ROUND 5 + ROUND 6 + ROUND 7
    + ROUND 8 + ROUND 9-22 (messenger) + ROUND 23 (site-wide mobile)
    ============================================================ */
+
+/* ============================================================
+   ROUND 24 — SITE-WIDE MOBILE SWEEP V2 (research hub, new admin
+   surfaces, account self-serve, table-heavy admin pages)
+   ------------------------------------------------------------
+   Sprint added ~25 new pages: research library, learn pages,
+   evidence hub, stacks, compare, area views, plus admin
+   cart-recovery, credit-increases, disputes, flash-sales,
+   availability, audit, catalog-risk, network, payments,
+   commissions, refunds, restock, search, sms, push, plus
+   account credits, rma, subscriptions, tax-exemption, etc.
+   Round 23 catches most of it via .card / input / button rules.
+   Round 24 closes the remaining gaps that the new pages
+   introduced with inline styles Round 23 doesn't see.
+   ============================================================ */
+
+/* (24.1) PAGE-HEADER ROWS — many new admin/research pages use
+   display:flex; justify-content:space-between with a title on
+   the left and a primary action button on the right. At 375px
+   the button can shove the title off-screen. Force wrap. */
+@media (max-width: 600px) {
+  header[style*="display: flex"],
+  div[style*="justifyContent: 'space-between'"][style*="display: 'flex'"],
+  div[style*="justify-content: space-between"][style*="display: flex"],
+  div[style*="justifyContent: \"space-between\""][style*="display: \"flex\""] {
+    flex-wrap: wrap !important;
+    gap: 12px !important;
+  }
+  /* Title element inside such rows — let it take a full row */
+  header > h1,
+  header > h2,
+  div[style*="justifyContent: 'space-between'"] > h1,
+  div[style*="justifyContent: 'space-between'"] > h2,
+  div[style*="justify-content: space-between"] > h1,
+  div[style*="justify-content: space-between"] > h2 {
+    flex: 1 1 100% !important;
+    min-width: 0 !important;
+  }
+}
+
+/* (24.2) INLINE FONT-SIZE CLAMP for h1/h2 page titles. New pages
+   use fontSize: '2.25rem' (~36px) which is fine but a bit tight
+   for very long titles ("Statement Disputes" wraps, "Credit
+   Increase Requests" wraps). Clamp on small phones. */
+@media (max-width: 480px) {
+  h1[style*="fontSize: '2.25rem'"],
+  h1[style*="fontSize: '2rem'"],
+  h1[style*="fontSize: \"2.25rem\""],
+  h1[style*="fontSize: \"2rem\""] {
+    font-size: 1.75rem !important;
+  }
+  h2[style*="fontSize: '1.8rem'"],
+  h2[style*="fontSize: '1.6rem'"],
+  h2[style*="fontSize: '1.5rem'"],
+  h2[style*="fontSize: \"1.8rem\""],
+  h2[style*="fontSize: \"1.6rem\""],
+  h2[style*="fontSize: \"1.5rem\""] {
+    font-size: 1.4rem !important;
+  }
+}
+
+/* (24.3) AUTO-FILL/AUTO-FIT GRIDS — the research hub uses
+   grid-template-columns: repeat(auto-fill, minmax(240px, 1fr))
+   which is fine on its own. But when nested under containers
+   with their own padding, the minmax(240px) can still force
+   horizontal scroll on 320-360px Android viewports. Force the
+   minmax to 1fr below 380px regardless. */
+@media (max-width: 380px) {
+  [style*="repeat(auto-fill, minmax(2"],
+  [style*="repeat(auto-fit, minmax(2"],
+  [style*="repeat(auto-fill,minmax(2"],
+  [style*="repeat(auto-fit,minmax(2"] {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* (24.4) TABLE CELLS in admin tables — many use padding 12-16px
+   per cell which is too generous on 375px, pushing already-wide
+   tables further horizontally. Tighten on mobile. The parent
+   div with overflowX:auto handles the actual scroll. */
+@media (max-width: 600px) {
+  .metal-frame table th,
+  .metal-frame table td,
+  table.admin-table th,
+  table.admin-table td,
+  div[style*="overflowX"] > table th,
+  div[style*="overflowX"] > table td,
+  div[style*="overflow-x"] > table th,
+  div[style*="overflow-x"] > table td {
+    padding: 8px 10px !important;
+    font-size: 0.85rem !important;
+    white-space: nowrap !important;
+  }
+}
+
+/* (24.5) CHIP/PILL ROWS that scroll horizontally (admin search,
+   filter toolbars). Round 23 covered overflowX wrappers. Add
+   visual affordance + smoother scrolling on iOS. */
+@media (max-width: 768px) {
+  div[role="toolbar"][style*="overflowX"],
+  div[style*="display: 'flex'"][style*="overflowX: 'auto'"],
+  div[style*="display: \"flex\""][style*="overflowX: \"auto\""] {
+    -webkit-overflow-scrolling: touch !important;
+    scrollbar-width: thin !important;
+    padding-bottom: 4px !important;
+    scroll-snap-type: x proximity !important;
+  }
+  div[role="toolbar"][style*="overflowX"] > *,
+  div[style*="display: 'flex'"][style*="overflowX: 'auto'"] > *,
+  div[style*="display: \"flex\""][style*="overflowX: \"auto\""] > * {
+    flex-shrink: 0 !important;
+    scroll-snap-align: start !important;
+  }
+}
+
+/* (24.6) ACCOUNT NAV ROWS — the account hub uses NavRow with a
+   56x56 icon span + title + chevron. On 375px the gap collapses
+   and the chevron can touch the edge. Tighten the icon size and
+   the row padding on the smallest phones. */
+@media (max-width: 380px) {
+  a.card-metal[style*="alignItems: 'center'"] > span[style*="width: 56"],
+  a.card-metal[style*="align-items: center"] > span[style*="width: 56"] {
+    width: 44px !important;
+    height: 44px !important;
+    flex-shrink: 0 !important;
+  }
+  a.card-metal[style*="alignItems: 'center'"] {
+    padding: var(--space-3, 12px) var(--space-4, 16px) !important;
+  }
+}
+
+/* (24.7) RESEARCH BROWSER FILTER GRID — ResearchBrowser uses a
+   row of selects (category, tier, area, wada) that on mobile
+   should stack 1-col, but they may render in a flex row by
+   default. Force flex-wrap and full-width selects below 600px. */
+@media (max-width: 600px) {
+  [data-research-browser] > div,
+  [data-research-browser] form > div,
+  div[style*="display: 'flex'"][style*="gap"] > select,
+  div[style*="display: \"flex\""][style*="gap"] > select {
+    flex: 1 1 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+  }
+  [data-research-browser] select,
+  div[style*="display: 'flex'"][style*="gap"] > select,
+  div[style*="display: \"flex\""][style*="gap"] > select {
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+}
+
+/* (24.8) COMPARE TABLE on /research/compare — likely renders a
+   wide comparison matrix. Round 24.4 already handles cell
+   padding. Ensure the wrapper has overflowX visible if it doesn't
+   already, and the table itself doesn't try to span 100vw + cell
+   widths combined. */
+@media (max-width: 768px) {
+  table[data-compare-table],
+  .compare-tool table {
+    display: block !important;
+    overflow-x: auto !important;
+    max-width: 100% !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+  table[data-compare-table] thead,
+  .compare-tool table thead {
+    position: sticky !important;
+    left: 0 !important;
+  }
+}
+
+/* (24.9) STICKY SUB-HEADERS — many admin pages render a
+   secondary nav/tab strip after the main page H1, with sticky
+   positioning. They commonly use `top: 0` which slides them
+   under the fixed navbar. Force them to sit below the navbar. */
+@media (max-width: 768px) {
+  [style*="position: 'sticky'"][style*="top: 0"],
+  [style*="position: \"sticky\""][style*="top: 0"],
+  [style*="position: sticky"][style*="top: 0"] {
+    top: var(--nav-offset, 60px) !important;
+  }
+}
+
+/* (24.10) PEPTIDE MONOGRAPH TABS (research/[slug]) — MonographTabs
+   uses a horizontal tab bar that overflow-scrolls. Ensure each tab
+   is fully tappable (≥44px) and the bar itself doesn't reserve
+   excess padding that pushes content. */
+@media (max-width: 768px) {
+  [role="tablist"] {
+    -webkit-overflow-scrolling: touch !important;
+    overflow-x: auto !important;
+    flex-wrap: nowrap !important;
+    scrollbar-width: thin !important;
+  }
+  [role="tablist"] [role="tab"] {
+    flex-shrink: 0 !important;
+    min-height: 44px !important;
+    padding: 10px 14px !important;
+  }
+}
+
+/* (24.11) MODALS opened on mobile that exceed viewport — the
+   inner card uses width: 90% or similar with max-width: 600px,
+   but the surrounding overlay has padding that can shrink it
+   below 320px. Constrain inner content. */
+@media (max-width: 480px) {
+  [role="dialog"][aria-modal="true"] > div,
+  .modal-overlay > div:not([role="presentation"]) {
+    width: 100% !important;
+    max-width: calc(100vw - 24px) !important;
+    margin: 0 auto !important;
+    box-sizing: border-box !important;
+  }
+}
+
+/* (24.12) FOOTER + COMPLIANCE NOTICES with very small inline
+   fontSize that Round 23 (12) didn't catch (e.g. 0.8rem). */
+@media (max-width: 480px) {
+  [style*="fontSize: '0.8rem'"]:not(button):not(a.btn),
+  [style*="fontSize: \"0.8rem\""]:not(button):not(a.btn),
+  [style*="font-size: 0.8rem"]:not(button):not(a.btn) {
+    font-size: 0.88rem !important;
+    line-height: 1.5 !important;
+  }
+}
+
+/* (24.13) ASK THE LAB assistant input — research hub puts the
+   AskTheLab textarea/input in a card. Ensure it gets 16px on
+   mobile (Round 23.1 already does this for textarea/input but
+   force it once more in case it uses a contenteditable). */
+@media (max-width: 768px) {
+  [contenteditable="true"],
+  [contenteditable=""],
+  [role="textbox"] {
+    font-size: 16px !important;
+    line-height: 1.4 !important;
+  }
+}
+
+/* (24.14) PRIMARY-ACTION BUTTON in page headers — on the
+   storefront register, login, become-agent forms, the primary
+   button is often rendered with width: auto + display: inline
+   which leaves an awkward small button on mobile. Make it full
+   width inside .auth-form and form.full-form. */
+@media (max-width: 600px) {
+  form.auth-form button[type="submit"],
+  form.full-form button[type="submit"],
+  form[data-mobile-full-width] button[type="submit"],
+  form[data-mobile-full-width] button.btn-primary {
+    width: 100% !important;
+    min-height: 48px !important;
+  }
+}
+
+/* (24.15) PRODUCT MONOGRAPH tabs body — inside a product detail
+   research page, code/specs/evidence cards may have a fixed
+   max-height with overflow. On mobile, expand to full height
+   (don't trap the user in a tiny scrollable). */
+@media (max-width: 768px) {
+  [data-monograph-tabs] [role="tabpanel"] {
+    max-height: none !important;
+    overflow: visible !important;
+  }
+}
+
+/* ============================================================
+   END ROUND 24
+   ============================================================ */

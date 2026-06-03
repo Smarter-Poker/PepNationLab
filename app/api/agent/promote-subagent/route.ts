@@ -183,6 +183,14 @@ export async function POST(req: NextRequest) {
       if (!safeguard.safe) {
         return NextResponse.json({ error: safeguard.error }, { status: 400 });
       }
+      if (safeguard.warning) {
+        // Fire notification asynchronously, don't await it
+        import('@/lib/notify').then(({ notifyMarginWarning }) => {
+          notifyMarginWarning(admin, user.id).catch(err => {
+            console.error('[promote-subagent] Failed to fire margin warning:', err);
+          });
+        });
+      }
     }
 
     if (paymentModel !== 'credit' && paymentModel !== 'prepaid') {

@@ -25,6 +25,7 @@ import {
   RISK_META,
 } from '@/lib/compounds';
 import ReconstitutionCalculator from '@/components/research/ReconstitutionCalculator';
+import GlossaryText from '@/components/research/GlossaryText';
 
 export type ResearchSection = 'profile' | 'findings' | 'prep' | 'spec' | 'faq';
 type View = ResearchSection | 'full';
@@ -71,7 +72,7 @@ function noEmDash(value: string): string {
 function Para({ children }: { children: React.ReactNode }) {
   return (
     <p style={{ ...cap, color: '#C8D2DC', lineHeight: 1.75, fontSize: '0.95rem', margin: '0 0 var(--space-3)' }}>
-      {children}
+      {typeof children === 'string' ? <GlossaryText text={children} /> : children}
     </p>
   );
 }

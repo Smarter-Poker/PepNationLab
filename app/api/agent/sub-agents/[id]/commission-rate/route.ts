@@ -74,6 +74,14 @@ export async function PATCH(
     if (!safeguard.safe) {
       return NextResponse.json({ error: safeguard.error }, { status: 400 });
     }
+    if (safeguard.warning) {
+      // Fire notification asynchronously, don't await it
+      import('@/lib/notify').then(({ notifyMarginWarning }) => {
+        notifyMarginWarning(admin, callerId).catch(err => {
+          console.error('[commission-rate] Failed to fire margin warning:', err);
+        });
+      });
+    }
 
     const previousPct = subAgent.commission_pct == null ? null : Number(subAgent.commission_pct);
     if (previousPct !== null && previousPct === commissionPct) {

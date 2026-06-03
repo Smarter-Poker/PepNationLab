@@ -21,6 +21,7 @@ import {
   RISK_META,
 } from '@/lib/compounds';
 import ReconstitutionCalculator from '@/components/research/ReconstitutionCalculator';
+import GlossaryText from '@/components/research/GlossaryText';
 
 interface Props {
   compound: Compound;
@@ -31,7 +32,7 @@ const cap: React.CSSProperties = { textTransform: 'capitalize' };
 function Para({ children }: { children: React.ReactNode }) {
   return (
     <p style={{ ...cap, color: '#C8D2DC', lineHeight: 1.7, fontSize: '0.92rem', margin: '0 0 var(--space-3)' }}>
-      {children}
+      {typeof children === 'string' ? <GlossaryText text={children} /> : children}
     </p>
   );
 }

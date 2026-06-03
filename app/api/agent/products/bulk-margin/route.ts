@@ -40,12 +40,25 @@ export async function POST(req: NextRequest) {
         if (val > maxExisting) maxExisting = val;
       }
       if (maxExisting > 0) {
-        const maxSafePct = marginPercent / 2;
-        if (maxExisting > maxSafePct) {
+        const netMarginPct = marginPercent - maxExisting;
+        
+        // Hard Rule: 10% Net Profit Margin
+        if (netMarginPct < 10) {
+          const minRequiredGross = maxExisting + 10;
           return NextResponse.json(
-            { error: `Cannot set margin to ${marginPercent}%. You have sub-agents earning up to ${maxExisting}% commission, which requires a minimum margin of ${maxExisting * 2}%.` },
+            { error: `Cannot set margin to ${marginPercent}%. You have sub-agents earning up to ${maxExisting}% commission, which requires a minimum gross margin of ${minRequiredGross}% to maintain a 10% Net Profit.` },
             { status: 422 }
           );
+        }
+
+        // Soft Rule: Warning if sub-agent out-earns agent
+        if (maxExisting > netMarginPct) {
+          import('@/lib/notify').then(({ notifyMarginWarning }) => {
+            const admin = require('@/lib/supabase/server').createAdminClient();
+            notifyMarginWarning(admin, gate.user.id).catch(err => {
+              console.error('[bulk-margin] Failed to fire margin warning:', err);
+            });
+          });
         }
       }
     }
