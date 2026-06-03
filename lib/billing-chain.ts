@@ -19,19 +19,31 @@ export type ChainCheckResult =
     };
 
 /**
- * Walks the billing chain rooted at p_agent_id and refuses the
- * transaction if (a) any tier in the chain is_transactions_frozen,
- * or (b) any credit-line tier would exceed its credit_limit after
- * adding p_additional_owed dollars. Used by order approval.
+ * Walks the billing chain and refuses the transaction if either
+ *   (a) the transacting agent OR ANY ancestor in their chain is
+ *       is_transactions_frozen — the freeze cascade rolls DOWN, so
+ *       both the transacting account itself AND every upline must be
+ *       clear, OR
+ *   (b) any credit-line tier on the billed chain would exceed its
+ *       credit_limit after adding additionalOwed dollars.
+ *
+ * `transactingAgentId` defaults to `billedAgentId`. For a sub-agent's
+ * order, pass the sub-agent's id as transactingAgentId and the
+ * super-agent's id as billedAgentId so freeze covers the sub-agent's
+ * own state while credit covers the billed chain.
  */
 export async function assertChainCanTransact(
   supabase: ServiceClient,
-  agentId: string,
+  billedAgentId: string,
   additionalOwed: number,
+  transactingAgentId?: string,
 ): Promise<ChainCheckResult> {
-  // 1) Freeze check — cascades down the chain.
+  const freezeRoot = transactingAgentId ?? billedAgentId;
+
+  // 1) Freeze check — starts at the transacting account so the
+  //    sub-agent's own freeze state is included in the walk.
   const { data: frozenRows, error: frozenErr } = await supabase.rpc('is_chain_frozen', {
-    p_agent_id: agentId,
+    p_agent_id: freezeRoot,
   });
   if (frozenErr) {
     return { ok: false, status: 500, error: 'Chain-freeze check failed.' };
@@ -49,9 +61,10 @@ export async function assertChainCanTransact(
     };
   }
 
-  // 2) Hierarchical credit-line check — bubbles up the chain.
+  // 2) Hierarchical credit-line check — bubbles up the BILLED chain
+  //    (credit limits live on the billed tier, not the transacting one).
   const { data: chainRows, error: chainErr } = await supabase.rpc('check_credit_chain', {
-    p_billed_agent_id: agentId,
+    p_billed_agent_id: billedAgentId,
     p_additional_owed: additionalOwed,
   });
   if (chainErr) {
