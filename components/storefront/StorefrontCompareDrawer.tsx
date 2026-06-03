@@ -14,6 +14,7 @@ import { createPortal } from 'react-dom';
 import { X, Scale, ChevronDown, ChevronRight, GripHorizontal, ChevronLeft } from 'lucide-react';
 import { evidenceTier, type Compound, RISK_META, researchAreaLabel, wadaLabel } from '@/lib/compounds';
 import InCellGlossaryTooltip from '../research/InCellGlossaryTooltip';
+import AttributeRadarChart from '../research/AttributeRadarChart';
 
 interface PinnedItem {
   productName: string;
@@ -434,6 +435,76 @@ export default function StorefrontCompareDrawer({
     }), 0);
   }, [displayedPinned, compoundsBySlug]);
 
+  const maxCitations = useMemo(() => {
+    return Math.max(...displayedPinned.map(p => {
+      const c = p.compoundSlug ? compoundsBySlug[p.compoundSlug] : null;
+      return c?.pubmed_citation_count || 0;
+    }), 0);
+  }, [displayedPinned, compoundsBySlug]);
+
+  const smartSummary = useMemo(() => {
+    if (pinned.length !== 2) return null;
+    const [a, b] = pinned;
+    const cA = a.compoundSlug ? compoundsBySlug[a.compoundSlug] : null;
+    const cB = b.compoundSlug ? compoundsBySlug[b.compoundSlug] : null;
+    if (!cA || !cB) return null;
+
+    const aHl = parseHalfLifeHours(cA.half_life);
+    const bHl = parseHalfLifeHours(cB.half_life);
+    let hlText = '';
+    if (aHl && bHl) {
+      if (aHl > bHl) hlText = `${a.productName} has a ${(aHl/bHl).toFixed(1)}x longer half-life than ${b.productName}.`;
+      else if (bHl > aHl) hlText = `${b.productName} has a ${(bHl/aHl).toFixed(1)}x longer half-life than ${a.productName}.`;
+    }
+    return hlText;
+  }, [pinned, compoundsBySlug]);
+
+  const colors = [primaryColor, '#F6AD55', '#68D391', '#FC8181'];
+
+  const radarData = useMemo(() => {
+    if (pinned.length < 2) return [];
+    return [
+      {
+        label: 'Safety Profile',
+        scores: pinned.map(p => {
+          const c = p.compoundSlug ? compoundsBySlug[p.compoundSlug] : null;
+          if (c?.risk_level === 'low') return 90;
+          if (c?.risk_level === 'moderate') return 70;
+          if (c?.risk_level === 'high') return 40;
+          if (c?.risk_level === 'critical') return 10;
+          return 50;
+        })
+      },
+      {
+        label: 'Evidence Level',
+        scores: pinned.map(p => {
+          if (p.evidenceTierKey === 'approved_drug') return 100;
+          if (p.evidenceTierKey === 'investigational') return 80;
+          if (p.evidenceTierKey === 'preclinical') return 60;
+          if (p.evidenceTierKey === 'research_chemical') return 40;
+          return 20;
+        })
+      },
+      {
+        label: 'Citations',
+        scores: pinned.map(p => {
+          if (!maxCitations) return 10;
+          const c = p.compoundSlug ? compoundsBySlug[p.compoundSlug] : null;
+          const count = c?.pubmed_citation_count || 0;
+          return Math.min(100, Math.max(10, (count / maxCitations) * 100));
+        })
+      },
+      { 
+        label: 'Half-Life', 
+        scores: pinned.map(p => {
+          if (!maxHalfLife) return 20;
+          const c = p.compoundSlug ? compoundsBySlug[p.compoundSlug] : null;
+          return Math.min(100, Math.max(10, (parseHalfLifeHours(c?.half_life) / maxHalfLife) * 100));
+        })
+      }
+    ];
+  }, [pinned, compoundsBySlug, maxCitations, maxHalfLife]);
+
   return createPortal(
     <>
       <div
@@ -680,6 +751,21 @@ export default function StorefrontCompareDrawer({
                       <span>🔥</span> {syn.message}
                     </div>
                   ))}
+                </div>
+              )}
+
+              {smartSummary && (
+                <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)', padding: '12px 16px', borderRadius: 8, marginBottom: 24, fontSize: '0.9rem', fontWeight: 600, color: 'var(--silver)' }}>
+                  <span style={{ color: primaryColor }}>Smart Summary:</span> {smartSummary}
+                </div>
+              )}
+
+              {pinned.length > 2 && (
+                <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 'var(--radius-lg, 12px)', padding: 'var(--space-4, 16px)', marginBottom: 24, overflow: 'hidden' }}>
+                  <h3 style={{ margin: '0 0 16px 0', fontSize: '1.2rem', color: 'var(--white)', textAlign: 'center', fontWeight: 800 }}>
+                    Profile Comparison
+                  </h3>
+                  <AttributeRadarChart data={radarData} colors={colors} size={280} />
                 </div>
               )}
 

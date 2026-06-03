@@ -1,9 +1,7 @@
 import { createServiceClient } from '@/lib/supabase/server';
 import { notFound } from 'next/navigation';
 import { getProductById } from '@/lib/products-server';
-import AgentStorefrontGrid from '@/components/AgentStorefrontGrid';
 import { getStorefrontConfig } from '@/lib/storefront';
-import { DiscoveryHeroProps } from '@/components/storefront/StorefrontDiscovery';
 
 export const revalidate = 0; // Don't cache shared links statically
 
@@ -27,14 +25,10 @@ export default async function SharedProtocolPage({
   }
 
   // 2. Fetch agent config to render the storefront wrapper
-  const config = await getAgentConfig(brandId);
+  const config = await getStorefrontConfig(brandId);
   if (!config) {
     return notFound();
   }
-
-  // 3. Fetch products to map the protocol
-  const { products } = await getAllProducts();
-  const agentProducts = products.filter(p => p.agent_id === config.agent.id);
 
   // Parse the payload
   const payload = protocol.payload as {
@@ -43,10 +37,13 @@ export default async function SharedProtocolPage({
     goalSummary: string;
   };
 
+  // 3. Fetch products to map the protocol
+  const agentProducts = (await Promise.all(
+    payload.results.map(r => getProductById(r.product_id))
+  )).filter(Boolean) as any[];
+
   return (
     <main style={{ minHeight: '100dvh', background: '#0A1018', color: '#FFF' }}>
-      <AgentHeader agentName={config.agent.name} />
-
       <div style={{ maxWidth: 800, margin: '0 auto', padding: '40px 20px' }}>
         <h1 style={{ fontSize: '2rem', fontWeight: 900, marginBottom: 8, color: config.storefront.primary_color }}>
           Shared AI Match Protocol
@@ -56,8 +53,8 @@ export default async function SharedProtocolPage({
         </p>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-          {payload.results.map((r, i) => {
-            const product = agentProducts.find(p => p.compound_slug === r.slug || p.id === r.product_id);
+          {payload.results.map((r: any, i: number) => {
+            const product = agentProducts.find(p => p.id === r.product_id);
             if (!product) return null; // Not stocked by this agent
 
             return (
@@ -114,7 +111,7 @@ export default async function SharedProtocolPage({
           <div style={{ marginTop: 48, padding: 24, background: 'rgba(255,0,0,0.05)', borderRadius: 20, border: '1px solid rgba(255,0,0,0.15)' }}>
             <h3 style={{ color: '#FC8181', fontSize: '1.2rem', fontWeight: 900, marginBottom: 16 }}>Excluded from this protocol</h3>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-              {payload.excluded.map((e, idx) => (
+              {payload.excluded.map((e: any, idx: number) => (
                 <div key={idx} style={{ display: 'flex', gap: 16 }}>
                   <span style={{ color: '#FFF', fontWeight: 700, minWidth: 150 }}>{e.displayName}</span>
                   <span style={{ color: '#FC8181' }}>{e.reason}</span>

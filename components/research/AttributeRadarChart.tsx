@@ -46,7 +46,7 @@ export default function AttributeRadarChart({ data, colors, size = 180 }: Props)
     
     // adjust text anchor based on angle
     const angle = i * angleStep - Math.PI / 2;
-    let textAnchor = 'middle';
+    let textAnchor: "start" | "end" | "middle" = 'middle';
     if (Math.abs(Math.cos(angle)) > 0.1) {
       textAnchor = Math.cos(angle) > 0 ? 'start' : 'end';
     }
