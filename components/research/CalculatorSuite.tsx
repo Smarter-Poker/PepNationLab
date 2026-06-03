@@ -115,14 +115,14 @@ function Reconstitution() {
         why="Most peptides ship freeze-dried. Reconstitution turns the powder into a usable working stock. Get the volume of diluent right and every downstream volume comes out clean."
       />
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12 }}>
-        <div>
-          <label style={labelStyle}>Vial Mass (mg)</label>
-          <input style={inputStyle} type="number" min={0} value={vialMass} onChange={(e) => setVialMass(e.target.value)} />
-        </div>
-        <div>
-          <label style={labelStyle}>Target Concentration (mg/mL)</label>
-          <input style={inputStyle} type="number" min={0} value={targetConc} onChange={(e) => setTargetConc(e.target.value)} />
-        </div>
+        <label style={{ display: "block" }}>
+          <div style={labelStyle}>Vial Mass (mg)</div>
+          <input style={inputStyle} type="number" step="any" min={0} value={vialMass} onChange={(e) => setVialMass(e.target.value)} />
+        </label>
+        <label style={{ display: "block" }}>
+          <div style={labelStyle}>Target Concentration (mg/mL)</div>
+          <input style={inputStyle} type="number" step="any" min={0} value={targetConc} onChange={(e) => setTargetConc(e.target.value)} />
+        </label>
       </div>
       <div style={{ ...resultStyle, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
         <span>
@@ -147,14 +147,14 @@ function Reconstitution() {
 
       <h3 style={{ margin: '20px 0 6px', color: '#FFFFFF', fontSize: 15 }}>Draw Volume Helper</h3>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12 }}>
-        <div>
-          <label style={labelStyle}>Diluent Added (mL)</label>
-          <input style={inputStyle} type="number" min={0} value={diluentMl} onChange={(e) => setDiluentMl(e.target.value)} />
-        </div>
-        <div>
-          <label style={labelStyle}>Desired Mass (mg)</label>
-          <input style={inputStyle} type="number" min={0} value={desiredMass} onChange={(e) => setDesiredMass(e.target.value)} />
-        </div>
+        <label style={{ display: "block" }}>
+          <div style={labelStyle}>Diluent Added (mL)</div>
+          <input style={inputStyle} type="number" step="any" min={0} value={diluentMl} onChange={(e) => setDiluentMl(e.target.value)} />
+        </label>
+        <label style={{ display: "block" }}>
+          <div style={labelStyle}>Desired Mass (mg)</div>
+          <input style={inputStyle} type="number" step="any" min={0} value={desiredMass} onChange={(e) => setDesiredMass(e.target.value)} />
+        </label>
       </div>
       <div style={resultStyle}>
         Draw{' '}
@@ -185,18 +185,18 @@ function DilutionSection() {
         why="Many in-vitro assays need a serial dilution series across log-scale ranges. This generates the per-step concentrations from a stock down to your detection limit."
       />
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 12 }}>
-        <div>
-          <label style={labelStyle}>Stock Concentration (Units)</label>
-          <input style={inputStyle} type="number" min={0} value={stock} onChange={(e) => setStock(e.target.value)} />
-        </div>
-        <div>
-          <label style={labelStyle}>Dilution Factor</label>
-          <input style={inputStyle} type="number" min={2} value={factor} onChange={(e) => setFactor(e.target.value)} />
-        </div>
-        <div>
-          <label style={labelStyle}>Steps</label>
+        <label style={{ display: "block" }}>
+          <div style={labelStyle}>Stock Concentration (Units)</div>
+          <input style={inputStyle} type="number" step="any" min={0} value={stock} onChange={(e) => setStock(e.target.value)} />
+        </label>
+        <label style={{ display: "block" }}>
+          <div style={labelStyle}>Dilution Factor</div>
+          <input style={inputStyle} type="number" step="any" min={2} value={factor} onChange={(e) => setFactor(e.target.value)} />
+        </label>
+        <label style={{ display: "block" }}>
+          <div style={labelStyle}>Steps</div>
           <input style={inputStyle} type="number" min={1} max={20} step={1} value={steps} onChange={(e) => setSteps(e.target.value)} />
-        </div>
+        </label>
       </div>
       <div style={{ ...resultStyle, padding: 0, background: 'transparent', border: 'none' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
@@ -260,27 +260,27 @@ function ConcentrationSection() {
         why="Studies report concentrations in many units. Convert freely between mass per volume (mg/mL, mcg/mL, ng/mL) and molar (mmol/L, umol/L, nmol/L). Molar conversions require molecular weight."
       />
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 12 }}>
-        <div>
-          <label style={labelStyle}>Value</label>
-          <input style={inputStyle} type="number" value={value} onChange={(e) => setValue(e.target.value)} />
-        </div>
-        <div>
-          <label style={labelStyle}>From Unit</label>
+        <label style={{ display: "block" }}>
+          <div style={labelStyle}>Value</div>
+          <input style={inputStyle} type="number" step="any" value={value} onChange={(e) => setValue(e.target.value)} />
+        </label>
+        <label style={{ display: "block" }}>
+          <div style={labelStyle}>From Unit</div>
           <select style={inputStyle} value={from} onChange={(e) => setFrom(e.target.value as ConcentrationUnit)}>
             {UNITS.map((u) => <option key={u} value={u}>{u}</option>)}
           </select>
-        </div>
-        <div>
-          <label style={labelStyle}>To Unit</label>
+        </label>
+        <label style={{ display: "block" }}>
+          <div style={labelStyle}>To Unit</div>
           <select style={inputStyle} value={to} onChange={(e) => setTo(e.target.value as ConcentrationUnit)}>
             {UNITS.map((u) => <option key={u} value={u}>{u}</option>)}
           </select>
-        </div>
+        </label>
         {mwRequired && (
-          <div>
-            <label style={labelStyle}>Molecular Weight (Da)</label>
-            <input style={inputStyle} type="number" value={mw} onChange={(e) => setMw(e.target.value)} />
-          </div>
+          <label style={{ display: "block" }}>
+            <div style={labelStyle}>Molecular Weight (Da)</div>
+            <input style={inputStyle} type="number" step="any" value={mw} onChange={(e) => setMw(e.target.value)} />
+          </label>
         )}
       </div>
       <div style={resultStyle}>
@@ -316,22 +316,22 @@ function StabilitySection() {
         why="Predict shelf-life at one temperature given a known shelf-life at another. Useful for comparing fridge versus room-temp storage windows. Default Ea is 83 kJ/mol, a common literature value for lyophilized peptides."
       />
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 12 }}>
-        <div>
-          <label style={labelStyle}>Known Shelf Days</label>
-          <input style={inputStyle} type="number" value={shelf} onChange={(e) => setShelf(e.target.value)} />
-        </div>
-        <div>
-          <label style={labelStyle}>Known Temperature (C)</label>
-          <input style={inputStyle} type="number" value={tFrom} onChange={(e) => setTFrom(e.target.value)} />
-        </div>
-        <div>
-          <label style={labelStyle}>Target Temperature (C)</label>
-          <input style={inputStyle} type="number" value={tTo} onChange={(e) => setTTo(e.target.value)} />
-        </div>
-        <div>
-          <label style={labelStyle}>Activation Energy (kJ/mol)</label>
-          <input style={inputStyle} type="number" value={ea} onChange={(e) => setEa(e.target.value)} />
-        </div>
+        <label style={{ display: "block" }}>
+          <div style={labelStyle}>Known Shelf Days</div>
+          <input style={inputStyle} type="number" step="any" value={shelf} onChange={(e) => setShelf(e.target.value)} />
+        </label>
+        <label style={{ display: "block" }}>
+          <div style={labelStyle}>Known Temperature (C)</div>
+          <input style={inputStyle} type="number" step="any" value={tFrom} onChange={(e) => setTFrom(e.target.value)} />
+        </label>
+        <label style={{ display: "block" }}>
+          <div style={labelStyle}>Target Temperature (C)</div>
+          <input style={inputStyle} type="number" step="any" value={tTo} onChange={(e) => setTTo(e.target.value)} />
+        </label>
+        <label style={{ display: "block" }}>
+          <div style={labelStyle}>Activation Energy (kJ/mol)</div>
+          <input style={inputStyle} type="number" step="any" value={ea} onChange={(e) => setEa(e.target.value)} />
+        </label>
       </div>
       <div style={resultStyle}>
         {days === null
@@ -364,18 +364,18 @@ function CostSection() {
         why="Compare cost across vial sizes and dose levels. Useful for planning study budgets when running multi-dose experiments."
       />
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 12 }}>
-        <div>
-          <label style={labelStyle}>Vial Price (USD)</label>
-          <input style={inputStyle} type="number" value={price} onChange={(e) => setPrice(e.target.value)} />
-        </div>
-        <div>
-          <label style={labelStyle}>Vial Mass (mg)</label>
-          <input style={inputStyle} type="number" value={mass} onChange={(e) => setMass(e.target.value)} />
-        </div>
-        <div>
-          <label style={labelStyle}>Per-Dose Amount (mcg)</label>
-          <input style={inputStyle} type="number" value={dose} onChange={(e) => setDose(e.target.value)} />
-        </div>
+        <label style={{ display: "block" }}>
+          <div style={labelStyle}>Vial Price (USD)</div>
+          <input style={inputStyle} type="number" step="any" value={price} onChange={(e) => setPrice(e.target.value)} />
+        </label>
+        <label style={{ display: "block" }}>
+          <div style={labelStyle}>Vial Mass (mg)</div>
+          <input style={inputStyle} type="number" step="any" value={mass} onChange={(e) => setMass(e.target.value)} />
+        </label>
+        <label style={{ display: "block" }}>
+          <div style={labelStyle}>Per-Dose Amount (mcg)</div>
+          <input style={inputStyle} type="number" step="any" value={dose} onChange={(e) => setDose(e.target.value)} />
+        </label>
       </div>
       <div style={resultStyle}>
         {!out
@@ -406,18 +406,18 @@ function PoolingSection() {
         why="When pooling multiple vials into a single sterile container, the resulting concentration depends on combined mass and total diluent. Use this to compute the final mg/mL."
       />
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 12 }}>
-        <div>
-          <label style={labelStyle}>Per-Vial Mass (mg)</label>
-          <input style={inputStyle} type="number" value={mass} onChange={(e) => setMass(e.target.value)} />
-        </div>
-        <div>
-          <label style={labelStyle}>Vial Count</label>
+        <label style={{ display: "block" }}>
+          <div style={labelStyle}>Per-Vial Mass (mg)</div>
+          <input style={inputStyle} type="number" step="any" value={mass} onChange={(e) => setMass(e.target.value)} />
+        </label>
+        <label style={{ display: "block" }}>
+          <div style={labelStyle}>Vial Count</div>
           <input style={inputStyle} type="number" min={1} step={1} value={count} onChange={(e) => setCount(e.target.value)} />
-        </div>
-        <div>
-          <label style={labelStyle}>Total Diluent (mL)</label>
-          <input style={inputStyle} type="number" value={diluent} onChange={(e) => setDiluent(e.target.value)} />
-        </div>
+        </label>
+        <label style={{ display: "block" }}>
+          <div style={labelStyle}>Total Diluent (mL)</div>
+          <input style={inputStyle} type="number" step="any" value={diluent} onChange={(e) => setDiluent(e.target.value)} />
+        </label>
       </div>
       <div style={resultStyle}>
         {!out
@@ -464,29 +464,29 @@ function HplcRtSection() {
         why="Roughly estimate where a peptide will elute on a C18 reverse-phase column using Bull-Breese hydrophobicity. Useful for planning a purification gradient before injection. Lab estimate, not a clinical prediction."
       />
       <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 12 }}>
-        <div>
-          <label style={labelStyle}>One-Letter Sequence (Standard 20 AA Codes)</label>
+        <label style={{ display: "block" }}>
+          <div style={labelStyle}>One-Letter Sequence (Standard 20 AA Codes)</div>
           <input style={inputStyle} type="text" value={seq} maxLength={500} onChange={(e) => setSeq(e.target.value)} />
           {unknownChars.length > 0 && (
             <div style={{ marginTop: 6, fontSize: 12, color: '#F6AD55', background: 'rgba(246,173,85,0.10)', border: '1px solid rgba(246,173,85,0.30)', borderRadius: 6, padding: '5px 10px' }}>
               ⚠ Non-standard characters detected: <strong>{unknownChars.join(', ')}</strong>. These are ignored for hydrophobicity, affecting accuracy. Use only: A C D E F G H I K L M N P Q R S T V W Y.
             </div>
           )}
-        </div>
+        </label>
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 12, marginTop: 12 }}>
-        <div>
-          <label style={labelStyle}>Gradient Start (%B)</label>
-          <input style={inputStyle} type="number" value={start} onChange={(e) => setStart(e.target.value)} />
-        </div>
-        <div>
-          <label style={labelStyle}>Gradient End (%B)</label>
-          <input style={inputStyle} type="number" value={end} onChange={(e) => setEnd(e.target.value)} />
-        </div>
-        <div>
-          <label style={labelStyle}>Gradient Length (Min)</label>
-          <input style={inputStyle} type="number" value={gradient} onChange={(e) => setGradient(e.target.value)} />
-        </div>
+        <label style={{ display: "block" }}>
+          <div style={labelStyle}>Gradient Start (%B)</div>
+          <input style={inputStyle} type="number" step="any" value={start} onChange={(e) => setStart(e.target.value)} />
+        </label>
+        <label style={{ display: "block" }}>
+          <div style={labelStyle}>Gradient End (%B)</div>
+          <input style={inputStyle} type="number" step="any" value={end} onChange={(e) => setEnd(e.target.value)} />
+        </label>
+        <label style={{ display: "block" }}>
+          <div style={labelStyle}>Gradient Length (Min)</div>
+          <input style={inputStyle} type="number" step="any" value={gradient} onChange={(e) => setGradient(e.target.value)} />
+        </label>
       </div>
       <div style={resultStyle}>
         {gradientInvalid
@@ -535,28 +535,28 @@ function MassSpecSection() {
         why="Predict the expected [M+nH]^n+ peaks for a peptide so you know where to look in the ESI-MS spectrum. Useful for identity confirmation after synthesis."
       />
       <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 12 }}>
-        <div>
-          <label style={labelStyle}>One-Letter Sequence (Standard 20 AA Codes)</label>
+        <label style={{ display: "block" }}>
+          <div style={labelStyle}>One-Letter Sequence (Standard 20 AA Codes)</div>
           <input style={inputStyle} type="text" value={seq} maxLength={500} onChange={(e) => setSeq(e.target.value)} />
           {unknownChars.length > 0 && (
             <div style={{ marginTop: 6, fontSize: 12, color: '#F6AD55', background: 'rgba(246,173,85,0.10)', border: '1px solid rgba(246,173,85,0.30)', borderRadius: 6, padding: '5px 10px' }}>
               ⚠ Non-standard characters detected: <strong>{unknownChars.join(', ')}</strong>. These are treated as ~110 Da residues and will affect accuracy. Use only: A C D E F G H I K L M N P Q R S T V W Y.
             </div>
           )}
-        </div>
+        </label>
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 12, marginTop: 12 }}>
-        <div>
-          <label style={labelStyle}>Ionization Mode</label>
+        <label style={{ display: "block" }}>
+          <div style={labelStyle}>Ionization Mode</div>
           <select style={inputStyle} value={mode} onChange={(e) => setMode(e.target.value as 'positive' | 'negative')}>
             <option value="positive">Positive</option>
             <option value="negative">Negative</option>
           </select>
-        </div>
-        <div>
-          <label style={labelStyle}>Max Charge State</label>
-          <input style={inputStyle} type="number" min={1} value={maxCharge} onChange={(e) => setMaxCharge(e.target.value)} />
-        </div>
+        </label>
+        <label style={{ display: "block" }}>
+          <div style={labelStyle}>Max Charge State</div>
+          <input style={inputStyle} type="number" step="any" min={1} value={maxCharge} onChange={(e) => setMaxCharge(e.target.value)} />
+        </label>
       </div>
       <div style={{ ...resultStyle, padding: 0, background: 'transparent', border: 'none' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14, marginTop: 8 }}>
@@ -616,29 +616,29 @@ function SppsSection() {
         why="Plan the cost of synthesizing a peptide via solid-phase Fmoc chemistry. Breaks down amino acid, resin, reagent, cleavage, and labor costs."
       />
       <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 12 }}>
-        <div>
-          <label style={labelStyle}>One-Letter Sequence</label>
+        <label style={{ display: "block" }}>
+          <div style={labelStyle}>One-Letter Sequence</div>
           <input style={inputStyle} type="text" value={seq} maxLength={500} onChange={(e) => setSeq(e.target.value)} />
           {sppsUnknownChars.length > 0 && (
             <div style={{ marginTop: 6, fontSize: 12, color: '#F6AD55', background: 'rgba(246,173,85,0.10)', border: '1px solid rgba(246,173,85,0.30)', borderRadius: 6, padding: '5px 10px' }}>
               ⚠ Non-standard characters: <strong>{sppsUnknownChars.join(', ')}</strong>. Cost estimate may be inaccurate. Use standard 20 AA codes only.
             </div>
           )}
-        </div>
+        </label>
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 12, marginTop: 12 }}>
-        <div>
-          <label style={labelStyle}>Scale (umol)</label>
-          <input style={inputStyle} type="number" value={scale} onChange={(e) => setScale(e.target.value)} />
-        </div>
-        <div>
-          <label style={labelStyle}>Fmoc AA Cost ($/g)</label>
-          <input style={inputStyle} type="number" value={aaCost} onChange={(e) => setAaCost(e.target.value)} />
-        </div>
-        <div>
-          <label style={labelStyle}>Resin Cost ($/g)</label>
-          <input style={inputStyle} type="number" value={resinCost} onChange={(e) => setResinCost(e.target.value)} />
-        </div>
+        <label style={{ display: "block" }}>
+          <div style={labelStyle}>Scale (umol)</div>
+          <input style={inputStyle} type="number" step="any" value={scale} onChange={(e) => setScale(e.target.value)} />
+        </label>
+        <label style={{ display: "block" }}>
+          <div style={labelStyle}>Fmoc AA Cost ($/g)</div>
+          <input style={inputStyle} type="number" step="any" value={aaCost} onChange={(e) => setAaCost(e.target.value)} />
+        </label>
+        <label style={{ display: "block" }}>
+          <div style={labelStyle}>Resin Cost ($/g)</div>
+          <input style={inputStyle} type="number" step="any" value={resinCost} onChange={(e) => setResinCost(e.target.value)} />
+        </label>
       </div>
       <div style={resultStyle}>
         {!out ? 'Enter A Valid Sequence.' : (
@@ -684,22 +684,22 @@ function SolubilitySection() {
         <a href="https://web.expasy.org/protparam/" target="_blank" rel="noopener noreferrer" style={{ color: '#00C4BC' }}>ExPASy ProtParam</a>.
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 12 }}>
-        <div>
-          <label style={labelStyle}>GRAVY</label>
+        <label style={{ display: "block" }}>
+          <div style={labelStyle}>GRAVY</div>
           <input style={inputStyle} type="number" step="0.01" value={gravy} onChange={(e) => setGravy(e.target.value)} />
-        </div>
-        <div>
-          <label style={labelStyle}>Isoelectric Point (pI)</label>
+        </label>
+        <label style={{ display: "block" }}>
+          <div style={labelStyle}>Isoelectric Point (pI)</div>
           <input style={inputStyle} type="number" step="0.01" value={pi} onChange={(e) => setPi(e.target.value)} />
-        </div>
-        <div>
-          <label style={labelStyle}>Sequence Length</label>
+        </label>
+        <label style={{ display: "block" }}>
+          <div style={labelStyle}>Sequence Length</div>
           <input style={inputStyle} type="number" step={1} min={1} value={len} onChange={(e) => setLen(e.target.value)} />
-        </div>
-        <div>
-          <label style={labelStyle}>Solution pH</label>
+        </label>
+        <label style={{ display: "block" }}>
+          <div style={labelStyle}>Solution pH</div>
           <input style={inputStyle} type="number" step="0.1" value={pH} onChange={(e) => setPH(e.target.value)} />
-        </div>
+        </label>
       </div>
       <div style={resultStyle}>
         {!out ? 'Enter Valid Inputs.' : (
@@ -734,22 +734,22 @@ function VialQuantitySection() {
         why="Plan vial procurement for a study. Given a sample size, doses per subject, and dose mass, compute the number of vials to order."
       />
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 12 }}>
-        <div>
-          <label style={labelStyle}>Sample Size (n)</label>
+        <label style={{ display: "block" }}>
+          <div style={labelStyle}>Sample Size (n)</div>
           <input style={inputStyle} type="number" min={1} step={1} value={n} onChange={(e) => setN(e.target.value)} />
-        </div>
-        <div>
-          <label style={labelStyle}>Doses Per Subject</label>
+        </label>
+        <label style={{ display: "block" }}>
+          <div style={labelStyle}>Doses Per Subject</div>
           <input style={inputStyle} type="number" min={1} step={1} value={doses} onChange={(e) => setDoses(e.target.value)} />
-        </div>
-        <div>
-          <label style={labelStyle}>Mg Per Dose</label>
+        </label>
+        <label style={{ display: "block" }}>
+          <div style={labelStyle}>Mg Per Dose</div>
           <input style={inputStyle} type="number" step="0.01" value={mgPerDose} onChange={(e) => setMgPerDose(e.target.value)} />
-        </div>
-        <div>
-          <label style={labelStyle}>Mg Per Vial</label>
+        </label>
+        <label style={{ display: "block" }}>
+          <div style={labelStyle}>Mg Per Vial</div>
           <input style={inputStyle} type="number" step="0.01" value={mgPerVial} onChange={(e) => setMgPerVial(e.target.value)} />
-        </div>
+        </label>
       </div>
       <div style={resultStyle}>
         {!out ? 'Enter Valid Inputs.' : (

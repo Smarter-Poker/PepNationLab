@@ -147,8 +147,57 @@ function onboardScore(r: Researcher): { score: number; label: string; color: str
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────
-   Micro-components
+   Premium UI Micro-components
 ───────────────────────────────────────────────────────────────────────────── */
+
+function Tooltip({ text, children }: { text: string; children: React.ReactNode }) {
+  return (
+    <div className="tooltip-container">
+      {children}
+      <span className="tooltip-text">{text}</span>
+    </div>
+  );
+}
+
+function SkeletonGrid() {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+      {/* KPI Skeletons */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 16 }}>
+        {Array.from({ length: 4 }).map((_, i) => (
+          <div key={i} className="skeleton-box hover-lift glass-panel" style={{ height: 104, borderRadius: 14 }} />
+        ))}
+      </div>
+      {/* Table Row Skeletons */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 16 }}>
+        {Array.from({ length: 5 }).map((_, i) => (
+          <div key={i} className="skeleton-box glass-panel" style={{ height: 60, borderRadius: 12 }} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function RadialProgress({ pct, size = 56, strokeWidth = 5 }: { pct: number; size?: number; strokeWidth?: number }) {
+  const radius = (size - strokeWidth) / 2;
+  const circum = radius * 2 * Math.PI;
+  const offset = circum - (pct / 100) * circum;
+  return (
+    <div style={{ position: 'relative', width: size, height: size, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+      <svg width={size} height={size} style={{ transform: 'rotate(-90deg)', overflow: 'visible' }}>
+        <circle cx={size/2} cy={size/2} r={radius} stroke="rgba(255,255,255,0.08)" strokeWidth={strokeWidth} fill="none" />
+        <circle cx={size/2} cy={size/2} r={radius} stroke="url(#cyan-grad)" strokeWidth={strokeWidth} fill="none" strokeDasharray={circum} strokeDashoffset={offset} strokeLinecap="round" style={{ transition: 'stroke-dashoffset 1.5s cubic-bezier(0.4, 0, 0.2, 1)' }} />
+        <defs>
+          <linearGradient id="cyan-grad" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stopColor="#00C4BC" />
+            <stop offset="100%" stopColor="#2DD4BF" />
+          </linearGradient>
+        </defs>
+      </svg>
+      <span style={{ position: 'absolute', fontSize: '0.75rem', fontWeight: 800, color: '#FFFFFF', letterSpacing: '-0.02em' }}>{pct}%</span>
+    </div>
+  );
+}
 
 function Sparkline({ data, color = '#00C4BC' }: { data: number[]; color?: string }) {
   if (!data || data.length === 0) return <span style={{ display: 'inline-block', width: 60, height: 20 }} />;
@@ -157,7 +206,7 @@ function Sparkline({ data, color = '#00C4BC' }: { data: number[]; color?: string
   return (
     <svg viewBox="0 0 60 20" width="60" height="20" style={{ overflow: 'visible', flexShrink: 0 }} aria-hidden>
       <polygon points={`0,20 ${pts} 60,20`} fill={color} opacity="0.12" />
-      <polyline points={pts} fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+      <polyline points={pts} fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="sparkline-path" />
     </svg>
   );
 }
@@ -174,16 +223,18 @@ function DeltaPill({ pct }: { pct: number }) {
 
 function StatusBadge({ status }: { status: Status }) {
   const s = STATUS_STYLES[status] ?? STATUS_STYLES.lead;
-  return <span style={{ display: 'inline-flex', alignItems: 'center', fontSize: '0.64rem', fontWeight: 800, letterSpacing: '0.03em', color: s.fg, background: s.bg, border: `1px solid ${s.border}`, borderRadius: 999, padding: '3px 9px', textTransform: 'uppercase', whiteSpace: 'nowrap' }}>{s.label}</span>;
+  return <span className={status === 'vip' ? 'vip-badge-glow' : undefined} style={{ display: 'inline-flex', alignItems: 'center', fontSize: '0.64rem', fontWeight: 800, letterSpacing: '0.03em', color: s.fg, background: s.bg, border: `1px solid ${s.border}`, borderRadius: 999, padding: '3px 9px', textTransform: 'uppercase', whiteSpace: 'nowrap' }}>{s.label}</span>;
 }
 
 function ChurnBar({ risk }: { risk: number }) {
   const pct = Math.max(0, Math.min(100, Math.round(safe(risk))));
   const color = pct >= 70 ? '#EF4444' : pct >= 40 ? '#F59E0B' : '#2DD4BF';
   return (
-    <div title={`Churn Risk ${pct}%`} style={{ width: '100%', height: 4, background: 'rgba(255,255,255,0.08)', borderRadius: 999, overflow: 'hidden' }}>
-      <div style={{ width: `${pct}%`, height: '100%', background: color, transition: 'width 250ms ease' }} />
-    </div>
+    <Tooltip text={`Churn Risk ${pct}%`}>
+      <div style={{ width: '100%', height: 4, background: 'rgba(255,255,255,0.08)', borderRadius: 999, overflow: 'hidden' }}>
+        <div style={{ width: `${pct}%`, height: '100%', background: color, transition: 'width 250ms ease' }} />
+      </div>
+    </Tooltip>
   );
 }
 
@@ -209,6 +260,7 @@ function KpiCard({ label, value, spark, delta, color = '#00C4BC', onClick, subti
   const clickable = !!onClick;
   return (
     <button type="button" onClick={onClick} disabled={!clickable}
+      className="hover-lift"
       style={{ textAlign: 'left', padding: '14px 16px', borderRadius: 14, cursor: clickable ? 'pointer' : 'default', background: 'linear-gradient(160deg, rgba(24,34,52,0.98) 0%, rgba(14,20,34,0.98) 100%)', border: `1px solid ${clickable ? 'rgba(255,255,255,0.10)' : 'rgba(255,255,255,0.06)'}`, boxShadow: '0 2px 12px rgba(0,0,0,0.35)', display: 'flex', flexDirection: 'column', gap: 10, minHeight: 104, minWidth: 0, transition: 'border-color 0.2s, box-shadow 0.2s, transform 0.15s' }}
       onMouseEnter={e => { if (clickable) { e.currentTarget.style.borderColor = `${color}66`; e.currentTarget.style.boxShadow = `0 6px 24px rgba(0,0,0,0.4), 0 0 0 1px ${color}22`; e.currentTarget.style.transform = 'translateY(-1px)'; } }}
       onMouseLeave={e => { e.currentTarget.style.borderColor = clickable ? 'rgba(255,255,255,0.10)' : 'rgba(255,255,255,0.06)'; e.currentTarget.style.boxShadow = '0 2px 12px rgba(0,0,0,0.35)'; e.currentTarget.style.transform = 'translateY(0)'; }}
@@ -269,13 +321,15 @@ function GoalHeader({ goal, onSetGoal }: {
           </div>
         </div>
       </div>
-      <div style={{ flex: '1 1 200px', minWidth: 160, maxWidth: 360 }}>
-        <div style={{ position: 'relative', height: 8, background: 'rgba(255,255,255,0.06)', borderRadius: 999, overflow: 'hidden' }}>
-          <div style={{ position: 'absolute', inset: 0, width: `${pct}%`, background: 'linear-gradient(90deg, #00C4BC 0%, #2DD4BF 100%)', transition: 'width 400ms ease', borderRadius: 999 }} />
-        </div>
-        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 5, fontSize: '0.69rem', color: '#7A8B9E' }}>
-          <span>{pct}% Complete</span>
-          {goal.streak_months > 0 && <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, color: '#F59E0B', fontWeight: 700 }}><Flame size={11} aria-hidden /> {goal.streak_months}mo Streak</span>}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+        <RadialProgress pct={pct} />
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+          <div style={{ fontSize: '0.69rem', color: '#7A8B9E', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em' }}>Goal Progress</div>
+          {goal.streak_months > 0 ? (
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, color: '#F59E0B', fontWeight: 700, fontSize: '0.75rem' }}><Flame size={12} aria-hidden /> {goal.streak_months} Month Streak!</span>
+          ) : (
+            <span style={{ fontSize: '0.75rem', color: '#FFFFFF', fontWeight: 600 }}>Keep pushing!</span>
+          )}
         </div>
       </div>
       {editing ? (
@@ -480,12 +534,14 @@ function ResearcherRow({ r, expanded, onExpand, onMessage, onAddTag, onRemoveTag
 
         {/* Actions */}
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 3 }} onClick={e => e.stopPropagation()}>
-          <button type="button" onClick={() => onMessage(r)} title="Message" className="crm-icon-btn"><MessageSquare size={13} /></button>
-          <button type="button" onClick={() => setAddingTag(v => !v)} title="Add Tag" className="crm-icon-btn"><TagIcon size={13} /></button>
-          <button type="button" onClick={() => onAddReminder(r)} title="Reminder" className="crm-icon-btn"><Bell size={13} /></button>
-          <button type="button" onClick={() => onTogglePin(r)} title={r.is_pinned ? 'Unpin' : 'Pin'} className="crm-icon-btn">
-            {r.is_pinned ? <PinOff size={13} /> : <Pin size={13} />}
-          </button>
+          <Tooltip text="Message"><button type="button" onClick={() => onMessage(r)} className="crm-icon-btn"><MessageSquare size={13} /></button></Tooltip>
+          <Tooltip text="Add Tag"><button type="button" onClick={() => setAddingTag(v => !v)} className="crm-icon-btn"><TagIcon size={13} /></button></Tooltip>
+          <Tooltip text="Reminder"><button type="button" onClick={() => onAddReminder(r)} className="crm-icon-btn"><Bell size={13} /></button></Tooltip>
+          <Tooltip text={r.is_pinned ? 'Unpin' : 'Pin'}>
+            <button type="button" onClick={() => onTogglePin(r)} className="crm-icon-btn">
+              {r.is_pinned ? <PinOff size={13} /> : <Pin size={13} />}
+            </button>
+          </Tooltip>
         </div>
       </div>
 
@@ -501,7 +557,7 @@ function ResearcherRow({ r, expanded, onExpand, onMessage, onAddTag, onRemoveTag
 
       {/* Expanded panel */}
       {expanded && (
-        <div style={{ padding: '16px 20px', marginLeft: 3, background: 'rgba(0,196,188,0.025)', borderTop: '1px solid rgba(0,196,188,0.10)' }}>
+        <div className="glass-panel stagger-fade-in" style={{ padding: '20px', margin: '6px 12px 16px 12px', borderTop: 'none', position: 'relative' }}>
 
           {/* Top detail grid */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: 16, marginBottom: 20 }}>
@@ -862,9 +918,8 @@ export default function AgentResearcherCRMv2({
   /* ── Render states ── */
   if (loading && !data) {
     return (
-      <div style={{ padding: '36px 0', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12, color: '#7A8B9E' }}>
-        <div style={{ width: 20, height: 20, borderRadius: '50%', border: '2px solid #00C4BC', borderTopColor: 'transparent', animation: 'spin 0.8s linear infinite' }} />
-        Loading CRM...
+      <div style={{ padding: '24px 0' }}>
+        <SkeletonGrid />
       </div>
     );
   }

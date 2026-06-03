@@ -798,23 +798,16 @@ export default function AgentDashboardClient({
                 {/* Brushed-steel outer frame */}
                 <div
                   onClick={e => e.stopPropagation()}
+                  className="glass-panel stagger-fade-in"
                   style={{
                     maxWidth: 480, width: '100%',
-                    borderRadius: 20,
-                    padding: 10,
-                    background: 'linear-gradient(145deg, #c8c2b8 0%, #a09890 30%, #8a847c 50%, #a09890 70%, #c8c2b8 100%)',
-                    boxShadow: '0 8px 48px rgba(0,0,0,0.8), inset 0 1px 0 rgba(255,255,255,0.35), inset 0 -1px 0 rgba(0,0,0,0.4)',
+                    padding: '28px 28px 24px',
+                    position: 'relative',
                     flexShrink: 0,
                   }}
                 >
-                  {/* Inner dark panel */}
-                  <div style={{
-                    borderRadius: 12,
-                    background: 'linear-gradient(180deg, #1a1f2e 0%, #141820 40%, #111520 100%)',
-                    padding: '28px 28px 24px',
-                    boxShadow: 'inset 0 2px 8px rgba(0,0,0,0.6)',
-                    position: 'relative',
-                  }}>
+                  {/* Inner container */}
+                  <div>
 
                     {/* Header row */}
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24 }}>
@@ -1224,7 +1217,7 @@ export default function AgentDashboardClient({
           background: 'rgba(0,0,0,0.8)', zIndex: 1000,
           display: 'flex', alignItems: 'center', justifyContent: 'center'
         }}>
-          <div className="card-metal" style={{ width: '100%', maxWidth: 400, padding: 'var(--space-6)' }}>
+          <div className="glass-panel stagger-fade-in" style={{ width: '100%', maxWidth: 400, padding: 'var(--space-6)', position: 'relative' }}>
             <h3 style={{ marginTop: 0, marginBottom: 'var(--space-4)', color: 'var(--white)' }}>Reset Password</h3>
             <p style={{ fontSize: '0.85rem', color: 'var(--silver)', marginBottom: 'var(--space-2)' }}>
               User: <strong style={{ color: 'var(--white)' }}>{resetPwUser.name}</strong>
