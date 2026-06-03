@@ -88,7 +88,7 @@ export default function PaymentProofUpload({ orderId, uploadDisabled = false }: 
 
   return (
     <div
-      className="card-metal hover-lift"
+      className="glass-panel hover-lift"
       style={{
         padding: 'var(--space-6)',
         marginBottom: 'var(--space-5)',

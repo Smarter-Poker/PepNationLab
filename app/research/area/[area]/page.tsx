@@ -80,13 +80,13 @@ export default async function ResearchAreaPage({ params }: PageProps) {
       label: 'Overview',
       children: (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-5, 24px)' }}>
-          <section className="card-metal" style={{ padding: 'var(--space-5, 24px)', borderRadius: 'var(--radius-lg, 12px)' }}>
+          <section className="glass-panel" style={{ padding: 'var(--space-5, 24px)', borderRadius: 'var(--radius-lg, 12px)' }}>
             <h2 style={sectionHeadStyle}>Overview</h2>
             <p style={bodyTextStyle}>{content.overview}</p>
           </section>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 'var(--space-4, 16px)' }}>
-            <section className="card-metal" style={{ padding: 'var(--space-5, 24px)', borderRadius: 'var(--radius-lg, 12px)' }}>
+            <section className="glass-panel" style={{ padding: 'var(--space-5, 24px)', borderRadius: 'var(--radius-lg, 12px)' }}>
               <h2 style={sectionHeadStyle}>Key Mechanisms</h2>
               <ul style={bulletListStyle}>
                 {content.keyMechanisms.map((m, i) => (
@@ -94,7 +94,7 @@ export default async function ResearchAreaPage({ params }: PageProps) {
                 ))}
               </ul>
             </section>
-            <section className="card-metal" style={{ padding: 'var(--space-5, 24px)', borderRadius: 'var(--radius-lg, 12px)' }}>
+            <section className="glass-panel" style={{ padding: 'var(--space-5, 24px)', borderRadius: 'var(--radius-lg, 12px)' }}>
               <h2 style={sectionHeadStyle}>Studied For (Research Use Cases)</h2>
               <ul style={bulletListStyle}>
                 {content.studiedFor.map((m, i) => (
@@ -111,7 +111,7 @@ export default async function ResearchAreaPage({ params }: PageProps) {
       key: 'overview',
       label: 'Overview',
       children: (
-        <section className="card-metal" style={{ padding: 'var(--space-5, 24px)', borderRadius: 'var(--radius-lg, 12px)' }}>
+        <section className="glass-panel" style={{ padding: 'var(--space-5, 24px)', borderRadius: 'var(--radius-lg, 12px)' }}>
           <p style={bodyTextStyle}>{meta.blurb}</p>
         </section>
       ),
@@ -124,7 +124,7 @@ export default async function ResearchAreaPage({ params }: PageProps) {
     label: `Compounds (${compounds.length})`,
     children:
       compounds.length === 0 ? (
-        <div className="card-metal" style={{ padding: 'var(--space-6, 32px)', textAlign: 'center', color: 'var(--silver, #A8B4C0)', borderRadius: 'var(--radius-lg, 12px)' }}>
+        <div className="glass-panel" style={{ padding: 'var(--space-6, 32px)', textAlign: 'center', color: 'var(--silver, #A8B4C0)', borderRadius: 'var(--radius-lg, 12px)' }}>
           No Compounds Are Currently Listed For This Research Area.
         </div>
       ) : (
@@ -136,7 +136,7 @@ export default async function ResearchAreaPage({ params }: PageProps) {
               <Link
                 key={c.slug}
                 href={`/research/${c.slug}`}
-                className="card-metal"
+                className="glass-panel"
                 style={{
                   display: 'flex',
                   flexDirection: 'column',
@@ -168,7 +168,7 @@ export default async function ResearchAreaPage({ params }: PageProps) {
   if (content) {
     const evidenceChildren = (
       <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4, 16px)' }}>
-        <section className="card-metal" style={{ padding: 'var(--space-5, 24px)', borderRadius: 'var(--radius-lg, 12px)' }}>
+        <section className="glass-panel" style={{ padding: 'var(--space-5, 24px)', borderRadius: 'var(--radius-lg, 12px)' }}>
           <h2 style={sectionHeadStyle}>Evidence Landscape</h2>
           <p style={bodyTextStyle}>{content.evidenceLandscape}</p>
         </section>
@@ -181,7 +181,7 @@ export default async function ResearchAreaPage({ params }: PageProps) {
                 if (!c) return null;
                 const t = evidenceTier(c.evidence_tier);
                 return (
-                  <Link key={slug} href={`/research/${slug}`} className="card-metal" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-1, 4px)', padding: 'var(--space-3, 12px) var(--space-4, 16px)', borderRadius: 'var(--radius-lg, 12px)', textDecoration: 'none', color: 'var(--white, #FFFFFF)' }}>
+                  <Link key={slug} href={`/research/${slug}`} className="glass-panel" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-1, 4px)', padding: 'var(--space-3, 12px) var(--space-4, 16px)', borderRadius: 'var(--radius-lg, 12px)', textDecoration: 'none', color: 'var(--white, #FFFFFF)' }}>
                     <span style={{ fontSize: '0.72rem', color: 'var(--silver, #A8B4C0)' }}>#{i + 1} Most Studied</span>
                     <span style={{ fontSize: '1rem', fontWeight: 700 }}>{c.display_name}</span>
                     <span style={{ fontSize: '0.72rem', color: t.color }}>{t.label}</span>
@@ -192,7 +192,7 @@ export default async function ResearchAreaPage({ params }: PageProps) {
           </section>
         )}
         {content.topStacks && content.topStacks.length > 0 && (
-          <section className="card-metal" style={{ padding: 'var(--space-5, 24px)', borderRadius: 'var(--radius-lg, 12px)' }}>
+          <section className="glass-panel" style={{ padding: 'var(--space-5, 24px)', borderRadius: 'var(--radius-lg, 12px)' }}>
             <h2 style={sectionHeadStyle}>Stacks Studied In This Area</h2>
             <ul style={bulletListStyle}>
               {content.topStacks.map((s, i) => <li key={i} style={bulletItemStyle}>{s}</li>)}
@@ -213,7 +213,7 @@ export default async function ResearchAreaPage({ params }: PageProps) {
       key: 'safety',
       label: 'Safety',
       children: (
-        <section className="card-metal" style={{ padding: 'var(--space-5, 24px)', borderRadius: 'var(--radius-lg, 12px)', borderLeft: '3px solid var(--red-600, #E53E3E)' }}>
+        <section className="glass-panel" style={{ padding: 'var(--space-5, 24px)', borderRadius: 'var(--radius-lg, 12px)', borderLeft: '3px solid var(--red-600, #E53E3E)' }}>
           <h2 style={sectionHeadStyle}>Notable Safety Considerations</h2>
           <p style={bodyTextStyle}>{content.notableSafety}</p>
         </section>
@@ -227,7 +227,7 @@ export default async function ResearchAreaPage({ params }: PageProps) {
       key: 'references',
       label: 'References',
       children: (
-        <section className="card-metal" style={{ padding: 'var(--space-5, 24px)', borderRadius: 'var(--radius-lg, 12px)' }}>
+        <section className="glass-panel" style={{ padding: 'var(--space-5, 24px)', borderRadius: 'var(--radius-lg, 12px)' }}>
           <h2 style={sectionHeadStyle}>Key References</h2>
           <ol style={{ ...bulletListStyle, listStyleType: 'decimal', paddingLeft: '1.4rem' }}>
             {content.keyReferences.map((r, i) => (

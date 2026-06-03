@@ -172,7 +172,7 @@ export default async function RecentlyViewedPage() {
         </div>
 
         {items.length === 0 ? (
-          <div className="card-metal hover-lift stagger-fade-in" style={{ padding: 'var(--space-8)', textAlign: 'center', animationDelay: '0.1s' }}>
+          <div className="glass-panel hover-lift stagger-fade-in" style={{ padding: 'var(--space-8)', textAlign: 'center', animationDelay: '0.1s' }}>
             <History size={32} aria-hidden="true" style={{ marginBottom: 'var(--space-3)', color: 'var(--silver)' }} />
             <h2 style={{ color: 'var(--white)', fontSize: '1.1rem', marginBottom: 'var(--space-2)' }}>
               Nothing Here Yet
@@ -187,7 +187,7 @@ export default async function RecentlyViewedPage() {
             )}
           </div>
         ) : (
-          <div className="card-metal hover-lift stagger-fade-in" style={{ padding: 0, overflow: 'hidden', animationDelay: '0.1s' }}>
+          <div className="glass-panel hover-lift stagger-fade-in" style={{ padding: 0, overflow: 'hidden', animationDelay: '0.1s' }}>
             <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
               {items.map((item, idx) => {
                 const price = priceMap.get(item.product_id) ?? item.products!.base_cost ?? 0;
@@ -253,7 +253,7 @@ export default async function RecentlyViewedPage() {
         )}
 
         {trending.length > 0 && (
-          <div className="card-metal hover-lift stagger-fade-in" style={{ marginTop: 'var(--space-6)', padding: 'var(--space-5) var(--space-5) var(--space-6)', animationDelay: '0.2s' }}>
+          <div className="glass-panel hover-lift stagger-fade-in" style={{ marginTop: 'var(--space-6)', padding: 'var(--space-5) var(--space-5) var(--space-6)', animationDelay: '0.2s' }}>
             <h2 style={{ color: 'var(--white)', fontSize: '1.05rem', fontFamily: 'var(--font-brand)', marginBottom: 'var(--space-2)' }}>
               Trending Now
             </h2>

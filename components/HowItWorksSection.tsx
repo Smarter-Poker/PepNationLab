@@ -70,7 +70,7 @@ export default function HowItWorksSection() {
 
           <div className="grid-3" style={{ position: 'relative', zIndex: 1 }}>
             {STEPS.map((step, i) => (
-              <div key={step.step} className="card-metal animate-fade-up"
+              <div key={step.step} className="glass-panel animate-fade-up"
                    style={{ animationDelay: `${i * 100}ms`, textAlign: 'center' }}>
                 {/* Step number + icon */}
                 <div style={{ 

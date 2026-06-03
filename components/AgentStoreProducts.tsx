@@ -254,8 +254,8 @@ export default function AgentStoreProducts({ agentId }: { agentId: string }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
       {/* Header */}
-      <div className="metal-frame">
-        <div className="metal-content" style={{ padding: 'var(--space-6)' }}>
+      <div className="glass-panel">
+        <div className="" style={{ padding: 'var(--space-6)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 'var(--space-4)' }}>
             <div>
               <h3 className="metal-text" style={{ fontSize: '1.25rem', margin: 0, fontFamily: 'var(--font-brand)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
@@ -323,8 +323,8 @@ export default function AgentStoreProducts({ agentId }: { agentId: string }) {
       />
 
       {/* Bulk Margin */}
-      <div className="metal-frame">
-        <div className="metal-content" style={{ padding: 'var(--space-5)' }}>
+      <div className="glass-panel">
+        <div className="" style={{ padding: 'var(--space-5)' }}>
           <h4 style={{ fontSize: '0.9rem', color: '#00E5FF', marginBottom: 'var(--space-3)', fontFamily: 'var(--font-brand)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Bulk Margin Adjustment</h4>
           <div style={{ display: 'flex', gap: 'var(--space-3)', alignItems: 'center', flexWrap: 'wrap' }}>
             <span style={{ fontSize: '0.82rem', color: 'rgba(255,255,255,0.4)' }}>Apply +</span>
@@ -349,15 +349,15 @@ export default function AgentStoreProducts({ agentId }: { agentId: string }) {
       </div>
 
       {error && (
-        <div className="metal-embossed-panel" style={{ border: '1px solid rgba(229,62,62,0.3)', padding: 'var(--space-3)', fontSize: '0.85rem', color: '#FC8181' }}>
+        <div className="glass-panel" style={{ border: '1px solid rgba(229,62,62,0.3)', padding: 'var(--space-3)', fontSize: '0.85rem', color: '#FC8181' }}>
           {error}
         </div>
       )}
 
       {/* Flat alphabetical list (default) */}
       {effectiveViewMode === 'flat' && (
-        <div className="metal-frame">
-          <div className="metal-content" style={{ padding: 0, overflow: 'hidden' }}>
+        <div className="glass-panel">
+          <div className="" style={{ padding: 0, overflow: 'hidden' }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1px', background: 'rgba(255,255,255,0.05)' }}>
             {searchFiltered.map((p, _idx) => {
               const displayName = p.custom_name || p.products.name;
@@ -368,7 +368,7 @@ export default function AgentStoreProducts({ agentId }: { agentId: string }) {
               return (
                 <div
                   key={p.id}
-                  className="metal-embossed-panel"
+                  className="glass-panel"
                   style={{
                     padding: 'var(--space-4) var(--space-5)',
                     margin: 0,
@@ -543,8 +543,8 @@ export default function AgentStoreProducts({ agentId }: { agentId: string }) {
         const catActiveCount = catProducts.filter(p => p.is_visible).length;
 
         return (
-          <div key={category} className="metal-frame" style={{ padding: 0 }}>
-            <div className="metal-content" style={{ padding: 0, overflow: 'hidden' }}>
+          <div key={category} className="glass-panel" style={{ padding: 0 }}>
+            <div className="" style={{ padding: 0, overflow: 'hidden' }}>
               <button
                 onClick={() => toggleCategory(category)}
                 style={{
@@ -574,7 +574,7 @@ export default function AgentStoreProducts({ agentId }: { agentId: string }) {
                     return (
                       <div
                         key={p.id}
-                        className="metal-embossed-panel"
+                        className="glass-panel"
                         style={{
                           padding: 'var(--space-4) var(--space-5)',
                           margin: 0, borderRadius: 0,
@@ -728,8 +728,8 @@ export default function AgentStoreProducts({ agentId }: { agentId: string }) {
       })}
 
       {searchFiltered.length === 0 && (
-        <div className="metal-frame">
-          <div className="metal-content" style={{ textAlign: 'center', padding: 'var(--space-8) 0' }}>
+        <div className="glass-panel">
+          <div className="" style={{ textAlign: 'center', padding: 'var(--space-8) 0' }}>
             <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.9rem' }}>No Products Match This Filter.</p>
           </div>
         </div>

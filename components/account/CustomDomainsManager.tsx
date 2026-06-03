@@ -37,7 +37,7 @@ export default function CustomDomainsManager() {
   }
 
   return (
-    <section className="card-metal" style={{ padding: 16, borderRadius: 12 }}>
+    <section className="glass-panel" style={{ padding: 16, borderRadius: 12 }}>
       <h3 style={{ color: 'var(--white)', marginTop: 0 }}>Custom Domains</h3>
       <p style={{ color: 'var(--grey-400)', fontSize: '0.82rem' }}>
         Point Your Domain CNAME To pepnationlab.com — Approval Required.

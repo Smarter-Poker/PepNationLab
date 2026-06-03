@@ -20,7 +20,7 @@ interface Props {
 export default function SARPanel({ compounds, baselineSlug }: Props) {
   if (!compounds || compounds.length === 0) {
     return (
-      <div className="card-metal" style={{ padding: 16, borderRadius: 12, color: '#A8B4C0', fontSize: 14 }}>
+      <div className="glass-panel" style={{ padding: 16, borderRadius: 12, color: '#A8B4C0', fontSize: 14 }}>
         No Analogue Family Available For This Compound.
       </div>
     );
@@ -31,7 +31,7 @@ export default function SARPanel({ compounds, baselineSlug }: Props) {
   const baseHl = baseline?.measured_half_life_hours ?? baseline?.predicted_half_life_hours ?? null;
 
   return (
-    <div className="card-metal" style={{ padding: 16, borderRadius: 12 }}>
+    <div className="glass-panel" style={{ padding: 16, borderRadius: 12 }}>
       <h3 style={{ margin: 0, color: '#FFFFFF', fontSize: 14, fontWeight: 800, marginBottom: 10 }}>Structure-Activity Relationship Panel</h3>
       <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
         <thead>

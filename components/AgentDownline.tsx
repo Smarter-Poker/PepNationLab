@@ -131,8 +131,8 @@ export default function AgentDownline({ agentId }: { agentId?: string }) {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-8)' }}>
-      <div className="metal-frame">
-        <div className="metal-content">
+      <div className="glass-panel">
+        <div className="">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 'var(--space-4)', gap: 'var(--space-4)', flexWrap: 'wrap' }}>
             <div>
               <h2 className="metal-text" style={{ fontSize: '1.25rem', fontFamily: 'var(--font-brand)' }}>
@@ -159,7 +159,7 @@ export default function AgentDownline({ agentId }: { agentId?: string }) {
                 return (
                   <div 
                     key={agent.id}
-                    className="metal-embossed-panel"
+                    className="glass-panel"
                     style={{
                       display: 'flex',
                       justifyContent: 'space-between',
@@ -247,8 +247,8 @@ export default function AgentDownline({ agentId }: { agentId?: string }) {
           position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)',
           zIndex: 1100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 'var(--space-4)'
         }}>
-          <div className="metal-frame" style={{ width: '100%', maxWidth: 500, maxHeight: '90vh', overflowY: 'auto' }}>
-            <div className="metal-content" style={{ padding: 'var(--space-6)' }}>
+          <div className="glass-panel" style={{ width: '100%', maxWidth: 500, maxHeight: '90vh', overflowY: 'auto' }}>
+            <div className="" style={{ padding: 'var(--space-6)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 'var(--space-5)' }}>
                 <div>
                   <h3 className="metal-text" style={{ marginTop: 0, fontSize: '1.4rem', fontFamily: 'var(--font-brand)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Create Agent Account</h3>
@@ -453,8 +453,8 @@ export default function AgentDownline({ agentId }: { agentId?: string }) {
           background: 'rgba(0,0,0,0.8)', zIndex: 1100,
           display: 'flex', alignItems: 'center', justifyContent: 'center'
         }}>
-          <div className="metal-frame" style={{ width: '100%', maxWidth: 400 }}>
-            <div className="metal-content" style={{ padding: 'var(--space-6)' }}>
+          <div className="glass-panel" style={{ width: '100%', maxWidth: 400 }}>
+            <div className="" style={{ padding: 'var(--space-6)' }}>
               <h3 className="metal-text" style={{ marginTop: 0, marginBottom: 'var(--space-4)' }}>Reset Agent Password</h3>
               <p style={{ fontSize: '0.85rem', color: 'var(--silver)', marginBottom: 'var(--space-2)' }}>
                 Agent: <strong style={{ color: 'var(--white)' }}>{resetPwUser.name}</strong>
@@ -525,8 +525,8 @@ export default function AgentDownline({ agentId }: { agentId?: string }) {
           background: 'rgba(0,0,0,0.85)', zIndex: 1200,
           display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 'var(--space-4)'
         }}>
-          <div className="metal-frame" style={{ width: '100%', maxWidth: 700, maxHeight: '90vh', display: 'flex', flexDirection: 'column' }}>
-            <div className="metal-content" style={{ padding: 'var(--space-6)', overflowY: 'auto' }}>
+          <div className="glass-panel" style={{ width: '100%', maxWidth: 700, maxHeight: '90vh', display: 'flex', flexDirection: 'column' }}>
+            <div className="" style={{ padding: 'var(--space-6)', overflowY: 'auto' }}>
               <h2 className="metal-text" style={{ marginTop: 0, marginBottom: 'var(--space-2)', fontSize: '1.4rem' }}>
                 Gamification Scale
               </h2>

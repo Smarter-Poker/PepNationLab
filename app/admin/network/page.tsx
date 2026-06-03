@@ -80,14 +80,14 @@ export default async function AdminNetworkPage() {
       )}
 
       {rows.length === 0 ? (
-        <div className="metal-frame">
-          <div className="metal-content" style={{ padding: 'var(--space-8)', textAlign: 'center', color: 'var(--grey-400)' }}>
+        <div className="glass-panel">
+          <div className="" style={{ padding: 'var(--space-8)', textAlign: 'center', color: 'var(--grey-400)' }}>
             No Agent Network Detected.
           </div>
         </div>
       ) : (
-        <div className="metal-frame">
-          <div className="metal-content" style={{ padding: 'var(--space-5)' }}>
+        <div className="glass-panel">
+          <div className="" style={{ padding: 'var(--space-5)' }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
               {rows.map((row) => {
                 const badge = roleBadge(row);

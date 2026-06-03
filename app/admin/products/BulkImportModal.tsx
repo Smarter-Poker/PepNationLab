@@ -301,7 +301,7 @@ export default function BulkImportModal({ onClose }: { onClose: () => void }) {
       onClick={onClose}
     >
       <div
-        className="card-metal"
+        className="glass-panel"
         style={{
           width: '100%',
           maxWidth: '960px',

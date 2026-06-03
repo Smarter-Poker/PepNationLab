@@ -814,7 +814,7 @@ export default function ResearcherDashboard({ userId, userName, userEmail, agent
               </div>
 
               {loadingFavs ? <Spinner /> : (favoritesTab === 'favorites' ? favorites : pastOrders).length === 0 ? (
-                <div className="card-metal" style={{ textAlign: 'center', padding: 48 }}>
+                <div className="glass-panel" style={{ textAlign: 'center', padding: 48 }}>
                   <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 12, opacity: 0.3 }}>
                     <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                       {favoritesTab === 'favorites' ? (
@@ -832,7 +832,7 @@ export default function ResearcherDashboard({ userId, userName, userEmail, agent
               ) : (
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 'var(--space-4)' }}>
                   {(favoritesTab === 'favorites' ? favorites : pastOrders).map(f => f.products && (
-                    <div key={f.product_id} className="card-metal" style={{ padding: 'var(--space-4)' }}>
+                    <div key={f.product_id} className="glass-panel" style={{ padding: 'var(--space-4)' }}>
                       <div style={{ position: 'relative', height: 120, borderRadius: 8, overflow: 'hidden', marginBottom: 10, background: 'rgba(255,255,255,0.03)' }}>
                         {f.products.image_url ? (
                           <img src={f.products.image_url} alt={f.products.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
@@ -878,7 +878,7 @@ export default function ResearcherDashboard({ userId, userName, userEmail, agent
           {/* ── ACCOUNT TAB ── */}
           {tab === 'account' && (
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-6)' }} className="account-grid">
-              <div className="card-metal hover-lift" style={{ padding: 'var(--space-6)' }}>
+              <div className="glass-panel hover-lift" style={{ padding: 'var(--space-6)' }}>
                 <h3 style={{ fontSize: '0.85rem', color: 'var(--silver)', fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 'var(--space-5)' }}>Profile Settings</h3>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
                   {/* R32: First + Last name top-aligned, matches every other
@@ -911,7 +911,7 @@ export default function ResearcherDashboard({ userId, userName, userEmail, agent
                 </div>
               </div>
 
-              <div className="card-metal" style={{ padding: 'var(--space-6)' }}>
+              <div className="glass-panel" style={{ padding: 'var(--space-6)' }}>
                 <h3 style={{ fontSize: '0.85rem', color: 'var(--silver)', fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 'var(--space-5)' }}>Account Info</h3>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                   {[

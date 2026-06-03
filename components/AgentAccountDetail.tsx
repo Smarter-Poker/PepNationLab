@@ -276,10 +276,10 @@ export default function AgentAccountDetail({
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="metal-frame"
+        className="glass-panel"
         style={{ width: '100%', maxWidth: 760, margin: 'var(--space-6) 0' }}
       >
-        <div className="metal-content" style={{ padding: 'var(--space-6)' }}>
+        <div className="" style={{ padding: 'var(--space-6)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 'var(--space-4)', marginBottom: 'var(--space-5)' }}>
             <div>
               <h2 className="metal-text" style={{ fontSize: '1.4rem', fontFamily: 'var(--font-brand)', margin: 0 }}>
@@ -339,7 +339,7 @@ export default function AgentAccountDetail({
                   </div>
 
                   {/* Edit form */}
-                  <div className="metal-embossed-panel" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
+                  <div className="glass-panel" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
                     <h3 className="metal-text" style={{ fontSize: '1rem', margin: 0, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                       {isSubAgent ? 'Edit Sub-Agent' : 'Edit Agent'}
                     </h3>
@@ -403,7 +403,7 @@ export default function AgentAccountDetail({
                   </div>
 
                   {/* Sales history */}
-                  <div className="metal-embossed-panel">
+                  <div className="glass-panel">
                     <h3 className="metal-text" style={{ fontSize: '1rem', margin: '0 0 var(--space-3)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Recent Sales</h3>
                     {detail.sales.recent.length === 0 ? (
                       <div style={{ color: 'var(--grey-400)', fontSize: '0.85rem', padding: 'var(--space-3) 0' }}>No Orders Yet.</div>
@@ -423,7 +423,7 @@ export default function AgentAccountDetail({
                   </div>
 
                   {/* Wallet ledger */}
-                  <div className="metal-embossed-panel">
+                  <div className="glass-panel">
                     <h3 className="metal-text" style={{ fontSize: '1rem', margin: '0 0 var(--space-3)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Wallet Ledger</h3>
                     {detail.ledger.length === 0 ? (
                       <div style={{ color: 'var(--grey-400)', fontSize: '0.85rem', padding: 'var(--space-3) 0' }}>No Wallet Transactions Yet.</div>
@@ -443,7 +443,7 @@ export default function AgentAccountDetail({
                   </div>
 
                   {/* Account Access + Transactions (Invoice v2) */}
-                  <div className="metal-embossed-panel" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)', marginTop: 'var(--space-4)' }}>
+                  <div className="glass-panel" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)', marginTop: 'var(--space-4)' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 'var(--space-3)' }}>
                       <div>
                         <div style={{ fontWeight: 700, color: 'var(--white)' }}>Account Access</div>
@@ -510,7 +510,7 @@ export default function AgentAccountDetail({
               )}
 
               {activeTab === 'Sub Agents' && (
-                <div className="metal-embossed-panel">
+                <div className="glass-panel">
                   <h3 className="metal-text" style={{ fontSize: '1rem', margin: '0 0 var(--space-3)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Sub Agents</h3>
                   {!detail.sub_agents || detail.sub_agents.length === 0 ? (
                     <div style={{ color: 'var(--grey-400)', fontSize: '0.85rem', padding: 'var(--space-3) 0' }}>No Sub Agents Yet.</div>

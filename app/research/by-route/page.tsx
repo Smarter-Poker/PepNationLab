@@ -4,7 +4,7 @@
 
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { createClient } from '@/lib/supabase/server';
+import { getAllCompounds } from '@/lib/compounds-server';
 import { evidenceTier, wadaLabel } from '@/lib/compounds';
 import BrowseFilterShell from '@/components/research/BrowseFilterShell';
 
@@ -53,7 +53,7 @@ function CompoundCard({ c }: { c: RouteRow }) {
   return (
     <Link
       href={`/research/${c.slug}`}
-      className="card-metal"
+      className="glass-panel"
       style={{
         display: 'flex',
         flexDirection: 'column',
@@ -92,13 +92,7 @@ function CompoundCard({ c }: { c: RouteRow }) {
 }
 
 export default async function ResearchByRoutePage() {
-  const supabase = await createClient();
-  const { data } = await supabase
-    .from('compounds')
-    .select('slug, display_name, category, evidence_tier, wada_status, plain_summary, route_of_admin')
-    .order('display_name', { ascending: true });
-
-  const rows = (data ?? []) as RouteRow[];
+  const rows = (await getAllCompounds()) as unknown as RouteRow[];
 
   const buckets = new Map<string, RouteRow[]>();
   for (const r of rows) {
@@ -149,7 +143,7 @@ export default async function ResearchByRoutePage() {
       </header>
 
       {shellGroups.length === 0 ? (
-        <div className="card-metal" style={{ padding: 'var(--space-5, 24px)', borderRadius: 'var(--radius-lg, 12px)', color: 'var(--silver, #A8B4C0)' }}>
+        <div className="glass-panel" style={{ padding: 'var(--space-5, 24px)', borderRadius: 'var(--radius-lg, 12px)', color: 'var(--silver, #A8B4C0)' }}>
           Route Annotations Will Populate Once The DailyMed Sync Cron Runs.
         </div>
       ) : (

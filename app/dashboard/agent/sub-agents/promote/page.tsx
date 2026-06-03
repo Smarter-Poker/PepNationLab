@@ -163,7 +163,7 @@ export default function PromoteSubAgentPage() {
 
       {/* Share link card — shown only after a successful promotion */}
       {shareLink && (
-        <div className="card-metal" style={{ padding: '16px', marginBottom: '20px', border: '1px solid #10B981' }}>
+        <div className="glass-panel" style={{ padding: '16px', marginBottom: '20px', border: '1px solid #10B981' }}>
           <div style={{ fontSize: '12px', opacity: 0.85, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '8px', color: '#10B981' }}>
             Your Sub-Agent&apos;s Invite Link
           </div>
@@ -185,7 +185,7 @@ export default function PromoteSubAgentPage() {
         </div>
       )}
 
-      <div className="card-metal" style={{ padding: '20px', marginBottom: '20px' }}>
+      <div className="glass-panel" style={{ padding: '20px', marginBottom: '20px' }}>
         <h2 style={{ fontSize: '20px', marginBottom: '12px' }}>Select A Researcher</h2>
         {loadingResearchers ? (
           <div>Loading Your Researchers...</div>
@@ -214,7 +214,7 @@ export default function PromoteSubAgentPage() {
         )}
       </div>
 
-      <form onSubmit={handleSubmit} className="card-metal" style={{ padding: '20px' }}>
+      <form onSubmit={handleSubmit} className="glass-panel" style={{ padding: '20px' }}>
         <div style={{ marginBottom: '16px' }}>
           <label style={{ display: 'block', marginBottom: '4px', fontWeight: 600 }}>Researcher Id</label>
           <input

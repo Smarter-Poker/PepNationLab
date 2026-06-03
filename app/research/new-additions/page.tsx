@@ -5,7 +5,7 @@
 
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { createServiceClient } from '@/lib/supabase/server';
+import { getAllCompounds } from '@/lib/compounds-server';
 import { evidenceTier } from '@/lib/compounds';
 import BrowseFilterShell from '@/components/research/BrowseFilterShell';
 
@@ -31,7 +31,7 @@ function ItemCard({ c }: { c: NewRow }) {
   return (
     <Link
       href={`/research/${c.slug}`}
-      className="card-metal"
+      className="glass-panel"
       style={{
         display: 'flex',
         justifyContent: 'space-between',
@@ -70,14 +70,10 @@ function ItemCard({ c }: { c: NewRow }) {
 }
 
 export default async function ResearchNewAdditionsPage() {
-  const supabase = await createServiceClient();
-  const { data } = await supabase
-    .from('compounds')
-    .select('slug, display_name, evidence_tier, category, plain_summary, created_at')
-    .order('created_at', { ascending: false })
-    .limit(40);
-
-  const items = (data ?? []) as NewRow[];
+  const all = await getAllCompounds();
+  const items = all
+    .sort((a, b) => new Date((b as any).created_at).getTime() - new Date((a as any).created_at).getTime())
+    .slice(0, 40) as unknown as NewRow[];
 
   // Group by category
   const categoryMap = new Map<string, NewRow[]>();
@@ -136,7 +132,7 @@ export default async function ResearchNewAdditionsPage() {
       </header>
 
       {items.length === 0 ? (
-        <div className="card-metal" style={{ padding: 'var(--space-5, 24px)', borderRadius: 'var(--radius-lg, 12px)', color: 'var(--silver, #A8B4C0)' }}>
+        <div className="glass-panel" style={{ padding: 'var(--space-5, 24px)', borderRadius: 'var(--radius-lg, 12px)', color: 'var(--silver, #A8B4C0)' }}>
           No Compounds In The Catalog Yet.
         </div>
       ) : (

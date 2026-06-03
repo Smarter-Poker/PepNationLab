@@ -77,7 +77,7 @@ export default function DangerZoneTab() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
-      <div className="card-metal" style={{ padding: 'var(--space-6)' }}>
+      <div className="glass-panel" style={{ padding: 'var(--space-6)' }}>
         <h3 style={{ marginTop: 0, marginBottom: 'var(--space-2)', color: 'var(--teal)' }}>Download Your Data</h3>
         <p style={{ color: 'var(--silver)', fontSize: '0.85rem', margin: '0 0 var(--space-4)', lineHeight: 1.6 }}>
           Request A Bundle Of Your Profile, Orders, Addresses, And Messages. Exports Are Prepared In The Background And
@@ -139,7 +139,7 @@ export default function DangerZoneTab() {
       </div>
 
       <div
-        className="card-metal"
+        className="glass-panel"
         style={{
           padding: 'var(--space-6)',
           border: '1px solid rgba(229,62,62,0.3)',
@@ -181,7 +181,7 @@ export default function DangerZoneTab() {
           }}
         >
           <div
-            className="card-metal"
+            className="glass-panel"
             onClick={(e) => e.stopPropagation()}
             style={{
               maxWidth: 440,

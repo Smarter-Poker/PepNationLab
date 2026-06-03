@@ -128,7 +128,7 @@ export default function LabToolsCalculators() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-5)' }}>
-      <div className="card-metal" style={{ padding: 'var(--space-6)' }}>
+      <div className="glass-panel" style={{ padding: 'var(--space-6)' }}>
         <h3 style={{ fontSize: '1rem', color: 'var(--white)', fontWeight: 800, marginBottom: 4 }}>Reconstitution Calculator</h3>
         <p style={{ fontSize: '0.82rem', color: 'var(--grey-400)', marginBottom: 'var(--space-5)', lineHeight: 1.5 }}>
           Enter Your Vial Strength, How Much Bacteriostatic Water You Are Adding, And Your Target Amount Per Draw. The Tool Computes The Concentration And Exactly How Much To Draw On A U-100 Syringe.
@@ -160,7 +160,7 @@ export default function LabToolsCalculators() {
       </div>
 
       {/* Quick reference */}
-      <div className="card-metal" style={{ padding: 'var(--space-6)' }}>
+      <div className="glass-panel" style={{ padding: 'var(--space-6)' }}>
         <h3 style={{ fontSize: '0.82rem', color: 'var(--silver)', fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 'var(--space-4)' }}>
           How The Math Works
         </h3>

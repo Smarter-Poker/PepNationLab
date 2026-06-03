@@ -86,8 +86,8 @@ export default function SubAgentCommissionEditor({ subAgentId, name }: { subAgen
           onClick={() => !saving && setOpen(false)}
           style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', zIndex: 1100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 'var(--space-4)' }}
         >
-          <div onClick={(e) => e.stopPropagation()} className="metal-frame" style={{ width: '100%', maxWidth: 560, maxHeight: '90vh', overflowY: 'auto' }}>
-            <div className="metal-content" style={{ padding: 'var(--space-6)' }}>
+          <div onClick={(e) => e.stopPropagation()} className="glass-panel" style={{ width: '100%', maxWidth: 560, maxHeight: '90vh', overflowY: 'auto' }}>
+            <div className="" style={{ padding: 'var(--space-6)' }}>
               <h3 className="metal-text" style={{ marginTop: 0, marginBottom: 4, fontFamily: 'var(--font-brand)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                 Commission Plan
               </h3>

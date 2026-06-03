@@ -62,7 +62,7 @@ export default async function ResearchAZPage() {
         }}
       >
         {letters.map((L) => (
-          <a key={L} href={`#letter-${L}`} className="card-metal" style={{ padding: '4px 10px', borderRadius: 'var(--radius-md, 8px)', color: 'var(--teal, #00C4BC)', textDecoration: 'none', fontWeight: 700, fontSize: '0.85rem' }}>
+          <a key={L} href={`#letter-${L}`} className="glass-panel" style={{ padding: '4px 10px', borderRadius: 'var(--radius-md, 8px)', color: 'var(--teal, #00C4BC)', textDecoration: 'none', fontWeight: 700, fontSize: '0.85rem' }}>
             {L}
           </a>
         ))}
@@ -78,7 +78,7 @@ export default async function ResearchAZPage() {
                 <Link
                   key={c.slug}
                   href={`/research/${c.slug}`}
-                  className="card-metal"
+                  className="glass-panel"
                   style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-1, 4px)', padding: 'var(--space-3, 12px) var(--space-4, 16px)', borderRadius: 'var(--radius-lg, 12px)', textDecoration: 'none', color: 'var(--white, #FFFFFF)' }}
                 >
                   <span style={{ fontSize: '0.7rem', color: t.color, textTransform: 'uppercase', letterSpacing: '0.04em', fontWeight: 700 }}>{t.label}</span>

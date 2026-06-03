@@ -167,8 +167,8 @@ export default function AdminAgentNotesPage() {
 
       <div className="grid-2" style={{ gap: 'var(--space-6)' }}>
         {/* Picker */}
-        <div className="metal-frame">
-          <div className="metal-content" style={{ padding: 'var(--space-5)' }}>
+        <div className="glass-panel">
+          <div className="" style={{ padding: 'var(--space-5)' }}>
             <h3 style={{ fontSize: '0.95rem', margin: 0, marginBottom: 'var(--space-3)' }}>Pick An Agent</h3>
             <input
               type="search"
@@ -210,8 +210,8 @@ export default function AdminAgentNotesPage() {
         </div>
 
         {/* Notes column */}
-        <div className="metal-frame">
-          <div className="metal-content" style={{ padding: 'var(--space-5)' }}>
+        <div className="glass-panel">
+          <div className="" style={{ padding: 'var(--space-5)' }}>
             <h3 style={{ fontSize: '0.95rem', margin: 0, marginBottom: 'var(--space-3)' }}>
               {subjectId ? 'Notes' : 'Select Someone To Begin'}
             </h3>

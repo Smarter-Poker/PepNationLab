@@ -7,6 +7,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
+import { getAllCompounds } from '@/lib/compounds-server';
 import { evidenceTier, wadaLabel } from '@/lib/compounds';
 import ReceptorAffinityHeatmap from '@/components/research/ReceptorAffinityHeatmap';
 
@@ -49,18 +50,14 @@ export default async function ResearchTargetDetailPage({ params }: PageProps) {
 
   const supabase = await createClient();
 
-  const { data: compounds } = await supabase
-    .from('compounds')
-    .select('slug, display_name, category, evidence_tier, wada_status, plain_summary, receptors')
-    .contains('receptors', [decoded])
-    .order('display_name', { ascending: true });
+  const allCompounds = await getAllCompounds();
+  const compoundRows = allCompounds.filter((c) => (c as any).receptors?.includes(decoded)) as unknown as CompoundRow[];
 
   const { data: bindings } = await supabase
     .from('compound_chembl_bindings')
     .select('compound_slug, target_name, standard_type, standard_value, standard_units, pchembl_value')
     .ilike('target_name', decoded);
 
-  const compoundRows = (compounds ?? []) as CompoundRow[];
   const bindingRows = (bindings ?? []) as BindingRow[];
 
   return (
@@ -99,7 +96,7 @@ export default async function ResearchTargetDetailPage({ params }: PageProps) {
       </h2>
 
       {compoundRows.length === 0 ? (
-        <div className="card-metal" style={{ padding: 'var(--space-5, 24px)', borderRadius: 'var(--radius-lg, 12px)', color: 'var(--silver, #A8B4C0)' }}>
+        <div className="glass-panel" style={{ padding: 'var(--space-5, 24px)', borderRadius: 'var(--radius-lg, 12px)', color: 'var(--silver, #A8B4C0)' }}>
           No Compounds Are Currently Annotated To Bind This Target.
         </div>
       ) : (
@@ -110,7 +107,7 @@ export default async function ResearchTargetDetailPage({ params }: PageProps) {
               <Link
                 key={c.slug}
                 href={`/research/${c.slug}`}
-                className="card-metal"
+                className="glass-panel"
                 style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-1, 4px)', padding: 'var(--space-3, 12px) var(--space-4, 16px)', borderRadius: 'var(--radius-lg, 12px)', textDecoration: 'none', color: 'var(--white, #FFFFFF)' }}
               >
                 <span style={{ fontSize: '0.7rem', color: t.color, textTransform: 'uppercase', letterSpacing: '0.04em', fontWeight: 700 }}>{t.label}</span>

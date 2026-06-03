@@ -473,15 +473,15 @@ export default function AgentSales({ orders, setOrders, agentId, userProfile }: 
 
       {/* ─────────────── ACCOUNTING / MONEY STRIP ─────────────── */}
       <div className="sa-capitalize-all" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 'var(--space-4)' }}>
-        <div className="metal-frame">
-          <div className="metal-content sa-box-centered" style={{ padding: 'var(--space-5)' }}>
+        <div className="glass-panel">
+          <div className=" sa-box-centered" style={{ padding: 'var(--space-5)' }}>
             <div className="sa-label">{wallet?.primaryLabel || 'Available'}</div>
             <div className="sa-stat" style={{ color: '#00E5FF', marginTop: 6 }}>{fmt(wallet?.primary ?? 0)}</div>
             <a href="/wallet" style={{ color: 'var(--teal)', fontSize: '0.76rem', fontWeight: 700, marginTop: 8, display: 'inline-block' }}>Open Wallet</a>
           </div>
         </div>
-        <div className="metal-frame">
-          <div className="metal-content sa-box-centered" style={{ padding: 'var(--space-5)' }}>
+        <div className="glass-panel">
+          <div className=" sa-box-centered" style={{ padding: 'var(--space-5)' }}>
             <div className="sa-label">Owed This Week</div>
             <div className="sa-stat" style={{ color: (wallet?.owedThisWeek ?? 0) > 0 ? '#FF6B81' : 'var(--white)', marginTop: 6 }}>{fmt(wallet?.owedThisWeek ?? 0)}</div>
             <div style={{ color: 'var(--grey-400)', fontSize: '0.74rem', marginTop: 8 }}>
@@ -489,23 +489,23 @@ export default function AgentSales({ orders, setOrders, agentId, userProfile }: 
             </div>
           </div>
         </div>
-        <div className="metal-frame">
-          <div className="metal-content sa-box-centered" style={{ padding: 'var(--space-5)' }}>
+        <div className="glass-panel">
+          <div className=" sa-box-centered" style={{ padding: 'var(--space-5)' }}>
             <div className="sa-label">Profit This Month<span className="sa-info" title={PROFIT_HELP}>i</span></div>
             <div className="sa-stat" style={{ color: '#00FF9D', marginTop: 6 }}>{fmt(a.monthProfit)}</div>
             <div style={{ color: 'var(--grey-400)', fontSize: '0.74rem', marginTop: 8 }}>{fmt(a.monthRevenue)} Revenue</div>
           </div>
         </div>
-        <div className="metal-frame">
-          <div className="metal-content sa-box-centered" style={{ padding: 'var(--space-5)' }}>
+        <div className="glass-panel">
+          <div className=" sa-box-centered" style={{ padding: 'var(--space-5)' }}>
             <div className="sa-label">Lifetime Profit<span className="sa-info" title={PROFIT_HELP}>i</span></div>
             <div className="sa-stat" style={{ marginTop: 6 }}>{fmt(a.lifetimeProfit)}</div>
             <div style={{ color: 'var(--grey-400)', fontSize: '0.74rem', marginTop: 8 }}>{a.margin.toFixed(0)}% Margin</div>
           </div>
         </div>
         {showCommission && (
-          <div className="metal-frame">
-            <div className="metal-content sa-box-centered" style={{ padding: 'var(--space-5)' }}>
+          <div className="glass-panel">
+            <div className=" sa-box-centered" style={{ padding: 'var(--space-5)' }}>
               <div className="sa-label">Commission Earned</div>
               <div className="sa-stat" style={{ color: '#7C5CFF', marginTop: 6 }}>{fmt(commission?.thisMonth ?? 0)}</div>
               <div style={{ color: 'var(--grey-400)', fontSize: '0.74rem', marginTop: 8 }}>This Month · {fmt(commission?.lifetime ?? 0)} Lifetime</div>
@@ -516,8 +516,8 @@ export default function AgentSales({ orders, setOrders, agentId, userProfile }: 
 
       {/* ─────────────── GETTING STARTED (no sales yet) ─────────────── */}
       {!a.hasCollected && (
-        <div className="metal-frame">
-          <div className="metal-content" style={{ padding: 'var(--space-6)' }}>
+        <div className="glass-panel">
+          <div className="" style={{ padding: 'var(--space-6)' }}>
             <h2 className="metal-text" style={{ fontSize: '1.15rem', fontFamily: 'var(--font-brand)', margin: '0 0 6px' }}>Let’s Get Your First Sale</h2>
             <p style={{ color: 'var(--silver)', fontSize: '0.88rem', margin: '0 0 14px' }}>Your Stats, Charts, Streak, And Goal All Come Alive Once Orders Start Landing. A Few Good First Moves:</p>
             <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
@@ -532,8 +532,8 @@ export default function AgentSales({ orders, setOrders, agentId, userProfile }: 
 
       {/* ─────────────── GOAL + STREAK + FORECAST ─────────────── */}
       <div className="sa-capitalize-all" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 'var(--space-4)' }}>
-        <div className="metal-frame" style={goal > 0 && goalPct >= 100 ? { animation: 'sa-pulse 2.4s ease-in-out infinite' } : undefined}>
-          <div className="metal-content" style={{ padding: 'var(--space-6)', display: 'flex', gap: 'var(--space-5)', alignItems: 'center' }}>
+        <div className="glass-panel" style={goal > 0 && goalPct >= 100 ? { animation: 'sa-pulse 2.4s ease-in-out infinite' } : undefined}>
+          <div className="" style={{ padding: 'var(--space-6)', display: 'flex', gap: 'var(--space-5)', alignItems: 'center' }}>
             <GoalRing pct={goalPct} hit={goalPct >= 100} />
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
@@ -561,8 +561,8 @@ export default function AgentSales({ orders, setOrders, agentId, userProfile }: 
           </div>
         </div>
 
-        <div className="metal-frame">
-          <div className="metal-content" style={{ padding: 'var(--space-6)' }}>
+        <div className="glass-panel">
+          <div className="" style={{ padding: 'var(--space-6)' }}>
             <div className="sa-label">Selling Streak</div>
             <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, marginTop: 6 }}>
               <span className="sa-stat" style={{ color: a.streak > 0 ? '#FFB020' : 'var(--grey-500)' }}>{a.streak}</span>
@@ -580,8 +580,8 @@ export default function AgentSales({ orders, setOrders, agentId, userProfile }: 
           </div>
         </div>
 
-        <div className="metal-frame">
-          <div className="metal-content" style={{ padding: 'var(--space-6)' }}>
+        <div className="glass-panel">
+          <div className="" style={{ padding: 'var(--space-6)' }}>
             <div className="sa-label">Projected Month-End</div>
             <div className="sa-stat" style={{ color: '#7C5CFF', marginTop: 6 }}>{fmt(a.projectedMonth)}</div>
             <div style={{ color: 'var(--grey-400)', fontSize: '0.8rem', marginTop: 4 }}>Based On {a.dayOfMonth} Of {a.daysInMonth} Days</div>
@@ -597,8 +597,8 @@ export default function AgentSales({ orders, setOrders, agentId, userProfile }: 
       </div>
 
       {/* ─────────────── MILESTONES ─────────────── */}
-      <div className="metal-frame">
-        <div className="metal-content" style={{ padding: 'var(--space-6)' }}>
+      <div className="glass-panel">
+        <div className="" style={{ padding: 'var(--space-6)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
             <h2 className="metal-text" style={{ fontSize: '1.05rem', fontFamily: 'var(--font-brand)', margin: 0 }}>Milestones</h2>
             <span style={{ color: 'var(--grey-400)', fontSize: '0.78rem' }}>{achievedMilestones.length} Of {MILESTONES.length} Unlocked</span>
@@ -639,8 +639,8 @@ export default function AgentSales({ orders, setOrders, agentId, userProfile }: 
       </div>
 
       {/* ─────────────── TREND CHART ─────────────── */}
-      <div className="metal-frame">
-        <div className="metal-content" style={{ padding: 'var(--space-6)' }}>
+      <div className="glass-panel">
+        <div className="" style={{ padding: 'var(--space-6)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10, marginBottom: 'var(--space-4)' }}>
             <h2 className="metal-text" style={{ fontSize: '1.15rem', fontFamily: 'var(--font-brand)', margin: 0 }}>Revenue And Profit</h2>
             <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
@@ -676,8 +676,8 @@ export default function AgentSales({ orders, setOrders, agentId, userProfile }: 
 
       {/* ─────────────── BREAKDOWNS ─────────────── */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 'var(--space-4)' }}>
-        <div className="metal-frame">
-          <div className="metal-content" style={{ padding: 'var(--space-6)' }}>
+        <div className="glass-panel">
+          <div className="" style={{ padding: 'var(--space-6)' }}>
             <h2 className="metal-text" style={{ fontSize: '1.05rem', fontFamily: 'var(--font-brand)', margin: '0 0 12px' }}>Revenue By Product</h2>
             {a.topProductSlices.length > 0 ? (
               <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)', flexWrap: 'wrap' }}>
@@ -705,8 +705,8 @@ export default function AgentSales({ orders, setOrders, agentId, userProfile }: 
           </div>
         </div>
 
-        <div className="metal-frame">
-          <div className="metal-content" style={{ padding: 'var(--space-6)' }}>
+        <div className="glass-panel">
+          <div className="" style={{ padding: 'var(--space-6)' }}>
             <h2 className="metal-text" style={{ fontSize: '1.05rem', fontFamily: 'var(--font-brand)', margin: '0 0 12px' }}>Revenue By Payment Method</h2>
             {a.payMix.length > 0 ? (
               <div style={{ width: '100%', height: 200 }}>
@@ -733,8 +733,8 @@ export default function AgentSales({ orders, setOrders, agentId, userProfile }: 
       </div>
 
       {/* ─────────────── MONTHLY PROFIT & LOSS ─────────────── */}
-      <div className="metal-frame">
-        <div className="metal-content" style={{ padding: 'var(--space-6)' }}>
+      <div className="glass-panel">
+        <div className="" style={{ padding: 'var(--space-6)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8, marginBottom: 14 }}>
             <h2 className="metal-text" style={{ fontSize: '1.15rem', fontFamily: 'var(--font-brand)', margin: 0 }}>
               Monthly Profit &amp; Loss<span className="sa-info" title={PROFIT_HELP}>i</span>
@@ -800,8 +800,8 @@ export default function AgentSales({ orders, setOrders, agentId, userProfile }: 
 // ── Small presentational helpers ──────────────────────────────────────────────
 function KpiCard({ label, value, delta, deltaLabel, sub, color, help }: { label: string; value: string; delta?: number; deltaLabel?: string; sub?: string; color?: string; help?: string }) {
   return (
-    <div className="metal-frame">
-      <div className="metal-content sa-box-centered" style={{ padding: 'var(--space-5)' }}>
+    <div className="glass-panel">
+      <div className=" sa-box-centered" style={{ padding: 'var(--space-5)' }}>
         <div className="sa-label">{label}{help && <span className="sa-info" title={help}>i</span>}</div>
         <div className="sa-stat" style={{ marginTop: 6, color: color || 'var(--white)' }}>{value}</div>
         {typeof delta === 'number' && (
@@ -833,8 +833,8 @@ function GoalRing({ pct, hit }: { pct: number; hit: boolean }) {
 
 function RankList({ title, rows, empty }: { title: string; rows: { name: string; primary: string; secondary: string }[]; empty: string }) {
   return (
-    <div className="metal-frame">
-      <div className="metal-content" style={{ padding: 'var(--space-6)' }}>
+    <div className="glass-panel">
+      <div className="" style={{ padding: 'var(--space-6)' }}>
         <h2 className="metal-text" style={{ fontSize: '1.05rem', fontFamily: 'var(--font-brand)', margin: '0 0 12px' }}>{title}</h2>
         {rows.length === 0 ? <p style={{ color: 'var(--grey-400)', fontSize: '0.82rem', margin: 0 }}>{empty}</p> : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>

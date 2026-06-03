@@ -177,8 +177,8 @@ export default function PaymentMethodsPanel({
   const enabledCount = PAYMENT_METHODS.filter(m => methods[m.key].enabled).length;
 
   return (
-    <div className="metal-frame" style={{ marginTop: 'var(--space-6)' }}>
-      <div className="metal-content" style={{ padding: 'var(--space-8)' }}>
+    <div className="glass-panel" style={{ marginTop: 'var(--space-6)' }}>
+      <div className="" style={{ padding: 'var(--space-8)' }}>
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 'var(--space-2)', gap: 'var(--space-4)', flexWrap: 'wrap' }}>
         <div>
           <h4 style={{ color: 'var(--teal)', marginBottom: 'var(--space-1)' }}>

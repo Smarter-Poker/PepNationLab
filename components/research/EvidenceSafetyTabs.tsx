@@ -93,7 +93,7 @@ export default function EvidenceSafetyTabs({
         <section>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4, 16px)' }}>
             {groups.map((g) => (
-              <div key={g.tier} className="card-metal" style={{ padding: 'var(--space-4, 16px)', borderRadius: 'var(--radius-lg, 12px)', borderLeft: `3px solid ${g.color}` }}>
+              <div key={g.tier} className="glass-panel" style={{ padding: 'var(--space-4, 16px)', borderRadius: 'var(--radius-lg, 12px)', borderLeft: `3px solid ${g.color}` }}>
                 <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 'var(--space-2, 8px)', marginBottom: 'var(--space-2, 8px)' }}>
                   <span style={{ fontSize: '1rem', fontWeight: 800, color: g.color }}>{g.label}</span>
                   <span style={{ fontSize: '0.78rem', color: 'var(--silver, #A8B4C0)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '999px', padding: '1px 8px' }}>
@@ -133,7 +133,7 @@ export default function EvidenceSafetyTabs({
               <Link
                 key={c.slug}
                 href={`/research/${c.slug}`}
-                className="card-metal"
+                className="glass-panel"
                 style={{ display: 'flex', flexDirection: 'column', gap: '4px', padding: 'var(--space-3, 12px) var(--space-4, 16px)', borderRadius: 'var(--radius-lg, 12px)', textDecoration: 'none', color: 'var(--white, #FFFFFF)' }}
               >
                 <span style={{ fontWeight: 700, fontSize: '0.95rem' }}>{c.name}</span>
@@ -153,7 +153,7 @@ export default function EvidenceSafetyTabs({
           </p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3, 12px)' }}>
             {flagged.map((c) => (
-              <div key={c.slug} className="card-metal" style={{ padding: 'var(--space-4, 16px)', borderRadius: 'var(--radius-lg, 12px)' }}>
+              <div key={c.slug} className="glass-panel" style={{ padding: 'var(--space-4, 16px)', borderRadius: 'var(--radius-lg, 12px)' }}>
                 <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 'var(--space-2, 8px)', marginBottom: '6px' }}>
                   <Link href={`/research/${c.slug}`} style={{ fontWeight: 800, fontSize: '1rem', color: 'var(--white, #FFFFFF)', textDecoration: 'none' }}>
                     {c.name}

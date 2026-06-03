@@ -102,7 +102,7 @@ export default function SubscribeReplenishButton({
             if (e.target === e.currentTarget) setOpen(false);
           }}
         >
-          <div className="card-metal" style={{ padding: 'var(--space-6)', maxWidth: 460, width: '100%' }}>
+          <div className="glass-panel" style={{ padding: 'var(--space-6)', maxWidth: 460, width: '100%' }}>
             <h2 style={{ fontSize: '1.1rem', color: 'var(--white)', marginBottom: 'var(--space-2)' }}>
               Auto-Replenish This Order
             </h2>

@@ -391,9 +391,9 @@ export default function ProductCatalogClient({
       )}
 
       {/* Table */}
-      <div className="metal-frame hover-lift stagger-fade-in">
+      <div className="glass-panel hover-lift stagger-fade-in">
         <div
-          className="metal-content"
+          className=""
           style={{ padding: 0, overflowX: "auto" }}
         >
           <table
@@ -819,9 +819,9 @@ export default function ProductCatalogClient({
             padding: "var(--space-4)",
           }}
         >
-          <div className="metal-frame" style={{ width: "100%", maxWidth: 520 }}>
+          <div className="glass-panel" style={{ width: "100%", maxWidth: 520 }}>
             <div
-              className="metal-content"
+              className=""
               style={{ padding: "var(--space-6)" }}
             >
               <h2

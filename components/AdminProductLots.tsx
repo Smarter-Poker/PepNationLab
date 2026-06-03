@@ -227,8 +227,8 @@ export default function AdminProductLots({ productId }: Props) {
   }
 
   return (
-    <div className="metal-frame">
-      <div className="metal-content" style={{ padding: 'var(--space-6)' }}>
+    <div className="glass-panel">
+      <div className="" style={{ padding: 'var(--space-6)' }}>
       <input
         ref={fileInputRef}
         type="file"
@@ -428,11 +428,11 @@ export default function AdminProductLots({ productId }: Props) {
       {showForm && (
         <div className="modal-overlay" onClick={closeForm}>
           <div
-            className="metal-frame"
+            className="glass-panel"
             style={{ width: '100%', maxWidth: 560, margin: 'var(--space-4)' }}
             onClick={e => e.stopPropagation()}
           >
-            <div className="metal-content" style={{ padding: 'var(--space-6)' }}>
+            <div className="" style={{ padding: 'var(--space-6)' }}>
             <h3 className="metal-text" style={{ marginBottom: 'var(--space-4)', color: '#fff', fontSize: '1.25rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
               {editingLot ? 'Edit Lot' : 'Add Lot'}
             </h3>

@@ -50,8 +50,8 @@ export default function GoalTracker({ revenueCents }: { revenueCents: number }) 
   const pct = target_cents > 0 ? Math.min(100, Math.round((revenue / target_cents) * 100)) : 0;
 
   return (
-    <div className="metal-frame">
-      <div className="metal-content" style={{ padding: 14 }}>
+    <div className="glass-panel">
+      <div className="" style={{ padding: 14 }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
           <h3 style={{ color: 'var(--white)', fontSize: '0.95rem', margin: 0 }}>Monthly Goal</h3>
           <button onClick={() => setEditing(v => !v)} style={{

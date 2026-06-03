@@ -109,7 +109,7 @@ export default function FirstRunNotificationPrompt() {
       }}
     >
       <div
-        className={!enabled ? "stagger-fade-in" : "card-metal stagger-fade-in"}
+        className={!enabled ? "stagger-fade-in" : "glass-panel stagger-fade-in"}
         style={{ width: '100%', maxWidth: 840, padding: !enabled ? 0 : 'var(--space-7, 28px)', textAlign: 'center', borderRadius: 18 }}
       >
         {!enabled ? (

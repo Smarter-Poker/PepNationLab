@@ -107,7 +107,7 @@ export default function StructureViewer3D({ pdbId, alphafoldId, sequence, height
 
   if (status === 'empty') {
     return (
-      <div className="card-metal" style={{ padding: 20, borderRadius: 12, color: '#A8B4C0', fontSize: 14 }}>
+      <div className="glass-panel" style={{ padding: 20, borderRadius: 12, color: '#A8B4C0', fontSize: 14 }}>
         No 3D Structure Is Yet Annotated For This Compound. {sequence ? 'Sequence Available; AlphaFold Prediction Pending.' : ''}
       </div>
     );

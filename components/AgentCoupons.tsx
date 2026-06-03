@@ -554,8 +554,8 @@ export default function AgentCoupons({ agentId, agentSlug }: AgentCouponsProps) 
   const todayIso = new Date().toISOString().slice(0, 10);
 
   return (
-    <div className="metal-frame">
-      <div className="metal-content" style={{ padding: 'var(--space-6)' }}>
+    <div className="glass-panel">
+      <div className="" style={{ padding: 'var(--space-6)' }}>
         <div style={{ marginBottom: 'var(--space-5)' }}>
           <h3
             className="metal-text"
@@ -595,7 +595,7 @@ export default function AgentCoupons({ agentId, agentSlug }: AgentCouponsProps) 
         }} className="coupons-create-grid">
           <form
             onSubmit={handleCreate}
-            className="metal-embossed-panel"
+            className="glass-panel"
             style={{ padding: 'var(--space-5)', display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}
           >
             {formError && (
@@ -857,7 +857,7 @@ export default function AgentCoupons({ agentId, agentSlug }: AgentCouponsProps) 
           </form>
 
           <div
-            className="metal-embossed-panel"
+            className="glass-panel"
             style={{ padding: 'var(--space-5)' }}
             aria-live="polite"
           >
@@ -997,7 +997,7 @@ export default function AgentCoupons({ agentId, agentSlug }: AgentCouponsProps) 
             <div style={{ width: 28, height: 28, borderRadius: '50%', border: '2px solid var(--teal)', borderTopColor: 'transparent', animation: 'spin 0.8s linear infinite' }} />
           </div>
         ) : error ? (
-          <div className="metal-embossed-panel" style={{ border: '1px solid rgba(229,62,62,0.3)', padding: 'var(--space-4)' }}>
+          <div className="glass-panel" style={{ border: '1px solid rgba(229,62,62,0.3)', padding: 'var(--space-4)' }}>
             <p style={{ color: '#FFAAAA', fontSize: '0.85rem', margin: 0 }}>{error}</p>
           </div>
         ) : filteredCoupons.length === 0 ? (
@@ -1031,7 +1031,7 @@ export default function AgentCoupons({ agentId, agentSlug }: AgentCouponsProps) 
               return (
                 <div
                   key={c.id}
-                  className="metal-embossed-panel"
+                  className="glass-panel"
                   style={{
                     padding: 'var(--space-4)',
                     display: 'flex',
@@ -1299,7 +1299,7 @@ function ModalShell({ title, onClose, children, footer, maxWidth = 560 }: ModalS
       }}
     >
       <div
-        className="metal-embossed-panel"
+        className="glass-panel"
         onClick={(e) => e.stopPropagation()}
         style={{
           width: '100%',

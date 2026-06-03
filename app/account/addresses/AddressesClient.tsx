@@ -174,7 +174,7 @@ export default function AddressesClient({ initialAddresses }: { initialAddresses
       )}
 
       {(editingId || creating) && (
-        <div className="card-metal hover-lift stagger-fade-in" style={{ padding: 'var(--space-5)', marginBottom: 'var(--space-5)', animationDelay: '0.1s' }}>
+        <div className="glass-panel hover-lift stagger-fade-in" style={{ padding: 'var(--space-5)', marginBottom: 'var(--space-5)', animationDelay: '0.1s' }}>
           <h2 style={{ color: 'var(--white)', fontSize: '1.05rem', marginBottom: 'var(--space-3)' }}>
             {editingId ? 'Edit Address' : 'Add New Address'}
           </h2>
@@ -215,13 +215,13 @@ export default function AddressesClient({ initialAddresses }: { initialAddresses
       )}
 
       {addresses.length === 0 ? (
-        <div className="card-metal hover-lift stagger-fade-in" style={{ padding: 'var(--space-6)', textAlign: 'center', animationDelay: '0.2s' }}>
+        <div className="glass-panel hover-lift stagger-fade-in" style={{ padding: 'var(--space-6)', textAlign: 'center', animationDelay: '0.2s' }}>
           <p style={{ color: 'var(--silver)' }}>You Have No Saved Addresses Yet.</p>
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
           {addresses.map((a, index) => (
-            <div key={a.id} className="card-metal hover-lift stagger-fade-in" style={{ padding: 'var(--space-4)', borderRadius: 'var(--radius-md)', animationDelay: `${0.1 + index * 0.06}s` }}>
+            <div key={a.id} className="glass-panel hover-lift stagger-fade-in" style={{ padding: 'var(--space-4)', borderRadius: 'var(--radius-md)', animationDelay: `${0.1 + index * 0.06}s` }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 'var(--space-3)' }}>
                 <div style={{ minWidth: 0 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', flexWrap: 'wrap' }}>

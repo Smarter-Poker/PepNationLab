@@ -20,7 +20,7 @@ function NavRow({ href, label, description, Icon, index }: NavRowProps) {
   return (
     <Link
       href={href}
-      className="card-metal hover-lift stagger-fade-in"
+      className="glass-panel hover-lift stagger-fade-in"
       style={{
         display: 'flex',
         alignItems: 'center',

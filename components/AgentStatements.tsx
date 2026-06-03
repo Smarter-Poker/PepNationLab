@@ -39,8 +39,8 @@ export default function AgentStatements() {
 
   if (loading) {
     return (
-      <div className="metal-frame" style={{ textAlign: 'center' }}>
-        <div className="metal-content" style={{ padding: 'var(--space-6)' }}>
+      <div className="glass-panel" style={{ textAlign: 'center' }}>
+        <div className="" style={{ padding: 'var(--space-6)' }}>
           <div className="spinner" style={{ margin: '0 auto', marginBottom: 'var(--space-4)' }} />
           <p style={{ color: 'var(--silver-light)' }}>Loading Statements...</p>
         </div>
@@ -50,8 +50,8 @@ export default function AgentStatements() {
 
   if (error) {
     return (
-      <div className="metal-frame" style={{ borderLeft: '3px solid var(--red)' }}>
-        <div className="metal-content" style={{ padding: 'var(--space-6)' }}>
+      <div className="glass-panel" style={{ borderLeft: '3px solid var(--red)' }}>
+        <div className="" style={{ padding: 'var(--space-6)' }}>
           <p style={{ color: 'var(--red)' }}>Error: {error}</p>
         </div>
       </div>
@@ -60,8 +60,8 @@ export default function AgentStatements() {
 
   if (statements.length === 0) {
     return (
-      <div className="metal-frame">
-        <div className="metal-content">
+      <div className="glass-panel">
+        <div className="">
           <h2 className="metal-text" style={{ fontSize: '1.25rem', fontFamily: 'var(--font-brand)', marginBottom: 'var(--space-4)' }}>Admin Statements</h2>
           <div style={{ padding: 'var(--space-6)', textAlign: 'center' }}>
             <p style={{ color: 'var(--silver-light)' }}>No Statements Found. Statements Are Generated Weekly For Your Fulfillment Costs.</p>
@@ -72,8 +72,8 @@ export default function AgentStatements() {
   }
 
   return (
-    <div className="metal-frame">
-      <div className="metal-content">
+    <div className="glass-panel">
+      <div className="">
         <h2 className="metal-text" style={{ fontSize: '1.25rem', fontFamily: 'var(--font-brand)', marginBottom: 'var(--space-4)' }}>Admin Statements</h2>
         <p style={{ color: 'var(--silver-light)', fontSize: '0.9rem', marginBottom: 'var(--space-6)' }}>
           These Statements Represent Your Wholesale Cost (COGS) And Shipping Costs Owed To The Admin For Fulfillment.

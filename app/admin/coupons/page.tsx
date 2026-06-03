@@ -262,16 +262,16 @@ export default function AdminCouponsPage() {
           <p style={{ color: 'var(--red)', fontSize: '0.9rem' }}>{error}</p>
         </div>
       ) : coupons.length === 0 ? (
-        <div className="metal-frame hover-lift stagger-fade-in" style={{ animationDelay: '0.1s' }}>
-          <div className="metal-content" style={{ textAlign: 'center', padding: 'var(--space-12) 0' }}>
+        <div className="glass-panel hover-lift stagger-fade-in" style={{ animationDelay: '0.1s' }}>
+          <div className="" style={{ textAlign: 'center', padding: 'var(--space-12) 0' }}>
             <p style={{ color: 'var(--grey-400)', fontSize: '0.88rem' }}>
               No Coupons Found. Click Create Coupon To Add One.
             </p>
           </div>
         </div>
       ) : (
-        <div className="metal-frame hover-lift stagger-fade-in" style={{ animationDelay: '0.1s' }}>
-          <div className="metal-content" style={{ padding: 'var(--space-4)' }}>
+        <div className="glass-panel hover-lift stagger-fade-in" style={{ animationDelay: '0.1s' }}>
+          <div className="" style={{ padding: 'var(--space-4)' }}>
             <div className="table-responsive">
               <table className="data-table" style={{ width: '100%' }}>
               <thead>
@@ -391,9 +391,9 @@ export default function AdminCouponsPage() {
             padding: 'var(--space-4)',
           }}
         >
-          <div className="metal-frame hover-lift stagger-fade-in" style={{ width: '100%', maxWidth: 560 }}>
+          <div className="glass-panel hover-lift stagger-fade-in" style={{ width: '100%', maxWidth: 560 }}>
             <div
-              className="metal-content"
+              className=""
               style={{
                 padding: 'var(--space-6)',
                 maxHeight: '92vh',

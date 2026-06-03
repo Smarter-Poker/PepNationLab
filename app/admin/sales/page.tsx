@@ -166,8 +166,8 @@ export default function AdminSalesPage() {
               { label: 'Active Agents', value: data.agents.length, color: 'var(--silver)' },
               { label: 'Direct Revenue', value: `$${data.direct.revenue.toFixed(2)}`, color: 'var(--grey-400)' },
             ].map(({ label, value, color }, index) => (
-              <div key={label} className="metal-frame hover-lift stagger-fade-in" style={{ animationDelay: `${0.1 + index * 0.1}s` }}>
-                <div className="metal-content" style={{ padding: 'var(--space-5)' }}>
+              <div key={label} className="glass-panel hover-lift stagger-fade-in" style={{ animationDelay: `${0.1 + index * 0.1}s` }}>
+                <div className="" style={{ padding: 'var(--space-5)' }}>
                   <div style={{ fontSize: '1.8rem', fontWeight: 800, fontFamily: 'var(--font-brand)', color, lineHeight: 1 }}>{value}</div>
                   <div style={{ fontSize: '0.78rem', color: 'var(--grey-400)', marginTop: 'var(--space-2)' }}>{label}</div>
                 </div>
@@ -177,8 +177,8 @@ export default function AdminSalesPage() {
 
           {/* Agent Revenue Chart */}
           {data.agents.length > 0 && (
-            <div className="metal-frame hover-lift stagger-fade-in" style={{ height: 320, marginBottom: 'var(--space-8)', animationDelay: '0.3s' }}>
-              <div className="metal-content" style={{ padding: 'var(--space-6)', height: '100%' }}>
+            <div className="glass-panel hover-lift stagger-fade-in" style={{ height: 320, marginBottom: 'var(--space-8)', animationDelay: '0.3s' }}>
+              <div className="" style={{ padding: 'var(--space-6)', height: '100%' }}>
                 <h3 style={{ fontSize: '1.1rem', fontFamily: 'var(--font-brand)', color: 'var(--white)', marginBottom: 'var(--space-4)' }}>Revenue By Agent</h3>
                 <ResponsiveContainer width="100%" height={250}>
                 <BarChart data={data.agents.map((a) => ({ ...a, total_revenue: Number(a.total_revenue) || 0 }))}>
@@ -201,8 +201,8 @@ export default function AdminSalesPage() {
 
           <div style={{ display: 'grid', gridTemplateColumns: selectedAgent ? 'repeat(auto-fit, minmax(min(100%, 360px), 1fr))' : '1fr', gap: 'var(--space-6)', alignItems: 'start' }}>
             {/* Agent Table */}
-            <div className="metal-frame hover-lift stagger-fade-in" style={{ overflowX: 'auto', animationDelay: '0.4s' }}>
-              <div className="metal-content" style={{ padding: 0 }}>
+            <div className="glass-panel hover-lift stagger-fade-in" style={{ overflowX: 'auto', animationDelay: '0.4s' }}>
+              <div className="" style={{ padding: 0 }}>
                 <div style={{ padding: 'var(--space-4) var(--space-5)', borderBottom: '1px solid rgba(255,255,255,0.06)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <h3 style={{ fontSize: '0.95rem', color: 'var(--silver)' }}>Revenue By Agent</h3>
                 <span style={{ fontSize: '0.76rem', color: 'var(--grey-500)' }}>Click Any Agent To View Their Transaction Ledger</span>
@@ -282,8 +282,8 @@ export default function AdminSalesPage() {
 
             {/* Transaction Ledger Drawer */}
             {selectedAgent && (
-              <div className="metal-frame hover-lift stagger-fade-in" style={{ position: 'sticky', top: 'var(--space-6)' }}>
-                <div className="metal-content" style={{ padding: 'var(--space-5)' }}>
+              <div className="glass-panel hover-lift stagger-fade-in" style={{ position: 'sticky', top: 'var(--space-6)' }}>
+                <div className="" style={{ padding: 'var(--space-5)' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-4)' }}>
                   <div>
                     <h3 style={{ fontSize: '0.95rem' }}>Transaction Ledger</h3>

@@ -318,9 +318,9 @@ function AdminTransactionsPageInner() {
         </button>
       </div>
 
-      <div className="metal-frame hover-lift stagger-fade-in">
+      <div className="glass-panel hover-lift stagger-fade-in">
         <div
-          className="metal-content"
+          className=""
           style={{ padding: 0, overflowX: "auto" }}
         >
           <table

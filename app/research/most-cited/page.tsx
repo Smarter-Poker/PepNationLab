@@ -31,7 +31,7 @@ function RankCard({ c, rank }: { c: CitedCompound; rank: number }) {
   return (
     <Link
       href={`/research/${c.slug}`}
-      className="card-metal"
+      className="glass-panel"
       style={{
         display: 'grid',
         gridTemplateColumns: '40px 1fr auto',
@@ -92,7 +92,7 @@ export default async function ResearchMostCitedPage() {
       count: withCitations.length,
       children:
         withCitations.length === 0 ? (
-          <div className="card-metal" style={{ padding: 'var(--space-5, 24px)', borderRadius: 'var(--radius-lg, 12px)', color: 'var(--silver, #A8B4C0)' }}>
+          <div className="glass-panel" style={{ padding: 'var(--space-5, 24px)', borderRadius: 'var(--radius-lg, 12px)', color: 'var(--silver, #A8B4C0)' }}>
             Citation Counts Will Populate When The Weekly PubMed Cron Has Run. Check Back Soon.
           </div>
         ) : (
@@ -132,7 +132,7 @@ export default async function ResearchMostCitedPage() {
                     <Link
                       key={c.slug}
                       href={`/research/${c.slug}`}
-                      className="card-metal"
+                      className="glass-panel"
                       style={{ padding: '6px 12px', borderRadius: 'var(--radius-md, 8px)', textDecoration: 'none', color: 'var(--white, #FFFFFF)', fontSize: '0.85rem' }}
                     >
                       {c.display_name}

@@ -1119,7 +1119,7 @@ export default function AgentStorefrontGrid({
               return (
                 <div
                   key={bundle.id}
-                  className="card-metal"
+                  className="glass-panel"
                   style={{
                     display: 'flex',
                     flexDirection: 'column',
@@ -1206,8 +1206,8 @@ export default function AgentStorefrontGrid({
       )}
 
       {filteredProducts.length === 0 && (
-        <div className="metal-frame hover-lift stagger-fade-in">
-          <div className="metal-content" style={{ textAlign: 'center', padding: 'var(--space-8) var(--space-6)' }}>
+        <div className="glass-panel hover-lift stagger-fade-in">
+          <div className="" style={{ textAlign: 'center', padding: 'var(--space-8) var(--space-6)' }}>
             <h3 style={{ color: 'var(--white)', fontSize: '1.05rem', marginBottom: 'var(--space-3)' }}>
               No Products Match Your Filters
             </h3>
@@ -1248,7 +1248,7 @@ export default function AgentStorefrontGrid({
 
           return (
             <motion.div
-              key={group.name} className="metal-frame hover-lift stagger-fade-in" variants={itemVariants}
+              key={group.name} className="glass-panel hover-lift stagger-fade-in" variants={itemVariants}
               style={{
                 cursor: 'pointer'
               }}
@@ -1261,7 +1261,7 @@ export default function AgentStorefrontGrid({
                 setPendingQty(existingQty ?? (bw ? 10 : (isStorefrontOwner ? Math.max(10, selfBuyMin) : selfBuyMin)));
               }}
             >
-              <div className="metal-content" style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden', padding: 0 }}>
+              <div className="" style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden', padding: 0 }}>
               <div style={{
                 height: 220,
                 background: `radial-gradient(circle at 50% 50%, ${primaryColor}20 0%, var(--black) 100%)`,

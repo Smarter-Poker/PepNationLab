@@ -118,7 +118,7 @@ export default async function OrderDetailPage(
       <PageShell hideFooter>
         <section className="section">
           <div className="container-sm">
-            <div className="card-metal hover-lift stagger-fade-in" style={{ padding: 'var(--space-12)', textAlign: 'center', animationDelay: '0.1s' }}>
+            <div className="glass-panel hover-lift stagger-fade-in" style={{ padding: 'var(--space-12)', textAlign: 'center', animationDelay: '0.1s' }}>
               <svg
                 width="44"
                 height="44"
@@ -422,7 +422,7 @@ export default async function OrderDetailPage(
           </div>
 
           {/* Buyer + Shipping */}
-          <div className="card-metal hover-lift stagger-fade-in" style={{ padding: 'var(--space-6)', marginBottom: 'var(--space-5)', animationDelay: '0.1s' }}>
+          <div className="glass-panel hover-lift stagger-fade-in" style={{ padding: 'var(--space-6)', marginBottom: 'var(--space-5)', animationDelay: '0.1s' }}>
             <h2 style={{ fontSize: '0.95rem', color: 'var(--silver)', marginBottom: 'var(--space-3)' }}>
               Buyer & Shipping
             </h2>
@@ -451,7 +451,7 @@ export default async function OrderDetailPage(
           </div>
 
           {/* Items */}
-          <div className="card-metal hover-lift stagger-fade-in" style={{ padding: 'var(--space-6)', marginBottom: 'var(--space-5)', animationDelay: '0.2s' }}>
+          <div className="glass-panel hover-lift stagger-fade-in" style={{ padding: 'var(--space-6)', marginBottom: 'var(--space-5)', animationDelay: '0.2s' }}>
             <h2 style={{ fontSize: '0.95rem', color: 'var(--silver)', marginBottom: 'var(--space-4)' }}>
               Items
             </h2>
@@ -500,7 +500,7 @@ export default async function OrderDetailPage(
 
           {/* You May Also Like */}
           {recommendations.length > 0 && (
-            <div className="card-metal hover-lift stagger-fade-in" style={{ padding: 'var(--space-6)', marginBottom: 'var(--space-5)', animationDelay: '0.3s' }}>
+            <div className="glass-panel hover-lift stagger-fade-in" style={{ padding: 'var(--space-6)', marginBottom: 'var(--space-5)', animationDelay: '0.3s' }}>
               <RecommendationStrip
                 title="You May Also Like"
                 /* Pre-resolve each item href server-side — passing a
@@ -517,7 +517,7 @@ export default async function OrderDetailPage(
 
           {/* Payment Instructions */}
           {order.status === 'pending_customer_payment' && (
-            <div className="card-metal hover-lift stagger-fade-in" style={{ padding: 'var(--space-6)', marginBottom: 'var(--space-5)', animationDelay: '0.4s' }}>
+            <div className="glass-panel hover-lift stagger-fade-in" style={{ padding: 'var(--space-6)', marginBottom: 'var(--space-5)', animationDelay: '0.4s' }}>
               <h2 style={{ fontSize: '0.95rem', color: 'var(--white)', marginBottom: 'var(--space-3)' }}>
                 Payment Instructions
               </h2>
@@ -585,7 +585,7 @@ export default async function OrderDetailPage(
 
           {/* Tracking */}
           {(order.tracking_number || order.label_url) && (
-            <div className="card-metal hover-lift stagger-fade-in" style={{ padding: 'var(--space-6)', animationDelay: '0.5s' }}>
+            <div className="glass-panel hover-lift stagger-fade-in" style={{ padding: 'var(--space-6)', animationDelay: '0.5s' }}>
               <h2 style={{ fontSize: '0.95rem', color: 'var(--silver)', marginBottom: 'var(--space-3)' }}>
                 Tracking
               </h2>
@@ -614,7 +614,7 @@ export default async function OrderDetailPage(
           {/* Lot Numbers & COA (R26 placeholder — wired to order_items.lot_number / coa_url;
               real values are stamped at fulfillment time. Until then, each line item
               shows "Pending" so buyers know the surface exists.) */}
-          <div className="card-metal hover-lift stagger-fade-in" style={{ padding: 'var(--space-6)', animationDelay: '0.55s' }}>
+          <div className="glass-panel hover-lift stagger-fade-in" style={{ padding: 'var(--space-6)', animationDelay: '0.55s' }}>
             <h2 style={{ fontSize: '0.95rem', color: 'var(--silver)', marginBottom: 'var(--space-2)' }}>
               Lot Numbers & COA
             </h2>

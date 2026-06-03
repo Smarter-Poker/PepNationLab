@@ -39,13 +39,13 @@ export default async function SubscriptionsPage() {
         </p>
       </header>
       {items.length === 0 ? (
-        <div className="card-metal" style={{ padding: 'var(--space-5, 24px)', borderRadius: 'var(--radius-lg, 12px)', color: 'var(--silver, #A8B4C0)' }}>
+        <div className="glass-panel" style={{ padding: 'var(--space-5, 24px)', borderRadius: 'var(--radius-lg, 12px)', color: 'var(--silver, #A8B4C0)' }}>
           You Have No Active Subscriptions. Use The Subscribe Button On Any Monograph To Start Tracking.
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3, 12px)' }}>
           {items.map((row) => (
-            <div key={row.compound_slug} className="card-metal" style={{ padding: 'var(--space-4, 16px)', borderRadius: 'var(--radius-lg, 12px)' }}>
+            <div key={row.compound_slug} className="glass-panel" style={{ padding: 'var(--space-4, 16px)', borderRadius: 'var(--radius-lg, 12px)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 'var(--space-2, 8px)' }}>
                 <Link href={`/research/${row.compound_slug}`} style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--white, #FFFFFF)', textDecoration: 'none' }}>{row.compound_slug}</Link>
                 <span style={{ fontSize: '0.72rem', color: 'var(--silver, #A8B4C0)' }}>Since {new Date(row.created_at).toLocaleDateString()}</span>

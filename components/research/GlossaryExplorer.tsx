@@ -107,7 +107,7 @@ export default function GlossaryExplorer({ terms }: { terms: GlossaryTermEntry[]
       ) : (
         <dl style={{ margin: 0, display: 'flex', flexDirection: 'column', gap: 'var(--space-3, 12px)' }}>
           {results.map((e) => (
-            <div key={e.term} className="card-metal" style={{ borderRadius: 'var(--radius-lg, 12px)', padding: 'var(--space-3, 12px) var(--space-4, 16px)' }}>
+            <div key={e.term} className="glass-panel" style={{ borderRadius: 'var(--radius-lg, 12px)', padding: 'var(--space-3, 12px) var(--space-4, 16px)' }}>
               <dt style={{ fontWeight: 700, color: 'var(--white, #FFFFFF)', fontSize: '0.98rem' }}>{e.term}</dt>
               <dd style={{ margin: '4px 0 0', color: 'var(--silver, #A8B4C0)', fontSize: '0.92rem', lineHeight: 1.55 }}>{e.def}</dd>
             </div>

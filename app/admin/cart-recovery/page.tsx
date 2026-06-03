@@ -117,8 +117,8 @@ export default function AdminCartRecoveryPage() {
       </div>
 
       {creating && (
-        <div className="metal-frame" style={{ marginBottom: 'var(--space-6)' }}>
-          <div className="metal-content" style={{ padding: 'var(--space-5)' }}>
+        <div className="glass-panel" style={{ marginBottom: 'var(--space-6)' }}>
+          <div className="" style={{ padding: 'var(--space-5)' }}>
             <h3 style={{ fontSize: '1rem', marginTop: 0, marginBottom: 'var(--space-3)' }}>Create Variant</h3>
             <form onSubmit={createVariant} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               <input type="text" value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="Variant Name (e.g. discount_10pct)" required
@@ -138,8 +138,8 @@ export default function AdminCartRecoveryPage() {
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-5)' }}>
         {variants.map((v) => (
-          <div key={v.id} className="metal-frame">
-            <div className="metal-content" style={{ padding: 'var(--space-5)' }}>
+          <div key={v.id} className="glass-panel">
+            <div className="" style={{ padding: 'var(--space-5)' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 'var(--space-3)', flexWrap: 'wrap' }}>
                 <h3 style={{ fontSize: '1.05rem', margin: 0, color: 'var(--white)' }}>{v.name}</h3>
                 <span style={{ fontSize: '0.7rem', padding: '2px 10px', borderRadius: 999, background: v.enabled ? 'rgba(0,196,188,0.15)' : 'rgba(168,180,192,0.18)', color: v.enabled ? 'var(--teal)' : 'var(--grey-300)', fontWeight: 700, textTransform: 'uppercase' }}>

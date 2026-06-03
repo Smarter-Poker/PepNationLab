@@ -31,7 +31,7 @@ export default function BrowseFilterShell({
   if (groups.length === 0) {
     return (
       <div
-        className="card-metal"
+        className="glass-panel"
         style={{ padding: 'var(--space-5, 24px)', borderRadius: 'var(--radius-lg, 12px)', color: 'var(--silver, #A8B4C0)' }}
       >
         {emptyMessage}
@@ -114,7 +114,7 @@ export default function BrowseFilterShell({
       <div role="tabpanel" aria-label={current.label}>
         {current.count === 0 ? (
           <div
-            className="card-metal"
+            className="glass-panel"
             style={{ padding: 'var(--space-5, 24px)', borderRadius: 'var(--radius-lg, 12px)', color: 'var(--silver, #A8B4C0)' }}
           >
             {emptyMessage}

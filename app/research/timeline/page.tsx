@@ -70,7 +70,7 @@ export default async function ResearchTimelinePage() {
               <Link
                 key={c.slug}
                 href={`/research/${c.slug}`}
-                className="card-metal"
+                className="glass-panel"
                 style={{
                   display: 'flex',
                   flexDirection: 'column',

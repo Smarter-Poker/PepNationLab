@@ -103,7 +103,7 @@ export default function UsernameChangeModal({
       }}
     >
       <div
-        className="card-metal"
+        className="glass-panel"
         onClick={(e) => e.stopPropagation()}
         style={{ maxWidth: 440, width: '100%', padding: 'var(--space-6)' }}
       >

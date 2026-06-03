@@ -201,10 +201,10 @@ export default function ProductsList({
             {/* Categories filter tabs */}
             <div style={{ display: 'flex', gap: 'var(--space-3)', flexWrap: 'wrap' }}>
               {categories.map(cat => (
-                <div key={cat} className="metal-frame hover-lift" style={{ borderRadius: 'var(--radius-full)' }}>
+                <div key={cat} className="glass-panel hover-lift" style={{ borderRadius: 'var(--radius-full)' }}>
                   <button
                     onClick={() => setActiveCategory(cat)}
-                    className="metal-content"
+                    className=""
                     style={{
                       padding: '8px 20px',
                       borderRadius: 'calc(var(--radius-full) - 3px)',
@@ -225,8 +225,8 @@ export default function ProductsList({
             </div>
 
             {/* Search Input */}
-            <div className="metal-frame hover-lift" style={{ width: '100%', maxWidth: 300, borderRadius: 'var(--radius-full)' }}>
-              <div className="metal-content" style={{ position: 'relative', padding: 0, borderRadius: 'calc(var(--radius-full) - 3px)', display: 'flex', alignItems: 'center' }}>
+            <div className="glass-panel hover-lift" style={{ width: '100%', maxWidth: 300, borderRadius: 'var(--radius-full)' }}>
+              <div className="" style={{ position: 'relative', padding: 0, borderRadius: 'calc(var(--radius-full) - 3px)', display: 'flex', alignItems: 'center' }}>
                 <input
                   type="text"
                   placeholder="Search Compounds By Name..."
@@ -291,8 +291,8 @@ export default function ProductsList({
               const isBackordered = !product.in_stock || product.inventory_count === 0;
 
               return (
-                <div key={product.id} className="product-card metal-frame hover-lift stagger-fade-in" style={{ animationDelay: `${0.1 + i * 0.05}s` }}>
-                  <div className="metal-content" style={{ display: 'flex', flexDirection: 'column', height: '100%', padding: 0 }}>
+                <div key={product.id} className="product-card glass-panel hover-lift stagger-fade-in" style={{ animationDelay: `${0.1 + i * 0.05}s` }}>
+                  <div className="" style={{ display: 'flex', flexDirection: 'column', height: '100%', padding: 0 }}>
 
                   {/* Decorative skeuomorphic header area */}
                   <div style={{
@@ -418,8 +418,8 @@ export default function ProductsList({
             })}
           </div>
         ) : (
-          <div className="metal-frame hover-lift stagger-fade-in">
-            <div className="metal-content" style={{ padding: 'var(--space-12)', textAlign: 'center' }}>
+          <div className="glass-panel hover-lift stagger-fade-in">
+            <div className="" style={{ padding: 'var(--space-12)', textAlign: 'center' }}>
             <p style={{ color: 'var(--grey-400)', margin: 0 }}>
               No Compounds Found Matching Your Filters.
             </p>

@@ -285,9 +285,9 @@ export default function AdminStatementsPage() {
               <p style={{ color: "var(--red)", fontSize: "0.9rem" }}>{error}</p>
             </div>
           ) : statements.length === 0 ? (
-            <div className="metal-frame hover-lift stagger-fade-in" style={{ animationDelay: '0.1s' }}>
+            <div className="glass-panel hover-lift stagger-fade-in" style={{ animationDelay: '0.1s' }}>
               <div
-                className="metal-content"
+                className=""
                 style={{ textAlign: "center", padding: "var(--space-12) 0" }}
               >
                 <p style={{ color: "var(--grey-400)", fontSize: "0.88rem" }}>
@@ -307,9 +307,9 @@ export default function AdminStatementsPage() {
                 const statusColor =
                   STATUS_COLORS[s.status] ?? "var(--grey-400)";
                 return (
-                  <div key={s.id} className="metal-frame hover-lift stagger-fade-in" style={{ animationDelay: `${0.1 + Math.min(index, 5) * 0.1}s` }}>
+                  <div key={s.id} className="glass-panel hover-lift stagger-fade-in" style={{ animationDelay: `${0.1 + Math.min(index, 5) * 0.1}s` }}>
                     <div
-                      className="metal-content"
+                      className=""
                       style={{ padding: "var(--space-5)" }}
                     >
                       <div
@@ -478,8 +478,8 @@ export default function AdminStatementsPage() {
         </div>
 
         {/* Generate panel */}
-        <div className="metal-frame hover-lift stagger-fade-in" style={{ animationDelay: '0.2s' }}>
-          <div className="metal-content" style={{ padding: "var(--space-6)" }}>
+        <div className="glass-panel hover-lift stagger-fade-in" style={{ animationDelay: '0.2s' }}>
+          <div className="" style={{ padding: "var(--space-6)" }}>
             <h3
               style={{
                 fontSize: "0.95rem",
@@ -581,9 +581,9 @@ export default function AdminStatementsPage() {
             padding: "var(--space-4)",
           }}
         >
-          <div className="metal-frame" style={{ width: "100%", maxWidth: 420 }}>
+          <div className="glass-panel" style={{ width: "100%", maxWidth: 420 }}>
             <div
-              className="metal-content"
+              className=""
               style={{ padding: "var(--space-6)" }}
             >
               <h2

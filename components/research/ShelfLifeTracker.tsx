@@ -124,9 +124,9 @@ export default function ShelfLifeTracker({ compounds }: ShelfLifeTrackerProps) {
 
   return (
     <div style={{ display: 'grid', gap: 'var(--space-6)' }}>
-      <div className="card-metal" style={{ padding: 0 }}>
-        <div className="metal-frame">
-          <div className="metal-content" style={{ padding: 'var(--space-6)' }}>
+      <div className="glass-panel" style={{ padding: 0 }}>
+        <div className="glass-panel">
+          <div className="" style={{ padding: 'var(--space-6)' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', marginBottom: 'var(--space-4)' }}>
               <Plus size={20} color="#00C4BC" aria-hidden="true" />
               <h2 style={{ margin: 0, color: '#FFFFFF', fontSize: '1.2rem', fontWeight: 700 }}>Add Reconstitution</h2>

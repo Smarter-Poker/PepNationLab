@@ -317,7 +317,7 @@ export default function AccountSecurityClient({
         )}
 
         {/* ============ Status Summary ============ */}
-        <section className="card-metal hover-lift" style={cardStyle}>
+        <section className="glass-panel hover-lift" style={cardStyle}>
           <h2 style={h2Style}>What's Enabled</h2>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             <StatusRow label="Email" value={userEmail} ok />
@@ -340,7 +340,7 @@ export default function AccountSecurityClient({
         </section>
 
         {/* ============ Password ============ */}
-        <section className="card-metal hover-lift" style={cardStyle}>
+        <section className="glass-panel hover-lift" style={cardStyle}>
           <h2 style={h2Style}>Change Password</h2>
           <p style={{ color: SILVER, fontSize: '0.85rem', marginBottom: 'var(--space-3)' }}>
             Use At Least 8 Characters. Mix Letters, Numbers, And Symbols.
@@ -385,7 +385,7 @@ export default function AccountSecurityClient({
         </section>
 
         {/* ============ Two-Factor ============ */}
-        <section className="card-metal hover-lift" style={cardStyle}>
+        <section className="glass-panel hover-lift" style={cardStyle}>
           <h2 style={h2Style}>Two-Factor Authentication</h2>
           {loading ? (
             <p style={{ color: SILVER, fontSize: '0.85rem' }}>Loading</p>
@@ -525,7 +525,7 @@ export default function AccountSecurityClient({
         </section>
 
         {/* ============ Active Sessions ============ */}
-        <section className="card-metal hover-lift" style={cardStyle}>
+        <section className="glass-panel hover-lift" style={cardStyle}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-3)' }}>
             <h2 style={{ ...h2Style, marginBottom: 0 }}>Active Sessions</h2>
             {sessions.length > 1 && (

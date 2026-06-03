@@ -13,8 +13,8 @@ export default function AIWeeklySummary() {
 
   if (!text) return null;
   return (
-    <div className="metal-frame">
-      <div className="metal-content" style={{ padding: 14 }}>
+    <div className="glass-panel">
+      <div className="" style={{ padding: 14 }}>
         <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 6 }}>
           <h3 style={{ color: 'var(--white)', fontSize: '0.95rem', margin: 0 }}>Weekly Summary</h3>
           <span style={{ color: 'var(--grey-500)', fontSize: '0.7rem' }}>Last 7 Days</span>

@@ -106,7 +106,7 @@ export default function AdminCatalogRisk() {
   if (loading) return <p style={{ color: 'var(--grey-400)' }}>Loading Risk Audit...</p>;
   if (error) {
     return (
-      <div className="metal-frame"><div className="metal-content" style={{ padding: 'var(--space-5)' }}>
+      <div className="glass-panel"><div className="" style={{ padding: 'var(--space-5)' }}>
         <p style={{ color: 'var(--white)', margin: 0 }}>Could Not Load The Risk Audit. Please Refresh.</p>
       </div></div>
     );
@@ -120,8 +120,8 @@ export default function AdminCatalogRisk() {
       {summary && (
         <div className="grid-4" style={{ marginBottom: 'var(--space-6)' }}>
           {(['critical', 'high', 'moderate', 'low'] as const).map((k) => (
-            <div key={k} className="metal-frame">
-              <div className="metal-content" style={{ padding: 'var(--space-5)' }}>
+            <div key={k} className="glass-panel">
+              <div className="" style={{ padding: 'var(--space-5)' }}>
                 <div style={{ fontSize: '1.7rem', fontWeight: 800, color: RISK_META[k].color, lineHeight: 1.1 }}>
                   {summary[k]}
                 </div>
@@ -167,8 +167,8 @@ export default function AdminCatalogRisk() {
                 const isBusy = busy === row.slug;
                 const allBlocked = row.total_skus > 0 && row.active_skus === 0;
                 return (
-                  <div key={row.slug} className="metal-frame">
-                    <div className="metal-content" style={{ padding: 'var(--space-4) var(--space-5)' }}>
+                  <div key={row.slug} className="glass-panel">
+                    <div className="" style={{ padding: 'var(--space-4) var(--space-5)' }}>
                       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--space-3)', alignItems: 'flex-start', justifyContent: 'space-between' }}>
                         <div style={{ minWidth: 0, flex: '1 1 360px' }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>

@@ -5,6 +5,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/server';
+import { getAllCompounds } from '@/lib/compounds-server';
 import BrowseFilterShell from '@/components/research/BrowseFilterShell';
 
 export const metadata: Metadata = {
@@ -35,7 +36,7 @@ interface CompoundBlockProps {
 function CompoundBlock({ slug, name, companions, nameBySlug }: CompoundBlockProps) {
   return (
     <article
-      className="card-metal"
+      className="glass-panel"
       style={{ padding: 'var(--space-4, 16px) var(--space-5, 24px)', borderRadius: 'var(--radius-lg, 12px)' }}
     >
       <div style={{ marginBottom: 'var(--space-3, 12px)' }}>
@@ -80,13 +81,9 @@ export default async function ResearchCorrelatedPage() {
     .select('compound_slug, companion_slug, co_occurrence_count')
     .order('co_occurrence_count', { ascending: false });
 
-  const { data: compounds } = await supabase
-    .from('compounds')
-    .select('slug, display_name')
-    .order('display_name', { ascending: true });
+  const compoundRows = (await getAllCompounds()) as unknown as CompoundRow[];
 
   const companionRows = (companions ?? []) as CompanionRow[];
-  const compoundRows = (compounds ?? []) as CompoundRow[];
 
   const nameBySlug = new Map<string, string>();
   for (const c of compoundRows) nameBySlug.set(c.slug, c.display_name);
@@ -177,7 +174,7 @@ export default async function ResearchCorrelatedPage() {
       </header>
 
       {allSlugs.length === 0 ? (
-        <div className="card-metal" style={{ padding: 'var(--space-5, 24px)', borderRadius: 'var(--radius-lg, 12px)', color: 'var(--silver, #A8B4C0)' }}>
+        <div className="glass-panel" style={{ padding: 'var(--space-5, 24px)', borderRadius: 'var(--radius-lg, 12px)', color: 'var(--silver, #A8B4C0)' }}>
           Will Populate Once PubMed Sync Runs. The Co-Occurrence Index Is Rebuilt Weekly From The Citation Corpus.
         </div>
       ) : (

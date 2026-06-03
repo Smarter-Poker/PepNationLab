@@ -64,7 +64,7 @@ export default function WalletSettings() {
     s === 'approved' ? '#2ed573' : s === 'denied' ? '#ff4757' : '#ffb800';
 
   return (
-    <section className="card-metal" style={{ padding: 16, borderRadius: 12, display: 'flex', flexDirection: 'column', gap: 18 }}>
+    <section className="glass-panel" style={{ padding: 16, borderRadius: 12, display: 'flex', flexDirection: 'column', gap: 18 }}>
       <div>
         <h3 style={{ color: 'var(--white)', marginTop: 0, marginBottom: 4 }}>Auto-Pay</h3>
         <p style={{ color: 'var(--grey-400)', fontSize: '0.82rem', margin: '0 0 12px' }}>

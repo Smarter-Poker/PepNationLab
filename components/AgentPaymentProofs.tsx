@@ -54,7 +54,7 @@ export default function AgentPaymentProofs({ orderId }: { orderId: string }) {
       {proofs.map((p) => (
         <div
           key={p.id}
-          className="metal-embossed-panel"
+          className="glass-panel"
           style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', fontSize: '0.76rem', padding: '8px 12px' }}
         >
           <span style={{ color: 'rgba(255,255,255,0.8)' }}>

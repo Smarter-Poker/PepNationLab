@@ -164,8 +164,8 @@ export default function NewProductPage() {
       <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
 
         {/* ── Product Information ── */}
-        <div className="metal-frame hover-lift stagger-fade-in" style={{ animationDelay: '0.1s' }}>
-          <div className="metal-content" style={{ padding: 'var(--space-6)' }}>
+        <div className="glass-panel hover-lift stagger-fade-in" style={{ animationDelay: '0.1s' }}>
+          <div className="" style={{ padding: 'var(--space-6)' }}>
             <h3 style={{ fontSize: '0.95rem', marginBottom: 'var(--space-5)', color: 'var(--silver)' }}>
               Product Information
             </h3>
@@ -230,8 +230,8 @@ export default function NewProductPage() {
         </div>
 
         {/* ── Pricing ── */}
-        <div className="metal-frame hover-lift stagger-fade-in" style={{ animationDelay: '0.2s' }}>
-          <div className="metal-content" style={{ padding: 'var(--space-6)' }}>
+        <div className="glass-panel hover-lift stagger-fade-in" style={{ animationDelay: '0.2s' }}>
+          <div className="" style={{ padding: 'var(--space-6)' }}>
             <h3 style={{ fontSize: '0.95rem', marginBottom: 'var(--space-5)', color: 'var(--silver)' }}>
               Pricing
             </h3>
@@ -343,8 +343,8 @@ export default function NewProductPage() {
         </div>
 
         {/* ── Inventory & Shipping ── */}
-        <div className="metal-frame hover-lift stagger-fade-in" style={{ animationDelay: '0.3s' }}>
-          <div className="metal-content" style={{ padding: 'var(--space-6)' }}>
+        <div className="glass-panel hover-lift stagger-fade-in" style={{ animationDelay: '0.3s' }}>
+          <div className="" style={{ padding: 'var(--space-6)' }}>
             <h3 style={{ fontSize: '0.95rem', marginBottom: 'var(--space-5)', color: 'var(--silver)' }}>
               Inventory & Shipping
             </h3>
@@ -410,8 +410,8 @@ export default function NewProductPage() {
         </div>
 
         {/* ── Visibility ── */}
-        <div className="metal-frame hover-lift stagger-fade-in" style={{ animationDelay: '0.4s' }}>
-          <div className="metal-content" style={{ padding: 'var(--space-5)' }}>
+        <div className="glass-panel hover-lift stagger-fade-in" style={{ animationDelay: '0.4s' }}>
+          <div className="" style={{ padding: 'var(--space-5)' }}>
             <label style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', cursor: 'pointer', fontSize: '0.9rem', color: 'var(--silver)' }}>
               <input
                 type="checkbox"

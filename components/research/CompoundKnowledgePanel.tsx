@@ -21,7 +21,7 @@ export default function CompoundKnowledgePanel({
 
   return (
     <aside
-      className="card-metal"
+      className="glass-panel"
       style={{
         padding: dense ? 16 : 20,
         borderRadius: 14,
@@ -72,9 +72,11 @@ export default function CompoundKnowledgePanel({
       )}
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 10 }}>
-        <KV label="Molecular Weight" value={compound.identity?.molecular_weight ?? 'Not Listed'} />
+        <KV label="Molecular Weight" value={compound.molecular_weight_da ? `${compound.molecular_weight_da} Da` : (compound.identity?.molecular_weight ?? 'Not Listed')} />
+        <KV label="Year Discovered" value={compound.year_discovered?.toString() ?? 'Unknown'} />
+        <KV label="PubMed Citations" value={compound.pubmed_citation_count ? compound.pubmed_citation_count.toLocaleString() : '—'} />
+        <KV label="Clinical Trials" value={(compound.active_trial_count || compound.completed_trial_count) ? String((compound.active_trial_count ?? 0) + (compound.completed_trial_count ?? 0)) : 'None'} />
         <KV label="Half-Life" value={compound.half_life ?? 'See Monograph'} />
-        <KV label="Form" value={compound.handling?.form ?? 'Not Listed'} />
         <KV label="Storage" value={compound.handling?.storage_temp ?? 'See Monograph'} />
       </div>
 

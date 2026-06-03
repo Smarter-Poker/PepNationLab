@@ -618,8 +618,8 @@ function ResearchersAdminPageInner() {
           <p style={{ color: 'var(--red)', fontSize: '0.9rem' }}>{error}</p>
         </div>
       ) : filteredProfiles.length === 0 ? (
-        <div className="metal-frame hover-lift stagger-fade-in" style={{ animationDelay: '0.1s' }}>
-          <div className="metal-content" style={{ textAlign: 'center', padding: 'var(--space-12) 0' }}>
+        <div className="glass-panel hover-lift stagger-fade-in" style={{ animationDelay: '0.1s' }}>
+          <div className="" style={{ textAlign: 'center', padding: 'var(--space-12) 0' }}>
             <p style={{ color: 'var(--grey-400)', fontSize: '0.88rem' }}>No Matching Profiles Found</p>
           </div>
         </div>
@@ -628,8 +628,8 @@ function ResearchersAdminPageInner() {
           {paginatedProfiles.map((profile, index) => {
             const ap = Array.isArray(profile.agent_profiles) ? profile.agent_profiles[0] : profile.agent_profiles;
             return (
-              <div key={profile.id} className="metal-frame hover-lift stagger-fade-in" style={{ opacity: profile.is_active ? 1 : 0.6, animationDelay: `${0.1 + Math.min(index, 5) * 0.1}s` }}>
-                <div className="metal-content" style={{
+              <div key={profile.id} className="glass-panel hover-lift stagger-fade-in" style={{ opacity: profile.is_active ? 1 : 0.6, animationDelay: `${0.1 + Math.min(index, 5) * 0.1}s` }}>
+                <div className="" style={{
                   padding: 'var(--space-5)',
                   display: 'flex',
                   flexWrap: 'wrap',
@@ -756,8 +756,8 @@ function ResearchersAdminPageInner() {
       {/* CREATE NEW AGENT MODAL */}
       {modalMode === 'create_agent' && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.88)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100, padding: 'var(--space-4)' }}>
-          <div className="metal-frame hover-lift stagger-fade-in" style={{ width: '100%', maxWidth: 580, maxHeight: '92vh', overflowY: 'auto' }}>
-            <div className="metal-content" style={{ padding: 'var(--space-6)' }}>
+          <div className="glass-panel hover-lift stagger-fade-in" style={{ width: '100%', maxWidth: 580, maxHeight: '92vh', overflowY: 'auto' }}>
+            <div className="" style={{ padding: 'var(--space-6)' }}>
               <h2 style={{ fontSize: '1.2rem', marginBottom: 'var(--space-2)' }}>
                 {createRole === 'researcher' ? 'Create New Researcher' : 'Create New Agent'}
               </h2>
@@ -992,8 +992,8 @@ function ResearchersAdminPageInner() {
       {/* UPGRADE / CONFIGURE MODAL */}
       {(modalMode === 'upgrade' || modalMode === 'edit') && selectedProfile && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.88)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100, padding: 'var(--space-4)' }}>
-          <div className="metal-frame hover-lift stagger-fade-in" style={{ width: '100%', maxWidth: 540, maxHeight: '90vh', overflowY: 'auto' }}>
-            <div className="metal-content" style={{ padding: 'var(--space-6)' }}>
+          <div className="glass-panel hover-lift stagger-fade-in" style={{ width: '100%', maxWidth: 540, maxHeight: '90vh', overflowY: 'auto' }}>
+            <div className="" style={{ padding: 'var(--space-6)' }}>
               <h2 style={{ fontSize: '1.2rem', marginBottom: 'var(--space-2)' }}>
               {modalMode === 'upgrade' ? 'Upgrade User To Agent' : 'Configure Agent Profile'}
             </h2>
@@ -1072,8 +1072,8 @@ function ResearchersAdminPageInner() {
       {/* BALANCE ADJUSTMENT MODAL */}
       {modalMode === 'balance' && selectedProfile && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.88)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100, padding: 'var(--space-4)' }}>
-          <div className="metal-frame" style={{ width: '100%', maxWidth: 400 }}>
-            <div className="metal-content" style={{ padding: 'var(--space-6)' }}>
+          <div className="glass-panel" style={{ width: '100%', maxWidth: 400 }}>
+            <div className="" style={{ padding: 'var(--space-6)' }}>
               <h2 style={{ fontSize: '1.2rem', marginBottom: 'var(--space-2)' }}>Adjust Prepaid Balance</h2>
             <p style={{ fontSize: '0.8rem', color: 'var(--grey-400)', marginBottom: 'var(--space-4)' }}>
               {selectedProfile.full_name}{selectedProfile.username ? ` (@${selectedProfile.username})` : ''}
@@ -1139,8 +1139,8 @@ function ResearchersAdminPageInner() {
       {/* QR CODE MODAL */}
       {modalMode === 'qr' && selectedProfile && resolvedAgentProfile && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.88)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100, padding: 'var(--space-4)' }}>
-          <div className="metal-frame" style={{ width: '100%', maxWidth: 420 }}>
-            <div className="metal-content" style={{ padding: 'var(--space-6)', textAlign: 'center' }}>
+          <div className="glass-panel" style={{ width: '100%', maxWidth: 420 }}>
+            <div className="" style={{ padding: 'var(--space-6)', textAlign: 'center' }}>
               <h2 style={{ fontSize: '1.2rem', marginBottom: 'var(--space-2)' }}>Storefront QR Code</h2>
             <p style={{ fontSize: '0.8rem', color: 'var(--grey-400)', marginBottom: 'var(--space-6)' }}>
               {resolvedAgentProfile.display_name} (@{resolvedAgentProfile.slug})

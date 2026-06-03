@@ -19,7 +19,7 @@ interface MetricCardProps {
 
 function MetricCard({ label, value, sub, index = 0 }: MetricCardProps) {
   return (
-    <div className="card-metal hover-lift stagger-fade-in" style={{ padding: 'var(--space-4)', borderRadius: 'var(--radius-md)', animationDelay: `${0.1 + index * 0.1}s` }}>
+    <div className="glass-panel hover-lift stagger-fade-in" style={{ padding: 'var(--space-4)', borderRadius: 'var(--radius-md)', animationDelay: `${0.1 + index * 0.1}s` }}>
       <div style={{ color: 'var(--silver)', fontSize: '0.78rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{label}</div>
       <div style={{ color: 'var(--white)', fontSize: '1.6rem', fontWeight: 800, marginTop: 4 }}>{value}</div>
       {sub && <div style={{ color: 'var(--silver)', fontSize: '0.78rem', marginTop: 2 }}>{sub}</div>}
@@ -128,7 +128,7 @@ export default async function AgentAnalyticsPage() {
       </div>
 
       {/* Conversion funnel */}
-      <div className="card-metal hover-lift stagger-fade-in" style={{ padding: 'var(--space-5)', marginBottom: 'var(--space-6)', animationDelay: '0.35s' }}>
+      <div className="glass-panel hover-lift stagger-fade-in" style={{ padding: 'var(--space-5)', marginBottom: 'var(--space-6)', animationDelay: '0.35s' }}>
         <h2 style={{ color: 'var(--white)', fontSize: '1.05rem', marginBottom: 'var(--space-1)' }}>Conversion Funnel</h2>
         <p style={{ color: 'var(--silver)', fontSize: '0.82rem', marginBottom: 'var(--space-4)' }}>
           Where Visitors Drop Off On The Way To An Order.
@@ -171,7 +171,7 @@ export default async function AgentAnalyticsPage() {
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 'var(--space-4)' }}>
-        <div className="card-metal hover-lift stagger-fade-in" style={{ padding: 'var(--space-4)', animationDelay: '0.4s' }}>
+        <div className="glass-panel hover-lift stagger-fade-in" style={{ padding: 'var(--space-4)', animationDelay: '0.4s' }}>
           <h2 style={{ color: 'var(--white)', fontSize: '1.05rem', marginBottom: 'var(--space-3)' }}>Top Search Terms</h2>
           {(!terms || terms.length === 0) ? (
             <p style={{ color: 'var(--silver)', fontSize: '0.9rem' }}>No Searches Recorded Yet.</p>
@@ -188,7 +188,7 @@ export default async function AgentAnalyticsPage() {
             </table>
           )}
         </div>
-        <div className="card-metal hover-lift stagger-fade-in" style={{ padding: 'var(--space-4)', animationDelay: '0.5s' }}>
+        <div className="glass-panel hover-lift stagger-fade-in" style={{ padding: 'var(--space-4)', animationDelay: '0.5s' }}>
           <h2 style={{ color: 'var(--white)', fontSize: '1.05rem', marginBottom: 'var(--space-3)' }}>Top Viewed Products</h2>
           {topRanked.length === 0 ? (
             <p style={{ color: 'var(--silver)', fontSize: '0.9rem' }}>No Product Views Yet.</p>

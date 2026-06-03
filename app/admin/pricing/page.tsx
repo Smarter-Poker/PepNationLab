@@ -165,9 +165,9 @@ export default function PricingTiersPage() {
               }}
             >
               {tiers.map((tier) => (
-                <div key={tier.tier_name} className="metal-frame hover-lift stagger-fade-in">
+                <div key={tier.tier_name} className="glass-panel hover-lift stagger-fade-in">
                   <div
-                    className="metal-content"
+                    className=""
                     style={{ padding: "var(--space-6)" }}
                   >
                     <div
@@ -290,9 +290,9 @@ export default function PricingTiersPage() {
           }}
         >
           {/* Dynamic Preview Configurator */}
-          <div className="metal-frame hover-lift stagger-fade-in" style={{ animationDelay: '0.1s' }}>
+          <div className="glass-panel hover-lift stagger-fade-in" style={{ animationDelay: '0.1s' }}>
             <div
-              className="metal-content"
+              className=""
               style={{ padding: "var(--space-6)" }}
             >
               <h3
@@ -333,11 +333,11 @@ export default function PricingTiersPage() {
 
           {/* Pricing Rules Legal Card */}
           <div
-            className="metal-frame hover-lift stagger-fade-in"
+            className="glass-panel hover-lift stagger-fade-in"
             style={{ borderColor: "rgba(192,184,168,0.15)", animationDelay: '0.2s' }}
           >
             <div
-              className="metal-content"
+              className=""
               style={{ padding: "var(--space-6)" }}
             >
               <h4
@@ -398,9 +398,9 @@ export default function PricingTiersPage() {
             padding: "var(--space-4)",
           }}
         >
-          <div className="metal-frame" style={{ width: "100%", maxWidth: 440 }}>
+          <div className="glass-panel" style={{ width: "100%", maxWidth: 440 }}>
             <div
-              className="metal-content"
+              className=""
               style={{ padding: "var(--space-6)" }}
             >
               <h2

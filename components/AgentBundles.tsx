@@ -156,8 +156,8 @@ export default function AgentBundles({ agentId }: { agentId: string }) {
   }
 
   return (
-    <div className="metal-frame">
-      <div className="metal-content" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
+    <div className="glass-panel">
+      <div className="" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
         {/* Header */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 'var(--space-4)' }}>
           <div>
@@ -179,16 +179,16 @@ export default function AgentBundles({ agentId }: { agentId: string }) {
 
         {/* Create Bundle Form */}
         {showCreate && (
-          <div className="metal-embossed-panel" style={{ padding: 'var(--space-6)' }}>
+          <div className="glass-panel" style={{ padding: 'var(--space-6)' }}>
             <h4 style={{ color: '#00E5FF', fontSize: '0.95rem', marginBottom: 'var(--space-4)' }}>New Research Bundle</h4>
 
             {error && (
-              <div className="metal-embossed-panel" style={{ border: '1px solid rgba(229,62,62,0.3)', marginBottom: 'var(--space-4)', padding: 'var(--space-3)' }}>
+              <div className="glass-panel" style={{ border: '1px solid rgba(229,62,62,0.3)', marginBottom: 'var(--space-4)', padding: 'var(--space-3)' }}>
                 <p style={{ color: '#FFAAAA', fontSize: '0.8rem', margin: 0 }}>{error}</p>
               </div>
             )}
             {success && (
-              <div className="metal-embossed-panel" style={{ border: '1px solid rgba(0,255,157,0.3)', marginBottom: 'var(--space-4)', padding: 'var(--space-3)' }}>
+              <div className="glass-panel" style={{ border: '1px solid rgba(0,255,157,0.3)', marginBottom: 'var(--space-4)', padding: 'var(--space-3)' }}>
                 <p style={{ color: '#00FF9D', fontSize: '0.8rem', margin: 0 }}>{success}</p>
               </div>
             )}
@@ -306,7 +306,7 @@ export default function AgentBundles({ agentId }: { agentId: string }) {
 
         {/* Existing Bundles */}
         {bundles.length === 0 && !showCreate ? (
-          <div className="metal-embossed-panel" style={{ padding: 'var(--space-8)', textAlign: 'center' }}>
+          <div className="glass-panel" style={{ padding: 'var(--space-8)', textAlign: 'center' }}>
             <div style={{ marginBottom: 'var(--space-3)', color: 'var(--grey-500)', display: 'flex', justifyContent: 'center' }}><Package size={32} aria-hidden="true" /></div>
             <p style={{ color: 'var(--grey-400)', fontSize: '0.9rem', marginBottom: 'var(--space-4)' }}>
               No Research Bundles Created Yet
@@ -323,7 +323,7 @@ export default function AgentBundles({ agentId }: { agentId: string }) {
               const bundlePrice = getBundlePrice(bundle);
 
               return (
-                <div key={bundle.id} className="metal-embossed-panel" style={{ padding: 'var(--space-5)', opacity: bundle.is_active ? 1 : 0.5 }}>
+                <div key={bundle.id} className="glass-panel" style={{ padding: 'var(--space-5)', opacity: bundle.is_active ? 1 : 0.5 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 'var(--space-4)' }}>
                     <div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', marginBottom: 4 }}>

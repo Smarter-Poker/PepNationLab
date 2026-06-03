@@ -32,8 +32,8 @@ export default function SalesKPIStrip({ data }: { data: any }) {
   return (
     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 10 }}>
       {tiles.map(t => (
-        <div key={t.label} className="metal-frame">
-          <div className="metal-content" style={{ padding: 12 }}>
+        <div key={t.label} className="glass-panel">
+          <div className="" style={{ padding: 12 }}>
             <div style={{ color: 'var(--grey-400)', fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{t.label}</div>
             <div style={{ color: 'var(--white)', fontSize: '1.4rem', fontWeight: 800, marginTop: 2 }}>{t.value}</div>
             <div style={{ marginTop: 4 }}><Delta d={t.delta ?? null} /></div>

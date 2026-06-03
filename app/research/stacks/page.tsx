@@ -36,11 +36,11 @@ export default async function StacksPage() {
           {stacks.map((stack) => (
             <article
               key={stack.slug}
-              className="card-metal"
+              className="glass-panel"
               style={{ padding: 0 }}
             >
-              <div className="metal-frame">
-                <div className="metal-content" style={{ padding: 'var(--space-5)' }}>
+              <div className="glass-panel">
+                <div className="" style={{ padding: 'var(--space-5)' }}>
                   <Link
                     href={`/research/${stack.slug}`}
                     style={{ color: '#00C4BC', fontWeight: 700, fontSize: '1.2rem', textDecoration: 'none' }}

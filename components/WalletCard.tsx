@@ -66,8 +66,8 @@ export default function WalletCard() {
 
   if (loading) {
     return (
-      <div className="metal-frame" style={{ textAlign: 'center', color: 'var(--silver)' }}>
-        <div className="metal-content" style={{ padding: 'var(--space-8)' }}>
+      <div className="glass-panel" style={{ textAlign: 'center', color: 'var(--silver)' }}>
+        <div className="" style={{ padding: 'var(--space-8)' }}>
           Loading Your Lab Wallet...
         </div>
       </div>
@@ -75,8 +75,8 @@ export default function WalletCard() {
   }
   if (error || !data) {
     return (
-      <div className="metal-frame" style={{ color: 'var(--red)' }}>
-        <div className="metal-content" style={{ padding: 'var(--space-6)' }}>
+      <div className="glass-panel" style={{ color: 'var(--red)' }}>
+        <div className="" style={{ padding: 'var(--space-6)' }}>
           {error || 'Wallet Unavailable.'}
         </div>
       </div>
@@ -112,9 +112,9 @@ export default function WalletCard() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-5)' }}>
       {/* Balance hero */}
-      <div className="metal-frame">
+      <div className="glass-panel">
         <div
-          className="metal-content"
+          className=""
           style={{
             padding: 'var(--space-6)',
             background: 'linear-gradient(180deg, #0d1822 0%, #0a1119 100%)',
@@ -189,8 +189,8 @@ export default function WalletCard() {
       </div>
 
       {/* Transaction history */}
-      <div className="metal-frame">
-        <div className="metal-content" style={{ padding: 'var(--space-6)' }}>
+      <div className="glass-panel">
+        <div className="" style={{ padding: 'var(--space-6)' }}>
           <h3
           style={{
             fontSize: '0.82rem',

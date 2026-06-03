@@ -39,13 +39,13 @@ export default async function SavedCompoundsPage() {
         </p>
       </header>
       {items.length === 0 ? (
-        <div className="card-metal" style={{ padding: 'var(--space-5, 24px)', borderRadius: 'var(--radius-lg, 12px)', color: 'var(--silver, #A8B4C0)' }}>
+        <div className="glass-panel" style={{ padding: 'var(--space-5, 24px)', borderRadius: 'var(--radius-lg, 12px)', color: 'var(--silver, #A8B4C0)' }}>
           You Have Not Saved Any Compounds Yet. Use The Save Button On Any Monograph To Add It Here.
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3, 12px)' }}>
           {items.map((row) => (
-            <Link key={`${row.collection_name}-${row.compound_slug}`} href={`/research/${row.compound_slug}`} className="card-metal" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 'var(--space-3, 12px)', padding: 'var(--space-3, 12px) var(--space-4, 16px)', borderRadius: 'var(--radius-lg, 12px)', textDecoration: 'none', color: 'var(--white, #FFFFFF)' }}>
+            <Link key={`${row.collection_name}-${row.compound_slug}`} href={`/research/${row.compound_slug}`} className="glass-panel" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 'var(--space-3, 12px)', padding: 'var(--space-3, 12px) var(--space-4, 16px)', borderRadius: 'var(--radius-lg, 12px)', textDecoration: 'none', color: 'var(--white, #FFFFFF)' }}>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
                 <span style={{ fontSize: '1.05rem', fontWeight: 700 }}>{row.compound_slug}</span>
                 <span style={{ fontSize: '0.78rem', color: 'var(--silver, #A8B4C0)' }}>

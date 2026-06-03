@@ -146,7 +146,7 @@ export default async function OrdersPage({
           </div>
 
           {orders.length === 0 ? (
-            <div className="card-metal hover-lift stagger-fade-in" style={{ padding: 'var(--space-12)', textAlign: 'center', animationDelay: '0.1s' }}>
+            <div className="glass-panel hover-lift stagger-fade-in" style={{ padding: 'var(--space-12)', textAlign: 'center', animationDelay: '0.1s' }}>
               <svg
                 width="44"
                 height="44"
@@ -180,7 +180,7 @@ export default async function OrdersPage({
                   { label: 'In Progress', value: String(activeCount) },
                   { label: 'Lifetime Spend', value: `$${lifetimeSpend.toFixed(2)}` },
                 ].map((stat) => (
-                  <div key={stat.label} className="card-metal" style={{ padding: 'var(--space-4)', borderRadius: 'var(--radius-md)' }}>
+                  <div key={stat.label} className="glass-panel" style={{ padding: 'var(--space-4)', borderRadius: 'var(--radius-md)' }}>
                     <div style={{ fontSize: '1.4rem', fontWeight: 800, fontFamily: 'var(--font-brand)', color: 'var(--teal)', lineHeight: 1 }}>{stat.value}</div>
                     <div style={{ fontSize: '0.74rem', color: 'var(--grey-400)', marginTop: 'var(--space-2)' }}>{stat.label}</div>
                   </div>
@@ -220,7 +220,7 @@ export default async function OrdersPage({
                 return (
                   <div
                     key={order.id}
-                    className="card-metal hover-lift stagger-fade-in"
+                    className="glass-panel hover-lift stagger-fade-in"
                     style={{ padding: 'var(--space-6)', animationDelay: `${0.1 + index * 0.1}s` }}
                   >
                     {/* Order header */}

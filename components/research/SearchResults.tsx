@@ -112,7 +112,7 @@ export default function SearchResults({
       )}
 
       {results.length === 0 ? (
-        <div className="card-metal" style={{ padding: 28, borderRadius: 14, textAlign: 'center', color: '#A8B4C0' }}>
+        <div className="glass-panel" style={{ padding: 28, borderRadius: 14, textAlign: 'center', color: '#A8B4C0' }}>
           No Results Match That Query Yet. Try A Broader Term, Or Browse The{' '}
           <Link href="/research" style={{ color: '#00C4BC' }}>Research Library Home</Link>.
         </div>

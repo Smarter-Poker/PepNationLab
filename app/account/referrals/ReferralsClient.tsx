@@ -164,7 +164,7 @@ export default function ReferralsClient({ code, settings, referrals, redeemed, s
 
         {/* Code card */}
         <div
-          className="card-metal"
+          className="glass-panel"
           style={{
             padding: 'var(--space-6)',
             marginBottom: 'var(--space-5)',
@@ -241,7 +241,7 @@ export default function ReferralsClient({ code, settings, referrals, redeemed, s
         {/* Apply referral form / status */}
         {redeemed ? (
           <div
-            className="card-metal"
+            className="glass-panel"
             style={{ padding: 'var(--space-5)', marginBottom: 'var(--space-5)' }}
           >
             <div style={{ color: 'var(--grey-400)', fontSize: '0.78rem', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 'var(--space-2)' }}>
@@ -263,7 +263,7 @@ export default function ReferralsClient({ code, settings, referrals, redeemed, s
             </div>
           </div>
         ) : canApply ? (
-          <div className="card-metal" style={{ padding: 'var(--space-5)', marginBottom: 'var(--space-5)' }}>
+          <div className="glass-panel" style={{ padding: 'var(--space-5)', marginBottom: 'var(--space-5)' }}>
             <div style={{ color: 'var(--grey-400)', fontSize: '0.78rem', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 'var(--space-3)' }}>
               Apply A Referral Code
             </div>
@@ -302,7 +302,7 @@ export default function ReferralsClient({ code, settings, referrals, redeemed, s
         ) : null}
 
         {/* List of issued referrals */}
-        <div className="card-metal" style={{ padding: 'var(--space-5)' }}>
+        <div className="glass-panel" style={{ padding: 'var(--space-5)' }}>
           <div style={{ color: 'var(--grey-400)', fontSize: '0.78rem', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 'var(--space-3)' }}>
             Your Referral History
           </div>
@@ -364,7 +364,7 @@ export default function ReferralsClient({ code, settings, referrals, redeemed, s
 function StatCard({ label, value, Icon }: { label: string; value: string; Icon: React.ComponentType<{ size?: number; 'aria-hidden'?: boolean }> }) {
   return (
     <div
-      className="card-metal hover-lift"
+      className="glass-panel hover-lift"
       style={{
         padding: 'var(--space-4)',
         display: 'flex',

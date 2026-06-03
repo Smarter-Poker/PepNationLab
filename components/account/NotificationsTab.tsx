@@ -184,7 +184,7 @@ export default function NotificationsTab() {
     <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
       <PushNotificationToggle showTypePrefs={false} />
 
-      <div className="card-metal" style={{ padding: 'var(--space-6)' }}>
+      <div className="glass-panel" style={{ padding: 'var(--space-6)' }}>
         <h3 style={{ marginTop: 0, marginBottom: 'var(--space-2)', color: 'var(--teal)' }}>Notifications</h3>
         <p style={{ color: 'var(--silver)', fontSize: '0.85rem', margin: '0 0 var(--space-4)', lineHeight: 1.6 }}>
           Choose Which Events Reach You And On Which Channel. Email Is Currently Disabled Platform-Wide.
@@ -203,7 +203,7 @@ export default function NotificationsTab() {
         </div>
       </div>
 
-      <div className="card-metal" style={{ padding: 'var(--space-6)' }}>
+      <div className="glass-panel" style={{ padding: 'var(--space-6)' }}>
         <h4 style={{ marginTop: 0, marginBottom: 'var(--space-4)', color: 'var(--teal)' }}>
           Per-Event Channels
         </h4>
@@ -307,7 +307,7 @@ export default function NotificationsTab() {
         )}
       </div>
 
-      <div className="card-metal" style={{ padding: 'var(--space-6)' }}>
+      <div className="glass-panel" style={{ padding: 'var(--space-6)' }}>
         <h4 style={{ marginTop: 0, marginBottom: 'var(--space-2)', color: 'var(--teal)' }}>Quiet Hours</h4>
         <p style={{ color: 'var(--silver)', fontSize: '0.82rem', margin: '0 0 var(--space-4)', lineHeight: 1.6 }}>
           Notifications Will Be Silenced On This Device During The Window Below. Stored Locally In Your Browser.

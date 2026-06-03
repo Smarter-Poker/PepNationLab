@@ -76,7 +76,7 @@ export default function SubAgentsPage() {
       ) : error ? (
         <div style={{ color: '#E53E3E' }}>{error}</div>
       ) : rows.length === 0 ? (
-        <div className="card-metal" style={{ padding: '20px' }}>
+        <div className="glass-panel" style={{ padding: '20px' }}>
           <p style={{ margin: 0 }}>You Have No Sub-Agents Yet.</p>
           <p style={{ marginTop: '8px', opacity: 0.8 }}>
             Promote A Researcher From Your Downline To Get Started. Sub-Agents Sell On Your
@@ -85,7 +85,7 @@ export default function SubAgentsPage() {
           </p>
         </div>
       ) : (
-        <div className="card-metal" style={{ padding: '12px', overflowX: 'auto' }}>
+        <div className="glass-panel" style={{ padding: '12px', overflowX: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '720px' }}>
             <thead>
               <tr>

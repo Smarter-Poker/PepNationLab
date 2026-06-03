@@ -417,7 +417,7 @@ export default function AgentDashboardClient({
   if (!agentProfile) {
     return (
       <div className="container-sm section" style={{ display: 'flex', justifyContent: 'center' }}>
-        <div className="card-metal stagger-fade-in" style={{ width: '100%', maxWidth: 550, padding: 'var(--space-8)' }}>
+        <div className="glass-panel stagger-fade-in" style={{ width: '100%', maxWidth: 550, padding: 'var(--space-8)' }}>
           <div style={{ textAlign: 'center', marginBottom: 'var(--space-6)' }}>
             <svg
               width="48"
@@ -1319,7 +1319,7 @@ function ThemeToggleCard() {
   const isLight = theme === 'light';
 
   return (
-    <div className="card-metal hover-lift" style={{ padding: 'var(--space-6)', marginTop: 'var(--space-6)' }}>
+    <div className="glass-panel hover-lift" style={{ padding: 'var(--space-6)', marginTop: 'var(--space-6)' }}>
       <h4 style={{ marginBottom: 'var(--space-2)', color: 'var(--teal)' }}>Display Theme</h4>
       <p style={{ fontSize: '0.82rem', color: 'var(--grey-400)', marginBottom: 'var(--space-5)', marginTop: 0 }}>
         Switch Between Dark Mode And Light Mode. Your Preference Is Saved Automatically.

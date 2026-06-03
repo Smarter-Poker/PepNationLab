@@ -85,7 +85,7 @@ export default async function ResearchLibraryPage({
               <Link
                 key={key}
                 href={`/research/area/${key}`}
-                className="card-metal"
+                className="glass-panel"
                 style={{
                   display: 'flex',
                   flexDirection: 'column',

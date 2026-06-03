@@ -204,8 +204,8 @@ export default function AdminAnalytics() {
             change: '', positive: true,
           },
         ].map((kpi, i) => (
-          <div key={i} className="metal-frame">
-            <div className="metal-content" style={{ padding: 'var(--space-4)' }}>
+          <div key={i} className="glass-panel">
+            <div className="" style={{ padding: 'var(--space-4)' }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', marginBottom: 8, minHeight: 20 }}>
 
                 {kpi.change && (
@@ -226,8 +226,8 @@ export default function AdminAnalytics() {
       {/* Charts Grid */}
       <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 'var(--space-6)', marginBottom: 'var(--space-6)' }}>
         {/* Revenue Trend */}
-        <div className="metal-frame">
-          <div className="metal-content" style={{ padding: 'var(--space-6)' }}>
+        <div className="glass-panel">
+          <div className="" style={{ padding: 'var(--space-6)' }}>
             <h3 className="metal-text" style={{ fontSize: '0.92rem', color: '#fff', marginBottom: 'var(--space-4)', fontFamily: 'var(--font-brand)' }}>
               Revenue Trend
             </h3>
@@ -256,8 +256,8 @@ export default function AdminAnalytics() {
         </div>
 
         {/* Order Status Pie */}
-        <div className="metal-frame">
-          <div className="metal-content" style={{ padding: 'var(--space-6)' }}>
+        <div className="glass-panel">
+          <div className="" style={{ padding: 'var(--space-6)' }}>
             <h3 className="metal-text" style={{ fontSize: '0.92rem', color: '#fff', marginBottom: 'var(--space-4)', fontFamily: 'var(--font-brand)' }}>
               Order Pipeline
             </h3>
@@ -293,8 +293,8 @@ export default function AdminAnalytics() {
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-6)' }}>
         {/* Top Products */}
-        <div className="metal-frame">
-          <div className="metal-content" style={{ padding: 'var(--space-6)' }}>
+        <div className="glass-panel">
+          <div className="" style={{ padding: 'var(--space-6)' }}>
             <h3 className="metal-text" style={{ fontSize: '0.92rem', color: '#fff', marginBottom: 'var(--space-4)', fontFamily: 'var(--font-brand)' }}>
               Top Products (Revenue)
             </h3>
@@ -321,8 +321,8 @@ export default function AdminAnalytics() {
         </div>
 
         {/* Agent Performance */}
-        <div className="metal-frame">
-          <div className="metal-content" style={{ padding: 'var(--space-6)' }}>
+        <div className="glass-panel">
+          <div className="" style={{ padding: 'var(--space-6)' }}>
             <h3 className="metal-text" style={{ fontSize: '0.92rem', color: '#fff', marginBottom: 'var(--space-4)', fontFamily: 'var(--font-brand)' }}>
               Agent Revenue
             </h3>

@@ -203,7 +203,7 @@ export default function MonographTabs({ compound, related = [] }: Props) {
       </div>
 
       {/* Tab panels */}
-      <section role="tabpanel" className="card-metal" style={{ padding: 'var(--space-5)', minHeight: 160 }}>
+      <section role="tabpanel" className="glass-panel" style={{ padding: 'var(--space-5)', minHeight: 160 }}>
         {active === 'overview' && (
           <div>
             {compound.plain_summary && <Para>{compound.plain_summary}</Para>}
@@ -211,12 +211,15 @@ export default function MonographTabs({ compound, related = [] }: Props) {
               <Fact label="Class" value={compound.compound_class} />
               <Fact label="Molecular Target" value={compound.molecular_target} />
               <Fact label="Sequence" value={id.sequence} />
-              <Fact label="Molecular Weight" value={id.molecular_weight} />
+              <Fact label="Molecular Weight" value={compound.molecular_weight_da ? `${compound.molecular_weight_da} Da` : id.molecular_weight} />
+              <Fact label="Year Discovered" value={compound.year_discovered} />
+              <Fact label="PubMed Citations" value={compound.pubmed_citation_count?.toLocaleString()} />
+              <Fact label="Clinical Trials" value={(compound.active_trial_count || compound.completed_trial_count) ? String((compound.active_trial_count ?? 0) + (compound.completed_trial_count ?? 0)) : null} />
               <Fact label="CAS" value={id.cas} />
               <Fact label="Parent" value={id.parent} />
             </div>
             <div style={{ marginTop: 'var(--space-4)' }}>
-              <SequenceViewer sequence={id.sequence} molecularWeight={id.molecular_weight} />
+              <SequenceViewer sequence={id.sequence} molecularWeight={compound.molecular_weight_da ? `${compound.molecular_weight_da} Da` : id.molecular_weight} />
             </div>
           </div>
         )}
@@ -344,7 +347,7 @@ export default function MonographTabs({ compound, related = [] }: Props) {
                 <Link
                   key={r.slug}
                   href={`/research/${r.slug}`}
-                  className="card-metal"
+                  className="glass-panel"
                   style={{
                     display: 'flex',
                     flexDirection: 'column',

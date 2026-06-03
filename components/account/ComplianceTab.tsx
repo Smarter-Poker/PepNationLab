@@ -42,7 +42,7 @@ export default function ComplianceTab({ disclaimerAccepted, disclaimerAcceptedAt
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
-      <div className="card-metal" style={{ padding: 'var(--space-6)' }}>
+      <div className="glass-panel" style={{ padding: 'var(--space-6)' }}>
         <h3 style={{ marginTop: 0, marginBottom: 'var(--space-2)', color: 'var(--teal)' }}>Research-Only Disclaimer</h3>
         <p style={{ color: 'var(--silver)', fontSize: '0.85rem', margin: '0 0 var(--space-4)', lineHeight: 1.6 }}>
           Every Researcher Must Acknowledge The Platform Disclaimer. You Can Re-Sign Below If You Need A Fresh Audit Entry.
@@ -95,7 +95,7 @@ export default function ComplianceTab({ disclaimerAccepted, disclaimerAcceptedAt
         </div>
       </div>
 
-      <div className="card-metal" style={{ padding: 'var(--space-6)' }}>
+      <div className="glass-panel" style={{ padding: 'var(--space-6)' }}>
         <h4 style={{ marginTop: 0, marginBottom: 'var(--space-2)', color: 'var(--teal)' }}>Documents</h4>
         <p style={{ color: 'var(--silver)', fontSize: '0.85rem', margin: '0 0 var(--space-4)', lineHeight: 1.6 }}>
           Review The Public Compliance Documents At Any Time.

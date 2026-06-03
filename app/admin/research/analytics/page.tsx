@@ -63,11 +63,11 @@ export default async function AdminSearchAnalyticsPage() {
         <p style={{ color: 'var(--silver, #A8B4C0)', fontSize: '1rem', marginTop: 'var(--space-2, 8px)' }}>Last 7 Days. {rows.length} Total Queries Across {groups.size} Unique Phrasings.</p>
       </header>
 
-      <section className="card-metal" style={{ padding: 'var(--space-5, 24px)', borderRadius: 'var(--radius-lg, 12px)', marginBottom: 'var(--space-5, 24px)' }}>
+      <section className="glass-panel" style={{ padding: 'var(--space-5, 24px)', borderRadius: 'var(--radius-lg, 12px)', marginBottom: 'var(--space-5, 24px)' }}>
         <h2 style={headerStyle}>Latency Distribution</h2>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 'var(--space-3, 12px)' }}>
           {([['P50', 50], ['P75', 75], ['P95', 95], ['P99', 99]] as const).map(([label, p]) => (
-            <div key={label} className="card-metal" style={{ padding: 'var(--space-3, 12px) var(--space-4, 16px)', borderRadius: 'var(--radius-md, 8px)' }}>
+            <div key={label} className="glass-panel" style={{ padding: 'var(--space-3, 12px) var(--space-4, 16px)', borderRadius: 'var(--radius-md, 8px)' }}>
               <div style={{ fontSize: '0.7rem', color: 'var(--silver, #A8B4C0)', fontWeight: 700, letterSpacing: '0.05em' }}>{label}</div>
               <div style={{ fontSize: '1.4rem', fontWeight: 900, color: 'var(--teal, #00C4BC)', marginTop: '4px' }}>{pct(p)}<span style={{ fontSize: '0.8rem', color: 'var(--silver, #A8B4C0)' }}> ms</span></div>
             </div>
@@ -75,7 +75,7 @@ export default async function AdminSearchAnalyticsPage() {
         </div>
       </section>
 
-      <section className="card-metal" style={{ padding: 'var(--space-5, 24px)', borderRadius: 'var(--radius-lg, 12px)', marginBottom: 'var(--space-5, 24px)' }}>
+      <section className="glass-panel" style={{ padding: 'var(--space-5, 24px)', borderRadius: 'var(--radius-lg, 12px)', marginBottom: 'var(--space-5, 24px)' }}>
         <h2 style={headerStyle}>Top Searches</h2>
         {ranked.length === 0 ? (
           <p style={{ color: 'var(--silver, #A8B4C0)', fontSize: '0.9rem' }}>No Queries Logged Yet. The Search Engine Will Populate This Table As Users Visit /research/search.</p>
@@ -91,7 +91,7 @@ export default async function AdminSearchAnalyticsPage() {
         )}
       </section>
 
-      <section className="card-metal" style={{ padding: 'var(--space-5, 24px)', borderRadius: 'var(--radius-lg, 12px)', marginBottom: 'var(--space-5, 24px)', borderLeft: '3px solid var(--red-600, #E53E3E)' }}>
+      <section className="glass-panel" style={{ padding: 'var(--space-5, 24px)', borderRadius: 'var(--radius-lg, 12px)', marginBottom: 'var(--space-5, 24px)', borderLeft: '3px solid var(--red-600, #E53E3E)' }}>
         <h2 style={headerStyle}>No-Result Queries (Content Gaps)</h2>
         {noResultRanked.length === 0 ? (
           <p style={{ color: 'var(--silver, #A8B4C0)', fontSize: '0.9rem' }}>No No-Result Queries Logged. The Catalog Coverage Is Holding.</p>
@@ -107,7 +107,7 @@ export default async function AdminSearchAnalyticsPage() {
         )}
       </section>
 
-      <section className="card-metal" style={{ padding: 'var(--space-5, 24px)', borderRadius: 'var(--radius-lg, 12px)' }}>
+      <section className="glass-panel" style={{ padding: 'var(--space-5, 24px)', borderRadius: 'var(--radius-lg, 12px)' }}>
         <h2 style={headerStyle}>Highest CTR Queries</h2>
         {ctrRanked.length === 0 ? (
           <p style={{ color: 'var(--silver, #A8B4C0)', fontSize: '0.9rem' }}>Need At Least Three Queries Per Phrase Before A CTR Is Computed.</p>

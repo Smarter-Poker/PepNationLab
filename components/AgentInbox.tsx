@@ -105,8 +105,8 @@ export default function AgentInbox({ agentId }: { agentId: string }) {
   }
 
   return (
-    <div className="metal-frame">
-      <div className="metal-content" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
+    <div className="glass-panel">
+      <div className="" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 'var(--space-4)' }}>
           <div>
@@ -168,7 +168,7 @@ export default function AgentInbox({ agentId }: { agentId: string }) {
         </div>
 
         {error && (
-          <div className="metal-embossed-panel" style={{ border: '1px solid rgba(229,62,62,0.3)', padding: '10px 14px', fontSize: '0.82rem', color: '#FFAAAA' }}>
+          <div className="glass-panel" style={{ border: '1px solid rgba(229,62,62,0.3)', padding: '10px 14px', fontSize: '0.82rem', color: '#FFAAAA' }}>
             {error}
           </div>
         )}
@@ -176,7 +176,7 @@ export default function AgentInbox({ agentId }: { agentId: string }) {
         {/* Messages */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)', maxHeight: 600, overflowY: 'auto' }}>
           {filtered.length === 0 ? (
-            <div className="metal-embossed-panel" style={{ padding: '48px 24px', textAlign: 'center' }}>
+            <div className="glass-panel" style={{ padding: '48px 24px', textAlign: 'center' }}>
               <div style={{
                 width: 56, height: 56, borderRadius: '50%',
                 background: 'rgba(255,255,255,0.02)', margin: '0 auto 14px',
@@ -199,7 +199,7 @@ export default function AgentInbox({ agentId }: { agentId: string }) {
               return (
                 <div
                   key={msg.id}
-                  className="metal-embossed-panel"
+                  className="glass-panel"
                   style={{
                     display: 'flex', gap: 14,
                     padding: '16px 20px',

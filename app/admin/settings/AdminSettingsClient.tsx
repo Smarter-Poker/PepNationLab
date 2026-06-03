@@ -23,7 +23,7 @@ export default function AdminSettingsClient({ profile }: AdminSettingsClientProp
       </h1>
 
       {/* Profile Picture Upload */}
-      <div className="card-metal hover-lift" style={{ padding: 'var(--space-6)', marginBottom: 'var(--space-6)' }}>
+      <div className="glass-panel hover-lift" style={{ padding: 'var(--space-6)', marginBottom: 'var(--space-6)' }}>
         <h4 style={{ marginBottom: 'var(--space-2)', color: 'var(--teal)' }}>Profile Picture</h4>
         <p style={{ fontSize: '0.82rem', color: 'var(--grey-400)', marginBottom: 'var(--space-5)', marginTop: 0 }}>
           Upload a profile picture to show in Messenger instead of a generic initial.
@@ -35,7 +35,7 @@ export default function AdminSettingsClient({ profile }: AdminSettingsClientProp
       </div>
 
       {/* Account Info */}
-      <div className="card-metal hover-lift" style={{ padding: 'var(--space-6)', marginBottom: 'var(--space-6)' }}>
+      <div className="glass-panel hover-lift" style={{ padding: 'var(--space-6)', marginBottom: 'var(--space-6)' }}>
         <h4 style={{ marginBottom: 'var(--space-4)', color: 'var(--teal)' }}>Account Information</h4>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
           <div>
@@ -50,7 +50,7 @@ export default function AdminSettingsClient({ profile }: AdminSettingsClientProp
       </div>
 
       {/* Change Password */}
-      <div className="card-metal hover-lift" style={{ padding: 'var(--space-6)', marginBottom: 'var(--space-6)' }}>
+      <div className="glass-panel hover-lift" style={{ padding: 'var(--space-6)', marginBottom: 'var(--space-6)' }}>
         <h4 style={{ marginBottom: 'var(--space-4)', color: 'var(--teal)' }}>Change Password</h4>
         <SettingsPasswordForm />
       </div>
@@ -252,7 +252,7 @@ function ThemeToggleCard() {
   const isLight = theme === 'light';
 
   return (
-    <div className="card-metal hover-lift" style={{ padding: 'var(--space-6)', marginTop: 'var(--space-6)' }}>
+    <div className="glass-panel hover-lift" style={{ padding: 'var(--space-6)', marginTop: 'var(--space-6)' }}>
       <h4 style={{ marginBottom: 'var(--space-2)', color: 'var(--teal)' }}>Display Theme</h4>
       <p style={{ fontSize: '0.82rem', color: 'var(--grey-400)', marginBottom: 'var(--space-5)', marginTop: 0 }}>
         Switch Between Dark Mode And Light Mode. Your Preference Is Saved Automatically.

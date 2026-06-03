@@ -242,7 +242,7 @@ export default function AgentInventory({ agentId }: { agentId: string }) {
     return (
       <div
         key={item.id}
-        className="metal-embossed-panel"
+        className="glass-panel"
         style={{
           padding: 'var(--space-4) var(--space-5)',
           margin: 0,
@@ -394,8 +394,8 @@ export default function AgentInventory({ agentId }: { agentId: string }) {
 
       {/* Smart Alerts Banner */}
       {alerts.length > 0 && (
-        <div className="metal-frame">
-          <div className="metal-content" style={{ borderLeft: '4px solid var(--orange)' }}>
+        <div className="glass-panel">
+          <div className="" style={{ borderLeft: '4px solid var(--orange)' }}>
             <h3 className="metal-text" style={{ fontSize: '1.2rem', marginBottom: 'var(--space-3)', display: 'flex', alignItems: 'center', gap: 8 }}>
               <AlertTriangle size={20} color="var(--orange)" aria-hidden="true" /> <span style={{ color: 'var(--orange)' }}>Low Stock Smart Alerts</span>
             </h3>
@@ -405,14 +405,14 @@ export default function AgentInventory({ agentId }: { agentId: string }) {
             
             <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)', marginBottom: 'var(--space-5)' }}>
               {alerts.map(alert => (
-                <div key={alert.product_id} className="metal-embossed-panel" style={{ padding: '12px 16px', fontSize: '0.85rem' }}>
+                <div key={alert.product_id} className="glass-panel" style={{ padding: '12px 16px', fontSize: '0.85rem' }}>
                   <strong style={{ color: 'var(--white)' }}>{alert.name}</strong> — {alert.message} 
                   <span style={{ marginLeft: 12, color: '#00E5FF' }}>(Stock: {alert.current_stock} / Reorder Point: {alert.reorder_point})</span>
                 </div>
               ))}
             </div>
 
-            <div className="metal-embossed-panel" style={{ border: '1px solid rgba(0, 196, 188, 0.3)' }}>
+            <div className="glass-panel" style={{ border: '1px solid rgba(0, 196, 188, 0.3)' }}>
               <h4 className="metal-text" style={{ marginBottom: 'var(--space-2)' }}>Weekly Suggested Reorder Cart</h4>
               <ul style={{ margin: '0 0 var(--space-4) 20px', fontSize: '0.85rem', color: 'var(--grey-200)' }}>
                 {suggestedCart.map(item => (
@@ -434,8 +434,8 @@ export default function AgentInventory({ agentId }: { agentId: string }) {
       )}
 
       {/* Header */}
-      <div className="metal-frame">
-        <div className="metal-content" style={{ padding: 'var(--space-6)' }}>
+      <div className="glass-panel">
+        <div className="" style={{ padding: 'var(--space-6)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 'var(--space-4)' }}>
             <div>
               <h3 className="metal-text" style={{ fontSize: '1.25rem', margin: 0, fontFamily: 'var(--font-brand)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
@@ -503,15 +503,15 @@ export default function AgentInventory({ agentId }: { agentId: string }) {
       />
 
       {error && (
-        <div className="metal-embossed-panel" style={{ border: '1px solid rgba(229,62,62,0.3)', padding: 'var(--space-3)', fontSize: '0.85rem', color: '#FC8181' }}>
+        <div className="glass-panel" style={{ border: '1px solid rgba(229,62,62,0.3)', padding: 'var(--space-3)', fontSize: '0.85rem', color: '#FC8181' }}>
           {error}
         </div>
       )}
 
       {/* Flat list */}
       {effectiveViewMode === 'flat' && (
-        <div className="metal-frame">
-          <div className="metal-content" style={{ padding: 0, overflow: 'hidden' }}>
+        <div className="glass-panel">
+          <div className="" style={{ padding: 0, overflow: 'hidden' }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1px', background: 'rgba(255,255,255,0.05)' }}>
               {searchFiltered.length === 0 ? (
                 <div style={{ textAlign: 'center', padding: 'var(--space-8) 0' }}>
@@ -529,11 +529,11 @@ export default function AgentInventory({ agentId }: { agentId: string }) {
       {effectiveViewMode === 'category' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-5)' }}>
           {sortedCategories.length === 0 && (
-            <div className="metal-frame"><div className="metal-content" style={{ padding: 'var(--space-6)', textAlign: 'center', color: 'var(--grey-400)' }}>No items match your criteria.</div></div>
+            <div className="glass-panel"><div className="" style={{ padding: 'var(--space-6)', textAlign: 'center', color: 'var(--grey-400)' }}>No items match your criteria.</div></div>
           )}
           {sortedCategories.map(cat => (
-            <div key={cat} className="metal-frame">
-              <div className="metal-content" style={{ padding: 0, overflow: 'hidden' }}>
+            <div key={cat} className="glass-panel">
+              <div className="" style={{ padding: 0, overflow: 'hidden' }}>
                 <h4 style={{ padding: '12px 20px', margin: 0, background: 'rgba(0,0,0,0.4)', borderBottom: '1px solid rgba(255,255,255,0.05)', color: '#00E5FF', fontSize: '0.9rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                   {cat} <span style={{ color: 'rgba(255,255,255,0.3)', marginLeft: 8 }}>({grouped[cat].length})</span>
                 </h4>

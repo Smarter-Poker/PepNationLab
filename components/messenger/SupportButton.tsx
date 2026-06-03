@@ -277,7 +277,7 @@ function Inner() {
           onClick={(e) => { if (e.target === e.currentTarget) setModalOpen(false); }}
         >
           <div
-            className="metal-embossed-panel"
+            className="glass-panel"
             style={{
               width: 'min(420px, 100%)',
               background: 'linear-gradient(180deg, #0F1923 0%, #1D2D3E 100%)',

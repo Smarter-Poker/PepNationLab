@@ -219,7 +219,7 @@ export default function HelpSupportClient({ role, initialCategory }: Props) {
 
         {/* Contact Support */}
         <section
-          className="card-metal"
+          className="glass-panel"
           style={{
             padding: 'var(--space-5)',
             borderRadius: 'var(--radius-lg)',
@@ -264,7 +264,7 @@ export default function HelpSupportClient({ role, initialCategory }: Props) {
             simplest reliable cross-device path; on mobile it opens the
             native mail composer, on desktop it opens the system handler. */}
         <section
-          className="card-metal"
+          className="glass-panel"
           style={{
             padding: 'var(--space-5)',
             borderRadius: 'var(--radius-lg)',
@@ -311,7 +311,7 @@ export default function HelpSupportClient({ role, initialCategory }: Props) {
 
         {/* Search bar */}
         <section
-          className="card-metal"
+          className="glass-panel"
           style={{
             padding: 'var(--space-4) var(--space-5)',
             borderRadius: 'var(--radius-lg)',
@@ -433,7 +433,7 @@ export default function HelpSupportClient({ role, initialCategory }: Props) {
             <section
               key={cat.id}
               id={`faq-cat-${cat.id}`}
-              className="card-metal"
+              className="glass-panel"
               style={{
                 padding: 'var(--space-5)',
                 borderRadius: 'var(--radius-lg)',

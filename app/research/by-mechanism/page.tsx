@@ -62,7 +62,7 @@ export default async function ResearchByMechanismPage() {
               <Link
                 key={c.slug}
                 href={`/research/${c.slug}`}
-                className="card-metal"
+                className="glass-panel"
                 style={{
                   display: 'flex',
                   flexDirection: 'column',
@@ -121,7 +121,7 @@ export default async function ResearchByMechanismPage() {
       </header>
 
       {shellGroups.length === 0 ? (
-        <div className="card-metal" style={{ padding: 'var(--space-5, 24px)', borderRadius: 'var(--radius-lg, 12px)', color: 'var(--silver, #A8B4C0)' }}>
+        <div className="glass-panel" style={{ padding: 'var(--space-5, 24px)', borderRadius: 'var(--radius-lg, 12px)', color: 'var(--silver, #A8B4C0)' }}>
           Mechanism Data Will Populate As The Catalog Is Enriched.
         </div>
       ) : (

@@ -135,7 +135,7 @@ export default function AccountOverview({ userEmail, profile, agentProfile, onPr
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
       <div
-        className="card-metal"
+        className="glass-panel"
         style={{
           padding: 'var(--space-6)',
           display: 'flex',
@@ -183,7 +183,7 @@ export default function AccountOverview({ userEmail, profile, agentProfile, onPr
         <ProfileCompletenessRing percent={completeness} />
       </div>
 
-      <div className="card-metal" style={{ padding: 'var(--space-6)' }}>
+      <div className="glass-panel" style={{ padding: 'var(--space-6)' }}>
         <h3 style={{ marginTop: 0, marginBottom: 'var(--space-4)', color: 'var(--teal)' }}>Profile Details</h3>
 
         <div

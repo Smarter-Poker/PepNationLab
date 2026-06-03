@@ -757,9 +757,9 @@ function AdminOrdersPageInner() {
               <p style={{ color: "var(--red)", fontSize: "0.9rem" }}>{error}</p>
             </div>
           ) : filteredOrders.length === 0 ? (
-            <div className="metal-frame">
+            <div className="glass-panel">
               <div
-                className="metal-content"
+                className=""
                 style={{ textAlign: "center", padding: "var(--space-12) 0" }}
               >
                 <p style={{ color: "var(--grey-400)", fontSize: "0.85rem" }}>
@@ -810,7 +810,7 @@ function AdminOrdersPageInner() {
               {paginatedOrders.map((order) => (
                 <div
                   key={order.id}
-                  className="metal-frame hover-lift stagger-fade-in"
+                  className="glass-panel hover-lift stagger-fade-in"
                   style={{
                     width: "100%",
                     cursor: "pointer",
@@ -821,7 +821,7 @@ function AdminOrdersPageInner() {
                   }}
                 >
                   <div
-                    className="metal-content"
+                    className=""
                     style={{
                       display: "flex",
                       alignItems: "center",
@@ -930,11 +930,11 @@ function AdminOrdersPageInner() {
         <div>
           {selectedOrder ? (
             <div
-              className="metal-frame hover-lift"
+              className="glass-panel hover-lift"
               style={{ position: "sticky", top: "var(--space-6)", zIndex: 10 }}
             >
               <div
-                className="metal-content"
+                className=""
                 style={{ padding: "var(--space-6)" }}
               >
                 <div
@@ -1490,9 +1490,9 @@ function AdminOrdersPageInner() {
               </div>
             </div>
           ) : (
-            <div className="metal-frame">
+            <div className="glass-panel">
               <div
-                className="metal-content"
+                className=""
                 style={{
                   padding: "var(--space-6)",
                   textAlign: "center",
@@ -1524,11 +1524,11 @@ function AdminOrdersPageInner() {
         >
           <div
             onClick={(e) => e.stopPropagation()}
-            className="metal-frame"
+            className="glass-panel"
             style={{ maxWidth: 480, width: "100%" }}
           >
             <div
-              className="metal-content"
+              className=""
               style={{ padding: "var(--space-6)" }}
             >
               <h2

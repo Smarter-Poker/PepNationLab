@@ -4,7 +4,7 @@
  * MyQRCodeModal — premium brushed-nickel restyle.
  *
  * Visual layer: matches the existing platform "metal" aesthetic
- * (.metal-frame + .metal-content + .metal-text + .metal-embossed-panel)
+ * (.glass-panel + . + .metal-text + .glass-panel)
  * used across AdminAgents, AgentBundles, AdminAnalytics, etc.
  *
  * Event-bubble defenses retained from prior fix:
@@ -151,7 +151,7 @@ export default function MyQRCodeModal({
   }
 
   // ---- Style helpers -----------------------------------------------------
-  // Brushed-nickel button skin (matches .metal-frame outer ring + inset highlights).
+  // Brushed-nickel button skin (matches .glass-panel outer ring + inset highlights).
   const nickelButton: React.CSSProperties = {
     padding: '14px 12px',
     borderRadius: 12,
@@ -232,11 +232,11 @@ export default function MyQRCodeModal({
 
       {/* Brushed-nickel frame wrapper */}
       <div
-        className="metal-frame"
+        className="glass-panel"
         onClick={(e) => e.stopPropagation()}
         style={{ maxWidth: 460, width: '100%', maxHeight: '92dvh', overflow: 'hidden' }}
       >
-        <div className="metal-content" style={{
+        <div className="" style={{
           padding: '28px 24px',
           maxHeight: 'calc(92dvh - 6px)',
           overflowY: 'auto',
@@ -320,7 +320,7 @@ export default function MyQRCodeModal({
               </p>
 
               {/* URL — embossed inset panel */}
-              <div className="metal-embossed-panel" style={{
+              <div className="glass-panel" style={{
                 padding: '10px 14px',
                 fontSize: '0.78rem',
                 color: '#D0DAE4',

@@ -185,9 +185,9 @@ export default function MatchForm() {
 
   return (
     <div>
-      <div className="card-metal" style={{ padding: 0 }}>
-        <div className="metal-frame">
-          <div className="metal-content" style={{ padding: 'var(--space-6, 24px)' }}>
+      <div className="glass-panel" style={{ padding: 0 }}>
+        <div className="glass-panel">
+          <div className="" style={{ padding: 'var(--space-6, 24px)' }}>
             <div
               style={{
                 display: 'flex',
@@ -378,7 +378,7 @@ export default function MatchForm() {
                 <Link
                   key={r.slug}
                   href={`/research/${r.slug}`}
-                  className="card-metal"
+                  className="glass-panel"
                   style={{
                     display: 'block',
                     padding: 'var(--space-4, 16px)',

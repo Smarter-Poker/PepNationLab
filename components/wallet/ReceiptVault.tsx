@@ -32,7 +32,7 @@ export default function ReceiptVault() {
   if (!data) return <div style={{ color: 'var(--grey-400)', padding: 16 }}>Loading...</div>;
 
   return (
-    <section className="card-metal" style={{ padding: 16, borderRadius: 12 }}>
+    <section className="glass-panel" style={{ padding: 16, borderRadius: 12 }}>
       <h3 style={{ color: 'var(--white)', marginTop: 0 }}>Receipt Vault</h3>
       <p style={{ color: 'var(--grey-400)', fontSize: '0.82rem' }}>{(data.count ?? data.receipts.length)} Payment Proofs Across All Orders.</p>
       {data.receipts.length === 0 ? (

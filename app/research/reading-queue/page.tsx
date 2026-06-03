@@ -43,7 +43,7 @@ export default async function ReadingQueuePage() {
       </header>
 
       {unread.length === 0 && read.length === 0 ? (
-        <div className="card-metal" style={{ padding: 'var(--space-5, 24px)', borderRadius: 'var(--radius-lg, 12px)', color: 'var(--silver, #A8B4C0)' }}>
+        <div className="glass-panel" style={{ padding: 'var(--space-5, 24px)', borderRadius: 'var(--radius-lg, 12px)', color: 'var(--silver, #A8B4C0)' }}>
           Your Reading Queue Is Empty. Use The Add-To-Queue Button On Any Monograph Or Reference.
         </div>
       ) : (
@@ -54,7 +54,7 @@ export default async function ReadingQueuePage() {
               <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2, 8px)' }}>
                 {unread.map((row) => (
                   row.compound_slug ? (
-                    <Link key={row.id} href={`/research/${row.compound_slug}`} className="card-metal" style={{ padding: 'var(--space-3, 12px) var(--space-4, 16px)', borderRadius: 'var(--radius-lg, 12px)', textDecoration: 'none', color: 'var(--white, #FFFFFF)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <Link key={row.id} href={`/research/${row.compound_slug}`} className="glass-panel" style={{ padding: 'var(--space-3, 12px) var(--space-4, 16px)', borderRadius: 'var(--radius-lg, 12px)', textDecoration: 'none', color: 'var(--white, #FFFFFF)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <span>{row.compound_slug}</span>
                       <span style={{ fontSize: '0.72rem', color: 'var(--silver, #A8B4C0)' }}>Position {row.position}</span>
                     </Link>
@@ -69,7 +69,7 @@ export default async function ReadingQueuePage() {
               <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2, 8px)' }}>
                 {read.map((row) => (
                   row.compound_slug ? (
-                    <Link key={row.id} href={`/research/${row.compound_slug}`} className="card-metal" style={{ padding: 'var(--space-2, 8px) var(--space-4, 16px)', borderRadius: 'var(--radius-md, 8px)', textDecoration: 'none', color: 'var(--silver, #A8B4C0)', fontSize: '0.88rem', display: 'flex', justifyContent: 'space-between' }}>
+                    <Link key={row.id} href={`/research/${row.compound_slug}`} className="glass-panel" style={{ padding: 'var(--space-2, 8px) var(--space-4, 16px)', borderRadius: 'var(--radius-md, 8px)', textDecoration: 'none', color: 'var(--silver, #A8B4C0)', fontSize: '0.88rem', display: 'flex', justifyContent: 'space-between' }}>
                       <span>{row.compound_slug}</span>
                       <span>Read {row.read_at ? new Date(row.read_at).toLocaleDateString() : ''}</span>
                     </Link>

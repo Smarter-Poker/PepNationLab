@@ -210,7 +210,7 @@ export default function AgentStorefrontLogin({
       background: 'var(--black)',
       padding: 'var(--space-6)'
     }}>
-      <div className="card-metal" style={{
+      <div className="glass-panel" style={{
         maxWidth: 420,
         width: '100%',
         padding: 'var(--space-8)',

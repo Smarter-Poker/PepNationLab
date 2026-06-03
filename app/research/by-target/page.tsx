@@ -5,7 +5,7 @@
 
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { createClient } from '@/lib/supabase/server';
+import { getAllCompounds } from '@/lib/compounds-server';
 
 export const metadata: Metadata = {
   title: 'Browse By Receptor Target | Research Library | Pep Nation Lab',
@@ -21,13 +21,7 @@ interface CompoundReceptorRow {
 }
 
 export default async function ResearchByTargetPage() {
-  const supabase = await createClient();
-  const { data } = await supabase
-    .from('compounds')
-    .select('slug, display_name, receptors')
-    .order('display_name', { ascending: true });
-
-  const rows = (data ?? []) as CompoundReceptorRow[];
+  const rows = (await getAllCompounds()) as unknown as CompoundReceptorRow[];
 
   const targetCounts = new Map<string, number>();
   for (const r of rows) {
@@ -56,7 +50,7 @@ export default async function ResearchByTargetPage() {
       </header>
 
       {targets.length === 0 ? (
-        <div className="card-metal" style={{ padding: 'var(--space-5, 24px)', borderRadius: 'var(--radius-lg, 12px)', color: 'var(--silver, #A8B4C0)' }}>
+        <div className="glass-panel" style={{ padding: 'var(--space-5, 24px)', borderRadius: 'var(--radius-lg, 12px)', color: 'var(--silver, #A8B4C0)' }}>
           Receptor Annotations Will Populate Once The IUPHAR And ChEMBL Sync Crons Run.
         </div>
       ) : (
@@ -65,7 +59,7 @@ export default async function ResearchByTargetPage() {
             <Link
               key={t}
               href={`/research/by-target/${encodeURIComponent(t)}`}
-              className="card-metal"
+              className="glass-panel"
               style={{ display: 'flex', flexDirection: 'column', gap: '4px', padding: 'var(--space-3, 12px) var(--space-4, 16px)', borderRadius: 'var(--radius-lg, 12px)', textDecoration: 'none', color: 'var(--white, #FFFFFF)' }}
             >
               <span style={{ fontSize: '1rem', fontWeight: 700 }}>{t}</span>

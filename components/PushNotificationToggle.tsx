@@ -231,7 +231,7 @@ export default function PushNotificationToggle({
 
   return (
     <div
-      className="card-metal"
+      className="glass-panel"
       style={{ padding: 'var(--space-5)', borderRadius: 'var(--radius-md)' }}
     >
       <h3 style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--white)', margin: '0 0 4px' }}>{title}</h3>

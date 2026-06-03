@@ -110,7 +110,7 @@ export default function SecurityTab({ userEmail }: Props) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
       {/* Change Password */}
-      <div className="card-metal" style={{ padding: 'var(--space-6)' }}>
+      <div className="glass-panel" style={{ padding: 'var(--space-6)' }}>
         <h3 style={{ marginTop: 0, marginBottom: 'var(--space-2)', color: 'var(--teal)' }}>
           Change Password
         </h3>
@@ -163,7 +163,7 @@ export default function SecurityTab({ userEmail }: Props) {
       </div>
 
       {/* MFA */}
-      <div className="card-metal" style={{ padding: 'var(--space-6)' }}>
+      <div className="glass-panel" style={{ padding: 'var(--space-6)' }}>
         <div
           style={{
             display: 'flex',
@@ -260,7 +260,7 @@ export default function SecurityTab({ userEmail }: Props) {
       </div>
 
       {/* Active Sessions */}
-      <div className="card-metal" style={{ padding: 'var(--space-6)' }}>
+      <div className="glass-panel" style={{ padding: 'var(--space-6)' }}>
         <SessionsTable />
       </div>
     </div>

@@ -53,7 +53,7 @@ export default async function StatusPage() {
         </h1>
 
         <div
-          className="card-metal hover-lift stagger-fade-in"
+          className="glass-panel hover-lift stagger-fade-in"
           style={{
             padding: 'var(--space-5)',
             borderLeft: `4px solid ${statusColor(overall)}`,
@@ -114,7 +114,7 @@ export default async function StatusPage() {
 function ComponentRow({ label, ok, detail }: { label: string; ok: boolean; detail: string }) {
   return (
     <div
-      className="card-metal"
+      className="glass-panel"
       style={{
         padding: 'var(--space-4)',
         borderRadius: 'var(--radius-md)',

@@ -42,8 +42,8 @@ export default function ReparentControl({ people }: { people: ReparentablePerson
   };
 
   return (
-    <div className="metal-frame" style={{ marginBottom: 'var(--space-6)' }}>
-      <div className="metal-content" style={{ padding: 'var(--space-5)' }}>
+    <div className="glass-panel" style={{ marginBottom: 'var(--space-6)' }}>
+      <div className="" style={{ padding: 'var(--space-5)' }}>
         <h3 style={{ fontSize: '0.95rem', margin: 0, marginBottom: 'var(--space-3)' }}>Reparent Agent</h3>
         <form onSubmit={submit} style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'flex-end' }}>
           <label style={{ display: 'flex', flexDirection: 'column', gap: 4, minWidth: 220, flex: '1 1 220px' }}>

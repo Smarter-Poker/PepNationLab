@@ -48,7 +48,7 @@ export default function OrgChart() {
 
   if (!rootId) return null;
   return (
-    <section className="card-metal" style={{ padding: 16, borderRadius: 12 }}>
+    <section className="glass-panel" style={{ padding: 16, borderRadius: 12 }}>
       <h3 style={{ color: 'var(--white)', marginTop: 0 }}>Team Org Chart</h3>
       <ul style={{ padding: 0, margin: 0 }}>
         <Node id={rootId} depth={0} />

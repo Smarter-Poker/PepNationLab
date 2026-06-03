@@ -51,7 +51,7 @@ export default function WishlistClient({ favorites: initialFavorites, pastOrders
   const renderGrid = (items: Item[], isFavorites: boolean) => {
     if (items.length === 0) {
       return (
-        <div className="card-metal hover-lift stagger-fade-in" style={{ padding: 'var(--space-8)', textAlign: 'center', animationDelay: '0.1s' }}>
+        <div className="glass-panel hover-lift stagger-fade-in" style={{ padding: 'var(--space-8)', textAlign: 'center', animationDelay: '0.1s' }}>
           {isFavorites ? (
             <Heart size={32} aria-hidden="true" style={{ marginBottom: 'var(--space-3)', color: 'var(--silver)' }} />
           ) : (
@@ -85,7 +85,7 @@ export default function WishlistClient({ favorites: initialFavorites, pastOrders
           return (
             <div
               key={item.product_id}
-              className="card-metal hover-lift stagger-fade-in"
+              className="glass-panel hover-lift stagger-fade-in"
               style={{
                 display: 'flex',
                 flexDirection: 'column',

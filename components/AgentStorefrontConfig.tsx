@@ -169,8 +169,8 @@ export default function AgentStorefrontConfig({
 
   return (
     <div style={{ maxWidth: 800 }}>
-      <div className="metal-frame">
-        <div className="metal-content" style={{ padding: 'var(--space-8)' }}>
+      <div className="glass-panel">
+        <div className="" style={{ padding: 'var(--space-8)' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 'var(--space-6)' }}>
           <div>
             <h3 className="metal-text" style={{ fontSize: '1.25rem', marginBottom: 'var(--space-2)', fontFamily: 'var(--font-brand)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Storefront Setup</h3>
@@ -361,8 +361,8 @@ export default function AgentStorefrontConfig({
       {paymentMethodsNode}
 
       {/* ── Warehouse & Shipping Configuration ── */}
-      <div className="metal-frame" style={{ marginTop: 'var(--space-6)' }}>
-        <div className="metal-content" style={{ padding: 'var(--space-8)' }}>
+      <div className="glass-panel" style={{ marginTop: 'var(--space-6)' }}>
+        <div className="" style={{ padding: 'var(--space-8)' }}>
           <h4 style={{ color: 'var(--teal)', fontSize: '1rem', marginBottom: 'var(--space-2)' }}>Warehouse Address</h4>
           <p style={{ color: 'var(--grey-400)', fontSize: '0.85rem', marginBottom: 'var(--space-4)' }}>
             Used As The Ship-From Address When Buying Shipping Labels.
@@ -510,8 +510,8 @@ function PricingConfig({ agentId }: { agentId: string }) {
   });
 
   return (
-    <div className="metal-frame" style={{ marginTop: 'var(--space-6)' }}>
-      <div className="metal-content" style={{ padding: 'var(--space-8)' }}>
+    <div className="glass-panel" style={{ marginTop: 'var(--space-6)' }}>
+      <div className="" style={{ padding: 'var(--space-8)' }}>
       <h3 className="metal-text" style={{ fontSize: '1.25rem', marginBottom: 'var(--space-2)', fontFamily: 'var(--font-brand)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Pricing & Discounts</h3>
       <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.9rem', marginBottom: 'var(--space-6)' }}>
         Configure quantity-based pricing and bulk volume discounts for your storefront.

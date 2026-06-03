@@ -76,7 +76,7 @@ export default function ForgotPasswordPage() {
           </p>
         </div>
 
-        <div className="card-metal hover-lift stagger-fade-in" style={{ padding: 'var(--space-8)', boxShadow: '0 0 40px rgba(104,211,145,0.05)' }}>
+        <div className="glass-panel hover-lift stagger-fade-in" style={{ padding: 'var(--space-8)', boxShadow: '0 0 40px rgba(104,211,145,0.05)' }}>
           {sent ? (
             <div style={{ textAlign: 'center' }}>
               <div

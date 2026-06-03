@@ -4,7 +4,7 @@
 
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { createClient } from '@/lib/supabase/server';
+import { getAllCompounds } from '@/lib/compounds-server';
 import { evidenceTier, wadaLabel } from '@/lib/compounds';
 import BrowseFilterShell from '@/components/research/BrowseFilterShell';
 
@@ -35,7 +35,7 @@ function CompoundCard({ c }: { c: MwRow }) {
   return (
     <Link
       href={`/research/${c.slug}`}
-      className="card-metal"
+      className="glass-panel"
       style={{
         display: 'flex',
         flexDirection: 'column',
@@ -61,13 +61,7 @@ function CompoundCard({ c }: { c: MwRow }) {
 }
 
 export default async function ResearchByMwPage() {
-  const supabase = await createClient();
-  const { data } = await supabase
-    .from('compounds')
-    .select('slug, display_name, evidence_tier, wada_status, plain_summary, molecular_weight_da')
-    .order('display_name', { ascending: true });
-
-  const rows = (data ?? []) as MwRow[];
+  const rows = (await getAllCompounds()) as unknown as MwRow[];
 
   const groups = BUCKETS.map((b) => ({ ...b, compounds: [] as MwRow[] }));
   const unknown: MwRow[] = [];
@@ -108,7 +102,7 @@ export default async function ResearchByMwPage() {
                     <Link
                       key={c.slug}
                       href={`/research/${c.slug}`}
-                      className="card-metal"
+                      className="glass-panel"
                       style={{ padding: '6px 12px', borderRadius: 'var(--radius-md, 8px)', textDecoration: 'none', color: 'var(--white, #FFFFFF)', fontSize: '0.85rem' }}
                     >
                       {c.display_name}

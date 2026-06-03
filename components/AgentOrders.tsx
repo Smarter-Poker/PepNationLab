@@ -228,8 +228,8 @@ export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
   );
 
   return (
-    <div className="metal-frame" style={{ marginBottom: 'var(--space-6)' }}>
-      <div className="metal-content">
+    <div className="glass-panel" style={{ marginBottom: 'var(--space-6)' }}>
+      <div className="">
       <h3
         className="metal-text"
         style={{
@@ -304,7 +304,7 @@ export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
                   transition: 'transform 0.2s ease, box-shadow 0.2s ease',
                   marginBottom: '16px',
                 }}
-                className="message-card-hover hover-lift-metal"
+                className="message-card-hover hover-lift"
               >
                 <div style={{
                   background: 'linear-gradient(180deg, #1a1f2e 0%, #141820 40%, #111520 100%)',
@@ -695,7 +695,7 @@ export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
         >
           <div
             onClick={(e) => e.stopPropagation()}
-            className="agent-order-modal card-metal"
+            className="agent-order-modal glass-panel"
             style={{
               width: '100%',
               maxWidth: 820,

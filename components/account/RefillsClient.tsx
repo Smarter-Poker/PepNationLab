@@ -178,7 +178,7 @@ export default function RefillsClient() {
 
         {dueOrder && (
           <div
-            className="card-metal"
+            className="glass-panel"
             style={{
               display: 'flex',
               alignItems: 'center',
@@ -210,11 +210,11 @@ export default function RefillsClient() {
         {loading ? (
           <p style={{ color: 'var(--silver)' }}>Loading Your Orders...</p>
         ) : error ? (
-          <div className="card-metal" style={{ padding: 'var(--space-5)', borderRadius: 'var(--radius-lg)' }}>
+          <div className="glass-panel" style={{ padding: 'var(--space-5)', borderRadius: 'var(--radius-lg)' }}>
             <p style={{ color: 'var(--white)', margin: 0 }}>Could Not Load Your Orders. Please Try Again.</p>
           </div>
         ) : orders.length === 0 ? (
-          <div className="card-metal" style={{ padding: 'var(--space-6)', borderRadius: 'var(--radius-lg)', textAlign: 'center' }}>
+          <div className="glass-panel" style={{ padding: 'var(--space-6)', borderRadius: 'var(--radius-lg)', textAlign: 'center' }}>
             <PackageCheck size={28} aria-hidden style={{ color: 'var(--teal)', marginBottom: 'var(--space-2)' }} />
             <div style={{ color: 'var(--white)', fontWeight: 700, marginBottom: 4 }}>No Past Orders Yet</div>
             <div style={{ color: 'var(--silver)', fontSize: '0.85rem' }}>
@@ -228,7 +228,7 @@ export default function RefillsClient() {
               return (
                 <div
                   key={o.id}
-                  className="card-metal"
+                  className="glass-panel"
                   style={{
                     padding: 'var(--space-4) var(--space-5)',
                     borderRadius: 'var(--radius-lg)',

@@ -616,8 +616,8 @@ export default function AdminAgents() {
           background: 'rgba(0,0,0,0.8)', zIndex: 1000,
           display: 'flex', alignItems: 'center', justifyContent: 'center'
         }}>
-          <div className="metal-frame" style={{ width: '100%', maxWidth: 400 }}>
-            <div className="metal-content" style={{ padding: 'var(--space-6)' }}>
+          <div className="glass-panel" style={{ width: '100%', maxWidth: 400 }}>
+            <div className="" style={{ padding: 'var(--space-6)' }}>
               <h3 className="metal-text" style={{ marginTop: 0, marginBottom: 'var(--space-4)', color: '#fff', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
                 Edit Contact Info
               </h3>
@@ -666,8 +666,8 @@ export default function AdminAgents() {
           background: 'rgba(0,0,0,0.8)', zIndex: 1000,
           display: 'flex', alignItems: 'center', justifyContent: 'center'
         }}>
-          <div className="metal-frame" style={{ width: '100%', maxWidth: 400 }}>
-            <div className="metal-content" style={{ padding: 'var(--space-6)' }}>
+          <div className="glass-panel" style={{ width: '100%', maxWidth: 400 }}>
+            <div className="" style={{ padding: 'var(--space-6)' }}>
               <h3 className="metal-text" style={{ marginTop: 0, marginBottom: 'var(--space-4)', color: '#fff', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Edit Password</h3>
               <p style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.4)', marginBottom: 'var(--space-2)' }}>
                 Agent: <strong style={{ color: '#fff' }}>{passwordAgent.full_name}</strong>
@@ -742,13 +742,13 @@ export default function AdminAgents() {
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           padding: 'var(--space-4)',
         }}>
-          <div className="metal-frame" style={{
+          <div className="glass-panel" style={{
             width: '100%',
             maxWidth: 520,
             maxHeight: '90vh',
             overflowY: 'auto',
           }}>
-            <div className="metal-content" style={{ padding: 'var(--space-6)' }}>
+            <div className="" style={{ padding: 'var(--space-6)' }}>
               <h3 className="metal-text" style={{ marginTop: 0, marginBottom: 'var(--space-2)', color: '#fff', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
                 Create New Agent
               </h3>
@@ -1034,8 +1034,8 @@ export default function AdminAgents() {
           background: 'rgba(0,0,0,0.85)', zIndex: 1200,
           display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 'var(--space-4)'
         }}>
-          <div className="metal-frame" style={{ width: '100%', maxWidth: 700, maxHeight: '90vh', display: 'flex', flexDirection: 'column' }}>
-            <div className="metal-content" style={{ padding: 'var(--space-6)', overflowY: 'auto' }}>
+          <div className="glass-panel" style={{ width: '100%', maxWidth: 700, maxHeight: '90vh', display: 'flex', flexDirection: 'column' }}>
+            <div className="" style={{ padding: 'var(--space-6)', overflowY: 'auto' }}>
               <h2 className="metal-text" style={{ marginTop: 0, marginBottom: 'var(--space-2)', fontSize: '1.4rem' }}>
                 Gamification Scale
               </h2>

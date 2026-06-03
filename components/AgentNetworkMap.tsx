@@ -36,7 +36,7 @@ function money(n: number): string {
 
 function Kpi({ label, value }: { label: string; value: string }) {
   return (
-    <div className="card-metal" style={{ padding: 'var(--space-4)', flex: '1 1 150px', minWidth: 150 }}>
+    <div className="glass-panel" style={{ padding: 'var(--space-4)', flex: '1 1 150px', minWidth: 150 }}>
       <div style={{ fontSize: '0.7rem', color: 'var(--grey-400)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 6 }}>{label}</div>
       <div style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--white)', fontFamily: 'var(--font-brand)' }}>{value}</div>
     </div>
@@ -70,7 +70,7 @@ export default function AgentNetworkMap() {
 
   if (loading) {
     return (
-      <div className="card-metal" style={{ padding: 'var(--space-8)', textAlign: 'center', color: 'var(--grey-400)', fontSize: '0.85rem', marginBottom: 'var(--space-6)' }}>
+      <div className="glass-panel" style={{ padding: 'var(--space-8)', textAlign: 'center', color: 'var(--grey-400)', fontSize: '0.85rem', marginBottom: 'var(--space-6)' }}>
         Loading Network Map...
       </div>
     );
@@ -82,7 +82,7 @@ export default function AgentNetworkMap() {
   const topRevenue = data.nodes.length > 0 ? data.nodes[0].revenue : 0;
 
   return (
-    <div className="card-metal hover-lift" style={{ padding: 'var(--space-6)', marginBottom: 'var(--space-6)' }}>
+    <div className="glass-panel hover-lift" style={{ padding: 'var(--space-6)', marginBottom: 'var(--space-6)' }}>
       <div style={{ textAlign: 'center', marginBottom: 'var(--space-5)' }}>
         <h3 style={{ fontSize: '1.1rem', color: 'var(--white)', fontFamily: 'var(--font-brand)', letterSpacing: '0.05em', textTransform: 'uppercase', marginBottom: 6 }}>
           Network Map

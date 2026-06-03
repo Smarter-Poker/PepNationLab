@@ -113,8 +113,8 @@ export default function AgentManualOrder({ onOrderCreated }: { onOrderCreated: (
   }
 
   return (
-    <div className="metal-frame">
-      <div className="metal-content" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
+    <div className="glass-panel">
+      <div className="" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
         <h3 className="metal-text" style={{ fontSize: '1.25rem', margin: 0, fontFamily: 'var(--font-brand)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
           Create Manual Shipment Order
         </h3>
@@ -122,7 +122,7 @@ export default function AgentManualOrder({ onOrderCreated }: { onOrderCreated: (
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
           
           {/* Customer Details */}
-          <div className="metal-embossed-panel" style={{ padding: '24px' }}>
+          <div className="glass-panel" style={{ padding: '24px' }}>
             <h4 style={{ fontSize: '1rem', color: '#00E5FF', marginBottom: '20px', fontFamily: 'var(--font-brand)', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid rgba(0,229,255,0.2)', paddingBottom: '10px' }}>Customer & Shipping Details</h4>
             <div className="grid-2" style={{ gap: 'var(--space-4)' }}>
               <div className="form-group">
@@ -157,7 +157,7 @@ export default function AgentManualOrder({ onOrderCreated }: { onOrderCreated: (
           </div>
 
           {/* Order Items */}
-          <div className="metal-embossed-panel" style={{ padding: '24px' }}>
+          <div className="glass-panel" style={{ padding: '24px' }}>
             <h4 style={{ fontSize: '1rem', color: '#00E5FF', marginBottom: '20px', fontFamily: 'var(--font-brand)', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid rgba(0,229,255,0.2)', paddingBottom: '10px' }}>Order Items</h4>
             
             <div style={{ display: 'flex', gap: 'var(--space-3)', alignItems: 'flex-end', marginBottom: 'var(--space-6)' }}>
@@ -217,7 +217,7 @@ export default function AgentManualOrder({ onOrderCreated }: { onOrderCreated: (
           </div>
 
           {/* Payment & Submit */}
-          <div className="metal-embossed-panel" style={{ padding: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: '20px' }}>
+          <div className="glass-panel" style={{ padding: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: '20px' }}>
             <div style={{ display: 'flex', gap: 'var(--space-4)', flexWrap: 'wrap' }}>
               <div className="form-group" style={{ width: 180, marginBottom: 0 }}>
                 <label className="form-label" style={{ color: 'rgba(255,255,255,0.6)' }}>Payment Received Via</label>

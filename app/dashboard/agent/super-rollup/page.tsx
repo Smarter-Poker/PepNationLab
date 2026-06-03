@@ -134,29 +134,29 @@ export default async function SuperAgentRollupPage() {
       </p>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 'var(--space-3)', marginBottom: 'var(--space-5)' }}>
-        <div className="card-metal hover-lift stagger-fade-in" style={{ padding: 'var(--space-4)', borderRadius: 'var(--radius-md)', animationDelay: '0.1s' }}>
+        <div className="glass-panel hover-lift stagger-fade-in" style={{ padding: 'var(--space-4)', borderRadius: 'var(--radius-md)', animationDelay: '0.1s' }}>
           <div style={{ color: 'var(--silver)', fontSize: '0.78rem', textTransform: 'uppercase' }}>Sub-Agents</div>
           <div style={{ color: 'var(--white)', fontSize: '1.6rem', fontWeight: 800, marginTop: 4 }}>{rows.length}</div>
         </div>
-        <div className="card-metal hover-lift stagger-fade-in" style={{ padding: 'var(--space-4)', borderRadius: 'var(--radius-md)', animationDelay: '0.2s' }}>
+        <div className="glass-panel hover-lift stagger-fade-in" style={{ padding: 'var(--space-4)', borderRadius: 'var(--radius-md)', animationDelay: '0.2s' }}>
           <div style={{ color: 'var(--silver)', fontSize: '0.78rem', textTransform: 'uppercase' }}>Total Pageviews</div>
           <div style={{ color: 'var(--white)', fontSize: '1.6rem', fontWeight: 800, marginTop: 4 }}>{totals.pageviews}</div>
         </div>
-        <div className="card-metal hover-lift stagger-fade-in" style={{ padding: 'var(--space-4)', borderRadius: 'var(--radius-md)', animationDelay: '0.3s' }}>
+        <div className="glass-panel hover-lift stagger-fade-in" style={{ padding: 'var(--space-4)', borderRadius: 'var(--radius-md)', animationDelay: '0.3s' }}>
           <div style={{ color: 'var(--silver)', fontSize: '0.78rem', textTransform: 'uppercase' }}>Total Orders</div>
           <div style={{ color: 'var(--white)', fontSize: '1.6rem', fontWeight: 800, marginTop: 4 }}>{totals.orders}</div>
         </div>
-        <div className="card-metal hover-lift stagger-fade-in" style={{ padding: 'var(--space-4)', borderRadius: 'var(--radius-md)', animationDelay: '0.4s' }}>
+        <div className="glass-panel hover-lift stagger-fade-in" style={{ padding: 'var(--space-4)', borderRadius: 'var(--radius-md)', animationDelay: '0.4s' }}>
           <div style={{ color: 'var(--silver)', fontSize: '0.78rem', textTransform: 'uppercase' }}>Total Revenue</div>
           <div style={{ color: 'var(--white)', fontSize: '1.6rem', fontWeight: 800, marginTop: 4 }}>{money(totals.revenue_cents)}</div>
         </div>
-        <div className="card-metal hover-lift stagger-fade-in" style={{ padding: 'var(--space-4)', borderRadius: 'var(--radius-md)', animationDelay: '0.5s' }}>
+        <div className="glass-panel hover-lift stagger-fade-in" style={{ padding: 'var(--space-4)', borderRadius: 'var(--radius-md)', animationDelay: '0.5s' }}>
           <div style={{ color: 'var(--silver)', fontSize: '0.78rem', textTransform: 'uppercase' }}>Margin Earned</div>
           <div style={{ color: 'var(--white)', fontSize: '1.6rem', fontWeight: 800, marginTop: 4 }}>${totals.margin_earned.toFixed(2)}</div>
         </div>
       </div>
 
-      <div className="card-metal hover-lift stagger-fade-in" style={{ padding: 0, overflow: 'hidden', animationDelay: '0.6s' }}>
+      <div className="glass-panel hover-lift stagger-fade-in" style={{ padding: 0, overflow: 'hidden', animationDelay: '0.6s' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.88rem' }}>
           <thead>
             <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}>

@@ -5,7 +5,7 @@
 
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { createClient } from '@/lib/supabase/server';
+import { getAllCompounds } from '@/lib/compounds-server';
 import { evidenceTier, wadaLabel } from '@/lib/compounds';
 import BrowseFilterShell from '@/components/research/BrowseFilterShell';
 
@@ -35,7 +35,7 @@ function TrialCard({ c, rank }: { c: TrialCompound; rank: number }) {
   return (
     <Link
       href={`/research/${c.slug}`}
-      className="card-metal"
+      className="glass-panel"
       style={{
         display: 'grid',
         gridTemplateColumns: '40px 1fr auto auto',
@@ -66,18 +66,14 @@ function TrialCard({ c, rank }: { c: TrialCompound; rank: number }) {
 }
 
 export default async function ResearchMostStudied2026Page() {
-  const supabase = await createClient();
-  const { data } = await supabase
-    .from('compounds')
-    .select('slug, display_name, evidence_tier, wada_status, category, active_trial_count, completed_trial_count')
-    .order('display_name', { ascending: true });
-
-  const rows = (data ?? []) as TrialRow[];
-  const ranked = rows
+  const compounds = await getAllCompounds();
+  const ranked = [...compounds]
     .map((r) => ({
       ...r,
+      active_trial_count: r.active_trial_count ?? null,
+      completed_trial_count: r.completed_trial_count ?? null,
       total_trials: (r.active_trial_count ?? 0) + (r.completed_trial_count ?? 0),
-    }))
+    } as TrialCompound))
     .sort((a, b) => b.total_trials - a.total_trials);
 
   const withTrials = ranked.filter((c) => c.total_trials > 0);
@@ -104,7 +100,7 @@ export default async function ResearchMostStudied2026Page() {
       count: withTrials.length,
       children:
         withTrials.length === 0 ? (
-          <div className="card-metal" style={{ padding: 'var(--space-5, 24px)', borderRadius: 'var(--radius-lg, 12px)', color: 'var(--silver, #A8B4C0)' }}>
+          <div className="glass-panel" style={{ padding: 'var(--space-5, 24px)', borderRadius: 'var(--radius-lg, 12px)', color: 'var(--silver, #A8B4C0)' }}>
             Trial Counts Will Populate Once The ClinicalTrials.gov Sync Cron Runs.
           </div>
         ) : (
@@ -142,7 +138,7 @@ export default async function ResearchMostStudied2026Page() {
                     <Link
                       key={c.slug}
                       href={`/research/${c.slug}`}
-                      className="card-metal"
+                      className="glass-panel"
                       style={{ padding: '6px 12px', borderRadius: 'var(--radius-md, 8px)', textDecoration: 'none', color: 'var(--white, #FFFFFF)', fontSize: '0.85rem' }}
                     >
                       {c.display_name}

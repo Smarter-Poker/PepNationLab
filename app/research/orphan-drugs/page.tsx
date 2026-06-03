@@ -4,7 +4,7 @@
 
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { createClient } from '@/lib/supabase/server';
+import { getAllCompounds } from '@/lib/compounds-server';
 import { evidenceTier, wadaLabel } from '@/lib/compounds';
 import BrowseFilterShell from '@/components/research/BrowseFilterShell';
 
@@ -31,7 +31,7 @@ function CompoundCard({ c }: { c: OrphanRow }) {
   const t = evidenceTier(c.evidence_tier);
   return (
     <article
-      className="card-metal"
+      className="glass-panel"
       style={{
         padding: 'var(--space-4, 16px) var(--space-5, 24px)',
         borderRadius: 'var(--radius-lg, 12px)',
@@ -72,16 +72,8 @@ function CompoundCard({ c }: { c: OrphanRow }) {
 }
 
 export default async function ResearchOrphanDrugsPage() {
-  const supabase = await createClient();
-  const { data } = await supabase
-    .from('compounds')
-    .select(
-      'slug, display_name, evidence_tier, wada_status, category, plain_summary, orphan_indications, fda_approval_year, ema_approval_year'
-    )
-    .eq('is_orphan_drug', true)
-    .order('display_name', { ascending: true });
-
-  const rows = (data ?? []) as OrphanRow[];
+  const all = await getAllCompounds();
+  const rows = all.filter((c) => (c as any).is_orphan_drug === true) as unknown as OrphanRow[];
 
   // Group by category
   const categoryMap = new Map<string, OrphanRow[]>();
@@ -168,7 +160,7 @@ export default async function ResearchOrphanDrugsPage() {
       </header>
 
       {rows.length === 0 ? (
-        <div className="card-metal" style={{ padding: 'var(--space-5, 24px)', borderRadius: 'var(--radius-lg, 12px)', color: 'var(--silver, #A8B4C0)' }}>
+        <div className="glass-panel" style={{ padding: 'var(--space-5, 24px)', borderRadius: 'var(--radius-lg, 12px)', color: 'var(--silver, #A8B4C0)' }}>
           No Orphan Drug Designations Currently In The Catalog.
         </div>
       ) : (

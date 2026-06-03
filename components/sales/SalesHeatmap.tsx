@@ -25,8 +25,8 @@ export default function SalesHeatmap({ preset }: { preset: string }) {
   }
 
   return (
-    <div className="metal-frame">
-      <div className="metal-content" style={{ padding: 12 }}>
+    <div className="glass-panel">
+      <div className="" style={{ padding: 12 }}>
         <h3 style={{ color: 'var(--white)', fontSize: '0.95rem', margin: '0 0 8px' }}>Activity Heatmap</h3>
         <p style={{ color: 'var(--grey-400)', fontSize: '0.75rem', margin: '0 0 10px' }}>
           Orders By Day Of Week And Hour

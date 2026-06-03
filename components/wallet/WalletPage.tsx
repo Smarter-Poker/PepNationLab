@@ -153,8 +153,8 @@ export default function WalletPage({
 
   return (
     <div style={{ textTransform: 'capitalize', paddingTop: 'calc(var(--nav-offset, 60px) + var(--space-6))', paddingRight: 'var(--space-4)', paddingBottom: 'var(--space-8)', paddingLeft: 'var(--space-4)', minHeight: '100dvh' }}>
-      <div className="metal-frame" style={{ maxWidth: 960, margin: '0 auto', width: '100%' }}>
-        <div className="metal-content" style={{ padding: 'var(--space-6)', display: 'flex', flexDirection: 'column', gap: 16 }}>
+      <div className="glass-panel" style={{ maxWidth: 960, margin: '0 auto', width: '100%' }}>
+        <div className="" style={{ padding: 'var(--space-6)', display: 'flex', flexDirection: 'column', gap: 16 }}>
           <header style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 12 }}>
             <div>
               <h1 style={{ fontSize: '1.6rem', color: 'var(--white)', margin: 0, fontFamily: 'var(--font-brand)' }}>Wallet</h1>
@@ -177,7 +177,7 @@ export default function WalletPage({
           </header>
 
           {/* HERO */}
-          <section className="card-metal" style={{ padding: 18, borderRadius: 14 }}>
+          <section className="glass-panel" style={{ padding: 18, borderRadius: 14 }}>
             {error ? (
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 10 }}>
                 <div style={{ color: 'var(--white)', fontWeight: 700 }}>Could Not Load Your Wallet</div>
@@ -285,7 +285,7 @@ export default function WalletPage({
           {/* TABS */}
           {tab === 'overview' && (
             <>
-              <section className="card-metal"
+              <section className="glass-panel"
                 style={{ padding: 16, borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
                 <div>
                   <div style={{ fontSize: '0.72rem', color: 'var(--grey-400)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Wallet Balance</div>
@@ -300,7 +300,7 @@ export default function WalletPage({
                 </button>
               </section>
 
-              <section className="card-metal" style={{ padding: 16, borderRadius: 12 }}>
+              <section className="glass-panel" style={{ padding: 16, borderRadius: 12 }}>
                 <h3 style={{ color: 'var(--white)', marginTop: 0, fontSize: '1rem' }}>Open Invoices</h3>
                 {openInvoices.length === 0 ? (
                   <p style={{ color: 'var(--grey-500)', fontSize: '0.9rem' }}>No Open Invoices.</p>
@@ -335,7 +335,7 @@ export default function WalletPage({
           )}
 
           {tab === 'activity' && (
-            <section className="card-metal" style={{ padding: 16, borderRadius: 12 }}>
+            <section className="glass-panel" style={{ padding: 16, borderRadius: 12 }}>
               <h3 style={{ color: 'var(--white)', marginTop: 0, fontSize: '1rem' }}>Recent Activity</h3>
               {loading ? (
                 <p style={{ color: 'var(--grey-500)' }}>Loading...</p>
@@ -378,7 +378,7 @@ export default function WalletPage({
           )}
 
           {tab === 'statements' && (
-            <section className="card-metal" style={{ padding: 16, borderRadius: 12 }}>
+            <section className="glass-panel" style={{ padding: 16, borderRadius: 12 }}>
               <h3 style={{ color: 'var(--white)', marginTop: 0 }}>Invoice History</h3>
               {statements.length === 0 ? (
                 <p style={{ color: 'var(--grey-500)' }}>No Invoices Yet.</p>

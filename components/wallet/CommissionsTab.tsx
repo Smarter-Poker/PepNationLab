@@ -33,7 +33,7 @@ export default function CommissionsTab() {
   );
 
   return (
-    <section className="card-metal" style={{ padding: 16, borderRadius: 12 }}>
+    <section className="glass-panel" style={{ padding: 16, borderRadius: 12 }}>
       <h3 style={{ color: 'var(--white)', marginTop: 0 }}>Commissions Earned</h3>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 12, marginBottom: 16 }}>
         <div style={{ padding: 12, background: 'rgba(255,184,0,0.08)', borderRadius: 8 }}>

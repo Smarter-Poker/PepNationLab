@@ -334,7 +334,7 @@ function AddToCartAcknowledgment({
         initial={{ y: 20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         exit={{ y: 20, opacity: 0 }}
-        className="card-metal"
+        className="glass-panel"
         style={{
           maxWidth: 520,
           width: '100%',
@@ -426,7 +426,7 @@ function CartDrawer() {
         animate={{ x: 0 }}
         exit={{ x: '100%' }}
         transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-        className="card-metal" 
+        className="glass-panel" 
         style={{
           width: '100%',
           maxWidth: 420,

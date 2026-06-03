@@ -72,7 +72,7 @@ export default function LearnGuidesExplorer() {
         </p>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4, 16px)' }}>
           {active.sections.map((s, i) => (
-            <div key={i} className="card-metal" style={{ padding: 'var(--space-4, 16px)', borderRadius: 'var(--radius-lg, 12px)' }}>
+            <div key={i} className="glass-panel" style={{ padding: 'var(--space-4, 16px)', borderRadius: 'var(--radius-lg, 12px)' }}>
               <h3 style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--teal, #00C4BC)', margin: '0 0 var(--space-2, 8px)' }}>
                 {s.heading}
               </h3>

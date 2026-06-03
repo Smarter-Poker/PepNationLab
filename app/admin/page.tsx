@@ -205,14 +205,14 @@ export default async function AdminDashboard() {
           <Link
             key={label}
             href={href}
-            className="metal-frame admin-kpi-card"
+            className="glass-panel admin-kpi-card"
             style={{
               display: 'block',
               textDecoration: 'none',
               transition: 'transform 0.18s',
             }}
           >
-            <div className="metal-content" style={{ padding: 'var(--space-5)' }}>
+            <div className="" style={{ padding: 'var(--space-5)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                 <div style={{ minWidth: 0, flex: 1 }}>
                   <div className="metal-text" style={{ fontSize: '1.7rem', fontWeight: 800, color, lineHeight: 1.1, fontFamily: "'Inter', 'Helvetica Neue', Arial, sans-serif", overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
@@ -246,8 +246,8 @@ export default async function AdminDashboard() {
       </div>
 
       <div className="grid-2" style={{ marginBottom: 'var(--space-8)' }}>
-        <div className="metal-frame">
-          <div className="metal-content" style={{ padding: 'var(--space-6)' }}>
+        <div className="glass-panel">
+          <div className="" style={{ padding: 'var(--space-6)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-5)' }}>
               <h3 style={{ fontSize: '1rem', margin: 0 }}>Sales Last 30 Days</h3>
               <Link href="/admin/sales" style={{ fontSize: '0.8rem', color: 'var(--teal)', textDecoration: 'none' }}>View Sales</Link>
@@ -256,8 +256,8 @@ export default async function AdminDashboard() {
           </div>
         </div>
 
-        <div className="metal-frame">
-          <div className="metal-content" style={{ padding: 'var(--space-6)' }}>
+        <div className="glass-panel">
+          <div className="" style={{ padding: 'var(--space-6)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-5)' }}>
               <h3 style={{ fontSize: '1rem', margin: 0 }}>Low Stock Items</h3>
               <Link href="/admin/products" style={{ fontSize: '0.8rem', color: 'var(--teal)', textDecoration: 'none' }}>Manage Products</Link>
@@ -298,8 +298,8 @@ export default async function AdminDashboard() {
 
       {/* fix-55 #5: Top Agents Leaderboard */}
       {metrics.topAgents.length > 0 && (
-        <div className="metal-frame" style={{ marginBottom: 'var(--space-8)' }}>
-          <div className="metal-content" style={{ padding: 'var(--space-6)' }}>
+        <div className="glass-panel" style={{ marginBottom: 'var(--space-8)' }}>
+          <div className="" style={{ padding: 'var(--space-6)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-5)' }}>
               <h3 style={{ fontSize: '1rem', margin: 0 }}>Top Agents (30 Days)</h3>
               <Link href="/admin/agents" style={{ fontSize: '0.8rem', color: 'var(--teal)', textDecoration: 'none' }}>Manage Agents</Link>
@@ -333,8 +333,8 @@ export default async function AdminDashboard() {
       )}
 
       <div className="grid-2" style={{ marginBottom: 'var(--space-8)' }}>
-        <div className="metal-frame">
-          <div className="metal-content" style={{ padding: 'var(--space-6)' }}>
+        <div className="glass-panel">
+          <div className="" style={{ padding: 'var(--space-6)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-5)' }}>
               <h3 style={{ fontSize: '1rem', margin: 0 }}>Top SKUs (30 Days)</h3>
               <Link href="/admin/sales" style={{ fontSize: '0.8rem', color: 'var(--teal)', textDecoration: 'none' }}>Full Sales</Link>
@@ -366,8 +366,8 @@ export default async function AdminDashboard() {
           </div>
         </div>
 
-        <div className="metal-frame">
-          <div className="metal-content" style={{ padding: 'var(--space-6)' }}>
+        <div className="glass-panel">
+          <div className="" style={{ padding: 'var(--space-6)' }}>
             <h3 style={{ fontSize: '1rem', marginBottom: 'var(--space-5)' }}>Recent Admin Activity</h3>
             {metrics.auditLog.length === 0 ? (
               <p style={{ fontSize: '0.85rem', color: 'var(--grey-400)', textAlign: 'center', padding: 'var(--space-6) 0' }}>

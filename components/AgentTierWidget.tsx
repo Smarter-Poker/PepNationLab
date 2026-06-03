@@ -90,8 +90,8 @@ export default function AgentTierWidget() {
   const isSub = comm?.enabled && comm.applicable;
 
   return (
-    <div className="metal-frame" style={{ marginBottom: 'var(--space-6)' }}>
-      <div className="metal-content" style={{ padding: 'var(--space-6)' }}>
+    <div className="glass-panel" style={{ marginBottom: 'var(--space-6)' }}>
+      <div className="" style={{ padding: 'var(--space-6)' }}>
         {isSub ? (
           /* ── Sub-agent commission mini-ladder ── */
           <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 'var(--space-6)' }}>

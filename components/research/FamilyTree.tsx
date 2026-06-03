@@ -22,7 +22,7 @@ export default function FamilyTree({ compoundSlug, analogs, parent, compoundName
   const xCenter = W / 2 - boxW / 2;
 
   return (
-    <div className="card-metal" style={{ padding: 16, borderRadius: 12 }}>
+    <div className="glass-panel" style={{ padding: 16, borderRadius: 12 }}>
       <h3 style={{ margin: 0, color: '#FFFFFF', fontSize: 14, fontWeight: 800, marginBottom: 12 }}>Compound Family Tree</h3>
       <svg viewBox={`0 0 ${W} ${H}`} xmlns="http://www.w3.org/2000/svg" style={{ width: '100%', height: 'auto' }}>
         {parent && (

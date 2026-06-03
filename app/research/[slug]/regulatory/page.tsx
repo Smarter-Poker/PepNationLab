@@ -52,7 +52,7 @@ interface RegCardProps {
 
 function RegCard({ agency, status, detail, url, isPending }: RegCardProps) {
   return (
-    <article className="card-metal" style={{ padding: 'var(--space-4, 16px)', borderRadius: 'var(--radius-lg, 12px)', display: 'flex', flexDirection: 'column', gap: 6 }}>
+    <article className="glass-panel" style={{ padding: 'var(--space-4, 16px)', borderRadius: 'var(--radius-lg, 12px)', display: 'flex', flexDirection: 'column', gap: 6 }}>
       <span style={{ fontSize: '0.72rem', color: 'var(--silver, #A8B4C0)', textTransform: 'uppercase', letterSpacing: '0.04em', fontWeight: 700 }}>{agency}</span>
       <span style={{ fontSize: '1.05rem', fontWeight: 800, color: isPending ? 'var(--silver, #A8B4C0)' : 'var(--white, #FFFFFF)' }}>{status}</span>
       {detail && <span style={{ fontSize: '0.82rem', color: 'var(--silver-light, #D0DAE4)' }}>{detail}</span>}
@@ -71,13 +71,7 @@ export default async function CompoundRegulatoryPage({ params }: PageProps) {
   if (!compound) notFound();
 
   const supabase = await createClient();
-  const { data: regData } = await supabase
-    .from('compounds')
-    .select('fda_approval_year, ema_approval_year, dea_schedule, dailymed_setid, faers_event_count')
-    .eq('slug', slug)
-    .maybeSingle();
-
-  const reg = (regData ?? {}) as RegRow;
+  const reg = (compound ?? {}) as unknown as RegRow;
 
   const { data: recallsData } = await supabase
     .from('compound_recall_alerts')
@@ -144,13 +138,13 @@ export default async function CompoundRegulatoryPage({ params }: PageProps) {
           Recall And Safety Signal Feed
         </h2>
         {recalls.length === 0 ? (
-          <div className="card-metal" style={{ padding: 'var(--space-5, 24px)', borderRadius: 'var(--radius-lg, 12px)', color: 'var(--silver, #A8B4C0)' }}>
+          <div className="glass-panel" style={{ padding: 'var(--space-5, 24px)', borderRadius: 'var(--radius-lg, 12px)', color: 'var(--silver, #A8B4C0)' }}>
             No Recalls Or Black-Box Warnings Currently Indexed.
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3, 12px)' }}>
             {recalls.map((r) => (
-              <article key={r.id} className="card-metal" style={{ padding: 'var(--space-4, 16px) var(--space-5, 24px)', borderRadius: 'var(--radius-lg, 12px)', borderLeft: '3px solid var(--red-600, #E53E3E)' }}>
+              <article key={r.id} className="glass-panel" style={{ padding: 'var(--space-4, 16px) var(--space-5, 24px)', borderRadius: 'var(--radius-lg, 12px)', borderLeft: '3px solid var(--red-600, #E53E3E)' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 'var(--space-2, 8px)' }}>
                   <div>
                     <span style={{ fontSize: '0.72rem', color: 'var(--red-600, #E53E3E)', textTransform: 'uppercase', letterSpacing: '0.04em', fontWeight: 700 }}>

@@ -29,7 +29,7 @@ function classOf(aa: string): keyof typeof CLASSES {
 export default function SequenceMotifViewer({ sequence }: Props) {
   if (!sequence) {
     return (
-      <div className="card-metal" style={{ padding: 16, borderRadius: 12, color: '#A8B4C0', fontSize: 14 }}>
+      <div className="glass-panel" style={{ padding: 16, borderRadius: 12, color: '#A8B4C0', fontSize: 14 }}>
         No Sequence Available For This Compound.
       </div>
     );
@@ -37,7 +37,7 @@ export default function SequenceMotifViewer({ sequence }: Props) {
   const clean = sequence.replace(/\s+/g, '').toUpperCase();
 
   return (
-    <div className="card-metal" style={{ padding: 16, borderRadius: 12 }}>
+    <div className="glass-panel" style={{ padding: 16, borderRadius: 12 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 10 }}>
         <h3 style={{ margin: 0, color: '#FFFFFF', fontSize: 14, fontWeight: 800 }}>Sequence Motif Viewer</h3>
         <span style={{ fontSize: 12, color: '#A8B4C0' }}>{clean.length} Residues</span>

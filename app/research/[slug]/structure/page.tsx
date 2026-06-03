@@ -47,13 +47,7 @@ export default async function CompoundStructurePage({ params }: PageProps) {
   if (!compound) notFound();
 
   const supabase = await createClient();
-  const { data: meta } = await supabase
-    .from('compounds')
-    .select('pdb_ids, alphafold_id')
-    .eq('slug', slug)
-    .maybeSingle();
-
-  const m = (meta ?? {}) as CompoundStructureMeta;
+  const m = (compound ?? {}) as unknown as CompoundStructureMeta;
 
   const { data: pdbRows } = await supabase
     .from('compound_pdb_structures')
@@ -98,7 +92,7 @@ export default async function CompoundStructurePage({ params }: PageProps) {
           </h2>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 'var(--space-3, 12px)' }}>
             {pdbs.map((p) => (
-              <article key={p.id} className="card-metal" style={{ padding: 'var(--space-4, 16px)', borderRadius: 'var(--radius-lg, 12px)', display: 'flex', flexDirection: 'column', gap: 4 }}>
+              <article key={p.id} className="glass-panel" style={{ padding: 'var(--space-4, 16px)', borderRadius: 'var(--radius-lg, 12px)', display: 'flex', flexDirection: 'column', gap: 4 }}>
                 <span style={{ fontSize: '0.72rem', color: 'var(--silver, #A8B4C0)', textTransform: 'uppercase', letterSpacing: '0.04em', fontWeight: 700 }}>
                   {p.source ?? 'Source'}
                 </span>
@@ -123,7 +117,7 @@ export default async function CompoundStructurePage({ params }: PageProps) {
       )}
 
       {!primaryPdb && !primaryAf && (
-        <div className="card-metal" style={{ padding: 'var(--space-5, 24px)', borderRadius: 'var(--radius-lg, 12px)', color: 'var(--silver, #A8B4C0)', marginTop: 'var(--space-4, 16px)' }}>
+        <div className="glass-panel" style={{ padding: 'var(--space-5, 24px)', borderRadius: 'var(--radius-lg, 12px)', color: 'var(--silver, #A8B4C0)', marginTop: 'var(--space-4, 16px)' }}>
           No PDB Or AlphaFold Identifier Is Currently Indexed For This Compound. The Structure Sync Cron Will Populate Available Records.
         </div>
       )}

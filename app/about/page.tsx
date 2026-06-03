@@ -76,7 +76,7 @@ export default function AboutPage() {
       {/* Mission */}
       <section className="section" style={{ paddingTop: 0 }}>
         <div className="container-sm">
-          <div className="card-metal hover-lift stagger-fade-in" style={{ padding: 'var(--space-8)' }}>
+          <div className="glass-panel hover-lift stagger-fade-in" style={{ padding: 'var(--space-8)' }}>
             <h2 className="animated-gradient-text" style={{ marginBottom: 'var(--space-4)', fontSize: '1.3rem' }}>
               Our <span style={{ color: 'var(--teal)' }}>Mission</span>
             </h2>
@@ -104,7 +104,7 @@ export default function AboutPage() {
           </div>
           <div className="grid-2">
             {VALUES.map((v, index) => (
-              <div key={v.title} className="card-metal hover-lift stagger-fade-in" style={{ padding: 'var(--space-6)', animationDelay: `${0.1 + index * 0.1}s` }}>
+              <div key={v.title} className="glass-panel hover-lift stagger-fade-in" style={{ padding: 'var(--space-6)', animationDelay: `${0.1 + index * 0.1}s` }}>
                 <div style={{ color: 'var(--teal)', marginBottom: 'var(--space-3)' }}>{v.icon}</div>
                 <h3 style={{ fontSize: '1rem', marginBottom: 'var(--space-2)', fontFamily: 'var(--font-brand)' }}>
                   {v.title}
@@ -121,7 +121,7 @@ export default function AboutPage() {
       {/* Research-only commitment */}
       <section className="section" style={{ paddingTop: 0 }}>
         <div className="container-sm">
-          <div className="card-metal hover-lift stagger-fade-in"
+          <div className="glass-panel hover-lift stagger-fade-in"
             style={{
               background: 'var(--red-bg)',
               border: '1px solid rgba(229,62,62,0.25)',

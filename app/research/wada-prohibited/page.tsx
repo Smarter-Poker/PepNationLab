@@ -33,7 +33,7 @@ function WadaCompoundCard({ c, hist }: WadaCompoundCardProps) {
   const t = evidenceTier(c.evidence_tier);
   return (
     <article
-      className="card-metal"
+      className="glass-panel"
       style={{
         padding: 'var(--space-4, 16px) var(--space-5, 24px)',
         borderRadius: 'var(--radius-lg, 12px)',
@@ -169,7 +169,7 @@ export default async function ResearchWadaProhibitedPage() {
       </header>
 
       {compounds.length === 0 ? (
-        <div className="card-metal" style={{ padding: 'var(--space-5, 24px)', borderRadius: 'var(--radius-lg, 12px)', color: 'var(--silver, #A8B4C0)' }}>
+        <div className="glass-panel" style={{ padding: 'var(--space-5, 24px)', borderRadius: 'var(--radius-lg, 12px)', color: 'var(--silver, #A8B4C0)' }}>
           No WADA-Prohibited Compounds Currently In The Catalog.
         </div>
       ) : (

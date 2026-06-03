@@ -89,7 +89,7 @@ export default function LegalDocument({
         </div>
 
         {/* Document Body */}
-        <div className="card-metal hover-lift stagger-fade-in" style={{ padding: 'var(--space-8)' }}>
+        <div className="glass-panel hover-lift stagger-fade-in" style={{ padding: 'var(--space-8)' }}>
           {/* Title */}
           <h1 className="animated-gradient-text" style={{ fontSize: '2rem', marginBottom: 'var(--space-2)' }}>{title}</h1>
           <p style={{ fontSize: '0.82rem', color: 'var(--grey-400)', marginBottom: 'var(--space-8)' }}>
@@ -97,7 +97,7 @@ export default function LegalDocument({
           </p>
 
         {/* Intro */}
-        <div className="card-metal" style={{ padding: 'var(--space-6)', marginBottom: 'var(--space-8)' }}>
+        <div className="glass-panel" style={{ padding: 'var(--space-6)', marginBottom: 'var(--space-8)' }}>
           {intro.map((para, i) => (
             <p
               key={i}

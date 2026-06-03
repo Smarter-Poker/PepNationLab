@@ -109,7 +109,7 @@ export default function ProductTierOverrides() {
   }
 
   return (
-    <div className="card-metal" style={{ padding: 'var(--space-6)', marginTop: 'var(--space-8)' }}>
+    <div className="glass-panel" style={{ padding: 'var(--space-6)', marginTop: 'var(--space-8)' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-5)' }}>
         <div>
           <h3 style={{ fontSize: '1.2rem', color: 'var(--white)', fontFamily: 'var(--font-brand)' }}>Product-Specific Multiplier Overrides</h3>

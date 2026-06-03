@@ -75,7 +75,7 @@ export default async function CompoundReferencesPage({ params }: PageProps) {
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: 'var(--space-4, 16px)' }}>
           <span style={{ fontSize: '0.85rem', color: 'var(--silver, #A8B4C0)', marginRight: 6 }}>Indexed Types:</span>
           {types.map((t) => (
-            <span key={t} className="card-metal" style={{ padding: '4px 10px', borderRadius: 999, color: 'var(--teal, #00C4BC)', fontSize: '0.8rem', textTransform: 'capitalize' }}>
+            <span key={t} className="glass-panel" style={{ padding: '4px 10px', borderRadius: 999, color: 'var(--teal, #00C4BC)', fontSize: '0.8rem', textTransform: 'capitalize' }}>
               {t}
             </span>
           ))}
@@ -83,7 +83,7 @@ export default async function CompoundReferencesPage({ params }: PageProps) {
       )}
 
       {refs.length === 0 ? (
-        <div className="card-metal" style={{ padding: 'var(--space-5, 24px)', borderRadius: 'var(--radius-lg, 12px)', color: 'var(--silver, #A8B4C0)' }}>
+        <div className="glass-panel" style={{ padding: 'var(--space-5, 24px)', borderRadius: 'var(--radius-lg, 12px)', color: 'var(--silver, #A8B4C0)' }}>
           No References Currently Indexed For This Compound. The PubMed Sync Cron Will Populate Citations Weekly.
         </div>
       ) : (
@@ -93,7 +93,7 @@ export default async function CompoundReferencesPage({ params }: PageProps) {
             return (
               <article
                 key={r.id}
-                className="card-metal"
+                className="glass-panel"
                 style={{
                   padding: 'var(--space-4, 16px) var(--space-5, 24px)',
                   borderRadius: 'var(--radius-lg, 12px)',

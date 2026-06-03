@@ -65,8 +65,8 @@ export default function AgentDownlineInvoices({ isSuperAgent }: { isSuperAgent: 
 
   if (loading) {
     return (
-      <div className="metal-frame" style={{ textAlign: 'center' }}>
-        <div className="metal-content" style={{ padding: 'var(--space-6)' }}>
+      <div className="glass-panel" style={{ textAlign: 'center' }}>
+        <div className="" style={{ padding: 'var(--space-6)' }}>
           <div className="spinner" style={{ margin: '0 auto', marginBottom: 'var(--space-4)' }} />
           <p style={{ color: 'var(--silver-light)' }}>Loading Invoices...</p>
         </div>
@@ -76,8 +76,8 @@ export default function AgentDownlineInvoices({ isSuperAgent }: { isSuperAgent: 
 
   if (invoices.length === 0) {
     return (
-      <div className="metal-frame">
-        <div className="metal-content">
+      <div className="glass-panel">
+        <div className="">
           <h2 className="metal-text" style={{ fontSize: '1.25rem', fontFamily: 'var(--font-brand)', marginBottom: 'var(--space-4)' }}>
             {isSuperAgent ? 'Agent Invoices' : 'My Invoices (Owed To Super Agent)'}
           </h2>
@@ -90,8 +90,8 @@ export default function AgentDownlineInvoices({ isSuperAgent }: { isSuperAgent: 
   }
 
   return (
-    <div className="metal-frame">
-      <div className="metal-content">
+    <div className="glass-panel">
+      <div className="">
         <h2 className="metal-text" style={{ fontSize: '1.25rem', fontFamily: 'var(--font-brand)', marginBottom: 'var(--space-4)' }}>
           {isSuperAgent ? 'Agent Invoices' : 'My Invoices (Owed To Super Agent)'}
         </h2>

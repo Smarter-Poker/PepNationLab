@@ -9,8 +9,8 @@ export default function SalesTimeseriesChart({ points }: { points: any[] }) {
     profit: Number(p.profit_cents) / 100,
   }));
   return (
-    <div className="metal-frame">
-      <div className="metal-content" style={{ padding: 12, height: 280 }}>
+    <div className="glass-panel">
+      <div className="" style={{ padding: 12, height: 280 }}>
         <h3 style={{ color: 'var(--white)', fontSize: '0.95rem', margin: '0 0 8px' }}>Performance Trend</h3>
         <ResponsiveContainer width="100%" height="85%">
           <AreaChart data={data}>
