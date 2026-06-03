@@ -336,7 +336,7 @@ function StabilitySection() {
       <div style={resultStyle}>
         {days === null
           ? 'Enter Valid Inputs (Temperatures Must Be Above −273°C).'
-          : Number(ea) === 0
+          : ea.trim() !== '' && Number(ea) === 0
           ? 'Activation Energy Cannot Be Zero — Temperature Has No Effect At Ea=0. Use A Value > 0 kJ/mol.'
           : <>Predicted Shelf: <strong>{days.toFixed(1)} Days</strong> At {tTo}°C</>
         }
@@ -449,13 +449,13 @@ function HplcRtSection() {
 
   const rt = predictHplcRetentionTime({
     sequence: seq,
-    gradientPctBStart: Number(start),
-    gradientPctBEnd: Number(end),
-    gradientMin: Number(gradient),
+    gradientPctBStart: start.trim() === '' ? undefined : Number(start),
+    gradientPctBEnd: end.trim() === '' ? undefined : Number(end),
+    gradientMin: gradient.trim() === '' ? undefined : Number(gradient),
     c18Column: true,
   });
 
-  const gradientInvalid = Number(gradient) <= 0;
+  const gradientInvalid = gradient.trim() !== '' && Number(gradient) <= 0;
 
   return (
     <section id="hplc-rt" style={sectionStyle}>
@@ -525,7 +525,7 @@ function MassSpecSection() {
   const peaks = predictMassSpecPeaks({
     sequence: seq,
     mode,
-    maxCharge: Number(maxCharge),
+    maxCharge: maxCharge.trim() === '' ? undefined : Number(maxCharge),
   });
 
   return (
@@ -603,9 +603,9 @@ function SppsSection() {
 
   const out = estimateFmocSppsCost({
     sequence: seq,
-    scaleUmol: Number(scale),
-    fmocAaCostPerGram: Number(aaCost),
-    resinCostPerGram: Number(resinCost),
+    scaleUmol: scale.trim() === '' ? undefined : Number(scale),
+    fmocAaCostPerGram: aaCost.trim() === '' ? undefined : Number(aaCost),
+    resinCostPerGram: resinCost.trim() === '' ? undefined : Number(resinCost),
     includeReagents: true,
   });
 
@@ -670,7 +670,7 @@ function SolubilitySection() {
     gravy: Number(gravy),
     isoelectricPoint: Number(pi),
     sequenceLength: Math.max(1, Math.floor(Number(len) || 1)),
-    pH: Number(pH),
+    pH: pH.trim() === '' ? undefined : Number(pH),
   });
 
   return (
