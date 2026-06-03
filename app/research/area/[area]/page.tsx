@@ -151,7 +151,7 @@ export default async function ResearchAreaPage({ params }: PageProps) {
                 {content.keyReferences.map((r, i) => (
                   <li key={i} style={bulletItemStyle}>
                     {r.url ? (
-                      <a href={r.url} data-inapp="1" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--teal, #00C4BC)', textDecoration: 'none' }}>
+                      <a href={r.url} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--teal, #00C4BC)', textDecoration: 'none' }}>
                         {r.citation}
                       </a>
                     ) : (

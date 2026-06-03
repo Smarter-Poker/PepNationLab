@@ -7,10 +7,17 @@ import { money, fmtDate } from './format';
 const HANDLES = ['zelle', 'venmo', 'cashapp', 'apple_pay'] as const;
 type Handle = (typeof HANDLES)[number];
 
+type StatementLike = {
+  id: string;
+  week_start?: string;
+  total_owed?: number | string;
+  target_type?: 'statement' | 'agent_invoice';
+};
+
 export default function PayNowSheet({
   openStatements, preferredHandle, onClose, onPaid,
 }: {
-  openStatements: any[];
+  openStatements: StatementLike[];
   preferredHandle: string;
   onClose: () => void;
   onPaid: () => void;
@@ -19,17 +26,25 @@ export default function PayNowSheet({
   const [handle, setHandle] = useState<Handle>((preferredHandle as Handle) || 'zelle');
   const [submitting, setSubmitting] = useState(false);
 
-  const stmt = openStatements.find((s: any) => s.id === selectedId) ?? openStatements[0];
+  const stmt = openStatements.find((s) => s.id === selectedId) ?? openStatements[0];
 
   async function submit() {
     if (!stmt) return;
     setSubmitting(true);
     try {
+      // Invoice v2 — send target_type so the unified pay_invoice RPC routes
+      // both weekly_statements and agent_invoices correctly. Defaults to
+      // 'statement' when not present so older callers still work.
+      const targetType = stmt.target_type ?? 'statement';
       const res = await fetch('/api/agent/wallet/pay', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          statement_id: stmt.id,
+          target_type: targetType,
+          target_id: stmt.id,
+          // Backward compat — older /api/agent/wallet/pay versions still
+          // expect statement_id; harmless when the v2 route ignores it.
+          statement_id: targetType === 'statement' ? stmt.id : undefined,
           handle,
           amount: Number(stmt.total_owed || 0),
           proof_id: null,
@@ -37,7 +52,7 @@ export default function PayNowSheet({
       });
       const j = await res.json();
       if (!res.ok) throw new Error(j.error || 'pay_failed');
-      toast.success('Statement Marked Paid');
+      toast.success('Marked Paid — Recipient Wallet Topped Off');
       onPaid();
     } catch (e: any) {
       toast.error('Pay Failed: ' + (e.message || 'Unknown'));
@@ -55,15 +70,15 @@ export default function PayNowSheet({
         background: 'var(--grey-900)', borderRadius: 16, padding: 18, width: '100%', maxWidth: 480,
         border: '1px solid rgba(255,255,255,0.1)', maxHeight: '85dvh', overflowY: 'auto',
       }}>
-        <h2 style={{ color: 'var(--white)', fontSize: '1.2rem', margin: '0 0 12px' }}>Pay Statement</h2>
+        <h2 style={{ color: 'var(--white)', fontSize: '1.2rem', margin: '0 0 12px' }}>Pay Invoice</h2>
 
         {!stmt ? (
-          <p style={{ color: 'var(--grey-500)' }}>No Open Statements.</p>
+          <p style={{ color: 'var(--grey-500)' }}>No Open Invoices.</p>
         ) : (
           <>
             <div style={{ marginBottom: 14 }}>
               <label style={{ color: 'var(--grey-400)', fontSize: '0.78rem', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-                Statement
+                Invoice
               </label>
               <select value={selectedId} onChange={e => setSelectedId(e.target.value)}
                 style={{
@@ -71,8 +86,11 @@ export default function PayNowSheet({
                   background: 'rgba(255,255,255,0.04)', color: 'var(--white)',
                   border: '1px solid rgba(255,255,255,0.1)', fontSize: '16px',
                 }}>
-                {openStatements.map((s: any) => (
-                  <option key={s.id} value={s.id}>Week Of {fmtDate(s.week_start)} — {money(Number(s.total_owed || 0))}</option>
+                {openStatements.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    Week Of {fmtDate(s.week_start)} — {money(Number(s.total_owed || 0))}
+                    {s.target_type === 'agent_invoice' ? ' (Super Agent Invoice)' : ''}
+                  </option>
                 ))}
               </select>
             </div>

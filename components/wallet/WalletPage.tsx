@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import PayNowSheet from './PayNowSheet';
 import StatementDetailModal from './StatementDetailModal';
@@ -27,6 +27,19 @@ const statusLabel = (s: string | null | undefined): string => {
   return STATUS_LABEL[k] || k.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()) || '—';
 };
 
+// Color-code statuses so the agent can scan history at a glance.
+// paid=green, pending_payment=teal, open=yellow, disputed=orange,
+// cancelled=grey. Anything else falls to neutral grey.
+const statusColors = (s: string | null | undefined): { fg: string; bg: string } => {
+  const k = (s || '').toLowerCase();
+  if (k === 'paid')             return { fg: '#2ed573', bg: 'rgba(46,213,115,0.20)' };
+  if (k === 'pending_payment')  return { fg: 'var(--teal)', bg: 'rgba(0,196,188,0.18)' };
+  if (k === 'open')             return { fg: '#ffb800', bg: 'rgba(255,184,0,0.18)' };
+  if (k === 'disputed')         return { fg: '#ff6b6b', bg: 'rgba(229,62,62,0.20)' };
+  if (k === 'cancelled')        return { fg: 'var(--grey-500)', bg: 'rgba(168,180,192,0.15)' };
+  return { fg: 'var(--silver)', bg: 'rgba(168,180,192,0.14)' };
+};
+
 // Consistent, human-readable dates. Date-only strings (YYYY-MM-DD) are pinned to
 // local midnight so they don't slip a day in negative-offset timezones.
 const fmtDate = (s: string | null | undefined): string => {
@@ -50,12 +63,26 @@ type ActivityTxn = {
 
 type Tab = 'overview' | 'activity' | 'statements' | 'commissions' | 'receipts' | 'settings';
 
+type StatementRow = {
+  id: string;
+  week_start: string;
+  week_end?: string;
+  total_cogs?: number | string;
+  total_shipping?: number | string;
+  total_owed: number | string;
+  status: string;
+  due_date?: string | null;
+  paid_at?: string | null;
+  target_type: 'statement' | 'agent_invoice';
+  bills_from?: 'admin' | 'super_agent';
+};
+
 export default function WalletPage({
   userId, role, isSuperAgent,
 }: { userId: string; role: string; isSuperAgent: boolean }) {
   const [tab, setTab] = useState<Tab>('overview');
   const [summary, setSummary] = useState<any>(null);
-  const [statements, setStatements] = useState<any[]>([]);
+  const [statements, setStatements] = useState<StatementRow[]>([]);
   const [activity, setActivity] = useState<ActivityTxn[]>([]);
   const [storeCredit, setStoreCredit] = useState<number>(0);
   const [walletBalance, setWalletBalance] = useState<number>(0);
@@ -99,22 +126,22 @@ export default function WalletPage({
 
   useEffect(() => { refresh(); }, []);
 
-  // A statement is overdue when it is still open/pending and its due date has passed.
-  const now = Date.now();
-  const overdue = (summary?.openStatements ?? []).some(
-    (s: any) => s.due_date && new Date(s.due_date).getTime() < now && s.status !== 'paid'
+  // Open invoices = anything that isn't paid/cancelled. The unified statements
+  // list already merges agent_invoices so sub-agents who owe their super-agent
+  // also see them here.
+  const openInvoices = useMemo(
+    () => statements.filter((s) => s.status !== 'paid' && s.status !== 'cancelled'),
+    [statements],
   );
-
-  // Action surface is INVARIANT — every role sees Pay Now, Send Funds, and
-  // Request Credit Increase at all times. Each button auto-disables when the
-  // underlying state is empty (no open statement / no credit line) so the
-  // user always sees where the action lives, and a hint below the row tells
-  // them why it can't fire right now.
-  const hasOpenStatement = !!summary?.hasOpenStatement;
+  const hasOpenStatement = openInvoices.length > 0;
   const hasCreditLine = (summary?.creditLimit ?? 0) > 0;
 
-  // Tab list — every role sees the full six tabs. Sub-components handle
-  // empty data with their own "No ... Yet" copy.
+  // A statement is overdue when it is still open/pending and its due date has passed.
+  const now = Date.now();
+  const overdue = openInvoices.some(
+    (s) => s.due_date && new Date(s.due_date).getTime() < now && s.status !== 'paid',
+  );
+
   const tabs: { id: Tab; label: string }[] = [
     { id: 'overview', label: 'Overview' },
     { id: 'activity', label: 'Activity' },
@@ -130,310 +157,292 @@ export default function WalletPage({
         <div className="metal-content" style={{ padding: 'var(--space-6)', display: 'flex', flexDirection: 'column', gap: 16 }}>
           <header style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 12 }}>
             <div>
-            <h1 style={{ fontSize: '1.6rem', color: 'var(--white)', margin: 0, fontFamily: 'var(--font-brand)' }}>Wallet</h1>
-            <p style={{ color: 'var(--grey-400)', fontSize: '0.88rem', margin: '4px 0 0' }}>
-              Your Balance, Statements, And Payouts
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={refresh}
-            disabled={loading}
-            style={{
-              background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)',
-              color: 'var(--silver)', padding: '8px 14px', borderRadius: 8, fontWeight: 700,
-              fontSize: '0.8rem', cursor: loading ? 'not-allowed' : 'pointer', minHeight: 40, whiteSpace: 'nowrap',
-            }}
-          >
-            {loading ? 'Refreshing...' : 'Refresh'}
-          </button>
-        </header>
+              <h1 style={{ fontSize: '1.6rem', color: 'var(--white)', margin: 0, fontFamily: 'var(--font-brand)' }}>Wallet</h1>
+              <p style={{ color: 'var(--grey-400)', fontSize: '0.88rem', margin: '4px 0 0' }}>
+                Your Balance, Invoices, And Payouts
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={refresh}
+              disabled={loading}
+              style={{
+                background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)',
+                color: 'var(--silver)', padding: '8px 14px', borderRadius: 8, fontWeight: 700,
+                fontSize: '0.8rem', cursor: loading ? 'not-allowed' : 'pointer', minHeight: 40, whiteSpace: 'nowrap',
+              }}
+            >
+              {loading ? 'Refreshing...' : 'Refresh'}
+            </button>
+          </header>
 
-        {/* HERO */}
-        <section className="card-metal" style={{ padding: 18, borderRadius: 14 }}>
-          {error ? (
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 10 }}>
-              <div style={{ color: 'var(--white)', fontWeight: 700 }}>Could Not Load Your Wallet</div>
-              <div style={{ color: 'var(--grey-400)', fontSize: '0.88rem' }}>
-                Check Your Connection And Try Again.
+          {/* HERO */}
+          <section className="card-metal" style={{ padding: 18, borderRadius: 14 }}>
+            {error ? (
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 10 }}>
+                <div style={{ color: 'var(--white)', fontWeight: 700 }}>Could Not Load Your Wallet</div>
+                <div style={{ color: 'var(--grey-400)', fontSize: '0.88rem' }}>Check Your Connection And Try Again.</div>
+                <button type="button" onClick={refresh} className="btn"
+                  style={{ background: 'var(--teal)', color: 'var(--black)', padding: '10px 18px', borderRadius: 10, border: 'none', fontWeight: 800, minHeight: 44, cursor: 'pointer' }}>
+                  Retry
+                </button>
               </div>
-              <button
-                type="button"
-                onClick={refresh}
-                className="btn"
-                style={{ background: 'var(--teal)', color: 'var(--black)', padding: '10px 18px', borderRadius: 10, border: 'none', fontWeight: 800, minHeight: 44, cursor: 'pointer' }}
-              >
-                Retry
+            ) : loading || !summary ? (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 14 }}>
+                {[0, 1, 2, 3].map((i) => (
+                  <div key={i}>
+                    <div className="skeleton" style={{ height: 12, width: '60%', borderRadius: 4, marginBottom: 8 }} />
+                    <div className="skeleton" style={{ height: 26, width: '80%', borderRadius: 6 }} />
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 14 }}>
+                <div>
+                  <div style={{ fontSize: '0.72rem', color: 'var(--grey-400)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                    {summary.primaryLabel}
+                  </div>
+                  <div style={{ fontSize: '1.6rem', fontWeight: 800, color: 'var(--white)' }}>{money(summary.primary)}</div>
+                </div>
+                <div>
+                  <div style={{ fontSize: '0.72rem', color: 'var(--grey-400)', textTransform: 'uppercase', letterSpacing: '0.08em', display: 'flex', alignItems: 'center', gap: 6 }}>
+                    Owed This Week
+                    {overdue && (
+                      <span style={{
+                        padding: '2px 8px', borderRadius: 6, fontSize: '0.62rem', fontWeight: 800,
+                        background: 'rgba(229,62,62,0.18)', color: '#ff6b6b', letterSpacing: '0.04em',
+                      }}>
+                        Overdue
+                      </span>
+                    )}
+                  </div>
+                  <div style={{ fontSize: '1.6rem', fontWeight: 800, color: overdue ? '#ff6b6b' : summary.owedThisWeek > 0 ? 'var(--teal)' : 'var(--grey-500)' }}>
+                    {money(summary.owedThisWeek)}
+                  </div>
+                </div>
+                <div>
+                  <div style={{ fontSize: '0.72rem', color: 'var(--grey-400)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Forecast Next</div>
+                  <div style={{ fontSize: '1.6rem', fontWeight: 800, color: 'var(--silver)' }}>{money(summary.forecastNext || 0)}</div>
+                </div>
+                <div>
+                  <div style={{ fontSize: '0.72rem', color: 'var(--grey-400)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Next Statement</div>
+                  <div style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--white)' }}>
+                    {summary.nextStatementDate ? fmtDate(summary.nextStatementDate) : '—'}
+                  </div>
+                </div>
+              </div>
+            )}
+          </section>
+
+          {/* ACTION BAR */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
+              <button type="button" disabled={!hasOpenStatement} onClick={() => setPayOpen(true)} className="btn"
+                style={{
+                  background: hasOpenStatement ? 'var(--teal)' : 'rgba(255,255,255,0.05)',
+                  color: hasOpenStatement ? 'var(--black)' : 'var(--grey-500)',
+                  padding: '12px 18px', borderRadius: 10, border: 'none', fontWeight: 800, fontSize: '0.9rem',
+                  minHeight: 44, cursor: hasOpenStatement ? 'pointer' : 'not-allowed',
+                }}>
+                Pay Now
+              </button>
+              <button type="button" onClick={() => setSendOpen(true)} className="btn btn-primary"
+                style={{ padding: '12px 18px', borderRadius: 10, minHeight: 44, whiteSpace: 'nowrap' }}>
+                Send Funds
+              </button>
+              <button type="button" disabled={!hasCreditLine} onClick={() => setCreditOpen(true)} className="btn-secondary"
+                style={{
+                  padding: '12px 18px', borderRadius: 10, minHeight: 44,
+                  opacity: hasCreditLine ? 1 : 0.55,
+                  cursor: hasCreditLine ? 'pointer' : 'not-allowed',
+                }}>
+                Request Credit Increase
               </button>
             </div>
-          ) : loading || !summary ? (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 14 }}>
-              {[0, 1, 2, 3].map((i) => (
-                <div key={i}>
-                  <div className="skeleton" style={{ height: 12, width: '60%', borderRadius: 4, marginBottom: 8 }} />
-                  <div className="skeleton" style={{ height: 26, width: '80%', borderRadius: 6 }} />
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 14 }}>
-              <div>
-                <div style={{ fontSize: '0.72rem', color: 'var(--grey-400)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-                  {summary.primaryLabel}
-                </div>
-                <div style={{ fontSize: '1.6rem', fontWeight: 800, color: 'var(--white)' }}>{money(summary.primary)}</div>
+            {summary && !loading && !error && (
+              <div style={{ color: 'var(--grey-500)', fontSize: '0.78rem', display: 'flex', flexWrap: 'wrap', gap: 12 }}>
+                {!hasOpenStatement && <span>You Are All Paid Up.</span>}
+                {!hasCreditLine && <span>Credit Increase Available Once You Have An Active Credit Line.</span>}
               </div>
-              <div>
-                <div style={{ fontSize: '0.72rem', color: 'var(--grey-400)', textTransform: 'uppercase', letterSpacing: '0.08em', display: 'flex', alignItems: 'center', gap: 6 }}>
-                  Owed This Week
-                  {overdue && (
-                    <span style={{
-                      padding: '2px 8px', borderRadius: 6, fontSize: '0.62rem', fontWeight: 800,
-                      background: 'rgba(229,62,62,0.18)', color: '#ff6b6b', letterSpacing: '0.04em',
-                    }}>
-                      Overdue
-                    </span>
-                  )}
-                </div>
-                <div style={{ fontSize: '1.6rem', fontWeight: 800, color: overdue ? '#ff6b6b' : summary.owedThisWeek > 0 ? 'var(--teal)' : 'var(--grey-500)' }}>
-                  {money(summary.owedThisWeek)}
-                </div>
-              </div>
-              <div>
-                <div style={{ fontSize: '0.72rem', color: 'var(--grey-400)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-                  Forecast Next
-                </div>
-                <div style={{ fontSize: '1.6rem', fontWeight: 800, color: 'var(--silver)' }}>
-                  {money(summary.forecastNext || 0)}
-                </div>
-              </div>
-              <div>
-                <div style={{ fontSize: '0.72rem', color: 'var(--grey-400)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-                  Next Statement
-                </div>
-                <div style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--white)' }}>
-                  {summary.nextStatementDate ? fmtDate(summary.nextStatementDate) : '—'}
-                </div>
-              </div>
-            </div>
-          )}
-        </section>
-
-        {/* ACTION BAR — all three buttons always rendered; each one auto-
-            disables when its underlying state is empty so the user always
-            sees where the action lives. */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
-            <button
-              type="button"
-              disabled={!hasOpenStatement}
-              onClick={() => setPayOpen(true)}
-              className="btn"
-              style={{
-                background: hasOpenStatement ? 'var(--teal)' : 'rgba(255,255,255,0.05)',
-                color: hasOpenStatement ? 'var(--black)' : 'var(--grey-500)',
-                padding: '12px 18px', borderRadius: 10, border: 'none', fontWeight: 800, fontSize: '0.9rem',
-                minHeight: 44, cursor: hasOpenStatement ? 'pointer' : 'not-allowed',
-              }}
-            >
-              Pay Now
-            </button>
-            <button
-              type="button"
-              onClick={() => setSendOpen(true)}
-              className="btn btn-primary"
-              style={{ padding: '12px 18px', borderRadius: 10, minHeight: 44, whiteSpace: 'nowrap' }}
-            >
-              Send Funds
-            </button>
-            <button
-              type="button"
-              disabled={!hasCreditLine}
-              onClick={() => setCreditOpen(true)}
-              className="btn-secondary"
-              style={{
-                padding: '12px 18px', borderRadius: 10, minHeight: 44,
-                opacity: hasCreditLine ? 1 : 0.55,
-                cursor: hasCreditLine ? 'pointer' : 'not-allowed',
-              }}
-            >
-              Request Credit Increase
-            </button>
+            )}
           </div>
-          {summary && !loading && !error && (
-            <div style={{ color: 'var(--grey-500)', fontSize: '0.78rem', display: 'flex', flexWrap: 'wrap', gap: 12 }}>
-              {!hasOpenStatement && <span>You Are All Paid Up.</span>}
-              {!hasCreditLine && <span>Credit Increase Available Once You Have An Active Credit Line.</span>}
-            </div>
-          )}
-        </div>
 
-        {/* TAB STRIP */}
-        <div role="tablist" style={{ display: 'flex', gap: 6, overflowX: 'auto', borderBottom: '1px solid rgba(255,255,255,0.08)', paddingBottom: 1 }}>
-          {tabs.map(t => (
-            <button key={t.id} role="tab" aria-selected={tab === t.id} onClick={() => setTab(t.id)}
-              style={{
-                background: 'none', border: 'none', color: tab === t.id ? 'var(--white)' : 'var(--grey-400)',
-                padding: '10px 14px', cursor: 'pointer', fontWeight: 700, fontSize: '0.88rem',
-                borderBottom: tab === t.id ? '2px solid var(--teal)' : '2px solid transparent',
-                whiteSpace: 'nowrap', minHeight: 44,
-              }}>
-              {t.label}
-            </button>
-          ))}
-        </div>
+          {/* TAB STRIP */}
+          <div role="tablist" style={{ display: 'flex', gap: 6, overflowX: 'auto', borderBottom: '1px solid rgba(255,255,255,0.08)', paddingBottom: 1 }}>
+            {tabs.map(t => (
+              <button key={t.id} role="tab" aria-selected={tab === t.id} onClick={() => setTab(t.id)}
+                style={{
+                  background: 'none', border: 'none', color: tab === t.id ? 'var(--white)' : 'var(--grey-400)',
+                  padding: '10px 14px', cursor: 'pointer', fontWeight: 700, fontSize: '0.88rem',
+                  borderBottom: tab === t.id ? '2px solid var(--teal)' : '2px solid transparent',
+                  whiteSpace: 'nowrap', minHeight: 44,
+                }}>
+                {t.label}
+              </button>
+            ))}
+          </div>
 
-        {/* TABS */}
-        {tab === 'overview' && (
-          <>
-          <section
-            className="card-metal"
-            style={{ padding: 16, borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}
-          >
-            <div>
-              <div style={{ fontSize: '0.72rem', color: 'var(--grey-400)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-                Wallet Balance
-              </div>
-              <div style={{ fontSize: '1.6rem', fontWeight: 800, color: 'var(--teal)' }}>{money(walletBalance)}</div>
-              <div style={{ fontSize: '0.8rem', color: 'var(--grey-500)', marginTop: 4 }}>
-                Real Funds You Can Send Or Spend Across The Network.
-              </div>
-            </div>
-            <button
-              type="button"
-              onClick={() => setSendOpen(true)}
-              className="btn btn-primary"
-              style={{ padding: '10px 16px', borderRadius: 10, minHeight: 44, whiteSpace: 'nowrap' }}
-            >
-              Send Funds
-            </button>
-          </section>
-          <section className="card-glass" style={{ padding: 16, borderRadius: 12 }}>
-            <h3 style={{ color: 'var(--white)', marginTop: 0, fontSize: '1rem' }}>Open Statements</h3>
-            {(summary?.openStatements ?? []).length === 0 ? (
-              <p style={{ color: 'var(--grey-500)', fontSize: '0.9rem' }}>No Open Statements.</p>
-            ) : (
-              <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: 8 }}>
-                {summary.openStatements.map((s: any) => {
-                  const isOverdue = s.due_date && new Date(s.due_date).getTime() < now && s.status !== 'paid';
-                  return (
-                    <li key={s.id}>
-                      <button onClick={() => setDetailId(s.id)} style={{
-                        width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                        padding: '10px 14px', background: 'rgba(255,255,255,0.03)',
-                        border: `1px solid ${isOverdue ? 'rgba(229,62,62,0.4)' : 'rgba(255,255,255,0.05)'}`, borderRadius: 10,
-                        color: 'var(--white)', cursor: 'pointer', minHeight: 44,
-                      }}>
-                        <span style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 2 }}>
-                          <span>Week Of {fmtDate(s.week_start)}</span>
-                          <span style={{ fontSize: '0.72rem', color: isOverdue ? '#ff6b6b' : 'var(--grey-500)' }}>
-                            {s.due_date ? `${isOverdue ? 'Was Due' : 'Due'} ${fmtDate(s.due_date)}` : 'Awaiting Payment'}
-                          </span>
-                        </span>
-                        <strong style={{ color: isOverdue ? '#ff6b6b' : 'var(--teal)' }}>{money(Number(s.total_owed || 0))}</strong>
-                      </button>
-                    </li>
-                  );
-                })}
-              </ul>
-            )}
-          </section>
-          </>
-        )}
+          {/* TABS */}
+          {tab === 'overview' && (
+            <>
+              <section className="card-metal"
+                style={{ padding: 16, borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
+                <div>
+                  <div style={{ fontSize: '0.72rem', color: 'var(--grey-400)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Wallet Balance</div>
+                  <div style={{ fontSize: '1.6rem', fontWeight: 800, color: 'var(--teal)' }}>{money(walletBalance)}</div>
+                  <div style={{ fontSize: '0.8rem', color: 'var(--grey-500)', marginTop: 4 }}>
+                    Real Funds You Can Send Or Spend Across The Network.
+                  </div>
+                </div>
+                <button type="button" onClick={() => setSendOpen(true)} className="btn btn-primary"
+                  style={{ padding: '10px 16px', borderRadius: 10, minHeight: 44, whiteSpace: 'nowrap' }}>
+                  Send Funds
+                </button>
+              </section>
 
-        {tab === 'activity' && (
-          <section className="card-glass" style={{ padding: 16, borderRadius: 12 }}>
-            <h3 style={{ color: 'var(--white)', marginTop: 0, fontSize: '1rem' }}>Recent Activity</h3>
-            {loading ? (
-              <p style={{ color: 'var(--grey-500)' }}>Loading...</p>
-            ) : activity.length === 0 ? (
-              <p style={{ color: 'var(--grey-500)', fontSize: '0.9rem' }}>No Activity Yet.</p>
-            ) : (
-              <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: 6 }}>
-                {activity.map((t) => {
-                  const positive = t.signedAmount >= 0;
-                  return (
-                    <li key={t.id} style={{
-                      display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12,
-                      padding: '10px 12px', background: 'rgba(255,255,255,0.03)',
-                      border: '1px solid rgba(255,255,255,0.05)', borderRadius: 10,
-                    }}>
-                      <span style={{ display: 'flex', flexDirection: 'column', gap: 3, minWidth: 0 }}>
-                        <span style={{ color: 'var(--white)', fontSize: '0.88rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                          {t.description}
-                        </span>
-                        <span style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.72rem', color: 'var(--grey-500)' }}>
-                          <span style={{
-                            padding: '1px 7px', borderRadius: 5, fontWeight: 700, letterSpacing: '0.03em',
-                            background: t.ledger === 'credit' ? 'rgba(0,196,188,0.14)' : 'rgba(168,180,192,0.14)',
-                            color: t.ledger === 'credit' ? 'var(--teal)' : 'var(--silver)',
+              <section className="card-glass" style={{ padding: 16, borderRadius: 12 }}>
+                <h3 style={{ color: 'var(--white)', marginTop: 0, fontSize: '1rem' }}>Open Invoices</h3>
+                {openInvoices.length === 0 ? (
+                  <p style={{ color: 'var(--grey-500)', fontSize: '0.9rem' }}>No Open Invoices.</p>
+                ) : (
+                  <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    {openInvoices.map((s) => {
+                      const isOverdue = s.due_date && new Date(s.due_date).getTime() < now && s.status !== 'paid';
+                      const billsFromLabel = s.target_type === 'agent_invoice' ? 'Super Agent' : 'Admin';
+                      return (
+                        <li key={`${s.target_type}-${s.id}`}>
+                          <button onClick={() => setDetailId(s.id)} style={{
+                            width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                            padding: '10px 14px', background: 'rgba(255,255,255,0.03)',
+                            border: `1px solid ${isOverdue ? 'rgba(229,62,62,0.4)' : 'rgba(255,255,255,0.05)'}`, borderRadius: 10,
+                            color: 'var(--white)', cursor: 'pointer', minHeight: 44,
                           }}>
-                            {t.ledger === 'credit' ? 'Store Credit' : 'Wallet'}
+                            <span style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 2 }}>
+                              <span>Week Of {fmtDate(s.week_start)} — {billsFromLabel}</span>
+                              <span style={{ fontSize: '0.72rem', color: isOverdue ? '#ff6b6b' : 'var(--grey-500)' }}>
+                                {s.due_date ? `${isOverdue ? 'Was Due' : 'Due'} ${fmtDate(s.due_date)}` : 'Awaiting Payment'}
+                              </span>
+                            </span>
+                            <strong style={{ color: isOverdue ? '#ff6b6b' : 'var(--teal)' }}>{money(Number(s.total_owed || 0))}</strong>
+                          </button>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
+              </section>
+            </>
+          )}
+
+          {tab === 'activity' && (
+            <section className="card-glass" style={{ padding: 16, borderRadius: 12 }}>
+              <h3 style={{ color: 'var(--white)', marginTop: 0, fontSize: '1rem' }}>Recent Activity</h3>
+              {loading ? (
+                <p style={{ color: 'var(--grey-500)' }}>Loading...</p>
+              ) : activity.length === 0 ? (
+                <p style={{ color: 'var(--grey-500)', fontSize: '0.9rem' }}>No Activity Yet.</p>
+              ) : (
+                <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  {activity.map((t) => {
+                    const positive = t.signedAmount >= 0;
+                    return (
+                      <li key={t.id} style={{
+                        display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12,
+                        padding: '10px 12px', background: 'rgba(255,255,255,0.03)',
+                        border: '1px solid rgba(255,255,255,0.05)', borderRadius: 10,
+                      }}>
+                        <span style={{ display: 'flex', flexDirection: 'column', gap: 3, minWidth: 0 }}>
+                          <span style={{ color: 'var(--white)', fontSize: '0.88rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            {t.description}
                           </span>
-                          <span>{fmtDate(t.createdAt)}</span>
+                          <span style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.72rem', color: 'var(--grey-500)' }}>
+                            <span style={{
+                              padding: '1px 7px', borderRadius: 5, fontWeight: 700, letterSpacing: '0.03em',
+                              background: t.ledger === 'credit' ? 'rgba(0,196,188,0.14)' : 'rgba(168,180,192,0.14)',
+                              color: t.ledger === 'credit' ? 'var(--teal)' : 'var(--silver)',
+                            }}>
+                              {t.ledger === 'credit' ? 'Store Credit' : 'Wallet'}
+                            </span>
+                            <span>{fmtDate(t.createdAt)}</span>
+                          </span>
                         </span>
-                      </span>
-                      <strong style={{ color: positive ? '#2ed573' : '#ff6b6b', fontSize: '0.92rem', whiteSpace: 'nowrap' }}>
-                        {positive ? '+' : '-'}{money(Math.abs(t.signedAmount))}
-                      </strong>
-                    </li>
-                  );
-                })}
-              </ul>
-            )}
-          </section>
-        )}
+                        <strong style={{ color: positive ? '#2ed573' : '#ff6b6b', fontSize: '0.92rem', whiteSpace: 'nowrap' }}>
+                          {positive ? '+' : '-'}{money(Math.abs(t.signedAmount))}
+                        </strong>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+            </section>
+          )}
 
-        {tab === 'statements' && (
-          <section className="card-glass" style={{ padding: 16, borderRadius: 12 }}>
-            <h3 style={{ color: 'var(--white)', marginTop: 0 }}>Statement History</h3>
-            {statements.length === 0 ? (
-              <p style={{ color: 'var(--grey-500)' }}>No Statements Yet.</p>
-            ) : (
-              <div style={{ overflowX: 'auto' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.88rem' }}>
-                  <thead>
-                    <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
-                      <th style={{ textAlign: 'left', padding: '8px', color: 'var(--silver)' }}>Week</th>
-                      <th style={{ textAlign: 'right', padding: '8px', color: 'var(--silver)' }}>COGS</th>
-                      <th style={{ textAlign: 'right', padding: '8px', color: 'var(--silver)' }}>Shipping</th>
-                      <th style={{ textAlign: 'right', padding: '8px', color: 'var(--teal)' }}>Owed</th>
-                      <th style={{ textAlign: 'center', padding: '8px', color: 'var(--silver)' }}>Status</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {statements.slice(0, 24).map((s: any) => (
-                      <tr key={s.id} onClick={() => setDetailId(s.id)}
-                        style={{ borderBottom: '1px solid rgba(255,255,255,0.04)', cursor: 'pointer' }}>
-                        <td style={{ padding: '10px 8px', color: 'var(--white)' }}>{fmtDate(s.week_start)}</td>
-                        <td style={{ padding: '10px 8px', color: 'var(--white)', textAlign: 'right' }}>{money(Number(s.total_cogs || 0))}</td>
-                        <td style={{ padding: '10px 8px', color: 'var(--white)', textAlign: 'right' }}>{money(Number(s.total_shipping || 0))}</td>
-                        <td style={{ padding: '10px 8px', color: 'var(--teal)', textAlign: 'right', fontWeight: 700 }}>{money(Number(s.total_owed || 0))}</td>
-                        <td style={{ padding: '10px 8px', textAlign: 'center' }}>
-                          <span style={{
-                            padding: '4px 10px', borderRadius: 6, fontSize: '0.72rem', fontWeight: 700,
-                            background: s.status === 'paid' ? 'rgba(46,213,115,0.2)' : 'rgba(255,71,87,0.2)',
-                            color: s.status === 'paid' ? '#2ed573' : '#ff4757',
-                          }}>{statusLabel(s.status)}</span>
-                        </td>
+          {tab === 'statements' && (
+            <section className="card-glass" style={{ padding: 16, borderRadius: 12 }}>
+              <h3 style={{ color: 'var(--white)', marginTop: 0 }}>Invoice History</h3>
+              {statements.length === 0 ? (
+                <p style={{ color: 'var(--grey-500)' }}>No Invoices Yet.</p>
+              ) : (
+                <div style={{ overflowX: 'auto' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.88rem' }}>
+                    <thead>
+                      <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+                        <th style={{ textAlign: 'left',  padding: '8px', color: 'var(--silver)' }}>Week</th>
+                        <th style={{ textAlign: 'left',  padding: '8px', color: 'var(--silver)' }}>Bills From</th>
+                        <th style={{ textAlign: 'right', padding: '8px', color: 'var(--silver)' }}>COGS</th>
+                        <th style={{ textAlign: 'right', padding: '8px', color: 'var(--silver)' }}>Shipping</th>
+                        <th style={{ textAlign: 'right', padding: '8px', color: 'var(--teal)' }}>Owed</th>
+                        <th style={{ textAlign: 'center', padding: '8px', color: 'var(--silver)' }}>Status</th>
+                        <th style={{ textAlign: 'center', padding: '8px', color: 'var(--silver)' }}>Print</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </section>
-        )}
+                    </thead>
+                    <tbody>
+                      {statements.slice(0, 24).map((s) => {
+                        const colors = statusColors(s.status);
+                        const billsFromLabel = s.target_type === 'agent_invoice' ? 'Super Agent' : 'Admin';
+                        return (
+                          <tr key={`${s.target_type}-${s.id}`}
+                            style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+                            <td onClick={() => setDetailId(s.id)} style={{ padding: '10px 8px', color: 'var(--white)', cursor: 'pointer' }}>{fmtDate(s.week_start)}</td>
+                            <td style={{ padding: '10px 8px', color: 'var(--grey-400)' }}>{billsFromLabel}</td>
+                            <td style={{ padding: '10px 8px', color: 'var(--white)', textAlign: 'right' }}>{money(Number(s.total_cogs || 0))}</td>
+                            <td style={{ padding: '10px 8px', color: 'var(--white)', textAlign: 'right' }}>{money(Number(s.total_shipping || 0))}</td>
+                            <td style={{ padding: '10px 8px', color: 'var(--teal)', textAlign: 'right', fontWeight: 700 }}>{money(Number(s.total_owed || 0))}</td>
+                            <td style={{ padding: '10px 8px', textAlign: 'center' }}>
+                              <span style={{
+                                padding: '4px 10px', borderRadius: 6, fontSize: '0.72rem', fontWeight: 700,
+                                background: colors.bg, color: colors.fg,
+                              }}>{statusLabel(s.status)}</span>
+                            </td>
+                            <td style={{ padding: '10px 8px', textAlign: 'center' }}>
+                              <a
+                                href={`/wallet/print?type=${s.target_type}&id=${s.id}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                style={{ color: 'var(--teal)', fontSize: '0.78rem', fontWeight: 700, textDecoration: 'none' }}
+                              >
+                                Print
+                              </a>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </section>
+          )}
 
-        {tab === 'commissions' && <CommissionsTab />}
-        {tab === 'receipts' && <ReceiptVault />}
-        {tab === 'settings' && <WalletSettings />}
+          {tab === 'commissions' && <CommissionsTab />}
+          {tab === 'receipts' && <ReceiptVault />}
+          {tab === 'settings' && <WalletSettings />}
         </div>
       </div>
 
       {payOpen && (
         <PayNowSheet
-          openStatements={summary?.openStatements ?? []}
+          openStatements={openInvoices}
           preferredHandle={summary?.preferredHandle ?? ''}
           onClose={() => setPayOpen(false)}
           onPaid={() => { setPayOpen(false); refresh(); }}

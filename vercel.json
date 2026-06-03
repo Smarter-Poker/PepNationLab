@@ -18,7 +18,7 @@
     },
     {
       "path": "/api/cron/invoices",
-      "schedule": "59 23 * * 0"
+      "schedule": "59 5 * * 1"
     },
     {
       "path": "/api/cron/label-jobs",
@@ -54,11 +54,7 @@
     },
     {
       "path": "/api/cron/sub-agent-settle",
-      "schedule": "50 23 * * 0"
-    },
-    {
-      "path": "/api/cron/auto-pay",
-      "schedule": "0 13 * * *"
+      "schedule": "49 5 * * 1"
     },
     {
       "path": "/api/cron/inventory-alerts",

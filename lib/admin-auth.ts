@@ -122,6 +122,32 @@ export async function requireAgent(): Promise<
 }
 
 /**
+ * Guards API routes that need ANY signed-in user (researcher / agent /
+ * super_agent / admin). Returns the same { ok, user: { id }, response }
+ * shape used by requireAgent so existing callers can swap freely.
+ *
+ * Used by surfaces that return user-scoped data and rely on the row-level
+ * query (e.g. agent_id = user.id) to gate visibility, rather than role.
+ * Researchers using these endpoints will simply get empty result sets.
+ */
+export async function requireSession(): Promise<
+  | { ok: true; user: { id: string } }
+  | { ok: false; response: NextResponse }
+> {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) {
+    return {
+      ok: false,
+      response: NextResponse.json({ error: 'Unauthorized' }, { status: 401 }),
+    };
+  }
+
+  return { ok: true, user: { id: user.id } };
+}
+
+/**
  * Guards high-sensitivity admin endpoints (Shippo connect / rotate /
  * disconnect) by verifying that the authenticated admin completed an MFA
  * challenge within the last `windowMs` milliseconds.
