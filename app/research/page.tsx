@@ -7,7 +7,7 @@
 
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { GitCompare, Layers, ShieldCheck, GraduationCap, BookOpen, HelpCircle, Sparkles } from 'lucide-react';
+import { GitCompare, Layers, ShieldCheck, GraduationCap, BookOpen, HelpCircle, Sparkles, Calculator, Library } from 'lucide-react';
 import { getAllCompounds } from '@/lib/compounds-server';
 import { RESEARCH_AREAS } from '@/lib/compounds';
 import AskTheLab from '@/components/research/AskTheLab';
@@ -176,6 +176,22 @@ export default async function ResearchLibraryPage() {
         >
           <HelpCircle size={18} aria-hidden="true" />
           FAQ
+        </Link>
+        <Link
+          href="/research/converter"
+          className="btn-secondary"
+          style={{ display: 'inline-flex', alignItems: 'center', gap: 'var(--space-2, 8px)', textDecoration: 'none' }}
+        >
+          <Calculator size={18} aria-hidden="true" />
+          Dosing & Unit Converter
+        </Link>
+        <Link
+          href="/research/references"
+          className="btn-secondary"
+          style={{ display: 'inline-flex', alignItems: 'center', gap: 'var(--space-2, 8px)', textDecoration: 'none' }}
+        >
+          <Library size={18} aria-hidden="true" />
+          References
         </Link>
       </section>
 

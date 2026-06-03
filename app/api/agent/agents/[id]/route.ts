@@ -206,7 +206,7 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
 
     const { data: target } = await supabase
       .from('profiles')
-      .select('id, parent_agent_id, account_type, credit_limit, is_active, full_name, commission_pct')
+      .select('id, parent_agent_id, account_type, credit_limit, is_active, full_name, commission_pct, commission_max_pct')
       .eq('id', id)
       .single();
 
