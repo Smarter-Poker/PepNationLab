@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import "./globals-round2.css";
 import { CartProvider } from "@/components/CartContext";
+import { InAppBrowserProvider } from "@/components/InAppBrowser";
 import ImpersonationBanner from "@/components/ImpersonationBanner";
 import PwaInstallPrompt from "@/components/PwaInstallPrompt";
 import SiteDisclaimerGate from "@/components/SiteDisclaimerGate";
@@ -91,7 +92,9 @@ export default function RootLayout({
           <StaleBrowserBanner />
           <SiteDisclaimerGate>
             <CartProvider>
-              {children}
+              <InAppBrowserProvider>
+                {children}
+              </InAppBrowserProvider>
             </CartProvider>
           </SiteDisclaimerGate>
           <Toaster theme="dark" position="bottom-right" richColors />

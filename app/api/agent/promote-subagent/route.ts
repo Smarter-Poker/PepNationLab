@@ -179,14 +179,14 @@ export async function POST(req: NextRequest) {
 
     const isPromotingToFullAgent = callerProfile.is_super_agent === true;
     if (!isPromotingToFullAgent) {
-      const safeguard = await verifyCommissionSafeguard(admin, user.id, commissionPct);
+      const safeguard = await verifyCommissionSafeguard(admin, callerId, commissionPct);
       if (!safeguard.safe) {
         return NextResponse.json({ error: safeguard.error }, { status: 400 });
       }
       if (safeguard.warning) {
         // Fire notification asynchronously, don't await it
         import('@/lib/notify').then(({ notifyMarginWarning }) => {
-          notifyMarginWarning(admin, user.id).catch(err => {
+          notifyMarginWarning(admin, callerId).catch(err => {
             console.error('[promote-subagent] Failed to fire margin warning:', err);
           });
         });
@@ -242,9 +242,6 @@ export async function POST(req: NextRequest) {
     // role='agent', so disambiguate via is_super_agent for the dashboard.
     const createdByRole = callerProfile.is_super_agent === true ? 'super_agent' : 'agent';
 
-    // If Super Agent, promote to Agent (is_sub_agent: false)
-    // If Agent, promote to Sub Agent (is_sub_agent: true)
-    const isPromotingToFullAgent = callerProfile.is_super_agent === true;
 
     const now = new Date().toISOString();
     const updatePayload: Record<string, unknown> = {

@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import {
   type Compound,
+  type RelatedCompoundRef,
   evidenceTier,
   wadaLabel,
   researchAreaLabel,
@@ -25,6 +26,7 @@ import GlossaryText from '@/components/research/GlossaryText';
 
 interface Props {
   compound: Compound;
+  related?: RelatedCompoundRef[];
 }
 
 const cap: React.CSSProperties = { textTransform: 'capitalize' };
@@ -67,7 +69,7 @@ function Chips({ items, color = '#A8B4C0' }: { items: string[]; color?: string }
   );
 }
 
-export default function MonographTabs({ compound }: Props) {
+export default function MonographTabs({ compound, related = [] }: Props) {
   const router = useRouter();
   const tier = evidenceTier(compound.evidence_tier);
   const risk = RISK_META[compound.risk_level];
@@ -303,7 +305,7 @@ export default function MonographTabs({ compound }: Props) {
                 const href = /^https?:\/\//i.test(src) ? src : `https://${src}`;
                 return (
                   <li key={i} style={{ wordBreak: 'break-all', fontSize: '0.82rem' }}>
-                    <a href={href} target="_blank" rel="noopener noreferrer" style={{ color: teal }}>
+                    <a href={href} data-inapp="1" target="_blank" rel="noopener noreferrer" style={{ color: teal }}>
                       {src}
                     </a>
                   </li>
@@ -313,6 +315,46 @@ export default function MonographTabs({ compound }: Props) {
           </div>
         )}
       </section>
+
+      {related.length > 0 && (
+        <section style={{ marginTop: 'var(--space-5)' }}>
+          <h2 style={{ fontSize: '1rem', fontWeight: 800, color: 'var(--white)', margin: '0 0 var(--space-3)' }}>
+            Related Compounds
+          </h2>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: 'var(--space-3)' }}>
+            {related.map((r) => {
+              const t = evidenceTier(r.evidence_tier);
+              return (
+                <Link
+                  key={r.slug}
+                  href={`/research/${r.slug}`}
+                  className="card-glass"
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '6px',
+                    padding: 'var(--space-3)',
+                    borderRadius: 'var(--radius-lg, 12px)',
+                    textDecoration: 'none',
+                  }}
+                >
+                  <span style={{ ...cap, fontWeight: 700, color: 'var(--white)', fontSize: '0.92rem' }}>
+                    {r.display_name}
+                  </span>
+                  <span style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', alignItems: 'center' }}>
+                    <span style={{ fontSize: '0.62rem', fontWeight: 800, letterSpacing: '0.04em', textTransform: 'uppercase', padding: '2px 8px', borderRadius: 9999, background: `${t.color}1A`, border: `1px solid ${t.color}55`, color: t.color }}>
+                      {t.label}
+                    </span>
+                    {r.category && (
+                      <span style={{ ...cap, fontSize: '0.72rem', color: 'var(--silver)' }}>{r.category}</span>
+                    )}
+                  </span>
+                </Link>
+              );
+            })}
+          </div>
+        </section>
+      )}
 
       <p style={{ fontSize: '0.74rem', color: 'var(--grey-400)', lineHeight: 1.5, margin: 'var(--space-4) 0 0', textAlign: 'center' }}>
         Research Use Only. Not For Human Or Veterinary Use. Information Provided For Laboratory Research Purposes Only.

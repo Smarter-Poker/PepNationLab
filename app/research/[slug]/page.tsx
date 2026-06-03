@@ -6,7 +6,8 @@
  * sticky Back control. No human dosing — research use only.
  */
 import { notFound } from 'next/navigation';
-import { getCompound } from '@/lib/compounds-server';
+import { getCompound, getAllCompounds } from '@/lib/compounds-server';
+import { relatedCompounds } from '@/lib/compounds';
 import MonographTabs from '@/components/research/MonographTabs';
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
@@ -24,9 +25,12 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
   const compound = await getCompound(slug);
   if (!compound) notFound();
 
+  const all = await getAllCompounds();
+  const related = relatedCompounds(compound, all);
+
   return (
     <div style={{ minHeight: '100dvh', background: 'var(--black)' }}>
-      <MonographTabs compound={compound} />
+      <MonographTabs compound={compound} related={related} />
     </div>
   );
 }

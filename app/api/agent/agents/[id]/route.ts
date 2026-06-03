@@ -264,6 +264,7 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
       if (!Number.isFinite(pct) || pct < 0 || pct > MAX_CAP_LIMIT) {
         return NextResponse.json({ error: 'Commission Rate Cannot Exceed 40%.' }, { status: 400 });
       }
+
       updates.commission_pct = pct;
       updates.commission_rate = pct;
       changes.commission_pct = pct;
@@ -292,6 +293,35 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
       }
       updates.commission_max_pct = cap;
       changes.commission_max_pct = cap;
+    }
+
+    // Safeguard: Ensure the newly set commission (base or cap, whichever is higher) doesn't violate the 10% hard floor.
+    if (updates.commission_pct !== undefined || updates.commission_max_pct !== undefined) {
+      const { verifyCommissionSafeguard } = await import('@/lib/pricing');
+      
+      // If we are updating commission_max_pct, we check that. If not, we check commission_pct. 
+      // If we are updating both, we check the max of both.
+      // If we are updating neither, this block won't run.
+      // Wait, we need to check the highest of the NEW or EXISTING values if only one is updated.
+      // But verifyCommissionSafeguard checks the agent's highest sub-agent commission if desiredCommissionPct is omitted.
+      // Wait, here we are editing ONE sub-agent. If we pass desiredCommissionPct, verifyCommissionSafeguard just checks if the agent can afford THAT pct.
+      // Yes, because this is an edit to a specific sub-agent.
+      const pctToCheck = Math.max(
+        updates.commission_max_pct !== undefined ? Number(updates.commission_max_pct || 0) : Number(target.commission_max_pct || 0),
+        updates.commission_pct !== undefined ? Number(updates.commission_pct || 0) : Number(target.commission_pct || 0)
+      );
+
+      const safeguard = await verifyCommissionSafeguard(supabase, gate.callerId, pctToCheck);
+      if (!safeguard.safe) {
+        return NextResponse.json({ error: safeguard.error }, { status: 400 });
+      }
+      if (safeguard.warning) {
+        import('@/lib/notify').then(({ notifyMarginWarning }) => {
+          notifyMarginWarning(supabase, gate.callerId).catch(err => {
+            console.error('[PATCH agent-detail] Failed to fire margin warning:', err);
+          });
+        });
+      }
     }
 
     if (body.velocity_cap === null) {

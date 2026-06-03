@@ -187,7 +187,7 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
                       const href = /^https?:\/\//i.test(src) ? src : `https://${src}`;
                       return (
                         <li key={i} style={{ wordBreak: 'break-all' }}>
-                          <a href={href} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--teal)' }}>
+                          <a href={href} data-inapp="1" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--teal)' }}>
                             {src}
                           </a>
                         </li>

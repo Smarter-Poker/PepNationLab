@@ -83,10 +83,14 @@ export const RESEARCH_AREAS: Record<string, { label: string; blurb: string }> = 
   tissue_repair: { label: 'Tissue Repair', blurb: 'Compounds studied for tendon, ligament, muscle, and wound repair.' },
   healing: { label: 'Healing & Recovery', blurb: 'Compounds studied for healing, cytoprotection, and recovery.' },
   metabolic: { label: 'Metabolic', blurb: 'Compounds studied for metabolism, glucose, and fat regulation.' },
+  weight_management: { label: 'Weight Management & Fat Loss', blurb: 'GLP-1 / GIP / triple-agonist incretins, AOD9604, Tesamorelin, and related fat-axis compounds.' },
   longevity: { label: 'Longevity', blurb: 'Compounds studied for aging, senescence, and healthspan.' },
   cosmetic: { label: 'Skin & Hair', blurb: 'Compounds studied for skin, hair, and cosmetic applications.' },
   cognitive: { label: 'Cognitive', blurb: 'Compounds studied for cognition, mood, and neuroprotection.' },
   immune: { label: 'Immune', blurb: 'Compounds studied for immune modulation and host defense.' },
+  gut_health: { label: 'Gut Health & GI Repair', blurb: 'Mucosal repair, tight-junction integrity, and GI cytoprotection literature (BPC-157, KPV, VIP).' },
+  pain_inflammation: { label: 'Pain & Inflammation', blurb: 'Cross-class anti-inflammatory and analgesic mechanisms (BPC-157, TB-500, LL-37, ARA-290).' },
+  bone_joint: { label: 'Bone Health & Joint Support', blurb: 'Bone density, cartilage maintenance, and joint repair pathways (BPC-157, TB-500, GHK-Cu, IGF-1).' },
   sexual_health: { label: 'Sexual Health & Hormones', blurb: 'Compounds studied for reproductive and sexual-health pathways.' },
   performance: { label: 'Performance', blurb: 'Compounds studied for the growth-hormone and anabolic axes.' },
   sleep: { label: 'Sleep', blurb: 'Compounds studied for sleep and circadian regulation.' },
@@ -231,4 +235,55 @@ export const GLOSSARY: Record<string, string> = {
 export function findGlossaryTerms(text: string): string[] {
   const lower = text.toLowerCase();
   return Object.keys(GLOSSARY).filter((term) => lower.includes(term));
+}
+
+/** A lightweight reference to a related compound for See-Also linking. */
+export interface RelatedCompoundRef {
+  slug: string;
+  display_name: string;
+  category: string | null;
+  evidence_tier: string;
+}
+
+/**
+ * Rank other compounds by relatedness to `target`: shared compound_class and
+ * research areas weigh most, then stack relationships, then shared category.
+ * Returns the top `limit` matches (default 6), excluding the target itself.
+ */
+export function relatedCompounds(
+  target: Compound,
+  all: Compound[],
+  limit = 6,
+): RelatedCompoundRef[] {
+  const targetAreas = new Set((target.research_areas || []).map((a) => a.toLowerCase()));
+  const targetStack = new Set((target.stack_components || []).map((s) => s.toLowerCase()));
+
+  const score = (c: Compound): number => {
+    if (c.slug === target.slug) return -1;
+    let s = 0;
+    for (const a of c.research_areas || []) if (targetAreas.has(a.toLowerCase())) s += 3;
+    if (c.compound_class && target.compound_class && c.compound_class === target.compound_class) s += 4;
+    if (c.category && target.category && c.category === target.category) s += 1;
+    if ((c.stack_components || []).some((x) => targetStack.has(x.toLowerCase()))) s += 2;
+    const cName = c.display_name.toLowerCase();
+    if (
+      (target.stack_components || []).some((x) => x.toLowerCase() === c.slug || x.toLowerCase() === cName) ||
+      (c.stack_components || []).some((x) => x.toLowerCase() === target.slug)
+    ) {
+      s += 3;
+    }
+    return s;
+  };
+
+  return all
+    .map((c) => ({ c, s: score(c) }))
+    .filter((x) => x.s > 0)
+    .sort((a, b) => b.s - a.s || a.c.display_name.localeCompare(b.c.display_name))
+    .slice(0, limit)
+    .map((x) => ({
+      slug: x.c.slug,
+      display_name: x.c.display_name,
+      category: x.c.category,
+      evidence_tier: x.c.evidence_tier,
+    }));
 }
