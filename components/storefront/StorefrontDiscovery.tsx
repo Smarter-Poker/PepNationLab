@@ -25,6 +25,7 @@
  */
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Sparkles, Search, ArrowRight, X, ShoppingCart, Compass } from 'lucide-react';
 import type { Compound } from '@/lib/compounds';
 
@@ -184,8 +185,19 @@ function MatchResultsDrawer({
   onOpenProduct: (productId: string) => void;
   primaryColor: string;
 }) {
+  const [filterOralOnly, setFilterOralOnly] = useState(false);
+  const [filterHumanOnly, setFilterHumanOnly] = useState(false);
+  const [compareIds, setCompareIds] = useState<string[]>([]);
+  const [compareOpen, setCompareOpen] = useState(false);
+
   useEffect(() => {
-    if (!open) return;
+    if (!open) {
+      setFilterOralOnly(false);
+      setFilterHumanOnly(false);
+      setCompareIds([]);
+      setCompareOpen(false);
+      return;
+    }
     const prev = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
@@ -196,248 +208,472 @@ function MatchResultsDrawer({
     };
   }, [open, onClose]);
 
-  if (!open) return null;
+  const filteredResults = useMemo(() => {
+    return results.filter(r => {
+      if (filterOralOnly && !r.display_name.toLowerCase().includes('capsule') && !r.display_name.toLowerCase().includes('oral') && !r.display_name.toLowerCase().includes('sublingual') && !r.display_name.toLowerCase().includes('spray')) {
+        return false;
+      }
+      if (filterHumanOnly && r.evidence_tier !== 'approved_drug' && r.evidence_tier !== 'investigational') {
+        return false;
+      }
+      return true;
+    });
+  }, [results, filterOralOnly, filterHumanOnly]);
 
-  const inCatalog = results.filter(r => r.in_stock);
-  const outOfCatalog = results.filter(r => !r.in_stock);
+  const inCatalog = filteredResults.filter(r => r.in_stock);
+  const outOfCatalog = filteredResults.filter(r => !r.in_stock);
+  const stackItems = inCatalog.filter(r => r.isStackPartner);
+
+  const handleAddStack = () => {
+    stackItems.forEach(item => onAddToCart(item.product_id));
+  };
+
+  const toggleCompare = (id: string) => {
+    setCompareIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+  };
 
   return (
-    <div
-      role="dialog"
-      aria-modal="true"
-      aria-label="Match Results"
-      onClick={onClose}
-      style={{
-        position: 'fixed', inset: 0, zIndex: 800,
-        background: 'rgba(5, 10, 15, 0.78)',
-        display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
-        paddingTop: 'env(safe-area-inset-top, 0px)',
-      }}
-    >
-      <div
-        onClick={(e) => e.stopPropagation()}
-        style={{
-          width: '100%', maxWidth: 760,
-          background: '#0F1923',
-          borderTopLeftRadius: 22, borderTopRightRadius: 22,
-          maxHeight: 'calc(100dvh - 56px)',
-          display: 'flex', flexDirection: 'column',
-          boxShadow: '0 -16px 40px rgba(0,0,0,0.55)',
-          paddingBottom: 'env(safe-area-inset-bottom, 0px)',
-        }}
-      >
-        <div
+    <AnimatePresence>
+      {open && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Match Results"
+          onClick={onClose}
           style={{
-            display: 'flex', alignItems: 'center', gap: 12,
-            padding: '14px 18px',
-            borderBottom: '1px solid rgba(255,255,255,0.08)',
-            background: `linear-gradient(135deg, ${primaryColor}22 0%, transparent 60%)`,
-            borderTopLeftRadius: 22, borderTopRightRadius: 22,
+            position: 'fixed', inset: 0, zIndex: 800,
+            background: 'rgba(10, 15, 20, 0.75)',
+            backdropFilter: 'blur(16px)',
+            WebkitBackdropFilter: 'blur(16px)',
+            display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
+            paddingTop: 'env(safe-area-inset-top, 0px)',
           }}
         >
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ color: 'var(--silver, #A8B4C0)', fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
-              Top Matches For
-            </div>
-            <div style={{ color: '#FFFFFF', fontSize: '0.98rem', fontWeight: 800, lineHeight: 1.25, marginTop: 2,
-                          whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-              {goalSummary}
-            </div>
-          </div>
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label="Close"
+          <motion.div
+            initial={{ y: '100%' }}
+            animate={{ y: 0 }}
+            exit={{ y: '100%' }}
+            transition={{ type: 'spring', damping: 26, stiffness: 220 }}
+            onClick={(e) => e.stopPropagation()}
             style={{
-              background: 'rgba(255,255,255,0.06)',
-              border: '1px solid rgba(255,255,255,0.16)',
-              color: '#FFFFFF',
-              borderRadius: 10, padding: 8, cursor: 'pointer',
-              display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-              minWidth: 44, minHeight: 44,
+              width: '100%', maxWidth: 760,
+              background: 'rgba(15, 20, 25, 0.85)',
+              borderTopLeftRadius: 24, borderTopRightRadius: 24,
+              borderTop: '1px solid rgba(255,255,255,0.1)',
+              borderLeft: '1px solid rgba(255,255,255,0.1)',
+              borderRight: '1px solid rgba(255,255,255,0.1)',
+              boxShadow: `0 0 40px ${primaryColor}22`,
+              maxHeight: 'calc(100dvh - 56px)',
+              display: 'flex', flexDirection: 'column',
+              paddingBottom: 'env(safe-area-inset-bottom, 0px)',
             }}
           >
-            <X size={18} />
-          </button>
-        </div>
-
-        <div style={{ overflowY: 'auto', padding: '14px 16px 18px', flex: 1 }}>
-          {loading && (
-            <div style={{ padding: '64px 24px', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 24 }}>
-              <div style={{
-                width: 60, height: 60, borderRadius: '50%',
-                border: '3px solid rgba(0, 196, 188, 0.1)',
-                borderTopColor: '#00C4BC',
-                animation: 'spin 1s linear infinite',
-              }} />
-              <style>{`@keyframes spin { 100% { transform: rotate(360deg); } }`}</style>
-              <div style={{ color: '#FFFFFF', fontSize: '1.2rem', fontWeight: 800, letterSpacing: '0.02em' }}>
-                Scanning The Research Library...
+            <div
+              style={{
+                display: 'flex', alignItems: 'center', gap: 12,
+                padding: '16px 20px',
+                borderBottom: '1px solid rgba(255,255,255,0.08)',
+                background: `linear-gradient(135deg, ${primaryColor}22 0%, transparent 60%)`,
+                borderTopLeftRadius: 24, borderTopRightRadius: 24,
+              }}
+            >
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ color: 'var(--silver, #A8B4C0)', fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+                  Top Matches For
+                </div>
+                <div style={{ color: '#FFFFFF', fontSize: '0.98rem', fontWeight: 800, lineHeight: 1.25, marginTop: 2,
+                              whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  {goalSummary}
+                </div>
               </div>
-              <div style={{ color: '#A8B4C0', fontSize: '0.9rem', maxWidth: 320, lineHeight: 1.5 }}>
-                Our AI Match Engine Is Analyzing Your Research Goal Against All Available Compounds And Data.
-              </div>
+              <button
+                type="button"
+                onClick={onClose}
+                aria-label="Close"
+                style={{
+                  background: 'rgba(255,255,255,0.06)',
+                  border: '1px solid rgba(255,255,255,0.16)',
+                  color: '#FFFFFF',
+                  borderRadius: 10, padding: 8, cursor: 'pointer',
+                  display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                  minWidth: 44, minHeight: 44,
+                }}
+              >
+                <X size={18} />
+              </button>
             </div>
-          )}
 
-          {!loading && results.length === 0 && (
-            <div style={{ padding: '32px 8px', textAlign: 'center', color: 'var(--silver, #A8B4C0)' }}>
-              No Matches Yet. Try Describing The Research Goal In Different Words Or Tap A Suggested Chip.
-            </div>
-          )}
-
-          {!loading && inCatalog.length > 0 && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              {inCatalog.map((r) => (
-                <div
-                  key={r.product_id}
+            {/* Live Filtering & Compare Bar */}
+            {!loading && results.length > 0 && (
+              <div style={{ padding: '12px 20px', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', gap: 8, alignItems: 'center', overflowX: 'auto', flexWrap: 'nowrap' }}>
+                <button
+                  type="button"
+                  onClick={() => setFilterOralOnly(!filterOralOnly)}
                   style={{
-                    display: 'flex', gap: 12, alignItems: 'stretch',
-                    background: 'rgba(255,255,255,0.04)',
-                    border: '1px solid rgba(255,255,255,0.10)',
-                    borderRadius: 14, padding: 12,
+                    background: filterOralOnly ? 'rgba(0,196,188,0.2)' : 'rgba(255,255,255,0.05)',
+                    border: `1px solid ${filterOralOnly ? '#00C4BC' : 'rgba(255,255,255,0.1)'}`,
+                    color: filterOralOnly ? '#00C4BC' : '#A8B4C0',
+                    padding: '6px 14px', borderRadius: 20, fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer',
+                    whiteSpace: 'nowrap', transition: 'all 0.2s ease',
                   }}
                 >
-                  {r.image_url ? (
-                    /* eslint-disable-next-line @next/next/no-img-element */
-                    <img
-                      src={r.image_url}
-                      alt=""
-                      onClick={() => onOpenProduct(r.product_id)}
-                      style={{ width: 72, height: 72, borderRadius: 10, objectFit: 'cover', cursor: 'pointer', flexShrink: 0 }}
-                    />
-                  ) : (
-                    <div style={{ width: 72, height: 72, borderRadius: 10, background: 'rgba(255,255,255,0.05)', flexShrink: 0 }} />
-                  )}
+                  {filterOralOnly ? '✓ Oral Only' : 'Oral Only'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setFilterHumanOnly(!filterHumanOnly)}
+                  style={{
+                    background: filterHumanOnly ? 'rgba(0,196,188,0.2)' : 'rgba(255,255,255,0.05)',
+                    border: `1px solid ${filterHumanOnly ? '#00C4BC' : 'rgba(255,255,255,0.1)'}`,
+                    color: filterHumanOnly ? '#00C4BC' : '#A8B4C0',
+                    padding: '6px 14px', borderRadius: 20, fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer',
+                    whiteSpace: 'nowrap', transition: 'all 0.2s ease',
+                  }}
+                >
+                  {filterHumanOnly ? '✓ Human Data Only' : 'Human Data Only'}
+                </button>
+                <div style={{ flex: 1 }} />
+                {compareIds.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setCompareOpen(true)}
+                    style={{
+                      background: '#00C4BC', color: '#0A1018',
+                      border: 'none', padding: '6px 14px', borderRadius: 20,
+                      fontSize: '0.75rem', fontWeight: 900, cursor: 'pointer',
+                      whiteSpace: 'nowrap', boxShadow: '0 4px 12px rgba(0,196,188,0.3)',
+                    }}
+                  >
+                    Compare ({compareIds.length})
+                  </button>
+                )}
+              </div>
+            )}
 
-                  <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 4 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
-                      <div
-                        onClick={() => onOpenProduct(r.product_id)}
+            <div style={{ overflowY: 'auto', padding: '14px 20px 18px', flex: 1 }}>
+              {loading && (
+                <div style={{ padding: '64px 24px', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 24 }}>
+                  <div style={{
+                    width: 60, height: 60, borderRadius: '50%',
+                    border: '3px solid rgba(0, 196, 188, 0.1)',
+                    borderTopColor: '#00C4BC',
+                    animation: 'spin 1s linear infinite',
+                  }} />
+                  <style>{`@keyframes spin { 100% { transform: rotate(360deg); } }`}</style>
+                  <div style={{ color: '#FFFFFF', fontSize: '1.2rem', fontWeight: 800, letterSpacing: '0.02em' }}>
+                    Scanning The Research Library...
+                  </div>
+                  <div style={{ color: '#A8B4C0', fontSize: '0.9rem', maxWidth: 320, lineHeight: 1.5 }}>
+                    Our AI Match Engine Is Analyzing Your Research Goal Against All Available Compounds And Data.
+                  </div>
+                </div>
+              )}
+
+              {!loading && filteredResults.length === 0 && (
+                <div style={{ padding: '32px 8px', textAlign: 'center', color: 'var(--silver, #A8B4C0)' }}>
+                  No Matches Found With These Filters. Try Expanding Your Search.
+                </div>
+              )}
+
+              {/* Stack "Add Protocol to Cart" logic */}
+              {!loading && stackItems.length > 1 && !filterOralOnly && !filterHumanOnly && (
+                <div style={{ background: 'rgba(246,173,85,0.08)', border: '1px solid rgba(246,173,85,0.3)', borderRadius: 16, padding: '14px', marginBottom: 16 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                    <div style={{ color: '#F6AD55', fontWeight: 800, fontSize: '0.9rem' }}>⚡ Recommended Protocol Stack</div>
+                    <button
+                      type="button"
+                      onClick={handleAddStack}
+                      style={{
+                        background: '#F6AD55', color: '#0A1018', border: 'none',
+                        padding: '6px 12px', borderRadius: 8, fontWeight: 800, fontSize: '0.75rem',
+                        cursor: 'pointer', boxShadow: '0 4px 12px rgba(246,173,85,0.3)'
+                      }}
+                    >
+                      Add Stack To Cart
+                    </button>
+                  </div>
+                  <div style={{ color: '#E2E8F0', fontSize: '0.8rem', lineHeight: 1.4 }}>
+                    This synergy stack includes <span style={{ fontWeight: 700 }}>{stackItems.map(s => s.display_name).join(' + ')}</span>. Research indicates superior outcomes when studying these compounds in combination.
+                  </div>
+                </div>
+              )}
+
+              {!loading && inCatalog.length > 0 && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  {inCatalog.map((r) => (
+                    <div
+                      key={r.product_id}
+                      style={{
+                        display: 'flex', gap: 12, alignItems: 'stretch',
+                        background: 'rgba(255,255,255,0.04)',
+                        border: '1px solid rgba(255,255,255,0.10)',
+                        borderRadius: 14, padding: 12, position: 'relative'
+                      }}
+                    >
+                      {/* Compare Checkbox */}
+                      <label style={{
+                        position: 'absolute', top: 12, left: 12, zIndex: 10,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        width: 24, height: 24, background: 'rgba(0,0,0,0.4)',
+                        border: `2px solid ${compareIds.includes(r.product_id) ? '#00C4BC' : 'rgba(255,255,255,0.3)'}`,
+                        borderRadius: 6, cursor: 'pointer',
+                      }}>
+                        <input
+                          type="checkbox"
+                          checked={compareIds.includes(r.product_id)}
+                          onChange={() => toggleCompare(r.product_id)}
+                          style={{ opacity: 0, position: 'absolute' }}
+                        />
+                        {compareIds.includes(r.product_id) && <div style={{ width: 12, height: 12, background: '#00C4BC', borderRadius: 2 }} />}
+                      </label>
+
+                      {r.image_url ? (
+                        /* eslint-disable-next-line @next/next/no-img-element */
+                        <img
+                          src={r.image_url}
+                          alt=""
+                          onClick={() => onOpenProduct(r.product_id)}
+                          style={{ width: 72, height: 72, borderRadius: 10, objectFit: 'cover', cursor: 'pointer', flexShrink: 0 }}
+                        />
+                      ) : (
+                        <div style={{ width: 72, height: 72, borderRadius: 10, background: 'rgba(255,255,255,0.05)', flexShrink: 0 }} />
+                      )}
+
+                      <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 4 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
+                          <div
+                            onClick={() => onOpenProduct(r.product_id)}
+                            style={{
+                              color: '#FFFFFF', fontWeight: 800, fontSize: '0.96rem', lineHeight: 1.25,
+                              flex: 1, minWidth: 0, cursor: 'pointer',
+                              whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+                            }}
+                          >
+                            {r.display_name}
+                          </div>
+                          {r.evidence_tier && (
+                            <span style={{
+                              fontSize: '0.62rem', fontWeight: 800, letterSpacing: '0.04em', textTransform: 'uppercase',
+                              padding: '3px 7px', borderRadius: 6,
+                              background: 'rgba(0,196,188,0.14)', color: '#00C4BC',
+                              border: '1px solid rgba(0,196,188,0.35)', flexShrink: 0,
+                            }}>
+                              {r.evidence_tier.replace(/_/g, ' ')}
+                            </span>
+                          )}
+                          {r.isStackPartner && (
+                            <span style={{
+                              fontSize: '0.62rem', fontWeight: 800, letterSpacing: '0.04em', textTransform: 'uppercase',
+                              padding: '3px 7px', borderRadius: 6,
+                              background: 'rgba(246,173,85,0.14)', color: '#F6AD55',
+                              border: '1px solid rgba(246,173,85,0.35)', flexShrink: 0,
+                            }} title="Synergizes well with other matched compounds">
+                              ⚡ Synergistic Stack Partner
+                            </span>
+                          )}
+                        </div>
+
+                        <div style={{ color: 'var(--silver, #A8B4C0)', fontSize: '0.82rem', lineHeight: 1.4 }}>
+                          <span style={{ color: 'var(--grey-400, #C8D2DD)', fontWeight: 700 }}>Why This Match: </span>
+                          {r.rationale}
+                        </div>
+
+                        {/* Visualizations */}
+                        <div style={{ display: 'flex', gap: 16, marginTop: 6, marginBottom: 6 }}>
+                          {/* Efficacy */}
+                          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 4 }}>
+                            <div style={{ fontSize: '0.65rem', fontWeight: 800, color: 'var(--silver)', textTransform: 'uppercase' }}>Target Efficacy</div>
+                            <div style={{ width: '100%', height: 6, background: 'rgba(255,255,255,0.1)', borderRadius: 4, overflow: 'hidden' }}>
+                              <div style={{ width: `${r.score || 0}%`, height: '100%', background: 'linear-gradient(90deg, #3182ce, #63b3ed)', borderRadius: 4 }} />
+                            </div>
+                          </div>
+                          {/* Evidence */}
+                          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 4 }}>
+                            <div style={{ fontSize: '0.65rem', fontWeight: 800, color: 'var(--silver)', textTransform: 'uppercase' }}>Human Data</div>
+                            <div style={{ width: '100%', height: 6, background: 'rgba(255,255,255,0.1)', borderRadius: 4, overflow: 'hidden' }}>
+                              <div style={{ width: `${getTierPercent(r.evidence_tier)}%`, height: '100%', background: 'linear-gradient(90deg, #805ad5, #b794f4)', borderRadius: 4 }} />
+                            </div>
+                          </div>
+                          {/* Safety */}
+                          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 4 }}>
+                            <div style={{ fontSize: '0.65rem', fontWeight: 800, color: 'var(--silver)', textTransform: 'uppercase' }}>Safety Profile</div>
+                            <div style={{ width: '100%', height: 6, background: 'rgba(255,255,255,0.1)', borderRadius: 4, overflow: 'hidden' }}>
+                              <div style={{ width: `${getRiskPercent(r.riskLevel)}%`, height: '100%', background: getRiskColor(r.riskLevel), borderRadius: 4 }} />
+                            </div>
+                          </div>
+                        </div>
+
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 4 }}>
+                          <div style={{ color: '#00C4BC', fontWeight: 900, fontSize: '1rem' }}>
+                            ${(r.price_cents / 100).toFixed(2)}
+                          </div>
+                          <div style={{ flex: 1 }} />
+                          <button
+                            type="button"
+                            onClick={() => onOpenProduct(r.product_id)}
+                            style={{
+                              background: 'transparent',
+                              border: '1px solid rgba(255,255,255,0.16)',
+                              color: '#FFFFFF', fontWeight: 700, fontSize: '0.82rem',
+                              padding: '8px 12px', borderRadius: 10, cursor: 'pointer',
+                              minHeight: 40,
+                            }}
+                          >
+                            View Details
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => onAddToCart(r.product_id)}
+                            style={{
+                              background: '#00C4BC', color: '#0A1018',
+                              border: 0, fontWeight: 900, fontSize: '0.82rem',
+                              padding: '8px 12px', borderRadius: 10, cursor: 'pointer',
+                              display: 'inline-flex', alignItems: 'center', gap: 6,
+                              minHeight: 40,
+                            }}
+                          >
+                            <ShoppingCart size={14} aria-hidden /> Add To Cart
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {!loading && outOfCatalog.length > 0 && (
+                <div style={{ marginTop: 14 }}>
+                  <div style={{ color: 'var(--silver, #A8B4C0)', fontSize: '0.72rem', fontWeight: 800, letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 8 }}>
+                    Also Studied For This Goal — Not Currently Stocked Here
+                  </div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                    {outOfCatalog.map((r) => (
+                      <span
+                        key={`oos-${r.compound_slug || r.display_name}`}
                         style={{
-                          color: '#FFFFFF', fontWeight: 800, fontSize: '0.96rem', lineHeight: 1.25,
-                          flex: 1, minWidth: 0, cursor: 'pointer',
-                          whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+                          background: 'rgba(255,255,255,0.04)',
+                          border: '1px solid rgba(255,255,255,0.10)',
+                          color: 'var(--silver, #A8B4C0)',
+                          borderRadius: 999, padding: '6px 10px',
+                          fontSize: '0.78rem', fontWeight: 600,
                         }}
                       >
                         {r.display_name}
-                      </div>
-                      {r.evidence_tier && (
-                        <span style={{
-                          fontSize: '0.62rem', fontWeight: 800, letterSpacing: '0.04em', textTransform: 'uppercase',
-                          padding: '3px 7px', borderRadius: 6,
-                          background: 'rgba(0,196,188,0.14)', color: '#00C4BC',
-                          border: '1px solid rgba(0,196,188,0.35)', flexShrink: 0,
-                        }}>
-                          {r.evidence_tier.replace(/_/g, ' ')}
-                        </span>
-                      )}
-                      {r.isStackPartner && (
-                        <span style={{
-                          fontSize: '0.62rem', fontWeight: 800, letterSpacing: '0.04em', textTransform: 'uppercase',
-                          padding: '3px 7px', borderRadius: 6,
-                          background: 'rgba(246,173,85,0.14)', color: '#F6AD55',
-                          border: '1px solid rgba(246,173,85,0.35)', flexShrink: 0,
-                        }} title="Synergizes well with other matched compounds">
-                          ⚡ Synergistic Stack Partner
-                        </span>
-                      )}
-                    </div>
-
-                    <div style={{ color: 'var(--silver, #A8B4C0)', fontSize: '0.82rem', lineHeight: 1.4 }}>
-                      <span style={{ color: 'var(--grey-400, #C8D2DD)', fontWeight: 700 }}>Why This Match: </span>
-                      {r.rationale}
-                    </div>
-
-                    {/* Visualizations */}
-                    <div style={{ display: 'flex', gap: 16, marginTop: 6, marginBottom: 6 }}>
-                      {/* Efficacy */}
-                      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 4 }}>
-                        <div style={{ fontSize: '0.65rem', fontWeight: 800, color: 'var(--silver)', textTransform: 'uppercase' }}>Target Efficacy</div>
-                        <div style={{ width: '100%', height: 6, background: 'rgba(255,255,255,0.1)', borderRadius: 4, overflow: 'hidden' }}>
-                          <div style={{ width: `${r.score || 0}%`, height: '100%', background: 'linear-gradient(90deg, #3182ce, #63b3ed)', borderRadius: 4 }} />
-                        </div>
-                      </div>
-                      {/* Evidence */}
-                      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 4 }}>
-                        <div style={{ fontSize: '0.65rem', fontWeight: 800, color: 'var(--silver)', textTransform: 'uppercase' }}>Human Data</div>
-                        <div style={{ width: '100%', height: 6, background: 'rgba(255,255,255,0.1)', borderRadius: 4, overflow: 'hidden' }}>
-                          <div style={{ width: `${getTierPercent(r.evidence_tier)}%`, height: '100%', background: 'linear-gradient(90deg, #805ad5, #b794f4)', borderRadius: 4 }} />
-                        </div>
-                      </div>
-                      {/* Safety */}
-                      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 4 }}>
-                        <div style={{ fontSize: '0.65rem', fontWeight: 800, color: 'var(--silver)', textTransform: 'uppercase' }}>Safety Profile</div>
-                        <div style={{ width: '100%', height: 6, background: 'rgba(255,255,255,0.1)', borderRadius: 4, overflow: 'hidden' }}>
-                          <div style={{ width: `${getRiskPercent(r.riskLevel)}%`, height: '100%', background: getRiskColor(r.riskLevel), borderRadius: 4 }} />
-                        </div>
-                      </div>
-                    </div>
-
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 4 }}>
-                      <div style={{ color: '#00C4BC', fontWeight: 900, fontSize: '1rem' }}>
-                        ${(r.price_cents / 100).toFixed(2)}
-                      </div>
-                      <div style={{ flex: 1 }} />
-                      <button
-                        type="button"
-                        onClick={() => onOpenProduct(r.product_id)}
-                        style={{
-                          background: 'transparent',
-                          border: '1px solid rgba(255,255,255,0.16)',
-                          color: '#FFFFFF', fontWeight: 700, fontSize: '0.82rem',
-                          padding: '8px 12px', borderRadius: 10, cursor: 'pointer',
-                          minHeight: 40,
-                        }}
-                      >
-                        View Details
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => onAddToCart(r.product_id)}
-                        style={{
-                          background: '#00C4BC', color: '#0A1018',
-                          border: 0, fontWeight: 900, fontSize: '0.82rem',
-                          padding: '8px 12px', borderRadius: 10, cursor: 'pointer',
-                          display: 'inline-flex', alignItems: 'center', gap: 6,
-                          minHeight: 40,
-                        }}
-                      >
-                        <ShoppingCart size={14} aria-hidden /> Add To Cart
-                      </button>
-                    </div>
+                      </span>
+                    ))}
                   </div>
                 </div>
-              ))}
+              )}
             </div>
-          )}
+          </motion.div>
+        </motion.div>
+      )}
 
-          {!loading && outOfCatalog.length > 0 && (
-            <div style={{ marginTop: 14 }}>
-              <div style={{ color: 'var(--silver, #A8B4C0)', fontSize: '0.72rem', fontWeight: 800, letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 8 }}>
-                Also Studied For This Goal — Not Currently Stocked Here
+      {/* Compare Modal */}
+      <AnimatePresence>
+        {compareOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            style={{
+              position: 'fixed', inset: 0, zIndex: 900,
+              background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(20px)',
+              display: 'flex', flexDirection: 'column', alignItems: 'center',
+              padding: 'env(safe-area-inset-top, 0px) 0 env(safe-area-inset-bottom, 0px)',
+            }}
+          >
+            <div style={{ width: '100%', maxWidth: 1000, flex: 1, display: 'flex', flexDirection: 'column', padding: 24 }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
+                <h2 style={{ color: '#FFF', margin: 0 }}>Compare Matches</h2>
+                <button
+                  type="button"
+                  onClick={() => setCompareOpen(false)}
+                  style={{
+                    background: 'rgba(255,255,255,0.1)', color: '#FFF', border: 'none',
+                    padding: 8, borderRadius: 12, cursor: 'pointer'
+                  }}
+                >
+                  <X size={24} />
+                </button>
               </div>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                {outOfCatalog.map((r) => (
-                  <span
-                    key={`oos-${r.compound_slug || r.display_name}`}
-                    style={{
-                      background: 'rgba(255,255,255,0.04)',
-                      border: '1px solid rgba(255,255,255,0.10)',
-                      color: 'var(--silver, #A8B4C0)',
-                      borderRadius: 999, padding: '6px 10px',
-                      fontSize: '0.78rem', fontWeight: 600,
-                    }}
-                  >
-                    {r.display_name}
-                  </span>
-                ))}
+
+              <div style={{ flex: 1, overflowX: 'auto', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 20 }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', color: '#E2E8F0', minWidth: 800 }}>
+                  <thead>
+                    <tr>
+                      <th style={{ padding: 16, borderBottom: '1px solid rgba(255,255,255,0.1)', width: 180 }}>Attribute</th>
+                      {compareIds.map(id => {
+                        const item = results.find(r => r.product_id === id);
+                        return (
+                          <th key={id} style={{ padding: 16, borderBottom: '1px solid rgba(255,255,255,0.1)', minWidth: 200 }}>
+                            {item?.display_name}
+                          </th>
+                        );
+                      })}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td style={{ padding: 16, borderBottom: '1px solid rgba(255,255,255,0.05)', fontWeight: 700, color: '#A8B4C0' }}>Price</td>
+                      {compareIds.map(id => {
+                        const item = results.find(r => r.product_id === id);
+                        return <td key={id} style={{ padding: 16, borderBottom: '1px solid rgba(255,255,255,0.05)', fontWeight: 800, color: '#00C4BC' }}>${(item?.price_cents ? item.price_cents / 100 : 0).toFixed(2)}</td>;
+                      })}
+                    </tr>
+                    <tr>
+                      <td style={{ padding: 16, borderBottom: '1px solid rgba(255,255,255,0.05)', fontWeight: 700, color: '#A8B4C0' }}>Target Efficacy</td>
+                      {compareIds.map(id => {
+                        const item = results.find(r => r.product_id === id);
+                        return <td key={id} style={{ padding: 16, borderBottom: '1px solid rgba(255,255,255,0.05)' }}>{item?.score}%</td>;
+                      })}
+                    </tr>
+                    <tr>
+                      <td style={{ padding: 16, borderBottom: '1px solid rgba(255,255,255,0.05)', fontWeight: 700, color: '#A8B4C0' }}>Human Data Tier</td>
+                      {compareIds.map(id => {
+                        const item = results.find(r => r.product_id === id);
+                        return <td key={id} style={{ padding: 16, borderBottom: '1px solid rgba(255,255,255,0.05)' }}>{item?.evidence_tier?.replace(/_/g, ' ')}</td>;
+                      })}
+                    </tr>
+                    <tr>
+                      <td style={{ padding: 16, borderBottom: '1px solid rgba(255,255,255,0.05)', fontWeight: 700, color: '#A8B4C0' }}>Safety Profile</td>
+                      {compareIds.map(id => {
+                        const item = results.find(r => r.product_id === id);
+                        return <td key={id} style={{ padding: 16, borderBottom: '1px solid rgba(255,255,255,0.05)', textTransform: 'capitalize' }}>{item?.riskLevel} Risk</td>;
+                      })}
+                    </tr>
+                    <tr>
+                      <td style={{ padding: 16, borderBottom: '1px solid rgba(255,255,255,0.05)', fontWeight: 700, color: '#A8B4C0' }}>Half Life</td>
+                      {compareIds.map(id => {
+                        const item = results.find(r => r.product_id === id);
+                        return <td key={id} style={{ padding: 16, borderBottom: '1px solid rgba(255,255,255,0.05)' }}>{item?.halfLife || 'N/A'}</td>;
+                      })}
+                    </tr>
+                    <tr>
+                      <td style={{ padding: 16, borderBottom: '1px solid rgba(255,255,255,0.05)', fontWeight: 700, color: '#A8B4C0' }}>Molecular Wt</td>
+                      {compareIds.map(id => {
+                        const item = results.find(r => r.product_id === id);
+                        return <td key={id} style={{ padding: 16, borderBottom: '1px solid rgba(255,255,255,0.05)' }}>{item?.molecularWeight ? `${item.molecularWeight} Da` : 'N/A'}</td>;
+                      })}
+                    </tr>
+                    <tr>
+                      <td style={{ padding: 16, borderBottom: '1px solid rgba(255,255,255,0.05)', fontWeight: 700, color: '#A8B4C0' }}>Why This Match</td>
+                      {compareIds.map(id => {
+                        const item = results.find(r => r.product_id === id);
+                        return <td key={id} style={{ padding: 16, borderBottom: '1px solid rgba(255,255,255,0.05)', fontSize: '0.85rem', lineHeight: 1.5 }}>{item?.rationale}</td>;
+                      })}
+                    </tr>
+                  </tbody>
+                </table>
               </div>
             </div>
-          )}
-        </div>
-      </div>
-    </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </AnimatePresence>
   );
 }
 
@@ -494,234 +730,255 @@ function GuidedDiscoveryWizard({
     };
   }, [open, onClose]);
 
-  if (!open) return null;
-
   const TOTAL_STEPS = 3;
 
+  const variants = {
+    initial: { x: 20, opacity: 0 },
+    animate: { x: 0, opacity: 1 },
+    exit: { x: -20, opacity: 0 }
+  };
+
   return (
-    <div
-      role="dialog"
-      aria-modal="true"
-      aria-label="Guided Discovery"
-      onClick={onClose}
-      style={{
-        position: 'fixed', inset: 0, zIndex: 850,
-        background: 'rgba(5,10,15,0.82)',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        padding: 'max(16px, env(safe-area-inset-top, 0px)) 16px max(16px, env(safe-area-inset-bottom, 0px))',
-      }}
-    >
-      <div
-        onClick={(e) => e.stopPropagation()}
-        style={{
-          width: '100%', maxWidth: 560,
-          background: '#0F1923', color: '#FFFFFF',
-          borderRadius: 20,
-          border: '1px solid rgba(255,255,255,0.10)',
-          boxShadow: '0 20px 48px rgba(0,0,0,0.55)',
-          display: 'flex', flexDirection: 'column',
-          maxHeight: 'calc(100dvh - 32px)',
-        }}
-      >
-        <div
+    <AnimatePresence>
+      {open && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Guided Discovery"
+          onClick={onClose}
           style={{
-            display: 'flex', alignItems: 'center', gap: 10,
-            padding: '14px 18px',
-            borderBottom: '1px solid rgba(255,255,255,0.08)',
-            background: `linear-gradient(135deg, ${primaryColor}22 0%, transparent 60%)`,
-            borderTopLeftRadius: 20, borderTopRightRadius: 20,
+            position: 'fixed', inset: 0, zIndex: 850,
+            background: 'rgba(5,10,15,0.82)',
+            backdropFilter: 'blur(12px)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            padding: 'max(16px, env(safe-area-inset-top, 0px)) 16px max(16px, env(safe-area-inset-bottom, 0px))',
           }}
         >
-          <Compass size={18} aria-hidden style={{ color: '#00C4BC' }} />
-          <div style={{ fontWeight: 800, fontSize: '0.98rem', flex: 1 }}>Let Us Guide You</div>
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label="Close"
+          <motion.div
+            initial={{ scale: 0.95, opacity: 0, y: 20 }}
+            animate={{ scale: 1, opacity: 1, y: 0 }}
+            exit={{ scale: 0.95, opacity: 0, y: 20 }}
+            transition={{ type: 'spring', damping: 24, stiffness: 300 }}
+            onClick={(e) => e.stopPropagation()}
             style={{
-              background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.16)',
-              color: '#FFFFFF', borderRadius: 10, padding: 8, cursor: 'pointer',
-              minWidth: 40, minHeight: 40,
+              width: '100%', maxWidth: 560,
+              background: 'rgba(15, 25, 35, 0.85)', color: '#FFFFFF',
+              borderRadius: 20,
+              border: '1px solid rgba(255,255,255,0.10)',
+              boxShadow: `0 20px 48px ${primaryColor}33`,
+              display: 'flex', flexDirection: 'column',
+              maxHeight: 'calc(100dvh - 32px)',
             }}
           >
-            <X size={16} />
-          </button>
-        </div>
-
-        <div style={{ padding: '14px 18px 6px', display: 'flex', gap: 6 }}>
-          {Array.from({ length: TOTAL_STEPS }).map((_, i) => (
             <div
-              key={i}
               style={{
-                flex: 1, height: 4, borderRadius: 999,
-                background: i <= step ? '#00C4BC' : 'rgba(255,255,255,0.10)',
-              }}
-            />
-          ))}
-        </div>
-
-        <div style={{ padding: '14px 18px 18px', flex: 1, overflowY: 'auto' }}>
-          {step === 0 && (
-            <div>
-              <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 800 }}>What Research Area Are You Focused On?</h3>
-              <p style={{ color: 'var(--silver, #A8B4C0)', fontSize: '0.88rem', lineHeight: 1.5, marginTop: 6 }}>
-                Pick The Area Closest To Your Goal. We Will Match Compounds Studied For That Area.
-              </p>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 14 }}>
-                {availableAreas.map((area) => {
-                  const active = state.area === area;
-                  return (
-                    <button
-                      key={area}
-                      type="button"
-                      onClick={() => setState(s => ({ ...s, area }))}
-                      style={{
-                        padding: '10px 14px',
-                        borderRadius: 12,
-                        background: active ? '#00C4BC' : 'rgba(255,255,255,0.05)',
-                        border: active ? '1px solid #00C4BC' : '1px solid rgba(255,255,255,0.14)',
-                        color: active ? '#0A1018' : '#FFFFFF',
-                        fontWeight: 700, fontSize: '0.86rem',
-                        cursor: 'pointer', minHeight: 44,
-                      }}
-                    >
-                      {labelForArea(area)}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-
-          {step === 1 && (
-            <div>
-              <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 800 }}>Single Compounds Or Blended Stacks?</h3>
-              <p style={{ color: 'var(--silver, #A8B4C0)', fontSize: '0.88rem', lineHeight: 1.5, marginTop: 6 }}>
-                Stacks Bundle Multiple Peptides Into One Vial For Combined Effects. Singles Let You Mix Your Own Protocol.
-              </p>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 10, marginTop: 14 }}>
-                {([
-                  { v: 'single', label: 'Single Compounds', sub: 'I Want To Build My Own Protocol.' },
-                  { v: 'stack', label: 'Blended Stacks', sub: 'I Want A Pre-Built Combination.' },
-                  { v: 'either', label: 'Show Me Both', sub: 'I Am Open To Either.' },
-                ] as const).map(o => {
-                  const active = state.preference === o.v;
-                  return (
-                    <button
-                      key={o.v}
-                      type="button"
-                      onClick={() => setState(s => ({ ...s, preference: o.v }))}
-                      style={{
-                        textAlign: 'left',
-                        padding: '14px 16px',
-                        borderRadius: 12,
-                        background: active ? 'rgba(0,196,188,0.10)' : 'rgba(255,255,255,0.04)',
-                        border: active ? '1px solid #00C4BC' : '1px solid rgba(255,255,255,0.12)',
-                        color: '#FFFFFF',
-                        cursor: 'pointer', minHeight: 56,
-                      }}
-                    >
-                      <div style={{ fontWeight: 800, fontSize: '0.96rem' }}>{o.label}</div>
-                      <div style={{ color: 'var(--silver, #A8B4C0)', fontSize: '0.82rem', marginTop: 2 }}>{o.sub}</div>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-
-          {step === 2 && (
-            <div>
-              <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 800 }}>How Well-Studied Should The Compound Be?</h3>
-              <p style={{ color: 'var(--silver, #A8B4C0)', fontSize: '0.88rem', lineHeight: 1.5, marginTop: 6 }}>
-                Stricter Comfort Returns Fewer But More Established Compounds. Looser Comfort Opens Up Newer Research Areas.
-              </p>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 10, marginTop: 14 }}>
-                {([
-                  { v: 'strict_human_only', label: 'Approved Compounds Only',     sub: 'Strongest Human Evidence.' },
-                  { v: 'investigational_ok', label: 'Investigational Or Better', sub: 'Active Clinical Trials Allowed.' },
-                  { v: 'preclinical_ok',     label: 'Preclinical Or Better',     sub: 'Animal And Cell Studies Allowed (Recommended).' },
-                  { v: 'any',                label: 'Any Research Stage',        sub: 'Show Me Everything Studied For My Goal.' },
-                ] as const).map(o => {
-                  const active = state.comfort === o.v;
-                  return (
-                    <button
-                      key={o.v}
-                      type="button"
-                      onClick={() => setState(s => ({ ...s, comfort: o.v }))}
-                      style={{
-                        textAlign: 'left',
-                        padding: '14px 16px',
-                        borderRadius: 12,
-                        background: active ? 'rgba(0,196,188,0.10)' : 'rgba(255,255,255,0.04)',
-                        border: active ? '1px solid #00C4BC' : '1px solid rgba(255,255,255,0.12)',
-                        color: '#FFFFFF',
-                        cursor: 'pointer', minHeight: 56,
-                      }}
-                    >
-                      <div style={{ fontWeight: 800, fontSize: '0.96rem' }}>{o.label}</div>
-                      <div style={{ color: 'var(--silver, #A8B4C0)', fontSize: '0.82rem', marginTop: 2 }}>{o.sub}</div>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-        </div>
-
-        <div
-          style={{
-            display: 'flex', gap: 10, padding: '12px 18px 16px',
-            borderTop: '1px solid rgba(255,255,255,0.08)',
-            paddingBottom: 'max(16px, env(safe-area-inset-bottom, 0px))',
-          }}
-        >
-          <button
-            type="button"
-            onClick={() => (step > 0 ? setStep(step - 1) : onClose())}
-            style={{
-              flex: 1,
-              background: 'transparent', border: '1px solid rgba(255,255,255,0.18)',
-              color: '#FFFFFF', fontWeight: 700, fontSize: '0.92rem',
-              padding: '12px 16px', borderRadius: 12, cursor: 'pointer',
-              minHeight: 48,
-            }}
-          >
-            {step === 0 ? 'Cancel' : 'Back'}
-          </button>
-          {step < TOTAL_STEPS - 1 ? (
-            <button
-              type="button"
-              onClick={() => setStep(step + 1)}
-              style={{
-                flex: 1,
-                background: '#00C4BC', color: '#0A1018', border: 0,
-                fontWeight: 900, fontSize: '0.92rem',
-                padding: '12px 16px', borderRadius: 12, cursor: 'pointer',
-                display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-                minHeight: 48,
+                display: 'flex', alignItems: 'center', gap: 10,
+                padding: '14px 18px',
+                borderBottom: '1px solid rgba(255,255,255,0.08)',
+                background: `linear-gradient(135deg, ${primaryColor}22 0%, transparent 60%)`,
+                borderTopLeftRadius: 20, borderTopRightRadius: 20,
               }}
             >
-              Next <ArrowRight size={16} aria-hidden />
-            </button>
-          ) : (
-            <button
-              type="button"
-              onClick={() => onSubmit(state)}
+              <Compass size={18} aria-hidden style={{ color: '#00C4BC' }} />
+              <div style={{ fontWeight: 800, fontSize: '0.98rem', flex: 1 }}>Let Us Guide You</div>
+              <button
+                type="button"
+                onClick={onClose}
+                aria-label="Close"
+                style={{
+                  background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.16)',
+                  color: '#FFFFFF', borderRadius: 10, padding: 8, cursor: 'pointer',
+                  minWidth: 40, minHeight: 40,
+                }}
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            <div style={{ padding: '14px 18px 6px', display: 'flex', gap: 6 }}>
+              {Array.from({ length: TOTAL_STEPS }).map((_, i) => (
+                <div
+                  key={i}
+                  style={{
+                    flex: 1, height: 4, borderRadius: 999,
+                    background: i <= step ? '#00C4BC' : 'rgba(255,255,255,0.10)',
+                    transition: 'background 0.3s ease',
+                  }}
+                />
+              ))}
+            </div>
+
+            <div style={{ padding: '14px 18px 18px', flex: 1, overflowY: 'auto', overflowX: 'hidden' }}>
+              <AnimatePresence mode="wait">
+                {step === 0 && (
+                  <motion.div key="step0" variants={variants} initial="initial" animate="animate" exit="exit" transition={{ duration: 0.2 }}>
+                    <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 800 }}>What Research Area Are You Focused On?</h3>
+                    <p style={{ color: 'var(--silver, #A8B4C0)', fontSize: '0.88rem', lineHeight: 1.5, marginTop: 6 }}>
+                      Pick The Area Closest To Your Goal. We Will Match Compounds Studied For That Area.
+                    </p>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 14 }}>
+                      {availableAreas.map((area) => {
+                        const active = state.area === area;
+                        return (
+                          <button
+                            key={area}
+                            type="button"
+                            onClick={() => setState(s => ({ ...s, area }))}
+                            style={{
+                              padding: '10px 14px',
+                              borderRadius: 12,
+                              background: active ? 'rgba(0,196,188,0.2)' : 'rgba(255,255,255,0.05)',
+                              border: active ? '1px solid #00C4BC' : '1px solid rgba(255,255,255,0.14)',
+                              color: active ? '#00C4BC' : '#FFFFFF',
+                              fontWeight: 700, fontSize: '0.86rem',
+                              cursor: 'pointer', minHeight: 44, transition: 'all 0.2s ease',
+                            }}
+                          >
+                            {labelForArea(area)}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </motion.div>
+                )}
+
+                {step === 1 && (
+                  <motion.div key="step1" variants={variants} initial="initial" animate="animate" exit="exit" transition={{ duration: 0.2 }}>
+                    <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 800 }}>Single Compounds Or Blended Stacks?</h3>
+                    <p style={{ color: 'var(--silver, #A8B4C0)', fontSize: '0.88rem', lineHeight: 1.5, marginTop: 6 }}>
+                      Stacks Bundle Multiple Peptides Into One Vial For Combined Effects. Singles Let You Mix Your Own Protocol.
+                    </p>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 10, marginTop: 14 }}>
+                      {([
+                        { v: 'single', label: 'Single Compounds', sub: 'I Want To Build My Own Protocol.' },
+                        { v: 'stack', label: 'Blended Stacks', sub: 'I Want A Pre-Built Combination.' },
+                        { v: 'either', label: 'Show Me Both', sub: 'I Am Open To Either.' },
+                      ] as const).map(o => {
+                        const active = state.preference === o.v;
+                        return (
+                          <button
+                            key={o.v}
+                            type="button"
+                            onClick={() => setState(s => ({ ...s, preference: o.v }))}
+                            style={{
+                              textAlign: 'left',
+                              padding: '14px 16px',
+                              borderRadius: 12,
+                              background: active ? 'rgba(0,196,188,0.15)' : 'rgba(255,255,255,0.04)',
+                              border: active ? '1px solid #00C4BC' : '1px solid rgba(255,255,255,0.12)',
+                              color: '#FFFFFF',
+                              cursor: 'pointer', minHeight: 56, transition: 'all 0.2s ease',
+                            }}
+                          >
+                            <div style={{ fontWeight: 800, fontSize: '0.96rem', color: active ? '#00C4BC' : '#FFF' }}>{o.label}</div>
+                            <div style={{ color: 'var(--silver, #A8B4C0)', fontSize: '0.82rem', marginTop: 2 }}>{o.sub}</div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </motion.div>
+                )}
+
+                {step === 2 && (
+                  <motion.div key="step2" variants={variants} initial="initial" animate="animate" exit="exit" transition={{ duration: 0.2 }}>
+                    <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 800 }}>How Well-Studied Should The Compound Be?</h3>
+                    <p style={{ color: 'var(--silver, #A8B4C0)', fontSize: '0.88rem', lineHeight: 1.5, marginTop: 6 }}>
+                      Stricter Comfort Returns Fewer But More Established Compounds. Looser Comfort Opens Up Newer Research Areas.
+                    </p>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 10, marginTop: 14 }}>
+                      {([
+                        { v: 'strict_human_only', label: 'Approved Compounds Only',     sub: 'Strongest Human Evidence.' },
+                        { v: 'investigational_ok', label: 'Investigational Or Better', sub: 'Active Clinical Trials Allowed.' },
+                        { v: 'preclinical_ok',     label: 'Preclinical Or Better',     sub: 'Animal And Cell Studies Allowed (Recommended).' },
+                        { v: 'any',                label: 'Any Research Stage',        sub: 'Show Me Everything Studied For My Goal.' },
+                      ] as const).map(o => {
+                        const active = state.comfort === o.v;
+                        return (
+                          <button
+                            key={o.v}
+                            type="button"
+                            onClick={() => setState(s => ({ ...s, comfort: o.v }))}
+                            style={{
+                              textAlign: 'left',
+                              padding: '14px 16px',
+                              borderRadius: 12,
+                              background: active ? 'rgba(0,196,188,0.15)' : 'rgba(255,255,255,0.04)',
+                              border: active ? '1px solid #00C4BC' : '1px solid rgba(255,255,255,0.12)',
+                              color: '#FFFFFF',
+                              cursor: 'pointer', minHeight: 56, transition: 'all 0.2s ease',
+                            }}
+                          >
+                            <div style={{ fontWeight: 800, fontSize: '0.96rem', color: active ? '#00C4BC' : '#FFF' }}>{o.label}</div>
+                            <div style={{ color: 'var(--silver, #A8B4C0)', fontSize: '0.82rem', marginTop: 2 }}>{o.sub}</div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+
+            <div
               style={{
-                flex: 1,
-                background: '#00C4BC', color: '#0A1018', border: 0,
-                fontWeight: 900, fontSize: '0.92rem',
-                padding: '12px 16px', borderRadius: 12, cursor: 'pointer',
-                minHeight: 48,
+                display: 'flex', gap: 10, padding: '12px 18px 16px',
+                borderTop: '1px solid rgba(255,255,255,0.08)',
+                paddingBottom: 'max(16px, env(safe-area-inset-bottom, 0px))',
               }}
             >
-              Reveal Top Matches
-            </button>
-          )}
-        </div>
-      </div>
-    </div>
+              <button
+                type="button"
+                onClick={() => (step > 0 ? setStep(step - 1) : onClose())}
+                style={{
+                  flex: 1,
+                  background: 'transparent', border: '1px solid rgba(255,255,255,0.18)',
+                  color: '#FFFFFF', fontWeight: 700, fontSize: '0.92rem',
+                  padding: '12px 16px', borderRadius: 12, cursor: 'pointer',
+                  minHeight: 48,
+                }}
+              >
+                {step === 0 ? 'Cancel' : 'Back'}
+              </button>
+              {step < TOTAL_STEPS - 1 ? (
+                <button
+                  type="button"
+                  onClick={() => setStep(step + 1)}
+                  style={{
+                    flex: 1,
+                    background: '#00C4BC', color: '#0A1018', border: 0,
+                    fontWeight: 900, fontSize: '0.92rem',
+                    padding: '12px 16px', borderRadius: 12, cursor: 'pointer',
+                    display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                    minHeight: 48,
+                    boxShadow: '0 4px 12px rgba(0,196,188,0.3)',
+                  }}
+                >
+                  Next <ArrowRight size={16} aria-hidden />
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => onSubmit(state)}
+                  style={{
+                    flex: 1,
+                    background: '#00C4BC', color: '#0A1018', border: 0,
+                    fontWeight: 900, fontSize: '0.92rem',
+                    padding: '12px 16px', borderRadius: 12, cursor: 'pointer',
+                    minHeight: 48,
+                    boxShadow: '0 4px 12px rgba(0,196,188,0.3)',
+                  }}
+                >
+                  Reveal Top Matches
+                </button>
+              )}
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 }
 

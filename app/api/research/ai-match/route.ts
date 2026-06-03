@@ -71,8 +71,12 @@ export async function POST(req: NextRequest) {
       const cleanText = text.replace(/^```json\n?/, '').replace(/\n?```$/, '').trim();
       const result = JSON.parse(cleanText);
       return NextResponse.json({ result });
-    } catch (error: any) {
-      console.error('AI Match Error:', error);
-      return NextResponse.json({ error: error.message || 'AI request failed' }, { status: 500 });
+    } catch (parseError: any) {
+      console.error('JSON Parse Error:', parseError);
+      return NextResponse.json({ error: 'Failed to parse AI response' }, { status: 500 });
     }
+  } catch (error: any) {
+    console.error('AI Match Error:', error);
+    return NextResponse.json({ error: error.message || 'AI request failed' }, { status: 500 });
+  }
 }

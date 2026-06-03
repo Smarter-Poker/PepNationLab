@@ -77,7 +77,7 @@ const STATUS_COLORS: Record<string, string> = {
 
 const IP = { width: 18, height: 18, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const };
 
-type TabKey = 'overview' | 'orders' | 'wallet' | 'tools' | 'messages' | 'favorites' | 'account';
+type TabKey = 'overview' | 'orders' | 'wallet' | 'matches' | 'tools' | 'messages' | 'favorites' | 'account';
 
 const MENU_ITEMS: { id: TabKey; label: string; icon: React.ReactNode }[] = [
   {
@@ -94,6 +94,11 @@ const MENU_ITEMS: { id: TabKey; label: string; icon: React.ReactNode }[] = [
     id: 'wallet',
     label: 'Lab Wallet',
     icon: <svg {...IP}><rect x="2" y="6" width="20" height="13" rx="2"/><path d="M2 10h20"/><path d="M16 14h.01"/></svg>,
+  },
+  {
+    id: 'matches',
+    label: 'Saved Matches',
+    icon: <svg {...IP}><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>,
   },
   {
     id: 'tools',
