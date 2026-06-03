@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { toast } from 'sonner';
 import Pagination from '@/components/Pagination';
 import ViewAsButton from '@/components/ViewAsButton';
+import { useAvailability, availabilityMessage } from '@/lib/useAvailability';
 
 const PAGE_SIZE = 25;
 
@@ -102,6 +103,21 @@ function ResearchersAdminPageInner() {
   // owning agent (parent_agent_id), which the API mandates for researchers.
   const [createRole, setCreateRole] = useState<'agent' | 'researcher'>('agent');
   const [newParentAgentId, setNewParentAgentId] = useState('');
+
+  // Live username availability — fires when the modal is mounted with a typed
+  // username. Mirrors the storefront register form + the agent create-researcher
+  // modal so the operator sees green/red feedback before they press submit.
+  const newUsernameCheck = useAvailability({
+    field: 'username',
+    value: newUsername,
+    minLength: 2,
+    disabled: modalMode !== 'create_agent',
+  });
+  const newUsernameMsg = availabilityMessage(newUsernameCheck);
+  const newUsernameBlocked =
+    newUsernameCheck.status === 'taken' ||
+    newUsernameCheck.status === 'reserved' ||
+    newUsernameCheck.status === 'invalid';
 
   useEffect(() => {
     fetchProfiles();
@@ -759,9 +775,13 @@ function ResearchersAdminPageInner() {
 
             <form onSubmit={createRole === 'researcher' ? handleCreateResearcher : handleCreateAgent}>
               <h4 style={{ fontSize: '0.88rem', color: 'var(--silver)', marginBottom: 'var(--space-4)' }}>Account Credentials</h4>
-              {/* R31: first/last on top row, username + password below. */}
+              {/* R31: first/last on top row, username + password below. The
+                  globals.css rule `.form-group + .form-group { margin-top: var(--space-5); }`
+                  was pushing Last Name ~20px lower than First Name even though
+                  they sit side-by-side in the grid. Override marginTop on both
+                  so the two fields line up. */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-4)', marginBottom: 'var(--space-4)', alignItems: 'start' }}>
-                <div className="form-group">
+                <div className="form-group" style={{ marginTop: 0 }}>
                   <label className="form-label">First Name</label>
                   <input type="text" className="form-input" placeholder="E.g. John" value={newFirstName}
                     onChange={e => {
@@ -776,7 +796,7 @@ function ResearchersAdminPageInner() {
                       setNewSlug(v.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9\-]/g, ''));
                     }} required />
                 </div>
-                <div className="form-group">
+                <div className="form-group" style={{ marginTop: 0 }}>
                   <label className="form-label">Last Name</label>
                   <input type="text" className="form-input" placeholder="E.g. Smith" value={newLastName}
                     onChange={e => {
@@ -790,9 +810,68 @@ function ResearchersAdminPageInner() {
               <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 'var(--space-4)', marginBottom: 'var(--space-4)' }}>
                 <div className="form-group" style={{ marginBottom: 0 }}>
                   <label className="form-label">Username</label>
-                  <input type="text" className="form-input" placeholder="E.g. midway" value={newUsername}
+                  <input
+                    type="text"
+                    className="form-input"
+                    placeholder="E.g. midway"
+                    value={newUsername}
                     onChange={e => setNewUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))}
-                    required autoCapitalize="none" spellCheck={false} />
+                    required
+                    autoCapitalize="none"
+                    spellCheck={false}
+                    aria-invalid={newUsernameBlocked || undefined}
+                    aria-describedby="admin-cr-username-status"
+                    style={{
+                      borderColor: newUsernameCheck.status === 'available'
+                        ? '#34D399'
+                        : newUsernameBlocked
+                          ? '#FC8181'
+                          : undefined,
+                    }}
+                  />
+                  {newUsernameMsg && (
+                    <div
+                      id="admin-cr-username-status"
+                      role="status"
+                      aria-live="polite"
+                      style={{
+                        marginTop: 6,
+                        fontSize: '0.78rem',
+                        color: newUsernameMsg.color,
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 6,
+                        lineHeight: 1.3,
+                      }}
+                    >
+                      {newUsernameMsg.tone === 'success' && (
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={newUsernameMsg.color} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                          <polyline points="20 6 9 17 4 12" />
+                        </svg>
+                      )}
+                      {newUsernameMsg.tone === 'error' && (
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={newUsernameMsg.color} strokeWidth="3" strokeLinecap="round" aria-hidden>
+                          <line x1="18" y1="6" x2="6" y2="18" />
+                          <line x1="6" y1="6" x2="18" y2="18" />
+                        </svg>
+                      )}
+                      {newUsernameMsg.tone === 'warn' && (
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={newUsernameMsg.color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                          <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                          <line x1="12" y1="9" x2="12" y2="13" />
+                          <circle cx="12" cy="17" r="0.5" />
+                        </svg>
+                      )}
+                      {newUsernameMsg.tone === 'info' && (
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={newUsernameMsg.color} strokeWidth="2" strokeLinecap="round" aria-hidden>
+                          <circle cx="12" cy="12" r="9" />
+                          <line x1="12" y1="7" x2="12" y2="13" />
+                          <circle cx="12" cy="17" r="0.5" />
+                        </svg>
+                      )}
+                      <span>{newUsernameMsg.text}</span>
+                    </div>
+                  )}
                 </div>
               </div>
               <div className="form-group" style={{ marginBottom: 'var(--space-5)' }}>
@@ -890,10 +969,18 @@ function ResearchersAdminPageInner() {
 
               <div style={{ position: 'sticky', bottom: 0, display: 'flex', justifyContent: 'flex-end', gap: 'var(--space-3)', paddingTop: 'var(--space-4)', paddingBottom: 'var(--space-2)', marginTop: 'var(--space-2)', background: 'var(--surface-1, #0F1923)', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
                 <button type="button" className="btn-silver" onClick={closeModal} disabled={submitting}>Cancel</button>
-                <button type="submit" className="btn-neon-cyan" disabled={submitting}>
+                <button
+                  type="submit"
+                  className="btn-neon-cyan"
+                  disabled={submitting || newUsernameBlocked || newUsernameCheck.status === 'checking'}
+                >
                   {submitting
                     ? (createRole === 'researcher' ? 'Creating Researcher...' : 'Creating Agent...')
-                    : (createRole === 'researcher' ? 'Create Researcher Account' : 'Create Agent Account')}
+                    : newUsernameBlocked
+                      ? 'Pick A Different Username'
+                      : newUsernameCheck.status === 'checking'
+                        ? 'Checking Username…'
+                        : (createRole === 'researcher' ? 'Create Researcher Account' : 'Create Agent Account')}
                 </button>
               </div>
             </form>
