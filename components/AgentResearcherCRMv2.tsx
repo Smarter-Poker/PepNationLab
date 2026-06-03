@@ -1,55 +1,69 @@
 'use client';
 
 /**
- * AgentResearcherCRMv2 — Premium Rebuild
+ * AgentResearcherCRMv2 — Full Premium Build
  *
- * Same API wiring (/api/agent/researchers/v2 + /api/agent/researchers/insights),
- * completely rebuilt UI to match the metal-frame premium aesthetic of the platform.
- *
- * Fixes: NaN display bugs, truncated KPI labels, dense cramped layout.
- * Upgrade: Metal-framed KPI cards, premium researcher rows, clean typography.
+ * Changes in this version:
+ *  - Props: onResetPassword, onPromote, onToggleAutoApprove, isSuperAgent
+ *  - Inline goal input (no window.prompt)
+ *  - Inline tag input chip (no window.prompt)
+ *  - Auto-approve toggle in expanded row (regression fix)
+ *  - Reset Password + Promote To Agent in expanded row
+ *  - Onboarding score badge per researcher
+ *  - Last Login column visible in table
+ *  - Sort by Last Login option
+ *  - Inline note field (saves to /api/agent/researchers/notes)
+ *  - Clickable KPI tile affordance (arrow indicator)
+ *  - "Message All Never Logged In" bulk nudge
+ *  - Full mobile-first layout
  */
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import {
   Pin, PinOff, MessageSquare, Tag as TagIcon, Search, Download,
   AlertTriangle, TrendingUp, TrendingDown, CircleAlert, Sparkles,
   Target, Flame, X, ChevronDown, ChevronUp, Mail, Activity as ActivityIcon,
   Table as TableIcon, LayoutGrid, BarChart3, GitBranch, Printer, Bell,
+  CheckCircle2, UserCheck, ArrowUpRight, StickyNote, Shield, RefreshCw,
 } from 'lucide-react';
 import {
   KanbanView, ChartsView, AcquisitionView, useInsights,
   type KanbanResearcher,
 } from './researcher-crm/views';
 
-/* ── Types ─────────────────────────────────────────────────────────────── */
+/* ─────────────────────────────────────────────────────────────────────────────
+   Types
+───────────────────────────────────────────────────────────────────────────── */
 
 type Status = 'lead' | 'new' | 'first_order' | 'active' | 'vip' | 'at_risk' | 'churned';
 
 interface Researcher {
   id: string; full_name: string | null; username: string | null;
-  email: string | null; phone: string | null; joined_at: string;
-  last_login: string | null; orders_count: number; lifetime_value: number;
+  email: string | null; phone: string | null;
+  joined_at: string; // mapped from created_at in payload
+  last_login: string | null; last_sign_in_at?: string | null;
+  orders_count: number; lifetime_value: number;
   last_order_at: string | null; status: Status; churn_risk: number;
-  sparkline: number[]; tags: { id: string; tag: string; color: string | null }[];
+  sparkline: number[];
+  tags: { id: string; tag: string; color: string | null }[];
   is_pinned: boolean; last_contacted_at: string | null;
   acquisition_source: string | null; has_open_reminder: boolean;
+  auto_approve_orders?: boolean;
+  note?: string; note_updated_at?: string | null;
+  reminders?: { id: string; title: string; remind_at: string }[];
 }
 
 interface Kpi { value: number; spark: number[]; delta_pct: number; label?: string; }
-
 interface Insight {
   id: string; kind: 'at_risk' | 'repeat_rate' | 'commission' | 'no_growth' | 'goal';
   title: string; body: string;
   action?: { label: string; filter?: string; href?: string };
 }
-
 interface ActivityItem {
   id: string; kind: 'order' | 'signup' | 'login' | 'note' | 'message';
   researcher_id: string; researcher_name: string; at: string; meta?: string;
 }
-
 interface Payload {
   researchers: Researcher[];
   kpis: {
@@ -59,174 +73,157 @@ interface Payload {
     lifetime_commission: Kpi;
   };
   insights: Insight[]; activity: ActivityItem[];
-  goal: { target_count: number; achieved_count: number; progress_pct: number; streak_months: number; };
+  goal: { target_count: number | null; achieved_count: number; progress_pct: number | null; streak_months: number; };
   kanban_counts: Record<Status, number>;
   source_counts: { source: string; count: number }[];
   storefront_slug: string | null;
 }
 
 type FilterKey = 'all' | 'vip' | 'at_risk' | 'new' | 'inactive' | 'pinned' | 'with_reminder';
-type SortKey = 'name' | 'ltv' | 'orders' | 'last' | 'joined' | 'risk';
+type SortKey = 'name' | 'ltv' | 'orders' | 'last' | 'joined' | 'risk' | 'login';
 type TabKey = 'list' | 'kanban' | 'charts' | 'acquisition';
 
-/* ── Status styles ──────────────────────────────────────────────────────── */
+export interface CRMExternalProps {
+  isSuperAgent?: boolean;
+  onResetPassword?: (r: { id: string; name: string; username: string }) => void;
+  onPromote?: (r: { id: string; full_name: string | null; username: string | null; email: string | null; created_at: string; auto_approve_orders?: boolean; }) => void;
+  onToggleAutoApprove?: (researcherId: string, currentStatus: boolean) => void;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   Status config
+───────────────────────────────────────────────────────────────────────────── */
 
 const STATUS_STYLES: Record<Status, { label: string; bg: string; fg: string; border: string }> = {
-  lead:         { label: 'Lead',        bg: 'rgba(168,180,192,0.10)', fg: '#A8B4C0', border: 'rgba(168,180,192,0.40)' },
-  new:          { label: 'New',         bg: 'rgba(96,165,250,0.12)',  fg: '#60A5FA', border: 'rgba(96,165,250,0.45)' },
-  first_order:  { label: 'First Order', bg: 'rgba(45,212,191,0.12)',  fg: '#2DD4BF', border: 'rgba(45,212,191,0.45)' },
-  active:       { label: 'Active',      bg: 'rgba(0,196,188,0.12)',   fg: '#00C4BC', border: 'rgba(0,196,188,0.45)' },
-  vip:          { label: 'VIP',         bg: 'rgba(250,204,21,0.14)',  fg: '#FACC15', border: 'rgba(250,204,21,0.55)' },
-  at_risk:      { label: 'At Risk',     bg: 'rgba(245,158,11,0.14)',  fg: '#F59E0B', border: 'rgba(245,158,11,0.50)' },
-  churned:      { label: 'Churned',     bg: 'rgba(239,68,68,0.14)',   fg: '#EF4444', border: 'rgba(239,68,68,0.50)' },
+  lead:        { label: 'Lead',        bg: 'rgba(168,180,192,0.10)', fg: '#A8B4C0', border: 'rgba(168,180,192,0.40)' },
+  new:         { label: 'New',         bg: 'rgba(96,165,250,0.12)',  fg: '#60A5FA', border: 'rgba(96,165,250,0.45)' },
+  first_order: { label: 'First Order', bg: 'rgba(45,212,191,0.12)',  fg: '#2DD4BF', border: 'rgba(45,212,191,0.45)' },
+  active:      { label: 'Active',      bg: 'rgba(0,196,188,0.12)',   fg: '#00C4BC', border: 'rgba(0,196,188,0.45)' },
+  vip:         { label: 'VIP ★',       bg: 'rgba(250,204,21,0.14)',  fg: '#FACC15', border: 'rgba(250,204,21,0.55)' },
+  at_risk:     { label: 'At Risk',     bg: 'rgba(245,158,11,0.14)',  fg: '#F59E0B', border: 'rgba(245,158,11,0.50)' },
+  churned:     { label: 'Churned',     bg: 'rgba(239,68,68,0.14)',   fg: '#EF4444', border: 'rgba(239,68,68,0.50)' },
 };
 
-/* ── Formatters ─────────────────────────────────────────────────────────── */
+/* ─────────────────────────────────────────────────────────────────────────────
+   Formatters
+───────────────────────────────────────────────────────────────────────────── */
 
 function safe(n: unknown): number {
   const v = Number(n);
   return Number.isFinite(v) ? v : 0;
 }
-
-function fmtUSD(n: unknown): string {
+function fmtUSD(n: unknown) {
   return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(safe(n));
 }
-
-function fmtInt(n: unknown): string {
-  return new Intl.NumberFormat('en-US').format(safe(n));
-}
-
-function fmtPct(n: unknown): string {
-  const v = safe(n);
-  return `${v >= 0 ? '+' : ''}${v.toFixed(1)}%`;
-}
-
+function fmtInt(n: unknown) { return new Intl.NumberFormat('en-US').format(safe(n)); }
+function fmtPct(n: unknown) { const v = safe(n); return `${v >= 0 ? '+' : ''}${v.toFixed(1)}%`; }
 function daysAgo(iso: string | null | undefined): string {
   if (!iso) return 'Never';
   const ms = Date.now() - new Date(iso).getTime();
   const d = Math.floor(ms / 86400000);
   if (d <= 0) return 'Today';
   if (d === 1) return 'Yesterday';
-  if (d < 30) return `${d}d Ago`;
+  if (d < 7)  return `${d}d Ago`;
+  if (d < 30) return `${Math.floor(d / 7)}w Ago`;
   const m = Math.floor(d / 30);
   if (m < 12) return `${m}mo Ago`;
   return `${Math.floor(d / 365)}y Ago`;
 }
 
-/* ── Micro-components ───────────────────────────────────────────────────── */
+/* ─────────────────────────────────────────────────────────────────────────────
+   Onboarding score
+───────────────────────────────────────────────────────────────────────────── */
+
+function onboardScore(r: Researcher): { score: number; label: string; color: string } {
+  let score = 0;
+  if (r.full_name) score += 25;
+  if (r.username) score += 25;
+  const hasLogin = !!(r.last_login ?? r.last_sign_in_at);
+  if (hasLogin) score += 25;
+  if (r.orders_count > 0) score += 25;
+  const color = score === 100 ? '#00C4BC' : score >= 50 ? '#F59E0B' : '#EF4444';
+  const label = score === 100 ? 'Complete' : score >= 75 ? 'Almost' : score >= 50 ? 'Partial' : 'New';
+  return { score, label, color };
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   Micro-components
+───────────────────────────────────────────────────────────────────────────── */
 
 function Sparkline({ data, color = '#00C4BC' }: { data: number[]; color?: string }) {
-  if (!data || data.length === 0) return null;
-  const max = Math.max(...data, 1);
-  const min = Math.min(...data, 0);
-  const range = max - min || 1;
-  const points = data.map((d, i) => {
-    const x = (i / Math.max(data.length - 1, 1)) * 60;
-    const y = 20 - ((d - min) / range) * 18 - 1;
-    return `${x.toFixed(1)},${y.toFixed(1)}`;
-  }).join(' ');
-  const area = `0,20 ${points} 60,20`;
+  if (!data || data.length === 0) return <span style={{ display: 'inline-block', width: 60, height: 20 }} />;
+  const max = Math.max(...data, 1), min = Math.min(...data, 0), range = max - min || 1;
+  const pts = data.map((d, i) => `${((i / Math.max(data.length - 1, 1)) * 60).toFixed(1)},${(20 - ((d - min) / range) * 18 - 1).toFixed(1)}`).join(' ');
   return (
-    <svg viewBox="0 0 60 20" width="60" height="20" style={{ overflow: 'visible' }} aria-hidden>
-      <polygon points={area} fill={color} opacity="0.12" />
-      <polyline points={points} fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+    <svg viewBox="0 0 60 20" width="60" height="20" style={{ overflow: 'visible', flexShrink: 0 }} aria-hidden>
+      <polygon points={`0,20 ${pts} 60,20`} fill={color} opacity="0.12" />
+      <polyline points={pts} fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
 }
 
 function DeltaPill({ pct }: { pct: number }) {
-  const v = safe(pct);
-  const positive = v >= 0;
-  const color = positive ? '#2DD4BF' : '#EF4444';
-  const Icon = positive ? TrendingUp : TrendingDown;
+  const v = safe(pct); const pos = v >= 0; const color = pos ? '#2DD4BF' : '#EF4444';
+  const Icon = pos ? TrendingUp : TrendingDown;
   return (
-    <span style={{
-      display: 'inline-flex', alignItems: 'center', gap: 3,
-      fontSize: '0.65rem', fontWeight: 700, color,
-      background: `${color}1a`, border: `1px solid ${color}55`,
-      borderRadius: 999, padding: '1px 6px',
-    }}>
-      <Icon size={10} aria-hidden />
-      {fmtPct(v)}
+    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 2, fontSize: '0.63rem', fontWeight: 700, color, background: `${color}1a`, border: `1px solid ${color}44`, borderRadius: 999, padding: '1px 5px', flexShrink: 0 }}>
+      <Icon size={9} aria-hidden />{fmtPct(v)}
     </span>
   );
 }
 
 function StatusBadge({ status }: { status: Status }) {
   const s = STATUS_STYLES[status] ?? STATUS_STYLES.lead;
-  return (
-    <span style={{
-      display: 'inline-flex', alignItems: 'center', fontSize: '0.66rem',
-      fontWeight: 800, letterSpacing: '0.03em', color: s.fg,
-      background: s.bg, border: `1px solid ${s.border}`,
-      borderRadius: 999, padding: '3px 10px', textTransform: 'uppercase', whiteSpace: 'nowrap',
-    }}>
-      {s.label}
-    </span>
-  );
+  return <span style={{ display: 'inline-flex', alignItems: 'center', fontSize: '0.64rem', fontWeight: 800, letterSpacing: '0.03em', color: s.fg, background: s.bg, border: `1px solid ${s.border}`, borderRadius: 999, padding: '3px 9px', textTransform: 'uppercase', whiteSpace: 'nowrap' }}>{s.label}</span>;
 }
 
-function ChurnRiskBar({ risk }: { risk: number }) {
+function ChurnBar({ risk }: { risk: number }) {
   const pct = Math.max(0, Math.min(100, Math.round(safe(risk))));
   const color = pct >= 70 ? '#EF4444' : pct >= 40 ? '#F59E0B' : '#2DD4BF';
   return (
-    <div title={`Churn Risk ${pct}%`} style={{
-      width: '100%', height: 5, background: 'rgba(255,255,255,0.08)',
-      borderRadius: 999, overflow: 'hidden',
-    }}>
+    <div title={`Churn Risk ${pct}%`} style={{ width: '100%', height: 4, background: 'rgba(255,255,255,0.08)', borderRadius: 999, overflow: 'hidden' }}>
       <div style={{ width: `${pct}%`, height: '100%', background: color, transition: 'width 250ms ease' }} />
     </div>
   );
 }
 
-/* ── KPI Card ───────────────────────────────────────────────────────────── */
+function ToggleSwitch({ checked, onChange, disabled, id }: { checked: boolean; onChange: () => void; disabled?: boolean; id: string }) {
+  return (
+    <label htmlFor={id} style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', cursor: disabled ? 'not-allowed' : 'pointer', gap: 8 }}>
+      <input id={id} type="checkbox" checked={checked} onChange={onChange} disabled={disabled} style={{ position: 'absolute', opacity: 0, width: 0, height: 0 }} />
+      <span style={{ position: 'relative', display: 'inline-block', width: 38, height: 22, background: checked ? '#00C4BC' : 'rgba(255,255,255,0.12)', borderRadius: 11, transition: 'background 0.25s', opacity: disabled ? 0.5 : 1 }}>
+        <span style={{ position: 'absolute', top: 3, left: checked ? 19 : 3, width: 16, height: 16, background: '#fff', borderRadius: '50%', transition: 'left 0.2s', boxShadow: '0 1px 4px rgba(0,0,0,0.3)' }} />
+      </span>
+    </label>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   KPI Card
+───────────────────────────────────────────────────────────────────────────── */
 
 function KpiCard({ label, value, spark, delta, color = '#00C4BC', onClick, subtitle }: {
   label: string; value: string; spark: number[]; delta: number;
   color?: string; onClick?: () => void; subtitle?: string;
 }) {
+  const clickable = !!onClick;
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      disabled={!onClick}
-      style={{
-        textAlign: 'left', padding: '16px', borderRadius: 16, cursor: onClick ? 'pointer' : 'default',
-        background: 'linear-gradient(160deg, rgba(26,36,54,0.98) 0%, rgba(15,22,36,0.98) 100%)',
-        border: '1px solid rgba(255,255,255,0.08)',
-        boxShadow: '0 2px 12px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.05)',
-        display: 'flex', flexDirection: 'column', gap: 10, minHeight: 108, minWidth: 0,
-        transition: 'border-color 0.2s, box-shadow 0.2s',
-      }}
-      onMouseEnter={e => {
-        if (onClick) {
-          e.currentTarget.style.borderColor = `${color}55`;
-          e.currentTarget.style.boxShadow = `0 4px 20px rgba(0,0,0,0.4), 0 0 0 1px ${color}22`;
-        }
-      }}
-      onMouseLeave={e => {
-        e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)';
-        e.currentTarget.style.boxShadow = '0 2px 12px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.05)';
-      }}
+    <button type="button" onClick={onClick} disabled={!clickable}
+      style={{ textAlign: 'left', padding: '14px 16px', borderRadius: 14, cursor: clickable ? 'pointer' : 'default', background: 'linear-gradient(160deg, rgba(24,34,52,0.98) 0%, rgba(14,20,34,0.98) 100%)', border: `1px solid ${clickable ? 'rgba(255,255,255,0.10)' : 'rgba(255,255,255,0.06)'}`, boxShadow: '0 2px 12px rgba(0,0,0,0.35)', display: 'flex', flexDirection: 'column', gap: 10, minHeight: 104, minWidth: 0, transition: 'border-color 0.2s, box-shadow 0.2s, transform 0.15s' }}
+      onMouseEnter={e => { if (clickable) { e.currentTarget.style.borderColor = `${color}66`; e.currentTarget.style.boxShadow = `0 6px 24px rgba(0,0,0,0.4), 0 0 0 1px ${color}22`; e.currentTarget.style.transform = 'translateY(-1px)'; } }}
+      onMouseLeave={e => { e.currentTarget.style.borderColor = clickable ? 'rgba(255,255,255,0.10)' : 'rgba(255,255,255,0.06)'; e.currentTarget.style.boxShadow = '0 2px 12px rgba(0,0,0,0.35)'; e.currentTarget.style.transform = 'translateY(0)'; }}
     >
-      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8 }}>
-        <span style={{
-          fontSize: '0.72rem', fontWeight: 700, color: '#8A9BB0',
-          letterSpacing: '0.04em', textTransform: 'uppercase', lineHeight: 1.3,
-        }}>
-          {label}
-        </span>
-        <DeltaPill pct={delta} />
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 6 }}>
+        <span style={{ fontSize: '0.7rem', fontWeight: 700, color: '#7A8B9E', letterSpacing: '0.04em', textTransform: 'uppercase', lineHeight: 1.35 }}>{label}</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }}>
+          <DeltaPill pct={delta} />
+          {clickable && <ArrowUpRight size={11} color={color} aria-hidden style={{ flexShrink: 0 }} />}
+        </div>
       </div>
       <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 8 }}>
-        <div>
-          <span style={{
-            fontSize: '1.5rem', fontWeight: 800, color: '#FFFFFF', lineHeight: 1.05,
-            letterSpacing: '-0.02em',
-          }}>
-            {value}
-          </span>
-          {subtitle && <div style={{ fontSize: '0.7rem', color, marginTop: 2, fontWeight: 600 }}>{subtitle}</div>}
+        <div style={{ minWidth: 0 }}>
+          <span style={{ fontSize: '1.45rem', fontWeight: 800, color: '#FFFFFF', letterSpacing: '-0.02em', lineHeight: 1.05, display: 'block' }}>{value}</span>
+          {subtitle && <span style={{ fontSize: '0.68rem', color, marginTop: 2, display: 'block', fontWeight: 600 }}>{subtitle}</span>}
         </div>
         <Sparkline data={spark} color={color} />
       </div>
@@ -234,201 +231,257 @@ function KpiCard({ label, value, spark, delta, color = '#00C4BC', onClick, subti
   );
 }
 
-/* ── Goal header ────────────────────────────────────────────────────────── */
+/* ─────────────────────────────────────────────────────────────────────────────
+   Goal header (inline input, no prompt)
+───────────────────────────────────────────────────────────────────────────── */
 
-function GoalHeader({ goal, onSetGoal }: { goal: Payload['goal']; onSetGoal: () => void }) {
+function GoalHeader({ goal, onSetGoal }: {
+  goal: Payload['goal'];
+  onSetGoal: (target: number) => Promise<void>;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [val, setVal] = useState(String(goal.target_count ?? ''));
+  const [saving, setSaving] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
   const pct = Math.max(0, Math.min(100, Math.round(safe(goal.progress_pct))));
+
+  const handleSave = async () => {
+    const n = parseInt(val, 10);
+    if (!Number.isFinite(n) || n < 0) { toast.error('Enter a whole number'); return; }
+    setSaving(true);
+    await onSetGoal(n);
+    setSaving(false);
+    setEditing(false);
+  };
+
+  useEffect(() => { if (editing) inputRef.current?.focus(); }, [editing]);
+
   return (
-    <div style={{
-      padding: '16px 20px', borderRadius: 16,
-      background: 'linear-gradient(135deg, rgba(0,196,188,0.08) 0%, rgba(0,196,188,0.02) 100%)',
-      border: '1px solid rgba(0,196,188,0.25)',
-      display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 14,
-    }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12, flex: 1, minWidth: 0 }}>
-        <div style={{
-          width: 38, height: 38, borderRadius: 10, background: 'rgba(0,196,188,0.12)',
-          border: '1px solid rgba(0,196,188,0.30)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-        }}>
-          <Target size={18} color="#00C4BC" aria-hidden />
+    <div style={{ padding: '16px 20px', borderRadius: 16, background: 'linear-gradient(135deg, rgba(0,196,188,0.07) 0%, rgba(0,196,188,0.02) 100%)', border: '1px solid rgba(0,196,188,0.22)', display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 14 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, flex: '1 1 200px', minWidth: 0 }}>
+        <div style={{ width: 38, height: 38, borderRadius: 10, background: 'rgba(0,196,188,0.12)', border: '1px solid rgba(0,196,188,0.28)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+          <Target size={17} color="#00C4BC" aria-hidden />
         </div>
-        <div>
-          <div style={{ fontSize: '0.72rem', color: '#8A9BB0', fontWeight: 600, letterSpacing: '0.04em', textTransform: 'uppercase' }}>This Month's Goal</div>
-          <div style={{ fontSize: '1.1rem', color: '#FFFFFF', fontWeight: 800, marginTop: 2 }}>
-            {fmtInt(goal.achieved_count)} <span style={{ color: '#8A9BB0', fontWeight: 400 }}>of</span> {fmtInt(goal.target_count || 0)} New Researchers
+        <div style={{ minWidth: 0 }}>
+          <div style={{ fontSize: '0.69rem', color: '#7A8B9E', fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase' }}>This Month's Goal</div>
+          <div style={{ fontSize: '1.05rem', color: '#FFFFFF', fontWeight: 800, marginTop: 2 }}>
+            {fmtInt(goal.achieved_count)} <span style={{ color: '#7A8B9E', fontWeight: 400 }}>of</span> {goal.target_count != null ? fmtInt(goal.target_count) : '—'} New Researchers
           </div>
         </div>
       </div>
-      <div style={{ flex: 1, minWidth: 180, maxWidth: 380 }}>
+      <div style={{ flex: '1 1 200px', minWidth: 160, maxWidth: 360 }}>
         <div style={{ position: 'relative', height: 8, background: 'rgba(255,255,255,0.06)', borderRadius: 999, overflow: 'hidden' }}>
-          <div style={{
-            position: 'absolute', inset: 0, width: `${pct}%`,
-            background: 'linear-gradient(90deg, #00C4BC 0%, #2DD4BF 100%)',
-            transition: 'width 400ms ease', borderRadius: 999,
-          }} />
+          <div style={{ position: 'absolute', inset: 0, width: `${pct}%`, background: 'linear-gradient(90deg, #00C4BC 0%, #2DD4BF 100%)', transition: 'width 400ms ease', borderRadius: 999 }} />
         </div>
-        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 6, fontSize: '0.7rem', color: '#8A9BB0' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 5, fontSize: '0.69rem', color: '#7A8B9E' }}>
           <span>{pct}% Complete</span>
-          {goal.streak_months > 0 && (
-            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, color: '#F59E0B', fontWeight: 700 }}>
-              <Flame size={11} aria-hidden /> {goal.streak_months} Month Streak
-            </span>
-          )}
+          {goal.streak_months > 0 && <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, color: '#F59E0B', fontWeight: 700 }}><Flame size={11} aria-hidden /> {goal.streak_months}mo Streak</span>}
         </div>
       </div>
-      <button
-        type="button"
-        onClick={onSetGoal}
-        style={{
-          padding: '8px 16px', borderRadius: 10, background: 'rgba(0,196,188,0.10)',
-          border: '1px solid rgba(0,196,188,0.35)', color: '#00C4BC',
-          fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap',
-          transition: 'background 0.2s',
-        }}
-        onMouseEnter={e => { e.currentTarget.style.background = 'rgba(0,196,188,0.20)'; }}
-        onMouseLeave={e => { e.currentTarget.style.background = 'rgba(0,196,188,0.10)'; }}
-      >
-        Set Goal
-      </button>
+      {editing ? (
+        <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexShrink: 0 }}>
+          <input ref={inputRef} type="number" min="0" value={val} onChange={e => setVal(e.target.value)}
+            onKeyDown={e => { if (e.key === 'Enter') void handleSave(); if (e.key === 'Escape') setEditing(false); }}
+            style={{ width: 80, padding: '7px 10px', borderRadius: 8, background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(0,196,188,0.40)', color: '#FFFFFF', fontSize: '0.82rem', outline: 'none' }}
+            placeholder="Target" />
+          <button type="button" onClick={() => void handleSave()} disabled={saving}
+            style={{ padding: '7px 12px', borderRadius: 8, background: 'rgba(0,196,188,0.16)', border: '1px solid rgba(0,196,188,0.40)', color: '#00C4BC', fontSize: '0.74rem', fontWeight: 700, cursor: saving ? 'not-allowed' : 'pointer' }}>
+            {saving ? '...' : 'Save'}
+          </button>
+          <button type="button" onClick={() => setEditing(false)} style={{ padding: '7px 8px', borderRadius: 8, background: 'transparent', border: '1px solid rgba(255,255,255,0.10)', color: '#7A8B9E', fontSize: '0.74rem', cursor: 'pointer' }}>
+            <X size={13} />
+          </button>
+        </div>
+      ) : (
+        <button type="button" onClick={() => { setVal(String(goal.target_count ?? '')); setEditing(true); }}
+          style={{ padding: '8px 16px', borderRadius: 10, background: 'rgba(0,196,188,0.08)', border: '1px solid rgba(0,196,188,0.30)', color: '#00C4BC', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap', transition: 'background 0.15s', flexShrink: 0 }}
+          onMouseEnter={e => { e.currentTarget.style.background = 'rgba(0,196,188,0.18)'; }}
+          onMouseLeave={e => { e.currentTarget.style.background = 'rgba(0,196,188,0.08)'; }}>
+          {goal.target_count != null ? 'Edit Goal' : 'Set Goal'}
+        </button>
+      )}
     </div>
   );
 }
 
-/* ── Filter chip ────────────────────────────────────────────────────────── */
+/* ─────────────────────────────────────────────────────────────────────────────
+   Filter chip + Tab button
+───────────────────────────────────────────────────────────────────────────── */
 
-function FilterChip({ active, onClick, children, count }: {
-  active: boolean; onClick: () => void; children: React.ReactNode; count?: number;
-}) {
+function FilterChip({ active, onClick, children, count }: { active: boolean; onClick: () => void; children: React.ReactNode; count?: number }) {
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      style={{
-        padding: '6px 14px', borderRadius: 999,
-        background: active ? 'rgba(0,196,188,0.15)' : 'rgba(255,255,255,0.04)',
-        border: `1px solid ${active ? 'rgba(0,196,188,0.50)' : 'rgba(255,255,255,0.10)'}`,
-        color: active ? '#00C4BC' : '#C0B8A8',
-        fontSize: '0.74rem', fontWeight: 700, cursor: 'pointer',
-        display: 'inline-flex', alignItems: 'center', gap: 6, whiteSpace: 'nowrap',
-        transition: 'all 0.15s',
-      }}
-    >
+    <button type="button" onClick={onClick} style={{ padding: '6px 13px', borderRadius: 999, background: active ? 'rgba(0,196,188,0.15)' : 'rgba(255,255,255,0.04)', border: `1px solid ${active ? 'rgba(0,196,188,0.48)' : 'rgba(255,255,255,0.09)'}`, color: active ? '#00C4BC' : '#B0B8C4', fontSize: '0.73rem', fontWeight: 700, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 5, whiteSpace: 'nowrap', transition: 'all 0.15s' }}>
       {children}
-      {count !== undefined && (
-        <span style={{
-          background: active ? 'rgba(0,196,188,0.25)' : 'rgba(255,255,255,0.08)',
-          padding: '0 7px', borderRadius: 999, fontSize: '0.66rem', fontWeight: 800,
-        }}>
-          {fmtInt(count)}
-        </span>
-      )}
+      {count !== undefined && <span style={{ background: active ? 'rgba(0,196,188,0.25)' : 'rgba(255,255,255,0.08)', padding: '0 6px', borderRadius: 999, fontSize: '0.64rem', fontWeight: 800 }}>{fmtInt(count)}</span>}
     </button>
   );
 }
 
-/* ── Tab button ─────────────────────────────────────────────────────────── */
-
-function TabButton({ active, onClick, icon, label }: {
-  active: boolean; onClick: () => void; icon: React.ReactNode; label: string;
-}) {
+function TabBtn({ active, onClick, icon, label }: { active: boolean; onClick: () => void; icon: React.ReactNode; label: string }) {
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      style={{
-        display: 'inline-flex', alignItems: 'center', gap: 6,
-        padding: '9px 16px', borderRadius: 10,
-        background: active ? 'rgba(0,196,188,0.15)' : 'transparent',
-        border: `1px solid ${active ? 'rgba(0,196,188,0.40)' : 'rgba(255,255,255,0.06)'}`,
-        color: active ? '#00C4BC' : '#C0B8A8',
-        fontSize: '0.8rem', fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap',
-        transition: 'all 0.15s',
-      }}
-    >
+    <button type="button" onClick={onClick} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '9px 15px', borderRadius: 10, background: active ? 'rgba(0,196,188,0.14)' : 'transparent', border: `1px solid ${active ? 'rgba(0,196,188,0.38)' : 'rgba(255,255,255,0.05)'}`, color: active ? '#00C4BC' : '#B0B8C4', fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap', transition: 'all 0.15s' }}>
       {icon}{label}
     </button>
   );
 }
 
-/* ── Researcher row card ─────────────────────────────────────────────────── */
+/* ─────────────────────────────────────────────────────────────────────────────
+   Inline tag input
+───────────────────────────────────────────────────────────────────────────── */
 
-function ResearcherRow({ r, expanded, onExpand, onMessage, onAddTag, onRemoveTag, onAddReminder, onTogglePin }: {
-  r: Researcher; expanded: boolean;
-  onExpand: () => void;
+function InlineTagInput({ onAdd, onCancel }: { onAdd: (tag: string) => Promise<void>; onCancel: () => void }) {
+  const [val, setVal] = useState('');
+  const [saving, setSaving] = useState(false);
+  const ref = useRef<HTMLInputElement>(null);
+  useEffect(() => { ref.current?.focus(); }, []);
+  const submit = async () => {
+    const t = val.trim().slice(0, 32);
+    if (!t) return;
+    setSaving(true);
+    await onAdd(t);
+    setSaving(false);
+  };
+  return (
+    <div style={{ display: 'flex', gap: 5, alignItems: 'center', marginTop: 6 }}>
+      <input ref={ref} value={val} onChange={e => setVal(e.target.value)}
+        onKeyDown={e => { if (e.key === 'Enter') void submit(); if (e.key === 'Escape') onCancel(); }}
+        placeholder="e.g. VIP" maxLength={32}
+        style={{ flex: 1, padding: '6px 10px', borderRadius: 8, background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(0,196,188,0.35)', color: '#FFFFFF', fontSize: '0.78rem', outline: 'none', minWidth: 0 }} />
+      <button type="button" onClick={() => void submit()} disabled={saving || !val.trim()}
+        style={{ padding: '6px 11px', borderRadius: 8, background: 'rgba(0,196,188,0.14)', border: '1px solid rgba(0,196,188,0.38)', color: '#00C4BC', fontSize: '0.74rem', fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap' }}>
+        {saving ? '...' : 'Add'}
+      </button>
+      <button type="button" onClick={onCancel} style={{ padding: '6px 8px', borderRadius: 8, background: 'transparent', border: '1px solid rgba(255,255,255,0.10)', color: '#7A8B9E', cursor: 'pointer' }}><X size={12} /></button>
+    </div>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   Inline note editor
+───────────────────────────────────────────────────────────────────────────── */
+
+function NoteEditor({ researcherId, initialNote, onSave }: { researcherId: string; initialNote: string; onSave: (note: string) => void }) {
+  const [val, setVal] = useState(initialNote);
+  const [saving, setSaving] = useState(false);
+  const [dirty, setDirty] = useState(false);
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      const res = await fetch('/api/agent/researchers/notes', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ researcherId, note: val }),
+      });
+      if (!res.ok) throw new Error('Failed');
+      onSave(val);
+      setDirty(false);
+      toast.success('Note Saved');
+    } catch {
+      toast.error('Could Not Save Note');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.66rem', color: '#7A8B9E', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+        <StickyNote size={11} /> Private Note
+      </div>
+      <textarea value={val} rows={3}
+        onChange={e => { setVal(e.target.value); setDirty(true); }}
+        placeholder="Add a private note about this researcher..."
+        style={{ resize: 'vertical', padding: '9px 12px', borderRadius: 8, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.10)', color: '#E6EEF6', fontSize: '0.78rem', outline: 'none', lineHeight: 1.5, fontFamily: 'inherit', width: '100%', boxSizing: 'border-box' }} />
+      {dirty && (
+        <div style={{ display: 'flex', gap: 6 }}>
+          <button type="button" onClick={() => void handleSave()} disabled={saving}
+            style={{ padding: '6px 14px', borderRadius: 8, background: 'rgba(0,196,188,0.14)', border: '1px solid rgba(0,196,188,0.38)', color: '#00C4BC', fontSize: '0.74rem', fontWeight: 700, cursor: saving ? 'not-allowed' : 'pointer' }}>
+            {saving ? 'Saving...' : 'Save Note'}
+          </button>
+          <button type="button" onClick={() => { setVal(initialNote); setDirty(false); }}
+            style={{ padding: '6px 10px', borderRadius: 8, background: 'transparent', border: '1px solid rgba(255,255,255,0.10)', color: '#7A8B9E', fontSize: '0.74rem', cursor: 'pointer' }}>
+            Discard
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   Researcher row (table + expanded detail)
+───────────────────────────────────────────────────────────────────────────── */
+
+function ResearcherRow({ r, expanded, onExpand, onMessage, onAddTag, onRemoveTag, onAddReminder, onTogglePin, isSuperAgent, onResetPassword, onPromote, onToggleAutoApprove, onNoteUpdate }: {
+  r: Researcher; expanded: boolean; onExpand: () => void;
   onMessage: (r: Researcher) => void;
   onAddTag: (r: Researcher) => void;
   onRemoveTag: (r: Researcher, tag: string) => void;
   onAddReminder: (r: Researcher) => void;
   onTogglePin: (r: Researcher) => void;
+  isSuperAgent?: boolean;
+  onResetPassword?: (r: { id: string; name: string; username: string }) => void;
+  onPromote?: (r: Researcher) => void;
+  onToggleAutoApprove?: (id: string, current: boolean) => void;
+  onNoteUpdate: (id: string, note: string) => void;
 }) {
+  const [addingTag, setAddingTag] = useState(false);
   const s = STATUS_STYLES[r.status] ?? STATUS_STYLES.lead;
+  const ob = onboardScore(r);
+  const lastLogin = r.last_login ?? r.last_sign_in_at;
+
   return (
-    <div style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+    <div style={{ borderBottom: '1px solid rgba(255,255,255,0.045)' }}>
+      {/* Main row */}
       <div
-        onClick={onExpand}
-        role="button"
-        tabIndex={0}
+        onClick={onExpand} role="button" tabIndex={0}
         onKeyDown={e => e.key === 'Enter' && onExpand()}
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'minmax(200px,2fr) 100px 90px 130px 110px 130px',
-          alignItems: 'center', gap: 8, padding: '14px 16px',
-          cursor: 'pointer', borderLeft: `3px solid ${s.border}`,
-          transition: 'background 0.15s',
-        }}
-        onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.025)'; }}
+        style={{ display: 'grid', gridTemplateColumns: 'minmax(160px,2fr) 90px 80px 110px 100px 110px', alignItems: 'center', gap: 8, padding: '13px 16px', cursor: 'pointer', borderLeft: `3px solid ${s.border}`, transition: 'background 0.13s' }}
+        onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.022)'; }}
         onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}
+        className="crm-row"
       >
         {/* Name + meta */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 3, minWidth: 0 }}>
-          <span style={{
-            fontWeight: 700, color: '#FFFFFF', fontSize: '0.9rem',
-            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-            display: 'inline-flex', alignItems: 'center', gap: 6,
-          }}>
-            {r.is_pinned && <Pin size={11} color="#FACC15" aria-hidden />}
-            {r.has_open_reminder && <Bell size={11} color="#60A5FA" aria-hidden />}
-            {r.full_name || r.username || r.email || 'Researcher'}
-          </span>
-          <span style={{ fontSize: '0.72rem', color: '#6A7A8A' }}>@{r.username || '—'}</span>
+        <div style={{ minWidth: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 5, flexWrap: 'wrap' }}>
+            <span style={{ fontWeight: 700, color: '#FFFFFF', fontSize: '0.88rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+              {r.is_pinned && <Pin size={10} color="#FACC15" aria-hidden />}
+              {r.has_open_reminder && <Bell size={10} color="#60A5FA" aria-hidden />}
+              {r.full_name || r.username || r.email || 'Researcher'}
+            </span>
+            {/* Onboarding badge */}
+            {ob.score < 100 && (
+              <span style={{ fontSize: '0.6rem', fontWeight: 700, color: ob.color, background: `${ob.color}18`, border: `1px solid ${ob.color}44`, borderRadius: 999, padding: '1px 6px', whiteSpace: 'nowrap' }}>
+                {ob.score}% Ready
+              </span>
+            )}
+          </div>
+          <span style={{ fontSize: '0.7rem', color: '#5A6A7A', display: 'block' }}>@{r.username || '—'}</span>
           {r.tags.length > 0 && (
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginTop: 2 }}>
-              {r.tags.map(t => (
-                <span key={t.id} style={{
-                  fontSize: '0.62rem', padding: '1px 7px', borderRadius: 999,
-                  background: 'rgba(0,196,188,0.10)', border: '1px solid rgba(0,196,188,0.30)',
-                  color: '#00C4BC', fontWeight: 700,
-                }}>{t.tag}</span>
-              ))}
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 3, marginTop: 3 }}>
+              {r.tags.map(t => <span key={t.id} style={{ fontSize: '0.6rem', padding: '1px 6px', borderRadius: 999, background: 'rgba(0,196,188,0.10)', border: '1px solid rgba(0,196,188,0.28)', color: '#00C4BC', fontWeight: 700 }}>{t.tag}</span>)}
             </div>
           )}
         </div>
 
         {/* LTV */}
-        <span style={{ fontWeight: 800, color: '#FFFFFF', fontSize: '0.88rem', textAlign: 'right' }}>
-          {fmtUSD(r.lifetime_value)}
-        </span>
+        <span style={{ fontWeight: 800, color: '#FFFFFF', fontSize: '0.86rem', textAlign: 'right' }}>{fmtUSD(r.lifetime_value)}</span>
 
         {/* Orders */}
-        <span style={{ color: '#C0B8A8', fontSize: '0.82rem', textAlign: 'right' }}>
-          {fmtInt(r.orders_count)}
-        </span>
+        <span style={{ color: '#B0B8C4', fontSize: '0.80rem', textAlign: 'right' }}>{fmtInt(r.orders_count)}</span>
 
-        {/* Last order */}
-        <span style={{ color: '#8A9BB0', fontSize: '0.78rem' }}>
-          {daysAgo(r.last_order_at)}
+        {/* Last Login */}
+        <span style={{ color: lastLogin ? '#B0B8C4' : '#EF4444', fontSize: '0.75rem', fontStyle: lastLogin ? 'normal' : 'italic' }}>
+          {daysAgo(lastLogin)}
         </span>
 
         {/* Status */}
         <StatusBadge status={r.status} />
 
         {/* Actions */}
-        <div
-          style={{ display: 'flex', justifyContent: 'flex-end', gap: 4 }}
-          onClick={e => e.stopPropagation()}
-        >
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 3 }} onClick={e => e.stopPropagation()}>
           <button type="button" onClick={() => onMessage(r)} title="Message" className="crm-icon-btn"><MessageSquare size={13} /></button>
-          <button type="button" onClick={() => onAddTag(r)} title="Add Tag" className="crm-icon-btn"><TagIcon size={13} /></button>
+          <button type="button" onClick={() => setAddingTag(v => !v)} title="Add Tag" className="crm-icon-btn"><TagIcon size={13} /></button>
           <button type="button" onClick={() => onAddReminder(r)} title="Reminder" className="crm-icon-btn"><Bell size={13} /></button>
           <button type="button" onClick={() => onTogglePin(r)} title={r.is_pinned ? 'Unpin' : 'Pin'} className="crm-icon-btn">
             {r.is_pinned ? <PinOff size={13} /> : <Pin size={13} />}
@@ -436,49 +489,77 @@ function ResearcherRow({ r, expanded, onExpand, onMessage, onAddTag, onRemoveTag
         </div>
       </div>
 
-      {/* Expanded detail */}
+      {/* Inline tag input */}
+      {addingTag && (
+        <div style={{ padding: '0 16px 10px 22px' }} onClick={e => e.stopPropagation()}>
+          <InlineTagInput
+            onAdd={async (tag) => { await onAddTag({ ...r, _tagInput: tag } as any); setAddingTag(false); }}
+            onCancel={() => setAddingTag(false)}
+          />
+        </div>
+      )}
+
+      {/* Expanded panel */}
       {expanded && (
-        <div style={{
-          padding: '16px 20px 16px 20px', marginLeft: 3,
-          background: 'rgba(0,196,188,0.03)', borderTop: '1px solid rgba(0,196,188,0.12)',
-          display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px,1fr))', gap: 16,
-        }}>
-          {[
-            { label: 'Joined', value: daysAgo(r.joined_at) },
-            { label: 'Last Login', value: daysAgo(r.last_login) },
-            { label: 'Last Contacted', value: daysAgo(r.last_contacted_at) },
-            { label: 'Source', value: r.acquisition_source || 'Direct' },
-          ].map(({ label, value }) => (
-            <div key={label}>
-              <div style={{ fontSize: '0.66rem', color: '#6A7A8A', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: 3 }}>{label}</div>
-              <div style={{ fontSize: '0.85rem', color: '#FFFFFF', fontWeight: 600 }}>{value}</div>
-            </div>
-          ))}
-          {r.email && (
+        <div style={{ padding: '16px 20px', marginLeft: 3, background: 'rgba(0,196,188,0.025)', borderTop: '1px solid rgba(0,196,188,0.10)' }}>
+
+          {/* Top detail grid */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: 16, marginBottom: 20 }}>
+            {[
+              { label: 'Joined', value: daysAgo(r.joined_at) },
+              { label: 'Last Login', value: daysAgo(lastLogin), warn: !lastLogin },
+              { label: 'Last Contacted', value: daysAgo(r.last_contacted_at) },
+              { label: 'Last Order', value: daysAgo(r.last_order_at) },
+              { label: 'Source', value: r.acquisition_source || 'Direct' },
+            ].map(({ label, value, warn }) => (
+              <div key={label}>
+                <div style={{ fontSize: '0.63rem', color: '#5A6A7A', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: 3 }}>{label}</div>
+                <div style={{ fontSize: '0.84rem', color: warn ? '#EF4444' : '#FFFFFF', fontWeight: 600 }}>{value}</div>
+              </div>
+            ))}
+            {r.email && (
+              <div>
+                <div style={{ fontSize: '0.63rem', color: '#5A6A7A', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: 3 }}>Email</div>
+                <a href={`mailto:${r.email}`} style={{ fontSize: '0.84rem', color: '#00C4BC', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 4 }}><Mail size={11} /> {r.email}</a>
+              </div>
+            )}
             <div>
-              <div style={{ fontSize: '0.66rem', color: '#6A7A8A', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: 3 }}>Email</div>
-              <a href={`mailto:${r.email}`} style={{ fontSize: '0.85rem', color: '#00C4BC', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                <Mail size={12} aria-hidden /> {r.email}
-              </a>
+              <div style={{ fontSize: '0.63rem', color: '#5A6A7A', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: 4 }}>Churn Risk</div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <div style={{ flex: 1 }}><ChurnBar risk={r.churn_risk} /></div>
+                <span style={{ fontSize: '0.76rem', color: '#B0B8C4', fontWeight: 700, flexShrink: 0 }}>{Math.round(safe(r.churn_risk))}%</span>
+              </div>
             </div>
-          )}
-          <div>
-            <div style={{ fontSize: '0.66rem', color: '#6A7A8A', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: 3 }}>Churn Risk</div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <ChurnRiskBar risk={r.churn_risk} />
-              <span style={{ fontSize: '0.78rem', color: '#C0B8A8', fontWeight: 700, flexShrink: 0 }}>{Math.round(safe(r.churn_risk))}%</span>
+            <div>
+              <div style={{ fontSize: '0.63rem', color: '#5A6A7A', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: 4 }}>Onboarding</div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <div style={{ flex: 1, height: 4, background: 'rgba(255,255,255,0.06)', borderRadius: 999, overflow: 'hidden' }}>
+                  <div style={{ width: `${ob.score}%`, height: '100%', background: ob.color, transition: 'width 300ms' }} />
+                </div>
+                <span style={{ fontSize: '0.74rem', color: ob.color, fontWeight: 700, flexShrink: 0 }}>{ob.score}%</span>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2px 8px', marginTop: 5, fontSize: '0.62rem', color: '#7A8B9E' }}>
+                {[
+                  { ok: !!r.full_name, label: 'Name' },
+                  { ok: !!r.username, label: 'Username' },
+                  { ok: !!(r.last_login ?? r.last_sign_in_at), label: 'Logged In' },
+                  { ok: r.orders_count > 0, label: 'First Order' },
+                ].map(({ ok, label }) => (
+                  <span key={label} style={{ color: ok ? '#00C4BC' : '#5A6A7A', display: 'inline-flex', alignItems: 'center', gap: 3 }}>
+                    {ok ? <CheckCircle2 size={9} /> : '○'} {label}
+                  </span>
+                ))}
+              </div>
             </div>
           </div>
+
+          {/* Tags row */}
           {r.tags.length > 0 && (
-            <div style={{ gridColumn: '1 / -1' }}>
-              <div style={{ fontSize: '0.66rem', color: '#6A7A8A', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: 6 }}>Tags</div>
+            <div style={{ marginBottom: 16 }}>
+              <div style={{ fontSize: '0.63rem', color: '#5A6A7A', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: 6 }}>Tags</div>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
                 {r.tags.map(t => (
-                  <span key={t.id} style={{
-                    display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: '0.72rem',
-                    padding: '3px 10px', borderRadius: 999, background: 'rgba(0,196,188,0.10)',
-                    border: '1px solid rgba(0,196,188,0.30)', color: '#00C4BC', fontWeight: 700,
-                  }}>
+                  <span key={t.id} style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: '0.71rem', padding: '3px 10px', borderRadius: 999, background: 'rgba(0,196,188,0.09)', border: '1px solid rgba(0,196,188,0.28)', color: '#00C4BC', fontWeight: 700 }}>
                     {t.tag}
                     <button type="button" onClick={() => onRemoveTag(r, t.tag)} aria-label={`Remove ${t.tag}`}
                       style={{ background: 'transparent', border: 0, color: 'inherit', cursor: 'pointer', padding: 0, display: 'inline-flex' }}>
@@ -489,60 +570,108 @@ function ResearcherRow({ r, expanded, onExpand, onMessage, onAddTag, onRemoveTag
               </div>
             </div>
           )}
+
+          {/* Reminders */}
+          {(r.reminders?.length ?? 0) > 0 && (
+            <div style={{ marginBottom: 16, padding: '10px 12px', borderRadius: 10, background: 'rgba(96,165,250,0.06)', border: '1px solid rgba(96,165,250,0.18)' }}>
+              <div style={{ fontSize: '0.63rem', color: '#60A5FA', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 5 }}><Bell size={10} /> Upcoming Reminders</div>
+              {r.reminders!.map(rem => (
+                <div key={rem.id} style={{ fontSize: '0.78rem', color: '#E6EEF6', marginBottom: 2 }}>
+                  • {rem.title} <span style={{ color: '#7A8B9E', fontSize: '0.70rem' }}> — {new Date(rem.remind_at).toLocaleDateString()}</span>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Note */}
+          <div style={{ marginBottom: 16 }}>
+            <NoteEditor researcherId={r.id} initialNote={r.note ?? ''} onSave={(note) => onNoteUpdate(r.id, note)} />
+          </div>
+
+          {/* Admin controls */}
+          <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 10, paddingTop: 14, borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+            {/* Auto-approve toggle */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <ToggleSwitch
+                id={`auto-approve-${r.id}`}
+                checked={!!r.auto_approve_orders}
+                onChange={() => onToggleAutoApprove?.(r.id, !!r.auto_approve_orders)}
+              />
+              <span style={{ fontSize: '0.74rem', color: '#B0B8C4', fontWeight: 600 }}>Auto-Approve Orders</span>
+            </div>
+
+            <div style={{ flex: 1 }} />
+
+            {/* Reset password */}
+            {onResetPassword && (
+              <button type="button"
+                onClick={() => onResetPassword({ id: r.id, name: r.full_name || 'Researcher', username: r.username ?? '' })}
+                style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '7px 13px', borderRadius: 9, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.10)', color: '#B0B8C4', fontSize: '0.74rem', fontWeight: 700, cursor: 'pointer', transition: 'all 0.15s' }}
+                onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.09)'; e.currentTarget.style.color = '#FFFFFF'; }}
+                onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; e.currentTarget.style.color = '#B0B8C4'; }}>
+                <RefreshCw size={12} /> Reset Password
+              </button>
+            )}
+
+            {/* Promote to Agent */}
+            {isSuperAgent && onPromote && (
+              <button type="button"
+                onClick={() => onPromote(r)}
+                style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '7px 13px', borderRadius: 9, background: 'rgba(250,204,21,0.08)', border: '1px solid rgba(250,204,21,0.25)', color: '#FACC15', fontSize: '0.74rem', fontWeight: 700, cursor: 'pointer', transition: 'all 0.15s' }}
+                onMouseEnter={e => { e.currentTarget.style.background = 'rgba(250,204,21,0.15)'; }}
+                onMouseLeave={e => { e.currentTarget.style.background = 'rgba(250,204,21,0.08)'; }}>
+                <UserCheck size={12} /> Promote To Agent
+              </button>
+            )}
+
+            {/* Message */}
+            <button type="button"
+              onClick={() => onMessage(r)}
+              style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '7px 13px', borderRadius: 9, background: 'rgba(0,196,188,0.10)', border: '1px solid rgba(0,196,188,0.30)', color: '#00C4BC', fontSize: '0.74rem', fontWeight: 700, cursor: 'pointer', transition: 'all 0.15s' }}
+              onMouseEnter={e => { e.currentTarget.style.background = 'rgba(0,196,188,0.20)'; }}
+              onMouseLeave={e => { e.currentTarget.style.background = 'rgba(0,196,188,0.10)'; }}>
+              <MessageSquare size={12} /> Message
+            </button>
+          </div>
         </div>
       )}
     </div>
   );
 }
 
-/* ── Activity feed ──────────────────────────────────────────────────────── */
+/* ─────────────────────────────────────────────────────────────────────────────
+   Activity feed
+───────────────────────────────────────────────────────────────────────────── */
 
 function ActivityFeed({ items }: { items: ActivityItem[] }) {
   const [open, setOpen] = useState(false);
   if (items.length === 0) return null;
   const visible = open ? items : items.slice(0, 5);
   return (
-    <div style={{
-      marginTop: 8, borderRadius: 16,
-      background: 'linear-gradient(160deg, rgba(20,28,44,0.95) 0%, rgba(13,19,30,0.95) 100%)',
-      border: '1px solid rgba(255,255,255,0.07)',
-      overflow: 'hidden',
-    }}>
-      <button
-        type="button"
-        onClick={() => setOpen(v => !v)}
-        style={{
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          width: '100%', background: 'transparent', border: 0, color: '#FFFFFF',
-          padding: '14px 18px', cursor: 'pointer', borderBottom: open ? '1px solid rgba(255,255,255,0.06)' : 'none',
-        }}
-      >
+    <div style={{ borderRadius: 16, background: 'linear-gradient(160deg, rgba(18,26,42,0.97) 0%, rgba(12,18,30,0.97) 100%)', border: '1px solid rgba(255,255,255,0.07)', overflow: 'hidden', marginTop: 8 }}>
+      <button type="button" onClick={() => setOpen(v => !v)}
+        style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', background: 'transparent', border: 0, color: '#FFFFFF', padding: '14px 18px', cursor: 'pointer', borderBottom: open ? '1px solid rgba(255,255,255,0.06)' : 'none' }}>
         <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, fontWeight: 700, fontSize: '0.82rem' }}>
-          <ActivityIcon size={14} color="#00C4BC" aria-hidden />
-          Recent Activity
-          <span style={{ fontSize: '0.68rem', color: '#6A7A8A', fontWeight: 400 }}>({items.length} events)</span>
+          <ActivityIcon size={14} color="#00C4BC" aria-hidden /> Recent Activity
+          <span style={{ fontSize: '0.68rem', color: '#5A6A7A', fontWeight: 400 }}>({items.length})</span>
         </span>
-        {open ? <ChevronUp size={14} color="#6A7A8A" /> : <ChevronDown size={14} color="#6A7A8A" />}
+        {open ? <ChevronUp size={14} color="#5A6A7A" /> : <ChevronDown size={14} color="#5A6A7A" />}
       </button>
       {open && (
-        <ul style={{ listStyle: 'none', padding: '0 18px', margin: 0, display: 'flex', flexDirection: 'column', gap: 0 }}>
+        <ul style={{ listStyle: 'none', padding: '0 18px', margin: 0, display: 'flex', flexDirection: 'column' }}>
           {visible.map((a, i) => (
-            <li key={a.id} style={{
-              display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
-              padding: '10px 0', borderTop: i > 0 ? '1px solid rgba(255,255,255,0.04)' : 'none',
-              fontSize: '0.78rem', color: '#C0B8A8',
-            }}>
+            <li key={a.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: '10px 0', borderTop: i > 0 ? '1px solid rgba(255,255,255,0.04)' : 'none', fontSize: '0.78rem', color: '#B0B8C4' }}>
               <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                 <strong style={{ color: '#FFFFFF' }}>{a.researcher_name}</strong>
                 {a.meta ? ` — ${a.meta}` : ''}
               </span>
-              <span style={{ color: '#6A7A8A', fontSize: '0.72rem', whiteSpace: 'nowrap' }}>{daysAgo(a.at)}</span>
+              <span style={{ color: '#5A6A7A', fontSize: '0.71rem', whiteSpace: 'nowrap' }}>{daysAgo(a.at)}</span>
             </li>
           ))}
-          {!open && items.length > 5 && (
+          {items.length > 5 && !open && (
             <li style={{ padding: '10px 0', textAlign: 'center' }}>
               <button type="button" onClick={() => setOpen(true)} style={{ background: 'none', border: 'none', color: '#00C4BC', fontSize: '0.74rem', cursor: 'pointer' }}>
-                View All {items.length} Events
+                Show All {items.length}
               </button>
             </li>
           )}
@@ -552,54 +681,36 @@ function ActivityFeed({ items }: { items: ActivityItem[] }) {
   );
 }
 
-/* ── Empty state ────────────────────────────────────────────────────────── */
+/* ─────────────────────────────────────────────────────────────────────────────
+   Empty state
+───────────────────────────────────────────────────────────────────────────── */
 
 function EmptyState({ slug }: { slug: string | null }) {
-  const storefrontUrl = typeof window !== 'undefined' && slug
-    ? `${window.location.origin}/${slug}` : slug ? `/${slug}` : null;
-  const onCopy = useCallback(() => {
-    if (!storefrontUrl) return;
-    void navigator.clipboard.writeText(storefrontUrl);
-    toast.success('Storefront Link Copied');
-  }, [storefrontUrl]);
-
+  const url = typeof window !== 'undefined' && slug ? `${window.location.origin}/${slug}` : slug ? `/${slug}` : null;
+  const onCopy = useCallback(() => { if (!url) return; void navigator.clipboard.writeText(url); toast.success('Storefront Link Copied'); }, [url]);
   return (
-    <div style={{
-      padding: '48px 24px', borderRadius: 16,
-      background: 'linear-gradient(160deg, rgba(18,26,42,0.95) 0%, rgba(12,18,30,0.95) 100%)',
-      border: '1px dashed rgba(0,196,188,0.25)', textAlign: 'center',
-      display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16,
-    }}>
-      <div style={{ width: 56, height: 56, borderRadius: 16, background: 'rgba(0,196,188,0.10)', border: '1px solid rgba(0,196,188,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <Sparkles size={24} color="#00C4BC" />
+    <div style={{ padding: '48px 24px', borderRadius: 16, background: 'linear-gradient(160deg, rgba(16,24,40,0.96) 0%, rgba(11,17,28,0.96) 100%)', border: '1px dashed rgba(0,196,188,0.22)', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16 }}>
+      <div style={{ width: 52, height: 52, borderRadius: 14, background: 'rgba(0,196,188,0.10)', border: '1px solid rgba(0,196,188,0.22)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <Sparkles size={22} color="#00C4BC" />
       </div>
       <div>
-        <div style={{ fontSize: '1.15rem', color: '#FFFFFF', fontWeight: 800, marginBottom: 8 }}>No Researchers Yet</div>
-        <p style={{ color: '#8A9BB0', fontSize: '0.84rem', maxWidth: 440, lineHeight: 1.55, margin: 0 }}>
-          Your CRM activates the moment your first researcher joins. Share your storefront, onboard a researcher, and track your growth here.
+        <div style={{ fontSize: '1.1rem', color: '#FFFFFF', fontWeight: 800, marginBottom: 8 }}>No Researchers Yet</div>
+        <p style={{ color: '#7A8B9E', fontSize: '0.83rem', maxWidth: 420, lineHeight: 1.55, margin: 0 }}>
+          Your CRM activates the moment your first researcher joins. Share your storefront, create an account above, and watch this page light up.
         </p>
       </div>
-      <ol style={{ textAlign: 'left', fontSize: '0.8rem', color: '#C0B8A8', lineHeight: 1.6, paddingLeft: 18, margin: 0, maxWidth: 360 }}>
-        <li>Share your storefront link or QR code</li>
-        <li>Onboard a researcher from the button above</li>
-        <li>Pin your VIPs and tag your repeat buyers</li>
-      </ol>
-      {storefrontUrl && (
-        <button type="button" onClick={onCopy} style={{
-          padding: '11px 24px', borderRadius: 10, background: 'rgba(0,196,188,0.12)',
-          border: '1px solid rgba(0,196,188,0.40)', color: '#00C4BC',
-          fontSize: '0.84rem', fontWeight: 700, cursor: 'pointer',
-        }}>
-          Copy Storefront Link
-        </button>
-      )}
+      {url && <button type="button" onClick={onCopy} style={{ padding: '10px 22px', borderRadius: 10, background: 'rgba(0,196,188,0.12)', border: '1px solid rgba(0,196,188,0.38)', color: '#00C4BC', fontSize: '0.83rem', fontWeight: 700, cursor: 'pointer' }}>Copy Storefront Link</button>}
     </div>
   );
 }
 
-/* ── Main component ─────────────────────────────────────────────────────── */
+/* ─────────────────────────────────────────────────────────────────────────────
+   Main component
+───────────────────────────────────────────────────────────────────────────── */
 
-export default function AgentResearcherCRMv2() {
+export default function AgentResearcherCRMv2({
+  isSuperAgent, onResetPassword, onPromote, onToggleAutoApprove,
+}: CRMExternalProps) {
   const [data, setData] = useState<Payload | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -617,7 +728,20 @@ export default function AgentResearcherCRMv2() {
       setLoading(true);
       const r = await fetch('/api/agent/researchers/v2', { cache: 'no-store' });
       if (!r.ok) throw new Error(`HTTP ${r.status}`);
-      setData((await r.json()) as Payload);
+      const raw = await r.json() as any;
+      // Normalise field names — API uses created_at/last_sign_in_at, UI uses joined_at/last_login
+      if (raw.researchers) {
+        raw.researchers = raw.researchers.map((r: any) => ({
+          ...r,
+          joined_at: r.joined_at ?? r.created_at,
+          last_login: r.last_login ?? r.last_sign_in_at,
+          lifetime_value: r.lifetime_value ?? r.total_spent ?? 0,
+          orders_count: r.orders_count ?? r.order_count ?? 0,
+          tags: (r.tags ?? []).map((t: any, i: number) => ({ id: t.id ?? `${r.id}-${i}`, tag: t.tag ?? t, color: t.color ?? null })),
+          has_open_reminder: !!(r.has_open_reminder ?? (r.reminders?.length > 0)),
+        }));
+      }
+      setData(raw as Payload);
       setError(null);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Could Not Load');
@@ -628,80 +752,75 @@ export default function AgentResearcherCRMv2() {
 
   useEffect(() => { void refresh(); }, [refresh]);
 
-  const onTogglePin = useCallback(async (r: Researcher) => {
-    const res = await fetch('/api/agent/researchers/pins', {
-      method: r.is_pinned ? 'DELETE' : 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ researcherId: r.id }),
-    });
+  /* ── API actions ── */
+  const togglePin = useCallback(async (r: Researcher) => {
+    const res = await fetch('/api/agent/researchers/pins', { method: r.is_pinned ? 'DELETE' : 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ researcherId: r.id }) });
     if (!res.ok) { toast.error('Could Not Update Pin'); return; }
-    toast.success(r.is_pinned ? 'Pin Removed' : 'Researcher Pinned');
+    toast.success(r.is_pinned ? 'Pin Removed' : 'Pinned');
     void refresh();
   }, [refresh]);
 
-  const onAddTag = useCallback(async (r: Researcher) => {
-    const tag = window.prompt('Tag For This Researcher (e.g. VIP, Discount Eligible)');
+  const addTag = useCallback(async (r: any) => {
+    const tag = r._tagInput ?? '';
     if (!tag) return;
-    const trimmed = tag.trim().slice(0, 32);
-    if (!trimmed) return;
-    const res = await fetch('/api/agent/researchers/tags', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ researcherId: r.id, tag: trimmed }),
-    });
+    const res = await fetch('/api/agent/researchers/tags', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ researcherId: r.id, tag }) });
     if (!res.ok) { toast.error('Could Not Save Tag'); return; }
     toast.success('Tag Added');
     void refresh();
   }, [refresh]);
 
-  const onRemoveTag = useCallback(async (r: Researcher, tag: string) => {
-    const res = await fetch('/api/agent/researchers/tags', {
-      method: 'DELETE', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ researcherId: r.id, tag }),
-    });
+  const removeTag = useCallback(async (r: Researcher, tag: string) => {
+    const res = await fetch('/api/agent/researchers/tags', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ researcherId: r.id, tag }) });
     if (!res.ok) { toast.error('Could Not Remove Tag'); return; }
     void refresh();
   }, [refresh]);
 
-  const onMessage = useCallback((r: Researcher | { id: string }) => {
+  const message = useCallback((r: Researcher | { id: string }) => {
     window.location.href = `/messenger?participant=${encodeURIComponent(r.id)}`;
   }, []);
 
-  const onAddReminder = useCallback(async (r: Researcher) => {
+  const addReminder = useCallback(async (r: Researcher) => {
     const title = window.prompt('What Do You Want To Be Reminded About?');
     if (!title) return;
-    const daysRaw = window.prompt('In How Many Days?', '7');
-    const days = Math.max(1, parseInt(daysRaw ?? '7', 10) || 7);
-    const remindAt = new Date(Date.now() + days * 86400000).toISOString();
-    const res = await fetch('/api/agent/researchers/reminders', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ researcherId: r.id, title: title.slice(0, 200), remindAt }),
-    });
+    const days = Math.max(1, parseInt(window.prompt('In How Many Days?', '7') ?? '7', 10) || 7);
+    const res = await fetch('/api/agent/researchers/reminders', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ researcherId: r.id, title: title.slice(0, 200), remindAt: new Date(Date.now() + days * 86400000).toISOString() }) });
     if (!res.ok) { toast.error('Could Not Save Reminder'); return; }
-    toast.success(`Reminder Set For ${days} Days From Now`);
+    toast.success(`Reminder Set For ${days} Days`);
     void refresh();
   }, [refresh]);
 
-  const onSetGoal = useCallback(async () => {
-    const raw = window.prompt('New Researchers Target For This Month');
-    if (!raw) return;
-    const n = parseInt(raw, 10);
-    if (!Number.isFinite(n) || n < 0) { toast.error('Enter A Whole Number'); return; }
-    const res = await fetch('/api/agent/researchers/goals', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ targetCount: n }),
-    });
+  const setGoal = useCallback(async (n: number) => {
+    const res = await fetch('/api/agent/researchers/goals', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ targetCount: n }) });
     if (!res.ok) { toast.error('Could Not Save Goal'); return; }
     toast.success('Goal Saved');
     void refresh();
   }, [refresh]);
 
-  const onExportCsv = useCallback(() => { window.location.href = '/api/agent/researchers/export'; }, []);
-  const onPrintSnapshot = useCallback(() => { window.print(); }, []);
+  const updateNote = useCallback((id: string, note: string) => {
+    setData(prev => prev ? { ...prev, researchers: prev.researchers.map(r => r.id === id ? { ...r, note } : r) } : prev);
+  }, []);
 
+  const handleAutoApprove = useCallback((researcherId: string, current: boolean) => {
+    onToggleAutoApprove?.(researcherId, current);
+    setData(prev => prev ? { ...prev, researchers: prev.researchers.map(r => r.id === researcherId ? { ...r, auto_approve_orders: !current } : r) } : prev);
+  }, [onToggleAutoApprove]);
+
+  const handlePromote = useCallback((r: Researcher) => {
+    onPromote?.({ id: r.id, full_name: r.full_name, username: r.username, email: r.email, created_at: r.joined_at, auto_approve_orders: r.auto_approve_orders });
+  }, [onPromote]);
+
+  const messageNeverLoggedIn = useCallback(() => {
+    if (!data) return;
+    const ids = data.researchers.filter(r => !(r.last_login ?? r.last_sign_in_at)).map(r => r.id);
+    if (ids.length === 0) { toast('No un-activated researchers'); return; }
+    window.location.href = `/messenger?participants=${encodeURIComponent(ids.join(','))}`;
+  }, [data]);
+
+  /* ── Filtering + sorting ── */
   const filtered = useMemo(() => {
     if (!data) return [];
     const term = search.trim().toLowerCase();
-    const byFilter = data.researchers.filter(r => {
+    const base = data.researchers.filter(r => {
       switch (filter) {
         case 'vip': return r.status === 'vip';
         case 'at_risk': return r.status === 'at_risk' || r.status === 'churned';
@@ -712,109 +831,105 @@ export default function AgentResearcherCRMv2() {
         default: return true;
       }
     });
-    const bySearch = term
-      ? byFilter.filter(r =>
-          (r.full_name ?? '').toLowerCase().includes(term) ||
-          (r.username ?? '').toLowerCase().includes(term) ||
-          (r.email ?? '').toLowerCase().includes(term))
-      : byFilter;
+    const searched = term ? base.filter(r => (r.full_name ?? '').toLowerCase().includes(term) || (r.username ?? '').toLowerCase().includes(term) || (r.email ?? '').toLowerCase().includes(term)) : base;
     const dir = sortDir === 'asc' ? 1 : -1;
-    return [...bySearch].sort((a, b) => {
+    return [...searched].sort((a, b) => {
       switch (sortBy) {
         case 'name': return (a.full_name ?? '').localeCompare(b.full_name ?? '') * dir;
         case 'orders': return (a.orders_count - b.orders_count) * dir;
         case 'last': return (new Date(a.last_order_at ?? 0).getTime() - new Date(b.last_order_at ?? 0).getTime()) * dir;
         case 'joined': return (new Date(a.joined_at).getTime() - new Date(b.joined_at).getTime()) * dir;
         case 'risk': return (a.churn_risk - b.churn_risk) * dir;
+        case 'login': return (new Date(a.last_login ?? a.last_sign_in_at ?? 0).getTime() - new Date(b.last_login ?? b.last_sign_in_at ?? 0).getTime()) * dir;
         default: return (a.lifetime_value - b.lifetime_value) * dir;
       }
     });
   }, [data, filter, search, sortBy, sortDir]);
 
-  const kanbanRows: KanbanResearcher[] = useMemo(() => {
-    if (!data) return [];
-    return data.researchers.map(r => ({
-      id: r.id, full_name: r.full_name, username: r.username,
-      lifetime_value: r.lifetime_value, orders_count: r.orders_count,
-      last_order_at: r.last_order_at, status: r.status, churn_risk: r.churn_risk,
-    }));
-  }, [data]);
+  const kanbanRows: KanbanResearcher[] = useMemo(() => (data?.researchers ?? []).map(r => ({ id: r.id, full_name: r.full_name, username: r.username, lifetime_value: r.lifetime_value, orders_count: r.orders_count, last_order_at: r.last_order_at, status: r.status, churn_risk: r.churn_risk })), [data]);
 
-  const sortBtn = (key: SortKey, label: string) => (
-    <button
-      type="button"
-      onClick={() => { setSortBy(key); setSortDir(d => sortBy === key && d === 'desc' ? 'asc' : 'desc'); }}
-      style={{
-        background: 'transparent', border: 0, color: sortBy === key ? '#00C4BC' : '#8A9BB0',
-        fontSize: '0.68rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.04em',
-        cursor: 'pointer', font: 'inherit', display: 'inline-flex', alignItems: 'center', gap: 3,
-        textAlign: 'right',
-      }}
-    >
-      {label}{sortBy === key ? (sortDir === 'desc' ? ' ↓' : ' ↑') : ''}
-    </button>
-  );
+  const neverLoggedIn = useMemo(() => (data?.researchers ?? []).filter(r => !(r.last_login ?? r.last_sign_in_at)).length, [data]);
 
+  function sortBtn(key: SortKey, label: string) {
+    return (
+      <button type="button" onClick={() => { setSortBy(key); setSortDir(d => sortBy === key && d === 'desc' ? 'asc' : 'desc'); }}
+        style={{ background: 'transparent', border: 0, color: sortBy === key ? '#00C4BC' : '#7A8B9E', fontSize: '0.66rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer', font: 'inherit', display: 'inline-flex', alignItems: 'center', gap: 2 }}>
+        {label}{sortBy === key ? (sortDir === 'desc' ? ' ↓' : ' ↑') : ''}
+      </button>
+    );
+  }
+
+  /* ── Render states ── */
   if (loading && !data) {
     return (
-      <div style={{ padding: '32px 0', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12, color: '#8A9BB0' }}>
+      <div style={{ padding: '36px 0', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12, color: '#7A8B9E' }}>
         <div style={{ width: 20, height: 20, borderRadius: '50%', border: '2px solid #00C4BC', borderTopColor: 'transparent', animation: 'spin 0.8s linear infinite' }} />
-        Loading Researcher CRM...
+        Loading CRM...
       </div>
     );
   }
   if (error) {
     return (
-      <div style={{ padding: '24px', color: '#EF4444', display: 'flex', alignItems: 'center', gap: 12 }}>
-        <AlertTriangle size={16} /> Could Not Load: {error}
-        <button type="button" onClick={() => void refresh()} style={{ marginLeft: 8, padding: '6px 14px', borderRadius: 8, background: 'rgba(0,196,188,0.10)', border: '1px solid rgba(0,196,188,0.40)', color: '#00C4BC', cursor: 'pointer', fontSize: '0.78rem', fontWeight: 700 }}>
-          Retry
-        </button>
+      <div style={{ padding: '20px', color: '#EF4444', display: 'flex', alignItems: 'center', gap: 12, borderRadius: 12, background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.20)' }}>
+        <AlertTriangle size={15} /> {error}
+        <button type="button" onClick={() => void refresh()} style={{ marginLeft: 8, padding: '5px 12px', borderRadius: 7, background: 'rgba(0,196,188,0.10)', border: '1px solid rgba(0,196,188,0.35)', color: '#00C4BC', cursor: 'pointer', fontSize: '0.76rem', fontWeight: 700 }}>Retry</button>
       </div>
     );
   }
   if (!data) return null;
 
   const k = data.kpis;
-  const hasAny = data.researchers.length > 0;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }} className="crm-shell">
 
-      {/* Goal */}
-      <GoalHeader goal={data.goal} onSetGoal={onSetGoal} />
+      {/* Goal header */}
+      <GoalHeader goal={data.goal} onSetGoal={setGoal} />
 
-      {/* KPI grid — 5-col on desktop, wraps on mobile */}
-      <div style={{ display: 'grid', gap: 12, gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))' }}>
-        <KpiCard label="Total Researchers" value={fmtInt(k.researchers_count.value)} spark={k.researchers_count.spark} delta={k.researchers_count.delta_pct} onClick={() => { setTab('list'); setFilter('all'); }} />
-        <KpiCard label="Lifetime Revenue" value={fmtUSD(k.lifetime_value.value)} spark={k.lifetime_value.spark} delta={k.lifetime_value.delta_pct} color="#FACC15" />
-        <KpiCard label="Total Orders" value={fmtInt(k.total_orders.value)} spark={k.total_orders.spark} delta={k.total_orders.delta_pct} color="#60A5FA" />
-        <KpiCard label="Active Buyers" value={fmtInt(k.active_buyers.value)} spark={k.active_buyers.spark} delta={k.active_buyers.delta_pct} onClick={() => { setTab('list'); setFilter('all'); }} />
-        <KpiCard label="Avg Order Value" value={fmtUSD(k.avg_order_value.value)} spark={k.avg_order_value.spark} delta={k.avg_order_value.delta_pct} color="#2DD4BF" />
-        <KpiCard label="Repeat Rate" value={`${Math.round(safe(k.repeat_rate.value))}%`} spark={k.repeat_rate.spark} delta={k.repeat_rate.delta_pct} color="#A78BFA" />
-        <KpiCard label="New This Month" value={fmtInt(k.new_this_month.value)} spark={k.new_this_month.spark} delta={k.new_this_month.delta_pct} onClick={() => { setTab('list'); setFilter('new'); }} />
-        <KpiCard label="At Risk" value={fmtInt(k.at_risk.value)} spark={k.at_risk.spark} delta={k.at_risk.delta_pct} color="#F59E0B" onClick={() => { setTab('list'); setFilter('at_risk'); }} />
-        <KpiCard label="Best Customer" value={k.best_customer.label || '—'} spark={k.best_customer.spark} delta={k.best_customer.delta_pct} color="#FACC15" subtitle={k.best_customer.value > 0 ? fmtUSD(k.best_customer.value) : undefined} />
-        <KpiCard label="Commission Earned" value={fmtUSD(k.lifetime_commission.value)} spark={k.lifetime_commission.spark} delta={k.lifetime_commission.delta_pct} color="#2DD4BF" />
+      {/* Never-logged-in nudge banner */}
+      {neverLoggedIn > 0 && (
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: '12px 18px', borderRadius: 12, background: 'rgba(245,158,11,0.07)', border: '1px solid rgba(245,158,11,0.22)', flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <AlertTriangle size={14} color="#F59E0B" aria-hidden />
+            <span style={{ fontSize: '0.8rem', color: '#F59E0B', fontWeight: 700 }}>
+              {neverLoggedIn} Researcher{neverLoggedIn !== 1 ? 's' : ''} Haven't Logged In Yet
+            </span>
+            <span style={{ fontSize: '0.75rem', color: '#7A8B9E' }}>— They haven't activated their account</span>
+          </div>
+          <button type="button" onClick={messageNeverLoggedIn}
+            style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '7px 14px', borderRadius: 9, background: 'rgba(245,158,11,0.12)', border: '1px solid rgba(245,158,11,0.32)', color: '#F59E0B', fontSize: '0.74rem', fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap' }}>
+            <MessageSquare size={12} /> Message All
+          </button>
+        </div>
+      )}
+
+      {/* KPI grid */}
+      <div style={{ display: 'grid', gap: 10, gridTemplateColumns: 'repeat(auto-fill, minmax(185px, 1fr))' }}>
+        <KpiCard label="Total Researchers" value={fmtInt(k.researchers_count.value)} spark={k.researchers_count.spark ?? []} delta={k.researchers_count.delta_pct} onClick={() => { setTab('list'); setFilter('all'); }} />
+        <KpiCard label="Lifetime Revenue" value={fmtUSD(k.lifetime_value.value)} spark={k.lifetime_value.spark ?? []} delta={k.lifetime_value.delta_pct} color="#FACC15" />
+        <KpiCard label="Total Orders" value={fmtInt(k.total_orders.value)} spark={k.total_orders.spark ?? []} delta={k.total_orders.delta_pct} color="#60A5FA" />
+        <KpiCard label="Active Buyers" value={fmtInt(k.active_buyers.value)} spark={k.active_buyers.spark ?? []} delta={k.active_buyers.delta_pct} onClick={() => { setTab('list'); setFilter('all'); }} />
+        <KpiCard label="Avg Order Value" value={fmtUSD(k.avg_order_value.value)} spark={k.avg_order_value.spark ?? []} delta={k.avg_order_value.delta_pct} color="#2DD4BF" />
+        <KpiCard label="Repeat Rate" value={`${Math.round(safe(k.repeat_rate.value))}%`} spark={k.repeat_rate.spark ?? []} delta={k.repeat_rate.delta_pct} color="#A78BFA" />
+        <KpiCard label="New This Month" value={fmtInt(k.new_this_month.value)} spark={k.new_this_month.spark ?? []} delta={k.new_this_month.delta_pct} onClick={() => { setTab('list'); setFilter('new'); }} />
+        <KpiCard label="At Risk" value={fmtInt(k.at_risk.value)} spark={k.at_risk.spark ?? []} delta={k.at_risk.delta_pct} color="#F59E0B" onClick={() => { setTab('list'); setFilter('at_risk'); }} />
+        <KpiCard label="Best Researcher" value={k.best_customer.label || '—'} spark={k.best_customer.spark ?? []} delta={k.best_customer.delta_pct} color="#FACC15" subtitle={k.best_customer.value > 0 ? fmtUSD(k.best_customer.value) : undefined} />
+        <KpiCard label="Commission Earned" value={fmtUSD(k.lifetime_commission.value)} spark={k.lifetime_commission.spark ?? []} delta={k.lifetime_commission.delta_pct} color="#2DD4BF" />
       </div>
 
       {/* Tab bar */}
-      <div role="tablist" aria-label="Researcher CRM View" style={{
-        display: 'flex', gap: 6, padding: '5px',
-        background: 'rgba(12,18,30,0.8)', border: '1px solid rgba(255,255,255,0.07)',
-        borderRadius: 14, overflowX: 'auto',
-      }}>
-        <TabButton active={tab === 'list'} onClick={() => setTab('list')} icon={<TableIcon size={14} aria-hidden />} label="Researchers" />
-        <TabButton active={tab === 'kanban'} onClick={() => setTab('kanban')} icon={<LayoutGrid size={14} aria-hidden />} label="Kanban" />
-        <TabButton active={tab === 'charts'} onClick={() => setTab('charts')} icon={<BarChart3 size={14} aria-hidden />} label="Charts" />
-        <TabButton active={tab === 'acquisition'} onClick={() => setTab('acquisition')} icon={<GitBranch size={14} aria-hidden />} label="Acquisition" />
+      <div role="tablist" aria-label="Researcher CRM View" style={{ display: 'flex', gap: 5, padding: '4px', background: 'rgba(10,16,28,0.80)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 13, overflowX: 'auto' }}>
+        <TabBtn active={tab === 'list'} onClick={() => setTab('list')} icon={<TableIcon size={13} aria-hidden />} label="Researchers" />
+        <TabBtn active={tab === 'kanban'} onClick={() => setTab('kanban')} icon={<LayoutGrid size={13} aria-hidden />} label="Kanban" />
+        <TabBtn active={tab === 'charts'} onClick={() => setTab('charts')} icon={<BarChart3 size={13} aria-hidden />} label="Charts" />
+        <TabBtn active={tab === 'acquisition'} onClick={() => setTab('acquisition')} icon={<GitBranch size={13} aria-hidden />} label="Acquisition" />
       </div>
 
       {/* List tab */}
       {tab === 'list' && (
         <>
-          {/* Filters + search + export */}
-          <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 8 }}>
+          {/* Filters + search */}
+          <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 7 }}>
             <FilterChip active={filter === 'all'} onClick={() => setFilter('all')} count={data.researchers.length}>All</FilterChip>
             <FilterChip active={filter === 'vip'} onClick={() => setFilter('vip')} count={data.kanban_counts.vip}>VIPs</FilterChip>
             <FilterChip active={filter === 'at_risk'} onClick={() => setFilter('at_risk')} count={(data.kanban_counts.at_risk ?? 0) + (data.kanban_counts.churned ?? 0)}>At Risk</FilterChip>
@@ -822,70 +937,48 @@ export default function AgentResearcherCRMv2() {
             <FilterChip active={filter === 'inactive'} onClick={() => setFilter('inactive')} count={data.kanban_counts.lead}>Inactive</FilterChip>
             <FilterChip active={filter === 'pinned'} onClick={() => setFilter('pinned')} count={data.researchers.filter(r => r.is_pinned).length}>Pinned</FilterChip>
             <div style={{ flex: 1 }} />
-            {/* Search */}
-            <div style={{
-              display: 'flex', alignItems: 'center', gap: 8,
-              background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.10)',
-              borderRadius: 10, padding: '0 12px', minWidth: 220,
-            }}>
-              <Search size={14} color="#8A9BB0" aria-hidden />
-              <input
-                type="search" value={search}
-                onChange={e => setSearch(e.target.value)}
-                placeholder="Search Name, Email, Username"
-                style={{ border: 0, background: 'transparent', color: '#FFFFFF', padding: '9px 0', fontSize: '0.78rem', outline: 'none', minWidth: 0, width: '100%' }}
-              />
+            <div style={{ display: 'flex', alignItems: 'center', gap: 7, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.09)', borderRadius: 10, padding: '0 11px', minWidth: 200, flex: '0 1 240px' }}>
+              <Search size={13} color="#7A8B9E" aria-hidden />
+              <input type="search" value={search} onChange={e => setSearch(e.target.value)} placeholder="Search name, email, username"
+                style={{ border: 0, background: 'transparent', color: '#FFFFFF', padding: '9px 0', fontSize: '0.77rem', outline: 'none', width: '100%' }} />
             </div>
-            <button type="button" onClick={onExportCsv} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '9px 14px', borderRadius: 10, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.10)', color: '#C0B8A8', fontSize: '0.74rem', fontWeight: 700, cursor: 'pointer' }}>
-              <Download size={13} /> CSV
+            <button type="button" onClick={() => { window.location.href = '/api/agent/researchers/export'; }}
+              style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '9px 13px', borderRadius: 10, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.09)', color: '#B0B8C4', fontSize: '0.73rem', fontWeight: 700, cursor: 'pointer' }}>
+              <Download size={12} /> CSV
             </button>
-            <button type="button" onClick={onPrintSnapshot} title="Print / Save PDF" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '9px 14px', borderRadius: 10, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.10)', color: '#C0B8A8', fontSize: '0.74rem', fontWeight: 700, cursor: 'pointer' }}>
-              <Printer size={13} /> PDF
+            <button type="button" onClick={() => window.print()} title="Print / Save PDF"
+              style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '9px 13px', borderRadius: 10, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.09)', color: '#B0B8C4', fontSize: '0.73rem', fontWeight: 700, cursor: 'pointer' }}>
+              <Printer size={12} /> PDF
             </button>
           </div>
 
           {/* Table */}
-          {!hasAny ? (
+          {data.researchers.length === 0 ? (
             <EmptyState slug={data.storefront_slug} />
           ) : (
-            <div style={{
-              borderRadius: 16, overflow: 'hidden',
-              background: 'linear-gradient(160deg, rgba(18,26,42,0.98) 0%, rgba(12,18,30,0.98) 100%)',
-              border: '1px solid rgba(255,255,255,0.08)',
-              boxShadow: '0 4px 24px rgba(0,0,0,0.30)',
-            }}>
+            <div style={{ borderRadius: 16, overflow: 'hidden', background: 'linear-gradient(160deg, rgba(16,24,40,0.97) 0%, rgba(10,16,28,0.97) 100%)', border: '1px solid rgba(255,255,255,0.07)', boxShadow: '0 4px 28px rgba(0,0,0,0.30)' }}>
               {/* Header */}
-              <div role="row" style={{
-                display: 'grid',
-                gridTemplateColumns: 'minmax(200px,2fr) 100px 90px 130px 110px 130px',
-                alignItems: 'center', gap: 8, padding: '10px 16px',
-                background: 'rgba(255,255,255,0.025)',
-                borderBottom: '1px solid rgba(255,255,255,0.07)',
-              }} className="crm-row-head">
-                <span style={{ fontSize: '0.68rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.04em', color: '#8A9BB0' }}>Researcher</span>
+              <div role="row" style={{ display: 'grid', gridTemplateColumns: 'minmax(160px,2fr) 90px 80px 110px 100px 110px', alignItems: 'center', gap: 8, padding: '9px 16px', background: 'rgba(255,255,255,0.02)', borderBottom: '1px solid rgba(255,255,255,0.06)' }} className="crm-row-head">
+                <span style={{ fontSize: '0.66rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.04em', color: '#5A6A7A' }}>Researcher</span>
                 <span style={{ textAlign: 'right' }}>{sortBtn('ltv', 'LTV')}</span>
                 <span style={{ textAlign: 'right' }}>{sortBtn('orders', 'Orders')}</span>
-                <span>{sortBtn('last', 'Last Order')}</span>
-                <span style={{ fontSize: '0.68rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.04em', color: '#8A9BB0' }}>Status</span>
-                <span style={{ textAlign: 'right', fontSize: '0.68rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.04em', color: '#8A9BB0' }}>Actions</span>
+                <span>{sortBtn('login', 'Last Login')}</span>
+                <span style={{ fontSize: '0.66rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.04em', color: '#5A6A7A' }}>Status</span>
+                <span style={{ textAlign: 'right', fontSize: '0.66rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.04em', color: '#5A6A7A' }}>Actions</span>
               </div>
 
               {filtered.length === 0 ? (
-                <div style={{ padding: '32px', textAlign: 'center', color: '#6A7A8A', fontSize: '0.84rem' }}>
-                  No researchers match your filter.
-                </div>
+                <div style={{ padding: '32px', textAlign: 'center', color: '#5A6A7A', fontSize: '0.83rem' }}>No researchers match this filter.</div>
               ) : (
                 filtered.map(r => (
-                  <ResearcherRow
-                    key={r.id}
-                    r={r}
+                  <ResearcherRow key={r.id} r={r}
                     expanded={expandedId === r.id}
                     onExpand={() => setExpandedId(id => id === r.id ? null : r.id)}
-                    onMessage={onMessage}
-                    onAddTag={onAddTag}
-                    onRemoveTag={onRemoveTag}
-                    onAddReminder={onAddReminder}
-                    onTogglePin={onTogglePin}
+                    onMessage={message} onAddTag={addTag} onRemoveTag={removeTag}
+                    onAddReminder={addReminder} onTogglePin={togglePin}
+                    isSuperAgent={isSuperAgent} onResetPassword={onResetPassword}
+                    onPromote={handlePromote} onToggleAutoApprove={handleAutoApprove}
+                    onNoteUpdate={updateNote}
                   />
                 ))
               )}
@@ -894,29 +987,17 @@ export default function AgentResearcherCRMv2() {
         </>
       )}
 
-      {tab === 'kanban' && (
-        <div style={{ marginTop: 4 }}>
-          <KanbanView researchers={kanbanRows} onCardClick={id => { setTab('list'); setExpandedId(id); }} />
-        </div>
-      )}
-      {tab === 'charts' && (
-        <div style={{ marginTop: 4 }}>
-          <ChartsView revenueSpark={k.lifetime_value.spark} insights={insights} />
-        </div>
-      )}
-      {tab === 'acquisition' && (
-        <div style={{ marginTop: 4 }}>
-          <AcquisitionView sourceCounts={data.source_counts} funnel={insights?.funnel ?? null} />
-        </div>
-      )}
+      {tab === 'kanban' && <div style={{ marginTop: 4 }}><KanbanView researchers={kanbanRows} onCardClick={id => { setTab('list'); setExpandedId(id); }} /></div>}
+      {tab === 'charts' && <div style={{ marginTop: 4 }}><ChartsView revenueSpark={k.lifetime_value.spark ?? []} insights={insights} /></div>}
+      {tab === 'acquisition' && <div style={{ marginTop: 4 }}><AcquisitionView sourceCounts={data.source_counts} funnel={insights?.funnel ?? null} /></div>}
 
       <ActivityFeed items={data.activity} />
 
       <style jsx>{`
         .crm-icon-btn {
           background: rgba(255,255,255,0.04);
-          border: 1px solid rgba(255,255,255,0.10);
-          color: #8a9bb0;
+          border: 1px solid rgba(255,255,255,0.09);
+          color: #7a8b9e;
           border-radius: 8px;
           padding: 6px;
           cursor: pointer;
@@ -925,18 +1006,26 @@ export default function AgentResearcherCRMv2() {
           justify-content: center;
           min-width: 30px;
           min-height: 30px;
-          transition: all 0.15s;
+          transition: all 0.13s;
         }
         .crm-icon-btn:hover {
           background: rgba(0,196,188,0.12);
           color: #00c4bc;
-          border-color: rgba(0,196,188,0.40);
+          border-color: rgba(0,196,188,0.36);
         }
+        @keyframes spin { to { transform: rotate(360deg); } }
         @media print {
           .crm-shell button, .crm-shell input, .crm-shell [role='tablist'] { display: none !important; }
         }
         @media (max-width: 640px) {
           .crm-row-head { display: none !important; }
+          .crm-row {
+            grid-template-columns: 1fr auto !important;
+            row-gap: 6px;
+          }
+          .crm-row > *:nth-child(2),
+          .crm-row > *:nth-child(3),
+          .crm-row > *:nth-child(4) { display: none; }
         }
       `}</style>
     </div>

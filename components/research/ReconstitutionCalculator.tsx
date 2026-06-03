@@ -99,7 +99,7 @@ export default function ReconstitutionCalculator({
       <div className="grid-2" style={{ gap: 'var(--space-3)', marginBottom: 'var(--space-3)' }}>
         <div>
           <label style={labelStyle} htmlFor="recon-mass">
-            Vial Amount (Mg)
+            Vial Amount (mg)
           </label>
           <input
             id="recon-mass"
@@ -116,7 +116,7 @@ export default function ReconstitutionCalculator({
         {mode === 'diluent' ? (
           <div>
             <label style={labelStyle} htmlFor="recon-diluent">
-              Bacteriostatic Water To Add (Ml)
+              Bacteriostatic Water To Add (mL)
             </label>
             <input
               id="recon-diluent"
@@ -132,7 +132,7 @@ export default function ReconstitutionCalculator({
         ) : (
           <div>
             <label style={labelStyle} htmlFor="recon-target">
-              Target Concentration (Mg/Ml)
+              Target Concentration (mg/mL)
             </label>
             <input
               id="recon-target"
@@ -153,7 +153,7 @@ export default function ReconstitutionCalculator({
           <p style={{ color: 'var(--silver)', marginBottom: 'var(--space-3)' }}>
             Resulting Concentration:{' '}
             <strong style={{ color: 'var(--teal)' }}>
-              {concentration != null ? `${concentration.toFixed(3)} Mg/Ml` : '-'}
+              {concentration != null ? `${concentration.toFixed(3)} mg/mL` : '-'}
             </strong>
           </p>
 
@@ -190,7 +190,7 @@ export default function ReconstitutionCalculator({
         <p style={{ color: 'var(--silver)' }}>
           Bacteriostatic Water To Add:{' '}
           <strong style={{ color: 'var(--teal)' }}>
-            {targetVolume != null ? `${targetVolume.toFixed(3)} Ml` : '-'}
+            {targetVolume != null ? `${targetVolume.toFixed(3)} mL` : '-'}
           </strong>
         </p>
       )}
@@ -219,8 +219,8 @@ export default function ReconstitutionCalculator({
       ) : (
         <p style={{ marginTop: 'var(--space-3)', fontSize: '0.82rem', color: 'var(--silver)' }}>
           Need Diluent?{' '}
-          <Link href="/research/bac-water" style={{ color: 'var(--teal)', fontWeight: 700 }}>
-            See Bacteriostatic Water.
+          <Link href="/research/calculators#reconstitution" style={{ color: 'var(--teal)', fontWeight: 700 }}>
+            See Reconstitution Calculator.
           </Link>
         </p>
       )}

@@ -133,7 +133,7 @@ function Reconstitution() {
         {volMl !== null && (
           <button
             type="button"
-            onClick={() => setDiluentMl(volMl.toFixed(2))}
+            onClick={() => setDiluentMl(String(volMl))}
             style={{
               fontSize: 12, fontWeight: 700, padding: '4px 10px', borderRadius: 6,
               background: 'rgba(0,196,188,0.18)', border: '1px solid rgba(0,196,188,0.45)',
@@ -186,7 +186,7 @@ function DilutionSection() {
       />
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 12 }}>
         <div>
-          <label style={labelStyle}>Stock Concentration</label>
+          <label style={labelStyle}>Stock Concentration (Units)</label>
           <input style={inputStyle} type="number" min={0} value={stock} onChange={(e) => setStock(e.target.value)} />
         </div>
         <div>
@@ -203,14 +203,18 @@ function DilutionSection() {
           <thead>
             <tr>
               <th style={{ textAlign: 'left', padding: 8, color: '#A8B4C0', fontSize: 12 }}>Step</th>
-              <th style={{ textAlign: 'left', padding: 8, color: '#A8B4C0', fontSize: 12 }}>Concentration</th>
+              <th style={{ textAlign: 'left', padding: 8, color: '#A8B4C0', fontSize: 12 }}>Concentration (Same Units)</th>
             </tr>
           </thead>
           <tbody>
             {series.map((s) => (
               <tr key={s.stepNumber}>
                 <td style={{ padding: 8, color: '#FFFFFF' }}>{s.stepNumber}</td>
-                <td style={{ padding: 8, color: '#00C4BC', fontWeight: 600 }}>{s.concentration.toExponential(3)}</td>
+                <td style={{ padding: 8, color: '#00C4BC', fontWeight: 600 }}>
+                  {Math.abs(s.concentration) >= 0.001 && Math.abs(s.concentration) < 1e5
+                    ? s.concentration.toPrecision(4)
+                    : s.concentration.toExponential(3)}
+                </td>
               </tr>
             ))}
             {series.length === 0 && (
@@ -282,6 +286,8 @@ function ConcentrationSection() {
       <div style={resultStyle}>
         {result === null
           ? 'Enter A Molecular Weight (Da) To Convert Between Mass And Molar Units.'
+          : from === to
+          ? <>Same Unit Selected — No Conversion Needed: <strong>{Number(value).toPrecision(6)}</strong> {to}</>
           : <>Converted: <strong>{result.toPrecision(6)}</strong> {to}</>
         }
       </div>
@@ -330,6 +336,8 @@ function StabilitySection() {
       <div style={resultStyle}>
         {days === null
           ? 'Enter Valid Inputs (Temperatures Must Be Above −273°C).'
+          : Number(ea) === 0
+          ? 'Activation Energy Cannot Be Zero — Temperature Has No Effect At Ea=0. Use A Value > 0 kJ/mol.'
           : <>Predicted Shelf: <strong>{days.toFixed(1)} Days</strong> At {tTo}°C</>
         }
       </div>
@@ -372,7 +380,7 @@ function CostSection() {
       <div style={resultStyle}>
         {!out
           ? 'Enter Valid Inputs.'
-          : <>Doses Per Vial: <strong>{out.dosesPerVial.toFixed(1)}</strong>{'  '}|{'  '}Dollars Per Dose: <strong>${out.dollarsPerDose.toFixed(3)}</strong></>
+          : <>Doses Per Vial: <strong>{out.dosesPerVial.toFixed(1)}</strong>{'  '}|{'  '}Dollars Per Dose: <strong>${out.dollarsPerDose === 0 ? '0.00' : out.dollarsPerDose.toFixed(3)}</strong></>
         }
       </div>
       <p style={noteStyle}>{RESEARCH_NOTE}</p>
@@ -404,7 +412,7 @@ function PoolingSection() {
         </div>
         <div>
           <label style={labelStyle}>Vial Count</label>
-          <input style={inputStyle} type="number" value={count} onChange={(e) => setCount(e.target.value)} />
+          <input style={inputStyle} type="number" min={1} step={1} value={count} onChange={(e) => setCount(String(Math.max(1, Math.floor(Number(e.target.value) || 1))))} />
         </div>
         <div>
           <label style={labelStyle}>Total Diluent (mL)</label>
@@ -430,6 +438,15 @@ function HplcRtSection() {
   const [end, setEnd] = useState('65');
   const [gradient, setGradient] = useState('20');
 
+  const cleanSeq = seq.replace(/\s+/g, '').toUpperCase();
+  const unknownChars = useMemo(() => {
+    const chars = new Set<string>();
+    for (const c of cleanSeq) {
+      if (!STANDARD_AA.has(c)) chars.add(c);
+    }
+    return [...chars];
+  }, [cleanSeq]);
+
   const rt = predictHplcRetentionTime({
     sequence: seq,
     gradientPctBStart: Number(start),
@@ -437,6 +454,8 @@ function HplcRtSection() {
     gradientMin: Number(gradient),
     c18Column: true,
   });
+
+  const gradientInvalid = Number(gradient) <= 0;
 
   return (
     <section id="hplc-rt" style={sectionStyle}>
@@ -448,6 +467,11 @@ function HplcRtSection() {
         <div>
           <label style={labelStyle}>One-Letter Sequence (Standard 20 AA Codes)</label>
           <input style={inputStyle} type="text" value={seq} maxLength={500} onChange={(e) => setSeq(e.target.value)} />
+          {unknownChars.length > 0 && (
+            <div style={{ marginTop: 6, fontSize: 12, color: '#F6AD55', background: 'rgba(246,173,85,0.10)', border: '1px solid rgba(246,173,85,0.30)', borderRadius: 6, padding: '5px 10px' }}>
+              ⚠ Non-standard characters detected: <strong>{unknownChars.join(', ')}</strong>. These are ignored for hydrophobicity, affecting accuracy. Use only: A C D E F G H I K L M N P Q R S T V W Y.
+            </div>
+          )}
         </div>
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 12, marginTop: 12 }}>
@@ -465,7 +489,9 @@ function HplcRtSection() {
         </div>
       </div>
       <div style={resultStyle}>
-        {rt === null
+        {gradientInvalid
+          ? 'Gradient Length Must Be Greater Than 0 Minutes.'
+          : rt === null
           ? Number(end) <= Number(start)
             ? 'Gradient End Must Be Greater Than Gradient Start.'
             : 'Enter A Valid One-Letter Sequence.'
@@ -529,7 +555,7 @@ function MassSpecSection() {
         </div>
         <div>
           <label style={labelStyle}>Max Charge State</label>
-          <input style={inputStyle} type="number" value={maxCharge} onChange={(e) => setMaxCharge(e.target.value)} />
+          <input style={inputStyle} type="number" min={1} value={maxCharge} onChange={(e) => setMaxCharge(e.target.value)} />
         </div>
       </div>
       <div style={{ ...resultStyle, padding: 0, background: 'transparent', border: 'none' }}>
@@ -566,6 +592,24 @@ function SppsSection() {
   const [aaCost, setAaCost] = useState('10');
   const [resinCost, setResinCost] = useState('20');
 
+  const cleanSppsSeq = seq.replace(/\s+/g, '').toUpperCase();
+  const sppsUnknownChars = useMemo(() => {
+    const chars = new Set<string>();
+    for (const c of cleanSppsSeq) {
+      if (!STANDARD_AA.has(c)) chars.add(c);
+    }
+    return [...chars];
+  }, [cleanSppsSeq]);
+
+  const cleanSeq = seq.replace(/\s+/g, '').toUpperCase();
+  const unknownChars = useMemo(() => {
+    const chars = new Set<string>();
+    for (const c of cleanSeq) {
+      if (!STANDARD_AA.has(c)) chars.add(c);
+    }
+    return [...chars];
+  }, [cleanSeq]);
+
   const out = estimateFmocSppsCost({
     sequence: seq,
     scaleUmol: Number(scale),
@@ -584,6 +628,11 @@ function SppsSection() {
         <div>
           <label style={labelStyle}>One-Letter Sequence</label>
           <input style={inputStyle} type="text" value={seq} maxLength={500} onChange={(e) => setSeq(e.target.value)} />
+          {sppsUnknownChars.length > 0 && (
+            <div style={{ marginTop: 6, fontSize: 12, color: '#F6AD55', background: 'rgba(246,173,85,0.10)', border: '1px solid rgba(246,173,85,0.30)', borderRadius: 6, padding: '5px 10px' }}>
+              ⚠ Non-standard characters: <strong>{sppsUnknownChars.join(', ')}</strong>. Cost estimate may be inaccurate. Use standard 20 AA codes only.
+            </div>
+          )}
         </div>
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 12, marginTop: 12 }}>
@@ -621,9 +670,9 @@ function SppsSection() {
 }
 
 function SolubilitySection() {
-  const [gravy, setGravy] = useState('-0.4');
-  const [pi, setPi] = useState('10.2');
-  const [len, setLen] = useState('25');
+  const [gravy, setGravy] = useState('0.5');
+  const [pi, setPi] = useState('7.0');
+  const [len, setLen] = useState('20');
   const [pH, setPH] = useState('7.4');
 
   const out = predictSolubility({
@@ -654,7 +703,7 @@ function SolubilitySection() {
         </div>
         <div>
           <label style={labelStyle}>Sequence Length</label>
-          <input style={inputStyle} type="number" value={len} onChange={(e) => setLen(e.target.value)} />
+          <input style={inputStyle} type="number" step={1} min={1} value={len} onChange={(e) => setLen(String(Math.max(1, Math.floor(Number(e.target.value) || 1))))} />
         </div>
         <div>
           <label style={labelStyle}>Solution pH</label>

@@ -43,8 +43,10 @@ export default function CalculatorsPage() {
           Researcher Calculators
         </h1>
         <p style={{ color: '#A8B4C0', fontSize: 16, marginTop: 8, maxWidth: 700, lineHeight: 1.6 }}>
-          Pure Lab-Prep Math, Built For The Bench. Reconstitution, Concentration Conversion, Serial
-          Dilution, Arrhenius Stability, Cost Per Dose, And Multi-Vial Pooling. Research Use Only.
+          Pure Lab-Prep Math, Built For The Bench. Eleven Calculators: Reconstitution, Serial Dilution,
+          Concentration Conversion, Arrhenius Stability, Cost Per Dose, Vial Pooling, HPLC Retention
+          Time, Mass Spec m/z, Fmoc-SPPS Cost, Solubility Prediction, And Vial Quantity Planning.
+          Research Use Only.
         </p>
       </header>
 
