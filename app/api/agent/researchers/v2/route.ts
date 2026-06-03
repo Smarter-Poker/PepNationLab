@@ -555,14 +555,20 @@ export async function GET() {
           delta_pct: 0,
           label: 'Churn Risk',
         },
+        // CRMv2 reads k.best_customer.label directly. NEVER return null here —
+        // doing so crashes the entire dashboard tab with TypeError: Cannot read
+        // properties of null (reading 'label') on the client. When there is no
+        // best customer, return an empty-shape Kpi the render path can read safely.
         best_customer: bestCustomer
           ? {
-              value: bestCustomer.full_name || bestCustomer.username || 'Top Researcher',
-              subvalue: `$${bestCustomer.total_spent.toFixed(0)}`,
+              value: Number(bestCustomer.total_spent ?? 0),
+              sparkline: [],
+              delta_pct: 0,
+              label: bestCustomer.full_name || bestCustomer.username || 'Top Researcher',
+              subvalue: `$${Number(bestCustomer.total_spent ?? 0).toFixed(0)}`,
               researcher_id: bestCustomer.id,
-              label: 'Best Customer',
             }
-          : null,
+          : { value: 0, sparkline: [], delta_pct: 0, label: '—' },
         lifetime_commission: {
           value: Number((totalLTV * 0.05).toFixed(2)),
           sparkline: weeklyRevenue.map((v) => v * 0.05),
@@ -600,7 +606,7 @@ function emptyPayload() {
       repeat_rate: { value: 0, sparkline: [], delta_pct: 0, label: 'Repeat Buyer Rate' },
       new_this_month: { value: 0, sparkline: [], delta_pct: 0, label: 'New This Month' },
       at_risk: { value: 0, sparkline: [], delta_pct: 0, label: 'Churn Risk' },
-      best_customer: null,
+      best_customer: { value: 0, sparkline: [], delta_pct: 0, label: '—' },
       lifetime_commission: { value: 0, sparkline: [], delta_pct: 0, label: 'Est Commission' },
     },
     insights: [],
