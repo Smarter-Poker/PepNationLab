@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
+import { verifyCommissionSafeguard } from '@/lib/pricing';
 import { requireAgent } from '@/lib/admin-auth';
 import { assertSameOrigin } from '@/lib/csrf';
 
@@ -67,6 +68,11 @@ export async function PATCH(
         { error: 'You Are Not The Parent Of This Sub-Agent.' },
         { status: 403 },
       );
+    }
+
+    const safeguard = await verifyCommissionSafeguard(admin, callerId, commissionPct);
+    if (!safeguard.safe) {
+      return NextResponse.json({ error: safeguard.error }, { status: 400 });
     }
 
     const previousPct = subAgent.commission_pct == null ? null : Number(subAgent.commission_pct);

@@ -164,4 +164,79 @@ export function applyBulkPrice(base: number, qty: number, bulkPrice: number | nu
   return base;
 }
 
+/**
+ * Ensures that an Agent's Sub-Agent commission rate never causes the Agent to
+ * lose money on a sale, or allows the Sub-Agent to out-earn the Agent.
+ * @param desiredCommissionPct - If provided, checks if this new % is safe. If omitted, checks the Agent's highest existing Sub-Agent commission.
+ */
+export async function verifyCommissionSafeguard(
+  supabase: ServiceClient,
+  agentId: string,
+  desiredCommissionPct?: number
+): Promise<{ safe: true } | { safe: false; error: string }> {
+  // Find highest sub-agent commission if not explicitly provided
+  let checkPct = desiredCommissionPct;
+  if (checkPct === undefined) {
+    const { data: subAgents } = await supabase
+      .from('profiles')
+      .select('commission_pct, commission_max_pct, is_sub_agent')
+      .eq('parent_agent_id', agentId)
+      .eq('is_sub_agent', true);
+    
+    let maxExisting = 0;
+    if (subAgents) {
+      for (const sa of subAgents) {
+        // Find highest possible rate between base and capped bonus
+        const val = Math.max(Number(sa.commission_pct || 0), Number(sa.commission_max_pct || 0));
+        if (val > maxExisting) maxExisting = val;
+      }
+    }
+    checkPct = maxExisting;
+  }
+
+  if (!checkPct || checkPct <= 0) return { safe: true };
+
+  // Pull all active agent products
+  const { data: products } = await supabase
+    .from('agent_products')
+    .select('product_id, retail_price')
+    .eq('agent_id', agentId)
+    .eq('is_visible', true);
+
+  if (!products || products.length === 0) return { safe: true };
+
+  // Need legacy tier for computeAgentCostForAgent
+  const { data: agentProfile } = await supabase
+    .from('profiles')
+    .select('tier')
+    .eq('id', agentId)
+    .maybeSingle();
+  const legacyTier = (agentProfile?.tier as AgentTier | null) ?? 'tier_3';
+
+  for (const p of products) {
+    const retail = Number(p.retail_price);
+    if (retail <= 0) continue;
+
+    const cost = await computeAgentCostForAgent(supabase, p.product_id, agentId, legacyTier);
+    
+    // Agent Net Profit before Commission = Retail - Cost
+    // Sub-Agent Commission = Retail * (checkPct / 100)
+    // Rule: Sub-Agent Commission <= Agent Net Profit / 2
+    // Which means: Retail * (checkPct / 100) <= (Retail - Cost) / 2
+    // checkPct <= ((Retail - Cost) / 2 / Retail) * 100
+    
+    const marginPct = ((retail - cost) / retail) * 100;
+    const maxSafePct = marginPct / 2;
+
+    if (checkPct > maxSafePct) {
+      return { 
+        safe: false, 
+        error: `Cannot proceed: A commission rate of ${checkPct}% would cause you to lose money or be out-earned by the sub-agent on at least one active product. Your lowest margin dictates a maximum safe commission of ${Math.floor(maxSafePct * 10) / 10}%. Please raise your retail prices before setting this commission.`
+      };
+    }
+  }
+
+  return { safe: true };
+}
+
 export { createServiceClient };

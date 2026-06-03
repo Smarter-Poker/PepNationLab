@@ -4,6 +4,7 @@ import { requireAgent } from '@/lib/admin-auth';
 import { assertSameOrigin } from '@/lib/csrf';
 import { notifyPromotedToAgent, notifyPromotionSuccess } from '@/lib/notify';
 import { generateQrDataUrl } from '@/lib/qr';
+import { verifyCommissionSafeguard } from '@/lib/pricing';
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://pepnationlab.com';
 
@@ -175,6 +176,15 @@ export async function POST(req: NextRequest) {
         { status: 400 },
       );
     }
+
+    const isPromotingToFullAgent = callerProfile.is_super_agent === true;
+    if (!isPromotingToFullAgent) {
+      const safeguard = await verifyCommissionSafeguard(admin, user.id, commissionPct);
+      if (!safeguard.safe) {
+        return NextResponse.json({ error: safeguard.error }, { status: 400 });
+      }
+    }
+
     if (paymentModel !== 'credit' && paymentModel !== 'prepaid') {
       return NextResponse.json(
         { error: 'paymentModel Must Be Either "credit" Or "prepaid".' },

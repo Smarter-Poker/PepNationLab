@@ -27,6 +27,29 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    const { data: subAgents } = await supabase
+      .from('profiles')
+      .select('commission_pct, commission_max_pct')
+      .eq('parent_agent_id', gate.user.id)
+      .eq('is_sub_agent', true);
+
+    if (subAgents && subAgents.length > 0) {
+      let maxExisting = 0;
+      for (const sa of subAgents) {
+        const val = Math.max(Number(sa.commission_pct || 0), Number(sa.commission_max_pct || 0));
+        if (val > maxExisting) maxExisting = val;
+      }
+      if (maxExisting > 0) {
+        const maxSafePct = marginPercent / 2;
+        if (maxExisting > maxSafePct) {
+          return NextResponse.json(
+            { error: `Cannot set margin to ${marginPercent}%. You have sub-agents earning up to ${maxExisting}% commission, which requires a minimum margin of ${maxExisting * 2}%.` },
+            { status: 422 }
+          );
+        }
+      }
+    }
+
     const { data: agentProducts } = await supabase
       .from('agent_products')
       .select('id, product_id, products!inner(base_cost)')

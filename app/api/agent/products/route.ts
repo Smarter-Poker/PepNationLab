@@ -212,6 +212,39 @@ export async function PATCH(req: NextRequest) {
         { status: 422 }
       );
     }
+    }
+  }
+
+  // ── Server-side Sub-Agent Margin Safeguard ───────────────────────────────
+  // Ensure that the new price does not drop the margin below what is required
+  // by existing Sub-Agents.
+  const checkRetailPrice = activeIsOnSale ? activeSalePrice : (resolvedRetailPrice !== undefined ? resolvedRetailPrice : Number(check.retail_price));
+  if (checkRetailPrice > 0 && agentCostPer10 > 0) {
+    const newMarginPct = ((checkRetailPrice - agentCostPer10) / checkRetailPrice) * 100;
+    
+    const { data: subAgents } = await supabase
+      .from('profiles')
+      .select('commission_pct, commission_max_pct')
+      .eq('parent_agent_id', gate.user.id)
+      .eq('is_sub_agent', true);
+
+    if (subAgents && subAgents.length > 0) {
+      let maxExisting = 0;
+      for (const sa of subAgents) {
+        const val = Math.max(Number(sa.commission_pct || 0), Number(sa.commission_max_pct || 0));
+        if (val > maxExisting) maxExisting = val;
+      }
+
+      if (maxExisting > 0) {
+        const maxSafePct = newMarginPct / 2;
+        if (maxExisting > maxSafePct) {
+          return NextResponse.json(
+            { error: `Cannot lower price to $${(checkRetailPrice / 10).toFixed(2)}/vial. You have sub-agents earning up to ${maxExisting}% commission, which requires this product's margin to remain higher.` },
+            { status: 422 }
+          );
+        }
+      }
+    }
   }
 
   const updatePayload: Record<string, unknown> = {
