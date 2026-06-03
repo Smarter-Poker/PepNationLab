@@ -7,7 +7,7 @@
 
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { GitCompare, Layers, ShieldCheck, GraduationCap, BookOpen, HelpCircle, Sparkles, Calculator, Library } from 'lucide-react';
+import { GitCompare, Layers, ShieldCheck, GraduationCap, BookOpen, HelpCircle, Sparkles, Calculator, Library, Table2 } from 'lucide-react';
 import { getAllCompounds } from '@/lib/compounds-server';
 import { RESEARCH_AREAS } from '@/lib/compounds';
 import AskTheLab from '@/components/research/AskTheLab';
@@ -139,6 +139,19 @@ export default async function ResearchLibraryPage({
         >
           <GitCompare size={18} aria-hidden="true" />
           Compare Compounds
+        </Link>
+        <Link
+          href="/research/data"
+          className="btn-secondary"
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 'var(--space-2, 8px)',
+            textDecoration: 'none',
+          }}
+        >
+          <Table2 size={18} aria-hidden="true" />
+          Full Data Table
         </Link>
         <Link
           href="/research/stacks"

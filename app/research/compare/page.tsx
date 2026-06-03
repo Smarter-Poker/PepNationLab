@@ -14,8 +14,17 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-export default async function CompareCompoundsPage() {
+export default async function CompareCompoundsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ add?: string }>;
+}) {
+  const { add } = await searchParams;
   const compounds = await getAllCompounds();
+  const initialSlugs = (add ?? '')
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean);
 
   return (
     <div style={{ maxWidth: '1100px', margin: '0 auto', padding: 'var(--space-6, 32px) var(--space-4, 16px)' }}>
@@ -42,7 +51,7 @@ export default async function CompareCompoundsPage() {
         </p>
       </header>
 
-      <CompareTool compounds={compounds} />
+      <CompareTool compounds={compounds} initialSlugs={initialSlugs} />
     </div>
   );
 }

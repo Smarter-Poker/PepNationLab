@@ -142,8 +142,16 @@ const ROWS: Row[] = [
   },
 ];
 
-export default function CompareTool({ compounds }: { compounds: Compound[] }) {
-  const [selectedSlugs, setSelectedSlugs] = useState<string[]>([]);
+export default function CompareTool({
+  compounds,
+  initialSlugs = [],
+}: {
+  compounds: Compound[];
+  initialSlugs?: string[];
+}) {
+  const [selectedSlugs, setSelectedSlugs] = useState<string[]>(() =>
+    initialSlugs.filter((s) => compounds.some((c) => c.slug === s)).slice(0, MAX_COLUMNS),
+  );
 
   const bySlug = useMemo(() => {
     const map = new Map<string, Compound>();

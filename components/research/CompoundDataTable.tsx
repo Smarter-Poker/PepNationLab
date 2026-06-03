@@ -3,13 +3,16 @@
 /**
  * CompoundDataTable — a sortable, filterable "database" grid of the whole
  * catalog. Click any column header to sort; type to filter across name,
- * category, class, and target. Each row links to the full monograph. Pure
- * client rendering over a lightweight row list from the server. Research-use-only.
+ * category, class, and target. Each row links to the full monograph and can be
+ * added to the side-by-side Compare tool. Research-use-only.
  */
 
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
-import { ArrowUpDown } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { ArrowUpDown, GitCompare, X } from 'lucide-react';
+
+const MAX_COMPARE = 3;
 
 export interface DataRow {
   slug: string;
@@ -63,9 +66,31 @@ const td: React.CSSProperties = {
 };
 
 export default function CompoundDataTable({ rows }: { rows: DataRow[] }) {
+  const router = useRouter();
   const [q, setQ] = useState('');
   const [sortKey, setSortKey] = useState<SortKey>('name');
   const [asc, setAsc] = useState(true);
+  const [compareSlugs, setCompareSlugs] = useState<string[]>([]);
+
+  const nameBySlug = useMemo(() => {
+    const m = new Map<string, string>();
+    for (const r of rows) m.set(r.slug, r.name);
+    return m;
+  }, [rows]);
+
+  function toggleCompare(slug: string) {
+    setCompareSlugs((prev) =>
+      prev.includes(slug)
+        ? prev.filter((s) => s !== slug)
+        : prev.length >= MAX_COMPARE
+          ? prev
+          : [...prev, slug],
+    );
+  }
+
+  function goCompare() {
+    if (compareSlugs.length > 0) router.push(`/research/compare?add=${compareSlugs.join(',')}`);
+  }
 
   const view = useMemo(() => {
     const term = q.trim().toLowerCase();
@@ -117,7 +142,7 @@ export default function CompoundDataTable({ rows }: { rows: DataRow[] }) {
       </p>
 
       <div className="card-glass" style={{ borderRadius: 'var(--radius-lg, 12px)', overflowX: 'auto' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '720px' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '820px' }}>
           <thead>
             <tr>
               {COLUMNS.map((col) => (
@@ -128,6 +153,7 @@ export default function CompoundDataTable({ rows }: { rows: DataRow[] }) {
                   </span>
                 </th>
               ))}
+              <th style={{ ...th, cursor: 'default', textAlign: 'center' }}>Compare</th>
             </tr>
           </thead>
           <tbody>
@@ -149,6 +175,40 @@ export default function CompoundDataTable({ rows }: { rows: DataRow[] }) {
                 <td style={td}>
                   <span style={{ color: r.riskColor, fontWeight: 700 }}>{r.risk}</span>
                 </td>
+                <td style={{ ...td, textAlign: 'center' }}>
+                  {(() => {
+                    const on = compareSlugs.includes(r.slug);
+                    const full = !on && compareSlugs.length >= MAX_COMPARE;
+                    return (
+                      <button
+                        type="button"
+                        onClick={() => toggleCompare(r.slug)}
+                        disabled={full}
+                        aria-pressed={on}
+                        aria-label={on ? `Remove ${r.name} From Compare` : `Add ${r.name} To Compare`}
+                        title={full ? 'Maximum Of Three Selected' : on ? 'Selected For Compare' : 'Add To Compare'}
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '5px',
+                          background: on ? 'rgba(0,196,188,0.16)' : 'transparent',
+                          border: `1px solid ${on ? 'var(--teal, #00C4BC)' : 'rgba(168,180,192,0.35)'}`,
+                          color: on ? 'var(--teal, #00C4BC)' : 'var(--silver, #A8B4C0)',
+                          borderRadius: '999px',
+                          padding: '4px 10px',
+                          fontSize: '0.72rem',
+                          fontWeight: 700,
+                          cursor: full ? 'not-allowed' : 'pointer',
+                          opacity: full ? 0.4 : 1,
+                          whiteSpace: 'nowrap',
+                        }}
+                      >
+                        <GitCompare size={12} aria-hidden="true" />
+                        {on ? 'Added' : 'Compare'}
+                      </button>
+                    );
+                  })()}
+                </td>
               </tr>
             ))}
           </tbody>
@@ -159,6 +219,73 @@ export default function CompoundDataTable({ rows }: { rows: DataRow[] }) {
         <p style={{ color: 'var(--silver, #A8B4C0)', fontSize: '0.95rem', marginTop: 'var(--space-4, 16px)' }}>
           No Compounds Matched That Filter.
         </p>
+      )}
+
+      {compareSlugs.length > 0 && (
+        <div
+          style={{
+            position: 'sticky',
+            bottom: '16px',
+            marginTop: 'var(--space-4, 16px)',
+            display: 'flex',
+            flexWrap: 'wrap',
+            alignItems: 'center',
+            gap: 'var(--space-2, 8px)',
+            padding: 'var(--space-3, 12px) var(--space-4, 16px)',
+            background: '#0F1923',
+            border: '1px solid rgba(0,196,188,0.4)',
+            borderRadius: '14px',
+            boxShadow: '0 14px 40px rgba(0,0,0,0.55)',
+            zIndex: 5,
+          }}
+        >
+          <span style={{ fontSize: '0.78rem', fontWeight: 800, color: 'var(--silver, #A8B4C0)', letterSpacing: '0.03em' }}>
+            Compare ({compareSlugs.length}/{MAX_COMPARE}):
+          </span>
+          {compareSlugs.map((slug) => (
+            <span
+              key={slug}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '5px',
+                background: 'rgba(0,196,188,0.12)',
+                border: '1px solid rgba(0,196,188,0.4)',
+                color: 'var(--teal, #00C4BC)',
+                borderRadius: '999px',
+                padding: '4px 6px 4px 11px',
+                fontSize: '0.78rem',
+                fontWeight: 700,
+              }}
+            >
+              {nameBySlug.get(slug) ?? slug}
+              <button
+                type="button"
+                onClick={() => toggleCompare(slug)}
+                aria-label={`Remove ${nameBySlug.get(slug) ?? slug}`}
+                style={{ background: 'transparent', border: 'none', color: 'inherit', cursor: 'pointer', display: 'inline-flex', padding: 0 }}
+              >
+                <X size={13} />
+              </button>
+            </span>
+          ))}
+          <button
+            type="button"
+            onClick={goCompare}
+            className="btn-primary"
+            style={{
+              marginLeft: 'auto',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              fontSize: '0.82rem',
+              padding: '8px 16px',
+            }}
+          >
+            <GitCompare size={15} aria-hidden="true" />
+            Compare {compareSlugs.length === 1 ? 'Selected' : `These ${compareSlugs.length}`}
+          </button>
+        </div>
       )}
     </div>
   );
