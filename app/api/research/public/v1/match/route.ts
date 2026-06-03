@@ -3,13 +3,21 @@
  * Bearer-token wrapper around the existing match engine.
  */
 import { NextResponse, type NextRequest } from 'next/server';
-import { createServiceClient } from '@/lib/supabase/server';
+
 import {
   validateApiKey,
   logApiRequest,
   corsHeaders,
   firstClientIp,
 } from '@/lib/research/api-keys';
+import { getAllCompounds } from '@/lib/compounds-server';
+import {
+  scoreCompounds,
+  type MatchInput,
+  type EvidenceComfort,
+  type WadaConstraint,
+  type RiskTolerance,
+} from '@/lib/match-engine';
 
 export const dynamic = 'force-dynamic';
 
@@ -29,15 +37,15 @@ async function handle(req: NextRequest, payload: { goal?: string; comfort?: stri
       { status: auth.reason === 'rate_limited' ? 429 : 401, headers: corsHeaders() },
     );
   }
-  const supabase = await createServiceClient();
   const limit = Math.max(1, Math.min(25, Number(payload.limit ?? 10)));
-  const { data } = await supabase.rpc('match_compounds', {
-    p_goal: (payload.goal ?? '').slice(0, 256),
-    p_comfort: (payload.comfort ?? '').slice(0, 32),
-    p_wada: (payload.wada ?? '').slice(0, 32),
-    p_risk: (payload.risk ?? '').slice(0, 32),
-    p_limit: limit,
-  });
+  const compounds = await getAllCompounds();
+  const input: MatchInput = {
+    goal: payload.goal || 'tissue_repair',
+    evidenceComfort: (payload.comfort || 'any') as EvidenceComfort,
+    wadaConstraint: (payload.wada || 'no_constraint') as WadaConstraint,
+    riskTolerance: (payload.risk || 'any') as RiskTolerance,
+  };
+  const data = scoreCompounds(input, compounds).slice(0, limit);
   const status = 200;
   await logApiRequest(auth.key_id!, '/api/research/public/v1/match', req.method, status, Date.now() - t0, firstClientIp(req));
   return NextResponse.json({ note: RESEARCH_NOTE, results: data ?? [] }, { status, headers: corsHeaders() });

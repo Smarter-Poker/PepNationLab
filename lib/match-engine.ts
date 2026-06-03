@@ -105,6 +105,8 @@ const GOAL_KEYWORDS: Record<string, string[]> = {
   sleep: ['sleep', 'insomnia', 'circadian', 'melatonin'],
   mitochondrial: ['mitochondrial', 'mitochondria', 'energy', 'cardiolipin', 'mitophagy', 'nad', 'fatigue'],
   pain_inflammation: ['pain', 'inflammation', 'anti-inflammatory', 'analgesic', 'inflammatory', 'arthritis'],
+  gut_health: ['gut', 'gi', 'mucosal', 'ulcer', 'colitis', 'crohn', 'leaky', 'gastric'],
+  bone_joint: ['bone', 'joint', 'cartilage', 'osteo', 'density', 'fracture', 'synovial'],
 };
 
 function goalMentionsBonus(goal: string, c: Compound): number {
@@ -113,6 +115,8 @@ function goalMentionsBonus(goal: string, c: Compound): number {
     c.category ?? '',
     c.compound_class ?? '',
     c.mechanism ?? '',
+    c.plain_summary ?? '',
+    c.benefits ?? '',
     ...(c.studied_for ?? []),
   ]
     .join(' ')
