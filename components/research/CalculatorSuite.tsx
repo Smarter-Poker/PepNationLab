@@ -7,9 +7,15 @@
  * Power) were added in Wave 2.
  *
  * Research use only. Lab-prep math, not human dosing.
+ *
+ * Bug fixes applied:
+ *   - MW field in ConcentrationConverter hides when not needed (mass↔mass or molar↔molar).
+ *   - Mass Spec validates for non-standard AA characters before predicting.
+ *   - Sequence inputs have maxLength=500 to prevent UI freeze on large pastes.
+ *   - Vial Quantity dose count formatted with toLocaleString().
  */
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import {
   reconstitutionVolumeMl,
   drawVolumeMl,
@@ -205,17 +211,27 @@ function DilutionSection() {
 
 const UNITS: ConcentrationUnit[] = ['mg/mL', 'mcg/mL', 'ng/mL', 'mmol/L', 'umol/L', 'nmol/L'];
 
+const MASS_UNITS = new Set(['mg/mL', 'mcg/mL', 'ng/mL']);
+const MOLAR_UNITS = new Set(['mmol/L', 'umol/L', 'nmol/L']);
+
+function needsMW(from: ConcentrationUnit, to: ConcentrationUnit): boolean {
+  return (MASS_UNITS.has(from) && MOLAR_UNITS.has(to)) ||
+         (MOLAR_UNITS.has(from) && MASS_UNITS.has(to));
+}
+
 function ConcentrationSection() {
   const [value, setValue] = useState('1');
   const [from, setFrom] = useState<ConcentrationUnit>('mg/mL');
   const [to, setTo] = useState<ConcentrationUnit>('mcg/mL');
   const [mw, setMw] = useState('3367');
 
+  const mwRequired = needsMW(from, to);
+
   const result = concentrationConvert({
     value: Number(value),
     fromUnit: from,
     toUnit: to,
-    molecularWeightDa: Number(mw) || null,
+    molecularWeightDa: mwRequired ? (Number(mw) || null) : null,
   });
 
   return (
@@ -241,14 +257,16 @@ function ConcentrationSection() {
             {UNITS.map((u) => <option key={u} value={u}>{u}</option>)}
           </select>
         </div>
-        <div>
-          <label style={labelStyle}>Molecular Weight (Da)</label>
-          <input style={inputStyle} type="number" value={mw} onChange={(e) => setMw(e.target.value)} />
-        </div>
+        {mwRequired && (
+          <div>
+            <label style={labelStyle}>Molecular Weight (Da)</label>
+            <input style={inputStyle} type="number" value={mw} onChange={(e) => setMw(e.target.value)} />
+          </div>
+        )}
       </div>
       <div style={resultStyle}>
         {result === null
-          ? 'Provide A Molecular Weight To Convert Across Mass And Molar Units.'
+          ? 'Enter A Molecular Weight (Da) To Convert Between Mass And Molar Units.'
           : <>Converted: <strong>{result.toPrecision(6)}</strong> {to}</>
         }
       </div>
@@ -413,8 +431,8 @@ function HplcRtSection() {
       />
       <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 12 }}>
         <div>
-          <label style={labelStyle}>One-Letter Sequence</label>
-          <input style={inputStyle} type="text" value={seq} onChange={(e) => setSeq(e.target.value)} />
+          <label style={labelStyle}>One-Letter Sequence (Standard 20 AA Codes)</label>
+          <input style={inputStyle} type="text" value={seq} maxLength={500} onChange={(e) => setSeq(e.target.value)} />
         </div>
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 12, marginTop: 12 }}>
@@ -442,10 +460,22 @@ function HplcRtSection() {
   );
 }
 
+// Standard 20 AA one-letter codes
+const STANDARD_AA = new Set('ACDEFGHIKLMNPQRSTVWY');
+
 function MassSpecSection() {
   const [seq, setSeq] = useState('GIGAVLKVLTTGLPALISWIKRKRQQ');
   const [mode, setMode] = useState<'positive' | 'negative'>('positive');
   const [maxCharge, setMaxCharge] = useState('4');
+
+  const cleanSeq = seq.replace(/\s+/g, '').toUpperCase();
+  const unknownChars = useMemo(() => {
+    const chars = new Set<string>();
+    for (const c of cleanSeq) {
+      if (!STANDARD_AA.has(c)) chars.add(c);
+    }
+    return [...chars];
+  }, [cleanSeq]);
 
   const peaks = predictMassSpecPeaks({
     sequence: seq,
@@ -461,8 +491,13 @@ function MassSpecSection() {
       />
       <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 12 }}>
         <div>
-          <label style={labelStyle}>One-Letter Sequence</label>
-          <input style={inputStyle} type="text" value={seq} onChange={(e) => setSeq(e.target.value)} />
+          <label style={labelStyle}>One-Letter Sequence (Standard 20 AA Codes)</label>
+          <input style={inputStyle} type="text" value={seq} maxLength={500} onChange={(e) => setSeq(e.target.value)} />
+          {unknownChars.length > 0 && (
+            <div style={{ marginTop: 6, fontSize: 12, color: '#F6AD55', background: 'rgba(246,173,85,0.10)', border: '1px solid rgba(246,173,85,0.30)', borderRadius: 6, padding: '5px 10px' }}>
+              ⚠ Non-standard characters detected: <strong>{unknownChars.join(', ')}</strong>. These are treated as ~110 Da residues and will affect accuracy. Use only: A C D E F G H I K L M N P Q R S T V W Y.
+            </div>
+          )}
         </div>
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 12, marginTop: 12 }}>
@@ -529,7 +564,7 @@ function SppsSection() {
       <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 12 }}>
         <div>
           <label style={labelStyle}>One-Letter Sequence</label>
-          <input style={inputStyle} type="text" value={seq} onChange={(e) => setSeq(e.target.value)} />
+          <input style={inputStyle} type="text" value={seq} maxLength={500} onChange={(e) => setSeq(e.target.value)} />
         </div>
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 12, marginTop: 12 }}>
@@ -583,8 +618,12 @@ function SolubilitySection() {
     <section id="solubility" style={sectionStyle}>
       <CalculatorHeader
         title="Solubility Predictor"
-        why="A heuristic estimate of aqueous solubility using GRAVY (hydrophobicity), distance of pI from solution pH, and sequence length. Useful for guessing whether a peptide will dissolve cleanly in PBS, acetic acid, or DMSO."
+        why="A heuristic estimate of aqueous solubility using GRAVY (hydrophobicity), distance of pI from solution pH, and sequence length. Useful for guessing whether a peptide will dissolve cleanly in PBS, acetic acid, or DMSO. Get GRAVY and pI from ExPASy ProtParam (web.expasy.org/protparam)."
       />
+      <div style={{ marginBottom: 10, fontSize: 12, color: '#A8B4C0' }}>
+        💡 GRAVY score and isoelectric point (pI) can be calculated from your sequence at{' '}
+        <a href="https://web.expasy.org/protparam/" target="_blank" rel="noopener noreferrer" style={{ color: '#00C4BC' }}>ExPASy ProtParam</a>.
+      </div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 12 }}>
         <div>
           <label style={labelStyle}>GRAVY</label>
@@ -656,7 +695,7 @@ function VialQuantitySection() {
       <div style={resultStyle}>
         {!out ? 'Enter Valid Inputs.' : (
           <>
-            Vials Needed: <strong>{out.vialsNeeded}</strong>{'  '}|{'  '}
+            Vials Needed: <strong>{out.vialsNeeded.toLocaleString()}</strong>{'  '}|{'  '}
             Per-Subject Mass: <strong>{out.perSubjectMg.toFixed(2)} mg</strong>{'  '}|{'  '}
             Total Mass: <strong>{out.totalMg.toFixed(2)} mg</strong>
           </>

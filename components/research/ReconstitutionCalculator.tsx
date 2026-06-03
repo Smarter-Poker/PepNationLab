@@ -161,19 +161,24 @@ export default function ReconstitutionCalculator({
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
               <thead>
                 <tr>
-                  <th style={thStyle}>Example Mass (Mg)</th>
-                  <th style={thStyle}>Volume To Draw (Ml)</th>
-                  <th style={thStyle}>Units (100-Unit Syringe)</th>
+                  <th style={thStyle}>Example Mass (mg)</th>
+                  <th style={thStyle}>Volume To Draw (mL)</th>
+                  <th style={thStyle}>Units (U-100 Syringe)</th>
                 </tr>
               </thead>
               <tbody>
                 {EXAMPLE_DRAW_MASSES_MG.map((dm) => {
                   const vol = drawVolumeMl(mass, diluent, dm);
+                  const units = vol != null ? vol * 100 : null;
+                  const unitsDisplay = units === null ? '-'
+                    : units < 0.1 ? '<0.1'
+                    : units < 1 ? `${units.toFixed(2)}`
+                    : `${Math.round(units)}`;
                   return (
                     <tr key={dm}>
                       <td style={tdStyle}>{dm}</td>
                       <td style={tdStyle}>{vol != null ? vol.toFixed(3) : '-'}</td>
-                      <td style={tdStyle}>{vol != null ? Math.round(vol * 100) : '-'}</td>
+                      <td style={tdStyle}>{unitsDisplay}</td>
                     </tr>
                   );
                 })}
