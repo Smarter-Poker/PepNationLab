@@ -184,7 +184,55 @@ export async function POST(req: NextRequest) {
     const { error: updateError } = await supabase.from('orders').update(updatePayload).eq('id', orderId);
     if (updateError) {
       if (prepaidDeducted) {
-        try { await supabase.rpc('deduct_prepaid_balance', { agent_id: primaryBilledAgentId, amount: -totalOwed }); } catch {}
+        // FINANCIAL ROLLBACK: refund the prepaid deduction since the order
+        // status update failed. Use the canonical refund_prepaid_balance RPC
+        // (positive amount = add back). If the refund ALSO fails the user
+        // has been debited with no order — log explicitly + write an
+        // 'adjustment' audit row (the allowed enum value) flagged as
+        // UNRESOLVED so an admin can reconcile manually.
+        try {
+          const { data: refundOk, error: refundError } = await supabase.rpc(
+            'refund_prepaid_balance',
+            { p_agent_id: primaryBilledAgentId, p_amount: totalOwed },
+          );
+          if (refundError || !refundOk) {
+            console.error('[CRITICAL] prepaid REFUND failed after order update failed', {
+              orderId,
+              agentId: primaryBilledAgentId,
+              amount: totalOwed,
+              originalError: updateError.message,
+              refundError: refundError?.message ?? 'rpc_returned_false',
+            });
+            // Audit row using the canonical 'adjustment' type (the
+            // balance_transactions_type_check constraint does not allow a
+            // dedicated rollback type). The description carries the
+            // UNRESOLVED marker so an operator can find it via search.
+            const auditInsert = await supabase.from('balance_transactions').insert({
+              agent_id: primaryBilledAgentId,
+              type: 'adjustment',
+              amount: 0,
+              balance_before: oldBalance,
+              balance_after: oldBalance - totalOwed,
+              description: `UNRESOLVED prepaid debit of $${totalOwed} on order ${orderId} could NOT be refunded after order update failed (${updateError.message}; refund error: ${refundError?.message ?? 'rpc_returned_false'}). Manual reconciliation required.`,
+              reference_id: orderId,
+              reference_type: 'order',
+              created_by: callerId,
+            });
+            if (auditInsert.error) {
+              console.error('[CRITICAL] UNRESOLVED-rollback audit insert ALSO failed', {
+                orderId,
+                error: auditInsert.error.message,
+              });
+            }
+          }
+        } catch (rollbackThrow: any) {
+          console.error('[CRITICAL] prepaid refund threw after order update failed', {
+            orderId,
+            agentId: primaryBilledAgentId,
+            amount: totalOwed,
+            error: rollbackThrow?.message ?? String(rollbackThrow),
+          });
+        }
       }
       return NextResponse.json({ error: 'Failed to update order status' }, { status: 500 });
     }
