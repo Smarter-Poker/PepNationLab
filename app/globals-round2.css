@@ -1462,3 +1462,124 @@ body > div.pnl-page:not(.pnl-page-with-navbar) {
     padding-bottom: max(24px, var(--safe-bottom, 0px)) !important;
   }
 }
+
+/* ============================================================
+   ROUND 26 — TERTIARY DEEP-DIVE GAPS
+   ------------------------------------------------------------
+   Third pass over surfaces R24+R25 didn't touch:
+   - Fixed 2-col minmax grids (not auto-fill) that overflow at 375px
+   - ImageLightbox close button safe-area (done in JSX)
+   - /wallet/print meta-grid mobile stack (done in inline <style>)
+   - GlossaryText <abbr> dotted underline visible on coarse pointers
+     (mobile users can't trigger hover tooltips — at least mark the
+      term as carrying extra info)
+   ============================================================ */
+
+/* (26.1) FIXED 2-COL MINMAX GRIDS that don't use auto-fill — the
+   `gridTemplateColumns: 'minmax(280px, 1fr) minmax(260px, 1fr)'`
+   pattern in ThemeBuilder, CustomDomainsManager etc. overflows at
+   375px (280+260+gap = 554px). Round 24.3 only matched auto-fill
+   variants. Collapse hardcoded 2-col below 600px. */
+@media (max-width: 600px) {
+  [style*="gridTemplateColumns: 'minmax("],
+  [style*="gridTemplateColumns: \"minmax("],
+  [style*="grid-template-columns: minmax("] {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* (26.2) ABBR GLOSSARY HINT — on coarse pointers, the native
+   `title` tooltip never fires. Make the dotted underline more
+   prominent so users at least know the term has extra info; until
+   we add a proper tap-to-show popover, this is the safest hint. */
+@media (pointer: coarse) {
+  abbr[title] {
+    text-decoration: underline dotted !important;
+    text-decoration-thickness: 1.5px !important;
+    text-underline-offset: 2px !important;
+    cursor: help;
+  }
+}
+
+/* (26.3) TOASTER POSITION — sonner Toaster is bottom-right which
+   overlaps the PwaInstallPrompt at the same coordinate on mobile.
+   Lift sonner above the install prompt so toasts don't get covered. */
+[data-sonner-toaster][data-y-position="bottom"] {
+  bottom: calc(max(16px, env(safe-area-inset-bottom)) + 8px) !important;
+  z-index: 1100 !important;
+}
+
+/* (26.4) SUB-AGENT EDITOR / COMMISSION EDITOR — these are
+   often rendered in cards with fixed inline padding. On mobile
+   the slider + number input combo can overflow if the row
+   doesn't wrap. */
+@media (max-width: 600px) {
+  [data-commission-editor] > div,
+  [data-commission-row] {
+    flex-wrap: wrap !important;
+    gap: 8px !important;
+  }
+}
+
+/* (26.5) Inline `<style>` jsx tag — some components (HeroSection,
+   AgentSales table, [agentSlug] storefront) declare a <style>
+   block with selectors like `.sa-table { min-width: 520px }`.
+   The min-width forces horizontal scroll inside the wrapper
+   (correct), but on mobile the wrapper itself sometimes leaks.
+   Defense: any element matching .sa-table, .salestable, or 
+   .agentsales-table that doesn't already have overflow set, get
+   wrapped in horizontal scroll. */
+@media (max-width: 768px) {
+  .sa-table,
+  .salestable,
+  .agentsales-table {
+    display: block !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    max-width: 100vw !important;
+  }
+}
+
+/* (26.6) ORG CHART SVG — fixed width SVGs need explicit
+   `max-width: 100%; height: auto;` so they scale to their parent
+   container on mobile. */
+[data-org-chart] svg,
+.org-chart svg {
+  max-width: 100% !important;
+  height: auto !important;
+}
+
+/* (26.7) Hide scroll-wheel "shimmer" if any user-facing carousel
+   reserved space for a horizontal scrollbar — same Android Chrome
+   issue as R25.7 but for non-table containers like .filter-chips
+   and chip-row toolbars. */
+@media (max-width: 768px) {
+  [role="toolbar"][style*="overflowX"],
+  .filter-chips {
+    scrollbar-width: none !important;
+  }
+  [role="toolbar"][style*="overflowX"]::-webkit-scrollbar,
+  .filter-chips::-webkit-scrollbar {
+    height: 0 !important;
+    display: none !important;
+  }
+}
+
+/* (26.8) PRINT VIEWS open in mobile browser — if the user opens
+   /wallet/print from their phone before deciding to print, the
+   defensive max-width: 100vw rule from html/body in Round 5
+   already applies. Add one more belt: the inline <style> in the
+   print page now has a @media (max-width: 600px) block that 
+   stacks meta-grid + tightens table cells. This rule below 
+   reinforces that on the GLOBAL stylesheet so any future print
+   route inherits the same behavior. */
+@media screen and (max-width: 600px) {
+  body[style*="background: #fff"][style*="padding: 28px"],
+  body[style*="background: '#fff'"][style*="padding: 28px"] {
+    padding: 16px !important;
+  }
+}
+
+/* ============================================================
+   END ROUND 26
+   ============================================================ */
