@@ -137,17 +137,16 @@ function MatchFormInner() {
     router.replace(`${pathname}?${params.toString()}`, { scroll: false });
   }, [goal, evidenceComfort, wadaConstraint, riskTolerance, excludeInjectables, requireLongHalfLife, excludeSlugs, pathname, router]);
 
-  async function onSubmit(e?: React.FormEvent) {
+  async function onSubmit(e?: React.FormEvent, overrides?: any) {
     if (e) e.preventDefault();
     setLoading(true);
     setErrorMsg(null);
     try {
+      const payload = overrides ? overrides : { goal, evidenceComfort, wadaConstraint, riskTolerance, excludeInjectables, requireLongHalfLife, excludeSlugs };
       const res = await fetch('/api/research/match', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          input: { goal, evidenceComfort, wadaConstraint, riskTolerance, excludeInjectables, requireLongHalfLife, excludeSlugs },
-        }),
+        body: JSON.stringify({ input: payload }),
       });
       const data = (await res.json()) as ApiResponse;
       if (!res.ok) {
@@ -193,7 +192,17 @@ function MatchFormInner() {
         if (typeof data.result.excludeInjectables === 'boolean') setExcludeInjectables(data.result.excludeInjectables);
         if (typeof data.result.requireLongHalfLife === 'boolean') setRequireLongHalfLife(data.result.requireLongHalfLife);
         setAiPrompt('');
-        setTimeout(onSubmit, 300); // give state time to update
+        
+        // Use overrides to bypass React closure state delays
+        onSubmit(undefined, {
+          goal: data.result.goal || goal,
+          evidenceComfort: data.result.evidenceComfort || evidenceComfort,
+          wadaConstraint: data.result.wadaConstraint || wadaConstraint,
+          riskTolerance: data.result.riskTolerance || riskTolerance,
+          excludeInjectables: typeof data.result.excludeInjectables === 'boolean' ? data.result.excludeInjectables : excludeInjectables,
+          requireLongHalfLife: typeof data.result.requireLongHalfLife === 'boolean' ? data.result.requireLongHalfLife : requireLongHalfLife,
+          excludeSlugs
+        });
       }
     } catch (err) {
       setErrorMsg('Network error communicating with AI.');
