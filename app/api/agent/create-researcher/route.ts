@@ -224,7 +224,7 @@ export async function POST(req: NextRequest) {
 
   // Fire-and-forget: notify the storefront-owning agent (parent for sub-agent
   // callers, caller for regular agents) that a new researcher joined.
-  void notifyNewResearcher(admin, referringAgentId, fullName).catch(() => { /* ignore */ });
+  await notifyNewResearcher(admin, referringAgentId, fullName).catch(() => { /* ignore */ });
 
   return NextResponse.json({
     success: true,

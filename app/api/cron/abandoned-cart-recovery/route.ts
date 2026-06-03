@@ -149,7 +149,7 @@ export async function GET(req: Request) {
       });
       if (msgError) { skipped++; continue; }
 
-      void notifyCartReminder(supabase, candidate.id, itemCount, cartValue).catch(() => { /* best-effort */ });
+      await notifyCartReminder(supabase, candidate.id, itemCount, cartValue).catch(() => { /* best-effort */ });
 
       await supabase.from('abandoned_cart_reminders').insert({
         user_id: candidate.id,

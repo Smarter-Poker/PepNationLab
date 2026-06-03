@@ -206,7 +206,7 @@ export async function POST(req: NextRequest) {
     });
 
     // In-app notification — shows in bell immediately via Realtime
-    void notifyInvoiceGenerated(supabase, sub_agent_id, week_start, totalOwed).catch(() => { /* best-effort */ });
+    await notifyInvoiceGenerated(supabase, sub_agent_id, week_start, totalOwed).catch(() => { /* best-effort */ });
 
     return NextResponse.json({ success: true, invoiceId: invoice.id });
   } catch (error) {

@@ -188,7 +188,7 @@ export async function GET(req: Request) {
             type: 'invoice',
           });
           // In-app notification — shows in bell immediately via Realtime
-          void notifyInvoiceGenerated(supabase, subAgent.id, weekStart, totalOwed).catch(() => { /* best-effort */ });
+          await notifyInvoiceGenerated(supabase, subAgent.id, weekStart, totalOwed).catch(() => { /* best-effort */ });
         }
       }
     }
