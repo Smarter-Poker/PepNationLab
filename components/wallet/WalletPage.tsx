@@ -105,17 +105,18 @@ export default function WalletPage({
     (s: any) => s.due_date && new Date(s.due_date).getTime() < now && s.status !== 'paid'
   );
 
-  // Role-based action gating. Admin doesn't have statements, doesn't have
-  // a credit line, doesn't earn commissions, and doesn't upload payment
-  // proofs — so the buttons + tabs that touch those surfaces should be
-  // hidden for admin (not just disabled). Credit-related actions also
-  // disappear for any role that has no credit_limit set.
+  // Action gating — every role gets the full Wallet surface. Pay Now stays
+  // tied to having a real open statement (the button auto-disables when
+  // there's nothing to pay). Request Credit Increase only renders when the
+  // user actually has a credit line set — there's no useful action to take
+  // when credit_limit is 0.
   const hasCreditLine = (summary?.creditLimit ?? 0) > 0;
-  const canPay = role !== 'admin';
-  const canRequestCredit = role !== 'admin' && hasCreditLine;
+  const canPay = true;
+  const canRequestCredit = hasCreditLine;
 
-  // Tab list filtered by role. Admin sees Overview/Activity/Settings only.
-  const allTabs: { id: Tab; label: string }[] = [
+  // Tab list — every role sees the full six tabs. Sub-components handle
+  // empty data with their own "No ... Yet" copy.
+  const tabs: { id: Tab; label: string }[] = [
     { id: 'overview', label: 'Overview' },
     { id: 'activity', label: 'Activity' },
     { id: 'statements', label: 'Statements' },
@@ -123,15 +124,6 @@ export default function WalletPage({
     { id: 'receipts', label: 'Receipts' },
     { id: 'settings', label: 'Settings' },
   ];
-  const tabs = allTabs.filter((t) => {
-    if (role === 'admin') return t.id === 'overview' || t.id === 'activity' || t.id === 'settings';
-    return true;
-  });
-  // If the active tab is no longer in the filtered list, snap back to overview.
-  // eslint-disable-next-line react-hooks/set-state-in-effect
-  useEffect(() => {
-    if (!tabs.find((t) => t.id === tab)) setTab('overview');
-  }, [role, tab, tabs]);
 
   return (
     <div style={{ textTransform: 'capitalize', paddingTop: 'calc(var(--nav-offset, 60px) + var(--space-6))', paddingRight: 'var(--space-4)', paddingBottom: 'var(--space-8)', paddingLeft: 'var(--space-4)', minHeight: '100dvh' }}>
@@ -228,9 +220,9 @@ export default function WalletPage({
           )}
         </section>
 
-        {/* ACTION BAR — role-aware; admin sees nothing here (Send Funds lives
-            in the Overview tab below). */}
-        {(canPay || canRequestCredit) && (
+        {/* ACTION BAR — Pay Now is always rendered; it auto-disables when
+            there's nothing to pay. Request Credit Increase only renders
+            when the user has a real credit line. */}
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
           {canPay && (
             <button
@@ -258,7 +250,6 @@ export default function WalletPage({
             <span style={{ color: 'var(--grey-500)', fontSize: '0.82rem' }}>You Are All Paid Up.</span>
           )}
         </div>
-        )}
 
         {/* TAB STRIP */}
         <div role="tablist" style={{ display: 'flex', gap: 6, overflowX: 'auto', borderBottom: '1px solid rgba(255,255,255,0.08)', paddingBottom: 1 }}>
@@ -302,7 +293,6 @@ export default function WalletPage({
               </button>
             )}
           </section>
-          {role !== 'admin' && (
           <section className="card-glass" style={{ padding: 16, borderRadius: 12 }}>
             <h3 style={{ color: 'var(--white)', marginTop: 0, fontSize: '1rem' }}>Open Statements</h3>
             {(summary?.openStatements ?? []).length === 0 ? (
@@ -333,7 +323,6 @@ export default function WalletPage({
               </ul>
             )}
           </section>
-          )}
           </>
         )}
 
