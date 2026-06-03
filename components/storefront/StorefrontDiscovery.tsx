@@ -663,6 +663,7 @@ export default function DiscoveryHero({
   const [query, setQuery] = useState('');
   const [wizardOpen, setWizardOpen] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [showAllAreas, setShowAllAreas] = useState(false);
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState<MatchedProduct[]>([]);
   const [goalSummary, setGoalSummary] = useState('');
@@ -725,9 +726,9 @@ export default function DiscoveryHero({
         style={{
           position: 'relative',
           width: '100%',
-          maxWidth: 1024,
+          maxWidth: 980,
           margin: '0 auto 18px',
-          aspectRatio: '1024 / 576',
+          aspectRatio: '980 / 476',
           backgroundImage: 'url(/images/store_discovery_hero_v2.png)',
           backgroundSize: 'cover',
           backgroundPosition: 'center',
@@ -739,12 +740,18 @@ export default function DiscoveryHero({
         {/* Match Me Button Overlay */}
         <button
           type="button"
-          onClick={submitTypedGoal}
-          disabled={!query.trim()}
+          onClick={() => {
+            if (!query.trim()) {
+              const el = document.getElementById('discovery-search-input');
+              if (el) el.focus();
+            } else {
+              submitTypedGoal();
+            }
+          }}
           title="Match Me"
           style={{
-            position: 'absolute', top: '15%', left: '52%', width: '19%', height: '12%',
-            cursor: query.trim() ? 'pointer' : 'not-allowed', opacity: 0, zIndex: 10
+            position: 'absolute', top: '7%', left: '52%', width: '20%', height: '15%',
+            cursor: 'pointer', opacity: 0, zIndex: 10
           }}
           aria-label="Match Me"
         />
@@ -755,7 +762,7 @@ export default function DiscoveryHero({
           onClick={() => setWizardOpen(true)}
           title="Let Us Guide You"
           style={{
-            position: 'absolute', top: '15%', left: '72%', width: '21%', height: '12%',
+            position: 'absolute', top: '7%', left: '73%', width: '22%', height: '15%',
             cursor: 'pointer', opacity: 0, zIndex: 10
           }}
           aria-label="Let Us Guide You"
@@ -763,17 +770,18 @@ export default function DiscoveryHero({
 
         {/* Search Input Box */}
         <input
+          id="discovery-search-input"
           type="text"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           onKeyDown={(e) => { if (e.key === 'Enter') submitTypedGoal(); }}
-          placeholder="What Are You Trying To Research Today?"
+          placeholder="Ask Us Anything About The Peptide You Are Looking For"
           style={{
-            position: 'absolute', top: '38%', left: '11%', width: '85%', height: '11%',
+            position: 'absolute', top: '34%', left: '9%', width: '89%', height: '16%',
             background: 'transparent',
             border: 'none', outline: 'none', color: '#FFFFFF',
-            fontSize: 'max(14px, 1.4vw)',
-            padding: '0 10px',
+            fontSize: 'max(15px, 1.4vw)',
+            padding: '0 10px 0 45px',
             zIndex: 5,
             fontWeight: 500,
             letterSpacing: '0.02em',
@@ -781,14 +789,54 @@ export default function DiscoveryHero({
         />
 
         {/* Quick Select Buttons */}
-        <button title="Recovery" onClick={() => { setQuery('Recovery'); void runMatch({ goal: 'Recovery' }, 'Recovery'); }} style={{ position: 'absolute', top: '64%', left: '3%', width: '10%', height: '22%', cursor: 'pointer', opacity: 0, zIndex: 10 }} />
-        <button title="Weight Management" onClick={() => { setQuery('Weight Management'); void runMatch({ goal: 'Weight Management' }, 'Weight Management'); }} style={{ position: 'absolute', top: '64%', left: '14.5%', width: '10%', height: '22%', cursor: 'pointer', opacity: 0, zIndex: 10 }} />
-        <button title="Sleep" onClick={() => { setQuery('Sleep'); void runMatch({ goal: 'Sleep' }, 'Sleep'); }} style={{ position: 'absolute', top: '64%', left: '26%', width: '10%', height: '22%', cursor: 'pointer', opacity: 0, zIndex: 10 }} />
-        <button title="Cognitive" onClick={() => { setQuery('Cognitive'); void runMatch({ goal: 'Cognitive' }, 'Cognitive'); }} style={{ position: 'absolute', top: '64%', left: '38%', width: '10%', height: '22%', cursor: 'pointer', opacity: 0, zIndex: 10 }} />
-        <button title="Immune" onClick={() => { setQuery('Immune'); void runMatch({ goal: 'Immune' }, 'Immune'); }} style={{ position: 'absolute', top: '64%', left: '49.5%', width: '10%', height: '22%', cursor: 'pointer', opacity: 0, zIndex: 10 }} />
-        <button title="Metabolic" onClick={() => { setQuery('Metabolic'); void runMatch({ goal: 'Metabolic' }, 'Metabolic'); }} style={{ position: 'absolute', top: '64%', left: '61.5%', width: '10%', height: '22%', cursor: 'pointer', opacity: 0, zIndex: 10 }} />
-        <button title="Longevity" onClick={() => { setQuery('Longevity'); void runMatch({ goal: 'Longevity' }, 'Longevity'); }} style={{ position: 'absolute', top: '64%', left: '73.5%', width: '10%', height: '22%', cursor: 'pointer', opacity: 0, zIndex: 10 }} />
-        <button title="More" onClick={() => { document.querySelector('.sf-toolbar')?.scrollIntoView({ behavior: 'smooth' }); }} style={{ position: 'absolute', top: '64%', left: '85.5%', width: '10%', height: '22%', cursor: 'pointer', opacity: 0, zIndex: 10 }} />
+        <button title="Recovery" onClick={() => onSelectArea('healing')} style={{ position: 'absolute', top: '67%', left: '1%', width: '11%', height: '25%', cursor: 'pointer', opacity: 0, zIndex: 10 }} />
+        <button title="Weight Management" onClick={() => onSelectArea('weight_management')} style={{ position: 'absolute', top: '67%', left: '13%', width: '11%', height: '25%', cursor: 'pointer', opacity: 0, zIndex: 10 }} />
+        <button title="Sleep" onClick={() => onSelectArea('sleep')} style={{ position: 'absolute', top: '67%', left: '25%', width: '11%', height: '25%', cursor: 'pointer', opacity: 0, zIndex: 10 }} />
+        <button title="Cognitive" onClick={() => onSelectArea('cognitive')} style={{ position: 'absolute', top: '67%', left: '37%', width: '11%', height: '25%', cursor: 'pointer', opacity: 0, zIndex: 10 }} />
+        <button title="Immune" onClick={() => onSelectArea('immune')} style={{ position: 'absolute', top: '67%', left: '49%', width: '11%', height: '25%', cursor: 'pointer', opacity: 0, zIndex: 10 }} />
+        <button title="Metabolic" onClick={() => onSelectArea('metabolic')} style={{ position: 'absolute', top: '67%', left: '61%', width: '11%', height: '25%', cursor: 'pointer', opacity: 0, zIndex: 10 }} />
+        <button title="Longevity" onClick={() => onSelectArea('longevity')} style={{ position: 'absolute', top: '67%', left: '73%', width: '11%', height: '25%', cursor: 'pointer', opacity: 0, zIndex: 10 }} />
+        <button title="More" onClick={() => setShowAllAreas(true)} style={{ position: 'absolute', top: '67%', left: '85%', width: '13%', height: '25%', cursor: 'pointer', opacity: 0, zIndex: 10 }} />
+        
+        {/* Pop Up For All Areas */}
+        {showAllAreas && (
+          <div style={{
+            position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+            background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(8px)',
+            zIndex: 50, display: 'flex', flexDirection: 'column', padding: 24,
+            overflowY: 'auto'
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+              <h3 style={{ color: '#FFF', fontSize: '1.2rem', fontWeight: 800 }}>Browse By Research Area</h3>
+              <button 
+                type="button" 
+                onClick={() => setShowAllAreas(false)}
+                style={{ background: 'transparent', border: 'none', color: '#FFF', cursor: 'pointer' }}
+              >
+                <X size={24} aria-hidden="true" />
+              </button>
+            </div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
+              {availableAreas.map((area) => (
+                <button
+                  key={area}
+                  type="button"
+                  onClick={() => { setShowAllAreas(false); onSelectArea(area); }}
+                  style={{
+                    background: 'rgba(0,196,188,0.08)',
+                    border: '1px solid rgba(0,196,188,0.32)',
+                    color: '#00C4BC',
+                    borderRadius: 999, padding: '8px 16px',
+                    fontSize: '0.85rem', fontWeight: 800,
+                    cursor: 'pointer', minHeight: 36,
+                  }}
+                >
+                  {labelForArea(area)}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       <GuidedDiscoveryWizard
