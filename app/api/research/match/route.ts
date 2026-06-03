@@ -49,7 +49,7 @@ function isRiskTolerance(v: unknown): v is RiskTolerance {
 function parseInput(raw: unknown): MatchInput | null {
   if (!raw || typeof raw !== 'object') return null;
   const obj = raw as Record<string, unknown>;
-  if (typeof obj.goal !== 'string' || obj.goal.length === 0 || obj.goal.length > 64) {
+  if (typeof obj.goal !== 'string' || obj.goal.length === 0 || obj.goal.length > 255) {
     return null;
   }
   if (!isEvidenceComfort(obj.evidenceComfort)) return null;

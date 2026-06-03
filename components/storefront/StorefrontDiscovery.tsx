@@ -226,8 +226,20 @@ function MatchResultsDrawer({
 
         <div style={{ overflowY: 'auto', padding: '14px 16px 18px', flex: 1 }}>
           {loading && (
-            <div style={{ padding: '32px 8px', textAlign: 'center', color: 'var(--silver, #A8B4C0)' }}>
-              Scanning The Research Library...
+            <div style={{ padding: '64px 24px', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 24 }}>
+              <div style={{
+                width: 60, height: 60, borderRadius: '50%',
+                border: '3px solid rgba(0, 196, 188, 0.1)',
+                borderTopColor: '#00C4BC',
+                animation: 'spin 1s linear infinite',
+              }} />
+              <style>{`@keyframes spin { 100% { transform: rotate(360deg); } }`}</style>
+              <div style={{ color: '#FFFFFF', fontSize: '1.2rem', fontWeight: 800, letterSpacing: '0.02em' }}>
+                Scanning The Research Library...
+              </div>
+              <div style={{ color: '#A8B4C0', fontSize: '0.9rem', maxWidth: 320, lineHeight: 1.5 }}>
+                Our AI Match Engine Is Analyzing Your Research Goal Against All Available Compounds And Data.
+              </div>
             </div>
           )}
 
@@ -759,7 +771,7 @@ export default function DiscoveryHero({
         {/* Let Us Guide You Button Overlay */}
         <button
           type="button"
-          onClick={() => setWizardOpen(true)}
+          onClick={() => setShowAllAreas(true)}
           title="Let Us Guide You"
           style={{
             position: 'absolute', top: '7%', left: '73%', width: '22%', height: '15%',
@@ -774,10 +786,11 @@ export default function DiscoveryHero({
           type="text"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          onKeyDown={(e) => { if (e.key === 'Enter') submitTypedGoal(); }}
-          placeholder="Ask Us Anything About The Peptide You Are Looking For"
+          onKeyDown={(e) => { if (e.key === 'Enter' && query.trim()) submitTypedGoal(); }}
+          placeholder="Ask Us Anything About The Peptides You Want To Research..."
           style={{
-            position: 'absolute', top: '34%', left: '9%', width: '89%', height: '16%',
+            position: 'absolute', top: '41%', left: '9%', width: '89%', height: '18%',
+            transform: 'translateY(-50%)',
             background: 'transparent',
             border: 'none', outline: 'none', color: '#FFFFFF',
             fontSize: 'max(15px, 1.4vw)',
@@ -802,36 +815,52 @@ export default function DiscoveryHero({
         {showAllAreas && (
           <div style={{
             position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
-            background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(8px)',
+            background: 'rgba(5, 10, 15, 0.95)', backdropFilter: 'blur(12px)',
             zIndex: 50, display: 'flex', flexDirection: 'column', padding: 24,
             overflowY: 'auto'
           }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-              <h3 style={{ color: '#FFF', fontSize: '1.2rem', fontWeight: 800 }}>Browse By Research Area</h3>
+              <h3 style={{ color: '#FFF', fontSize: '1.4rem', fontWeight: 800 }}>Browse By Research Area</h3>
               <button 
                 type="button" 
                 onClick={() => setShowAllAreas(false)}
-                style={{ background: 'transparent', border: 'none', color: '#FFF', cursor: 'pointer' }}
+                style={{ background: 'rgba(255,255,255,0.1)', border: 'none', color: '#FFF', cursor: 'pointer', borderRadius: '50%', padding: '8px', display: 'flex' }}
               >
-                <X size={24} aria-hidden="true" />
+                <X size={20} aria-hidden="true" />
               </button>
             </div>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
+            
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))',
+              gap: '16px',
+              paddingBottom: '32px'
+            }}>
               {availableAreas.map((area) => (
                 <button
                   key={area}
                   type="button"
                   onClick={() => { setShowAllAreas(false); onSelectArea(area); }}
                   style={{
-                    background: 'rgba(0,196,188,0.08)',
-                    border: '1px solid rgba(0,196,188,0.32)',
-                    color: '#00C4BC',
-                    borderRadius: 999, padding: '8px 16px',
-                    fontSize: '0.85rem', fontWeight: 800,
-                    cursor: 'pointer', minHeight: 36,
+                    background: 'transparent',
+                    border: 'none',
+                    cursor: 'pointer',
+                    padding: 0,
+                    margin: 0,
+                    borderRadius: '16px',
+                    overflow: 'hidden',
+                    boxShadow: '0 8px 24px rgba(0,0,0,0.4)',
+                    transition: 'transform 0.2s ease',
+                    aspectRatio: '1 / 1'
                   }}
+                  onMouseOver={(e) => e.currentTarget.style.transform = 'translateY(-4px) scale(1.02)'}
+                  onMouseOut={(e) => e.currentTarget.style.transform = 'translateY(0) scale(1)'}
                 >
-                  {labelForArea(area)}
+                  <img 
+                    src={`/images/areas/${area}.png`} 
+                    alt={labelForArea(area)} 
+                    style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                  />
                 </button>
               ))}
             </div>
