@@ -1,4 +1,5 @@
 import { createServiceClient } from '@/lib/supabase/server';
+import { chicagoMidnightIso } from '@/lib/time-cst';
 
 function addDays(dateStr: string, days: number): string {
   const d = new Date(`${dateStr}T00:00:00Z`);
@@ -22,8 +23,10 @@ export async function computeStatement(
   weekStart: string
 ): Promise<{ ok: true; data: ComputeResult } | { ok: false; error: string }> {
   const weekEnd = addDays(weekStart, 6);
-  const rangeStart = `${weekStart}T00:00:00Z`;
-  const rangeEndExclusive = `${addDays(weekStart, 7)}T00:00:00Z`;
+  // Billing weeks live in America/Chicago. Mon 00:00 CT → next Mon 00:00 CT
+  // — matches the spec ("Week ends Sunday 23:59:59 CST") and handles DST.
+  const rangeStart = chicagoMidnightIso(weekStart);
+  const rangeEndExclusive = chicagoMidnightIso(addDays(weekStart, 7));
 
   const { data: agent, error: agentError } = await supabase
     .from('profiles')
