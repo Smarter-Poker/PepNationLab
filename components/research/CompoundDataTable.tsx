@@ -2,9 +2,10 @@
 
 /**
  * CompoundDataTable — a sortable, filterable "database" grid of the whole
- * catalog. Click any column header to sort; type to filter across name,
- * category, class, and target. Each row links to the full monograph and can be
- * added to the side-by-side Compare tool. Research-use-only.
+ * catalog. Click any column header to sort (numeric columns sort by value,
+ * empty values sink to the bottom); type to filter across name, category,
+ * class, and target. Each row links to the full monograph and can be added to
+ * the side-by-side Compare tool. Research-use-only.
  */
 
 import { useMemo, useState } from 'react';
@@ -26,20 +27,33 @@ export interface DataRow {
   wada: string;
   risk: string;
   riskColor: string;
+  // Numeric / structured fields (null when not applicable, e.g. blends).
+  mw: number | null;
+  citations: number | null;
+  trials: number | null;
+  year: number | null;
 }
 
-type SortKey = 'name' | 'category' | 'klass' | 'tierLabel' | 'target' | 'halfLife' | 'wada' | 'risk';
+type SortKey =
+  | 'name' | 'category' | 'klass' | 'tierLabel' | 'target'
+  | 'mw' | 'halfLife' | 'citations' | 'trials' | 'year' | 'wada' | 'risk';
 
-const COLUMNS: { key: SortKey; label: string }[] = [
+const COLUMNS: { key: SortKey; label: string; numeric?: boolean }[] = [
   { key: 'name', label: 'Compound' },
   { key: 'category', label: 'Category' },
   { key: 'klass', label: 'Class' },
   { key: 'tierLabel', label: 'Evidence' },
   { key: 'target', label: 'Molecular Target' },
+  { key: 'mw', label: 'Mol. Weight', numeric: true },
   { key: 'halfLife', label: 'Half-Life' },
+  { key: 'citations', label: 'Citations', numeric: true },
+  { key: 'trials', label: 'Trials', numeric: true },
+  { key: 'year', label: 'Discovered', numeric: true },
   { key: 'wada', label: 'WADA' },
   { key: 'risk', label: 'Risk' },
 ];
+
+const NUMERIC_KEYS = new Set<SortKey>(COLUMNS.filter((c) => c.numeric).map((c) => c.key));
 
 const th: React.CSSProperties = {
   textAlign: 'left',
@@ -64,6 +78,11 @@ const td: React.CSSProperties = {
   color: 'var(--white, #FFFFFF)',
   verticalAlign: 'top',
 };
+
+const num = (n: number) => n.toLocaleString('en-US');
+const mwDisp = (n: number | null) => (n == null ? '—' : `${n.toLocaleString('en-US', { maximumFractionDigits: 1 })} Da`);
+const countDisp = (n: number | null) => (n == null || n === 0 ? '—' : num(n));
+const yearDisp = (n: number | null) => (n == null ? '—' : String(n));
 
 export default function CompoundDataTable({ rows }: { rows: DataRow[] }) {
   const router = useRouter();
@@ -103,9 +122,19 @@ export default function CompoundDataTable({ rows }: { rows: DataRow[] }) {
             r.target.toLowerCase().includes(term),
         )
       : rows;
+    const numeric = NUMERIC_KEYS.has(sortKey);
     const sorted = [...filtered].sort((a, b) => {
-      const cmp = a[sortKey].localeCompare(b[sortKey], 'en', { numeric: true, sensitivity: 'base' });
-      return asc ? cmp : -cmp;
+      if (numeric) {
+        const av = a[sortKey] as number | null;
+        const bv = b[sortKey] as number | null;
+        // Empty values always sink to the bottom, regardless of direction.
+        if (av == null && bv == null) return 0;
+        if (av == null) return 1;
+        if (bv == null) return -1;
+        return asc ? av - bv : bv - av;
+      }
+      const c = String(a[sortKey]).localeCompare(String(b[sortKey]), 'en', { numeric: true, sensitivity: 'base' });
+      return asc ? c : -c;
     });
     return sorted;
   }, [rows, q, sortKey, asc]);
@@ -114,7 +143,8 @@ export default function CompoundDataTable({ rows }: { rows: DataRow[] }) {
     if (key === sortKey) setAsc((v) => !v);
     else {
       setSortKey(key);
-      setAsc(true);
+      // Numeric columns are most useful highest-first.
+      setAsc(!NUMERIC_KEYS.has(key));
     }
   }
 
@@ -142,11 +172,11 @@ export default function CompoundDataTable({ rows }: { rows: DataRow[] }) {
       </p>
 
       <div className="card-glass" style={{ borderRadius: 'var(--radius-lg, 12px)', overflowX: 'auto' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '820px' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '1180px' }}>
           <thead>
             <tr>
               {COLUMNS.map((col) => (
-                <th key={col.key} style={th} onClick={() => toggleSort(col.key)}>
+                <th key={col.key} style={{ ...th, textAlign: col.numeric ? 'right' : 'left' }} onClick={() => toggleSort(col.key)}>
                   <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
                     {col.label}
                     <ArrowUpDown size={11} aria-hidden="true" style={{ opacity: sortKey === col.key ? 1 : 0.35 }} />
@@ -170,7 +200,11 @@ export default function CompoundDataTable({ rows }: { rows: DataRow[] }) {
                   <span style={{ color: r.tierColor, fontWeight: 700 }}>{r.tierLabel}</span>
                 </td>
                 <td style={{ ...td, color: 'var(--silver, #A8B4C0)' }}>{r.target}</td>
+                <td style={{ ...td, textAlign: 'right', whiteSpace: 'nowrap' }}>{mwDisp(r.mw)}</td>
                 <td style={td}>{r.halfLife}</td>
+                <td style={{ ...td, textAlign: 'right', color: r.citations ? 'var(--teal, #00C4BC)' : 'var(--silver, #A8B4C0)', fontWeight: r.citations ? 700 : 400 }}>{countDisp(r.citations)}</td>
+                <td style={{ ...td, textAlign: 'right', color: 'var(--silver, #A8B4C0)' }}>{countDisp(r.trials)}</td>
+                <td style={{ ...td, textAlign: 'right', color: 'var(--silver, #A8B4C0)' }}>{yearDisp(r.year)}</td>
                 <td style={{ ...td, color: 'var(--silver, #A8B4C0)' }}>{r.wada}</td>
                 <td style={td}>
                   <span style={{ color: r.riskColor, fontWeight: 700 }}>{r.risk}</span>
