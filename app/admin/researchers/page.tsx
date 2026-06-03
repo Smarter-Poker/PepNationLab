@@ -97,6 +97,11 @@ function ResearchersAdminPageInner() {
   const [newPrepaidBalance, setNewPrepaidBalance] = useState('');
   const [newSlug, setNewSlug] = useState('');
   const [newDisplayName, setNewDisplayName] = useState('');
+  // Which kind of account the create modal is building. Researcher mode hides
+  // the agent-only Pricing/Billing/Storefront sections and instead requires the
+  // owning agent (parent_agent_id), which the API mandates for researchers.
+  const [createRole, setCreateRole] = useState<'agent' | 'researcher'>('agent');
+  const [newParentAgentId, setNewParentAgentId] = useState('');
 
   useEffect(() => {
     fetchProfiles();
@@ -193,14 +198,56 @@ function ResearchersAdminPageInner() {
     setBalanceType('add');
   }
 
-  function openCreateAgentModal() {
+  function openCreateModal(role: 'agent' | 'researcher') {
+    setCreateRole(role);
     setModalMode('create_agent');
     setModalError('');
     setModalSuccess('');
     setNewFirstName(''); setNewLastName(''); setNewUsername(''); setNewPassword('');
     setNewTier('tier_2'); setNewAccountType('prepaid');
     setNewCreditLimit(''); setNewPrepaidBalance('');
-    setNewSlug(''); setNewDisplayName('');
+    setNewSlug(''); setNewDisplayName(''); setNewParentAgentId('');
+  }
+  function openCreateAgentModal() { openCreateModal('agent'); }
+
+  async function handleCreateResearcher(e: React.FormEvent) {
+    e.preventDefault();
+    setSubmitting(true);
+    setModalError('');
+    setModalSuccess('');
+    if (!newParentAgentId) {
+      setModalError('Please Select The Agent This Researcher Belongs To');
+      setSubmitting(false);
+      return;
+    }
+    try {
+      const res = await fetch('/api/admin/agents', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          account_role: 'researcher',
+          full_name: `${newFirstName.trim()} ${newLastName.trim()}`.trim(),
+          firstName: newFirstName.trim(),
+          lastName: newLastName.trim(),
+          username: newUsername,
+          password: newPassword,
+          parent_agent_id: newParentAgentId,
+        }),
+      });
+      const json = await res.json();
+      if (res.ok) {
+        toast.success(`Researcher Account Created — Username: ${json.username || newUsername}`);
+        await fetchProfiles();
+        setActiveTab('researchers');
+        closeModal();
+      } else {
+        setModalError(json.error || 'Failed To Create Researcher');
+      }
+    } catch (err: any) {
+      setModalError(err.message || 'Network Error');
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   function openQrModal(profile: Profile) {
@@ -394,17 +441,29 @@ function ResearchersAdminPageInner() {
             Manage Research Accounts, Role Upgrades, Pricing Tiers, And Prepaid Balances
           </p>
         </div>
-        {/* Create New Agent Button */}
-        <button
-          onClick={openCreateAgentModal}
-          className="btn-neon-cyan"
-          style={{ display: 'flex', alignItems: 'center', gap: 8 }}
-        >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-            <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
-          </svg>
-          Create New Agent
-        </button>
+        {/* Create Account Buttons */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', flexWrap: 'wrap' }}>
+          <button
+            onClick={() => openCreateModal('researcher')}
+            className="btn-silver"
+            style={{ display: 'flex', alignItems: 'center', gap: 8 }}
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
+            </svg>
+            Create Researcher
+          </button>
+          <button
+            onClick={() => openCreateModal('agent')}
+            className="btn-neon-cyan"
+            style={{ display: 'flex', alignItems: 'center', gap: 8 }}
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
+            </svg>
+            Create New Agent
+          </button>
+        </div>
       </div>
 
       {/* Tabs & Search */}
@@ -683,9 +742,13 @@ function ResearchersAdminPageInner() {
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.88)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100, padding: 'var(--space-4)' }}>
           <div className="metal-frame hover-lift stagger-fade-in" style={{ width: '100%', maxWidth: 580, maxHeight: '92vh', overflowY: 'auto' }}>
             <div className="metal-content" style={{ padding: 'var(--space-6)' }}>
-              <h2 style={{ fontSize: '1.2rem', marginBottom: 'var(--space-2)' }}>Create New Agent</h2>
+              <h2 style={{ fontSize: '1.2rem', marginBottom: 'var(--space-2)' }}>
+                {createRole === 'researcher' ? 'Create New Researcher' : 'Create New Agent'}
+              </h2>
             <p style={{ fontSize: '0.8rem', color: 'var(--grey-400)', marginBottom: 'var(--space-6)' }}>
-              Creates A Supabase Auth Account + Agent Profile Directly. No Registration Required.
+              {createRole === 'researcher'
+                ? 'Creates A Researcher Account Tied To The Agent You Select Below. No Storefront Or Pricing Tier Required.'
+                : 'Creates A Supabase Auth Account + Agent Profile Directly. No Registration Required.'}
             </p>
 
             {modalError && (
@@ -694,7 +757,7 @@ function ResearchersAdminPageInner() {
               </div>
             )}
 
-            <form onSubmit={handleCreateAgent}>
+            <form onSubmit={createRole === 'researcher' ? handleCreateResearcher : handleCreateAgent}>
               <h4 style={{ fontSize: '0.88rem', color: 'var(--silver)', marginBottom: 'var(--space-4)' }}>Account Credentials</h4>
               {/* R31: first/last on top row, username + password below. */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-4)', marginBottom: 'var(--space-4)', alignItems: 'start' }}>
@@ -738,6 +801,29 @@ function ResearchersAdminPageInner() {
                   value={newPassword} onChange={e => setNewPassword(e.target.value)} required minLength={8} />
               </div>
 
+              {createRole === 'researcher' && (
+                <>
+                  <hr style={{ border: 'none', borderTop: '1px solid rgba(255,255,255,0.06)', margin: 'var(--space-4) 0' }} />
+                  <h4 style={{ fontSize: '0.88rem', color: 'var(--silver)', marginBottom: 'var(--space-4)' }}>Account Owner</h4>
+                  <div className="form-group" style={{ marginBottom: 'var(--space-5)' }}>
+                    <label className="form-label">Assign To Agent</label>
+                    <select className="form-input" value={newParentAgentId} onChange={e => setNewParentAgentId(e.target.value)} required>
+                      <option value="">Select The Agent This Researcher Belongs To</option>
+                      {profiles
+                        .filter(p => p.role === 'agent' || p.role === 'super_agent')
+                        .sort((a, b) => (a.full_name || a.username || '').localeCompare(b.full_name || b.username || ''))
+                        .map(a => (
+                          <option key={a.id} value={a.id}>
+                            {(a.full_name || a.username || 'Agent')}{a.username ? ` (@${a.username})` : ''}
+                          </option>
+                        ))}
+                    </select>
+                  </div>
+                </>
+              )}
+
+              {createRole === 'agent' && (
+              <>
               <hr style={{ border: 'none', borderTop: '1px solid rgba(255,255,255,0.06)', margin: 'var(--space-4) 0' }} />
 
               <h4 style={{ fontSize: '0.88rem', color: 'var(--silver)', marginBottom: 'var(--space-4)' }}>Pricing & Billing</h4>
@@ -790,15 +876,24 @@ function ResearchersAdminPageInner() {
                 </div>
               </div>
 
-              <label style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', cursor: 'pointer', fontSize: '0.85rem', color: 'var(--silver)', marginBottom: 'var(--space-6)' }}>
+              </>
+              )}
+
+              <label style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', fontSize: '0.85rem', color: 'var(--silver)', marginBottom: 'var(--space-6)' }}>
                 <input type="checkbox" checked style={inputStyle} disabled />
-                <span style={{ color: 'var(--grey-400)' }}>Agent Will Log In With Their Username — You Set It Above</span>
+                <span style={{ color: 'var(--grey-400)' }}>
+                  {createRole === 'researcher'
+                    ? 'Researcher Will Log In With Their Username — You Set It Above'
+                    : 'Agent Will Log In With Their Username — You Set It Above'}
+                </span>
               </label>
 
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 'var(--space-3)' }}>
+              <div style={{ position: 'sticky', bottom: 0, display: 'flex', justifyContent: 'flex-end', gap: 'var(--space-3)', paddingTop: 'var(--space-4)', paddingBottom: 'var(--space-2)', marginTop: 'var(--space-2)', background: 'var(--surface-1, #0F1923)', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
                 <button type="button" className="btn-silver" onClick={closeModal} disabled={submitting}>Cancel</button>
                 <button type="submit" className="btn-neon-cyan" disabled={submitting}>
-                  {submitting ? 'Creating Agent...' : 'Create Agent Account'}
+                  {submitting
+                    ? (createRole === 'researcher' ? 'Creating Researcher...' : 'Creating Agent...')
+                    : (createRole === 'researcher' ? 'Create Researcher Account' : 'Create Agent Account')}
                 </button>
               </div>
             </form>
