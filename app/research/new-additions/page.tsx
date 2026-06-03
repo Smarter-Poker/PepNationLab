@@ -25,6 +25,50 @@ interface NewRow {
   created_at: string;
 }
 
+function ItemCard({ c }: { c: NewRow }) {
+  const t = evidenceTier(c.evidence_tier);
+  const added = new Date(c.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+  return (
+    <Link
+      href={`/research/${c.slug}`}
+      className="card-metal"
+      style={{
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        gap: 'var(--space-3, 12px)',
+        padding: 'var(--space-3, 12px) var(--space-4, 16px)',
+        borderRadius: 'var(--radius-lg, 12px)',
+        textDecoration: 'none',
+        color: 'var(--white, #FFFFFF)',
+      }}
+    >
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', minWidth: 0 }}>
+        <span style={{ fontSize: '1.05rem', fontWeight: 700 }}>{c.display_name}</span>
+        <span style={{ fontSize: '0.78rem', color: 'var(--silver, #A8B4C0)' }}>
+          {c.category} · <span style={{ color: t.color }}>{t.label}</span>
+        </span>
+        {c.plain_summary && (
+          <span
+            style={{
+              fontSize: '0.78rem',
+              color: 'var(--silver-light, #D0DAE4)',
+              marginTop: '4px',
+              display: '-webkit-box',
+              WebkitLineClamp: 2,
+              WebkitBoxOrient: 'vertical',
+              overflow: 'hidden',
+            }}
+          >
+            {c.plain_summary}
+          </span>
+        )}
+      </div>
+      <span style={{ fontSize: '0.75rem', color: 'var(--silver, #A8B4C0)', whiteSpace: 'nowrap' }}>Added {added}</span>
+    </Link>
+  );
+}
+
 export default async function ResearchNewAdditionsPage() {
   const supabase = await createServiceClient();
   const { data } = await supabase
@@ -48,49 +92,6 @@ export default async function ResearchNewAdditionsPage() {
     return bc - ac;
   });
 
-  function ItemCard({ c }: { c: NewRow }) {
-    const t = evidenceTier(c.evidence_tier);
-    const added = new Date(c.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
-    return (
-      <Link
-        href={`/research/${c.slug}`}
-        className="card-metal"
-        style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          gap: 'var(--space-3, 12px)',
-          padding: 'var(--space-3, 12px) var(--space-4, 16px)',
-          borderRadius: 'var(--radius-lg, 12px)',
-          textDecoration: 'none',
-          color: 'var(--white, #FFFFFF)',
-        }}
-      >
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', minWidth: 0 }}>
-          <span style={{ fontSize: '1.05rem', fontWeight: 700 }}>{c.display_name}</span>
-          <span style={{ fontSize: '0.78rem', color: 'var(--silver, #A8B4C0)' }}>
-            {c.category} · <span style={{ color: t.color }}>{t.label}</span>
-          </span>
-          {c.plain_summary && (
-            <span
-              style={{
-                fontSize: '0.78rem',
-                color: 'var(--silver-light, #D0DAE4)',
-                marginTop: '4px',
-                display: '-webkit-box',
-                WebkitLineClamp: 2,
-                WebkitBoxOrient: 'vertical',
-                overflow: 'hidden',
-              }}
-            >
-              {c.plain_summary}
-            </span>
-          )}
-        </div>
-        <span style={{ fontSize: '0.75rem', color: 'var(--silver, #A8B4C0)', whiteSpace: 'nowrap' }}>Added {added}</span>
-      </Link>
-    );
-  }
 
   const shellGroups = [
     {

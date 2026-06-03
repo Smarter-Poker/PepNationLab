@@ -90,8 +90,8 @@ export default async function ResearchWadaProhibitedPage() {
               Prohibition History
             </h3>
             <ul style={{ margin: 0, padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '4px' }}>
-              {hist.map((h) => (
-                <li key={h.year} style={{ fontSize: '0.8rem', color: 'var(--silver, #A8B4C0)' }}>
+              {hist.map((h, hi) => (
+                <li key={`${h.year}-${hi}`} style={{ fontSize: '0.8rem', color: 'var(--silver, #A8B4C0)' }}>
                   <strong style={{ color: 'var(--white, #FFFFFF)' }}>{h.year}</strong>: {h.status}
                   {h.notes ? ` — ${h.notes}` : ''}
                   {h.source_url && (

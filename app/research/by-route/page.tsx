@@ -33,6 +33,7 @@ const ROUTE_LABELS: Record<string, string> = {
   topical: 'Topical',
   iv: 'Intravenous',
   unspecified: 'Unspecified',
+  other: 'Other Routes',
 };
 
 function normalizeRoute(r: string): string {
@@ -43,7 +44,8 @@ function normalizeRoute(r: string): string {
   if (lower.startsWith('intram') || lower === 'im') return 'intramuscular';
   if (lower.startsWith('top')) return 'topical';
   if (lower === 'iv' || lower.startsWith('intrav')) return 'iv';
-  return lower;
+  // Any unrecognized string → bucket as 'other' so it's not silently dropped
+  return 'other';
 }
 
 function CompoundCard({ c }: { c: RouteRow }) {
@@ -113,7 +115,7 @@ export default async function ResearchByRoutePage() {
     }
   }
 
-  const order = ['subcutaneous', 'intranasal', 'oral', 'intramuscular', 'topical', 'iv', 'unspecified'];
+  const order = ['subcutaneous', 'intranasal', 'oral', 'intramuscular', 'topical', 'iv', 'unspecified', 'other'];
   const keys = order.filter((k) => buckets.has(k));
 
   const shellGroups = keys.map((k) => {

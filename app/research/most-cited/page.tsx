@@ -16,6 +16,48 @@ export const metadata: Metadata = {
 
 export const dynamic = 'force-dynamic';
 
+interface CitedCompound {
+  slug: string;
+  display_name: string;
+  evidence_tier: string;
+  wada_status: string;
+  category: string | null;
+  citation_count: number;
+  [key: string]: unknown;
+}
+
+function RankCard({ c, rank }: { c: CitedCompound; rank: number }) {
+  const t = evidenceTier(c.evidence_tier);
+  return (
+    <Link
+      href={`/research/${c.slug}`}
+      className="card-metal"
+      style={{
+        display: 'grid',
+        gridTemplateColumns: '40px 1fr auto',
+        alignItems: 'center',
+        gap: 'var(--space-3, 12px)',
+        padding: 'var(--space-3, 12px) var(--space-4, 16px)',
+        borderRadius: 'var(--radius-lg, 12px)',
+        textDecoration: 'none',
+        color: 'var(--white, #FFFFFF)',
+      }}
+    >
+      <span style={{ fontSize: '0.85rem', color: 'var(--silver, #A8B4C0)', fontWeight: 700 }}>#{rank}</span>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', minWidth: 0 }}>
+        <span style={{ fontSize: '1.05rem', fontWeight: 700 }}>{c.display_name}</span>
+        <span style={{ fontSize: '0.78rem', color: 'var(--silver, #A8B4C0)' }}>
+          {c.category} · <span style={{ color: t.color }}>{t.label}</span>
+          {c.wada_status && c.wada_status !== 'not_listed' ? ` · ${wadaLabel(c.wada_status)}` : ''}
+        </span>
+      </div>
+      <span style={{ fontSize: '1.1rem', fontWeight: 900, color: 'var(--teal, #00C4BC)', whiteSpace: 'nowrap' }}>
+        {c.citation_count.toLocaleString()}
+      </span>
+    </Link>
+  );
+}
+
 export default async function ResearchMostCitedPage() {
   const compounds = await getAllCompounds();
   const ranked = [...compounds]
@@ -42,40 +84,7 @@ export default async function ResearchMostCitedPage() {
     return bTop - aTop;
   });
 
-  function RankCard({ c, rank }: { c: (typeof withCitations)[0]; rank: number }) {
-    const t = evidenceTier(c.evidence_tier);
-    return (
-      <Link
-        href={`/research/${c.slug}`}
-        className="card-metal"
-        style={{
-          display: 'grid',
-          gridTemplateColumns: '40px 1fr auto',
-          alignItems: 'center',
-          gap: 'var(--space-3, 12px)',
-          padding: 'var(--space-3, 12px) var(--space-4, 16px)',
-          borderRadius: 'var(--radius-lg, 12px)',
-          textDecoration: 'none',
-          color: 'var(--white, #FFFFFF)',
-        }}
-      >
-        <span style={{ fontSize: '0.85rem', color: 'var(--silver, #A8B4C0)', fontWeight: 700 }}>#{rank}</span>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', minWidth: 0 }}>
-          <span style={{ fontSize: '1.05rem', fontWeight: 700 }}>{c.display_name}</span>
-          <span style={{ fontSize: '0.78rem', color: 'var(--silver, #A8B4C0)' }}>
-            {c.category} · <span style={{ color: t.color }}>{t.label}</span>
-            {c.wada_status && c.wada_status !== 'not_listed' ? ` · ${wadaLabel(c.wada_status)}` : ''}
-          </span>
-        </div>
-        <span style={{ fontSize: '1.1rem', fontWeight: 900, color: 'var(--teal, #00C4BC)', whiteSpace: 'nowrap' }}>
-          {c.citation_count.toLocaleString()}
-        </span>
-      </Link>
-    );
-  }
 
-  // All ranked = first tab, then per-category
-  const shellGroups = [
     {
       key: 'all',
       label: 'All Compounds',

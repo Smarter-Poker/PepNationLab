@@ -26,6 +26,45 @@ interface TrialRow {
   completed_trial_count: number | null;
 }
 
+interface TrialCompound extends TrialRow {
+  total_trials: number;
+}
+
+function TrialCard({ c, rank }: { c: TrialCompound; rank: number }) {
+  const t = evidenceTier(c.evidence_tier);
+  return (
+    <Link
+      href={`/research/${c.slug}`}
+      className="card-metal"
+      style={{
+        display: 'grid',
+        gridTemplateColumns: '40px 1fr auto auto',
+        alignItems: 'center',
+        gap: 'var(--space-3, 12px)',
+        padding: 'var(--space-3, 12px) var(--space-4, 16px)',
+        borderRadius: 'var(--radius-lg, 12px)',
+        textDecoration: 'none',
+        color: 'var(--white, #FFFFFF)',
+      }}
+    >
+      <span style={{ fontSize: '0.85rem', color: 'var(--silver, #A8B4C0)', fontWeight: 700 }}>#{rank}</span>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', minWidth: 0 }}>
+        <span style={{ fontSize: '1.05rem', fontWeight: 700 }}>{c.display_name}</span>
+        <span style={{ fontSize: '0.78rem', color: 'var(--silver, #A8B4C0)' }}>
+          {c.category} · <span style={{ color: t.color }}>{t.label}</span>
+          {c.wada_status && c.wada_status !== 'not_listed' ? ` · ${wadaLabel(c.wada_status)}` : ''}
+        </span>
+      </div>
+      <span style={{ fontSize: '0.82rem', color: '#00E5FF', fontWeight: 700, whiteSpace: 'nowrap' }}>
+        Active: {c.active_trial_count ?? 0}
+      </span>
+      <span style={{ fontSize: '1.05rem', fontWeight: 900, color: 'var(--teal, #00C4BC)', whiteSpace: 'nowrap' }}>
+        {c.total_trials}
+      </span>
+    </Link>
+  );
+}
+
 export default async function ResearchMostStudied2026Page() {
   const supabase = await createClient();
   const { data } = await supabase
@@ -57,40 +96,6 @@ export default async function ResearchMostStudied2026Page() {
     return bTop - aTop;
   });
 
-  function TrialCard({ c, rank }: { c: (typeof withTrials)[0]; rank: number }) {
-    const t = evidenceTier(c.evidence_tier);
-    return (
-      <Link
-        href={`/research/${c.slug}`}
-        className="card-metal"
-        style={{
-          display: 'grid',
-          gridTemplateColumns: '40px 1fr auto auto',
-          alignItems: 'center',
-          gap: 'var(--space-3, 12px)',
-          padding: 'var(--space-3, 12px) var(--space-4, 16px)',
-          borderRadius: 'var(--radius-lg, 12px)',
-          textDecoration: 'none',
-          color: 'var(--white, #FFFFFF)',
-        }}
-      >
-        <span style={{ fontSize: '0.85rem', color: 'var(--silver, #A8B4C0)', fontWeight: 700 }}>#{rank}</span>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', minWidth: 0 }}>
-          <span style={{ fontSize: '1.05rem', fontWeight: 700 }}>{c.display_name}</span>
-          <span style={{ fontSize: '0.78rem', color: 'var(--silver, #A8B4C0)' }}>
-            {c.category} · <span style={{ color: t.color }}>{t.label}</span>
-            {c.wada_status && c.wada_status !== 'not_listed' ? ` · ${wadaLabel(c.wada_status)}` : ''}
-          </span>
-        </div>
-        <span style={{ fontSize: '0.82rem', color: '#00E5FF', fontWeight: 700, whiteSpace: 'nowrap' }}>
-          Active: {c.active_trial_count ?? 0}
-        </span>
-        <span style={{ fontSize: '1.05rem', fontWeight: 900, color: 'var(--teal, #00C4BC)', whiteSpace: 'nowrap' }}>
-          {c.total_trials}
-        </span>
-      </Link>
-    );
-  }
 
   const shellGroups = [
     {

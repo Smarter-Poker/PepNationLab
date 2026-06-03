@@ -5,6 +5,7 @@
  * Tabs: Overview | Mechanisms | Evidence | Safety | Compounds | References
  */
 
+import type { CSSProperties } from 'react';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
@@ -25,7 +26,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   };
 }
 
-const sectionHeadStyle: React.CSSProperties = {
+const sectionHeadStyle: CSSProperties = {
   fontSize: '1.15rem',
   fontWeight: 800,
   color: 'var(--white, #FFFFFF)',
@@ -33,20 +34,20 @@ const sectionHeadStyle: React.CSSProperties = {
   marginBottom: 'var(--space-3, 12px)',
 };
 
-const bodyTextStyle: React.CSSProperties = {
+const bodyTextStyle: CSSProperties = {
   color: 'var(--silver-light, #D0DAE4)',
   fontSize: '0.95rem',
   lineHeight: 1.7,
   margin: 0,
 };
 
-const bulletListStyle: React.CSSProperties = {
+const bulletListStyle: CSSProperties = {
   margin: 0,
   paddingLeft: '1.2rem',
   color: 'var(--silver-light, #D0DAE4)',
 };
 
-const bulletItemStyle: React.CSSProperties = {
+const bulletItemStyle: CSSProperties = {
   fontSize: '0.92rem',
   lineHeight: 1.6,
   marginBottom: 'var(--space-2, 8px)',
