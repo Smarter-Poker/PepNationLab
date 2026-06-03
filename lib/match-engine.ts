@@ -29,6 +29,16 @@ export interface MatchInput {
   evidenceComfort: EvidenceComfort;
   wadaConstraint: WadaConstraint;
   riskTolerance: RiskTolerance;
+  excludeInjectables?: boolean;
+  requireLongHalfLife?: boolean;
+  excludeSlugs?: string[];
+}
+
+export interface ScoreBreakdown {
+  base: number;
+  keyword: number;
+  evidenceBonus: number;
+  classBonus: number;
 }
 
 export interface MatchResult {
@@ -39,6 +49,11 @@ export interface MatchResult {
   evidenceTier: string;
   wadaStatus: string;
   riskLevel: string;
+  halfLife: string | null;
+  molecularWeight: number | null;
+  isTempSensitive: boolean;
+  scoreBreakdown: ScoreBreakdown;
+  isStackPartner?: boolean;
 }
 
 // --------------------------------------------------------------------------
@@ -155,6 +170,24 @@ function failsEvidenceGate(c: Compound, comfort: EvidenceComfort): boolean {
   return tierRank(c.evidence_tier) < comfortMinRank(comfort);
 }
 
+function failsHandlingGate(c: Compound, excludeInjectables: boolean | undefined): boolean {
+  if (!excludeInjectables) return false;
+  const form = c.handling?.form?.toLowerCase() || '';
+  if (form.includes('injectable') || form.includes('lyophilized') || form.includes('vial') || form.includes('injection')) {
+    return true;
+  }
+  return false;
+}
+
+function failsHalfLifeGate(c: Compound, requireLongHalfLife: boolean | undefined): boolean {
+  if (!requireLongHalfLife) return false;
+  const hl = c.half_life?.toLowerCase() || '';
+  if (!hl) return false;
+  if (hl.includes('min') || hl.includes('short')) return true;
+  if (hl.match(/\b([1-9]|1[0-9]|2[0-3])\s*h(ou)?r/)) return true; // e.g. "2 hours"
+  return false;
+}
+
 // --------------------------------------------------------------------------
 // Rationale composition.
 // --------------------------------------------------------------------------
@@ -206,31 +239,44 @@ function buildRationale(
 // --------------------------------------------------------------------------
 // Top-level scoring.
 // --------------------------------------------------------------------------
-function scoreOne(input: MatchInput, c: Compound): { score: number; rationale: string } | null {
+function scoreOne(input: MatchInput, c: Compound): { score: number; rationale: string; breakdown: ScoreBreakdown } | null {
   // Hard gates first — if any of these fail, the compound is excluded from
   // results entirely. We model that as returning null rather than a negative
   // score so callers cannot accidentally surface restricted compounds.
   if (failsEvidenceGate(c, input.evidenceComfort)) return null;
   if (failsWadaGate(c, input.wadaConstraint)) return null;
   if (failsRiskGate(c, input.riskTolerance)) return null;
+  if (failsHandlingGate(c, input.excludeInjectables)) return null;
+  if (failsHalfLifeGate(c, input.requireLongHalfLife)) return null;
+  if (input.excludeSlugs && input.excludeSlugs.includes(c.slug)) return null;
 
   let score = 0;
+  const breakdown: ScoreBreakdown = { base: 0, keyword: 0, evidenceBonus: 0, classBonus: 0 };
 
   // +50 for an exact research-area tag match.
   const taggedHit = Array.isArray(c.research_areas) && c.research_areas.includes(input.goal);
-  if (taggedHit) score += 50;
+  if (taggedHit) {
+    score += 50;
+    breakdown.base = 50;
+  }
 
   // +20 if the goal's keywords appear in category / class / mechanism / studied_for.
   const keywordBonus = goalMentionsBonus(input.goal, c);
-  if (keywordBonus > 0) score += keywordBonus;
+  if (keywordBonus > 0) {
+    score += keywordBonus;
+    breakdown.keyword = keywordBonus;
+  }
   const keywordHit = keywordBonus > 0;
 
   // +15 if the compound's evidence tier matches the user's comfort level.
-  score += evidenceComfortBonus(c.evidence_tier, input.evidenceComfort);
+  const eBonus = evidenceComfortBonus(c.evidence_tier, input.evidenceComfort);
+  score += eBonus;
+  breakdown.evidenceBonus = eBonus;
 
   // +5 nudge for class-aligned bonuses.
   if (c.is_glp1 && (input.goal === 'metabolic' || input.goal === 'weight_management')) {
     score += 5;
+    breakdown.classBonus += 5;
   }
   if (
     c.is_pro_angiogenic &&
@@ -239,6 +285,7 @@ function scoreOne(input: MatchInput, c: Compound): { score: number; rationale: s
       input.goal === 'pain_inflammation')
   ) {
     score += 5;
+    breakdown.classBonus += 5;
   }
 
   // If the compound has zero goal-signal at all, do not surface it. This keeps
@@ -251,6 +298,7 @@ function scoreOne(input: MatchInput, c: Compound): { score: number; rationale: s
   return {
     score: clamped,
     rationale: buildRationale(c, input.goal, taggedHit, keywordHit),
+    breakdown,
   };
 }
 
@@ -272,6 +320,11 @@ export function scoreCompounds(input: MatchInput, compounds: Compound[]): MatchR
       evidenceTier: c.evidence_tier,
       wadaStatus: c.wada_status,
       riskLevel: c.risk_level,
+      halfLife: c.half_life,
+      molecularWeight: c.molecular_weight_da ?? null,
+      isTempSensitive: c.is_temp_sensitive ?? false,
+      scoreBreakdown: result.breakdown,
+      isStackPartner: false, // Updated below
     });
   }
 
@@ -282,5 +335,23 @@ export function scoreCompounds(input: MatchInput, compounds: Compound[]): MatchR
     return a.displayName.localeCompare(b.displayName);
   });
 
-  return scored.slice(0, 5);
+  const top5 = scored.slice(0, 5);
+
+  // Detect synergistic stack relationships among the top results
+  for (let i = 0; i < top5.length; i++) {
+    for (let j = i + 1; j < top5.length; j++) {
+      const cA = compounds.find(c => c.slug === top5[i].slug);
+      const cB = compounds.find(c => c.slug === top5[j].slug);
+      if (cA && cB) {
+        const aHasB = cA.stack_components?.includes(cB.slug);
+        const bHasA = cB.stack_components?.includes(cA.slug);
+        if (aHasB || bHasA) {
+          top5[i].isStackPartner = true;
+          top5[j].isStackPartner = true;
+        }
+      }
+    }
+  }
+
+  return top5;
 }

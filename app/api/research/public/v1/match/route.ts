@@ -28,7 +28,7 @@ export async function OPTIONS() {
   return new NextResponse(null, { status: 204, headers: corsHeaders() });
 }
 
-async function handle(req: NextRequest, payload: { goal?: string; comfort?: string; wada?: string; risk?: string; limit?: number }) {
+async function handle(req: NextRequest, payload: { goal?: string; comfort?: string; wada?: string; risk?: string; limit?: number; exclude_injectables?: boolean; require_long_half_life?: boolean; exclude_slugs?: string[] }) {
   const t0 = Date.now();
   const auth = await validateApiKey(req.headers.get('authorization'));
   if (!auth.ok) {
@@ -44,6 +44,9 @@ async function handle(req: NextRequest, payload: { goal?: string; comfort?: stri
     evidenceComfort: (payload.comfort || 'any') as EvidenceComfort,
     wadaConstraint: (payload.wada || 'no_constraint') as WadaConstraint,
     riskTolerance: (payload.risk || 'any') as RiskTolerance,
+    excludeInjectables: payload.exclude_injectables,
+    requireLongHalfLife: payload.require_long_half_life,
+    excludeSlugs: payload.exclude_slugs,
   };
   const data = scoreCompounds(input, compounds).slice(0, limit);
   const status = 200;
@@ -58,11 +61,14 @@ export async function GET(req: NextRequest) {
     wada: req.nextUrl.searchParams.get('wada') ?? '',
     risk: req.nextUrl.searchParams.get('risk') ?? '',
     limit: Number(req.nextUrl.searchParams.get('limit') ?? '10') || 10,
+    exclude_injectables: req.nextUrl.searchParams.get('exclude_injectables') === 'true',
+    require_long_half_life: req.nextUrl.searchParams.get('require_long_half_life') === 'true',
+    exclude_slugs: req.nextUrl.searchParams.getAll('exclude_slugs'),
   });
 }
 
 export async function POST(req: NextRequest) {
-  let body: { goal?: string; comfort?: string; wada?: string; risk?: string; limit?: number } = {};
+  let body: { goal?: string; comfort?: string; wada?: string; risk?: string; limit?: number; exclude_injectables?: boolean; require_long_half_life?: boolean; exclude_slugs?: string[] } = {};
   try {
     body = (await req.json()) as typeof body;
   } catch {

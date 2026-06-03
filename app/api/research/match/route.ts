@@ -11,6 +11,7 @@
  */
 
 import { NextResponse, type NextRequest } from 'next/server';
+import { createServiceClient } from '@/lib/supabase/server';
 import { getAllCompounds } from '@/lib/compounds-server';
 import {
   scoreCompounds,
@@ -60,6 +61,9 @@ function parseInput(raw: unknown): MatchInput | null {
     evidenceComfort: obj.evidenceComfort,
     wadaConstraint: obj.wadaConstraint,
     riskTolerance: obj.riskTolerance,
+    excludeInjectables: typeof obj.excludeInjectables === 'boolean' ? obj.excludeInjectables : undefined,
+    requireLongHalfLife: typeof obj.requireLongHalfLife === 'boolean' ? obj.requireLongHalfLife : undefined,
+    excludeSlugs: Array.isArray(obj.excludeSlugs) ? obj.excludeSlugs.filter((s) => typeof s === 'string') : undefined,
   };
 }
 
@@ -89,5 +93,22 @@ export async function POST(req: NextRequest) {
 
   const compounds = await getAllCompounds();
   const results = scoreCompounds(input, compounds);
+
+  // Async logging to db (fire and forget)
+  const supabase = await createServiceClient();
+  supabase
+    .from('research_match_analytics')
+    .insert({
+      goal: input.goal,
+      evidence_comfort: input.evidenceComfort,
+      wada_constraint: input.wadaConstraint,
+      risk_tolerance: input.riskTolerance,
+      exclude_injectables: input.excludeInjectables ?? false,
+      require_long_half_life: input.requireLongHalfLife ?? false,
+    })
+    .then(({ error }) => {
+      if (error) console.error('[Match Analytics] Failed to insert', error);
+    });
+
   return NextResponse.json({ results, note: RESEARCH_NOTE });
 }
