@@ -24,7 +24,15 @@ const TYPE_COLOR: Record<SearchType, string> = {
   tool: '#E8C07D',
 };
 
-export default function LandingSearchOverlay() {
+export default function LandingSearchOverlay({
+  formStyle,
+  buttonStyle,
+  resultsStyle,
+}: {
+  formStyle?: React.CSSProperties;
+  buttonStyle?: React.CSSProperties;
+  resultsStyle?: React.CSSProperties;
+} = {}) {
   const router = useRouter();
   const [q, setQ] = useState('');
   const [docs, setDocs] = useState<SearchDoc[]>([]);
@@ -68,14 +76,15 @@ export default function LandingSearchOverlay() {
           width: '71%',
           height: '4.0%',
           zIndex: 20,
-          backgroundColor: '#0a1017',
-          borderRadius: '24px 0 0 24px',
+          backgroundColor: (open || q.length > 0) ? '#090e15' : 'transparent',
+          borderRadius: '8px',
           display: 'flex',
           alignItems: 'center',
           paddingLeft: '16px',
+          ...formStyle,
         }}
       >
-        <Search size={20} color="#A8B4C0" />
+        <Search size={20} color={(open || q.length > 0) ? "#A8B4C0" : "transparent"} />
         <input
           type="text"
           value={q}
@@ -114,6 +123,7 @@ export default function LandingSearchOverlay() {
           height: '4.0%',
           cursor: 'pointer',
           zIndex: 20,
+          ...buttonStyle,
         }}
       />
 
@@ -134,6 +144,7 @@ export default function LandingSearchOverlay() {
             borderRadius: '14px',
             boxShadow: '0 18px 50px rgba(0,0,0,0.6)',
             WebkitOverflowScrolling: 'touch',
+            ...resultsStyle,
           }}
         >
           {results.length === 0 ? (
