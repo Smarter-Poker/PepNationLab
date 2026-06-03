@@ -1378,10 +1378,10 @@ export default function DiscoveryHero({
           }}
           placeholder="Ask Us Anything About The Peptides You Want To Research..."
           style={{
-            position: 'absolute', top: '34.4%', left: '9%', width: '89%', height: '13%',
+            position: 'absolute', top: '33.0%', left: '9%', width: '89%', height: '13%',
             background: 'transparent',
             border: 'none', outline: 'none', color: '#FFFFFF',
-            fontSize: 'max(15px, 1.4vw)',
+            fontSize: 'max(20px, 1.86vw)',
             padding: '0 10px 0 45px',
             zIndex: 5,
             fontWeight: 500,

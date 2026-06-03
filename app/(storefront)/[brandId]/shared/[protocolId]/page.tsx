@@ -1,7 +1,5 @@
 import { createServiceClient } from '@/lib/supabase/server';
 import { notFound } from 'next/navigation';
-import { getProductById } from '@/lib/products-server';
-import { getStorefrontConfig } from '@/lib/storefront';
 
 export const revalidate = 0; // Don't cache shared links statically
 
@@ -24,8 +22,13 @@ export default async function SharedProtocolPage({
     return notFound();
   }
 
-  // 2. Fetch agent config to render the storefront wrapper
-  const config = await getStorefrontConfig(brandId);
+  // 2. Fetch agent config
+  const { data: config } = await supabase
+    .from('agent_profiles')
+    .select('id, name:display_name, slug, primary_color')
+    .ilike('slug', brandId)
+    .single();
+
   if (!config) {
     return notFound();
   }
@@ -38,14 +41,21 @@ export default async function SharedProtocolPage({
   };
 
   // 3. Fetch products to map the protocol
-  const agentProducts = (await Promise.all(
-    payload.results.map(r => getProductById(r.product_id))
-  )).filter(Boolean) as any[];
+  const productIds = payload.results.map(r => r.product_id).filter(Boolean);
+  let agentProducts: any[] = [];
+  if (productIds.length > 0) {
+    const { data } = await supabase
+      .from('agent_products')
+      .select('*, products(*)')
+      .in('product_id', productIds)
+      .eq('agent_id', config.id);
+    if (data) agentProducts = data;
+  }
 
   return (
     <main style={{ minHeight: '100dvh', background: '#0A1018', color: '#FFF' }}>
       <div style={{ maxWidth: 800, margin: '0 auto', padding: '40px 20px' }}>
-        <h1 style={{ fontSize: '2rem', fontWeight: 900, marginBottom: 8, color: config.storefront.primary_color }}>
+        <h1 style={{ fontSize: '2rem', fontWeight: 900, marginBottom: 8, color: config.primary_color || '#00C4BC' }}>
           Shared AI Match Protocol
         </h1>
         <p style={{ color: '#A8B4C0', fontSize: '1.1rem', marginBottom: 40, lineHeight: 1.5 }}>
@@ -54,7 +64,7 @@ export default async function SharedProtocolPage({
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
           {payload.results.map((r: any, i: number) => {
-            const product = agentProducts.find(p => p.id === r.product_id);
+            const product = agentProducts.find(p => p.product_id === r.product_id);
             if (!product) return null; // Not stocked by this agent
 
             return (
@@ -75,8 +85,8 @@ export default async function SharedProtocolPage({
                       )}
                     </div>
                   </div>
-                  <div style={{ fontSize: '1.25rem', fontWeight: 900, color: config.storefront.primary_color }}>
-                    ${(product.price_cents / 100).toFixed(2)}
+                  <div style={{ fontSize: '1.25rem', fontWeight: 900, color: config.primary_color || '#00C4BC' }}>
+                    ${(product.retail_price / 100).toFixed(2)}
                   </div>
                 </div>
 
@@ -96,11 +106,11 @@ export default async function SharedProtocolPage({
                 <a 
                   href={`/${brandId}?add=${product.id}`}
                   style={{
-                    display: 'inline-flex', padding: '12px 24px', background: config.storefront.primary_color,
+                    display: 'inline-flex', padding: '12px 24px', background: config.primary_color || '#00C4BC',
                     color: '#0A1018', fontWeight: 800, borderRadius: 12, textDecoration: 'none'
                   }}
                 >
-                  Buy on {config.agent.name}
+                  Buy on {config.name}
                 </a>
               </div>
             );
@@ -124,7 +134,7 @@ export default async function SharedProtocolPage({
         <div style={{ marginTop: 48, textAlign: 'center' }}>
           <a 
             href={`/${brandId}`}
-            style={{ color: config.storefront.primary_color, fontWeight: 700, textDecoration: 'none' }}
+            style={{ color: config.primary_color || '#00C4BC', fontWeight: 700, textDecoration: 'none' }}
           >
             ← Back to Storefront
           </a>

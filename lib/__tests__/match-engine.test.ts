@@ -77,7 +77,7 @@ describe('scoreCompounds — evidence-comfort gate', () => {
       }),
     ];
 
-    const results = scoreCompounds(
+    const { matches: results } = scoreCompounds(
       { ...baseInput, evidenceComfort: 'strict_human_only' },
       compounds,
     );
@@ -109,7 +109,7 @@ describe('scoreCompounds — evidence-comfort gate', () => {
       }),
     ];
 
-    const results = scoreCompounds(
+    const { matches: results } = scoreCompounds(
       { ...baseInput, evidenceComfort: 'investigational_ok' },
       compounds,
     );
@@ -148,7 +148,7 @@ describe('scoreCompounds — WADA gate', () => {
       }),
     ];
 
-    const results = scoreCompounds(
+    const { matches: results } = scoreCompounds(
       { ...baseInput, wadaConstraint: 'wada_permitted_only' },
       compounds,
     );
@@ -169,7 +169,7 @@ describe('scoreCompounds — WADA gate', () => {
       }),
     ];
 
-    const results = scoreCompounds(
+    const { matches: results } = scoreCompounds(
       { ...baseInput, wadaConstraint: 'no_constraint' },
       compounds,
     );
@@ -207,7 +207,7 @@ describe('scoreCompounds — risk gate', () => {
       }),
     ];
 
-    const results = scoreCompounds(
+    const { matches: results } = scoreCompounds(
       { ...baseInput, riskTolerance: 'low_only' },
       compounds,
     );
@@ -233,7 +233,7 @@ describe('scoreCompounds — risk gate', () => {
       }),
     ];
 
-    const results = scoreCompounds(
+    const { matches: results } = scoreCompounds(
       { ...baseInput, riskTolerance: 'moderate_ok' },
       compounds,
     );
@@ -271,7 +271,7 @@ describe('scoreCompounds — ranking and cap', () => {
       }),
     ];
 
-    const results = scoreCompounds(
+    const { matches: results } = scoreCompounds(
       { ...baseInput, evidenceComfort: 'preclinical_ok' },
       compounds,
     );
@@ -298,7 +298,7 @@ describe('scoreCompounds — ranking and cap', () => {
       );
     }
 
-    const results = scoreCompounds(baseInput, compounds);
+    const { matches: results } = scoreCompounds(baseInput, compounds);
     expect(results.length).toBe(5);
   });
 
@@ -318,7 +318,7 @@ describe('scoreCompounds — ranking and cap', () => {
       }),
     ];
 
-    const results = scoreCompounds(baseInput, compounds);
+    const { matches: results } = scoreCompounds(baseInput, compounds);
     expect(results.map((r) => r.slug)).toEqual(['with-signal']);
   });
 });
