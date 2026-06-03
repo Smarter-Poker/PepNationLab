@@ -765,20 +765,22 @@ function VialQuantitySection() {
   );
 }
 
-export default function CalculatorSuite() {
+export default function CalculatorSuite({ activeId }: { activeId?: string | null }) {
+  if (!activeId) return null;
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column' }}>
-      <Reconstitution />
-      <DilutionSection />
-      <ConcentrationSection />
-      <StabilitySection />
-      <CostSection />
-      <PoolingSection />
-      <HplcRtSection />
-      <MassSpecSection />
-      <SppsSection />
-      <SolubilitySection />
-      <VialQuantitySection />
+      {activeId === 'reconstitution' && <Reconstitution />}
+      {activeId === 'dilution' && <DilutionSection />}
+      {activeId === 'concentration' && <ConcentrationSection />}
+      {activeId === 'stability' && <StabilitySection />}
+      {activeId === 'cost' && <CostSection />}
+      {activeId === 'pooling' && <PoolingSection />}
+      {activeId === 'hplc-rt' && <HplcRtSection />}
+      {activeId === 'mass-spec' && <MassSpecSection />}
+      {activeId === 'spps-cost' && <SppsSection />}
+      {activeId === 'solubility' && <SolubilitySection />}
+      {activeId === 'vial-quantity' && <VialQuantitySection />}
     </div>
   );
 }
