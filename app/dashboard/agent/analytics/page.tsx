@@ -19,7 +19,7 @@ interface MetricCardProps {
 
 function MetricCard({ label, value, sub, index = 0 }: MetricCardProps) {
   return (
-    <div className="card-glass hover-lift stagger-fade-in" style={{ padding: 'var(--space-4)', borderRadius: 'var(--radius-md)', animationDelay: `${0.1 + index * 0.1}s` }}>
+    <div className="card-metal hover-lift stagger-fade-in" style={{ padding: 'var(--space-4)', borderRadius: 'var(--radius-md)', animationDelay: `${0.1 + index * 0.1}s` }}>
       <div style={{ color: 'var(--silver)', fontSize: '0.78rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{label}</div>
       <div style={{ color: 'var(--white)', fontSize: '1.6rem', fontWeight: 800, marginTop: 4 }}>{value}</div>
       {sub && <div style={{ color: 'var(--silver)', fontSize: '0.78rem', marginTop: 2 }}>{sub}</div>}

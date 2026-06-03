@@ -97,7 +97,7 @@ export default function LegalDocument({
           </p>
 
         {/* Intro */}
-        <div className="card-glass" style={{ padding: 'var(--space-6)', marginBottom: 'var(--space-8)' }}>
+        <div className="card-metal" style={{ padding: 'var(--space-6)', marginBottom: 'var(--space-8)' }}>
           {intro.map((para, i) => (
             <p
               key={i}

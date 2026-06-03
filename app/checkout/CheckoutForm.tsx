@@ -639,7 +639,7 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
           </div>
 
           {totalAdjusted && serverTotal !== null && (
-            <div className="card-glass" style={{ background: 'rgba(0, 240, 255, 0.05)', border: '1px solid rgba(0, 240, 255, 0.15)', borderRadius: 'var(--radius-md)', padding: 'var(--space-4)', marginBottom: 'var(--space-4)', display: 'flex', gap: 12, alignItems: 'flex-start', boxShadow: 'inset 0 0 20px rgba(0,0,0,0.5)' }}>
+            <div className="card-metal" style={{ background: 'rgba(0, 240, 255, 0.05)', border: '1px solid rgba(0, 240, 255, 0.15)', borderRadius: 'var(--radius-md)', padding: 'var(--space-4)', marginBottom: 'var(--space-4)', display: 'flex', gap: 12, alignItems: 'flex-start', boxShadow: 'inset 0 0 20px rgba(0,0,0,0.5)' }}>
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--teal)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, marginTop: 2 }}>
                 <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
                 <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
@@ -654,7 +654,7 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
           )}
 
 
-          <div className="card-glass" style={{ background: 'rgba(0, 0, 0, 0.3)', border: '1px solid rgba(255, 255, 255, 0.06)', borderRadius: 'var(--radius-lg)', padding: 'var(--space-5)', marginBottom: 'var(--space-6)', boxShadow: 'inset 0 0 20px rgba(0,0,0,0.5)' }}>
+          <div className="card-metal" style={{ background: 'rgba(0, 0, 0, 0.3)', border: '1px solid rgba(255, 255, 255, 0.06)', borderRadius: 'var(--radius-lg)', padding: 'var(--space-5)', marginBottom: 'var(--space-6)', boxShadow: 'inset 0 0 20px rgba(0,0,0,0.5)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid rgba(255, 255, 255, 0.05)', paddingBottom: 'var(--space-3)', marginBottom: 'var(--space-3)' }}>
               <span style={{ color: 'var(--grey-400)', fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Order Identifier</span>
               <strong style={{ color: 'var(--white)', fontFamily: 'var(--font-brand)', fontSize: '0.95rem', wordBreak: 'break-all' }}>{orderSuccess}</strong>
@@ -673,7 +673,7 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
             </div>
           </div>
 
-          <div className="card-glass" style={{ background: 'rgba(0, 0, 0, 0.3)', border: '1px solid rgba(255, 255, 255, 0.06)', borderRadius: 'var(--radius-lg)', padding: 'var(--space-5)', marginBottom: 'var(--space-8)', boxShadow: 'inset 0 0 20px rgba(0,0,0,0.5)' }}>
+          <div className="card-metal" style={{ background: 'rgba(0, 0, 0, 0.3)', border: '1px solid rgba(255, 255, 255, 0.06)', borderRadius: 'var(--radius-lg)', padding: 'var(--space-5)', marginBottom: 'var(--space-8)', boxShadow: 'inset 0 0 20px rgba(0,0,0,0.5)' }}>
             <h3 style={{ fontSize: '1rem', color: 'var(--teal)', marginBottom: 'var(--space-3)', textTransform: 'uppercase', letterSpacing: '0.05em', fontFamily: 'var(--font-brand)', display: 'flex', alignItems: 'center', gap: 8 }}>
               <svg
                 width="14"
@@ -700,7 +700,7 @@ export default function CheckoutForm({ userProfile, userEmail, tierMultipliers, 
 
           <PaymentProofUpload orderId={orderSuccess} />
 
-          <div className="card-glass" style={{ background: 'rgba(229, 62, 62, 0.05)', border: '1px solid rgba(229, 62, 62, 0.15)', padding: 'var(--space-4)', borderRadius: 'var(--radius-md)', marginBottom: 'var(--space-6)', boxShadow: 'inset 0 0 20px rgba(0,0,0,0.3)' }}>
+          <div className="card-metal" style={{ background: 'rgba(229, 62, 62, 0.05)', border: '1px solid rgba(229, 62, 62, 0.15)', padding: 'var(--space-4)', borderRadius: 'var(--radius-md)', marginBottom: 'var(--space-6)', boxShadow: 'inset 0 0 20px rgba(0,0,0,0.3)' }}>
             <h4 style={{ color: 'var(--red)', fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 4, fontFamily: 'var(--font-brand)', textShadow: '0 0 10px rgba(229, 62, 62, 0.3)' }}>Strict Legal Reminder</h4>
             <p style={{ color: 'var(--silver-light)', fontSize: '0.78rem', margin: 0, lineHeight: 1.5 }}>
               All Products Purchased Are Restrictively Designated For Laboratory Experimentation And Chemical Analysis Only. Any Therapeutic Use Or Human Consumption Is Stringently Prohibited.

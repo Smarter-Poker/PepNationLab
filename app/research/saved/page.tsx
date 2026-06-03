@@ -39,7 +39,7 @@ export default async function SavedCompoundsPage() {
         </p>
       </header>
       {items.length === 0 ? (
-        <div className="card-glass" style={{ padding: 'var(--space-5, 24px)', borderRadius: 'var(--radius-lg, 12px)', color: 'var(--silver, #A8B4C0)' }}>
+        <div className="card-metal" style={{ padding: 'var(--space-5, 24px)', borderRadius: 'var(--radius-lg, 12px)', color: 'var(--silver, #A8B4C0)' }}>
           You Have Not Saved Any Compounds Yet. Use The Save Button On Any Monograph To Add It Here.
         </div>
       ) : (

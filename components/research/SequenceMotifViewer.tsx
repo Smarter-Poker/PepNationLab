@@ -29,7 +29,7 @@ function classOf(aa: string): keyof typeof CLASSES {
 export default function SequenceMotifViewer({ sequence }: Props) {
   if (!sequence) {
     return (
-      <div className="card-glass" style={{ padding: 16, borderRadius: 12, color: '#A8B4C0', fontSize: 14 }}>
+      <div className="card-metal" style={{ padding: 16, borderRadius: 12, color: '#A8B4C0', fontSize: 14 }}>
         No Sequence Available For This Compound.
       </div>
     );

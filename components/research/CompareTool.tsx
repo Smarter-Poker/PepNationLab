@@ -225,7 +225,7 @@ export default function CompareTool({
 
       {selected.length === 0 ? (
         <div
-          className="card-glass"
+          className="card-metal"
           style={{
             padding: 'var(--space-6, 32px)',
             textAlign: 'center',
@@ -236,7 +236,7 @@ export default function CompareTool({
           Select Up To Three Compounds To Compare Every Attribute Side By Side.
         </div>
       ) : (
-        <div className="card-glass" style={{ borderRadius: 'var(--radius-lg, 12px)', overflowX: 'auto' }}>
+        <div className="card-metal" style={{ borderRadius: 'var(--radius-lg, 12px)', overflowX: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '480px' }}>
             <thead>
               <tr>

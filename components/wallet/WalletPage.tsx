@@ -300,7 +300,7 @@ export default function WalletPage({
                 </button>
               </section>
 
-              <section className="card-glass" style={{ padding: 16, borderRadius: 12 }}>
+              <section className="card-metal" style={{ padding: 16, borderRadius: 12 }}>
                 <h3 style={{ color: 'var(--white)', marginTop: 0, fontSize: '1rem' }}>Open Invoices</h3>
                 {openInvoices.length === 0 ? (
                   <p style={{ color: 'var(--grey-500)', fontSize: '0.9rem' }}>No Open Invoices.</p>
@@ -335,7 +335,7 @@ export default function WalletPage({
           )}
 
           {tab === 'activity' && (
-            <section className="card-glass" style={{ padding: 16, borderRadius: 12 }}>
+            <section className="card-metal" style={{ padding: 16, borderRadius: 12 }}>
               <h3 style={{ color: 'var(--white)', marginTop: 0, fontSize: '1rem' }}>Recent Activity</h3>
               {loading ? (
                 <p style={{ color: 'var(--grey-500)' }}>Loading...</p>
@@ -378,7 +378,7 @@ export default function WalletPage({
           )}
 
           {tab === 'statements' && (
-            <section className="card-glass" style={{ padding: 16, borderRadius: 12 }}>
+            <section className="card-metal" style={{ padding: 16, borderRadius: 12 }}>
               <h3 style={{ color: 'var(--white)', marginTop: 0 }}>Invoice History</h3>
               {statements.length === 0 ? (
                 <p style={{ color: 'var(--grey-500)' }}>No Invoices Yet.</p>

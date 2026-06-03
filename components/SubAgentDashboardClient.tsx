@@ -128,7 +128,7 @@ export default function SubAgentDashboardClient({ data, onRefresh }: { data: Ove
               <div style={{ animation: 'fadeIn 0.3s ease-out' }}>
                 <h1 style={{ fontSize: '24px', marginBottom: '16px' }}>Researchers</h1>
                 {data.share_link && (
-                  <div className="card-glass" style={{ padding: '20px', marginBottom: '24px' }}>
+                  <div className="card-metal" style={{ padding: '20px', marginBottom: '24px' }}>
                     <h2 style={{ fontSize: '18px', marginBottom: '12px' }}>Invite Researchers</h2>
                     <div style={{ background: 'rgba(0,196,188,0.06)', border: '1px solid rgba(0,196,188,0.2)', borderRadius: '8px', padding: '14px' }}>
                       <div style={{ fontSize: '11px', opacity: 0.7, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '6px' }}>Your Referral Link</div>

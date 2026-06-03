@@ -140,7 +140,7 @@ export default function UniversalSearch({
                   key={hit.doc.id}
                   href={hit.doc.url}
                   onMouseEnter={() => setActive(i)}
-                  className="card-glass"
+                  className="card-metal"
                   style={{
                     display: 'block',
                     padding: 'var(--space-3, 12px) var(--space-4, 16px)',

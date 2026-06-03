@@ -180,7 +180,7 @@ export default async function OrdersPage({
                   { label: 'In Progress', value: String(activeCount) },
                   { label: 'Lifetime Spend', value: `$${lifetimeSpend.toFixed(2)}` },
                 ].map((stat) => (
-                  <div key={stat.label} className="card-glass" style={{ padding: 'var(--space-4)', borderRadius: 'var(--radius-md)' }}>
+                  <div key={stat.label} className="card-metal" style={{ padding: 'var(--space-4)', borderRadius: 'var(--radius-md)' }}>
                     <div style={{ fontSize: '1.4rem', fontWeight: 800, fontFamily: 'var(--font-brand)', color: 'var(--teal)', lineHeight: 1 }}>{stat.value}</div>
                     <div style={{ fontSize: '0.74rem', color: 'var(--grey-400)', marginTop: 'var(--space-2)' }}>{stat.label}</div>
                   </div>

@@ -172,7 +172,7 @@ export default function ResearchBrowser({ compounds }: { compounds: Compound[] }
 
       {filtered.length === 0 ? (
         <div
-          className="card-glass"
+          className="card-metal"
           style={{
             padding: 'var(--space-6, 32px)',
             textAlign: 'center',

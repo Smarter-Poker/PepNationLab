@@ -177,7 +177,7 @@ export default async function ResearchCorrelatedPage() {
       </header>
 
       {allSlugs.length === 0 ? (
-        <div className="card-glass" style={{ padding: 'var(--space-5, 24px)', borderRadius: 'var(--radius-lg, 12px)', color: 'var(--silver, #A8B4C0)' }}>
+        <div className="card-metal" style={{ padding: 'var(--space-5, 24px)', borderRadius: 'var(--radius-lg, 12px)', color: 'var(--silver, #A8B4C0)' }}>
           Will Populate Once PubMed Sync Runs. The Co-Occurrence Index Is Rebuilt Weekly From The Citation Corpus.
         </div>
       ) : (

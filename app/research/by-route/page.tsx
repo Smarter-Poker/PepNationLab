@@ -149,7 +149,7 @@ export default async function ResearchByRoutePage() {
       </header>
 
       {shellGroups.length === 0 ? (
-        <div className="card-glass" style={{ padding: 'var(--space-5, 24px)', borderRadius: 'var(--radius-lg, 12px)', color: 'var(--silver, #A8B4C0)' }}>
+        <div className="card-metal" style={{ padding: 'var(--space-5, 24px)', borderRadius: 'var(--radius-lg, 12px)', color: 'var(--silver, #A8B4C0)' }}>
           Route Annotations Will Populate Once The DailyMed Sync Cron Runs.
         </div>
       ) : (

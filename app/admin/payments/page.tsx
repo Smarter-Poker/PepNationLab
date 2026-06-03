@@ -94,7 +94,7 @@ export default function AdminPaymentsPage() {
       ) : (
         <div style={{ display: 'grid', gridTemplateColumns: 'minmax(280px, 1fr) minmax(280px, 360px)', gap: 18, alignItems: 'start' }}>
           {/* Agent list */}
-          <section className="card-glass" style={{ padding: 14, borderRadius: 12 }}>
+          <section className="card-metal" style={{ padding: 14, borderRadius: 12 }}>
             <input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
@@ -139,7 +139,7 @@ export default function AdminPaymentsPage() {
           </section>
 
           {/* Payment panel */}
-          <section className="card-glass" style={{ padding: 16, borderRadius: 12, position: 'sticky', top: 76 }}>
+          <section className="card-metal" style={{ padding: 16, borderRadius: 12, position: 'sticky', top: 76 }}>
             {!selected ? (
               <p style={{ color: 'var(--grey-500)', margin: 0 }}>Select An Agent To Record A Payment.</p>
             ) : (

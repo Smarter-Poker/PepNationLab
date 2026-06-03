@@ -123,7 +123,7 @@ export default async function CompoundStructurePage({ params }: PageProps) {
       )}
 
       {!primaryPdb && !primaryAf && (
-        <div className="card-glass" style={{ padding: 'var(--space-5, 24px)', borderRadius: 'var(--radius-lg, 12px)', color: 'var(--silver, #A8B4C0)', marginTop: 'var(--space-4, 16px)' }}>
+        <div className="card-metal" style={{ padding: 'var(--space-5, 24px)', borderRadius: 'var(--radius-lg, 12px)', color: 'var(--silver, #A8B4C0)', marginTop: 'var(--space-4, 16px)' }}>
           No PDB Or AlphaFold Identifier Is Currently Indexed For This Compound. The Structure Sync Cron Will Populate Available Records.
         </div>
       )}

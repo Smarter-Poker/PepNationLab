@@ -21,7 +21,7 @@ export default function CompoundKnowledgePanel({
 
   return (
     <aside
-      className="card-glass"
+      className="card-metal"
       style={{
         padding: dense ? 16 : 20,
         borderRadius: 14,

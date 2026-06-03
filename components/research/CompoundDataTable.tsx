@@ -171,7 +171,7 @@ export default function CompoundDataTable({ rows }: { rows: DataRow[] }) {
         {view.length} Of {rows.length} Compounds
       </p>
 
-      <div className="card-glass" style={{ borderRadius: 'var(--radius-lg, 12px)', overflowX: 'auto' }}>
+      <div className="card-metal" style={{ borderRadius: 'var(--radius-lg, 12px)', overflowX: 'auto' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '1180px' }}>
           <thead>
             <tr>

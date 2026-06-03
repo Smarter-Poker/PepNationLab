@@ -80,7 +80,7 @@ export default async function ResearchAreaPage({ params }: PageProps) {
       label: 'Overview',
       children: (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-5, 24px)' }}>
-          <section className="card-glass" style={{ padding: 'var(--space-5, 24px)', borderRadius: 'var(--radius-lg, 12px)' }}>
+          <section className="card-metal" style={{ padding: 'var(--space-5, 24px)', borderRadius: 'var(--radius-lg, 12px)' }}>
             <h2 style={sectionHeadStyle}>Overview</h2>
             <p style={bodyTextStyle}>{content.overview}</p>
           </section>
@@ -111,7 +111,7 @@ export default async function ResearchAreaPage({ params }: PageProps) {
       key: 'overview',
       label: 'Overview',
       children: (
-        <section className="card-glass" style={{ padding: 'var(--space-5, 24px)', borderRadius: 'var(--radius-lg, 12px)' }}>
+        <section className="card-metal" style={{ padding: 'var(--space-5, 24px)', borderRadius: 'var(--radius-lg, 12px)' }}>
           <p style={bodyTextStyle}>{meta.blurb}</p>
         </section>
       ),
@@ -124,7 +124,7 @@ export default async function ResearchAreaPage({ params }: PageProps) {
     label: `Compounds (${compounds.length})`,
     children:
       compounds.length === 0 ? (
-        <div className="card-glass" style={{ padding: 'var(--space-6, 32px)', textAlign: 'center', color: 'var(--silver, #A8B4C0)', borderRadius: 'var(--radius-lg, 12px)' }}>
+        <div className="card-metal" style={{ padding: 'var(--space-6, 32px)', textAlign: 'center', color: 'var(--silver, #A8B4C0)', borderRadius: 'var(--radius-lg, 12px)' }}>
           No Compounds Are Currently Listed For This Research Area.
         </div>
       ) : (
@@ -168,7 +168,7 @@ export default async function ResearchAreaPage({ params }: PageProps) {
   if (content) {
     const evidenceChildren = (
       <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4, 16px)' }}>
-        <section className="card-glass" style={{ padding: 'var(--space-5, 24px)', borderRadius: 'var(--radius-lg, 12px)' }}>
+        <section className="card-metal" style={{ padding: 'var(--space-5, 24px)', borderRadius: 'var(--radius-lg, 12px)' }}>
           <h2 style={sectionHeadStyle}>Evidence Landscape</h2>
           <p style={bodyTextStyle}>{content.evidenceLandscape}</p>
         </section>
@@ -192,7 +192,7 @@ export default async function ResearchAreaPage({ params }: PageProps) {
           </section>
         )}
         {content.topStacks && content.topStacks.length > 0 && (
-          <section className="card-glass" style={{ padding: 'var(--space-5, 24px)', borderRadius: 'var(--radius-lg, 12px)' }}>
+          <section className="card-metal" style={{ padding: 'var(--space-5, 24px)', borderRadius: 'var(--radius-lg, 12px)' }}>
             <h2 style={sectionHeadStyle}>Stacks Studied In This Area</h2>
             <ul style={bulletListStyle}>
               {content.topStacks.map((s, i) => <li key={i} style={bulletItemStyle}>{s}</li>)}
@@ -213,7 +213,7 @@ export default async function ResearchAreaPage({ params }: PageProps) {
       key: 'safety',
       label: 'Safety',
       children: (
-        <section className="card-glass" style={{ padding: 'var(--space-5, 24px)', borderRadius: 'var(--radius-lg, 12px)', borderLeft: '3px solid var(--red-600, #E53E3E)' }}>
+        <section className="card-metal" style={{ padding: 'var(--space-5, 24px)', borderRadius: 'var(--radius-lg, 12px)', borderLeft: '3px solid var(--red-600, #E53E3E)' }}>
           <h2 style={sectionHeadStyle}>Notable Safety Considerations</h2>
           <p style={bodyTextStyle}>{content.notableSafety}</p>
         </section>
@@ -227,7 +227,7 @@ export default async function ResearchAreaPage({ params }: PageProps) {
       key: 'references',
       label: 'References',
       children: (
-        <section className="card-glass" style={{ padding: 'var(--space-5, 24px)', borderRadius: 'var(--radius-lg, 12px)' }}>
+        <section className="card-metal" style={{ padding: 'var(--space-5, 24px)', borderRadius: 'var(--radius-lg, 12px)' }}>
           <h2 style={sectionHeadStyle}>Key References</h2>
           <ol style={{ ...bulletListStyle, listStyleType: 'decimal', paddingLeft: '1.4rem' }}>
             {content.keyReferences.map((r, i) => (

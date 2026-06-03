@@ -344,7 +344,7 @@ export default function MonographTabs({ compound, related = [] }: Props) {
                 <Link
                   key={r.slug}
                   href={`/research/${r.slug}`}
-                  className="card-glass"
+                  className="card-metal"
                   style={{
                     display: 'flex',
                     flexDirection: 'column',

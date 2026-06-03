@@ -99,7 +99,7 @@ export default async function ResearchTargetDetailPage({ params }: PageProps) {
       </h2>
 
       {compoundRows.length === 0 ? (
-        <div className="card-glass" style={{ padding: 'var(--space-5, 24px)', borderRadius: 'var(--radius-lg, 12px)', color: 'var(--silver, #A8B4C0)' }}>
+        <div className="card-metal" style={{ padding: 'var(--space-5, 24px)', borderRadius: 'var(--radius-lg, 12px)', color: 'var(--silver, #A8B4C0)' }}>
           No Compounds Are Currently Annotated To Bind This Target.
         </div>
       ) : (

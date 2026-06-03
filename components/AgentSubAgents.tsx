@@ -13,6 +13,15 @@ import {
   downloadPrintablePDF,
 } from '@/lib/export';
 
+function Tooltip({ text, children }: { text: string; children: React.ReactNode }) {
+  return (
+    <div className="tooltip-container">
+      {children}
+      <span className="tooltip-text">{text}</span>
+    </div>
+  );
+}
+
 function escapeHtml(value: string): string {
   return value
     .replace(/&/g, '&amp;')
@@ -360,11 +369,11 @@ export default function AgentSubAgents({ agentId }: { agentId?: string }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-8)' }}>
       {/* Sub-Agents List */}
-      <div className="metal-frame">
-        <div className="metal-content">
+      <div className="glass-panel stagger-fade-in" style={{ padding: 'var(--space-6)', borderRadius: '16px' }}>
+        <div>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 'var(--space-4)', gap: 'var(--space-4)', flexWrap: 'wrap' }}>
             <div>
-              <h2 className="metal-text" style={{ fontSize: '1.25rem', fontFamily: 'var(--font-brand)' }}>
+              <h2 style={{ fontSize: '1.25rem', fontFamily: 'var(--font-brand)', color: 'var(--white)', fontWeight: 800, margin: 0 }}>
                 My Sub-Agents
               </h2>
               <p style={{ color: 'var(--grey-400)', fontSize: '0.85rem', marginTop: 4 }}>
@@ -389,13 +398,14 @@ export default function AgentSubAgents({ agentId }: { agentId?: string }) {
               subAgents.map(agent => (
                 <div 
                   key={agent.id}
-                  className="metal-embossed-panel"
+                  className="glass-panel hover-lift"
                   style={{
                     display: 'flex',
                     justifyContent: 'space-between',
                     alignItems: 'center',
                     flexWrap: 'wrap',
-                    gap: '12px'
+                    gap: '12px',
+                    padding: 'var(--space-4)'
                   }}
                 >
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', flex: '1 1 200px' }}>
@@ -530,13 +540,13 @@ export default function AgentSubAgents({ agentId }: { agentId?: string }) {
       </div>
 
       {/* Invoices */}
-      <div className="metal-frame">
-        <div className="metal-content">
-          <h2 className="metal-text" style={{ fontSize: '1.25rem', marginBottom: 'var(--space-4)', fontFamily: 'var(--font-brand)' }}>
+      <div className="glass-panel stagger-fade-in" style={{ padding: 'var(--space-6)', borderRadius: '16px' }}>
+        <div>
+          <h2 style={{ fontSize: '1.25rem', marginBottom: 'var(--space-4)', fontFamily: 'var(--font-brand)', color: 'var(--white)', fontWeight: 800 }}>
             Sub-Agent Invoices
           </h2>
           {invoices.length === 0 ? (
-            <div className="metal-embossed-panel" style={{ padding: 'var(--space-8)', textAlign: 'center', opacity: 0.7 }}>
+            <div className="glass-panel" style={{ padding: 'var(--space-8)', textAlign: 'center', opacity: 0.7 }}>
               <p>No Invoices Generated Yet. Click Generate Below An Agent To Bill Them For This Week.</p>
             </div>
           ) : (
@@ -544,13 +554,14 @@ export default function AgentSubAgents({ agentId }: { agentId?: string }) {
               {invoices.map(inv => (
                 <div 
                   key={inv.id}
-                  className="metal-embossed-panel"
+                  className="glass-panel hover-lift"
                   style={{
                     display: 'flex',
                     justifyContent: 'space-between',
                     alignItems: 'center',
                     flexWrap: 'wrap',
-                    gap: '12px'
+                    gap: '12px',
+                    padding: 'var(--space-4)'
                   }}
                 >
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', flex: '1 1 150px' }}>
@@ -622,16 +633,17 @@ export default function AgentSubAgents({ agentId }: { agentId?: string }) {
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.95, opacity: 0, y: 20 }}
               onClick={e => e.stopPropagation()} 
-              className="metal-frame"
+              className="glass-panel"
               style={{
                 maxWidth: 850, width: '100%',
                 maxHeight: '90vh', overflowY: 'auto',
+                padding: 'var(--space-7)', borderRadius: '16px'
               }}
             >
-              <div className="metal-content" style={{ padding: 'var(--space-7)' }}>
+              <div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-5)' }}>
                   <div>
-                    <h3 className="metal-text" style={{ fontSize: '1.3rem', fontFamily: 'var(--font-brand)', letterSpacing: '0.05em', textTransform: 'uppercase' }}>Baseline Pricing (Applies To All Sub-Agents)</h3>
+                    <h3 style={{ margin: 0, fontSize: '1.3rem', fontFamily: 'var(--font-brand)', letterSpacing: '0.05em', textTransform: 'uppercase', color: 'var(--white)', fontWeight: 800 }}>Baseline Pricing (Applies To All Sub-Agents)</h3>
                     <p style={{ fontSize: '0.85rem', color: 'var(--grey-400)', marginTop: 4 }}>
                       Set The Fixed Wholesale Cost That Your Sub-Agents Will Pay You For Each Product. These Rules Apply Globally Across All Sub-Agents.
                     </p>
@@ -723,9 +735,9 @@ export default function AgentSubAgents({ agentId }: { agentId?: string }) {
           background: 'rgba(0,0,0,0.8)', zIndex: 1100,
           display: 'flex', alignItems: 'center', justifyContent: 'center'
         }}>
-          <div className="metal-frame" style={{ width: '100%', maxWidth: 400 }}>
-            <div className="metal-content" style={{ padding: 'var(--space-6)' }}>
-              <h3 className="metal-text" style={{ marginTop: 0, marginBottom: 'var(--space-4)' }}>Reset Sub-Agent Password</h3>
+          <div className="glass-panel" style={{ width: '100%', maxWidth: 400, padding: 'var(--space-6)', borderRadius: '16px' }}>
+            <div>
+              <h3 style={{ marginTop: 0, marginBottom: 'var(--space-4)', fontSize: '1.3rem', fontWeight: 800, color: 'var(--white)' }}>Reset Sub-Agent Password</h3>
               <p style={{ fontSize: '0.85rem', color: 'var(--silver)', marginBottom: 'var(--space-2)' }}>
                 Agent: <strong style={{ color: 'var(--white)' }}>{resetPwUser.name}</strong>
               </p>
@@ -786,9 +798,9 @@ export default function AgentSubAgents({ agentId }: { agentId?: string }) {
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           padding: 'var(--space-4)',
         }}>
-          <div className="metal-frame" style={{ width: '100%', maxWidth: 440 }}>
-            <div className="metal-content" style={{ padding: 'var(--space-6)' }}>
-              <h3 className="metal-text" style={{ marginTop: 0, marginBottom: 'var(--space-3)' }}>
+          <div className="glass-panel" style={{ width: '100%', maxWidth: 440, padding: 'var(--space-6)', borderRadius: '16px' }}>
+            <div>
+              <h3 style={{ marginTop: 0, marginBottom: 'var(--space-3)', fontSize: '1.3rem', fontWeight: 800, color: 'var(--white)' }}>
                 Revoke Agent Privileges For {revokeTarget.name}?
               </h3>
               <p style={{ fontSize: '0.88rem', color: 'var(--silver)', marginBottom: 'var(--space-3)' }}>
@@ -827,9 +839,9 @@ export default function AgentSubAgents({ agentId }: { agentId?: string }) {
           background: 'rgba(0,0,0,0.8)', zIndex: 1100,
           display: 'flex', alignItems: 'center', justifyContent: 'center'
         }}>
-          <div className="metal-frame" style={{ width: '100%', maxWidth: 400 }}>
-            <div className="metal-content" style={{ padding: 'var(--space-6)' }}>
-              <h3 className="metal-text" style={{ marginTop: 0, marginBottom: 'var(--space-4)' }}>Edit Contact Info</h3>
+          <div className="glass-panel" style={{ width: '100%', maxWidth: 400, padding: 'var(--space-6)', borderRadius: '16px' }}>
+            <div>
+              <h3 style={{ marginTop: 0, marginBottom: 'var(--space-4)', fontSize: '1.3rem', fontWeight: 800, color: 'var(--white)' }}>Edit Contact Info</h3>
               <p style={{ fontSize: '0.85rem', color: 'var(--silver)', marginBottom: 'var(--space-4)' }}>
                 Agent: <strong style={{ color: 'var(--white)' }}>{editContactUser.name}</strong>
               </p>

@@ -51,7 +51,7 @@ export default function ThemeBuilder() {
 
   return (
     <div className="pnl-themebuilder-grid" style={{ display: 'grid', gridTemplateColumns: 'minmax(min(280px, 100%), 1fr) minmax(min(260px, 100%), 1fr)', gap: 14 }}>
-      <section className="card-glass" style={{ padding: 16, borderRadius: 12 }}>
+      <section className="card-metal" style={{ padding: 16, borderRadius: 12 }}>
         <h3 style={{ color: 'var(--white)', fontSize: '1rem', marginTop: 0 }}>Storefront Theme</h3>
 
         <label style={{ display: 'block', marginBottom: 12 }}>
@@ -115,7 +115,7 @@ export default function ThemeBuilder() {
         }}>{saving ? 'Saving...' : 'Save Theme'}</button>
       </section>
 
-      <section className="card-glass" style={{ padding: 16, borderRadius: 12 }}>
+      <section className="card-metal" style={{ padding: 16, borderRadius: 12 }}>
         <h3 style={{ color: 'var(--white)', fontSize: '1rem', marginTop: 0 }}>Live Preview</h3>
         <div style={{
           border: `2px solid ${primary}`, borderRadius: 12, padding: 16,

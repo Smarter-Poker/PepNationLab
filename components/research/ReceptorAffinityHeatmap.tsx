@@ -29,7 +29,7 @@ function colorFor(v: number): string {
 export default function ReceptorAffinityHeatmap({ bindings }: Props) {
   if (!bindings || bindings.length === 0) {
     return (
-      <div className="card-glass" style={{ padding: 16, borderRadius: 12, color: '#A8B4C0', fontSize: 14 }}>
+      <div className="card-metal" style={{ padding: 16, borderRadius: 12, color: '#A8B4C0', fontSize: 14 }}>
         No Binding Affinity Rows Are Yet Indexed For This Target. ChEMBL Sync Will Populate.
       </div>
     );

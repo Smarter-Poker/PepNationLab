@@ -88,7 +88,7 @@ export default function AdminDisputesPage() {
       ) : (
         <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: 12 }}>
           {disputes.map((d) => (
-            <li key={d.id} className="card-glass" style={{
+            <li key={d.id} className="card-metal" style={{
               padding: 16, borderRadius: 12,
               border: d.resolved ? '1px solid rgba(255,255,255,0.06)' : '1px solid rgba(229,62,62,0.35)',
             }}>

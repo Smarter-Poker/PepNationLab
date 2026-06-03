@@ -144,7 +144,7 @@ export default async function CompoundRegulatoryPage({ params }: PageProps) {
           Recall And Safety Signal Feed
         </h2>
         {recalls.length === 0 ? (
-          <div className="card-glass" style={{ padding: 'var(--space-5, 24px)', borderRadius: 'var(--radius-lg, 12px)', color: 'var(--silver, #A8B4C0)' }}>
+          <div className="card-metal" style={{ padding: 'var(--space-5, 24px)', borderRadius: 'var(--radius-lg, 12px)', color: 'var(--silver, #A8B4C0)' }}>
             No Recalls Or Black-Box Warnings Currently Indexed.
           </div>
         ) : (

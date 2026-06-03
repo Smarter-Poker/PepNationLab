@@ -114,7 +114,7 @@ export default async function StatusPage() {
 function ComponentRow({ label, ok, detail }: { label: string; ok: boolean; detail: string }) {
   return (
     <div
-      className="card-glass"
+      className="card-metal"
       style={{
         padding: 'var(--space-4)',
         borderRadius: 'var(--radius-md)',

@@ -92,7 +92,7 @@ export default function AdminCreditIncreasesPage() {
           {reqs.map((r) => {
             const pending = r.status === 'pending';
             return (
-              <li key={r.id} className="card-glass" style={{ padding: 16, borderRadius: 12 }}>
+              <li key={r.id} className="card-metal" style={{ padding: 16, borderRadius: 12 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, flexWrap: 'wrap' }}>
                   <div>
                     <div style={{ color: 'var(--white)', fontWeight: 700 }}>{r.agent_name}</div>

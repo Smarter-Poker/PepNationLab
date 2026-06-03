@@ -23,7 +23,7 @@ function colorForStatus(s: string): string {
 export default function WadaTimeline({ history }: Props) {
   if (!history || history.length === 0) {
     return (
-      <div className="card-glass" style={{ padding: 16, borderRadius: 12, color: '#A8B4C0', fontSize: 14 }}>
+      <div className="card-metal" style={{ padding: 16, borderRadius: 12, color: '#A8B4C0', fontSize: 14 }}>
         No WADA Prohibition History Recorded.
       </div>
     );

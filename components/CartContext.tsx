@@ -334,7 +334,7 @@ function AddToCartAcknowledgment({
         initial={{ y: 20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         exit={{ y: 20, opacity: 0 }}
-        className="card-glass"
+        className="card-metal"
         style={{
           maxWidth: 520,
           width: '100%',

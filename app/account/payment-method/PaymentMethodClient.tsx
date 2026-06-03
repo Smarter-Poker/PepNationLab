@@ -157,7 +157,7 @@ export default function PaymentMethodClient({ initialDefault, initialHandles }: 
         return (
           <div
             key={opt.id}
-            className="card-glass hover-lift stagger-fade-in"
+            className="card-metal hover-lift stagger-fade-in"
             style={{
               padding: 'var(--space-4)',
               borderRadius: 'var(--radius-md)',

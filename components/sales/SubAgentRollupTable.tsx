@@ -24,7 +24,7 @@ export default function SubAgentRollupTable({ preset }: { preset: string }) {
   if (rows.length === 0) return null;
 
   return (
-    <div className="card-glass" style={{ padding: 14, borderRadius: 12 }}>
+    <div className="card-metal" style={{ padding: 14, borderRadius: 12 }}>
       <h3 style={{ color: 'var(--white)', fontSize: '0.95rem', margin: '0 0 8px' }}>Sub-Agent Rollup</h3>
       <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
         <thead>

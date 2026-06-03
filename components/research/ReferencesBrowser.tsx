@@ -57,7 +57,7 @@ export default function ReferencesBrowser({ refs }: { refs: RefEntry[] }) {
         {filtered.map((r) => (
           <li
             key={r.url}
-            className="card-glass"
+            className="card-metal"
             style={{ borderRadius: 'var(--radius-lg, 12px)', padding: 'var(--space-4, 16px)' }}
           >
             <a

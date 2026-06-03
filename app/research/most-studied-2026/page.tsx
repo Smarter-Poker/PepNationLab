@@ -104,7 +104,7 @@ export default async function ResearchMostStudied2026Page() {
       count: withTrials.length,
       children:
         withTrials.length === 0 ? (
-          <div className="card-glass" style={{ padding: 'var(--space-5, 24px)', borderRadius: 'var(--radius-lg, 12px)', color: 'var(--silver, #A8B4C0)' }}>
+          <div className="card-metal" style={{ padding: 'var(--space-5, 24px)', borderRadius: 'var(--radius-lg, 12px)', color: 'var(--silver, #A8B4C0)' }}>
             Trial Counts Will Populate Once The ClinicalTrials.gov Sync Cron Runs.
           </div>
         ) : (

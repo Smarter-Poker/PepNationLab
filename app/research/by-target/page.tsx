@@ -56,7 +56,7 @@ export default async function ResearchByTargetPage() {
       </header>
 
       {targets.length === 0 ? (
-        <div className="card-glass" style={{ padding: 'var(--space-5, 24px)', borderRadius: 'var(--radius-lg, 12px)', color: 'var(--silver, #A8B4C0)' }}>
+        <div className="card-metal" style={{ padding: 'var(--space-5, 24px)', borderRadius: 'var(--radius-lg, 12px)', color: 'var(--silver, #A8B4C0)' }}>
           Receptor Annotations Will Populate Once The IUPHAR And ChEMBL Sync Crons Run.
         </div>
       ) : (

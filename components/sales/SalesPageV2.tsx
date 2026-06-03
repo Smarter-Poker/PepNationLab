@@ -47,7 +47,7 @@ export default function SalesPageV2() {
         <SalesHeatmap preset={preset} />
         <SubAgentRollupTable preset={preset} />
 
-        <div className="card-glass" style={{ padding: 14, borderRadius: 12 }}>
+        <div className="card-metal" style={{ padding: 14, borderRadius: 12 }}>
           <h3 style={{ color: 'var(--white)', fontSize: '0.95rem', marginTop: 0 }}>Exports</h3>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
             <a href={`/api/agent/sales/export/tax?year=${new Date().getFullYear()}`} download

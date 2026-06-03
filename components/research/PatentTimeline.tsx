@@ -13,7 +13,7 @@ export default function PatentTimeline({ patentStatus, patentExpiryYear }: Props
 
   if (!patentStatus && !expiry) {
     return (
-      <div className="card-glass" style={{ padding: 16, borderRadius: 12, color: '#A8B4C0', fontSize: 14 }}>
+      <div className="card-metal" style={{ padding: 16, borderRadius: 12, color: '#A8B4C0', fontSize: 14 }}>
         Patent Status Will Populate Once The Google Patents Sync Cron Runs.
       </div>
     );

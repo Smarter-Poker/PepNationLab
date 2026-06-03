@@ -204,12 +204,12 @@ export default async function ResearchLibraryPage({
           FAQ
         </Link>
         <Link
-          href="/research/converter"
+          href="/research/calculators"
           className="btn-secondary"
           style={{ display: 'inline-flex', alignItems: 'center', gap: 'var(--space-2, 8px)', textDecoration: 'none' }}
         >
           <Calculator size={18} aria-hidden="true" />
-          Dosing & Unit Converter
+          Laboratory Calculators
         </Link>
         <Link
           href="/research/references"

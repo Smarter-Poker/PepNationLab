@@ -65,7 +65,7 @@ export default function FaqExplorer({ items, categories }: { items: FaqItem[]; c
       {/* Active category questions */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2, 8px)' }}>
         {current.map((f, i) => (
-          <details key={i} className="card-glass" style={{ borderRadius: 'var(--radius-lg, 12px)', padding: 'var(--space-3, 12px) var(--space-4, 16px)' }}>
+          <details key={i} className="card-metal" style={{ borderRadius: 'var(--radius-lg, 12px)', padding: 'var(--space-3, 12px) var(--space-4, 16px)' }}>
             <summary style={{ cursor: 'pointer', fontWeight: 700, color: 'var(--white, #FFFFFF)', fontSize: '0.98rem', listStyle: 'revert' }}>
               {f.q}
             </summary>
