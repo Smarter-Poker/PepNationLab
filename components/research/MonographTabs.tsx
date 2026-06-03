@@ -23,6 +23,7 @@ import {
 } from '@/lib/compounds';
 import ReconstitutionCalculator from '@/components/research/ReconstitutionCalculator';
 import GlossaryText from '@/components/research/GlossaryText';
+import SequenceViewer from '@/components/research/SequenceViewer';
 
 interface Props {
   compound: Compound;
@@ -213,6 +214,9 @@ export default function MonographTabs({ compound, related = [] }: Props) {
               <Fact label="Molecular Weight" value={id.molecular_weight} />
               <Fact label="CAS" value={id.cas} />
               <Fact label="Parent" value={id.parent} />
+            </div>
+            <div style={{ marginTop: 'var(--space-4)' }}>
+              <SequenceViewer sequence={id.sequence} molecularWeight={id.molecular_weight} />
             </div>
           </div>
         )}
