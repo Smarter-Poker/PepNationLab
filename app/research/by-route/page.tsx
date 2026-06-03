@@ -6,6 +6,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/server';
 import { evidenceTier, wadaLabel } from '@/lib/compounds';
+import BrowseFilterShell from '@/components/research/BrowseFilterShell';
 
 export const metadata: Metadata = {
   title: 'Browse By Route Of Administration | Research Library | Pep Nation Lab',
@@ -45,6 +46,49 @@ function normalizeRoute(r: string): string {
   return lower;
 }
 
+function CompoundCard({ c }: { c: RouteRow }) {
+  const t = evidenceTier(c.evidence_tier);
+  return (
+    <Link
+      href={`/research/${c.slug}`}
+      className="card-metal"
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 'var(--space-1, 4px)',
+        padding: 'var(--space-3, 12px) var(--space-4, 16px)',
+        borderRadius: 'var(--radius-lg, 12px)',
+        textDecoration: 'none',
+        color: 'var(--white, #FFFFFF)',
+      }}
+    >
+      <span style={{ fontSize: '0.7rem', color: t.color, textTransform: 'uppercase', letterSpacing: '0.04em', fontWeight: 700 }}>
+        {t.label}
+      </span>
+      <span style={{ fontSize: '1rem', fontWeight: 700 }}>{c.display_name}</span>
+      {c.plain_summary && (
+        <span
+          style={{
+            fontSize: '0.78rem',
+            color: 'var(--silver, #A8B4C0)',
+            display: '-webkit-box',
+            WebkitLineClamp: 2,
+            WebkitBoxOrient: 'vertical',
+            overflow: 'hidden',
+          }}
+        >
+          {c.plain_summary}
+        </span>
+      )}
+      {c.wada_status && c.wada_status !== 'not_listed' && (
+        <span style={{ fontSize: '0.7rem', color: 'var(--silver, #A8B4C0)', marginTop: '4px' }}>
+          {wadaLabel(c.wada_status)}
+        </span>
+      )}
+    </Link>
+  );
+}
+
 export default async function ResearchByRoutePage() {
   const supabase = await createClient();
   const { data } = await supabase
@@ -72,6 +116,20 @@ export default async function ResearchByRoutePage() {
   const order = ['subcutaneous', 'intranasal', 'oral', 'intramuscular', 'topical', 'iv', 'unspecified'];
   const keys = order.filter((k) => buckets.has(k));
 
+  const shellGroups = keys.map((k) => {
+    const items = buckets.get(k)!;
+    return {
+      key: k,
+      label: ROUTE_LABELS[k] ?? k,
+      count: items.length,
+      children: (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 'var(--space-3, 12px)' }}>
+          {items.map((c) => <CompoundCard key={c.slug} c={c} />)}
+        </div>
+      ),
+    };
+  });
+
   return (
     <div style={{ maxWidth: '1100px', margin: '0 auto', padding: 'var(--space-6, 32px) var(--space-4, 16px)' }}>
       <nav style={{ marginBottom: 'var(--space-4, 16px)' }}>
@@ -84,45 +142,17 @@ export default async function ResearchByRoutePage() {
           Browse By Route Of Administration
         </h1>
         <p style={{ color: 'var(--silver, #A8B4C0)', fontSize: '1.05rem', marginTop: 'var(--space-2, 8px)', maxWidth: '760px' }}>
-          Compounds Grouped By Annotated Route Of Administration In The Research Literature.
+          Compounds Grouped By Route Of Administration. Select A Delivery Method Below.
         </p>
       </header>
 
-      {keys.length === 0 && (
+      {shellGroups.length === 0 ? (
         <div className="card-glass" style={{ padding: 'var(--space-5, 24px)', borderRadius: 'var(--radius-lg, 12px)', color: 'var(--silver, #A8B4C0)' }}>
           Route Annotations Will Populate Once The DailyMed Sync Cron Runs.
         </div>
+      ) : (
+        <BrowseFilterShell groups={shellGroups} emptyMessage="No Compounds In This Route Category Yet." />
       )}
-
-      {keys.map((k) => (
-        <section key={k} style={{ marginBottom: 'var(--space-6, 32px)' }}>
-          <h2 style={{ fontSize: '1.3rem', fontWeight: 800, color: 'var(--teal, #00C4BC)', marginBottom: 'var(--space-3, 12px)' }}>
-            {ROUTE_LABELS[k] ?? k} ({buckets.get(k)!.length})
-          </h2>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 'var(--space-3, 12px)' }}>
-            {buckets.get(k)!.map((c) => {
-              const t = evidenceTier(c.evidence_tier);
-              return (
-                <Link
-                  key={c.slug}
-                  href={`/research/${c.slug}`}
-                  className="card-metal"
-                  style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-1, 4px)', padding: 'var(--space-3, 12px) var(--space-4, 16px)', borderRadius: 'var(--radius-lg, 12px)', textDecoration: 'none', color: 'var(--white, #FFFFFF)' }}
-                >
-                  <span style={{ fontSize: '0.7rem', color: t.color, textTransform: 'uppercase', letterSpacing: '0.04em', fontWeight: 700 }}>{t.label}</span>
-                  <span style={{ fontSize: '1rem', fontWeight: 700 }}>{c.display_name}</span>
-                  {c.plain_summary && (
-                    <span style={{ fontSize: '0.78rem', color: 'var(--silver, #A8B4C0)', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{c.plain_summary}</span>
-                  )}
-                  {c.wada_status && c.wada_status !== 'not_listed' && (
-                    <span style={{ fontSize: '0.7rem', color: 'var(--silver, #A8B4C0)', marginTop: '4px' }}>{wadaLabel(c.wada_status)}</span>
-                  )}
-                </Link>
-              );
-            })}
-          </div>
-        </section>
-      ))}
     </div>
   );
 }

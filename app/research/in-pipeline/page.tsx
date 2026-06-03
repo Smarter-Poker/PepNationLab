@@ -1,12 +1,13 @@
 /**
  * Compounds in the development pipeline, grouped by phase.
- * Server component.
+ * Server component wraps BrowseFilterShell for progressive disclosure.
  */
 
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/server';
 import { evidenceTier, wadaLabel } from '@/lib/compounds';
+import BrowseFilterShell from '@/components/research/BrowseFilterShell';
 
 export const metadata: Metadata = {
   title: 'In Development Pipeline | Research Library | Pep Nation Lab',
@@ -40,11 +41,24 @@ function normalizePhase(p: string | null): string {
   return p;
 }
 
+// Phase accent colors
+const PHASE_COLORS: Record<string, string> = {
+  Preclinical: '#A8B4C0',
+  'Phase 1': '#00C4BC',
+  'Phase 2': '#00E5FF',
+  'Phase 3': '#BBA371',
+  'FDA Review': '#F6AD55',
+  Approved: '#68D391',
+  'Unspecified Phase': '#718096',
+};
+
 export default async function ResearchInPipelinePage() {
   const supabase = await createClient();
   const { data } = await supabase
     .from('compounds')
-    .select('slug, display_name, evidence_tier, wada_status, pipeline_status, pipeline_phase, pipeline_indication, plain_summary')
+    .select(
+      'slug, display_name, evidence_tier, wada_status, pipeline_status, pipeline_phase, pipeline_indication, plain_summary'
+    )
     .or('pipeline_status.not.is.null,pipeline_phase.not.is.null')
     .order('display_name', { ascending: true });
 
@@ -62,6 +76,54 @@ export default async function ResearchInPipelinePage() {
     return (ai === -1 ? 99 : ai) - (bi === -1 ? 99 : bi);
   });
 
+  const shellGroups = phases.map((phase) => {
+    const items = groups.get(phase)!;
+    const accentColor = PHASE_COLORS[phase] ?? '#00C4BC';
+    return {
+      key: phase,
+      label: phase,
+      count: items.length,
+      children: (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 'var(--space-3, 12px)' }}>
+          {items.map((c) => {
+            const t = evidenceTier(c.evidence_tier);
+            return (
+              <Link
+                key={c.slug}
+                href={`/research/${c.slug}`}
+                className="card-metal"
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 'var(--space-1, 4px)',
+                  padding: 'var(--space-3, 12px) var(--space-4, 16px)',
+                  borderRadius: 'var(--radius-lg, 12px)',
+                  textDecoration: 'none',
+                  color: 'var(--white, #FFFFFF)',
+                  borderLeft: `3px solid ${accentColor}`,
+                }}
+              >
+                <span style={{ fontSize: '0.7rem', color: t.color, textTransform: 'uppercase', letterSpacing: '0.04em', fontWeight: 700 }}>
+                  {t.label}
+                </span>
+                <span style={{ fontSize: '1rem', fontWeight: 700 }}>{c.display_name}</span>
+                {c.pipeline_indication && (
+                  <span style={{ fontSize: '0.78rem', color: 'var(--teal, #00C4BC)' }}>{c.pipeline_indication}</span>
+                )}
+                {c.pipeline_status && (
+                  <span style={{ fontSize: '0.78rem', color: 'var(--silver, #A8B4C0)' }}>{c.pipeline_status}</span>
+                )}
+                {c.wada_status && c.wada_status !== 'not_listed' && (
+                  <span style={{ fontSize: '0.7rem', color: 'var(--silver, #A8B4C0)' }}>{wadaLabel(c.wada_status)}</span>
+                )}
+              </Link>
+            );
+          })}
+        </div>
+      ),
+    };
+  });
+
   return (
     <div style={{ maxWidth: '1100px', margin: '0 auto', padding: 'var(--space-6, 32px) var(--space-4, 16px)' }}>
       <nav style={{ marginBottom: 'var(--space-4, 16px)' }}>
@@ -74,47 +136,16 @@ export default async function ResearchInPipelinePage() {
           In Development Pipeline
         </h1>
         <p style={{ color: 'var(--silver, #A8B4C0)', fontSize: '1.05rem', marginTop: 'var(--space-2, 8px)', maxWidth: '760px' }}>
-          Compounds Currently Moving Through Preclinical, Clinical Trial, And Regulatory Review.
+          Compounds Moving Through Preclinical, Clinical Trial, And Regulatory Review. Select A Phase Below.
         </p>
       </header>
 
-      {phases.length === 0 ? (
+      {shellGroups.length === 0 ? (
         <div className="card-glass" style={{ padding: 'var(--space-5, 24px)', borderRadius: 'var(--radius-lg, 12px)', color: 'var(--silver, #A8B4C0)' }}>
           Pipeline Status Will Populate Once The FDA And EMA Sync Crons Run.
         </div>
       ) : (
-        phases.map((phase) => (
-          <section key={phase} style={{ marginBottom: 'var(--space-6, 32px)' }}>
-            <h2 style={{ fontSize: '1.3rem', fontWeight: 800, color: 'var(--teal, #00C4BC)', marginBottom: 'var(--space-3, 12px)' }}>
-              {phase} ({groups.get(phase)!.length})
-            </h2>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 'var(--space-3, 12px)' }}>
-              {groups.get(phase)!.map((c) => {
-                const t = evidenceTier(c.evidence_tier);
-                return (
-                  <Link
-                    key={c.slug}
-                    href={`/research/${c.slug}`}
-                    className="card-metal"
-                    style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-1, 4px)', padding: 'var(--space-3, 12px) var(--space-4, 16px)', borderRadius: 'var(--radius-lg, 12px)', textDecoration: 'none', color: 'var(--white, #FFFFFF)' }}
-                  >
-                    <span style={{ fontSize: '0.7rem', color: t.color, textTransform: 'uppercase', letterSpacing: '0.04em', fontWeight: 700 }}>{t.label}</span>
-                    <span style={{ fontSize: '1rem', fontWeight: 700 }}>{c.display_name}</span>
-                    {c.pipeline_indication && (
-                      <span style={{ fontSize: '0.78rem', color: 'var(--teal, #00C4BC)' }}>{c.pipeline_indication}</span>
-                    )}
-                    {c.pipeline_status && (
-                      <span style={{ fontSize: '0.78rem', color: 'var(--silver, #A8B4C0)' }}>{c.pipeline_status}</span>
-                    )}
-                    {c.wada_status && c.wada_status !== 'not_listed' && (
-                      <span style={{ fontSize: '0.7rem', color: 'var(--silver, #A8B4C0)' }}>{wadaLabel(c.wada_status)}</span>
-                    )}
-                  </Link>
-                );
-              })}
-            </div>
-          </section>
-        ))
+        <BrowseFilterShell groups={shellGroups} emptyMessage="No Compounds In This Pipeline Phase Yet." />
       )}
     </div>
   );
