@@ -677,6 +677,77 @@ function TabButton({
   );
 }
 
+/**
+ * Defensive normalizer for the /api/agent/researchers/v2 payload.
+ *
+ * Why: when an agent has no sales yet, the API returns `best_customer: null`
+ * and uses field name `sparkline` (the type declares non-null + `spark`).
+ * Accessing `.label` on null crashed the entire render and tripped the
+ * top-level error boundary — producing the "Something Went Wrong" page
+ * for every new agent. This function maps any raw payload (current or
+ * legacy field names, null/missing values) to a guaranteed-safe shape
+ * the render path can read without any optional chaining.
+ *
+ * The pattern is: every field has a safe default, and we accept BOTH
+ * `spark` and `sparkline` so we keep working if the API name flips back.
+ */
+function normalizeKpi(raw: any): Kpi {
+  return {
+    value: typeof raw?.value === 'number' ? raw.value : 0,
+    spark: Array.isArray(raw?.spark)
+      ? raw.spark
+      : Array.isArray(raw?.sparkline)
+        ? raw.sparkline
+        : [],
+    delta_pct: typeof raw?.delta_pct === 'number' ? raw.delta_pct : 0,
+    label: typeof raw?.label === 'string' ? raw.label : undefined,
+  };
+}
+
+function normalizePayload(raw: any): Payload {
+  const k = raw?.kpis ?? {};
+  const bcRaw = k.best_customer ?? null;
+  const bc = {
+    ...normalizeKpi(bcRaw),
+    label: (bcRaw && typeof bcRaw.label === 'string' && bcRaw.label) || '—',
+  };
+  const kanban = raw?.kanban_counts ?? {};
+  return {
+    researchers: Array.isArray(raw?.researchers) ? raw.researchers : [],
+    kpis: {
+      researchers_count: normalizeKpi(k.researchers_count),
+      lifetime_value: normalizeKpi(k.lifetime_value),
+      total_orders: normalizeKpi(k.total_orders),
+      active_buyers: normalizeKpi(k.active_buyers),
+      avg_order_value: normalizeKpi(k.avg_order_value),
+      repeat_rate: normalizeKpi(k.repeat_rate),
+      new_this_month: normalizeKpi(k.new_this_month),
+      at_risk: normalizeKpi(k.at_risk),
+      best_customer: bc as Kpi & { label: string },
+      lifetime_commission: normalizeKpi(k.lifetime_commission),
+    },
+    insights: Array.isArray(raw?.insights) ? raw.insights : [],
+    activity: Array.isArray(raw?.activity) ? raw.activity : [],
+    goal: {
+      target_count: typeof raw?.goal?.target_count === 'number' ? raw.goal.target_count : 0,
+      achieved_count: typeof raw?.goal?.achieved_count === 'number' ? raw.goal.achieved_count : 0,
+      progress_pct: typeof raw?.goal?.progress_pct === 'number' ? raw.goal.progress_pct : 0,
+      streak_months: typeof raw?.goal?.streak_months === 'number' ? raw.goal.streak_months : 0,
+    },
+    kanban_counts: {
+      lead: typeof kanban.lead === 'number' ? kanban.lead : 0,
+      new: typeof kanban.new === 'number' ? kanban.new : 0,
+      first_order: typeof kanban.first_order === 'number' ? kanban.first_order : 0,
+      active: typeof kanban.active === 'number' ? kanban.active : 0,
+      vip: typeof kanban.vip === 'number' ? kanban.vip : 0,
+      at_risk: typeof kanban.at_risk === 'number' ? kanban.at_risk : 0,
+      churned: typeof kanban.churned === 'number' ? kanban.churned : 0,
+    },
+    source_counts: Array.isArray(raw?.source_counts) ? raw.source_counts : [],
+    storefront_slug: raw?.storefront_slug ?? null,
+  };
+}
+
 export default function AgentResearcherCRMv2() {
   const [data, setData] = useState<Payload | null>(null);
   const [loading, setLoading] = useState(true);
@@ -697,8 +768,11 @@ export default function AgentResearcherCRMv2() {
       setLoading(true);
       const r = await fetch('/api/agent/researchers/v2', { cache: 'no-store' });
       if (!r.ok) throw new Error(`HTTP ${r.status}`);
-      const j = (await r.json()) as Payload;
-      setData(j);
+      const j = await r.json();
+      // Normalize defensively — API can return null best_customer + 'sparkline'
+      // (component reads 'spark'). Without this, an empty-state agent crashes
+      // the entire dashboard tab into the error boundary on first render.
+      setData(normalizePayload(j));
       setError(null);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Could Not Load');

@@ -183,90 +183,27 @@ export default function TherapeuticAreasPage() {
           }
         }
         
-        /* Premium Brushed Nickel Card */
-        .premium-card {
-          background: linear-gradient(180deg, #181d24 0%, #0d1218 100%);
-          position: relative;
-          overflow: visible;
-          transition: all 0.2s ease;
-          border-radius: 8px;
-          
-          /* The brushed nickel frame is created using multiple box-shadows */
-          box-shadow: 
-            0 0 0 1px rgba(0,0,0,0.8),
-            0 0 0 4px #b0b4b8,
-            0 0 0 5px #e5e7eb,
-            0 0 0 6px #787f87,
-            0 0 0 8px rgba(0,0,0,0.9),
-            0 15px 30px 10px rgba(0,0,0,0.6),
-            inset 0 1px 1px rgba(255,255,255,0.1),
-            inset 0 20px 40px rgba(255,255,255,0.03);
-        }
-        
-        .premium-card:hover {
-          background: linear-gradient(180deg, #1c222a 0%, #10161d 100%);
-          transform: translateY(-2px);
-          box-shadow: 
-            0 0 0 1px rgba(0,0,0,0.8),
-            0 0 0 4px #c2c6ca,
-            0 0 0 5px #ffffff,
-            0 0 0 6px #8a9199,
-            0 0 0 8px rgba(0,0,0,0.9),
-            0 20px 40px 10px rgba(0,0,0,0.7),
-            inset 0 1px 1px rgba(255,255,255,0.2),
-            inset 0 30px 60px rgba(255,255,255,0.05);
-        }
-
-        .area-card {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          text-align: center;
-          gap: 16px;
-          padding: 32px 24px;
+        /* Full Image Card Link */
+        .full-image-link {
+          display: block;
           text-decoration: none;
+          transition: all 0.2s ease;
+          border-radius: 20px; /* Crops the dark background to match the metal frame curvature */
+          overflow: hidden;
+          box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+          aspect-ratio: 1 / 1;
+        }
+        
+        .full-image-link:hover {
+          transform: translateY(-4px) scale(1.02);
+          box-shadow: 0 16px 32px rgba(0,0,0,0.7);
+        }
+        
+        .full-card-image {
+          width: 100%;
           height: 100%;
-        }
-        
-        .custom-icon {
-          width: 80px;
-          height: 80px;
-          border-radius: 18px;
-          margin-bottom: 8px;
           object-fit: cover;
-          box-shadow: 0 10px 20px rgba(0,0,0,0.6);
-          border: 1px solid rgba(255,255,255,0.15);
-          transition: all 0.3s ease;
-        }
-        
-        .premium-card:hover .custom-icon {
-          transform: scale(1.05);
-          box-shadow: 0 15px 30px rgba(0,0,0,0.8);
-          border-color: rgba(255,255,255,0.3);
-        }
-
-        .icon-circle {
-          width: 56px;
-          height: 56px;
-          border-radius: 50%;
-          background: #0d1219;
-          border: 1px solid rgba(0, 196, 188, 0.15);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          margin-bottom: 8px;
-          color: #00C4BC;
-          box-shadow: 
-            inset 0 0 15px rgba(0, 196, 188, 0.1), 
-            0 0 20px rgba(0, 196, 188, 0.05);
-          transition: all 0.3s ease;
-        }
-        
-        .premium-card:hover .icon-circle {
-          box-shadow: 
-            inset 0 0 20px rgba(0, 196, 188, 0.2), 
-            0 0 30px rgba(0, 196, 188, 0.1);
-          transform: scale(1.05);
+          display: block;
         }
       `}</style>
       
@@ -274,26 +211,13 @@ export default function TherapeuticAreasPage() {
         <div className="areas-grid">
           {Object.keys(RESEARCH_AREAS).map((key) => {
             const meta = RESEARCH_AREAS[key];
-            const hasCustomImage = ['tissue_repair', 'healing', 'metabolic'].includes(key);
             return (
               <Link
                 key={key}
                 href={`/research/area/${key}`}
-                className="premium-card area-card"
+                className="full-image-link"
               >
-                {hasCustomImage ? (
-                  <img src={`/images/areas/${key}.png`} alt={meta.label} className="custom-icon" />
-                ) : (
-                  <div className="icon-circle">
-                    {ICON_MAP[key] || <Activity size={26} strokeWidth={1.5} />}
-                  </div>
-                )}
-                <span style={{ fontSize: '1.25rem', fontWeight: 800, color: '#FFFFFF', letterSpacing: '0.01em', textShadow: '0 2px 4px rgba(0,0,0,0.5)' }}>
-                  {toTitleCase(meta.label)}
-                </span>
-                <span style={{ fontSize: '0.9rem', color: '#a0acb8', lineHeight: 1.5, padding: '0 4px' }}>
-                  {toTitleCase(meta.blurb)}
-                </span>
+                <img src={`/images/areas/${key}.png`} alt={meta.label} className="full-card-image" />
               </Link>
             );
           })}
