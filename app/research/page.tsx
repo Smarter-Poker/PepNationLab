@@ -1,17 +1,41 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Search } from 'lucide-react';
+import { vibrateLight, initHaptics } from '@/lib/messenger/haptics';
+
+function HotspotLink({ href, style }: { href: string; style: React.CSSProperties }) {
+  return (
+    <Link 
+      href={href} 
+      className="hotspot"
+      onPointerDown={() => vibrateLight()}
+      style={{
+        ...style,
+        position: 'absolute',
+        cursor: 'pointer',
+      }}
+    />
+  );
+}
 
 export default function ResearchLandingPage() {
   const router = useRouter();
   const [q, setQ] = useState('');
 
+  // Initialize haptics on first touch/click
+  useEffect(() => {
+    const handleInit = () => initHaptics();
+    window.addEventListener('pointerdown', handleInit, { once: true });
+    return () => window.removeEventListener('pointerdown', handleInit);
+  }, []);
+
   function handleSearch(e: React.FormEvent) {
     e.preventDefault();
     if (q.trim()) {
+      vibrateLight();
       router.push(`/research/catalog?q=${encodeURIComponent(q.trim())}`);
     }
   }
@@ -25,6 +49,28 @@ export default function ResearchLandingPage() {
       alignItems: 'flex-start',
       minHeight: '100vh',
     }}>
+      <style>{`
+        .hotspot {
+          transition: background-color 0.2s ease, transform 0.1s ease;
+          border-radius: 16px;
+        }
+        .hotspot:hover {
+          background-color: rgba(255, 255, 255, 0.06);
+        }
+        .hotspot:active {
+          background-color: rgba(255, 255, 255, 0.1);
+          transform: scale(0.98);
+        }
+        .search-btn:hover {
+          background-color: rgba(255, 255, 255, 0.08);
+          border-radius: 12px;
+        }
+        .search-btn:active {
+          background-color: rgba(255, 255, 255, 0.15);
+          transform: scale(0.95);
+        }
+      `}</style>
+      
       <div style={{
         position: 'relative',
         width: '100%',
@@ -58,7 +104,7 @@ export default function ResearchLandingPage() {
             type="text"
             value={q}
             onChange={(e) => setQ(e.target.value)}
-            placeholder="Search Any Compound, Mechanism, Target, Pathway..."
+            placeholder=" Ask Me Anything..."
             style={{
               flex: 1,
               height: '100%',
@@ -74,7 +120,9 @@ export default function ResearchLandingPage() {
 
         {/* 2. The Search Button (Submit) */}
         <div 
+          className="search-btn"
           onClick={handleSearch}
+          onPointerDown={() => vibrateLight()}
           style={{
             position: 'absolute',
             top: '26.8%',
@@ -83,56 +131,29 @@ export default function ResearchLandingPage() {
             height: '4.0%',
             cursor: 'pointer',
             zIndex: 10,
+            transition: 'all 0.15s ease'
           }}
         />
 
         {/* 3. The 4 Big Grid Buttons */}
-        <Link href="/research/areas" style={{
-          position: 'absolute', top: '35.5%', left: '4%', width: '44%', height: '18.5%', cursor: 'pointer',
-        }} />
-        <Link href="/research/catalog" style={{
-          position: 'absolute', top: '35.5%', left: '50.5%', width: '44%', height: '18.5%', cursor: 'pointer',
-        }} />
-        <Link href="/research/compare" style={{
-          position: 'absolute', top: '56%', left: '4%', width: '44%', height: '18.5%', cursor: 'pointer',
-        }} />
-        <Link href="/research/stacks" style={{
-          position: 'absolute', top: '56%', left: '50.5%', width: '44%', height: '18.5%', cursor: 'pointer',
-        }} />
+        <HotspotLink href="/research/areas" style={{ top: '35.5%', left: '4%', width: '44%', height: '18.5%' }} />
+        <HotspotLink href="/research/catalog" style={{ top: '35.5%', left: '50.5%', width: '44%', height: '18.5%' }} />
+        <HotspotLink href="/research/compare" style={{ top: '56%', left: '4%', width: '44%', height: '18.5%' }} />
+        <HotspotLink href="/research/stacks" style={{ top: '56%', left: '50.5%', width: '44%', height: '18.5%' }} />
 
         {/* 4. Quick Access Top Row */}
-        <Link href="/research/area/tissue_repair" style={{
-          position: 'absolute', top: '78.5%', left: '5%', width: '16.5%', height: '5%', cursor: 'pointer',
-        }} />
-        <Link href="/research/area/healing" style={{
-          position: 'absolute', top: '78.5%', left: '22.5%', width: '16.5%', height: '5%', cursor: 'pointer',
-        }} />
-        <Link href="/research/area/cognitive" style={{
-          position: 'absolute', top: '78.5%', left: '40.5%', width: '16.5%', height: '5%', cursor: 'pointer',
-        }} />
-        <Link href="/research/area/metabolic" style={{
-          position: 'absolute', top: '78.5%', left: '58.5%', width: '16.5%', height: '5%', cursor: 'pointer',
-        }} />
-        <Link href="/research/area/longevity" style={{
-          position: 'absolute', top: '78.5%', left: '76.5%', width: '16.5%', height: '5%', cursor: 'pointer',
-        }} />
+        <HotspotLink href="/research/area/tissue_repair" style={{ top: '78.5%', left: '5%', width: '16.5%', height: '5%', borderRadius: '8px' }} />
+        <HotspotLink href="/research/area/healing" style={{ top: '78.5%', left: '22.5%', width: '16.5%', height: '5%', borderRadius: '8px' }} />
+        <HotspotLink href="/research/area/cognitive" style={{ top: '78.5%', left: '40.5%', width: '16.5%', height: '5%', borderRadius: '8px' }} />
+        <HotspotLink href="/research/area/metabolic" style={{ top: '78.5%', left: '58.5%', width: '16.5%', height: '5%', borderRadius: '8px' }} />
+        <HotspotLink href="/research/area/longevity" style={{ top: '78.5%', left: '76.5%', width: '16.5%', height: '5%', borderRadius: '8px' }} />
 
         {/* 5. Quick Access Bottom Row */}
-        <Link href="/research/area/immune" style={{
-          position: 'absolute', top: '86%', left: '5%', width: '16.5%', height: '5%', cursor: 'pointer',
-        }} />
-        <Link href="/research/area/sleep" style={{
-          position: 'absolute', top: '86%', left: '22.5%', width: '16.5%', height: '5%', cursor: 'pointer',
-        }} />
-        <Link href="/research/area/cosmetic" style={{
-          position: 'absolute', top: '86%', left: '40.5%', width: '16.5%', height: '5%', cursor: 'pointer',
-        }} />
-        <Link href="/research/area/performance" style={{
-          position: 'absolute', top: '86%', left: '58.5%', width: '16.5%', height: '5%', cursor: 'pointer',
-        }} />
-        <Link href="/research/area/mitochondrial" style={{
-          position: 'absolute', top: '86%', left: '76.5%', width: '16.5%', height: '5%', cursor: 'pointer',
-        }} />
+        <HotspotLink href="/research/area/immune" style={{ top: '86%', left: '5%', width: '16.5%', height: '5%', borderRadius: '8px' }} />
+        <HotspotLink href="/research/area/sleep" style={{ top: '86%', left: '22.5%', width: '16.5%', height: '5%', borderRadius: '8px' }} />
+        <HotspotLink href="/research/area/cosmetic" style={{ top: '86%', left: '40.5%', width: '16.5%', height: '5%', borderRadius: '8px' }} />
+        <HotspotLink href="/research/area/performance" style={{ top: '86%', left: '58.5%', width: '16.5%', height: '5%', borderRadius: '8px' }} />
+        <HotspotLink href="/research/area/mitochondrial" style={{ top: '86%', left: '76.5%', width: '16.5%', height: '5%', borderRadius: '8px' }} />
       </div>
     </div>
   );
