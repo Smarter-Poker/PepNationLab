@@ -9,7 +9,7 @@
  * Includes a full-screen StorefrontCompareModal that renders the attributes matrix.
  */
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { X, Scale } from 'lucide-react';
 import { evidenceTier, type Compound, RISK_META, researchAreaLabel, wadaLabel } from '@/lib/compounds';
@@ -77,6 +77,10 @@ const labelCellStyle: React.CSSProperties = {
   color: 'var(--silver, #A8B4C0)',
   fontWeight: 700,
   whiteSpace: 'nowrap',
+  position: 'sticky',
+  left: 0,
+  zIndex: 10,
+  boxShadow: 'inset -1px 0 0 rgba(168,180,192,0.18)',
 };
 
 const groupCellStyle: React.CSSProperties = {
@@ -108,6 +112,7 @@ export default function StorefrontCompareDrawer({
   const [mounted, setMounted] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
   const [showMatrix, setShowMatrix] = useState(false);
+  const [diffMode, setDiffMode] = useState(false);
 
   useEffect(() => {
     setMounted(true);
@@ -168,6 +173,117 @@ export default function StorefrontCompareDrawer({
     setPinned([]);
     writePinned([]);
   }
+
+  const ROWS = useMemo(() => {
+    return [
+      { kind: 'group', label: 'Evidence & Risk' },
+      {
+        kind: 'data', label: 'Evidence Tier',
+        getValue: (p: PinnedItem) => p.evidenceTierKey || NL,
+        render: (p: PinnedItem) => {
+          const tier = p.evidenceTierKey ? evidenceTier(p.evidenceTierKey) : null;
+          return tier ? (
+            <span style={{ color: tier.color, fontWeight: 700, border: `1px solid ${tier.color}`, padding: '2px 8px', borderRadius: 999, fontSize: '0.7rem' }}>
+              {tier.label}
+            </span>
+          ) : NL;
+        }
+      },
+      {
+        kind: 'data', label: 'Risk Level',
+        getValue: (p: PinnedItem) => {
+          const c = p.compoundSlug ? compoundsBySlug[p.compoundSlug] : null;
+          return c?.risk_level || NL;
+        },
+        render: (p: PinnedItem) => {
+          const c = p.compoundSlug ? compoundsBySlug[p.compoundSlug] : null;
+          const r = c?.risk_level ? RISK_META[c.risk_level] : null;
+          return r ? <span style={{ color: r.color, fontWeight: 700 }}>{r.label}</span> : NL;
+        }
+      },
+      {
+        kind: 'data', label: 'WADA Status',
+        getValue: (p: PinnedItem) => {
+          const c = p.compoundSlug ? compoundsBySlug[p.compoundSlug] : null;
+          return c?.wada_status || NL;
+        },
+        render: (p: PinnedItem) => {
+          const c = p.compoundSlug ? compoundsBySlug[p.compoundSlug] : null;
+          return c?.wada_status ? wadaLabel(c.wada_status) : NL;
+        }
+      },
+      { kind: 'group', label: 'Pharmacology' },
+      {
+        kind: 'data', label: 'Half-Life',
+        getValue: (p: PinnedItem) => {
+          const c = p.compoundSlug ? compoundsBySlug[p.compoundSlug] : null;
+          return c?.half_life || NL;
+        },
+        render: (p: PinnedItem) => {
+          const c = p.compoundSlug ? compoundsBySlug[p.compoundSlug] : null;
+          return c?.half_life ? <span style={{ color: primaryColor, fontWeight: 700 }}>{c.half_life}</span> : NL;
+        }
+      },
+      {
+        kind: 'data', label: 'Molecular Target',
+        getValue: (p: PinnedItem) => {
+          const c = p.compoundSlug ? compoundsBySlug[p.compoundSlug] : null;
+          return txt(c?.molecular_target);
+        },
+        render: (p: PinnedItem) => {
+          const c = p.compoundSlug ? compoundsBySlug[p.compoundSlug] : null;
+          return txt(c?.molecular_target);
+        }
+      },
+      {
+        kind: 'data', label: 'Research Areas',
+        getValue: (p: PinnedItem) => {
+          const c = p.compoundSlug ? compoundsBySlug[p.compoundSlug] : null;
+          return c?.research_areas?.length ? c.research_areas.join(',') : NL;
+        },
+        render: (p: PinnedItem) => {
+          const c = p.compoundSlug ? compoundsBySlug[p.compoundSlug] : null;
+          return c?.research_areas?.length ? c.research_areas.map(researchAreaLabel).join(', ') : NL;
+        }
+      },
+      {
+        kind: 'data', label: 'Reported Findings',
+        getValue: (p: PinnedItem) => {
+          const c = p.compoundSlug ? compoundsBySlug[p.compoundSlug] : null;
+          return txt(c?.benefits);
+        },
+        render: (p: PinnedItem) => {
+          const c = p.compoundSlug ? compoundsBySlug[p.compoundSlug] : null;
+          return txt(c?.benefits);
+        }
+      },
+      { kind: 'group', label: 'Handling' },
+      {
+        kind: 'data', label: 'Storage Temp',
+        getValue: (p: PinnedItem) => {
+          const c = p.compoundSlug ? compoundsBySlug[p.compoundSlug] : null;
+          return txt(c?.handling?.storage_temp);
+        },
+        render: (p: PinnedItem) => {
+          const c = p.compoundSlug ? compoundsBySlug[p.compoundSlug] : null;
+          return txt(c?.handling?.storage_temp);
+        }
+      },
+      {
+        kind: 'data', label: 'Reconstituted Shelf Life',
+        getValue: (p: PinnedItem) => {
+          const c = p.compoundSlug ? compoundsBySlug[p.compoundSlug] : null;
+          const d = c?.reconstitution_shelf_days ?? c?.handling?.reconstituted_days;
+          return d != null ? `${d} Days Refrigerated` : NL;
+        },
+        render: (p: PinnedItem) => {
+          const c = p.compoundSlug ? compoundsBySlug[p.compoundSlug] : null;
+          const d = c?.reconstitution_shelf_days ?? c?.handling?.reconstituted_days;
+          return d != null ? `${d} Days Refrigerated` : NL;
+        }
+      }
+    ];
+  }, [compoundsBySlug, primaryColor]);
 
   if (!mounted) return null;
   if (pinned.length === 0) return null;
@@ -366,26 +482,39 @@ export default function StorefrontCompareDrawer({
               <h2 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 900, color: 'var(--white)' }}>
                 Compare Products
               </h2>
-              <button
-                onClick={() => setShowMatrix(false)}
-                style={{
-                  background: 'rgba(255,255,255,0.05)', border: 'none', color: 'var(--white)',
-                  width: 32, height: 32, borderRadius: '50%', cursor: 'pointer',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                }}
-              >
-                <X size={18} />
-              </button>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 24 }}>
+                {pinned.length >= 2 && (
+                  <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', color: 'var(--silver)', fontSize: '0.85rem', fontWeight: 800, userSelect: 'none' }}>
+                    <input 
+                      type="checkbox" 
+                      checked={diffMode} 
+                      onChange={(e) => setDiffMode(e.target.checked)} 
+                      style={{ accentColor: primaryColor, width: 16, height: 16 }}
+                    />
+                    Highlight Differences
+                  </label>
+                )}
+                <button
+                  onClick={() => setShowMatrix(false)}
+                  style={{
+                    background: 'rgba(255,255,255,0.05)', border: 'none', color: 'var(--white)',
+                    width: 32, height: 32, borderRadius: '50%', cursor: 'pointer',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  }}
+                >
+                  <X size={18} />
+                </button>
+              </div>
             </div>
             
             <div style={{ overflowY: 'auto', padding: '24px', flex: 1 }}>
               <div style={{ borderRadius: 'var(--radius-lg, 12px)', overflowX: 'auto', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.08)' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '600px' }}>
-                  <thead>
+                <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '600px', position: 'relative' }}>
+                  <thead style={{ position: 'sticky', top: 0, zIndex: 20 }}>
                     <tr>
-                      <th style={{ ...labelCellStyle, textAlign: 'left', width: '20%' }} scope="col">Product</th>
+                      <th style={{ ...labelCellStyle, textAlign: 'left', width: '20%', background: '#0F161E', zIndex: 30 }} scope="col">Product</th>
                       {pinned.map((p) => (
-                        <th key={p.productName} style={{ ...cellStyle, textAlign: 'left', width: `${80 / pinned.length}%` }} scope="col">
+                        <th key={p.productName} style={{ ...cellStyle, textAlign: 'left', width: `${80 / pinned.length}%`, background: '#0F161E' }} scope="col">
                           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                               {p.imageUrl && (
@@ -416,90 +545,45 @@ export default function StorefrontCompareDrawer({
                     </tr>
                   </thead>
                   <tbody>
-                    <tr>
-                      <td style={groupCellStyle} colSpan={pinned.length + 1}>Evidence & Risk</td>
-                    </tr>
-                    <tr>
-                      <td style={labelCellStyle}>Evidence Tier</td>
-                      {pinned.map((p, i) => {
-                        const tier = p.evidenceTierKey ? evidenceTier(p.evidenceTierKey) : null;
+                    {ROWS.map((row, rIdx) => {
+                      if (row.kind === 'group') {
                         return (
-                          <td key={i} style={cellStyle}>
-                            {tier ? (
-                              <span style={{ color: tier.color, fontWeight: 700, border: `1px solid ${tier.color}`, padding: '2px 8px', borderRadius: 999, fontSize: '0.7rem' }}>
-                                {tier.label}
-                              </span>
-                            ) : NL}
-                          </td>
+                          <tr key={rIdx}>
+                            <td style={{ ...groupCellStyle, position: 'sticky', left: 0, zIndex: 10, background: 'rgba(0,196,188,0.1)' }} colSpan={pinned.length + 1}>
+                              {row.label}
+                            </td>
+                          </tr>
                         );
-                      })}
-                    </tr>
-                    <tr>
-                      <td style={labelCellStyle}>Risk Level</td>
-                      {pinned.map((p, i) => {
-                        const c = p.compoundSlug ? compoundsBySlug[p.compoundSlug] : null;
-                        const r = c?.risk_level ? RISK_META[c.risk_level] : null;
-                        return <td key={i} style={cellStyle}>{r ? <span style={{ color: r.color, fontWeight: 700 }}>{r.label}</span> : NL}</td>;
-                      })}
-                    </tr>
-                    <tr>
-                      <td style={labelCellStyle}>WADA Status</td>
-                      {pinned.map((p, i) => {
-                        const c = p.compoundSlug ? compoundsBySlug[p.compoundSlug] : null;
-                        return <td key={i} style={cellStyle}>{c?.wada_status ? wadaLabel(c.wada_status) : NL}</td>;
-                      })}
-                    </tr>
-                    
-                    <tr>
-                      <td style={groupCellStyle} colSpan={pinned.length + 1}>Pharmacology</td>
-                    </tr>
-                    <tr>
-                      <td style={labelCellStyle}>Half-Life</td>
-                      {pinned.map((p, i) => {
-                        const c = p.compoundSlug ? compoundsBySlug[p.compoundSlug] : null;
-                        return <td key={i} style={cellStyle}>{c?.half_life ? <span style={{ color: primaryColor, fontWeight: 700 }}>{c.half_life}</span> : NL}</td>;
-                      })}
-                    </tr>
-                    <tr>
-                      <td style={labelCellStyle}>Molecular Target</td>
-                      {pinned.map((p, i) => {
-                        const c = p.compoundSlug ? compoundsBySlug[p.compoundSlug] : null;
-                        return <td key={i} style={cellStyle}>{txt(c?.molecular_target)}</td>;
-                      })}
-                    </tr>
-                    <tr>
-                      <td style={labelCellStyle}>Research Areas</td>
-                      {pinned.map((p, i) => {
-                        const c = p.compoundSlug ? compoundsBySlug[p.compoundSlug] : null;
-                        return <td key={i} style={cellStyle}>{c?.research_areas?.length ? c.research_areas.map(researchAreaLabel).join(', ') : NL}</td>;
-                      })}
-                    </tr>
-                    <tr>
-                      <td style={labelCellStyle}>Reported Findings</td>
-                      {pinned.map((p, i) => {
-                        const c = p.compoundSlug ? compoundsBySlug[p.compoundSlug] : null;
-                        return <td key={i} style={cellStyle}>{txt(c?.benefits)}</td>;
-                      })}
-                    </tr>
+                      }
 
-                    <tr>
-                      <td style={groupCellStyle} colSpan={pinned.length + 1}>Handling</td>
-                    </tr>
-                    <tr>
-                      <td style={labelCellStyle}>Storage Temp</td>
-                      {pinned.map((p, i) => {
-                        const c = p.compoundSlug ? compoundsBySlug[p.compoundSlug] : null;
-                        return <td key={i} style={cellStyle}>{txt(c?.handling?.storage_temp)}</td>;
-                      })}
-                    </tr>
-                    <tr>
-                      <td style={labelCellStyle}>Reconstituted Shelf Life</td>
-                      {pinned.map((p, i) => {
-                        const c = p.compoundSlug ? compoundsBySlug[p.compoundSlug] : null;
-                        const d = c?.reconstitution_shelf_days ?? c?.handling?.reconstituted_days;
-                        return <td key={i} style={cellStyle}>{d != null ? `${d} Days Refrigerated` : NL}</td>;
-                      })}
-                    </tr>
+                      // Check differences
+                      const values = pinned.map(p => row.getValue!(p));
+                      const allSame = values.every(v => v === values[0]);
+                      const isDiff = !allSame && pinned.length > 1;
+
+                      let trStyle: React.CSSProperties = { transition: 'opacity 0.2s, background 0.2s' };
+                      let tdLabelStyle: React.CSSProperties = { ...labelCellStyle, background: '#0F161E' };
+
+                      if (diffMode) {
+                        if (isDiff) {
+                          trStyle.background = `${primaryColor}15`;
+                          tdLabelStyle.background = `rgba(0,0,0,0)`;
+                        } else {
+                          trStyle.opacity = 0.3;
+                        }
+                      }
+
+                      return (
+                        <tr key={rIdx} style={trStyle}>
+                          <td style={tdLabelStyle}>{row.label}</td>
+                          {pinned.map((p, pIdx) => (
+                            <td key={pIdx} style={cellStyle}>
+                              {row.render!(p)}
+                            </td>
+                          ))}
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>

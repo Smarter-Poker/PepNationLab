@@ -1086,7 +1086,7 @@ export default function DiscoveryHero({
     
     setLoading(true);
     setDrawerOpen(true);
-    setSummary(g);
+    setGoalSummary(g);
 
     try {
       const res = await fetch('/api/research/ai-match', {

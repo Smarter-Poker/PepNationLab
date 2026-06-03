@@ -232,7 +232,7 @@ function MatchFormInner() {
   async function handleSaveMatch() {
     setSaving(true);
     try {
-      const payload = { goal, evidenceComfort, wadaConstraint, riskTolerance, excludeInjectables, requireLongHalfLife, preference };
+      const payload = { goal, evidenceComfort, wadaConstraint, riskTolerance, excludeInjectables, requireLongHalfLife, preference, excludeSlugs };
       const res = await saveMatchAction(payload, results || []);
       if (res.error) {
         toast.error(res.error);
