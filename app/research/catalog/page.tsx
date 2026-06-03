@@ -12,18 +12,26 @@ import { getAllCompounds } from '@/lib/compounds-server';
 import { RESEARCH_AREAS } from '@/lib/compounds';
 import AskTheLab from '@/components/research/AskTheLab';
 import ResearchBrowser from '@/components/research/ResearchBrowser';
+import UniversalSearch from '@/components/research/UniversalSearch';
+import { buildResearchSearchDocs } from '@/lib/research-search-docs';
 
 export const metadata: Metadata = {
   title: 'Research Library | Pep Nation Lab',
   robots: { index: false, follow: false },
 };
 
-export default async function ResearchLibraryPage() {
+export default async function ResearchLibraryPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ q?: string }>;
+}) {
+  const { q } = await searchParams;
   const compounds = await getAllCompounds();
+  const searchIndex = buildResearchSearchDocs(compounds);
 
   return (
     <div style={{ maxWidth: '1100px', margin: '0 auto', padding: 'var(--space-6, 32px) var(--space-4, 16px)' }}>
-      <header style={{ marginBottom: 'var(--space-7, 48px)' }}>
+      <header style={{ marginBottom: 'var(--space-5, 24px)' }}>
         <h1
           style={{
             fontSize: '2.25rem',
@@ -47,6 +55,11 @@ export default async function ResearchLibraryPage() {
           Research Goal. For Laboratory Research Only.
         </p>
       </header>
+
+      {/* Universal instant search across compounds, areas, guides, glossary, FAQ */}
+      <section style={{ marginBottom: 'var(--space-7, 48px)' }}>
+        <UniversalSearch docs={searchIndex} initialQuery={q ?? ''} autoFocus={Boolean(q)} />
+      </section>
 
       <section style={{ marginBottom: 'var(--space-7, 48px)' }}>
         <h2
