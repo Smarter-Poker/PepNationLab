@@ -657,6 +657,10 @@ export default function AgentStorefrontGrid({
       const grp = grouped.find(g => g.variants.some(v => v.id === pid || v.product_id === pid));
       if (grp) {
         setDetailProduct(grp);
+        const specificVariant = grp.variants.find(v => v.id === pid);
+        if (specificVariant) {
+          setSelectedVariants(prev => ({ ...prev, [grp.name]: specificVariant.id }));
+        }
         // Clean up the URL so it doesn't reopen on refresh or after closing
         urlParams.delete('product');
         const qs = urlParams.toString();

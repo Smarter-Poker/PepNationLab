@@ -51,7 +51,7 @@ export interface CompoundInfo {
   researchAreas: string[];
 }
 
-interface Props {
+export interface Props {
   products: AreaProduct[];
   compounds: CompoundInfo[];
   agentSlug: string | null;
@@ -106,16 +106,8 @@ export default function AreaProductGrid({
   agentSlug,
   isStorefrontOwner,
   isAuthenticated,
-  userRole,
 }: Props) {
-  /* ── Compound lookup ── */
-  const compoundMap = useMemo(() => {
-    const m = new Map<string, CompoundInfo>();
-    compounds.forEach(c => m.set(c.slug, c));
-    return m;
-  }, [compounds]);
-
-  /* ── State ── */
+  /* ── Sorting & Search ── */
   const [sortBy, setSortBy] = useState<SortKey>('evidence');
   const [filterWada, setFilterWada] = useState(false);
   const [filterHalfLife, setFilterHalfLife] = useState(false);
@@ -145,7 +137,10 @@ export default function AreaProductGrid({
       const raw = localStorage.getItem(`cart_${agentSlug}`);
       if (raw) {
         const parsed = JSON.parse(raw);
-        if (parsed && typeof parsed === 'object') setCartItems(parsed);
+        if (parsed && typeof parsed === 'object') {
+          // eslint-disable-next-line react-hooks/set-state-in-effect
+          setCartItems(parsed);
+        }
       }
     } catch { /* ignore */ }
   }, [agentSlug]);
@@ -1351,6 +1346,7 @@ export default function AreaProductGrid({
                           <div style={{ marginBottom: 16, fontSize: '1.5rem', fontWeight: 800 }}>{toTitleCase(p.productName)}</div>
                           {p.imageUrl && (
                             <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'center' }}>
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
                               <img src={p.imageUrl} alt={p.productName} style={{ width: 200, height: 200, objectFit: 'contain', borderRadius: 8, background: '#fff' }} />
                             </div>
                           )}
@@ -1745,7 +1741,7 @@ export default function AreaProductGrid({
               <div>
                 <h3 style={{ margin: '0 0 8px', color: '#FFF', fontSize: '1.2rem', fontWeight: 800 }}>Need help deciding?</h3>
                 <p style={{ margin: 0, color: '#D0DAE4', fontSize: '0.95rem', lineHeight: 1.5, maxWidth: 600 }}>
-                  Tell our AI Research Assistant what you're trying to achieve. It can evaluate these compounds based on your specific goals, analyze the pros and cons, and recommend the best fit for your research.
+                  Tell our AI Research Assistant what you&apos;re trying to achieve. It can evaluate these compounds based on your specific goals, analyze the pros and cons, and recommend the best fit for your research.
                 </p>
               </div>
               <Link href="/research/match" style={{
@@ -1861,7 +1857,7 @@ function CompareRow({
 }: {
   label: string;
   children: React.ReactNode;
-  diffableValues?: any[];
+  diffableValues?: unknown[];
   showDiffsOnly?: boolean;
 }) {
   if (showDiffsOnly && diffableValues && diffableValues.length > 1) {

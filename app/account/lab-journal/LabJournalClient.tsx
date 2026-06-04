@@ -3,6 +3,7 @@
 import { useState, useTransition } from 'react';
 import { Heart, Trash2, ExternalLink, PackageOpen, History } from 'lucide-react';
 import Link from 'next/link';
+import { getProductImage } from '@/lib/categoryImage';
 
 interface Item {
   product_id: string;
@@ -128,9 +129,24 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
                         src={item.image_url}
                         alt={item.name}
                         style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                        onError={(e) => {
+                          const target = e.target as HTMLImageElement;
+                          const fallback = getProductImage(null, item.category || 'Other', item.name);
+                          if (target.src !== fallback && target.src !== window.location.origin + fallback) {
+                            target.src = fallback;
+                          } else {
+                            target.src = '/images/peptide_clear.png';
+                            target.style.opacity = '0.9';
+                          }
+                        }}
                       />
                     ) : (
-                      <span style={{ color: 'var(--grey-600)', fontSize: '0.6rem' }}>No Image</span>
+                      /* eslint-disable-next-line @next/next/no-img-element */
+                      <img
+                        src={getProductImage(null, item.category || 'Other', item.name)}
+                        alt={item.name}
+                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                      />
                     )}
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
@@ -198,10 +214,25 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
                   <img
                     src={item.image_url}
                     alt={item.name}
-                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                    style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.4s' }}
+                    onError={(e) => {
+                      const target = e.target as HTMLImageElement;
+                      const fallback = getProductImage(null, item.category || 'Other', item.name);
+                      if (target.src !== fallback && target.src !== window.location.origin + fallback) {
+                        target.src = fallback;
+                      } else {
+                        target.src = '/images/peptide_clear.png';
+                        target.style.opacity = '0.9';
+                      }
+                    }}
                   />
                 ) : (
-                  <span style={{ color: 'var(--grey-500)', fontSize: '0.75rem' }}>No Image</span>
+                  /* eslint-disable-next-line @next/next/no-img-element */
+                  <img
+                    src={getProductImage(null, item.category || 'Other', item.name)}
+                    alt={item.name}
+                    style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.4s' }}
+                  />
                 )}
                 {type === 'pastOrders' && item.last_purchased_date && (
                   <div style={{
