@@ -86,9 +86,9 @@ export default function AgentDownline({ agentId }: { agentId?: string }) {
           credit_limit: caAccountType === 'credit' ? caCreditLimit : undefined,
           prepaid_balance: caAccountType === 'prepaid' ? caPrepaidBalance : undefined,
           // Commission structure. Fixed -> flat rate (cap == base). Gamified
-          // (Default or Custom) -> persist the concrete 5-level ladder so the
+          // (Default or Custom) -> persist the concrete 3-level ladder so the
           // order-time engine and the UI always agree. base = Rookie (entry)
-          // level, cap = Apex (top) level; stored as bonus-over-base.
+          // level, cap = Premium (top) level; stored as bonus-over-base.
           commission_pct: caCommissionMode === 'fixed'
             ? (caCommissionPct === '' ? undefined : caCommissionPct)
             : (Number(caCustomSteps[0].bonus_pct) || 0),
@@ -433,7 +433,7 @@ export default function AgentDownline({ agentId }: { agentId?: string }) {
                     </div>
                   )}
                   <p style={{ fontSize: '0.72rem', color: 'var(--grey-500)', margin: '6px 0 0', lineHeight: 1.4 }}>
-                    Fixed Markup Pays A Flat Rate. The Default Gamification Scale Starts At 20% And Rises To A 40% Maximum As Monthly Sales Grow. Customize To Set Your Own 5 Levels.
+                    Fixed Markup Pays A Flat Rate. The Default Gamification Scale Starts At 20% And Rises To A 40% Maximum As Monthly Sales Grow. Customize To Set Your Own 3 Levels.
                   </p>
                 </div>
 
@@ -531,7 +531,7 @@ export default function AgentDownline({ agentId }: { agentId?: string }) {
                 Gamification Scale
               </h2>
               <p style={{ color: 'var(--grey-400)', fontSize: '0.85rem', marginBottom: 'var(--space-4)' }}>
-                {caScaleType === 'custom' ? 'Customize The 5 Levels Of Gamification For This Agent.' : 'The Default House Scale — Starts At 20% And Rises To A 40% Maximum. Read Only.'}
+                {caScaleType === 'custom' ? 'Customize The 3 Levels Of Gamification For This Agent.' : 'The Default House Scale — Starts At 20% And Rises To A 40% Maximum. Read Only.'}
               </p>
               
               <div style={{ border: '1px solid rgba(0,196,188,0.35)', borderRadius: 10, overflow: 'hidden', marginBottom: 'var(--space-4)' }}>
@@ -545,7 +545,7 @@ export default function AgentDownline({ agentId }: { agentId?: string }) {
                 {caCustomSteps.map((step, idx) => {
                   const isEditable = caScaleType === 'custom';
                   const min = step.min_volume;
-                  const max = idx < 4 ? caCustomSteps[idx+1].min_volume - 0.01 : null;
+                  const max = idx < 2 ? caCustomSteps[idx+1].min_volume - 0.01 : null;
                   
                   // For the bonus column
                   const baseRate = caCustomSteps[0].bonus_pct;

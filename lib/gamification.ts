@@ -14,9 +14,9 @@ export interface GamificationStep {
 // five monthly-volume tiers ($0 / $2.5K / $7.5K / $20K / $50K+). This ladder is
 // read-only in the UI — "See Default Gamification Levels" never lets it change.
 export const DEFAULT_GAMIFICATION_LADDER: GamificationStep[] = [
-  { level: 1, name: 'Premium', min_volume: 20000, bonus_pct: 40 },
-  { level: 2, name: 'Pro',     min_volume: 5000,  bonus_pct: 30 },
   { level: 3, name: 'Rookie',  min_volume: 0,     bonus_pct: 20 },
+  { level: 2, name: 'Pro',     min_volume: 5000,  bonus_pct: 30 },
+  { level: 1, name: 'Premium', min_volume: 20000, bonus_pct: 40 },
 ];
 
 // Platform ceiling: no gamification level may exceed 40%.
