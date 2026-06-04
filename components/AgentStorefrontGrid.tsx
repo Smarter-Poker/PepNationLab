@@ -776,11 +776,19 @@ export default function AgentStorefrontGrid({
         else if (rawToken.endsWith('s')) variants.push(rawToken.slice(0, -1));
         if (!rawToken.endsWith('s')) variants.push(rawToken + 's');
         
-        // Add semantic synonyms to the variant list bidirectionally
+        // Add semantic synonyms to the variant list bidirectionally with typo tolerance
         const toAdd = new Set<string>();
         for (const variant of variants) {
           for (const group of CONCEPT_GROUPS) {
-            if (group.includes(variant)) {
+            const matchesGroup = group.some(w => {
+               if (w === variant) return true;
+               // Allow 1 character typo for words longer than 4 characters
+               if (variant.length >= 4 && Math.abs(w.length - variant.length) <= 1) {
+                  return getEditDistance(w, variant) <= 1;
+               }
+               return false;
+            });
+            if (matchesGroup) {
               group.forEach(w => toAdd.add(w));
             }
           }
