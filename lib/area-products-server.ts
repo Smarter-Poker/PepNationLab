@@ -2,7 +2,7 @@
  * Server-only helpers for resolving products on research area pages.
  * Bridges compounds → products → agent pricing for the logged-in user.
  */
-import { createClient, createServiceClient } from '@/lib/supabase/server';
+import { createClient, createAdminClient } from '@/lib/supabase/server';
 import { getProductImage } from '@/lib/categoryImage';
 import { computeAgentCostForAgent, type AgentTier } from '@/lib/pricing';
 
@@ -91,7 +91,7 @@ export async function getAreaProducts(
   const agentSlug = agentProfile?.slug || null;
 
   // Get all master products matching these compound slugs
-  const svc = await createServiceClient();
+  const svc = createAdminClient();
   const { data: masterProducts } = await svc
     .from('products')
     .select('id, name, compound_slug, category, image_url, unit_size, unit_measure, base_cost, weight_oz, sku, inventory_count')

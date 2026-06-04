@@ -55,6 +55,8 @@ export interface Compound {
   recommended_action: 'keep' | 'review' | 'restrict' | 'remove';
   reconstitution_shelf_days: number | null;
   half_life: string | null;
+  measured_half_life_hours?: number | null;
+  predicted_half_life_hours?: number | null;
   pk_summary: string | null;
   molecular_weight_da?: number | null;
   pubmed_citation_count?: number | null;

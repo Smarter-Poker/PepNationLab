@@ -90,7 +90,7 @@ export default async function ResearchAreaPage({ params }: PageProps) {
     wadaStatus: c.wada_status ?? 'not_listed',
     category: c.category ?? null,
     mechanism: c.mechanism ?? null,
-    halfLife: c.half_life ?? null,
+    halfLife: c.measured_half_life_hours ? `${c.measured_half_life_hours}h (measured)` : c.predicted_half_life_hours ? `${c.predicted_half_life_hours}h (predicted)` : null,
     molecularWeightDa: c.molecular_weight_da ?? null,
     riskLevel: c.risk_level ?? 'moderate',
     studiedFor: c.studied_for ?? [],
