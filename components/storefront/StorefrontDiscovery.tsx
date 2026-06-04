@@ -1483,7 +1483,7 @@ export default function DiscoveryHero({
                 suggestions={suggestions}
                 recent={[]} // Storefront doesn't need recent searches history necessarily, but we provide empty array
                 onSelect={onSuggestionSelect}
-                onSelectRecent={(t) => { setQuery(t); submitTypedGoal(t); }}
+                onSelectRecent={(t) => { setQuery(t); if (onSearchStarted) onSearchStarted(t); }}
               />
             </div>
           )}
