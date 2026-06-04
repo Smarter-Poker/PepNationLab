@@ -98,12 +98,12 @@ const ADMIN_LINKS: RoleNavLink[] = [
   { href: '/research/calculators', label: 'Lab Tools Calculator', icon: ICON.labTools },
   { href: '/account/lab-journal', label: 'Lab Journal', icon: ICON.heart },
   { href: '/admin/settings/shipping', label: 'Global Shipping Settings', icon: <svg {...ip}><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg> },
-  { href: '/admin/referrals', label: 'Referrals', icon: <svg {...ip}><path d="M17 11a4 4 0 1 0-8 0M3 21h18M5 21a7 7 0 0 1 14 0"/></svg> },
   { href: '/admin/flash-sales', label: 'Flash Sale', icon: <svg {...ip}><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" /></svg> },
   { href: '/admin/cart-recovery', label: 'Cart Recovery', icon: <svg {...ip}><circle cx="9" cy="21" r="1" /><circle cx="20" cy="21" r="1" /><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" /></svg> },
   { href: '/admin/moderation', label: 'Moderation', icon: <svg {...ip}><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /></svg> },
   { href: '#SHOW_QR', label: 'My QR Code', icon: ICON.qr },
   { href: '/admin/audit', label: 'Audit Log', icon: <svg {...ip}><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> },
+  { href: '/admin/referrals', label: 'Referrals', icon: <svg {...ip}><path d="M17 11a4 4 0 1 0-8 0M3 21h18M5 21a7 7 0 0 1 14 0"/></svg> },
   { href: '/admin/settings', label: 'Account Settings', icon: ICON.gear },
 ];
 

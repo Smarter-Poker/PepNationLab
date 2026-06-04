@@ -1461,6 +1461,7 @@ export default function DiscoveryHero({
             onFocus={() => setSuggestOpen(true)}
             onKeyDown={(e) => { 
               if (e.key === 'Enter' && query.trim()) {
+                e.preventDefault();
                 onSelectArea(''); // Clear filter
                 if (onSearchStarted) onSearchStarted(query.trim());
               }

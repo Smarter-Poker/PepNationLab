@@ -191,7 +191,10 @@ export async function POST(req: NextRequest) {
   if (typeof minPrice === 'number') query = query.gte('retail_price', minPrice);
   if (typeof maxPrice === 'number') query = query.lte('retail_price', maxPrice);
   if (category) query = query.eq('products.category', category);
-  if (q) query = query.ilike('products.name', `%${escapeIlike(q)}%`);
+  if (q) {
+    const term = `%${escapeIlike(q)}%`;
+    query = query.or(`name.ilike.${term},description.ilike.${term},category.ilike.${term}`, { foreignTable: 'products' });
+  }
   if (typeof minWeight === 'number')
     query = query.gte('products.weight_oz', minWeight);
   if (typeof maxWeight === 'number')

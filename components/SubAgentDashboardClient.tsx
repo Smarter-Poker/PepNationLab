@@ -113,8 +113,9 @@ export default function SubAgentDashboardClient({ data, onRefresh }: { data: Ove
                   orders={data.recent_orders}
                   isSubAgent={true}
                   onNavigate={(tab) => {
-                    if (tab === 'Store Products' || tab === 'Inventory') {
-                      toast.info('Inventory and Products are managed by your Parent Agent.');
+                    const restrictedTabs = ['Store Products', 'Inventory', 'Storefront Config', 'Coupons', 'My Sub-Agents', 'My Agent Accounts'];
+                    if (restrictedTabs.includes(tab)) {
+                      toast.info('This feature is restricted for Sub-Agents.');
                     } else {
                       setActiveTab(tab);
                       // setIsMobileMenuOpen(false);

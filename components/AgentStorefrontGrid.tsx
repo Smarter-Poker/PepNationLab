@@ -739,23 +739,26 @@ export default function AgentStorefrontGrid({
       if (!q) return { matches: true, score: 0 };
       
       const STOP_WORDS = new Set(['for', 'the', 'and', 'in', 'to', 'with', 'a', 'an', 'of', 'is', 'it', 'on', 'peptides', 'peptide', 'best']);
-      const SYNONYMS: Record<string, string[]> = {
-        fat: ['weight loss', 'lipolysis', 'obesity', 'adipose', 'slimming', 'lean', 'weight'],
-        muscle: ['hypertrophy', 'bodybuilding', 'mass', 'strength', 'growth', 'anabolic', 'gains'],
-        sleep: ['insomnia', 'circadian', 'rest', 'recovery', 'rem'],
-        pain: ['analgesic', 'inflammation', 'injury', 'healing', 'joint', 'tendon', 'nociception', 'soreness'],
-        brain: ['cognitive', 'nootropic', 'memory', 'focus', 'neuro', 'alzheimers', 'dementia', 'learning'],
-        skin: ['anti-aging', 'collagen', 'wrinkle', 'elasticity', 'hair', 'nail', 'glow'],
-        energy: ['stamina', 'endurance', 'fatigue', 'metabolism', 'mitochondrial'],
-        sugar: ['diabetes', 'insulin', 'glucose', 'glycemic', 'metabolic'],
-        heart: ['cardiovascular', 'blood', 'vascular', 'angiogenesis', 'cardiac'],
-        bone: ['osteoporosis', 'mineral', 'fracture', 'density', 'healing'],
-        sex: ['libido', 'erectile', 'aphrodisiac', 'testosterone', 'hormone', 'arousal'],
-        gut: ['digestion', 'ulcer', 'gastric', 'intestinal', 'microbiome', 'bowel', 'leaky', 'stomach'],
-        immune: ['immunity', 'infection', 'virus', 'bacteria', 'autoimmune', 'sick'],
-        stress: ['anxiety', 'cortisol', 'calm', 'relax', 'mood', 'depression', 'panic'],
-        aging: ['longevity', 'senescence', 'lifespan', 'youth', 'telomere', 'anti-aging'],
-      };
+      const CONCEPT_GROUPS: string[][] = [
+        ['fat', 'weight', 'loss', 'lipolysis', 'obesity', 'adipose', 'slimming', 'lean', 'cut', 'cutting'],
+        ['muscle', 'hypertrophy', 'bodybuilding', 'mass', 'strength', 'growth', 'anabolic', 'gains', 'bulking', 'size', 'brawn'],
+        ['sleep', 'insomnia', 'circadian', 'rest', 'recovery', 'rem', 'tired', 'exhausted', 'yawn'],
+        ['pain', 'analgesic', 'inflammation', 'injury', 'healing', 'joint', 'tendon', 'nociception', 'soreness', 'headache', 'headaches', 'migraine', 'migraines', 'ache', 'sore', 'hurt', 'arthritis', 'back', 'knee'],
+        ['brain', 'cognitive', 'nootropic', 'memory', 'focus', 'neuro', 'alzheimers', 'dementia', 'learning', 'adhd', 'attention', 'clarity', 'smart'],
+        ['skin', 'anti-aging', 'collagen', 'wrinkle', 'elasticity', 'hair', 'nail', 'glow', 'complexion', 'youth', 'tanning', 'tan', 'melanin', 'sun', 'burn'],
+        ['energy', 'stamina', 'endurance', 'fatigue', 'metabolism', 'mitochondrial', 'cardio', 'athletic', 'performance', 'vitality'],
+        ['sugar', 'diabetes', 'insulin', 'glucose', 'glycemic', 'metabolic', 'a1c'],
+        ['heart', 'cardiovascular', 'blood', 'vascular', 'angiogenesis', 'cardiac', 'pressure', 'cholesterol', 'artery'],
+        ['bone', 'osteoporosis', 'mineral', 'fracture', 'density', 'healing', 'skeleton'],
+        ['sex', 'libido', 'erectile', 'aphrodisiac', 'testosterone', 'hormone', 'arousal', 'ed', 'dysfunction', 'intimacy', 'drive'],
+        ['gut', 'digestion', 'ulcer', 'gastric', 'intestinal', 'microbiome', 'bowel', 'leaky', 'stomach', 'ibs', 'crohns', 'colitis', 'bloating'],
+        ['immune', 'immunity', 'infection', 'virus', 'bacteria', 'autoimmune', 'sick', 'illness', 'cold', 'flu'],
+        ['stress', 'anxiety', 'cortisol', 'calm', 'relax', 'mood', 'depression', 'panic', 'worry', 'nervous'],
+        ['aging', 'longevity', 'senescence', 'lifespan', 'youth', 'telomere', 'anti-aging', 'life'],
+        ['women', 'female', 'menopause', 'pcos', 'estrogen', 'progesterone'],
+        ['men', 'male', 'trt', 'testosterone', 'prostate'],
+        ['eyes', 'vision', 'sight', 'macular', 'retina', 'blindness']
+      ];
 
       // Filter out stop words
       const rawTokens = q.split(/\s+/).filter(t => t && !STOP_WORDS.has(t));
@@ -767,18 +770,22 @@ export default function AgentStorefrontGrid({
 
       for (const rawToken of rawTokens) {
         // Generate singular/plural variants for basic stemming
-        const variants = [rawToken];
+        let variants = [rawToken];
         if (rawToken.endsWith('ies')) variants.push(rawToken.slice(0, -3) + 'y');
         else if (rawToken.endsWith('es')) variants.push(rawToken.slice(0, -2));
         else if (rawToken.endsWith('s')) variants.push(rawToken.slice(0, -1));
         if (!rawToken.endsWith('s')) variants.push(rawToken + 's');
         
-        // Add semantic synonyms to the variant list
-        for (const variant of [...variants]) {
-          if (SYNONYMS[variant]) {
-            variants.push(...SYNONYMS[variant]);
+        // Add semantic synonyms to the variant list bidirectionally
+        const toAdd = new Set<string>();
+        for (const variant of variants) {
+          for (const group of CONCEPT_GROUPS) {
+            if (group.includes(variant)) {
+              group.forEach(w => toAdd.add(w));
+            }
           }
         }
+        variants = Array.from(new Set([...variants, ...Array.from(toAdd)]));
 
         let maxTokenScore = 0;
         let tokenReason: string | undefined = undefined;
