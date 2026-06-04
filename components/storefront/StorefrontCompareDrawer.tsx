@@ -44,6 +44,9 @@ function writePinned(list: PinnedItem[]) {
   if (typeof window === 'undefined') return;
   try {
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(list.slice(-MAX_PINNED)));
+    // Notify other components/buttons across the page
+    window.dispatchEvent(new StorageEvent('storage', { key: STORAGE_KEY }));
+    window.dispatchEvent(new CustomEvent('pnl:compare-changed'));
   } catch {
     // localStorage may be unavailable; ignore.
   }
@@ -365,14 +368,20 @@ export default function StorefrontCompareDrawer({
       if (e.key === STORAGE_KEY) setPinned(readPinned());
     };
 
+    const syncPinned = () => {
+      setPinned(readPinned());
+    };
+
     window.addEventListener('pnl:compare-add', onAdd as EventListener);
     window.addEventListener('pnl:compare-remove', onRemove as EventListener);
     window.addEventListener('pnl:compare-clear', onClear as EventListener);
+    window.addEventListener('pnl:compare-changed', syncPinned);
     window.addEventListener('storage', onStorage);
     return () => {
       window.removeEventListener('pnl:compare-add', onAdd as EventListener);
       window.removeEventListener('pnl:compare-remove', onRemove as EventListener);
       window.removeEventListener('pnl:compare-clear', onClear as EventListener);
+      window.removeEventListener('pnl:compare-changed', syncPinned);
       window.removeEventListener('storage', onStorage);
     };
   }, []);
