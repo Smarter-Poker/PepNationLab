@@ -7,6 +7,8 @@ import AdminDashboardRealtime from '@/components/AdminDashboardRealtime';
 import { fetchAdminMetrics, computeGmvDelta, timeAgo } from '@/lib/admin-metrics';
 import { getImpersonationContext } from '@/lib/impersonation';
 
+import AdminOverviewImageMap from '@/components/AdminOverviewImageMap';
+
 const ICON_PROPS = {
   width: 22,
   height: 22,
@@ -29,7 +31,7 @@ function formatAuditAction(action: string): string {
     .join(' ');
 }
 
-export default async function AdminDashboard() {
+export default async function AdminDashboard({ searchParams }: { searchParams: { view?: string } }) {
   const supabase = await createClient();
 
   const { data: { user } } = await supabase.auth.getUser();
@@ -39,6 +41,12 @@ export default async function AdminDashboard() {
 
   if (profile?.role !== 'admin') {
     return redirect('/dashboard');
+  }
+
+  // Next.js 15 requires awaiting searchParams, we do it safely:
+  const resolvedParams = await Promise.resolve(searchParams);
+  if (resolvedParams?.view !== 'metrics') {
+    return <AdminOverviewImageMap />;
   }
 
   const metrics = await fetchAdminMetrics(user.id);

@@ -209,7 +209,7 @@ export function AdminLayoutClient({
       </div>
       
       {showQRModal && (
-        <MyQRCodeModal isOpen={showQRModal} onClose={() => setShowQRModal(false)} />
+        <MyQRCodeModal open={true} onClose={() => { window.location.hash = ''; setShowQRModal(false); }} />
       )}
     </>
   );

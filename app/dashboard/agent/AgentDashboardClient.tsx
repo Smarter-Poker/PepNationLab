@@ -649,6 +649,7 @@ export default function AgentDashboardClient({
               }}
               copiedStorefront={copiedStorefront}
               agentProfile={agentProfile}
+              userProfile={userProfile}
               orders={orders}
               onNavigate={(tab) => { setActiveTab(tab as any); }}
             />
