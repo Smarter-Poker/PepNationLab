@@ -37,132 +37,51 @@ export default function TherapeuticAreasPage() {
       minHeight: '100vh',
       backgroundColor: '#05070a'
     }}>
-      {/* Header Section matching the image */}
-      <header style={{ marginBottom: '32px', position: 'relative' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#00C4BC', fontSize: '0.75rem', fontWeight: 800, letterSpacing: '0.05em', marginBottom: '16px' }}>
-          <span>RESEARCH LIBRARY</span>
-          <ChevronRight size={12} />
-          <span style={{ color: '#A8B4C0' }}>THERAPEUTIC AREAS</span>
-        </div>
-        
-        <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'flex-start', gap: '24px' }}>
-          <div style={{ flex: '1 1 500px' }}>
-            <h1
-              style={{
-                fontSize: '2.5rem',
-                fontWeight: 900,
-                color: 'var(--white, #FFFFFF)',
-                margin: '0 0 16px 0',
-                letterSpacing: '-0.02em'
-              }}
-            >
-              Therapeutic Areas
-            </h1>
-            <p
-              style={{
-                color: 'var(--silver, #A8B4C0)',
-                fontSize: '1.05rem',
-                margin: 0,
-                maxWidth: '540px',
-                lineHeight: 1.5,
-              }}
-            >
-              Explore Research Compounds By Focus Area. Each Category Contains Compounds Studied For Specific Physiological Systems And Therapeutic Applications.
-            </p>
-          </div>
+      {/* Dynamic Image Header */}
+      <header style={{ marginBottom: '40px', position: 'relative', width: '100%', borderRadius: '12px', overflow: 'hidden' }}>
+        <img 
+          src="/images/areas_header.png" 
+          alt="Therapeutic Areas" 
+          style={{ width: '100%', display: 'block' }} 
+        />
 
-          <Link href="/research/about-areas" style={{ textDecoration: 'none' }}>
-            <div className="slate-card" style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '16px',
-              padding: '20px 24px',
-              borderRadius: '16px',
-              maxWidth: '340px',
-            }}>
-              <div style={{ color: '#00C4BC' }}>
-                <Activity size={32} />
-              </div>
-              <div>
-                <h3 style={{ color: '#FFFFFF', margin: '0 0 4px 0', fontSize: '1.05rem', fontWeight: 700 }}>About Therapeutic Areas</h3>
-                <p style={{ color: '#A8B4C0', margin: 0, fontSize: '0.85rem', lineHeight: 1.4 }}>
-                  Therapeutic Areas Help You Discover Compounds By Biological Focus And Research Application.
-                </p>
-              </div>
-              <ChevronRight size={20} color="#A8B4C0" style={{ flexShrink: 0, marginLeft: '8px' }} />
-            </div>
-          </Link>
-        </div>
+        {/* Hotspot: About Therapeutic Areas */}
+        <Link 
+          href="/research/about-areas" 
+          style={{
+            position: 'absolute',
+            top: '20%',
+            left: '60%',
+            width: '38%',
+            height: '30%',
+            zIndex: 10,
+          }}
+          aria-label="About Therapeutic Areas"
+        />
+
+        {/* Hotspot: Universal Search Integration */}
+        <LandingSearchOverlay 
+          formStyle={{
+            top: '68.5%',
+            left: '4.5%',
+            width: '72%',
+            height: '12%',
+            backgroundColor: 'transparent',
+          }}
+          buttonStyle={{
+            top: '68.5%',
+            left: '79%',
+            width: '14%',
+            height: '12%',
+            backgroundColor: 'transparent',
+          }}
+          resultsStyle={{
+            top: '82%',
+            left: '4.5%',
+            width: '72%',
+          }}
+        />
       </header>
-
-      {/* Universal Search Integration */}
-      <div style={{ position: 'relative', marginBottom: '40px', zIndex: 50 }}>
-        <div className="slate-card" style={{
-          padding: '24px',
-          borderRadius: '12px',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '16px'
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#00C4BC', fontWeight: 700 }}>
-            <Sparkles size={18} />
-            <span>Search For Anything Related To Therapeutic Areas</span>
-          </div>
-          <div style={{ position: 'relative', height: '52px' }}>
-            {/* The LandingSearchOverlay relies on absolute positioning inside a relative container. We provide standard positioning. */}
-            <LandingSearchOverlay 
-              formStyle={{
-                top: 0,
-                left: 0,
-                width: 'calc(100% - 130px)',
-                height: '100%',
-                backgroundColor: '#0a0e14',
-                border: '1px solid rgba(255,255,255,0.05)',
-                borderRadius: '8px',
-              }}
-              buttonStyle={{
-                top: 0,
-                right: 0,
-                left: 'auto',
-                width: '120px',
-                height: '100%',
-                backgroundColor: '#e6d3ba', // metallic gold/beige accent for Ask button
-                borderRadius: '8px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: '#1a1e24',
-                fontWeight: 800,
-                fontSize: '1.05rem',
-                border: 'none',
-              }}
-              resultsStyle={{
-                top: 'calc(100% + 8px)',
-                left: 0,
-                width: '100%',
-              }}
-            />
-            {/* Custom "Ask" text over the invisible button area */}
-            <div style={{
-              position: 'absolute',
-              top: 0,
-              right: 0,
-              width: '120px',
-              height: '100%',
-              pointerEvents: 'none',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '8px',
-              color: '#1a1e24',
-              fontWeight: 800,
-              zIndex: 25,
-            }}>
-              <Search size={18} strokeWidth={2.5} /> Ask
-            </div>
-          </div>
-        </div>
-      </div>
 
       <style>{`
         .areas-grid {
