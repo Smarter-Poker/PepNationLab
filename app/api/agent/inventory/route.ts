@@ -13,6 +13,24 @@ export async function GET(req: NextRequest) {
     const supabase = await createServiceClient();
     const agentId = gate.user.id;
 
+    // Verify Minimum Wholesale Purchase History of $5,000
+    const { data: purchaseData, error: purchaseErr } = await supabase
+      .from('orders')
+      .select('total')
+      .eq('buyer_id', agentId)
+      .eq('is_wholesale_restock', true)
+      .not('status', 'eq', 'cancelled');
+
+    if (purchaseErr) {
+      return NextResponse.json({ error: 'Failed to verify agent purchase history.' }, { status: 500 });
+    }
+
+    const totalSpend = purchaseData?.reduce((sum, order) => sum + (Number(order.total) || 0), 0) || 0;
+
+    if (totalSpend < 5000) {
+      return NextResponse.json({ error: `Access Denied. You must have a minimum wholesale purchase history of $5,000 to access local inventory features. Your current verified wholesale history is $${totalSpend.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}.` }, { status: 403 });
+    }
+
     // Fetch all active products
     const { data: products, error: productsError } = await supabase
       .from('products')
@@ -100,6 +118,24 @@ export async function POST(req: NextRequest) {
     const supabase = await createServiceClient();
     const agentId = gate.user.id;
     const { productId, stockCount } = await req.json();
+
+    // Verify Minimum Wholesale Purchase History of $5,000
+    const { data: purchaseData, error: purchaseErr } = await supabase
+      .from('orders')
+      .select('total')
+      .eq('buyer_id', agentId)
+      .eq('is_wholesale_restock', true)
+      .not('status', 'eq', 'cancelled');
+
+    if (purchaseErr) {
+      return NextResponse.json({ error: 'Failed to verify agent purchase history.' }, { status: 500 });
+    }
+
+    const totalSpend = purchaseData?.reduce((sum, order) => sum + (Number(order.total) || 0), 0) || 0;
+
+    if (totalSpend < 5000) {
+      return NextResponse.json({ error: `Access Denied. You must have a minimum wholesale purchase history of $5,000 to manage local inventory.` }, { status: 403 });
+    }
 
     // BUG-16 FIX: validate productId is a valid UUID before hitting the DB.
     // Without this, a malformed ID triggers a raw FK constraint error leaking schema details.
