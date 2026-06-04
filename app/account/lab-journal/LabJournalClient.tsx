@@ -1212,7 +1212,7 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
             {(selectedItems.size >= 2 && selectedItems.size <= 4) && (
               <button onClick={() => { setIsComparing(true); saveComparison(Array.from(selectedItems)); }} className="btn btn-secondary" style={{ borderRadius: 20, padding: '8px 20px', background: 'rgba(0,196,188,0.1)', color: 'var(--teal)', border: '1px solid rgba(0,196,188,0.2)' }}>Compare</button>
             )}
-            <button onClick={handleBulkAdd} className="btn btn-primary" style={{ borderRadius: 20, padding: '8px 20px' }}>Add to Cart</button>
+            <button onClick={handleBulkAdd} className="btn btn-primary" style={{ borderRadius: 20, padding: '8px 20px' }}>Add To Cart</button>
             <button onClick={() => setSelectedItems(new Set())} className="btn btn-ghost" style={{ borderRadius: 20, color: 'var(--silver)' }}>Cancel</button>
           </div>
         </div>
@@ -1251,7 +1251,7 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
                         disabled={quickViewItem.in_stock === false}
                         className="btn btn-primary"
                       >
-                        Add to Cart
+                        Add To Cart
                       </button>
                     )}
                   </div>
@@ -1286,7 +1286,7 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
                       <div style={{ display: 'flex', justifyContent: 'space-between' }}><span>Status:</span> <strong style={{ color: item.in_stock === false ? 'var(--red)' : 'var(--teal)' }}>{item.in_stock === false ? 'Out of Stock' : 'In Stock'}</strong></div>
                     </div>
                     {storefrontSlug && (
-                      <button onClick={() => { handleQuickAdd(item); setSelectedItems(s => { const ns = new Set(s); ns.delete(item.product_id); return ns; }); if (selectedItems.size <= 2) setIsComparing(false); }} disabled={item.in_stock === false} className="btn btn-primary" style={{ marginTop: 12 }}>Add to Cart</button>
+                      <button onClick={() => { handleQuickAdd(item); setSelectedItems(s => { const ns = new Set(s); ns.delete(item.product_id); return ns; }); if (selectedItems.size <= 2) setIsComparing(false); }} disabled={item.in_stock === false} className="btn btn-primary" style={{ marginTop: 12 }}>Add To Cart</button>
                     )}
                   </div>
                 );

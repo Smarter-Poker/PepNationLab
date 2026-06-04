@@ -71,7 +71,7 @@ export async function GET(req: NextRequest) {
       if (purchasedAt) {
         const daysAgo = Math.floor((Date.now() - new Date(purchasedAt).getTime()) / (1000 * 60 * 60 * 24));
         if (daysAgo > 35) {
-          insight += `⚠️ Restock Alert: You ordered this ${daysAgo} days ago. Based on typical 6-week research cycles, you may need to restock soon. `;
+          insight += `Restock Alert: You ordered this ${daysAgo} days ago. Based on typical 6-week research cycles, you may need to restock soon. `;
         }
       }
 
@@ -82,12 +82,12 @@ export async function GET(req: NextRequest) {
       if (p.unit_size && p.unit_measure?.toLowerCase() === 'mg') {
         const mg = parseFloat(p.unit_size);
         if (!isNaN(mg) && mg > 0) {
-          insight += `🧪 Reconstitution Guide: Adding 2ml of bacteriostatic water to this ${mg}mg vial yields a concentration of ${mg/2}mg per ml (or ${mg/20}mg per 10 units). `;
+          insight += `Reconstitution Guide: Adding 2ml of bacteriostatic water to this ${mg}mg vial yields a concentration of ${mg/2}mg per ml (or ${mg/20}mg per 10 units). `;
         }
       }
 
       if (compound?.best_stacked_with && compound.best_stacked_with.length > 0) {
-        insight += `💡 Synergy: Known to stack well with ${compound.best_stacked_with.join(', ')}.`;
+        insight += `Synergy: Known to stack well with ${compound.best_stacked_with.join(', ')}.`;
       }
 
       if (!insight) {

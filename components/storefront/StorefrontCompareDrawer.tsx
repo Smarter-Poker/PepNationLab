@@ -11,7 +11,7 @@
 
 import { useEffect, useState, useMemo, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { X, Scale, ChevronDown, ChevronRight, GripHorizontal, ChevronLeft, ThumbsUp, ThumbsDown, Trophy, AlertTriangle, Info, Zap, BookOpen, Clock, Thermometer } from 'lucide-react';
+import { X, Scale, ChevronDown, ChevronRight, GripHorizontal, ChevronLeft, ThumbsUp, ThumbsDown, Trophy, AlertTriangle, Info, Zap, BookOpen, Clock, Thermometer, Sparkles, Check, Shield } from 'lucide-react';
 import { evidenceTier, type Compound, RISK_META, researchAreaLabel, wadaLabel } from '@/lib/compounds';
 import InCellGlossaryTooltip from '../research/InCellGlossaryTooltip';
 import AttributeRadarChart from '../research/AttributeRadarChart';
@@ -576,7 +576,7 @@ export default function StorefrontCompareDrawer({
       {
         kind: 'data', label: 'Light Sensitive',
         getValue: (p: PinnedItem) => { const c = p.compoundSlug ? compoundsBySlug[p.compoundSlug] : null; return c?.handling?.light_sensitive == null ? NL : c.handling.light_sensitive ? 'Yes' : 'No'; },
-        render: (p: PinnedItem) => { const c = p.compoundSlug ? compoundsBySlug[p.compoundSlug] : null; return c?.handling?.light_sensitive == null ? NL : c.handling.light_sensitive ? '⚠️ Yes' : '✓ No'; }
+        render: (p: PinnedItem) => { const c = p.compoundSlug ? compoundsBySlug[p.compoundSlug] : null; return c?.handling?.light_sensitive == null ? NL : c.handling.light_sensitive ? <span style={{ color: '#F6AD55', display: 'inline-flex', alignItems: 'center', gap: '3px' }}><AlertTriangle size={11} /> Yes</span> : <span style={{ color: '#68D391', display: 'inline-flex', alignItems: 'center', gap: '3px' }}><Check size={11} /> No</span>; }
       },
       {
         kind: 'data', label: 'Reconstituted Shelf Life',
@@ -851,8 +851,8 @@ export default function StorefrontCompareDrawer({
                         }}>{tier.label}</span>
                       )}
                       {c?.wada_status && (c.wada_status === 'prohibited' || c.wada_status === 'prohibited_males') && (
-                        <span style={{ background: 'rgba(229,62,62,0.15)', color: '#FC8181', padding: '2px 6px', borderRadius: 4, fontSize: '0.65rem', fontWeight: 800 }}>
-                          WADA 🚫
+                        <span style={{ background: 'rgba(229,62,62,0.15)', color: '#FC8181', padding: '2px 6px', borderRadius: 4, fontSize: '0.65rem', fontWeight: 800, display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
+                          <X size={10} /> WADA Banned
                         </span>
                       )}
                       {item.pricePerVialDollars != null && (
@@ -938,7 +938,7 @@ export default function StorefrontCompareDrawer({
                 <div style={{ marginBottom: 16 }}>
                   {activeSynergies.map((syn, idx) => (
                     <div key={idx} style={{ background: syn.type === 'conflict' ? 'rgba(229,62,62,0.1)' : 'rgba(104,211,145,0.1)', border: `1px solid ${syn.type === 'conflict' ? 'rgba(229,62,62,0.3)' : 'rgba(104,211,145,0.3)'}`, color: syn.type === 'conflict' ? '#FC8181' : '#68D391', padding: '12px 16px', borderRadius: 8, marginBottom: 8, fontSize: '0.9rem', fontWeight: 600, display: 'flex', alignItems: 'flex-start', gap: 8 }}>
-                      {syn.type === 'conflict' ? <AlertTriangle size={16} style={{ marginTop: 1, flexShrink: 0 }} /> : <span>🔥</span>}
+                      {syn.type === 'conflict' ? <AlertTriangle size={16} style={{ marginTop: 1, flexShrink: 0 }} /> : <Sparkles size={16} style={{ marginTop: 1, flexShrink: 0 }} />}
                       <span><strong>{syn.type === 'conflict' ? 'Conflict' : 'Synergy'}:</strong> {syn.message}</span>
                     </div>
                   ))}
@@ -1031,12 +1031,12 @@ export default function StorefrontCompareDrawer({
               {/* Tab navigation */}
               <div style={{ display: 'flex', gap: 6, marginBottom: 16, flexWrap: 'wrap' }}>
                 {([
-                  ['matrix', '📊 Matrix'],
-                  ['proscons', '⚖️ Pros & Cons'],
-                  ['brief', '🧠 Brief'],
-                  ['mechanism', '🔬 Mechanism'],
-                  ['protocol', '📋 Protocol'],
-                  ['verdict', '🎯 Verdict'],
+                  ['matrix', 'Matrix'],
+                  ['proscons', 'Pros & Cons'],
+                  ['brief', 'Analyst Brief'],
+                  ['mechanism', 'Mechanism'],
+                  ['protocol', 'Protocol'],
+                  ['verdict', 'Verdict'],
                 ] as const).map(([id, label]) => (
                   <button key={id} type="button" onClick={() => setMatrixTab(id)}
                     style={{ padding: '7px 12px', borderRadius: 8, fontWeight: 700, fontSize: '0.75rem', cursor: 'pointer', border: matrixTab === id ? `1px solid ${primaryColor}77` : '1px solid rgba(255,255,255,0.1)', background: matrixTab === id ? `${primaryColor}15` : 'rgba(255,255,255,0.04)', color: matrixTab === id ? primaryColor : 'rgba(255,255,255,0.5)', whiteSpace: 'nowrap' }}>
@@ -1079,8 +1079,8 @@ export default function StorefrontCompareDrawer({
                     <span style={{ marginLeft: 'auto', fontSize: '0.65rem', color: 'rgba(255,255,255,0.3)', fontStyle: 'italic' }}>Research reference only</span>
                   </div>
                   {smartSummary && (
-                    <div style={{ background: `${primaryColor}10`, border: `1px solid ${primaryColor}30`, borderRadius: 8, padding: '8px 12px', marginBottom: 12, fontSize: '0.78rem', color: primaryColor, fontWeight: 600 }}>
-                      💡 {smartSummary}
+                    <div style={{ background: `${primaryColor}10`, border: `1px solid ${primaryColor}30`, borderRadius: 8, padding: '8px 12px', marginBottom: 12, fontSize: '0.78rem', color: primaryColor, fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <Info size={14} /> {smartSummary}
                     </div>
                   )}
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
@@ -1108,9 +1108,9 @@ export default function StorefrontCompareDrawer({
                           {c?.mechanism && <div><div style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.3)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 2 }}>Mechanism of Action</div><div style={{ fontSize: '0.78rem', color: 'rgba(255,255,255,0.7)', lineHeight: 1.5 }}>{c.mechanism}</div></div>}
                           {c?.pk_summary && <div><div style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.3)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 2 }}>Pharmacokinetics</div><div style={{ fontSize: '0.78rem', color: 'rgba(255,255,255,0.7)', lineHeight: 1.5 }}>{c.pk_summary}</div></div>}
                           {c?.risk_reasons?.length ? <div><div style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.3)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4 }}>Risk Considerations</div><div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>{c.risk_reasons.map((r, ri) => <div key={ri} style={{ display: 'flex', gap: 5, alignItems: 'flex-start' }}><AlertTriangle size={10} color={RISK_META[c.risk_level]?.color ?? '#F6AD55'} style={{ marginTop: 2, flexShrink: 0 }} /><span style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.6)', lineHeight: 1.4 }}>{r}</span></div>)}</div></div> : null}
-                          {c?.is_pro_angiogenic && <div style={{ fontSize: '0.72rem', color: '#F6AD55', fontWeight: 700 }}>⚠️ Pro-Angiogenic — promotes new vessel growth</div>}
-                          {c?.is_glp1 && <div style={{ fontSize: '0.72rem', color: '#9F7AEA', fontWeight: 700 }}>✓ GLP-1 / Incretin Class</div>}
-                          {c?.sources?.length ? <div><div style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.3)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4 }}>Key Sources</div><div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>{c.sources.slice(0, 3).map((src, si) => <a key={si} href={src.startsWith('http') ? src : undefined} target="_blank" rel="noopener noreferrer" style={{ fontSize: '0.68rem', color, opacity: 0.8, wordBreak: 'break-all', lineHeight: 1.3, textDecoration: src.startsWith('http') ? 'underline' : 'none' }}>{src.startsWith('http') ? `📄 Source ${si+1}` : src}</a>)}</div></div> : null}
+                          {c?.is_pro_angiogenic && <div style={{ fontSize: '0.72rem', color: '#F6AD55', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '4px' }}><AlertTriangle size={12} /> Pro-Angiogenic — Promotes New Vessel Growth</div>}
+                          {c?.is_glp1 && <div style={{ fontSize: '0.72rem', color: '#9F7AEA', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '4px' }}><Check size={12} /> GLP-1 / Incretin Class</div>}
+                          {c?.sources?.length ? <div><div style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.3)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4 }}>Key Sources</div><div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>{c.sources.slice(0, 3).map((src, si) => <a key={si} href={src.startsWith('http') ? src : undefined} target="_blank" rel="noopener noreferrer" style={{ fontSize: '0.68rem', color, opacity: 0.8, wordBreak: 'break-all', lineHeight: 1.3, textDecoration: src.startsWith('http') ? 'underline' : 'none' }}>{src.startsWith('http') ? <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}><BookOpen size={11} /> Source {si+1}</span> : src}</a>)}</div></div> : null}
                         </div>
                       </div>
                     );
@@ -1141,7 +1141,7 @@ export default function StorefrontCompareDrawer({
                               <div style={{ color: 'rgba(255,255,255,0.4)' }}>Form</div><div style={{ color: 'rgba(255,255,255,0.8)' }}>{c?.handling?.form ?? NL}</div>
                               <div style={{ color: 'rgba(255,255,255,0.4)' }}>Diluent</div><div style={{ color: 'rgba(255,255,255,0.8)' }}>{c?.handling?.diluent ?? NL}</div>
                               <div style={{ color: 'rgba(255,255,255,0.4)' }}>Storage</div><div style={{ color: 'rgba(255,255,255,0.8)' }}>{c?.handling?.storage_temp ?? NL}</div>
-                              <div style={{ color: 'rgba(255,255,255,0.4)' }}>Light</div><div style={{ color: 'rgba(255,255,255,0.8)' }}>{c?.handling?.light_sensitive == null ? NL : c.handling.light_sensitive ? '⚠️ Sensitive' : '✓ Safe'}</div>
+                              <div style={{ color: 'rgba(255,255,255,0.4)' }}>Light</div><div style={{ color: 'rgba(255,255,255,0.8)' }}>{c?.handling?.light_sensitive == null ? NL : c.handling.light_sensitive ? 'Sensitive' : 'Safe'}</div>
                               {shelf && <><div style={{ color: 'rgba(255,255,255,0.4)' }}>Shelf Life</div><div style={{ color: shelf >= 28 ? '#68D391' : shelf < 14 ? '#FC8181' : '#F6AD55', fontWeight: 700 }}>{shelf} days</div></>}
                             </div>
                           </div>
@@ -1171,10 +1171,10 @@ export default function StorefrontCompareDrawer({
                 const mostStudied = [...ranked].sort((a, b) => b.s.breakdown.science - a.s.breakdown.science)[0];
                 const mostPractical = [...ranked].sort((a, b) => b.s.breakdown.handling - a.s.breakdown.handling)[0];
                 const verdicts = [
-                  { label: '🏆 Overall Best', item: leader, color: primaryColor, reason: `Highest composite research score (${leader.s.total}/100)` },
-                  { label: '🛡️ Safest Profile', item: safest, color: '#68D391', reason: `Best safety-to-evidence ratio in this comparison` },
-                  { label: '📚 Most Studied', item: mostStudied, color: '#F6AD55', reason: `Deepest scientific literature footprint` },
-                  { label: '⚡ Most Practical', item: mostPractical, color: '#9F7AEA', reason: `Best handling & protocol practicality score` },
+                  { label: 'Overall Best', icon: <Trophy size={14} />, item: leader, color: primaryColor, reason: `Highest composite research score (${leader.s.total}/100)` },
+                  { label: 'Safest Profile', icon: <Shield size={14} />, item: safest, color: '#68D391', reason: `Best safety-to-evidence ratio in this comparison` },
+                  { label: 'Most Studied', icon: <BookOpen size={14} />, item: mostStudied, color: '#F6AD55', reason: `Deepest scientific literature footprint` },
+                  { label: 'Most Practical', icon: <Zap size={14} />, item: mostPractical, color: '#9F7AEA', reason: `Best handling & protocol practicality score` },
                 ];
                 return (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 20 }}>
@@ -1182,7 +1182,7 @@ export default function StorefrontCompareDrawer({
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 10 }}>
                       {verdicts.map(v => (
                         <div key={v.label} style={{ padding: '12px 14px', borderRadius: 10, background: `${v.color}08`, border: `1px solid ${v.color}25` }}>
-                          <div style={{ fontSize: '0.65rem', fontWeight: 800, color: v.color, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4 }}>{v.label}</div>
+                          <div style={{ fontSize: '0.65rem', fontWeight: 800, color: v.color, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4, display: 'flex', alignItems: 'center', gap: '4px' }}>{v.icon} {v.label}</div>
                           <div style={{ fontWeight: 900, fontSize: '0.92rem', color: 'var(--white)', marginBottom: 4 }}>{v.item.p.productName}</div>
                           <div style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.5)', lineHeight: 1.4 }}>{v.reason}</div>
                         </div>
@@ -1329,8 +1329,8 @@ export default function StorefrontCompareDrawer({
                             return (
                               <td key={p.productName} style={{ ...valueCellStyle, position: 'relative' }}>
                                 {isWinner && (
-                                  <div style={{ position: 'absolute', top: 4, right: 4, fontSize: '0.65rem', background: primaryColor, color: '#04221F', padding: '2px 6px', borderRadius: 4, fontWeight: 800 }}>
-                                    TOP PICK 👑
+                                  <div style={{ position: 'absolute', top: 4, right: 4, fontSize: '0.65rem', background: primaryColor, color: '#04221F', padding: '2px 6px', borderRadius: 4, fontWeight: 800, display: 'inline-flex', alignItems: 'center', gap: '2px' }}>
+                                    <Trophy size={9} /> Top Pick
                                   </div>
                                 )}
                                 <div style={isWinner ? { borderLeft: `2px solid ${primaryColor}`, paddingLeft: 8, marginLeft: -10 } : {}}>

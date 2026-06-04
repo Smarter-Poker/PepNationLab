@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import IframeLink from '@/components/ui/IframeLink';
+import { ThumbsUp, Heart, Smile, Flame, Eye, Check, Paperclip, Edit2, Trash2, CornerUpLeft, Star, CreditCard, DollarSign, Megaphone, AlertTriangle, Bell, Sparkles } from 'lucide-react';
 
 interface Message {
   id: string;
@@ -24,8 +25,67 @@ interface Message {
 
 interface Reaction { emoji: string; count: number; myReaction: boolean }
 
-const EMOJI_QUICK = ['👍', '❤️', '😂', '🔥', '👀', '✅'];
-const EMOJI_FULL = ['👍', '❤️', '😂', '🔥', '👀', '✅', '👏', '🙏', '💯', '🎉', '😍', '🤔', '😢', '😮', '👎', '💰', '📎', '⭐', '🚀', '💪', '😎', '🤝', '✨', '💎'];
+const EMOJI_QUICK = ['like', 'love', 'laugh', 'fire', 'eyes', 'done'];
+const EMOJI_FULL = ['like', 'love', 'laugh', 'fire', 'eyes', 'done', 'applause', 'pray', 'hundred', 'party', 'heart_eyes', 'think', 'sad', 'wow', 'dislike', 'money', 'clip', 'star', 'rocket', 'flex', 'cool', 'deal', 'sparkle', 'gem'];
+
+function normalizeReaction(emoji: string): string {
+  if (emoji === '\u{1F44D}') return 'like';
+  if (emoji === '\u{2764}' || emoji === '\u{2764}\u{FE0F}') return 'love';
+  if (emoji === '\u{1F602}') return 'laugh';
+  if (emoji === '\u{1F525}') return 'fire';
+  if (emoji === '\u{1F440}') return 'eyes';
+  if (emoji === '\u{2705}' || emoji === '\u{2705}\u{FE0F}') return 'done';
+  if (emoji === '\u{1F44F}') return 'applause';
+  if (emoji === '\u{1F64F}') return 'pray';
+  if (emoji === '\u{1F4AF}') return 'hundred';
+  if (emoji === '\u{1F389}') return 'party';
+  if (emoji === '\u{1F60D}') return 'heart_eyes';
+  if (emoji === '\u{1F914}') return 'think';
+  if (emoji === '\u{1F622}') return 'sad';
+  if (emoji === '\u{1F62E}') return 'wow';
+  if (emoji === '\u{1F44E}') return 'dislike';
+  if (emoji === '\u{1F4B0}') return 'money';
+  if (emoji === '\u{1F4CE}') return 'clip';
+  if (emoji === '\u{2B50}') return 'star';
+  if (emoji === '\u{1F680}') return 'rocket';
+  if (emoji === '\u{1F4AA}') return 'flex';
+  if (emoji === '\u{1F60E}') return 'cool';
+  if (emoji === '\u{1F91D}') return 'deal';
+  if (emoji === '\u{2728}') return 'sparkle';
+  if (emoji === '\u{1F48E}') return 'gem';
+  return emoji;
+}
+
+function renderReactionIcon(emoji: string, size = 13) {
+  const key = normalizeReaction(emoji);
+  switch (key) {
+    case 'like': return <ThumbsUp size={size} />;
+    case 'love': return <Heart size={size} fill="currentColor" />;
+    case 'laugh': return <Smile size={size} />;
+    case 'fire': return <Flame size={size} fill="currentColor" />;
+    case 'eyes': return <Eye size={size} />;
+    case 'done': return <Check size={size} />;
+    case 'applause': return <span style={{ fontSize: '0.7rem', fontWeight: 800 }}>Applause</span>;
+    case 'pray': return <span style={{ fontSize: '0.7rem', fontWeight: 800 }}>Pray</span>;
+    case 'hundred': return <span style={{ fontSize: '0.7rem', fontWeight: 800 }}>100</span>;
+    case 'party': return <span style={{ fontSize: '0.7rem', fontWeight: 800 }}>Party</span>;
+    case 'heart_eyes': return <Heart size={size} fill="currentColor" />;
+    case 'think': return <span style={{ fontSize: '0.7rem', fontWeight: 800 }}>Think</span>;
+    case 'sad': return <span style={{ fontSize: '0.7rem', fontWeight: 800 }}>Sad</span>;
+    case 'wow': return <span style={{ fontSize: '0.7rem', fontWeight: 800 }}>Wow</span>;
+    case 'dislike': return <span style={{ fontSize: '0.7rem', fontWeight: 800 }}>Dislike</span>;
+    case 'money': return <span style={{ fontSize: '0.7rem', fontWeight: 800 }}>Money</span>;
+    case 'clip': return <Paperclip size={size} />;
+    case 'star': return <Star size={size} fill="currentColor" />;
+    case 'rocket': return <span style={{ fontSize: '0.7rem', fontWeight: 800 }}>Rocket</span>;
+    case 'flex': return <span style={{ fontSize: '0.7rem', fontWeight: 800 }}>Flex</span>;
+    case 'cool': return <span style={{ fontSize: '0.7rem', fontWeight: 800 }}>Cool</span>;
+    case 'deal': return <span style={{ fontSize: '0.7rem', fontWeight: 800 }}>Deal</span>;
+    case 'sparkle': return <Sparkles size={size} />;
+    case 'gem': return <span style={{ fontSize: '0.7rem', fontWeight: 800 }}>Gem</span>;
+    default: return <span style={{ fontSize: '0.7rem' }}>{key}</span>;
+  }
+}
 
 export default function Messaging({
   selfId,
@@ -162,12 +222,13 @@ export default function Messaging({
   }
 
   async function handleReaction(messageId: string, emoji: string) {
-    const existing = reactions[messageId]?.find(r => r.emoji === emoji && r.myReaction);
+    const key = normalizeReaction(emoji);
+    const existing = reactions[messageId]?.find(r => normalizeReaction(r.emoji) === key && r.myReaction);
     try {
       if (existing) {
-        await fetch('/api/messages/reactions', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ messageId, emoji }) });
+        await fetch('/api/messages/reactions', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ messageId, emoji: existing.emoji }) });
       } else {
-        await fetch('/api/messages/reactions', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ messageId, emoji }) });
+        await fetch('/api/messages/reactions', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ messageId, emoji: key }) });
       }
       // Reload reactions for this message
       const res = await fetch(`/api/messages/reactions?messageId=${messageId}`);
@@ -293,7 +354,7 @@ export default function Messaging({
           borderRadius: 16, pointerEvents: 'none',
         }}>
           <div style={{ color: 'var(--teal)', fontSize: '1rem', fontWeight: 700 }}>
-            📎 Drop File To Attach
+            <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Paperclip size={16} /> Drop File To Attach</span>
           </div>
         </div>
       )}
@@ -417,7 +478,7 @@ export default function Messaging({
                           borderLeft: '2px solid var(--teal)',
                           background: 'rgba(255,255,255,0.02)', borderRadius: '4px 8px 8px 4px',
                         }}>
-                          ↩ {replyPreview.body?.substring(0, 60)}
+                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><CornerUpLeft size={11} /> {replyPreview.body?.substring(0, 60)}</span>
                         </div>
                       )}
 
@@ -440,7 +501,9 @@ export default function Messaging({
                           borderRadius: 14, padding: '12px 14px',
                         }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6, paddingBottom: 6, borderBottom: `1px solid rgba(255,255,255,0.04)` }}>
-                            <span style={{ fontSize: '1rem' }}>{isInvoice ? (m.type === 'credit_memo' ? '💳' : '💰') : isBroadcast ? '📢' : m.type === 'payment_reminder' ? '⚠️' : '🔔'}</span>
+                            <span style={{ display: 'inline-flex', alignItems: 'center', color: isInvoice ? 'var(--teal)' : isBroadcast ? '#C084FC' : '#63B3ED' }}>
+                              {isInvoice ? (m.type === 'credit_memo' ? <CreditCard size={16} /> : <DollarSign size={16} />) : isBroadcast ? <Megaphone size={16} /> : m.type === 'payment_reminder' ? <AlertTriangle size={16} /> : <Bell size={16} />}
+                            </span>
                             <span style={{ fontSize: '0.68rem', fontWeight: 700, color: isInvoice ? 'var(--teal)' : isBroadcast ? '#C084FC' : '#63B3ED', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
                               {m.type === 'credit_memo' ? 'Credit Memo' : m.type === 'payment_reminder' ? 'Payment Reminder' : isBroadcast ? 'Broadcast' : isInvoice ? 'Invoice' : 'Notification'}
                             </span>
@@ -486,7 +549,7 @@ export default function Messaging({
                               </IframeLink>
                             ) : (
                               <IframeLink href={m.attachment_url} style={{ color: mine ? 'rgba(255,255,255,0.8)' : 'var(--teal)', fontSize: '0.73rem', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 4, background: mine ? 'rgba(255,255,255,0.12)' : 'rgba(192,184,168,0.06)', padding: '3px 8px', borderRadius: 6, marginTop: 4 }}>
-                                📎 Attachment
+                                <Paperclip size={11} /> Attachment
                               </IframeLink>
                             )
                           )}
@@ -505,7 +568,7 @@ export default function Messaging({
                                 fontSize: '0.7rem', display: 'flex', alignItems: 'center', gap: 3,
                                 color: 'rgba(255,255,255,0.6)',
                               }}>
-                              {r.emoji} <span style={{ fontSize: '0.6rem' }}>{r.count}</span>
+                              {renderReactionIcon(r.emoji)} <span style={{ fontSize: '0.6rem' }}>{r.count}</span>
                             </button>
                           ))}
                         </div>
@@ -522,17 +585,17 @@ export default function Messaging({
                         }}>
                           {EMOJI_QUICK.slice(0, 4).map(em => (
                             <button key={em} onClick={() => handleReaction(m.id, em)}
-                              style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '2px 4px', fontSize: '0.85rem', borderRadius: 4 }}>
-                              {em}
+                              style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '2px 4px', fontSize: '0.85rem', borderRadius: 4, display: 'flex', alignItems: 'center' }}>
+                              {renderReactionIcon(em, 14)}
                             </button>
                           ))}
                           <button onClick={() => setShowEmojiFor(showEmojiFor === m.id ? null : m.id)}
-                            style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '2px 4px', fontSize: '0.75rem', color: 'rgba(255,255,255,0.4)', borderRadius: 4 }}>
-                            ＋
+                            style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '2px 4px', fontSize: '0.75rem', color: 'rgba(255,255,255,0.4)', borderRadius: 4, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            +
                           </button>
                           <button onClick={() => setReplyTo(m)}
-                            style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '2px 4px', fontSize: '0.7rem', color: 'rgba(255,255,255,0.4)', borderRadius: 4 }}>
-                            ↩
+                            style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '2px 4px', fontSize: '0.7rem', color: 'rgba(255,255,255,0.4)', borderRadius: 4, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <CornerUpLeft size={12} />
                           </button>
                         </div>
                       )}
@@ -547,9 +610,9 @@ export default function Messaging({
                         }}>
                           {EMOJI_FULL.map(em => (
                             <button key={em} onClick={() => handleReaction(m.id, em)}
-                              style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '3px 4px', fontSize: '0.9rem', borderRadius: 4 }}
+                              style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '3px 4px', fontSize: '0.9rem', borderRadius: 4, display: 'flex', alignItems: 'center' }}
                               className="msg-emoji-btn">
-                              {em}
+                              {renderReactionIcon(em, 14)}
                             </button>
                           ))}
                         </div>
@@ -560,7 +623,7 @@ export default function Messaging({
               );
             })}
             {showReadReceipt && (
-              <div style={{ textAlign: 'right', fontSize: '0.62rem', color: 'rgba(192,184,168,0.5)', fontWeight: 500, padding: '1px 6px 0' }}>✓ Seen</div>
+              <div style={{ textAlign: 'right', fontSize: '0.62rem', color: 'rgba(192,184,168,0.5)', fontWeight: 500, padding: '1px 6px 0', display: 'inline-flex', alignItems: 'center', gap: 3 }}><Check size={11} /> Seen</div>
             )}
           </>
         )}
@@ -580,12 +643,12 @@ export default function Messaging({
             setContextMenu(null);
           }} style={{ display: 'block', width: '100%', textAlign: 'left', background: 'none', border: 'none', padding: '8px 12px', color: '#fff', fontSize: '0.8rem', cursor: 'pointer', borderRadius: 6 }}
             className="msg-context-btn">
-            ✏️ Edit Message
+            Edit Message
           </button>
           <button onClick={() => handleDelete(contextMenu.msgId)}
             style={{ display: 'block', width: '100%', textAlign: 'left', background: 'none', border: 'none', padding: '8px 12px', color: '#FC8181', fontSize: '0.8rem', cursor: 'pointer', borderRadius: 6 }}
             className="msg-context-delete-btn">
-            🗑 Delete Message
+            Delete Message
           </button>
         </div>
       )}
@@ -607,7 +670,7 @@ export default function Messaging({
       {editingMsg && (
         <div style={{ padding: '6px 16px', borderTop: '1px solid rgba(237,137,54,0.1)', background: 'rgba(237,137,54,0.03)', display: 'flex', alignItems: 'center', gap: 8 }}>
           <div style={{ flex: 1 }}>
-            <div style={{ fontSize: '0.68rem', color: '#00C4BC', fontWeight: 600 }}>✏️ Editing Message</div>
+            <div style={{ fontSize: '0.68rem', color: '#00C4BC', fontWeight: 600 }}>Editing Message</div>
           </div>
           <button onClick={() => { setEditingMsg(null); setEditBody(''); }} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.3)', cursor: 'pointer', padding: 4 }}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
@@ -626,7 +689,7 @@ export default function Messaging({
           {isImage(attachmentUrl) ? (
             <img src={attachmentUrl} alt="preview" style={{ width: 40, height: 40, borderRadius: 6, objectFit: 'cover' }} />
           ) : (
-            <span style={{ fontSize: '0.78rem', color: 'var(--teal)' }}>📎</span>
+            <Paperclip size={13} style={{ color: 'var(--teal)' }} />
           )}
           <span style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.5)', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{attachmentName || 'File Attached'}</span>
           <button onClick={() => { setAttachmentUrl(null); setAttachmentName(''); }} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.3)', cursor: 'pointer', padding: 2 }}>
@@ -638,24 +701,6 @@ export default function Messaging({
       {/* Composer */}
       <form onSubmit={handleSend} style={{ padding: '10px 12px', background: 'rgba(255,255,255,0.02)', borderTop: '1px solid rgba(255,255,255,0.04)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'rgba(255,255,255,0.05)', borderRadius: 22, padding: '3px 3px 3px 6px', border: '1px solid rgba(255,255,255,0.05)' }}>
-          {/* Emoji button */}
-          <div style={{ position: 'relative' }}>
-            <button type="button" onClick={() => setShowFullEmoji(!showFullEmoji)}
-              style={{ width: 30, height: 30, borderRadius: '50%', background: 'none', border: 'none', cursor: 'pointer', color: showFullEmoji ? 'var(--teal)' : 'rgba(255,255,255,0.3)', fontSize: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              😊
-            </button>
-            {showFullEmoji && (
-              <div style={{ position: 'absolute', bottom: '100%', left: 0, marginBottom: 8, background: '#1f2937', borderRadius: 12, padding: 8, border: '1px solid rgba(255,255,255,0.1)', boxShadow: '0 8px 24px rgba(0,0,0,0.5)', display: 'flex', flexWrap: 'wrap', gap: 2, width: 220, zIndex: 30 }}>
-                {EMOJI_FULL.map(em => (
-                  <button key={em} type="button" onClick={() => { setBody(prev => prev + em); setShowFullEmoji(false); inputRef.current?.focus(); }}
-                    style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px 5px', fontSize: '1.1rem', borderRadius: 4 }}
-                    className="msg-emoji-picker-btn">
-                    {em}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
           {/* Attach */}
           <label style={{ width: 30, height: 30, borderRadius: '50%', cursor: uploadingFile ? 'wait' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'rgba(255,255,255,0.3)', flexShrink: 0 }}>
             {uploadingFile ? <div style={{ width: 14, height: 14, borderRadius: '50%', border: '2px solid var(--teal)', borderTopColor: 'transparent', animation: 'spin 0.8s linear infinite' }} /> : (
@@ -678,7 +723,7 @@ export default function Messaging({
               transition: 'background 0.2s, transform 0.15s', transform: sending ? 'scale(0.9)' : 'scale(1)',
             }}>
             {sending ? <div style={{ width: 12, height: 12, borderRadius: '50%', border: '2px solid rgba(255,255,255,0.3)', borderTopColor: '#fff', animation: 'spin 0.8s linear infinite' }} /> : (
-              editingMsg ? <span style={{ fontSize: '0.8rem', color: '#fff' }}>✓</span> : (
+              editingMsg ? <Check size={14} color="#fff" /> : (
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={((body.trim()) || attachmentUrl) ? '#fff' : 'rgba(255,255,255,0.15)'} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13" /><polygon points="22 2 15 22 11 13 2 9 22 2" /></svg>
               )
             )}

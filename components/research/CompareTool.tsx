@@ -26,7 +26,8 @@ import {
   ThumbsUp, ThumbsDown, Trophy, AlertTriangle, Info,
   Zap, BookOpen, FlaskConical, Shield, Star, TrendingUp,
   Clock, Thermometer, Layers, ArrowRight, BarChart3, Beaker,
-  Scale, Dna, Droplets, Activity
+  Scale, Dna, Droplets, Activity, Syringe, Wrench, Hourglass,
+  Sparkles, Moon, Heart, Brain
 } from 'lucide-react';
 import { type Compound, evidenceTier, wadaLabel, researchAreaLabel, RISK_META } from '@/lib/compounds';
 import AttributeRadarChart, { type RadarDataPoint } from './AttributeRadarChart';
@@ -87,15 +88,29 @@ function parseHalfLifeHours(hl: string | null | undefined): number {
 
 // ─── POPULAR COMPARISONS ────────────────────────────────────────────────────
 const POPULAR_COMPARISONS = [
-  { label: 'GH Stack Classics', slugs: ['cjc-1295-without-dac', 'ipamorelin'], icon: '💉' },
-  { label: 'Healing Duo', slugs: ['bpc-157', 'tb-500'], icon: '🔧' },
-  { label: 'Longevity Stack', slugs: ['epitalon', 'ghk-cu'], icon: '⏳' },
-  { label: 'Weight Comparison', slugs: ['semaglutide', 'tirzepatide'], icon: '⚖️' },
-  { label: 'Collagen & Skin', slugs: ['ghk-cu', 'bpc-157'], icon: '✨' },
-  { label: 'Sleep & Recovery', slugs: ['epitalon', 'dsip'], icon: '😴' },
-  { label: 'Sexual Health', slugs: ['pt-141', 'kisspeptin-10'], icon: '❤️' },
-  { label: 'Cognitive Boost', slugs: ['dihexa', 'semax'], icon: '🧠' },
+  { label: 'GH Stack Classics', slugs: ['cjc-1295-without-dac', 'ipamorelin'], icon: 'syringe' },
+  { label: 'Healing Duo', slugs: ['bpc-157', 'tb-500'], icon: 'wrench' },
+  { label: 'Longevity Stack', slugs: ['epitalon', 'ghk-cu'], icon: 'hourglass' },
+  { label: 'Weight Comparison', slugs: ['semaglutide', 'tirzepatide'], icon: 'scale' },
+  { label: 'Collagen & Skin', slugs: ['ghk-cu', 'bpc-157'], icon: 'sparkles' },
+  { label: 'Sleep & Recovery', slugs: ['epitalon', 'dsip'], icon: 'moon' },
+  { label: 'Sexual Health', slugs: ['pt-141', 'kisspeptin-10'], icon: 'heart' },
+  { label: 'Cognitive Boost', slugs: ['dihexa', 'semax'], icon: 'brain' },
 ];
+
+function renderPopularIcon(name: string, size = 16) {
+  switch (name) {
+    case 'syringe': return <Syringe size={size} />;
+    case 'wrench': return <Wrench size={size} />;
+    case 'hourglass': return <Hourglass size={size} />;
+    case 'scale': return <Scale size={size} />;
+    case 'sparkles': return <Sparkles size={size} />;
+    case 'moon': return <Moon size={size} />;
+    case 'heart': return <Heart size={size} />;
+    case 'brain': return <Brain size={size} />;
+    default: return null;
+  }
+}
 
 // ─── EXPANDED SYNERGY ENGINE (25 pairs) ─────────────────────────────────────
 const KNOWN_SYNERGIES = [
@@ -489,14 +504,14 @@ const ROWS: Row[] = [
     kind: 'data', label: 'Pro-Angiogenic',
     getValue: c => c.is_pro_angiogenic ? 'Yes' : 'No',
     render: c => c.is_pro_angiogenic
-      ? <span style={{ color: '#F6AD55', fontWeight: 700, fontSize: '0.78rem' }}>⚠️ Yes — promotes new vessel growth</span>
-      : <span style={{ color: 'rgba(104,211,145,0.7)', fontSize: '0.78rem' }}>✓ No</span>
+      ? <span style={{ color: '#F6AD55', fontWeight: 700, fontSize: '0.78rem', display: 'inline-flex', alignItems: 'center', gap: '4px' }}><AlertTriangle size={12} /> Yes — Promotes New Vessel Growth</span>
+      : <span style={{ color: 'rgba(104,211,145,0.7)', fontSize: '0.78rem', display: 'inline-flex', alignItems: 'center', gap: '4px' }}><Check size={12} /> No</span>
   },
   {
     kind: 'data', label: 'GLP-1 Class',
     getValue: c => c.is_glp1 ? 'Yes' : 'No',
     render: c => c.is_glp1
-      ? <span style={{ color: '#9F7AEA', fontWeight: 700, fontSize: '0.78rem' }}>✓ GLP-1 / Incretin agent</span>
+      ? <span style={{ color: '#9F7AEA', fontWeight: 700, fontSize: '0.78rem', display: 'inline-flex', alignItems: 'center', gap: '4px' }}><Check size={12} /> GLP-1 / Incretin Agent</span>
       : <span style={{ color: 'rgba(168,180,192,0.4)', fontSize: '0.78rem' }}>No</span>
   },
   {
@@ -615,7 +630,7 @@ const ROWS: Row[] = [
   { kind: 'data', label: 'Form', getValue: c => c.handling?.form, render: c => txt(c.handling?.form) },
   { kind: 'data', label: 'Diluent', glossaryTerm: 'reconstitution', getValue: c => c.handling?.diluent, render: c => txt(c.handling?.diluent) },
   { kind: 'data', label: 'Storage Temp', getValue: c => c.handling?.storage_temp, render: c => txt(c.handling?.storage_temp) },
-  { kind: 'data', label: 'Light Sensitive', getValue: c => c.handling?.light_sensitive, render: c => c.handling?.light_sensitive == null ? NL : c.handling.light_sensitive ? <span style={{ color: '#F6AD55' }}>⚠️ Yes</span> : <span style={{ color: '#68D391' }}>✓ No</span> },
+  { kind: 'data', label: 'Light Sensitive', getValue: c => c.handling?.light_sensitive, render: c => c.handling?.light_sensitive == null ? NL : c.handling.light_sensitive ? <span style={{ color: '#F6AD55', display: 'inline-flex', alignItems: 'center', gap: '4px' }}><AlertTriangle size={12} /> Yes</span> : <span style={{ color: '#68D391', display: 'inline-flex', alignItems: 'center', gap: '4px' }}><Check size={12} /> No</span> },
   { kind: 'data', label: 'Freeze / Thaw', getValue: c => c.handling?.freeze_thaw, render: c => txt(c.handling?.freeze_thaw) },
   { kind: 'data', label: 'Handling Notes', getValue: c => c.handling?.notes, render: c => txt(c.handling?.notes) },
   {
@@ -876,7 +891,7 @@ function MechanismTab({ selected }: { selected: Compound[] }) {
                       {c.sources.slice(0, 4).map((src, si) => (
                         <a key={si} href={src.startsWith('http') ? src : undefined} target="_blank" rel="noopener noreferrer"
                           style={{ fontSize: '0.72rem', color: color, opacity: 0.8, wordBreak: 'break-all', lineHeight: 1.3, textDecoration: src.startsWith('http') ? 'underline' : 'none' }}>
-                          {src.startsWith('http') ? `📄 Source ${si + 1}` : src}
+                          {src.startsWith('http') ? <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}><BookOpen size={11} /> Source {si + 1}</span> : src}
                         </a>
                       ))}
                     </div>
@@ -936,7 +951,7 @@ function ProtocolTab({ selected }: { selected: Compound[] }) {
                     <div style={{ color: 'rgba(255,255,255,0.4)' }}>Storage</div>
                     <div style={{ color: 'rgba(255,255,255,0.8)' }}>{c.handling?.storage_temp ?? NL}</div>
                     <div style={{ color: 'rgba(255,255,255,0.4)' }}>Light</div>
-                    <div style={{ color: 'rgba(255,255,255,0.8)' }}>{c.handling?.light_sensitive == null ? NL : c.handling.light_sensitive ? '⚠️ Sensitive' : '✓ Safe'}</div>
+                    <div style={{ color: 'rgba(255,255,255,0.8)' }}>{c.handling?.light_sensitive == null ? NL : c.handling.light_sensitive ? <span style={{ color: '#F6AD55', display: 'inline-flex', alignItems: 'center', gap: '4px' }}><AlertTriangle size={11} /> Sensitive</span> : <span style={{ color: '#68D391', display: 'inline-flex', alignItems: 'center', gap: '4px' }}><Check size={11} /> Safe</span>}</div>
                     {shelf && <>
                       <div style={{ color: 'rgba(255,255,255,0.4)' }}>Shelf Life</div>
                       <div style={{ color: shelf >= 28 ? '#68D391' : shelf < 14 ? '#FC8181' : '#F6AD55', fontWeight: 700 }}>{shelf} days</div>
@@ -1134,12 +1149,12 @@ export default function CompareTool({ compounds, initialSlugs = [] }: { compound
   }, [selected]);
 
   const tabs = [
-    { id: 'matrix' as const, label: '📊 Matrix', showAlways: false },
-    { id: 'proscons' as const, label: '⚖️ Pros & Cons', showAlways: false },
-    { id: 'brief' as const, label: '🧠 Analyst Brief', showAlways: false },
-    { id: 'mechanism' as const, label: '🔬 Mechanism', showAlways: false },
-    { id: 'protocol' as const, label: '📋 Protocol', showAlways: false },
-    { id: 'recommend' as const, label: '🎯 Verdict', showAlways: false },
+    { id: 'matrix' as const, label: 'Matrix', showAlways: false },
+    { id: 'proscons' as const, label: 'Pros & Cons', showAlways: false },
+    { id: 'brief' as const, label: 'Analyst Brief', showAlways: false },
+    { id: 'mechanism' as const, label: 'Mechanism', showAlways: false },
+    { id: 'protocol' as const, label: 'Protocol', showAlways: false },
+    { id: 'recommend' as const, label: 'Verdict', showAlways: false },
   ];
 
   return (
@@ -1214,7 +1229,7 @@ export default function CompareTool({ compounds, initialSlugs = [] }: { compound
       {/* Synergy / Conflict Alerts */}
       {[...activeSynergies, ...dynamicAlerts].map((syn, idx) => (
         <div key={idx} style={{ background: syn.type === 'conflict' ? 'rgba(229,62,62,0.1)' : syn.type === 'caution' ? 'rgba(246,173,85,0.1)' : 'rgba(104,211,145,0.1)', border: `1px solid ${syn.type === 'conflict' ? 'rgba(229,62,62,0.3)' : syn.type === 'caution' ? 'rgba(246,173,85,0.3)' : 'rgba(104,211,145,0.3)'}`, color: syn.type === 'conflict' ? '#FC8181' : syn.type === 'caution' ? '#F6AD55' : '#68D391', padding: '11px 16px', borderRadius: 8, marginBottom: 10, fontSize: '0.88rem', fontWeight: 600, display: 'flex', alignItems: 'flex-start', gap: 10 }}>
-          {syn.type === 'conflict' ? <AlertTriangle size={15} style={{ flexShrink: 0, marginTop: 1 }} /> : syn.type === 'caution' ? <AlertTriangle size={15} style={{ flexShrink: 0, marginTop: 1 }} /> : <span style={{ fontSize: '0.9rem' }}>🔥</span>}
+          {syn.type === 'conflict' ? <AlertTriangle size={15} style={{ flexShrink: 0, marginTop: 1 }} /> : syn.type === 'caution' ? <AlertTriangle size={15} style={{ flexShrink: 0, marginTop: 1 }} /> : <Sparkles size={15} style={{ flexShrink: 0, marginTop: 1 }} />}
           <span><strong>{syn.type === 'conflict' ? 'Conflict' : syn.type === 'caution' ? 'Caution' : `Synergy — ${'category' in syn ? syn.category : ''}`}:</strong> {syn.message}</span>
         </div>
       ))}
@@ -1237,7 +1252,7 @@ export default function CompareTool({ compounds, initialSlugs = [] }: { compound
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 8 }}>
               {POPULAR_COMPARISONS.filter(p => p.slugs.every(s => compounds.some(c => c.slug === s))).map(p => (
                 <button key={p.label} type="button" className="popular-card" onClick={() => { setSelectedSlugs(p.slugs.slice(0, MAX_COLUMNS)); }}>
-                  <span style={{ fontSize: '1.1rem' }}>{p.icon}</span>
+                  <span style={{ fontSize: '1.1rem', display: 'inline-flex', alignItems: 'center' }}>{renderPopularIcon(p.icon)}</span>
                   <span style={{ fontSize: '0.82rem', fontWeight: 700, color: 'rgba(255,255,255,0.8)' }}>{p.label}</span>
                   <span style={{ fontSize: '0.68rem', color: 'rgba(168,180,192,0.5)' }}>{p.slugs.map(s => bySlug.get(s)?.display_name ?? s).join(' vs. ')}</span>
                 </button>
@@ -1466,11 +1481,11 @@ export default function CompareTool({ compounds, initialSlugs = [] }: { compound
                                 {isMobile && origIdx !== 0 && selected.length > 2 && <button onClick={() => setMobileViewIndex(p => p < selected.length - 1 ? p + 1 : 1)} style={{ background: 'none', border: 'none', color: 'rgba(168,180,192,0.6)', cursor: 'pointer', padding: 0 }}><ChevronRight size={16} /></button>}
                               </div>
                               <div style={{ display: 'flex', gap: 3, marginTop: 4, flexWrap: 'wrap' }}>
-                                {c.evidence_tier === 'approved_drug' && <span style={{ background: 'rgba(104,211,145,0.15)', color: '#68D391', padding: '1px 5px', borderRadius: 3, fontSize: '0.62rem', fontWeight: 800 }}>FDA✓</span>}
-                                {(c.wada_status === 'prohibited' || c.wada_status === 'prohibited_males') && <span style={{ background: 'rgba(229,62,62,0.15)', color: '#FC8181', padding: '1px 5px', borderRadius: 3, fontSize: '0.62rem', fontWeight: 800 }}>WADA🚫</span>}
-                                {c.is_stack && <span style={{ background: 'rgba(159,122,234,0.15)', color: '#9F7AEA', padding: '1px 5px', borderRadius: 3, fontSize: '0.62rem', fontWeight: 800 }}>STACK</span>}
-                                {c.is_temp_sensitive && <span style={{ background: 'rgba(246,173,85,0.15)', color: '#F6AD55', padding: '1px 5px', borderRadius: 3, fontSize: '0.62rem', fontWeight: 800 }}>COLD🧊</span>}
-                                {c.is_pro_angiogenic && <span style={{ background: 'rgba(246,173,85,0.12)', color: '#F6AD55', padding: '1px 5px', borderRadius: 3, fontSize: '0.62rem', fontWeight: 800 }}>ANGIO⚠</span>}
+                                {c.evidence_tier === 'approved_drug' && <span style={{ background: 'rgba(104,211,145,0.15)', color: '#68D391', padding: '1px 5px', borderRadius: 3, fontSize: '0.62rem', fontWeight: 800, display: 'inline-flex', alignItems: 'center', gap: '2px' }}><Check size={9} /> FDA</span>}
+                                {(c.wada_status === 'prohibited' || c.wada_status === 'prohibited_males') && <span style={{ background: 'rgba(229,62,62,0.15)', color: '#FC8181', padding: '1px 5px', borderRadius: 3, fontSize: '0.62rem', fontWeight: 800, display: 'inline-flex', alignItems: 'center', gap: '2px' }}><X size={9} /> WADA Banned</span>}
+                                {c.is_stack && <span style={{ background: 'rgba(159,122,234,0.15)', color: '#9F7AEA', padding: '1px 5px', borderRadius: 3, fontSize: '0.62rem', fontWeight: 800 }}>Stack</span>}
+                                {c.is_temp_sensitive && <span style={{ background: 'rgba(246,173,85,0.15)', color: '#F6AD55', padding: '1px 5px', borderRadius: 3, fontSize: '0.62rem', fontWeight: 800 }}>Cold Chain</span>}
+                                {c.is_pro_angiogenic && <span style={{ background: 'rgba(246,173,85,0.12)', color: '#F6AD55', padding: '1px 5px', borderRadius: 3, fontSize: '0.62rem', fontWeight: 800 }}>Angio Alert</span>}
                                 {c.is_glp1 && <span style={{ background: 'rgba(159,122,234,0.12)', color: '#9F7AEA', padding: '1px 5px', borderRadius: 3, fontSize: '0.62rem', fontWeight: 800 }}>GLP-1</span>}
                                 {c.year_discovered && <span style={{ background: 'rgba(168,180,192,0.08)', color: 'rgba(168,180,192,0.5)', padding: '1px 5px', borderRadius: 3, fontSize: '0.62rem', fontWeight: 600 }}>{c.year_discovered}</span>}
                                 <span style={{ background: `${color}15`, color, padding: '1px 5px', borderRadius: 3, fontSize: '0.62rem', fontWeight: 800 }}>{scores[origIdx].letter}</span>
@@ -1544,7 +1559,7 @@ export default function CompareTool({ compounds, initialSlugs = [] }: { compound
                           const isWinner = bestIndices.includes(idx);
                           return (
                             <td key={c.slug} style={{ ...valueCellStyle, position: 'relative' }}>
-                              {isWinner && <div style={{ position: 'absolute', top: 4, right: 4, fontSize: '0.6rem', background: '#00C4BC', color: '#04221F', padding: '1px 5px', borderRadius: 3, fontWeight: 800 }}>TOP 👑</div>}
+                              {isWinner && <div style={{ position: 'absolute', top: 4, right: 4, fontSize: '0.6rem', background: '#00C4BC', color: '#04221F', padding: '1px 5px', borderRadius: 3, fontWeight: 800, display: 'inline-flex', alignItems: 'center', gap: '2px' }}><Trophy size={9} /> Top Pick</div>}
                               <div style={isWinner ? { borderLeft: '2px solid #00C4BC', paddingLeft: 7, marginLeft: -8 } : {}}>
                                 {row.render(c, maxHalfLife)}
                               </div>

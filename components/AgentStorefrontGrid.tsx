@@ -4,7 +4,7 @@ import React, { useState, useMemo, useCallback, useEffect, useDeferredValue, use
 import { createPortal } from 'react-dom';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { motion, Variants, AnimatePresence } from 'framer-motion';
-import { Star, X, Heart, FileText, Search, SlidersHorizontal, RotateCcw, Check, ShoppingCart, ArrowRight, Sparkles } from 'lucide-react';
+import { Star, X, Heart, FileText, Search, SlidersHorizontal, RotateCcw, Check, ShoppingCart, ArrowRight, Sparkles, Flame, Zap, Brain, Shield, Hourglass, Moon, Activity, Syringe } from 'lucide-react';
 import RecommendationStrip, { type RecommendationItem } from './RecommendationStrip';
 import ProductMonograph from './research/ProductMonograph';
 import IframeLink from '@/components/ui/IframeLink';
@@ -1580,7 +1580,7 @@ export default function AgentStorefrontGrid({
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M19 12H5M12 19l-7-7 7-7"/>
               </svg>
-              Back to Store Map
+              Back To Store Map
             </button>
           </div>
       {filterArea && (
@@ -1657,19 +1657,19 @@ export default function AgentStorefrontGrid({
           marginBottom: '4px',
         }}>
           {([
-            { label: '🔥 Fat Loss',     query: 'fatloss lipolysis visceral' },
-            { label: '💪 Muscle & GH',  query: 'muscle growthhormone hypertrophy anabolic' },
-            { label: '🧠 Brain & Neuro',query: 'cognitive nootropic brain bdnf neuroprotect' },
-            { label: '🩹 Healing',      query: 'healing repair tendon wound' },
-            { label: '🌿 Longevity',    query: 'longevity antiaging telomere senolytic' },
-            { label: '💤 Sleep',        query: 'sleep insomnia circadian rem' },
-            { label: '🦠 Immune',       query: 'immune immunity antimicrobial tcell' },
-            { label: '🫀 Gut Health',   query: 'gut gastrointestinal leakygut guthealth' },
-            { label: '💉 GLP-1',        query: 'glp1 semaglutide tirzepatide weightloss' },
-            { label: '🔬 Mitochondria', query: 'mitochondrial nad+ ampk atp' },
-            { label: '❤️ Sexual Health',query: 'sexual libido erectile fertility' },
-            { label: '✨ Skin & Hair',  query: 'skin collagen hairloss antiaging' },
-          ] as { label: string; query: string }[]).map(({ label, query }) => (
+            { label: 'Fat Loss',     query: 'fatloss lipolysis visceral', icon: Flame },
+            { label: 'Muscle & GH',  query: 'muscle growthhormone hypertrophy anabolic', icon: Zap },
+            { label: 'Brain & Neuro',query: 'cognitive nootropic brain bdnf neuroprotect', icon: Brain },
+            { label: 'Healing',      query: 'healing repair tendon wound', icon: Shield },
+            { label: 'Longevity',    query: 'longevity antiaging telomere senolytic', icon: Hourglass },
+            { label: 'Sleep',        query: 'sleep insomnia circadian rem', icon: Moon },
+            { label: 'Immune',       query: 'immune immunity antimicrobial tcell', icon: Shield },
+            { label: 'Gut Health',   query: 'gut gastrointestinal leakygut guthealth', icon: Activity },
+            { label: 'GLP-1',        query: 'glp1 semaglutide tirzepatide weightloss', icon: Syringe },
+            { label: 'Mitochondria', query: 'mitochondrial nad+ ampk atp', icon: Zap },
+            { label: 'Sexual Health',query: 'sexual libido erectile fertility', icon: Heart },
+            { label: 'Skin & Hair',  query: 'skin collagen hairloss antiaging', icon: Sparkles },
+          ] as { label: string; query: string; icon: any }[]).map(({ label, query, icon: Icon }) => (
             <button
               key={label}
               type="button"
@@ -1700,6 +1700,7 @@ export default function AgentStorefrontGrid({
                 (e.currentTarget as HTMLButtonElement).style.color = 'rgba(255,255,255,0.82)';
               }}
             >
+              <Icon size={11} style={{ marginRight: 5, display: 'inline-block', verticalAlign: 'middle' }} />
               {label}
             </button>
           ))}
@@ -1814,7 +1815,7 @@ export default function AgentStorefrontGrid({
           <div style={{ textAlign: 'center', padding: 'var(--space-8) var(--space-6)' }}>
             {deferredSearch.trim() ? (
               <>
-                <div style={{ fontSize: '2.2rem', marginBottom: '12px' }}>🔍</div>
+                <Search size={32} style={{ color: 'var(--grey-400)', marginBottom: 12 }} />
                 <h3 style={{ color: 'var(--white)', fontSize: '1.1rem', marginBottom: '8px' }}>
                   No results for &ldquo;{deferredSearch.trim()}&rdquo;
                 </h3>
@@ -1822,16 +1823,16 @@ export default function AgentStorefrontGrid({
                   Try one of these common research goals, or check your spelling:
                 </p>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', justifyContent: 'center', marginBottom: '24px' }}>
-                  {[
-                    { label: '🔥 Fat Loss', q: 'fatloss lipolysis visceral' },
-                    { label: '💪 Muscle Growth', q: 'muscle anabolic growthhormone hypertrophy' },
-                    { label: '🧠 Brain / Nootropic', q: 'cognitive nootropic brain neuroprotect' },
-                    { label: '🩹 Tissue Healing', q: 'healing repair tendon wound' },
-                    { label: '🌿 Anti-Aging', q: 'antiaging longevity telomere senolytic' },
-                    { label: '💉 GLP-1 / Weight', q: 'glp1 semaglutide weightloss' },
-                    { label: '🦠 Immune Support', q: 'immune antimicrobial tcell thymosin' },
-                    { label: '❤️ Sexual Health', q: 'sexual libido erectile fertility' },
-                  ].map(({ label, q }) => (
+                  {([
+                    { label: 'Fat Loss', q: 'fatloss lipolysis visceral', icon: Flame },
+                    { label: 'Muscle Growth', q: 'muscle anabolic growthhormone hypertrophy', icon: Zap },
+                    { label: 'Brain / Nootropic', q: 'cognitive nootropic brain neuroprotect', icon: Brain },
+                    { label: 'Tissue Healing', q: 'healing repair tendon wound', icon: Shield },
+                    { label: 'Anti-Aging', q: 'antiaging longevity telomere senolytic', icon: Hourglass },
+                    { label: 'GLP-1 / Weight', q: 'glp1 semaglutide weightloss', icon: Syringe },
+                    { label: 'Immune Support', q: 'immune antimicrobial tcell thymosin', icon: Shield },
+                    { label: 'Sexual Health', q: 'sexual libido erectile fertility', icon: Heart },
+                  ] as { label: string; q: string; icon: any }[]).map(({ label, q, icon: Icon }) => (
                     <button
                       key={label}
                       type="button"
@@ -1846,6 +1847,9 @@ export default function AgentStorefrontGrid({
                         padding: '6px 14px',
                         cursor: 'pointer',
                         transition: 'all 0.15s',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 6
                       }}
                       onMouseEnter={e => {
                         (e.currentTarget as HTMLButtonElement).style.background = 'rgba(120,200,255,0.18)';
@@ -1856,6 +1860,7 @@ export default function AgentStorefrontGrid({
                         (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(255,255,255,0.18)';
                       }}
                     >
+                      <Icon size={12} />
                       {label}
                     </button>
                   ))}
@@ -1941,7 +1946,7 @@ export default function AgentStorefrontGrid({
                     boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
                     pointerEvents: 'none'
                   }}>
-                    🎯 Matched: {toTitleCase(group._search.reason)}
+                    <Sparkles size={11} style={{ marginRight: 4 }} /> Matched: {toTitleCase(group._search.reason)}
                   </div>
                 )}
               <div style={{

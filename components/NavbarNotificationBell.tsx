@@ -5,6 +5,7 @@ import { createPortal } from 'react-dom';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 import { toast } from 'sonner';
+import { Package, CheckCircle, Truck, Gift, XCircle, DollarSign, User, MessageSquare, FileText, Clock, ShoppingCart, Link2, Bell, X, ArrowRight } from 'lucide-react';
 
 /* ─── Types ────────────────────────────────────────────────────────────────── */
 export type NotifType =
@@ -24,22 +25,26 @@ interface NotifItem {
 
 /* ─── Icon map by type ─────────────────────────────────────────────────────── */
 function NotifIcon({ type }: { type: string }) {
-  const icons: Record<string, string> = {
-    order_placed:    '📦',
-    order_approved:  '✅',
-    order_shipped:   '🚚',
-    order_delivered: '🎉',
-    order_cancelled: '❌',
-    commission_earned: '💰',
-    new_researcher:  '👤',
-    new_message:     '💬',
-    invoice:         '📄',
-    payment_reminder: '⏰',
-    cart_reminder:   '🛒',
-    referral:        '🔗',
-    system:          '🔔',
+  const icons: Record<string, React.ReactNode> = {
+    order_placed:      <Package size={14} style={{ color: 'var(--teal)' }} />,
+    order_approved:    <CheckCircle size={14} style={{ color: '#48BB78' }} />,
+    order_shipped:     <Truck size={14} style={{ color: '#63B3ED' }} />,
+    order_delivered:   <Gift size={14} style={{ color: '#9F7AEA' }} />,
+    order_cancelled:   <XCircle size={14} style={{ color: '#F56565' }} />,
+    commission_earned: <DollarSign size={14} style={{ color: '#48BB78' }} />,
+    new_researcher:    <User size={14} style={{ color: '#A0AEC0' }} />,
+    new_message:       <MessageSquare size={14} style={{ color: 'var(--teal)' }} />,
+    invoice:           <FileText size={14} style={{ color: '#F6AD55' }} />,
+    payment_reminder:  <Clock size={14} style={{ color: '#FC8181' }} />,
+    cart_reminder:     <ShoppingCart size={14} style={{ color: '#F6AD55' }} />,
+    referral:          <Link2 size={14} style={{ color: '#63B3ED' }} />,
+    system:            <Bell size={14} style={{ color: '#A0AEC0' }} />,
   };
-  return <span style={{ fontSize: '1.1rem', flexShrink: 0 }}>{icons[type] ?? '🔔'}</span>;
+  return (
+    <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, width: 26, height: 26, borderRadius: '50%', background: 'rgba(255,255,255,0.05)' }}>
+      {icons[type] ?? <Bell size={14} style={{ color: '#A0AEC0' }} />}
+    </span>
+  );
 }
 
 /* ─── Time-ago helper ──────────────────────────────────────────────────────── */
@@ -387,7 +392,7 @@ export default function NavbarNotificationBell() {
                 }}
                 aria-label="Close notifications"
               >
-                ✕
+                <X size={15} />
               </button>
             </div>
           </div>
@@ -396,11 +401,11 @@ export default function NavbarNotificationBell() {
           <div style={{ flex: 1, overflowY: 'auto' }}>
             {loading && items.length === 0 ? (
               <div style={{ padding: '24px 16px', color: 'rgba(192,184,168,0.5)', textAlign: 'center', fontSize: '0.82rem' }}>
-                Loading…
+                Loading...
               </div>
             ) : items.length === 0 ? (
               <div style={{ padding: '32px 16px', textAlign: 'center' }}>
-                <div style={{ fontSize: '2rem', marginBottom: 8 }}>🔔</div>
+                <div style={{ display: 'inline-flex', marginBottom: 12, color: 'rgba(255,255,255,0.15)' }}><Bell size={36} /></div>
                 <div style={{ color: 'rgba(192,184,168,0.5)', fontSize: '0.82rem' }}>
                   No notifications yet
                 </div>
@@ -500,7 +505,9 @@ export default function NavbarNotificationBell() {
                 fontWeight: 600,
               }}
             >
-              View all notifications →
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                View All Notifications <ArrowRight size={13} />
+              </span>
             </Link>
             <Link
               href="/messenger"

@@ -183,7 +183,7 @@ function VisualSyringe({ ml, size }: { ml: number; size: 0.3 | 0.5 | 1.0 }) {
       
       {ml > size ? (
         <div style={{ color: '#FF6B6B', fontSize: 13, textAlign: 'center', padding: '8px 0', border: '1px dashed rgba(255,107,107,0.3)', borderRadius: 6, background: 'rgba(255,107,107,0.05)' }}>
-          ⚠ Dose volume ({ml.toFixed(3)} mL) exceeds syringe capacity ({size} mL). Select a larger syringe or increase reconstitution diluent volume.
+          Warning: Dose volume ({ml.toFixed(3)} mL) exceeds syringe capacity ({size} mL). Select a larger syringe or increase reconstitution diluent volume.
         </div>
       ) : (
         <div style={{ display: 'flex', alignItems: 'center', height: 60, paddingLeft: 40, position: 'relative' }}>
@@ -318,8 +318,8 @@ function Reconstitution({ compounds }: { compounds: CompoundListItem[] }) {
         </div>
 
         {isIgf && (
-          <div style={{ margin: '12px 0', fontSize: 13, color: '#F6AD55', background: 'rgba(246,173,85,0.1)', border: '1px solid rgba(246,173,85,0.3)', borderRadius: 8, padding: '10px 14px' }}>
-            ⚠ <strong>Stability Warning:</strong> IGF-1 family peptides precipitate quickly in neutral pH (bac-water). Reconstituting in 0.6% Acetic Acid maintains solubility and shelf-stability.
+          <div style={{ color: '#F6AD55', fontSize: 13, padding: '8px 12px', border: '1px solid rgba(246,173,85,0.3)', borderRadius: 6, background: 'rgba(246,173,85,0.05)', marginBottom: 12 }}>
+            Stability Warning: IGF-1 family peptides precipitate quickly in neutral pH (bac-water). Reconstituting in 0.6% Acetic Acid maintains solubility and shelf-stability.
           </div>
         )}
 
@@ -904,11 +904,11 @@ function CostSection() {
               <div style={{ ...resultStyle, background: 'rgba(104,211,145,0.05)', border: '1px solid #68D391', color: '#E2E8F0', fontSize: 14 }}>
                 {outA.dollarsPerDose < outB.dollarsPerDose ? (
                   <span>
-                    🎉 <strong>Option A</strong> is more cost-effective. It saves you <strong style={{ color: '#68D391' }}>${(outB.dollarsPerDose - outA.dollarsPerDose).toFixed(2)}</strong> per dose (<strong style={{ color: '#68D391' }}>{((1 - outA.dollarsPerDose / outB.dollarsPerDose) * 100).toFixed(1)}%</strong> savings).
+                    Success: <strong>Option A</strong> is more cost-effective. It saves you <strong style={{ color: '#68D391' }}>${(outB.dollarsPerDose - outA.dollarsPerDose).toFixed(2)}</strong> per dose (<strong style={{ color: '#68D391' }}>{((1 - outA.dollarsPerDose / outB.dollarsPerDose) * 100).toFixed(1)}%</strong> savings).
                   </span>
                 ) : outB.dollarsPerDose < outA.dollarsPerDose ? (
                   <span>
-                    🎉 <strong>Option B</strong> is more cost-effective. It saves you <strong style={{ color: '#68D391' }}>${(outA.dollarsPerDose - outB.dollarsPerDose).toFixed(2)}</strong> per dose (<strong style={{ color: '#68D391' }}>{((1 - outB.dollarsPerDose / outA.dollarsPerDose) * 100).toFixed(1)}%</strong> savings).
+                    Success: <strong>Option B</strong> is more cost-effective. It saves you <strong style={{ color: '#68D391' }}>${(outA.dollarsPerDose - outB.dollarsPerDose).toFixed(2)}</strong> per dose (<strong style={{ color: '#68D391' }}>{((1 - outB.dollarsPerDose / outA.dollarsPerDose) * 100).toFixed(1)}%</strong> savings).
                   </span>
                 ) : (
                   <span>Both options yield identical cost-per-dose metrics.</span>
@@ -963,9 +963,9 @@ function PoolingSection() {
           </label>
         </div>
 
-        {out?.solubilityWarning && (
-          <div style={{ margin: '12px 0', fontSize: 13, color: '#FF6B6B', background: 'rgba(255,107,107,0.1)', border: '1px solid rgba(255,107,107,0.3)', borderRadius: 8, padding: '10px 14px' }}>
-            ⚠ <strong>Aqueous Precipitation Risk:</strong> Calculated concentration is <strong>{out.concentrationMgPerMl.toFixed(1)} mg/mL</strong>. Concentrations exceeding 50 mg/mL are highly prone to peptide aggregation or gelation in standard aqueous buffers.
+        {out && out.concentrationMgPerMl > 50 && (
+          <div style={{ color: '#F6AD55', fontSize: 13, padding: '8px 12px', border: '1px solid rgba(246,173,85,0.3)', borderRadius: 6, background: 'rgba(246,173,85,0.05)', marginBottom: 12 }}>
+            Aqueous Precipitation Risk: Calculated concentration is <strong>{out.concentrationMgPerMl.toFixed(1)} mg/mL</strong>. Concentrations exceeding 50 mg/mL are highly prone to peptide aggregation or gelation in standard aqueous buffers.
           </div>
         )}
 
@@ -1038,7 +1038,7 @@ function HplcRtSection() {
             <StyledInput type="text" value={seq} maxLength={500} onChange={(e) => setSeq(e.target.value)} placeholder="e.g. PLG" />
             {unknownChars.length > 0 && (
               <div style={{ marginTop: 6, fontSize: 12, color: '#F6AD55', background: 'rgba(246,173,85,0.10)', border: '1px solid rgba(246,173,85,0.30)', borderRadius: 6, padding: '5px 10px' }}>
-                ⚠ Non-standard characters detected: <strong>{unknownChars.join(', ')}</strong>. Standard codes: A C D E F G H I K L M N P Q R S T V W Y.
+                Warning: Non-standard characters detected: <strong>{unknownChars.join(', ')}</strong>. Standard codes: A C D E F G H I K L M N P Q R S T V W Y.
               </div>
             )}
           </label>
@@ -1145,7 +1145,7 @@ function MassSpecSection() {
             <StyledInput type="text" value={seq} maxLength={500} onChange={(e) => setSeq(e.target.value)} placeholder="e.g. GLP1 sequence..." />
             {unknownChars.length > 0 && (
               <div style={{ marginTop: 6, fontSize: 12, color: '#F6AD55', background: 'rgba(246,173,85,0.10)', border: '1px solid rgba(246,173,85,0.30)', borderRadius: 6, padding: '5px 10px' }}>
-                ⚠ Non-standard characters detected: <strong>{unknownChars.join(', ')}</strong>. Residues estimated at ~110 Da average. Standard codes only: A C D E F G H I K L M N P Q R S T V W Y.
+                Warning: Non-standard characters detected: <strong>{unknownChars.join(', ')}</strong>. Residues estimated at ~110 Da average. Standard codes only: A C D E F G H I K L M N P Q R S T V W Y.
               </div>
             )}
           </label>
@@ -1289,7 +1289,7 @@ function SppsSection() {
             <StyledInput type="text" value={seq} maxLength={500} onChange={(e) => setSeq(e.target.value)} placeholder="e.g. FLG" />
             {sppsUnknownChars.length > 0 && (
               <div style={{ marginTop: 6, fontSize: 12, color: '#F6AD55', background: 'rgba(246,173,85,0.10)', border: '1px solid rgba(246,173,85,0.30)', borderRadius: 6, padding: '5px 10px' }}>
-                ⚠ Non-standard characters: <strong>{sppsUnknownChars.join(', ')}</strong>. Codes ignored in residue yield projections.
+                Warning: Non-standard characters: <strong>{sppsUnknownChars.join(', ')}</strong>. Codes ignored in residue yield projections.
               </div>
             )}
           </label>
@@ -1422,7 +1422,7 @@ function SolubilitySection() {
           why="Heuristic calculation of aqueous solubility. Input the sequence for automatic residue diagnostics (GRAVY, Cysteine ratios, and hydrophobic aggregations)."
         />
         <div style={{ marginBottom: 12, fontSize: 12, color: '#A8B4C0' }}>
-          💡 Enter sequence to auto-calculate sequence length and GRAVY score.
+          Enter Sequence To Auto-Calculate Sequence Length And GRAVY Score.
         </div>
         <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
           <button 
@@ -1475,7 +1475,7 @@ function SolubilitySection() {
         {out?.warnings && out.warnings.length > 0 && (
           <div style={{ margin: '12px 0', fontSize: 13, color: '#F6AD55', background: 'rgba(246,173,85,0.1)', border: '1px solid rgba(246,173,85,0.3)', borderRadius: 8, padding: '10px 14px' }}>
             {out.warnings.map((w, idx) => (
-              <div key={idx} style={{ marginBottom: 4 }}>⚠ {w}</div>
+              <div key={idx} style={{ marginBottom: 4 }}>Warning: {w}</div>
             ))}
           </div>
         )}

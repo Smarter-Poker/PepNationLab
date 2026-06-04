@@ -30,7 +30,7 @@ import { useRouter } from 'next/navigation';
 import { ProtocolScheduler } from '../research/ProtocolScheduler';
 import { motion, AnimatePresence } from 'framer-motion';
 import { RESEARCH_AREAS, researchAreaLabel } from '../../lib/compounds';
-import { ShoppingCart, Plus, Minus, X, Star, AlertTriangle, Scale, Target, Activity, Sparkles, Search, ArrowRight, Compass } from 'lucide-react';
+import { ShoppingCart, Plus, Minus, X, Star, AlertTriangle, Scale, Target, Activity, Sparkles, Search, ArrowRight, Compass, Check } from 'lucide-react';
 import type { Compound } from '@/lib/compounds';
 import AutocompleteDropdown, { type Suggestion } from '../research/AutocompleteDropdown';
 
@@ -369,7 +369,11 @@ function MatchResultsDrawer({
                     whiteSpace: 'nowrap', transition: 'all 0.2s ease',
                   }}
                 >
-                  {filterOralOnly ? '✓ Oral Only' : 'Oral Only'}
+                  {filterOralOnly ? (
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                      <Check size={12} /> Oral Only
+                    </span>
+                  ) : 'Oral Only'}
                 </button>
                 <button
                   type="button"
@@ -382,7 +386,11 @@ function MatchResultsDrawer({
                     whiteSpace: 'nowrap', transition: 'all 0.2s ease',
                   }}
                 >
-                  {filterHumanOnly ? '✓ Human Data Only' : 'Human Data Only'}
+                  {filterHumanOnly ? (
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                      <Check size={12} /> Human Data Only
+                    </span>
+                  ) : 'Human Data Only'}
                 </button>
                 <div style={{ flex: 1 }} />
                 {compareIds.length > 0 && (
@@ -472,7 +480,7 @@ function MatchResultsDrawer({
               {!loading && stackItems.length > 1 && !filterOralOnly && !filterHumanOnly && (
                 <div style={{ background: 'rgba(246,173,85,0.08)', border: '1px solid rgba(246,173,85,0.3)', borderRadius: 16, padding: '14px', marginBottom: 16 }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-                    <div style={{ color: '#F6AD55', fontWeight: 800, fontSize: '0.9rem' }}>⚡ Recommended Protocol Stack</div>
+                    <div style={{ color: '#F6AD55', fontWeight: 800, fontSize: '0.9rem', display: 'inline-flex', alignItems: 'center', gap: '6px' }}><Sparkles size={14} /> Recommended Protocol Stack</div>
                     <button
                       type="button"
                       onClick={handleAddStack}
@@ -560,8 +568,9 @@ function MatchResultsDrawer({
                               padding: '3px 7px', borderRadius: 6,
                               background: 'rgba(246,173,85,0.14)', color: '#F6AD55',
                               border: '1px solid rgba(246,173,85,0.35)', flexShrink: 0,
+                              display: 'inline-flex', alignItems: 'center', gap: '4px'
                             }} title="Synergizes well with other matched compounds">
-                              ⚡ Synergistic Stack Partner
+                              <Sparkles size={10} /> Synergistic Stack Partner
                             </span>
                           )}
                         </div>

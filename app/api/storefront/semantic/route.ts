@@ -51,7 +51,7 @@ export async function POST(req: NextRequest) {
         vectorMatches.forEach((m: any) => {
           matches[m.product_id] = {
             score: m.similarity,
-            reason: `🎯 AI Match: Semantically Related`
+            reason: `AI Match: Semantically Related`
           };
         });
       }

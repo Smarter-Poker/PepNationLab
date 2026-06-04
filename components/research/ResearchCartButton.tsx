@@ -62,7 +62,7 @@ export default function ResearchCartButton({ productName, compoundName, size = '
       }}
     >
       {justAdded ? <Check size={isSmall ? 11 : 13} /> : <ShoppingCart size={isSmall ? 11 : 13} />}
-      {justAdded ? 'Added!' : isSmall ? 'Add to Cart' : 'Add to Cart'}
+      {justAdded ? 'Added!' : isSmall ? 'Add To Cart' : 'Add To Cart'}
     </button>
   );
 }
