@@ -1459,7 +1459,6 @@ export default function DiscoveryHero({
             onChange={(e) => {
               setQuery(e.target.value);
               setSuggestOpen(true);
-              if (onSearchStarted && e.target.value.length > 0) onSearchStarted();
             }}
             onFocus={() => setSuggestOpen(true)}
             onKeyDown={(e) => { 
