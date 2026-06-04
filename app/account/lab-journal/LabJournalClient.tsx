@@ -42,6 +42,14 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
   const [pendingId, setPendingId] = useState<string | null>(null);
   const [helpfulData, setHelpfulData] = useState<any>(null);
   const [notes, setNotes] = useState<any[]>([]);
+  const [comparisons, setComparisons] = useState<any[]>([]);
+  
+  // Notes UI State
+  const [isCreatingNote, setIsCreatingNote] = useState(false);
+  const [editingNote, setEditingNote] = useState<any>(null);
+  const [noteTitle, setNoteTitle] = useState('');
+  const [noteText, setNoteText] = useState('');
+  const [noteSaving, setNoteSaving] = useState(false);
   
   // UX Features State
   const [activeTab, setActiveTab] = useState<'bundles' | 'favorites' | 'recentlyViewed' | 'pastOrders' | 'compareHistory' | 'notes'>('bundles');
@@ -85,7 +93,28 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
       .then(res => res.json())
       .then(data => { if (data.notes) setNotes(data.notes); })
       .catch(console.error);
+
+    fetch('/api/researcher/comparisons')
+      .then(res => res.json())
+      .then(data => { if (data.comparisons) setComparisons(data.comparisons); })
+      .catch(console.error);
   }, []);
+
+  const saveComparison = async (ids: string[]) => {
+    try {
+      const res = await fetch('/api/researcher/comparisons', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ product_ids: ids })
+      });
+      const data = await res.json();
+      if (res.ok && data.comparison) {
+        setComparisons(prev => [data.comparison, ...prev]);
+      }
+    } catch (e) {
+      console.error('Failed to save comparison', e);
+    }
+  };
 
   async function removeItem(productId: string) {
     setPendingId(productId);
@@ -122,6 +151,70 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
       console.error('Failed to clear history:', err);
     }
   }
+
+  // Notes Functions
+  const openNewNote = () => {
+    setNoteTitle('');
+    setNoteText('');
+    setEditingNote(null);
+    setIsCreatingNote(true);
+  };
+
+  const editNote = (n: any) => {
+    setNoteTitle(n.title || '');
+    setNoteText(n.note_text || '');
+    setEditingNote(n);
+    setIsCreatingNote(true);
+  };
+
+  const saveNote = async () => {
+    if (!noteText.trim()) return;
+    setNoteSaving(true);
+    try {
+      const url = '/api/researcher/notes';
+      const method = editingNote ? 'PATCH' : 'POST';
+      const body = editingNote ? { id: editingNote.id, title: noteTitle, note_text: noteText } : { title: noteTitle, note_text: noteText };
+      
+      const res = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
+      const data = await res.json();
+      if (res.ok && data.note) {
+        if (editingNote) {
+          setNotes(prev => prev.map(n => n.id === data.note.id ? data.note : n));
+        } else {
+          setNotes(prev => [data.note, ...prev]);
+        }
+        setIsCreatingNote(false);
+        toast.success(editingNote ? 'Note updated' : 'Note created');
+      } else {
+        throw new Error(data.error);
+      }
+    } catch (e: any) {
+      toast.error('Failed to save note');
+    } finally {
+      setNoteSaving(false);
+    }
+  };
+
+  const deleteNote = async (id: string) => {
+    if (!confirm('Delete this note?')) return;
+    try {
+      const res = await fetch('/api/researcher/notes', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id })
+      });
+      if (res.ok) {
+        setNotes(prev => prev.filter(n => n.id !== id));
+        toast.success('Note deleted');
+      }
+    } catch (e) {
+      toast.error('Failed to delete note');
+    }
+  };
 
   function handleQuickAdd(item: Item, qty = 1, silent = false) {
     try {
@@ -478,20 +571,81 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
               )}
               {activeTab === 'notes' ? (
                 <div>
+                  <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 'var(--space-4)' }}>
+                    <button onClick={openNewNote} className="btn btn-primary" style={{ padding: '8px 20px', borderRadius: 20 }}>+ Add New Note</button>
+                  </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
                     {notes.length === 0 ? renderEmptyState() : notes.map(n => (
-                      <div key={n.id} className="glass-panel" style={{ padding: 'var(--space-4)', borderRadius: 'var(--radius-lg)' }}>
-                        <h3 style={{ color: 'var(--white)' }}>{n.title || 'Journal Entry'}</h3>
-                        <p style={{ color: 'var(--silver)', whiteSpace: 'pre-wrap', marginTop: 'var(--space-2)' }}>{n.note_text}</p>
-                        <div style={{ marginTop: 'var(--space-3)', fontSize: '0.75rem', color: 'var(--silver)' }}>
-                          {new Date(n.updated_at).toLocaleDateString()}
+                      <div key={n.id} className="glass-panel" style={{ padding: 'var(--space-4)', borderRadius: 'var(--radius-lg)', position: 'relative' }}>
+                        <div style={{ position: 'absolute', top: 'var(--space-4)', right: 'var(--space-4)', display: 'flex', gap: 'var(--space-2)' }}>
+                          <button onClick={() => editNote(n)} className="btn btn-ghost btn-sm" style={{ padding: 4, color: 'var(--silver)' }}>Edit</button>
+                          <button onClick={() => deleteNote(n.id)} className="btn btn-ghost btn-sm" style={{ padding: 4, color: 'var(--red)' }}><Trash2 size={16}/></button>
+                        </div>
+                        <h3 style={{ color: 'var(--white)', paddingRight: 80 }}>{n.title || 'Journal Entry'}</h3>
+                        <p style={{ color: 'var(--silver)', whiteSpace: 'pre-wrap', marginTop: 'var(--space-3)' }}>{n.note_text}</p>
+                        <div style={{ marginTop: 'var(--space-4)', fontSize: '0.75rem', color: 'rgba(255,255,255,0.4)', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: 'var(--space-2)' }}>
+                          Last updated: {new Date(n.updated_at).toLocaleDateString()} at {new Date(n.updated_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  
+                  {isCreatingNote && (
+                    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(5px)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 'var(--space-4)' }} onClick={() => setIsCreatingNote(false)}>
+                      <div className="glass-panel" style={{ width: '100%', maxWidth: 600, padding: 'var(--space-6)', borderRadius: 'var(--radius-xl)' }} onClick={e => e.stopPropagation()}>
+                        <h2 style={{ color: 'var(--white)', marginBottom: 'var(--space-4)' }}>{editingNote ? 'Edit Note' : 'New Lab Note'}</h2>
+                        <input 
+                          type="text" 
+                          placeholder="Note Title (Optional)" 
+                          value={noteTitle} 
+                          onChange={e => setNoteTitle(e.target.value)}
+                          style={{ width: '100%', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', padding: '12px', borderRadius: 8, color: 'var(--white)', marginBottom: 'var(--space-3)', fontSize: '1rem' }}
+                        />
+                        <textarea 
+                          placeholder="Write your research notes, protocol logs, or observations here..." 
+                          value={noteText} 
+                          onChange={e => setNoteText(e.target.value)}
+                          rows={8}
+                          style={{ width: '100%', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', padding: '12px', borderRadius: 8, color: 'var(--white)', marginBottom: 'var(--space-4)', fontSize: '1rem', resize: 'vertical' }}
+                        />
+                        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 'var(--space-3)' }}>
+                          <button onClick={() => setIsCreatingNote(false)} className="btn btn-ghost" style={{ color: 'var(--silver)' }}>Cancel</button>
+                          <button onClick={saveNote} disabled={!noteText.trim() || noteSaving} className="btn btn-primary" style={{ padding: '8px 24px' }}>
+                            {noteSaving ? 'Saving...' : 'Save Note'}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+              ) : activeTab === 'compareHistory' ? (
+                <div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
+                    {comparisons.length === 0 ? renderEmptyState() : comparisons.map(c => (
+                      <div key={c.id} className="glass-panel" style={{ padding: 'var(--space-4)', borderRadius: 'var(--radius-lg)' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 'var(--space-3)' }}>
+                          <h3 style={{ color: 'var(--white)' }}>Comparison from {new Date(c.created_at).toLocaleDateString()}</h3>
+                        </div>
+                        <div style={{ display: 'flex', gap: 'var(--space-3)', overflowX: 'auto', paddingBottom: 'var(--space-2)' }}>
+                          {c.product_ids.map((pid: string) => {
+                            const item = [...favorites, ...pastOrders, ...recentlyViewed, ...catalog].find(i => i.product_id === pid);
+                            if (!item) return <div key={pid} style={{ color: 'var(--silver)' }}>Unknown Item</div>;
+                            return (
+                              <div key={pid} style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', background: 'rgba(255,255,255,0.05)', padding: 'var(--space-2) var(--space-3)', borderRadius: 20, whiteSpace: 'nowrap' }}>
+                                <img src={item.image_url || getProductImage(null, item.category || 'Other', item.name)} style={{ width: 24, height: 24, objectFit: 'contain', borderRadius: 4 }} alt={item.name} />
+                                <span style={{ color: 'var(--white)', fontSize: '0.85rem' }}>{item.name}</span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 'var(--space-4)' }}>
+                          <button onClick={() => { setSelectedItems(new Set(c.product_ids)); setIsComparing(true); }} className="btn btn-secondary btn-sm" style={{ padding: '6px 16px', borderRadius: 20 }}>View Comparison Again</button>
                         </div>
                       </div>
                     ))}
                   </div>
                 </div>
-              ) : activeTab === 'compareHistory' ? (
-                renderEmptyState() /* Placeholder until Compare History is fully wired to API */
               ) : (
                 <>
               {activeTab === 'recentlyViewed' && recentlyViewed.length > 0 && !searchQuery && (
@@ -576,7 +730,7 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
           <div style={{ color: 'var(--white)', fontWeight: 'bold', fontSize: '0.9rem' }}>{selectedItems.size} Selected</div>
           <div style={{ display: 'flex', gap: 8 }}>
             {(selectedItems.size >= 2 && selectedItems.size <= 4) && (
-              <button onClick={() => setIsComparing(true)} className="btn btn-secondary" style={{ borderRadius: 20, padding: '8px 20px', background: 'rgba(0,196,188,0.1)', color: 'var(--teal)', border: '1px solid rgba(0,196,188,0.2)' }}>Compare</button>
+              <button onClick={() => { setIsComparing(true); saveComparison(Array.from(selectedItems)); }} className="btn btn-secondary" style={{ borderRadius: 20, padding: '8px 20px', background: 'rgba(0,196,188,0.1)', color: 'var(--teal)', border: '1px solid rgba(0,196,188,0.2)' }}>Compare</button>
             )}
             <button onClick={handleBulkAdd} className="btn btn-primary" style={{ borderRadius: 20, padding: '8px 20px' }}>Add to Cart</button>
             <button onClick={() => setSelectedItems(new Set())} className="btn btn-ghost" style={{ borderRadius: 20, color: 'var(--silver)' }}>Cancel</button>
