@@ -541,18 +541,22 @@ export default function ResearcherDashboard({ userId, userName, userEmail, agent
                 maxWidth: 600,
                 aspectRatio: '576 / 1024',
                 overflow: 'hidden',
-                backgroundImage: "url('/researcher-menu.jpg')",
+                backgroundImage: "url('/researcher-menu-v2.jpg')",
                 backgroundRepeat: 'no-repeat',
                 backgroundPosition: 'top left',
                 backgroundSize: '100% 100%',
               }}>
                 {/* Invisible click zones — percentages map 1:1 to image pixels */}
                 {[
-                  { key: 'storefront', top: '5.5%',  height: '17%',   action: () => { window.location.href = agentSlug ? `/${agentSlug}` : '/products'; } },
-                  { key: 'orders',     top: '23.5%', height: '19.5%', action: () => setTab('orders') },
-                  { key: 'messages',   top: '44%',   height: '19%',   action: () => { window.location.href = '/messenger'; } },
-                  { key: 'favorites',  top: '64%',   height: '15.5%', action: () => setTab('favorites') },
-                  { key: 'account',    top: '80.5%', height: '14.5%', action: () => setTab('account') },
+                  { key: 'store',       top: '3%',    height: '9.5%', action: () => { window.location.href = agentSlug ? `/${agentSlug}` : '/products'; } },
+                  { key: 'library',     top: '13.5%', height: '9.5%', action: () => { window.location.href = '/research'; } },
+                  { key: 'messenger',   top: '24.2%', height: '9.5%', action: () => { window.location.href = '/messenger'; } },
+                  { key: 'lab-journal', top: '34.8%', height: '9.5%', action: () => { window.location.href = '/account/lab-journal'; } },
+                  { key: 'orders',      top: '45.4%', height: '9.5%', action: () => setTab('orders') },
+                  { key: 'wallet',      top: '56.1%', height: '9.5%', action: () => setTab('wallet') },
+                  { key: 'tools',       top: '66.8%', height: '9.5%', action: () => { window.location.href = '/research/calculators'; } },
+                  { key: 'account',     top: '77.4%', height: '9.5%', action: () => setTab('account') },
+                  { key: 'help',        top: '88.0%', height: '9.5%', action: () => { window.location.href = '/help'; } },
                 ].map(z => (
                   <div
                     key={z.key}
