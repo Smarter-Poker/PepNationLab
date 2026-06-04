@@ -138,24 +138,21 @@ const SUBAGENT_LINKS: RoleNavLink[] = [
 // Researcher (customer) menu. Their account lives entirely in the role-agnostic
 // /account/* pages plus their referring agent's storefront.
 function researcherLinks(storefrontHref?: string): RoleNavLink[] {
-  const links: RoleNavLink[] = [
-    { href: '/dashboard', label: 'Dashboard', icon: ICON.grid },
-    { href: '/research', label: 'Research Library', icon: ICON.book },
-  ];
-  // Only show the storefront link when we actually have a real slug (not the
-  // generic agent-dashboard fallback the Navbar passes when no slug is known).
+  const links: RoleNavLink[] = [];
+  
   if (storefrontHref && !storefrontHref.includes('/dashboard')) {
     links.push({ href: storefrontHref, label: 'Pep Nation Research Store', icon: ICON.storefront });
   }
-  links.push(
-    { href: '/orders', label: 'My Orders', icon: ICON.orders },
-    { href: '/wallet', label: 'Wallet', icon: ICON.wallet },
-    { href: '/messenger', label: 'Messenger', icon: ICON.messenger },
-    { href: '/account/wishlist', label: 'Wishlist', icon: ICON.heart },
-    { href: '/account/recently-viewed', label: 'Recently Viewed', icon: ICON.clock },
 
-    { href: '/account', label: 'Account Settings', icon: ICON.gear },
+  links.push(
+    { href: '/research', label: 'Research Library', icon: ICON.book },
+    { href: '/messenger', label: 'Messenger', icon: ICON.messenger },
+    { href: '/account/lab-journal', label: 'Lab Journal', icon: ICON.heart },
+    { href: '/orders', label: 'Orders & Tracking', icon: ICON.orders },
+    { href: '/wallet', label: 'Wallet', icon: ICON.wallet },
     { href: '/research/calculators', label: 'Lab Tools Calculator', icon: ICON.labTools },
+    { href: '/account', label: 'Account Settings', icon: ICON.gear },
+    { href: '/help', label: 'Help & Support', icon: <svg {...ip}><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> },
   );
   return links;
 }

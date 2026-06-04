@@ -1,26 +1,33 @@
 'use client';
 
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useState } from 'react';
 import mermaid from 'mermaid';
 
 export default function MermaidDiagram({ chart }: { chart: string }) {
-  const containerRef = useRef<HTMLDivElement>(null);
+  const [svgContent, setSvgContent] = useState('');
 
   useEffect(() => {
     mermaid.initialize({
-      startOnLoad: true,
+      startOnLoad: false,
       theme: 'dark',
       securityLevel: 'loose',
     });
-    if (containerRef.current) {
-      mermaid.init(undefined, containerRef.current);
-    }
+    
+    const renderChart = async () => {
+      try {
+        const id = `mermaid-${Math.random().toString(36).substr(2, 9)}`;
+        const { svg } = await mermaid.render(id, chart);
+        setSvgContent(svg);
+      } catch (err) {
+        console.error('Mermaid render error:', err);
+      }
+    };
+
+    renderChart();
   }, [chart]);
 
   return (
     <div
-      className="mermaid"
-      ref={containerRef}
       style={{
         display: 'flex',
         justifyContent: 'center',
@@ -30,8 +37,7 @@ export default function MermaidDiagram({ chart }: { chart: string }) {
         border: '1px solid rgba(255,255,255,0.05)',
         overflowX: 'auto',
       }}
-    >
-      {chart}
-    </div>
+      dangerouslySetInnerHTML={{ __html: svgContent }}
+    />
   );
 }
