@@ -17,6 +17,7 @@ interface Item {
   unit_measure: string | null;
   last_purchased_date?: string;
   viewed_at?: string;
+  is_on_sale?: boolean;
 }
 
 interface Props {
@@ -27,8 +28,9 @@ interface Props {
   storefrontSlug: string | null;
 }
 
-export default function LabJournalClient({ favorites: initialFavorites, pastOrders, recentlyViewed, trending, storefrontSlug }: Props) {
+export default function LabJournalClient({ favorites: initialFavorites, pastOrders, recentlyViewed: initialRecentlyViewed, trending, storefrontSlug }: Props) {
   const [favorites, setFavorites] = useState<Item[]>(initialFavorites);
+  const [recentlyViewed, setRecentlyViewed] = useState<Item[]>(initialRecentlyViewed);
   const [, startTransition] = useTransition();
   const [pendingId, setPendingId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'favorites' | 'recentlyViewed' | 'pastOrders'>('favorites');
@@ -52,6 +54,20 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
     }
   }
 
+  async function clearRecentlyViewed() {
+    if (!confirm('Are you sure you want to clear your recently viewed history?')) return;
+    try {
+      const res = await fetch('/api/researcher/recently-viewed', { method: 'DELETE' });
+      if (res.ok) {
+        startTransition(() => {
+          setRecentlyViewed([]);
+        });
+      }
+    } catch (err) {
+      console.error('Failed to clear history:', err);
+    }
+  }
+
   function timeAgo(iso: string): string {
     const then = new Date(iso).getTime();
     const now = Date.now();
@@ -64,6 +80,58 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
     const days = Math.floor(hrs / 24);
     if (days < 7) return `${days} Day${days === 1 ? '' : 's'} Ago`;
     return new Date(iso).toLocaleDateString();
+  }
+
+  function handleQuickAdd(item: Item) {
+    if (!storefrontSlug) return;
+    try {
+      const storageKey = `pnl_storefront_cart_${storefrontSlug}`;
+      const rawCart = localStorage.getItem(storageKey);
+      let pnlCart = { items: [] as any[], _savedAt: Date.now() };
+      if (rawCart) {
+        try { pnlCart = JSON.parse(rawCart); } catch {}
+      }
+
+      // Add or increment item
+      const existing = pnlCart.items.find((i: any) => i.id === item.product_id);
+      if (existing) {
+        existing.quantity += 1;
+      } else {
+        const perVial = item.retail_price ?? item.base_cost ?? 0;
+        pnlCart.items.push({
+          id: item.product_id,
+          name: `${item.name} ${item.unit_size ? `(${item.unit_size}${item.unit_measure || ''})` : ''}`.trim(),
+          sku: item.product_id,
+          quantity: 1,
+          retailPrice: perVial,
+          costPrice: perVial, // Simplified for researcher quick-add
+          weightOz: 0.5,
+          agentSelfBuy: false,
+        });
+      }
+
+      pnlCart._savedAt = Date.now();
+      localStorage.setItem(storageKey, JSON.stringify(pnlCart));
+
+      // Trigger a storage event manually so other tabs/components can sync if needed
+      window.dispatchEvent(new Event('storage'));
+      
+      // Visual feedback
+      const btn = document.getElementById(`quick-add-${item.product_id}`);
+      if (btn) {
+        const originalText = btn.innerText;
+        btn.innerText = 'Added!';
+        btn.style.background = 'var(--teal)';
+        btn.style.color = 'var(--black)';
+        setTimeout(() => {
+          btn.innerText = originalText;
+          btn.style.background = '';
+          btn.style.color = '';
+        }, 1500);
+      }
+    } catch (err) {
+      console.error('Failed to quick add:', err);
+    }
   }
 
   const renderGrid = (items: Item[], type: 'favorites' | 'pastOrders' | 'recentlyViewed') => {
@@ -163,9 +231,23 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
                     </div>
                   )}
                   {storefrontSlug && (
-                    <Link href={`/${storefrontSlug}?product=${encodeURIComponent(item.product_id)}`} className="btn btn-secondary btn-sm">
-                      View
-                    </Link>
+                    <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
+                      <Link
+                        href={`/${storefrontSlug}?product=${encodeURIComponent(item.product_id)}`}
+                        className="btn btn-secondary btn-sm"
+                      >
+                        View
+                      </Link>
+                      <button
+                        id={`quick-add-${item.product_id}`}
+                        onClick={() => handleQuickAdd(item)}
+                        className="btn btn-primary btn-sm"
+                        style={{ transition: 'all 0.2s ease' }}
+                        disabled={item.in_stock === false}
+                      >
+                        Add
+                      </button>
+                    </div>
                   )}
                 </li>
               );
@@ -176,14 +258,26 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
     }
 
     return (
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))',
-          gap: 'var(--space-4)',
-        }}
-      >
-        {items.map((item, index) => {
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
+        {type === 'pastOrders' && (
+          <div className="glass-panel" style={{ padding: 'var(--space-3) var(--space-4)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 'var(--space-4)', borderRadius: 'var(--radius-md)', background: 'var(--surface-1)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
+              <PackageOpen size={18} style={{ color: 'var(--teal)' }} />
+              <span style={{ color: 'var(--silver)', fontSize: '0.9rem' }}>Looking for a specific receipt or tracking number?</span>
+            </div>
+            <Link href="/orders" className="btn btn-ghost btn-sm" style={{ color: 'var(--white)', whiteSpace: 'nowrap' }}>
+              View Full Order History &rarr;
+            </Link>
+          </div>
+        )}
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))',
+            gap: 'var(--space-4)',
+          }}
+        >
+          {items.map((item, index) => {
           const displayPrice = item.retail_price ?? item.base_cost ?? 0;
           return (
             <div
@@ -248,13 +342,49 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
                     textTransform: 'uppercase',
                     letterSpacing: '0.05em',
                     fontWeight: 'bold',
-                    border: '1px solid rgba(255,255,255,0.1)'
+                    zIndex: 1
                   }}>
-                    Last Purchased: {new Date(item.last_purchased_date).toLocaleDateString()}
+                    Bought {new Date(item.last_purchased_date).toLocaleDateString()}
+                  </div>
+                )}
+                
+                {item.is_on_sale && (
+                  <div style={{
+                    position: 'absolute', top: 12, right: 12,
+                    fontSize: '0.65rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em',
+                    padding: '4px 10px', borderRadius: 'var(--radius-full)',
+                    background: 'rgba(245,101,101,0.15)', border: '1px solid rgba(245,101,101,0.4)',
+                    color: '#F56565', backdropFilter: 'blur(4px)',
+                    zIndex: 1
+                  }}>
+                    Sale
+                  </div>
+                )}
+
+                {item.in_stock === false && (
+                  <div style={{
+                    position: 'absolute', inset: 0,
+                    background: 'rgba(0,0,0,0.6)',
+                    backdropFilter: 'grayscale(100%)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    zIndex: 2
+                  }}>
+                    <div style={{
+                      background: 'var(--black)',
+                      color: 'var(--silver)',
+                      padding: '4px 12px',
+                      borderRadius: 'var(--radius-full)',
+                      fontSize: '0.75rem',
+                      fontWeight: 'bold',
+                      textTransform: 'uppercase',
+                      border: '1px solid rgba(255,255,255,0.1)'
+                    }}>
+                      Out of Stock
+                    </div>
                   </div>
                 )}
               </div>
-              <div style={{ padding: 'var(--space-4)', display: 'flex', flexDirection: 'column', gap: 'var(--space-2)', flex: 1 }}>
+              <div style={{ padding: 'var(--space-3) var(--space-4)', display: 'flex', flexDirection: 'column', flex: 1 }}>
                 <div style={{ color: 'var(--white)', fontWeight: 700, fontSize: '0.95rem', lineHeight: 1.3 }}>
                   {item.name}
                 </div>
@@ -301,7 +431,8 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
               </div>
             </div>
           );
-        })}
+          })}
+        </div>
       </div>
     );
   };
@@ -362,6 +493,17 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
       {activeTab === 'favorites' && renderGrid(favorites, 'favorites')}
       {activeTab === 'recentlyViewed' && (
         <>
+          {recentlyViewed.length > 0 && (
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 'var(--space-2)' }}>
+              <button
+                onClick={clearRecentlyViewed}
+                className="btn btn-ghost btn-sm"
+                style={{ color: 'var(--silver)', fontSize: '0.8rem', padding: '4px 12px' }}
+              >
+                Clear History
+              </button>
+            </div>
+          )}
           {renderGrid(recentlyViewed, 'recentlyViewed')}
           {trending.length > 0 && (
             <div className="glass-panel hover-lift stagger-fade-in" style={{ marginTop: 'var(--space-6)', padding: 'var(--space-5) var(--space-5) var(--space-6)', animationDelay: '0.2s' }}>
@@ -400,9 +542,24 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
                             src={t.image_url}
                             alt={t.name}
                             style={{ width: '100%', height: '100%', objectFit: 'contain', padding: 8 }}
+                            onError={(e) => {
+                              const target = e.target as HTMLImageElement;
+                              const fallback = getProductImage(null, t.category || 'Other', t.name);
+                              if (target.src !== fallback && target.src !== window.location.origin + fallback) {
+                                target.src = fallback;
+                              } else {
+                                target.src = '/images/peptide_clear.png';
+                                target.style.opacity = '0.9';
+                              }
+                            }}
                           />
                         ) : (
-                          <span style={{ color: 'var(--grey-600)', fontSize: '0.65rem' }}>No Image</span>
+                          /* eslint-disable-next-line @next/next/no-img-element */
+                          <img
+                            src={getProductImage(null, t.category || 'Other', t.name)}
+                            alt={t.name}
+                            style={{ width: '100%', height: '100%', objectFit: 'contain', padding: 8 }}
+                          />
                         )}
                       </div>
                       <div

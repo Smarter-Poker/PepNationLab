@@ -93,7 +93,7 @@ export default async function LabJournalPage() {
     }
   }
 
-  const priceMap = new Map<string, number>();
+  const priceMap = new Map<string, { price: number; is_on_sale: boolean }>();
   if (referringAgentId && allProductIds.length > 0) {
     const { data: agentProducts } = await service
       .from('agent_products')
@@ -103,7 +103,9 @@ export default async function LabJournalPage() {
     for (const ap of agentProducts ?? []) {
       const rawPrice = ap.is_on_sale && ap.sale_price != null ? Number(ap.sale_price) : Number(ap.retail_price);
       const price = rawPrice / 10;
-      if (Number.isFinite(price) && price > 0) priceMap.set(ap.product_id, price);
+      if (Number.isFinite(price) && price > 0) {
+        priceMap.set(ap.product_id, { price, is_on_sale: ap.is_on_sale === true });
+      }
     }
   }
 
@@ -113,7 +115,8 @@ export default async function LabJournalPage() {
     image_url: p.image_url,
     category: p.category,
     base_cost: p.base_cost,
-    retail_price: priceMap.get(p.id) ?? null,
+    retail_price: priceMap.get(p.id)?.price ?? null,
+    is_on_sale: priceMap.get(p.id)?.is_on_sale ?? false,
     in_stock: p.in_stock,
     unit_size: p.unit_size,
     unit_measure: p.unit_measure,

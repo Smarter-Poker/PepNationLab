@@ -112,3 +112,29 @@ export async function POST(req: NextRequest) {
   if (error) return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
   return NextResponse.json({ success: true });
 }
+
+/** DELETE: Clear all recently viewed history for the current user */
+export async function DELETE(req: NextRequest) {
+  const csrf = assertSameOrigin(req);
+  if (csrf) return csrf;
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+  const rl = await rateLimit({
+    key: 'recently_viewed_delete',
+    limit: 10,
+    windowSeconds: 60,
+    identifier: user.id,
+  });
+  if (!rl.allowed) return NextResponse.json({ error: 'rate_limited' }, { status: 429 });
+
+  const service = await createServiceClient();
+  const { error } = await service
+    .from('researcher_recently_viewed')
+    .delete()
+    .eq('user_id', user.id);
+
+  if (error) return NextResponse.json({ error: 'Failed to clear history' }, { status: 500 });
+  return NextResponse.json({ success: true });
+}
