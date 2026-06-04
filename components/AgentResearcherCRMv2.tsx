@@ -49,9 +49,9 @@ interface Researcher {
   tags: { id: string; tag: string; color: string | null }[];
   is_pinned: boolean; last_contacted_at: string | null;
   acquisition_source: string | null; has_open_reminder: boolean;
-  auto_approve_orders?: boolean;
   note?: string; note_updated_at?: string | null;
   reminders?: { id: string; title: string; remind_at: string }[];
+  account_type?: string | null;
 }
 
 interface Kpi { value: number; spark: number[]; delta_pct: number; label?: string; }
@@ -647,11 +647,12 @@ function ResearcherRow({ r, expanded, onExpand, onMessage, onAddTag, onRemoveTag
           {/* Admin controls */}
           <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 10, paddingTop: 14, borderTop: '1px solid rgba(255,255,255,0.06)' }}>
             {/* Auto-approve toggle */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, opacity: (r.account_type === 'credit' || r.account_type === 'prepaid') ? 0.5 : 1 }}>
               <ToggleSwitch
                 id={`auto-approve-${r.id}`}
                 checked={!!r.auto_approve_orders}
                 onChange={() => onToggleAutoApprove?.(r.id, !!r.auto_approve_orders)}
+                disabled={r.account_type === 'credit' || r.account_type === 'prepaid'}
               />
               <span style={{ fontSize: '0.74rem', color: '#B0B8C4', fontWeight: 600 }}>Auto-Approve Orders</span>
             </div>
@@ -794,7 +795,8 @@ export default function AgentResearcherCRMv2({
           lifetime_value: r.lifetime_value ?? r.total_spent ?? 0,
           orders_count: r.orders_count ?? r.order_count ?? 0,
           tags: (r.tags ?? []).map((t: any, i: number) => ({ id: t.id ?? `${r.id}-${i}`, tag: t.tag ?? t, color: t.color ?? null })),
-          has_open_reminder: !!(r.has_open_reminder ?? (r.reminders?.length > 0)),
+          has_open_reminder: Array.isArray(r.reminders) && r.reminders.length > 0,
+          account_type: (r as any).account_type,
         }));
       }
       setData(raw as Payload);

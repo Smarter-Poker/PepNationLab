@@ -1,0 +1,2 @@
+ALTER TABLE public.profiles
+ADD COLUMN IF NOT EXISTS last_balance_alert_at TIMESTAMP WITH TIME ZONE;

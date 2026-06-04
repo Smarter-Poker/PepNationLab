@@ -69,7 +69,7 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ id: string
         // role alone can't distinguish them from regular agents, so the R32
         // gate `role === 'agent'` was incorrectly still showing markup UI
         // to super_agents in the Edit Agent drawer).
-        'id, full_name, username, email, phone, role, account_type, credit_limit, prepaid_balance, commission_pct, commission_max_pct, velocity_cap, commission_active_since, is_active, is_sub_agent, is_super_agent, parent_agent_id, created_at, last_sign_in_at, first_sign_in_at, sign_in_count, agent_profiles(slug, display_name, is_active)',
+        'id, full_name, username, email, phone, role, account_type, credit_limit, max_auto_approve_limit, prepaid_balance, commission_pct, commission_max_pct, velocity_cap, commission_active_since, is_active, is_sub_agent, is_super_agent, parent_agent_id, created_at, last_sign_in_at, first_sign_in_at, sign_in_count, agent_profiles(slug, display_name, is_active)',
       )
       .eq('id', id)
       .single();
@@ -148,6 +148,7 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ id: string
         phone: (agent as { phone?: string | null }).phone ?? null,
         account_type: agent.account_type,
         credit_limit: agent.credit_limit != null ? num(agent.credit_limit) : null,
+        max_auto_approve_limit: agent.max_auto_approve_limit != null ? num(agent.max_auto_approve_limit) : null,
         prepaid_balance: num(agent.prepaid_balance),
         commission_pct: agent.commission_pct != null ? num(agent.commission_pct) : null,
         commission_max_pct: commissionMaxPct != null ? num(commissionMaxPct) : null,
@@ -270,6 +271,21 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
     // Keep credit_limit coherent with the (possibly new) account type.
     if (nextAccountType === 'prepaid') {
       updates.credit_limit = null;
+      updates.max_auto_approve_limit = null;
+    }
+
+    if (body.max_auto_approve_limit !== undefined) {
+      if (body.max_auto_approve_limit === null || body.max_auto_approve_limit === '') {
+        updates.max_auto_approve_limit = null;
+        changes.max_auto_approve_limit = null;
+      } else {
+        const ml = Number(body.max_auto_approve_limit);
+        if (!Number.isFinite(ml) || ml < 0) {
+          return NextResponse.json({ error: 'Max Auto-Approve Limit Must Be Zero Or Greater.' }, { status: 400 });
+        }
+        updates.max_auto_approve_limit = ml;
+        changes.max_auto_approve_limit = ml;
+      }
     }
 
     if (body.commission_pct !== undefined && body.commission_pct !== null && body.commission_pct !== '') {

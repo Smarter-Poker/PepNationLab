@@ -23,7 +23,8 @@ export async function PATCH(request: Request) {
       is_active,
       account_type,
       credit_limit,
-      prepaid_balance
+      prepaid_balance,
+      max_auto_approve_limit
     } = await request.json();
 
     if (!id) return NextResponse.json({ error: 'Missing agent ID' }, { status: 400 });
@@ -39,6 +40,7 @@ export async function PATCH(request: Request) {
     // Convert to number or null, ensuring safe defaults
     if (credit_limit !== undefined) updates.credit_limit = credit_limit === '' ? null : Number(credit_limit);
     if (prepaid_balance !== undefined) updates.prepaid_balance = prepaid_balance === '' ? 0 : Number(prepaid_balance);
+    if (max_auto_approve_limit !== undefined) updates.max_auto_approve_limit = max_auto_approve_limit === '' ? null : Number(max_auto_approve_limit);
 
     const { error } = await supabase
       .from('profiles')

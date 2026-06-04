@@ -105,7 +105,7 @@ export async function POST(request: NextRequest) {
     // Get researcher profile
     const { data: profile, error: profileError } = await serviceSupabase
       .from('profiles')
-      .select('id, referring_agent_id, role, tier, parent_agent_id, account_type, prepaid_balance, credit_limit, auto_approve_orders, is_sub_agent, referring_sub_agent_id')
+      .select('id, referring_agent_id, role, tier, parent_agent_id, account_type, prepaid_balance, credit_limit, max_auto_approve_limit, auto_approve_orders, is_sub_agent, referring_sub_agent_id')
       .eq('id', user.id)
       .single();
 
@@ -124,14 +124,14 @@ export async function POST(request: NextRequest) {
       agentProfile = profile;
       isAgentSelfBuy = true;
       if (profile.parent_agent_id) {
-        const { data: sap } = await serviceSupabase.from('profiles').select('id, tier, account_type, prepaid_balance, credit_limit, auto_approve_orders').eq('id', profile.parent_agent_id).single();
+        const { data: sap } = await serviceSupabase.from('profiles').select('id, tier, account_type, prepaid_balance, credit_limit, max_auto_approve_limit, auto_approve_orders').eq('id', profile.parent_agent_id).single();
         superAgentProfile = sap;
       }
     } else if (profile.referring_agent_id) {
-      const { data: ap } = await serviceSupabase.from('profiles').select('id, role, tier, parent_agent_id, auto_approve_orders, account_type, is_sub_agent, referring_sub_agent_id').eq('id', profile.referring_agent_id).single();
+      const { data: ap } = await serviceSupabase.from('profiles').select('id, role, tier, parent_agent_id, auto_approve_orders, account_type, max_auto_approve_limit, is_sub_agent, referring_sub_agent_id').eq('id', profile.referring_agent_id).single();
       agentProfile = ap;
       if (ap && ap.parent_agent_id) {
-        const { data: sap } = await serviceSupabase.from('profiles').select('id, tier, account_type, prepaid_balance, credit_limit, auto_approve_orders').eq('id', ap.parent_agent_id).single();
+        const { data: sap } = await serviceSupabase.from('profiles').select('id, tier, account_type, prepaid_balance, credit_limit, max_auto_approve_limit, auto_approve_orders').eq('id', ap.parent_agent_id).single();
         superAgentProfile = sap;
       }
     }
@@ -733,7 +733,8 @@ export async function POST(request: NextRequest) {
 
 
 
-    const isUserCredit = profile.account_type === 'credit' || profile.auto_approve_orders === true;
+    const limit = profile.max_auto_approve_limit !== undefined && profile.max_auto_approve_limit !== null ? Number(profile.max_auto_approve_limit) : Infinity;
+    const isUserCredit = (profile.account_type === 'credit' || profile.auto_approve_orders === true) && (total <= limit);
     const autoApproveStatus = fulfillmentMethod === 'agent_pickup' ? 'approved_pickup' : 'approved_ship';
 
     if (isWholesaleRestock) {

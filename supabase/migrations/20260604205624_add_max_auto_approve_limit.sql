@@ -1,0 +1,1 @@
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS max_auto_approve_limit NUMERIC(10, 2) DEFAULT NULL;

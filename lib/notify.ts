@@ -554,3 +554,19 @@ export async function notifyMarginWarning(
   });
 }
 
+/** Notify agent of high credit utilization or low prepaid balance */
+export async function notifyAccountAlert(
+  supabase: SupabaseClient,
+  agentId: string,
+  title: string,
+  body: string,
+) {
+  await notify(supabase, {
+    userId: agentId,
+    type: 'system',
+    title,
+    body,
+    url: `/dashboard/agent?tab=balance`,
+  });
+}
+

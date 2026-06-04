@@ -56,6 +56,7 @@ interface Researcher {
   first_sign_in_at: string | null;
   acquisition_source: string | null;
   referring_agent_id: string | null;
+  account_type?: string | null;
 }
 
 function weekIndexFromNow(iso: string, now: number): number {
@@ -94,7 +95,7 @@ export async function GET() {
     // 1. RESEARCHERS ------------------------------------------------------
     const { data: researchersRaw } = await svc
       .from('profiles')
-      .select('id, full_name, username, email, phone, created_at, auto_approve_orders, last_sign_in_at, first_sign_in_at, acquisition_source, referring_agent_id')
+      .select('id, full_name, username, email, phone, created_at, auto_approve_orders, last_sign_in_at, first_sign_in_at, acquisition_source, referring_agent_id, account_type')
       .eq('referring_agent_id', agentId)
       .eq('role', 'researcher')
       .order('created_at', { ascending: false });
@@ -303,6 +304,7 @@ export async function GET() {
         reminders: remindersByResearcher.get(r.id) ?? [],
         last_contacted_at: lastContactedByResearcher.get(r.id) ?? null,
         acquisition_source: r.acquisition_source ?? null,
+        account_type: r.account_type ?? null,
       };
     });
 

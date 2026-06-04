@@ -18,6 +18,7 @@
     { "path": "/api/cron/shippo-reconcile", "schedule": "0 22 * * 0" },
     { "path": "/api/cron/sub-agent-settle", "schedule": "49 5 * * 1" },
     { "path": "/api/cron/inventory-alerts", "schedule": "0 9 * * *" },
+    { "path": "/api/cron/balance-alerts", "schedule": "0 8 * * *" },
     { "path": "/api/cron/webhooks-dispatch", "schedule": "*/5 * * * *" },
     { "path": "/api/messenger/cron/cleanup-presence", "schedule": "*/5 * * * *" },
     { "path": "/api/messenger/cron/expire-messages", "schedule": "*/5 * * * *" },

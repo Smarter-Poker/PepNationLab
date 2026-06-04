@@ -57,6 +57,7 @@ export async function POST(req: NextRequest) {
     velocity_cap,
     custom_commission_scale,
     custom_markup_override,
+    max_auto_approve_limit,
   } = body;
 
   const isResearcher = account_role === 'researcher';
@@ -223,6 +224,7 @@ export async function POST(req: NextRequest) {
     profileData.custom_markup_override = custom_markup_override !== undefined ? custom_markup_override : null;
     profileData.account_type = account_type;
     profileData.auto_approve_orders = account_type === 'credit';
+    profileData.max_auto_approve_limit = account_type === 'credit' && max_auto_approve_limit ? Number(max_auto_approve_limit) : null;
     profileData.credit_limit = account_type === 'credit' ? (Number(credit_limit) || null) : null;
     profileData.prepaid_balance = account_type === 'prepaid' ? (Number(prepaid_balance) || 0) : 0;
     profileData.is_super_agent = account_role === 'super_agent';

@@ -45,6 +45,7 @@ export default function AdminAgents() {
     tier: 'tier_3',
     account_type: 'prepaid',
     credit_limit: '',
+    max_auto_approve_limit: '',
     prepaid_balance: '',
     slug: '',
     display_name: '',
@@ -204,6 +205,7 @@ export default function AdminAgents() {
         tier: 'tier_3',
         account_type: 'prepaid',
         credit_limit: '',
+        max_auto_approve_limit: '',
         prepaid_balance: '',
         slug: '',
         display_name: '',
@@ -431,17 +433,17 @@ export default function AdminAgents() {
                           type="checkbox" 
                           checked={!!agent.auto_approve_orders}
                           onChange={() => handleToggleTrust(agent.id, !!agent.auto_approve_orders)}
-                          disabled={togglingTrust === agent.id}
+                          disabled={togglingTrust === agent.id || agent.account_type === 'credit' || agent.account_type === 'prepaid'}
                           style={{ opacity: 0, width: 0, height: 0 }} 
                         />
                         <span style={{
                           position: 'absolute',
-                          cursor: togglingTrust === agent.id ? 'not-allowed' : 'pointer',
+                          cursor: (togglingTrust === agent.id || agent.account_type === 'credit' || agent.account_type === 'prepaid') ? 'not-allowed' : 'pointer',
                           top: 0, left: 0, right: 0, bottom: 0,
                           backgroundColor: agent.auto_approve_orders ? 'var(--teal)' : 'var(--grey-500)',
                           transition: '.4s',
                           borderRadius: '16px',
-                          opacity: togglingTrust === agent.id ? 0.5 : 1
+                          opacity: (togglingTrust === agent.id || agent.account_type === 'credit' || agent.account_type === 'prepaid') ? 0.5 : 1
                         }}>
                           <span style={{
                             position: 'absolute',
@@ -456,6 +458,11 @@ export default function AdminAgents() {
                         </span>
                       </label>
                       {togglingTrust === agent.id && <span style={{ fontSize: '0.65rem', color: 'var(--teal)' }}>Saving...</span>}
+                      {(agent.account_type === 'credit' || agent.account_type === 'prepaid') && (
+                        <span style={{ fontSize: '0.65rem', color: 'var(--silver)', fontStyle: 'italic' }} title="Locked by Account Type">
+                          (Locked)
+                        </span>
+                      )}
                     </div>
                   )}
                 </div>
@@ -927,18 +934,32 @@ export default function AdminAgents() {
                   />
                 </div>
               ) : (
-                <div className="form-group" style={{ marginBottom: 'var(--space-4)' }}>
-                  <label className="form-label" style={{ display: 'block', marginBottom: 'var(--space-1)' }}>Credit Limit ($)</label>
-                  <input
-                    type="number"
-                    className="form-input"
-                    value={createForm.credit_limit}
-                    onChange={e => handleCreateFormChange('credit_limit', e.target.value)}
-                    placeholder="1000.00"
-                    step="0.01"
-                    style={{ width: '100%' }}
-                  />
-                </div>
+                <>
+                  <div className="form-group" style={{ marginBottom: 'var(--space-4)' }}>
+                    <label className="form-label" style={{ display: 'block', marginBottom: 'var(--space-1)' }}>Credit Limit ($)</label>
+                    <input
+                      type="number"
+                      className="form-input"
+                      value={createForm.credit_limit}
+                      onChange={e => handleCreateFormChange('credit_limit', e.target.value)}
+                      placeholder="1000.00"
+                      step="0.01"
+                      style={{ width: '100%' }}
+                    />
+                  </div>
+                  <div className="form-group" style={{ marginBottom: 'var(--space-4)' }}>
+                    <label className="form-label" style={{ display: 'block', marginBottom: 'var(--space-1)' }}>Max Auto-Approve Limit ($)</label>
+                    <input
+                      type="number"
+                      className="form-input"
+                      value={createForm.max_auto_approve_limit}
+                      onChange={e => handleCreateFormChange('max_auto_approve_limit', e.target.value)}
+                      placeholder="Unlimited"
+                      step="0.01"
+                      style={{ width: '100%' }}
+                    />
+                  </div>
+                </>
               )}
 
               {/* Storefront Slug */}

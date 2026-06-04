@@ -458,17 +458,17 @@ export default function AgentSubAgents({ agentId }: { agentId?: string }) {
                           type="checkbox" 
                           checked={!!agent.auto_approve_orders}
                           onChange={() => handleToggleTrust(agent.id, !!agent.auto_approve_orders)}
-                          disabled={togglingTrust === agent.id}
+                          disabled={togglingTrust === agent.id || agent.account_type === 'credit' || agent.account_type === 'prepaid'}
                           style={{ opacity: 0, width: 0, height: 0 }} 
                         />
                         <span style={{
                           position: 'absolute',
-                          cursor: togglingTrust === agent.id ? 'not-allowed' : 'pointer',
+                          cursor: (togglingTrust === agent.id || agent.account_type === 'credit' || agent.account_type === 'prepaid') ? 'not-allowed' : 'pointer',
                           top: 0, left: 0, right: 0, bottom: 0,
                           backgroundColor: agent.auto_approve_orders ? 'var(--teal)' : 'var(--grey-500)',
                           transition: '.4s',
-                          borderRadius: '20px',
-                          opacity: togglingTrust === agent.id ? 0.5 : 1
+                          borderRadius: '16px',
+                          opacity: (togglingTrust === agent.id || agent.account_type === 'credit' || agent.account_type === 'prepaid') ? 0.5 : 1
                         }}>
                           <span style={{
                             position: 'absolute',
@@ -483,6 +483,11 @@ export default function AgentSubAgents({ agentId }: { agentId?: string }) {
                         </span>
                       </label>
                       {togglingTrust === agent.id && <span style={{ fontSize: '0.7rem', color: 'var(--teal)' }}>Saving...</span>}
+                      {(agent.account_type === 'credit' || agent.account_type === 'prepaid') && (
+                        <span style={{ fontSize: '0.7rem', color: 'var(--silver)', fontStyle: 'italic' }} title="Locked by Account Type">
+                          (Locked)
+                        </span>
+                      )}
                     </div>
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', minWidth: '160px' }}>

@@ -32,7 +32,7 @@ export async function POST(req: NextRequest) {
     const safeShipping = Number(shippingCost) || 0;
     const fulfillment = fulfillmentMethod === 'agent_pickup' ? 'agent_pickup' : 'ship';
 
-    const { data: agentProfile, error: agentProfileError } = await supabase.from('profiles').select('tier, parent_agent_id, role, is_sub_agent, account_type').eq('id', agentId).single();
+    const { data: agentProfile, error: agentProfileError } = await supabase.from('profiles').select('tier, parent_agent_id, role, is_sub_agent, account_type, max_auto_approve_limit').eq('id', agentId).single();
     if (agentProfileError || !agentProfile) return NextResponse.json({ error: 'Agent Profile Not Found.' }, { status: 404 });
 
     // SACA: sub-agents do not own a storefront and therefore cannot create
@@ -140,7 +140,9 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Failed To Add Items To Order.' }, { status: 500 });
     }
 
-    const finalAutoStatus = agentProfile.account_type === 'credit'
+    const limit = agentProfile.max_auto_approve_limit !== undefined && agentProfile.max_auto_approve_limit !== null ? Number(agentProfile.max_auto_approve_limit) : Infinity;
+    const isUnderLimit = computedTotal <= limit;
+    const finalAutoStatus = (agentProfile.account_type === 'credit' && isUnderLimit)
       ? (fulfillment === 'ship' ? 'approved_ship' : 'approved_pickup')
       : 'admin_approval_pending';
 

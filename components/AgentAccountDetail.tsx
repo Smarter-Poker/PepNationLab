@@ -36,6 +36,7 @@ type Detail = {
     phone: string | null;
     account_type: 'credit' | 'prepaid' | string | null;
     credit_limit: number | null;
+    max_auto_approve_limit: number | null;
     prepaid_balance: number;
     commission_pct: number | null;
     commission_max_pct: number | null;
@@ -131,6 +132,7 @@ export default function AgentAccountDetail({
   const [slug, setSlug] = useState('');
   const [accountType, setAccountType] = useState<'credit' | 'prepaid'>('prepaid');
   const [creditLimit, setCreditLimit] = useState('');
+  const [maxAutoApproveLimit, setMaxAutoApproveLimit] = useState('');
   const [commissionPct, setCommissionPct] = useState('');
   const [commissionMode, setCommissionMode] = useState<'fixed' | 'gamified'>('fixed');
   const [scaleType, setScaleType] = useState<'default' | 'custom'>('default');
@@ -160,6 +162,7 @@ export default function AgentAccountDetail({
       setSlug(d.storefront?.slug || '');
       setAccountType(d.agent.account_type === 'credit' ? 'credit' : 'prepaid');
       setCreditLimit(d.agent.credit_limit != null ? String(d.agent.credit_limit) : '');
+      setMaxAutoApproveLimit(d.agent.max_auto_approve_limit != null ? String(d.agent.max_auto_approve_limit) : '');
       setCommissionPct(d.agent.commission_pct != null ? String(d.agent.commission_pct) : '');
       const basePct = d.agent.commission_pct == null ? 0 : Number(d.agent.commission_pct);
       const capPct = d.agent.commission_max_pct;
@@ -233,7 +236,10 @@ export default function AgentAccountDetail({
           bonus_pct: Math.max(0, Number(s.bonus_pct) - baseVal),
         }));
       }
-      if (accountType === 'credit') payload.credit_limit = creditLimit === '' ? 0 : creditLimit;
+      if (accountType === 'credit') {
+        payload.credit_limit = creditLimit === '' ? 0 : creditLimit;
+        payload.max_auto_approve_limit = maxAutoApproveLimit === '' ? null : maxAutoApproveLimit;
+      }
 
       const res = await fetch(`/api/agent/agents/${agentId}`, {
         method: 'PATCH',
@@ -410,10 +416,16 @@ export default function AgentAccountDetail({
                         </div>
                       </div>
                       {accountType === 'credit' && (
-                        <div>
-                          <label style={labelStyle}>Credit Limit ($)</label>
-                          <input style={inputStyle} type="number" min="0" step="0.01" value={creditLimit} onChange={(e) => setCreditLimit(e.target.value)} placeholder="0.00" />
-                        </div>
+                        <>
+                          <div>
+                            <label style={labelStyle}>Credit Limit ($)</label>
+                            <input style={inputStyle} type="number" min="0" step="0.01" value={creditLimit} onChange={(e) => setCreditLimit(e.target.value)} placeholder="0.00" />
+                          </div>
+                          <div>
+                            <label style={labelStyle}>Max Auto-Approve Limit ($)</label>
+                            <input style={inputStyle} type="number" min="0" step="0.01" value={maxAutoApproveLimit} onChange={(e) => setMaxAutoApproveLimit(e.target.value)} placeholder="Unlimited" />
+                          </div>
+                        </>
                       )}
                     </div>
 
