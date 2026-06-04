@@ -48,68 +48,26 @@ export default function AgentOverview({
    *   Because the container has the exact image aspect ratio + background-size
    *   100% 100%, zone % === image pixel % — no offset math needed.
    */
-  // 12-button layout evenly distributed as a placeholder until new image is ready
   const cardZones = [
-    {
-      id: 'orders',
-      top: '2%', height: '7%',
-      action: () => onNavigate?.('Orders'),
-    },
-    {
-      id: 'messenger',
-      top: '10%', height: '7%',
-      action: () => { window.location.href = '/messenger'; },
-    },
-    {
-      id: 'researchers',
-      top: '18%', height: '7%',
-      action: () => onNavigate?.('Researchers'),
-    },
-    {
-      id: 'sales',
-      top: '26%', height: '7%',
-      action: () => onNavigate?.('Sales & Accounting'),
-    },
-    {
-      id: 'inventory',
-      top: '34%', height: '7%',
-      action: () => onNavigate?.('Inventory'),
-    },
-    {
-      id: 'products',
-      top: '42%', height: '7%',
-      action: () => onNavigate?.('Store Products'),
-    },
-    {
-      id: 'coupons',
-      top: '50%', height: '7%',
-      action: () => onNavigate?.('Coupons'),
-    },
-    {
-      id: 'bundles',
-      top: '58%', height: '7%',
-      action: () => onNavigate?.('Research Bundles'),
-    },
-    {
-      id: 'network',
-      top: '66%', height: '7%',
-      action: () => onNavigate?.(agentProfile?.is_super_agent ? 'My Agent Accounts' : 'My Sub-Agents'),
-    },
-    {
-      id: 'config',
-      top: '74%', height: '7%',
-      action: () => onNavigate?.('Storefront Config'),
-    },
-    {
-      id: 'storefront',
-      top: '82%', height: '7%',
-      action: () => { window.location.href = storefrontUrl; },
-    },
-    {
-      id: 'settings',
-      top: '90%', height: '7%',
-      action: () => { window.location.href = '/account'; },
-    },
+    // --- LEFT COLUMN ---
+    { id: 'visit_storefront', left: '4%', width: '44.5%', top: '3%', height: '10.5%', action: () => { window.location.href = storefrontUrl; } },
+    { id: 'messenger', left: '4%', width: '44.5%', top: '15%', height: '10.5%', action: () => { window.location.href = '/messenger'; } },
+    { id: 'orders', left: '4%', width: '44.5%', top: '27%', height: '10.5%', action: () => onNavigate?.('Orders') },
+    { id: 'products', left: '4%', width: '44.5%', top: '39%', height: '10.5%', action: () => onNavigate?.('Store Products') },
+    { id: 'researchers', left: '4%', width: '44.5%', top: '51%', height: '10.5%', action: () => onNavigate?.('Researchers') },
+    { id: 'sales', left: '4%', width: '44.5%', top: '63%', height: '10.5%', action: () => onNavigate?.('Sales & Accounting') },
+    { id: 'coupons', left: '4%', width: '44.5%', top: '75%', height: '10.5%', action: () => onNavigate?.('Coupons') },
+    { id: 'lab_tools', left: '4%', width: '44.5%', top: '87%', height: '10.5%', action: () => { window.location.href = '/lab-tools'; } },
+
+    // --- RIGHT COLUMN ---
+    { id: 'wallet', left: '51.5%', width: '44.5%', top: '3%', height: '10.5%', action: () => { window.location.href = '/wallet'; } },
+    { id: 'lab_journal', left: '51.5%', width: '44.5%', top: '15%', height: '10.5%', action: () => { window.location.href = '/account/lab-journal'; } },
+    { id: 'storefront_config', left: '51.5%', width: '44.5%', top: '27%', height: '10.5%', action: () => onNavigate?.('Storefront Config') },
+    { id: 'my_agents', left: '51.5%', width: '44.5%', top: '39%', height: '10.5%', action: () => onNavigate?.(agentProfile?.is_super_agent ? 'My Agent Accounts' : 'My Sub-Agents') },
+    { id: 'inventory', left: '51.5%', width: '44.5%', top: '51%', height: '10.5%', action: () => onNavigate?.('Inventory') },
+    { id: 'research_library', left: '51.5%', width: '44.5%', top: '63%', height: '10.5%', action: () => { window.location.href = '/research'; } },
+    { id: 'account_settings', left: '51.5%', width: '44.5%', top: '75%', height: '10.5%', action: () => { window.location.href = '/account'; } },
+    { id: 'help_support', left: '51.5%', width: '44.5%', top: '87%', height: '10.5%', action: () => { window.location.href = '/dashboard/agent/help'; } },
   ];
 
   return (
@@ -147,12 +105,12 @@ export default function AgentOverview({
           width: calc(100% - 4px);
           max-width: 480px;           /* cap on wide desktop */
 
-          /* Height auto-calculated by browser: width × (1024/576) */
-          aspect-ratio: 576 / 1024;
+          /* Height auto-calculated by browser: width × (1672/941) */
+          aspect-ratio: 941 / 1672;
 
           overflow: hidden;
 
-          background-image: url('/images/agent-dashboard-nav.jpg');
+          background-image: url('/images/agent-dashboard-16.png');
           background-repeat: no-repeat;
           background-position: top left;
           background-size: 100% 100%;   /* pixel-perfect: container = image */
@@ -161,8 +119,6 @@ export default function AgentOverview({
         /* ── Click zones ─────────────────────────────────────────────────── */
         .dash-zone {
           position: absolute;
-          left: 3%;
-          width: 94%;
           cursor: pointer;
           border-radius: 6px;
           transition: background 0.15s ease;
@@ -192,7 +148,7 @@ export default function AgentOverview({
                 if (e.key === 'Enter' || e.key === ' ') zone.action();
               }}
               aria-label={zone.id}
-              style={{ top: zone.top, height: zone.height }}
+              style={{ left: zone.left, width: zone.width, top: zone.top, height: zone.height }}
             />
           ))}
         </div>

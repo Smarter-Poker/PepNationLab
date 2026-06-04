@@ -1019,7 +1019,7 @@ export default function AgentStorefrontGrid({
             setFilterCategory('all');
             setShowStoreGrid(true);
             if (typeof window !== 'undefined') {
-              try { window.scrollTo({ top: 0, behavior: 'smooth' }); } catch {}
+              try { window.scrollTo({ top: 0, behavior: 'auto' }); } catch {}
             }
           }}
           onSearchStarted={() => {
@@ -1028,13 +1028,13 @@ export default function AgentStorefrontGrid({
             setSearchQuery('');
             setShowStoreGrid(true);
             if (typeof window !== 'undefined') {
-              try { window.scrollTo({ top: 0, behavior: 'smooth' }); } catch {}
+              try { window.scrollTo({ top: 0, behavior: 'auto' }); } catch {}
             }
           }}
           onAlreadyKnowClicked={() => {
             setShowStoreGrid(true);
             if (typeof window !== 'undefined') {
-              try { window.scrollTo({ top: 0, behavior: 'smooth' }); } catch {}
+              try { window.scrollTo({ top: 0, behavior: 'auto' }); } catch {}
             }
           }}
         onAddToCart={(variantId) => addToCart(variantId)}
@@ -1092,7 +1092,7 @@ export default function AgentStorefrontGrid({
                 setFilterCategory('all');
                 setSearchQuery('');
                 if (typeof window !== 'undefined') {
-                  try { window.scrollTo({ top: 0, behavior: 'smooth' }); } catch {}
+                  try { window.scrollTo({ top: 0, behavior: 'auto' }); } catch {}
                 }
               }}
               style={{
