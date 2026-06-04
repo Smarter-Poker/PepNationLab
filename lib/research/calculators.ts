@@ -157,12 +157,15 @@ export function vialPooling(opts: {
   vialMassMg: number;
   vialCount: number;
   totalDiluentMl: number;
+  transferLossPct?: number;
 }): { totalMassMg: number; concentrationMgPerMl: number } | null {
   const { vialMassMg, vialCount, totalDiluentMl } = opts;
   if (!isFinite(vialMassMg) || vialMassMg <= 0) return null;
   if (!isFinite(vialCount) || vialCount <= 0) return null;
   if (!isFinite(totalDiluentMl) || totalDiluentMl <= 0) return null;
-  const totalMassMg = vialMassMg * vialCount;
+  const lossPct = Math.max(0, Math.min(100, opts.transferLossPct ?? 0));
+  const effectiveVialMass = vialMassMg * (1 - lossPct / 100);
+  const totalMassMg = effectiveVialMass * vialCount;
   return { totalMassMg, concentrationMgPerMl: totalMassMg / totalDiluentMl };
 }
 
@@ -240,6 +243,7 @@ export function predictMassSpecPeaks(opts: {
   sequence: string;
   mode?: 'positive' | 'negative';
   maxCharge?: number;
+  adductMass?: number;
 }): MassSpecPeak[] {
   const seq = (opts.sequence ?? '').replace(/\s+/g, '').toUpperCase();
   const rawCharge = opts.maxCharge ?? 4;
@@ -252,8 +256,9 @@ export function predictMassSpecPeaks(opts: {
   }
   const peaks: MassSpecPeak[] = [];
   const isPositive = (opts.mode ?? 'positive') === 'positive';
+  const adduct = opts.adductMass ?? PROTON_MASS;
   for (let n = 1; n <= maxCharge; n++) {
-    const mz = (M + n * (isPositive ? PROTON_MASS : -PROTON_MASS)) / n;
+    const mz = (M + n * (isPositive ? adduct : -PROTON_MASS)) / n;
     const intensity = Math.exp(-Math.abs(n - 2) / 1.5);
     peaks.push({ charge: n, mz: Number(mz.toFixed(4)), intensity: Number(intensity.toFixed(3)) });
   }
@@ -267,6 +272,8 @@ export interface FmocSppsCostBreakdownItem {
 
 export interface FmocSppsCostResult {
   totalUsd: number;
+  recoveredMg: number;
+  costPerRecoveredMg: number;
   breakdown: FmocSppsCostBreakdownItem[];
 }
 
@@ -280,6 +287,8 @@ export function estimateFmocSppsCost(opts: {
   fmocAaCostPerGram?: number;
   resinCostPerGram?: number;
   includeReagents?: boolean;
+  synthesisYieldPct?: number;
+  purificationYieldPct?: number;
 }): FmocSppsCostResult | null {
   const seq = (opts.sequence ?? '').replace(/\s+/g, '').toUpperCase();
   if (!seq.length) return null;
@@ -288,6 +297,8 @@ export function estimateFmocSppsCost(opts: {
   const resinCostPerG = Math.max(0, opts.resinCostPerGram ?? 20);
   if (!isFinite(scale) || !isFinite(fmocCostPerG) || !isFinite(resinCostPerG)) return null;
   const includeReagents = opts.includeReagents !== false;
+  const synthYield = Math.max(1, Math.min(100, opts.synthesisYieldPct ?? 90)) / 100;
+  const purYield = Math.max(1, Math.min(100, opts.purificationYieldPct ?? 50)) / 100;
 
   const fmocAaGramsTotal = (seq.length * 5 * scale) / 1000;
   const fmocAaCost = fmocAaGramsTotal * fmocCostPerG;
@@ -299,8 +310,15 @@ export function estimateFmocSppsCost(opts: {
 
   const total = fmocAaCost + resinCost + reagentCost + cleavageCost + laborOverhead;
 
+  // Approximate crude mass based on average residue mass (~110 Da)
+  const theoreticalYieldMg = (scale / 1000) * (seq.length * 110);
+  const recoveredMg = theoreticalYieldMg * synthYield * purYield;
+  const costPerRecoveredMg = recoveredMg > 0 ? total / recoveredMg : 0;
+
   return {
     totalUsd: Number(total.toFixed(2)),
+    recoveredMg: Number(recoveredMg.toFixed(2)),
+    costPerRecoveredMg: Number(costPerRecoveredMg.toFixed(2)),
     breakdown: [
       { label: 'Fmoc Amino Acids', costUsd: Number(fmocAaCost.toFixed(2)) },
       { label: 'Resin', costUsd: Number(resinCost.toFixed(2)) },
@@ -368,13 +386,16 @@ export function vialQuantityPower(opts: {
   dosesPerSubject: number;
   mgPerDose: number;
   mgPerVial: number;
+  overagePct?: number;
 }): VialQuantityPowerResult | null {
   const { n, dosesPerSubject, mgPerDose, mgPerVial } = opts;
   if (!isFinite(n) || !isFinite(dosesPerSubject) || !isFinite(mgPerDose) || !isFinite(mgPerVial)) return null;
   if (n <= 0 || dosesPerSubject <= 0 || mgPerDose <= 0 || mgPerVial <= 0) return null;
+  const overage = Math.max(0, Math.min(100, opts.overagePct ?? 0)) / 100;
   const perSubjectMg = dosesPerSubject * mgPerDose;
   const totalMg = perSubjectMg * n;
-  const vialsNeeded = Math.ceil(totalMg / mgPerVial);
+  const baseVials = Math.ceil(totalMg / mgPerVial);
+  const vialsNeeded = Math.ceil(baseVials * (1 + overage));
   return {
     vialsNeeded,
     totalMg,

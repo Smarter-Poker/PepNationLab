@@ -171,6 +171,7 @@ function Reconstitution() {
   const [diluentMl, setDiluentMl] = useState('');
   const [desiredMass, setDesiredMass] = useState('');
   const [unit, setUnit] = useState('mcg');
+  const [syringeType, setSyringeType] = useState('U-100');
 
   // When peptide changes, update defaults
   const handlePeptideChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -196,7 +197,7 @@ function Reconstitution() {
   const dMassMg = unit === 'mcg' ? dMassNumeric / 1000 : dMassNumeric;
 
   const drawMl = drawVolumeMl(vMass, dilMl, dMassMg);
-  const drawUnits = drawMl !== null && isFinite(drawMl) ? Math.round(drawMl * 100) : null;
+  const drawUnits = drawMl !== null && isFinite(drawMl) ? Math.round(drawMl * (syringeType === 'U-100' ? 100 : 40)) : null;
 
   return (
     <section id="reconstitution" style={chromeOuterStyle}>
@@ -252,6 +253,13 @@ function Reconstitution() {
               </StyledSelect>
             </div>
           </label>
+          <label style={{ display: "block" }}>
+            <div style={labelStyle}>Syringe Type</div>
+            <StyledSelect value={syringeType} onChange={(e) => setSyringeType(e.target.value)}>
+              <option value="U-100">U-100 (Most Common)</option>
+              <option value="U-40">U-40 (Vet / Special)</option>
+            </StyledSelect>
+          </label>
         </div>
 
         <div style={{ ...resultStyle, marginTop: 20 }}>
@@ -262,7 +270,7 @@ function Reconstitution() {
               <span style={{ fontSize: 24, color: '#68D391', fontWeight: 800, display: 'block', margin: '12px 0' }}>
                 {drawUnits} units
               </span>
-              <span style={{ fontSize: 13, color: '#A8B4C0' }}>(on a standard U-100 syringe. That is {drawMl.toFixed(3)} mL)</span>
+              <span style={{ fontSize: 13, color: '#A8B4C0' }}>(Pull liquid to the <strong>{drawUnits}</strong> tick mark on a standard {syringeType} syringe. That is {drawMl.toFixed(3)} mL)</span>
             </div>
           ) : (
             <div style={{ fontSize: 14 }}>Enter a desired dose above.</div>
@@ -279,12 +287,18 @@ function DilutionSection() {
   const [stock, setStock] = useState('');
   const [factor, setFactor] = useState('');
   const [steps, setSteps] = useState('');
+  const [finalVol, setFinalVol] = useState('');
 
   const series = dilutionSeries({
     stockConcentration: Number(stock),
     dilutionFactor: Number(factor),
     steps: Math.max(1, Math.floor(Number(steps) || 1)),
   });
+
+  const fv = Number(finalVol);
+  const df = Number(factor);
+  const stockNeeded = (fv > 0 && df > 1) ? fv / df : null;
+  const diluentNeeded = stockNeeded !== null ? fv - stockNeeded : null;
 
   return (
     <section id="dilution" style={chromeOuterStyle}>
@@ -306,7 +320,19 @@ function DilutionSection() {
           <div style={labelStyle}>Steps</div>
           <StyledInput  type="number" min={1} max={20} step={1} value={steps} onChange={(e) => setSteps(e.target.value)} />
         </label>
+        <label style={{ display: "block" }}>
+          <div style={labelStyle}>Target Final Vol (Optional)</div>
+          <StyledInput  type="number" step="any" min={0} value={finalVol} placeholder="e.g. 100" onChange={(e) => setFinalVol(e.target.value)} />
+        </label>
       </div>
+
+      {stockNeeded !== null && diluentNeeded !== null && (
+        <div style={{ ...resultStyle, marginTop: 16, marginBottom: 16, fontSize: 14 }}>
+          To make <strong style={{ color: '#00E5FF' }}>{fv} units</strong> of final volume at each step:<br/>
+          Mix <strong style={{ color: '#68D391' }}>{stockNeeded.toPrecision(4)} units</strong> of previous step stock with <strong style={{ color: '#68D391' }}>{diluentNeeded.toPrecision(4)} units</strong> of diluent.
+        </div>
+      )}
+
       <div style={{ ...resultStyle, padding: 0, background: 'transparent', border: 'none' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
           <thead>
@@ -363,6 +389,14 @@ function ConcentrationSection() {
     molecularWeightDa: mwRequired ? (Number(mw) || null) : null,
   });
 
+  const popularMws = [
+    { name: 'Manual MW', val: '' },
+    { name: 'BPC-157 (1419.5 Da)', val: '1419.5' },
+    { name: 'TB-500 (4963.5 Da)', val: '4963.5' },
+    { name: 'Tirzepatide (4813.5 Da)', val: '4813.5' },
+    { name: 'Semaglutide (4113.6 Da)', val: '4113.6' },
+  ];
+
   return (
     <section id="concentration" style={chromeOuterStyle}>
       <div style={chromeInnerStyle}>
@@ -390,7 +424,12 @@ function ConcentrationSection() {
         {mwRequired && (
           <label style={{ display: "block" }}>
             <div style={labelStyle}>Molecular Weight (Da)</div>
-            <StyledInput  type="number" step="any" value={mw} onChange={(e) => setMw(e.target.value)} />
+            <div style={{ display: 'flex', gap: 8 }}>
+              <StyledSelect style={{ flex: 1 }} value={mw} onChange={(e) => setMw(e.target.value)}>
+                {popularMws.map(p => <option key={p.name} value={p.val}>{p.name}</option>)}
+              </StyledSelect>
+              <StyledInput style={{ width: 100 }} type="number" step="any" value={mw} onChange={(e) => setMw(e.target.value)} placeholder="Da" />
+            </div>
           </label>
         )}
       </div>

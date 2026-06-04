@@ -1,26 +1,40 @@
 'use client';
 
 /**
- * Compare Tool — comprehensive side-by-side comparison of up to four compounds,
- * with pros/cons, a weighted scoring verdict, analyst brief, synergy detection,
- * and a radar chart. Pure presentation over an in-memory Compound[] from the
- * parent server component. Research-use-only.
+ * CompareTool — Phase 2
+ * Full side-by-side comparison tool with:
+ * - 5 tabs: Matrix | Pros & Cons | Analyst Brief | Mechanism | Protocol
+ * - Weighted scoring engine (0–100) with animated score rings
+ * - Auto-generated Pros/Cons with severity tiers and category grouping
+ * - Deep Analyst Brief with mechanism, stack, and protocol paragraphs
+ * - Mechanism deep-dive tab with receptor targets, risk_reasons, sources
+ * - Protocol tab with reconstitution, frequency, shelf-life, handling
+ * - Efficacy_scores heatmap visualization
+ * - Recommendation engine: "Which should I choose?" verdict card
+ * - Popular Comparisons quick-start suggestions
+ * - Expanded synergy/conflict engine (25+ pairs)
+ * - Animated radar (7 axes) with hover tooltips
+ * - JSON + CSV export, print, share
  */
 
-import { useMemo, useState, useEffect, useRef } from 'react';
+import { useMemo, useState, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import {
   Search, X, PlusCircle, Check, Printer, Share2, Download,
   ChevronDown, ChevronRight, GripHorizontal, ChevronLeft,
-  ThumbsUp, ThumbsDown, Trophy, AlertTriangle, Info
+  ThumbsUp, ThumbsDown, Trophy, AlertTriangle, Info,
+  Zap, BookOpen, FlaskConical, Shield, Star, TrendingUp,
+  Clock, Thermometer, Layers, ArrowRight, BarChart3, Beaker
 } from 'lucide-react';
 import { type Compound, evidenceTier, wadaLabel, researchAreaLabel, RISK_META } from '@/lib/compounds';
 import AttributeRadarChart, { type RadarDataPoint } from './AttributeRadarChart';
 import InCellGlossaryTooltip from './InCellGlossaryTooltip';
 
 const MAX_COLUMNS = 4;
+const NL = 'Not Listed';
 
+// ─── Style constants ─────────────────────────────────────────────────────────
 const cellStyle: React.CSSProperties = {
   padding: 'var(--space-3, 12px)',
   borderBottom: '1px solid rgba(168,180,192,0.18)',
@@ -28,7 +42,6 @@ const cellStyle: React.CSSProperties = {
   fontSize: '0.88rem',
   color: 'var(--white, #FFFFFF)',
 };
-
 const labelCellStyle: React.CSSProperties = {
   ...cellStyle,
   color: 'var(--silver, #A8B4C0)',
@@ -37,15 +50,15 @@ const labelCellStyle: React.CSSProperties = {
   position: 'sticky',
   left: 0,
   zIndex: 10,
+  background: '#162230',
   boxShadow: 'inset -1px 0 0 rgba(168,180,192,0.18)',
 };
-
 const groupCellStyle: React.CSSProperties = {
   padding: 'var(--space-3, 12px)',
-  background: 'linear-gradient(rgba(0,196,188,0.1), rgba(0,196,188,0.1)), #162230',
+  background: 'linear-gradient(rgba(0,196,188,0.1),rgba(0,196,188,0.1)),#162230',
   borderTop: '1px solid rgba(0,196,188,0.3)',
   borderBottom: '1px solid rgba(0,196,188,0.3)',
-  color: 'var(--teal, #00C4BC)',
+  color: 'var(--teal,#00C4BC)',
   fontWeight: 800,
   fontSize: '0.72rem',
   letterSpacing: '0.06em',
@@ -53,71 +66,93 @@ const groupCellStyle: React.CSSProperties = {
   cursor: 'pointer',
   userSelect: 'none',
 };
+const colors = ['#00C4BC', '#FF6B6B', '#FCA311', '#9F7AEA'];
 
-const NL = 'Not Listed';
 function txt(v: unknown): string {
   const s = (v ?? '').toString().trim();
   return s || NL;
 }
-
 function parseHalfLifeHours(hl: string | null | undefined): number {
   if (!hl) return 0;
   const s = hl.toLowerCase();
-  const match = s.match(/(\d+(?:\.\d+)?)/);
-  if (!match) return 0;
-  const num = parseFloat(match[1]);
-  if (s.includes('min')) return num / 60;
-  if (s.includes('day')) return num * 24;
-  if (s.includes('week')) return num * 24 * 7;
-  return num;
+  const m = s.match(/(\d+(?:\.\d+)?)/);
+  if (!m) return 0;
+  const n = parseFloat(m[1]);
+  if (s.includes('min')) return n / 60;
+  if (s.includes('day')) return n * 24;
+  if (s.includes('week')) return n * 24 * 7;
+  return n;
 }
 
-// ─── Weighted Composite Scoring Engine ───────────────────────────────────────
+// ─── POPULAR COMPARISONS ────────────────────────────────────────────────────
+const POPULAR_COMPARISONS = [
+  { label: 'GH Stack Classics', slugs: ['cjc-1295-without-dac', 'ipamorelin'], icon: '💉' },
+  { label: 'Healing Duo', slugs: ['bpc-157', 'tb-500'], icon: '🔧' },
+  { label: 'Longevity Stack', slugs: ['epitalon', 'ghk-cu'], icon: '⏳' },
+  { label: 'Weight Comparison', slugs: ['semaglutide', 'tirzepatide'], icon: '⚖️' },
+  { label: 'Collagen & Skin', slugs: ['ghk-cu', 'bpc-157'], icon: '✨' },
+  { label: 'Sleep & Recovery', slugs: ['epitalon', 'dsip'], icon: '😴' },
+  { label: 'Sexual Health', slugs: ['pt-141', 'kisspeptin-10'], icon: '❤️' },
+  { label: 'Cognitive Boost', slugs: ['dihexa', 'semax'], icon: '🧠' },
+];
+
+// ─── EXPANDED SYNERGY ENGINE (25 pairs) ─────────────────────────────────────
+const KNOWN_SYNERGIES = [
+  // Tissue Repair / Healing
+  { pairs: ['bpc-157', 'tb-500'], type: 'synergy', category: 'Healing', message: 'BPC-157 + TB-500 act highly synergistically — BPC-157 drives localized GI/tendon cytoprotection while TB-500 provides systemic actin-regulatory repair.' },
+  { pairs: ['bpc-157', 'ghk-cu'], type: 'synergy', category: 'Healing', message: 'BPC-157 + GHK-Cu: complementary wound healing stack — GHK-Cu drives collagen synthesis and copper-dependent enzymes while BPC-157 supports vascular and mucosal repair.' },
+  { pairs: ['tb-500', 'ghk-cu'], type: 'synergy', category: 'Healing', message: 'TB-500 + GHK-Cu: actin regulation + ECM remodeling provides dual-layered soft tissue recovery support.' },
+  { pairs: ['bpc-157', 'tb-500', 'ghk-cu'], type: 'synergy', category: 'Healing', message: 'Triple Healing Stack: BPC-157 + TB-500 + GHK-Cu represents the full tissue repair trifecta — local, systemic, and structural matrix rebuilding.' },
+  // GH Secretagogue Stacks
+  { pairs: ['cjc-1295-without-dac', 'ipamorelin'], type: 'synergy', category: 'Performance', message: 'CJC-1295 + Ipamorelin: gold-standard GH stack — GHRH analog + GHSR agonist dual-pathway stimulation amplifies GH pulse amplitude without spiking cortisol or prolactin.' },
+  { pairs: ['sermorelin', 'ipamorelin'], type: 'synergy', category: 'Performance', message: 'Sermorelin + Ipamorelin: softer dual-pathway GH secretagogue combination with favorable safety profile.' },
+  { pairs: ['cjc-1295-without-dac', 'mk-677'], type: 'synergy', category: 'Performance', message: 'CJC-1295 + MK-677: injectable GHRH + oral ghrelin mimetic produces robust, sustained GH/IGF-1 elevation.' },
+  { pairs: ['ipamorelin', 'mk-677'], type: 'synergy', category: 'Performance', message: 'Ipamorelin + MK-677: complementary ghrelin-axis stimulation — injectable pulse + oral sustained background.' },
+  // Longevity / Anti-Aging
+  { pairs: ['epitalon', 'ghk-cu'], type: 'synergy', category: 'Longevity', message: 'Epitalon + GHK-Cu: telomerase activation + copper-tripeptide regeneration for multi-pathway longevity research.' },
+  { pairs: ['epitalon', 'dsip'], type: 'synergy', category: 'Sleep', message: 'Epitalon + DSIP: circadian clock restoration + sleep-initiation signaling for sleep architecture research.' },
+  { pairs: ['mots-c', 'ss-31'], type: 'synergy', category: 'Longevity', message: 'MOTS-c + SS-31: dual mitochondrial optimization — MOTS-c for metabolic signaling, SS-31 for inner membrane cardiolipin protection.' },
+  // Sexual Health
+  { pairs: ['pt-141', 'kisspeptin-10'], type: 'synergy', category: 'Sexual Health', message: 'PT-141 + Kisspeptin-10: complementary central (melanocortin MC4R) + hypothalamic (GPR54) sexual health pathways.' },
+  // Weight / Metabolic
+  { pairs: ['aod-9604', 'ipamorelin'], type: 'synergy', category: 'Metabolic', message: 'AOD-9604 + Ipamorelin: lipolytic C-terminal fragment + GH pulse amplifier for body composition research.' },
+  // Conflict Pairs
+  { pairs: ['tirzepatide', 'retatrutide'], type: 'conflict', category: 'Safety', message: 'Compounding GLP-1/GIP dual/triple agonists: highly overlapping mechanism with compounding GI adverse effects (nausea, vomiting, gastroparesis).' },
+  { pairs: ['semaglutide', 'tirzepatide'], type: 'conflict', category: 'Safety', message: 'Two incretin agents: stacking GLP-1 agonists compounds GI distress and unclear additive efficacy benefit in research.' },
+  { pairs: ['semaglutide', 'retatrutide'], type: 'conflict', category: 'Safety', message: 'GLP-1 agonist overlap: additive nausea/vomiting risk with no clear mechanistic benefit over mono-therapy.' },
+  // Pro-Angiogenic caution
+  { pairs: ['bpc-157', 'igf-1'], type: 'caution', category: 'Safety', message: 'Caution: Both BPC-157 and IGF-1 promote angiogenesis. Research literature notes theoretical considerations around stacking pro-angiogenic compounds.' },
+  { pairs: ['tb-500', 'igf-1'], type: 'caution', category: 'Safety', message: 'Caution: TB-500 (thymosin beta-4) and IGF-1 both promote cell migration and angiogenesis — research protocol design should account for this.' },
+];
+
+// ─── SCORING ENGINE ──────────────────────────────────────────────────────────
 interface CompoundScore {
-  total: number; // 0–100
-  breakdown: {
-    evidence: number;    // 0–30
-    safety: number;      // 0–25
-    coverage: number;    // 0–15
-    science: number;     // 0–15
-    handling: number;    // 0–15
-  };
-  verdict: string;       // human-readable summary of strongest dimension
-  bestFor: string[];     // research areas where this compound leads
+  total: number;
+  letter: 'A+' | 'A' | 'B+' | 'B' | 'C+' | 'C' | 'D';
+  breakdown: { evidence: number; safety: number; coverage: number; science: number; handling: number };
+  verdict: string;
+  weaknesses: string[];
+  strengths: string[];
+  bestFor: string[];
+  recommendedContexts: string[];
 }
 
 function scoreCompound(c: Compound, allSelected: Compound[]): CompoundScore {
-  // Evidence Tier (0–30)
-  const evidenceScore =
-    c.evidence_tier === 'approved_drug' ? 30 :
-    c.evidence_tier === 'investigational' ? 22 :
-    c.evidence_tier === 'preclinical' ? 14 :
-    c.evidence_tier === 'research_chemical' ? 6 : 3;
-
-  // Safety/Risk (0–25) — lower risk = higher score
-  const safetyScore =
-    c.risk_level === 'low' ? 25 :
-    c.risk_level === 'moderate' ? 18 :
-    c.risk_level === 'high' ? 9 :
-    c.risk_level === 'critical' ? 2 : 10;
-
-  // Research Coverage (0–15) — number of research areas, capped
+  const evidenceScore = c.evidence_tier === 'approved_drug' ? 30 : c.evidence_tier === 'investigational' ? 22 : c.evidence_tier === 'preclinical' ? 14 : c.evidence_tier === 'research_chemical' ? 6 : 3;
+  const safetyScore = c.risk_level === 'low' ? 25 : c.risk_level === 'moderate' ? 18 : c.risk_level === 'high' ? 9 : c.risk_level === 'critical' ? 2 : 10;
   const areaCount = (c.research_areas ?? []).length;
   const coverageScore = Math.min(15, areaCount * 2.5);
-
-  // Scientific Backing (0–15) — citations + trials
   const citeScore = Math.min(8, ((c.pubmed_citation_count ?? 0) / 500) * 8);
   const trialScore = Math.min(7, (((c.active_trial_count ?? 0) + (c.completed_trial_count ?? 0)) / 20) * 7);
   const scienceScore = citeScore + trialScore;
-
-  // Handling Practicality (0–15) — half-life + shelf life
   const hlHours = parseHalfLifeHours(c.half_life);
-  const hlScore = hlHours > 0 ? Math.min(8, (hlHours / 168) * 8) : 2; // 168h = 1 week
+  const hlScore = hlHours > 0 ? Math.min(8, (hlHours / 168) * 8) : 2;
   const shelfDays = c.reconstitution_shelf_days ?? c.handling?.reconstituted_days ?? 0;
   const shelfScore = shelfDays > 0 ? Math.min(7, (shelfDays / 60) * 7) : 2;
   const handlingScore = hlScore + shelfScore;
-
   const total = Math.round(evidenceScore + safetyScore + coverageScore + scienceScore + handlingScore);
+
+  const letter: CompoundScore['letter'] = total >= 88 ? 'A+' : total >= 80 ? 'A' : total >= 73 ? 'B+' : total >= 65 ? 'B' : total >= 57 ? 'C+' : total >= 48 ? 'C' : 'D';
 
   const dims = [
     { name: 'evidence strength', val: evidenceScore / 30 },
@@ -126,18 +161,25 @@ function scoreCompound(c: Compound, allSelected: Compound[]): CompoundScore {
     { name: 'scientific backing', val: scienceScore / 15 },
     { name: 'handling practicality', val: handlingScore / 15 },
   ];
-  const topDim = dims.sort((a, b) => b.val - a.val)[0];
-  const verdict = `Leads in ${topDim.name}`;
+  const sorted = [...dims].sort((a, b) => b.val - a.val);
+  const verdict = `Leads in ${sorted[0].name}`;
+  const strengths = sorted.slice(0, 2).filter(d => d.val > 0.5).map(d => d.name);
+  const weaknesses = sorted.slice(-2).filter(d => d.val < 0.4).map(d => d.name);
 
-  // bestFor: research areas where this compound has the most coverage vs peers
-  const bestFor = (c.research_areas ?? []).filter(area =>
-    allSelected.every(other =>
-      other.slug === c.slug || !(other.research_areas ?? []).includes(area)
-    )
-  );
+  const bestFor = (c.research_areas ?? []).filter(area => allSelected.every(other => other.slug === c.slug || !(other.research_areas ?? []).includes(area)));
+
+  const recommendedContexts: string[] = [];
+  if (c.evidence_tier === 'approved_drug' || c.evidence_tier === 'investigational') recommendedContexts.push('Researchers requiring clinical-grade validated compounds');
+  if (c.risk_level === 'low') recommendedContexts.push('Protocols with conservative safety parameters');
+  if (hlHours >= 72) recommendedContexts.push('Long-duration exposure research designs');
+  if (hlHours > 0 && hlHours < 3) recommendedContexts.push('Short-pulse or acute-response research');
+  if ((c.pubmed_citation_count ?? 0) >= 500) recommendedContexts.push('Literature-backed reference compound selection');
+  if ((c.research_areas ?? []).length >= 5) recommendedContexts.push('Multi-system or polypharmacology research');
+  if (c.is_stack) recommendedContexts.push('Multi-compound combination research protocols');
 
   return {
     total,
+    letter,
     breakdown: {
       evidence: Math.round(evidenceScore),
       safety: Math.round(safetyScore),
@@ -146,131 +188,153 @@ function scoreCompound(c: Compound, allSelected: Compound[]): CompoundScore {
       handling: Math.round(handlingScore),
     },
     verdict,
+    weaknesses,
+    strengths,
     bestFor,
+    recommendedContexts,
   };
 }
 
-// ─── Pros / Cons Generator ───────────────────────────────────────────────────
-interface ProsCons {
-  pros: string[];
-  cons: string[];
-}
+// ─── PROS/CONS ENGINE (tiered severity) ──────────────────────────────────────
+type PCSeverity = 'high' | 'medium' | 'low';
+interface PCItem { text: string; severity: PCSeverity; category: 'Evidence' | 'Safety' | 'Practical' | 'Science' }
+interface ProsCons { pros: PCItem[]; cons: PCItem[] }
 
 function generateProsCons(c: Compound): ProsCons {
-  const pros: string[] = [];
-  const cons: string[] = [];
+  const pros: PCItem[] = [];
+  const cons: PCItem[] = [];
 
   // Evidence
-  if (c.evidence_tier === 'approved_drug') pros.push('FDA/EMA Approved — highest evidence tier');
-  else if (c.evidence_tier === 'investigational') pros.push('Active human clinical trials underway');
-  else if (c.evidence_tier === 'preclinical') cons.push('Only preclinical (animal/in-vitro) evidence so far');
-  else cons.push('Research compound only — no approved human use');
+  if (c.evidence_tier === 'approved_drug') pros.push({ text: 'FDA/EMA Approved — highest possible regulatory evidence tier', severity: 'high', category: 'Evidence' });
+  else if (c.evidence_tier === 'investigational') pros.push({ text: 'Active human clinical trials underway — strong translational trajectory', severity: 'high', category: 'Evidence' });
+  else if (c.evidence_tier === 'preclinical') cons.push({ text: 'Preclinical evidence only (animal/in-vitro) — no human efficacy data yet', severity: 'high', category: 'Evidence' });
+  else cons.push({ text: 'Research compound — no approved or investigational clinical use', severity: 'high', category: 'Evidence' });
 
   // Safety
-  if (c.risk_level === 'low') pros.push('Low risk profile in available literature');
-  else if (c.risk_level === 'moderate') cons.push('Moderate risk — careful handling protocols recommended');
-  else if (c.risk_level === 'high') cons.push('High risk level — significant adverse event reports');
-  else if (c.risk_level === 'critical') cons.push('Critical risk designation — exercise extreme caution');
+  if (c.risk_level === 'low') pros.push({ text: 'Low risk profile across available literature', severity: 'high', category: 'Safety' });
+  else if (c.risk_level === 'moderate') cons.push({ text: 'Moderate risk — protocol design should include careful handling parameters', severity: 'medium', category: 'Safety' });
+  else if (c.risk_level === 'high') cons.push({ text: 'High risk designation — significant adverse event considerations documented', severity: 'high', category: 'Safety' });
+  else if (c.risk_level === 'critical') cons.push({ text: 'Critical risk level — exercise extreme laboratory caution; detailed safety protocols required', severity: 'high', category: 'Safety' });
+
+  // Risk reasons (from compound data)
+  if (c.risk_reasons?.length) {
+    c.risk_reasons.slice(0, 2).forEach(r => cons.push({ text: r, severity: 'medium', category: 'Safety' }));
+  }
 
   // WADA
-  if (c.wada_status === 'prohibited' || c.wada_status === 'prohibited_males') {
-    cons.push('WADA Prohibited — not permitted in tested competitive sport');
-  } else if (c.wada_status === 'permitted') {
-    pros.push('WADA Permitted — compliant for tested athletes');
-  }
+  if (c.wada_status === 'prohibited' || c.wada_status === 'prohibited_males') cons.push({ text: 'WADA Prohibited — not permitted for use by tested competitive athletes', severity: 'high', category: 'Safety' });
+  else if (c.wada_status === 'permitted') pros.push({ text: 'WADA Permitted — compliant for tested athletes in competitive sport', severity: 'medium', category: 'Safety' });
 
   // Citations
   const cites = c.pubmed_citation_count ?? 0;
-  if (cites >= 1000) pros.push(`Extensive scientific literature (${cites.toLocaleString()} PubMed citations)`);
-  else if (cites >= 200) pros.push(`Good scientific literature base (${cites.toLocaleString()} PubMed citations)`);
-  else if (cites < 50 && cites >= 0) cons.push('Limited peer-reviewed literature available');
+  if (cites >= 2000) pros.push({ text: `Exceptional peer-reviewed literature depth (${cites.toLocaleString()} PubMed citations)`, severity: 'high', category: 'Science' });
+  else if (cites >= 500) pros.push({ text: `Strong scientific literature base (${cites.toLocaleString()} PubMed citations)`, severity: 'medium', category: 'Science' });
+  else if (cites >= 100) pros.push({ text: `Moderate scientific literature (${cites.toLocaleString()} PubMed citations)`, severity: 'low', category: 'Science' });
+  else if (cites < 30) cons.push({ text: 'Very limited peer-reviewed literature — exercise additional interpretive caution', severity: 'high', category: 'Science' });
+  else cons.push({ text: 'Sparse scientific literature — few peer-reviewed studies available', severity: 'medium', category: 'Science' });
 
   // Clinical Trials
-  const trials = (c.active_trial_count ?? 0) + (c.completed_trial_count ?? 0);
-  if (trials >= 10) pros.push(`Substantial clinical trial history (${trials} trials)`);
-  else if (trials > 0) pros.push(`${trials} clinical trial${trials > 1 ? 's' : ''} on record`);
-  else cons.push('No registered clinical trials found');
+  const active = c.active_trial_count ?? 0;
+  const completed = c.completed_trial_count ?? 0;
+  const trials = active + completed;
+  if (trials >= 20) pros.push({ text: `Extensive clinical trial history (${trials} total; ${active} active)`, severity: 'high', category: 'Science' });
+  else if (trials >= 5) pros.push({ text: `${trials} clinical trial${trials > 1 ? 's' : ''} on record (${active} active)`, severity: 'medium', category: 'Science' });
+  else if (trials > 0) pros.push({ text: `${trials} clinical trial${trials > 1 ? 's' : ''} registered`, severity: 'low', category: 'Science' });
+  else cons.push({ text: 'No registered clinical trials in ClinicalTrials.gov', severity: 'medium', category: 'Science' });
 
   // Half-life
   const hlHours = parseHalfLifeHours(c.half_life);
-  if (hlHours >= 48) pros.push(`Long half-life (${c.half_life}) — infrequent dosing intervals possible`);
-  else if (hlHours > 0 && hlHours < 2) cons.push(`Very short half-life (${c.half_life}) — frequent administration required`);
+  if (hlHours >= 72) pros.push({ text: `Long half-life (${c.half_life}) enables infrequent administration intervals`, severity: 'medium', category: 'Practical' });
+  else if (hlHours >= 12) pros.push({ text: `Moderate half-life (${c.half_life}) — workable dosing window`, severity: 'low', category: 'Practical' });
+  else if (hlHours > 0 && hlHours < 1) cons.push({ text: `Very short half-life (${c.half_life}) — may require continuous infusion or frequent administration in research protocols`, severity: 'high', category: 'Practical' });
+  else if (hlHours > 0 && hlHours < 4) cons.push({ text: `Short half-life (${c.half_life}) — requires frequent administration scheduling`, severity: 'medium', category: 'Practical' });
 
   // Shelf life
   const shelf = c.reconstitution_shelf_days ?? c.handling?.reconstituted_days;
-  if (shelf && shelf >= 28) pros.push(`Good reconstituted shelf life (${shelf} days refrigerated)`);
-  else if (shelf && shelf < 14) cons.push(`Short shelf life after reconstitution (${shelf} days)`);
-
-  // Research areas breadth
-  const areaCount = (c.research_areas ?? []).length;
-  if (areaCount >= 4) pros.push(`Broad research interest — studied across ${areaCount} application areas`);
-  else if (areaCount === 1) cons.push('Narrow research scope — limited to one primary application area');
-
-  // Stack benefits
-  if ((c.best_stacked_with ?? []).length > 0) {
-    pros.push(`Known synergistic stack partners: ${c.best_stacked_with!.join(', ')}`);
-  }
+  if (shelf && shelf >= 30) pros.push({ text: `Good reconstituted shelf life (${shelf} days refrigerated) — reduced prep frequency`, severity: 'low', category: 'Practical' });
+  else if (shelf && shelf < 10) cons.push({ text: `Short post-reconstitution shelf life (${shelf} days) — requires frequent preparation`, severity: 'medium', category: 'Practical' });
 
   // Temperature sensitivity
-  if (c.is_temp_sensitive) {
-    cons.push('Temperature-sensitive — requires cold-chain shipping and refrigerated storage');
-  }
+  if (c.is_temp_sensitive) cons.push({ text: 'Temperature-sensitive — requires unbroken cold-chain during shipping and storage', severity: 'medium', category: 'Practical' });
+
+  // Research breadth
+  const areaCount = (c.research_areas ?? []).length;
+  if (areaCount >= 6) pros.push({ text: `Exceptionally broad research scope — studied across ${areaCount} application areas`, severity: 'medium', category: 'Science' });
+  else if (areaCount >= 4) pros.push({ text: `Wide research coverage across ${areaCount} application areas`, severity: 'low', category: 'Science' });
+  else if (areaCount === 1) cons.push({ text: 'Narrow research scope — one primary application area limits versatility', severity: 'low', category: 'Science' });
+
+  // Stack benefits
+  if ((c.best_stacked_with ?? []).length >= 2) pros.push({ text: `Well-characterized stack compatibility: ${c.best_stacked_with!.slice(0, 3).join(', ')}`, severity: 'low', category: 'Practical' });
+
+  // Stack compound note
+  if (c.is_stack && c.stack_components?.length) pros.push({ text: `Pre-formulated stack — combines ${c.stack_components.slice(0, 3).join(' + ')}${c.stack_components.length > 3 ? ` +${c.stack_components.length - 3} more` : ''} for convenience`, severity: 'medium', category: 'Practical' });
 
   return { pros, cons };
 }
 
-// ─── Analyst Brief Generator ──────────────────────────────────────────────────
+// ─── ANALYST BRIEF GENERATOR ─────────────────────────────────────────────────
 function generateAnalystBrief(selected: Compound[], scores: CompoundScore[]): string[] {
   if (selected.length < 2) return [];
   const paragraphs: string[] = [];
 
-  // Score leader
-  const sorted = [...selected].map((c, i) => ({ c, s: scores[i] })).sort((a, b) => b.s.total - a.s.total);
-  const leader = sorted[0];
-  const runner = sorted[1];
-  paragraphs.push(
-    `Overall, ${leader.c.display_name} scores highest at ${leader.s.total}/100 on PepNation Lab's composite research index, driven by its ${leader.s.verdict.toLowerCase()}. ${runner.c.display_name} follows at ${runner.s.total}/100${sorted.length > 2 ? `, with ${sorted.slice(2).map(x => `${x.c.display_name} at ${x.s.total}`).join(', ')}` : ''}.`
-  );
+  const ranked = [...selected].map((c, i) => ({ c, s: scores[i] })).sort((a, b) => b.s.total - a.s.total);
+  const leader = ranked[0];
+  const runner = ranked[1];
 
-  // Evidence narrative
-  const highestEvidence = [...selected].sort((a, b) => {
-    const rank = (e: string) =>
-      e === 'approved_drug' ? 4 : e === 'investigational' ? 3 : e === 'preclinical' ? 2 : 1;
-    return rank(b.evidence_tier) - rank(a.evidence_tier);
-  })[0];
-  paragraphs.push(
-    `From an evidence standpoint, ${highestEvidence.display_name} carries the strongest regulatory backing as an ${evidenceTier(highestEvidence.evidence_tier).label.toLowerCase()} compound. Researchers prioritizing well-validated compounds should weight this heavily in their selection.`
-  );
+  // 1. Overall ranking
+  const rankStr = ranked.map(({ c, s }) => `${c.display_name} (${s.total}/100, ${s.letter})`).join(', ');
+  paragraphs.push(`Overall research index ranking: ${rankStr}. ${leader.c.display_name} leads driven by its ${leader.s.verdict.toLowerCase()}${leader.s.strengths.length ? ` and strong ${leader.s.strengths.join(' and ')}` : ''}.`);
 
-  // Safety narrative
-  const safest = [...selected].sort((a, b) => {
-    const rank = (r: string) => r === 'low' ? 1 : r === 'moderate' ? 2 : r === 'high' ? 3 : 4;
-    return rank(a.risk_level) - rank(b.risk_level);
-  })[0];
-  const mostRisky = [...selected].sort((a, b) => {
-    const rank = (r: string) => r === 'low' ? 1 : r === 'moderate' ? 2 : r === 'high' ? 3 : 4;
-    return rank(b.risk_level) - rank(a.risk_level);
-  })[0];
-  if (safest.slug !== mostRisky.slug) {
-    paragraphs.push(
-      `Safety profiles diverge meaningfully across this selection. ${safest.display_name} presents the lowest documented risk level, while ${mostRisky.display_name} carries a ${RISK_META[mostRisky.risk_level]?.label ?? mostRisky.risk_level} risk designation — a factor that should inform lab protocol design and storage handling.`
-    );
+  // 2. Evidence comparison
+  const evidenceRanked = [...selected].sort((a, b) => {
+    const r = (e: string) => e === 'approved_drug' ? 4 : e === 'investigational' ? 3 : e === 'preclinical' ? 2 : 1;
+    return r(b.evidence_tier) - r(a.evidence_tier);
+  });
+  const topEvidence = evidenceRanked[0];
+  const bottomEvidence = evidenceRanked[evidenceRanked.length - 1];
+  if (topEvidence.slug !== bottomEvidence.slug) {
+    paragraphs.push(`Evidence hierarchy is significant in this comparison. ${topEvidence.display_name} sits at the ${evidenceTier(topEvidence.evidence_tier).label} tier, while ${bottomEvidence.display_name} operates at the ${evidenceTier(bottomEvidence.evidence_tier).label} level — a gap that should meaningfully inform protocol design decisions and researcher expectations around established efficacy data.`);
   }
 
-  // Half-life narrative
-  const byHl = [...selected].map(c => ({ c, hl: parseHalfLifeHours(c.half_life) })).filter(x => x.hl > 0).sort((a, b) => b.hl - a.hl);
-  if (byHl.length >= 2) {
-    const longest = byHl[0];
-    const shortest = byHl[byHl.length - 1];
+  // 3. Safety divergence
+  const safetyRanked = [...selected].sort((a, b) => {
+    const r = (x: string) => x === 'low' ? 1 : x === 'moderate' ? 2 : x === 'high' ? 3 : 4;
+    return r(a.risk_level) - r(b.risk_level);
+  });
+  const safest = safetyRanked[0];
+  const riskiest = safetyRanked[safetyRanked.length - 1];
+  if (safest.slug !== riskiest.slug) {
+    const riskiestMeta = RISK_META[riskiest.risk_level];
+    paragraphs.push(`Safety profiles diverge across this selection. ${safest.display_name} presents the most favorable documented risk profile, while ${riskiest.display_name} carries a ${riskiestMeta?.label ?? riskiest.risk_level} designation${riskiest.risk_reasons?.length ? ` (key considerations: ${riskiest.risk_reasons.slice(0, 2).join('; ')})` : ''} — a factor that should directly inform lab protocol safeguards and handling procedures.`);
+  }
+
+  // 4. Pharmacokinetics / Half-life
+  const hlData = selected.map(c => ({ c, hl: parseHalfLifeHours(c.half_life) })).filter(x => x.hl > 0).sort((a, b) => b.hl - a.hl);
+  if (hlData.length >= 2) {
+    const longest = hlData[0];
+    const shortest = hlData[hlData.length - 1];
     if (longest.c.slug !== shortest.c.slug) {
       const ratio = (longest.hl / shortest.hl).toFixed(1);
-      paragraphs.push(
-        `Pharmacokinetically, ${longest.c.display_name} provides a ${ratio}x longer half-life than ${shortest.c.display_name} (${longest.c.half_life} vs. ${shortest.c.half_life}). For research protocols requiring sustained exposure, ${longest.c.display_name} offers greater dosing interval flexibility.`
-      );
+      paragraphs.push(`Pharmacokinetically, ${longest.c.display_name} provides a ${ratio}x longer half-life (${longest.c.half_life}) versus ${shortest.c.display_name} (${shortest.c.half_life}). For sustained-exposure research designs, ${longest.c.display_name} reduces administration frequency significantly; for pulse-modeling studies, ${shortest.c.display_name}'s rapid clearance may be preferable.`);
     }
   }
 
-  // Unique use-case note
+  // 5. Scientific backing divergence
+  const citeRanked = [...selected].sort((a, b) => (b.pubmed_citation_count ?? 0) - (a.pubmed_citation_count ?? 0));
+  const mostCited = citeRanked[0];
+  const leastCited = citeRanked[citeRanked.length - 1];
+  if (mostCited.slug !== leastCited.slug && (mostCited.pubmed_citation_count ?? 0) > 0) {
+    paragraphs.push(`Scientific literature depth varies considerably. ${mostCited.display_name} has the deepest research footprint with ${(mostCited.pubmed_citation_count ?? 0).toLocaleString()} indexed PubMed publications${mostCited.active_trial_count ? ` and ${mostCited.active_trial_count} active clinical trials` : ''}. ${leastCited.display_name} has the smallest evidence base with ${(leastCited.pubmed_citation_count ?? 0).toLocaleString()} citations, meaning researchers should weigh conclusions with proportionally greater caution.`);
+  }
+
+  // 6. Mechanism / target divergence
+  const withMech = selected.filter(c => c.molecular_target || c.mechanism || c.pk_summary);
+  if (withMech.length >= 2) {
+    const mechLines = withMech.slice(0, 3).map(c => `${c.display_name} (${c.molecular_target ?? c.compound_class ?? 'mechanism TBD'})`).join(', ');
+    paragraphs.push(`Mechanistically, these compounds operate through distinct pathways: ${mechLines}. This differentiation means they are unlikely to be directly interchangeable in research protocols — target specificity should be primary criteria for selection.`);
+  }
+
+  // 7. Unique use-case differentiation
   const uniqueAreas = selected.flatMap(c =>
     (c.research_areas ?? []).filter(a =>
       selected.filter(o => o.slug !== c.slug).every(o => !(o.research_areas ?? []).includes(a))
@@ -283,13 +347,56 @@ function generateAnalystBrief(selected: Compound[], scores: CompoundScore[]): st
       return acc;
     }, {});
     const parts = Object.entries(grouped).map(([name, areas]) => `${name} uniquely covers ${areas.join(' and ')}`);
-    paragraphs.push(`In terms of research scope differentiation: ${parts.join('; ')}.`);
+    paragraphs.push(`Research scope differentiation: ${parts.join('; ')}. When multi-area coverage is the research objective, these non-overlapping domains suggest combinatorial protocols may be more effective than single-compound selection.`);
+  }
+
+  // 8. Stack recommendation
+  const stackable = selected.filter(c => (c.best_stacked_with ?? []).length > 0);
+  const stackPairs = selected.flatMap(c =>
+    selected
+      .filter(other => other.slug !== c.slug && (c.best_stacked_with ?? []).some(s => s.toLowerCase().includes(other.slug) || other.slug.includes(s.toLowerCase())))
+      .map(other => `${c.display_name} + ${other.display_name}`)
+  );
+  if (stackPairs.length > 0) {
+    const uniquePairs = [...new Set(stackPairs)];
+    paragraphs.push(`Combination potential: ${uniquePairs.join('; ')} ${uniquePairs.length === 1 ? 'is' : 'are'} explicitly noted as compatible research stack partner${uniquePairs.length > 1 ? 's' : ''} in compound metadata. Researchers designing multi-compound protocols should prioritize these established relationships.`);
   }
 
   return paragraphs;
 }
 
-// ─── Row Definitions ─────────────────────────────────────────────────────────
+// ─── RECOMMENDATION ENGINE ────────────────────────────────────────────────────
+interface Recommendation {
+  compound: Compound;
+  score: CompoundScore;
+  reason: string;
+  secondaryLabel: string;
+}
+
+function generateRecommendations(selected: Compound[], scores: CompoundScore[]): {
+  overall: Recommendation;
+  safest: Recommendation;
+  mostStudied: Recommendation;
+  mostPractical: Recommendation;
+} | null {
+  if (selected.length < 2) return null;
+
+  const ranked = selected.map((c, i) => ({ c, s: scores[i] }));
+
+  const overall = ranked.sort((a, b) => b.s.total - a.s.total)[0];
+  const safest = [...ranked].sort((a, b) => b.s.breakdown.safety - a.s.breakdown.safety)[0];
+  const mostStudied = [...ranked].sort((a, b) => b.s.breakdown.science - a.s.breakdown.science)[0];
+  const mostPractical = [...ranked].sort((a, b) => b.s.breakdown.handling - a.s.breakdown.handling)[0];
+
+  return {
+    overall: { compound: overall.c, score: overall.s, reason: `Highest composite research score (${overall.s.total}/100) — best across all evaluated dimensions`, secondaryLabel: `Grade ${overall.s.letter}` },
+    safest: { compound: safest.c, score: safest.s, reason: `Best safety-to-evidence ratio — lowest documented risk profile in this comparison`, secondaryLabel: RISK_META[safest.c.risk_level]?.label ?? 'Low Risk' },
+    mostStudied: { compound: mostStudied.c, score: mostStudied.s, reason: `Deepest scientific foundation — ${(mostStudied.c.pubmed_citation_count ?? 0).toLocaleString()} citations + ${(mostStudied.c.active_trial_count ?? 0) + (mostStudied.c.completed_trial_count ?? 0)} trials`, secondaryLabel: 'Most Published' },
+    mostPractical: { compound: mostPractical.c, score: mostPractical.s, reason: `Best handling & protocol practicality — longest half-life or shelf life advantage`, secondaryLabel: mostPractical.c.half_life ? `HL: ${mostPractical.c.half_life}` : 'Best Handling' },
+  };
+}
+
+// ─── ROW DEFINITIONS ─────────────────────────────────────────────────────────
 type Row =
   | { kind: 'group'; label: string }
   | {
@@ -299,7 +406,7 @@ type Row =
       bestLogic?: 'max' | 'min';
       getRawScore?: (c: Compound) => number;
       getValue: (c: Compound) => unknown;
-      render: (c: Compound, maxHl?: number) => React.ReactNode
+      render: (c: Compound, maxHl?: number) => React.ReactNode;
     };
 
 const ROWS: Row[] = [
@@ -309,86 +416,114 @@ const ROWS: Row[] = [
     getValue: c => c.eli5_summary ?? c.plain_summary,
     render: c => {
       const text = c.eli5_summary ?? c.plain_summary;
-      if (!text) return NL;
-      return <span style={{ fontSize: '0.82rem', lineHeight: 1.5, display: 'block', maxHeight: 120, overflowY: 'auto' }}>{text}</span>;
+      if (!text) return <span style={{ color: 'rgba(168,180,192,0.4)', fontStyle: 'italic', fontSize: '0.8rem' }}>No summary available</span>;
+      return <span style={{ fontSize: '0.82rem', lineHeight: 1.55, display: 'block', maxHeight: 120, overflowY: 'auto', color: 'rgba(255,255,255,0.8)' }}>{text}</span>;
     }
   },
-  { kind: 'data', label: 'Studied For', getValue: c => c.studied_for?.join(','), render: (c) => ((c.studied_for ?? []).length ? c.studied_for.join(', ') : NL) },
-  { kind: 'data', label: 'Research Areas', getValue: c => c.research_areas?.join(','), render: (c) => ((c.research_areas ?? []).length ? c.research_areas.map(researchAreaLabel).join(', ') : NL) },
-  { kind: 'data', label: 'Best Stacked With', getValue: c => c.best_stacked_with?.join(','), render: (c) => (c.best_stacked_with?.length ? c.best_stacked_with.join(', ') : NL) },
+  {
+    kind: 'data', label: 'Studied For',
+    getValue: c => c.studied_for?.join(','),
+    render: c => {
+      const items = c.studied_for ?? [];
+      if (!items.length) return NL;
+      return (
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 3 }}>
+          {items.map(s => <span key={s} style={{ background: 'rgba(0,196,188,0.1)', color: '#00C4BC', padding: '1px 6px', borderRadius: 4, fontSize: '0.7rem', fontWeight: 600 }}>{s}</span>)}
+        </div>
+      );
+    }
+  },
+  {
+    kind: 'data', label: 'Research Areas',
+    getValue: c => c.research_areas?.join(','),
+    render: c => {
+      const areas = c.research_areas ?? [];
+      if (!areas.length) return NL;
+      return (
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 3 }}>
+          {areas.map(a => <span key={a} style={{ background: 'rgba(159,122,234,0.1)', color: '#9F7AEA', padding: '1px 6px', borderRadius: 4, fontSize: '0.7rem', fontWeight: 600 }}>{researchAreaLabel(a)}</span>)}
+        </div>
+      );
+    }
+  },
+  {
+    kind: 'data', label: 'Best Stacked With',
+    getValue: c => c.best_stacked_with?.join(','),
+    render: c => c.best_stacked_with?.length ? (
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 3 }}>
+        {c.best_stacked_with.map(s => <span key={s} style={{ background: 'rgba(246,173,85,0.1)', color: '#F6AD55', padding: '1px 6px', borderRadius: 4, fontSize: '0.7rem', fontWeight: 600 }}>{s}</span>)}
+      </div>
+    ) : NL
+  },
 
   { kind: 'group', label: 'Identity' },
-  { kind: 'data', label: 'Category', getValue: c => c.category, render: (c) => txt(c.category) },
-  { kind: 'data', label: 'Class', getValue: c => c.compound_class, render: (c) => txt(c.compound_class) },
-  { kind: 'data', label: 'Molecular Target', getValue: c => c.molecular_target, render: (c) => txt(c.molecular_target) },
-  { kind: 'data', label: 'Sequence', getValue: c => c.identity?.sequence, render: (c) => txt(c.identity?.sequence) },
+  { kind: 'data', label: 'Category', getValue: c => c.category, render: c => txt(c.category) },
+  { kind: 'data', label: 'Compound Class', getValue: c => c.compound_class, render: c => txt(c.compound_class) },
+  { kind: 'data', label: 'Molecular Target', getValue: c => c.molecular_target, render: c => txt(c.molecular_target) },
   {
-    kind: 'data',
-    label: 'Molecular Weight',
-    glossaryTerm: 'Molecular Weight',
+    kind: 'data', label: 'Molecular Weight', glossaryTerm: 'Molecular Weight',
     bestLogic: 'min',
     getRawScore: c => c.molecular_weight_da ? Number(c.molecular_weight_da) : Number(c.identity?.molecular_weight) || Infinity,
     getValue: c => c.molecular_weight_da ?? c.identity?.molecular_weight,
-    render: (c) => c.molecular_weight_da ? `${c.molecular_weight_da} Da` : txt(c.identity?.molecular_weight)
+    render: c => c.molecular_weight_da ? `${c.molecular_weight_da} Da` : txt(c.identity?.molecular_weight)
   },
-  { kind: 'data', label: 'CAS Number', getValue: c => c.identity?.cas, render: (c) => txt(c.identity?.cas) },
-  { kind: 'data', label: 'Discovered', getValue: c => c.year_discovered, render: (c) => txt(c.year_discovered) },
+  { kind: 'data', label: 'Amino Acid Sequence', getValue: c => c.identity?.sequence, render: c => c.identity?.sequence ? <code style={{ fontSize: '0.7rem', wordBreak: 'break-all', color: '#00C4BC', background: 'rgba(0,196,188,0.08)', padding: '2px 4px', borderRadius: 4, display: 'block' }}>{c.identity.sequence}</code> : NL },
+  { kind: 'data', label: 'CAS Number', getValue: c => c.identity?.cas, render: c => txt(c.identity?.cas) },
+  { kind: 'data', label: 'Year Discovered', getValue: c => c.year_discovered, render: c => txt(c.year_discovered) },
+  {
+    kind: 'data', label: 'Purity', getValue: c => c.purity_percentage,
+    bestLogic: 'max', getRawScore: c => c.purity_percentage ?? 0,
+    render: c => c.purity_percentage ? (
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <span style={{ fontWeight: 700, color: c.purity_percentage >= 99 ? '#68D391' : c.purity_percentage >= 95 ? '#F6AD55' : '#FC8181' }}>{c.purity_percentage}%</span>
+        <div style={{ flex: 1, height: 4, background: 'rgba(255,255,255,0.1)', borderRadius: 2, overflow: 'hidden', maxWidth: 80 }}>
+          <div style={{ height: '100%', width: `${c.purity_percentage}%`, background: c.purity_percentage >= 99 ? '#68D391' : '#F6AD55' }} />
+        </div>
+      </div>
+    ) : NL
+  },
 
   { kind: 'group', label: 'Evidence & Regulatory' },
   {
-    kind: 'data',
-    label: 'Evidence Tier',
-    glossaryTerm: 'Evidence Tier',
+    kind: 'data', label: 'Evidence Tier', glossaryTerm: 'Evidence Tier',
     bestLogic: 'max',
-    getRawScore: c => {
-      if (c.evidence_tier === 'approved_drug') return 5;
-      if (c.evidence_tier === 'investigational') return 4;
-      if (c.evidence_tier === 'preclinical') return 3;
-      if (c.evidence_tier === 'research_chemical') return 2;
-      return 1;
-    },
+    getRawScore: c => c.evidence_tier === 'approved_drug' ? 5 : c.evidence_tier === 'investigational' ? 4 : c.evidence_tier === 'preclinical' ? 3 : c.evidence_tier === 'research_chemical' ? 2 : 1,
     getValue: c => c.evidence_tier,
-    render: (c) => {
+    render: c => {
       const t = evidenceTier(c.evidence_tier);
-      return (
-        <span style={{ display: 'inline-block', fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: t.color, border: `1px solid ${t.color}`, borderRadius: '999px', padding: '2px 10px' }}>
-          {t.label}
-        </span>
-      );
+      return <span style={{ display: 'inline-block', fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: t.color, border: `1px solid ${t.color}`, borderRadius: 999, padding: '2px 10px' }}>{t.label}</span>;
     },
   },
   {
-    kind: 'data',
-    label: 'Risk Level',
-    bestLogic: 'min',
-    getRawScore: c => {
-      if (c.risk_level === 'low') return 1;
-      if (c.risk_level === 'moderate') return 2;
-      if (c.risk_level === 'high') return 3;
-      if (c.risk_level === 'critical') return 4;
-      return 5;
-    },
+    kind: 'data', label: 'Risk Level',
+    bestLogic: 'min', getRawScore: c => c.risk_level === 'low' ? 1 : c.risk_level === 'moderate' ? 2 : c.risk_level === 'high' ? 3 : 4,
     getValue: c => c.risk_level,
-    render: (c) => {
+    render: c => {
       const r = RISK_META[c.risk_level];
-      return r ? <span style={{ color: r.color, fontWeight: 700 }}>{r.label}</span> : NL;
+      return r ? (
+        <div>
+          <span style={{ color: r.color, fontWeight: 700 }}>{r.label}</span>
+          {c.risk_reasons?.length ? <div style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.4)', marginTop: 3 }}>{c.risk_reasons.slice(0, 1).join(', ')}</div> : null}
+        </div>
+      ) : NL;
     },
   },
   {
-    kind: 'data',
-    label: 'PubMed Citations',
-    bestLogic: 'max',
-    getRawScore: c => c.pubmed_citation_count || 0,
+    kind: 'data', label: 'PubMed Citations',
+    bestLogic: 'max', getRawScore: c => c.pubmed_citation_count || 0,
     getValue: c => c.pubmed_citation_count,
-    render: (c) => c.pubmed_citation_count ? c.pubmed_citation_count.toLocaleString() : NL
+    render: c => {
+      const n = c.pubmed_citation_count;
+      if (!n) return NL;
+      const tier = n >= 1000 ? { color: '#68D391', label: 'Extensive' } : n >= 200 ? { color: '#00C4BC', label: 'Good' } : n >= 50 ? { color: '#F6AD55', label: 'Moderate' } : { color: '#FC8181', label: 'Sparse' };
+      return <span>{n.toLocaleString()} <span style={{ fontSize: '0.68rem', color: tier.color, fontWeight: 700, marginLeft: 4 }}>{tier.label}</span></span>;
+    }
   },
   {
-    kind: 'data',
-    label: 'Clinical Trials',
-    bestLogic: 'max',
-    getRawScore: c => (c.active_trial_count ?? 0) + (c.completed_trial_count ?? 0),
+    kind: 'data', label: 'Clinical Trials',
+    bestLogic: 'max', getRawScore: c => (c.active_trial_count ?? 0) + (c.completed_trial_count ?? 0),
     getValue: c => (c.active_trial_count ?? 0) + (c.completed_trial_count ?? 0),
-    render: (c) => {
+    render: c => {
       const total = (c.active_trial_count ?? 0) + (c.completed_trial_count ?? 0);
       if (!total) return NL;
       return (
@@ -399,16 +534,17 @@ const ROWS: Row[] = [
       );
     }
   },
-  { kind: 'data', label: 'Regulatory', getValue: c => c.regulatory, render: (c) => txt(c.regulatory) },
-  { kind: 'data', label: 'WADA Status', getValue: c => c.wada_status, render: (c) => wadaLabel(c.wada_status) },
+  { kind: 'data', label: 'Regulatory Status', getValue: c => c.regulatory, render: c => txt(c.regulatory) },
+  { kind: 'data', label: 'WADA Status', getValue: c => c.wada_status, render: c => {
+    const label = wadaLabel(c.wada_status);
+    const isProhibited = c.wada_status === 'prohibited' || c.wada_status === 'prohibited_males';
+    return <span style={{ color: isProhibited ? '#FC8181' : c.wada_status === 'permitted' ? '#68D391' : 'inherit', fontWeight: isProhibited ? 700 : 'inherit' }}>{label}</span>;
+  }},
 
   { kind: 'group', label: 'Pharmacology' },
   {
-    kind: 'data',
-    label: 'Half-Life',
-    glossaryTerm: 'Half-Life',
-    bestLogic: 'max',
-    getRawScore: c => parseHalfLifeHours(c.half_life),
+    kind: 'data', label: 'Half-Life', glossaryTerm: 'half-life',
+    bestLogic: 'max', getRawScore: c => parseHalfLifeHours(c.half_life),
     getValue: c => c.half_life,
     render: (c, maxHl) => {
       if (!c.half_life) return NL;
@@ -416,163 +552,429 @@ const ROWS: Row[] = [
       const pct = maxHl && maxHl > 0 ? (hlVal / maxHl) * 100 : 0;
       return (
         <div>
-          <div style={{ color: 'var(--teal, #00C4BC)', fontWeight: 700, marginBottom: 4 }}>{c.half_life}</div>
-          {pct > 0 && (
-            <div style={{ height: 4, background: 'rgba(255,255,255,0.1)', borderRadius: 2, overflow: 'hidden', width: '100%', maxWidth: 150 }}>
-              <div style={{ height: '100%', width: `${pct}%`, background: 'var(--teal, #00C4BC)' }} />
-            </div>
-          )}
+          <div style={{ color: '#00C4BC', fontWeight: 700, marginBottom: 4 }}>{c.half_life}</div>
+          {pct > 0 && <div style={{ height: 4, background: 'rgba(255,255,255,0.1)', borderRadius: 2, overflow: 'hidden', width: '100%', maxWidth: 140 }}><div style={{ height: '100%', width: `${pct}%`, background: '#00C4BC', transition: 'width 0.5s ease' }} /></div>}
+          {c.measured_half_life_hours && <div style={{ fontSize: '0.68rem', color: 'rgba(255,255,255,0.4)', marginTop: 2 }}>Measured: {c.measured_half_life_hours}h</div>}
         </div>
       );
     },
   },
-  { kind: 'data', label: 'Typical Frequency', getValue: c => c.typical_frequency, render: (c) => txt(c.typical_frequency) },
-  { kind: 'data', label: 'Mechanism / PK', glossaryTerm: 'Mechanism', getValue: c => c.pk_summary, render: (c) => txt(c.pk_summary) },
-  { kind: 'data', label: 'Reported Findings', getValue: c => c.benefits, render: (c) => txt(c.benefits) },
-  { kind: 'data', label: 'Side Effects', getValue: c => c.side_effects, render: (c) => txt(c.side_effects) },
-  { kind: 'data', label: 'Warnings', getValue: c => c.warnings, render: (c) => txt(c.warnings) },
+  { kind: 'data', label: 'Typical Frequency', getValue: c => c.typical_frequency, render: c => txt(c.typical_frequency) },
+  {
+    kind: 'data', label: 'Mechanism / PK',
+    getValue: c => c.pk_summary,
+    render: c => c.pk_summary ? <span style={{ fontSize: '0.8rem', lineHeight: 1.5, display: 'block', color: 'rgba(255,255,255,0.8)' }}>{c.pk_summary}</span> : NL
+  },
+  {
+    kind: 'data', label: 'Reported Findings',
+    getValue: c => c.benefits,
+    render: c => c.benefits ? <span style={{ fontSize: '0.8rem', lineHeight: 1.5, display: 'block', color: 'rgba(255,255,255,0.8)', maxHeight: 100, overflowY: 'auto' }}>{c.benefits}</span> : NL
+  },
+  {
+    kind: 'data', label: 'Side Effects Noted',
+    getValue: c => c.side_effects,
+    render: c => c.side_effects ? <span style={{ fontSize: '0.8rem', lineHeight: 1.5, display: 'block', color: 'rgba(252,129,129,0.9)', maxHeight: 80, overflowY: 'auto' }}>{c.side_effects}</span> : NL
+  },
+  {
+    kind: 'data', label: 'Warnings',
+    getValue: c => c.warnings,
+    render: c => c.warnings ? <span style={{ fontSize: '0.8rem', lineHeight: 1.5, display: 'block', color: 'rgba(246,173,85,0.9)' }}><AlertTriangle size={11} style={{ marginRight: 4, display: 'inline-block', verticalAlign: 'middle' }} />{c.warnings}</span> : NL
+  },
 
   { kind: 'group', label: 'Handling & Storage' },
-  { kind: 'data', label: 'Form', getValue: c => c.handling?.form, render: (c) => txt(c.handling?.form) },
-  { kind: 'data', label: 'Diluent', glossaryTerm: 'Reconstitution', getValue: c => c.handling?.diluent, render: (c) => txt(c.handling?.diluent) },
-  { kind: 'data', label: 'Storage Temperature', glossaryTerm: 'Storage', getValue: c => c.handling?.storage_temp, render: (c) => txt(c.handling?.storage_temp) },
+  { kind: 'data', label: 'Form', getValue: c => c.handling?.form, render: c => txt(c.handling?.form) },
+  { kind: 'data', label: 'Diluent', glossaryTerm: 'reconstitution', getValue: c => c.handling?.diluent, render: c => txt(c.handling?.diluent) },
+  { kind: 'data', label: 'Storage Temp', getValue: c => c.handling?.storage_temp, render: c => txt(c.handling?.storage_temp) },
+  { kind: 'data', label: 'Light Sensitive', getValue: c => c.handling?.light_sensitive, render: c => c.handling?.light_sensitive == null ? NL : c.handling.light_sensitive ? <span style={{ color: '#F6AD55' }}>⚠️ Yes</span> : <span style={{ color: '#68D391' }}>✓ No</span> },
+  { kind: 'data', label: 'Freeze / Thaw', getValue: c => c.handling?.freeze_thaw, render: c => txt(c.handling?.freeze_thaw) },
+  { kind: 'data', label: 'Handling Notes', getValue: c => c.handling?.notes, render: c => txt(c.handling?.notes) },
   {
-    kind: 'data',
-    label: 'Light Sensitive',
-    getValue: c => c.handling?.light_sensitive,
-    render: (c) => (c.handling?.light_sensitive == null ? NL : c.handling.light_sensitive ? '⚠️ Yes' : '✓ No'),
-  },
-  { kind: 'data', label: 'Freeze / Thaw', getValue: c => c.handling?.freeze_thaw, render: (c) => txt(c.handling?.freeze_thaw) },
-  {
-    kind: 'data',
-    label: 'Reconstituted Shelf Life',
-    bestLogic: 'max',
-    getRawScore: c => c.reconstitution_shelf_days ?? c.handling?.reconstituted_days ?? 0,
+    kind: 'data', label: 'Reconstituted Shelf Life',
+    bestLogic: 'max', getRawScore: c => c.reconstitution_shelf_days ?? c.handling?.reconstituted_days ?? 0,
     getValue: c => c.reconstitution_shelf_days ?? c.handling?.reconstituted_days,
-    render: (c) => {
+    render: c => {
       const d = c.reconstitution_shelf_days ?? c.handling?.reconstituted_days;
-      return d != null ? `${d} Days Refrigerated` : NL;
+      if (d == null) return NL;
+      const color = d >= 28 ? '#68D391' : d < 14 ? '#FC8181' : '#F6AD55';
+      return <span style={{ color, fontWeight: 700 }}>{d} Days <span style={{ fontWeight: 400, color: 'rgba(255,255,255,0.4)' }}>Refrigerated</span></span>;
     },
   },
 ];
 
-const KNOWN_SYNERGIES = [
-  { pairs: ['bpc-157', 'tb-500'], type: 'synergy', message: 'BPC-157 + TB-500 act highly synergistically for combined systemic and localized tissue/tendon repair.' },
-  { pairs: ['cjc-1295-without-dac', 'ipamorelin'], type: 'synergy', message: 'CJC-1295 + Ipamorelin amplifies GH pulse amplitude without spiking cortisol or prolactin.' },
-  { pairs: ['bpc-157', 'ghk-cu'], type: 'synergy', message: 'BPC-157 + GHK-Cu offers complementary wound healing — GHK-Cu drives collagen synthesis while BPC-157 supports vascular repair.' },
-  { pairs: ['sermorelin', 'ipamorelin'], type: 'synergy', message: 'Sermorelin + Ipamorelin provides dual-pathway GH stimulation (GHRH + GHSR) for amplified secretagogue effect.' },
-  { pairs: ['epitalon', 'dsip'], type: 'synergy', message: 'Epitalon + DSIP may complement each other for circadian rhythm regulation and sleep architecture optimization.' },
-  { pairs: ['pt-141', 'kisspeptin-10'], type: 'synergy', message: 'PT-141 + Kisspeptin-10 provides complementary central and peripheral sexual health pathways.' },
-  { pairs: ['tirzepatide', 'retatrutide'], type: 'conflict', message: 'Warning: Compounding GLP-1/GIP agonists may lead to severe gastrointestinal distress and overlapping adverse effects.' },
-  { pairs: ['semaglutide', 'tirzepatide'], type: 'conflict', message: 'Warning: Stacking two incretin agents is not recommended — compounding GI effects and unclear additive benefit.' },
-];
+// ─── Animated Score Ring ──────────────────────────────────────────────────────
+function AnimatedScoreRing({ score, color }: { score: CompoundScore; color: string }) {
+  const [displayPct, setDisplayPct] = useState(0);
+  const rafRef = useRef<number>(0);
 
-const colors = ['#00C4BC', '#FF6B6B', '#FCA311', '#9F7AEA'];
+  useEffect(() => {
+    const target = score.total;
+    const duration = 1000;
+    const start = performance.now();
+    const easeOut = (t: number) => 1 - Math.pow(1 - t, 3);
+    const tick = (now: number) => {
+      const elapsed = now - start;
+      const t = Math.min(elapsed / duration, 1);
+      setDisplayPct(Math.round(easeOut(t) * target));
+      if (t < 1) rafRef.current = requestAnimationFrame(tick);
+    };
+    rafRef.current = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(rafRef.current);
+  }, [score.total]);
 
-// ─── Score Badge Component ─────────────────────────────────────────────────────
-function ScoreBadge({ score, color }: { score: CompoundScore; color: string }) {
-  const pct = score.total;
-  const grade =
-    pct >= 80 ? { label: 'A', bg: 'rgba(104,211,145,0.2)', border: '#68D391', text: '#68D391' } :
-    pct >= 65 ? { label: 'B', bg: 'rgba(0,196,188,0.2)', border: '#00C4BC', text: '#00C4BC' } :
-    pct >= 50 ? { label: 'C', bg: 'rgba(246,173,85,0.2)', border: '#F6AD55', text: '#F6AD55' } :
-    { label: 'D', bg: 'rgba(229,62,62,0.2)', border: '#FC8181', text: '#FC8181' };
+  const r = 36;
+  const circ = 2 * Math.PI * r;
+  const pct = (displayPct / 100) * circ;
+  const gradeColor =
+    score.letter.startsWith('A') ? '#68D391' :
+    score.letter.startsWith('B') ? '#00C4BC' :
+    score.letter.startsWith('C') ? '#F6AD55' : '#FC8181';
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 8 }}>
-      {/* Score Ring */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-        <div style={{
-          width: 48, height: 48, borderRadius: '50%',
-          background: grade.bg, border: `2px solid ${grade.border}`,
-          display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-          flexShrink: 0,
-        }}>
-          <span style={{ fontSize: '0.65rem', fontWeight: 800, color: grade.text, lineHeight: 1 }}>{pct}</span>
-          <span style={{ fontSize: '0.52rem', color: grade.text, opacity: 0.7 }}>/100</span>
-        </div>
-        <div style={{ flex: 1 }}>
-          {/* Score bar */}
-          <div style={{ height: 5, background: 'rgba(255,255,255,0.08)', borderRadius: 999, overflow: 'hidden', width: '100%' }}>
-            <div style={{ height: '100%', width: `${pct}%`, background: `linear-gradient(90deg, ${color}, ${color}cc)`, borderRadius: 999, transition: 'width 0.6s ease' }} />
-          </div>
-          <div style={{ fontSize: '0.68rem', color: 'rgba(255,255,255,0.5)', marginTop: 3 }}>{score.verdict}</div>
+    <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 6 }}>
+      {/* SVG ring */}
+      <div style={{ position: 'relative', width: 84, height: 84, flexShrink: 0 }}>
+        <svg width="84" height="84" viewBox="0 0 84 84">
+          <circle cx="42" cy="42" r={r} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="7" />
+          <circle
+            cx="42" cy="42" r={r}
+            fill="none"
+            stroke={gradeColor}
+            strokeWidth="7"
+            strokeLinecap="round"
+            strokeDasharray={`${pct} ${circ}`}
+            strokeDashoffset={circ / 4}
+            style={{ transition: 'stroke-dasharray 0.1s linear' }}
+          />
+        </svg>
+        <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+          <span style={{ fontSize: '1.1rem', fontWeight: 900, color: gradeColor, lineHeight: 1 }}>{displayPct}</span>
+          <span style={{ fontSize: '0.55rem', color: gradeColor, opacity: 0.7 }}>/100</span>
         </div>
       </div>
-      {/* Dimension breakdown */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '3px 8px', fontSize: '0.62rem', color: 'rgba(255,255,255,0.45)' }}>
-        {[
-          { label: 'Evidence', val: score.breakdown.evidence, max: 30 },
-          { label: 'Safety', val: score.breakdown.safety, max: 25 },
-          { label: 'Coverage', val: score.breakdown.coverage, max: 15 },
-          { label: 'Science', val: score.breakdown.science, max: 15 },
-          { label: 'Handling', val: score.breakdown.handling, max: 15 },
-        ].map(d => (
-          <div key={d.label} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-            <span style={{ minWidth: 48 }}>{d.label}</span>
-            <div style={{ flex: 1, height: 3, background: 'rgba(255,255,255,0.07)', borderRadius: 999, overflow: 'hidden' }}>
-              <div style={{ height: '100%', width: `${(d.val / d.max) * 100}%`, background: color, borderRadius: 999 }} />
+      {/* Right column */}
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+          <span style={{ fontSize: '1rem', fontWeight: 900, color: gradeColor, letterSpacing: '-0.02em' }}>Grade {score.letter}</span>
+        </div>
+        <div style={{ fontSize: '0.68rem', color: 'rgba(255,255,255,0.45)', marginBottom: 6 }}>{score.verdict}</div>
+        {/* Mini breakdown bars */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+          {[
+            { label: 'Evidence', val: score.breakdown.evidence, max: 30 },
+            { label: 'Safety', val: score.breakdown.safety, max: 25 },
+            { label: 'Science', val: score.breakdown.science, max: 15 },
+            { label: 'Coverage', val: score.breakdown.coverage, max: 15 },
+            { label: 'Handling', val: score.breakdown.handling, max: 15 },
+          ].map(d => (
+            <div key={d.label} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+              <span style={{ fontSize: '0.58rem', color: 'rgba(255,255,255,0.35)', minWidth: 50 }}>{d.label}</span>
+              <div style={{ flex: 1, height: 3, background: 'rgba(255,255,255,0.07)', borderRadius: 999, overflow: 'hidden' }}>
+                <div style={{ height: '100%', width: `${(d.val / d.max) * 100}%`, background: color, borderRadius: 999, transition: 'width 0.8s ease' }} />
+              </div>
+              <span style={{ fontSize: '0.58rem', color, minWidth: 16, textAlign: 'right', fontWeight: 700 }}>{d.val}</span>
             </div>
-            <span style={{ minWidth: 18, textAlign: 'right' }}>{d.val}</span>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Pros/Cons Card ───────────────────────────────────────────────────────────
+function ProsConsCard({ pc }: { pc: ProsCons }) {
+  const [expanded, setExpanded] = useState(false);
+  const MAX_SHOWN = 4;
+  const allItems = [...pc.pros.map(p => ({ ...p, isPro: true })), ...pc.cons.map(c => ({ ...c, isPro: false }))];
+  const sorted = allItems.sort((a, b) => {
+    const sev = (s: PCSeverity) => s === 'high' ? 3 : s === 'medium' ? 2 : 1;
+    return sev(b.severity) - sev(a.severity);
+  });
+  const shown = expanded ? sorted : sorted.slice(0, MAX_SHOWN);
+
+  return (
+    <div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+        {shown.map((item, i) => (
+          <div key={i} style={{ display: 'flex', gap: 7, alignItems: 'flex-start' }}>
+            <div style={{ flexShrink: 0, marginTop: 2 }}>
+              {item.isPro ? <ThumbsUp size={12} color="#68D391" /> : <ThumbsDown size={12} color="#FC8181" />}
+            </div>
+            <div style={{ flex: 1 }}>
+              <span style={{ fontSize: '0.79rem', color: item.isPro ? 'rgba(255,255,255,0.85)' : 'rgba(255,255,255,0.65)', lineHeight: 1.4 }}>{item.text}</span>
+              <span style={{ marginLeft: 4, fontSize: '0.58rem', opacity: 0.4, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{item.category}</span>
+            </div>
           </div>
         ))}
       </div>
+      {sorted.length > MAX_SHOWN && (
+        <button type="button" onClick={() => setExpanded(e => !e)} style={{ marginTop: 8, background: 'none', border: 'none', color: 'rgba(0,196,188,0.8)', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer', padding: 0 }}>
+          {expanded ? '▲ Show Less' : `▼ Show ${sorted.length - MAX_SHOWN} More`}
+        </button>
+      )}
     </div>
   );
 }
 
-// ─── Pros/Cons Card Component ──────────────────────────────────────────────────
-function ProsConsCard({ pc, color }: { pc: ProsCons; color: string }) {
+// ─── Efficacy Scores Heatmap ──────────────────────────────────────────────────
+function EfficacyHeatmap({ selected }: { selected: Compound[] }) {
+  const allKeys = [...new Set(selected.flatMap(c => Object.keys(c.efficacy_scores ?? {})))];
+  if (!allKeys.length) return null;
+
+  const getColor = (v: number) => {
+    if (v >= 80) return '#68D391';
+    if (v >= 60) return '#00C4BC';
+    if (v >= 40) return '#F6AD55';
+    return '#FC8181';
+  };
+
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-      {pc.pros.map((p, i) => (
-        <div key={`pro-${i}`} style={{ display: 'flex', gap: 6, alignItems: 'flex-start' }}>
-          <ThumbsUp size={12} color="#68D391" style={{ marginTop: 2, flexShrink: 0 }} />
-          <span style={{ fontSize: '0.78rem', color: 'rgba(255,255,255,0.8)', lineHeight: 1.4 }}>{p}</span>
-        </div>
-      ))}
-      {pc.cons.map((c, i) => (
-        <div key={`con-${i}`} style={{ display: 'flex', gap: 6, alignItems: 'flex-start' }}>
-          <ThumbsDown size={12} color="#FC8181" style={{ marginTop: 2, flexShrink: 0 }} />
-          <span style={{ fontSize: '0.78rem', color: 'rgba(255,255,255,0.6)', lineHeight: 1.4 }}>{c}</span>
-        </div>
-      ))}
+    <div style={{ overflowX: 'auto' }}>
+      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8rem' }}>
+        <thead>
+          <tr>
+            <th style={{ textAlign: 'left', padding: '6px 10px', color: 'rgba(255,255,255,0.4)', fontWeight: 700, fontSize: '0.7rem', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>Domain</th>
+            {selected.map((c, i) => <th key={c.slug} style={{ textAlign: 'center', padding: '6px 10px', color: colors[i % colors.length], fontWeight: 700, fontSize: '0.7rem', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>{c.display_name}</th>)}
+          </tr>
+        </thead>
+        <tbody>
+          {allKeys.map(key => (
+            <tr key={key} style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+              <td style={{ padding: '5px 10px', color: 'rgba(255,255,255,0.6)', fontWeight: 600, fontSize: '0.75rem', textTransform: 'capitalize' }}>{key.replace(/_/g, ' ')}</td>
+              {selected.map((c, i) => {
+                const v = (c.efficacy_scores ?? {})[key];
+                const color = v != null ? getColor(v) : 'transparent';
+                return (
+                  <td key={c.slug} style={{ textAlign: 'center', padding: '5px 10px' }}>
+                    {v != null ? (
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
+                        <span style={{ fontWeight: 800, fontSize: '0.82rem', color }}>{v}</span>
+                        <div style={{ width: 28, height: 3, background: 'rgba(255,255,255,0.07)', borderRadius: 999, overflow: 'hidden' }}>
+                          <div style={{ height: '100%', width: `${v}%`, background: color, borderRadius: 999 }} />
+                        </div>
+                      </div>
+                    ) : <span style={{ color: 'rgba(255,255,255,0.2)', fontSize: '0.7rem' }}>—</span>}
+                  </td>
+                );
+              })}
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 }
 
-// ─── Main Component ────────────────────────────────────────────────────────────
-export default function CompareTool({
-  compounds,
-  initialSlugs = [],
-}: {
-  compounds: Compound[];
-  initialSlugs?: string[];
-}) {
+// ─── Recommendation Card ──────────────────────────────────────────────────────
+function RecommendationCard({ rec, label, icon, color }: { rec: { compound: Compound; score: CompoundScore; reason: string; secondaryLabel: string }; label: string; icon: React.ReactNode; color: string }) {
+  return (
+    <div style={{ padding: '12px 14px', borderRadius: 10, background: `${color}08`, border: `1px solid ${color}25`, display: 'flex', flexDirection: 'column', gap: 6 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+        <div style={{ color, display: 'flex' }}>{icon}</div>
+        <span style={{ fontSize: '0.67rem', fontWeight: 800, color, textTransform: 'uppercase', letterSpacing: '0.06em' }}>{label}</span>
+        <span style={{ marginLeft: 'auto', fontSize: '0.65rem', background: `${color}20`, color, padding: '1px 6px', borderRadius: 4, fontWeight: 700 }}>{rec.secondaryLabel}</span>
+      </div>
+      <div style={{ fontWeight: 900, fontSize: '1rem', color: 'var(--white)', lineHeight: 1.2 }}>
+        <Link href={`/research/${rec.compound.slug}`} style={{ color: color, textDecoration: 'none' }}>{rec.compound.display_name}</Link>
+      </div>
+      <div style={{ fontSize: '0.74rem', color: 'rgba(255,255,255,0.55)', lineHeight: 1.4 }}>{rec.reason}</div>
+      {rec.score.recommendedContexts.length > 0 && (
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 3, marginTop: 2 }}>
+          {rec.score.recommendedContexts.slice(0, 2).map((ctx, i) => (
+            <span key={i} style={{ fontSize: '0.62rem', background: 'rgba(255,255,255,0.05)', color: 'rgba(255,255,255,0.45)', padding: '1px 6px', borderRadius: 4, fontWeight: 600 }}>{ctx}</span>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Mechanism Tab ────────────────────────────────────────────────────────────
+function MechanismTab({ selected }: { selected: Compound[] }) {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: `repeat(auto-fit, minmax(260px, 1fr))`, gap: 14 }}>
+        {selected.map((c, i) => {
+          const color = colors[i % colors.length];
+          return (
+            <div key={c.slug} style={{ padding: 16, borderRadius: 12, background: 'rgba(255,255,255,0.02)', border: `1px solid rgba(255,255,255,0.08)` }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 12, paddingBottom: 10, borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+                <div style={{ width: 8, height: 8, borderRadius: '50%', background: color, flexShrink: 0 }} />
+                <span style={{ fontWeight: 900, fontSize: '0.95rem', color: 'var(--white)' }}>{c.display_name}</span>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                {c.compound_class && (
+                  <div>
+                    <div style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.35)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 2 }}>Compound Class</div>
+                    <div style={{ fontSize: '0.82rem', color }}>{c.compound_class}</div>
+                  </div>
+                )}
+                {c.molecular_target && (
+                  <div>
+                    <div style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.35)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 2 }}>Molecular Target</div>
+                    <div style={{ fontSize: '0.82rem', color: 'rgba(255,255,255,0.8)', lineHeight: 1.4 }}>{c.molecular_target}</div>
+                  </div>
+                )}
+                {c.mechanism && (
+                  <div>
+                    <div style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.35)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 2 }}>Mechanism of Action</div>
+                    <div style={{ fontSize: '0.82rem', color: 'rgba(255,255,255,0.75)', lineHeight: 1.55 }}>{c.mechanism}</div>
+                  </div>
+                )}
+                {c.pk_summary && (
+                  <div>
+                    <div style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.35)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 2 }}>Pharmacokinetics</div>
+                    <div style={{ fontSize: '0.82rem', color: 'rgba(255,255,255,0.75)', lineHeight: 1.55 }}>{c.pk_summary}</div>
+                  </div>
+                )}
+                {c.risk_reasons?.length ? (
+                  <div>
+                    <div style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.35)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 2 }}>Risk Considerations</div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                      {c.risk_reasons.map((r, ri) => (
+                        <div key={ri} style={{ display: 'flex', gap: 6, alignItems: 'flex-start' }}>
+                          <AlertTriangle size={11} color={RISK_META[c.risk_level]?.color ?? '#F6AD55'} style={{ marginTop: 2, flexShrink: 0 }} />
+                          <span style={{ fontSize: '0.78rem', color: 'rgba(255,255,255,0.65)', lineHeight: 1.4 }}>{r}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ) : null}
+                {c.sources?.length ? (
+                  <div>
+                    <div style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.35)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4 }}>Key Sources</div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                      {c.sources.slice(0, 4).map((src, si) => (
+                        <a key={si} href={src.startsWith('http') ? src : undefined} target="_blank" rel="noopener noreferrer"
+                          style={{ fontSize: '0.72rem', color: color, opacity: 0.8, wordBreak: 'break-all', lineHeight: 1.3, textDecoration: src.startsWith('http') ? 'underline' : 'none' }}>
+                          {src.startsWith('http') ? `📄 Source ${si + 1}` : src}
+                        </a>
+                      ))}
+                    </div>
+                  </div>
+                ) : null}
+                {/* Stack rationale if stack compound */}
+                {c.is_stack && c.stack_rationale && (
+                  <div>
+                    <div style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.35)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 2 }}>Stack Rationale</div>
+                    <div style={{ fontSize: '0.82rem', color: '#9F7AEA', lineHeight: 1.55, fontStyle: 'italic' }}>{c.stack_rationale}</div>
+                  </div>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+      {/* Efficacy Scores section */}
+      {selected.some(c => c.efficacy_scores && Object.keys(c.efficacy_scores).length > 0) && (
+        <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 12, padding: 16 }}>
+          <div style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--white)', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
+            <BarChart3 size={15} color="#00C4BC" /> Efficacy Score Comparison
+            <span style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.35)', marginLeft: 6, fontWeight: 400 }}>(0–100 per application domain, sourced from compound metadata)</span>
+          </div>
+          <EfficacyHeatmap selected={selected} />
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Protocol Tab ─────────────────────────────────────────────────────────────
+function ProtocolTab({ selected }: { selected: Compound[] }) {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: `repeat(auto-fit, minmax(260px, 1fr))`, gap: 14 }}>
+        {selected.map((c, i) => {
+          const color = colors[i % colors.length];
+          const shelf = c.reconstitution_shelf_days ?? c.handling?.reconstituted_days;
+          const hlH = parseHalfLifeHours(c.half_life);
+          const dosesPerWeek = hlH > 0 ? Math.max(1, Math.round(168 / (hlH * 2))) : null;
+          return (
+            <div key={c.slug} style={{ padding: 16, borderRadius: 12, background: 'rgba(255,255,255,0.02)', border: `1px solid rgba(255,255,255,0.08)` }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 12, paddingBottom: 10, borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+                <div style={{ width: 8, height: 8, borderRadius: '50%', background: color, flexShrink: 0 }} />
+                <span style={{ fontWeight: 900, fontSize: '0.95rem', color: 'var(--white)' }}>{c.display_name}</span>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                {/* Reconstitution info */}
+                <div style={{ background: `${color}08`, borderRadius: 8, padding: '10px 12px' }}>
+                  <div style={{ fontSize: '0.65rem', color, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6 }}>Reconstitution</div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px 12px', fontSize: '0.78rem' }}>
+                    <div style={{ color: 'rgba(255,255,255,0.4)' }}>Form</div>
+                    <div style={{ color: 'rgba(255,255,255,0.8)' }}>{c.handling?.form ?? NL}</div>
+                    <div style={{ color: 'rgba(255,255,255,0.4)' }}>Diluent</div>
+                    <div style={{ color: 'rgba(255,255,255,0.8)' }}>{c.handling?.diluent ?? NL}</div>
+                    <div style={{ color: 'rgba(255,255,255,0.4)' }}>Storage</div>
+                    <div style={{ color: 'rgba(255,255,255,0.8)' }}>{c.handling?.storage_temp ?? NL}</div>
+                    <div style={{ color: 'rgba(255,255,255,0.4)' }}>Light</div>
+                    <div style={{ color: 'rgba(255,255,255,0.8)' }}>{c.handling?.light_sensitive == null ? NL : c.handling.light_sensitive ? '⚠️ Sensitive' : '✓ Safe'}</div>
+                    {shelf && <>
+                      <div style={{ color: 'rgba(255,255,255,0.4)' }}>Shelf Life</div>
+                      <div style={{ color: shelf >= 28 ? '#68D391' : shelf < 14 ? '#FC8181' : '#F6AD55', fontWeight: 700 }}>{shelf} days</div>
+                    </>}
+                  </div>
+                </div>
+                {/* Dosing guidance */}
+                {(c.half_life || c.typical_frequency) && (
+                  <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 8, padding: '10px 12px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                    <div style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.35)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6 }}>Administration</div>
+                    {c.half_life && <div style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.7)', marginBottom: 4 }}><Clock size={10} style={{ marginRight: 4, display: 'inline-block', verticalAlign: 'middle' }} />Half-life: <strong style={{ color }}>{c.half_life}</strong></div>}
+                    {c.typical_frequency && <div style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.7)', marginBottom: 4 }}><Zap size={10} style={{ marginRight: 4, display: 'inline-block', verticalAlign: 'middle' }} />Typical frequency: <strong style={{ color: 'rgba(255,255,255,0.9)' }}>{c.typical_frequency}</strong></div>}
+                    {dosesPerWeek && <div style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.4)', marginTop: 4, fontStyle: 'italic' }}>Estimated ~{dosesPerWeek}× per week based on half-life</div>}
+                  </div>
+                )}
+                {/* Freeze-thaw */}
+                {c.handling?.freeze_thaw && (
+                  <div style={{ fontSize: '0.78rem', color: 'rgba(255,255,255,0.6)', display: 'flex', gap: 6, alignItems: 'flex-start' }}>
+                    <Thermometer size={12} color="#F6AD55" style={{ marginTop: 1, flexShrink: 0 }} />
+                    <span>{c.handling.freeze_thaw}</span>
+                  </div>
+                )}
+                {/* Handling notes */}
+                {c.handling?.notes && (
+                  <div style={{ fontSize: '0.78rem', color: 'rgba(255,255,255,0.55)', lineHeight: 1.4, borderLeft: '2px solid rgba(255,255,255,0.1)', paddingLeft: 8 }}>
+                    {c.handling.notes}
+                  </div>
+                )}
+                {/* COA Link */}
+                {c.coa_url && (
+                  <a href={c.coa_url} target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: '0.75rem', color, textDecoration: 'none', fontWeight: 700 }}>
+                    <BookOpen size={12} /> View Certificate of Analysis
+                  </a>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// ─── MAIN COMPONENT ───────────────────────────────────────────────────────────
+export default function CompareTool({ compounds, initialSlugs = [] }: { compounds: Compound[]; initialSlugs?: string[] }) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
   const [selectedSlugs, setSelectedSlugs] = useState<string[]>(() => {
-    let slugsToLoad = initialSlugs;
+    let slugs = initialSlugs;
     if (typeof window !== 'undefined') {
       const sp = new URLSearchParams(window.location.search);
       const urlCompare = sp.get('compare');
-      if (urlCompare) slugsToLoad = urlCompare.split(',').filter(Boolean);
+      if (urlCompare) slugs = urlCompare.split(',').filter(Boolean);
     }
-    return slugsToLoad.filter((s) => compounds.some((c) => c.slug === s)).slice(0, MAX_COLUMNS);
+    return slugs.filter(s => compounds.some(c => c.slug === s)).slice(0, MAX_COLUMNS);
   });
 
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [diffMode, setDiffMode] = useState(false);
   const [copied, setCopied] = useState(false);
-  const [activeTab, setActiveTab] = useState<'matrix' | 'proscons' | 'brief'>('matrix');
-  const searchRef = useRef<HTMLDivElement>(null);
-
+  const [activeTab, setActiveTab] = useState<'matrix' | 'proscons' | 'brief' | 'mechanism' | 'protocol' | 'recommend'>('matrix');
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
-  const [mobileViewIndex, setMobileViewIndex] = useState<number>(1);
+  const [mobileViewIndex, setMobileViewIndex] = useState(1);
   const [isMobile, setIsMobile] = useState(false);
+  const searchRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth < 768);
@@ -583,327 +985,270 @@ export default function CompareTool({
 
   useEffect(() => {
     const params = new URLSearchParams(searchParams?.toString() || '');
-    if (selectedSlugs.length > 0) {
-      params.set('compare', selectedSlugs.join(','));
-      params.delete('add');
-    } else {
-      params.delete('compare');
-      params.delete('add');
-    }
-    const target = `${pathname}?${params.toString()}`;
-    router.replace(target, { scroll: false });
+    if (selectedSlugs.length > 0) { params.set('compare', selectedSlugs.join(',')); params.delete('add'); }
+    else { params.delete('compare'); params.delete('add'); }
+    router.replace(`${pathname}?${params.toString()}`, { scroll: false });
   }, [selectedSlugs, pathname, searchParams, router]);
 
-  let clampedMobileIndex = mobileViewIndex;
-  if (clampedMobileIndex >= selectedSlugs.length && selectedSlugs.length > 1) {
-    clampedMobileIndex = selectedSlugs.length - 1;
-  }
-
   useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
-        setIsSearchOpen(false);
-      }
-    }
+    const handleClickOutside = (e: MouseEvent) => {
+      if (searchRef.current && !searchRef.current.contains(e.target as Node)) setIsSearchOpen(false);
+    };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const bySlug = useMemo(() => {
-    const map = new Map<string, Compound>();
-    for (const c of compounds) map.set(c.slug, c);
-    return map;
-  }, [compounds]);
+  const bySlug = useMemo(() => new Map(compounds.map(c => [c.slug, c])), [compounds]);
+  const selected = useMemo(() => selectedSlugs.map(s => bySlug.get(s)).filter((c): c is Compound => Boolean(c)), [selectedSlugs, bySlug]);
 
-  const selected = useMemo(
-    () => selectedSlugs.map((s) => bySlug.get(s)).filter((c): c is Compound => Boolean(c)),
-    [selectedSlugs, bySlug],
-  );
+  let clampedMobileIndex = mobileViewIndex;
+  if (clampedMobileIndex >= selected.length && selected.length > 1) clampedMobileIndex = selected.length - 1;
 
-  const displayedSelected = useMemo(() => {
-    return isMobile && selected.length > 1
-      ? [selected[0], selected[clampedMobileIndex]]
-      : selected;
-  }, [isMobile, selected, clampedMobileIndex]);
-
-  const maxHalfLife = useMemo(() => {
-    return Math.max(...displayedSelected.map(c => parseHalfLifeHours(c.half_life)), 0);
-  }, [displayedSelected]);
-
+  const displayedSelected = useMemo(() => isMobile && selected.length > 1 ? [selected[0], selected[clampedMobileIndex]] : selected, [isMobile, selected, clampedMobileIndex]);
+  const maxHalfLife = useMemo(() => Math.max(...displayedSelected.map(c => parseHalfLifeHours(c.half_life)), 0), [displayedSelected]);
   const scores = useMemo(() => selected.map(c => scoreCompound(c, selected)), [selected]);
   const prosCons = useMemo(() => selected.map(c => generateProsCons(c)), [selected]);
   const analystBrief = useMemo(() => generateAnalystBrief(selected, scores), [selected, scores]);
-
-  const topPickSlug = useMemo(() => {
-    if (selected.length < 2) return null;
-    const best = [...selected].map((c, i) => ({ c, s: scores[i] })).sort((a, b) => b.s.total - a.s.total)[0];
-    return best?.c.slug ?? null;
-  }, [selected, scores]);
+  const recommendations = useMemo(() => generateRecommendations(selected, scores), [selected, scores]);
+  const topPickSlug = useMemo(() => selected.length < 2 ? null : [...selected].map((c, i) => ({ c, s: scores[i] })).sort((a, b) => b.s.total - a.s.total)[0]?.c.slug ?? null, [selected, scores]);
 
   const searchResults = useMemo(() => {
     if (!searchQuery.trim()) return [];
     const lower = searchQuery.toLowerCase();
-    return compounds.filter((c) =>
+    return compounds.filter(c =>
       !selectedSlugs.includes(c.slug) &&
-      (c.display_name.toLowerCase().includes(lower) ||
-        (c.category && c.category.toLowerCase().includes(lower)) ||
-        c.slug.toLowerCase().includes(lower) ||
-        (c.aliases ?? []).some(a => a.toLowerCase().includes(lower)))
-    ).slice(0, 10);
+      (c.display_name.toLowerCase().includes(lower) || (c.category ?? '').toLowerCase().includes(lower) || c.slug.includes(lower) || (c.aliases ?? []).some(a => a.toLowerCase().includes(lower)))
+    ).slice(0, 12);
   }, [compounds, searchQuery, selectedSlugs]);
 
-  function addCompound(slug: string) {
+  const addCompound = useCallback((slug: string) => {
     if (!slug) return;
-    setSelectedSlugs((prev) => (prev.includes(slug) || prev.length >= MAX_COLUMNS ? prev : [...prev, slug]));
+    setSelectedSlugs(prev => prev.includes(slug) || prev.length >= MAX_COLUMNS ? prev : [...prev, slug]);
     setSearchQuery('');
     setIsSearchOpen(false);
-  }
+  }, []);
 
-  function removeCompound(slug: string) {
-    setSelectedSlugs((prev) => prev.filter((s) => s !== slug));
-  }
-
-  const toggleGroup = (label: string) => {
-    setCollapsedGroups(prev => {
-      const n = new Set(prev);
-      if (n.has(label)) n.delete(label);
-      else n.add(label);
-      return n;
-    });
-  };
-
-  const handleDragStart = (e: React.DragEvent, index: number) => {
-    e.dataTransfer.setData('text/plain', index.toString());
-    e.dataTransfer.effectAllowed = 'move';
-  };
-
-  const handleDrop = (e: React.DragEvent, targetIndex: number) => {
-    e.preventDefault();
-    const sourceIndex = parseInt(e.dataTransfer.getData('text/plain'), 10);
-    if (sourceIndex === targetIndex || isNaN(sourceIndex)) return;
-    setSelectedSlugs(prev => {
-      const next = [...prev];
-      const [removed] = next.splice(sourceIndex, 1);
-      next.splice(targetIndex, 0, removed);
-      return next;
-    });
-  };
+  const removeCompound = useCallback((slug: string) => setSelectedSlugs(prev => prev.filter(s => s !== slug)), []);
+  const toggleGroup = useCallback((label: string) => setCollapsedGroups(prev => { const n = new Set(prev); n.has(label) ? n.delete(label) : n.add(label); return n; }), []);
 
   function handleShare() {
     if (typeof window === 'undefined') return;
-    navigator.clipboard.writeText(window.location.href).then(() => {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    });
+    navigator.clipboard.writeText(window.location.href).then(() => { setCopied(true); setTimeout(() => setCopied(false), 2000); });
   }
 
   function handleExportCSV() {
-    if (selected.length === 0) return;
+    if (!selected.length) return;
     let csv = 'Attribute,' + selected.map(c => `"${c.display_name}"`).join(',') + '\n';
     for (const row of ROWS) {
-      if (row.kind === 'group') {
-        csv += `"${row.label}"\n`;
-      } else {
-        csv += `"${row.label}",`;
-        csv += selected.map(c => {
-          const v = String(row.getValue(c)).replace(/"/g, '""');
-          return `"${v}"`;
-        }).join(',') + '\n';
-      }
+      if (row.kind === 'group') { csv += `"${row.label}"\n`; continue; }
+      csv += `"${row.label}",` + selected.map(c => `"${String(row.getValue(c)).replace(/"/g, '""')}"`).join(',') + '\n';
     }
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.setAttribute('download', `pepnationlab_compare_${selectedSlugs.join('_')}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    const a = document.createElement('a');
+    a.href = url; a.download = `pepnationlab_compare_${selectedSlugs.join('_')}.csv`;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
+  function handleExportJSON() {
+    if (!selected.length) return;
+    const data = selected.map((c, i) => ({
+      compound: c.display_name,
+      slug: c.slug,
+      score: scores[i],
+      prosCons: prosCons[i],
+      attributes: Object.fromEntries(ROWS.filter(r => r.kind === 'data').map(r => r.kind === 'data' ? [r.label, String(r.getValue(c))] : ['', ''])),
+    }));
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = `pepnationlab_compare_${selectedSlugs.join('_')}.json`;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
     URL.revokeObjectURL(url);
   }
 
   const canAdd = selected.length < MAX_COLUMNS;
   const colSpan = displayedSelected.length + 1;
 
-  // Radar Data — 7 axes
   const radarData: RadarDataPoint[] = useMemo(() => {
     if (selected.length < 2) return [];
     const maxCites = Math.max(...selected.map(c => c.pubmed_citation_count ?? 0), 1);
     const maxHl = Math.max(...selected.map(c => parseHalfLifeHours(c.half_life)), 1);
     const maxTrials = Math.max(...selected.map(c => (c.active_trial_count ?? 0) + (c.completed_trial_count ?? 0)), 1);
     return [
-      { label: 'Evidence', scores: selected.map(c => { const t = evidenceTier(c.evidence_tier); return t.label === 'Approved Drug' ? 100 : t.label === 'Investigational' ? 78 : t.label === 'Preclinical' ? 55 : 30; }) },
-      { label: 'Safety', scores: selected.map(c => c.risk_level === 'low' ? 100 : c.risk_level === 'moderate' ? 70 : c.risk_level === 'high' ? 35 : 10) },
+      { label: 'Evidence', scores: selected.map(c => c.evidence_tier === 'approved_drug' ? 100 : c.evidence_tier === 'investigational' ? 78 : c.evidence_tier === 'preclinical' ? 55 : 30) },
+      { label: 'Safety', scores: selected.map(c => c.risk_level === 'low' ? 100 : c.risk_level === 'moderate' ? 72 : c.risk_level === 'high' ? 38 : 10) },
       { label: 'Citations', scores: selected.map(c => Math.min(100, Math.max(5, ((c.pubmed_citation_count ?? 0) / maxCites) * 100))) },
       { label: 'Trials', scores: selected.map(c => Math.min(100, Math.max(5, (((c.active_trial_count ?? 0) + (c.completed_trial_count ?? 0)) / maxTrials) * 100))) },
       { label: 'Half-Life', scores: selected.map(c => Math.min(100, Math.max(5, (parseHalfLifeHours(c.half_life) / maxHl) * 100))) },
       { label: 'Coverage', scores: selected.map(c => Math.min(100, Math.max(5, ((c.research_areas ?? []).length / 8) * 100))) },
-      { label: 'Handling', scores: selected.map(c => { const shelf = c.reconstitution_shelf_days ?? c.handling?.reconstituted_days ?? 0; return Math.min(100, Math.max(5, (shelf / 60) * 100)); }) },
+      { label: 'Handling', scores: selected.map(c => { const s = c.reconstitution_shelf_days ?? c.handling?.reconstituted_days ?? 0; return Math.min(100, Math.max(5, (s / 60) * 100)); }) },
     ];
   }, [selected]);
 
-  // Synergy Detection
-  const activeSynergies = KNOWN_SYNERGIES.filter(syn =>
-    syn.pairs.every(slug => selectedSlugs.includes(slug))
-  );
+  const activeSynergies = KNOWN_SYNERGIES.filter(syn => syn.pairs.every(slug => selectedSlugs.includes(slug)));
+
+  const tabs = [
+    { id: 'matrix' as const, label: '📊 Matrix', showAlways: false },
+    { id: 'proscons' as const, label: '⚖️ Pros & Cons', showAlways: false },
+    { id: 'brief' as const, label: '🧠 Analyst Brief', showAlways: false },
+    { id: 'mechanism' as const, label: '🔬 Mechanism', showAlways: false },
+    { id: 'protocol' as const, label: '📋 Protocol', showAlways: false },
+    { id: 'recommend' as const, label: '🎯 Verdict', showAlways: false },
+  ];
 
   return (
     <div>
-      <style dangerouslySetInnerHTML={{__html: `
-        @media print {
-          body { background: #fff !important; color: #000 !important; }
-          .no-print { display: none !important; }
-          .glass-panel { background: #fff !important; border: 1px solid #ccc !important; padding: 0 !important; }
-          td, th { color: #000 !important; background: #fff !important; border-bottom: 1px solid #ddd !important; }
-          .print-group { background: #f5f5f5 !important; color: #000 !important; }
-        }
-        .ct-tab-btn { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); color: rgba(255,255,255,0.5); border-radius: 8px; padding: 8px 16px; font-size: 0.82rem; font-weight: 700; cursor: pointer; transition: all 0.2s; }
-        .ct-tab-btn:hover { background: rgba(255,255,255,0.08); color: var(--white); }
-        .ct-tab-btn.active { background: rgba(0,196,188,0.15); border-color: rgba(0,196,188,0.5); color: var(--teal); }
+      <style dangerouslySetInnerHTML={{ __html: `
+        @media print { body { background: #fff !important; color: #000 !important; } .no-print { display: none !important; } td, th { color: #000 !important; background: #fff !important; border-bottom: 1px solid #ddd !important; } }
+        .ct-tab { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); color: rgba(255,255,255,0.45); border-radius: 8px; padding: 8px 14px; font-size: 0.8rem; font-weight: 700; cursor: pointer; transition: all 0.2s; white-space: nowrap; }
+        .ct-tab:hover { background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.85); }
+        .ct-tab.active { background: rgba(0,196,188,0.15); border-color: rgba(0,196,188,0.5); color: #00C4BC; }
+        .ct-row-hover:hover td { background: rgba(255,255,255,0.015) !important; }
+        .popular-card { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; padding: 12px 14px; cursor: pointer; transition: all 0.2s; display: flex; flex-direction: column; gap: 4; }
+        .popular-card:hover { background: rgba(0,196,188,0.08); border-color: rgba(0,196,188,0.3); transform: translateY(-1px); }
       `}} />
 
-      {/* ── Search / Add Bar ── */}
-      <div className="no-print" style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--space-4, 16px)', alignItems: 'center', marginBottom: 'var(--space-5, 24px)', position: 'relative', zIndex: 50 }} ref={searchRef}>
-        <div style={{ position: 'relative', flex: 1, maxWidth: 500 }}>
-          <div style={{ position: 'relative' }}>
-            <Search style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: 'var(--silver, #A8B4C0)' }} size={18} />
-            <input
-              type="text"
-              placeholder={canAdd ? 'Search for a compound to compare...' : `Maximum of ${MAX_COLUMNS} compounds selected`}
-              value={searchQuery}
-              onChange={(e) => { setSearchQuery(e.target.value); setIsSearchOpen(true); }}
-              onFocus={() => setIsSearchOpen(true)}
-              disabled={!canAdd}
-              style={{ width: '100%', background: 'var(--grey-400, #162230)', color: 'var(--white, #FFFFFF)', border: '1px solid rgba(168,180,192,0.25)', borderRadius: 'var(--radius-md, 8px)', padding: '12px 16px 12px 42px', fontSize: '1rem', outline: 'none', opacity: canAdd ? 1 : 0.5 }}
-            />
-          </div>
+      {/* Search bar */}
+      <div className="no-print" style={{ display: 'flex', flexWrap: 'wrap', gap: 14, alignItems: 'center', marginBottom: 24, position: 'relative', zIndex: 50 }} ref={searchRef}>
+        <div style={{ position: 'relative', flex: 1, minWidth: 240, maxWidth: 520 }}>
+          <Search style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: 'rgba(168,180,192,0.6)' }} size={17} />
+          <input
+            type="text"
+            placeholder={canAdd ? 'Search compounds to add...' : `Maximum ${MAX_COLUMNS} selected`}
+            value={searchQuery}
+            onChange={e => { setSearchQuery(e.target.value); setIsSearchOpen(true); }}
+            onFocus={() => setIsSearchOpen(true)}
+            disabled={!canAdd}
+            style={{ width: '100%', background: '#162230', color: '#fff', border: '1px solid rgba(168,180,192,0.2)', borderRadius: 8, padding: '12px 16px 12px 42px', fontSize: '0.95rem', outline: 'none', opacity: canAdd ? 1 : 0.5 }}
+          />
           {isSearchOpen && searchQuery.trim() && (
-            <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, marginTop: 8, background: '#162230', border: '1px solid rgba(168,180,192,0.25)', borderRadius: '8px', overflow: 'hidden', boxShadow: '0 10px 25px rgba(0,0,0,0.5)' }}>
-              {searchResults.length > 0 ? (
-                <ul style={{ listStyle: 'none', padding: 0, margin: 0, maxHeight: 300, overflowY: 'auto' }}>
-                  {searchResults.map((c) => {
+            <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, marginTop: 6, background: '#162230', border: '1px solid rgba(168,180,192,0.2)', borderRadius: 8, overflow: 'hidden', boxShadow: '0 12px 30px rgba(0,0,0,0.6)', zIndex: 100 }}>
+              {searchResults.length ? (
+                <ul style={{ listStyle: 'none', padding: 0, margin: 0, maxHeight: 320, overflowY: 'auto' }}>
+                  {searchResults.map(c => {
                     const tier = evidenceTier(c.evidence_tier);
                     return (
                       <li key={c.slug}>
-                        <button type="button" onClick={() => addCompound(c.slug)} style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', background: 'transparent', border: 'none', borderBottom: '1px solid rgba(168,180,192,0.1)', color: 'var(--white, #FFFFFF)', textAlign: 'left', cursor: 'pointer' }}
-                          onMouseOver={(e) => e.currentTarget.style.background = 'rgba(0,196,188,0.1)'}
-                          onMouseOut={(e) => e.currentTarget.style.background = 'transparent'}>
+                        <button type="button" onClick={() => addCompound(c.slug)}
+                          style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, padding: '11px 16px', background: 'transparent', border: 'none', borderBottom: '1px solid rgba(168,180,192,0.08)', color: '#fff', textAlign: 'left', cursor: 'pointer' }}
+                          onMouseOver={e => e.currentTarget.style.background = 'rgba(0,196,188,0.08)'}
+                          onMouseOut={e => e.currentTarget.style.background = 'transparent'}>
                           <div>
-                            <div style={{ fontWeight: 700, fontSize: '0.95rem' }}>{c.display_name}</div>
-                            <div style={{ fontSize: '0.75rem', color: 'var(--silver, #A8B4C0)', marginTop: 2 }}>{c.category}</div>
+                            <div style={{ fontWeight: 700, fontSize: '0.92rem' }}>{c.display_name}</div>
+                            <div style={{ fontSize: '0.72rem', color: 'rgba(168,180,192,0.7)', marginTop: 1 }}>{c.category} · {c.compound_class}</div>
                           </div>
-                          <span style={{ fontSize: '0.65rem', padding: '2px 8px', borderRadius: 999, background: `${tier.color}20`, color: tier.color, fontWeight: 700 }}>{tier.label}</span>
+                          <span style={{ fontSize: '0.65rem', padding: '2px 8px', borderRadius: 999, background: `${tier.color}20`, color: tier.color, fontWeight: 700, flexShrink: 0 }}>{tier.label}</span>
                         </button>
                       </li>
                     );
                   })}
                 </ul>
               ) : (
-                <div style={{ padding: '16px', textAlign: 'center', color: 'var(--silver, #A8B4C0)', fontSize: '0.9rem' }}>No compounds found matching &quot;{searchQuery}&quot;</div>
+                <div style={{ padding: 16, textAlign: 'center', color: 'rgba(168,180,192,0.6)', fontSize: '0.88rem' }}>No compounds match &quot;{searchQuery}&quot;</div>
               )}
             </div>
           )}
         </div>
-
-        <span style={{ color: 'var(--silver, #A8B4C0)', fontSize: '0.85rem', fontWeight: 700 }}>{selected.length} Of {MAX_COLUMNS} Selected</span>
-
+        <span style={{ color: 'rgba(168,180,192,0.7)', fontSize: '0.82rem', fontWeight: 700 }}>{selected.length}/{MAX_COLUMNS}</span>
         {selected.length >= 2 && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginLeft: 'auto', flexWrap: 'wrap' }}>
-            <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', color: 'var(--silver)', fontSize: '0.85rem', fontWeight: 800, userSelect: 'none' }}>
-              <input type="checkbox" checked={diffMode} onChange={(e) => setDiffMode(e.target.checked)} style={{ accentColor: '#00C4BC', width: 16, height: 16 }} />
-              Highlight Differences
+          <div style={{ display: 'flex', gap: 8, marginLeft: 'auto', flexWrap: 'wrap', alignItems: 'center' }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 5, cursor: 'pointer', color: 'rgba(168,180,192,0.8)', fontSize: '0.8rem', fontWeight: 700, userSelect: 'none' }}>
+              <input type="checkbox" checked={diffMode} onChange={e => setDiffMode(e.target.checked)} style={{ accentColor: '#00C4BC' }} />
+              Diff Mode
             </label>
-            <button type="button" onClick={handleExportCSV} style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'var(--white)', borderRadius: 8, padding: '8px 12px', fontSize: '0.8rem', fontWeight: 700, cursor: 'pointer' }}>
-              <Download size={14} /> Export
-            </button>
-            <button type="button" onClick={handleShare} style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'var(--white)', borderRadius: 8, padding: '8px 12px', fontSize: '0.8rem', fontWeight: 700, cursor: 'pointer' }}>
-              {copied ? <Check size={14} color="#00C4BC" /> : <Share2 size={14} />}
-              {copied ? 'Copied!' : 'Share'}
-            </button>
-            <button type="button" onClick={() => window.print()} style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'var(--white)', borderRadius: 8, padding: '8px 12px', fontSize: '0.8rem', fontWeight: 700, cursor: 'pointer' }}>
-              <Printer size={14} /> Print
-            </button>
+            <button type="button" onClick={handleExportCSV} style={{ display: 'flex', alignItems: 'center', gap: 5, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', borderRadius: 7, padding: '7px 12px', fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer' }}><Download size={13} /> CSV</button>
+            <button type="button" onClick={handleExportJSON} style={{ display: 'flex', alignItems: 'center', gap: 5, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', borderRadius: 7, padding: '7px 12px', fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer' }}><Download size={13} /> JSON</button>
+            <button type="button" onClick={handleShare} style={{ display: 'flex', alignItems: 'center', gap: 5, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', borderRadius: 7, padding: '7px 12px', fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer' }}>{copied ? <Check size={13} color="#00C4BC" /> : <Share2 size={13} />} {copied ? 'Copied!' : 'Share'}</button>
+            <button type="button" onClick={() => window.print()} style={{ display: 'flex', alignItems: 'center', gap: 5, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', borderRadius: 7, padding: '7px 12px', fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer' }}><Printer size={13} /> Print</button>
           </div>
         )}
-
-        {selected.length > 0 && (
-          <button type="button" onClick={() => setSelectedSlugs([])} style={{ background: 'rgba(229,62,62,0.1)', border: '1px solid rgba(229,62,62,0.3)', color: '#F08A8A', borderRadius: 8, padding: '8px 16px', fontSize: '0.8rem', fontWeight: 700, cursor: 'pointer' }}>
-            Clear All
-          </button>
-        )}
+        {selected.length > 0 && <button type="button" onClick={() => setSelectedSlugs([])} style={{ background: 'rgba(229,62,62,0.1)', border: '1px solid rgba(229,62,62,0.3)', color: '#F08A8A', borderRadius: 7, padding: '7px 14px', fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer' }}>Clear All</button>}
       </div>
 
-      {/* ── Synergy / Conflict Alerts ── */}
+      {/* Synergy / Conflict Alerts */}
       {activeSynergies.map((syn, idx) => (
-        <div key={idx} style={{
-          background: syn.type === 'conflict' ? 'rgba(229,62,62,0.1)' : 'rgba(104,211,145,0.1)',
-          border: `1px solid ${syn.type === 'conflict' ? 'rgba(229,62,62,0.3)' : 'rgba(104,211,145,0.3)'}`,
-          color: syn.type === 'conflict' ? '#FC8181' : '#68D391',
-          padding: '12px 16px', borderRadius: 8, marginBottom: 12, fontSize: '0.9rem', fontWeight: 600, display: 'flex', alignItems: 'flex-start', gap: 10
-        }}>
-          {syn.type === 'conflict' ? <AlertTriangle size={16} style={{ marginTop: 1, flexShrink: 0 }} /> : <span style={{ fontSize: '1rem' }}>🔥</span>}
-          <span><strong>{syn.type === 'conflict' ? 'Conflict Detected' : 'Synergy Detected'}:</strong> {syn.message}</span>
+        <div key={idx} style={{ background: syn.type === 'conflict' ? 'rgba(229,62,62,0.1)' : syn.type === 'caution' ? 'rgba(246,173,85,0.1)' : 'rgba(104,211,145,0.1)', border: `1px solid ${syn.type === 'conflict' ? 'rgba(229,62,62,0.3)' : syn.type === 'caution' ? 'rgba(246,173,85,0.3)' : 'rgba(104,211,145,0.3)'}`, color: syn.type === 'conflict' ? '#FC8181' : syn.type === 'caution' ? '#F6AD55' : '#68D391', padding: '11px 16px', borderRadius: 8, marginBottom: 10, fontSize: '0.88rem', fontWeight: 600, display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+          {syn.type === 'conflict' ? <AlertTriangle size={15} style={{ flexShrink: 0, marginTop: 1 }} /> : syn.type === 'caution' ? <AlertTriangle size={15} style={{ flexShrink: 0, marginTop: 1 }} /> : <span style={{ fontSize: '0.9rem' }}>🔥</span>}
+          <span><strong>{syn.type === 'conflict' ? 'Conflict' : syn.type === 'caution' ? 'Caution' : `Synergy — ${syn.category}`}:</strong> {syn.message}</span>
         </div>
       ))}
 
-      {/* ── Empty State ── */}
+      {/* Empty State */}
       {selected.length === 0 ? (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 'var(--space-4, 16px)' }}>
-          {[1, 2, 3].map((num) => (
-            <div key={num} className="glass-panel" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 16, height: 300, border: '2px dashed rgba(168,180,192,0.2)', borderRadius: 'var(--radius-lg, 12px)', background: 'rgba(22, 34, 48, 0.4)' }}>
-              <PlusCircle size={48} color="rgba(168,180,192,0.2)" />
-              <div style={{ color: 'var(--silver, #A8B4C0)', fontWeight: 700, fontSize: '1.1rem' }}>Compound {num}</div>
-              <p style={{ color: 'var(--silver, #A8B4C0)', fontSize: '0.85rem', textAlign: 'center', padding: '0 24px', opacity: 0.7 }}>Use the search bar above to select a compound and begin building your comparison.</p>
-            </div>
-          ))}
-        </div>
-      ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6, 32px)' }}>
-
-          {/* ── Tab Navigation ── */}
-          {selected.length >= 2 && (
-            <div className="no-print" style={{ display: 'flex', gap: 8, borderBottom: '1px solid rgba(255,255,255,0.08)', paddingBottom: 0 }}>
-              {[
-                { id: 'matrix' as const, label: '📊 Attribute Matrix' },
-                { id: 'proscons' as const, label: '⚖️ Pros & Cons' },
-                { id: 'brief' as const, label: '🧠 Analyst Brief' },
-              ].map(tab => (
-                <button key={tab.id} type="button" className={`ct-tab-btn${activeTab === tab.id ? ' active' : ''}`} onClick={() => setActiveTab(tab.id)}>
-                  {tab.label}
+        <div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 14, marginBottom: 32 }}>
+            {[1, 2, 3].map(num => (
+              <div key={num} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 14, minHeight: 240, border: '2px dashed rgba(168,180,192,0.15)', borderRadius: 14, background: 'rgba(22,34,48,0.4)' }}>
+                <PlusCircle size={44} color="rgba(168,180,192,0.2)" />
+                <div style={{ color: 'rgba(168,180,192,0.6)', fontWeight: 700, fontSize: '1rem' }}>Compound {num}</div>
+                <p style={{ color: 'rgba(168,180,192,0.4)', fontSize: '0.82rem', textAlign: 'center', padding: '0 24px', margin: 0 }}>Search above to select a compound for comparison.</p>
+              </div>
+            ))}
+          </div>
+          {/* Popular Comparisons */}
+          <div style={{ marginTop: 8 }}>
+            <div style={{ fontSize: '0.78rem', fontWeight: 800, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 12 }}>Popular Comparisons — Quick Start</div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 8 }}>
+              {POPULAR_COMPARISONS.filter(p => p.slugs.every(s => compounds.some(c => c.slug === s))).map(p => (
+                <button key={p.label} type="button" className="popular-card" onClick={() => { setSelectedSlugs(p.slugs.slice(0, MAX_COLUMNS)); }}>
+                  <span style={{ fontSize: '1.1rem' }}>{p.icon}</span>
+                  <span style={{ fontSize: '0.82rem', fontWeight: 700, color: 'rgba(255,255,255,0.8)' }}>{p.label}</span>
+                  <span style={{ fontSize: '0.68rem', color: 'rgba(168,180,192,0.5)' }}>{p.slugs.map(s => bySlug.get(s)?.display_name ?? s).join(' vs. ')}</span>
                 </button>
               ))}
             </div>
+          </div>
+        </div>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 28 }}>
+
+          {/* Tabs */}
+          {selected.length >= 2 && (
+            <div className="no-print" style={{ overflowX: 'auto', paddingBottom: 4 }}>
+              <div style={{ display: 'flex', gap: 6, minWidth: 'max-content' }}>
+                {tabs.map(tab => (
+                  <button key={tab.id} type="button" className={`ct-tab${activeTab === tab.id ? ' active' : ''}`} onClick={() => setActiveTab(tab.id)}>
+                    {tab.label}
+                  </button>
+                ))}
+              </div>
+            </div>
           )}
 
-          {/* ── RADAR + SCORE SUMMARY (always visible) ── */}
+          {/* Score Summary Panel — always visible */}
           {selected.length >= 2 && (
-            <div className="glass-panel" style={{ borderRadius: 'var(--radius-lg, 12px)', padding: '24px', display: 'flex', flexDirection: 'column', gap: 20 }}>
+            <div className="glass-panel" style={{ borderRadius: 14, padding: 24, display: 'flex', flexDirection: 'column', gap: 20 }}>
               {/* Top Pick Banner */}
               {topPickSlug && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10, background: 'rgba(0,196,188,0.08)', border: '1px solid rgba(0,196,188,0.25)', borderRadius: 10, padding: '10px 16px' }}>
-                  <Trophy size={18} color="#00C4BC" />
-                  <span style={{ fontWeight: 800, fontSize: '0.9rem', color: 'var(--teal)' }}>Top Overall Pick: {bySlug.get(topPickSlug)?.display_name}</span>
-                  <span style={{ fontSize: '0.78rem', color: 'rgba(255,255,255,0.5)', marginLeft: 4 }}>· Highest composite research score among selected compounds</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, background: 'rgba(0,196,188,0.08)', border: '1px solid rgba(0,196,188,0.2)', borderRadius: 10, padding: '10px 16px' }}>
+                  <Trophy size={17} color="#00C4BC" />
+                  <span style={{ fontWeight: 800, fontSize: '0.88rem', color: '#00C4BC' }}>Top Overall Pick: {bySlug.get(topPickSlug)?.display_name}</span>
+                  <span style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.4)', marginLeft: 4 }}>· Highest composite research score</span>
+                  <button type="button" onClick={() => setActiveTab('recommend')} style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 4, background: 'rgba(0,196,188,0.1)', border: '1px solid rgba(0,196,188,0.3)', color: '#00C4BC', borderRadius: 6, padding: '4px 10px', fontSize: '0.72rem', fontWeight: 700, cursor: 'pointer' }}>
+                    See Verdict <ArrowRight size={11} />
+                  </button>
                 </div>
               )}
 
-              {/* Score cards per compound */}
+              {/* Score Cards */}
               <div style={{ display: 'grid', gridTemplateColumns: `repeat(${displayedSelected.length}, 1fr)`, gap: 16 }}>
-                {displayedSelected.map((c, idx) => {
-                  const originalIdx = selected.findIndex(x => x.slug === c.slug);
-                  const score = scores[originalIdx];
-                  const color = colors[originalIdx % colors.length];
+                {displayedSelected.map(c => {
+                  const origIdx = selected.findIndex(x => x.slug === c.slug);
+                  const score = scores[origIdx];
+                  const color = colors[origIdx % colors.length];
                   const isTop = c.slug === topPickSlug;
                   return (
-                    <div key={c.slug} style={{ padding: 14, borderRadius: 10, background: isTop ? 'rgba(0,196,188,0.06)' : 'rgba(255,255,255,0.02)', border: `1px solid ${isTop ? 'rgba(0,196,188,0.3)' : 'rgba(255,255,255,0.08)'}` }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
+                    <div key={c.slug} style={{ padding: 14, borderRadius: 12, background: isTop ? 'rgba(0,196,188,0.05)' : 'rgba(255,255,255,0.02)', border: `1px solid ${isTop ? 'rgba(0,196,188,0.25)' : 'rgba(255,255,255,0.07)'}` }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
                         <div style={{ width: 8, height: 8, borderRadius: '50%', background: color, flexShrink: 0 }} />
-                        <span style={{ fontWeight: 900, fontSize: '0.9rem', color: 'var(--white)' }}>{c.display_name}</span>
-                        {isTop && <Trophy size={12} color="#00C4BC" />}
+                        <Link href={`/research/${c.slug}`} style={{ color, fontWeight: 900, textDecoration: 'none', fontSize: '0.95rem' }}>{c.display_name}</Link>
+                        {isTop && <Trophy size={13} color="#00C4BC" />}
                       </div>
-                      <ScoreBadge score={score} color={color} />
+                      <AnimatedScoreRing score={score} color={color} />
                       {score.bestFor.length > 0 && (
-                        <div style={{ marginTop: 8, padding: '6px 10px', background: `${color}12`, borderRadius: 6, fontSize: '0.7rem', color: color, fontWeight: 700 }}>
+                        <div style={{ marginTop: 8, padding: '5px 8px', background: `${color}10`, borderRadius: 6, fontSize: '0.67rem', color: color, fontWeight: 700, lineHeight: 1.4 }}>
                           Unique: {score.bestFor.map(researchAreaLabel).slice(0, 2).join(', ')}
                         </div>
                       )}
@@ -912,15 +1257,15 @@ export default function CompareTool({
                 })}
               </div>
 
-              {/* Radar */}
+              {/* Radar Chart */}
               {radarData.length >= 2 && (
-                <div style={{ marginTop: 8 }}>
-                  <div style={{ textAlign: 'center', fontSize: '0.75rem', color: 'rgba(255,255,255,0.4)', marginBottom: 8, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Research Profile Radar</div>
-                  <AttributeRadarChart data={radarData} colors={colors} size={isMobile ? 220 : 300} />
-                  <div style={{ display: 'flex', justifyContent: 'center', gap: 16, flexWrap: 'wrap', marginTop: 8 }}>
+                <div style={{ marginTop: 4 }}>
+                  <div style={{ textAlign: 'center', fontSize: '0.68rem', color: 'rgba(255,255,255,0.35)', marginBottom: 4, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em' }}>Research Profile Radar — hover axes for details</div>
+                  <AttributeRadarChart data={radarData} colors={colors} compoundNames={selected.map(c => c.display_name)} size={isMobile ? 220 : 320} animated />
+                  <div style={{ display: 'flex', justifyContent: 'center', gap: 16, flexWrap: 'wrap', marginTop: 6 }}>
                     {selected.map((c, i) => (
-                      <div key={c.slug} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.72rem', color: 'rgba(255,255,255,0.6)' }}>
-                        <div style={{ width: 10, height: 10, borderRadius: 2, background: colors[i % colors.length] }} />
+                      <div key={c.slug} style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: '0.7rem', color: 'rgba(255,255,255,0.55)' }}>
+                        <div style={{ width: 10, height: 4, borderRadius: 2, background: colors[i % colors.length] }} />
                         {c.display_name}
                       </div>
                     ))}
@@ -932,22 +1277,26 @@ export default function CompareTool({
 
           {/* ── TAB: PROS & CONS ── */}
           {(activeTab === 'proscons' || selected.length === 1) && (
-            <div className="glass-panel" style={{ borderRadius: 'var(--radius-lg, 12px)', padding: '24px' }}>
-              <h3 style={{ margin: '0 0 20px 0', fontSize: '1.1rem', fontWeight: 800, color: 'var(--white)' }}>
-                ⚖️ Pros &amp; Cons Analysis
+            <div className="glass-panel" style={{ borderRadius: 14, padding: 24 }}>
+              <h3 style={{ margin: '0 0 18px 0', fontSize: '1.05rem', fontWeight: 800, color: '#fff', display: 'flex', alignItems: 'center', gap: 8 }}>
+                <Scale size={17} color="#00C4BC" /> Pros &amp; Cons Analysis
+                <span style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.3)', fontWeight: 400, marginLeft: 4 }}>Data-driven from compound attributes</span>
               </h3>
-              <div style={{ display: 'grid', gridTemplateColumns: `repeat(auto-fit, minmax(260px, 1fr))`, gap: 16 }}>
-                {displayedSelected.map((c, idx) => {
-                  const originalIdx = selected.findIndex(x => x.slug === c.slug);
-                  const pc = prosCons[originalIdx];
-                  const color = colors[originalIdx % colors.length];
+              <div style={{ display: 'grid', gridTemplateColumns: `repeat(auto-fit, minmax(260px, 1fr))`, gap: 14 }}>
+                {displayedSelected.map(c => {
+                  const origIdx = selected.findIndex(x => x.slug === c.slug);
+                  const pc = prosCons[origIdx];
+                  const color = colors[origIdx % colors.length];
+                  const isTop = c.slug === topPickSlug;
                   return (
-                    <div key={c.slug} style={{ padding: 16, borderRadius: 10, background: 'rgba(255,255,255,0.02)', border: `1px solid rgba(255,255,255,0.08)` }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 14, paddingBottom: 10, borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-                        <div style={{ width: 8, height: 8, borderRadius: '50%', background: color, flexShrink: 0 }} />
-                        <span style={{ fontWeight: 900, fontSize: '0.92rem', color: 'var(--white)' }}>{c.display_name}</span>
+                    <div key={c.slug} style={{ padding: 16, borderRadius: 12, background: isTop ? 'rgba(0,196,188,0.04)' : 'rgba(255,255,255,0.02)', border: `1px solid ${isTop ? 'rgba(0,196,188,0.2)' : 'rgba(255,255,255,0.07)'}` }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 12, paddingBottom: 10, borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+                        <div style={{ width: 7, height: 7, borderRadius: '50%', background: color, flexShrink: 0 }} />
+                        <span style={{ fontWeight: 900, fontSize: '0.9rem', color: '#fff' }}>{c.display_name}</span>
+                        {isTop && <Trophy size={11} color="#00C4BC" />}
+                        <span style={{ marginLeft: 'auto', fontSize: '0.65rem', color, fontWeight: 800 }}>Score: {scores[origIdx].total}/100</span>
                       </div>
-                      <ProsConsCard pc={pc} color={color} />
+                      <ProsConsCard pc={pc} />
                     </div>
                   );
                 })}
@@ -957,17 +1306,15 @@ export default function CompareTool({
 
           {/* ── TAB: ANALYST BRIEF ── */}
           {activeTab === 'brief' && selected.length >= 2 && (
-            <div className="glass-panel" style={{ borderRadius: 'var(--radius-lg, 12px)', padding: '24px' }}>
+            <div className="glass-panel" style={{ borderRadius: 14, padding: 24 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
-                <Info size={18} color="rgba(0,196,188,0.8)" />
-                <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 800, color: 'var(--white)' }}>
-                  Analyst Brief
-                </h3>
-                <span style={{ marginLeft: 'auto', fontSize: '0.72rem', color: 'rgba(255,255,255,0.3)', fontStyle: 'italic' }}>For laboratory research reference only</span>
+                <Info size={17} color="rgba(0,196,188,0.8)" />
+                <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 800, color: '#fff' }}>Analyst Brief</h3>
+                <span style={{ marginLeft: 'auto', fontSize: '0.68rem', color: 'rgba(255,255,255,0.3)', fontStyle: 'italic' }}>For laboratory research reference only</span>
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
                 {analystBrief.map((para, i) => (
-                  <p key={i} style={{ margin: 0, color: 'rgba(255,255,255,0.75)', fontSize: '0.9rem', lineHeight: 1.7, paddingLeft: 14, borderLeft: '2px solid rgba(0,196,188,0.3)' }}>
+                  <p key={i} style={{ margin: 0, color: 'rgba(255,255,255,0.78)', fontSize: '0.88rem', lineHeight: 1.75, paddingLeft: 14, borderLeft: '2px solid rgba(0,196,188,0.3)' }}>
                     {para}
                   </p>
                 ))}
@@ -975,54 +1322,118 @@ export default function CompareTool({
             </div>
           )}
 
+          {/* ── TAB: MECHANISM ── */}
+          {activeTab === 'mechanism' && (
+            <div className="glass-panel" style={{ borderRadius: 14, padding: 24 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
+                <FlaskConical size={17} color="rgba(0,196,188,0.8)" />
+                <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 800, color: '#fff' }}>Mechanism Deep-Dive</h3>
+                <span style={{ marginLeft: 'auto', fontSize: '0.68rem', color: 'rgba(255,255,255,0.3)', fontStyle: 'italic' }}>Receptor targets, MOA, risk factors, sources</span>
+              </div>
+              <MechanismTab selected={displayedSelected} />
+            </div>
+          )}
+
+          {/* ── TAB: PROTOCOL ── */}
+          {activeTab === 'protocol' && (
+            <div className="glass-panel" style={{ borderRadius: 14, padding: 24 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
+                <Beaker size={17} color="rgba(0,196,188,0.8)" />
+                <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 800, color: '#fff' }}>Protocol Guide</h3>
+                <span style={{ marginLeft: 'auto', fontSize: '0.68rem', color: 'rgba(255,255,255,0.3)', fontStyle: 'italic' }}>Reconstitution, handling, frequency</span>
+              </div>
+              <ProtocolTab selected={displayedSelected} />
+            </div>
+          )}
+
+          {/* ── TAB: RECOMMENDATION / VERDICT ── */}
+          {activeTab === 'recommend' && selected.length >= 2 && recommendations && (
+            <div className="glass-panel" style={{ borderRadius: 14, padding: 24 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
+                <Star size={17} color="rgba(0,196,188,0.8)" />
+                <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 800, color: '#fff' }}>Research Verdict</h3>
+              </div>
+              <p style={{ margin: '0 0 20px 0', fontSize: '0.82rem', color: 'rgba(255,255,255,0.4)', lineHeight: 1.5 }}>
+                Which compound is best suited for different research contexts — based on composite scoring across evidence, safety, scientific backing, research coverage, and handling practicality.
+              </p>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 12, marginBottom: 24 }}>
+                <RecommendationCard rec={recommendations.overall} label="Overall Best Pick" icon={<Trophy size={14} />} color="#00C4BC" />
+                <RecommendationCard rec={recommendations.safest} label="Safest Profile" icon={<Shield size={14} />} color="#68D391" />
+                <RecommendationCard rec={recommendations.mostStudied} label="Most Research-Backed" icon={<BookOpen size={14} />} color="#F6AD55" />
+                <RecommendationCard rec={recommendations.mostPractical} label="Most Practical" icon={<Zap size={14} />} color="#9F7AEA" />
+              </div>
+              {/* Recommended contexts per compound */}
+              <div>
+                <div style={{ fontSize: '0.72rem', fontWeight: 800, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 12 }}>Best Research Contexts Per Compound</div>
+                <div style={{ display: 'grid', gridTemplateColumns: `repeat(auto-fit, minmax(220px, 1fr))`, gap: 10 }}>
+                  {displayedSelected.map(c => {
+                    const origIdx = selected.findIndex(x => x.slug === c.slug);
+                    const score = scores[origIdx];
+                    const color = colors[origIdx % colors.length];
+                    return (
+                      <div key={c.slug} style={{ padding: 12, borderRadius: 10, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.07)' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginBottom: 8 }}>
+                          <div style={{ width: 6, height: 6, borderRadius: '50%', background: color }} />
+                          <span style={{ fontWeight: 800, fontSize: '0.82rem', color: 'var(--white)' }}>{c.display_name}</span>
+                          <span style={{ marginLeft: 'auto', fontSize: '0.65rem', color, fontWeight: 800 }}>{score.letter}</span>
+                        </div>
+                        {score.recommendedContexts.length ? (
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                            {score.recommendedContexts.map((ctx, i) => (
+                              <div key={i} style={{ display: 'flex', gap: 5, alignItems: 'flex-start', fontSize: '0.75rem', color: 'rgba(255,255,255,0.6)', lineHeight: 1.35 }}>
+                                <ArrowRight size={10} color={color} style={{ marginTop: 2, flexShrink: 0 }} />
+                                {ctx}
+                              </div>
+                            ))}
+                          </div>
+                        ) : <span style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.3)' }}>General-purpose research compound</span>}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* ── TAB: ATTRIBUTE MATRIX ── */}
           {(activeTab === 'matrix' || selected.length === 1) && (
-            <div className="glass-panel" style={{ borderRadius: 'var(--radius-lg, 12px)', overflowX: 'auto' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '480px', position: 'relative' }}>
+            <div className="glass-panel" style={{ borderRadius: 14, overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 480, position: 'relative' }}>
                 <thead style={{ position: 'sticky', top: 0, zIndex: 20 }}>
                   <tr>
-                    <th className="print-th" style={{ ...labelCellStyle, textAlign: 'left', width: '22%', background: '#162230', zIndex: 30 }} scope="col">Attribute</th>
-                    {displayedSelected.map((c) => {
-                      const originalIndex = selected.findIndex(x => x.slug === c.slug);
-                      const color = colors[originalIndex % colors.length];
+                    <th style={{ ...labelCellStyle, textAlign: 'left', width: '22%', background: '#162230', zIndex: 30, fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }} scope="col">Attribute</th>
+                    {displayedSelected.map(c => {
+                      const origIdx = selected.findIndex(x => x.slug === c.slug);
+                      const color = colors[origIdx % colors.length];
                       const isTop = c.slug === topPickSlug;
                       return (
-                        <th key={c.slug} className="print-th" style={{ ...cellStyle, textAlign: 'left', width: `${78 / displayedSelected.length}%`, background: '#162230' }} scope="col"
+                        <th key={c.slug} style={{ ...cellStyle, textAlign: 'left', background: '#162230', width: `${78 / displayedSelected.length}%` }} scope="col"
                           draggable={!isMobile}
-                          onDragStart={(e) => handleDragStart(e, originalIndex)}
-                          onDragOver={(e) => e.preventDefault()}
-                          onDrop={(e) => handleDrop(e, originalIndex)}>
-                          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8 }}>
-                            <div style={{ display: 'flex', flexDirection: 'column' }}>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                                {!isMobile && <GripHorizontal size={14} color="rgba(255,255,255,0.2)" style={{ cursor: 'grab' }} />}
-                                {isMobile && originalIndex !== 0 && selected.length > 2 && (
-                                  <button onClick={() => setMobileViewIndex(prev => prev > 1 ? prev - 1 : selected.length - 1)} style={{ background: 'none', border: 'none', color: 'var(--silver)', cursor: 'pointer', padding: 0 }}>
-                                    <ChevronLeft size={18} />
-                                  </button>
-                                )}
-                                <Link href={`/research/${c.slug}`} style={{ color, fontWeight: 900, textDecoration: 'none', fontSize: '1.1rem' }}>
-                                  {c.display_name}
-                                </Link>
-                                {isTop && <Trophy size={14} color="#00C4BC" />}
-                                {isMobile && originalIndex !== 0 && selected.length > 2 && (
-                                  <button onClick={() => setMobileViewIndex(prev => prev < selected.length - 1 ? prev + 1 : 1)} style={{ background: 'none', border: 'none', color: 'var(--silver)', cursor: 'pointer', padding: 0 }}>
-                                    <ChevronRight size={18} />
-                                  </button>
-                                )}
+                          onDragStart={e => { e.dataTransfer.setData('text/plain', String(origIdx)); e.dataTransfer.effectAllowed = 'move'; }}
+                          onDragOver={e => e.preventDefault()}
+                          onDrop={e => { e.preventDefault(); const src = parseInt(e.dataTransfer.getData('text/plain'), 10); if (src !== origIdx && !isNaN(src)) { setSelectedSlugs(prev => { const n = [...prev]; const [r] = n.splice(src, 1); n.splice(origIdx, 0, r); return n; }); } }}>
+                          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 6 }}>
+                            <div>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                                {!isMobile && <GripHorizontal size={13} color="rgba(255,255,255,0.15)" style={{ cursor: 'grab', flexShrink: 0 }} />}
+                                {isMobile && origIdx !== 0 && selected.length > 2 && <button onClick={() => setMobileViewIndex(p => p > 1 ? p - 1 : selected.length - 1)} style={{ background: 'none', border: 'none', color: 'rgba(168,180,192,0.6)', cursor: 'pointer', padding: 0 }}><ChevronLeft size={16} /></button>}
+                                <Link href={`/research/${c.slug}`} style={{ color, fontWeight: 900, textDecoration: 'none', fontSize: '1.05rem' }}>{c.display_name}</Link>
+                                {isTop && <Trophy size={13} color="#00C4BC" />}
+                                {isMobile && origIdx !== 0 && selected.length > 2 && <button onClick={() => setMobileViewIndex(p => p < selected.length - 1 ? p + 1 : 1)} style={{ background: 'none', border: 'none', color: 'rgba(168,180,192,0.6)', cursor: 'pointer', padding: 0 }}><ChevronRight size={16} /></button>}
                               </div>
-                              <div style={{ display: 'flex', gap: 4, marginTop: 4, flexWrap: 'wrap' }}>
-                                {c.evidence_tier === 'approved_drug' && <span style={{ background: 'rgba(104,211,145,0.15)', color: '#68D391', padding: '2px 6px', borderRadius: 4, fontSize: '0.65rem', fontWeight: 800 }}>FDA</span>}
-                                {(c.wada_status === 'prohibited' || c.wada_status === 'prohibited_males') && <span style={{ background: 'rgba(229,62,62,0.15)', color: '#FC8181', padding: '2px 6px', borderRadius: 4, fontSize: '0.65rem', fontWeight: 800 }}>WADA 🚫</span>}
-                                {c.regulatory?.toLowerCase().includes('orphan') && <span style={{ background: 'rgba(246,173,85,0.15)', color: '#F6AD55', padding: '2px 6px', borderRadius: 4, fontSize: '0.65rem', fontWeight: 800 }}>ORPHAN</span>}
-                                {c.is_stack && <span style={{ background: 'rgba(159,122,234,0.15)', color: '#9F7AEA', padding: '2px 6px', borderRadius: 4, fontSize: '0.65rem', fontWeight: 800 }}>STACK</span>}
+                              <div style={{ display: 'flex', gap: 3, marginTop: 4, flexWrap: 'wrap' }}>
+                                {c.evidence_tier === 'approved_drug' && <span style={{ background: 'rgba(104,211,145,0.15)', color: '#68D391', padding: '1px 5px', borderRadius: 3, fontSize: '0.62rem', fontWeight: 800 }}>FDA</span>}
+                                {(c.wada_status === 'prohibited' || c.wada_status === 'prohibited_males') && <span style={{ background: 'rgba(229,62,62,0.15)', color: '#FC8181', padding: '1px 5px', borderRadius: 3, fontSize: '0.62rem', fontWeight: 800 }}>WADA🚫</span>}
+                                {c.is_stack && <span style={{ background: 'rgba(159,122,234,0.15)', color: '#9F7AEA', padding: '1px 5px', borderRadius: 3, fontSize: '0.62rem', fontWeight: 800 }}>STACK</span>}
+                                {c.is_temp_sensitive && <span style={{ background: 'rgba(246,173,85,0.15)', color: '#F6AD55', padding: '1px 5px', borderRadius: 3, fontSize: '0.62rem', fontWeight: 800 }}>COLD🧊</span>}
+                                <span style={{ background: `${color}15`, color, padding: '1px 5px', borderRadius: 3, fontSize: '0.62rem', fontWeight: 800 }}>{scores[origIdx].letter}</span>
                               </div>
                             </div>
                             <button type="button" className="no-print" onClick={() => removeCompound(c.slug)} aria-label={`Remove ${c.display_name}`}
-                              style={{ background: 'transparent', border: 'none', color: 'var(--silver, #A8B4C0)', cursor: 'pointer', display: 'inline-flex', padding: 4, borderRadius: 4 }}
-                              onMouseOver={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.1)'}
-                              onMouseOut={(e) => e.currentTarget.style.background = 'transparent'}>
-                              <X size={18} />
+                              style={{ background: 'transparent', border: 'none', color: 'rgba(168,180,192,0.5)', cursor: 'pointer', display: 'flex', padding: 3, borderRadius: 4 }}
+                              onMouseOver={e => e.currentTarget.style.background = 'rgba(255,255,255,0.08)'}
+                              onMouseOut={e => e.currentTarget.style.background = 'transparent'}>
+                              <X size={16} />
                             </button>
                           </div>
                         </th>
@@ -1031,14 +1442,14 @@ export default function CompareTool({
                   </tr>
                 </thead>
                 <tbody>
-                  {ROWS.map((row) => {
+                  {ROWS.map(row => {
                     if (row.kind === 'group') {
                       const isCollapsed = collapsedGroups.has(row.label);
                       return (
                         <tr key={`g-${row.label}`} onClick={() => toggleGroup(row.label)}>
-                          <td className="print-group" style={{ ...groupCellStyle, position: 'sticky', left: 0, zIndex: 10 }} colSpan={colSpan}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                              {isCollapsed ? <ChevronRight size={14} /> : <ChevronDown size={14} />}
+                          <td style={{ ...groupCellStyle, position: 'sticky', left: 0, zIndex: 10 }} colSpan={colSpan}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+                              {isCollapsed ? <ChevronRight size={13} /> : <ChevronDown size={13} />}
                               {row.label}
                             </div>
                           </td>
@@ -1046,45 +1457,38 @@ export default function CompareTool({
                       );
                     }
 
-                    let currentGroupLabel = '';
+                    let currentGroup = '';
                     const rowIdx = ROWS.indexOf(row);
-                    for (let i = rowIdx; i >= 0; i--) {
-                      if (ROWS[i].kind === 'group') { currentGroupLabel = ROWS[i].label; break; }
-                    }
-                    if (collapsedGroups.has(currentGroupLabel)) return null;
+                    for (let i = rowIdx; i >= 0; i--) { if (ROWS[i].kind === 'group') { currentGroup = ROWS[i].label; break; } }
+                    if (collapsedGroups.has(currentGroup)) return null;
 
                     const values = displayedSelected.map(c => row.getValue(c));
                     const allSame = values.every(v => v === values[0]);
                     const isDiff = !allSame && displayedSelected.length > 1;
 
-                    const trStyle: React.CSSProperties = { transition: 'background 0.2s' };
-                    const tdLabelStyle: React.CSSProperties = { ...labelCellStyle, background: '#162230', transition: 'color 0.2s' };
-                    const valueCellStyle: React.CSSProperties = { ...cellStyle, transition: 'opacity 0.2s' };
+                    const trStyle: React.CSSProperties = {};
+                    const tdLabelStyle: React.CSSProperties = { ...labelCellStyle };
+                    const valueCellStyle: React.CSSProperties = { ...cellStyle };
 
                     if (diffMode) {
-                      if (isDiff) {
-                        trStyle.background = 'rgba(0,196,188,0.08)';
-                        tdLabelStyle.background = 'linear-gradient(rgba(0,196,188,0.08), rgba(0,196,188,0.08)), #162230';
-                      } else {
-                        tdLabelStyle.color = 'rgba(168,180,192,0.3)';
-                        valueCellStyle.opacity = 0.3;
-                      }
+                      if (isDiff) { trStyle.background = 'rgba(0,196,188,0.07)'; tdLabelStyle.background = 'linear-gradient(rgba(0,196,188,0.07),rgba(0,196,188,0.07)),#162230'; }
+                      else { tdLabelStyle.color = 'rgba(168,180,192,0.25)'; valueCellStyle.opacity = 0.25; }
                     }
 
                     const bestIndices: number[] = [];
                     if (row.bestLogic && displayedSelected.length > 1 && !allSame) {
-                      const scoresRaw = displayedSelected.map(c => row.getRawScore ? row.getRawScore(c) : 0);
-                      const validScores = scoresRaw.filter(s => typeof s === 'number' && !isNaN(s) && s !== Infinity);
-                      if (validScores.length > 0) {
-                        const bestValue = row.bestLogic === 'max' ? Math.max(...validScores) : Math.min(...validScores);
-                        scoresRaw.forEach((s, idx) => { if (s === bestValue) bestIndices.push(idx); });
+                      const rawScores = displayedSelected.map(c => row.getRawScore ? row.getRawScore(c) : 0);
+                      const valid = rawScores.filter(s => typeof s === 'number' && !isNaN(s) && s !== Infinity);
+                      if (valid.length > 0) {
+                        const best = row.bestLogic === 'max' ? Math.max(...valid) : Math.min(...valid);
+                        rawScores.forEach((s, i) => { if (s === best) bestIndices.push(i); });
                       }
                     }
 
                     return (
-                      <tr key={row.label} style={trStyle}>
+                      <tr key={row.label} style={trStyle} className="ct-row-hover">
                         <td style={tdLabelStyle}>
-                          <div style={{ display: 'flex', alignItems: 'center' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                             {row.label}
                             {row.glossaryTerm && <InCellGlossaryTooltip term={row.glossaryTerm} />}
                           </div>
@@ -1093,12 +1497,8 @@ export default function CompareTool({
                           const isWinner = bestIndices.includes(idx);
                           return (
                             <td key={c.slug} style={{ ...valueCellStyle, position: 'relative' }}>
-                              {isWinner && (
-                                <div style={{ position: 'absolute', top: 4, right: 4, fontSize: '0.65rem', background: 'var(--teal)', color: '#04221F', padding: '2px 6px', borderRadius: 4, fontWeight: 800 }}>
-                                  TOP 👑
-                                </div>
-                              )}
-                              <div style={isWinner ? { borderLeft: '2px solid var(--teal)', paddingLeft: 8, marginLeft: -10 } : {}}>
+                              {isWinner && <div style={{ position: 'absolute', top: 4, right: 4, fontSize: '0.6rem', background: '#00C4BC', color: '#04221F', padding: '1px 5px', borderRadius: 3, fontWeight: 800 }}>TOP 👑</div>}
+                              <div style={isWinner ? { borderLeft: '2px solid #00C4BC', paddingLeft: 7, marginLeft: -8 } : {}}>
                                 {row.render(c, maxHalfLife)}
                               </div>
                             </td>
@@ -1115,4 +1515,9 @@ export default function CompareTool({
       )}
     </div>
   );
+}
+
+// Fix missing import for Scale icon
+function Scale({ size, color }: { size: number; color?: string }) {
+  return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color ?? 'currentColor'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m16 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"/><path d="m2 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"/><path d="M7 21h10"/><path d="M12 3v18"/><path d="M3 7h2c2 0 5-1 7-2 2 1 5 2 7 2h2"/></svg>;
 }
