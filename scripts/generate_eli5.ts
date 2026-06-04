@@ -68,7 +68,7 @@ Keep the bullet points concise but highly educational. Format as a clean markdow
     }
     
     // Slight delay to avoid rate limits
-    await new Promise(r => setTimeout(r, 1000));
+    await new Promise(r => setTimeout(r, 4500));
   }
   
   console.log('Done!');

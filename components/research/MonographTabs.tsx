@@ -11,7 +11,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
-  ArrowLeft, FileText, FlaskConical, Beaker, Snowflake, ShieldAlert, BookOpen, Microscope,
+  ArrowLeft, FileText, FlaskConical, Beaker, Snowflake, ShieldAlert, BookOpen, Microscope, Sparkles,
 } from 'lucide-react';
 import {
   type Compound,
@@ -95,7 +95,6 @@ export default function MonographTabs({ compound, related = [] }: Props) {
   if (compound.sources.length > 0) tabs.push({ key: 'sources', label: 'Sources', icon: <BookOpen size={15} aria-hidden="true" /> });
 
   const [active, setActive] = useState('overview');
-  const [modalUrl, setModalUrl] = useState<string | null>(null);
 
   return (
     <main style={{ maxWidth: 820, margin: '0 auto', padding: 'var(--space-4) var(--space-4) var(--space-8)' }}>

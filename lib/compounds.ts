@@ -36,6 +36,8 @@ export interface Compound {
   mechanism: string | null;
   studied_for: string[];
   research_areas: string[];
+  plain_summary: string | null;
+  eli5_summary: string | null;
   benefits: string | null;
   side_effects: string | null;
   warnings: string | null;
