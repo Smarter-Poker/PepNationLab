@@ -222,6 +222,7 @@ export async function POST(req: NextRequest) {
     profileData.fixed_scale_override = true;
     profileData.custom_markup_override = custom_markup_override !== undefined ? custom_markup_override : null;
     profileData.account_type = account_type;
+    profileData.auto_approve_orders = account_type === 'credit';
     profileData.credit_limit = account_type === 'credit' ? (Number(credit_limit) || null) : null;
     profileData.prepaid_balance = account_type === 'prepaid' ? (Number(prepaid_balance) || 0) : 0;
     profileData.is_super_agent = account_role === 'super_agent';

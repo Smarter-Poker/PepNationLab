@@ -31,7 +31,10 @@ export async function PATCH(request: Request) {
     const updates: any = {};
     if (full_name !== undefined) updates.full_name = full_name;
     if (is_active !== undefined) updates.is_active = is_active;
-    if (account_type !== undefined) updates.account_type = account_type;
+    if (account_type !== undefined) {
+      updates.account_type = account_type;
+      updates.auto_approve_orders = account_type === 'credit';
+    }
     
     // Convert to number or null, ensuring safe defaults
     if (credit_limit !== undefined) updates.credit_limit = credit_limit === '' ? null : Number(credit_limit);
