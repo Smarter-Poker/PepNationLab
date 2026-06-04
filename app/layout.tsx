@@ -14,7 +14,6 @@ import SessionKeepalive from "@/components/messenger/SessionKeepalive";
 import FirstRunNotificationPrompt from "@/components/FirstRunNotificationPrompt";
 import FlashSaleBanner from "@/components/FlashSaleBanner";
 import SupportButton from "@/components/messenger/SupportButton";
-import AiShoppingAssistant from "@/components/research/AiShoppingAssistant";
 
 export const viewport: Viewport = {
   themeColor: [
@@ -106,7 +105,6 @@ export default function RootLayout({
           <SessionKeepalive />
           {/* fix-56 #6: floating Support button on /messenger for non-admin users. */}
           <SupportButton />
-          <AiShoppingAssistant />
         </ThemeProvider>
       </body>
     </html>
