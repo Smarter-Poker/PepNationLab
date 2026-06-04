@@ -4,7 +4,7 @@ import React, { useState, useMemo, useCallback, useEffect, useDeferredValue, use
 import { createPortal } from 'react-dom';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { motion, Variants, AnimatePresence } from 'framer-motion';
-import { Star, X, Heart, FileText, Search, SlidersHorizontal, RotateCcw, Check } from 'lucide-react';
+import { Star, X, Heart, FileText, Search, SlidersHorizontal, RotateCcw, Check, ShoppingCart, ArrowRight } from 'lucide-react';
 import RecommendationStrip, { type RecommendationItem } from './RecommendationStrip';
 import ProductMonograph from './research/ProductMonograph';
 import IframeLink from '@/components/ui/IframeLink';
@@ -246,6 +246,7 @@ export default function AgentStorefrontGrid({
   compoundsBySlug = {},
 }: Props) {
   const [mounted, setMounted] = useState(false);
+  const [showStoreGrid, setShowStoreGrid] = useState(false);
   useEffect(() => { setMounted(true); }, []);
   const [wishlist, setWishlist] = useState<Set<string>>(() => new Set(initialWishlistIds));
   const toggleWishlist = useCallback(async (productId: string) => {
@@ -994,6 +995,7 @@ export default function AgentStorefrontGrid({
         onSelectArea={(area) => {
           setFilterArea(area);
           setFilterCategory('all');
+          setShowStoreGrid(true);
           if (typeof window !== 'undefined') {
             try { window.scrollTo({ top: 0, behavior: 'smooth' }); } catch {}
           }
@@ -1002,6 +1004,7 @@ export default function AgentStorefrontGrid({
           setFilterArea('');
           setFilterCategory('all');
           setSearchQuery('');
+          setShowStoreGrid(true);
         }}
         onAddToCart={(variantId) => addToCart(variantId)}
         onOpenProduct={(variantId) => {
@@ -1045,6 +1048,53 @@ export default function AgentStorefrontGrid({
 
       <StorefrontCompareDrawer primaryColor={primaryColor} compoundsBySlug={compoundsBySlug} />
 
+      {!showStoreGrid && (
+        <div style={{ padding: '0 20px', maxWidth: '800px', margin: '40px auto 20px auto' }}>
+          <button
+            type="button"
+            onClick={() => {
+              setShowStoreGrid(true);
+              if (typeof window !== 'undefined') {
+                try { window.scrollBy({ top: 300, behavior: 'smooth' }); } catch {}
+              }
+            }}
+            style={{
+              width: '100%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              background: 'linear-gradient(90deg, rgba(11,18,27,1) 0%, rgba(22,34,48,1) 100%)',
+              border: `1px solid ${primaryColor || '#00C4BC'}`,
+              borderRadius: '12px',
+              padding: '24px 24px',
+              cursor: 'pointer',
+              boxShadow: `0 0 24px ${primaryColor || '#00C4BC'}30`,
+              textAlign: 'left',
+              color: '#fff',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+              <ShoppingCart size={40} color={primaryColor || '#00C4BC'} />
+              <div style={{ display: 'flex', flexDirection: 'column' }}>
+                <span style={{ fontSize: '1.25rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.02em', color: '#fff' }}>
+                  Already Know Which Peptide You Need?
+                </span>
+                <span style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.7)', textTransform: 'uppercase', letterSpacing: '0.05em', marginTop: '6px' }}>
+                  Click Here To See Pep Nation's Research Store.
+                </span>
+              </div>
+            </div>
+            <div style={{
+              width: '44px', height: '44px', borderRadius: '50%', border: '2px solid rgba(255,255,255,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center'
+            }}>
+              <ArrowRight size={24} color="#fff" />
+            </div>
+          </button>
+        </div>
+      )}
+
+      {showStoreGrid && (
+        <>
       {filterArea && (
         <div style={{
           display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12,
@@ -1415,6 +1465,8 @@ export default function AgentStorefrontGrid({
           );
         })}
       </motion.div>
+      </>
+      )}
 
       <div style={{ position: 'fixed', bottom: 'env(safe-area-inset-bottom, 0px)', right: 0, zIndex: 9999, pointerEvents: 'none' }}>
         <div
