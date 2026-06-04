@@ -38,7 +38,7 @@ export default function TherapeuticAreasPage() {
       backgroundColor: '#05070a'
     }}>
       {/* Dynamic Image Header */}
-      <header style={{ marginBottom: '40px', position: 'relative', width: '100%', borderRadius: '12px', overflow: 'hidden' }}>
+      <header style={{ marginTop: '-40px', marginBottom: '-10px', position: 'relative', width: '100%', borderRadius: '12px', overflow: 'hidden' }}>
         <img 
           src="/images/areas_header.png" 
           alt="Therapeutic Areas" 
