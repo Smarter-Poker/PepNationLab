@@ -30,12 +30,16 @@ export default function LandingSearchOverlay({
   resultsStyle,
   inputStyle,
   hideIcon,
+  placeholder = "Ask Us Anything...",
+  buttonContent,
 }: {
   formStyle?: React.CSSProperties;
   buttonStyle?: React.CSSProperties;
   resultsStyle?: React.CSSProperties;
   inputStyle?: React.CSSProperties;
   hideIcon?: boolean;
+  placeholder?: string;
+  buttonContent?: React.ReactNode;
 } = {}) {
   const router = useRouter();
   const [q, setQ] = useState('');
@@ -100,7 +104,7 @@ export default function LandingSearchOverlay({
           onBlur={() => {
             blurTimer.current = setTimeout(() => setOpen(false), 160);
           }}
-          placeholder=" Ask Me Anything..."
+          placeholder={placeholder}
           aria-label="Search The Research Library"
           autoComplete="off"
           style={{
@@ -130,7 +134,9 @@ export default function LandingSearchOverlay({
           zIndex: 20,
           ...buttonStyle,
         }}
-      />
+      >
+        {buttonContent}
+      </div>
 
       {/* Live results dropdown */}
       {open && q.trim() && (
