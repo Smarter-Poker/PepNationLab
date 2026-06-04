@@ -391,6 +391,32 @@ export default function AgentStorefrontGrid({
   const [selectedVariants, setSelectedVariants] = useState<Record<string, string>>({});
   const [searchQuery, setSearchQuery] = useState<string>(getInit('q'));
   const deferredSearch = useDeferredValue(searchQuery);
+  const [semanticMatches, setSemanticMatches] = useState<Record<string, { score: number, reason: string }>>({});
+
+  useEffect(() => {
+    const q = deferredSearch.trim();
+    if (q.length < 3) {
+      setSemanticMatches({});
+      return;
+    }
+    const timer = setTimeout(() => {
+      fetch('/api/storefront/semantic', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ q }),
+        credentials: 'omit'
+      })
+      .then(r => r.ok ? r.json() : { matches: {} })
+      .then(data => {
+        if (data && data.matches) {
+          setSemanticMatches(data.matches);
+        }
+      })
+      .catch(() => {});
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [deferredSearch]);
+
   const initialSort = (getInit('sort') || 'popular') as
     | 'popular' | 'name_asc' | 'name_desc' | 'price_low' | 'price_high' | 'newest';
   const [sortBy, setSortBy] = useState<typeof initialSort>(initialSort);
@@ -851,10 +877,15 @@ export default function AgentStorefrontGrid({
             }
           };
 
-          const rawTokenAlpha = token.replace(/[^a-z0-9]/g, '');
+          const escapedToken = token.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
           const matchesRaw = (src: string | null | undefined) => {
-            if (!src || !rawTokenAlpha) return false;
-            return src.toLowerCase().replace(/[^a-z0-9]/g, '').includes(rawTokenAlpha);
+            if (!src || !escapedToken) return false;
+            try {
+              const regex = new RegExp(`(?:^|\\s|\\b)${escapedToken}(?:$|\\s|\\b)`, 'i');
+              return regex.test(src);
+            } catch {
+              return false;
+            }
           };
 
           // Exact or strong matches
@@ -945,7 +976,16 @@ export default function AgentStorefrontGrid({
       }
 
       // Evidence-Weighted Sorting Tie-Breaker
-      const isMatch = allTokensMatched || totalScore >= 400;
+      let isMatch = allTokensMatched || totalScore >= 400;
+      
+      // Override with Semantic AI Match if JS filtering missed it
+      const matchingVariant = g.variants.find(v => semanticMatches[v.product_id]);
+      if (matchingVariant) {
+        isMatch = true;
+        totalScore += 2000;
+        primaryReason = semanticMatches[matchingVariant.product_id].reason;
+      }
+
       if (isMatch && compoundsBySlug && g.compoundSlug) {
         const c = compoundsBySlug[g.compoundSlug];
         if (c) {
@@ -957,7 +997,7 @@ export default function AgentStorefrontGrid({
 
       return { matches: isMatch, score: totalScore, reason: primaryReason };
     },
-    [deferredSearch, compoundsBySlug]
+    [deferredSearch, compoundsBySlug, semanticMatches]
   );
   const matchesPrice = useCallback(
     (g: GroupedProduct) =>
