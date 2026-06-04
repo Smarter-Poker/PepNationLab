@@ -61,12 +61,17 @@ export default function TherapeuticAreasPage() {
 
         {/* Hotspot: Universal Search Integration */}
         <LandingSearchOverlay 
+          hideIcon={true}
           formStyle={{
             top: '68.5%',
             left: '4.5%',
             width: '72%',
             height: '12%',
             backgroundColor: 'transparent',
+          }}
+          inputStyle={{
+            paddingLeft: '47px',
+            fontSize: 'clamp(16px, 1.86vw, 21.3px)',
           }}
           buttonStyle={{
             top: '68.5%',

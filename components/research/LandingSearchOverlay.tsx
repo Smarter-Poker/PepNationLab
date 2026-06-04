@@ -28,10 +28,14 @@ export default function LandingSearchOverlay({
   formStyle,
   buttonStyle,
   resultsStyle,
+  inputStyle,
+  hideIcon,
 }: {
   formStyle?: React.CSSProperties;
   buttonStyle?: React.CSSProperties;
   resultsStyle?: React.CSSProperties;
+  inputStyle?: React.CSSProperties;
+  hideIcon?: boolean;
 } = {}) {
   const router = useRouter();
   const [q, setQ] = useState('');
@@ -84,7 +88,7 @@ export default function LandingSearchOverlay({
           ...formStyle,
         }}
       >
-        <Search size={20} color={(open || q.length > 0) ? "#A8B4C0" : "transparent"} />
+        {!hideIcon && <Search size={20} color={(open || q.length > 0) ? "#A8B4C0" : "transparent"} />}
         <input
           type="text"
           value={q}
@@ -108,6 +112,7 @@ export default function LandingSearchOverlay({
             color: '#ffffff',
             fontSize: 'clamp(12px, 1.4vw, 16px)',
             padding: '0 12px 0 12px',
+            ...inputStyle,
           }}
         />
       </form>
