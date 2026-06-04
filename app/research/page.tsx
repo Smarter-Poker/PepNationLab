@@ -69,19 +69,22 @@ export default function ResearchLandingPage() {
           placeholder="Ask Us Anything..."
           hideIcon={true}
           formStyle={{
-            top: '20%',
+            top: '19.5%',
             left: '5%',
             width: '76%',
             height: '4.5%',
           }}
+          inputStyle={{
+            paddingLeft: '36px',
+          }}
           buttonStyle={{
-            top: '20%',
+            top: '19.5%',
             left: '82%',
             width: '13%',
             height: '4.5%',
           }}
           resultsStyle={{
-            top: '25%',
+            top: '24.5%',
             left: '5%',
             width: '90%',
             maxHeight: '40%',

@@ -60,7 +60,7 @@ export default function LandingSearchOverlay({
     }
   }
 
-  const results = q.trim() ? searchDocs(q, docs, 8) : [];
+  const results = q.trim().length >= 2 ? searchDocs(q, docs, 8) : [];
 
   function goFull() {
     if (q.trim()) router.push(`/research/catalog?q=${encodeURIComponent(q.trim())}`);
@@ -139,7 +139,7 @@ export default function LandingSearchOverlay({
       </div>
 
       {/* Live results dropdown */}
-      {open && q.trim() && (
+      {open && q.trim().length >= 2 && (
         <div
           onMouseDown={(e) => e.preventDefault()}
           style={{

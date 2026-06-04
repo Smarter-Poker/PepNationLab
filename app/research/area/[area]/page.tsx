@@ -112,41 +112,20 @@ export default async function ResearchAreaPage({ params }: PageProps) {
             <p style={bodyTextStyle}>{content.overview}</p>
           </section>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 'var(--space-4, 16px)' }}>
-            <section className="glass-panel" style={{ padding: 'var(--space-5, 24px)', borderRadius: 'var(--radius-lg, 12px)' }}>
-              <h2 style={sectionHeadStyle}>Key Mechanisms</h2>
-              <ul style={bulletListStyle}>
-                {content.keyMechanisms.map((m, i) => (
-                  <li key={i} style={bulletItemStyle}>{m}</li>
-                ))}
-              </ul>
-            </section>
-            <section className="glass-panel" style={{ padding: 'var(--space-5, 24px)', borderRadius: 'var(--radius-lg, 12px)' }}>
-              <h2 style={sectionHeadStyle}>Studied For (Research Use Cases)</h2>
-              <ul style={bulletListStyle}>
-                {content.studiedFor.map((m, i) => (
-                  <li key={i} style={bulletItemStyle}>{m}</li>
-                ))}
-              </ul>
-            </section>
-          </div>
-
-          {/* Featured Products In This Area */}
-          {productCtx.products.length > 0 && (
-            <section>
-              <h2 style={{ ...sectionHeadStyle, marginBottom: 'var(--space-4, 16px)' }}>
-                Featured Products In This Area ({productCtx.products.length})
-              </h2>
-              <AreaProductGrid
-                products={productCtx.products}
-                compounds={compoundInfos}
-                agentSlug={productCtx.agentSlug}
-                isStorefrontOwner={productCtx.isStorefrontOwner}
-                isAuthenticated={productCtx.isAuthenticated}
-                userRole={productCtx.userRole}
-              />
-            </section>
-          )}
+          {/* Featured Compounds In This Area */}
+          <section>
+            <h2 style={{ ...sectionHeadStyle, marginBottom: 'var(--space-4, 16px)' }}>
+              Featured Compounds In This Area ({compounds.length})
+            </h2>
+            <AreaProductGrid
+              products={productCtx.products}
+              compounds={compoundInfos}
+              agentSlug={productCtx.agentSlug}
+              isStorefrontOwner={productCtx.isStorefrontOwner}
+              isAuthenticated={productCtx.isAuthenticated}
+              userRole={productCtx.userRole}
+            />
+          </section>
         </div>
       ),
     });
@@ -160,22 +139,20 @@ export default async function ResearchAreaPage({ params }: PageProps) {
             <p style={bodyTextStyle}>{meta.blurb}</p>
           </section>
 
-          {/* Featured Products In This Area */}
-          {productCtx.products.length > 0 && (
-            <section>
-              <h2 style={{ ...sectionHeadStyle, marginBottom: 'var(--space-4, 16px)' }}>
-                Featured Products In This Area ({productCtx.products.length})
-              </h2>
-              <AreaProductGrid
-                products={productCtx.products}
-                compounds={compoundInfos}
-                agentSlug={productCtx.agentSlug}
-                isStorefrontOwner={productCtx.isStorefrontOwner}
-                isAuthenticated={productCtx.isAuthenticated}
-                userRole={productCtx.userRole}
-              />
-            </section>
-          )}
+          {/* Featured Compounds In This Area */}
+          <section>
+            <h2 style={{ ...sectionHeadStyle, marginBottom: 'var(--space-4, 16px)' }}>
+              Featured Compounds In This Area ({compounds.length})
+            </h2>
+            <AreaProductGrid
+              products={productCtx.products}
+              compounds={compoundInfos}
+              agentSlug={productCtx.agentSlug}
+              isStorefrontOwner={productCtx.isStorefrontOwner}
+              isAuthenticated={productCtx.isAuthenticated}
+              userRole={productCtx.userRole}
+            />
+          </section>
         </div>
       ),
     });
@@ -196,6 +173,42 @@ export default async function ResearchAreaPage({ params }: PageProps) {
       />
     ),
   });
+
+  // ── Key Mechanisms tab ──
+  if (content && content.keyMechanisms?.length > 0) {
+    tabs.push({
+      key: 'mechanisms',
+      label: 'Key Mechanisms',
+      children: (
+        <section className="glass-panel" style={{ padding: 'var(--space-5, 24px)', borderRadius: 'var(--radius-lg, 12px)' }}>
+          <h2 style={sectionHeadStyle}>Key Mechanisms</h2>
+          <ul style={bulletListStyle}>
+            {content.keyMechanisms.map((m, i) => (
+              <li key={i} style={bulletItemStyle}>{m}</li>
+            ))}
+          </ul>
+        </section>
+      ),
+    });
+  }
+
+  // ── Studied For tab ──
+  if (content && content.studiedFor?.length > 0) {
+    tabs.push({
+      key: 'studied-for',
+      label: 'Studied For',
+      children: (
+        <section className="glass-panel" style={{ padding: 'var(--space-5, 24px)', borderRadius: 'var(--radius-lg, 12px)' }}>
+          <h2 style={sectionHeadStyle}>Studied For (Research Use Cases)</h2>
+          <ul style={bulletListStyle}>
+            {content.studiedFor.map((m, i) => (
+              <li key={i} style={bulletItemStyle}>{m}</li>
+            ))}
+          </ul>
+        </section>
+      ),
+    });
+  }
 
   // ── Evidence tab ──
   if (content) {

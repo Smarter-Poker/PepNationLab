@@ -462,14 +462,23 @@ export default function AreaProductGrid({
         borderRadius: 14,
         backdropFilter: 'blur(8px)',
       }}>
-        <span style={{
-          color: '#A8B4C0',
-          fontSize: '0.85rem',
-          fontWeight: 600,
-          whiteSpace: 'nowrap',
-        }}>
-          Showing {sorted.length} Product{sorted.length !== 1 ? 's' : ''}
-        </span>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+          <span style={{
+            color: '#A8B4C0',
+            fontSize: '0.85rem',
+            fontWeight: 600,
+            whiteSpace: 'nowrap',
+          }}>
+            Showing {sorted.length} Compound{sorted.length !== 1 ? 's' : ''}
+          </span>
+          <span style={{
+            color: '#00C4BC',
+            fontSize: '0.75rem',
+            fontWeight: 500,
+          }}>
+            Click The Compare Box To See The Differences Between Multiple Peptides.
+          </span>
+        </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
           <select
             value={sortBy}
