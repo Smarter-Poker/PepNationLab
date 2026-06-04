@@ -733,7 +733,8 @@ export async function POST(request: NextRequest) {
 
 
 
-    const isUserCredit = profile.account_type === 'credit';
+    const isUserCredit = profile.account_type === 'credit' || profile.auto_approve_orders === true;
+    const autoApproveStatus = fulfillmentMethod === 'agent_pickup' ? 'approved_pickup' : 'approved_ship';
 
     if (isWholesaleRestock) {
       if (profile.role === 'super_agent') {
@@ -745,7 +746,7 @@ export async function POST(request: NextRequest) {
             prepaidDeductedAmount = res.amount || 0;
             prepaidDeductedAgentId = res.agentId || null;
           }
-          initialStatus = 'admin_approval_pending';
+          initialStatus = autoApproveStatus;
         } else {
           initialStatus = 'pending_customer_payment';
         }
@@ -764,7 +765,7 @@ export async function POST(request: NextRequest) {
             prepaidDeductedAmount = res.amount || 0;
             prepaidDeductedAgentId = res.agentId || null;
           }
-          initialStatus = 'admin_approval_pending';
+          initialStatus = autoApproveStatus;
         } else {
           initialStatus = 'agent_approval_pending';
         }
@@ -787,7 +788,7 @@ export async function POST(request: NextRequest) {
               prepaidDeductedAmount = res.amount || 0;
               prepaidDeductedAgentId = res.agentId || null;
             }
-            initialStatus = 'admin_approval_pending';
+            initialStatus = autoApproveStatus;
           } else {
             initialStatus = 'agent_approval_pending';
           }
@@ -805,9 +806,9 @@ export async function POST(request: NextRequest) {
             prepaidDeductedAmount = res.amount || 0;
             prepaidDeductedAgentId = res.agentId || null;
           }
-          initialStatus = 'admin_approval_pending';
+          initialStatus = autoApproveStatus;
         } else {
-          initialStatus = 'admin_approval_pending';
+          initialStatus = autoApproveStatus;
         }
       } else {
         initialStatus = 'agent_approval_pending';
@@ -900,6 +901,17 @@ export async function POST(request: NextRequest) {
       }
 
       return NextResponse.json({ error: `An unexpected error occurred: ${itemsError.message || JSON.stringify(itemsError)}` }, { status: 500 });
+    }
+
+    if (initialStatus === 'approved_ship' || initialStatus === 'approved_pickup') {
+      try {
+        await serviceSupabase.rpc('charge_order_credit_line', { p_order_id: order.id, p_created_by: user.id });
+      } catch {}
+      if (initialStatus === 'approved_ship') {
+        try {
+          await serviceSupabase.rpc('shippo_enqueue_label_job', { p_order_id: order.id });
+        } catch {}
+      }
     }
 
     // SACA Phase 4: Sub-Agent Commission Accrual

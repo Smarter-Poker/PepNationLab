@@ -1049,7 +1049,7 @@ export default function AgentStorefrontGrid({
         case 'newest': result.sort((a, b) => a.g.popularity - b.g.popularity); break;
       }
     }
-    return result.map(r => r.g);
+    return result.map(r => ({ ...r.g, _search: r.search }));
   }, [grouped, matchesCategory, matchesArea, matchesSearch, matchesPrice, matchesWeight, matchesInStock, matchesBulk, sortBy, deferredSearch]);
 
   useEffect(() => {
