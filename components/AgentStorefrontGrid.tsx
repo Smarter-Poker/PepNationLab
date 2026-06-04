@@ -649,6 +649,23 @@ export default function AgentStorefrontGrid({
     return m;
   }, [grouped]);
 
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const urlParams = new URLSearchParams(window.location.search);
+    const pid = urlParams.get('product');
+    if (pid && grouped.length > 0) {
+      const grp = grouped.find(g => g.variants.some(v => v.id === pid || v.product_id === pid));
+      if (grp) {
+        setDetailProduct(grp);
+        // Clean up the URL so it doesn't reopen on refresh or after closing
+        urlParams.delete('product');
+        const qs = urlParams.toString();
+        const newUrl = window.location.pathname + (qs ? `?${qs}` : '');
+        window.history.replaceState({}, '', newUrl);
+      }
+    }
+  }, [grouped]);
+
   const matchesSearch = useCallback(
     (g: GroupedProduct) => {
       const q = deferredSearch.trim().toLowerCase();
