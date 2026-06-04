@@ -87,20 +87,20 @@ export const WADA_LABEL: Record<string, string> = {
 };
 
 export const RESEARCH_AREAS: Record<string, { label: string; blurb: string }> = {
+  weight_management: { label: 'Weight Management & Fat Loss', blurb: 'GLP-1 / GIP / triple-agonist incretins, AOD9604, Tesamorelin, and related fat-axis compounds.' },
   tissue_repair: { label: 'Tissue Repair', blurb: 'Compounds studied for tendon, ligament, muscle, and wound repair.' },
   healing: { label: 'Healing & Recovery', blurb: 'Compounds studied for healing, cytoprotection, and recovery.' },
-  metabolic: { label: 'Metabolic', blurb: 'Compounds studied for metabolism, glucose, and fat regulation.' },
-  weight_management: { label: 'Weight Management & Fat Loss', blurb: 'GLP-1 / GIP / triple-agonist incretins, AOD9604, Tesamorelin, and related fat-axis compounds.' },
-  longevity: { label: 'Longevity', blurb: 'Compounds studied for aging, senescence, and healthspan.' },
+  performance: { label: 'Performance & Muscle', blurb: 'Growth hormone secretagogues and anabolic pathways (Ipamorelin, Tesamorelin, CJC-1295).' },
   cosmetic: { label: 'Skin & Hair', blurb: 'Compounds studied for skin, hair, and cosmetic applications.' },
   cognitive: { label: 'Cognitive', blurb: 'Compounds studied for cognition, mood, and neuroprotection.' },
-  immune: { label: 'Immune', blurb: 'Compounds studied for immune modulation and host defense.' },
-  gut_health: { label: 'Gut Health & GI Repair', blurb: 'Mucosal repair, tight-junction integrity, and GI cytoprotection literature (BPC-157, KPV, VIP).' },
   pain_inflammation: { label: 'Pain & Inflammation', blurb: 'Cross-class anti-inflammatory and analgesic mechanisms (BPC-157, TB-500, LL-37, ARA-290).' },
-  bone_joint: { label: 'Joint & Bone Support', blurb: 'Bone density, cartilage maintenance, and joint repair pathways (BPC-157, TB-500, GHK-Cu, IGF-1).' },
+  gut_health: { label: 'Gut Health & GI Repair', blurb: 'Mucosal repair, tight-junction integrity, and GI cytoprotection literature (BPC-157, KPV, VIP).' },
   sexual_health: { label: 'Sexual Health & Libido', blurb: 'Compounds studied for arousal, erectile function, and libido (PT-141, Kisspeptin).' },
-  performance: { label: 'Performance & Muscle', blurb: 'Growth hormone secretagogues and anabolic pathways (Ipamorelin, Tesamorelin, CJC-1295).' },
   sleep: { label: 'Sleep & Circadian', blurb: 'Compounds studied for sleep architecture and circadian rhythms (Epitalon, DSIP).' },
+  longevity: { label: 'Longevity', blurb: 'Compounds studied for aging, senescence, and healthspan.' },
+  bone_joint: { label: 'Joint & Bone Support', blurb: 'Bone density, cartilage maintenance, and joint repair pathways (BPC-157, TB-500, GHK-Cu, IGF-1).' },
+  immune: { label: 'Immune', blurb: 'Compounds studied for immune modulation and host defense.' },
+  metabolic: { label: 'Metabolic', blurb: 'Compounds studied for metabolism, glucose, and fat regulation.' },
   mitochondrial: { label: 'Mitochondrial Function', blurb: 'Energy, mitophagy, and cellular optimization (MOTS-c, SS-31, 5-Amino-1MQ).' },
 };
 
