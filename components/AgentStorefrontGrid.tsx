@@ -821,6 +821,22 @@ export default function AgentStorefrontGrid({
       ['mitochondria', 'mitochondrial', 'cristae', 'cardiolipin', 'atp', 'electron-transport', 'oxidative', 'ros', 'reactive-oxygen'],
       // Hair Specifically
       ['hair', 'hairloss', 'hair-loss', 'alopecia', 'balding', 'bald', 'thinning', 'hairgrowth', 'scalp', 'follicle', 'regrowth'],
+      // Dosing / Frequency / Route
+      ['daily', 'weekly', 'biweekly', 'twice-weekly', 'monthly', 'dose', 'dosing', 'frequency', 'protocol', 'schedule', 'timing', 'pulsed', 'pulsatile', 'subcutaneous', 'sc', 'im', 'intravenous', 'iv', 'intranasal', 'topical', 'injection', 'inject', 'syringe', 'reconstitute', 'reconstitution', 'lyophilized', 'freeze-dried', 'vial', 'powder', 'cycle', 'on-cycle', 'off-cycle', 'sublingual', 'oral', 'intramuscular', 'infusion', 'bolus', 'once-weekly', 'once-daily'],
+      // Pharmacokinetics / Half-life
+      ['halflife', 'half-life', 'pharmacokinetics', 'pk', 'absorption', 'bioavailability', 'clearance', 'plasma', 'serum', 'tissue', 'distribution', 'fast-acting', 'longacting', 'long-acting', 'shortacting', 'short-acting', 'immediate-release', 'sustained-release', 'prolonged', 'extended', 'peak', 'trough', 'steady-state', 'accumulation'],
+      // WADA / Prohibited / Banned
+      ['wada', 'banned', 'prohibited', 'anti-doping', 'antidoping', 'doping', 'sport-ban', 'competition', 'testing', 'permissible', 'permitted', 'allowed', 'tested-sport', 'usada', 'nada', 'in-competition', 'out-of-competition', 'therapeutic-use-exemption', 'tue'],
+      // Safety / Side Effects
+      ['safe', 'safety', 'side-effect', 'sideeffect', 'adverse', 'risk', 'danger', 'reaction', 'tolerated', 'tolerance', 'wellbeing', 'benign', 'minimal-side-effects', 'no-side-effects', 'low-risk', 'nausea', 'headache', 'fatigue', 'irritation', 'allergy', 'contraindication', 'interaction'],
+      // Discovery / Research Vintage
+      ['novel', 'new', 'newest', 'cutting-edge', 'emerging', 'pioneering', 'recent', 'first-in-class', 'breakthrough', 'next-generation', 'nextgen', 'classic', 'established', 'decades', 'legacy', 'original'],
+      // Mechanism of Action
+      ['mechanism', 'moa', 'receptor', 'agonist', 'antagonist', 'inhibitor', 'activator', 'signaling', 'pathway', 'binding', 'target', 'kinase', 'enzyme', 'protein', 'peptide', 'amino-acid', 'chain', 'upstream', 'downstream', 'feedback', 'axis', 'cascade'],
+      // Clinical Status
+      ['fda-approved', 'fdaapproved', 'approved', 'phase3', 'phase-3', 'phase2', 'phase-2', 'clinical-trial', 'clinicaltrial', 'investigational', 'preclinical', 'compassionate', 'off-label', 'experimental', 'pipeline', 'registered', 'rx', 'prescription'],
+      // Stacking / Synergy
+      ['stack', 'combo', 'combination', 'stacks', 'synergy', 'synergistic', 'combined', 'pair', 'partner', 'protocol', 'bundle', 'regimen', 'alongside', 'together', 'dual', 'triple'],
     ];
 
     // Pre-process common multi-word concepts to keep them glued together
@@ -845,7 +861,26 @@ export default function AgentStorefrontGrid({
       .replace(/mental\s+health/g, 'mentalhealth')
       .replace(/life\s+extension/g, 'lifeextension')
       .replace(/anti[\s-]inflammatory/g, 'antiinflammatory')
-      .replace(/anti[\s-]wrinkle/g, 'antiaging');
+      .replace(/anti[\s-]wrinkle/g, 'antiaging')
+      .replace(/half[\s-]life/g, 'halflife')
+      .replace(/long[\s-]acting/g, 'longacting')
+      .replace(/short[\s-]acting/g, 'shortacting')
+      .replace(/side[\s-]effect/g, 'sideeffect')
+      .replace(/fast[\s-]acting/g, 'fast-acting')
+      .replace(/clinical[\s-]trial/g, 'clinicaltrial')
+      .replace(/fda[\s-]approved/g, 'fdaapproved')
+      .replace(/anti[\s-]doping/g, 'antidoping')
+      .replace(/weight\s+management/g, 'weightloss')
+      .replace(/muscle\s+growth/g, 'musclegrowth')
+      .replace(/muscle\s+building/g, 'musclebuilding')
+      .replace(/zombie\s+cells/g, 'senolytic')
+      .replace(/zombie\s+cell/g, 'senolytic')
+      .replace(/master\s+antioxidant/g, 'glutathione')
+      .replace(/love\s+hormone/g, 'oxytocin')
+      .replace(/cardio\s+in\s+a\s+syringe/g, 'aicar')
+      .replace(/bone\s+density/g, 'bone')
+      .replace(/sexual\s+health/g, 'sexual')
+      .replace(/gut\s+lining/g, 'leakygut');
 
     // Filter out stop words and detect negative modifiers
     const qTokens = processedQ.split(/\s+/).filter(t => t);
@@ -979,7 +1014,19 @@ export default function AgentStorefrontGrid({
               if (c.wada_status?.toLowerCase().includes(token)) recordMatch(15, `WADA Status: ${c.wada_status}`);
 
               // Half life search (e.g., "long acting", "short half life")
-              if (c.half_life?.toLowerCase().includes(token)) recordMatch(10, `Half Life: ${c.half_life}`);
+              if (c.half_life?.toLowerCase().includes(token)) recordMatch(12, `Half Life: ${c.half_life}`);
+
+              // Typical frequency search (e.g., "daily", "weekly injection", "once weekly")
+              if (c.typical_frequency?.toLowerCase().includes(token)) recordMatch(12, `Dosing: ${c.typical_frequency?.split(';')[0].trim()}`);
+
+              // PK summary search (e.g., "albumin binding", "intranasal", "steady state", "bioavailability")
+              if (c.pk_summary?.toLowerCase().includes(token)) recordMatch(10, `PK Profile Match`);
+
+              // Year discovered search (e.g., "2022", "newest", "classic")
+              if (c.year_discovered) {
+                if (String(c.year_discovered).includes(token)) recordMatch(8, `Discovered: ${c.year_discovered}`);
+              }
+
 
               // Efficacy scores: if searching for a goal keyword that matches a known efficacy key, boost ranking
               if (c.efficacy_scores) {
@@ -1600,6 +1647,65 @@ export default function AgentStorefrontGrid({
         </div>
       </div>
 
+      {/* ── Phase 3: Quick-Filter Chips ─────────────────────────────── */}
+      {!deferredSearch.trim() && (
+        <div style={{
+          display: 'flex',
+          flexWrap: 'wrap',
+          gap: '8px',
+          padding: '10px 0 4px',
+          marginBottom: '4px',
+        }}>
+          {([
+            { label: '🔥 Fat Loss',     query: 'fat loss' },
+            { label: '💪 Muscle & GH',  query: 'muscle growth hormone' },
+            { label: '🧠 Brain & Neuro',query: 'cognitive nootropic brain' },
+            { label: '🩹 Healing',      query: 'healing repair recovery' },
+            { label: '🌿 Longevity',    query: 'longevity anti-aging telomere' },
+            { label: '💤 Sleep',        query: 'sleep insomnia circadian' },
+            { label: '🦠 Immune',       query: 'immune immunity antimicrobial' },
+            { label: '🫀 Gut Health',   query: 'gut gastrointestinal leaky gut' },
+            { label: '💉 GLP-1',        query: 'glp-1 semaglutide tirzepatide weight loss' },
+            { label: '🔬 Mitochondria', query: 'mitochondria nad+ energy cellular' },
+            { label: '❤️ Sexual Health',query: 'sexual libido erectile fertility' },
+            { label: '✨ Skin & Hair',  query: 'skin collagen hair anti-aging' },
+          ] as { label: string; query: string }[]).map(({ label, query }) => (
+            <button
+              key={label}
+              type="button"
+              onClick={() => setSearchQuery(query)}
+              aria-label={`Filter: ${label}`}
+              style={{
+                background: 'rgba(255,255,255,0.06)',
+                border: '1px solid rgba(255,255,255,0.14)',
+                borderRadius: '20px',
+                color: 'rgba(255,255,255,0.82)',
+                fontSize: '0.72rem',
+                fontWeight: 600,
+                padding: '5px 11px',
+                cursor: 'pointer',
+                letterSpacing: '0.01em',
+                transition: 'all 0.18s ease',
+                whiteSpace: 'nowrap',
+                lineHeight: 1.4,
+              }}
+              onMouseEnter={e => {
+                (e.currentTarget as HTMLButtonElement).style.background = 'rgba(120,200,255,0.15)';
+                (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(120,200,255,0.45)';
+                (e.currentTarget as HTMLButtonElement).style.color = '#fff';
+              }}
+              onMouseLeave={e => {
+                (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.06)';
+                (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(255,255,255,0.14)';
+                (e.currentTarget as HTMLButtonElement).style.color = 'rgba(255,255,255,0.82)';
+              }}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      )}
+
       {bundles && bundles.length > 0 && (
         <div style={{ marginTop: 0 }}>
           <h3 style={{ fontFamily: 'var(--font-brand)', fontSize: '1.05rem', color: 'var(--white)', marginBottom: 'var(--space-4)', letterSpacing: '0.03em' }}>
@@ -1704,29 +1810,83 @@ export default function AgentStorefrontGrid({
 
       {filteredProducts.length === 0 && (
         <div className="glass-panel hover-lift stagger-fade-in">
-          <div className="" style={{ textAlign: 'center', padding: 'var(--space-8) var(--space-6)' }}>
-            <h3 style={{ color: 'var(--white)', fontSize: '1.05rem', marginBottom: 'var(--space-3)' }}>
-              No Products Match Your Filters
-            </h3>
-          <p style={{ color: 'var(--grey-400)', fontSize: '0.9rem', marginBottom: 'var(--space-4)' }}>
-            Try Widening Your Price Range, Clearing The Search, Or Resetting All Filters.
-          </p>
-          <button
-            type="button"
-            onClick={resetFilters}
-            style={{
-              display: 'inline-flex', alignItems: 'center', gap: 8,
-              padding: '10px 20px', background: primaryColor, color: 'var(--white)',
-              border: 'none', borderRadius: 'var(--radius-md)',
-              fontWeight: 700, fontSize: '0.9rem', cursor: 'pointer',
-            }}
-          >
-            <RotateCcw size={14} aria-hidden="true" />
-            Reset Filters
-          </button>
+          <div style={{ textAlign: 'center', padding: 'var(--space-8) var(--space-6)' }}>
+            {deferredSearch.trim() ? (
+              <>
+                <div style={{ fontSize: '2.2rem', marginBottom: '12px' }}>🔍</div>
+                <h3 style={{ color: 'var(--white)', fontSize: '1.1rem', marginBottom: '8px' }}>
+                  No results for &ldquo;{deferredSearch.trim()}&rdquo;
+                </h3>
+                <p style={{ color: 'rgba(255,255,255,0.55)', fontSize: '0.85rem', marginBottom: '20px', maxWidth: '440px', margin: '0 auto 20px' }}>
+                  Try one of these common research goals, or check your spelling:
+                </p>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', justifyContent: 'center', marginBottom: '24px' }}>
+                  {[
+                    { label: '🔥 Fat Loss', q: 'fat loss lipolysis' },
+                    { label: '💪 Muscle Growth', q: 'muscle anabolic growth hormone' },
+                    { label: '🧠 Brain / Nootropic', q: 'cognitive brain nootropic focus' },
+                    { label: '🩹 Tissue Healing', q: 'healing repair tendon gut' },
+                    { label: '🌿 Anti-Aging', q: 'anti-aging longevity telomere senolytic' },
+                    { label: '💉 GLP-1 / Weight', q: 'semaglutide glp-1 weight loss' },
+                    { label: '🦠 Immune Support', q: 'immune thymosin antimicrobial' },
+                    { label: '❤️ Sexual Health', q: 'sexual libido erectile fertility' },
+                  ].map(({ label, q }) => (
+                    <button
+                      key={label}
+                      type="button"
+                      onClick={() => setSearchQuery(q)}
+                      style={{
+                        background: 'rgba(255,255,255,0.07)',
+                        border: '1px solid rgba(255,255,255,0.18)',
+                        borderRadius: '20px',
+                        color: 'rgba(255,255,255,0.85)',
+                        fontSize: '0.75rem',
+                        fontWeight: 600,
+                        padding: '6px 14px',
+                        cursor: 'pointer',
+                        transition: 'all 0.15s',
+                      }}
+                      onMouseEnter={e => {
+                        (e.currentTarget as HTMLButtonElement).style.background = 'rgba(120,200,255,0.18)';
+                        (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(120,200,255,0.5)';
+                      }}
+                      onMouseLeave={e => {
+                        (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.07)';
+                        (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(255,255,255,0.18)';
+                      }}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              </>
+            ) : (
+              <>
+                <h3 style={{ color: 'var(--white)', fontSize: '1.05rem', marginBottom: 'var(--space-3)' }}>
+                  No Products Match Your Filters
+                </h3>
+                <p style={{ color: 'var(--grey-400)', fontSize: '0.9rem', marginBottom: 'var(--space-4)' }}>
+                  Try widening your price range or resetting all filters.
+                </p>
+              </>
+            )}
+            <button
+              type="button"
+              onClick={resetFilters}
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: 8,
+                padding: '10px 20px', background: primaryColor, color: 'var(--white)',
+                border: 'none', borderRadius: 'var(--radius-md)',
+                fontWeight: 700, fontSize: '0.9rem', cursor: 'pointer',
+              }}
+            >
+              <RotateCcw size={14} aria-hidden="true" />
+              Reset Filters
+            </button>
           </div>
         </div>
       )}
+
 
       <motion.div
         className="grid-3" style={{ gap: 'var(--space-6)', display: filteredProducts.length === 0 ? 'none' : undefined }}

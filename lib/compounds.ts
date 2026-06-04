@@ -45,7 +45,6 @@ export interface Compound {
   regulatory: string | null;
   wada_status: string;
   sources: string[];
-  plain_summary: string | null;
   is_temp_sensitive: boolean;
   is_pro_angiogenic: boolean;
   is_glp1: boolean;

@@ -25,7 +25,8 @@ import {
   ChevronDown, ChevronRight, GripHorizontal, ChevronLeft,
   ThumbsUp, ThumbsDown, Trophy, AlertTriangle, Info,
   Zap, BookOpen, FlaskConical, Shield, Star, TrendingUp,
-  Clock, Thermometer, Layers, ArrowRight, BarChart3, Beaker
+  Clock, Thermometer, Layers, ArrowRight, BarChart3, Beaker,
+  Scale, Dna, Droplets, Activity
 } from 'lucide-react';
 import { type Compound, evidenceTier, wadaLabel, researchAreaLabel, RISK_META } from '@/lib/compounds';
 import AttributeRadarChart, { type RadarDataPoint } from './AttributeRadarChart';
@@ -461,6 +462,20 @@ const ROWS: Row[] = [
   { kind: 'data', label: 'Compound Class', getValue: c => c.compound_class, render: c => txt(c.compound_class) },
   { kind: 'data', label: 'Molecular Target', getValue: c => c.molecular_target, render: c => txt(c.molecular_target) },
   {
+    kind: 'data', label: 'Aliases / AKA',
+    getValue: c => (c.aliases ?? []).join(', '),
+    render: c => {
+      const items = (c.aliases ?? []).slice(0, 6);
+      if (!items.length) return NL;
+      return (
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 3 }}>
+          {items.map(a => <span key={a} style={{ background: 'rgba(168,180,192,0.08)', color: 'rgba(255,255,255,0.55)', padding: '1px 6px', borderRadius: 4, fontSize: '0.68rem', fontWeight: 600, border: '1px solid rgba(168,180,192,0.12)' }}>{a}</span>)}
+        </div>
+      );
+    }
+  },
+  { kind: 'data', label: 'Parent Compound', getValue: c => c.identity?.parent, render: c => txt(c.identity?.parent) },
+  {
     kind: 'data', label: 'Molecular Weight', glossaryTerm: 'Molecular Weight',
     bestLogic: 'min',
     getRawScore: c => c.molecular_weight_da ? Number(c.molecular_weight_da) : Number(c.identity?.molecular_weight) || Infinity,
@@ -470,6 +485,20 @@ const ROWS: Row[] = [
   { kind: 'data', label: 'Amino Acid Sequence', getValue: c => c.identity?.sequence, render: c => c.identity?.sequence ? <code style={{ fontSize: '0.7rem', wordBreak: 'break-all', color: '#00C4BC', background: 'rgba(0,196,188,0.08)', padding: '2px 4px', borderRadius: 4, display: 'block' }}>{c.identity.sequence}</code> : NL },
   { kind: 'data', label: 'CAS Number', getValue: c => c.identity?.cas, render: c => txt(c.identity?.cas) },
   { kind: 'data', label: 'Year Discovered', getValue: c => c.year_discovered, render: c => txt(c.year_discovered) },
+  {
+    kind: 'data', label: 'Pro-Angiogenic',
+    getValue: c => c.is_pro_angiogenic ? 'Yes' : 'No',
+    render: c => c.is_pro_angiogenic
+      ? <span style={{ color: '#F6AD55', fontWeight: 700, fontSize: '0.78rem' }}>⚠️ Yes — promotes new vessel growth</span>
+      : <span style={{ color: 'rgba(104,211,145,0.7)', fontSize: '0.78rem' }}>✓ No</span>
+  },
+  {
+    kind: 'data', label: 'GLP-1 Class',
+    getValue: c => c.is_glp1 ? 'Yes' : 'No',
+    render: c => c.is_glp1
+      ? <span style={{ color: '#9F7AEA', fontWeight: 700, fontSize: '0.78rem' }}>✓ GLP-1 / Incretin agent</span>
+      : <span style={{ color: 'rgba(168,180,192,0.4)', fontSize: '0.78rem' }}>No</span>
+  },
   {
     kind: 'data', label: 'Purity', getValue: c => c.purity_percentage,
     bestLogic: 'max', getRawScore: c => c.purity_percentage ?? 0,
@@ -555,6 +584,7 @@ const ROWS: Row[] = [
           <div style={{ color: '#00C4BC', fontWeight: 700, marginBottom: 4 }}>{c.half_life}</div>
           {pct > 0 && <div style={{ height: 4, background: 'rgba(255,255,255,0.1)', borderRadius: 2, overflow: 'hidden', width: '100%', maxWidth: 140 }}><div style={{ height: '100%', width: `${pct}%`, background: '#00C4BC', transition: 'width 0.5s ease' }} /></div>}
           {c.measured_half_life_hours && <div style={{ fontSize: '0.68rem', color: 'rgba(255,255,255,0.4)', marginTop: 2 }}>Measured: {c.measured_half_life_hours}h</div>}
+          {c.predicted_half_life_hours && <div style={{ fontSize: '0.68rem', color: 'rgba(255,255,255,0.3)', marginTop: 1 }}>Predicted: {c.predicted_half_life_hours}h</div>}
         </div>
       );
     },
@@ -1089,6 +1119,20 @@ export default function CompareTool({ compounds, initialSlugs = [] }: { compound
 
   const activeSynergies = KNOWN_SYNERGIES.filter(syn => syn.pairs.every(slug => selectedSlugs.includes(slug)));
 
+  // Dynamic compound-class based warnings
+  const dynamicAlerts = useMemo(() => {
+    const alerts: { type: 'caution' | 'conflict'; message: string; category: string }[] = [];
+    const proAngio = selected.filter(c => c.is_pro_angiogenic);
+    if (proAngio.length >= 2) {
+      alerts.push({ type: 'caution', category: 'Safety', message: `Multiple pro-angiogenic compounds selected (${proAngio.map(c => c.display_name).join(', ')}). Research literature notes theoretical considerations around stacking compounds that promote new vessel growth.` });
+    }
+    const glp1 = selected.filter(c => c.is_glp1);
+    if (glp1.length >= 2) {
+      alerts.push({ type: 'conflict', category: 'Safety', message: `Multiple GLP-1/incretin agents selected (${glp1.map(c => c.display_name).join(', ')}). Stacking incretin-class compounds compounds gastrointestinal adverse effects with unclear additive benefit.` });
+    }
+    return alerts;
+  }, [selected]);
+
   const tabs = [
     { id: 'matrix' as const, label: '📊 Matrix', showAlways: false },
     { id: 'proscons' as const, label: '⚖️ Pros & Cons', showAlways: false },
@@ -1168,10 +1212,10 @@ export default function CompareTool({ compounds, initialSlugs = [] }: { compound
       </div>
 
       {/* Synergy / Conflict Alerts */}
-      {activeSynergies.map((syn, idx) => (
+      {[...activeSynergies, ...dynamicAlerts].map((syn, idx) => (
         <div key={idx} style={{ background: syn.type === 'conflict' ? 'rgba(229,62,62,0.1)' : syn.type === 'caution' ? 'rgba(246,173,85,0.1)' : 'rgba(104,211,145,0.1)', border: `1px solid ${syn.type === 'conflict' ? 'rgba(229,62,62,0.3)' : syn.type === 'caution' ? 'rgba(246,173,85,0.3)' : 'rgba(104,211,145,0.3)'}`, color: syn.type === 'conflict' ? '#FC8181' : syn.type === 'caution' ? '#F6AD55' : '#68D391', padding: '11px 16px', borderRadius: 8, marginBottom: 10, fontSize: '0.88rem', fontWeight: 600, display: 'flex', alignItems: 'flex-start', gap: 10 }}>
           {syn.type === 'conflict' ? <AlertTriangle size={15} style={{ flexShrink: 0, marginTop: 1 }} /> : syn.type === 'caution' ? <AlertTriangle size={15} style={{ flexShrink: 0, marginTop: 1 }} /> : <span style={{ fontSize: '0.9rem' }}>🔥</span>}
-          <span><strong>{syn.type === 'conflict' ? 'Conflict' : syn.type === 'caution' ? 'Caution' : `Synergy — ${syn.category}`}:</strong> {syn.message}</span>
+          <span><strong>{syn.type === 'conflict' ? 'Conflict' : syn.type === 'caution' ? 'Caution' : `Synergy — ${'category' in syn ? syn.category : ''}`}:</strong> {syn.message}</span>
         </div>
       ))}
 
@@ -1276,7 +1320,7 @@ export default function CompareTool({ compounds, initialSlugs = [] }: { compound
           )}
 
           {/* ── TAB: PROS & CONS ── */}
-          {(activeTab === 'proscons' || selected.length === 1) && (
+          {activeTab === 'proscons' && (
             <div className="glass-panel" style={{ borderRadius: 14, padding: 24 }}>
               <h3 style={{ margin: '0 0 18px 0', fontSize: '1.05rem', fontWeight: 800, color: '#fff', display: 'flex', alignItems: 'center', gap: 8 }}>
                 <Scale size={17} color="#00C4BC" /> Pros &amp; Cons Analysis
@@ -1396,7 +1440,7 @@ export default function CompareTool({ compounds, initialSlugs = [] }: { compound
           )}
 
           {/* ── TAB: ATTRIBUTE MATRIX ── */}
-          {(activeTab === 'matrix' || selected.length === 1) && (
+          {(activeTab === 'matrix') && (
             <div className="glass-panel" style={{ borderRadius: 14, overflowX: 'auto' }}>
               <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 480, position: 'relative' }}>
                 <thead style={{ position: 'sticky', top: 0, zIndex: 20 }}>
@@ -1422,10 +1466,13 @@ export default function CompareTool({ compounds, initialSlugs = [] }: { compound
                                 {isMobile && origIdx !== 0 && selected.length > 2 && <button onClick={() => setMobileViewIndex(p => p < selected.length - 1 ? p + 1 : 1)} style={{ background: 'none', border: 'none', color: 'rgba(168,180,192,0.6)', cursor: 'pointer', padding: 0 }}><ChevronRight size={16} /></button>}
                               </div>
                               <div style={{ display: 'flex', gap: 3, marginTop: 4, flexWrap: 'wrap' }}>
-                                {c.evidence_tier === 'approved_drug' && <span style={{ background: 'rgba(104,211,145,0.15)', color: '#68D391', padding: '1px 5px', borderRadius: 3, fontSize: '0.62rem', fontWeight: 800 }}>FDA</span>}
+                                {c.evidence_tier === 'approved_drug' && <span style={{ background: 'rgba(104,211,145,0.15)', color: '#68D391', padding: '1px 5px', borderRadius: 3, fontSize: '0.62rem', fontWeight: 800 }}>FDA✓</span>}
                                 {(c.wada_status === 'prohibited' || c.wada_status === 'prohibited_males') && <span style={{ background: 'rgba(229,62,62,0.15)', color: '#FC8181', padding: '1px 5px', borderRadius: 3, fontSize: '0.62rem', fontWeight: 800 }}>WADA🚫</span>}
                                 {c.is_stack && <span style={{ background: 'rgba(159,122,234,0.15)', color: '#9F7AEA', padding: '1px 5px', borderRadius: 3, fontSize: '0.62rem', fontWeight: 800 }}>STACK</span>}
                                 {c.is_temp_sensitive && <span style={{ background: 'rgba(246,173,85,0.15)', color: '#F6AD55', padding: '1px 5px', borderRadius: 3, fontSize: '0.62rem', fontWeight: 800 }}>COLD🧊</span>}
+                                {c.is_pro_angiogenic && <span style={{ background: 'rgba(246,173,85,0.12)', color: '#F6AD55', padding: '1px 5px', borderRadius: 3, fontSize: '0.62rem', fontWeight: 800 }}>ANGIO⚠</span>}
+                                {c.is_glp1 && <span style={{ background: 'rgba(159,122,234,0.12)', color: '#9F7AEA', padding: '1px 5px', borderRadius: 3, fontSize: '0.62rem', fontWeight: 800 }}>GLP-1</span>}
+                                {c.year_discovered && <span style={{ background: 'rgba(168,180,192,0.08)', color: 'rgba(168,180,192,0.5)', padding: '1px 5px', borderRadius: 3, fontSize: '0.62rem', fontWeight: 600 }}>{c.year_discovered}</span>}
                                 <span style={{ background: `${color}15`, color, padding: '1px 5px', borderRadius: 3, fontSize: '0.62rem', fontWeight: 800 }}>{scores[origIdx].letter}</span>
                               </div>
                             </div>
@@ -1515,9 +1562,4 @@ export default function CompareTool({ compounds, initialSlugs = [] }: { compound
       )}
     </div>
   );
-}
-
-// Fix missing import for Scale icon
-function Scale({ size, color }: { size: number; color?: string }) {
-  return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color ?? 'currentColor'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m16 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"/><path d="m2 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"/><path d="M7 21h10"/><path d="M12 3v18"/><path d="M3 7h2c2 0 5-1 7-2 2 1 5 2 7 2h2"/></svg>;
 }

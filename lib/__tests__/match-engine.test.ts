@@ -43,6 +43,14 @@ function makeCompound(overrides: Partial<Compound> & { slug: string; display_nam
     reconstitution_shelf_days: null,
     half_life: null,
     pk_summary: null,
+    eli5_summary: null,
+    best_stacked_with: [],
+    typical_frequency: null,
+    year_discovered: null,
+    pubmed_citation_count: null,
+    active_trial_count: null,
+    efficacy_scores: {},
+
   };
   return { ...base, ...overrides };
 }
