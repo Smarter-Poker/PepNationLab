@@ -1070,7 +1070,7 @@ export default function AgentStorefrontGrid({
       <StorefrontCompareDrawer primaryColor={primaryColor} compoundsBySlug={compoundsBySlug} />
 
       {!showStoreGrid && (
-        <div style={{ padding: '0 20px', maxWidth: '800px', margin: '40px auto 20px auto' }}>
+        <div style={{ padding: '0 20px', maxWidth: '800px', margin: '40px auto 20px auto', display: 'flex', justifyContent: 'center' }}>
           <button
             type="button"
             onClick={() => {
@@ -1080,36 +1080,23 @@ export default function AgentStorefrontGrid({
               }
             }}
             style={{
-              width: '100%',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              background: 'linear-gradient(90deg, rgba(11,18,27,1) 0%, rgba(22,34,48,1) 100%)',
-              border: `1px solid ${primaryColor || '#00C4BC'}`,
-              borderRadius: '12px',
-              padding: '24px 24px',
+              background: 'none',
+              border: 'none',
+              padding: 0,
               cursor: 'pointer',
-              boxShadow: `0 0 24px ${primaryColor || '#00C4BC'}30`,
-              textAlign: 'left',
-              color: '#fff',
+              width: '100%',
+              transition: 'transform 0.1s ease',
             }}
+            onPointerDown={(e) => (e.currentTarget.style.transform = 'scale(0.98)')}
+            onPointerUp={(e) => (e.currentTarget.style.transform = 'scale(1)')}
+            onPointerLeave={(e) => (e.currentTarget.style.transform = 'scale(1)')}
           >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
-              <ShoppingCart size={40} color={primaryColor || '#00C4BC'} />
-              <div style={{ display: 'flex', flexDirection: 'column' }}>
-                <span style={{ fontSize: '1.25rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.02em', color: '#fff' }}>
-                  Already Know Which Peptide You Need?
-                </span>
-                <span style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.7)', textTransform: 'uppercase', letterSpacing: '0.05em', marginTop: '6px' }}>
-                  Click Here To See Pep Nation's Research Store.
-                </span>
-              </div>
-            </div>
-            <div style={{
-              width: '44px', height: '44px', borderRadius: '50%', border: '2px solid rgba(255,255,255,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center'
-            }}>
-              <ArrowRight size={24} color="#fff" />
-            </div>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img 
+              src="/images/research/already-know.png" 
+              alt="Already Know Which Peptide You Need? Click Here To See Pep Nation's Research Store"
+              style={{ width: '100%', height: 'auto', display: 'block' }}
+            />
           </button>
         </div>
       )}
