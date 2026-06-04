@@ -740,28 +740,46 @@ export default function AgentStorefrontGrid({
       
       const STOP_WORDS = new Set(['for', 'the', 'and', 'in', 'to', 'with', 'a', 'an', 'of', 'is', 'it', 'on', 'peptides', 'peptide', 'best']);
       const CONCEPT_GROUPS: string[][] = [
-        ['fat', 'weight', 'loss', 'lipolysis', 'obesity', 'adipose', 'slimming', 'lean', 'cut', 'cutting'],
-        ['muscle', 'hypertrophy', 'bodybuilding', 'mass', 'strength', 'growth', 'anabolic', 'gains', 'bulking', 'size', 'brawn'],
+        ['fat', 'weightloss', 'weight', 'loss', 'lipolysis', 'obesity', 'adipose', 'slimming', 'lean', 'cut', 'cutting'],
+        ['muscle', 'growthhormone', 'gh', 'hgh', 'hypertrophy', 'bodybuilding', 'mass', 'strength', 'growth', 'anabolic', 'gains', 'bulking', 'size', 'brawn'],
         ['sleep', 'insomnia', 'circadian', 'rest', 'recovery', 'rem', 'tired', 'exhausted', 'yawn'],
         ['pain', 'analgesic', 'inflammation', 'injury', 'healing', 'joint', 'tendon', 'nociception', 'soreness', 'headache', 'headaches', 'migraine', 'migraines', 'ache', 'sore', 'hurt', 'arthritis', 'back', 'knee'],
         ['brain', 'cognitive', 'nootropic', 'memory', 'focus', 'neuro', 'alzheimers', 'dementia', 'learning', 'adhd', 'attention', 'clarity', 'smart'],
-        ['skin', 'anti-aging', 'collagen', 'wrinkle', 'elasticity', 'hair', 'nail', 'glow', 'complexion', 'youth', 'tanning', 'tan', 'melanin', 'sun', 'burn'],
+        ['skin', 'antiaging', 'collagen', 'wrinkle', 'elasticity', 'hair', 'nail', 'glow', 'complexion', 'youth', 'tanning', 'tan', 'melanin', 'sun', 'burn'],
         ['energy', 'stamina', 'endurance', 'fatigue', 'metabolism', 'mitochondrial', 'cardio', 'athletic', 'performance', 'vitality'],
         ['sugar', 'diabetes', 'insulin', 'glucose', 'glycemic', 'metabolic', 'a1c'],
-        ['heart', 'cardiovascular', 'blood', 'vascular', 'angiogenesis', 'cardiac', 'pressure', 'cholesterol', 'artery'],
+        ['heart', 'bloodpressure', 'cardiovascular', 'blood', 'vascular', 'angiogenesis', 'cardiac', 'pressure', 'cholesterol', 'artery'],
         ['bone', 'osteoporosis', 'mineral', 'fracture', 'density', 'healing', 'skeleton'],
         ['sex', 'libido', 'erectile', 'aphrodisiac', 'testosterone', 'hormone', 'arousal', 'ed', 'dysfunction', 'intimacy', 'drive'],
         ['gut', 'digestion', 'ulcer', 'gastric', 'intestinal', 'microbiome', 'bowel', 'leaky', 'stomach', 'ibs', 'crohns', 'colitis', 'bloating'],
-        ['immune', 'immunity', 'infection', 'virus', 'bacteria', 'autoimmune', 'sick', 'illness', 'cold', 'flu'],
+        ['immune', 'immunesystem', 'immunity', 'infection', 'virus', 'bacteria', 'autoimmune', 'sick', 'illness', 'cold', 'flu'],
         ['stress', 'anxiety', 'cortisol', 'calm', 'relax', 'mood', 'depression', 'panic', 'worry', 'nervous'],
-        ['aging', 'longevity', 'senescence', 'lifespan', 'youth', 'telomere', 'anti-aging', 'life'],
+        ['aging', 'longevity', 'senescence', 'lifespan', 'youth', 'telomere', 'life'],
         ['women', 'female', 'menopause', 'pcos', 'estrogen', 'progesterone'],
         ['men', 'male', 'trt', 'testosterone', 'prostate'],
-        ['eyes', 'vision', 'sight', 'macular', 'retina', 'blindness']
+        ['eyes', 'vision', 'sight', 'macular', 'retina', 'blindness'],
+        ['glp1', 'incretin', 'tirzepatide', 'semaglutide', 'retatrutide', 'appetite', 'craving'],
+        ['bpc157', 'wolverine', 'healing', 'repair', 'gut', 'recovery'],
+        ['tb500', 'healing', 'repair', 'muscle', 'recovery']
       ];
 
+      // Pre-process common multi-word concepts to keep them glued together
+      let processedQ = q
+        .replace(/weight loss/g, 'weightloss')
+        .replace(/anti aging/g, 'antiaging')
+        .replace(/anti-aging/g, 'antiaging')
+        .replace(/growth hormone/g, 'growthhormone')
+        .replace(/blood pressure/g, 'bloodpressure')
+        .replace(/immune system/g, 'immunesystem')
+        .replace(/glp 1/g, 'glp1')
+        .replace(/glp-1/g, 'glp1')
+        .replace(/bpc 157/g, 'bpc157')
+        .replace(/bpc-157/g, 'bpc157')
+        .replace(/tb 500/g, 'tb500')
+        .replace(/tb-500/g, 'tb500');
+
       // Filter out stop words
-      const rawTokens = q.split(/\s+/).filter(t => t && !STOP_WORDS.has(t));
+      const rawTokens = processedQ.split(/\s+/).filter(t => t && !STOP_WORDS.has(t));
       if (rawTokens.length === 0) return { matches: true, score: 0 };
 
       let totalScore = 0;
