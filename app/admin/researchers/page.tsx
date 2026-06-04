@@ -25,6 +25,7 @@ interface Profile {
   phone: string | null;
   role: 'researcher' | 'agent' | 'super_agent' | 'admin';
   tier: 'tier_1' | 'tier_2' | 'tier_3' | null;
+  custom_markup_override: number | null;
   account_type: 'credit' | 'prepaid' | null;
   prepaid_balance: number;
   credit_limit: number | null;
@@ -79,6 +80,7 @@ function ResearchersAdminPageInner() {
   const [formTier, setFormTier] = useState<'tier_1' | 'tier_2' | 'tier_3'>('tier_2');
   const [formAccountType, setFormAccountType] = useState<'credit' | 'prepaid'>('prepaid');
   const [formCreditLimit, setFormCreditLimit] = useState('');
+  const [formCustomMarkup, setFormCustomMarkup] = useState('');
   const [formSlug, setFormSlug] = useState('');
   const [formDisplayName, setFormDisplayName] = useState('');
 
@@ -185,6 +187,7 @@ function ResearchersAdminPageInner() {
     setModalSuccess('');
     setFormRole('agent');
     setFormTier('tier_2');
+    setFormCustomMarkup('');
     setFormAccountType('prepaid');
     setFormCreditLimit('');
     setFormSlug((profile.full_name || '').toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9\-]/g, ''));
@@ -198,6 +201,7 @@ function ResearchersAdminPageInner() {
     setModalSuccess('');
     setFormRole(profile.role === 'super_agent' ? 'super_agent' : 'agent');
     setFormTier(profile.tier || 'tier_2');
+    setFormCustomMarkup(profile.custom_markup_override != null ? String(Math.round(profile.custom_markup_override * 100)) : '');
     setFormAccountType(profile.account_type || 'prepaid');
     setFormCreditLimit(profile.credit_limit ? String(profile.credit_limit) : '');
     const ap = Array.isArray(profile.agent_profiles) ? profile.agent_profiles[0] : profile.agent_profiles;
@@ -291,6 +295,7 @@ function ResearchersAdminPageInner() {
         tier: formTier,
         account_type: formAccountType,
         credit_limit: formAccountType === 'credit' ? Number(formCreditLimit) : null,
+        custom_markup_override: formCustomMarkup ? Number(formCustomMarkup) / 100 : null,
         slug: formSlug,
         display_name: formDisplayName,
       };
@@ -755,7 +760,7 @@ function ResearchersAdminPageInner() {
 
       {/* CREATE NEW AGENT MODAL */}
       {modalMode === 'create_agent' && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.88)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100, padding: 'var(--space-4)' }}>
+        <div style={{ position: 'fixed', inset: 0, background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100, padding: 'var(--space-4)' }}>
           <div className="glass-panel hover-lift stagger-fade-in" style={{ width: '100%', maxWidth: 580, maxHeight: '92vh', overflowY: 'auto' }}>
             <div className="" style={{ padding: 'var(--space-6)' }}>
               <h2 style={{ fontSize: '1.2rem', marginBottom: 'var(--space-2)' }}>
@@ -906,16 +911,16 @@ function ResearchersAdminPageInner() {
               <hr style={{ border: 'none', borderTop: '1px solid rgba(255,255,255,0.06)', margin: 'var(--space-4) 0' }} />
 
               <h4 style={{ fontSize: '0.88rem', color: 'var(--silver)', marginBottom: 'var(--space-4)' }}>Pricing & Billing</h4>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-4)', marginBottom: 'var(--space-4)' }}>
-                <div className="form-group">
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-4)', marginBottom: 'var(--space-4)', alignItems: 'start' }}>
+                <div className="form-group" style={{ marginTop: 0 }}>
                   <label className="form-label">Pricing Tier</label>
                   <select className="form-input" value={newTier} onChange={e => setNewTier(e.target.value as any)} required>
-                    <option value="tier_1">Tier 1 — Best Pricing</option>
-                    <option value="tier_2">Tier 2 — Standard Pricing</option>
-                    <option value="tier_3">Tier 3 — Entry Pricing</option>
+                    <option value="tier_1">Tier 1 — Best Pricing (50% House)</option>
+                    <option value="tier_2">Tier 2 — Standard Pricing (60% House)</option>
+                    <option value="tier_3">Tier 3 — Entry Pricing (70% House)</option>
                   </select>
                 </div>
-                <div className="form-group">
+                <div className="form-group" style={{ marginTop: 0 }}>
                   <label className="form-label">Billing Mode</label>
                   <select className="form-input" value={newAccountType} onChange={e => setNewAccountType(e.target.value as any)} required>
                     <option value="prepaid">Prepaid (Pays Before Orders Ship)</option>
@@ -991,7 +996,7 @@ function ResearchersAdminPageInner() {
 
       {/* UPGRADE / CONFIGURE MODAL */}
       {(modalMode === 'upgrade' || modalMode === 'edit') && selectedProfile && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.88)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100, padding: 'var(--space-4)' }}>
+        <div style={{ position: 'fixed', inset: 0, background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100, padding: 'var(--space-4)' }}>
           <div className="glass-panel hover-lift stagger-fade-in" style={{ width: '100%', maxWidth: 540, maxHeight: '90vh', overflowY: 'auto' }}>
             <div className="" style={{ padding: 'var(--space-6)' }}>
               <h2 style={{ fontSize: '1.2rem', marginBottom: 'var(--space-2)' }}>
@@ -1016,8 +1021,8 @@ function ResearchersAdminPageInner() {
               </div>
               {formRole !== 'researcher' && (
                 <>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-4)' }}>
-                    <div className="form-group">
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-4)', alignItems: 'start' }}>
+                    <div className="form-group" style={{ marginTop: 0 }}>
                       <label className="form-label">Pricing Tier</label>
                       <select className="form-input" value={formTier} onChange={e => setFormTier(e.target.value as any)} required>
                         <option value="tier_1">Tier 1 — Best Pricing</option>
@@ -1025,7 +1030,7 @@ function ResearchersAdminPageInner() {
                         <option value="tier_3">Tier 3 — Entry Pricing</option>
                       </select>
                     </div>
-                    <div className="form-group">
+                    <div className="form-group" style={{ marginTop: 0 }}>
                       <label className="form-label">Billing Account Mode</label>
                       <select className="form-input" value={formAccountType} onChange={e => setFormAccountType(e.target.value as any)} required>
                         <option value="prepaid">Prepaid (Agent Pays Before Orders Ship)</option>
@@ -1034,12 +1039,20 @@ function ResearchersAdminPageInner() {
                     </div>
                   </div>
                   {formAccountType === 'credit' && (
-                    <div className="form-group">
+                    <div className="form-group" style={{ marginTop: 'var(--space-4)' }}>
                       <label className="form-label">Credit Limit Amount ($)</label>
                       <input type="number" className="form-input" placeholder="E.g. 5000"
                         value={formCreditLimit} onChange={e => setFormCreditLimit(e.target.value)} required min="0" />
                     </div>
                   )}
+                  <div className="form-group" style={{ marginTop: 'var(--space-4)' }}>
+                    <label className="form-label">Manual Markup Override % (Optional)</label>
+                    <input type="number" className="form-input" placeholder="E.g. 45 for 45%. Overrides Tier selection."
+                      value={formCustomMarkup} onChange={e => setFormCustomMarkup(e.target.value)} min="0" max="200" step="1" />
+                    <p style={{ fontSize: '0.72rem', color: 'var(--grey-500)', marginTop: 4 }}>
+                      Leave blank to use the standard Pricing Tier. If set, this exact percentage will be used for all their product base costs.
+                    </p>
+                  </div>
                   <hr style={{ border: 'none', borderTop: '1px solid rgba(255,255,255,0.06)', margin: 'var(--space-5) 0' }} />
                   <h4 style={{ fontSize: '0.9rem', color: 'var(--silver)', marginBottom: 'var(--space-4)' }}>Agent Storefront Configuration</h4>
                   <div className="form-group">
@@ -1071,7 +1084,7 @@ function ResearchersAdminPageInner() {
 
       {/* BALANCE ADJUSTMENT MODAL */}
       {modalMode === 'balance' && selectedProfile && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.88)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100, padding: 'var(--space-4)' }}>
+        <div style={{ position: 'fixed', inset: 0, background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100, padding: 'var(--space-4)' }}>
           <div className="glass-panel" style={{ width: '100%', maxWidth: 400 }}>
             <div className="" style={{ padding: 'var(--space-6)' }}>
               <h2 style={{ fontSize: '1.2rem', marginBottom: 'var(--space-2)' }}>Adjust Prepaid Balance</h2>
@@ -1138,7 +1151,7 @@ function ResearchersAdminPageInner() {
 
       {/* QR CODE MODAL */}
       {modalMode === 'qr' && selectedProfile && resolvedAgentProfile && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.88)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100, padding: 'var(--space-4)' }}>
+        <div style={{ position: 'fixed', inset: 0, background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100, padding: 'var(--space-4)' }}>
           <div className="glass-panel" style={{ width: '100%', maxWidth: 420 }}>
             <div className="" style={{ padding: 'var(--space-6)', textAlign: 'center' }}>
               <h2 style={{ fontSize: '1.2rem', marginBottom: 'var(--space-2)' }}>Storefront QR Code</h2>

@@ -44,7 +44,7 @@ export async function POST(req: NextRequest) {
   const supabase = await createServiceClient();
   const body = await req.json().catch(() => ({}));
 
-  const { id, action, role, tier, account_type, credit_limit, is_active, slug, display_name, balance_delta } = body;
+  const { id, action, role, tier, account_type, credit_limit, is_active, slug, display_name, balance_delta, custom_markup_override } = body;
   if (!id) return NextResponse.json({ error: 'Missing User ID' }, { status: 400 });
 
   // Security: role must be one of the allowed non-admin values.
@@ -117,6 +117,7 @@ export async function POST(req: NextRequest) {
     tier: role === 'researcher' ? null : tier,
     account_type: role === 'researcher' ? null : account_type,
     credit_limit: role === 'researcher' || account_type === 'prepaid' ? null : (credit_limit ? Number(credit_limit) : null),
+    custom_markup_override: role === 'researcher' ? null : (custom_markup_override !== undefined ? custom_markup_override : null),
     is_active: is_active !== undefined ? is_active : true,
     updated_at: new Date().toISOString(),
   };

@@ -59,7 +59,7 @@ export default function ResearchLandingPage() {
         {/* The Base Image */}
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
-          src="/images/research/research-landing-bg.jpg"
+          src="/images/research/research-landing-bg-v2.png"
           alt="Research Library"
           style={{ width: '100%', height: 'auto', display: 'block' }}
         />

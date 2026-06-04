@@ -68,9 +68,13 @@ export async function getAreaProducts(
   let isStorefrontOwner = false;
 
   if (role === 'admin') {
-    // Admin: show products from a default context — use their own ID if they have an agent profile
-    agentId = profile.id;
-    isStorefrontOwner = true;
+    // Admin: show products from a default context — if they have their own agent_profile, use it.
+    // Otherwise we'll fallback to the first active agent in the system below.
+    const { data: adminAgent } = await supabase.from('agent_profiles').select('id').eq('id', profile.id).maybeSingle();
+    if (adminAgent) {
+        agentId = profile.id;
+        isStorefrontOwner = true;
+    }
   } else if (role === 'researcher') {
     agentId = (profile as any).referring_agent_id || null;
   } else if (role === 'agent' || role === 'super_agent') {
@@ -79,7 +83,23 @@ export async function getAreaProducts(
   }
 
   if (!agentId) {
-    return { products: [], agentSlug: null, userRole: role, isStorefrontOwner: false, isAuthenticated: true };
+    if (role === 'admin') {
+      // Fallback for admins: pick the first active agent so they can actually test the UI
+      const { data: fallbackAgent } = await supabase
+        .from('agent_profiles')
+        .select('id')
+        .eq('is_active', true)
+        .limit(1)
+        .maybeSingle();
+      if (fallbackAgent) {
+        agentId = fallbackAgent.id;
+        isStorefrontOwner = true;
+      } else {
+        return { products: [], agentSlug: null, userRole: role, isStorefrontOwner: false, isAuthenticated: true };
+      }
+    } else {
+      return { products: [], agentSlug: null, userRole: role, isStorefrontOwner: false, isAuthenticated: true };
+    }
   }
 
   // Get agent slug for cart integration

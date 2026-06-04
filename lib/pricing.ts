@@ -128,17 +128,25 @@ export async function resolveHouseTierLevel(supabase: ServiceClient, agentId: st
 
 /** v2 wholesale cost for a House-facing agent: cost = base * (1 + markup(level)). */
 export async function computeAgentCostV2(supabase: ServiceClient, productId: string, agentId: string): Promise<number> {
-  const [base, level, tiers] = await Promise.all([
+  const [base, profileRes, level, tiers] = await Promise.all([
     getProductBaseCost(supabase, productId),
+    supabase.from('profiles').select('custom_markup_override').eq('id', agentId).maybeSingle(),
     resolveHouseTierLevel(supabase, agentId),
     getHouseTiers(supabase),
   ]);
-  const tier = tiers.find((t) => t.level === level);
-  // Safety: on an unknown level or missing config, fall back to the HIGHEST
-  // configured markup (most house-protective), or 0.7 if the table is empty.
-  const markup = tier
-    ? tier.markup
-    : (tiers.length ? Math.max(...tiers.map((t) => t.markup)) : 0.7);
+  const customOverride = profileRes.data?.custom_markup_override != null ? Number(profileRes.data.custom_markup_override) : null;
+  
+  let markup = 0;
+  if (customOverride !== null) {
+    markup = customOverride;
+  } else {
+    const tier = tiers.find((t) => t.level === level);
+    // Safety: on an unknown level or missing config, fall back to the HIGHEST
+    // configured markup (most house-protective), or 0.7 if the table is empty.
+    markup = tier
+      ? tier.markup
+      : (tiers.length ? Math.max(...tiers.map((t) => t.markup)) : 0.7);
+  }
   return Math.round(base * (1 + markup) * 100) / 100;
 }
 
