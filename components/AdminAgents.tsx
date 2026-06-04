@@ -60,6 +60,7 @@ export default function AdminAgents() {
   const [caScaleType, setCaScaleType] = useState<'default' | 'custom'>('default');
   const [caCustomSteps, setCaCustomSteps] = useState(freshDefaultLadder());
   const [showGamificationInfo, setShowGamificationInfo] = useState(false);
+  const [viewingDownlineFor, setViewingDownlineFor] = useState<any | null>(null);
 
   // Real-time availability checks
   const [usernameStatus, setUsernameStatus] = useState<'idle' | 'checking' | 'available' | 'taken'>('idle');
@@ -354,11 +355,33 @@ export default function AdminAgents() {
         </button>
       </div>
 
+      {/* Downline Breadcrumb */}
+      {viewingDownlineFor && (
+        <div style={{ marginBottom: 'var(--space-4)', padding: 'var(--space-4)', background: 'rgba(0,196,188,0.05)', border: '1px solid rgba(0,196,188,0.2)', borderRadius: 'var(--radius-md)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div>
+            <span style={{ color: 'var(--silver)' }}>Viewing Downline Agents For:</span>{' '}
+            <span style={{ fontWeight: 700, color: 'var(--teal)', fontSize: '1.05rem' }}>{viewingDownlineFor.full_name || viewingDownlineFor.username}</span>
+          </div>
+          <button onClick={() => setViewingDownlineFor(null)} className="btn-secondary btn-sm" style={{ padding: '6px 12px' }}>
+            &larr; Back To Top-Level Agents
+          </button>
+        </div>
+      )}
+
       <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
-        {agents.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: 'var(--space-6)', opacity: 0.5 }}>No agents found.</div>
-        ) : (
-          agents.map(agent => {
+        {(() => {
+          const filteredAgents = agents.filter(agent => {
+            if (viewingDownlineFor) {
+              return agent.parent_agent_id === viewingDownlineFor.id;
+            }
+            return agent.parent_agent_id == null;
+          });
+
+          if (filteredAgents.length === 0) {
+            return <div style={{ textAlign: 'center', padding: 'var(--space-6)', opacity: 0.5 }}>No matching agents found.</div>;
+          }
+
+          return filteredAgents.map(agent => {
             const isDefaultEmail = agent.email?.includes('@internal.auth');
             return (
               <div 
@@ -561,16 +584,24 @@ export default function AdminAgents() {
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', minWidth: '120px' }}>
                   <span style={{ fontSize: '0.75rem', color: 'var(--grey-400)', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>Storefront</span>
-                  {agent.agent_profiles?.[0]?.slug ? (
-                    <a href={`/${agent.agent_profiles[0].slug}`} style={{ color: 'var(--teal)', textDecoration: 'none', fontWeight: 600, fontSize: '0.9rem' }}>
-                      {agent.agent_profiles[0].slug}
-                    </a>
-                  ) : (
-                    <span style={{ color: 'var(--grey-400)', fontSize: '0.85rem' }}>No storefront</span>
-                  )}
+                  {(() => {
+                    const ap = Array.isArray(agent.agent_profiles) ? agent.agent_profiles[0] : agent.agent_profiles;
+                    return ap?.slug ? (
+                      <a href={`/${ap.slug}`} style={{ color: 'var(--teal)', textDecoration: 'none', fontWeight: 600, fontSize: '0.9rem' }}>
+                        {ap.slug}
+                      </a>
+                    ) : (
+                      <span style={{ color: 'var(--grey-400)', fontSize: '0.85rem' }}>No storefront</span>
+                    );
+                  })()}
                 </div>
 
                 <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end', flexWrap: 'wrap', flex: '1 1 150px' }}>
+                  {agent.is_super_agent && (
+                    <button onClick={() => setViewingDownlineFor(agent)} className="btn-secondary" style={{ padding: '6px 12px', fontSize: '0.8rem' }}>
+                      View Downline
+                    </button>
+                  )}
                   <button onClick={() => openEditAccountModal(agent)} className="btn-silver" style={{ padding: '6px 12px', fontSize: '0.8rem' }}>
                     Edit Details
                   </button>
@@ -605,8 +636,8 @@ export default function AdminAgents() {
 
               </div>
             );
-          })
-        )}
+          });
+        })()}
       </div>
 
       {/* Edit Contact Modal */}
