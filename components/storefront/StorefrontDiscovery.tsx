@@ -1440,7 +1440,7 @@ export default function DiscoveryHero({
         <div 
           ref={searchContainerRef}
           style={{
-            position: 'absolute', top: '33.8%', left: '9%', width: '89%', height: '11%',
+            position: 'absolute', top: '33.2%', left: '9%', width: '89%', height: '11%',
             zIndex: 5,
           }}
         >
@@ -1465,7 +1465,7 @@ export default function DiscoveryHero({
               background: 'transparent',
               border: 'none', outline: 'none', color: '#FFFFFF',
               fontSize: 'max(20px, 1.86vw)',
-              padding: '0 10px 0 45px',
+              padding: '0 10px 2px 65px',
               fontWeight: 500,
               letterSpacing: '0.02em',
             }}

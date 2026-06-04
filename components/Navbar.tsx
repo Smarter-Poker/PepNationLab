@@ -504,7 +504,7 @@ export default function Navbar({ onMenuClick, isOpen, title }: { onMenuClick?: (
                 />
               )}
               {role === 'researcher' && agentSlug && (
-                <DrawerLink href={`/${agentSlug}`} label="Visit Your Store" onClick={closeDrawer}
+                <DrawerLink href={`/${agentSlug}`} label="Pep Nation Research Store" onClick={closeDrawer}
                   icon={<svg {...IP}><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>}
                 />
               )}

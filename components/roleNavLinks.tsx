@@ -145,15 +145,14 @@ function researcherLinks(storefrontHref?: string): RoleNavLink[] {
   // Only show the storefront link when we actually have a real slug (not the
   // generic agent-dashboard fallback the Navbar passes when no slug is known).
   if (storefrontHref && !storefrontHref.includes('/dashboard')) {
-    links.push({ href: storefrontHref, label: 'Visit Your Store', icon: ICON.storefront });
+    links.push({ href: storefrontHref, label: 'Pep Nation Research Store', icon: ICON.storefront });
   }
   links.push(
     { href: '/orders', label: 'My Orders', icon: ICON.orders },
+    { href: '/wallet', label: 'Wallet', icon: ICON.wallet },
     { href: '/messenger', label: 'Messenger', icon: ICON.messenger },
     { href: '/account/wishlist', label: 'Wishlist', icon: ICON.heart },
     { href: '/account/recently-viewed', label: 'Recently Viewed', icon: ICON.clock },
-    { href: '/account/addresses', label: 'Saved Addresses', icon: ICON.pin },
-    { href: '/account/payment-method', label: 'Payment Method', icon: ICON.card },
     { href: '/account/referrals', label: 'Referrals', icon: ICON.gift },
     { href: '/account', label: 'Account Settings', icon: ICON.gear },
     { href: '/research/calculators', label: 'Lab Tools Calculator', icon: ICON.labTools },

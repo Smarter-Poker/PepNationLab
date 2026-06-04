@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import Link from 'next/link';
 import { toTitleCase } from '@/lib/categoryImage';
+import { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer } from 'recharts';
 
 /* ─── Interfaces ─── */
 
@@ -121,6 +122,7 @@ export default function AreaProductGrid({
   const [filterTrials, setFilterTrials] = useState(false);
   const [compareSet, setCompareSet] = useState<Set<string>>(new Set());
   const [showCompare, setShowCompare] = useState(false);
+  const [showDiffsOnly, setShowDiffsOnly] = useState(false);
   const [stackItems, setStackItems] = useState<Set<string>>(new Set());
   const [cartItems, setCartItems] = useState<Record<string, number>>({});
   const [toast, setToast] = useState<string | null>(null);
@@ -1185,8 +1187,13 @@ export default function AreaProductGrid({
               }}>
                 Compare Compounds
               </h2>
-              <button
-                onClick={() => setShowCompare(false)}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#A8B4C0', fontSize: '0.85rem', fontWeight: 600, cursor: 'pointer' }}>
+                  <input type="checkbox" checked={showDiffsOnly} onChange={e => setShowDiffsOnly(e.target.checked)} style={{ width: 16, height: 16, accentColor: '#00C4BC' }} />
+                  Highlight Differences
+                </label>
+                <button
+                  onClick={() => setShowCompare(false)}
                 style={{
                   width: 44,
                   height: 44,
@@ -1206,6 +1213,7 @@ export default function AreaProductGrid({
               >
                 ✕
               </button>
+            </div>
             </div>
 
             {/* Comparison table */}
@@ -1250,10 +1258,10 @@ export default function AreaProductGrid({
                           minWidth: 200,
                           background: 'rgba(255,255,255,0.01)',
                         }}>
-                          <div style={{ marginBottom: 12, fontSize: '1.1rem' }}>{toTitleCase(p.productName)}</div>
+                          <div style={{ marginBottom: 16, fontSize: '1.5rem', fontWeight: 800 }}>{toTitleCase(p.productName)}</div>
                           {p.imageUrl && (
-                            <div style={{ marginBottom: 12, display: 'flex', justifyContent: 'center' }}>
-                              <img src={p.imageUrl} alt={p.productName} style={{ width: 120, height: 120, objectFit: 'contain', borderRadius: 8, background: '#fff' }} />
+                            <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'center' }}>
+                              <img src={p.imageUrl} alt={p.productName} style={{ width: 200, height: 200, objectFit: 'contain', borderRadius: 8, background: '#fff' }} />
                             </div>
                           )}
                           <div style={{ display: 'flex', gap: 4, justifyContent: 'center', marginTop: 8 }}>
@@ -1288,8 +1296,34 @@ export default function AreaProductGrid({
                   </tr>
                 </thead>
                 <tbody>
+                  {/* Efficacy Profile Radar Chart */}
+                  <CompareRow label="Efficacy Profile" showDiffsOnly={showDiffsOnly} diffableValues={compareItems.map(p => p.compound?.efficacyScores)}>
+                    {compareItems.map(p => {
+                      const scores = p.compound?.efficacyScores || {};
+                      const data = Object.keys(scores).map(key => ({
+                        subject: key,
+                        A: scores[key],
+                        fullMark: 10,
+                      }));
+                      return (
+                        <td key={p.productId} style={{ ...compareTdStyle, width: 250, height: 250 }}>
+                          {Object.keys(scores).length > 0 ? (
+                            <ResponsiveContainer width="100%" height={220}>
+                              <RadarChart cx="50%" cy="50%" outerRadius="70%" data={data}>
+                                <PolarGrid stroke="rgba(255,255,255,0.1)" />
+                                <PolarAngleAxis dataKey="subject" tick={{ fill: '#A8B4C0', fontSize: 10 }} />
+                                <PolarRadiusAxis angle={30} domain={[0, 10]} tick={false} axisLine={false} />
+                                <Radar name={p.productName} dataKey="A" stroke="#00C4BC" fill="#00C4BC" fillOpacity={0.4} />
+                              </RadarChart>
+                            </ResponsiveContainer>
+                          ) : <span style={{ color: '#718096' }}>—</span>}
+                        </td>
+                      );
+                    })}
+                  </CompareRow>
+
                   {/* Price */}
-                  <CompareRow label="Price">
+                  <CompareRow label="Price" showDiffsOnly={showDiffsOnly} diffableValues={compareItems.map(p => isStorefrontOwner && p.costPrice != null ? p.costPrice : p.retailPrice)}>
                     {compareItems.map(p => {
                       const price = isStorefrontOwner && p.costPrice != null
                         ? p.costPrice : p.retailPrice;
@@ -1319,7 +1353,7 @@ export default function AreaProductGrid({
                   </CompareRow>
 
                   {/* Evidence Tier */}
-                  <CompareRow label="Evidence Tier">
+                  <CompareRow label="Evidence Tier" showDiffsOnly={showDiffsOnly} diffableValues={compareItems.map(p => p.compound?.evidenceTier)}>
                     {compareItems.map(p => {
                       const ti = tierInfo(p.compound?.evidenceTier ?? '');
                       return (
@@ -1341,7 +1375,7 @@ export default function AreaProductGrid({
                   </CompareRow>
 
                   {/* Risk Level */}
-                  <CompareRow label="Risk Level">
+                  <CompareRow label="Risk Level" showDiffsOnly={showDiffsOnly} diffableValues={compareItems.map(p => p.compound?.riskLevel)}>
                     {compareItems.map(p => {
                       const risk = p.compound?.riskLevel ?? '—';
                       const color = risk === 'low' ? '#68D391'
@@ -1373,8 +1407,19 @@ export default function AreaProductGrid({
                     })}
                   </CompareRow>
 
+                  {/* Side Effects */}
+                  <CompareRow label="Side Effects" showDiffsOnly={showDiffsOnly} diffableValues={compareItems.map(p => p.compound?.sideEffects)}>
+                    {compareItems.map(p => (
+                      <td key={p.productId} style={{ ...compareTdStyle, maxWidth: 220, textAlign: 'left', verticalAlign: 'top' }}>
+                        <span style={{ color: '#D0DAE4', fontSize: '0.85rem', lineHeight: 1.5 }}>
+                          {p.compound?.sideEffects || '—'}
+                        </span>
+                      </td>
+                    ))}
+                  </CompareRow>
+
                   {/* Half-Life */}
-                  <CompareRow label="Half-Life">
+                  <CompareRow label="Half-Life" showDiffsOnly={showDiffsOnly} diffableValues={compareItems.map(p => p.compound?.halfLife)}>
                     {compareItems.map(p => (
                       <td key={p.productId} style={compareTdStyle}>
                         <span style={{ color: '#D0DAE4', fontWeight: 600 }}>
@@ -1385,7 +1430,7 @@ export default function AreaProductGrid({
                   </CompareRow>
 
                   {/* Molecular Weight */}
-                  <CompareRow label="Molecular Weight">
+                  <CompareRow label="Molecular Weight" showDiffsOnly={showDiffsOnly} diffableValues={compareItems.map(p => p.compound?.molecularWeightDa)}>
                     {compareItems.map(p => (
                       <td key={p.productId} style={compareTdStyle}>
                         <span style={{ color: '#D0DAE4' }}>
@@ -1398,7 +1443,7 @@ export default function AreaProductGrid({
                   </CompareRow>
 
                   {/* Category */}
-                  <CompareRow label="Category">
+                  <CompareRow label="Category" showDiffsOnly={showDiffsOnly} diffableValues={compareItems.map(p => p.compound?.category)}>
                     {compareItems.map(p => (
                       <td key={p.productId} style={compareTdStyle}>
                         <span style={{ color: '#D0DAE4', textTransform: 'capitalize' }}>
@@ -1409,7 +1454,7 @@ export default function AreaProductGrid({
                   </CompareRow>
 
                   {/* Other Names */}
-                  <CompareRow label="Other Names">
+                  <CompareRow label="Other Names" showDiffsOnly={showDiffsOnly} diffableValues={compareItems.map(p => (p.compound?.aliases || []).join(','))}>
                     {compareItems.map(p => (
                       <td key={p.productId} style={compareTdStyle}>
                         <span style={{ color: '#D0DAE4', fontSize: '0.85rem' }}>
@@ -1422,7 +1467,7 @@ export default function AreaProductGrid({
                   </CompareRow>
 
                   {/* Summary */}
-                  <CompareRow label="Summary">
+                  <CompareRow label="Summary" showDiffsOnly={showDiffsOnly} diffableValues={compareItems.map(p => p.compound?.plainSummary)}>
                     {compareItems.map(p => (
                       <td key={p.productId} style={{ ...compareTdStyle, maxWidth: 220, textAlign: 'left', verticalAlign: 'top' }}>
                         <span style={{ color: '#D0DAE4', fontSize: '0.85rem', lineHeight: 1.5 }}>
@@ -1433,7 +1478,7 @@ export default function AreaProductGrid({
                   </CompareRow>
 
                   {/* Main Benefits */}
-                  <CompareRow label="Main Benefits">
+                  <CompareRow label="Main Benefits" showDiffsOnly={showDiffsOnly} diffableValues={compareItems.map(p => p.compound?.benefits)}>
                     {compareItems.map(p => (
                       <td key={p.productId} style={{ ...compareTdStyle, maxWidth: 220, textAlign: 'left', verticalAlign: 'top' }}>
                         <span style={{ color: '#00C4BC', fontSize: '0.85rem', lineHeight: 1.5, fontWeight: 600 }}>
@@ -1444,7 +1489,7 @@ export default function AreaProductGrid({
                   </CompareRow>
 
                   {/* Mechanism */}
-                  <CompareRow label="Mechanism">
+                  <CompareRow label="Mechanism" showDiffsOnly={showDiffsOnly} diffableValues={compareItems.map(p => p.compound?.mechanism)}>
                     {compareItems.map(p => (
                       <td key={p.productId} style={{ ...compareTdStyle, maxWidth: 220, textAlign: 'left', verticalAlign: 'top' }}>
                         <span style={{
@@ -1460,7 +1505,7 @@ export default function AreaProductGrid({
                   </CompareRow>
 
                   {/* Key Research Uses */}
-                  <CompareRow label="Key Research Uses">
+                  <CompareRow label="Key Research Uses" showDiffsOnly={showDiffsOnly} diffableValues={compareItems.map(p => (p.compound?.studiedFor || []).join(','))}>
                     {compareItems.map(p => (
                       <td key={p.productId} style={{ ...compareTdStyle, verticalAlign: 'top', textAlign: 'left' }}>
                         <div style={{
@@ -1492,8 +1537,37 @@ export default function AreaProductGrid({
                     ))}
                   </CompareRow>
 
+                  {/* Synergistic Stacking */}
+                  <CompareRow label="Synergistic Stacking" showDiffsOnly={showDiffsOnly} diffableValues={compareItems.map(p => (p.compound?.bestStackedWith || []).join(','))}>
+                    {compareItems.map(p => (
+                      <td key={p.productId} style={{ ...compareTdStyle, verticalAlign: 'top', textAlign: 'left' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 6, alignItems: 'flex-start' }}>
+                          {(p.compound?.bestStackedWith ?? []).length > 0
+                            ? p.compound!.bestStackedWith.map((use, i) => (
+                              <span key={i} style={{ display: 'inline-block', padding: '3px 10px', borderRadius: 8, fontSize: '0.72rem', fontWeight: 600, background: 'rgba(0,196,188,0.1)', color: '#00C4BC', border: '1px solid rgba(0,196,188,0.2)', textTransform: 'capitalize' }}>
+                                + {use}
+                              </span>
+                            ))
+                            : <span style={{ color: '#718096' }}>—</span>
+                          }
+                        </div>
+                      </td>
+                    ))}
+                  </CompareRow>
+
+                  {/* Typical Protocol/Frequency */}
+                  <CompareRow label="Protocol/Frequency" showDiffsOnly={showDiffsOnly} diffableValues={compareItems.map(p => p.compound?.typicalFrequency)}>
+                    {compareItems.map(p => (
+                      <td key={p.productId} style={{ ...compareTdStyle, verticalAlign: 'top', textAlign: 'left' }}>
+                        <span style={{ color: '#D0DAE4', fontSize: '0.85rem' }}>
+                          {p.compound?.typicalFrequency || '—'}
+                        </span>
+                      </td>
+                    ))}
+                  </CompareRow>
+
                   {/* References */}
-                  <CompareRow label="References">
+                  <CompareRow label="References" showDiffsOnly={showDiffsOnly} diffableValues={compareItems.map(p => p.compound?.pubmedCitationCount)}>
                     {compareItems.map(p => (
                       <td key={p.productId} style={compareTdStyle}>
                         {p.compound?.pubmedCitationCount != null ? (
@@ -1670,10 +1744,19 @@ const compareLabelTdStyle: React.CSSProperties = {
 function CompareRow({
   label,
   children,
+  diffableValues,
+  showDiffsOnly,
 }: {
   label: string;
   children: React.ReactNode;
+  diffableValues?: any[];
+  showDiffsOnly?: boolean;
 }) {
+  if (showDiffsOnly && diffableValues && diffableValues.length > 1) {
+    const first = JSON.stringify(diffableValues[0]);
+    const allSame = diffableValues.every(v => JSON.stringify(v) === first);
+    if (allSame) return null;
+  }
   return (
     <tr>
       <td style={compareLabelTdStyle}>{label}</td>
