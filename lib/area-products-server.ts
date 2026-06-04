@@ -87,7 +87,7 @@ export async function getAreaProducts(
     .from('agent_profiles')
     .select('slug')
     .eq('id', agentId)
-    .single();
+    .maybeSingle();
   const agentSlug = agentProfile?.slug || null;
 
   // Get all master products matching these compound slugs

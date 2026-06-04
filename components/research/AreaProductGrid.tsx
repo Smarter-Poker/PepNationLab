@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import Image from 'next/image';
 import Link from 'next/link';
 import { toTitleCase } from '@/lib/categoryImage';
 
@@ -556,14 +555,17 @@ export default function AreaProductGrid({
                 justifyContent: 'center',
                 overflow: 'hidden',
               }}>
-                <Image
-                  src={p.imageUrl || '/images/placeholder-product.png'}
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={p.imageUrl}
                   alt={p.productName}
                   width={140}
                   height={140}
+                  loading="lazy"
                   style={{
                     objectFit: 'contain',
                     maxHeight: 140,
+                    maxWidth: 140,
                     filter: 'drop-shadow(0 4px 16px rgba(0,0,0,0.5))',
                   }}
                 />
