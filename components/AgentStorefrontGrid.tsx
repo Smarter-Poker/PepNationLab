@@ -1626,7 +1626,30 @@ export default function AgentStorefrontGrid({
                 setPendingQty(existingQty ?? (bw ? 10 : (isStorefrontOwner ? Math.max(10, selfBuyMin) : selfBuyMin)));
               }}
             >
-              <div className="" style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden', padding: 0 }}>
+              <div className="" style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden', padding: 0, position: 'relative' }}>
+                {group._search?.reason && (
+                  <div style={{
+                    position: 'absolute',
+                    top: 8,
+                    right: 8,
+                    zIndex: 10,
+                    background: 'rgba(20, 25, 30, 0.75)',
+                    backdropFilter: 'blur(8px)',
+                    border: '1px solid rgba(255, 255, 255, 0.1)',
+                    padding: '4px 10px',
+                    borderRadius: 20,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    fontSize: '0.75rem',
+                    fontWeight: 600,
+                    color: 'var(--white)',
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+                    pointerEvents: 'none'
+                  }}>
+                    🎯 Matched: {toTitleCase(group._search.reason)}
+                  </div>
+                )}
               <div style={{
                 height: 220,
                 background: `radial-gradient(circle at 50% 50%, ${primaryColor}20 0%, var(--black) 100%)`,

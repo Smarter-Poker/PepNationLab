@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
 import { rateLimit, getClientIp } from '@/lib/rate-limit';
 import { assertSameOrigin } from '@/lib/csrf';
+import { GoogleGenAI } from '@google/genai';
 
 /**
  * POST /api/storefront/search
@@ -139,6 +140,30 @@ export async function POST(req: NextRequest) {
   // RLS would otherwise hide most rows for an anonymous fetch.
   const supabase = await createServiceClient();
 
+  let matchedProductIds: string[] = [];
+  if (q) {
+    try {
+      const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+      const response = await ai.models.embedContent({
+        model: 'text-embedding-004',
+        contents: q,
+      });
+      const queryEmbedding = response.embeddings?.[0]?.values;
+      if (queryEmbedding) {
+        const { data: vectorMatches, error: vecErr } = await supabase.rpc('match_products_vector', {
+          query_embedding: queryEmbedding,
+          match_threshold: 0.1,
+          match_limit: 100
+        });
+        if (!vecErr && vectorMatches && vectorMatches.length > 0) {
+          matchedProductIds = vectorMatches.map((m: any) => m.product_id);
+        }
+      }
+    } catch (e) {
+      console.error('Vector generation failed:', e);
+    }
+  }
+
   const { data: agent, error: agentErr } = await supabase
     .from('agent_profiles')
     .select('id, slug, is_active')
@@ -192,8 +217,12 @@ export async function POST(req: NextRequest) {
   if (typeof maxPrice === 'number') query = query.lte('retail_price', maxPrice);
   if (category) query = query.eq('products.category', category);
   if (q) {
-    const term = `%${escapeIlike(q)}%`;
-    query = query.or(`name.ilike.${term},description.ilike.${term},category.ilike.${term}`, { foreignTable: 'products' });
+    if (matchedProductIds.length > 0) {
+      query = query.in('product_id', matchedProductIds);
+    } else {
+      const term = `%${escapeIlike(q)}%`;
+      query = query.or(`name.ilike.${term},description.ilike.${term},category.ilike.${term}`, { foreignTable: 'products' });
+    }
   }
   if (typeof minWeight === 'number')
     query = query.gte('products.weight_oz', minWeight);
