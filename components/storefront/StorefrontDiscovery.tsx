@@ -1325,8 +1325,8 @@ export default function DiscoveryHero({
           width: '100%',
           maxWidth: 980,
           margin: '0 auto 18px',
-          aspectRatio: '980 / 476',
-          backgroundImage: 'url(/images/store_discovery_hero_v2.png)',
+          aspectRatio: '1672 / 941',
+          backgroundImage: 'url(/images/store_discovery_hero_v3.png)',
           backgroundSize: 'cover',
           backgroundPosition: 'center',
           borderRadius: 22,
@@ -1347,7 +1347,7 @@ export default function DiscoveryHero({
           }}
           title="Match Me"
           style={{
-            position: 'absolute', top: '7%', left: '52%', width: '20%', height: '15%',
+            position: 'absolute', top: '12%', left: '52%', width: '20%', height: '14%',
             cursor: 'pointer', opacity: 0, zIndex: 10
           }}
           aria-label="Match Me"
@@ -1362,7 +1362,7 @@ export default function DiscoveryHero({
           }}
           title="Let Us Guide You"
           style={{
-            position: 'absolute', top: '7%', left: '73%', width: '22%', height: '15%',
+            position: 'absolute', top: '12%', left: '73%', width: '22%', height: '14%',
             cursor: 'pointer', opacity: 0, zIndex: 10
           }}
           aria-label="Let Us Guide You"
@@ -1382,7 +1382,7 @@ export default function DiscoveryHero({
           }}
           placeholder="Ask Us Anything About The Peptides You Want To Research..."
           style={{
-            position: 'absolute', top: '33.0%', left: '9%', width: '89%', height: '13%',
+            position: 'absolute', top: '35.0%', left: '9%', width: '89%', height: '11%',
             background: 'transparent',
             border: 'none', outline: 'none', color: '#FFFFFF',
             fontSize: 'max(20px, 1.86vw)',
@@ -1394,17 +1394,17 @@ export default function DiscoveryHero({
         />
 
         {/* Quick Select Buttons */}
-        <button title="Recovery" onClick={() => onSelectArea('healing')} style={{ position: 'absolute', top: '67%', left: '1%', width: '11%', height: '25%', cursor: 'pointer', opacity: 0, zIndex: 10 }} />
-        <button title="Weight Management" onClick={() => onSelectArea('weight_management')} style={{ position: 'absolute', top: '67%', left: '13%', width: '11%', height: '25%', cursor: 'pointer', opacity: 0, zIndex: 10 }} />
-        <button title="Sleep" onClick={() => onSelectArea('sleep')} style={{ position: 'absolute', top: '67%', left: '25%', width: '11%', height: '25%', cursor: 'pointer', opacity: 0, zIndex: 10 }} />
-        <button title="Cognitive" onClick={() => onSelectArea('cognitive')} style={{ position: 'absolute', top: '67%', left: '37%', width: '11%', height: '25%', cursor: 'pointer', opacity: 0, zIndex: 10 }} />
-        <button title="Immune" onClick={() => onSelectArea('immune')} style={{ position: 'absolute', top: '67%', left: '49%', width: '11%', height: '25%', cursor: 'pointer', opacity: 0, zIndex: 10 }} />
-        <button title="Metabolic" onClick={() => onSelectArea('metabolic')} style={{ position: 'absolute', top: '67%', left: '61%', width: '11%', height: '25%', cursor: 'pointer', opacity: 0, zIndex: 10 }} />
-        <button title="Longevity" onClick={() => onSelectArea('longevity')} style={{ position: 'absolute', top: '67%', left: '73%', width: '11%', height: '25%', cursor: 'pointer', opacity: 0, zIndex: 10 }} />
+        <button title="Weight Management" onClick={() => onSelectArea('weight_management')} style={{ position: 'absolute', top: '55%', left: '4%', width: '11%', height: '40%', cursor: 'pointer', opacity: 0, zIndex: 10 }} />
+        <button title="Tissue Repair" onClick={() => onSelectArea('tissue_repair')} style={{ position: 'absolute', top: '55%', left: '16%', width: '11%', height: '40%', cursor: 'pointer', opacity: 0, zIndex: 10 }} />
+        <button title="Healing & Recovery" onClick={() => onSelectArea('healing')} style={{ position: 'absolute', top: '55%', left: '28%', width: '11%', height: '40%', cursor: 'pointer', opacity: 0, zIndex: 10 }} />
+        <button title="Performance" onClick={() => onSelectArea('performance')} style={{ position: 'absolute', top: '55%', left: '40%', width: '11%', height: '40%', cursor: 'pointer', opacity: 0, zIndex: 10 }} />
+        <button title="Skin & Hair" onClick={() => onSelectArea('cosmetic')} style={{ position: 'absolute', top: '55%', left: '52%', width: '11%', height: '40%', cursor: 'pointer', opacity: 0, zIndex: 10 }} />
+        <button title="Cognitive" onClick={() => onSelectArea('cognitive')} style={{ position: 'absolute', top: '55%', left: '64%', width: '11%', height: '40%', cursor: 'pointer', opacity: 0, zIndex: 10 }} />
+        <button title="Pain & Inflammation" onClick={() => onSelectArea('pain')} style={{ position: 'absolute', top: '55%', left: '76%', width: '11%', height: '40%', cursor: 'pointer', opacity: 0, zIndex: 10 }} />
         <button title="More" onClick={() => {
           onSelectArea(''); // Clear filter
           setShowAllAreas(true);
-        }} style={{ position: 'absolute', top: '67%', left: '85%', width: '13%', height: '25%', cursor: 'pointer', opacity: 0, zIndex: 10 }} />
+        }} style={{ position: 'absolute', top: '55%', left: '88%', width: '10%', height: '40%', cursor: 'pointer', opacity: 0, zIndex: 10 }} />
         
         {/* Pop Up For All Areas */}
         {showAllAreas && (
