@@ -31,8 +31,8 @@ export async function POST() {
     
     try {
       const response = await ai.models.embedContent({
-        model: 'text-embedding-004',
-        contents: textToEmbed,
+        model: 'gemini-embedding-001',
+        contents: [textToEmbed],
       });
       
       const embedding = response.embeddings?.[0]?.values;

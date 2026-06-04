@@ -145,8 +145,8 @@ export async function POST(req: NextRequest) {
     try {
       const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
       const response = await ai.models.embedContent({
-        model: 'text-embedding-004',
-        contents: q,
+        model: 'gemini-embedding-001',
+        contents: [q],
       });
       const queryEmbedding = response.embeddings?.[0]?.values;
       if (queryEmbedding) {
