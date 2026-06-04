@@ -16,7 +16,7 @@ async function fixUsername() {
     .eq('email', email);
 
   if (error) console.error("Error updating username:", error);
-  else console.log("✅ Fixed Shipping username");
+  else console.log("[OK] Fixed Shipping username");
 }
 
 fixUsername();

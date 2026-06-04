@@ -16,7 +16,7 @@ async function fixUsername() {
     .eq('email', email);
 
   if (error) console.error("Error updating username:", error);
-  else console.log("✅ Fixed SavageBrands username");
+  else console.log("[OK] Fixed SavageBrands username");
 }
 
 fixUsername();

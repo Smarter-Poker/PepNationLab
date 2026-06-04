@@ -18,6 +18,7 @@ import {
   type ConcentrationUnit,
 } from '@/lib/research/calculators';
 import IframeLink from '@/components/ui/IframeLink';
+import { toast } from 'sonner';
 
 const RESEARCH_NOTE = 'Research Use Only. Not Intended As Medical Advice Or Human Dosing.';
 
@@ -146,6 +147,73 @@ function CalculatorHeader({ title, why }: { title: string; why: string }) {
       </h3>
       <p style={explainerStyle}>{why}</p>
     </>
+  );
+}
+
+function SaveToJournalButton({
+  title,
+  noteText,
+  compoundSlug = null
+}: {
+  title: string;
+  noteText: string;
+  compoundSlug?: string | null;
+}) {
+  const [saving, setSaving] = useState(false);
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      const res = await fetch('/api/researcher/notes', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          title,
+          note_text: noteText,
+          compound_slug: compoundSlug,
+        }),
+      });
+
+      if (res.status === 401) {
+        toast.error('Please Sign In To Save To Lab Journal');
+      } else if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        toast.error(data.error || 'Failed To Save Note');
+      } else {
+        toast.success('Calculated Recipe Saved Successfully To Lab Journal');
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error('An Error Occurred While Saving');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <button
+      type="button"
+      onClick={handleSave}
+      disabled={saving}
+      style={{
+        background: 'var(--teal)',
+        border: 'none',
+        color: '#000',
+        padding: '8px 16px',
+        borderRadius: 6,
+        fontSize: 13,
+        fontWeight: 600,
+        cursor: saving ? 'not-allowed' : 'pointer',
+        opacity: saving ? 0.7 : 1,
+        transition: 'all 0.2s',
+        marginTop: 12,
+        alignSelf: 'flex-start'
+      }}
+    >
+      {saving ? 'Saving...' : 'Save To Journal'}
+    </button>
   );
 }
 
@@ -374,6 +442,18 @@ function Reconstitution({ compounds }: { compounds: CompoundListItem[] }) {
           <div style={{ ...resultStyle, marginTop: 20, fontSize: 14 }}>Enter a desired dose above.</div>
         )}
 
+        {vMass > 0 && dilMl > 0 && (
+          <SaveToJournalButton
+            title={`Reconstitution Recipe - ${peptide}`}
+            noteText={`Peptide Name: ${peptide}
+Vial Mass: ${vMass} mg
+Diluent Volume: ${dilMl} mL (${diluentType === 'bac-water' ? 'Bacteriostatic Water' : '0.6% Acetic Acid'})
+Target Dose: ${dMassNumeric} ${unit}
+Recommended Syringe Draw: ${drawMl !== null && isFinite(drawMl) ? Math.round(drawMl * 100) : 0} Units (on a ${syringeSize} mL syringe)`}
+            compoundSlug={compounds.find(c => c.display_name === peptide)?.slug || null}
+          />
+        )}
+
         <p style={noteStyle}>{RESEARCH_NOTE}</p>
       </div>
     </section>
@@ -543,6 +623,20 @@ function DilutionSection() {
             </tbody>
           </table>
         </div>
+
+        {Number(stock) > 0 && Number(factor) > 1 && (
+          <SaveToJournalButton
+            title="Dilution Series Protocol"
+            noteText={`Stock Concentration: ${stock}
+Dilution Factor: ${factor}
+Steps: ${steps}
+Assay Mode: ${assayMode ? 'Yes' : 'No'}
+Final Volume Per Tube: ${finalVol || 'N/A'} mL
+Tube Breakdown:
+${series.map(s => `- Step ${s.stepNumber} (T${s.stepNumber}): Conc ${s.concentration.toExponential(3)}${assayMode ? `, Transfer: ${s.transferVolumeMl?.toFixed(3)} mL, Diluent: ${s.diluentVolumeMl?.toFixed(3)} mL` : ''}`).join('\n')}`}
+          />
+        )}
+
         <p style={noteStyle}>{RESEARCH_NOTE}</p>
       </div>
     </section>
@@ -658,6 +752,18 @@ function ConcentrationSection({ compounds }: { compounds: CompoundListItem[] }) 
             : <>Converted: <strong>{result.toPrecision(6)}</strong> {to}</>
           }
         </div>
+
+        {result !== null && (
+          <SaveToJournalButton
+            title={`Concentration Conversion${searchQuery ? ` - ${searchQuery}` : ''}`}
+            noteText={`Input Value: ${value} ${from}
+Converted Value: ${result.toPrecision(6)} ${to}
+Molecular Weight: ${mw} Da
+Peptide: ${searchQuery || 'Custom'}`}
+            compoundSlug={compounds.find(c => c.display_name === searchQuery)?.slug || null}
+          />
+        )}
+
         <p style={noteStyle}>{RESEARCH_NOTE}</p>
       </div>
     </section>
@@ -748,6 +854,17 @@ function StabilitySection() {
             : <>Predicted Shelf: <strong>{days.toFixed(1)} Days</strong> At {tTo}°C</>
           }
         </div>
+
+        {days !== null && (
+          <SaveToJournalButton
+            title="Arrhenius Stability Prediction"
+            noteText={`Initial Shelf Life: ${shelf} Days At ${tFrom} C
+Target Temperature: ${tTo} C
+Activation Energy (Ea): ${ea} kJ/mol
+Predicted Shelf Life At ${tTo} C: ${days.toFixed(1)} Days`}
+          />
+        )}
+
         <p style={noteStyle}>{RESEARCH_NOTE}</p>
       </div>
     </section>
@@ -918,6 +1035,25 @@ function CostSection() {
           </div>
         )}
 
+        {outA && (
+          <SaveToJournalButton
+            title={comparisonMode ? "Vendor Cost Comparison" : "Cost Per Dose Economics"}
+            noteText={!comparisonMode
+              ? `Option A Price: $${priceA}
+Vial Mass: ${massA} mg
+Dose Amount: ${doseA} mcg
+Dosing Frequency: ${frequency} doses/week
+Cost Per Dose: $${outA.dollarsPerDose.toFixed(2)}
+Monthly Projected Cost: $${outA.monthlyCostUsd?.toFixed(2) ?? 'N/A'}
+Annual Projected Cost: $${outA.annualCostUsd?.toFixed(2) ?? 'N/A'}`
+              : `Option A: Price $${priceA}, Mass ${massA} mg, Dose ${doseA} mcg
+Option B: Price $${priceB}, Mass ${massB} mg, Dose ${doseB} mcg
+Option A Cost Per Dose: $${outA.dollarsPerDose.toFixed(2)}
+Option B Cost Per Dose: $${outB?.dollarsPerDose.toFixed(2) ?? 'N/A'}
+Projected Winner: ${outB ? (outA.dollarsPerDose < outB.dollarsPerDose ? 'Option A' : 'Option B') : 'Option A'}`}
+          />
+        )}
+
         <p style={noteStyle}>{RESEARCH_NOTE}</p>
       </div>
     </section>
@@ -975,6 +1111,19 @@ function PoolingSection() {
             : <>Total Mass: <strong>{out.totalMassMg.toFixed(2)} mg</strong>{'  '}|{'  '}Concentration: <strong>{out.concentrationMgPerMl.toFixed(3)} mg/mL</strong></>
           }
         </div>
+
+        {out && (
+          <SaveToJournalButton
+            title="Vial Pooling Recipe"
+            noteText={`Vials Pooled: ${count}
+Mass Per Vial: ${mass} mg
+Diluent Added: ${diluent} mL
+Transfer Loss: ${loss}%
+Total Pooled Mass: ${out.totalMassMg.toFixed(2)} mg
+Final Pooled Concentration: ${out.concentrationMgPerMl.toFixed(3)} mg/mL`}
+          />
+        )}
+
         <p style={noteStyle}>{RESEARCH_NOTE}</p>
       </div>
     </section>
@@ -1091,6 +1240,20 @@ function HplcRtSection() {
               </>
           }
         </div>
+
+        {rt !== null && (
+          <SaveToJournalButton
+            title="HPLC Retention Time Prediction"
+            noteText={`Sequence: ${seq}
+Column Type: ${columnType}
+Acid Modifier: ${modifier}
+Predicted Retention Time: ${rt.toFixed(2)} Min
+Gradient Start (%B): ${start}%
+Gradient End (%B): ${end}%
+Gradient Length: ${gradient} Min`}
+          />
+        )}
+
         <p style={noteStyle}>{RESEARCH_NOTE}</p>
       </div>
     </section>
@@ -1238,6 +1401,18 @@ function MassSpecSection() {
             </tbody>
           </table>
         </div>
+
+        {peaks.length > 0 && (
+          <SaveToJournalButton
+            title="Mass Spec m/z Prediction"
+            noteText={`Sequence: ${seq}
+Ionization Mode: ${mode}
+Adduct Type: ${adduct}
+Predicted Peaks (charge, m/z, relative intensity):
+${peaks.map(p => `- Charge ${mode === 'negative' ? `-${p.charge}` : `+${p.charge}`}: m/z ${p.mz.toFixed(4)} (${(p.intensity * 100).toFixed(0)}% intensity)`).join('\n')}`}
+          />
+        )}
+
         <p style={noteStyle}>{RESEARCH_NOTE}</p>
       </div>
     </section>
@@ -1369,6 +1544,19 @@ function SppsSection() {
             </>
           )}
         </div>
+
+        {out && (
+          <SaveToJournalButton
+            title="Fmoc-SPPS Cost Estimate"
+            noteText={`Scale: ${scale} mmol
+Sequence Length: ${cleanSppsSeq.length} AA
+Coupling Chemistry: ${chemistry === 'DIC/Oxyma' ? 'DIC/Oxyma (Standard)' : chemistry === 'HATU/DIEA' ? 'HATU/DIEA (Premium)' : 'HBTU/DIEA'}
+Total Estimated Cost: $${out.totalUsd.toFixed(2)}
+Cost Breakdown:
+${out.breakdown.map(b => `- ${b.label}: $${b.costUsd.toFixed(2)}`).join('\n')}`}
+          />
+        )}
+
         <p style={noteStyle}>{RESEARCH_NOTE}</p>
       </div>
     </section>
@@ -1488,6 +1676,21 @@ function SolubilitySection() {
             </>
           )}
         </div>
+
+        {out && (
+          <SaveToJournalButton
+            title="Sequence Solubility Prediction"
+            noteText={`Sequence: ${seq}
+Predicted Solubility: ${out.predictedSolubilityMgMl.toFixed(3)} mg/mL
+Classification: ${out.classification.toUpperCase()}
+GRAVY Score: ${gravy}
+Isoelectric Point (pI): ${pi}
+Sequence Length: ${len}
+Solution pH: ${pH}
+Notes: ${out.notes}`}
+          />
+        )}
+
         <p style={noteStyle}>{RESEARCH_NOTE}</p>
       </div>
     </section>
@@ -1594,6 +1797,23 @@ function VialQuantitySection() {
             </>
           )}
         </div>
+
+        {out && (
+          <SaveToJournalButton
+            title="Study Procurement Plan"
+            noteText={`Treatment Groups: ${groups}
+Subjects Per Group: ${subjectsPerGroup} (Total N: ${totalN})
+Doses Per Subject (Weekly): ${dosesPerSubjectPerWeek}
+Study Duration: ${studyDurationWeeks} Weeks
+Mg Per Dose: ${mgPerDose}
+Mg Per Vial: ${mgPerVial}
+Overage Buffer: ${overage}%
+Total Vials Needed: ${out.vialsNeeded}
+Per-Subject Mass: ${Number(out.perSubjectMg).toFixed(2)} mg
+Total Mass Needed: ${Number(out.totalMg).toFixed(2)} mg`}
+          />
+        )}
+
         <p style={noteStyle}>{RESEARCH_NOTE}</p>
       </div>
     </section>

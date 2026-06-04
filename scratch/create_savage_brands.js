@@ -54,7 +54,7 @@ async function createSuperAgent() {
     return;
   }
 
-  console.log("✅ Successfully created Super Agent account: SavageBrands / MyKingDaniel");
+  console.log("[OK] Successfully created Super Agent account: SavageBrands / MyKingDaniel");
 }
 
 createSuperAgent();

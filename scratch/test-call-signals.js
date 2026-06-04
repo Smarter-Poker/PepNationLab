@@ -19,14 +19,14 @@ let incomingReceived = false;
 let endedReceived = false;
 
 async function run() {
-  console.log('--- 🧪 START CALL SIGNALLING INTEGRATION TEST 🧪 ---');
+  console.log('--- [TEST] START CALL SIGNALLING INTEGRATION TEST [TEST] ---');
 
   // 2. Callee subscribes to call-signal:${calleeId}
   console.log(`[Callee] Subscribing to channel 'call-signal:${calleeId}'...`);
   const calleeChannel = callee.channel(`call-signal:${calleeId}`);
 
   calleeChannel.on('broadcast', { event: 'incoming_call' }, (payload) => {
-    console.log('[Callee] ✅ SUCCESS! Received incoming_call broadcast:', payload.payload);
+    console.log('[Callee] [SUCCESS] Received incoming_call broadcast:', payload.payload);
     incomingReceived = true;
     
     // Simulate accepting call, then we'll trigger the unload beacon
@@ -34,7 +34,7 @@ async function run() {
   });
 
   calleeChannel.on('broadcast', { event: 'call_ended' }, (payload) => {
-    console.log('[Callee] ✅ SUCCESS! Received call_ended broadcast via server beacon:', payload.payload);
+    console.log('[Callee] [SUCCESS] Received call_ended broadcast via server beacon:', payload.payload);
     endedReceived = true;
     finish();
   });
@@ -109,19 +109,19 @@ async function triggerUnloadBeacon() {
 }
 
 function finish() {
-  console.log('--- 🧪 INTEGRATION RESULTS 🧪 ---');
+  console.log('--- [TEST] INTEGRATION RESULTS [TEST] ---');
   if (incomingReceived && endedReceived) {
-    console.log('🎉 ALL TESTS PASSED SUCCESSFULLY! Realtime channels are aligned and the unload beacon route functions perfectly.');
+    console.log('[SUCCESS] ALL TESTS PASSED SUCCESSFULLY! Realtime channels are aligned and the unload beacon route functions perfectly.');
     process.exit(0);
   } else {
-    console.error('❌ TEST FAILED: One or more signals were not received.');
+    console.error('[FAIL] TEST FAILED: One or more signals were not received.');
     process.exit(1);
   }
 }
 
 // Wait for a timeout in case test wedges
 setTimeout(() => {
-  console.error('❌ TEST TIMEOUT: Realtime connection took too long or event was lost.');
+  console.error('[FAIL] TEST TIMEOUT: Realtime connection took too long or event was lost.');
   process.exit(1);
 }, 12000);
 

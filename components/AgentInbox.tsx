@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import IframeLink from '@/components/ui/IframeLink';
+import { FileText, Bell, MessageSquare, Paperclip, RefreshCw } from 'lucide-react';
 
 interface InternalMessage {
   id: string;
@@ -18,6 +19,13 @@ interface InternalMessage {
     full_name: string | null;
     email: string;
   };
+}
+
+function toTitleCase(str: string): string {
+  return str
+    .split(/[-_ ]+/)
+    .map(w => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(' ');
 }
 
 export default function AgentInbox({ agentId }: { agentId: string }) {
@@ -74,10 +82,10 @@ export default function AgentInbox({ agentId }: { agentId: string }) {
     return new Date(dateStr).toLocaleDateString([], { month: 'short', day: 'numeric' });
   }
 
-  const typeConfig: Record<string, { icon: string; color: string; gradient: string }> = {
-    invoice: { icon: '💰', color: 'var(--teal)', gradient: 'linear-gradient(135deg, #C0B8A8 0%, #0099FF 100%)' },
-    notification: { icon: '🔔', color: '#63B3ED', gradient: 'linear-gradient(135deg, #63B3ED 0%, #805AD5 100%)' },
-    direct_message: { icon: '💬', color: 'rgba(255,255,255,0.5)', gradient: 'linear-gradient(135deg, #374151 0%, #4B5563 100%)' },
+  const typeConfig: Record<string, { icon: React.ComponentType<any>; color: string; gradient: string }> = {
+    invoice: { icon: FileText, color: '#00C4BC', gradient: 'linear-gradient(135deg, #1A365D 0%, #0099FF 100%)' },
+    notification: { icon: Bell, color: '#63B3ED', gradient: 'linear-gradient(135deg, #2B6CB0 0%, #805AD5 100%)' },
+    direct_message: { icon: MessageSquare, color: 'rgba(255,255,255,0.7)', gradient: 'linear-gradient(135deg, #2D3748 0%, #4B5563 100%)' },
   };
 
   const filters: { key: 'all' | 'invoice' | 'notification' | 'direct_message'; label: string }[] = [
@@ -130,10 +138,7 @@ export default function AgentInbox({ agentId }: { agentId: string }) {
               display: 'flex', alignItems: 'center', gap: 6,
             }}
           >
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <polyline points="23 4 23 10 17 10" /><polyline points="1 20 1 14 7 14" />
-              <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
-            </svg>
+            <RefreshCw size={12} />
             Refresh
           </button>
         </div>
@@ -191,12 +196,13 @@ export default function AgentInbox({ agentId }: { agentId: string }) {
               </div>
               <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.88rem', fontWeight: 600 }}>No Messages</div>
               <div style={{ color: 'rgba(255,255,255,0.2)', fontSize: '0.75rem', marginTop: 4 }}>
-                {activeFilter === 'all' ? 'Your inbox is empty' : `No ${activeFilter.replace('_', ' ')}s found`}
+                {activeFilter === 'all' ? 'Your Inbox Is Empty' : `No ${toTitleCase(activeFilter)}s Found`}
               </div>
             </div>
           ) : (
             filtered.map((msg, i) => {
               const cfg = typeConfig[msg.type] || typeConfig.direct_message;
+              const IconComp = cfg.icon;
               return (
                 <div
                   key={msg.id}
@@ -212,11 +218,11 @@ export default function AgentInbox({ agentId }: { agentId: string }) {
                     width: 42, height: 42, borderRadius: '50%',
                     background: cfg.gradient,
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    fontSize: '1.2rem', flexShrink: 0,
+                    color: cfg.color, flexShrink: 0,
                     boxShadow: '0 2px 8px rgba(0,0,0,0.5)',
                     border: '1px solid rgba(255,255,255,0.1)'
                   }}>
-                    {cfg.icon}
+                    <IconComp size={18} />
                   </div>
 
                   {/* Content */}
@@ -253,9 +259,16 @@ export default function AgentInbox({ agentId }: { agentId: string }) {
                           <span>·</span>
                           <IframeLink
                             href={msg.attachment_url}
-                            style={{ color: '#00E5FF', textDecoration: 'none', fontWeight: 600 }}
+                            style={{
+                              color: '#00E5FF',
+                              textDecoration: 'none',
+                              fontWeight: 600,
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: 4
+                            }}
                           >
-                            📎 Attachment
+                            <Paperclip size={12} /> Attachment
                           </IframeLink>
                         </>
                       )}

@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { toTitleCase } from '@/lib/categoryImage';
 import { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer } from 'recharts';
 import { motion, AnimatePresence } from 'framer-motion';
+import { FlaskConical, Dna, ArrowRight, X } from 'lucide-react';
 
 /* ─── Interfaces ─── */
 
@@ -672,8 +673,9 @@ export default function AreaProductGrid({
                 <motion.span
                   animate={{ x: [0, 5, 0] }}
                   transition={{ repeat: Infinity, duration: 1.5, ease: "easeInOut" }}
+                  style={{ display: 'inline-flex', alignItems: 'center' }}
                 >
-                  👉
+                  <ArrowRight size={16} />
                 </motion.span>
                 Start Swipe Mode
               </>
@@ -847,7 +849,7 @@ export default function AreaProductGrid({
                       }}
                       title="View Certificate of Analysis"
                     >
-                      🧪 {compound.purityPercentage}% Purity ↗
+                      <FlaskConical size={12} style={{ marginRight: 4 }} /> {compound.purityPercentage}% Purity ↗
                     </a>
                   ) : (
                     <span style={{
@@ -865,7 +867,7 @@ export default function AreaProductGrid({
                       border: '1px solid rgba(56, 161, 105, 0.3)',
                       backdropFilter: 'blur(6px)',
                     }}>
-                      🧪 {compound.purityPercentage}% Purity
+                      <FlaskConical size={12} style={{ marginRight: 4 }} /> {compound.purityPercentage}% Purity
                     </span>
                   )
                 )}
@@ -1117,9 +1119,12 @@ export default function AreaProductGrid({
                           color: '#A8B4C0',
                           fontSize: '0.65rem',
                           fontWeight: 600,
-                          textTransform: 'capitalize'
+                          textTransform: 'capitalize',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 4
                         }}>
-                          🧬 {ra.replace(/_/g, ' ')}
+                          <Dna size={10} /> {ra.replace(/_/g, ' ')}
                         </span>
                       ))}
                     </div>
@@ -1211,12 +1216,11 @@ export default function AreaProductGrid({
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                fontSize: '1.1rem',
                 flexShrink: 0,
               }}
               aria-label="Clear comparison"
             >
-              ✕
+              <X size={16} />
             </button>
           </div>
         </div>
@@ -1291,12 +1295,11 @@ export default function AreaProductGrid({
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  fontSize: '1.2rem',
                   flexShrink: 0,
                 }}
                 aria-label="Close comparison"
               >
-                ✕
+                <X size={18} />
               </button>
             </div>
             </div>

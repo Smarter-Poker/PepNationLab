@@ -211,7 +211,7 @@ export async function POST(req: NextRequest) {
         await service.from('messenger_messages').insert({
           conversation_id: conversationId,
           sender_id: user.id, // The researcher who uploaded
-          text: `📎 Payment proof submitted for Order #${shortId}. Please review and mark as paid once verified.`,
+          text: `[Attachment] Payment proof submitted for Order #${shortId}. Please review and mark as paid once verified.`,
           message_type: isImage ? 'image' : 'file',
           media_url: longSigned?.signedUrl ?? null,
           media_metadata: {

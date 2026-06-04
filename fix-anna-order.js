@@ -29,7 +29,7 @@ async function run() {
   const { data: msg, error: msgErr } = await svc.from('messenger_messages').insert({
     conversation_id: conversationId,
     sender_id: anna, 
-    text: `📎 Payment proof submitted for Order #${shortId}. Please review and mark as paid once verified.`,
+    text: `[Attachment] Payment proof submitted for Order #${shortId}. Please review and mark as paid once verified.`,
     message_type: 'image',
     media_url: longSigned?.signedUrl ?? null,
     media_metadata: {

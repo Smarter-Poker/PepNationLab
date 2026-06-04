@@ -100,7 +100,7 @@ const STATUS_STYLES: Record<Status, { label: string; bg: string; fg: string; bor
   new:         { label: 'New',         bg: 'rgba(96,165,250,0.12)',  fg: '#60A5FA', border: 'rgba(96,165,250,0.45)' },
   first_order: { label: 'First Order', bg: 'rgba(45,212,191,0.12)',  fg: '#2DD4BF', border: 'rgba(45,212,191,0.45)' },
   active:      { label: 'Active',      bg: 'rgba(0,196,188,0.12)',   fg: '#00C4BC', border: 'rgba(0,196,188,0.45)' },
-  vip:         { label: 'VIP ★',       bg: 'rgba(250,204,21,0.14)',  fg: '#FACC15', border: 'rgba(250,204,21,0.55)' },
+  vip:         { label: 'VIP',       bg: 'rgba(250,204,21,0.14)',  fg: '#FACC15', border: 'rgba(250,204,21,0.55)' },
   at_risk:     { label: 'At Risk',     bg: 'rgba(245,158,11,0.14)',  fg: '#F59E0B', border: 'rgba(245,158,11,0.50)' },
   churned:     { label: 'Churned',     bg: 'rgba(239,68,68,0.14)',   fg: '#EF4444', border: 'rgba(239,68,68,0.50)' },
 };

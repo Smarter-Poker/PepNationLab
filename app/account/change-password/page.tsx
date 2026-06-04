@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { Key } from 'lucide-react';
 
 export default function ChangePasswordPage() {
   const router = useRouter();
@@ -76,8 +77,9 @@ export default function ChangePasswordPage() {
               display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
               width: 56, height: 56, borderRadius: '50%',
               background: 'rgba(0,196,188,0.12)', border: '1px solid rgba(0,196,188,0.3)',
-              fontSize: '1.6rem',
-            }}>🔑</div>
+            }}>
+              <Key size={24} color="#00C4BC" />
+            </div>
           </div>
 
           <h1 style={{

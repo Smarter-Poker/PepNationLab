@@ -16,6 +16,7 @@ import { NextResponse, type NextRequest, after } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
 import { parseQuery, buildAutoWildcardTsquery, type ParsedQuery, type FieldFilter } from '@/lib/research/search-parser';
 import { classifyIntent, type IntentMatch } from '@/lib/research/intent';
+import { GoogleGenAI } from '@google/genai';
 
 export const dynamic = 'force-dynamic';
 
@@ -204,8 +205,70 @@ async function handle(req: NextRequest, q: string, limit: number, offset: number
     }
   }
 
+  // Attempt Semantic Vector Search via gemini-embedding-001
+  let vectorRows: SearchResultRow[] = [];
+  if (process.env.GEMINI_API_KEY) {
+    try {
+      const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+      const response = await ai.models.embedContent({
+        model: 'gemini-embedding-001',
+        contents: [trimmed],
+      });
+      const queryEmbedding = response.embeddings?.[0]?.values;
+      if (queryEmbedding) {
+        const { data: vectorMatches, error: vecErr } = await supabase.rpc('match_compounds_vector', {
+          query_embedding: queryEmbedding,
+          match_threshold: 0.3,
+          match_limit: limit
+        });
+        if (!vecErr && vectorMatches && vectorMatches.length > 0) {
+          vectorRows = vectorMatches.map((r: any) => ({
+            slug: String(r.slug ?? ''),
+            display_name: String(r.display_name ?? ''),
+            evidence_tier: String(r.evidence_tier ?? ''),
+            wada_status: String(r.wada_status ?? 'not_listed'),
+            snippet: String(r.plain_summary ?? '').slice(0, 160) + (String(r.plain_summary ?? '').length > 160 ? '...' : ''),
+            score: typeof r.similarity === 'number' ? r.similarity : Number(r.similarity ?? 0),
+            knowledge_panel_url: `/research/compounds/${String(r.slug ?? '')}`,
+          }));
+        }
+      }
+    } catch (e) {
+      console.error('Semantic search embedding failed, falling back to text search:', e);
+    }
+  }
+
+  // Merge vector search results and keyword results
+  let finalRows = rows;
+  if (vectorRows.length > 0) {
+    const mergedMap = new Map<string, SearchResultRow>();
+    
+    // Add vector matches first
+    for (const vr of vectorRows) {
+      mergedMap.set(vr.slug, vr);
+    }
+    
+    // Add or merge keyword matches
+    for (const kr of rows) {
+      const existing = mergedMap.get(kr.slug);
+      if (existing) {
+        // Boost score if found in both
+        existing.score = Math.max(existing.score, kr.score) + 0.1;
+        // Keep the keyword headline snippet if available
+        if (kr.snippet) {
+          existing.snippet = kr.snippet;
+        }
+      } else {
+        mergedMap.set(kr.slug, kr);
+      }
+    }
+    
+    finalRows = Array.from(mergedMap.values()).sort((a, b) => b.score - a.score);
+    total = finalRows.length;
+  }
+
   const latencyMs = Date.now() - t0;
-  const topSlug = rows[0]?.slug ?? null;
+  const topSlug = finalRows[0]?.slug ?? null;
 
   // Best-effort analytics — run safely in the background using Next.js `after`
   void firstClientIp(req);
@@ -215,7 +278,7 @@ async function handle(req: NextRequest, q: string, limit: number, offset: number
 
   return NextResponse.json(
     {
-      results: rows,
+      results: finalRows,
       intent,
       total,
       latencyMs,

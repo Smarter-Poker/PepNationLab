@@ -35,7 +35,7 @@ export async function POST(req: NextRequest) {
   const { error: sendError } = await service.from('internal_messages').insert({
     sender_id: user.id,
     receiver_id: invoice.receiver_id,
-    subject: `⚠️ Payment Reminder — ${invoice.subject}`,
+    subject: `Payment Reminder — ${invoice.subject}`,
     body: `This is a reminder that your invoice "${invoice.subject}" ($${Number(invoice.invoice_amount || 0).toFixed(2)}) is overdue.
 
 Please remit payment as soon as possible to avoid any service interruptions.`,
