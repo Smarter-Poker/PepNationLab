@@ -50,12 +50,17 @@ export default async function LabJournalPage() {
     if (r.product_id) favProductIds.add(r.product_id);
   }
 
-  const pastOrderProducts = new Map<string, string>(); // product_id -> last_purchased_date
+  const pastOrderProducts = new Map<string, { date: string; count: number }>(); 
   for (const o of orderRows ?? []) {
     const items = o.order_items as { product_id: string }[];
     for (const item of items ?? []) {
-      if (item.product_id && !pastOrderProducts.has(item.product_id)) {
-        pastOrderProducts.set(item.product_id, o.created_at);
+      if (item.product_id) {
+        const existing = pastOrderProducts.get(item.product_id);
+        if (!existing) {
+          pastOrderProducts.set(item.product_id, { date: o.created_at, count: 1 });
+        } else {
+          pastOrderProducts.set(item.product_id, { date: existing.date, count: existing.count + 1 });
+        }
       }
     }
   }
@@ -93,18 +98,22 @@ export default async function LabJournalPage() {
     }
   }
 
-  const priceMap = new Map<string, { price: number; is_on_sale: boolean }>();
+  const priceMap = new Map<string, { price: number; is_on_sale: boolean; agent_product_id: string }>();
   if (referringAgentId && allProductIds.length > 0) {
     const { data: agentProducts } = await service
       .from('agent_products')
-      .select('product_id, retail_price, is_on_sale, sale_price')
+      .select('id, product_id, retail_price, is_on_sale, sale_price')
       .eq('agent_id', referringAgentId)
       .in('product_id', allProductIds);
     for (const ap of agentProducts ?? []) {
       const rawPrice = ap.is_on_sale && ap.sale_price != null ? Number(ap.sale_price) : Number(ap.retail_price);
       const price = rawPrice / 10;
       if (Number.isFinite(price) && price > 0) {
-        priceMap.set(ap.product_id, { price, is_on_sale: ap.is_on_sale === true });
+        priceMap.set(ap.product_id, { 
+          price, 
+          is_on_sale: ap.is_on_sale === true,
+          agent_product_id: ap.id
+        });
       }
     }
   }
@@ -117,6 +126,7 @@ export default async function LabJournalPage() {
     base_cost: p.base_cost,
     retail_price: priceMap.get(p.id)?.price ?? null,
     is_on_sale: priceMap.get(p.id)?.is_on_sale ?? false,
+    agent_product_id: priceMap.get(p.id)?.agent_product_id ?? null,
     in_stock: p.in_stock,
     unit_size: p.unit_size,
     unit_measure: p.unit_measure,
@@ -129,14 +139,20 @@ export default async function LabJournalPage() {
     .map(p => mapToItem(p));
 
   const pastOrders = Array.from(pastOrderProducts.entries())
-    .map(([id, date]) => ({ p: productsMap.get(id), date }))
+    .map(([id, data]) => ({ p: productsMap.get(id), data }))
     .filter(({ p }) => p && p.is_active && !p.is_banned)
-    .map(({ p, date }) => mapToItem(p, { last_purchased_date: date }));
+    .map(({ p, data }) => mapToItem(p, { last_purchased_date: data.date, purchase_count: data.count }));
 
   const recentlyViewed = Array.from(recentlyViewedProducts.entries())
     .map(([id, date]) => ({ p: productsMap.get(id), date }))
     .filter(({ p }) => p && p.is_active && !p.is_banned)
     .map(({ p, date }) => mapToItem(p, { viewed_at: date }));
+
+  const categories = Array.from(new Set(
+    [...favorites, ...pastOrders, ...recentlyViewed]
+      .map(i => i.category)
+      .filter(Boolean)
+  )) as string[];
 
   // --- Trending Now ---
   const trending: any[] = [];
@@ -207,6 +223,7 @@ export default async function LabJournalPage() {
           pastOrders={pastOrders} 
           recentlyViewed={recentlyViewed} 
           trending={trending} 
+          categories={categories}
           storefrontSlug={storefrontSlug} 
         />
       </div>

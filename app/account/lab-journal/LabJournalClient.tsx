@@ -18,6 +18,7 @@ interface Item {
   last_purchased_date?: string;
   viewed_at?: string;
   is_on_sale?: boolean;
+  agent_product_id?: string | null;
 }
 
 interface Props {
@@ -112,6 +113,18 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
 
       pnlCart._savedAt = Date.now();
       localStorage.setItem(storageKey, JSON.stringify(pnlCart));
+
+      // Also write to the simple quantity map for the grid component
+      if (item.agent_product_id) {
+        const gridKey = `cart_${storefrontSlug}`;
+        const rawGrid = localStorage.getItem(gridKey);
+        let gridMap: Record<string, number> = {};
+        if (rawGrid) {
+          try { gridMap = JSON.parse(rawGrid) || {}; } catch {}
+        }
+        gridMap[item.agent_product_id] = (gridMap[item.agent_product_id] || 0) + 1;
+        localStorage.setItem(gridKey, JSON.stringify(gridMap));
+      }
 
       // Trigger a storage event manually so other tabs/components can sync if needed
       window.dispatchEvent(new Event('storage'));

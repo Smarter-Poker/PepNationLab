@@ -541,7 +541,7 @@ export default function ResearcherDashboard({ userId, userName, userEmail, agent
                 maxWidth: 600,
                 aspectRatio: '576 / 1024',
                 overflow: 'hidden',
-                backgroundImage: "url('/researcher-menu-v2.jpg')",
+                backgroundImage: "url('/researcher-menu.jpg')",
                 backgroundRepeat: 'no-repeat',
                 backgroundPosition: 'top left',
                 backgroundSize: '100% 100%',
