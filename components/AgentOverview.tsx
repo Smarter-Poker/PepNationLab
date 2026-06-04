@@ -9,47 +9,38 @@ interface AgentOverviewProps {
   copiedStorefront: boolean;
   agentProfile: any;
   orders: any[];
+  userProfile?: any;
   onNavigate?: (tab: string) => void;
 }
 
 export default function AgentOverview({
   storefrontUrl,
   agentProfile,
+  userProfile,
   onNavigate,
 }: AgentOverviewProps) {
-  /*
-   * Image: agent-dashboard-nav.jpg  576 × 1024 px  (9:16 portrait)
-   *
-   * Strategy — WIDTH-DRIVEN with 2 px gutters:
-   *   .dash-hero width  = calc(100% - 4px)  →  ~386px on a 390px phone
-   *   .dash-hero height = auto via aspect-ratio: 576/1024  →  ~686px
-   *
-   *   background-size: 100% 100%  maps image pixel-perfect onto the container
-   *   (no clipping on any edge, no distortion because the container IS the
-   *   image's exact aspect ratio).
-   *
-   *   On mobile the panel is ~686px tall. Safari's "large" viewport (chrome
-   *   hidden while interacting) is ~780px — the full panel is always visible
-   *   when the user is actively using the dashboard. When the browser UI bar
-   *   is visible at rest (~600px), the user sees rows 1-5 + partial row 6;
-   *   the click zone for row 6 is at 571px (still tappable).
-   *
-   *   On desktop the panel is capped at 480px wide → ~854px tall, centered on
-   *   the page with dark background on the sides. All 6 rows visible.
-   *
-   * Click zone calibration (measured against 576×1024 source):
-   *   border top: ~12px (1.2%)   border bottom: ~12px (1.2%)
-   *   each row:  ~158px (15.4%)  each gap:       ~10px (1.0%)
-   *
-   *   Row 1 top:  1.2%    Row 2 top: 17.6%
-   *   Row 3 top: 34.0%    Row 4 top: 50.5%
-   *   Row 5 top: 66.9%    Row 6 top: 83.3%
-   *
-   *   Because the container has the exact image aspect ratio + background-size
-   *   100% 100%, zone % === image pixel % — no offset math needed.
-   */
-  const cardZones = [
-    // --- LEFT COLUMN ---
+  const isSubAgent = userProfile && !userProfile.is_super_agent;
+
+  const cardZones = isSubAgent ? [
+    // --- SUB-AGENT (6 Rows) ---
+    // Left Column
+    { id: 'visit_storefront', left: '4%', width: '44.5%', top: '3%', height: '14.5%', action: () => { window.location.href = storefrontUrl; } },
+    { id: 'messenger', left: '4%', width: '44.5%', top: '19%', height: '14.5%', action: () => { window.location.href = '/messenger'; } },
+    { id: 'orders', left: '4%', width: '44.5%', top: '35%', height: '14.5%', action: () => onNavigate?.('Orders') },
+    { id: 'products', left: '4%', width: '44.5%', top: '51%', height: '14.5%', action: () => onNavigate?.('Store Products') },
+    { id: 'researchers', left: '4%', width: '44.5%', top: '67%', height: '14.5%', action: () => onNavigate?.('Researchers') },
+    { id: 'sales', left: '4%', width: '44.5%', top: '83%', height: '14.5%', action: () => onNavigate?.('Sales & Accounting') },
+    
+    // Right Column
+    { id: 'wallet', left: '51.5%', width: '44.5%', top: '3%', height: '14.5%', action: () => { window.location.href = '/wallet'; } },
+    { id: 'lab_journal', left: '51.5%', width: '44.5%', top: '19%', height: '14.5%', action: () => { window.location.href = '/account/lab-journal'; } },
+    { id: 'research_library', left: '51.5%', width: '44.5%', top: '35%', height: '14.5%', action: () => { window.location.href = '/research'; } },
+    { id: 'account_settings', left: '51.5%', width: '44.5%', top: '51%', height: '14.5%', action: () => { window.location.href = '/account'; } },
+    { id: 'lab_tools', left: '51.5%', width: '44.5%', top: '67%', height: '14.5%', action: () => { window.location.href = '/lab-tools'; } },
+    { id: 'help_support', left: '51.5%', width: '44.5%', top: '83%', height: '14.5%', action: () => { window.location.href = '/dashboard/agent/help'; } },
+  ] : [
+    // --- SUPER AGENT (8 Rows) ---
+    // LEFT COLUMN
     { id: 'visit_storefront', left: '4%', width: '44.5%', top: '3%', height: '10.5%', action: () => { window.location.href = storefrontUrl; } },
     { id: 'messenger', left: '4%', width: '44.5%', top: '15%', height: '10.5%', action: () => { window.location.href = '/messenger'; } },
     { id: 'orders', left: '4%', width: '44.5%', top: '27%', height: '10.5%', action: () => onNavigate?.('Orders') },
@@ -59,7 +50,7 @@ export default function AgentOverview({
     { id: 'coupons', left: '4%', width: '44.5%', top: '75%', height: '10.5%', action: () => onNavigate?.('Coupons') },
     { id: 'lab_tools', left: '4%', width: '44.5%', top: '87%', height: '10.5%', action: () => { window.location.href = '/lab-tools'; } },
 
-    // --- RIGHT COLUMN ---
+    // RIGHT COLUMN
     { id: 'wallet', left: '51.5%', width: '44.5%', top: '3%', height: '10.5%', action: () => { window.location.href = '/wallet'; } },
     { id: 'lab_journal', left: '51.5%', width: '44.5%', top: '15%', height: '10.5%', action: () => { window.location.href = '/account/lab-journal'; } },
     { id: 'storefront_config', left: '51.5%', width: '44.5%', top: '27%', height: '10.5%', action: () => onNavigate?.('Storefront Config') },
@@ -110,7 +101,7 @@ export default function AgentOverview({
 
           overflow: hidden;
 
-          background-image: url('/images/agent-dashboard-16.png');
+          background-image: url('${isSubAgent ? '/images/sub-agent-dashboard.png' : '/images/agent-dashboard-16.png'}');
           background-repeat: no-repeat;
           background-position: top left;
           background-size: 100% 100%;   /* pixel-perfect: container = image */

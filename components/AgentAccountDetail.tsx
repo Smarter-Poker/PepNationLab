@@ -72,6 +72,14 @@ type Detail = {
     commission_pct: number | null;
     created_at: string;
   }>;
+  researchers: Array<{
+    id: string;
+    full_name: string | null;
+    username: string | null;
+    email: string | null;
+    is_active: boolean;
+    created_at: string;
+  }>;
 };
 
 const fmtMoney = (v: number | null | undefined) => `$${(Number(v) || 0).toFixed(2)}`;
@@ -131,7 +139,7 @@ export default function AgentAccountDetail({
   const [isActive, setIsActive] = useState(true);
   const [saving, setSaving] = useState(false);
 
-  const [activeTab, setActiveTab] = useState<'Overview' | 'Sub Agents'>('Overview');
+  const [activeTab, setActiveTab] = useState<'Overview' | 'Sub Agents' | 'Researchers'>('Overview');
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -326,6 +334,19 @@ export default function AgentAccountDetail({
                     Sub Agents ({detail.sub_agents?.length || 0})
                   </button>
                 )}
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('Researchers')}
+                  style={{
+                    background: 'none', border: 'none', padding: '0 0 8px 0', cursor: 'pointer',
+                    fontSize: '1rem', fontWeight: 700,
+                    color: activeTab === 'Researchers' ? '#00E5FF' : 'var(--grey-400)',
+                    borderBottom: activeTab === 'Researchers' ? '2px solid #00E5FF' : '2px solid transparent',
+                    textTransform: 'uppercase', letterSpacing: '0.05em'
+                  }}
+                >
+                  Researchers ({detail.researchers?.length || 0})
+                </button>
               </div>
 
               {activeTab === 'Overview' && (
@@ -529,6 +550,26 @@ export default function AgentAccountDetail({
                           <span style={{ color: 'var(--grey-400)' }}>Joined: {fmtDate(sa.created_at)}</span>
                           <span style={{ color: sa.is_active ? '#00FF9D' : '#FFAAAA', minWidth: 60, textAlign: 'right' }}>{sa.is_active ? 'Active' : 'Inactive'}</span>
                           <span style={{ color: '#00E5FF', fontWeight: 700, minWidth: 60, textAlign: 'right' }}>{sa.commission_pct ?? 0}%</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {activeTab === 'Researchers' && (
+                <div className="glass-panel">
+                  <h3 className="metal-text" style={{ fontSize: '1rem', margin: '0 0 var(--space-3)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Researchers</h3>
+                  {!detail.researchers || detail.researchers.length === 0 ? (
+                    <div style={{ color: 'var(--grey-400)', fontSize: '0.85rem', padding: 'var(--space-3) 0' }}>No Researchers Yet.</div>
+                  ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                      {detail.researchers.map((r) => (
+                        <div key={r.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.82rem', padding: '6px 0', borderBottom: '1px solid rgba(255,255,255,0.04)', gap: 8 }}>
+                          <span style={{ color: 'var(--white)', flex: 1, fontWeight: 600 }}>{r.full_name || r.username || 'Anonymous'}</span>
+                          <span style={{ color: 'var(--silver)' }}>{r.email || ''}</span>
+                          <span style={{ color: 'var(--grey-400)' }}>Joined: {fmtDate(r.created_at)}</span>
+                          <span style={{ color: r.is_active ? '#00FF9D' : '#FFAAAA', minWidth: 60, textAlign: 'right' }}>{r.is_active ? 'Active' : 'Inactive'}</span>
                         </div>
                       ))}
                     </div>

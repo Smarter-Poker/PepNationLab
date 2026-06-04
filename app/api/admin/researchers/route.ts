@@ -17,7 +17,14 @@ export async function GET(req: NextRequest) {
     .from('profiles')
     .select('*, agent_profiles(*)');
 
-  if (role) dbQuery = dbQuery.eq('role', role);
+  if (role) {
+    dbQuery = dbQuery.eq('role', role);
+    if (role === 'researcher') {
+      dbQuery = dbQuery.eq('referring_agent_id', gate.userId);
+    }
+  } else {
+    dbQuery = dbQuery.or(`role.neq.researcher,referring_agent_id.eq.${gate.userId}`);
+  }
 
   if (rawQuery) {
     // P0 1.23: PostgREST .or() injection — sanitize syntax-significant chars.

@@ -68,10 +68,27 @@ export default async function LabJournalPage() {
   // --- Fetch Recently Viewed ---
   const { data: recentRows } = await service
     .from('researcher_recently_viewed')
-    .select('product_id, agent_id, viewed_at')
+    .select('product_id, viewed_at')
     .eq('user_id', user.id)
     .order('viewed_at', { ascending: false })
     .limit(50);
+
+  // --- Bundles ---
+  const { data: bData } = await service
+    .from('products')
+    .select('id, name, image_url, category, base_cost, unit_size, unit_measure, in_stock')
+    .eq('category', 'Peptide Stacks')
+    .eq('is_active', true)
+    .eq('is_banned', false);
+
+  // --- Catalog for Stack Builder ---
+  const { data: cData } = await service
+    .from('products')
+    .select('id, name, image_url, category, base_cost, unit_size, unit_measure, in_stock')
+    .neq('category', 'Peptide Stacks')
+    .eq('is_active', true)
+    .eq('is_banned', false)
+    .order('name');
 
   const recentlyViewedProducts = new Map<string, string>(); // product_id -> viewed_at
   for (const r of recentRows ?? []) {
@@ -84,7 +101,9 @@ export default async function LabJournalPage() {
   const allProductIds = Array.from(new Set([
     ...favProductIds,
     ...pastOrderProducts.keys(),
-    ...recentlyViewedProducts.keys()
+    ...recentlyViewedProducts.keys(),
+    ...(bData || []).map((p: any) => p.id),
+    ...(cData || []).map((p: any) => p.id)
   ]));
 
   const productsMap = new Map<string, any>();
@@ -183,55 +202,35 @@ export default async function LabJournalPage() {
 
   // --- Bundles ---
   let bundles: any[] = [];
-  try {
-    const { data: bData } = await service
-      .from('products')
-      .select('id, name, image_url, category, base_cost, unit_size, unit_measure, in_stock')
-      .eq('category', 'Peptide Stacks')
-      .eq('is_active', true)
-      .eq('is_banned', false);
-      
-    if (bData) {
-      bundles = bData.map((p: any) => ({
-        product_id: p.id,
-        name: p.name,
-        image_url: p.image_url,
-        category: p.category,
-        base_cost: p.base_cost,
-        retail_price: null,
-        in_stock: p.in_stock,
-        unit_size: p.unit_size,
-        unit_measure: p.unit_measure,
-      }));
-    }
-  } catch {}
+  if (bData) {
+    bundles = bData.map((p: any) => ({
+      product_id: p.id,
+      name: p.name,
+      image_url: p.image_url,
+      category: p.category,
+      base_cost: p.base_cost,
+      retail_price: priceMap.get(p.id)?.price ?? null,
+      in_stock: p.in_stock,
+      unit_size: p.unit_size,
+      unit_measure: p.unit_measure,
+    }));
+  }
 
-  
   // --- Catalog for Stack Builder ---
   let catalog: any[] = [];
-  try {
-    const { data: cData } = await service
-      .from('products')
-      .select('id, name, image_url, category, base_cost, unit_size, unit_measure, in_stock')
-      .neq('category', 'Peptide Stacks')
-      .eq('is_active', true)
-      .eq('is_banned', false)
-      .order('name');
-      
-    if (cData) {
-      catalog = cData.map((p: any) => ({
-        product_id: p.id,
-        name: p.name,
-        image_url: p.image_url,
-        category: p.category,
-        base_cost: p.base_cost,
-        retail_price: null,
-        in_stock: p.in_stock,
-        unit_size: p.unit_size,
-        unit_measure: p.unit_measure,
-      }));
-    }
-  } catch {}
+  if (cData) {
+    catalog = cData.map((p: any) => ({
+      product_id: p.id,
+      name: p.name,
+      image_url: p.image_url,
+      category: p.category,
+      base_cost: p.base_cost,
+      retail_price: priceMap.get(p.id)?.price ?? null,
+      in_stock: p.in_stock,
+      unit_size: p.unit_size,
+      unit_measure: p.unit_measure,
+    }));
+  }
 
   return (
     <div style={{ minHeight: '100dvh', background: 'var(--black)', padding: 'var(--space-6) var(--space-4)' }}>

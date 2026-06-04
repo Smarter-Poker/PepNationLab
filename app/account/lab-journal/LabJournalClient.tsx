@@ -56,10 +56,10 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
 
   // Check cart status
   useEffect(() => {
-    if (!storefrontSlug) return;
     const checkCart = () => {
       try {
-        const raw = localStorage.getItem(`pnl_storefront_cart_${storefrontSlug}`);
+        const storageKey = storefrontSlug ? `pnl_storefront_cart_${storefrontSlug}` : 'pnl_storefront_cart';
+        const raw = localStorage.getItem(storageKey);
         if (raw) {
           const parsed = JSON.parse(raw);
           const ids = new Set<string>((parsed.items || []).map((i: any) => i.id));
@@ -109,9 +109,8 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
   }
 
   function handleQuickAdd(item: Item, qty = 1, silent = false) {
-    if (!storefrontSlug) return;
     try {
-      const storageKey = `pnl_storefront_cart_${storefrontSlug}`;
+      const storageKey = storefrontSlug ? `pnl_storefront_cart_${storefrontSlug}` : 'pnl_storefront_cart';
       const rawCart = localStorage.getItem(storageKey);
       let pnlCart = { items: [] as any[], _savedAt: Date.now() };
       if (rawCart) {

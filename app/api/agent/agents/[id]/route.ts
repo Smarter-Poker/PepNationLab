@@ -117,6 +117,14 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ id: string
       .eq('is_sub_agent', true)
       .order('created_at', { ascending: false });
 
+    // Researchers of this agent
+    const { data: researchersRows } = await supabase
+      .from('profiles')
+      .select('id, full_name, username, email, created_at, is_active')
+      .eq('referring_agent_id', id)
+      .eq('role', 'researcher')
+      .order('created_at', { ascending: false });
+
     // Custom Gamification Ladder
     const { data: planData } = await supabase
       .from('sub_agent_commission_plan')
@@ -186,6 +194,14 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ id: string
         is_active: sa.is_active,
         commission_pct: sa.commission_pct != null ? num(sa.commission_pct) : null,
         created_at: sa.created_at,
+      })),
+      researchers: (researchersRows ?? []).map((r) => ({
+        id: r.id,
+        full_name: r.full_name,
+        username: r.username,
+        email: r.email,
+        is_active: r.is_active,
+        created_at: r.created_at,
       })),
     });
   } catch (err) {
