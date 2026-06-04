@@ -719,19 +719,46 @@ export default function AgentStorefrontGrid({
       const q = deferredSearch.trim().toLowerCase();
       if (!q) return { matches: true, score: 0 };
       
-      const tokens = q.split(/\s+/).filter(Boolean);
-      if (tokens.length === 0) return { matches: true, score: 0 };
+      const STOP_WORDS = new Set(['for', 'the', 'and', 'in', 'to', 'with', 'a', 'an', 'of', 'is', 'it', 'on', 'peptides', 'peptide', 'best']);
+      const SYNONYMS: Record<string, string[]> = {
+        fat: ['weight loss', 'lipolysis', 'obesity', 'adipose', 'slimming', 'lean', 'weight'],
+        muscle: ['hypertrophy', 'bodybuilding', 'mass', 'strength', 'growth', 'anabolic', 'gains'],
+        sleep: ['insomnia', 'circadian', 'rest', 'recovery', 'rem'],
+        pain: ['analgesic', 'inflammation', 'injury', 'healing', 'joint', 'tendon', 'nociception', 'soreness'],
+        brain: ['cognitive', 'nootropic', 'memory', 'focus', 'neuro', 'alzheimers', 'dementia', 'learning'],
+        skin: ['anti-aging', 'collagen', 'wrinkle', 'elasticity', 'hair', 'nail', 'glow'],
+        energy: ['stamina', 'endurance', 'fatigue', 'metabolism', 'mitochondrial'],
+        sugar: ['diabetes', 'insulin', 'glucose', 'glycemic', 'metabolic'],
+        heart: ['cardiovascular', 'blood', 'vascular', 'angiogenesis', 'cardiac'],
+        bone: ['osteoporosis', 'mineral', 'fracture', 'density', 'healing'],
+        sex: ['libido', 'erectile', 'aphrodisiac', 'testosterone', 'hormone', 'arousal'],
+        gut: ['digestion', 'ulcer', 'gastric', 'intestinal', 'microbiome', 'bowel', 'leaky', 'stomach'],
+        immune: ['immunity', 'infection', 'virus', 'bacteria', 'autoimmune', 'sick'],
+        stress: ['anxiety', 'cortisol', 'calm', 'relax', 'mood', 'depression', 'panic'],
+        aging: ['longevity', 'senescence', 'lifespan', 'youth', 'telomere', 'anti-aging'],
+      };
+
+      // Filter out stop words
+      const rawTokens = q.split(/\s+/).filter(t => t && !STOP_WORDS.has(t));
+      if (rawTokens.length === 0) return { matches: true, score: 0 };
 
       let totalScore = 0;
       let allTokensMatched = true;
 
-      for (const rawToken of tokens) {
+      for (const rawToken of rawTokens) {
         // Generate singular/plural variants for basic stemming
         const variants = [rawToken];
         if (rawToken.endsWith('ies')) variants.push(rawToken.slice(0, -3) + 'y');
         else if (rawToken.endsWith('es')) variants.push(rawToken.slice(0, -2));
         else if (rawToken.endsWith('s')) variants.push(rawToken.slice(0, -1));
         if (!rawToken.endsWith('s')) variants.push(rawToken + 's');
+        
+        // Add semantic synonyms to the variant list
+        for (const variant of [...variants]) {
+          if (SYNONYMS[variant]) {
+            variants.push(...SYNONYMS[variant]);
+          }
+        }
 
         let maxTokenScore = 0;
 
