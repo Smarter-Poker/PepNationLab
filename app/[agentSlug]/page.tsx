@@ -340,6 +340,11 @@ export default async function AgentStorefrontPage({ params }: Props) {
         />
       ) : null}
 
+      <style dangerouslySetInnerHTML={{ __html: `
+        @media (max-width: 600px) {
+          .sf-hero { display: none !important; }
+        }
+      `}} />
       <section
         className="sf-hero"
         style={{ background: `radial-gradient(ellipse at 50% 0%, ${primaryColor}10 0%, transparent 70%)` }}

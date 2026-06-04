@@ -1469,13 +1469,14 @@ export default function DiscoveryHero({
                 submitTypedGoal();
               }
             }}
-            placeholder="Ask Us Anything About The Peptides You Want To Research..."
+            placeholder="Ask Us Anything..."
             style={{
               width: '100%', height: '100%',
               background: 'transparent',
               border: 'none', outline: 'none', color: '#FFFFFF',
               fontSize: 'max(20px, 1.86vw)',
-              padding: '0 10px 2px 65px',
+              padding: '0 20px 2px 20px',
+              textAlign: 'center',
               fontWeight: 500,
               letterSpacing: '0.02em',
             }}
