@@ -181,6 +181,31 @@ export default async function LabJournalPage() {
     }
   } catch {}
 
+  // --- Bundles ---
+  let bundles: any[] = [];
+  try {
+    const { data: bData } = await service
+      .from('products')
+      .select('id, name, image_url, category, base_cost, unit_size, unit_measure, in_stock')
+      .eq('category', 'Peptide Stacks')
+      .eq('is_active', true)
+      .eq('is_banned', false);
+      
+    if (bData) {
+      bundles = bData.map((p: any) => ({
+        product_id: p.id,
+        name: p.name,
+        image_url: p.image_url,
+        category: p.category,
+        base_cost: p.base_cost,
+        retail_price: null,
+        in_stock: p.in_stock,
+        unit_size: p.unit_size,
+        unit_measure: p.unit_measure,
+      }));
+    }
+  } catch {}
+
   return (
     <div style={{ minHeight: '100dvh', background: 'var(--black)', padding: 'var(--space-6) var(--space-4)' }}>
       <div className="container" style={{ maxWidth: 1080 }}>
@@ -222,7 +247,8 @@ export default async function LabJournalPage() {
           favorites={favorites} 
           pastOrders={pastOrders} 
           recentlyViewed={recentlyViewed} 
-          trending={trending} 
+          trending={trending}
+          bundles={bundles}
           categories={categories}
           storefrontSlug={storefrontSlug} 
         />

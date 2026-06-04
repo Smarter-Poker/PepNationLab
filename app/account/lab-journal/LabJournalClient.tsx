@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useTransition, useEffect } from 'react';
-import { Heart, Trash2, ExternalLink, PackageOpen, History, LayoutGrid, List as ListIcon, Search, X, Check, ShoppingCart, Info, TrendingUp, XCircle } from 'lucide-react';
+import { Heart, Trash2, ExternalLink, PackageOpen, History, LayoutGrid, List as ListIcon, Search, X, Check, ShoppingCart, Info, TrendingUp, XCircle, Layers } from 'lucide-react';
 import Link from 'next/link';
 import { toast } from 'sonner';
 import { getProductImage } from '@/lib/categoryImage';
@@ -27,19 +27,20 @@ interface Props {
   favorites: Item[];
   pastOrders: Item[];
   recentlyViewed: Item[];
+  bundles: Item[];
   trending: { id: string; name: string; image_url: string | null; category: string | null; }[];
   categories: string[];
   storefrontSlug: string | null;
 }
 
-export default function LabJournalClient({ favorites: initialFavorites, pastOrders, recentlyViewed: initialRecentlyViewed, trending, categories, storefrontSlug }: Props) {
+export default function LabJournalClient({ favorites: initialFavorites, pastOrders, recentlyViewed: initialRecentlyViewed, bundles, trending, categories, storefrontSlug }: Props) {
   const [favorites, setFavorites] = useState<Item[]>(initialFavorites);
   const [recentlyViewed, setRecentlyViewed] = useState<Item[]>(initialRecentlyViewed);
   const [, startTransition] = useTransition();
   const [pendingId, setPendingId] = useState<string | null>(null);
   
   // UX Features State
-  const [activeTab, setActiveTab] = useState<'favorites' | 'recentlyViewed' | 'pastOrders'>('favorites');
+  const [activeTab, setActiveTab] = useState<'favorites' | 'recentlyViewed' | 'pastOrders' | 'bundles'>('favorites');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [searchQuery, setSearchQuery] = useState('');
   const [filterCategory, setFilterCategory] = useState('all');
@@ -161,7 +162,7 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
 
   function handleBulkAdd() {
     if (selectedItems.size === 0) return;
-    const baseItems = activeTab === 'favorites' ? favorites : activeTab === 'pastOrders' ? pastOrders : recentlyViewed;
+    const baseItems = activeTab === 'favorites' ? favorites : activeTab === 'pastOrders' ? pastOrders : activeTab === 'bundles' ? bundles : recentlyViewed;
     const toAdd = baseItems.filter(i => selectedItems.has(i.product_id) && i.in_stock !== false);
     if (toAdd.length === 0) return;
     
@@ -178,7 +179,7 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
   }
 
   // Derived Data
-  let currentItems = activeTab === 'favorites' ? favorites : activeTab === 'pastOrders' ? pastOrders : recentlyViewed;
+  let currentItems = activeTab === 'favorites' ? favorites : activeTab === 'pastOrders' ? pastOrders : activeTab === 'bundles' ? bundles : recentlyViewed;
 
   if (searchQuery) {
     const q = searchQuery.toLowerCase();
@@ -213,15 +214,18 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
         <Heart size={48} style={{ color: 'var(--teal)', marginBottom: 'var(--space-4)', opacity: 0.8 }} />
       ) : activeTab === 'pastOrders' ? (
         <PackageOpen size={48} style={{ color: 'var(--teal)', marginBottom: 'var(--space-4)', opacity: 0.8 }} />
+      ) : activeTab === 'bundles' ? (
+        <Layers size={48} style={{ color: 'var(--teal)', marginBottom: 'var(--space-4)', opacity: 0.8 }} />
       ) : (
         <History size={48} style={{ color: 'var(--teal)', marginBottom: 'var(--space-4)', opacity: 0.8 }} />
       )}
-      <h2 style={{ color: 'var(--white)', fontSize: '1.25rem', marginBottom: 'var(--space-2)' }}>
-        {activeTab === 'favorites' ? 'Your Wishlist Is Empty' : activeTab === 'pastOrders' ? 'No Past Orders Found' : 'Nothing Here Yet'}
+      <h2 style={{ color: 'var(--white)', fontSize: '1.25', marginBottom: 'var(--space-2)' }}>
+        {activeTab === 'favorites' ? 'Your Wishlist Is Empty' : activeTab === 'pastOrders' ? 'No Past Orders Found' : activeTab === 'bundles' ? 'No Bundles Found' : 'Nothing Here Yet'}
       </h2>
       <p style={{ color: 'var(--silver)', fontSize: '0.95rem', maxWidth: 400 }}>
         {activeTab === 'favorites' ? 'Tap the heart icon on any product to save it here for later.' : 
          activeTab === 'pastOrders' ? 'Items you purchase will appear here for easy re-ordering.' : 
+         activeTab === 'bundles' ? 'Bundles and stacks curated for optimal results will appear here.' :
          'Browse products on a storefront and they will magically appear here.'}
       </p>
       {storefrontSlug && (
@@ -351,7 +355,8 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
         {[
           { id: 'favorites', label: 'Saved Compounds', icon: Heart },
           { id: 'pastOrders', label: 'Buy It Again', icon: PackageOpen },
-          { id: 'recentlyViewed', label: 'Recently Viewed', icon: History }
+          { id: 'recentlyViewed', label: 'Recently Viewed', icon: History },
+          { id: 'bundles', label: 'Bundles & Stacks', icon: Layers }
         ].map(t => (
           <button
             key={t.id}
