@@ -92,7 +92,7 @@ export default function LandingSearchOverlay({
           ...formStyle,
         }}
       >
-        {!hideIcon && <Search size={20} color={(open || q.length > 0) ? "#A8B4C0" : "transparent"} />}
+        {!hideIcon && <Search size={20} color="#A8B4C0" />}
         <input
           type="text"
           value={q}
