@@ -8,7 +8,7 @@
 
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
-import { Search } from 'lucide-react';
+import { Search, Flame, Activity, Shield, Brain, Sparkles, GraduationCap, ArrowRight } from 'lucide-react';
 import {
   type Compound,
   EVIDENCE_TIER,
@@ -19,6 +19,8 @@ import {
 } from '@/lib/compounds';
 import PinToCompareButton from '@/components/research/PinToCompareButton';
 import ResearchCartButton from '@/components/research/ResearchCartButton';
+import InteractiveGlossaryText from './InteractiveGlossaryText';
+import HelpMeChooseWizard from './HelpMeChooseWizard';
 
 const ALL = 'all';
 
@@ -31,12 +33,39 @@ const selectStyle: React.CSSProperties = {
   fontSize: '0.9rem',
 };
 
+// Autocorrect / shorthand mapping helper
+function autocorrectSearch(input: string): string {
+  const norm = input.trim().toLowerCase();
+  const map: Record<string, string> = {
+    sema: 'semaglutide',
+    tirz: 'tirzepatide',
+    reta: 'retatrutide',
+    bpc157: 'bpc-157',
+    bpc: 'bpc-157',
+    tb500: 'tb-500',
+    tb: 'tb-500',
+  };
+  return map[norm] || input;
+}
+
+// Classify compound administration form
+function getCompoundForm(c: Compound): 'injection' | 'oral' | 'topical' | 'other' {
+  const form = (c.handling?.form || '').toLowerCase();
+  if (form.includes('capsule') || form.includes('oral') || form.includes('tablet')) return 'oral';
+  if (form.includes('cream') || form.includes('topical') || form.includes('nasal') || form.includes('spray') || form.includes('gel')) return 'topical';
+  if (form.includes('vial') || form.includes('powder') || form.includes('lyophilized') || form.includes('injection')) return 'injection';
+  return 'other';
+}
+
 export default function ResearchBrowser({ compounds }: { compounds: Compound[] }) {
   const [query, setQuery] = useState('');
   const [category, setCategory] = useState<string>(ALL);
   const [tier, setTier] = useState<string>(ALL);
   const [area, setArea] = useState<string>(ALL);
   const [wada, setWada] = useState<string>(ALL);
+  const [formFilter, setFormFilter] = useState<string>(ALL);
+  const [isEli5, setIsEli5] = useState(false);
+  const [isWizardOpen, setIsWizardOpen] = useState(false);
 
   const categories = useMemo(() => {
     const set = new Set<string>();
@@ -47,22 +76,289 @@ export default function ResearchBrowser({ compounds }: { compounds: Compound[] }
   }, [compounds]);
 
   const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
+    let q = query.trim().toLowerCase();
+    if (q) {
+      q = autocorrectSearch(q);
+    }
     return compounds.filter((c) => {
       if (q) {
-        const haystack = [c.display_name, ...(c.aliases ?? [])].join(' ').toLowerCase();
+        const haystack = [
+          c.display_name,
+          ...(c.aliases ?? []),
+          c.category ?? '',
+          ...(c.research_areas ?? []),
+        ].join(' ').toLowerCase();
         if (!haystack.includes(q)) return false;
       }
       if (category !== ALL && c.category !== category) return false;
       if (tier !== ALL && c.evidence_tier !== tier) return false;
       if (area !== ALL && !(c.research_areas ?? []).includes(area)) return false;
       if (wada !== ALL && c.wada_status !== wada) return false;
+
+      // Form filter matching
+      if (formFilter !== ALL) {
+        const cForm = getCompoundForm(c);
+        if (cForm !== formFilter) return false;
+      }
       return true;
     });
-  }, [compounds, query, category, tier, area, wada]);
+  }, [compounds, query, category, tier, area, wada, formFilter]);
+
+  const handleAreaToggle = (targetArea: string) => {
+    setArea((prev) => (prev === targetArea ? ALL : targetArea));
+  };
+
+  const handleWizardComplete = (wizardFilters: { area: string; form: string; wada: string }) => {
+    if (wizardFilters.area !== 'all') {
+      if (wizardFilters.area === 'healing') {
+        setArea('healing');
+      } else {
+        setArea(wizardFilters.area);
+      }
+    }
+    if (wizardFilters.form !== 'all') {
+      setFormFilter(wizardFilters.form);
+    }
+    if (wizardFilters.wada !== 'all') {
+      setWada(wizardFilters.wada);
+    }
+  };
+
+  // Helper to resolve card border based on WADA compliance
+  const getCardBorder = (status: string) => {
+    if (status === 'permitted') return '1px solid rgba(104, 211, 145, 0.4)';
+    if (status === 'prohibited') return '1px solid rgba(229, 62, 62, 0.4)';
+    if (status === 'prohibited_males') return '1px solid rgba(246, 173, 85, 0.4)';
+    return '1px solid rgba(255, 255, 255, 0.08)';
+  };
+
+  // Form badge coloring
+  const getFormBadgeStyle = (form: 'injection' | 'oral' | 'topical' | 'other'): React.CSSProperties => {
+    const base: React.CSSProperties = {
+      fontSize: '0.7rem',
+      fontWeight: 700,
+      textTransform: 'uppercase',
+      padding: '2px 8px',
+      borderRadius: '4px',
+    };
+    if (form === 'oral') {
+      return { ...base, background: 'rgba(214, 188, 250, 0.15)', color: '#D6BCFA', border: '1px solid rgba(214, 188, 250, 0.3)' };
+    }
+    if (form === 'topical') {
+      return { ...base, background: 'rgba(0, 196, 188, 0.15)', color: 'var(--teal, #00C4BC)', border: '1px solid rgba(0, 196, 188, 0.3)' };
+    }
+    if (form === 'injection') {
+      return { ...base, background: 'rgba(66, 153, 225, 0.15)', color: '#63B3ED', border: '1px solid rgba(66, 153, 225, 0.3)' };
+    }
+    return { ...base, background: 'rgba(255, 255, 255, 0.05)', color: 'var(--silver, #A8B4C0)', border: '1px solid rgba(255, 255, 255, 0.1)' };
+  };
+
+  // Dosing frequency badge coloring
+  const getDosingBadgeStyle = (freq: string): React.CSSProperties => {
+    const base: React.CSSProperties = {
+      fontSize: '0.7rem',
+      fontWeight: 700,
+      textTransform: 'uppercase',
+      padding: '2px 8px',
+      borderRadius: '4px',
+    };
+    const lower = freq.toLowerCase();
+    if (lower.includes('weekly') || lower.includes('week')) {
+      return { ...base, background: 'rgba(104, 211, 145, 0.15)', color: '#68D391', border: '1px solid rgba(104, 211, 145, 0.3)' };
+    }
+    if (lower.includes('daily') || lower.includes('day') || lower.includes('nightly')) {
+      return { ...base, background: 'rgba(246, 173, 85, 0.15)', color: '#F6AD55', border: '1px solid rgba(246, 173, 85, 0.3)' };
+    }
+    return { ...base, background: 'rgba(255, 255, 255, 0.05)', color: 'var(--silver, #A8B4C0)', border: '1px solid rgba(255, 255, 255, 0.1)' };
+  };
+
+  // Resolve dosing badge display string
+  const getDosingLabel = (freq: string): string => {
+    const lower = freq.toLowerCase();
+    if (lower.includes('weekly') || lower.includes('week')) return 'Once Weekly';
+    if (lower.includes('daily') || lower.includes('day') || lower.includes('nightly')) return 'Daily';
+    return freq;
+  };
+
+  // WADA badge coloring
+  const wadaBadgeStyle = (status: string): React.CSSProperties => {
+    if (status === 'permitted') {
+      return { color: '#68D391', border: '1px solid #68D391' };
+    }
+    if (status === 'prohibited') {
+      return { color: '#FC8181', border: '1px solid #FC8181' };
+    }
+    if (status === 'prohibited_males') {
+      return { color: '#F6AD55', border: '1px solid #F6AD55' };
+    }
+    return { color: '#A8B4C0', border: '1px solid rgba(168,180,192,0.3)' };
+  };
 
   return (
     <div>
+      {/* 5. First-Time Researcher Quick Start Guide Card */}
+      <div
+        className="glass-panel"
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '16px',
+          padding: '20px 24px',
+          borderRadius: 'var(--radius-lg, 12px)',
+          marginBottom: '28px',
+          background: 'linear-gradient(90deg, rgba(0, 196, 188, 0.06), rgba(22, 34, 48, 0.95))',
+          borderLeft: '4px solid var(--teal, #00C4BC)',
+        }}
+      >
+        <div
+          style={{
+            background: 'rgba(0, 196, 188, 0.1)',
+            padding: '12px',
+            borderRadius: '50%',
+            color: 'var(--teal, #00C4BC)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          <GraduationCap size={24} />
+        </div>
+        <div style={{ flex: 1 }}>
+          <h3 style={{ fontSize: '1rem', fontWeight: 800, margin: 0, color: 'var(--white, #FFFFFF)' }}>
+            New To Peptide Research?
+          </h3>
+          <p style={{ fontSize: '0.85rem', color: 'var(--silver, #A8B4C0)', margin: '4px 0 0 0' }}>
+            Check Out Our 60-Second Reconstitution Guide & Dose Calculator Before Selecting Your Compounds.
+          </p>
+        </div>
+        <Link
+          href="/research/calculators"
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '6px',
+            textDecoration: 'none',
+            fontSize: '0.85rem',
+            fontWeight: 700,
+            color: 'var(--teal, #00C4BC)',
+            padding: '8px 16px',
+            background: 'rgba(0,196,188,0.08)',
+            borderRadius: '6px',
+            transition: 'all 0.2s ease',
+          }}
+        >
+          Open Calculator Suite
+          <ArrowRight size={14} />
+        </Link>
+      </div>
+
+      {/* 1. Visual Intent Navigation (Body Goal Picker) */}
+      <section style={{ marginBottom: '28px' }}>
+        <h3 style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--silver, #A8B4C0)', marginBottom: '12px' }}>
+          Select A Research Goal
+        </h3>
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+            gap: '12px',
+          }}
+        >
+          <button
+            type="button"
+            onClick={() => handleAreaToggle('weight_management')}
+            style={{
+              padding: '16px',
+              borderRadius: 'var(--radius-md, 8px)',
+              background: area === 'weight_management' ? 'rgba(0, 196, 188, 0.15)' : 'rgba(22, 34, 48, 0.5)',
+              border: `1px solid ${area === 'weight_management' ? 'var(--teal, #00C4BC)' : 'rgba(255,255,255,0.06)'}`,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '12px',
+              textAlign: 'left',
+              transition: 'all 0.2s ease',
+            }}
+          >
+            <Flame size={20} color={area === 'weight_management' ? 'var(--teal, #00C4BC)' : 'var(--silver, #A8B4C0)'} />
+            <div>
+              <div style={{ fontWeight: 700, fontSize: '0.9rem', color: 'var(--white, #FFFFFF)' }}>Weight Loss & Belly Fat</div>
+              <div style={{ fontSize: '0.72rem', color: 'var(--silver, #A8B4C0)' }}>Filters To Weight Management</div>
+            </div>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => handleAreaToggle('performance')}
+            style={{
+              padding: '16px',
+              borderRadius: 'var(--radius-md, 8px)',
+              background: area === 'performance' ? 'rgba(0, 196, 188, 0.15)' : 'rgba(22, 34, 48, 0.5)',
+              border: `1px solid ${area === 'performance' ? 'var(--teal, #00C4BC)' : 'rgba(255,255,255,0.06)'}`,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '12px',
+              textAlign: 'left',
+              transition: 'all 0.2s ease',
+            }}
+          >
+            <Activity size={20} color={area === 'performance' ? 'var(--teal, #00C4BC)' : 'var(--silver, #A8B4C0)'} />
+            <div>
+              <div style={{ fontWeight: 700, fontSize: '0.9rem', color: 'var(--white, #FFFFFF)' }}>Muscle & Recovery</div>
+              <div style={{ fontSize: '0.72rem', color: 'var(--silver, #A8B4C0)' }}>Filters To Performance</div>
+            </div>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => handleAreaToggle('healing')}
+            style={{
+              padding: '16px',
+              borderRadius: 'var(--radius-md, 8px)',
+              background: area === 'healing' ? 'rgba(0, 196, 188, 0.15)' : 'rgba(22, 34, 48, 0.5)',
+              border: `1px solid ${area === 'healing' ? 'var(--teal, #00C4BC)' : 'rgba(255,255,255,0.06)'}`,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '12px',
+              textAlign: 'left',
+              transition: 'all 0.2s ease',
+            }}
+          >
+            <Shield size={20} color={area === 'healing' ? 'var(--teal, #00C4BC)' : 'var(--silver, #A8B4C0)'} />
+            <div>
+              <div style={{ fontWeight: 700, fontSize: '0.9rem', color: 'var(--white, #FFFFFF)' }}>Joint & Wound Healing</div>
+              <div style={{ fontSize: '0.72rem', color: 'var(--silver, #A8B4C0)' }}>Filters To Tissue Repair</div>
+            </div>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => handleAreaToggle('sleep')}
+            style={{
+              padding: '16px',
+              borderRadius: 'var(--radius-md, 8px)',
+              background: area === 'sleep' ? 'rgba(0, 196, 188, 0.15)' : 'rgba(22, 34, 48, 0.5)',
+              border: `1px solid ${area === 'sleep' ? 'var(--teal, #00C4BC)' : 'rgba(255,255,255,0.06)'}`,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '12px',
+              textAlign: 'left',
+              transition: 'all 0.2s ease',
+            }}
+          >
+            <Brain size={20} color={area === 'sleep' ? 'var(--teal, #00C4BC)' : 'var(--silver, #A8B4C0)'} />
+            <div>
+              <div style={{ fontWeight: 700, fontSize: '0.9rem', color: 'var(--white, #FFFFFF)' }}>Sleep & Mental Focus</div>
+              <div style={{ fontSize: '0.72rem', color: 'var(--silver, #A8B4C0)' }}>Filters To Sleep / Cognitive</div>
+            </div>
+          </button>
+        </div>
+      </section>
+
+      {/* Filter and Switch controls */}
       <div
         style={{
           display: 'flex',
@@ -104,6 +400,25 @@ export default function ResearchBrowser({ compounds }: { compounds: Compound[] }
             }}
           />
         </div>
+
+        {/* 6. Three-Question "Help Me Choose" Wizard Trigger */}
+        <button
+          type="button"
+          onClick={() => setIsWizardOpen(true)}
+          style={{
+            ...selectStyle,
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '6px',
+            background: 'linear-gradient(135deg, rgba(0, 196, 188, 0.2), rgba(22, 34, 48, 0.8))',
+            borderColor: 'var(--teal, #00C4BC)',
+            fontWeight: 700,
+            cursor: 'pointer',
+          }}
+        >
+          <Sparkles size={16} color="var(--teal, #00C4BC)" />
+          Help Me Choose
+        </button>
 
         <select
           aria-label="Filter By Category"
@@ -147,6 +462,19 @@ export default function ResearchBrowser({ compounds }: { compounds: Compound[] }
           ))}
         </select>
 
+        {/* Visual Form Filter select option */}
+        <select
+          aria-label="Filter By Form"
+          value={formFilter}
+          onChange={(e) => setFormFilter(e.target.value)}
+          style={selectStyle}
+        >
+          <option value={ALL}>All Forms</option>
+          <option value="injection">Injection (Vial)</option>
+          <option value="oral">Oral (Capsule)</option>
+          <option value="topical">Topical</option>
+        </select>
+
         <select
           aria-label="Filter By WADA Status"
           value={wada}
@@ -160,6 +488,53 @@ export default function ResearchBrowser({ compounds }: { compounds: Compound[] }
             </option>
           ))}
         </select>
+
+        {/* 2. Global "ELI5" (Plain English) Search Toggle */}
+        <div
+          style={{
+            display: 'flex',
+            border: '1px solid rgba(168, 180, 192, 0.25)',
+            borderRadius: 'var(--radius-md, 8px)',
+            padding: '2px',
+            background: 'var(--grey-400, #162230)',
+            marginLeft: 'auto',
+          }}
+        >
+          <button
+            type="button"
+            onClick={() => setIsEli5(true)}
+            style={{
+              padding: '6px 12px',
+              borderRadius: '6px',
+              border: 'none',
+              background: isEli5 ? 'var(--teal, #00C4BC)' : 'transparent',
+              color: isEli5 ? 'var(--black, #0C151D)' : 'var(--silver, #A8B4C0)',
+              fontSize: '0.8rem',
+              fontWeight: 700,
+              cursor: 'pointer',
+              transition: 'all 0.2s ease',
+            }}
+          >
+            Plain English / ELI5
+          </button>
+          <button
+            type="button"
+            onClick={() => setIsEli5(false)}
+            style={{
+              padding: '6px 12px',
+              borderRadius: '6px',
+              border: 'none',
+              background: !isEli5 ? 'var(--teal, #00C4BC)' : 'transparent',
+              color: !isEli5 ? 'var(--black, #0C151D)' : 'var(--silver, #A8B4C0)',
+              fontSize: '0.8rem',
+              fontWeight: 700,
+              cursor: 'pointer',
+              transition: 'all 0.2s ease',
+            }}
+          >
+            Technical / Scientific
+          </button>
+        </div>
       </div>
 
       <p
@@ -172,29 +547,122 @@ export default function ResearchBrowser({ compounds }: { compounds: Compound[] }
         Showing {filtered.length} {filtered.length === 1 ? 'Compound' : 'Compounds'}
       </p>
 
+      {/* 4. "No Results" Smart Recommendation Cards */}
       {filtered.length === 0 ? (
         <div
           className="glass-panel"
           style={{
-            padding: 'var(--space-6, 32px)',
+            padding: 'var(--space-6, 40px) var(--space-4, 24px)',
             textAlign: 'center',
             color: 'var(--silver, #A8B4C0)',
             borderRadius: 'var(--radius-lg, 12px)',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: '16px',
           }}
         >
-          No Compounds Match Your Filters. Try Broadening Your Search.
+          <div>We Couldn't Find A Direct Match. Try Searching For One Of Our Popular Research Goals:</div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', justifyContent: 'center' }}>
+            <button
+              onClick={() => {
+                setArea('weight_management');
+                setQuery('');
+                setCategory(ALL);
+                setTier(ALL);
+                setWada(ALL);
+                setFormFilter(ALL);
+              }}
+              style={{
+                background: 'rgba(0,196,188,0.1)',
+                border: '1px solid var(--teal, #00C4BC)',
+                color: 'var(--white, #FFFFFF)',
+                padding: '8px 16px',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                fontWeight: 700,
+              }}
+            >
+              Search: Fat Loss
+            </button>
+            <button
+              onClick={() => {
+                setArea('healing');
+                setQuery('');
+                setCategory(ALL);
+                setTier(ALL);
+                setWada(ALL);
+                setFormFilter(ALL);
+              }}
+              style={{
+                background: 'rgba(0,196,188,0.1)',
+                border: '1px solid var(--teal, #00C4BC)',
+                color: 'var(--white, #FFFFFF)',
+                padding: '8px 16px',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                fontWeight: 700,
+              }}
+            >
+              Search: Joint Repair
+            </button>
+            <button
+              onClick={() => {
+                setArea('sleep');
+                setQuery('');
+                setCategory(ALL);
+                setTier(ALL);
+                setWada(ALL);
+                setFormFilter(ALL);
+              }}
+              style={{
+                background: 'rgba(0,196,188,0.1)',
+                border: '1px solid var(--teal, #00C4BC)',
+                color: 'var(--white, #FFFFFF)',
+                padding: '8px 16px',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                fontWeight: 700,
+              }}
+            >
+              Search: Deep Sleep
+            </button>
+            <button
+              onClick={() => {
+                setArea('cosmetic');
+                setQuery('');
+                setCategory(ALL);
+                setTier(ALL);
+                setWada(ALL);
+                setFormFilter(ALL);
+              }}
+              style={{
+                background: 'rgba(0,196,188,0.1)',
+                border: '1px solid var(--teal, #00C4BC)',
+                color: 'var(--white, #FFFFFF)',
+                padding: '8px 16px',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                fontWeight: 700,
+              }}
+            >
+              Search: Skin Health
+            </button>
+          </div>
         </div>
       ) : (
         <div
           style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))',
+            gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))',
             gap: 'var(--space-4, 16px)',
           }}
         >
           {filtered.map((c) => {
             const t = evidenceTier(c.evidence_tier);
             const aliasLine = (c.aliases ?? []).slice(0, 3).join(', ');
+            const cForm = getCompoundForm(c);
+
             return (
               <div
                 key={c.slug}
@@ -207,6 +675,9 @@ export default function ResearchBrowser({ compounds }: { compounds: Compound[] }
                   borderRadius: 'var(--radius-lg, 12px)',
                   color: 'var(--white, #FFFFFF)',
                   height: '100%',
+                  /* 2. Dynamic WADA border compliance indicators */
+                  border: getCardBorder(c.wada_status),
+                  transition: 'transform 0.2s ease, box-shadow 0.2s ease',
                 }}
               >
                 <Link
@@ -220,28 +691,84 @@ export default function ResearchBrowser({ compounds }: { compounds: Compound[] }
                     flexGrow: 1,
                   }}
                 >
-                  <span
-                    style={{
-                      display: 'inline-flex',
-                      alignSelf: 'flex-start',
-                      alignItems: 'center',
-                      gap: '6px',
-                      fontSize: '0.7rem',
-                      fontWeight: 700,
-                      textTransform: 'uppercase',
-                      letterSpacing: '0.04em',
-                      color: t.color,
-                      border: `1px solid ${t.color}`,
-                      borderRadius: '999px',
-                      padding: '2px 10px',
-                    }}
-                  >
-                    {t.label}
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', alignItems: 'center' }}>
+                    <span
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        fontSize: '0.7rem',
+                        fontWeight: 700,
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.04em',
+                        color: t.color,
+                        border: `1px solid ${t.color}`,
+                        borderRadius: '999px',
+                        padding: '2px 10px',
+                      }}
+                    >
+                      {t.label}
+                    </span>
+
+                    {/* 1. Form badge */}
+                    {c.handling?.form && (
+                      <span style={getFormBadgeStyle(cForm)}>
+                        {cForm === 'injection'
+                          ? 'Injection (Vial)'
+                          : cForm === 'oral'
+                          ? 'Oral (Capsule)'
+                          : cForm === 'topical'
+                          ? 'Topical'
+                          : c.handling.form}
+                      </span>
+                    )}
+
+                    {/* 1. Dosing Complexity badge */}
+                    {c.typical_frequency && (
+                      <span style={getDosingBadgeStyle(c.typical_frequency)}>
+                        {getDosingLabel(c.typical_frequency)}
+                      </span>
+                    )}
+                  </div>
+
+                  <span style={{ fontSize: '1.05rem', fontWeight: 700, marginTop: '4px' }}>
+                    {c.display_name}
                   </span>
-                  <span style={{ fontSize: '1.05rem', fontWeight: 700 }}>{c.display_name}</span>
+
                   {aliasLine && (
-                    <span style={{ fontSize: '0.8rem', color: 'var(--silver, #A8B4C0)' }}>{aliasLine}</span>
+                    <span style={{ fontSize: '0.8rem', color: 'var(--silver, #A8B4C0)' }}>
+                      {aliasLine}
+                    </span>
                   )}
+
+                  {/* Description area based on isEli5 toggle */}
+                  <div style={{ fontSize: '0.85rem', color: 'var(--silver, #A8B4C0)', margin: '8px 0', lineHeight: '1.4' }}>
+                    {isEli5 ? (
+                      /* Plain English view */
+                      <InteractiveGlossaryText text={c.eli5_summary || c.plain_summary || c.mechanism || ''} />
+                    ) : (
+                      /* Technical view */
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        {c.mechanism && (
+                          <div>
+                            <strong style={{ color: 'var(--white, #FFFFFF)', display: 'block', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '2px' }}>
+                              Mechanism
+                            </strong>
+                            <InteractiveGlossaryText text={c.mechanism} />
+                          </div>
+                        )}
+                        {c.pk_summary && (
+                          <div>
+                            <strong style={{ color: 'var(--white, #FFFFFF)', display: 'block', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '2px' }}>
+                              Pharmacokinetics
+                            </strong>
+                            <InteractiveGlossaryText text={c.pk_summary} />
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
                   {c.category && (
                     <span
                       style={{
@@ -253,12 +780,68 @@ export default function ResearchBrowser({ compounds }: { compounds: Compound[] }
                       {c.category}
                     </span>
                   )}
+
+                  {/* 2. Dynamic WADA badge */}
                   {c.wada_status && c.wada_status !== 'not_listed' && (
-                    <span style={{ fontSize: '0.72rem', color: 'var(--silver, #A8B4C0)' }}>
+                    <span
+                      style={{
+                        alignSelf: 'flex-start',
+                        fontSize: '0.7rem',
+                        fontWeight: 700,
+                        textTransform: 'uppercase',
+                        padding: '2px 8px',
+                        borderRadius: '4px',
+                        marginTop: '4px',
+                        ...wadaBadgeStyle(c.wada_status),
+                      }}
+                    >
                       {wadaLabel(c.wada_status)}
                     </span>
                   )}
                 </Link>
+
+                {/* 4. Popular Pairing click shortcuts */}
+                {c.best_stacked_with && c.best_stacked_with.length > 0 && (
+                  (() => {
+                    const partnerSlug = c.best_stacked_with[0];
+                    const partner = compounds.find((x) => x.slug === partnerSlug);
+                    if (partner) {
+                      return (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            setQuery(partner.display_name);
+                            setCategory(ALL);
+                            setTier(ALL);
+                            setArea(ALL);
+                            setWada(ALL);
+                            setFormFilter(ALL);
+                          }}
+                          style={{
+                            background: 'rgba(255, 255, 255, 0.03)',
+                            border: '1px dashed rgba(255,255,255,0.1)',
+                            borderRadius: '6px',
+                            padding: '4px 8px',
+                            fontSize: '0.72rem',
+                            color: 'var(--teal, #00C4BC)',
+                            cursor: 'pointer',
+                            textAlign: 'left',
+                            marginTop: '6px',
+                            alignSelf: 'flex-start',
+                            fontWeight: 600,
+                            transition: 'all 0.2s ease',
+                          }}
+                        >
+                          Often Paired With {partner.display_name}
+                        </button>
+                      );
+                    }
+                    return null;
+                  })()
+                )}
+
                 <div
                   style={{
                     display: 'flex',
@@ -290,6 +873,13 @@ export default function ResearchBrowser({ compounds }: { compounds: Compound[] }
           })}
         </div>
       )}
+
+      {/* guided wizard dialog */}
+      <HelpMeChooseWizard
+        isOpen={isWizardOpen}
+        onClose={() => setIsWizardOpen(false)}
+        onComplete={handleWizardComplete}
+      />
     </div>
   );
 }
