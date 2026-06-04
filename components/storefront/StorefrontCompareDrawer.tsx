@@ -15,6 +15,7 @@ import { X, Scale, ChevronDown, ChevronRight, GripHorizontal, ChevronLeft, Thumb
 import { evidenceTier, type Compound, RISK_META, researchAreaLabel, wadaLabel } from '@/lib/compounds';
 import InCellGlossaryTooltip from '../research/InCellGlossaryTooltip';
 import AttributeRadarChart from '../research/AttributeRadarChart';
+import { scoreCompound, type CompoundScore } from '../research/CompareTool';
 
 interface PinnedItem {
   productName: string;
@@ -149,16 +150,11 @@ const KNOWN_SYNERGIES = [
 ];
 
 // ── Animated Score Ring ───────────────────────────────────────────────────────
-interface CompoundScore {
-  total: number;
-  letter: 'A+' | 'A' | 'B+' | 'B' | 'C+' | 'C' | 'D';
-  breakdown: { evidence: number; safety: number; coverage: number; science: number; handling: number };
-  verdict: string;
-}
-
 function AnimatedScoreRingDrawer({ score, color }: { score: CompoundScore; color: string }) {
   const [displayPct, setDisplayPct] = useState(0);
   const rafRef = useRef<number>(0);
+  const [showAudit, setShowAudit] = useState(false);
+
   useEffect(() => {
     const target = score.total;
     const duration = 900;
@@ -173,77 +169,162 @@ function AnimatedScoreRingDrawer({ score, color }: { score: CompoundScore; color
     rafRef.current = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(rafRef.current);
   }, [score.total]);
+
   const r = 32;
   const circ = 2 * Math.PI * r;
   const pct = (displayPct / 100) * circ;
   const gradeColor = score.letter.startsWith('A') ? '#68D391' : score.letter.startsWith('B') ? '#00C4BC' : score.letter.startsWith('C') ? '#F6AD55' : '#FC8181';
+
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 6 }}>
-      <div style={{ position: 'relative', width: 72, height: 72, flexShrink: 0 }}>
-        <svg width="72" height="72" viewBox="0 0 72 72">
-          <circle cx="36" cy="36" r={r} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="6" />
-          <circle cx="36" cy="36" r={r} fill="none" stroke={gradeColor} strokeWidth="6" strokeLinecap="round"
-            strokeDasharray={`${pct} ${circ}`} strokeDashoffset={circ / 4} />
-        </svg>
-        <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-          <span style={{ fontSize: '0.95rem', fontWeight: 900, color: gradeColor, lineHeight: 1 }}>{displayPct}</span>
-          <span style={{ fontSize: '0.5rem', color: gradeColor, opacity: 0.6 }}>/100</span>
+    <div style={{ position: 'relative' }}>
+      <div 
+        onClick={() => setShowAudit(prev => !prev)}
+        style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 6, cursor: 'pointer', padding: '4px', borderRadius: '6px', transition: 'background 0.2s', userSelect: 'none' }}
+        onMouseOver={e => e.currentTarget.style.background = 'rgba(255,255,255,0.03)'}
+        onMouseOut={e => e.currentTarget.style.background = 'transparent'}
+        title="Click to view score audit breakdown"
+      >
+        <div style={{ position: 'relative', width: 72, height: 72, flexShrink: 0 }}>
+          <svg width="72" height="72" viewBox="0 0 72 72">
+            <circle cx="36" cy="36" r={r} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="6" />
+            <circle cx="36" cy="36" r={r} fill="none" stroke={gradeColor} strokeWidth="6" strokeLinecap="round"
+              strokeDasharray={`${pct} ${circ}`} strokeDashoffset={circ / 4} />
+          </svg>
+          <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+            <span style={{ fontSize: '0.95rem', fontWeight: 900, color: gradeColor, lineHeight: 1 }}>{displayPct}</span>
+            <span style={{ fontSize: '0.5rem', color: gradeColor, opacity: 0.6 }}>/100</span>
+          </div>
         </div>
-      </div>
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontSize: '0.88rem', fontWeight: 900, color: gradeColor }}>Grade {score.letter}</div>
-        <div style={{ fontSize: '0.62rem', color: 'rgba(255,255,255,0.4)', marginBottom: 5 }}>{score.verdict}</div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-          {[['Ev', score.breakdown.evidence, 30], ['Sa', score.breakdown.safety, 25], ['Sc', score.breakdown.science, 15], ['Ha', score.breakdown.handling, 15]].map(([lbl, val, max]) => (
-            <div key={String(lbl)} style={{ display: 'flex', alignItems: 'center', gap: 3, fontSize: '0.58rem', color: 'rgba(255,255,255,0.35)' }}>
-              <span style={{ minWidth: 12 }}>{lbl}</span>
-              <div style={{ flex: 1, height: 2, background: 'rgba(255,255,255,0.06)', borderRadius: 999, overflow: 'hidden' }}>
-                <div style={{ height: '100%', width: `${(Number(val)/Number(max))*100}%`, background: color, borderRadius: 999 }} />
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: '0.88rem', fontWeight: 900, color: gradeColor }}>Grade {score.letter}</div>
+          <div style={{ fontSize: '0.62rem', color: 'rgba(255,255,255,0.4)', marginBottom: 5 }}>{score.verdict}</div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            {[['Ev', score.breakdown.evidence, 30], ['Sa', score.breakdown.safety, 25], ['Sc', score.breakdown.science, 15], ['Ha', score.breakdown.handling, 15]].map(([lbl, val, max]) => (
+              <div key={String(lbl)} style={{ display: 'flex', alignItems: 'center', gap: 3, fontSize: '0.58rem', color: 'rgba(255,255,255,0.35)' }}>
+                <span style={{ minWidth: 12 }}>{lbl}</span>
+                <div style={{ flex: 1, height: 2, background: 'rgba(255,255,255,0.06)', borderRadius: 999, overflow: 'hidden' }}>
+                  <div style={{ height: '100%', width: `${(Number(val)/Number(max))*100}%`, background: color, borderRadius: 999 }} />
+                </div>
+                <span style={{ minWidth: 14, textAlign: 'right', fontWeight: 700, color }}>{val}</span>
               </div>
-              <span style={{ minWidth: 14, textAlign: 'right', fontWeight: 700, color }}>{val}</span>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       </div>
+
+      {showAudit && (
+        <div style={{
+          position: 'absolute',
+          top: '78px',
+          left: 0,
+          right: 0,
+          background: 'linear-gradient(135deg, #162230, #0f1720)',
+          border: '1px solid rgba(0, 196, 188, 0.3)',
+          boxShadow: '0 8px 20px rgba(0,0,0,0.6)',
+          borderRadius: 8,
+          padding: 10,
+          zIndex: 500,
+          color: '#fff',
+          fontSize: '0.72rem',
+          lineHeight: 1.4
+        }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6, borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: 3 }}>
+            <span style={{ fontWeight: 800, color: '#00C4BC' }}>Score Audit</span>
+            <button onClick={(e) => { e.stopPropagation(); setShowAudit(false); }} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.5)', cursor: 'pointer', fontSize: '0.65rem', padding: 0 }}>Close</button>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+            <div>Evidence: {score.breakdown.evidence} / 30</div>
+            <div>Safety: {score.breakdown.safety} / 25</div>
+            <div>PubMed/Trials: {score.breakdown.science} / 15</div>
+            <div>Areas: {score.breakdown.coverage} / 15</div>
+            <div>Handling: {score.breakdown.handling} / 15</div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
 
-
-
-function scoreCompoundFromPinned(p: PinnedItem, compoundsBySlug: Record<string, Compound>): CompoundScore {
+function scoreCompoundFromPinned(p: PinnedItem, compoundsBySlug: Record<string, Compound>, allPinned: PinnedItem[] = []): CompoundScore {
   const c = p.compoundSlug ? compoundsBySlug[p.compoundSlug] : null;
-  const evidenceScore =
-    p.evidenceTierKey === 'approved_drug' ? 30 :
-    p.evidenceTierKey === 'investigational' ? 22 :
-    p.evidenceTierKey === 'preclinical' ? 14 :
-    p.evidenceTierKey === 'research_chemical' ? 6 : 3;
-  const safetyScore =
-    c?.risk_level === 'low' ? 25 :
-    c?.risk_level === 'moderate' ? 18 :
-    c?.risk_level === 'high' ? 9 :
-    c?.risk_level === 'critical' ? 2 : 10;
-  const areaCount = (c?.research_areas ?? []).length;
-  const coverageScore = Math.min(15, areaCount * 2.5);
-  const citeScore = Math.min(8, ((c?.pubmed_citation_count ?? 0) / 500) * 8);
-  const trialScore = Math.min(7, (((c?.active_trial_count ?? 0) + (c?.completed_trial_count ?? 0)) / 20) * 7);
-  const scienceScore = citeScore + trialScore;
-  const hlHours = (() => { if (!c?.half_life) return 0; const s = c.half_life.toLowerCase(); const m = s.match(/(\d+(?:\.\d+)?)/); if (!m) return 0; const n = parseFloat(m[1]); if (s.includes('min')) return n/60; if (s.includes('day')) return n*24; if (s.includes('week')) return n*24*7; return n; })();
-  const hlScore = hlHours > 0 ? Math.min(8, (hlHours / 168) * 8) : 2;
-  const shelfDays = c?.reconstitution_shelf_days ?? c?.handling?.reconstituted_days ?? 0;
-  const shelfScore = shelfDays > 0 ? Math.min(7, (shelfDays / 60) * 7) : 2;
-  const handlingScore = hlScore + shelfScore;
-  const total = Math.round(evidenceScore + safetyScore + coverageScore + scienceScore + handlingScore);
-  const letter: CompoundScore['letter'] = total >= 88 ? 'A+' : total >= 80 ? 'A' : total >= 73 ? 'B+' : total >= 65 ? 'B' : total >= 57 ? 'C+' : total >= 48 ? 'C' : 'D';
-  const dims = [
-    { name: 'evidence strength', val: evidenceScore / 30 },
-    { name: 'safety profile', val: safetyScore / 25 },
-    { name: 'research coverage', val: coverageScore / 15 },
-    { name: 'scientific backing', val: scienceScore / 15 },
-    { name: 'handling practicality', val: handlingScore / 15 },
-  ];
-  const topDim = [...dims].sort((a, b) => b.val - a.val)[0];
-  return { total, letter, breakdown: { evidence: Math.round(evidenceScore), safety: Math.round(safetyScore), coverage: Math.round(coverageScore), science: Math.round(scienceScore), handling: Math.round(handlingScore) }, verdict: `Leads in ${topDim.name}` };
+  if (!c) {
+    return {
+      total: 0,
+      letter: 'D',
+      breakdown: { evidence: 0, safety: 0, coverage: 0, science: 0, handling: 0 },
+      verdict: 'Unknown compound',
+      weaknesses: [],
+      strengths: [],
+      bestFor: [],
+      recommendedContexts: []
+    };
+  }
+  const allSelected = allPinned
+    .map(x => x.compoundSlug ? compoundsBySlug[x.compoundSlug] : null)
+    .filter(Boolean) as Compound[];
+  return scoreCompound(c, allSelected);
+}
+
+function getNumericValuePinned(rowLabel: string, p: PinnedItem, compoundsBySlug: Record<string, Compound>): number | null {
+  const c = p.compoundSlug ? compoundsBySlug[p.compoundSlug] : null;
+  if (!c) {
+    if (rowLabel === 'Price Per Vial') return p.pricePerVialDollars;
+    return null;
+  }
+  switch (rowLabel) {
+    case 'Price Per Vial':
+      return p.pricePerVialDollars;
+    case 'Molecular Weight':
+      return c.molecular_weight_da ?? (c.identity?.molecular_weight ? parseFloat(c.identity.molecular_weight) : null);
+    case 'Purity':
+      return c.purity_percentage ?? null;
+    case 'PubMed Citations':
+      return c.pubmed_citation_count ?? null;
+    case 'Clinical Trials':
+      return (c.active_trial_count ?? 0) + (c.completed_trial_count ?? 0);
+    case 'Reconstituted Shelf Life':
+      return c.reconstitution_shelf_days ?? c.handling?.reconstituted_days ?? null;
+    case 'Half-Life':
+      return parseHalfLifeHours(c.half_life);
+    default:
+      return null;
+  }
+}
+
+function renderRelativeDeltaPinned(
+  rowLabel: string,
+  p: PinnedItem,
+  control: PinnedItem,
+  compoundsBySlug: Record<string, Compound>
+): React.ReactNode {
+  if (p.compoundSlug && p.compoundSlug === control.compoundSlug) return null;
+  const currentVal = getNumericValuePinned(rowLabel, p, compoundsBySlug);
+  const controlVal = getNumericValuePinned(rowLabel, control, compoundsBySlug);
+  if (currentVal != null && controlVal != null) {
+    const diff = currentVal - controlVal;
+    if (diff === 0) return null;
+    const sign = diff > 0 ? '+' : '';
+    let color = diff > 0 ? '#68D391' : '#FF6B6B';
+    if (rowLabel === 'Price Per Vial') {
+      color = diff < 0 ? '#68D391' : '#FF6B6B';
+    }
+    let unit = '';
+    if (rowLabel === 'Molecular Weight') unit = ' Da';
+    else if (rowLabel === 'Purity') unit = '%';
+    else if (rowLabel === 'Half-Life') unit = 'h';
+    else if (rowLabel === 'Reconstituted Shelf Life') unit = ' Days';
+    else if (rowLabel === 'Price Per Vial') unit = '';
+
+    const formattedVal = rowLabel === 'Price Per Vial' ? `$${Math.abs(diff).toFixed(2)}` : Math.abs(diff).toLocaleString();
+    const diffSign = diff > 0 ? 'higher' : 'lower';
+
+    return (
+      <div style={{ fontSize: '0.7rem', color, fontWeight: 700, marginTop: 4 }}>
+        {formattedVal}{unit} {diffSign} vs control
+      </div>
+    );
+  }
+  return null;
 }
 
 // ── Pros/Cons Generator ──────────────────────────────────────────────────────
@@ -292,6 +373,8 @@ export default function StorefrontCompareDrawer({
   const [collapsed, setCollapsed] = useState(false);
   const [showMatrix, setShowMatrix] = useState(false);
   const [diffMode, setDiffMode] = useState(false);
+  const [controlSlug, setControlSlug] = useState<string | null>(null);
+  const [hideIdentical, setHideIdentical] = useState(false);
   
   // Accordion State
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
@@ -611,7 +694,7 @@ export default function StorefrontCompareDrawer({
     }), 0);
   }, [displayedPinned, compoundsBySlug]);
 
-  const pinnedScores = useMemo(() => pinned.map(p => scoreCompoundFromPinned(p, compoundsBySlug)), [pinned, compoundsBySlug]);
+  const pinnedScores = useMemo(() => pinned.map(p => scoreCompoundFromPinned(p, compoundsBySlug, pinned)), [pinned, compoundsBySlug]);
   const pinnedProsCons = useMemo(() => pinned.map(p => generateProsConsPinned(p, compoundsBySlug)), [pinned, compoundsBySlug]);
 
   const topPickIdx = useMemo(() => {
@@ -899,15 +982,26 @@ export default function StorefrontCompareDrawer({
               </h2>
               <div style={{ display: 'flex', alignItems: 'center', gap: 24, flexWrap: 'wrap' }}>
                 {pinned.length >= 2 && (
-                  <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', color: 'var(--silver)', fontSize: '0.85rem', fontWeight: 800, userSelect: 'none' }}>
-                    <input 
-                      type="checkbox" 
-                      checked={diffMode} 
-                      onChange={(e) => setDiffMode(e.target.checked)} 
-                      style={{ accentColor: primaryColor, width: 16, height: 16 }}
-                    />
-                    Highlight Differences
-                  </label>
+                  <>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', color: 'var(--silver)', fontSize: '0.85rem', fontWeight: 800, userSelect: 'none' }}>
+                      <input 
+                        type="checkbox" 
+                        checked={diffMode} 
+                        onChange={(e) => setDiffMode(e.target.checked)} 
+                        style={{ accentColor: primaryColor, width: 16, height: 16 }}
+                      />
+                      Highlight Differences
+                    </label>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', color: 'var(--silver)', fontSize: '0.85rem', fontWeight: 800, userSelect: 'none', marginLeft: 16 }}>
+                      <input 
+                        type="checkbox" 
+                        checked={hideIdentical} 
+                        onChange={(e) => setHideIdentical(e.target.checked)} 
+                        style={{ accentColor: primaryColor, width: 16, height: 16 }}
+                      />
+                      Hide Identical Attributes
+                    </label>
+                  </>
                 )}
                 <button
                   type="button"
@@ -1249,6 +1343,29 @@ export default function StorefrontCompareDrawer({
                               >
                                 Add To Cart
                               </button>
+                              {pinned.length >= 2 && (
+                                <button
+                                  type="button"
+                                  onClick={() => setControlSlug(p.compoundSlug === controlSlug ? null : p.compoundSlug)}
+                                  style={{
+                                    background: p.compoundSlug === controlSlug ? '#00C4BC' : 'rgba(255,255,255,0.06)',
+                                    border: '1px solid rgba(255,255,255,0.12)',
+                                    color: p.compoundSlug === controlSlug ? '#04221F' : '#A8B4C0',
+                                    borderRadius: 6,
+                                    padding: '4px 10px',
+                                    fontSize: '0.68rem',
+                                    fontWeight: 800,
+                                    cursor: 'pointer',
+                                    marginTop: 4,
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: 4,
+                                    width: 'fit-content'
+                                  }}
+                                >
+                                  {p.compoundSlug === controlSlug ? 'Baseline Control' : 'Set Baseline'}
+                                </button>
+                              )}
                             </div>
                           </th>
                         );
@@ -1256,92 +1373,127 @@ export default function StorefrontCompareDrawer({
                     </tr>
                   </thead>
                   <tbody>
-                    {ROWS.map((row, rIdx) => {
-                      if (row.kind === 'group') {
-                        const isCollapsed = collapsedGroups.has(row.label);
-                        return (
-                          <tr key={rIdx} onClick={() => toggleGroup(row.label)}>
-                            <td style={{ ...groupCellStyle, position: 'sticky', left: 0, zIndex: 10 }} colSpan={displayedPinned.length + 1}>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                                {isCollapsed ? <ChevronRight size={14} /> : <ChevronDown size={14} />}
-                                {row.label}
-                              </div>
-                            </td>
-                          </tr>
-                        );
-                      }
+                    {(() => {
+                      const visibleRows: typeof ROWS = [];
+                      let currentGroupRow: typeof ROWS[number] | null = null;
+                      let currentGroupHasChildren = false;
 
-                      // Check collapsed state for parent group
-                      let currentGroupLabel = '';
-                      for (let i = rIdx; i >= 0; i--) {
-                        if (ROWS[i].kind === 'group') {
-                          currentGroupLabel = ROWS[i].label;
-                          break;
-                        }
-                      }
-
-                      if (collapsedGroups.has(currentGroupLabel)) {
-                        return null;
-                      }
-
-                      // Check differences
-                      const values = displayedPinned.map(p => row.getValue(p));
-                      const allSame = values.every(v => v === values[0]);
-                      const isDiff = !allSame && displayedPinned.length > 1;
-
-                      const trStyle: React.CSSProperties = { transition: 'background 0.2s' };
-                      const tdLabelStyle: React.CSSProperties = { ...labelCellStyle, background: '#0F161E', transition: 'color 0.2s' };
-                      const valueCellStyle: React.CSSProperties = { ...cellStyle, transition: 'opacity 0.2s' };
-
-                      if (diffMode) {
-                        if (isDiff) {
-                          trStyle.background = `${primaryColor}15`;
-                          tdLabelStyle.background = `linear-gradient(${primaryColor}15, ${primaryColor}15), #0F161E`;
+                      for (const row of ROWS) {
+                        if (row.kind === 'group') {
+                          if (currentGroupRow && currentGroupHasChildren) {
+                            visibleRows.push(currentGroupRow);
+                          }
+                          currentGroupRow = row;
+                          currentGroupHasChildren = false;
                         } else {
-                          tdLabelStyle.color = 'rgba(168,180,192,0.3)';
-                          valueCellStyle.opacity = 0.3;
+                          const values = displayedPinned.map(p => row.getValue(p));
+                          const allSame = values.every(v => v === values[0]);
+                          const isVisible = !(hideIdentical && allSame && displayedPinned.length > 1);
+                          if (isVisible) {
+                            currentGroupHasChildren = true;
+                            visibleRows.push(row);
+                          }
                         }
                       }
-
-                      // Winner Engine Calculation
-                      const bestIndices: number[] = [];
-                      if (row.bestLogic && displayedPinned.length > 1 && !allSame) {
-                        const scores = displayedPinned.map(p => row.getRawScore ? row.getRawScore(p) : 0);
-                        const validScores = scores.filter(s => typeof s === 'number' && !isNaN(s) && s !== Infinity);
-                        if (validScores.length > 0) {
-                          const bestValue = row.bestLogic === 'max' ? Math.max(...validScores) : Math.min(...validScores);
-                          scores.forEach((s, idx) => {
-                            if (s === bestValue) bestIndices.push(idx);
-                          });
-                        }
+                      if (currentGroupRow && currentGroupHasChildren) {
+                        visibleRows.push(currentGroupRow);
                       }
 
-                      return (
-                        <tr key={rIdx} style={trStyle}>
-                          <td style={tdLabelStyle}>
-                            <div style={{ display: 'flex', alignItems: 'center' }}>
-                              {row.label}
-                              {row.glossaryTerm && <InCellGlossaryTooltip term={row.glossaryTerm} />}
-                            </div>
-                          </td>
-                          {displayedPinned.map((p, pIdx) => {
-                            const isWinner = bestIndices.includes(pIdx);
-                            return (
-                              <td key={p.productName} style={{ ...valueCellStyle, position: 'relative' }}>
-                                {isWinner && (
-                                  <div style={{ position: 'absolute', top: 4, right: 4, fontSize: '0.65rem', background: primaryColor, color: '#04221F', padding: '2px 6px', borderRadius: 4, fontWeight: 800, display: 'inline-flex', alignItems: 'center', gap: '2px' }}>
-                                    <Trophy size={9} /> Top Pick
-                                  </div>
-                                )}
-                                <div style={isWinner ? { borderLeft: `2px solid ${primaryColor}`, paddingLeft: 8, marginLeft: -10 } : {}}>
-                                  {row.render(p, maxHalfLife)}
+                      const controlPinned = displayedPinned.find(x => x.compoundSlug === controlSlug);
+
+                      return visibleRows.map((row) => {
+                        const rIdx = ROWS.indexOf(row);
+                        if (row.kind === 'group') {
+                          const isCollapsed = collapsedGroups.has(row.label);
+                          return (
+                            <tr key={rIdx} onClick={() => toggleGroup(row.label)}>
+                              <td style={{ ...groupCellStyle, position: 'sticky', left: 0, zIndex: 10 }} colSpan={displayedPinned.length + 1}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                  {isCollapsed ? <ChevronRight size={14} /> : <ChevronDown size={14} />}
+                                  {row.label}
                                 </div>
                               </td>
-                            )
-                          })}
-                        </tr>
-                      );
-                    })}
+                            </tr>
+                          );
+                        }
+
+                        // Check collapsed state for parent group
+                        let currentGroupLabel = '';
+                        for (let i = rIdx; i >= 0; i--) {
+                          if (ROWS[i].kind === 'group') {
+                            currentGroupLabel = ROWS[i].label;
+                            break;
+                          }
+                        }
+
+                        if (collapsedGroups.has(currentGroupLabel)) {
+                          return null;
+                        }
+
+                        // Check differences
+                        const values = displayedPinned.map(p => row.getValue(p));
+                        const allSame = values.every(v => v === values[0]);
+                        const isDiff = !allSame && displayedPinned.length > 1;
+
+                        if (hideIdentical && allSame && displayedPinned.length > 1) {
+                          return null;
+                        }
+
+                        const trStyle: React.CSSProperties = { transition: 'background 0.2s' };
+                        const tdLabelStyle: React.CSSProperties = { ...labelCellStyle, background: '#0F161E', transition: 'color 0.2s' };
+                        const valueCellStyle: React.CSSProperties = { ...cellStyle, transition: 'opacity 0.2s' };
+
+                        if (diffMode) {
+                          if (isDiff) {
+                            trStyle.background = `${primaryColor}15`;
+                            tdLabelStyle.background = `linear-gradient(${primaryColor}15, ${primaryColor}15), #0F161E`;
+                          } else {
+                            tdLabelStyle.color = 'rgba(168,180,192,0.3)';
+                            valueCellStyle.opacity = 0.3;
+                          }
+                        }
+
+                        // Winner Engine Calculation
+                        const bestIndices: number[] = [];
+                        if (row.bestLogic && displayedPinned.length > 1 && !allSame) {
+                          const scores = displayedPinned.map(p => row.getRawScore ? row.getRawScore(p) : 0);
+                          const validScores = scores.filter(s => typeof s === 'number' && !isNaN(s) && s !== Infinity);
+                          if (validScores.length > 0) {
+                            const bestValue = row.bestLogic === 'max' ? Math.max(...validScores) : Math.min(...validScores);
+                            scores.forEach((s, idx) => {
+                              if (s === bestValue) bestIndices.push(idx);
+                            });
+                          }
+                        }
+
+                        return (
+                          <tr key={rIdx} style={trStyle}>
+                            <td style={tdLabelStyle}>
+                              <div style={{ display: 'flex', alignItems: 'center' }}>
+                                {row.label}
+                                {row.glossaryTerm && <InCellGlossaryTooltip term={row.glossaryTerm} />}
+                              </div>
+                            </td>
+                            {displayedPinned.map((p, pIdx) => {
+                              const isWinner = bestIndices.includes(pIdx);
+                              return (
+                                <td key={p.productName} style={{ ...valueCellStyle, position: 'relative' }}>
+                                  {isWinner && (
+                                    <div style={{ position: 'absolute', top: 4, right: 4, fontSize: '0.65rem', background: primaryColor, color: '#04221F', padding: '2px 6px', borderRadius: 4, fontWeight: 800, display: 'inline-flex', alignItems: 'center', gap: '2px' }}>
+                                      <Trophy size={9} /> Top Pick
+                                    </div>
+                                  )}
+                                  <div style={isWinner ? { borderLeft: `2px solid ${primaryColor}`, paddingLeft: 8, marginLeft: -10 } : {}}>
+                                    {row.render(p, maxHalfLife)}
+                                    {controlPinned && renderRelativeDeltaPinned(row.label, p, controlPinned, compoundsBySlug)}
+                                  </div>
+                                </td>
+                              )
+                            })}
+                          </tr>
+                        );
+                      });
+                    })()}
                   </tbody>
                 </table>
               </div>}

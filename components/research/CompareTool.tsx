@@ -142,7 +142,7 @@ const KNOWN_SYNERGIES = [
 ];
 
 // ─── SCORING ENGINE ──────────────────────────────────────────────────────────
-interface CompoundScore {
+export interface CompoundScore {
   total: number;
   letter: 'A+' | 'A' | 'B+' | 'B' | 'C+' | 'C' | 'D';
   breakdown: { evidence: number; safety: number; coverage: number; science: number; handling: number };
@@ -153,7 +153,7 @@ interface CompoundScore {
   recommendedContexts: string[];
 }
 
-function scoreCompound(c: Compound, allSelected: Compound[]): CompoundScore {
+export function scoreCompound(c: Compound, allSelected: Compound[] = []): CompoundScore {
   const evidenceScore = c.evidence_tier === 'approved_drug' ? 30 : c.evidence_tier === 'investigational' ? 22 : c.evidence_tier === 'preclinical' ? 14 : c.evidence_tier === 'research_chemical' ? 6 : 3;
   const safetyScore = c.risk_level === 'low' ? 25 : c.risk_level === 'moderate' ? 18 : c.risk_level === 'high' ? 9 : c.risk_level === 'critical' ? 2 : 10;
   const areaCount = (c.research_areas ?? []).length;
@@ -1053,6 +1053,10 @@ export default function CompareTool({ compounds, initialSlugs = [] }: { compound
   });
 
   const [searchQuery, setSearchQuery] = useState('');
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const [diffMode, setDiffMode] = useState(false);
+  const [hideIdentical, setHideIdentical] = useState(false);
 
   const [activeTab, setActiveTab] = useState<'matrix' | 'proscons' | 'brief' | 'mechanism' | 'protocol' | 'recommend'>('matrix');
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
@@ -1255,6 +1259,10 @@ export default function CompareTool({ compounds, initialSlugs = [] }: { compound
             <label style={{ display: 'flex', alignItems: 'center', gap: 5, cursor: 'pointer', color: 'rgba(168,180,192,0.8)', fontSize: '0.8rem', fontWeight: 700, userSelect: 'none' }}>
               <input type="checkbox" checked={diffMode} onChange={e => setDiffMode(e.target.checked)} style={{ accentColor: '#00C4BC' }} />
               Diff Mode
+            </label>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 5, cursor: 'pointer', color: 'rgba(168,180,192,0.8)', fontSize: '0.8rem', fontWeight: 700, userSelect: 'none', marginLeft: 8 }}>
+              <input type="checkbox" checked={hideIdentical} onChange={e => setHideIdentical(e.target.checked)} style={{ accentColor: '#00C4BC' }} />
+              Hide Identical Attributes
             </label>
             <button type="button" onClick={handleExportCSV} style={{ display: 'flex', alignItems: 'center', gap: 5, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', borderRadius: 7, padding: '7px 12px', fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer' }}><Download size={13} /> CSV</button>
             <button type="button" onClick={handleExportJSON} style={{ display: 'flex', alignItems: 'center', gap: 5, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', borderRadius: 7, padding: '7px 12px', fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer' }}><Download size={13} /> JSON</button>
@@ -1566,6 +1574,8 @@ export default function CompareTool({ compounds, initialSlugs = [] }: { compound
                     const values = displayedSelected.map(c => row.getValue(c));
                     const allSame = values.every(v => v === values[0]);
                     const isDiff = !allSame && displayedSelected.length > 1;
+
+                    if (hideIdentical && allSame && displayedSelected.length > 1) return null;
 
                     const trStyle: React.CSSProperties = {};
                     const tdLabelStyle: React.CSSProperties = { ...labelCellStyle };

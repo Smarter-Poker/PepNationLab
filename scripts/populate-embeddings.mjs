@@ -126,13 +126,13 @@ async function main() {
       
       await updateEmbedding(product.id, embedding);
       success++;
-      console.log(`  ✅ ${product.name}`);
+      console.log(`  [SUCCESS] ${product.name}`);
       
       // Rate limiting: Google allows 1500 req/min on free tier, 
       // but embedding is per-request so add small delay
       await new Promise(r => setTimeout(r, 100));
     } catch (e) {
-      console.error(`  ❌ FAILED ${product.name}:`, e.message);
+      console.error(`  [FAILED] ${product.name}:`, e.message);
       failed++;
     }
   }

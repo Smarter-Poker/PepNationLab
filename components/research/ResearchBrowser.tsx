@@ -68,6 +68,7 @@ export default function ResearchBrowser({ compounds }: { compounds: Compound[] }
   const [prepFilter, setPrepFilter] = useState<string>(ALL);
   const [isEli5, setIsEli5] = useState(false);
   const [isWizardOpen, setIsWizardOpen] = useState(false);
+  const [wizardChoices, setWizardChoices] = useState<{ area: string; form: string; wada: string; budget: string; prep: string } | null>(null);
 
   const categories = useMemo(() => {
     const set = new Set<string>();
@@ -141,6 +142,7 @@ export default function ResearchBrowser({ compounds }: { compounds: Compound[] }
     setWada(wizardFilters.wada);
     setBudgetFilter(wizardFilters.budget);
     setPrepFilter(wizardFilters.prep);
+    setWizardChoices(wizardFilters);
   };
 
   // Helper to resolve card border based on WADA compliance
@@ -215,6 +217,97 @@ export default function ResearchBrowser({ compounds }: { compounds: Compound[] }
 
   return (
     <div>
+      {/* Guided Selection Wizard Recommendations */}
+      {wizardChoices && (
+        <div
+          className="glass-panel"
+          style={{
+            padding: '20px 24px',
+            borderRadius: 'var(--radius-lg, 12px)',
+            marginBottom: '28px',
+            background: 'linear-gradient(135deg, rgba(0, 196, 188, 0.08), rgba(22, 34, 48, 0.95))',
+            border: '1px solid rgba(0, 196, 188, 0.25)',
+            borderLeft: '4px solid var(--teal, #00C4BC)',
+          }}
+        >
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 12, marginBottom: 12 }}>
+            <div>
+              <h3 style={{ fontSize: '1rem', fontWeight: 800, margin: 0, color: 'var(--white, #FFFFFF)' }}>
+                Guided Recommendations
+              </h3>
+              <p style={{ fontSize: '0.82rem', color: 'rgba(255,255,255,0.6)', margin: '4px 0 0 0' }}>
+                Your Profile: {wizardChoices.area !== 'all' ? wizardChoices.area.replace('_', ' ') : 'All areas'} | {wizardChoices.form !== 'all' ? wizardChoices.form : 'All routes'} | {wizardChoices.budget !== 'all' ? wizardChoices.budget : 'All budgets'}
+              </p>
+            </div>
+            <button
+              onClick={() => {
+                setArea(ALL);
+                setFormFilter(ALL);
+                setWada(ALL);
+                setBudgetFilter(ALL);
+                setPrepFilter(ALL);
+                setWizardChoices(null);
+              }}
+              style={{
+                background: 'rgba(229, 62, 62, 0.1)',
+                border: '1px solid rgba(229, 62, 62, 0.3)',
+                color: '#FC8181',
+                padding: '6px 12px',
+                borderRadius: '6px',
+                fontSize: '0.78rem',
+                fontWeight: 700,
+                cursor: 'pointer'
+              }}
+            >
+              Clear Recommendation Profile
+            </button>
+          </div>
+          <div style={{ fontSize: '0.85rem', lineHeight: 1.5, color: 'var(--silver, #A8B4C0)' }}>
+            {wizardChoices.area === 'weight_management' && (
+              <div>
+                {wizardChoices.budget === 'conservative' ? (
+                  <div>
+                    We recommend evaluating <strong>AOD-9604</strong> (highly target lipolytic fragment) or <strong>5-Amino-1MQ</strong> (oral NNMT inhibitor designed to increase cellular energy metabolism and reduce adipose accumulation without affecting appetite).
+                  </div>
+                ) : (
+                  <div>
+                    We recommend evaluating <strong>Tirzepatide</strong> (dual GLP-1/GIP receptor agonist) or <strong>Retatrutide</strong> (triple GLP-1/GIP/GCGR agonist). These represent the current state-of-the-art in incretin hormone receptor agonist research with the highest clinical weight management efficacy profiles.
+                  </div>
+                )}
+              </div>
+            )}
+            {wizardChoices.area === 'healing' && (
+              <div>
+                {wizardChoices.form === 'oral' ? (
+                  <div>
+                    We recommend evaluating <strong>BPC-157 Gastric-Stable Oral</strong> form. It maintains structural stability under gastric juices and local tissue repair pathways.
+                  </div>
+                ) : (
+                  <div>
+                    We recommend evaluating the dual-mechanism stacking protocol of <strong>BPC-157</strong> and <strong>TB-500</strong>. BPC-157 accelerates tissue granulation and tendon-to-bone healing, while TB-500 promotes cell migration and actin polymerization to accelerate recovery.
+                  </div>
+                )}
+              </div>
+            )}
+            {wizardChoices.area === 'longevity' && (
+              <div>
+                We recommend evaluating <strong>Epithalon</strong> (telomerase activator and pineal gland regulator) or the mitochondrial stacking combination of <strong>MOTS-c</strong> and <strong>SS-31</strong> to target inner cardiolipin membrane stabilization.
+              </div>
+            )}
+            {wizardChoices.area === 'sleep' && (
+              <div>
+                We recommend evaluating <strong>DSIP</strong> (Delta Sleep-Inducing Peptide) for targeting deep-wave EEG sleep states or <strong>Epithalon</strong> for its circadian rhythm melatonin restoration properties.
+              </div>
+            )}
+            {wizardChoices.area === 'all' && (
+              <div>
+                Evaluate the filtered list of compounds below matching your chosen route and budget parameters. Use the Pin to Compare action to compare up to 4 compounds side-by-side.
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* 5. First-Time Researcher Quick Start Guide Card */}
       <div
         className="glass-panel"
