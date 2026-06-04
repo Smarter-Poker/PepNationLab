@@ -21,6 +21,16 @@ const nextConfig = {
         destination: "https://pepnationlab.com/:path*",
         permanent: true,
       },
+      {
+        source: "/account/wishlist",
+        destination: "/account/lab-journal",
+        permanent: true,
+      },
+      {
+        source: "/account/recently-viewed",
+        destination: "/account/lab-journal",
+        permanent: true,
+      },
     ];
   },
   async headers() {

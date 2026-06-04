@@ -1,12 +1,12 @@
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { createClient, createServiceClient } from '@/lib/supabase/server';
-import { Heart, ArrowLeft, Bookmark, History, Bell, ShieldCheck, Gift } from 'lucide-react';
-import WishlistClient from './WishlistClient';
+import { Heart, Bell, ShieldCheck, Gift } from 'lucide-react';
+import LabJournalClient from './LabJournalClient';
 
 export const dynamic = 'force-dynamic';
 
-export default async function WishlistPage() {
+export default async function LabJournalPage() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect('/login');
@@ -31,6 +31,7 @@ export default async function WishlistPage() {
     storefrontSlug = agentRow?.slug ?? null;
   }
 
+  // --- Fetch Wishlist and Past Orders ---
   const { data: favRows } = await service
     .from('researcher_favorites')
     .select('product_id, created_at')
@@ -59,7 +60,27 @@ export default async function WishlistPage() {
     }
   }
 
-  const allProductIds = Array.from(new Set([...favProductIds, ...pastOrderProducts.keys()]));
+  // --- Fetch Recently Viewed ---
+  const { data: recentRows } = await service
+    .from('researcher_recently_viewed')
+    .select('product_id, agent_id, viewed_at')
+    .eq('user_id', user.id)
+    .order('viewed_at', { ascending: false })
+    .limit(50);
+
+  const recentlyViewedProducts = new Map<string, string>(); // product_id -> viewed_at
+  for (const r of recentRows ?? []) {
+    if (r.product_id && !recentlyViewedProducts.has(r.product_id)) {
+      recentlyViewedProducts.set(r.product_id, r.viewed_at);
+    }
+  }
+
+  // Collect ALL product IDs to fetch from master table
+  const allProductIds = Array.from(new Set([
+    ...favProductIds,
+    ...pastOrderProducts.keys(),
+    ...recentlyViewedProducts.keys()
+  ]));
 
   const productsMap = new Map<string, any>();
   if (allProductIds.length > 0) {
@@ -80,7 +101,6 @@ export default async function WishlistPage() {
       .eq('agent_id', referringAgentId)
       .in('product_id', allProductIds);
     for (const ap of agentProducts ?? []) {
-      // retail_price is stored as a 10-pack price. Divide by 10 for per-vial display.
       const rawPrice = ap.is_on_sale && ap.sale_price != null ? Number(ap.sale_price) : Number(ap.retail_price);
       const price = rawPrice / 10;
       if (Number.isFinite(price) && price > 0) priceMap.set(ap.product_id, price);
@@ -110,17 +130,49 @@ export default async function WishlistPage() {
     .filter(({ p }) => p && p.is_active && !p.is_banned)
     .map(({ p, date }) => mapToItem(p, { last_purchased_date: date }));
 
+  const recentlyViewed = Array.from(recentlyViewedProducts.entries())
+    .map(([id, date]) => ({ p: productsMap.get(id), date }))
+    .filter(({ p }) => p && p.is_active && !p.is_banned)
+    .map(({ p, date }) => mapToItem(p, { viewed_at: date }));
+
+  // --- Trending Now ---
+  const trending: any[] = [];
+  try {
+    const { data: pop } = await service
+      .from('product_popular_60d')
+      .select('product_id, units')
+      .order('units', { ascending: false })
+      .limit(24);
+    const popIds = ((pop ?? []) as Array<{ product_id: string }>).map(r => r.product_id);
+    if (popIds.length > 0) {
+      const { data: prods } = await service
+        .from('products')
+        .select('id, name, image_url, category, is_active, is_banned')
+        .in('id', popIds);
+      const byId = new Map<string, any>();
+      for (const p of prods ?? []) {
+        if (p.is_active === false || p.is_banned === true) continue;
+        byId.set(p.id, { id: p.id, name: p.name, image_url: p.image_url, category: p.category });
+      }
+      for (const pid of popIds) {
+        if (trending.length >= 8) break;
+        const row = byId.get(pid);
+        if (row) trending.push(row);
+      }
+    }
+  } catch {}
+
   return (
     <div style={{ minHeight: '100dvh', background: 'var(--black)', padding: 'var(--space-6) var(--space-4)' }}>
       <div className="container" style={{ maxWidth: 1080 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', marginBottom: 'var(--space-2)' }}>
           <Heart size={22} aria-hidden="true" style={{ color: 'var(--teal)' }} />
           <h1 className="animated-gradient-text" style={{ color: 'var(--white)', fontSize: '1.6rem', fontFamily: 'var(--font-brand)' }}>
-            Favorites & Past Orders
+            Lab Journal
           </h1>
         </div>
         <p style={{ color: 'var(--silver)', fontSize: '0.92rem', marginBottom: 'var(--space-6)' }}>
-          Products You Have Saved For Later Or Previously Ordered.
+          Your Saved Compounds, Browsing History, And Past Orders All In One Place.
         </p>
 
         <div
@@ -131,14 +183,6 @@ export default async function WishlistPage() {
             marginBottom: 'var(--space-6)',
           }}
         >
-          <Link href="/account/wishlist" className="btn btn-secondary btn-sm" style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-            <Bookmark size={12} aria-hidden="true" />
-            Saved Items
-          </Link>
-          <Link href="/account/recently-viewed" className="btn btn-ghost btn-sm" style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-            <History size={12} aria-hidden="true" />
-            Recently Viewed
-          </Link>
           <Link href="/account/notifications" className="btn btn-ghost btn-sm" style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
             <Bell size={12} aria-hidden="true" />
             Notifications
@@ -155,13 +199,19 @@ export default async function WishlistPage() {
           )}
         </div>
 
-        <WishlistClient favorites={favorites} pastOrders={pastOrders} storefrontSlug={storefrontSlug} />
+        <LabJournalClient 
+          favorites={favorites} 
+          pastOrders={pastOrders} 
+          recentlyViewed={recentlyViewed} 
+          trending={trending} 
+          storefrontSlug={storefrontSlug} 
+        />
       </div>
     </div>
   );
 }
 
 export const metadata = {
-  title: 'Favorites & Past Orders | Pep Nation Lab',
+  title: 'Lab Journal | Pep Nation Lab',
   robots: { index: false, follow: false },
 };

@@ -84,8 +84,7 @@ export default async function AccountHubPage() {
   // (no timing gap) regardless of which role-gated rows are present.
   const rows: Array<{ href: string; label: string; description: string; Icon: NavRowProps['Icon'] }> = [
     { href: '/account/profile', label: 'Profile', description: 'Your Name, Avatar, Username, And Contact Details.', Icon: User },
-    { href: '/account/wishlist', label: 'Wishlist', description: 'Products You Saved For Later.', Icon: Heart },
-    { href: '/account/recently-viewed', label: 'Recently Viewed', description: 'The Last 50 Products You Browsed.', Icon: History },
+    { href: '/account/lab-journal', label: 'Lab Journal', description: 'Your Saved Compounds, Browsing History, And Past Orders.', Icon: Heart },
     { href: '/account/refills', label: 'Order History And Reorders', description: 'Browse Past Orders And Reorder In One Tap.', Icon: RotateCcw },
     { href: '/research', label: 'Research Library', description: 'Mechanism, Evidence, Storage, And Safety For Every Compound.', Icon: FlaskConical },
     { href: '/account/shelf-life', label: 'Reconstitution & Shelf Life', description: 'Log Reconstitution Dates And Track Remaining Shelf Life.', Icon: Clock },
