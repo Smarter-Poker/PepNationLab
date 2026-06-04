@@ -40,9 +40,11 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
   const [recentlyViewed, setRecentlyViewed] = useState<Item[]>(initialRecentlyViewed);
   const [, startTransition] = useTransition();
   const [pendingId, setPendingId] = useState<string | null>(null);
+  const [helpfulData, setHelpfulData] = useState<any>(null);
+  const [notes, setNotes] = useState<any[]>([]);
   
   // UX Features State
-  const [activeTab, setActiveTab] = useState<'favorites' | 'recentlyViewed' | 'pastOrders' | 'bundles'>('favorites');
+  const [activeTab, setActiveTab] = useState<'bundles' | 'favorites' | 'recentlyViewed' | 'pastOrders' | 'compareHistory' | 'notes'>('bundles');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [searchQuery, setSearchQuery] = useState('');
   const [filterCategory, setFilterCategory] = useState('all');
@@ -71,6 +73,19 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
     window.addEventListener('storage', checkCart);
     return () => window.removeEventListener('storage', checkCart);
   }, [storefrontSlug]);
+
+  // Fetch helpful data and notes
+  useEffect(() => {
+    fetch('/api/researcher/helpful-data')
+      .then(res => res.json())
+      .then(data => { if (data.helpfulData) setHelpfulData(data.helpfulData); })
+      .catch(console.error);
+
+    fetch('/api/researcher/notes')
+      .then(res => res.json())
+      .then(data => { if (data.notes) setNotes(data.notes); })
+      .catch(console.error);
+  }, []);
 
   async function removeItem(productId: string) {
     setPendingId(productId);
@@ -181,7 +196,7 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
   }
 
   // Derived Data
-  let currentItems = activeTab === 'favorites' ? favorites : activeTab === 'pastOrders' ? pastOrders : activeTab === 'bundles' ? bundles : recentlyViewed;
+  let currentItems = activeTab === 'favorites' ? favorites : activeTab === 'pastOrders' ? pastOrders : activeTab === 'bundles' ? bundles : activeTab === 'recentlyViewed' ? recentlyViewed : [];
 
   if (searchQuery) {
     const q = searchQuery.toLowerCase();
@@ -226,8 +241,10 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
       </h2>
       <p style={{ color: 'var(--silver)', fontSize: '0.95rem', maxWidth: 400 }}>
         {activeTab === 'favorites' ? 'Tap the heart icon on any product to save it here for later.' : 
-         activeTab === 'pastOrders' ? 'Items you purchase will appear here for easy re-ordering.' : 
+         activeTab === 'pastOrders' ? 'Items you purchase will appear here. Also checkout the helpful data for your past purchases.' : 
          activeTab === 'bundles' ? 'Bundles and stacks curated for optimal results will appear here.' :
+         activeTab === 'compareHistory' ? 'Compounds you have compared will appear here.' :
+         activeTab === 'notes' ? 'Your personal lab journal notes will appear here.' :
          'Browse products on a storefront and they will magically appear here.'}
       </p>
       {storefrontSlug && (
@@ -355,10 +372,12 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
       {/* Top Tabs */}
       <div style={{ display: 'flex', gap: 'var(--space-2)', marginBottom: 'var(--space-4)', borderBottom: '1px solid rgba(255,255,255,0.1)', overflowX: 'auto', paddingBottom: 'var(--space-2)' }}>
         {[
+          { id: 'bundles', label: 'Bundles & Stacks', icon: Layers },
           { id: 'favorites', label: 'Saved Compounds', icon: Heart },
-          { id: 'pastOrders', label: 'Buy It Again', icon: PackageOpen },
+          { id: 'pastOrders', label: 'Helpful Data & Orders', icon: PackageOpen },
           { id: 'recentlyViewed', label: 'Recently Viewed', icon: History },
-          { id: 'bundles', label: 'Bundles & Stacks', icon: Layers }
+          { id: 'compareHistory', label: 'Compare History', icon: Search },
+          { id: 'notes', label: 'My Notes', icon: Info }
         ].map(t => (
           <button
             key={t.id}
@@ -441,8 +460,40 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
             </div>
           </div>
 
-          {currentItems.length === 0 ? renderEmptyState() : (
+          {currentItems.length === 0 && activeTab !== 'notes' && activeTab !== 'compareHistory' ? renderEmptyState() : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
+              {activeTab === 'pastOrders' && helpfulData && (
+                <div className="glass-panel" style={{ padding: 'var(--space-4)', borderRadius: 'var(--radius-lg)' }}>
+                  <h3 style={{ color: 'var(--teal)', marginBottom: 'var(--space-2)' }}>Personalized Research Insights</h3>
+                  <p style={{ color: 'var(--silver)', marginBottom: 'var(--space-4)' }}>{helpfulData.message}</p>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 'var(--space-3)' }}>
+                    {helpfulData.insights?.map((insight: any, i: number) => (
+                      <div key={i} style={{ background: 'rgba(255,255,255,0.05)', padding: 'var(--space-3)', borderRadius: 'var(--radius-md)' }}>
+                        <div style={{ color: 'var(--white)', fontWeight: 'bold', marginBottom: 'var(--space-1)' }}>{insight.compoundName}</div>
+                        <div style={{ color: 'var(--silver)', fontSize: '0.85rem' }}>{insight.insightText}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {activeTab === 'notes' ? (
+                <div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
+                    {notes.length === 0 ? renderEmptyState() : notes.map(n => (
+                      <div key={n.id} className="glass-panel" style={{ padding: 'var(--space-4)', borderRadius: 'var(--radius-lg)' }}>
+                        <h3 style={{ color: 'var(--white)' }}>{n.title || 'Journal Entry'}</h3>
+                        <p style={{ color: 'var(--silver)', whiteSpace: 'pre-wrap', marginTop: 'var(--space-2)' }}>{n.note_text}</p>
+                        <div style={{ marginTop: 'var(--space-3)', fontSize: '0.75rem', color: 'var(--silver)' }}>
+                          {new Date(n.updated_at).toLocaleDateString()}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : activeTab === 'compareHistory' ? (
+                renderEmptyState() /* Placeholder until Compare History is fully wired to API */
+              ) : (
+                <>
               {activeTab === 'recentlyViewed' && recentlyViewed.length > 0 && !searchQuery && (
                 <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '-var(--space-4)' }}>
                   <button onClick={clearRecentlyViewed} className="btn btn-ghost btn-sm" style={{ color: 'var(--silver)', fontSize: '0.8rem', padding: '4px 12px' }}>Clear History</button>
@@ -471,6 +522,8 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
                   </div>
                 </div>
               ))}
+              </>
+            )}
             </div>
           )}
         </>
