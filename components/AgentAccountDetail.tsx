@@ -4,6 +4,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { toast } from 'sonner';
 import { freshDefaultLadder, isDefaultLadder } from '@/lib/gamification';
 import AgentFreezeToggle from '@/components/AgentFreezeToggle';
+import AdminTierOverrideControl from '@/components/AdminTierOverrideControl';
 
 /**
  * AgentAccountDetail — full management drawer for a single downline FULL agent.
@@ -395,7 +396,12 @@ export default function AgentAccountDetail({
                       )}
                     </div>
 
-                    <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                    <div style={{ marginTop: 'var(--space-4)', padding: 'var(--space-3)', background: 'var(--surface-2)', borderRadius: 8, border: '1px solid rgba(255,255,255,0.05)' }}>
+                      <label style={{ ...labelStyle, marginBottom: 8, display: 'block' }}>Global Pricing Override</label>
+                      <AdminTierOverrideControl agentId={agentId} />
+                    </div>
+
+                    <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 'var(--space-4)' }}>
                       <button type="button" className="btn-neon-cyan" disabled={saving} onClick={saveChanges}>
                         {saving ? 'Saving...' : 'Save Changes'}
                       </button>

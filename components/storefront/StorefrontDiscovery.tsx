@@ -125,22 +125,22 @@ const EXAMPLE_GOALS: ReadonlyArray<{ label: string; goal: string }> = [
 ] as const;
 
 const RESEARCH_AREA_LABELS: Record<string, string> = {
-  weight_management:   'Weight Management',
-  metabolic:           'Metabolic & Glucose',
-  healing:             'Recovery & Healing',
-  tissue_repair:       'Tendon & Tissue Repair',
-  longevity:           'Anti-Aging & Longevity',
+  weight_management:   'Weight Management\n& Fat Loss',
+  metabolic:           'Metabolic',
+  healing:             'Healing & Recovery',
+  tissue_repair:       'Tissue Repair',
+  longevity:           'Longevity',
   cosmetic:            'Skin & Hair',
-  cognitive:           'Cognitive & Focus',
-  sleep:               'Sleep & Circadian',
-  immune:              'Immune Support',
+  cognitive:           'Cognitive',
+  sleep:               'Sleep',
+  immune:              'Immune',
   hormonal:            'Hormonal Balance',
   gut_health:          'Gut Health',
   pain_inflammation:   'Pain & Inflammation',
-  bone_joint:          'Bone & Joint',
+  bone_joint:          'Joint & Bone Health',
   sexual_health:       'Sexual Health',
   cardiovascular:      'Cardiovascular',
-  muscle_growth:       'Muscle Growth',
+  muscle_growth:       'Muscle Building',
 };
 
 function labelForArea(area: string): string {
@@ -1541,9 +1541,26 @@ export default function DiscoveryHero({
                 >
                   <img 
                     src={`/images/areas/${area}.png`} 
-                    alt={labelForArea(area)} 
+                    alt={labelForArea(area).replace('\n', ' ')} 
                     style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
                   />
+                  <div style={{
+                    position: 'absolute',
+                    bottom: '6%',
+                    left: 0,
+                    right: 0,
+                    textAlign: 'center',
+                    color: '#FFF',
+                    fontWeight: 800,
+                    fontSize: 'clamp(11px, 1.3vw, 15px)',
+                    textShadow: '0px 2px 4px rgba(0,0,0,0.9), 0px 1px 2px rgba(0,0,0,0.9)',
+                    lineHeight: 1.1,
+                    padding: '0 4px',
+                  }}>
+                    {labelForArea(area).split('\n').map((line, i) => (
+                      <div key={i}>{line}</div>
+                    ))}
+                  </div>
                 </button>
               ))}
             </div>
