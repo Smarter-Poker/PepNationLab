@@ -4,6 +4,7 @@ import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import Link from 'next/link';
 import { toTitleCase } from '@/lib/categoryImage';
 import { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer } from 'recharts';
+import { motion, AnimatePresence } from 'framer-motion';
 
 /* ─── Interfaces ─── */
 
@@ -123,7 +124,16 @@ export default function AreaProductGrid({
   const [compareSet, setCompareSet] = useState<Set<string>>(new Set());
   const [showCompare, setShowCompare] = useState(false);
   const [showDiffsOnly, setShowDiffsOnly] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+  const [isSwipeMode, setIsSwipeMode] = useState(false);
   const [stackItems, setStackItems] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth <= 768);
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
   const [cartItems, setCartItems] = useState<Record<string, number>>({});
   const [toast, setToast] = useState<string | null>(null);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -636,11 +646,61 @@ export default function AreaProductGrid({
         </div>
       </div>
 
+      {isMobile && (
+        <AnimatePresence>
+          <motion.button
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={() => setIsSwipeMode(!isSwipeMode)}
+            style={{
+              width: '100%',
+              marginBottom: 24,
+              padding: '16px',
+              background: isSwipeMode ? 'rgba(0,196,188,0.1)' : 'linear-gradient(45deg, #00C4BC, #00827D)',
+              color: isSwipeMode ? '#00C4BC' : '#FFF',
+              border: isSwipeMode ? '1px solid #00C4BC' : 'none',
+              borderRadius: 12,
+              fontWeight: 800,
+              fontSize: '1rem',
+              cursor: 'pointer',
+              boxShadow: isSwipeMode ? 'none' : '0 4px 14px rgba(0,196,188,0.4)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 8,
+            }}
+          >
+            {isSwipeMode ? 'Exit Swipe Mode' : (
+              <>
+                <motion.span
+                  animate={{ x: [0, 5, 0] }}
+                  transition={{ repeat: Infinity, duration: 1.5, ease: "easeInOut" }}
+                >
+                  👉
+                </motion.span>
+                Start Swipe Mode
+              </>
+            )}
+          </motion.button>
+        </AnimatePresence>
+      )}
+
       {/* ─── Product Grid ─── */}
       <div style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
-        gap: 20,
+        ...(isSwipeMode ? {
+          display: 'flex',
+          overflowX: 'auto',
+          scrollSnapType: 'x mandatory',
+          gap: 16,
+          paddingBottom: 20,
+          WebkitOverflowScrolling: 'touch',
+        } : {
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
+          gap: 20,
+        })
       }}>
         {sorted.map((p) => {
           const compound = p.compound;
@@ -658,6 +718,8 @@ export default function AreaProductGrid({
             <div
               key={p.productId}
               style={{
+                minWidth: isSwipeMode ? '85vw' : 'auto',
+                scrollSnapAlign: isSwipeMode ? 'center' : 'none',
                 background: 'rgba(10,16,24,0.85)',
                 border: isComparing
                   ? '1px solid rgba(0,196,188,0.4)'

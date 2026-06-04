@@ -27,6 +27,8 @@ export interface AreaContent {
   notableSafety: string;
   /** 3-6 peer-reviewed references -- real PubMed, NEJM, JAMA, FDA, EMA. */
   keyReferences: { citation: string; url?: string }[];
+  /** Optional Mermaid.js biology pathway diagram. */
+  diagram?: string;
 }
 
 export const RESEARCH_AREA_CONTENT: Record<string, AreaContent> = {
@@ -83,6 +85,22 @@ export const RESEARCH_AREA_CONTENT: Record<string, AreaContent> = {
         url: 'https://pubmed.ncbi.nlm.nih.gov/20536453/',
       },
     ],
+    diagram: `graph TD;
+    Injury[Tissue Injury] --> BPC157(BPC-157);
+    Injury --> TB500(Thymosin Beta-4);
+    BPC157 --> eNOS[eNOS / iNOS Upregulation];
+    BPC157 --> VEGF[VEGF-A Activation];
+    TB500 --> Actin[Actin Sequestration];
+    eNOS --> Angio[Angiogenesis & Microvascular Repair];
+    VEGF --> Angio;
+    Actin --> Migration[Fibroblast & Cell Migration];
+    Angio --> Repair[Tissue Regeneration];
+    Migration --> Repair;
+    GHK[GHK-Cu] --> LOX[Lysyl Oxidase];
+    LOX --> Collagen[Collagen Cross-linking];
+    Collagen --> Repair;
+    style Repair fill:#00C4BC,stroke:#000,stroke-width:2px,color:#fff;
+    `,
   },
 
   healing: {
