@@ -228,7 +228,7 @@ export default function TherapeuticAreasPage() {
         <img 
           src="/images/badges/research_use_pill_transparent.png" 
           alt="Research Use Only - Not For Human Use - Laboratory Research Only" 
-          style={{ maxWidth: '90%', height: 'auto', maxHeight: '50px' }} 
+          style={{ maxWidth: '95%', height: 'auto', maxHeight: '150px' }} 
         />
       </div>
     </div>

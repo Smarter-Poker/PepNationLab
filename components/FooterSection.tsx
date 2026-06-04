@@ -15,7 +15,7 @@ export default function FooterSection() {
         <img 
           src="/images/badges/research_use_pill_transparent.png" 
           alt="Research Use Only - Not For Human Use - Laboratory Research Only" 
-          style={{ maxWidth: '100%', height: 'auto', maxHeight: '55px' }} 
+          style={{ maxWidth: '95%', height: 'auto', maxHeight: '150px' }} 
         />
       </div>
       <div className="container">
