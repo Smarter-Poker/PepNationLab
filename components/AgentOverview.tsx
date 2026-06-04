@@ -74,8 +74,8 @@ export default function AgentOverview({
           justify-content: center;
           align-items: flex-start;
 
-          /* 2 px gap between global header and the image */
-          padding-top: 2px;
+          /* gap between global header and the image */
+          padding-top: 20px;
 
           /* Dark fill visible on desktop beside the centered panel */
           background: #0a0a0a;
