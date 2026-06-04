@@ -72,7 +72,8 @@ function ItemCard({ c }: { c: NewRow }) {
 export default async function ResearchNewAdditionsPage() {
   const all = await getAllCompounds();
   const items = all
-    .sort((a, b) => new Date(((b as unknown) as Record<string, unknown>).created_at as string).getTime() - new Date(((a as unknown) as Record<string, unknown>).created_at as string).getTime())
+    .filter((c) => !!((c as unknown) as { created_at?: string }).created_at)
+    .sort((a, b) => new Date(((b as unknown) as { created_at: string }).created_at).getTime() - new Date(((a as unknown) as { created_at: string }).created_at).getTime())
     .slice(0, 40) as unknown as NewRow[];
 
   // Group by category

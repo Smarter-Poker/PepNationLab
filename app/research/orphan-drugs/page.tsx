@@ -73,7 +73,7 @@ function CompoundCard({ c }: { c: OrphanRow }) {
 
 export default async function ResearchOrphanDrugsPage() {
   const all = await getAllCompounds();
-  const rows = all.filter((c) => ((c as unknown) as Record<string, unknown>).is_orphan_drug === true) as unknown as OrphanRow[];
+  const rows = all.filter((c) => ((c as unknown) as { is_orphan_drug?: boolean }).is_orphan_drug === true) as unknown as OrphanRow[];
 
   // Group by category
   const categoryMap = new Map<string, OrphanRow[]>();

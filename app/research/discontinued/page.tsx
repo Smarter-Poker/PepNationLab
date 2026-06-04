@@ -81,8 +81,8 @@ function CompoundCard({ c }: { c: DiscontinuedRow }) {
 export default async function ResearchDiscontinuedPage() {
   const all = await getAllCompounds();
   const rows = all
-    .filter((c) => ((c as unknown) as Record<string, unknown>).is_discontinued === true)
-    .sort((a, b) => (((b as unknown) as Record<string, unknown>).discontinuation_year as number ?? 0) - (((a as unknown) as Record<string, unknown>).discontinuation_year as number ?? 0)) as unknown as DiscontinuedRow[];
+    .filter((c) => ((c as unknown) as { is_discontinued?: boolean }).is_discontinued === true)
+    .sort((a, b) => (((b as unknown) as { discontinuation_year?: number }).discontinuation_year ?? 0) - (((a as unknown) as { discontinuation_year?: number }).discontinuation_year ?? 0)) as unknown as DiscontinuedRow[];
 
 
   const decadeOrder = ['2020s', '2010s', '2000s', '1990s', '1980s', 'Pre-1980s', 'Year Unknown'];
