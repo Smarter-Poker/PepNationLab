@@ -549,7 +549,6 @@ export default function AdminAgents() {
                     <span style={{ fontSize: '0.8rem', color: 'var(--silver)' }}>
                       {agent.account_type === 'prepaid' ? 'Prepaid' : 'Credit'}
                     </span>
-                    <AdminTierOverrideControl agentId={agent.id} />
                   </div>
                 </div>
 

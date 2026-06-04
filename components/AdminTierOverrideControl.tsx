@@ -76,56 +76,77 @@ export default function AdminTierOverrideControl({ agentId }: { agentId: string 
 
   if (!loaded) return null;
 
+  let selectValue = 'auto';
+  if (customMarkup !== '' && customMarkup !== null) {
+    selectValue = `custom_${customMarkup}`;
+  } else if (enabled) {
+    selectValue = `tier_${level}`;
+  }
+
+  const handleSelectChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const val = e.target.value;
+    if (val === 'auto') {
+      save(false, level, '');
+    } else if (val.startsWith('tier_')) {
+      const newLevel = Number(val.split('_')[1]);
+      setLevel(newLevel);
+      save(true, newLevel, '');
+    } else if (val.startsWith('custom_')) {
+      const newCustom = val.split('_')[1];
+      setCustomMarkup(newCustom);
+      save(false, level, newCustom); // false for fixed_scale_override because custom overrides take precedence natively
+    }
+  };
+
+  // Build custom options, ensuring the currently selected custom markup is present
+  const baseCustomOptions = [10, 20, 30, 40];
+  const currentCustomNumber = customMarkup !== '' ? Number(customMarkup) : null;
+  const customOptions = [...baseCustomOptions];
+  if (currentCustomNumber !== null && !customOptions.includes(currentCustomNumber)) {
+    customOptions.push(currentCustomNumber);
+    customOptions.sort((a, b) => a - b);
+  }
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginTop: 6 }}>
-      <span style={{ fontSize: '0.62rem', color: 'var(--grey-500)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>House Tier Lock</span>
       <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-        <button
-          type="button"
-          onClick={() => save(!enabled, level)}
+        <select
+          value={selectValue}
           disabled={saving}
-          style={{
-            padding: '3px 10px', borderRadius: 12, fontSize: '0.7rem', fontWeight: 700, cursor: saving ? 'not-allowed' : 'pointer',
-            background: enabled ? 'var(--teal)' : 'rgba(192,184,168,0.12)',
-            color: enabled ? '#04221f' : 'var(--grey-400)',
-            border: enabled ? '1px solid var(--teal)' : '1px solid rgba(192,184,168,0.3)',
+          onChange={handleSelectChange}
+          style={{ 
+            background: 'var(--surface-3)', 
+            color: 'var(--white)', 
+            border: '1px solid rgba(255,255,255,0.15)', 
+            borderRadius: 6, 
+            padding: '6px 12px', 
+            fontSize: '0.85rem', 
+            cursor: saving ? 'not-allowed' : 'pointer',
+            width: '100%',
+            maxWidth: '300px'
           }}
         >
-          {enabled ? 'Locked' : 'Auto'}
-        </button>
-        {enabled && (
-          <select
-            value={level}
-            disabled={saving}
-            onChange={(e) => { const lv = Number(e.target.value); setLevel(lv); save(true, lv); }}
-            style={{ background: 'var(--surface-3)', color: 'var(--white)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: 6, padding: '3px 6px', fontSize: '0.7rem', cursor: 'pointer' }}
-          >
-            {LEVELS.map((l) => <option key={l.level} value={l.level}>{l.name}</option>)}
-          </select>
-        )}
-      </div>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 4 }}>
-        <input
-          type="number"
-          placeholder="Custom Markup %"
-          value={customMarkup}
-          disabled={saving}
-          onChange={(e) => setCustomMarkup(e.target.value)}
-          onBlur={() => save(enabled, level, customMarkup)}
-          style={{
-            background: 'var(--surface-3)',
-            color: 'var(--white)',
-            border: '1px solid rgba(255,255,255,0.15)',
-            borderRadius: 6,
-            padding: '3px 6px',
-            fontSize: '0.7rem',
-            width: '120px'
-          }}
-        />
-        <span style={{ fontSize: '0.62rem', color: 'var(--grey-500)' }}>Override All Set Pricing</span>
+          <option value="auto">Auto (Volume Based)</option>
+          
+          <optgroup label="Gamification Tiers">
+            {LEVELS.map((l) => (
+              <option key={`tier_${l.level}`} value={`tier_${l.level}`}>
+                Tier {l.level}: {l.name} ({[0.5, 0.6, 0.7][l.level - 1] * 100}% Markup)
+              </option>
+            ))}
+          </optgroup>
+
+          <optgroup label="Custom Pricing Override">
+            {customOptions.map(pct => (
+              <option key={`custom_${pct}`} value={`custom_${pct}`}>
+                Custom: {pct}% Markup
+              </option>
+            ))}
+          </optgroup>
+        </select>
       </div>
       {!ladderActive && (
-        <span style={{ fontSize: '0.6rem', color: 'var(--grey-500)', marginTop: 4 }}>Takes Effect When Tier Ladder Is Enabled</span>
+        <span style={{ fontSize: '0.65rem', color: 'var(--grey-500)', marginTop: 4 }}>Volume Based Pricing Takes Effect When Tier Ladder Is Enabled</span>
       )}
     </div>
   );

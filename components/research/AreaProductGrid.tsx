@@ -38,6 +38,8 @@ export interface CompoundInfo {
   riskReasons: string[];
   studiedFor: string[];
   pubmedCitationCount: number | null;
+  plainSummary: string | null;
+  benefits: string | null;
 }
 
 interface Props {
@@ -1285,13 +1287,35 @@ export default function AreaProductGrid({
                     ))}
                   </CompareRow>
 
+                  {/* Summary */}
+                  <CompareRow label="Summary">
+                    {compareItems.map(p => (
+                      <td key={p.productId} style={{ ...compareTdStyle, maxWidth: 220, textAlign: 'left', verticalAlign: 'top' }}>
+                        <span style={{ color: '#D0DAE4', fontSize: '0.85rem', lineHeight: 1.5 }}>
+                          {p.compound?.plainSummary || '—'}
+                        </span>
+                      </td>
+                    ))}
+                  </CompareRow>
+
+                  {/* Main Benefits */}
+                  <CompareRow label="Main Benefits">
+                    {compareItems.map(p => (
+                      <td key={p.productId} style={{ ...compareTdStyle, maxWidth: 220, textAlign: 'left', verticalAlign: 'top' }}>
+                        <span style={{ color: '#00C4BC', fontSize: '0.85rem', lineHeight: 1.5, fontWeight: 600 }}>
+                          {p.compound?.benefits || '—'}
+                        </span>
+                      </td>
+                    ))}
+                  </CompareRow>
+
                   {/* Mechanism */}
                   <CompareRow label="Mechanism">
                     {compareItems.map(p => (
-                      <td key={p.productId} style={{ ...compareTdStyle, maxWidth: 220 }}>
+                      <td key={p.productId} style={{ ...compareTdStyle, maxWidth: 220, textAlign: 'left', verticalAlign: 'top' }}>
                         <span style={{
                           color: '#D0DAE4',
-                          fontSize: '0.82rem',
+                          fontSize: '0.85rem',
                           lineHeight: 1.5,
                           display: 'block',
                         }}>
@@ -1334,15 +1358,17 @@ export default function AreaProductGrid({
                     ))}
                   </CompareRow>
 
-                  {/* Citations */}
-                  <CompareRow label="PubMed Citations">
+                  {/* References */}
+                  <CompareRow label="References">
                     {compareItems.map(p => (
                       <td key={p.productId} style={compareTdStyle}>
-                        <span style={{ color: '#D0DAE4', fontWeight: 600 }}>
-                          {p.compound?.pubmedCitationCount != null
-                            ? p.compound.pubmedCitationCount.toLocaleString()
-                            : '—'}
-                        </span>
+                        {p.compound?.pubmedCitationCount != null ? (
+                          <Link href={`/research/${p.compound.slug}/references`} target="_blank" style={{ color: '#00C4BC', fontWeight: 700, textDecoration: 'none' }}>
+                            {p.compound.pubmedCitationCount.toLocaleString()} Citations ↗
+                          </Link>
+                        ) : (
+                          <span style={{ color: '#718096' }}>—</span>
+                        )}
                       </td>
                     ))}
                   </CompareRow>
@@ -1381,6 +1407,38 @@ export default function AreaProductGrid({
                   </CompareRow>
                 </tbody>
               </table>
+            </div>
+            
+            {/* AI Advisor Call to Action */}
+            <div style={{
+              marginTop: 24,
+              padding: '24px 32px',
+              borderRadius: 12,
+              background: 'linear-gradient(90deg, rgba(0,196,188,0.08) 0%, rgba(15,25,35,0) 100%)',
+              border: '1px solid rgba(0,196,188,0.2)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: 24,
+              flexWrap: 'wrap'
+            }}>
+              <div>
+                <h3 style={{ margin: '0 0 8px', color: '#FFF', fontSize: '1.2rem', fontWeight: 800 }}>Need help deciding?</h3>
+                <p style={{ margin: 0, color: '#D0DAE4', fontSize: '0.95rem', lineHeight: 1.5, maxWidth: 600 }}>
+                  Tell our AI Research Assistant what you're trying to achieve. It can evaluate these compounds based on your specific goals, analyze the pros and cons, and recommend the best fit for your research.
+                </p>
+              </div>
+              <Link href="/research/match" style={{
+                background: '#00C4BC',
+                color: '#000',
+                padding: '12px 24px',
+                borderRadius: 8,
+                fontWeight: 800,
+                textDecoration: 'none',
+                whiteSpace: 'nowrap'
+              }}>
+                Ask AI Advisor ↗
+              </Link>
             </div>
           </div>
         </div>

@@ -17,6 +17,7 @@ import { getAllCompounds } from '@/lib/compounds-server';
 import { RESEARCH_AREAS, researchAreaLabel, evidenceTier, wadaLabel } from '@/lib/compounds';
 import { RESEARCH_AREA_CONTENT } from '@/lib/research-area-content';
 import AreaContentTabs from '@/components/research/AreaContentTabs';
+import AreaReferencesClient from '@/components/research/AreaReferencesClient';
 import type { AreaTab } from '@/components/research/AreaContentTabs';
 import AreaProductGrid from '@/components/research/AreaProductGrid';
 import type { CompoundInfo } from '@/components/research/AreaProductGrid';
@@ -96,6 +97,8 @@ export default async function ResearchAreaPage({ params }: PageProps) {
     riskReasons: c.risk_reasons ?? [],
     studiedFor: c.studied_for ?? [],
     pubmedCitationCount: c.pubmed_citation_count ?? null,
+    plainSummary: c.plain_summary ?? null,
+    benefits: c.benefits ?? null,
   }));
 
   // Build tabs
@@ -267,24 +270,7 @@ export default async function ResearchAreaPage({ params }: PageProps) {
     tabs.push({
       key: 'references',
       label: 'References',
-      children: (
-        <section className="glass-panel" style={{ padding: 'var(--space-5, 24px)', borderRadius: 'var(--radius-lg, 12px)' }}>
-          <h2 style={sectionHeadStyle}>Key References</h2>
-          <ol style={{ ...bulletListStyle, listStyleType: 'decimal', paddingLeft: '1.4rem' }}>
-            {content.keyReferences.map((r, i) => (
-              <li key={i} style={bulletItemStyle}>
-                {r.url ? (
-                  <a href={r.url} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--teal, #00C4BC)', textDecoration: 'none' }}>
-                    {r.citation}
-                  </a>
-                ) : (
-                  r.citation
-                )}
-              </li>
-            ))}
-          </ol>
-        </section>
-      ),
+      children: <AreaReferencesClient references={content.keyReferences} />
     });
   }
 
