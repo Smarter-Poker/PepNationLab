@@ -548,15 +548,15 @@ export default function ResearcherDashboard({ userId, userName, userEmail, agent
               }}>
                 {/* Invisible click zones — percentages map 1:1 to image pixels */}
                 {[
-                  { key: 'store',       top: '3%',    height: '9.5%', action: () => { window.location.href = agentSlug ? `/${agentSlug}` : '/products'; } },
-                  { key: 'library',     top: '13.5%', height: '9.5%', action: () => { window.location.href = '/research'; } },
-                  { key: 'messenger',   top: '24.2%', height: '9.5%', action: () => { window.location.href = '/messenger'; } },
-                  { key: 'lab-journal', top: '34.8%', height: '9.5%', action: () => { window.location.href = '/account/lab-journal'; } },
-                  { key: 'orders',      top: '45.4%', height: '9.5%', action: () => setTab('orders') },
-                  { key: 'wallet',      top: '56.1%', height: '9.5%', action: () => setTab('wallet') },
-                  { key: 'tools',       top: '66.8%', height: '9.5%', action: () => { window.location.href = '/research/calculators'; } },
-                  { key: 'account',     top: '77.4%', height: '9.5%', action: () => setTab('account') },
-                  { key: 'help',        top: '88.0%', height: '9.5%', action: () => { window.location.href = '/help'; } },
+                  { key: 'store',       top: '3.0%',  height: '11.0%', action: () => { window.location.href = agentSlug ? `/${agentSlug}` : '/products'; } },
+                  { key: 'library',     top: '14.0%', height: '11.0%', action: () => { window.location.href = '/research'; } },
+                  { key: 'messenger',   top: '25.0%', height: '11.0%', action: () => { window.location.href = '/messenger'; } },
+                  { key: 'lab-journal', top: '36.0%', height: '11.0%', action: () => { window.location.href = '/account/lab-journal'; } },
+                  { key: 'orders',      top: '47.0%', height: '11.0%', action: () => setTab('orders') },
+                  { key: 'wallet',      top: '58.0%', height: '11.0%', action: () => setTab('wallet') },
+                  { key: 'tools',       top: '69.0%', height: '10.5%', action: () => { window.location.href = '/research/calculators'; } },
+                  { key: 'account',     top: '79.5%', height: '10.0%', action: () => setTab('account') },
+                  { key: 'help',        top: '89.5%', height: '9.5%',  action: () => { window.location.href = '/help'; } },
                 ].map(z => (
                   <div
                     key={z.key}
