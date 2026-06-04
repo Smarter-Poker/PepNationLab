@@ -1027,6 +1027,12 @@ export default function AgentStorefrontGrid({
           setSearchQuery('');
           setShowStoreGrid(true);
         }}
+        onAlreadyKnowClicked={() => {
+          setShowStoreGrid(true);
+          if (typeof window !== 'undefined') {
+            try { window.scrollBy({ top: 300, behavior: 'smooth' }); } catch {}
+          }
+        }}
         onAddToCart={(variantId) => addToCart(variantId)}
         onOpenProduct={(variantId) => {
           const grp = grouped.find(g => g.variants.some(v => v.id === variantId));
@@ -1069,37 +1075,7 @@ export default function AgentStorefrontGrid({
 
       <StorefrontCompareDrawer primaryColor={primaryColor} compoundsBySlug={compoundsBySlug} />
 
-      {!showStoreGrid && (
-        <div style={{ padding: '0 20px', maxWidth: '800px', margin: '40px auto 20px auto', display: 'flex', justifyContent: 'center' }}>
-          <button
-            type="button"
-            onClick={() => {
-              setShowStoreGrid(true);
-              if (typeof window !== 'undefined') {
-                try { window.scrollBy({ top: 300, behavior: 'smooth' }); } catch {}
-              }
-            }}
-            style={{
-              background: 'none',
-              border: 'none',
-              padding: 0,
-              cursor: 'pointer',
-              width: '100%',
-              transition: 'transform 0.1s ease',
-            }}
-            onPointerDown={(e) => (e.currentTarget.style.transform = 'scale(0.98)')}
-            onPointerUp={(e) => (e.currentTarget.style.transform = 'scale(1)')}
-            onPointerLeave={(e) => (e.currentTarget.style.transform = 'scale(1)')}
-          >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img 
-              src="/images/research/already-know.png" 
-              alt="Already Know Which Peptide You Need? Click Here To See Pep Nation's Research Store"
-              style={{ width: '100%', height: 'auto', display: 'block' }}
-            />
-          </button>
-        </div>
-      )}
+
 
       {showStoreGrid && (
         <>

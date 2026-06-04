@@ -79,6 +79,8 @@ export interface DiscoveryHeroProps {
   primaryColor?: string;
   /** Caller notified when user starts typing or selects a goal */
   onSearchStarted?: () => void;
+  /** Caller notified when user clicks Already Know Which Peptide You Need */
+  onAlreadyKnowClicked?: () => void;
 }
 
 // --------------------------------------------------------------------------
@@ -1173,8 +1175,9 @@ export default function DiscoveryHero({
   onAddToCart,
   onOpenProduct,
   onSelectArea,
-  primaryColor = '#C0C5CE',
+  primaryColor = '#00C4BC',
   onSearchStarted,
+  onAlreadyKnowClicked,
 }: DiscoveryHeroProps) {
   const router = useRouter();
   const [query, setQuery] = useState('');
@@ -1397,8 +1400,8 @@ export default function DiscoveryHero({
           width: '100%',
           maxWidth: 980,
           margin: '0 auto 18px',
-          aspectRatio: '1672 / 941',
-          backgroundImage: 'url(/images/store_discovery_hero_v3.png)',
+          aspectRatio: '941 / 1672',
+          backgroundImage: 'url(/images/research/store-hero.png)',
           backgroundSize: 'cover',
           backgroundPosition: 'center',
           borderRadius: 22,
@@ -1420,7 +1423,7 @@ export default function DiscoveryHero({
           }}
           title="Match Me"
           style={{
-            position: 'absolute', top: '12%', left: '52%', width: '20%', height: '14%',
+            position: 'absolute', top: '85%', left: '15%', width: '33%', height: '8%',
             cursor: 'pointer', opacity: 0, zIndex: 10
           }}
           aria-label="Match Me"
@@ -1435,7 +1438,7 @@ export default function DiscoveryHero({
           }}
           title="Let Us Guide You"
           style={{
-            position: 'absolute', top: '12%', left: '73%', width: '22%', height: '14%',
+            position: 'absolute', top: '85%', left: '52%', width: '33%', height: '8%',
             cursor: 'pointer', opacity: 0, zIndex: 10
           }}
           aria-label="Let Us Guide You"
@@ -1445,7 +1448,7 @@ export default function DiscoveryHero({
         <div 
           ref={searchContainerRef}
           style={{
-            position: 'absolute', top: '33.2%', left: '9%', width: '89%', height: '11%',
+            position: 'absolute', top: '13.5%', left: '6%', width: '88%', height: '4.5%',
             zIndex: 5,
           }}
         >
@@ -1490,17 +1493,27 @@ export default function DiscoveryHero({
         </div>
 
         {/* Quick Select Buttons */}
-        <button title="Weight Management" onClick={() => onSelectArea('weight_management')} style={{ position: 'absolute', top: '55%', left: '4%', width: '11%', height: '40%', cursor: 'pointer', opacity: 0, zIndex: 10 }} />
-        <button title="Tissue Repair" onClick={() => onSelectArea('tissue_repair')} style={{ position: 'absolute', top: '55%', left: '16%', width: '11%', height: '40%', cursor: 'pointer', opacity: 0, zIndex: 10 }} />
-        <button title="Healing & Recovery" onClick={() => onSelectArea('healing')} style={{ position: 'absolute', top: '55%', left: '28%', width: '11%', height: '40%', cursor: 'pointer', opacity: 0, zIndex: 10 }} />
-        <button title="Performance" onClick={() => onSelectArea('performance')} style={{ position: 'absolute', top: '55%', left: '40%', width: '11%', height: '40%', cursor: 'pointer', opacity: 0, zIndex: 10 }} />
-        <button title="Skin & Hair" onClick={() => onSelectArea('cosmetic')} style={{ position: 'absolute', top: '55%', left: '52%', width: '11%', height: '40%', cursor: 'pointer', opacity: 0, zIndex: 10 }} />
-        <button title="Cognitive" onClick={() => onSelectArea('cognitive')} style={{ position: 'absolute', top: '55%', left: '64%', width: '11%', height: '40%', cursor: 'pointer', opacity: 0, zIndex: 10 }} />
-        <button title="Pain & Inflammation" onClick={() => onSelectArea('pain')} style={{ position: 'absolute', top: '55%', left: '76%', width: '11%', height: '40%', cursor: 'pointer', opacity: 0, zIndex: 10 }} />
+        <button title="Weight Management" onClick={() => onSelectArea('weight_management')} style={{ position: 'absolute', top: '23%', left: '5%', width: '21%', height: '18%', cursor: 'pointer', opacity: 0, zIndex: 10 }} />
+        <button title="Tissue Repair" onClick={() => onSelectArea('tissue_repair')} style={{ position: 'absolute', top: '23%', left: '27%', width: '22%', height: '18%', cursor: 'pointer', opacity: 0, zIndex: 10 }} />
+        <button title="Healing & Recovery" onClick={() => onSelectArea('healing')} style={{ position: 'absolute', top: '23%', left: '50%', width: '22%', height: '18%', cursor: 'pointer', opacity: 0, zIndex: 10 }} />
+        <button title="Performance" onClick={() => onSelectArea('performance')} style={{ position: 'absolute', top: '23%', left: '73%', width: '22%', height: '18%', cursor: 'pointer', opacity: 0, zIndex: 10 }} />
+        <button title="Skin & Hair" onClick={() => onSelectArea('cosmetic')} style={{ position: 'absolute', top: '42%', left: '5%', width: '21%', height: '19%', cursor: 'pointer', opacity: 0, zIndex: 10 }} />
+        <button title="Cognitive" onClick={() => onSelectArea('cognitive')} style={{ position: 'absolute', top: '42%', left: '27%', width: '22%', height: '19%', cursor: 'pointer', opacity: 0, zIndex: 10 }} />
+        <button title="Pain & Inflammation" onClick={() => onSelectArea('pain')} style={{ position: 'absolute', top: '42%', left: '50%', width: '22%', height: '19%', cursor: 'pointer', opacity: 0, zIndex: 10 }} />
         <button title="More" onClick={() => {
           onSelectArea(''); // Clear filter
           setShowAllAreas(true);
-        }} style={{ position: 'absolute', top: '55%', left: '88%', width: '10%', height: '40%', cursor: 'pointer', opacity: 0, zIndex: 10 }} />
+        }} style={{ position: 'absolute', top: '42%', left: '73%', width: '22%', height: '19%', cursor: 'pointer', opacity: 0, zIndex: 10 }} />
+
+        {/* Already Know Which Peptide You Need */}
+        <button
+          type="button"
+          onClick={() => {
+            if (onAlreadyKnowClicked) onAlreadyKnowClicked();
+          }}
+          title="Already Know Which Peptide You Need"
+          style={{ position: 'absolute', top: '64.5%', left: '3%', width: '94%', height: '12.5%', cursor: 'pointer', opacity: 0, zIndex: 10 }}
+        />
         
         {/* Pop Up For All Areas */}
         {showAllAreas && (
