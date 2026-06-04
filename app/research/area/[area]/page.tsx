@@ -93,6 +93,7 @@ export default async function ResearchAreaPage({ params }: PageProps) {
     halfLife: c.half_life || (c.measured_half_life_hours ? `${c.measured_half_life_hours}h (measured)` : c.predicted_half_life_hours ? `${c.predicted_half_life_hours}h (predicted)` : null),
     molecularWeightDa: c.molecular_weight_da ?? null,
     riskLevel: c.risk_level ?? 'moderate',
+    riskReasons: c.risk_reasons ?? [],
     studiedFor: c.studied_for ?? [],
     pubmedCitationCount: c.pubmed_citation_count ?? null,
   }));
@@ -114,9 +115,6 @@ export default async function ResearchAreaPage({ params }: PageProps) {
 
           {/* Featured Compounds In This Area */}
           <section>
-            <h2 style={{ ...sectionHeadStyle, marginBottom: 'var(--space-4, 16px)' }}>
-              Featured Compounds In This Area ({compounds.length})
-            </h2>
             <AreaProductGrid
               products={productCtx.products}
               compounds={compoundInfos}
@@ -141,9 +139,6 @@ export default async function ResearchAreaPage({ params }: PageProps) {
 
           {/* Featured Compounds In This Area */}
           <section>
-            <h2 style={{ ...sectionHeadStyle, marginBottom: 'var(--space-4, 16px)' }}>
-              Featured Compounds In This Area ({compounds.length})
-            </h2>
             <AreaProductGrid
               products={productCtx.products}
               compounds={compoundInfos}
@@ -294,7 +289,7 @@ export default async function ResearchAreaPage({ params }: PageProps) {
   }
 
   return (
-    <div style={{ maxWidth: '1100px', margin: '0 auto', padding: 'var(--space-6, 32px) var(--space-4, 16px)' }}>
+    <div style={{ maxWidth: '1100px', margin: '0 auto', padding: 'var(--space-6, 32px) var(--space-4, 16px)', textTransform: 'capitalize' }}>
       <nav style={{ marginBottom: 'var(--space-4, 16px)' }}>
         <Link href="/research" style={{ color: 'var(--teal, #00C4BC)', fontSize: '0.9rem', textDecoration: 'none' }}>
           Back To Research Library

@@ -35,6 +35,7 @@ export interface CompoundInfo {
   halfLife: string | null;
   molecularWeightDa: number | null;
   riskLevel: string;
+  riskReasons: string[];
   studiedFor: string[];
   pubmedCitationCount: number | null;
 }
@@ -1113,12 +1114,12 @@ export default function AreaProductGrid({
                           minWidth: 200,
                           background: 'rgba(255,255,255,0.01)',
                         }}>
+                          <div style={{ marginBottom: 12, fontSize: '1.1rem' }}>{toTitleCase(p.productName)}</div>
                           {p.imageUrl && (
                             <div style={{ marginBottom: 12, display: 'flex', justifyContent: 'center' }}>
-                              <img src={p.imageUrl} alt={p.productName} style={{ width: 80, height: 80, objectFit: 'contain', borderRadius: 8, background: '#fff' }} />
+                              <img src={p.imageUrl} alt={p.productName} style={{ width: 120, height: 120, objectFit: 'contain', borderRadius: 8, background: '#fff' }} />
                             </div>
                           )}
-                          <div>{toTitleCase(p.productName)}</div>
                           <div style={{ display: 'flex', gap: 4, justifyContent: 'center', marginTop: 8 }}>
                             {isBestVal && (
                               <span style={{
@@ -1214,9 +1215,23 @@ export default function AreaProductGrid({
                         : '#A8B4C0';
                       return (
                         <td key={p.productId} style={compareTdStyle}>
-                          <span style={{ color, fontWeight: 700, textTransform: 'capitalize' }}>
+                          <button
+                            onClick={() => alert(p.compound?.riskReasons?.length ? p.compound.riskReasons.join('\\n') : 'No additional risk data available.')}
+                            title="Click to view risk reasons"
+                            style={{ 
+                              color, 
+                              fontWeight: 700, 
+                              textTransform: 'capitalize',
+                              background: 'none',
+                              border: 'none',
+                              borderBottom: `1px dashed ${color}`,
+                              cursor: 'pointer',
+                              padding: 0,
+                              fontSize: '0.95rem'
+                            }}
+                          >
                             {risk}
-                          </span>
+                          </button>
                         </td>
                       );
                     })}
@@ -1246,6 +1261,30 @@ export default function AreaProductGrid({
                     ))}
                   </CompareRow>
 
+                  {/* Category */}
+                  <CompareRow label="Category">
+                    {compareItems.map(p => (
+                      <td key={p.productId} style={compareTdStyle}>
+                        <span style={{ color: '#D0DAE4', textTransform: 'capitalize' }}>
+                          {p.compound?.category ? p.compound.category.replace(/_/g, ' ') : '—'}
+                        </span>
+                      </td>
+                    ))}
+                  </CompareRow>
+
+                  {/* Other Names */}
+                  <CompareRow label="Other Names">
+                    {compareItems.map(p => (
+                      <td key={p.productId} style={compareTdStyle}>
+                        <span style={{ color: '#D0DAE4', fontSize: '0.85rem' }}>
+                          {p.compound?.aliases && p.compound.aliases.length > 0
+                            ? p.compound.aliases.join(', ')
+                            : '—'}
+                        </span>
+                      </td>
+                    ))}
+                  </CompareRow>
+
                   {/* Mechanism */}
                   <CompareRow label="Mechanism">
                     {compareItems.map(p => (
@@ -1265,15 +1304,15 @@ export default function AreaProductGrid({
                   {/* Key Research Uses */}
                   <CompareRow label="Key Research Uses">
                     {compareItems.map(p => (
-                      <td key={p.productId} style={{ ...compareTdStyle, verticalAlign: 'top' }}>
+                      <td key={p.productId} style={{ ...compareTdStyle, verticalAlign: 'top', textAlign: 'left' }}>
                         <div style={{
                           display: 'flex',
-                          flexWrap: 'wrap',
+                          flexDirection: 'column',
+                          alignItems: 'flex-start',
                           gap: 6,
-                          justifyContent: 'center',
                         }}>
                           {(p.compound?.studiedFor ?? []).length > 0
-                            ? p.compound!.studiedFor.slice(0, 4).map((use, i) => (
+                            ? p.compound!.studiedFor.map((use, i) => (
                               <span key={i} style={{
                                 display: 'inline-block',
                                 padding: '3px 10px',
@@ -1283,6 +1322,7 @@ export default function AreaProductGrid({
                                 background: 'rgba(255,255,255,0.05)',
                                 color: '#D0DAE4',
                                 border: '1px solid rgba(255,255,255,0.08)',
+                                textTransform: 'capitalize'
                               }}>
                                 {use}
                               </span>
