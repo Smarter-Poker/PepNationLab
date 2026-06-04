@@ -9,9 +9,9 @@
  * Includes a full-screen StorefrontCompareModal that renders the attributes matrix.
  */
 
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { X, Scale, ChevronDown, ChevronRight, GripHorizontal, ChevronLeft, ThumbsUp, ThumbsDown, Trophy, AlertTriangle, Info } from 'lucide-react';
+import { X, Scale, ChevronDown, ChevronRight, GripHorizontal, ChevronLeft, ThumbsUp, ThumbsDown, Trophy, AlertTriangle, Info, Zap, BookOpen, Clock, Thermometer } from 'lucide-react';
 import { evidenceTier, type Compound, RISK_META, researchAreaLabel, wadaLabel } from '@/lib/compounds';
 import InCellGlossaryTooltip from '../research/InCellGlossaryTooltip';
 import AttributeRadarChart from '../research/AttributeRadarChart';
@@ -118,22 +118,95 @@ function parseHalfLifeHours(hl: string | null | undefined): number {
 }
 
 const KNOWN_SYNERGIES = [
-  { pairs: ['bpc-157', 'tb-500'], type: 'synergy', message: 'BPC-157 + TB-500 act highly synergistically for combined systemic and localized tissue/tendon repair.' },
-  { pairs: ['cjc-1295-without-dac', 'ipamorelin'], type: 'synergy', message: 'CJC-1295 + Ipamorelin amplifies GH pulse amplitude without spiking cortisol or prolactin.' },
-  { pairs: ['bpc-157', 'ghk-cu'], type: 'synergy', message: 'BPC-157 + GHK-Cu offers complementary wound healing — GHK-Cu drives collagen synthesis while BPC-157 supports vascular repair.' },
-  { pairs: ['sermorelin', 'ipamorelin'], type: 'synergy', message: 'Sermorelin + Ipamorelin provides dual-pathway GH stimulation (GHRH + GHSR) for amplified secretagogue effect.' },
-  { pairs: ['epitalon', 'dsip'], type: 'synergy', message: 'Epitalon + DSIP may complement each other for circadian rhythm regulation and sleep architecture.' },
-  { pairs: ['pt-141', 'kisspeptin-10'], type: 'synergy', message: 'PT-141 + Kisspeptin-10 provides complementary central and peripheral sexual health pathways.' },
-  { pairs: ['tirzepatide', 'retatrutide'], type: 'conflict', message: 'Warning: Compounding GLP-1/GIP agonists may lead to severe gastrointestinal distress.' },
-  { pairs: ['semaglutide', 'tirzepatide'], type: 'conflict', message: 'Warning: Stacking two incretin agents is not recommended — compounding GI effects and unclear additive benefit.' },
+  // Tissue Repair / Healing
+  { pairs: ['bpc-157', 'tb-500'], type: 'synergy', category: 'Healing', message: 'BPC-157 + TB-500 act highly synergistically — BPC-157 drives localized GI/tendon cytoprotection while TB-500 provides systemic actin-regulatory repair.' },
+  { pairs: ['bpc-157', 'ghk-cu'], type: 'synergy', category: 'Healing', message: 'BPC-157 + GHK-Cu: complementary wound healing — GHK-Cu drives collagen synthesis and copper-dependent enzymes while BPC-157 supports vascular repair.' },
+  { pairs: ['tb-500', 'ghk-cu'], type: 'synergy', category: 'Healing', message: 'TB-500 + GHK-Cu: actin regulation + ECM remodeling provides dual-layered soft tissue recovery support.' },
+  { pairs: ['bpc-157', 'tb-500', 'ghk-cu'], type: 'synergy', category: 'Healing', message: 'Triple Healing Stack: BPC-157 + TB-500 + GHK-Cu is the full tissue repair trifecta — local, systemic, and structural matrix rebuilding.' },
+  // GH Secretagogue Stacks
+  { pairs: ['cjc-1295-without-dac', 'ipamorelin'], type: 'synergy', category: 'Performance', message: 'CJC-1295 + Ipamorelin: gold-standard GH stack — GHRH analog + GHSR agonist dual-pathway stimulation amplifies GH pulse amplitude without spiking cortisol or prolactin.' },
+  { pairs: ['sermorelin', 'ipamorelin'], type: 'synergy', category: 'Performance', message: 'Sermorelin + Ipamorelin: softer dual-pathway GH secretagogue combination with favorable safety profile.' },
+  { pairs: ['cjc-1295-without-dac', 'mk-677'], type: 'synergy', category: 'Performance', message: 'CJC-1295 + MK-677: injectable GHRH + oral ghrelin mimetic produces robust, sustained GH/IGF-1 elevation.' },
+  { pairs: ['ipamorelin', 'mk-677'], type: 'synergy', category: 'Performance', message: 'Ipamorelin + MK-677: complementary ghrelin-axis stimulation — injectable pulse + oral sustained background.' },
+  // Longevity / Anti-Aging
+  { pairs: ['epitalon', 'ghk-cu'], type: 'synergy', category: 'Longevity', message: 'Epitalon + GHK-Cu: telomerase activation + copper-tripeptide regeneration for multi-pathway longevity research.' },
+  { pairs: ['epitalon', 'dsip'], type: 'synergy', category: 'Sleep', message: 'Epitalon + DSIP: circadian clock restoration + sleep-initiation signaling for sleep architecture research.' },
+  { pairs: ['mots-c', 'ss-31'], type: 'synergy', category: 'Longevity', message: 'MOTS-c + SS-31: dual mitochondrial optimization — MOTS-c for metabolic signaling, SS-31 for inner membrane cardiolipin protection.' },
+  // Sexual Health
+  { pairs: ['pt-141', 'kisspeptin-10'], type: 'synergy', category: 'Sexual Health', message: 'PT-141 + Kisspeptin-10: complementary central (melanocortin MC4R) + hypothalamic (GPR54) sexual health pathways.' },
+  // Weight / Metabolic
+  { pairs: ['aod-9604', 'ipamorelin'], type: 'synergy', category: 'Metabolic', message: 'AOD-9604 + Ipamorelin: lipolytic C-terminal fragment + GH pulse amplifier for body composition research.' },
+  // Conflict Pairs
+  { pairs: ['tirzepatide', 'retatrutide'], type: 'conflict', category: 'Safety', message: 'Compounding GLP-1/GIP dual/triple agonists: highly overlapping mechanism with compounding GI adverse effects (nausea, vomiting, gastroparesis).' },
+  { pairs: ['semaglutide', 'tirzepatide'], type: 'conflict', category: 'Safety', message: 'Two incretin agents: stacking GLP-1 agonists compounds GI distress and unclear additive efficacy benefit in research.' },
+  { pairs: ['semaglutide', 'retatrutide'], type: 'conflict', category: 'Safety', message: 'GLP-1 agonist overlap: additive nausea/vomiting risk with no clear mechanistic benefit over mono-therapy.' },
+  // Pro-Angiogenic caution
+  { pairs: ['bpc-157', 'igf-1'], type: 'caution', category: 'Safety', message: 'Caution: Both BPC-157 and IGF-1 promote angiogenesis. Research literature notes theoretical considerations around stacking pro-angiogenic compounds.' },
+  { pairs: ['tb-500', 'igf-1'], type: 'caution', category: 'Safety', message: 'Caution: TB-500 (thymosin beta-4) and IGF-1 both promote cell migration and angiogenesis — research protocol design should account for this.' },
 ];
 
-// ── Weighted Scoring Engine ──────────────────────────────────────────────────
+// ── Animated Score Ring ───────────────────────────────────────────────────────
 interface CompoundScore {
   total: number;
+  letter: 'A+' | 'A' | 'B+' | 'B' | 'C+' | 'C' | 'D';
   breakdown: { evidence: number; safety: number; coverage: number; science: number; handling: number };
   verdict: string;
 }
+
+function AnimatedScoreRingDrawer({ score, color }: { score: CompoundScore; color: string }) {
+  const [displayPct, setDisplayPct] = useState(0);
+  const rafRef = useRef<number>(0);
+  useEffect(() => {
+    const target = score.total;
+    const duration = 900;
+    const start = performance.now();
+    const easeOut = (t: number) => 1 - Math.pow(1 - t, 3);
+    const tick = (now: number) => {
+      const elapsed = now - start;
+      const t = Math.min(elapsed / duration, 1);
+      setDisplayPct(Math.round(easeOut(t) * target));
+      if (t < 1) rafRef.current = requestAnimationFrame(tick);
+    };
+    rafRef.current = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(rafRef.current);
+  }, [score.total]);
+  const r = 32;
+  const circ = 2 * Math.PI * r;
+  const pct = (displayPct / 100) * circ;
+  const gradeColor = score.letter.startsWith('A') ? '#68D391' : score.letter.startsWith('B') ? '#00C4BC' : score.letter.startsWith('C') ? '#F6AD55' : '#FC8181';
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 6 }}>
+      <div style={{ position: 'relative', width: 72, height: 72, flexShrink: 0 }}>
+        <svg width="72" height="72" viewBox="0 0 72 72">
+          <circle cx="36" cy="36" r={r} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="6" />
+          <circle cx="36" cy="36" r={r} fill="none" stroke={gradeColor} strokeWidth="6" strokeLinecap="round"
+            strokeDasharray={`${pct} ${circ}`} strokeDashoffset={circ / 4} />
+        </svg>
+        <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+          <span style={{ fontSize: '0.95rem', fontWeight: 900, color: gradeColor, lineHeight: 1 }}>{displayPct}</span>
+          <span style={{ fontSize: '0.5rem', color: gradeColor, opacity: 0.6 }}>/100</span>
+        </div>
+      </div>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontSize: '0.88rem', fontWeight: 900, color: gradeColor }}>Grade {score.letter}</div>
+        <div style={{ fontSize: '0.62rem', color: 'rgba(255,255,255,0.4)', marginBottom: 5 }}>{score.verdict}</div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          {[['Ev', score.breakdown.evidence, 30], ['Sa', score.breakdown.safety, 25], ['Sc', score.breakdown.science, 15], ['Ha', score.breakdown.handling, 15]].map(([lbl, val, max]) => (
+            <div key={String(lbl)} style={{ display: 'flex', alignItems: 'center', gap: 3, fontSize: '0.58rem', color: 'rgba(255,255,255,0.35)' }}>
+              <span style={{ minWidth: 12 }}>{lbl}</span>
+              <div style={{ flex: 1, height: 2, background: 'rgba(255,255,255,0.06)', borderRadius: 999, overflow: 'hidden' }}>
+                <div style={{ height: '100%', width: `${(Number(val)/Number(max))*100}%`, background: color, borderRadius: 999 }} />
+              </div>
+              <span style={{ minWidth: 14, textAlign: 'right', fontWeight: 700, color }}>{val}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+
 
 function scoreCompoundFromPinned(p: PinnedItem, compoundsBySlug: Record<string, Compound>): CompoundScore {
   const c = p.compoundSlug ? compoundsBySlug[p.compoundSlug] : null;
@@ -158,6 +231,7 @@ function scoreCompoundFromPinned(p: PinnedItem, compoundsBySlug: Record<string, 
   const shelfScore = shelfDays > 0 ? Math.min(7, (shelfDays / 60) * 7) : 2;
   const handlingScore = hlScore + shelfScore;
   const total = Math.round(evidenceScore + safetyScore + coverageScore + scienceScore + handlingScore);
+  const letter: CompoundScore['letter'] = total >= 88 ? 'A+' : total >= 80 ? 'A' : total >= 73 ? 'B+' : total >= 65 ? 'B' : total >= 57 ? 'C+' : total >= 48 ? 'C' : 'D';
   const dims = [
     { name: 'evidence strength', val: evidenceScore / 30 },
     { name: 'safety profile', val: safetyScore / 25 },
@@ -166,7 +240,7 @@ function scoreCompoundFromPinned(p: PinnedItem, compoundsBySlug: Record<string, 
     { name: 'handling practicality', val: handlingScore / 15 },
   ];
   const topDim = [...dims].sort((a, b) => b.val - a.val)[0];
-  return { total, breakdown: { evidence: Math.round(evidenceScore), safety: Math.round(safetyScore), coverage: Math.round(coverageScore), science: Math.round(scienceScore), handling: Math.round(handlingScore) }, verdict: `Leads in ${topDim.name}` };
+  return { total, letter, breakdown: { evidence: Math.round(evidenceScore), safety: Math.round(safetyScore), coverage: Math.round(coverageScore), science: Math.round(scienceScore), handling: Math.round(handlingScore) }, verdict: `Leads in ${topDim.name}` };
 }
 
 // ── Pros/Cons Generator ──────────────────────────────────────────────────────
@@ -514,7 +588,7 @@ export default function StorefrontCompareDrawer({
     return best;
   }, [pinned, pinnedScores]);
 
-  const [matrixTab, setMatrixTab] = useState<'matrix' | 'proscons' | 'brief'>('matrix');
+  const [matrixTab, setMatrixTab] = useState<'matrix' | 'proscons' | 'brief' | 'mechanism' | 'protocol' | 'verdict'>('matrix');
 
   const analystBriefLines = useMemo(() => {
     if (pinned.length < 2) return [];
@@ -526,6 +600,11 @@ export default function StorefrontCompareDrawer({
     lines.push(`From an evidence standpoint, ${highestEvidence.productName} carries the strongest regulatory backing as an ${evidenceTier(highestEvidence.evidenceTierKey ?? '').label.toLowerCase()} compound.`);
     const allHl = pinned.map(p => { const c = p.compoundSlug ? compoundsBySlug[p.compoundSlug] : null; return { p, hl: parseHalfLifeHours(c?.half_life), raw: c?.half_life }; }).filter(x => x.hl > 0).sort((a, b) => b.hl - a.hl);
     if (allHl.length >= 2) { const lg = allHl[0]; const sh = allHl[allHl.length - 1]; if (lg.p.productName !== sh.p.productName) lines.push(`Pharmacokinetically, ${lg.p.productName} provides a ${(lg.hl/sh.hl).toFixed(1)}x longer half-life than ${sh.p.productName} (${lg.raw} vs. ${sh.raw}), offering greater dosing interval flexibility.`); }
+    // Safety divergence
+    const safeRanked = [...pinned].map(p => ({ p, c: p.compoundSlug ? compoundsBySlug[p.compoundSlug] : null })).filter(x => x.c).sort((a, b) => { const r = (x: string) => x === 'low' ? 1 : x === 'moderate' ? 2 : x === 'high' ? 3 : 4; return r(a.c!.risk_level) - r(b.c!.risk_level); });
+    if (safeRanked.length >= 2 && safeRanked[0].c?.risk_level !== safeRanked[safeRanked.length-1].c?.risk_level) {
+      lines.push(`Safety profiles diverge: ${safeRanked[0].p.productName} has the most favorable risk profile (${safeRanked[0].c?.risk_level}), while ${safeRanked[safeRanked.length-1].p.productName} carries a ${safeRanked[safeRanked.length-1].c?.risk_level} designation.`);
+    }
     return lines;
   }, [pinned, pinnedScores, compoundsBySlug]);
 
@@ -551,6 +630,17 @@ export default function StorefrontCompareDrawer({
     syn.pairs.every(slug => pinned.some(p => p.compoundSlug === slug))
   );
 
+  // Dynamic GLP-1 / pro-angiogenic warnings
+  const dynamicWarnings = useMemo(() => {
+    const warnings: { type: 'conflict' | 'caution'; category: string; message: string }[] = [];
+    const pinnedCompounds = pinned.map(p => p.compoundSlug ? compoundsBySlug[p.compoundSlug] : null).filter(Boolean) as Compound[];
+    const proAngio = pinnedCompounds.filter(c => c.is_pro_angiogenic);
+    if (proAngio.length >= 2) warnings.push({ type: 'caution', category: 'Safety', message: `Multiple pro-angiogenic compounds pinned (${proAngio.map(c => c.display_name).join(', ')}). Stacking compounds that promote new vessel growth warrants additional research scrutiny.` });
+    const glp1s = pinnedCompounds.filter(c => c.is_glp1);
+    if (glp1s.length >= 2) warnings.push({ type: 'conflict', category: 'Safety', message: `Multiple GLP-1/incretin agents pinned (${glp1s.map(c => c.display_name).join(', ')}). Combining incretin-class agents compounds gastrointestinal adverse effects.` });
+    return warnings;
+  }, [pinned, compoundsBySlug]);
+
   const maxTrials = useMemo(() => Math.max(...displayedPinned.map(p => { const c = p.compoundSlug ? compoundsBySlug[p.compoundSlug] : null; return (c?.active_trial_count ?? 0) + (c?.completed_trial_count ?? 0); }), 1), [displayedPinned, compoundsBySlug]);
 
   const radarData = useMemo(() => {
@@ -570,7 +660,7 @@ export default function StorefrontCompareDrawer({
   if (pinned.length === 0) return null;
   if (typeof document === 'undefined') return null;
 
-  const activeSynergies = activeSynergiesModal;
+  const activeSynergies = [...activeSynergiesModal, ...dynamicWarnings];
 
   return createPortal(
     <>
@@ -727,7 +817,7 @@ export default function StorefrontCompareDrawer({
                           border: `1px solid ${tier.color}55`,
                         }}>{tier.label}</span>
                       )}
-                      {c?.wada_status !== 'Permitted' && (
+                      {c?.wada_status && (c.wada_status === 'prohibited' || c.wada_status === 'prohibited_males') && (
                         <span style={{ background: 'rgba(229,62,62,0.15)', color: '#FC8181', padding: '2px 6px', borderRadius: 4, fontSize: '0.65rem', fontWeight: 800 }}>
                           WADA 🚫
                         </span>
@@ -874,20 +964,49 @@ export default function StorefrontCompareDrawer({
 
               {/* Radar Chart */}
               {radarData.length >= 2 && (
-                <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 12, padding: 16, marginBottom: 20 }}>
+                <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 12, padding: 16, marginBottom: 16 }}>
                   <div style={{ textAlign: 'center', fontSize: '0.72rem', color: 'rgba(255,255,255,0.4)', marginBottom: 8, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Research Profile Radar</div>
-                  <AttributeRadarChart data={radarData} colors={colors} size={260} />
+                  <AttributeRadarChart data={radarData} colors={colors} size={260} compoundNames={pinned.map(p => p.productName)} />
                   <div style={{ display: 'flex', justifyContent: 'center', gap: 12, flexWrap: 'wrap', marginTop: 8 }}>
                     {pinned.map((p, i) => <div key={p.productName} style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: '0.68rem', color: 'rgba(255,255,255,0.5)' }}><div style={{ width: 8, height: 8, borderRadius: 2, background: colors[i % colors.length] }} />{p.productName}</div>)}
                   </div>
                 </div>
               )}
 
+              {/* Score Ring Summary Panel */}
+              {pinned.length >= 2 && (
+                <div style={{ display: 'grid', gridTemplateColumns: `repeat(auto-fit, minmax(190px, 1fr))`, gap: 10, marginBottom: 16, padding: 14, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 10 }}>
+                  {displayedPinned.map((p) => {
+                    const origIdx = pinned.findIndex(x => x.productName === p.productName);
+                    const score = pinnedScores[origIdx];
+                    const color = colors[origIdx % colors.length];
+                    const isTop = origIdx === topPickIdx;
+                    return (
+                      <div key={p.productName} style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginBottom: 2 }}>
+                          <div style={{ width: 6, height: 6, borderRadius: '50%', background: color }} />
+                          <span style={{ fontWeight: 800, fontSize: '0.78rem', color: 'var(--white)', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.productName}</span>
+                          {isTop && <Trophy size={11} color={primaryColor} />}
+                        </div>
+                        <AnimatedScoreRingDrawer score={score} color={color} />
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
               {/* Tab navigation */}
-              <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
-                {([['matrix', '📊 Matrix'], ['proscons', '⚖️ Pros & Cons'], ['brief', '🧠 Brief']] as const).map(([id, label]) => (
+              <div style={{ display: 'flex', gap: 6, marginBottom: 16, flexWrap: 'wrap' }}>
+                {([
+                  ['matrix', '📊 Matrix'],
+                  ['proscons', '⚖️ Pros & Cons'],
+                  ['brief', '🧠 Brief'],
+                  ['mechanism', '🔬 Mechanism'],
+                  ['protocol', '📋 Protocol'],
+                  ['verdict', '🎯 Verdict'],
+                ] as const).map(([id, label]) => (
                   <button key={id} type="button" onClick={() => setMatrixTab(id)}
-                    style={{ padding: '7px 14px', borderRadius: 8, fontWeight: 700, fontSize: '0.78rem', cursor: 'pointer', border: matrixTab === id ? `1px solid ${primaryColor}77` : '1px solid rgba(255,255,255,0.1)', background: matrixTab === id ? `${primaryColor}15` : 'rgba(255,255,255,0.04)', color: matrixTab === id ? primaryColor : 'rgba(255,255,255,0.5)' }}>
+                    style={{ padding: '7px 12px', borderRadius: 8, fontWeight: 700, fontSize: '0.75rem', cursor: 'pointer', border: matrixTab === id ? `1px solid ${primaryColor}77` : '1px solid rgba(255,255,255,0.1)', background: matrixTab === id ? `${primaryColor}15` : 'rgba(255,255,255,0.04)', color: matrixTab === id ? primaryColor : 'rgba(255,255,255,0.5)', whiteSpace: 'nowrap' }}>
                     {label}
                   </button>
                 ))}
@@ -902,11 +1021,13 @@ export default function StorefrontCompareDrawer({
                     const color = colors[origIdx % colors.length];
                     return (
                       <div key={p.productName} style={{ padding: 14, borderRadius: 10, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.08)' }}>
-                        <div style={{ fontWeight: 900, fontSize: '0.88rem', color: 'var(--white)', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6, paddingBottom: 8, borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+                        <div style={{ fontWeight: 900, fontSize: '0.88rem', color: 'var(--white)', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 6, paddingBottom: 8, borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
                           <div style={{ width: 7, height: 7, borderRadius: '50%', background: color }} />
                           {p.productName}
+                          <span style={{ marginLeft: 'auto', fontSize: '0.65rem', color, fontWeight: 800 }}>Score: {pinnedScores[origIdx].total}/100</span>
                         </div>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                        <AnimatedScoreRingDrawer score={pinnedScores[origIdx]} color={color} />
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 5, marginTop: 10 }}>
                           {pc?.pros.map((pro, i) => <div key={`pro-${i}`} style={{ display: 'flex', gap: 6, alignItems: 'flex-start' }}><ThumbsUp size={11} color="#68D391" style={{ marginTop: 2, flexShrink: 0 }} /><span style={{ fontSize: '0.76rem', color: 'rgba(255,255,255,0.8)', lineHeight: 1.4 }}>{pro}</span></div>)}
                           {pc?.cons.map((con, i) => <div key={`con-${i}`} style={{ display: 'flex', gap: 6, alignItems: 'flex-start' }}><ThumbsDown size={11} color="#FC8181" style={{ marginTop: 2, flexShrink: 0 }} /><span style={{ fontSize: '0.76rem', color: 'rgba(255,255,255,0.6)', lineHeight: 1.4 }}>{con}</span></div>)}
                         </div>
@@ -924,11 +1045,119 @@ export default function StorefrontCompareDrawer({
                     <span style={{ fontWeight: 800, fontSize: '0.88rem', color: 'var(--white)' }}>Analyst Brief</span>
                     <span style={{ marginLeft: 'auto', fontSize: '0.65rem', color: 'rgba(255,255,255,0.3)', fontStyle: 'italic' }}>Research reference only</span>
                   </div>
+                  {smartSummary && (
+                    <div style={{ background: `${primaryColor}10`, border: `1px solid ${primaryColor}30`, borderRadius: 8, padding: '8px 12px', marginBottom: 12, fontSize: '0.78rem', color: primaryColor, fontWeight: 600 }}>
+                      💡 {smartSummary}
+                    </div>
+                  )}
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                     {analystBriefLines.map((para, i) => <p key={i} style={{ margin: 0, color: 'rgba(255,255,255,0.7)', fontSize: '0.84rem', lineHeight: 1.7, paddingLeft: 12, borderLeft: `2px solid ${primaryColor}40` }}>{para}</p>)}
                   </div>
                 </div>
               )}
+
+              {/* Mechanism Tab */}
+              {matrixTab === 'mechanism' && (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 12, marginBottom: 20 }}>
+                  {displayedPinned.map((p) => {
+                    const origIdx = pinned.findIndex(x => x.productName === p.productName);
+                    const color = colors[origIdx % colors.length];
+                    const c = p.compoundSlug ? compoundsBySlug[p.compoundSlug] : null;
+                    return (
+                      <div key={p.productName} style={{ padding: 14, borderRadius: 10, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.08)' }}>
+                        <div style={{ fontWeight: 900, fontSize: '0.88rem', color: 'var(--white)', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6, paddingBottom: 8, borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+                          <div style={{ width: 7, height: 7, borderRadius: '50%', background: color }} />
+                          {p.productName}
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                          {c?.compound_class && <div><div style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.3)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 2 }}>Compound Class</div><div style={{ fontSize: '0.78rem', color }}>{c.compound_class}</div></div>}
+                          {c?.molecular_target && <div><div style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.3)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 2 }}>Molecular Target</div><div style={{ fontSize: '0.78rem', color: 'rgba(255,255,255,0.8)', lineHeight: 1.4 }}>{c.molecular_target}</div></div>}
+                          {c?.mechanism && <div><div style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.3)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 2 }}>Mechanism of Action</div><div style={{ fontSize: '0.78rem', color: 'rgba(255,255,255,0.7)', lineHeight: 1.5 }}>{c.mechanism}</div></div>}
+                          {c?.pk_summary && <div><div style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.3)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 2 }}>Pharmacokinetics</div><div style={{ fontSize: '0.78rem', color: 'rgba(255,255,255,0.7)', lineHeight: 1.5 }}>{c.pk_summary}</div></div>}
+                          {c?.risk_reasons?.length ? <div><div style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.3)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4 }}>Risk Considerations</div><div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>{c.risk_reasons.map((r, ri) => <div key={ri} style={{ display: 'flex', gap: 5, alignItems: 'flex-start' }}><AlertTriangle size={10} color={RISK_META[c.risk_level]?.color ?? '#F6AD55'} style={{ marginTop: 2, flexShrink: 0 }} /><span style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.6)', lineHeight: 1.4 }}>{r}</span></div>)}</div></div> : null}
+                          {c?.is_pro_angiogenic && <div style={{ fontSize: '0.72rem', color: '#F6AD55', fontWeight: 700 }}>⚠️ Pro-Angiogenic — promotes new vessel growth</div>}
+                          {c?.is_glp1 && <div style={{ fontSize: '0.72rem', color: '#9F7AEA', fontWeight: 700 }}>✓ GLP-1 / Incretin Class</div>}
+                          {c?.sources?.length ? <div><div style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.3)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4 }}>Key Sources</div><div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>{c.sources.slice(0, 3).map((src, si) => <a key={si} href={src.startsWith('http') ? src : undefined} target="_blank" rel="noopener noreferrer" style={{ fontSize: '0.68rem', color, opacity: 0.8, wordBreak: 'break-all', lineHeight: 1.3, textDecoration: src.startsWith('http') ? 'underline' : 'none' }}>{src.startsWith('http') ? `📄 Source ${si+1}` : src}</a>)}</div></div> : null}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              {/* Protocol Tab */}
+              {matrixTab === 'protocol' && (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 12, marginBottom: 20 }}>
+                  {displayedPinned.map((p) => {
+                    const origIdx = pinned.findIndex(x => x.productName === p.productName);
+                    const color = colors[origIdx % colors.length];
+                    const c = p.compoundSlug ? compoundsBySlug[p.compoundSlug] : null;
+                    const shelf = c?.reconstitution_shelf_days ?? c?.handling?.reconstituted_days;
+                    const hlH = parseHalfLifeHours(c?.half_life);
+                    const dosesPerWeek = hlH > 0 ? Math.max(1, Math.round(168 / (hlH * 2))) : null;
+                    return (
+                      <div key={p.productName} style={{ padding: 14, borderRadius: 10, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.08)' }}>
+                        <div style={{ fontWeight: 900, fontSize: '0.88rem', color: 'var(--white)', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6, paddingBottom: 8, borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+                          <div style={{ width: 7, height: 7, borderRadius: '50%', background: color }} />
+                          {p.productName}
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                          <div style={{ background: `${color}08`, borderRadius: 8, padding: '8px 10px' }}>
+                            <div style={{ fontSize: '0.6rem', color, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 5 }}>Reconstitution</div>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '3px 10px', fontSize: '0.74rem' }}>
+                              <div style={{ color: 'rgba(255,255,255,0.4)' }}>Form</div><div style={{ color: 'rgba(255,255,255,0.8)' }}>{c?.handling?.form ?? NL}</div>
+                              <div style={{ color: 'rgba(255,255,255,0.4)' }}>Diluent</div><div style={{ color: 'rgba(255,255,255,0.8)' }}>{c?.handling?.diluent ?? NL}</div>
+                              <div style={{ color: 'rgba(255,255,255,0.4)' }}>Storage</div><div style={{ color: 'rgba(255,255,255,0.8)' }}>{c?.handling?.storage_temp ?? NL}</div>
+                              <div style={{ color: 'rgba(255,255,255,0.4)' }}>Light</div><div style={{ color: 'rgba(255,255,255,0.8)' }}>{c?.handling?.light_sensitive == null ? NL : c.handling.light_sensitive ? '⚠️ Sensitive' : '✓ Safe'}</div>
+                              {shelf && <><div style={{ color: 'rgba(255,255,255,0.4)' }}>Shelf Life</div><div style={{ color: shelf >= 28 ? '#68D391' : shelf < 14 ? '#FC8181' : '#F6AD55', fontWeight: 700 }}>{shelf} days</div></>}
+                            </div>
+                          </div>
+                          {(c?.half_life || c?.typical_frequency) && (
+                            <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 8, padding: '8px 10px', border: '1px solid rgba(255,255,255,0.04)' }}>
+                              <div style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.35)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 5 }}>Administration</div>
+                              {c?.half_life && <div style={{ fontSize: '0.76rem', color: 'rgba(255,255,255,0.7)', marginBottom: 3 }}><Clock size={9} style={{ marginRight: 4, display: 'inline-block', verticalAlign: 'middle' }} />Half-life: <strong style={{ color }}>{c.half_life}</strong></div>}
+                              {c?.typical_frequency && <div style={{ fontSize: '0.76rem', color: 'rgba(255,255,255,0.7)', marginBottom: 3 }}><Zap size={9} style={{ marginRight: 4, display: 'inline-block', verticalAlign: 'middle' }} />Frequency: <strong style={{ color: 'rgba(255,255,255,0.9)' }}>{c.typical_frequency}</strong></div>}
+                              {dosesPerWeek && <div style={{ fontSize: '0.68rem', color: 'rgba(255,255,255,0.35)', marginTop: 3, fontStyle: 'italic' }}>~{dosesPerWeek}× per week based on half-life</div>}
+                            </div>
+                          )}
+                          {c?.handling?.freeze_thaw && <div style={{ fontSize: '0.74rem', color: 'rgba(255,255,255,0.6)', display: 'flex', gap: 5, alignItems: 'flex-start' }}><Thermometer size={11} color="#F6AD55" style={{ marginTop: 1, flexShrink: 0 }} /><span>{c.handling.freeze_thaw}</span></div>}
+                          {c?.handling?.notes && <div style={{ fontSize: '0.74rem', color: 'rgba(255,255,255,0.55)', lineHeight: 1.4, borderLeft: '2px solid rgba(255,255,255,0.08)', paddingLeft: 6 }}>{c.handling.notes}</div>}
+                          {c?.coa_url && <a href={c.coa_url} target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: '0.72rem', color, textDecoration: 'none', fontWeight: 700 }}><BookOpen size={11} /> View COA</a>}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              {/* Verdict Tab */}
+              {matrixTab === 'verdict' && pinned.length >= 2 && (() => {
+                const ranked = [...pinned].map((p, i) => ({ p, s: pinnedScores[i] })).sort((a, b) => b.s.total - a.s.total);
+                const leader = ranked[0];
+                const safest = [...ranked].sort((a, b) => b.s.breakdown.safety - a.s.breakdown.safety)[0];
+                const mostStudied = [...ranked].sort((a, b) => b.s.breakdown.science - a.s.breakdown.science)[0];
+                const mostPractical = [...ranked].sort((a, b) => b.s.breakdown.handling - a.s.breakdown.handling)[0];
+                const verdicts = [
+                  { label: '🏆 Overall Best', item: leader, color: primaryColor, reason: `Highest composite research score (${leader.s.total}/100)` },
+                  { label: '🛡️ Safest Profile', item: safest, color: '#68D391', reason: `Best safety-to-evidence ratio in this comparison` },
+                  { label: '📚 Most Studied', item: mostStudied, color: '#F6AD55', reason: `Deepest scientific literature footprint` },
+                  { label: '⚡ Most Practical', item: mostPractical, color: '#9F7AEA', reason: `Best handling & protocol practicality score` },
+                ];
+                return (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 20 }}>
+                    <p style={{ margin: '0 0 4px 0', fontSize: '0.78rem', color: 'rgba(255,255,255,0.4)', lineHeight: 1.5 }}>Research verdict cards — scored on evidence strength, safety profile, scientific backing, research coverage, and handling practicality.</p>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 10 }}>
+                      {verdicts.map(v => (
+                        <div key={v.label} style={{ padding: '12px 14px', borderRadius: 10, background: `${v.color}08`, border: `1px solid ${v.color}25` }}>
+                          <div style={{ fontSize: '0.65rem', fontWeight: 800, color: v.color, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4 }}>{v.label}</div>
+                          <div style={{ fontWeight: 900, fontSize: '0.92rem', color: 'var(--white)', marginBottom: 4 }}>{v.item.p.productName}</div>
+                          <div style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.5)', lineHeight: 1.4 }}>{v.reason}</div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })()}
 
               {matrixTab === 'matrix' && <div style={{ borderRadius: 'var(--radius-lg, 12px)', overflowX: 'auto', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.08)' }}>
                 <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '600px', position: 'relative' }}>
