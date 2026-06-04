@@ -269,20 +269,7 @@ export default function Navbar({ onMenuClick, isOpen, title }: { onMenuClick?: (
   };
 
   const handleBack = () => {
-    if (window.history.length > 1) {
-      router.back();
-      return;
-    }
-    if (pathname.startsWith('/admin/')) {
-      router.push('/admin');
-    } else if (pathname.startsWith('/account/')) {
-      router.push(dashLink);
-    } else if (pathname.match(/^\/[^\/]+\/product\//)) {
-      const slug = pathname.split('/')[1];
-      router.push(`/${slug}/store`);
-    } else {
-      router.push(dashLink);
-    }
+    router.back();
   };
 
   const showBack = pathname !== '/';

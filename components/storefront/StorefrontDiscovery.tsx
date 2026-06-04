@@ -1473,9 +1473,9 @@ export default function DiscoveryHero({
               width: '100%', height: '100%',
               background: 'transparent',
               border: 'none', outline: 'none', color: '#FFFFFF',
-              fontSize: 'max(20px, 1.86vw)',
-              padding: '0 20px 2px 20px',
-              textAlign: 'center',
+              fontSize: 'max(16px, 1.86vw)',
+              padding: '0 10px 8px 48px',
+              textAlign: 'left',
               fontWeight: 500,
               letterSpacing: '0.02em',
             }}
