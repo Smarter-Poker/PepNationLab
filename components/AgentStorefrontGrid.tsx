@@ -733,66 +733,68 @@ export default function AgentStorefrontGrid({
     }
   }, [grouped]);
 
-  const matchesSearch = useCallback(
-    (g: GroupedProduct) => {
-      const q = deferredSearch.trim().toLowerCase();
-      if (!q) return { matches: true, score: 0 };
-      
-      const STOP_WORDS = new Set(['for', 'the', 'and', 'in', 'to', 'with', 'a', 'an', 'of', 'is', 'it', 'on', 'peptides', 'peptide', 'best']);
-      const CONCEPT_GROUPS: string[][] = [
-        ['fat', 'weightloss', 'weight', 'loss', 'lipolysis', 'obesity', 'adipose', 'slimming', 'lean', 'cut', 'cutting'],
-        ['muscle', 'growthhormone', 'gh', 'hgh', 'hypertrophy', 'bodybuilding', 'mass', 'strength', 'growth', 'anabolic', 'gains', 'bulking', 'size', 'brawn'],
-        ['sleep', 'insomnia', 'circadian', 'rest', 'recovery', 'rem', 'tired', 'exhausted', 'yawn'],
-        ['pain', 'analgesic', 'inflammation', 'injury', 'healing', 'joint', 'tendon', 'nociception', 'soreness', 'headache', 'headaches', 'migraine', 'migraines', 'ache', 'sore', 'hurt', 'arthritis', 'back', 'knee'],
-        ['brain', 'cognitive', 'nootropic', 'memory', 'focus', 'neuro', 'alzheimers', 'dementia', 'learning', 'adhd', 'attention', 'clarity', 'smart'],
-        ['skin', 'antiaging', 'collagen', 'wrinkle', 'elasticity', 'hair', 'nail', 'glow', 'complexion', 'youth', 'tanning', 'tan', 'melanin', 'sun', 'burn'],
-        ['energy', 'stamina', 'endurance', 'fatigue', 'metabolism', 'mitochondrial', 'cardio', 'athletic', 'performance', 'vitality'],
-        ['sugar', 'diabetes', 'insulin', 'glucose', 'glycemic', 'metabolic', 'a1c'],
-        ['heart', 'bloodpressure', 'cardiovascular', 'blood', 'vascular', 'angiogenesis', 'cardiac', 'pressure', 'cholesterol', 'artery'],
-        ['bone', 'osteoporosis', 'mineral', 'fracture', 'density', 'healing', 'skeleton'],
-        ['sex', 'libido', 'erectile', 'aphrodisiac', 'testosterone', 'hormone', 'arousal', 'ed', 'dysfunction', 'intimacy', 'drive'],
-        ['gut', 'digestion', 'ulcer', 'gastric', 'intestinal', 'microbiome', 'bowel', 'leaky', 'stomach', 'ibs', 'crohns', 'colitis', 'bloating'],
-        ['immune', 'immunesystem', 'immunity', 'infection', 'virus', 'bacteria', 'autoimmune', 'sick', 'illness', 'cold', 'flu'],
-        ['stress', 'anxiety', 'cortisol', 'calm', 'relax', 'mood', 'depression', 'panic', 'worry', 'nervous'],
-        ['aging', 'longevity', 'senescence', 'lifespan', 'youth', 'telomere', 'life'],
-        ['women', 'female', 'menopause', 'pcos', 'estrogen', 'progesterone'],
-        ['men', 'male', 'trt', 'testosterone', 'prostate'],
-        ['eyes', 'vision', 'sight', 'macular', 'retina', 'blindness'],
-        ['glp1', 'incretin', 'tirzepatide', 'semaglutide', 'retatrutide', 'appetite', 'craving'],
-        ['bpc157', 'wolverine', 'healing', 'repair', 'gut', 'recovery'],
-        ['tb500', 'healing', 'repair', 'muscle', 'recovery']
-      ];
+  const parsedSearchData = useMemo(() => {
+    const q = deferredSearch.trim().toLowerCase();
+    if (!q) return [];
+    
+    const STOP_WORDS = new Set(['for', 'the', 'and', 'in', 'to', 'with', 'a', 'an', 'of', 'is', 'it', 'on', 'peptides', 'peptide', 'best']);
+    const CONCEPT_GROUPS: string[][] = [
+      ['fat', 'weightloss', 'weight', 'loss', 'lipolysis', 'obesity', 'adipose', 'slimming', 'lean', 'cut', 'cutting'],
+      ['muscle', 'growthhormone', 'gh', 'hgh', 'hypertrophy', 'bodybuilding', 'mass', 'strength', 'growth', 'anabolic', 'gains', 'bulking', 'size', 'brawn'],
+      ['sleep', 'insomnia', 'circadian', 'rest', 'recovery', 'rem', 'tired', 'exhausted', 'yawn'],
+      ['pain', 'analgesic', 'inflammation', 'injury', 'healing', 'joint', 'tendon', 'nociception', 'soreness', 'headache', 'headaches', 'migraine', 'migraines', 'ache', 'sore', 'hurt', 'arthritis', 'back', 'knee'],
+      ['brain', 'cognitive', 'nootropic', 'memory', 'focus', 'neuro', 'alzheimers', 'dementia', 'learning', 'adhd', 'attention', 'clarity', 'smart'],
+      ['skin', 'antiaging', 'collagen', 'wrinkle', 'elasticity', 'hair', 'nail', 'glow', 'complexion', 'youth', 'tanning', 'tan', 'melanin', 'sun', 'burn'],
+      ['energy', 'stamina', 'endurance', 'fatigue', 'metabolism', 'mitochondrial', 'cardio', 'athletic', 'performance', 'vitality'],
+      ['sugar', 'diabetes', 'insulin', 'glucose', 'glycemic', 'metabolic', 'a1c'],
+      ['heart', 'bloodpressure', 'cardiovascular', 'blood', 'vascular', 'angiogenesis', 'cardiac', 'pressure', 'cholesterol', 'artery'],
+      ['bone', 'osteoporosis', 'mineral', 'fracture', 'density', 'healing', 'skeleton'],
+      ['sex', 'libido', 'erectile', 'aphrodisiac', 'testosterone', 'hormone', 'arousal', 'ed', 'dysfunction', 'intimacy', 'drive'],
+      ['gut', 'digestion', 'ulcer', 'gastric', 'intestinal', 'microbiome', 'bowel', 'leaky', 'stomach', 'ibs', 'crohns', 'colitis', 'bloating'],
+      ['immune', 'immunesystem', 'immunity', 'infection', 'virus', 'bacteria', 'autoimmune', 'sick', 'illness', 'cold', 'flu'],
+      ['stress', 'anxiety', 'cortisol', 'calm', 'relax', 'mood', 'depression', 'panic', 'worry', 'nervous'],
+      ['aging', 'longevity', 'senescence', 'lifespan', 'youth', 'telomere', 'life'],
+      ['women', 'female', 'menopause', 'pcos', 'estrogen', 'progesterone'],
+      ['men', 'male', 'trt', 'testosterone', 'prostate'],
+      ['eyes', 'vision', 'sight', 'macular', 'retina', 'blindness'],
+      ['glp1', 'incretin', 'tirzepatide', 'semaglutide', 'retatrutide', 'appetite', 'craving'],
+      ['bpc157', 'wolverine', 'healing', 'repair', 'gut', 'recovery'],
+      ['tb500', 'healing', 'repair', 'muscle', 'recovery']
+    ];
 
-      // Pre-process common multi-word concepts to keep them glued together
-      let processedQ = q
-        .replace(/weight loss/g, 'weightloss')
-        .replace(/anti aging/g, 'antiaging')
-        .replace(/anti-aging/g, 'antiaging')
-        .replace(/growth hormone/g, 'growthhormone')
-        .replace(/blood pressure/g, 'bloodpressure')
-        .replace(/immune system/g, 'immunesystem')
-        .replace(/glp 1/g, 'glp1')
-        .replace(/glp-1/g, 'glp1')
-        .replace(/bpc 157/g, 'bpc157')
-        .replace(/bpc-157/g, 'bpc157')
-        .replace(/tb 500/g, 'tb500')
-        .replace(/tb-500/g, 'tb500');
+    // Pre-process common multi-word concepts to keep them glued together
+    let processedQ = q
+      .replace(/weight loss/g, 'weightloss')
+      .replace(/anti aging/g, 'antiaging')
+      .replace(/anti-aging/g, 'antiaging')
+      .replace(/growth hormone/g, 'growthhormone')
+      .replace(/blood pressure/g, 'bloodpressure')
+      .replace(/immune system/g, 'immunesystem')
+      .replace(/glp 1/g, 'glp1')
+      .replace(/glp-1/g, 'glp1')
+      .replace(/bpc 157/g, 'bpc157')
+      .replace(/bpc-157/g, 'bpc157')
+      .replace(/tb 500/g, 'tb500')
+      .replace(/tb-500/g, 'tb500');
 
-      // Filter out stop words
-      const rawTokens = processedQ.split(/\s+/).filter(t => t && !STOP_WORDS.has(t));
-      if (rawTokens.length === 0) return { matches: true, score: 0 };
-
-      let totalScore = 0;
-      let allTokensMatched = true;
-      let primaryReason: string | undefined = undefined;
-
-      for (const rawToken of rawTokens) {
+    // Filter out stop words and detect negative modifiers
+    const qTokens = processedQ.split(/\s+/).filter(t => t);
+    const rawTokens: { token: string, isNegative: boolean, variants: string[] }[] = [];
+    let isNegContext = false;
+    const NEG_MODIFIERS = new Set(['no', 'without', 'excluding', 'minus', 'non', 'zero', 'not', 'lack']);
+    
+    for (const t of qTokens) {
+      if (NEG_MODIFIERS.has(t)) {
+        isNegContext = true;
+        continue;
+      }
+      if (!STOP_WORDS.has(t)) {
         // Generate singular/plural variants for basic stemming
-        let variants = [rawToken];
-        if (rawToken.endsWith('ies')) variants.push(rawToken.slice(0, -3) + 'y');
-        else if (rawToken.endsWith('es')) variants.push(rawToken.slice(0, -2));
-        else if (rawToken.endsWith('s')) variants.push(rawToken.slice(0, -1));
-        if (!rawToken.endsWith('s')) variants.push(rawToken + 's');
+        let variants = [t];
+        if (t.endsWith('ies')) variants.push(t.slice(0, -3) + 'y');
+        else if (t.endsWith('es')) variants.push(t.slice(0, -2));
+        else if (t.endsWith('s')) variants.push(t.slice(0, -1));
+        if (!t.endsWith('s')) variants.push(t + 's');
         
         // Add semantic synonyms to the variant list bidirectionally with typo tolerance
         const toAdd = new Set<string>();
@@ -812,6 +814,28 @@ export default function AgentStorefrontGrid({
           }
         }
         variants = Array.from(new Set([...variants, ...Array.from(toAdd)]));
+        rawTokens.push({ token: t, isNegative: isNegContext, variants });
+        
+        // Reset negative context after attaching it to the immediate next token
+        isNegContext = false;
+      }
+    }
+    return rawTokens;
+  }, [deferredSearch]);
+
+  const matchesSearch = useCallback(
+    (g: GroupedProduct) => {
+      const q = deferredSearch.trim().toLowerCase();
+      if (parsedSearchData.length === 0) return { matches: true, score: 0 };
+
+      let totalScore = 0;
+      let allTokensMatched = true;
+      let primaryReason: string | undefined = undefined;
+
+      for (const tokenData of parsedSearchData) {
+        const rawToken = tokenData.token;
+        const isNegative = tokenData.isNegative;
+        const variants = tokenData.variants;
 
         let maxTokenScore = 0;
         let tokenReason: string | undefined = undefined;
@@ -890,9 +914,13 @@ export default function AgentStorefrontGrid({
           }
         }
 
-        if (maxTokenScore === 0) {
+        if (maxTokenScore === 0 && !isNegative) {
           allTokensMatched = false;
-        } else {
+        } else if (maxTokenScore > 0 && isNegative) {
+          // Negative token matched -> heavily penalize or disqualify
+          totalScore -= 2000;
+          allTokensMatched = false;
+        } else if (maxTokenScore > 0 && !isNegative) {
           totalScore += maxTokenScore;
           if (!primaryReason && tokenReason) {
              // Only display semantic/alias/typo reasons, otherwise it's just repeating the obvious name
@@ -916,7 +944,18 @@ export default function AgentStorefrontGrid({
         }
       }
 
-      return { matches: allTokensMatched, score: totalScore, reason: primaryReason };
+      // Evidence-Weighted Sorting Tie-Breaker
+      const isMatch = allTokensMatched || totalScore >= 400;
+      if (isMatch && compoundsBySlug && g.compoundSlug) {
+        const c = compoundsBySlug[g.compoundSlug];
+        if (c) {
+          if (c.evidence_tier === 'approved_drug') totalScore += 100;
+          else if (c.evidence_tier === 'investigational') totalScore += 50;
+          else if (c.evidence_tier === 'preclinical') totalScore += 20;
+        }
+      }
+
+      return { matches: isMatch, score: totalScore, reason: primaryReason };
     },
     [deferredSearch, compoundsBySlug]
   );

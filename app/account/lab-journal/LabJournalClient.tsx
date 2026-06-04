@@ -3,6 +3,7 @@
 import { useState, useTransition, useEffect } from 'react';
 import SmartStackBuilder from '@/components/researcher/SmartStackBuilder';
 import { Heart, Trash2, ExternalLink, PackageOpen, History, LayoutGrid, List as ListIcon, Search, X, Check, ShoppingCart, Info, TrendingUp, XCircle, Layers, FlaskConical } from 'lucide-react';
+import { Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer, ComposedChart, Bar, ReferenceLine } from 'recharts';
 import Link from 'next/link';
 import { toast } from 'sonner';
 import { getProductImage } from '@/lib/categoryImage';
@@ -65,6 +66,21 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
   const [bioValue, setBioValue] = useState('');
   const [bioUnit, setBioUnit] = useState('');
   const [bioSaving, setBioSaving] = useState(false);
+  const [biometricGoals, setBiometricGoals] = useState<Record<string, number>>({});
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('pnl_biometric_goals');
+      if (saved) setBiometricGoals(JSON.parse(saved));
+    } catch {}
+  }, []);
+
+  const setGoal = (metric: string, val: number) => {
+    if (isNaN(val)) return;
+    const updated = { ...biometricGoals, [metric]: val };
+    setBiometricGoals(updated);
+    try { localStorage.setItem('pnl_biometric_goals', JSON.stringify(updated)); } catch {}
+  };
   
   // UX Features State
   const [activeTab, setActiveTab] = useState<'bundles' | 'favorites' | 'recentlyViewed' | 'pastOrders' | 'compareHistory' | 'notes' | 'doses' | 'biometrics'>('bundles');
@@ -312,33 +328,84 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
     }
   };
 
-  const renderDoseGraph = () => {
-    const days = Array.from({length: 60}, (_, i) => {
-      const d = new Date();
-      d.setDate(d.getDate() - (59 - i));
-      return d.toISOString().split('T')[0];
-    });
-
-    const dosesMap = new Map();
+  const renderCombinedChart = (metric: string) => {
+    // Group by day string
+    const byDay: Record<string, any> = {};
+    let hasData = false;
+    
+    if (metric !== 'Doses Only') {
+      const mData = biometrics.filter(b => b.metric_name === metric).sort((a, b) => new Date(a.measured_at).getTime() - new Date(b.measured_at).getTime());
+      mData.forEach(m => {
+        const day = new Date(m.measured_at).toLocaleDateString();
+        if (!byDay[day]) byDay[day] = { date: day };
+        byDay[day][metric] = m.metric_value;
+        hasData = true;
+      });
+    }
+    
+    // Also include doses in the same chart
     doses.forEach(d => {
-      const day = new Date(d.dosed_at).toISOString().split('T')[0];
-      if (!dosesMap.has(day)) dosesMap.set(day, []);
-      dosesMap.get(day).push(d);
+      const day = new Date(d.dosed_at).toLocaleDateString();
+      if (!byDay[day]) byDay[day] = { date: day };
+      byDay[day][d.compound_slug] = (byDay[day][d.compound_slug] || 0) + d.dose_amount;
+      hasData = true;
     });
+    
+    const chartData = Object.values(byDay).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    if (!hasData || chartData.length === 0) return null;
+    
+    const compoundsPresent = Array.from(new Set(doses.map(d => d.compound_slug)));
+    const colors = ['#00E5FF', '#F6AD55', '#68D391', '#D6BCFA', '#FC8181'];
+    const goal = metric !== 'Doses Only' ? biometricGoals[metric] : undefined;
 
     return (
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginTop: 'var(--space-4)', padding: 'var(--space-4)', background: 'rgba(0,0,0,0.2)', borderRadius: 'var(--radius-lg)' }}>
-        {days.map(d => {
-          const count = dosesMap.get(d)?.length || 0;
-          let opacity = 0.1;
-          if (count === 1) opacity = 0.4;
-          if (count === 2) opacity = 0.7;
-          if (count > 2) opacity = 1;
-          
-          return (
-            <div key={d} title={`${d}: ${count} doses`} style={{ width: 14, height: 14, borderRadius: 2, background: `rgba(0,196,188,${opacity})`, cursor: 'help' }} />
-          );
-        })}
+      <div key={metric} style={{ marginBottom: 'var(--space-6)' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-4)' }}>
+           <h3 style={{ color: 'var(--white)', margin: 0 }}>Protocol Correlation: {metric}</h3>
+           {metric !== 'Doses Only' && (
+             <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+               <span style={{ color: 'var(--silver)', fontSize: '0.9rem' }}>Target Goal:</span>
+               <input 
+                 type="number" 
+                 placeholder="Set Goal"
+                 value={goal || ''}
+                 onChange={e => setGoal(metric, parseFloat(e.target.value))}
+                 style={{ width: 100, background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', padding: '4px 8px', borderRadius: 4, color: 'var(--white)', fontSize: '0.9rem' }}
+               />
+             </div>
+           )}
+        </div>
+        <div style={{ width: '100%', height: 350, background: 'rgba(0,0,0,0.2)', borderRadius: 8, padding: 'var(--space-4)', position: 'relative' }}>
+          {goal && (
+             <div style={{ position: 'absolute', top: 10, left: 20, zIndex: 10, color: 'var(--teal)', fontSize: '0.85rem', fontWeight: 'bold' }}>
+                Active Target: {goal}
+             </div>
+          )}
+          <ResponsiveContainer width="100%" height="100%">
+            <ComposedChart data={chartData} margin={{ top: 20, right: 0, left: -20, bottom: 0 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
+              <XAxis dataKey="date" stroke="rgba(255,255,255,0.3)" tick={{fill: 'var(--silver)', fontSize: 11}} tickLine={false} axisLine={false} />
+              <YAxis yAxisId="left" stroke="rgba(255,255,255,0.3)" tick={{fill: 'var(--silver)', fontSize: 11}} tickLine={false} axisLine={false} />
+              <YAxis yAxisId="right" orientation="right" stroke="rgba(255,255,255,0.3)" tick={{fill: 'var(--silver)', fontSize: 11}} tickLine={false} axisLine={false} />
+              <RechartsTooltip 
+                contentStyle={{ backgroundColor: '#1A202C', borderColor: 'rgba(255,255,255,0.1)', borderRadius: 8 }} 
+                itemStyle={{ color: '#fff', fontSize: '0.9rem' }} 
+                labelStyle={{ color: 'var(--silver)', marginBottom: 4 }}
+              />
+              <Legend wrapperStyle={{ paddingTop: 10, fontSize: '0.85rem', color: 'var(--silver)' }} />
+              
+              {goal && <ReferenceLine yAxisId="left" y={goal} stroke="var(--teal)" strokeDasharray="4 4" />}
+              
+              {metric !== 'Doses Only' && (
+                <Line yAxisId="left" type="monotone" name={`${metric} Trend`} dataKey={metric} stroke="var(--white)" strokeWidth={3} dot={{r: 4, fill: '#1A202C', stroke: 'var(--white)', strokeWidth: 2}} activeDot={{r: 6}} connectNulls />
+              )}
+              
+              {compoundsPresent.map((cmp, idx) => (
+                <Bar key={cmp} yAxisId={metric !== 'Doses Only' ? "right" : "left"} name={`${cmp} Dose`} dataKey={cmp} fill={colors[idx % colors.length]} opacity={0.6} radius={[4,4,0,0]} barSize={20} />
+              ))}
+            </ComposedChart>
+          </ResponsiveContainer>
+        </div>
       </div>
     );
   };
@@ -774,7 +841,17 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
                     <div style={{ display: 'flex', gap: 'var(--space-3)', alignItems: 'center' }}>
                       <select 
                         value={doseCompound} 
-                        onChange={e => setDoseCompound(e.target.value)}
+                        onChange={e => {
+                          const cmp = e.target.value;
+                          setDoseCompound(cmp);
+                          const lastDose = doses.find(d => d.compound_slug === cmp);
+                          if (lastDose) {
+                            setDoseAmount(lastDose.dose_amount.toString());
+                            setDoseUnit(lastDose.unit);
+                          } else {
+                            setDoseAmount('');
+                          }
+                        }}
                         style={{ flex: 1, background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', padding: '12px', borderRadius: 8, color: 'var(--white)', fontSize: '1rem' }}
                       >
                         <option value="">Select Compound</option>
@@ -804,8 +881,10 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
                       </button>
                     </div>
                     
-                    <h3 style={{ color: 'var(--white)', marginTop: 'var(--space-6)' }}>60-Day Contribution Graph</h3>
-                    {renderDoseGraph()}
+                    <h3 style={{ color: 'var(--white)', marginTop: 'var(--space-6)' }}>Protocol Correlation Graph</h3>
+                    {biometrics.length > 0 
+                       ? Array.from(new Set(biometrics.map(b => b.metric_name))).map(metric => renderCombinedChart(metric))
+                       : renderCombinedChart('Doses Only')}
                   </div>
 
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
@@ -867,28 +946,12 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
                     </div>
                   </div>
 
-                  {/* Simple graph approximation via Flex blocks since recharts isn't guaranteed to be installed */}
+                  {/* Protocol Correlation Charts via Recharts */}
                   <div className="glass-panel" style={{ padding: 'var(--space-6)', borderRadius: 'var(--radius-lg)' }}>
-                    <h3 style={{ color: 'var(--white)', marginBottom: 'var(--space-4)' }}>Recent Biometrics</h3>
+                    <h3 style={{ color: 'var(--white)', marginBottom: 'var(--space-4)' }}>Protocol Correlation & Trends</h3>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
                       {biometrics.length === 0 ? <div style={{ color: 'var(--silver)' }}>No biometrics logged yet.</div> : null}
-                      {Array.from(new Set(biometrics.map(b => b.metric_name))).map(metric => {
-                        const mData = biometrics.filter(b => b.metric_name === metric);
-                        return (
-                          <div key={metric} style={{ marginBottom: 'var(--space-4)' }}>
-                            <div style={{ color: 'var(--teal)', fontWeight: 'bold', marginBottom: 'var(--space-2)' }}>{metric} Trend</div>
-                            <div style={{ display: 'flex', gap: 4, alignItems: 'flex-end', height: 60, borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
-                              {mData.map((b, i) => {
-                                const max = Math.max(...mData.map(d => d.metric_value));
-                                const height = max > 0 ? (b.metric_value / max) * 100 : 0;
-                                return (
-                                  <div key={b.id} title={`${b.metric_value} ${b.unit} on ${new Date(b.measured_at).toLocaleDateString()}`} style={{ flex: 1, background: 'var(--teal)', height: `${height}%`, minHeight: 4, borderRadius: '2px 2px 0 0', opacity: 0.8 }} />
-                                )
-                              })}
-                            </div>
-                          </div>
-                        );
-                      })}
+                      {Array.from(new Set(biometrics.map(b => b.metric_name))).map(metric => renderCombinedChart(metric))}
                     </div>
                   </div>
                 </div>
