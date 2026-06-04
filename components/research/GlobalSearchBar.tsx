@@ -111,7 +111,7 @@ export default function GlobalSearchBar({
   useEffect(() => {
     if (debounceRef.current) window.clearTimeout(debounceRef.current);
     const trimmed = q.trim();
-    if (!trimmed) {
+    if (trimmed.length < 2) {
       setSuggestions([]);
       return;
     }

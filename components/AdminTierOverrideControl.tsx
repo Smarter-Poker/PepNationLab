@@ -20,6 +20,7 @@ export default function AdminTierOverrideControl({ agentId }: { agentId: string 
   const [loaded, setLoaded] = useState(false);
   const [enabled, setEnabled] = useState(false);
   const [level, setLevel] = useState(3);
+  const [customMarkup, setCustomMarkup] = useState<string>('');
   const [ladderActive, setLadderActive] = useState(false);
   const [saving, setSaving] = useState(false);
 
@@ -33,6 +34,11 @@ export default function AdminTierOverrideControl({ agentId }: { agentId: string 
         if (cancelled) return;
         setEnabled(!!json.enabled);
         if (json.level) setLevel(Number(json.level));
+        if (json.customMarkup !== null && json.customMarkup !== undefined) {
+          setCustomMarkup(String(json.customMarkup));
+        } else {
+          setCustomMarkup('');
+        }
         setLadderActive(!!json.ladderActive);
       } catch {
         /* non-blocking: leave defaults */
@@ -43,13 +49,19 @@ export default function AdminTierOverrideControl({ agentId }: { agentId: string 
     return () => { cancelled = true; };
   }, [agentId]);
 
-  async function save(nextEnabled: boolean, nextLevel: number) {
+  async function save(nextEnabled: boolean, nextLevel: number, nextCustomMarkup?: string) {
     setSaving(true);
+    const resolvedMarkup = nextCustomMarkup !== undefined ? nextCustomMarkup : customMarkup;
     try {
       const res = await fetch('/api/admin/agents/tier-override', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ agentId, enabled: nextEnabled, level: nextEnabled ? nextLevel : undefined }),
+        body: JSON.stringify({ 
+          agentId, 
+          enabled: nextEnabled, 
+          level: nextEnabled ? nextLevel : undefined,
+          customMarkup: resolvedMarkup === '' ? null : Number(resolvedMarkup)
+        }),
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || 'Failed To Save Override');
@@ -92,8 +104,28 @@ export default function AdminTierOverrideControl({ agentId }: { agentId: string 
           </select>
         )}
       </div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 4 }}>
+        <input
+          type="number"
+          placeholder="Custom Markup %"
+          value={customMarkup}
+          disabled={saving}
+          onChange={(e) => setCustomMarkup(e.target.value)}
+          onBlur={() => save(enabled, level, customMarkup)}
+          style={{
+            background: 'var(--surface-3)',
+            color: 'var(--white)',
+            border: '1px solid rgba(255,255,255,0.15)',
+            borderRadius: 6,
+            padding: '3px 6px',
+            fontSize: '0.7rem',
+            width: '120px'
+          }}
+        />
+        <span style={{ fontSize: '0.62rem', color: 'var(--grey-500)' }}>Override All Set Pricing</span>
+      </div>
       {!ladderActive && (
-        <span style={{ fontSize: '0.6rem', color: 'var(--grey-500)' }}>Takes Effect When Tier Ladder Is Enabled</span>
+        <span style={{ fontSize: '0.6rem', color: 'var(--grey-500)', marginTop: 4 }}>Takes Effect When Tier Ladder Is Enabled</span>
       )}
     </div>
   );

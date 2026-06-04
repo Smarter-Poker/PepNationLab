@@ -22,7 +22,7 @@ export async function GET(req: NextRequest) {
   const svc = await createServiceClient();
   const { data } = await svc
     .from('profiles')
-    .select('fixed_scale_override, locked_tier_level, house_tier_level')
+    .select('fixed_scale_override, locked_tier_level, house_tier_level, custom_markup_override')
     .eq('id', agentId)
     .maybeSingle();
 
@@ -30,6 +30,7 @@ export async function GET(req: NextRequest) {
     enabled: !!data?.fixed_scale_override,
     level: data?.locked_tier_level == null ? null : Number(data.locked_tier_level),
     currentLevel: data?.house_tier_level == null ? null : Number(data.house_tier_level),
+    customMarkup: data?.custom_markup_override == null ? null : Number(data.custom_markup_override),
     ladderActive: isTierLadderV2(),
   });
 }
@@ -54,12 +55,16 @@ export async function POST(req: NextRequest) {
   const agentId = typeof body.agentId === 'string' ? body.agentId : '';
   const enabled = body.enabled === true;
   const level = body.level == null ? null : Number(body.level);
+  const customMarkup = body.customMarkup === '' ? null : (body.customMarkup == null ? null : Number(body.customMarkup));
 
   if (!agentId) {
     return NextResponse.json({ error: 'agentId Is Required.' }, { status: 400 });
   }
   if (enabled && (!Number.isInteger(level) || (level as number) < 1 || (level as number) > 5)) {
     return NextResponse.json({ error: 'A Locked Level Between 1 And 5 Is Required When Enabling The Override.' }, { status: 400 });
+  }
+  if (customMarkup !== null && (customMarkup < 0 || customMarkup > 100)) {
+    return NextResponse.json({ error: 'Custom Markup Must Be Between 0 And 100.' }, { status: 400 });
   }
 
   const svc = await createServiceClient();
@@ -72,6 +77,7 @@ export async function POST(req: NextRequest) {
   const update: Record<string, unknown> = {
     fixed_scale_override: enabled,
     locked_tier_level: enabled ? level : null,
+    custom_markup_override: customMarkup,
   };
   // Reflect the locked level immediately when enabling; otherwise leave the
   // persisted level for the recompute cron to refresh from volume.
@@ -83,5 +89,12 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Failed To Update Override.' }, { status: 500 });
   }
 
-  return NextResponse.json({ success: true, agentId, enabled, level: enabled ? level : null });
+  // Force a pricing recalculation for all products
+  try {
+    await svc.rpc('recalculate_agent_product_prices', { p_agent_id: agentId });
+  } catch (err) {
+    console.error('[tier-override] recalculation failed:', err);
+  }
+
+  return NextResponse.json({ success: true, agentId, enabled, level: enabled ? level : null, customMarkup });
 }

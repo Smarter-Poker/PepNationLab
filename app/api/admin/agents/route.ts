@@ -216,6 +216,8 @@ export async function POST(req: NextRequest) {
     profileData.referring_agent_id = parent_agent_id;
   } else {
     profileData.tier = tier;
+    // Both Agents and Super Agents get their initial tier locked so the dropdown
+    // mapping (Tier 1, 2, 3 -> Premium, Pro, Rookie) applies immediately.
     profileData.locked_tier_level = tier ? parseInt(tier.replace('tier_', ''), 10) : null;
     profileData.fixed_scale_override = true;
     profileData.custom_markup_override = custom_markup_override !== undefined ? custom_markup_override : null;

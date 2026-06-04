@@ -124,7 +124,7 @@ export default function UniversalSearch({
       )}
 
       {/* Results */}
-      {q.trim() && (
+      {q.trim().length >= 2 && (
         <div style={{ marginTop: 'var(--space-4, 16px)' }}>
           <p style={{ fontSize: '0.8rem', color: 'var(--silver, #A8B4C0)', margin: '0 0 var(--space-3, 12px)' }}>
             {results.length === 0

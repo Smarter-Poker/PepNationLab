@@ -24,12 +24,14 @@
  * No emojis.
  */
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useRouter } from 'next/navigation';
 
 import { ProtocolScheduler } from '../research/ProtocolScheduler';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Sparkles, Search, ArrowRight, X, ShoppingCart, Compass } from 'lucide-react';
 import type { Compound } from '@/lib/compounds';
+import AutocompleteDropdown, { type Suggestion } from '../research/AutocompleteDropdown';
 
 // --------------------------------------------------------------------------
 // Public types
@@ -1170,6 +1172,7 @@ export default function DiscoveryHero({
   onSelectArea,
   primaryColor = '#C0C5CE',
 }: DiscoveryHeroProps) {
+  const router = useRouter();
   const [query, setQuery] = useState('');
   const [wizardOpen, setWizardOpen] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -1180,7 +1183,69 @@ export default function DiscoveryHero({
   const [goalSummary, setGoalSummary] = useState('');
   const [followUp, setFollowUp] = useState<{ question: string; originalGoal: string } | null>(null);
 
+  const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
+  const [suggestOpen, setSuggestOpen] = useState(false);
+  const debounceRef = useRef<number | null>(null);
+  const searchContainerRef = useRef<HTMLDivElement>(null);
+
   const availableAreas = useMemo(() => deriveAvailableAreas(compoundsBySlug), [compoundsBySlug]);
+
+  useEffect(() => {
+    function onPointer(e: MouseEvent) {
+      if (!searchContainerRef.current) return;
+      if (!searchContainerRef.current.contains(e.target as Node)) {
+        setSuggestOpen(false);
+      }
+    }
+    window.addEventListener('mousedown', onPointer);
+    return () => window.removeEventListener('mousedown', onPointer);
+  }, []);
+
+  useEffect(() => {
+    if (debounceRef.current) window.clearTimeout(debounceRef.current);
+    const trimmed = query.trim();
+    if (trimmed.length < 2) {
+      setSuggestions([]);
+      return;
+    }
+    debounceRef.current = window.setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/research/suggest?q=${encodeURIComponent(trimmed)}`);
+        if (!res.ok) return;
+        const data = await res.json();
+        if (Array.isArray(data.suggestions)) {
+          setSuggestions(data.suggestions);
+        }
+      } catch {
+        // swallow
+      }
+    }, 200);
+    return () => {
+      if (debounceRef.current) window.clearTimeout(debounceRef.current);
+    };
+  }, [query]);
+
+  function onSuggestionSelect(s: Suggestion) {
+    if (s.kind === 'compound') {
+      router.push(`/research/${s.slug}`);
+      setSuggestOpen(false);
+      return;
+    }
+    if (s.kind === 'area') {
+      router.push(`/research/area/${s.slug}`);
+      setSuggestOpen(false);
+      return;
+    }
+    // For 'glossary', we can just use the query in the AI match or push
+    if (s.kind === 'glossary') {
+      router.push(`/research/search?q=${encodeURIComponent(s.display_name)}`);
+      setSuggestOpen(false);
+      return;
+    }
+    // default fallback
+    setQuery(s.display_name);
+    submitTypedGoal(s.display_name);
+  }
 
   const runMatch = useCallback(async (input: {
     goal: string;
@@ -1255,9 +1320,11 @@ export default function DiscoveryHero({
     }
   }, [resolveProducts]);
 
-  const submitTypedGoal = useCallback(async () => {
-    const g = query.trim();
+  const submitTypedGoal = useCallback(async (overrideGoal?: string) => {
+    const g = (overrideGoal || query).trim();
     if (!g) return;
+    
+    setSuggestOpen(false);
     
     setLoading(true);
     setDrawerOpen(true);
@@ -1369,29 +1436,50 @@ export default function DiscoveryHero({
         />
 
         {/* Search Input Box */}
-        <input
-          id="discovery-search-input"
-          type="text"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          onKeyDown={(e) => { 
-            if (e.key === 'Enter' && query.trim()) {
-              onSelectArea(''); // Clear filter
-              submitTypedGoal();
-            }
-          }}
-          placeholder="Ask Us Anything About The Peptides You Want To Research..."
+        <div 
+          ref={searchContainerRef}
           style={{
-            position: 'absolute', top: '35.0%', left: '9%', width: '89%', height: '11%',
-            background: 'transparent',
-            border: 'none', outline: 'none', color: '#FFFFFF',
-            fontSize: 'max(20px, 1.86vw)',
-            padding: '0 10px 0 45px',
+            position: 'absolute', top: '33.8%', left: '9%', width: '89%', height: '11%',
             zIndex: 5,
-            fontWeight: 500,
-            letterSpacing: '0.02em',
           }}
-        />
+        >
+          <input
+            id="discovery-search-input"
+            type="text"
+            value={query}
+            onChange={(e) => {
+              setQuery(e.target.value);
+              setSuggestOpen(true);
+            }}
+            onFocus={() => setSuggestOpen(true)}
+            onKeyDown={(e) => { 
+              if (e.key === 'Enter' && query.trim()) {
+                onSelectArea(''); // Clear filter
+                submitTypedGoal();
+              }
+            }}
+            placeholder="Ask Us Anything About The Peptides You Want To Research..."
+            style={{
+              width: '100%', height: '100%',
+              background: 'transparent',
+              border: 'none', outline: 'none', color: '#FFFFFF',
+              fontSize: 'max(20px, 1.86vw)',
+              padding: '0 10px 0 45px',
+              fontWeight: 500,
+              letterSpacing: '0.02em',
+            }}
+          />
+          {suggestOpen && query.trim().length >= 2 && suggestions.length > 0 && (
+            <div style={{ position: 'absolute', top: '100%', left: 0, right: '4%', zIndex: 50, marginTop: '4px' }}>
+              <AutocompleteDropdown
+                suggestions={suggestions}
+                recent={[]} // Storefront doesn't need recent searches history necessarily, but we provide empty array
+                onSelect={onSuggestionSelect}
+                onSelectRecent={(t) => { setQuery(t); submitTypedGoal(t); }}
+              />
+            </div>
+          )}
+        </div>
 
         {/* Quick Select Buttons */}
         <button title="Weight Management" onClick={() => onSelectArea('weight_management')} style={{ position: 'absolute', top: '55%', left: '4%', width: '11%', height: '40%', cursor: 'pointer', opacity: 0, zIndex: 10 }} />
