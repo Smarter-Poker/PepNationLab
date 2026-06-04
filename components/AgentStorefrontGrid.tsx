@@ -952,15 +952,44 @@ export default function AgentStorefrontGrid({
               else if (c.aliases?.some(a => a.toLowerCase().includes(token))) recordMatch(80, `Matched Alias`);
               else if (c.aliases?.some(a => matchesRaw(a))) recordMatch(40, `Matched Alias`);
 
-              if (c.studied_for?.some(s => s.toLowerCase().includes(token))) recordMatch(50, `Studied For: ${c.studied_for.find(s => s.toLowerCase().includes(token))}`);
-              if (c.research_areas?.some(r => r.toLowerCase().includes(token))) recordMatch(50, `Research Area: ${c.research_areas.find(r => r.toLowerCase().includes(token))}`);
+              if (c.studied_for?.some(s => s.toLowerCase().includes(token))) recordMatch(60, `Studied For: ${c.studied_for.find(s => s.toLowerCase().includes(token))}`);
+              if (c.research_areas?.some(r => r.toLowerCase().includes(token))) recordMatch(55, `Research Area: ${c.research_areas.find(r => r.toLowerCase().includes(token))}`);
               if (c.benefits?.toLowerCase().includes(token)) recordMatch(50, `Associated Benefit`);
               
-              if (c.compound_class?.toLowerCase().includes(token)) recordMatch(30, `Compound Class: ${c.compound_class}`);
-              if (c.molecular_target?.toLowerCase().includes(token)) recordMatch(30, `Target: ${c.molecular_target}`);
+              if (c.compound_class?.toLowerCase().includes(token)) recordMatch(35, `Compound Class: ${c.compound_class}`);
+              if (c.molecular_target?.toLowerCase().includes(token)) recordMatch(35, `Target: ${c.molecular_target}`);
 
-              if (c.mechanism?.toLowerCase().includes(token)) recordMatch(10, `Matched Mechanism of Action`);
-              if (c.plain_summary?.toLowerCase().includes(token)) recordMatch(10, `Matched Summary`);
+              if (c.mechanism?.toLowerCase().includes(token)) recordMatch(20, `Matched Mechanism of Action`);
+              if (c.plain_summary?.toLowerCase().includes(token)) recordMatch(20, `Matched Summary`);
+
+              // ── Phase 2 fields ──────────────────────────────────────────
+              // eli5_summary: rich plain-English description — great for phrase/concept searches
+              if (c.eli5_summary?.toLowerCase().includes(token)) recordMatch(25, `Matched Description`);
+
+              // best_stacked_with: helps discovery via "what stacks with X"
+              if (c.best_stacked_with?.some(slug => slug.toLowerCase().includes(token))) {
+                recordMatch(20, `Stacks Well With: ${c.best_stacked_with?.find(s => s.toLowerCase().includes(token))}`);
+              }
+
+              // side_effects + warnings: allow filtering by side effect terms
+              if (c.side_effects?.toLowerCase().includes(token)) recordMatch(15, `Side Effect Profile Match`);
+              if (c.warnings?.toLowerCase().includes(token)) recordMatch(10, `Warnings Matched`);
+
+              // WADA status search (e.g., "banned", "prohibited", "permitted")
+              if (c.wada_status?.toLowerCase().includes(token)) recordMatch(15, `WADA Status: ${c.wada_status}`);
+
+              // Half life search (e.g., "long acting", "short half life")
+              if (c.half_life?.toLowerCase().includes(token)) recordMatch(10, `Half Life: ${c.half_life}`);
+
+              // Efficacy scores: if searching for a goal keyword that matches a known efficacy key, boost ranking
+              if (c.efficacy_scores) {
+                const efficacyKeys = Object.keys(c.efficacy_scores);
+                const matchedKey = efficacyKeys.find(k => k.toLowerCase().replace(/_/g, ' ').includes(token) || token.includes(k.toLowerCase().replace(/_/g, ' ')));
+                if (matchedKey) {
+                  const score = (c.efficacy_scores as Record<string, number>)[matchedKey];
+                  if (score >= 80) recordMatch(score / 5, `High Efficacy For: ${matchedKey.replace(/_/g, ' ')}`);
+                }
+              }
             }
           }
           
@@ -1033,9 +1062,28 @@ export default function AgentStorefrontGrid({
       if (isMatch && compoundsBySlug && g.compoundSlug) {
         const c = compoundsBySlug[g.compoundSlug];
         if (c) {
+          // Evidence tier boost
           if (c.evidence_tier === 'approved_drug') totalScore += 100;
           else if (c.evidence_tier === 'investigational') totalScore += 50;
           else if (c.evidence_tier === 'preclinical') totalScore += 20;
+
+          // Efficacy score boost: reward compounds that have high efficacy
+          // for any goal matching the current search query
+          const qLower = deferredSearch.trim().toLowerCase();
+          if (c.efficacy_scores) {
+            const efficacyMap = c.efficacy_scores as Record<string, number>;
+            for (const [key, val] of Object.entries(efficacyMap)) {
+              const keyReadable = key.replace(/_/g, ' ');
+              if (qLower.includes(keyReadable) || keyReadable.includes(qLower.split(' ')[0])) {
+                totalScore += Math.round(val * 0.5); // max +49.5 for a perfect 99-score compound
+              }
+            }
+          }
+
+          // Citation count as popularity / trust signal (if available)
+          if (c.pubmed_citation_count && c.pubmed_citation_count > 0) {
+            totalScore += Math.min(30, Math.log10(c.pubmed_citation_count + 1) * 10);
+          }
         }
       }
 

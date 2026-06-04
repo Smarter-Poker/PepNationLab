@@ -151,80 +151,134 @@ function CalculatorHeader({ title, why }: { title: string; why: string }) {
   );
 }
 
-function Reconstitution() {
-  const [vialMass, setVialMass] = useState('5');
-  const [targetConc, setTargetConc] = useState('5');
-  const [diluentMl, setDiluentMl] = useState('2');
-  const [desiredMass, setDesiredMass] = useState('0.25');
+const POPULAR_PEPTIDES = [
+  { name: 'Custom (Enter Manually)', vialMass: '', defaultDose: '', unit: 'mcg' },
+  { name: 'BPC-157', vialMass: '5', defaultDose: '250', unit: 'mcg' },
+  { name: 'TB-500', vialMass: '5', defaultDose: '2.5', unit: 'mg' },
+  { name: 'CJC-1295 / Ipamorelin', vialMass: '5', defaultDose: '300', unit: 'mcg' },
+  { name: 'Tirzepatide', vialMass: '10', defaultDose: '2.5', unit: 'mg' },
+  { name: 'Semaglutide', vialMass: '5', defaultDose: '0.25', unit: 'mg' },
+  { name: 'Retatrutide', vialMass: '10', defaultDose: '2', unit: 'mg' },
+  { name: 'GHK-Cu', vialMass: '50', defaultDose: '2', unit: 'mg' },
+  { name: 'Melanotan II', vialMass: '10', defaultDose: '250', unit: 'mcg' },
+  { name: 'PT-141', vialMass: '10', defaultDose: '1', unit: 'mg' },
+  { name: 'MOTS-c', vialMass: '10', defaultDose: '5', unit: 'mg' }
+];
 
-  const volMl = reconstitutionVolumeMl(Number(vialMass), Number(targetConc));
-  const drawMl = drawVolumeMl(Number(vialMass), Number(diluentMl), Number(desiredMass));
+function Reconstitution() {
+  const [peptide, setPeptide] = useState(POPULAR_PEPTIDES[0].name);
+  const [vialMass, setVialMass] = useState('');
+  const [diluentMl, setDiluentMl] = useState('');
+  const [desiredMass, setDesiredMass] = useState('');
+  const [unit, setUnit] = useState('mcg');
+
+  // When peptide changes, update defaults
+  const handlePeptideChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const val = e.target.value;
+    setPeptide(val);
+    const found = POPULAR_PEPTIDES.find(p => p.name === val);
+    if (found && found.name !== 'Custom (Enter Manually)') {
+      setVialMass(found.vialMass);
+      setDesiredMass(found.defaultDose);
+      setUnit(found.unit);
+      setDiluentMl('2'); // standard recommendation
+    } else {
+      setVialMass('');
+      setDesiredMass('');
+      setDiluentMl('');
+    }
+  };
+
+  const vMass = Number(vialMass);
+  const dilMl = Number(diluentMl);
+  // desiredMass in the helper expects mg, so convert if mcg
+  const dMassNumeric = Number(desiredMass);
+  const dMassMg = unit === 'mcg' ? dMassNumeric / 1000 : dMassNumeric;
+
+  const drawMl = drawVolumeMl(vMass, dilMl, dMassMg);
+  const drawUnits = drawMl !== null && isFinite(drawMl) ? Math.round(drawMl * 100) : null;
 
   return (
     <section id="reconstitution" style={chromeOuterStyle}>
       <div style={chromeInnerStyle}>
-      <CalculatorHeader
-        title="Reconstitution Calculator"
-        why="Most peptides ship freeze-dried. Reconstitution turns the powder into a usable working stock. Get the volume of diluent right and every downstream volume comes out clean."
-      />
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12 }}>
-        <label style={{ display: "block" }}>
-          <div style={labelStyle}>Vial Mass (mg)</div>
-          <StyledInput  type="number" step="any" min={0} value={vialMass} onChange={(e) => setVialMass(e.target.value)} />
-        </label>
-        <label style={{ display: "block" }}>
-          <div style={labelStyle}>Target Concentration (mg/mL)</div>
-          <StyledInput  type="number" step="any" min={0} value={targetConc} onChange={(e) => setTargetConc(e.target.value)} />
-        </label>
-      </div>
-      <div style={{ ...resultStyle, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
-        <span>
-          Add{' '}
-          <strong>{volMl === null ? '-' : volMl.toFixed(2)} mL</strong>{' '}
-          Of Sterile Diluent To Reach The Target Concentration.
-        </span>
-        {volMl !== null && (
-          <button
-            type="button"
-            onClick={() => setDiluentMl(String(volMl))}
-            style={{
-              fontSize: 12, fontWeight: 700, padding: '4px 10px', borderRadius: 6,
-              background: 'rgba(168,178,193,0.18)', border: '1px solid rgba(168,178,193,0.45)',
-              color: '#A8B2C1', cursor: 'pointer', whiteSpace: 'nowrap',
-            }}
-          >
-            ↓ Use This Volume Below
-          </button>
-        )}
-      </div>
+        <CalculatorHeader
+          title="Reconstitution Calculator"
+          why="Most peptides ship freeze-dried. Reconstitution turns the powder into a usable working stock. Select your peptide or enter values manually to get plain-English preparation and drawing instructions."
+        />
+        
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 16, marginBottom: 16 }}>
+          <label style={{ display: "block" }}>
+            <div style={labelStyle}>Step 1: Select Peptide</div>
+            <StyledSelect value={peptide} onChange={handlePeptideChange}>
+              {POPULAR_PEPTIDES.map(p => <option key={p.name} value={p.name}>{p.name}</option>)}
+            </StyledSelect>
+          </label>
+        </div>
 
-      <h3 style={{ margin: '20px 0 6px', color: '#FFFFFF', fontSize: 15 }}>Draw Volume Helper</h3>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12 }}>
-        <label style={{ display: "block" }}>
-          <div style={labelStyle}>Diluent Added (mL)</div>
-          <StyledInput  type="number" step="any" min={0} value={diluentMl} onChange={(e) => setDiluentMl(e.target.value)} />
-        </label>
-        <label style={{ display: "block" }}>
-          <div style={labelStyle}>Desired Mass (mg)</div>
-          <StyledInput  type="number" step="any" min={0} value={desiredMass} onChange={(e) => setDesiredMass(e.target.value)} />
-        </label>
-      </div>
-      <div style={resultStyle}>
-        Draw{' '}
-        <strong>{drawMl === null ? '-' : drawMl.toFixed(3)} mL</strong>{' '}
-        From The Reconstituted Vial.
-      </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 16 }}>
+          <label style={{ display: "block" }}>
+            <div style={labelStyle}>Step 2: Vial Mass (mg)</div>
+            <StyledInput type="number" step="any" min={0} value={vialMass} placeholder="e.g. 5" onChange={(e) => setVialMass(e.target.value)} />
+          </label>
+          <label style={{ display: "block" }}>
+            <div style={labelStyle}>Step 3: Bacteriostatic Water Added (mL)</div>
+            <StyledInput type="number" step="any" min={0} value={diluentMl} placeholder="e.g. 2" onChange={(e) => setDiluentMl(e.target.value)} />
+          </label>
+        </div>
 
-      <p style={noteStyle}>{RESEARCH_NOTE}</p>
-    </div>
+        <div style={{ ...resultStyle, marginTop: 20 }}>
+          {vMass > 0 && dilMl > 0 ? (
+            <div style={{ color: '#00E5FF', fontWeight: 800, fontSize: 18 }}>
+              Add {dilMl} mL of sterile diluent to the vial.
+            </div>
+          ) : (
+            <div style={{ fontSize: 14 }}>Enter vial mass and diluent volume above.</div>
+          )}
+        </div>
+
+        <h3 style={{ margin: '24px 0 8px', color: '#FFFFFF', fontSize: 16 }}>Draw Volume Helper</h3>
+        <p style={{ color: '#A8B4C0', fontSize: 14, marginBottom: 16 }}>
+          How much do you want to draw for a single dose?
+        </p>
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 16 }}>
+          <label style={{ display: "block" }}>
+            <div style={labelStyle}>Desired Target Dose</div>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <StyledInput style={{ flex: 1 }} type="number" step="any" min={0} value={desiredMass} placeholder="e.g. 250" onChange={(e) => setDesiredMass(e.target.value)} />
+              <StyledSelect style={{ width: 80 }} value={unit} onChange={(e) => setUnit(e.target.value)}>
+                <option value="mcg">mcg</option>
+                <option value="mg">mg</option>
+              </StyledSelect>
+            </div>
+          </label>
+        </div>
+
+        <div style={{ ...resultStyle, marginTop: 20 }}>
+          {drawMl !== null && isFinite(drawMl) && drawMl > 0 ? (
+            <div>
+              To draw a dose of <strong>{dMassNumeric} {unit}</strong>, pull the syringe to 
+              <br/>
+              <span style={{ fontSize: 24, color: '#68D391', fontWeight: 800, display: 'block', margin: '12px 0' }}>
+                {drawUnits} units
+              </span>
+              <span style={{ fontSize: 13, color: '#A8B4C0' }}>(on a standard U-100 syringe. That is {drawMl.toFixed(3)} mL)</span>
+            </div>
+          ) : (
+            <div style={{ fontSize: 14 }}>Enter a desired dose above.</div>
+          )}
+        </div>
+
+        <p style={noteStyle}>{RESEARCH_NOTE}</p>
+      </div>
     </section>
   );
 }
 
 function DilutionSection() {
-  const [stock, setStock] = useState('100');
-  const [factor, setFactor] = useState('10');
-  const [steps, setSteps] = useState('5');
+  const [stock, setStock] = useState('');
+  const [factor, setFactor] = useState('');
+  const [steps, setSteps] = useState('');
 
   const series = dilutionSeries({
     stockConcentration: Number(stock),
@@ -295,10 +349,10 @@ function needsMW(from: ConcentrationUnit, to: ConcentrationUnit): boolean {
 }
 
 function ConcentrationSection() {
-  const [value, setValue] = useState('1');
+  const [value, setValue] = useState('');
   const [from, setFrom] = useState<ConcentrationUnit>('mg/mL');
   const [to, setTo] = useState<ConcentrationUnit>('mcg/mL');
-  const [mw, setMw] = useState('3367');
+  const [mw, setMw] = useState('');
 
   const mwRequired = needsMW(from, to);
 
@@ -355,10 +409,10 @@ function ConcentrationSection() {
 }
 
 function StabilitySection() {
-  const [shelf, setShelf] = useState('28');
-  const [tFrom, setTFrom] = useState('4');
-  const [tTo, setTTo] = useState('25');
-  const [ea, setEa] = useState('83');
+  const [shelf, setShelf] = useState('');
+  const [tFrom, setTFrom] = useState('');
+  const [tTo, setTTo] = useState('');
+  const [ea, setEa] = useState('');
 
   const days = arrheniusStability({
     shelfDaysAtTempC: Number(shelf),
@@ -407,9 +461,9 @@ function StabilitySection() {
 }
 
 function CostSection() {
-  const [price, setPrice] = useState('120');
-  const [mass, setMass] = useState('5');
-  const [dose, setDose] = useState('250');
+  const [price, setPrice] = useState('');
+  const [mass, setMass] = useState('');
+  const [dose, setDose] = useState('');
 
   const out = costPerDose({
     vialPriceUsd: Number(price),
@@ -451,9 +505,9 @@ function CostSection() {
 }
 
 function PoolingSection() {
-  const [mass, setMass] = useState('5');
-  const [count, setCount] = useState('3');
-  const [diluent, setDiluent] = useState('10');
+  const [mass, setMass] = useState('');
+  const [count, setCount] = useState('');
+  const [diluent, setDiluent] = useState('');
 
   const out = vialPooling({
     vialMassMg: Number(mass),
@@ -497,10 +551,11 @@ function PoolingSection() {
 /* ----- Wave 2 calculators ----- */
 
 function HplcRtSection() {
-  const [seq, setSeq] = useState('GIGAVLKVLTTGLPALISWIKRKRQQ');
-  const [start, setStart] = useState('5');
-  const [end, setEnd] = useState('65');
-  const [gradient, setGradient] = useState('20');
+  const [showAdvanced, setShowAdvanced] = useState(false);
+  const [seq, setSeq] = useState('');
+  const [start, setStart] = useState('');
+  const [end, setEnd] = useState('');
+  const [gradient, setGradient] = useState('');
 
   const cleanSeq = seq.replace(/\s+/g, '').toUpperCase();
   const unknownChars = useMemo(() => {
@@ -539,7 +594,8 @@ function HplcRtSection() {
           )}
         </label>
       </div>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 12, marginTop: 12 }}>
+      <button type="button" onClick={() => setShowAdvanced(!showAdvanced)} style={{ background: 'transparent', border: '1px solid rgba(168,178,193,0.3)', color: '#A8B2C1', padding: '6px 12px', borderRadius: 6, fontSize: 12, marginTop: 12, cursor: 'pointer' }}>{showAdvanced ? 'Hide Advanced Options' : 'Show Advanced Options'}</button>
+      {showAdvanced && <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 12, marginTop: 12 }}>
         <label style={{ display: "block" }}>
           <div style={labelStyle}>Gradient Start (%B)</div>
           <StyledInput  type="number" step="any" value={start} onChange={(e) => setStart(e.target.value)} />
@@ -552,7 +608,7 @@ function HplcRtSection() {
           <div style={labelStyle}>Gradient Length (Min)</div>
           <StyledInput  type="number" step="any" value={gradient} onChange={(e) => setGradient(e.target.value)} />
         </label>
-      </div>
+      </div>}
       <div style={resultStyle}>
         {gradientInvalid
           ? 'Gradient Length Must Be Greater Than 0 Minutes.'
@@ -575,9 +631,10 @@ function HplcRtSection() {
 const STANDARD_AA = new Set('ACDEFGHIKLMNPQRSTVWY');
 
 function MassSpecSection() {
-  const [seq, setSeq] = useState('GIGAVLKVLTTGLPALISWIKRKRQQ');
+  const [showAdvanced, setShowAdvanced] = useState(false);
+  const [seq, setSeq] = useState('');
   const [mode, setMode] = useState<'positive' | 'negative'>('positive');
-  const [maxCharge, setMaxCharge] = useState('4');
+  const [maxCharge, setMaxCharge] = useState('');
 
   const cleanSeq = seq.replace(/\s+/g, '').toUpperCase();
   const unknownChars = useMemo(() => {
@@ -612,7 +669,8 @@ function MassSpecSection() {
           )}
         </label>
       </div>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 12, marginTop: 12 }}>
+      <button type="button" onClick={() => setShowAdvanced(!showAdvanced)} style={{ background: 'transparent', border: '1px solid rgba(168,178,193,0.3)', color: '#A8B2C1', padding: '6px 12px', borderRadius: 6, fontSize: 12, marginTop: 12, cursor: 'pointer' }}>{showAdvanced ? 'Hide Advanced Options' : 'Show Advanced Options'}</button>
+      {showAdvanced && <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 12, marginTop: 12 }}>
         <label style={{ display: "block" }}>
           <div style={labelStyle}>Ionization Mode</div>
           <StyledSelect value={mode} onChange={(e) => setMode(e.target.value as 'positive' | 'negative')}>
@@ -624,7 +682,7 @@ function MassSpecSection() {
           <div style={labelStyle}>Max Charge State</div>
           <StyledInput  type="number" step="any" min={1} value={maxCharge} onChange={(e) => setMaxCharge(e.target.value)} />
         </label>
-      </div>
+      </div>}
       <div style={{ ...resultStyle, padding: 0, background: 'transparent', border: 'none' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14, marginTop: 8 }}>
           <thead>
@@ -655,10 +713,11 @@ function MassSpecSection() {
 }
 
 function SppsSection() {
-  const [seq, setSeq] = useState('GIGAVLKVLTTGLPALISWIKRKRQQ');
-  const [scale, setScale] = useState('100');
-  const [aaCost, setAaCost] = useState('10');
-  const [resinCost, setResinCost] = useState('20');
+  const [showAdvanced, setShowAdvanced] = useState(false);
+  const [seq, setSeq] = useState('');
+  const [scale, setScale] = useState('');
+  const [aaCost, setAaCost] = useState('');
+  const [resinCost, setResinCost] = useState('');
 
   const cleanSppsSeq = seq.replace(/\s+/g, '').toUpperCase();
   const sppsUnknownChars = useMemo(() => {
@@ -695,7 +754,8 @@ function SppsSection() {
           )}
         </label>
       </div>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 12, marginTop: 12 }}>
+      <button type="button" onClick={() => setShowAdvanced(!showAdvanced)} style={{ background: 'transparent', border: '1px solid rgba(168,178,193,0.3)', color: '#A8B2C1', padding: '6px 12px', borderRadius: 6, fontSize: 12, marginTop: 12, cursor: 'pointer' }}>{showAdvanced ? 'Hide Advanced Options' : 'Show Advanced Options'}</button>
+      {showAdvanced && <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 12, marginTop: 12 }}>
         <label style={{ display: "block" }}>
           <div style={labelStyle}>Scale (umol)</div>
           <StyledInput  type="number" step="any" value={scale} onChange={(e) => setScale(e.target.value)} />
@@ -708,7 +768,7 @@ function SppsSection() {
           <div style={labelStyle}>Resin Cost ($/g)</div>
           <StyledInput  type="number" step="any" value={resinCost} onChange={(e) => setResinCost(e.target.value)} />
         </label>
-      </div>
+      </div>}
       <div style={resultStyle}>
         {!out ? 'Enter A Valid Sequence.' : (
           <>
@@ -731,10 +791,11 @@ function SppsSection() {
 }
 
 function SolubilitySection() {
-  const [gravy, setGravy] = useState('0.5');
-  const [pi, setPi] = useState('7.0');
-  const [len, setLen] = useState('20');
-  const [pH, setPH] = useState('7.4');
+  const [showAdvanced, setShowAdvanced] = useState(false);
+  const [gravy, setGravy] = useState('');
+  const [pi, setPi] = useState('');
+  const [len, setLen] = useState('');
+  const [pH, setPH] = useState('');
 
   const out = predictSolubility({
     gravy: Number(gravy),
@@ -754,7 +815,8 @@ function SolubilitySection() {
         💡 GRAVY score and isoelectric point (pI) can be calculated from your sequence at{' '}
         <IframeLink href="https://web.expasy.org/protparam/" style={{ color: '#A8B2C1' }}>ExPASy ProtParam</IframeLink>.
       </div>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 12 }}>
+      <button type="button" onClick={() => setShowAdvanced(!showAdvanced)} style={{ background: 'transparent', border: '1px solid rgba(168,178,193,0.3)', color: '#A8B2C1', padding: '6px 12px', borderRadius: 6, fontSize: 12, marginBottom: 12, cursor: 'pointer' }}>{showAdvanced ? 'Hide Advanced Options' : 'Show Advanced Options'}</button>
+      {showAdvanced && <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 12 }}>
         <label style={{ display: "block" }}>
           <div style={labelStyle}>GRAVY</div>
           <StyledInput  type="number" step="0.01" value={gravy} onChange={(e) => setGravy(e.target.value)} />
@@ -771,7 +833,7 @@ function SolubilitySection() {
           <div style={labelStyle}>Solution pH</div>
           <StyledInput  type="number" step="0.1" value={pH} onChange={(e) => setPH(e.target.value)} />
         </label>
-      </div>
+      </div>}
       <div style={resultStyle}>
         {!out ? 'Enter Valid Inputs.' : (
           <>
@@ -787,10 +849,11 @@ function SolubilitySection() {
 }
 
 function VialQuantitySection() {
-  const [n, setN] = useState('30');
-  const [doses, setDoses] = useState('12');
-  const [mgPerDose, setMgPerDose] = useState('0.25');
-  const [mgPerVial, setMgPerVial] = useState('5');
+  const [showAdvanced, setShowAdvanced] = useState(false);
+  const [n, setN] = useState('');
+  const [doses, setDoses] = useState('');
+  const [mgPerDose, setMgPerDose] = useState('');
+  const [mgPerVial, setMgPerVial] = useState('');
 
   const out = vialQuantityPower({
     n: Math.max(1, Math.floor(Number(n) || 1)),
@@ -806,7 +869,8 @@ function VialQuantitySection() {
         title="Vial Quantity Power Calculator"
         why="Plan vial procurement for a study. Given a sample size, doses per subject, and dose mass, compute the number of vials to order."
       />
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 12 }}>
+      <button type="button" onClick={() => setShowAdvanced(!showAdvanced)} style={{ background: 'transparent', border: '1px solid rgba(168,178,193,0.3)', color: '#A8B2C1', padding: '6px 12px', borderRadius: 6, fontSize: 12, marginBottom: 12, cursor: 'pointer' }}>{showAdvanced ? 'Hide Advanced Options' : 'Show Advanced Options'}</button>
+      {showAdvanced && <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 12 }}>
         <label style={{ display: "block" }}>
           <div style={labelStyle}>Sample Size (n)</div>
           <StyledInput  type="number" min={1} step={1} value={n} onChange={(e) => setN(e.target.value)} />
@@ -823,7 +887,7 @@ function VialQuantitySection() {
           <div style={labelStyle}>Mg Per Vial</div>
           <StyledInput  type="number" step="0.01" value={mgPerVial} onChange={(e) => setMgPerVial(e.target.value)} />
         </label>
-      </div>
+      </div>}
       <div style={resultStyle}>
         {!out ? 'Enter Valid Inputs.' : (
           <>
