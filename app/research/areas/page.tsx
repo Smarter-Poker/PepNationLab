@@ -131,7 +131,7 @@ export default function TherapeuticAreasPage() {
         }
       `}</style>
       
-      <section style={{ marginBottom: '64px', padding: '16px' }}>
+      <section style={{ position: 'relative', zIndex: 20, marginBottom: '64px', padding: '16px' }}>
         <div className="areas-grid">
           {Object.keys(RESEARCH_AREAS).map((key) => {
             const meta = RESEARCH_AREAS[key];
