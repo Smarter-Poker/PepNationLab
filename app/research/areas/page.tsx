@@ -109,25 +109,27 @@ export default function TherapeuticAreasPage() {
         
         /* Full Image Card Link */
         .full-image-link {
-          display: block;
+          display: flex;
+          flex-direction: column;
           text-decoration: none;
-          transition: all 0.2s ease;
-          border-radius: 20px;
-          overflow: hidden;
-          box-shadow: 0 8px 24px rgba(0,0,0,0.5);
-          aspect-ratio: 1 / 1;
+          transition: transform 0.2s ease, box-shadow 0.2s ease;
         }
         
         .full-image-link:hover {
           transform: translateY(-4px) scale(1.02);
-          box-shadow: 0 16px 32px rgba(0,0,0,0.7);
         }
         
         .full-card-image {
           width: 100%;
-          height: 100%;
-          object-fit: cover;
+          height: auto;
           display: block;
+          border-radius: 20px;
+          box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+          transition: box-shadow 0.2s ease;
+        }
+
+        .full-image-link:hover .full-card-image {
+          box-shadow: 0 16px 32px rgba(0,0,0,0.7);
         }
       `}</style>
       
@@ -142,6 +144,17 @@ export default function TherapeuticAreasPage() {
                 className="full-image-link"
               >
                 <img src={`/images/areas/${key}.png`} alt={meta.label} className="full-card-image" />
+                <p style={{ 
+                  marginTop: '16px', 
+                  color: 'var(--silver, #A8B4C0)', 
+                  fontSize: '1.0rem', 
+                  textAlign: 'center', 
+                  lineHeight: 1.5, 
+                  textTransform: 'capitalize',
+                  padding: '0 8px'
+                }}>
+                  {meta.blurb}
+                </p>
               </Link>
             );
           })}
