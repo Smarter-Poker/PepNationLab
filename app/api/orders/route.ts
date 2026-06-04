@@ -128,9 +128,9 @@ export async function POST(request: NextRequest) {
         superAgentProfile = sap;
       }
     } else if (profile.referring_agent_id) {
-      const { data: ap } = await serviceSupabase.from('profiles').select('id, role, tier, parent_agent_id, auto_approve_orders, is_sub_agent, referring_sub_agent_id').eq('id', profile.referring_agent_id).single();
+      const { data: ap } = await serviceSupabase.from('profiles').select('id, role, tier, parent_agent_id, auto_approve_orders, account_type, is_sub_agent, referring_sub_agent_id').eq('id', profile.referring_agent_id).single();
       agentProfile = ap;
-      if (ap?.parent_agent_id) {
+      if (ap && ap.parent_agent_id) {
         const { data: sap } = await serviceSupabase.from('profiles').select('id, tier, account_type, prepaid_balance, credit_limit, auto_approve_orders').eq('id', ap.parent_agent_id).single();
         superAgentProfile = sap;
       }
@@ -731,13 +731,13 @@ export async function POST(request: NextRequest) {
       }
     };
 
-    const isSACAOrder =
-      isSubAgent ||
-      ((profile as { referring_sub_agent_id?: string | null }).referring_sub_agent_id != null);
+
+
+    const isUserCredit = profile.account_type === 'credit';
 
     if (isWholesaleRestock) {
       if (profile.role === 'super_agent') {
-        if (profile.auto_approve_orders) {
+        if (isUserCredit) {
           const res = await checkSuperAgentCredit(profile, total);
           if (res.error) return NextResponse.json({ error: res.error }, { status: res.status });
           prepaidDeducted = res.prepaidDeducted || false;
@@ -750,7 +750,7 @@ export async function POST(request: NextRequest) {
           initialStatus = 'pending_customer_payment';
         }
       } else if (profile.role === 'agent') {
-        if (profile.auto_approve_orders && superAgentProfile) {
+        if (isUserCredit && superAgentProfile) {
           let wholesaleCogs = 0;
           for (const item of computedItems) {
             wholesaleCogs += (item.unit_super_agent_cost !== null ? item.unit_super_agent_cost : item.unit_cost_price) * item.quantity;
@@ -770,11 +770,9 @@ export async function POST(request: NextRequest) {
         }
       }
     } else {
-      if (isSACAOrder) {
-        initialStatus = 'agent_approval_pending';
-      } else if (profile.auto_approve_orders) {
+      if (isUserCredit) {
         if (agentProfile && agentProfile.role === 'agent') {
-          if (agentProfile.auto_approve_orders && superAgentProfile) {
+          if (superAgentProfile) {
             let retailCogs = 0;
             for (const item of computedItems) {
               const cost = item.unit_super_agent_cost !== null ? item.unit_super_agent_cost : item.unit_cost_price;
@@ -808,7 +806,11 @@ export async function POST(request: NextRequest) {
             prepaidDeductedAgentId = res.agentId || null;
           }
           initialStatus = 'admin_approval_pending';
+        } else {
+          initialStatus = 'admin_approval_pending';
         }
+      } else {
+        initialStatus = 'agent_approval_pending';
       }
     }
 
