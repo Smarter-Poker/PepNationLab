@@ -47,36 +47,67 @@ export default function AgentOverview({
    *   Because the container has the exact image aspect ratio + background-size
    *   100% 100%, zone % === image pixel % — no offset math needed.
    */
+  // 12-button layout evenly distributed as a placeholder until new image is ready
   const cardZones = [
     {
-      id: 'storefront',
-      top: '1.2%', height: '15.4%',
-      action: () => window.location.href = storefrontUrl,
+      id: 'orders',
+      top: '2%', height: '7%',
+      action: () => onNavigate?.('Orders'),
+    },
+    {
+      id: 'messenger',
+      top: '10%', height: '7%',
+      action: () => { window.location.href = '/messenger'; },
     },
     {
       id: 'researchers',
-      top: '17.6%', height: '15.4%',
+      top: '18%', height: '7%',
       action: () => onNavigate?.('Researchers'),
     },
     {
+      id: 'sales',
+      top: '26%', height: '7%',
+      action: () => onNavigate?.('Sales & Accounting'),
+    },
+    {
       id: 'inventory',
-      top: '34.0%', height: '15.4%',
+      top: '34%', height: '7%',
       action: () => onNavigate?.('Inventory'),
     },
     {
       id: 'products',
-      top: '50.5%', height: '15.4%',
+      top: '42%', height: '7%',
       action: () => onNavigate?.('Store Products'),
     },
     {
-      id: 'sales',
-      top: '66.9%', height: '15.4%',
-      action: () => onNavigate?.('Sales & Accounting'),
+      id: 'coupons',
+      top: '50%', height: '7%',
+      action: () => onNavigate?.('Coupons'),
     },
     {
-      id: 'orders',
-      top: '83.3%', height: '15.4%',
-      action: () => onNavigate?.('Orders'),
+      id: 'bundles',
+      top: '58%', height: '7%',
+      action: () => onNavigate?.('Research Bundles'),
+    },
+    {
+      id: 'network',
+      top: '66%', height: '7%',
+      action: () => onNavigate?.('My Sub-Agents'),
+    },
+    {
+      id: 'config',
+      top: '74%', height: '7%',
+      action: () => onNavigate?.('Storefront Config'),
+    },
+    {
+      id: 'storefront',
+      top: '82%', height: '7%',
+      action: () => { window.location.href = storefrontUrl; },
+    },
+    {
+      id: 'settings',
+      top: '90%', height: '7%',
+      action: () => onNavigate?.('Settings'),
     },
   ];
 
