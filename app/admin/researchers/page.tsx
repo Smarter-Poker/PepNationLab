@@ -23,6 +23,7 @@ interface Profile {
   username: string | null;   // username-based login identity
   full_name: string | null;
   phone: string | null;
+  parent_agent_id?: string | null;
   role: 'researcher' | 'agent' | 'super_agent' | 'admin';
   tier: 'tier_1' | 'tier_2' | 'tier_3' | null;
   custom_markup_override: number | null;
@@ -67,6 +68,7 @@ function ResearchersAdminPageInner() {
   const [accountTypeFilter, setAccountTypeFilter] = useState<string>(searchParams.get('accountType') ?? 'all');
   const [outstandingOnly, setOutstandingOnly] = useState<boolean>(searchParams.get('outstanding') === '1');
   const [page, setPage] = useState(1);
+  const [viewingDownlineFor, setViewingDownlineFor] = useState<Profile | null>(null);
 
   // Modal State
   const [selectedProfile, setSelectedProfile] = useState<Profile | null>(null);
@@ -413,7 +415,17 @@ function ResearchersAdminPageInner() {
         (p.email || '').toLowerCase().includes(q);
       if (!matchesSearch) return false;
       if (activeTab === 'researchers' && p.role !== 'researcher') return false;
-      if (activeTab === 'agents' && p.role !== 'agent' && p.role !== 'super_agent') return false;
+      if (activeTab === 'agents') {
+        if (p.role !== 'agent' && p.role !== 'super_agent') return false;
+        // Apply hierarchy filter only if there is no active search query
+        if (!q) {
+          if (viewingDownlineFor) {
+            if (p.parent_agent_id !== viewingDownlineFor.id) return false;
+          } else {
+            if (p.parent_agent_id != null) return false; // Hide sub-agents from the root view
+          }
+        }
+      }
       if (activeTab === 'admins' && p.role !== 'admin') return false;
       if (roleFilter !== 'all' && p.role !== roleFilter) return false;
       if (activeFilter === 'active' && !p.is_active) return false;
@@ -430,9 +442,10 @@ function ResearchersAdminPageInner() {
   const safePage = Math.min(page, totalPages);
   const paginatedProfiles = filteredProfiles.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
 
-  // Reset to page 1 when filter or search changes
+  // Reset to page 1 and clear downline view when filter or search changes
   useEffect(() => {
     setPage(1);
+    if (activeTab !== 'agents') setViewingDownlineFor(null);
   }, [searchQuery, activeTab, roleFilter, activeFilter, tierFilter, accountTypeFilter, outstandingOnly]);
 
   function resetResearcherFilters() {
@@ -619,6 +632,19 @@ function ResearchersAdminPageInner() {
         </button>
       </div>
 
+      {/* Downline Breadcrumb */}
+      {viewingDownlineFor && activeTab === 'agents' && (
+        <div style={{ marginBottom: 'var(--space-4)', padding: 'var(--space-4)', background: 'rgba(0,196,188,0.05)', border: '1px solid rgba(0,196,188,0.2)', borderRadius: 'var(--radius-md)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div>
+            <span style={{ color: 'var(--silver)' }}>Viewing Downline Agents For:</span>{' '}
+            <span style={{ fontWeight: 700, color: 'var(--teal)', fontSize: '1.05rem' }}>{viewingDownlineFor.full_name || viewingDownlineFor.username}</span>
+          </div>
+          <button onClick={() => setViewingDownlineFor(null)} className="btn-secondary btn-sm" style={{ padding: '6px 12px' }}>
+            &larr; Back To Top-Level Agents
+          </button>
+        </div>
+      )}
+
       {/* Profile List */}
       {loading ? (
         <div style={{ display: 'flex', justifyContent: 'center', padding: 'var(--space-12)' }}>
@@ -732,6 +758,12 @@ function ResearchersAdminPageInner() {
                       targetUserId={profile.id}
                       targetLabel={profile.full_name ?? profile.email}
                     />
+
+                    {profile.role === 'super_agent' && (
+                      <button onClick={() => setViewingDownlineFor(profile)} className="btn-secondary" style={{ padding: 'var(--space-2) var(--space-4)', fontSize: '0.78rem' }}>
+                        View Downline
+                      </button>
+                    )}
 
                     {profile.role === 'researcher' ? (
                       <button onClick={() => openUpgradeModal(profile)} className="btn-neon-cyan" style={{ padding: 'var(--space-2) var(--space-4)', fontSize: '0.78rem' }}>
