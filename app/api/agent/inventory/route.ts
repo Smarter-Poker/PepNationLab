@@ -122,6 +122,29 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Stock Count Cannot Exceed 100,000' }, { status: 400 });
     }
 
+    if (stockCount > 0) {
+      // Cross-reference wholesale orders to verify they have actually purchased this product in bulk
+      const { data: pastWholesaleOrder, error: orderErr } = await supabase
+        .from('order_items')
+        .select('id, orders!inner(id, buyer_id, is_wholesale_restock, status)')
+        .eq('product_id', productId)
+        .eq('orders.buyer_id', agentId)
+        .eq('orders.is_wholesale_restock', true)
+        .not('orders.status', 'eq', 'cancelled')
+        .limit(1);
+
+      if (orderErr) {
+        console.error('Inventory wholesale check error:', orderErr);
+        return NextResponse.json({ error: 'Failed to verify wholesale purchase history.' }, { status: 500 });
+      }
+
+      if (!pastWholesaleOrder || pastWholesaleOrder.length === 0) {
+        return NextResponse.json({ 
+          error: 'Action Denied. You must have a verified wholesale bulk order for this product before listing it as a local in-stock item.' 
+        }, { status: 403 });
+      }
+    }
+
     // Upsert the inventory count
     const { error } = await supabase
       .from('agent_inventory')
