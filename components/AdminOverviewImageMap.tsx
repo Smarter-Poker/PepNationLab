@@ -14,43 +14,23 @@ export default function AdminOverviewImageMap() {
     }
   };
 
-  const ROW_COUNT = 14;
-  const TOP_OFFSET = 2.0;
-  const ROW_HEIGHT = 6.0;
-  const ROW_SPACING = 6.95;
-
-  const leftColumn = [
-    { id: 'admin_dashboard', href: '/admin?view=metrics' },
-    { id: 'products', href: '/admin/products' },
-    { id: 'pricing', href: '/admin/pricing' },
-    { id: 'statements', href: '/admin/statements' },
-    { id: 'disputes', href: '/admin/disputes' },
-    { id: 'global_search', href: '/admin/search' },
-    { id: 'orders', href: '/admin/orders' },
-    { id: 'product_manager', href: '/dashboard/agent?tab=Store+Products' },
-    { id: 'my_researchers', href: '/admin/researchers' },
-    { id: 'shadow_notes', href: '/admin/agent-notes' },
-    { id: 'sales_revenue', href: '/admin/sales' },
-    { id: 'coupons', href: '/admin/coupons' },
-    { id: 'account_settings', href: '/admin/settings' },
-    { id: 'lab_journal', href: '/account/lab-journal' },
-  ];
-
-  const rightColumn = [
-    { id: 'wallet', href: '/wallet' },
-    { id: 'visit_storefront', href: '/admin/store-preview' },
-    { id: 'agent_payments', href: '/admin/payments' },
-    { id: 'credit_requests', href: '/admin/credit-increases' },
-    { id: 'messenger', href: '/messenger' },
-    { id: 'find_user', href: '/messenger?compose=1' },
-    { id: 'storefront_configure', href: '/dashboard/agent?tab=Storefront+Config' },
-    { id: 'my_agents', href: '/admin/agents' },
-    { id: 'transactions', href: '/admin/transactions' },
-    { id: 'network', href: '/admin/network' },
-    { id: 'research_library', href: '/research' },
-    { id: 'catalog_risk', href: '/admin/catalog-risk' },
-    { id: 'lab_tools', href: '/research/calculators' },
-    { id: 'global_shipping', href: '/admin/settings/shipping' },
+  const zones = [
+    { id: "gmv", href: "/admin/sales", left: 1.76, top: 10.17, width: 22.67, height: 8.03 },
+    { id: "pending_admin", href: "/admin/orders", left: 26.07, top: 10.17, width: 22.67, height: 8.03 },
+    { id: "pending_agent", href: "/admin/orders", left: 50.50, top: 10.17, width: 22.67, height: 8.03 },
+    { id: "waiting_approval", href: "/admin/orders", left: 74.81, top: 10.17, width: 22.67, height: 8.03 },
+    { id: "ready_ship", href: "/admin/orders", left: 1.76, top: 28.05, width: 22.67, height: 8.35 },
+    { id: "ready_pickup", href: "/admin/orders", left: 26.07, top: 28.05, width: 22.67, height: 8.35 },
+    { id: "waiting_tracking", href: "/admin/orders", left: 50.50, top: 28.05, width: 22.67, height: 8.35 },
+    { id: "low_stock_alerts", href: "/dashboard/agent?tab=Inventory", left: 74.81, top: 28.05, width: 22.67, height: 8.35 },
+    { id: "out_of_stock", href: "/admin/products", left: 1.76, top: 41.97, width: 22.67, height: 8.35 },
+    { id: "unpaid_statements", href: "/admin/statements", left: 26.07, top: 41.97, width: 22.67, height: 8.35 },
+    { id: "new_researchers", href: "/admin/researchers", left: 50.50, top: 41.97, width: 22.67, height: 8.35 },
+    { id: "active_agents", href: "/admin/agents", left: 74.81, top: 41.97, width: 22.67, height: 8.35 },
+    { id: "gmv_trend", href: "/admin/sales", left: 1.76, top: 50.96, width: 46.98, height: 10.06 },
+    { id: "sales_30d", href: "/admin/sales", left: 1.76, top: 64.24, width: 46.98, height: 27.84 },
+    { id: "low_stock_items", href: "/admin/products", left: 50.50, top: 64.24, width: 46.98, height: 27.84 },
+    { id: "top_agents", href: "/admin/agents", left: 1.76, top: 95.07, width: 95.59, height: 4.93 },
   ];
 
   return (
@@ -62,17 +42,17 @@ export default function AdminOverviewImageMap() {
           justify-content: center;
           align-items: flex-start;
           padding-top: 2px;
-          background: #0a0a0a;
+          background: transparent;
         }
 
         .admin-hero {
           position: relative;
           flex-shrink: 0;
           width: calc(100% - 4px);
-          max-width: 539px;
-          aspect-ratio: 539 / 1024;
+          max-width: 794px;
+          aspect-ratio: 794 / 934;
           overflow: hidden;
-          background-image: url('/images/admin-dashboard.jpg');
+          background-image: url('/images/admin-dashboard-cropped.png');
           background-repeat: no-repeat;
           background-position: top left;
           background-size: 100% 100%;
@@ -97,7 +77,7 @@ export default function AdminOverviewImageMap() {
 
       <div className="admin-hero-wrap">
         <div className="admin-hero">
-          {leftColumn.map((item, index) => (
+          {zones.map((item) => (
             <div
               key={item.id}
               className="admin-zone"
@@ -108,21 +88,7 @@ export default function AdminOverviewImageMap() {
                 if (e.key === 'Enter' || e.key === ' ') handleNav(item.href);
               }}
               aria-label={item.id}
-              style={{ left: '4%', width: '44.5%', top: `${TOP_OFFSET + index * ROW_SPACING}%`, height: `${ROW_HEIGHT}%` }}
-            />
-          ))}
-          {rightColumn.map((item, index) => (
-            <div
-              key={item.id}
-              className="admin-zone"
-              onClick={() => handleNav(item.href)}
-              role="button"
-              tabIndex={0}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' || e.key === ' ') handleNav(item.href);
-              }}
-              aria-label={item.id}
-              style={{ left: '51.5%', width: '44.5%', top: `${TOP_OFFSET + index * ROW_SPACING}%`, height: `${ROW_HEIGHT}%` }}
+              style={{ left: `${item.left}%`, width: `${item.width}%`, top: `${item.top}%`, height: `${item.height}%` }}
             />
           ))}
         </div>
@@ -130,3 +96,4 @@ export default function AdminOverviewImageMap() {
     </>
   );
 }
+

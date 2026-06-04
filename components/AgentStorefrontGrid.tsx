@@ -4,7 +4,7 @@ import React, { useState, useMemo, useCallback, useEffect, useDeferredValue, use
 import { createPortal } from 'react-dom';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { motion, Variants, AnimatePresence } from 'framer-motion';
-import { Star, X, Heart, FileText, Search, SlidersHorizontal, RotateCcw, Check, ShoppingCart, ArrowRight } from 'lucide-react';
+import { Star, X, Heart, FileText, Search, SlidersHorizontal, RotateCcw, Check, ShoppingCart, ArrowRight, Sparkles } from 'lucide-react';
 import RecommendationStrip, { type RecommendationItem } from './RecommendationStrip';
 import ProductMonograph from './research/ProductMonograph';
 import IframeLink from '@/components/ui/IframeLink';
@@ -863,7 +863,8 @@ export default function AgentStorefrontGrid({
           totalScore += maxTokenScore;
           if (!primaryReason && tokenReason) {
              // Only display semantic/alias/typo reasons, otherwise it's just repeating the obvious name
-             if (tokenReason.includes('Did you mean') || tokenReason.includes('Also Known As') || tokenReason.includes('Studied For') || tokenReason.includes('Research Area') || tokenReason.includes('Class') || tokenReason.includes('Target')) {
+             const reasonStr = tokenReason as string;
+             if (reasonStr.includes('Did you mean') || reasonStr.includes('Also Known As') || reasonStr.includes('Studied For') || reasonStr.includes('Research Area') || reasonStr.includes('Class') || reasonStr.includes('Target')) {
                 primaryReason = tokenReason;
              }
           }

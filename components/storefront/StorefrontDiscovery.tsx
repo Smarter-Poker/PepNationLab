@@ -78,7 +78,7 @@ export interface DiscoveryHeroProps {
   /** Brand primary colour for the hero gradient. */
   primaryColor?: string;
   /** Caller notified when user starts typing or selects a goal */
-  onSearchStarted?: () => void;
+  onSearchStarted?: (query?: string) => void;
   /** Caller notified when user clicks Already Know Which Peptide You Need */
   onAlreadyKnowClicked?: () => void;
 }

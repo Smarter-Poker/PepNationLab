@@ -743,7 +743,7 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
                             style={{ background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', padding: '12px', borderRadius: 8, color: 'var(--white)', fontSize: '1rem', width: 200 }}
                           >
                             <option value="">No Compound Tag</option>
-                            {Array.from(new Set([...favorites, ...pastOrders, ...recentlyViewed].filter(i => i.slug).map(i => i.slug))).map(slug => (
+                            {Array.from(new Set([...favorites, ...pastOrders, ...recentlyViewed].filter(i => (i as any).slug).map(i => (i as any).slug))).map(slug => (
                               <option key={slug as string} value={slug as string}>{slug}</option>
                             ))}
                           </select>
@@ -778,7 +778,7 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
                         style={{ flex: 1, background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', padding: '12px', borderRadius: 8, color: 'var(--white)', fontSize: '1rem' }}
                       >
                         <option value="">Select Compound</option>
-                        {Array.from(new Set([...favorites, ...pastOrders, ...recentlyViewed].filter(i => i.slug).map(i => i.slug))).map(slug => (
+                        {Array.from(new Set([...favorites, ...pastOrders, ...recentlyViewed].filter(i => (i as any).slug).map(i => (i as any).slug))).map(slug => (
                           <option key={slug as string} value={slug as string}>{slug}</option>
                         ))}
                       </select>
