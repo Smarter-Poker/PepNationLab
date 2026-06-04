@@ -92,7 +92,7 @@ export default function AgentOverview({
     {
       id: 'network',
       top: '66%', height: '7%',
-      action: () => onNavigate?.('My Sub-Agents'),
+      action: () => onNavigate?.(agentProfile?.is_super_agent ? 'My Agent Accounts' : 'My Sub-Agents'),
     },
     {
       id: 'config',
@@ -107,7 +107,7 @@ export default function AgentOverview({
     {
       id: 'settings',
       top: '90%', height: '7%',
-      action: () => onNavigate?.('Settings'),
+      action: () => { window.location.href = '/account'; },
     },
   ];
 
