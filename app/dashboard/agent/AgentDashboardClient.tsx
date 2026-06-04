@@ -38,6 +38,7 @@ interface Profile {
   role: string;
   tier: string | null;
   is_super_agent?: boolean;
+  is_sub_agent?: boolean;
   avatar_url?: string | null;
 }
 

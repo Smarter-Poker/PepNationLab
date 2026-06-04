@@ -10,6 +10,7 @@ interface AgentOverviewProps {
   agentProfile: any;
   orders: any[];
   userProfile?: any;
+  isSubAgent?: boolean;
   onNavigate?: (tab: string) => void;
 }
 
@@ -17,9 +18,10 @@ export default function AgentOverview({
   storefrontUrl,
   agentProfile,
   userProfile,
+  isSubAgent: explicitIsSubAgent,
   onNavigate,
 }: AgentOverviewProps) {
-  const isSubAgent = userProfile && !userProfile.is_super_agent;
+  const isSubAgent = explicitIsSubAgent ?? (userProfile?.is_sub_agent === true);
 
   const cardZones = isSubAgent ? [
     // --- SUB-AGENT (6 Rows) ---

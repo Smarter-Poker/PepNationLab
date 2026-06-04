@@ -111,6 +111,7 @@ export default function SubAgentDashboardClient({ data, onRefresh }: { data: Ove
                   copiedStorefront={copiedStorefront}
                   agentProfile={{ slug: data.profile.parent?.storefront_slug }}
                   orders={data.recent_orders}
+                  isSubAgent={true}
                   onNavigate={(tab) => {
                     if (tab === 'Store Products' || tab === 'Inventory') {
                       toast.info('Inventory and Products are managed by your Parent Agent.');
@@ -189,6 +190,42 @@ export default function SubAgentDashboardClient({ data, onRefresh }: { data: Ove
             )}
 
             {/* Sales & Accounting Tab */}
+            {activeTab === 'Sales & Accounting' && (
+              <div style={{ animation: 'fadeIn 0.3s ease-out' }}>
+                <h1 style={{ fontSize: '24px', marginBottom: '16px' }}>Sales & Accounting</h1>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '24px' }}>
+                  <div className="glass-panel stagger-fade-in" style={{ padding: 'var(--space-6)', borderRadius: '16px' }}>
+                    <div style={{ fontSize: '14px', opacity: 0.7, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px' }}>Pending Commission</div>
+                    <div style={{ fontSize: '32px', fontWeight: 700, color: 'var(--teal)' }}>{fmtMoney(data.pending_commission)}</div>
+                  </div>
+                  <div className="glass-panel stagger-fade-in" style={{ padding: 'var(--space-6)', borderRadius: '16px', animationDelay: '0.1s' }}>
+                    <div style={{ fontSize: '14px', opacity: 0.7, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px' }}>Lifetime Commission</div>
+                    <div style={{ fontSize: '32px', fontWeight: 700, color: 'var(--teal)' }}>{fmtMoney(data.lifetime_commission)}</div>
+                  </div>
+                </div>
+
+                <div className="glass-panel stagger-fade-in" style={{ padding: 'var(--space-6)', borderRadius: '16px', animationDelay: '0.2s' }}>
+                  <h3 style={{ fontSize: '14px', opacity: 0.7, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '16px' }}>Recent Settlements</h3>
+                  {data.recent_settlements.length === 0 ? (
+                    <p style={{ opacity: 0.7 }}>No settlements yet.</p>
+                  ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                      {data.recent_settlements.map(s => (
+                        <div key={s.id} style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: '16px', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+                          <div>
+                            <div style={{ fontWeight: 600 }}>{fmtDate(s.week_start)} - {fmtDate(s.week_end)}</div>
+                            <div style={{ fontSize: '13px', opacity: 0.7 }}>{s.orders_count} orders &bull; Settled {fmtDate(s.settled_at)}</div>
+                          </div>
+                          <div style={{ textAlign: 'right', fontWeight: 600, color: 'var(--teal)' }}>
+                            {fmtMoney(s.total_commission)}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
