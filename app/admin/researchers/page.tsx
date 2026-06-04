@@ -521,7 +521,13 @@ function ResearchersAdminPageInner() {
             placeholder="Search Name, Username, Email, Or Phone..."
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
-            style={{ paddingLeft: 'var(--space-8)' }}
+            style={{ 
+              paddingLeft: 'var(--space-8)', 
+              fontSize: '1.25rem', /* 33% larger than default ~0.95rem */
+              paddingBottom: '14px', /* moves text up */
+              paddingTop: '6px',
+              height: '48px'
+            }}
           />
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
             style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--grey-500)' }}>
