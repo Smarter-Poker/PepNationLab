@@ -14,7 +14,8 @@ interface Props {
 }
 
 export default function AttributeRadarChart({ data, colors, size = 180 }: Props) {
-  if (!data || data.length < 3) return null;
+  if (!data || data.length < 2) return null;
+
 
   const center = size / 2;
   const radius = center * 0.75;

@@ -763,45 +763,89 @@ export default function AgentStorefrontGrid({
     const q = deferredSearch.trim().toLowerCase();
     if (!q) return [];
     
-    const STOP_WORDS = new Set(['for', 'the', 'and', 'in', 'to', 'with', 'a', 'an', 'of', 'is', 'it', 'on', 'peptides', 'peptide', 'best']);
+    const STOP_WORDS = new Set(['for', 'the', 'and', 'in', 'to', 'with', 'a', 'an', 'of', 'is', 'it', 'on', 'peptides', 'peptide', 'best', 'help', 'me', 'my', 'i', 'want', 'need', 'that', 'are', 'good']);
     const CONCEPT_GROUPS: string[][] = [
-      ['fat', 'weightloss', 'weight', 'loss', 'lipolysis', 'obesity', 'adipose', 'slimming', 'lean', 'cut', 'cutting'],
-      ['muscle', 'growthhormone', 'gh', 'hgh', 'hypertrophy', 'bodybuilding', 'mass', 'strength', 'growth', 'anabolic', 'gains', 'bulking', 'size', 'brawn'],
-      ['sleep', 'insomnia', 'circadian', 'rest', 'recovery', 'rem', 'tired', 'exhausted', 'yawn'],
-      ['pain', 'analgesic', 'inflammation', 'injury', 'healing', 'joint', 'tendon', 'nociception', 'soreness', 'headache', 'headaches', 'migraine', 'migraines', 'ache', 'sore', 'hurt', 'arthritis', 'back', 'knee'],
-      ['brain', 'cognitive', 'nootropic', 'memory', 'focus', 'neuro', 'alzheimers', 'dementia', 'learning', 'adhd', 'attention', 'clarity', 'smart'],
-      ['skin', 'antiaging', 'collagen', 'wrinkle', 'elasticity', 'hair', 'nail', 'glow', 'complexion', 'youth', 'tanning', 'tan', 'melanin', 'sun', 'burn'],
-      ['energy', 'stamina', 'endurance', 'fatigue', 'metabolism', 'mitochondrial', 'cardio', 'athletic', 'performance', 'vitality'],
-      ['sugar', 'diabetes', 'insulin', 'glucose', 'glycemic', 'metabolic', 'a1c'],
-      ['heart', 'bloodpressure', 'cardiovascular', 'blood', 'vascular', 'angiogenesis', 'cardiac', 'pressure', 'cholesterol', 'artery'],
-      ['bone', 'osteoporosis', 'mineral', 'fracture', 'density', 'healing', 'skeleton'],
-      ['sex', 'libido', 'erectile', 'aphrodisiac', 'testosterone', 'hormone', 'arousal', 'ed', 'dysfunction', 'intimacy', 'drive'],
-      ['gut', 'digestion', 'ulcer', 'gastric', 'intestinal', 'microbiome', 'bowel', 'leaky', 'stomach', 'ibs', 'crohns', 'colitis', 'bloating'],
-      ['immune', 'immunesystem', 'immunity', 'infection', 'virus', 'bacteria', 'autoimmune', 'sick', 'illness', 'cold', 'flu'],
-      ['stress', 'anxiety', 'cortisol', 'calm', 'relax', 'mood', 'depression', 'panic', 'worry', 'nervous'],
-      ['aging', 'longevity', 'senescence', 'lifespan', 'youth', 'telomere', 'life'],
-      ['women', 'female', 'menopause', 'pcos', 'estrogen', 'progesterone'],
-      ['men', 'male', 'trt', 'testosterone', 'prostate'],
-      ['eyes', 'vision', 'sight', 'macular', 'retina', 'blindness'],
-      ['glp1', 'incretin', 'tirzepatide', 'semaglutide', 'retatrutide', 'appetite', 'craving'],
-      ['bpc157', 'wolverine', 'healing', 'repair', 'gut', 'recovery'],
-      ['tb500', 'healing', 'repair', 'muscle', 'recovery']
+      // Weight Loss / Fat
+      ['fat', 'weightloss', 'weight', 'loss', 'lipolysis', 'obesity', 'adipose', 'slimming', 'lean', 'cut', 'cutting', 'slim', 'shed', 'trim', 'bodyfat', 'overweight', 'bmi', 'diet', 'calories', 'calorie', 'deficit', 'melt', 'burn', 'fat-loss', 'fatloss', 'visceral'],
+      // Muscle / GH / Anabolic
+      ['muscle', 'growthhormone', 'gh', 'hgh', 'hypertrophy', 'bodybuilding', 'mass', 'strength', 'growth', 'anabolic', 'gains', 'bulking', 'size', 'brawn', 'musclebuilding', 'musclegrowth', 'lean-muscle', 'leanmuscle', 'physique', 'pump', 'ripped', 'swole', 'protein', 'powerlifting', 'athletic', 'jacked', 'build', 'strong', 'stronger', 'power', 'lift', 'big', 'bigger'],
+      // Sleep
+      ['sleep', 'insomnia', 'circadian', 'rest', 'rem', 'tired', 'exhausted', 'yawn', 'sleepless', 'wakeup', 'waking', 'melatonin', 'napping', 'drowsy', 'fatigue', 'jet-lag', 'jetlag'],
+      // Pain / Inflammation / Injury / Recovery
+      ['pain', 'analgesic', 'inflammation', 'injury', 'healing', 'joint', 'tendon', 'nociception', 'soreness', 'headache', 'headaches', 'migraine', 'migraines', 'ache', 'sore', 'hurt', 'arthritis', 'back', 'knee', 'elbow', 'shoulder', 'torn', 'sprain', 'sprained', 'swelling', 'inflamed', 'anti-inflammatory', 'antiinflammatory', 'recover', 'recovery', 'repair', 'damage', 'neuropathy'],
+      // Brain / Cognitive / Nootropic
+      ['brain', 'cognitive', 'nootropic', 'memory', 'focus', 'neuro', 'alzheimers', 'dementia', 'learning', 'adhd', 'attention', 'clarity', 'smart', 'mental', 'mindsharpness', 'brain-fog', 'brainfog', 'concentration', 'neurodegeneration', 'neuroprotect', 'neuroplasticity', 'processing', 'recall', 'intelligence', 'cognition', 'stroke', 'tbi', 'concussion', 'productivity'],
+      // Skin / Anti-Aging / Cosmetic
+      ['skin', 'antiaging', 'collagen', 'wrinkle', 'elasticity', 'hair', 'nail', 'glow', 'complexion', 'youth', 'tanning', 'tan', 'melanin', 'sun', 'burn', 'brightening', 'dark-spots', 'spots', 'blemish', 'acne', 'pores', 'texture', 'dermis', 'anti-wrinkle', 'rejuvenate', 'rejuvenation', 'youthful', 'firming', 'hydration', 'hairloss', 'hair-loss', 'hairgrowth', 'balding', 'alopecia', 'scalp', 'pigment'],
+      // Energy / Endurance / Performance
+      ['energy', 'stamina', 'endurance', 'fatigue', 'metabolism', 'mitochondrial', 'cardio', 'athletic', 'performance', 'vitality', 'atp', 'cellular-energy', 'bioenergetics', 'nad', 'nad+', 'ampk', 'exericse', 'exercise', 'sport', 'sports', 'workout', 'gym', 'running', 'marathon', 'cycling', 'vo2'],
+      // Diabetes / Metabolic / Insulin
+      ['sugar', 'diabetes', 'insulin', 'glucose', 'glycemic', 'metabolic', 'a1c', 'type2', 'prediabetes', 'blood-sugar', 'bloodsugar', 'pancreas', 'leptin', 'ghrelin', 'satiety', 'incretin', 'glp1'],
+      // Heart / Cardiovascular
+      ['heart', 'bloodpressure', 'cardiovascular', 'blood', 'vascular', 'angiogenesis', 'cardiac', 'pressure', 'cholesterol', 'artery', 'hypertension', 'atherosclerosis', 'coronary', 'circulation', 'flow', 'clot'],
+      // Bone / Joint
+      ['bone', 'osteoporosis', 'mineral', 'fracture', 'density', 'skeleton', 'ligament', 'cartilage', 'joint-health', 'jointhealth', 'connective-tissue', 'spine', 'hip', 'skeletal'],
+      // Sexual Health / Libido
+      ['sex', 'libido', 'erectile', 'aphrodisiac', 'testosterone', 'hormone', 'arousal', 'ed', 'dysfunction', 'intimacy', 'drive', 'desire', 'sexual', 'erection', 'orgasm', 'ejaculation', 'virility', 'fertility', 'reproductive'],
+      // Gut / GI
+      ['gut', 'digestion', 'ulcer', 'gastric', 'intestinal', 'microbiome', 'bowel', 'leaky', 'stomach', 'ibs', 'crohns', 'colitis', 'bloating', 'gi', 'gastrointestinal', 'leaky-gut', 'leakygut', 'gut-health', 'guthealth', 'digestion', 'digestive', 'diarrhea', 'constipation', 'mucosa', 'esophagus'],
+      // Immune
+      ['immune', 'immunesystem', 'immunity', 'infection', 'virus', 'bacteria', 'autoimmune', 'sick', 'illness', 'cold', 'flu', 'lymphocyte', 'tcell', 't-cell', 'cytokine', 'antibody', 'pathogen', 'antimicrobial', 'antiviral', 'antifungal', 'inflammation', 'innate', 'adaptive'],
+      // Anxiety / Mood / Stress
+      ['stress', 'anxiety', 'cortisol', 'calm', 'relax', 'mood', 'depression', 'panic', 'worry', 'nervous', 'gaba', 'serotonin', 'dopamine', 'neurotransmitter', 'ptsd', 'fear', 'phobia', 'ocd', 'wellbeing', 'mental-health', 'mentalhealth', 'anxious', 'depressed', 'low-mood'],
+      // Aging / Longevity / Senescence
+      ['aging', 'longevity', 'senescence', 'lifespan', 'youth', 'telomere', 'life', 'anti-age', 'antiage', 'healthspan', 'lifeextension', 'life-extension', 'immortality', 'senolytic', 'epigenetic', 'sirtuin', 'biohack', 'biohacking', 'age-reversal', 'reverseaging'],
+      // Women's Health
+      ['women', 'female', 'menopause', 'pcos', 'estrogen', 'progesterone', 'perimenopause', 'menstrual', 'hormones', 'ivf', 'fertility', 'ovulation'],
+      // Men's Health / Hormonal
+      ['men', 'male', 'trt', 'testosterone', 'prostate', 'hypogonadism', 'lowt', 'low-t', 'sperm', 'spermatogenesis', 'hcg', 'hmg', 'androgen'],
+      // Eyes / Vision
+      ['eyes', 'vision', 'sight', 'macular', 'retina', 'blindness', 'amd', 'optic', 'ocular'],
+      // GLP-1 Specific
+      ['glp1', 'glp-1', 'incretin', 'tirzepatide', 'semaglutide', 'retatrutide', 'ozempic', 'wegovy', 'mounjaro', 'appetite', 'craving', 'satiety', 'weightloss-drug', 'injection-diet', 'dual-agonist', 'triple-agonist'],
+      // BPC-157 / Repair
+      ['bpc157', 'bpc-157', 'wolverine', 'repair', 'gut', 'gastrointestinal'],
+      // TB-500 / Healing
+      ['tb500', 'tb-500', 'thymosin', 'thymosinbeta', 'actin'],
+      // NAD+ / Cellular
+      ['nad+', 'nad', 'nicotinamide', 'niacinamide', 'nac', 'nadh', 'nadplus', 'sirtuin', 'energy-boost', 'cellular-health'],
+      // Detox / Liver
+      ['detox', 'detoxification', 'liver', 'hepatic', 'fatty-liver', 'nafld', 'nash', 'lipid', 'glutathione', 'antioxidant'],
+      // Peptide Stacks
+      ['stack', 'combo', 'combination', 'protocol', 'cycle', 'regimen', 'bundle'],
+      // Research / Lab
+      ['research', 'study', 'lab', 'preclinical', 'clinical', 'trial', 'investigational', 'compound', 'molecule', 'drug'],
+      // Wound Healing
+      ['wound', 'scar', 'scarring', 'ulcer', 'lesion', 'abrasion', 'cut', 'laceration', 'wound-healing', 'woundhealing'],
+      // Mitochondria
+      ['mitochondria', 'mitochondrial', 'cristae', 'cardiolipin', 'atp', 'electron-transport', 'oxidative', 'ros', 'reactive-oxygen'],
+      // Hair Specifically
+      ['hair', 'hairloss', 'hair-loss', 'alopecia', 'balding', 'bald', 'thinning', 'hairgrowth', 'scalp', 'follicle', 'regrowth'],
     ];
 
     // Pre-process common multi-word concepts to keep them glued together
     let processedQ = q
-      .replace(/weight loss/g, 'weightloss')
-      .replace(/anti aging/g, 'antiaging')
-      .replace(/anti-aging/g, 'antiaging')
-      .replace(/growth hormone/g, 'growthhormone')
-      .replace(/blood pressure/g, 'bloodpressure')
-      .replace(/immune system/g, 'immunesystem')
-      .replace(/glp 1/g, 'glp1')
-      .replace(/glp-1/g, 'glp1')
-      .replace(/bpc 157/g, 'bpc157')
-      .replace(/bpc-157/g, 'bpc157')
-      .replace(/tb 500/g, 'tb500')
-      .replace(/tb-500/g, 'tb500');
+      .replace(/weight\s+loss/g, 'weightloss')
+      .replace(/anti[\s-]aging/g, 'antiaging')
+      .replace(/growth\s+hormone/g, 'growthhormone')
+      .replace(/blood\s+pressure/g, 'bloodpressure')
+      .replace(/immune\s+system/g, 'immunesystem')
+      .replace(/glp[\s-]1/g, 'glp1')
+      .replace(/bpc[\s-]157/g, 'bpc157')
+      .replace(/tb[\s-]500/g, 'tb500')
+      .replace(/nad\+/g, 'nad+')
+      .replace(/gut\s+health/g, 'guthealth')
+      .replace(/brain\s+fog/g, 'brainfog')
+      .replace(/fat\s+loss/g, 'fatloss')
+      .replace(/hair\s+loss/g, 'hairloss')
+      .replace(/lean\s+muscle/g, 'leanmuscle')
+      .replace(/blood\s+sugar/g, 'bloodsugar')
+      .replace(/type\s+2/g, 'type2')
+      .replace(/low\s+t/g, 'lowt')
+      .replace(/mental\s+health/g, 'mentalhealth')
+      .replace(/life\s+extension/g, 'lifeextension')
+      .replace(/anti[\s-]inflammatory/g, 'antiinflammatory')
+      .replace(/anti[\s-]wrinkle/g, 'antiaging');
 
     // Filter out stop words and detect negative modifiers
     const qTokens = processedQ.split(/\s+/).filter(t => t);
