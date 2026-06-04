@@ -1251,7 +1251,7 @@ export default function DiscoveryHero({
     }
     // default fallback
     setQuery(s.display_name);
-    if (onSearchStarted) onSearchStarted();
+    if (onSearchStarted) onSearchStarted(s.display_name);
     submitTypedGoal(s.display_name);
   }
 
@@ -1414,11 +1414,11 @@ export default function DiscoveryHero({
           type="button"
           onClick={() => {
             onSelectArea(''); // Clear filter
-            if (!query.trim()) {
-              setWizardOpen(true);
-            } else {
-              if (onSearchStarted) onSearchStarted();
+            if (query.trim().length > 0) {
+              if (onSearchStarted) onSearchStarted(query.trim());
               submitTypedGoal();
+            } else {
+              setWizardOpen(true);
             }
           }}
           title="Match Me"
@@ -1465,6 +1465,7 @@ export default function DiscoveryHero({
               if (e.key === 'Enter' && query.trim()) {
                 onSelectArea(''); // Clear filter
                 if (onSearchStarted) onSearchStarted(query.trim());
+                submitTypedGoal();
               }
             }}
             placeholder="Ask Us Anything..."

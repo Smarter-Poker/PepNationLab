@@ -1063,10 +1063,10 @@ export default function AgentStorefrontGrid({
             setFilterCategory('all');
             openGrid();
           }}
-          onSearchStarted={() => {
+          onSearchStarted={(q?: string) => {
             setFilterArea('');
             setFilterCategory('all');
-            setSearchQuery('');
+            setSearchQuery(q || '');
             openGrid();
           }}
           onAlreadyKnowClicked={() => {
