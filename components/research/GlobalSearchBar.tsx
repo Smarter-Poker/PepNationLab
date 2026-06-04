@@ -72,7 +72,6 @@ export default function GlobalSearchBar({
     const w = window as unknown as SpeechRecognitionWindow;
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setVoiceSupported(!!(w.SpeechRecognition || w.webkitSpeechRecognition));
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setRecent(loadHistory());
   }, []);
 

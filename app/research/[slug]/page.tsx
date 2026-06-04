@@ -14,7 +14,7 @@
  */
 
 import { notFound } from 'next/navigation';
-import { getCompound, getAllCompounds, getCompoundBindings, getCompoundStructures } from '@/lib/compounds-server';
+import { getCompound, getAllCompounds, getCompoundBindings } from '@/lib/compounds-server';
 import { relatedCompounds } from '@/lib/compounds';
 import MonographTabs from '@/components/research/MonographTabs';
 import CompoundKnowledgePanel from '@/components/research/CompoundKnowledgePanel';
@@ -58,9 +58,8 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
   const related = relatedCompounds(compound, all);
 
   // Server-fetch the Wave 2 enriched data (bindings + structures); fail-soft.
-  const [bindingsRes, pdbRes] = await Promise.all([
+  const [bindingsRes] = await Promise.all([
     getCompoundBindings(slug),
-    getCompoundStructures(slug),
   ]);
   const bindings = bindingsRes as Array<{
     target_name: string;
@@ -70,14 +69,7 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
     pchembl_value: number | null;
     target_organism: string | null;
   }>;
-  const structures = pdbRes as Array<{
-    pdb_id: string | null;
-    source: string;
-    resolution_a: number | null;
-    title: string | null;
-    release_year: number | null;
-    url: string | null;
-  }>;
+
 
   // Build MedicalSubstance JSON-LD — only emit fields that exist on the row.
   const c: Record<string, unknown> = compound as unknown as Record<string, unknown>;
@@ -94,9 +86,9 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
   if (compound.warnings) jsonLd.warning = compound.warnings;
   if (compound.side_effects) jsonLd.adverseOutcome = compound.side_effects;
   const code: Record<string, unknown> = {};
-  if (c.chembl_id) code.codingSystem = 'ChEMBL', (code.codeValue = c.chembl_id);
-  if (c.uniprot_id) code.codingSystem = 'UniProt', (code.codeValue = c.uniprot_id);
-  if (c.unii) code.codingSystem = 'UNII', (code.codeValue = c.unii);
+  if (c.chembl_id) { code.codingSystem = 'ChEMBL'; code.codeValue = c.chembl_id; }
+  if (c.uniprot_id) { code.codingSystem = 'UniProt'; code.codeValue = c.uniprot_id; }
+  if (c.unii) { code.codingSystem = 'UNII'; code.codeValue = c.unii; }
   if (Object.keys(code).length > 0) jsonLd.code = code;
 
   // Pull the most-recent PK numbers off the compound row (Wave 1 columns).
@@ -110,7 +102,6 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
     <div style={{ minHeight: '100dvh', background: 'var(--black)' }}>
       <script
         type="application/ld+json"
-        // eslint-disable-next-line react/no-danger
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
 

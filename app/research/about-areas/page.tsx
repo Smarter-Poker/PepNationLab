@@ -49,7 +49,7 @@ export default function AboutAreasPage() {
               In Laboratory Research, Compounds Are Frequently Studied In Isolation Based On Their Chemical Class (E.G., Growth Hormone Secretagogues, Incretin Mimetics). However, Real-World Biological Systems Do Not Operate In Isolation. 
             </p>
             <p style={{ color: 'var(--silver, #D0DAE4)', lineHeight: 1.7, marginBottom: 'var(--space-3, 12px)' }}>
-              By Organizing Compounds Into "Therapeutic Areas", Researchers Can Easily Identify Cross-Class Synergies. For Example, A Protocol Targeting "Tissue Repair" Might Combine A Systemic Healing Agent (Like TB-500) With A Localized Angiogenic Peptide (Like BPC-157). 
+              By Organizing Compounds Into &quot;Therapeutic Areas&quot;, Researchers Can Easily Identify Cross-Class Synergies. For Example, A Protocol Targeting &quot;Tissue Repair&quot; Might Combine A Systemic Healing Agent (Like TB-500) With A Localized Angiogenic Peptide (Like BPC-157). 
             </p>
             <p style={{ color: 'var(--silver, #D0DAE4)', lineHeight: 1.7 }}>
               This Categorization Method Allows For Optimal Experimental Design, Helping You Find Exactly Which Pathways And Receptors Correspond To Your Specific Research Goals.

@@ -51,7 +51,7 @@ export default async function ResearchTargetDetailPage({ params }: PageProps) {
   const supabase = await createClient();
 
   const allCompounds = await getAllCompounds();
-  const compoundRows = allCompounds.filter((c) => (c as any).receptors?.includes(decoded)) as unknown as CompoundRow[];
+  const compoundRows = allCompounds.filter((c) => ((c as unknown) as Record<string, unknown>).receptors?.includes(decoded)) as unknown as CompoundRow[];
 
   const { data: bindings } = await supabase
     .from('compound_chembl_bindings')

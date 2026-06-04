@@ -3,6 +3,7 @@
 import { useState, useTransition, useEffect } from 'react';
 import { Heart, Trash2, ExternalLink, PackageOpen, History, LayoutGrid, List as ListIcon, Search, X, Check, ShoppingCart, Info, TrendingUp, XCircle } from 'lucide-react';
 import Link from 'next/link';
+import { toast } from 'sonner';
 import { getProductImage } from '@/lib/categoryImage';
 
 interface Item {
@@ -103,7 +104,7 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
     }
   }
 
-  function handleQuickAdd(item: Item, qty = 1) {
+  function handleQuickAdd(item: Item, qty = 1, silent = false) {
     if (!storefrontSlug) return;
     try {
       const storageKey = `pnl_storefront_cart_${storefrontSlug}`;
@@ -149,6 +150,10 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
       const nextIds = new Set(localCartIds);
       nextIds.add(item.product_id);
       setLocalCartIds(nextIds);
+      
+      if (!silent) {
+        toast.success(`Added ${item.name} to Cart`);
+      }
     } catch (err) {
       console.error('Failed to quick add:', err);
     }
@@ -158,9 +163,11 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
     if (selectedItems.size === 0) return;
     const baseItems = activeTab === 'favorites' ? favorites : activeTab === 'pastOrders' ? pastOrders : recentlyViewed;
     const toAdd = baseItems.filter(i => selectedItems.has(i.product_id) && i.in_stock !== false);
-    toAdd.forEach(i => handleQuickAdd(i, 1));
+    if (toAdd.length === 0) return;
+    
+    toAdd.forEach(i => handleQuickAdd(i, 1, true));
     setSelectedItems(new Set());
-    alert(`Added ${toAdd.length} items to cart!`);
+    toast.success(`Added ${toAdd.length} items to cart`);
   }
 
   function toggleSelection(id: string) {
@@ -438,15 +445,24 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
           <h2 style={{ color: 'var(--white)', fontSize: '1.05rem', fontFamily: 'var(--font-brand)', marginBottom: 'var(--space-2)' }}>Trending Now</h2>
           <p style={{ color: 'var(--silver)', fontSize: '0.85rem', marginBottom: 'var(--space-4)' }}>The Top Eight Products Researchers Have Ordered In The Last Sixty Days.</p>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: 'var(--space-3)' }}>
-            {trending.map((t) => (
-              <div key={t.id} style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 'var(--radius-lg)', padding: 'var(--space-3)', display: 'flex', flexDirection: 'column', transition: 'transform 0.2s, background 0.2s' }}>
-                <div style={{ width: '100%', aspectRatio: '1 / 1', background: 'var(--black-2)', borderRadius: 'var(--radius-md)', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 8 }}>
-                  <img src={t.image_url || getProductImage(null, t.category || 'Other', t.name)} alt={t.name} style={{ width: '100%', height: '100%', objectFit: 'contain', padding: 8 }} />
+            {trending.map((t) => {
+              const inner = (
+                <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 'var(--radius-lg)', padding: 'var(--space-3)', display: 'flex', flexDirection: 'column', height: '100%', transition: 'transform 0.2s, background 0.2s' }} className="hover-lift">
+                  <div style={{ width: '100%', aspectRatio: '1 / 1', background: 'var(--black-2)', borderRadius: 'var(--radius-md)', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 8 }}>
+                    <img src={t.image_url || getProductImage(null, t.category || 'Other', t.name)} alt={t.name} style={{ width: '100%', height: '100%', objectFit: 'contain', padding: 8 }} />
+                  </div>
+                  <div style={{ color: 'var(--white)', fontWeight: 700, fontSize: '0.82rem', lineHeight: 1.25, marginBottom: 4, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{t.name}</div>
+                  {t.category && <div style={{ color: 'var(--grey-500)', fontSize: '0.7rem' }}>{t.category}</div>}
                 </div>
-                <div style={{ color: 'var(--white)', fontWeight: 700, fontSize: '0.82rem', lineHeight: 1.25, marginBottom: 4, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{t.name}</div>
-                {t.category && <div style={{ color: 'var(--grey-500)', fontSize: '0.7rem' }}>{t.category}</div>}
-              </div>
-            ))}
+              );
+              return storefrontSlug ? (
+                <Link key={t.id} href={`/${storefrontSlug}?product=${encodeURIComponent(t.id)}`} style={{ textDecoration: 'none' }}>
+                  {inner}
+                </Link>
+              ) : (
+                <div key={t.id}>{inner}</div>
+              );
+            })}
           </div>
         </div>
       )}

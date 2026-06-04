@@ -3,6 +3,7 @@
  * Public documentation page for the /api/research/public/v1/* endpoints.
  */
 import type { Metadata } from 'next';
+import Link from 'next/link';
 
 export const metadata: Metadata = {
   title: 'Research API Documentation — Pep Nation Lab',
@@ -24,7 +25,7 @@ export default function ApiDocsPage() {
         <pre style={{ background: 'var(--surface, #0F1923)', padding: 16, borderRadius: 8, overflow: 'auto' }}>
 {`Authorization: Bearer YOUR_API_KEY`}
         </pre>
-        <p>Admins Can Generate Keys At <a href="/admin/api-keys">/admin/api-keys</a>.</p>
+        <p>Admins Can Generate Keys At <Link href="/admin/api-keys">/admin/api-keys</Link>.</p>
       </section>
 
       <section style={{ marginBottom: 32 }}>

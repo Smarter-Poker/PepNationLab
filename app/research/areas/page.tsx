@@ -3,30 +3,8 @@
 import React from 'react';
 import Link from 'next/link';
 import { RESEARCH_AREAS } from '@/lib/compounds';
-import { ShieldCheck, ChevronRight, Activity, HeartPulse, Flame, Infinity, Sparkles, Brain, Shield, Target, Sun, Bone, Users, PersonStanding, Moon, Dna, Search } from 'lucide-react';
 import LandingSearchOverlay from '@/components/research/LandingSearchOverlay';
 
-const ICON_MAP: Record<string, React.ReactNode> = {
-  tissue_repair: <Dna size={26} strokeWidth={1.5} />,
-  healing: <HeartPulse size={26} strokeWidth={1.5} />,
-  metabolic: <Flame size={26} strokeWidth={1.5} />,
-  weight_management: <Infinity size={26} strokeWidth={1.5} />,
-  longevity: <Infinity size={26} strokeWidth={1.5} />,
-  cosmetic: <Sparkles size={26} strokeWidth={1.5} />,
-  cognitive: <Brain size={26} strokeWidth={1.5} />,
-  immune: <Shield size={26} strokeWidth={1.5} />,
-  gut_health: <Target size={26} strokeWidth={1.5} />,
-  pain_inflammation: <Sun size={26} strokeWidth={1.5} />,
-  bone_joint: <Bone size={26} strokeWidth={1.5} />,
-  sexual_health: <Users size={26} strokeWidth={1.5} />,
-  performance: <PersonStanding size={26} strokeWidth={1.5} />,
-  sleep: <Moon size={26} strokeWidth={1.5} />,
-  mitochondrial: <Activity size={26} strokeWidth={1.5} />,
-};
-
-function toTitleCase(str: string) {
-  return str.replace(/\w\S*/g, (txt) => txt.charAt(0).toUpperCase() + txt.slice(1).toLowerCase());
-}
 
 export default function TherapeuticAreasPage() {
   return (

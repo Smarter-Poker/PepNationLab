@@ -170,7 +170,7 @@ function MatchFormInner() {
         return;
       }
       setResults(data.results ?? []);
-      setExcludedCompounds((data as Record<string, any>).excluded as {slug: string; displayName: string; reason: string}[] ?? []);
+      setExcludedCompounds((data as Record<string, unknown>).excluded as {slug: string; displayName: string; reason: string}[] ?? []);
     } catch {
       setErrorMsg('Network Error. Please Try Again.');
     } finally {

@@ -3,7 +3,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 
-export async function saveMatchAction(matchInput: any, results: any[]) {
+export async function saveMatchAction(matchInput: unknown, results: unknown[]) {
   const supabase = await createClient();
   
   const { data: { user } } = await supabase.auth.getUser();

@@ -54,7 +54,7 @@ const PHASE_COLORS: Record<string, string> = {
 
 export default async function ResearchInPipelinePage() {
   const all = await getAllCompounds();
-  const rows = all.filter((c) => (c as any).pipeline_status != null || (c as any).pipeline_phase != null) as unknown as PipelineRow[];
+  const rows = all.filter((c) => ((c as unknown) as Record<string, unknown>).pipeline_status != null || ((c as unknown) as Record<string, unknown>).pipeline_phase != null) as unknown as PipelineRow[];
 
   const groups = new Map<string, PipelineRow[]>();
   for (const r of rows) {

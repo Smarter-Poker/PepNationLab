@@ -8,7 +8,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { getCompound } from '@/lib/compounds-server';
-import CitationExportButton from '@/components/research/CitationExportButton';
+
 import CompoundReferencesClient from '@/components/research/CompoundReferencesClient';
 
 type PageProps = { params: Promise<{ slug: string }> };
