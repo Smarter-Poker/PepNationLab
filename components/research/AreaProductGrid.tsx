@@ -207,11 +207,36 @@ export default function AreaProductGrid({
 
   /* ── Enrich & sort ── */
   const enriched = useMemo(() => {
-    return products.map(p => ({
-      ...p,
-      compound: compoundMap.get(p.compoundSlug) ?? null,
-    }));
-  }, [products, compoundMap]);
+    // Map agent products by compound slug
+    const productsByCompound = new Map<string, AreaProduct[]>();
+    products.forEach(p => {
+      if (!p.compoundSlug) return;
+      if (!productsByCompound.has(p.compoundSlug)) productsByCompound.set(p.compoundSlug, []);
+      productsByCompound.get(p.compoundSlug)!.push(p);
+    });
+
+    return compounds.map(c => {
+      const agentProducts = productsByCompound.get(c.slug) || [];
+      const primary = agentProducts[0]; // Just use the first variant if they carry it
+
+      return {
+        compound: c,
+        compoundSlug: c.slug,
+        productName: primary ? primary.name : c.display_name,
+        imageUrl: primary?.imageUrl || '/images/blank_card.png',
+        productId: primary?.masterId || c.slug,
+        agentProductId: primary?.agentProductId || '',
+        retailPrice: primary?.retailPrice || 0,
+        costPrice: primary?.costPrice,
+        isOnSale: primary?.isOnSale || false,
+        salePrice: primary?.salePrice || null,
+        unitSize: primary?.unitSize || null,
+        unitMeasure: primary?.unitMeasure || null,
+        inventoryCount: primary?.inventoryCount || 0,
+        sku: primary?.sku || '',
+      };
+    });
+  }, [products, compounds]);
 
   const sorted = useMemo(() => {
     const arr = [...enriched];
@@ -513,7 +538,7 @@ export default function AreaProductGrid({
           const ti = tierInfo(compound?.evidenceTier ?? '');
           const isComparing = compareSet.has(p.compoundSlug);
           const inCart = p.agentProductId ? (cartItems[p.agentProductId] || 0) : 0;
-          const outOfStock = p.inventoryCount <= 0;
+          const outOfStock = p.agentProductId ? p.inventoryCount <= 0 : false;
           const displayPrice = isStorefrontOwner && p.costPrice != null
             ? p.costPrice
             : p.isOnSale && p.salePrice != null
@@ -687,9 +712,9 @@ export default function AreaProductGrid({
                     fontSize: '1.05rem',
                     fontWeight: 800,
                   }}>
-                    {isStorefrontOwner ? 'Cost ' : ''}{formatPrice(displayPrice)}
+                    {p.agentProductId ? (isStorefrontOwner ? `Cost ${formatPrice(displayPrice)}` : formatPrice(displayPrice)) : '—'}
                   </span>
-                  {p.isOnSale && p.salePrice != null && !isStorefrontOwner && (
+                  {p.agentProductId && p.isOnSale && p.salePrice != null && !isStorefrontOwner && (
                     <span style={{
                       color: '#718096',
                       fontSize: '0.8rem',
@@ -780,7 +805,7 @@ export default function AreaProductGrid({
                     (e.currentTarget as HTMLButtonElement).style.opacity = '1';
                   }}
                 >
-                  {outOfStock ? 'Out Of Stock' : (
+                  {outOfStock ? 'Out Of Stock' : !p.agentProductId ? 'Not Carried' : (
                     <>
                       Add To Cart
                       {inCart > 0 && (

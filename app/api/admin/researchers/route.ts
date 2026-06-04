@@ -112,9 +112,16 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ success: true, new_balance: newBalance });
   }
 
+  let locked_tier_level = null;
+  if (tier) {
+    locked_tier_level = parseInt(tier.replace('tier_', ''), 10);
+  }
+
   const profileUpdates: any = {
     role,
     tier: role === 'researcher' ? null : tier,
+    locked_tier_level: role === 'researcher' ? null : locked_tier_level,
+    fixed_scale_override: role === 'researcher' ? false : true,
     account_type: role === 'researcher' ? null : account_type,
     credit_limit: role === 'researcher' || account_type === 'prepaid' ? null : (credit_limit ? Number(credit_limit) : null),
     custom_markup_override: role === 'researcher' ? null : (custom_markup_override !== undefined ? custom_markup_override : null),

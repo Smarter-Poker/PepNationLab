@@ -77,7 +77,7 @@ export async function computeSubAgentBaselineCost(supabase: ServiceClient, produ
   }
   const { data: superProfile } = await supabase.from('profiles').select('tier').eq('id', superAgentId).maybeSingle();
   const superTier = (superProfile?.tier as AgentTier | null) ?? 'tier_3';
-  return computeAgentCost(supabase, productId, superTier);
+  return computeAgentCostForAgent(supabase, productId, superAgentId, superTier);
 }
 
 /* ── 5-Tier Gamification Ladder (v2) — flag-gated ──────────────────────────

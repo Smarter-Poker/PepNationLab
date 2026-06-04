@@ -56,6 +56,7 @@ export async function POST(req: NextRequest) {
     commission_max_pct,
     velocity_cap,
     custom_commission_scale,
+    custom_markup_override,
   } = body;
 
   const isResearcher = account_role === 'researcher';
@@ -215,6 +216,9 @@ export async function POST(req: NextRequest) {
     profileData.referring_agent_id = parent_agent_id;
   } else {
     profileData.tier = tier;
+    profileData.locked_tier_level = tier ? parseInt(tier.replace('tier_', ''), 10) : null;
+    profileData.fixed_scale_override = true;
+    profileData.custom_markup_override = custom_markup_override !== undefined ? custom_markup_override : null;
     profileData.account_type = account_type;
     profileData.credit_limit = account_type === 'credit' ? (Number(credit_limit) || null) : null;
     profileData.prepaid_balance = account_type === 'prepaid' ? (Number(prepaid_balance) || 0) : 0;
