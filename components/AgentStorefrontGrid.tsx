@@ -718,9 +718,39 @@ export default function AgentStorefrontGrid({
     (g: GroupedProduct) => {
       const q = deferredSearch.trim().toLowerCase();
       if (!q) return true;
-      return g.name.toLowerCase().includes(q);
+      
+      const tokens = q.split(/\s+/).filter(Boolean);
+      if (tokens.length === 0) return true;
+
+      // Build a searchable text corpus for the product
+      let corpus = [
+        g.name,
+        g.category,
+        g.desc
+      ].filter(Boolean).join(' ').toLowerCase();
+
+      if (compoundsBySlug && g.compoundSlug) {
+        const c = compoundsBySlug[g.compoundSlug];
+        if (c) {
+          const compoundTexts = [
+            c.display_name,
+            ...(c.aliases || []),
+            ...(c.studied_for || []),
+            ...(c.research_areas || []),
+            c.compound_class,
+            c.molecular_target,
+            c.mechanism,
+            c.benefits,
+            c.plain_summary
+          ].filter(Boolean).join(' ').toLowerCase();
+          corpus += ' ' + compoundTexts;
+        }
+      }
+
+      // Check if ALL tokens are present somewhere in the corpus
+      return tokens.every(token => corpus.includes(token));
     },
-    [deferredSearch]
+    [deferredSearch, compoundsBySlug]
   );
   const matchesPrice = useCallback(
     (g: GroupedProduct) =>
