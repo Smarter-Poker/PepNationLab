@@ -147,7 +147,7 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
                     </div>
                   )}
                   {storefrontSlug && (
-                    <Link href={`/${storefrontSlug}`} className="btn btn-secondary btn-sm">
+                    <Link href={`/${storefrontSlug}?product=${encodeURIComponent(item.product_id)}`} className="btn btn-secondary btn-sm">
                       View
                     </Link>
                   )}
@@ -245,12 +245,12 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
                 <div style={{ display: 'flex', gap: 'var(--space-2)', marginTop: 'auto', paddingTop: 'var(--space-2)' }}>
                   {storefrontSlug && (
                     <Link
-                      href={`/${storefrontSlug}`}
+                      href={`/${storefrontSlug}?product=${encodeURIComponent(item.product_id)}`}
                       className="btn btn-secondary btn-sm"
                       style={{ flex: 1, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}
                     >
                       <ExternalLink size={12} aria-hidden="true" />
-                      View Storefront
+                      View Product
                     </Link>
                   )}
                   {type === 'favorites' && (

@@ -827,25 +827,52 @@ export default function AreaProductGrid({
                   </span>
                 )}
 
-                {/* Purity badge */}
+                {/* Purity & COA badge */}
                 {compound?.purityPercentage != null && (
-                  <span style={{
-                    position: 'absolute',
-                    bottom: 12,
-                    left: 12,
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    padding: '3px 8px',
-                    borderRadius: 20,
-                    fontSize: '0.65rem',
-                    fontWeight: 700,
-                    background: 'rgba(56, 161, 105, 0.15)',
-                    color: '#68D391',
-                    border: '1px solid rgba(56, 161, 105, 0.3)',
-                    backdropFilter: 'blur(6px)',
-                  }}>
-                    🧪 {compound.purityPercentage}% Purity
-                  </span>
+                  compound?.coaUrl && compound.coaUrl !== '#' ? (
+                    <a
+                      href={compound.coaUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{
+                        position: 'absolute',
+                        bottom: 12,
+                        left: 12,
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        padding: '3px 8px',
+                        borderRadius: 20,
+                        fontSize: '0.65rem',
+                        fontWeight: 700,
+                        background: 'rgba(56, 161, 105, 0.15)',
+                        color: '#68D391',
+                        border: '1px solid rgba(56, 161, 105, 0.3)',
+                        backdropFilter: 'blur(6px)',
+                        textDecoration: 'none',
+                      }}
+                      title="View Certificate of Analysis"
+                    >
+                      🧪 {compound.purityPercentage}% Purity ↗
+                    </a>
+                  ) : (
+                    <span style={{
+                      position: 'absolute',
+                      bottom: 12,
+                      left: 12,
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      padding: '3px 8px',
+                      borderRadius: 20,
+                      fontSize: '0.65rem',
+                      fontWeight: 700,
+                      background: 'rgba(56, 161, 105, 0.15)',
+                      color: '#68D391',
+                      border: '1px solid rgba(56, 161, 105, 0.3)',
+                      backdropFilter: 'blur(6px)',
+                    }}>
+                      🧪 {compound.purityPercentage}% Purity
+                    </span>
+                  )
                 )}
               </div>
 
@@ -1086,7 +1113,7 @@ export default function AreaProductGrid({
                   </span>
                   {/* Cross-Over Discovery Tags */}
                   {compound?.researchAreas && compound.researchAreas.length > 0 && (
-                    <div style={{ marginTop: 8, display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                    <div style={{ marginTop: 8, display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 6 }}>
                       {compound.researchAreas.map(ra => (
                         <span key={ra} style={{
                           padding: '3px 8px',
@@ -1094,7 +1121,8 @@ export default function AreaProductGrid({
                           background: 'rgba(255,255,255,0.05)',
                           color: '#A8B4C0',
                           fontSize: '0.65rem',
-                          fontWeight: 600
+                          fontWeight: 600,
+                          textTransform: 'capitalize'
                         }}>
                           🧬 {ra.replace(/_/g, ' ')}
                         </span>
@@ -1511,6 +1539,28 @@ export default function AreaProductGrid({
                         <span style={{ color: '#D0DAE4', textTransform: 'capitalize' }}>
                           {p.compound?.category ? p.compound.category.replace(/_/g, ' ') : '—'}
                         </span>
+                      </td>
+                    ))}
+                  </CompareRow>
+
+                  {/* Quality & COA */}
+                  <CompareRow label="Quality & COA" showDiffsOnly={showDiffsOnly} diffableValues={compareItems.map(p => p.compound?.purityPercentage)}>
+                    {compareItems.map(p => (
+                      <td key={p.productId} style={compareTdStyle}>
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
+                          {p.compound?.purityPercentage != null ? (
+                            <span style={{ color: '#68D391', fontWeight: 700 }}>
+                              {p.compound.purityPercentage}% Purity
+                            </span>
+                          ) : (
+                            <span style={{ color: '#718096' }}>—</span>
+                          )}
+                          {p.compound?.coaUrl && p.compound.coaUrl !== '#' && (
+                            <a href={p.compound.coaUrl} target="_blank" rel="noopener noreferrer" style={{ color: '#00C4BC', fontSize: '0.75rem', fontWeight: 600, textDecoration: 'none', background: 'rgba(0,196,188,0.1)', padding: '2px 8px', borderRadius: 12, border: '1px solid rgba(0,196,188,0.2)' }}>
+                              View COA ↗
+                            </a>
+                          )}
+                        </div>
                       </td>
                     ))}
                   </CompareRow>

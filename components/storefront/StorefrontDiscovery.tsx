@@ -77,6 +77,8 @@ export interface DiscoveryHeroProps {
   onSelectArea: (area: string) => void;
   /** Brand primary colour for the hero gradient. */
   primaryColor?: string;
+  /** Caller notified when user starts typing or selects a goal */
+  onSearchStarted?: () => void;
 }
 
 // --------------------------------------------------------------------------
@@ -1172,6 +1174,7 @@ export default function DiscoveryHero({
   onOpenProduct,
   onSelectArea,
   primaryColor = '#C0C5CE',
+  onSearchStarted,
 }: DiscoveryHeroProps) {
   const router = useRouter();
   const [query, setQuery] = useState('');
@@ -1245,6 +1248,7 @@ export default function DiscoveryHero({
     }
     // default fallback
     setQuery(s.display_name);
+    if (onSearchStarted) onSearchStarted();
     submitTypedGoal(s.display_name);
   }
 
@@ -1410,6 +1414,7 @@ export default function DiscoveryHero({
             if (!query.trim()) {
               setWizardOpen(true);
             } else {
+              if (onSearchStarted) onSearchStarted();
               submitTypedGoal();
             }
           }}
@@ -1451,11 +1456,13 @@ export default function DiscoveryHero({
             onChange={(e) => {
               setQuery(e.target.value);
               setSuggestOpen(true);
+              if (onSearchStarted && e.target.value.length > 0) onSearchStarted();
             }}
             onFocus={() => setSuggestOpen(true)}
             onKeyDown={(e) => { 
               if (e.key === 'Enter' && query.trim()) {
                 onSelectArea(''); // Clear filter
+                if (onSearchStarted) onSearchStarted();
                 submitTypedGoal();
               }
             }}

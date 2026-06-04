@@ -998,6 +998,11 @@ export default function AgentStorefrontGrid({
             try { window.scrollTo({ top: 0, behavior: 'smooth' }); } catch {}
           }
         }}
+        onSearchStarted={() => {
+          setFilterArea('');
+          setFilterCategory('all');
+          setSearchQuery('');
+        }}
         onAddToCart={(variantId) => addToCart(variantId)}
         onOpenProduct={(variantId) => {
           const grp = grouped.find(g => g.variants.some(v => v.id === variantId));
