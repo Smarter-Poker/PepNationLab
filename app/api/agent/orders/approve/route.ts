@@ -178,7 +178,8 @@ export async function POST(req: NextRequest) {
       prepaidDeducted = true;
     }
 
-    const updatePayload: Record<string, string> = { status: 'admin_approval_pending', agent_approved_at: new Date().toISOString(), updated_at: new Date().toISOString() };
+    const finalAutoStatus = primaryProfile.account_type === 'credit' ? finalStatus : 'admin_approval_pending';
+    const updatePayload: Record<string, string> = { status: finalAutoStatus, agent_approved_at: new Date().toISOString(), updated_at: new Date().toISOString() };
     if (tracking_number && typeof tracking_number === 'string') updatePayload.tracking_number = tracking_number;
 
     const { error: updateError } = await supabase.from('orders').update(updatePayload).eq('id', orderId);
@@ -251,6 +252,17 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    if (finalAutoStatus === 'approved_ship' || finalAutoStatus === 'approved_pickup') {
+      try {
+        await supabase.rpc('charge_order_credit_line', { p_order_id: orderId, p_created_by: callerId });
+      } catch {}
+      if (finalAutoStatus === 'approved_ship') {
+        try {
+          await supabase.rpc('shippo_enqueue_label_job', { p_order_id: orderId });
+        } catch {}
+      }
+    }
+
     try {
       const { data: admins } = await supabase.from('profiles').select('id').eq('role', 'admin');
       if (admins && admins.length > 0) {
@@ -259,10 +271,12 @@ export async function POST(req: NextRequest) {
         const fulfillmentMsg = order.fulfillment_method === 'agent_pickup' ? 'For Pickup' : 'For Shipping';
         const notifications = admins.map((admin) => ({
           user_id: admin.id,
-          title: 'Order Needs Admin Approval',
-          body: `Order #${short} ($${totalStr}) — Agent Approved (${fulfillmentMsg}). Review And Release To Fulfillment.`,
+          title: finalAutoStatus === 'admin_approval_pending' ? 'Order Needs Admin Approval' : 'Order Auto-Approved',
+          body: finalAutoStatus === 'admin_approval_pending'
+            ? `Order #${short} ($${totalStr}) — Agent Approved (${fulfillmentMsg}). Review And Release To Fulfillment.`
+            : `Order #${short} ($${totalStr}) — Agent Approved (${fulfillmentMsg}). Auto-Approved on Credit Line.`,
           type: 'system',
-          url: `/admin/orders?status=admin_approval_pending`,
+          url: `/admin/orders?status=${finalAutoStatus}`,
         }));
         await supabase.from('notifications').insert(notifications);
       }
@@ -270,7 +284,7 @@ export async function POST(req: NextRequest) {
       console.error('Failed to notify admins of pending approval', err);
     }
 
-    return NextResponse.json({ success: true, status: 'admin_approval_pending' });
+    return NextResponse.json({ success: true, status: finalAutoStatus });
       },
     });
   } catch (error) {

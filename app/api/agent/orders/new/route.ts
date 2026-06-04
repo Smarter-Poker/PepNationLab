@@ -32,7 +32,7 @@ export async function POST(req: NextRequest) {
     const safeShipping = Number(shippingCost) || 0;
     const fulfillment = fulfillmentMethod === 'agent_pickup' ? 'agent_pickup' : 'ship';
 
-    const { data: agentProfile, error: agentProfileError } = await supabase.from('profiles').select('tier, parent_agent_id, role, is_sub_agent').eq('id', agentId).single();
+    const { data: agentProfile, error: agentProfileError } = await supabase.from('profiles').select('tier, parent_agent_id, role, is_sub_agent, account_type').eq('id', agentId).single();
     if (agentProfileError || !agentProfile) return NextResponse.json({ error: 'Agent Profile Not Found.' }, { status: 404 });
 
     // SACA: sub-agents do not own a storefront and therefore cannot create
@@ -140,12 +140,16 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Failed To Add Items To Order.' }, { status: 500 });
     }
 
+    const finalAutoStatus = agentProfile.account_type === 'credit'
+      ? (fulfillment === 'ship' ? 'approved_ship' : 'approved_pickup')
+      : 'admin_approval_pending';
+
     // GATE: agent-created manual orders must still pass admin approval before
-    // reaching the shipping team. Park at admin_approval_pending (inventory is
-    // deducted on this hop by deduct_inventory_on_order_approval); only an admin
+    // reaching the shipping team unless the agent has a credit line. Park at admin_approval_pending
+    // (inventory is deducted on this hop by deduct_inventory_on_order_approval); only an admin
     // releases it onward to approved_ship / approved_pickup.
     const { error: approvalError } = await supabase.from('orders').update({
-      status: 'admin_approval_pending', agent_approved_at: new Date().toISOString(), updated_at: new Date().toISOString(),
+      status: finalAutoStatus, agent_approved_at: new Date().toISOString(), updated_at: new Date().toISOString(),
     }).eq('id', newOrder.id);
 
     if (approvalError) {
@@ -154,6 +158,17 @@ export async function POST(req: NextRequest) {
       await supabase.from('orders').delete().eq('id', newOrder.id);
       const message = approvalError.code === '23514' || /insufficient/i.test(approvalError.message) ? approvalError.message : 'Insufficient Inventory To Approve Manual Order.';
       return NextResponse.json({ error: message }, { status: 422 });
+    }
+
+    if (finalAutoStatus === 'approved_ship' || finalAutoStatus === 'approved_pickup') {
+      try {
+        await supabase.rpc('charge_order_credit_line', { p_order_id: newOrder.id, p_created_by: agentId });
+      } catch {}
+      if (finalAutoStatus === 'approved_ship') {
+        try {
+          await supabase.rpc('shippo_enqueue_label_job', { p_order_id: newOrder.id });
+        } catch {}
+      }
     }
 
     // Notify Admins that the manual order is approved and ready
@@ -165,10 +180,12 @@ export async function POST(req: NextRequest) {
         const fulfillmentMsg = fulfillment === 'ship' ? 'Ready for Shipping' : 'Ready for Agent Pickup';
         const notifications = admins.map((admin) => ({
           user_id: admin.id,
-          title: 'Manual Order Needs Admin Approval',
-          body: `Order #${short} ($${totalStr}) — Agent Created & Approved. Needs Admin Release (${fulfillmentMsg}).`,
+          title: finalAutoStatus === 'admin_approval_pending' ? 'Manual Order Needs Admin Approval' : 'Manual Order Auto-Approved',
+          body: finalAutoStatus === 'admin_approval_pending' 
+            ? `Order #${short} ($${totalStr}) — Agent Created & Approved. Needs Admin Release (${fulfillmentMsg}).`
+            : `Order #${short} ($${totalStr}) — Agent Created & Auto-Approved on Credit Line. (${fulfillmentMsg}).`,
           type: 'system',
-          url: `/admin/orders?status=admin_approval_pending`,
+          url: `/admin/orders?status=${finalAutoStatus}`,
         }));
         await supabase.from('notifications').insert(notifications);
       }
