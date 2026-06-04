@@ -64,6 +64,8 @@ export default function ResearchBrowser({ compounds }: { compounds: Compound[] }
   const [area, setArea] = useState<string>(ALL);
   const [wada, setWada] = useState<string>(ALL);
   const [formFilter, setFormFilter] = useState<string>(ALL);
+  const [budgetFilter, setBudgetFilter] = useState<string>(ALL);
+  const [prepFilter, setPrepFilter] = useState<string>(ALL);
   const [isEli5, setIsEli5] = useState(false);
   const [isWizardOpen, setIsWizardOpen] = useState(false);
 
@@ -100,15 +102,33 @@ export default function ResearchBrowser({ compounds }: { compounds: Compound[] }
         const cForm = getCompoundForm(c);
         if (cForm !== formFilter) return false;
       }
+
+      // Reconstitution equipment matching
+      if (prepFilter !== ALL) {
+        const form = (c.handling?.form || '').toLowerCase();
+        const isReconstitution = form.includes('lyophilized') || form.includes('powder') || form.includes('vial') || form.includes('injection') || form.includes('injectable');
+        if (prepFilter === 'reconstitution' && !isReconstitution) return false;
+        if (prepFilter === 'no_reconstitution' && isReconstitution) return false;
+      }
+
+      // Budget proxy matching
+      if (budgetFilter !== ALL) {
+        if (budgetFilter === 'conservative') {
+          if (c.is_stack) return false;
+          const premiumSlugs = ['semaglutide', 'tirzepatide', 'retatrutide', 'igf-1-lr3', 'igf-1-des', 'dihexa', 'mots-c'];
+          if (premiumSlugs.includes(c.slug)) return false;
+        }
+      }
+
       return true;
     });
-  }, [compounds, query, category, tier, area, wada, formFilter]);
+  }, [compounds, query, category, tier, area, wada, formFilter, budgetFilter, prepFilter]);
 
   const handleAreaToggle = (targetArea: string) => {
     setArea((prev) => (prev === targetArea ? ALL : targetArea));
   };
 
-  const handleWizardComplete = (wizardFilters: { area: string; form: string; wada: string }) => {
+  const handleWizardComplete = (wizardFilters: { area: string; form: string; wada: string; budget: string; prep: string }) => {
     setQuery('');
     setCategory(ALL);
     setTier(ALL);
@@ -119,6 +139,8 @@ export default function ResearchBrowser({ compounds }: { compounds: Compound[] }
     }
     setFormFilter(wizardFilters.form);
     setWada(wizardFilters.wada);
+    setBudgetFilter(wizardFilters.budget);
+    setPrepFilter(wizardFilters.prep);
   };
 
   // Helper to resolve card border based on WADA compliance
@@ -470,6 +492,30 @@ export default function ResearchBrowser({ compounds }: { compounds: Compound[] }
           <option value="injection">Injection (Vial)</option>
           <option value="oral">Oral (Capsule)</option>
           <option value="topical">Topical</option>
+        </select>
+
+        {/* Budget Filter select option */}
+        <select
+          aria-label="Filter By Budget"
+          value={budgetFilter}
+          onChange={(e) => setBudgetFilter(e.target.value)}
+          style={selectStyle}
+        >
+          <option value={ALL}>All Budgets</option>
+          <option value="conservative">Conservative Budget</option>
+          <option value="standard">Standard Budget</option>
+        </select>
+
+        {/* Reconstitution Prep Filter select option */}
+        <select
+          aria-label="Filter By Prep"
+          value={prepFilter}
+          onChange={(e) => setPrepFilter(e.target.value)}
+          style={selectStyle}
+        >
+          <option value={ALL}>All Reconstitution Preps</option>
+          <option value="reconstitution">Lyophilized Vials Only</option>
+          <option value="no_reconstitution">Ready-To-Use Formats Only</option>
         </select>
 
         <select

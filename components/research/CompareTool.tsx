@@ -211,7 +211,48 @@ function scoreCompound(c: Compound, allSelected: Compound[]): CompoundScore {
   };
 }
 
-// ─── PROS/CONS ENGINE (tiered severity) ──────────────────────────────────────
+function getNumericValue(rowLabel: string, c: Compound): number | null {
+  switch (rowLabel) {
+    case 'Molecular Weight':
+      return c.molecular_weight_da ?? (c.identity?.molecular_weight ? parseFloat(c.identity.molecular_weight) : null);
+    case 'Purity':
+      return c.purity_percentage ?? null;
+    case 'PubMed Citations':
+      return c.pubmed_citation_count ?? null;
+    case 'Clinical Trials':
+      return (c.active_trial_count ?? 0) + (c.completed_trial_count ?? 0);
+    case 'Reconstituted Shelf Life':
+      return c.reconstitution_shelf_days ?? c.handling?.reconstituted_days ?? null;
+    case 'Half-Life':
+      return parseHalfLifeHours(c.half_life);
+    default:
+      return null;
+  }
+}
+
+function renderRelativeDelta(rowLabel: string, c: Compound, control: Compound): React.ReactNode {
+  if (c.slug === control.slug) return null;
+  const currentVal = getNumericValue(rowLabel, c);
+  const controlVal = getNumericValue(rowLabel, control);
+  if (currentVal != null && controlVal != null) {
+    const diff = currentVal - controlVal;
+    if (diff === 0) return null;
+    const sign = diff > 0 ? '+' : '';
+    const color = diff > 0 ? '#68D391' : '#FF6B6B';
+    let unit = '';
+    if (rowLabel === 'Molecular Weight') unit = ' Da';
+    else if (rowLabel === 'Purity') unit = '%';
+    else if (rowLabel === 'Half-Life') unit = 'h';
+    else if (rowLabel === 'Reconstituted Shelf Life') unit = ' Days';
+
+    return (
+      <div style={{ fontSize: '0.72rem', color, fontWeight: 700, marginTop: 4 }}>
+        {sign}{diff.toLocaleString()}{unit} vs Control
+      </div>
+    );
+  }
+  return null;
+}
 type PCSeverity = 'high' | 'medium' | 'low';
 interface PCItem { text: string; severity: PCSeverity; category: 'Evidence' | 'Safety' | 'Practical' | 'Science' }
 interface ProsCons { pros: PCItem[]; cons: PCItem[] }
@@ -1012,9 +1053,7 @@ export default function CompareTool({ compounds, initialSlugs = [] }: { compound
   });
 
   const [searchQuery, setSearchQuery] = useState('');
-  const [isSearchOpen, setIsSearchOpen] = useState(false);
-  const [diffMode, setDiffMode] = useState(false);
-  const [copied, setCopied] = useState(false);
+
   const [activeTab, setActiveTab] = useState<'matrix' | 'proscons' | 'brief' | 'mechanism' | 'protocol' | 'recommend'>('matrix');
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
   const [mobileViewIndex, setMobileViewIndex] = useState(1);

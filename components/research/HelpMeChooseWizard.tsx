@@ -7,6 +7,8 @@ interface WizardFilters {
   area: string;
   form: string;
   wada: string;
+  budget: string;
+  prep: string;
 }
 
 interface Props {
@@ -20,6 +22,8 @@ export default function HelpMeChooseWizard({ isOpen, onClose, onComplete }: Prop
   const [area, setArea] = useState('all');
   const [form, setForm] = useState('all');
   const [wada, setWada] = useState('all');
+  const [budget, setBudget] = useState('all');
+  const [prep, setPrep] = useState('all');
 
   React.useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -44,7 +48,7 @@ export default function HelpMeChooseWizard({ isOpen, onClose, onComplete }: Prop
   };
 
   const handleFinish = () => {
-    onComplete({ area, form, wada });
+    onComplete({ area, form, wada, budget, prep });
     setStep(1);
     onClose();
   };
@@ -53,6 +57,8 @@ export default function HelpMeChooseWizard({ isOpen, onClose, onComplete }: Prop
     setArea('all');
     setForm('all');
     setWada('all');
+    setBudget('all');
+    setPrep('all');
     setStep(1);
   };
 
@@ -135,7 +141,7 @@ export default function HelpMeChooseWizard({ isOpen, onClose, onComplete }: Prop
 
         {/* Step Indicator */}
         <div style={{ display: 'flex', gap: '8px', marginBottom: '28px' }}>
-          {[1, 2, 3].map((s) => (
+          {[1, 2, 3, 4, 5].map((s) => (
             <div
               key={s}
               style={{
@@ -286,6 +292,88 @@ export default function HelpMeChooseWizard({ isOpen, onClose, onComplete }: Prop
           </div>
         )}
 
+        {/* Question 4: Budget */}
+        {step === 4 && (
+          <div>
+            <h3 style={{ fontSize: '1.05rem', fontWeight: 700, marginBottom: '18px' }}>
+              What Is Your Target Budget Per Vial?
+            </h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              <button
+                type="button"
+                onClick={() => setBudget('conservative')}
+                style={optionCardStyle(budget === 'conservative')}
+              >
+                <div>
+                  <div style={{ fontWeight: 700, color: 'var(--white, #FFFFFF)' }}>Conservative Budget</div>
+                  <div style={{ fontSize: '0.75rem' }}>Prioritize Cost-Efficient Options (Under $50 / Vial)</div>
+                </div>
+              </button>
+              <button
+                type="button"
+                onClick={() => setBudget('standard')}
+                style={optionCardStyle(budget === 'standard')}
+              >
+                <div>
+                  <div style={{ fontWeight: 700, color: 'var(--white, #FFFFFF)' }}>Standard Budget</div>
+                  <div style={{ fontSize: '0.75rem' }}>Balanced Value And Premium Reference Peptides (Under $100 / Vial)</div>
+                </div>
+              </button>
+              <button
+                type="button"
+                onClick={() => setBudget('all')}
+                style={optionCardStyle(budget === 'all')}
+              >
+                <div>
+                  <div style={{ fontWeight: 700, color: 'var(--white, #FFFFFF)' }}>No Constraint</div>
+                  <div style={{ fontSize: '0.75rem' }}>Show All Available Peptides Regardless Of Cost</div>
+                </div>
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Question 5: Reconstitution Prep */}
+        {step === 5 && (
+          <div>
+            <h3 style={{ fontSize: '1.05rem', fontWeight: 700, marginBottom: '18px' }}>
+              Do You Have Reconstitution Equipment?
+            </h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              <button
+                type="button"
+                onClick={() => setPrep('reconstitution')}
+                style={optionCardStyle(prep === 'reconstitution')}
+              >
+                <div>
+                  <div style={{ fontWeight: 700, color: 'var(--white, #FFFFFF)' }}>Yes (Lyophilized Vials)</div>
+                  <div style={{ fontSize: '0.75rem' }}>Reconstitution Prep With Sterile Bacteriostatic Water Required</div>
+                </div>
+              </button>
+              <button
+                type="button"
+                onClick={() => setPrep('no_reconstitution')}
+                style={optionCardStyle(prep === 'no_reconstitution')}
+              >
+                <div>
+                  <div style={{ fontWeight: 700, color: 'var(--white, #FFFFFF)' }}>No (Premixed / Oral / Topical)</div>
+                  <div style={{ fontSize: '0.75rem' }}>Show Ready-To-Use Formats (Capsules, Nasal Sprays, Creams Only)</div>
+                </div>
+              </button>
+              <button
+                type="button"
+                onClick={() => setPrep('all')}
+                style={optionCardStyle(prep === 'all')}
+              >
+                <div>
+                  <div style={{ fontWeight: 700, color: 'var(--white, #FFFFFF)' }}>No Constraint</div>
+                  <div style={{ fontSize: '0.75rem' }}>Show Both Lyophilized Vials And Premixed Formats</div>
+                </div>
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Footer Navigation */}
         <div
           style={{
@@ -325,7 +413,7 @@ export default function HelpMeChooseWizard({ isOpen, onClose, onComplete }: Prop
           )}
 
           <div style={{ display: 'flex', gap: '10px' }}>
-            {step < 3 ? (
+            {step < 5 ? (
               <button
                 type="button"
                 onClick={handleNext}

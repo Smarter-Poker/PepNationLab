@@ -34,6 +34,7 @@ export interface MatchInput {
   excludeSlugs?: string[];
   preference?: 'single' | 'stack' | 'either';
   budget?: 'conservative' | 'standard' | 'unlimited';
+  prep?: 'reconstitution' | 'no_reconstitution' | 'all';
 }
 
 export interface ScoreBreakdown {
@@ -187,6 +188,15 @@ function failsHandlingGate(c: Compound, excludeInjectables: boolean | undefined)
   return false;
 }
 
+function failsPrepGate(c: Compound, prep: 'reconstitution' | 'no_reconstitution' | 'all' | undefined): boolean {
+  if (!prep || prep === 'all') return false;
+  const form = (c.handling?.form || '').toLowerCase();
+  const isReconstitution = form.includes('lyophilized') || form.includes('powder') || form.includes('vial') || form.includes('injection') || form.includes('injectable');
+  if (prep === 'reconstitution' && !isReconstitution) return true;
+  if (prep === 'no_reconstitution' && isReconstitution) return true;
+  return false;
+}
+
 function failsHalfLifeGate(c: Compound, requireLongHalfLife: boolean | undefined): boolean {
   if (!requireLongHalfLife) return false;
   const hl = c.half_life?.toLowerCase() || '';
@@ -263,6 +273,7 @@ function scoreOne(input: MatchInput, c: Compound): { score: number; rationale: s
   if (failsWadaGate(c, input.wadaConstraint)) return { failReason: 'Contains WADA-prohibited substances.' };
   if (failsRiskGate(c, input.riskTolerance)) return { failReason: 'Exceeds requested risk tolerance.' };
   if (failsHandlingGate(c, input.excludeInjectables)) return { failReason: 'Requires injection (user requested non-injectable).' };
+  if (failsPrepGate(c, input.prep)) return { failReason: 'Requires reconstitution equipment configuration mismatch.' };
   if (failsHalfLifeGate(c, input.requireLongHalfLife)) return { failReason: 'Does not meet long half-life requirement.' };
   if (failsPreferenceGate(c, input.preference)) return { failReason: 'Does not match preference (single/stack).' };
   if (input.excludeSlugs && input.excludeSlugs.includes(c.slug)) return { failReason: 'Manually excluded.' };
@@ -317,12 +328,24 @@ function scoreOne(input: MatchInput, c: Compound): { score: number; rationale: s
   if (!taggedHit && !keywordHit) return { failReason: 'Not relevant to your goal.' };
 
   // Budget penalty for stacks if conservative
-  if (input.budget === 'conservative' && c.is_stack) {
-    score -= 20; // Penalize expensive stacks
-  }
-  // Budget bonus for single compounds if conservative
-  if (input.budget === 'conservative' && !c.is_stack) {
-    score += 10;
+  if (input.budget === 'conservative') {
+    if (c.is_stack) {
+      score -= 20; // Penalize expensive stacks
+    }
+    const premiumSlugs = ['semaglutide', 'tirzepatide', 'retatrutide', 'igf-1-lr3', 'igf-1-des', 'dihexa', 'mots-c'];
+    if (premiumSlugs.includes(c.slug)) {
+      score -= 15;
+    } else {
+      score += 10;
+    }
+  } else if (input.budget === 'standard') {
+    if (c.is_stack) {
+      score -= 5;
+    }
+    const premiumSlugs = ['tirzepatide', 'retatrutide', 'igf-1-lr3'];
+    if (premiumSlugs.includes(c.slug)) {
+      score -= 5;
+    }
   }
 
   // Clamp to 0..100 for the public score field.
