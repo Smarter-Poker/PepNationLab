@@ -125,7 +125,7 @@ function MatchFormInner() {
 
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState<MatchResult[] | null>(null);
-  const [excludedCompounds, setExcludedCompounds] = useState<unknown[]>([]);
+  const [excludedCompounds, setExcludedCompounds] = useState<{slug: string; displayName: string; reason: string}[]>([]);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [showCompare, setShowCompare] = useState(false);
 
@@ -170,7 +170,7 @@ function MatchFormInner() {
         return;
       }
       setResults(data.results ?? []);
-      setExcludedCompounds((data as Record<string, unknown>).excluded as unknown[] ?? []);
+      setExcludedCompounds((data as Record<string, any>).excluded as {slug: string; displayName: string; reason: string}[] ?? []);
     } catch {
       setErrorMsg('Network Error. Please Try Again.');
     } finally {
