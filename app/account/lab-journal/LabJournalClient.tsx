@@ -49,6 +49,7 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
   const [editingNote, setEditingNote] = useState<any>(null);
   const [noteTitle, setNoteTitle] = useState('');
   const [noteText, setNoteText] = useState('');
+  const [noteCompoundSlug, setNoteCompoundSlug] = useState('');
   const [noteSaving, setNoteSaving] = useState(false);
   
   // UX Features State
@@ -116,6 +117,29 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
     }
   };
 
+  const exportJournalToCSV = () => {
+    let csv = 'Type,Date,Title/Items,Details\\n';
+    
+    // Add Notes
+    notes.forEach(n => {
+      csv += `Note,${new Date(n.updated_at).toLocaleDateString()},"${(n.title || 'Journal Entry').replace(/"/g, '""')}","${(n.note_text || '').replace(/"/g, '""')}"\\n`;
+    });
+    
+    // Add Comparisons
+    comparisons.forEach(c => {
+      csv += `Comparison,${new Date(c.created_at).toLocaleDateString()},"Items: ${c.product_ids.join(', ')}",""\\n`;
+    });
+    
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `Lab_Journal_${new Date().toISOString().split('T')[0]}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success('Journal exported to CSV');
+  };
+
   async function removeItem(productId: string) {
     setPendingId(productId);
     try {
@@ -156,6 +180,7 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
   const openNewNote = () => {
     setNoteTitle('');
     setNoteText('');
+    setNoteCompoundSlug('');
     setEditingNote(null);
     setIsCreatingNote(true);
   };
@@ -163,6 +188,7 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
   const editNote = (n: any) => {
     setNoteTitle(n.title || '');
     setNoteText(n.note_text || '');
+    setNoteCompoundSlug(n.compound_slug || '');
     setEditingNote(n);
     setIsCreatingNote(true);
   };
@@ -173,7 +199,9 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
     try {
       const url = '/api/researcher/notes';
       const method = editingNote ? 'PATCH' : 'POST';
-      const body = editingNote ? { id: editingNote.id, title: noteTitle, note_text: noteText } : { title: noteTitle, note_text: noteText };
+      const body = editingNote 
+        ? { id: editingNote.id, title: noteTitle, note_text: noteText, compound_slug: noteCompoundSlug || null } 
+        : { title: noteTitle, note_text: noteText, compound_slug: noteCompoundSlug || null };
       
       const res = await fetch(url, {
         method,
@@ -581,6 +609,11 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
                           <button onClick={() => editNote(n)} className="btn btn-ghost btn-sm" style={{ padding: 4, color: 'var(--silver)' }}>Edit</button>
                           <button onClick={() => deleteNote(n.id)} className="btn btn-ghost btn-sm" style={{ padding: 4, color: 'var(--red)' }}><Trash2 size={16}/></button>
                         </div>
+                        {n.compound_slug && (
+                          <div style={{ display: 'inline-block', background: 'rgba(0,196,188,0.1)', color: 'var(--teal)', padding: '2px 8px', borderRadius: 12, fontSize: '0.75rem', marginBottom: 'var(--space-2)' }}>
+                            #{n.compound_slug}
+                          </div>
+                        )}
                         <h3 style={{ color: 'var(--white)', paddingRight: 80 }}>{n.title || 'Journal Entry'}</h3>
                         <p style={{ color: 'var(--silver)', whiteSpace: 'pre-wrap', marginTop: 'var(--space-3)' }}>{n.note_text}</p>
                         <div style={{ marginTop: 'var(--space-4)', fontSize: '0.75rem', color: 'rgba(255,255,255,0.4)', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: 'var(--space-2)' }}>
@@ -594,13 +627,27 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
                     <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(5px)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 'var(--space-4)' }} onClick={() => setIsCreatingNote(false)}>
                       <div className="glass-panel" style={{ width: '100%', maxWidth: 600, padding: 'var(--space-6)', borderRadius: 'var(--radius-xl)' }} onClick={e => e.stopPropagation()}>
                         <h2 style={{ color: 'var(--white)', marginBottom: 'var(--space-4)' }}>{editingNote ? 'Edit Note' : 'New Lab Note'}</h2>
-                        <input 
-                          type="text" 
-                          placeholder="Note Title (Optional)" 
-                          value={noteTitle} 
-                          onChange={e => setNoteTitle(e.target.value)}
-                          style={{ width: '100%', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', padding: '12px', borderRadius: 8, color: 'var(--white)', marginBottom: 'var(--space-3)', fontSize: '1rem' }}
-                        />
+                        
+                        <div style={{ display: 'flex', gap: 'var(--space-3)', marginBottom: 'var(--space-3)' }}>
+                          <input 
+                            type="text" 
+                            placeholder="Note Title (Optional)" 
+                            value={noteTitle} 
+                            onChange={e => setNoteTitle(e.target.value)}
+                            style={{ flex: 1, background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', padding: '12px', borderRadius: 8, color: 'var(--white)', fontSize: '1rem' }}
+                          />
+                          <select 
+                            value={noteCompoundSlug} 
+                            onChange={e => setNoteCompoundSlug(e.target.value)}
+                            style={{ background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', padding: '12px', borderRadius: 8, color: 'var(--white)', fontSize: '1rem', width: 200 }}
+                          >
+                            <option value="">No Compound Tag</option>
+                            {Array.from(new Set([...favorites, ...pastOrders, ...recentlyViewed].filter(i => i.slug).map(i => i.slug))).map(slug => (
+                              <option key={slug as string} value={slug as string}>{slug}</option>
+                            ))}
+                          </select>
+                        </div>
+                        
                         <textarea 
                           placeholder="Write your research notes, protocol logs, or observations here..." 
                           value={noteText} 

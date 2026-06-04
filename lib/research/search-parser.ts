@@ -139,28 +139,91 @@ export function parseQuery(raw: string): ParsedQuery {
   return parsed;
 }
 
+const STOP_WORDS = new Set(['for', 'the', 'and', 'in', 'to', 'with', 'a', 'an', 'of', 'is', 'it', 'on', 'peptides', 'peptide', 'best']);
+
+const SYNONYMS: Record<string, string[]> = {
+  fat: ['weight loss', 'lipolysis', 'obesity', 'adipose', 'slimming', 'lean', 'weight'],
+  muscle: ['hypertrophy', 'bodybuilding', 'mass', 'strength', 'growth', 'anabolic', 'gains'],
+  sleep: ['insomnia', 'circadian', 'rest', 'recovery', 'rem'],
+  pain: ['analgesic', 'inflammation', 'injury', 'healing', 'joint', 'tendon', 'nociception', 'soreness'],
+  brain: ['cognitive', 'nootropic', 'memory', 'focus', 'neuro', 'alzheimers', 'dementia', 'learning'],
+  skin: ['anti-aging', 'collagen', 'wrinkle', 'elasticity', 'hair', 'nail', 'glow'],
+  energy: ['stamina', 'endurance', 'fatigue', 'metabolism', 'mitochondrial'],
+  sugar: ['diabetes', 'insulin', 'glucose', 'glycemic', 'metabolic'],
+  heart: ['cardiovascular', 'blood', 'vascular', 'angiogenesis', 'cardiac'],
+  bone: ['osteoporosis', 'mineral', 'fracture', 'density', 'healing'],
+  sex: ['libido', 'erectile', 'aphrodisiac', 'testosterone', 'hormone', 'arousal'],
+  gut: ['digestion', 'ulcer', 'gastric', 'intestinal', 'microbiome', 'bowel', 'leaky', 'stomach'],
+  immune: ['immunity', 'infection', 'virus', 'bacteria', 'autoimmune', 'sick'],
+  stress: ['anxiety', 'cortisol', 'calm', 'relax', 'mood', 'depression', 'panic'],
+  aging: ['longevity', 'senescence', 'lifespan', 'youth', 'telomere', 'anti-aging'],
+};
+
+function getTermExpansions(term: string): string[] {
+  // basic stripping
+  const cleanTerm = term.replace(/[^a-z0-9_\-]/gi, '');
+  if (!cleanTerm || STOP_WORDS.has(cleanTerm)) return [];
+  
+  const expansions = [cleanTerm];
+  if (cleanTerm.endsWith('ies')) expansions.push(cleanTerm.slice(0, -3) + 'y');
+  else if (cleanTerm.endsWith('es')) expansions.push(cleanTerm.slice(0, -2));
+  else if (cleanTerm.endsWith('s')) expansions.push(cleanTerm.slice(0, -1));
+  if (!cleanTerm.endsWith('s')) expansions.push(cleanTerm + 's');
+
+  const finalExpansions = new Set<string>();
+  for (const exp of expansions) {
+    finalExpansions.add(exp);
+    if (SYNONYMS[exp]) {
+      for (const syn of SYNONYMS[exp]) {
+        // If a synonym has multiple words, we join them with <-> for postgres phrase matching
+        // or we just take the individual words if we want looser matching. For simplicity,
+        // we'll format them as individual words or phrase components later, but here we can
+        // just push single words if they don't have spaces.
+        // Actually, for tsquery, replacing spaces with ` <-> ` or ` & ` is best.
+        finalExpansions.add(syn);
+      }
+    }
+  }
+  return Array.from(finalExpansions);
+}
+
+function formatExpansionForPg(exp: string): string {
+  const parts = exp.split(/\s+/).filter(Boolean);
+  if (parts.length > 1) return `(${parts.join(' <-> ')})`;
+  return parts[0];
+}
+
 export function buildTsquery(parsed: ParsedQuery): string {
   function clean(t: string): string {
     return t.replace(/[^a-z0-9_\-]/gi, '');
   }
   const atoms: string[] = [];
+  
   for (const phrase of parsed.phrases) {
     const words = phrase.split(/\s+/).map(clean).filter(Boolean);
     if (words.length === 0) continue;
     atoms.push('(' + words.join(' <-> ') + ')');
   }
+  
   for (const term of parsed.required) {
-    const c = clean(term);
-    if (c) atoms.push(c);
+    const exps = getTermExpansions(term);
+    if (exps.length > 0) {
+      atoms.push('(' + exps.map(formatExpansionForPg).join(' | ') + ')');
+    }
   }
+  
   for (const term of parsed.terms) {
-    const c = clean(term);
-    if (c) atoms.push(c);
+    const exps = getTermExpansions(term);
+    if (exps.length > 0) {
+      atoms.push('(' + exps.map(formatExpansionForPg).join(' | ') + ')');
+    }
   }
+  
   for (const w of parsed.wildcards) {
     const c = clean(w);
-    if (c) atoms.push(`${c}:*`);
+    if (c && !STOP_WORDS.has(c)) atoms.push(`${c}:*`);
   }
+  
   let q = atoms.join(' & ');
   for (const excl of parsed.excluded) {
     const c = clean(excl);
@@ -177,8 +240,10 @@ export function buildAutoWildcardTsquery(parsed: ParsedQuery): string {
     parsed.terms.length + parsed.required.length === 1
   ) {
     const lone = [...parsed.required, ...parsed.terms][0];
-    const c = lone.replace(/[^a-z0-9_\-]/gi, '');
-    if (c) return base ? `${base} | ${c}:*` : `${c}:*`;
+    const cleanLone = lone.replace(/[^a-z0-9_\-]/gi, '');
+    if (cleanLone && !STOP_WORDS.has(cleanLone)) {
+       return base ? `${base} | ${cleanLone}:*` : `${cleanLone}:*`;
+    }
   }
   return base;
 }
