@@ -717,38 +717,85 @@ export default function AgentStorefrontGrid({
   const matchesSearch = useCallback(
     (g: GroupedProduct) => {
       const q = deferredSearch.trim().toLowerCase();
-      if (!q) return true;
+      if (!q) return { matches: true, score: 0 };
       
       const tokens = q.split(/\s+/).filter(Boolean);
-      if (tokens.length === 0) return true;
+      if (tokens.length === 0) return { matches: true, score: 0 };
 
-      // Build a searchable text corpus for the product
-      let corpus = [
-        g.name,
-        g.category,
-        g.desc
-      ].filter(Boolean).join(' ').toLowerCase();
+      let totalScore = 0;
+      let allTokensMatched = true;
 
-      if (compoundsBySlug && g.compoundSlug) {
-        const c = compoundsBySlug[g.compoundSlug];
-        if (c) {
-          const compoundTexts = [
-            c.display_name,
-            ...(c.aliases || []),
-            ...(c.studied_for || []),
-            ...(c.research_areas || []),
-            c.compound_class,
-            c.molecular_target,
-            c.mechanism,
-            c.benefits,
-            c.plain_summary
-          ].filter(Boolean).join(' ').toLowerCase();
-          corpus += ' ' + compoundTexts;
+      for (const rawToken of tokens) {
+        // Generate singular/plural variants for basic stemming
+        const variants = [rawToken];
+        if (rawToken.endsWith('ies')) variants.push(rawToken.slice(0, -3) + 'y');
+        else if (rawToken.endsWith('es')) variants.push(rawToken.slice(0, -2));
+        else if (rawToken.endsWith('s')) variants.push(rawToken.slice(0, -1));
+        if (!rawToken.endsWith('s')) variants.push(rawToken + 's');
+
+        let maxTokenScore = 0;
+
+        for (const token of variants) {
+          let currentVariantScore = 0;
+          const rawTokenAlpha = token.replace(/[^a-z0-9]/g, '');
+          const matchesRaw = (src: string | null | undefined) => {
+            if (!src || !rawTokenAlpha) return false;
+            return src.toLowerCase().replace(/[^a-z0-9]/g, '').includes(rawTokenAlpha);
+          };
+
+          // Exact or strong matches
+          if (g.name.toLowerCase() === token) currentVariantScore += 500;
+          else if (g.name.toLowerCase().includes(token)) currentVariantScore += 100;
+          else if (matchesRaw(g.name)) currentVariantScore += 50;
+          
+          if (g.category.toLowerCase().includes(token)) currentVariantScore += 50;
+          if (g.desc.toLowerCase().includes(token)) currentVariantScore += 10;
+          else if (matchesRaw(g.desc)) currentVariantScore += 5;
+
+          if (compoundsBySlug && g.compoundSlug) {
+            const c = compoundsBySlug[g.compoundSlug];
+            if (c) {
+              if (c.display_name.toLowerCase() === token) currentVariantScore += 500;
+              else if (c.display_name.toLowerCase().includes(token)) currentVariantScore += 100;
+              else if (matchesRaw(c.display_name)) currentVariantScore += 50;
+
+              if (c.aliases?.some(a => a.toLowerCase() === token)) currentVariantScore += 400;
+              else if (c.aliases?.some(a => a.toLowerCase().includes(token))) currentVariantScore += 80;
+              else if (c.aliases?.some(a => matchesRaw(a))) currentVariantScore += 40;
+
+              if (c.studied_for?.some(s => s.toLowerCase().includes(token))) currentVariantScore += 50;
+              if (c.research_areas?.some(r => r.toLowerCase().includes(token))) currentVariantScore += 50;
+              if (c.benefits?.toLowerCase().includes(token)) currentVariantScore += 50;
+              
+              if (c.compound_class?.toLowerCase().includes(token)) currentVariantScore += 30;
+              if (c.molecular_target?.toLowerCase().includes(token)) currentVariantScore += 30;
+
+              if (c.mechanism?.toLowerCase().includes(token)) currentVariantScore += 10;
+              if (c.plain_summary?.toLowerCase().includes(token)) currentVariantScore += 10;
+            }
+          }
+          
+          if (currentVariantScore > maxTokenScore) {
+            maxTokenScore = currentVariantScore;
+          }
+        }
+
+        if (maxTokenScore === 0) {
+          allTokensMatched = false;
+        } else {
+          totalScore += maxTokenScore;
         }
       }
 
-      // Check if ALL tokens are present somewhere in the corpus
-      return tokens.every(token => corpus.includes(token));
+      // Add a bonus for exact full query match against name or alias
+      if (g.name.toLowerCase() === q) totalScore += 2000;
+      if (compoundsBySlug && g.compoundSlug) {
+        const c = compoundsBySlug[g.compoundSlug];
+        if (c?.display_name.toLowerCase() === q) totalScore += 2000;
+        if (c?.aliases?.some(a => a.toLowerCase() === q)) totalScore += 2000;
+      }
+
+      return { matches: allTokensMatched, score: totalScore };
     },
     [deferredSearch, compoundsBySlug]
   );
@@ -813,29 +860,41 @@ export default function AgentStorefrontGrid({
   );
 
   const filteredProducts = useMemo(() => {
-    let result = grouped.filter(g =>
+    const withScores = grouped.map(g => ({ g, search: matchesSearch(g) }));
+
+    let result = withScores.filter(({ g, search }) =>
       matchesCategory(g) &&
       matchesArea(g) &&
-      matchesSearch(g) &&
+      search.matches &&
       matchesPrice(g) &&
       matchesWeight(g) &&
       matchesInStock(g) &&
       matchesBulk(g)
     );
-    switch (sortBy) {
-      case 'popular': result = [...result].sort((a, b) => a.popularity - b.popularity); break;
-      case 'name_asc': result = [...result].sort((a, b) => a.name.localeCompare(b.name)); break;
-      case 'name_desc': result = [...result].sort((a, b) => b.name.localeCompare(a.name)); break;
-      case 'price_low': result = [...result].sort((a, b) => a.lowestPrice - b.lowestPrice); break;
-      case 'price_high': result = [...result].sort((a, b) => b.lowestPrice - a.lowestPrice); break;
-      case 'newest': result = [...result].sort((a, b) => a.popularity - b.popularity); break;
+
+    const q = deferredSearch.trim();
+
+    if (q && sortBy === 'popular') {
+      result.sort((a, b) => {
+        if (b.search.score !== a.search.score) return b.search.score - a.search.score;
+        return a.g.popularity - b.g.popularity;
+      });
+    } else {
+      switch (sortBy) {
+        case 'popular': result.sort((a, b) => a.g.popularity - b.g.popularity); break;
+        case 'name_asc': result.sort((a, b) => a.g.name.localeCompare(b.g.name)); break;
+        case 'name_desc': result.sort((a, b) => b.g.name.localeCompare(a.g.name)); break;
+        case 'price_low': result.sort((a, b) => a.g.lowestPrice - b.g.lowestPrice); break;
+        case 'price_high': result.sort((a, b) => b.g.lowestPrice - a.g.lowestPrice); break;
+        case 'newest': result.sort((a, b) => a.g.popularity - b.g.popularity); break;
+      }
     }
-    return result;
-  }, [grouped, matchesCategory, matchesArea, matchesSearch, matchesPrice, matchesWeight, matchesInStock, matchesBulk, sortBy]);
+    return result.map(r => r.g);
+  }, [grouped, matchesCategory, matchesArea, matchesSearch, matchesPrice, matchesWeight, matchesInStock, matchesBulk, sortBy, deferredSearch]);
 
   const categoryCounts = useMemo<Record<string, number>>(() => {
     const base = grouped.filter(g =>
-      matchesSearch(g) &&
+      matchesSearch(g).matches &&
       matchesPrice(g) &&
       matchesWeight(g) &&
       matchesInStock(g) &&
