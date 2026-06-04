@@ -215,6 +215,32 @@ export default function ResearchBrowser({ compounds }: { compounds: Compound[] }
     return { color: '#A8B4C0', border: '1px solid rgba(168,180,192,0.3)' };
   };
 
+  // Helper to format profile value to Title Case
+  const formatProfileValue = (key: string, val: string) => {
+    if (val === 'all') {
+      if (key === 'area') return 'All Areas';
+      if (key === 'route') return 'All Routes';
+      if (key === 'budget') return 'All Budgets';
+      return 'All';
+    }
+    if (key === 'area') {
+      if (val === 'weight_management') return 'Weight Management';
+      if (val === 'healing') return 'Healing';
+      if (val === 'longevity') return 'Longevity';
+      if (val === 'sleep') return 'Sleep';
+    }
+    if (key === 'route') {
+      if (val === 'injection') return 'Injection (Vial)';
+      if (val === 'oral') return 'Oral (Capsule)';
+      if (val === 'topical') return 'Topical';
+    }
+    if (key === 'budget') {
+      if (val === 'conservative') return 'Conservative Budget';
+      if (val === 'standard') return 'Standard Budget';
+    }
+    return val.charAt(0).toUpperCase() + val.slice(1);
+  };
+
   return (
     <div>
       {/* Guided Selection Wizard Recommendations */}
@@ -236,7 +262,7 @@ export default function ResearchBrowser({ compounds }: { compounds: Compound[] }
                 Guided Recommendations
               </h3>
               <p style={{ fontSize: '0.82rem', color: 'rgba(255,255,255,0.6)', margin: '4px 0 0 0' }}>
-                Your Profile: {wizardChoices.area !== 'all' ? wizardChoices.area.replace('_', ' ') : 'All areas'} | {wizardChoices.form !== 'all' ? wizardChoices.form : 'All routes'} | {wizardChoices.budget !== 'all' ? wizardChoices.budget : 'All budgets'}
+                Your Profile: {formatProfileValue('area', wizardChoices.area)} | {formatProfileValue('route', wizardChoices.form)} | {formatProfileValue('budget', wizardChoices.budget)}
               </p>
             </div>
             <button

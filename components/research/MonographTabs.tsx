@@ -72,6 +72,25 @@ function Chips({ items, color = '#A8B4C0' }: { items: string[]; color?: string }
   );
 }
 
+function Eli5Formatter({ text, color }: { text: string; color: string }) {
+  if (!text) return null;
+  const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
+  return (
+    <div style={{ marginBottom: 'var(--space-4)', padding: '12px 16px', background: `${color}1A`, border: `1px solid ${color}33`, borderRadius: '12px' }}>
+      <p style={{ margin: '0 0 8px', fontSize: '0.85rem', fontWeight: 800, color, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+        <Sparkles size={14} style={{ display: 'inline', verticalAlign: 'text-bottom', marginRight: 6 }} />
+        Explain Like I&apos;m 5
+      </p>
+      <ul style={{ margin: 0, paddingLeft: '1.2rem', color: 'var(--white)', fontSize: '0.9rem', lineHeight: 1.6, display: 'flex', flexDirection: 'column', gap: 6 }}>
+        {lines.map((line, i) => {
+          const content = line.replace(/^[\*\-\d\.]+\s*/, '');
+          return <li key={i}>{content}</li>;
+        })}
+      </ul>
+    </div>
+  );
+}
+
 export default function MonographTabs({ compound, related = [] }: Props) {
   const router = useRouter();
   const tier = evidenceTier(compound.evidence_tier);
@@ -222,6 +241,10 @@ export default function MonographTabs({ compound, related = [] }: Props) {
       <section role="tabpanel" className="glass-panel" style={{ padding: 'var(--space-5)', minHeight: 160 }}>
         {active === 'overview' && (
           <div>
+            {compound.eli5_summary && (
+              <Eli5Formatter text={compound.eli5_summary} color={teal} />
+            )}
+            
             {compound.plain_summary && <Para>{compound.plain_summary}</Para>}
             <div style={{ marginTop: 'var(--space-2)' }}>
               <Fact label="Class" value={compound.compound_class} />
