@@ -8,6 +8,7 @@ import { createServiceClient } from '@/lib/supabase/server';
 import { getAllCompounds } from '@/lib/compounds-server';
 import { evidenceTier, wadaLabel } from '@/lib/compounds';
 import BrowseFilterShell from '@/components/research/BrowseFilterShell';
+import IframeLink from '@/components/ui/IframeLink';
 
 export const metadata: Metadata = {
   title: 'WADA-Prohibited Compounds | Research Library | Pep Nation Lab',
@@ -64,7 +65,7 @@ function WadaCompoundCard({ c, hist }: WadaCompoundCardProps) {
                 <strong style={{ color: 'var(--white, #FFFFFF)' }}>{h.year}</strong>: {h.status}
                 {h.notes ? ` — ${h.notes}` : ''}
                 {h.source_url && (
-                  <>{' '}<a href={h.source_url} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--teal, #00C4BC)', textDecoration: 'none' }}>Source</a></>
+                  <>{' '}<IframeLink href={h.source_url} style={{ color: 'var(--teal, #00C4BC)', textDecoration: 'none' }}>Source</IframeLink></>
                 )}
               </li>
             ))}

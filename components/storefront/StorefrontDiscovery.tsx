@@ -29,7 +29,8 @@ import { useRouter } from 'next/navigation';
 
 import { ProtocolScheduler } from '../research/ProtocolScheduler';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Sparkles, Search, ArrowRight, X, ShoppingCart, Compass } from 'lucide-react';
+import { RESEARCH_AREAS, researchAreaLabel } from '../../lib/compounds';
+import { ShoppingCart, Plus, Minus, X, Star, AlertTriangle, Scale, Target, Activity, Sparkles, Search, ArrowRight, Compass } from 'lucide-react';
 import type { Compound } from '@/lib/compounds';
 import AutocompleteDropdown, { type Suggestion } from '../research/AutocompleteDropdown';
 
@@ -1525,41 +1526,66 @@ export default function DiscoveryHero({
                   type="button"
                   onClick={() => { setShowAllAreas(false); onSelectArea(area); }}
                   style={{
-                    background: 'transparent',
-                    border: 'none',
+                    background: 'rgba(255, 255, 255, 0.03)',
+                    border: '1px solid rgba(255, 255, 255, 0.08)',
                     cursor: 'pointer',
                     padding: 0,
                     margin: 0,
                     borderRadius: '16px',
                     overflow: 'hidden',
                     boxShadow: '0 8px 24px rgba(0,0,0,0.4)',
-                    transition: 'transform 0.2s ease',
-                    aspectRatio: '1 / 1'
+                    transition: 'transform 0.2s ease, background 0.2s ease',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    textAlign: 'left'
                   }}
-                  onMouseOver={(e) => e.currentTarget.style.transform = 'translateY(-4px) scale(1.02)'}
-                  onMouseOut={(e) => e.currentTarget.style.transform = 'translateY(0) scale(1)'}
+                  onMouseOver={(e) => {
+                    e.currentTarget.style.transform = 'translateY(-4px) scale(1.02)';
+                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.08)';
+                  }}
+                  onMouseOut={(e) => {
+                    e.currentTarget.style.transform = 'translateY(0) scale(1)';
+                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.03)';
+                  }}
                 >
-                  <img 
-                    src={`/images/areas/${area}.png`} 
-                    alt={labelForArea(area).replace('\n', ' ')} 
-                    style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
-                  />
-                  <div style={{
-                    position: 'absolute',
-                    bottom: '6%',
-                    left: 0,
-                    right: 0,
-                    textAlign: 'center',
-                    color: '#FFF',
-                    fontWeight: 800,
-                    fontSize: 'clamp(11px, 1.3vw, 15px)',
-                    textShadow: '0px 2px 4px rgba(0,0,0,0.9), 0px 1px 2px rgba(0,0,0,0.9)',
-                    lineHeight: 1.1,
-                    padding: '0 4px',
-                  }}>
-                    {labelForArea(area).split('\n').map((line, i) => (
-                      <div key={i}>{line}</div>
-                    ))}
+                  <div style={{ width: '100%', aspectRatio: '1 / 1', position: 'relative' }}>
+                    <img 
+                      src={`/images/areas/${area}.png`} 
+                      alt={labelForArea(area).replace('\n', ' ')} 
+                      style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                    />
+                    {/* Dark gradient overlay for image text */}
+                    <div style={{
+                      position: 'absolute',
+                      top: 0, left: 0, right: 0, bottom: 0,
+                      background: 'linear-gradient(to bottom, transparent 60%, rgba(0,0,0,0.9) 100%)'
+                    }} />
+                    <div style={{
+                      position: 'absolute',
+                      bottom: '8px',
+                      left: '8px',
+                      right: '8px',
+                      color: '#FFF',
+                      fontWeight: 800,
+                      fontSize: 'clamp(12px, 1.4vw, 16px)',
+                      textShadow: '0px 2px 4px rgba(0,0,0,0.9)',
+                      lineHeight: 1.2
+                    }}>
+                      {labelForArea(area).replace('\n', ' ')}
+                    </div>
+                  </div>
+                  
+                  {/* Dynamic description underneath the image */}
+                  <div style={{ padding: '12px', flex: 1, display: 'flex', alignItems: 'flex-start' }}>
+                    <p style={{
+                      margin: 0,
+                      fontSize: '0.85rem',
+                      color: 'var(--silver-light, #D0DAE4)',
+                      lineHeight: 1.4,
+                      fontWeight: 400
+                    }}>
+                      {RESEARCH_AREAS[area]?.blurb || 'Explore research compounds in this category.'}
+                    </p>
                   </div>
                 </button>
               ))}

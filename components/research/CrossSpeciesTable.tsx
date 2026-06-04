@@ -13,6 +13,8 @@ interface Props {
   orthologs: Ortholog[];
 }
 
+import IframeLink from '@/components/ui/IframeLink';
+
 export default function CrossSpeciesTable({ orthologs }: Props) {
   if (!orthologs || orthologs.length === 0) {
     return (
@@ -37,14 +39,12 @@ export default function CrossSpeciesTable({ orthologs }: Props) {
             <tr key={i} style={{ borderBottom: '1px solid rgba(168,180,192,0.10)' }}>
               <td style={{ padding: '8px 10px', color: '#FFFFFF', fontWeight: 600 }}>{o.species}</td>
               <td style={{ padding: '8px 10px' }}>
-                <a
+                <IframeLink
                   href={`https://www.uniprot.org/uniprotkb/${encodeURIComponent(o.uniprot_id)}/entry`}
-                  target="_blank"
-                  rel="noopener noreferrer"
                   style={{ color: '#00C4BC', textDecoration: 'none' }}
                 >
                   {o.uniprot_id}
-                </a>
+                </IframeLink>
               </td>
               <td style={{ padding: '8px 10px', color: '#D0DAE4', textAlign: 'right' }}>{o.sequence_length}</td>
             </tr>

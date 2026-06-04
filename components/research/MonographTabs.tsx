@@ -24,6 +24,7 @@ import {
 import ReconstitutionCalculator from '@/components/research/ReconstitutionCalculator';
 import GlossaryText from '@/components/research/GlossaryText';
 import SequenceViewer from '@/components/research/SequenceViewer';
+import IframeModal from '@/components/ui/IframeModal';
 
 interface Props {
   compound: Compound;
@@ -94,6 +95,7 @@ export default function MonographTabs({ compound, related = [] }: Props) {
   if (compound.sources.length > 0) tabs.push({ key: 'sources', label: 'Sources', icon: <BookOpen size={15} aria-hidden="true" /> });
 
   const [active, setActive] = useState('overview');
+  const [modalUrl, setModalUrl] = useState<string | null>(null);
 
   return (
     <main style={{ maxWidth: 820, margin: '0 auto', padding: 'var(--space-4) var(--space-4) var(--space-8)' }}>
@@ -324,9 +326,20 @@ export default function MonographTabs({ compound, related = [] }: Props) {
                 const href = /^https?:\/\//i.test(src) ? src : `https://${src}`;
                 return (
                   <li key={i} style={{ wordBreak: 'break-all', fontSize: '0.82rem' }}>
-                    <a href={href} data-inapp="1" target="_blank" rel="noopener noreferrer" style={{ color: teal }}>
+                    <button 
+                      onClick={() => setModalUrl(href)} 
+                      style={{ 
+                        color: teal, 
+                        background: 'none', 
+                        border: 'none', 
+                        padding: 0, 
+                        cursor: 'pointer', 
+                        textAlign: 'left',
+                        textDecoration: 'underline'
+                      }}
+                    >
                       {src}
-                    </a>
+                    </button>
                   </li>
                 );
               })}
@@ -378,6 +391,10 @@ export default function MonographTabs({ compound, related = [] }: Props) {
       <p style={{ fontSize: '0.74rem', color: 'var(--grey-400)', lineHeight: 1.5, margin: 'var(--space-4) 0 0', textAlign: 'center' }}>
         Research Use Only. Not For Human Or Veterinary Use. Information Provided For Laboratory Research Purposes Only.
       </p>
+
+      {modalUrl && (
+        <IframeModal url={modalUrl} onClose={() => setModalUrl(null)} />
+      )}
     </main>
   );
 }

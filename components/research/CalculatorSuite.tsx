@@ -31,6 +31,7 @@ import {
   vialQuantityPower,
   type ConcentrationUnit,
 } from '@/lib/research/calculators';
+import IframeLink from '@/components/ui/IframeLink';
 
 const RESEARCH_NOTE = 'Research Use Only. Not Intended As Medical Advice Or Human Dosing.';
 // Note: CSS capitalization handles UI rendering
@@ -751,7 +752,7 @@ function SolubilitySection() {
       />
       <div style={{ marginBottom: 10, fontSize: 12, color: '#A8B4C0' }}>
         💡 GRAVY score and isoelectric point (pI) can be calculated from your sequence at{' '}
-        <a href="https://web.expasy.org/protparam/" target="_blank" rel="noopener noreferrer" style={{ color: '#A8B2C1' }}>ExPASy ProtParam</a>.
+        <IframeLink href="https://web.expasy.org/protparam/" style={{ color: '#A8B2C1' }}>ExPASy ProtParam</IframeLink>.
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 12 }}>
         <label style={{ display: "block" }}>

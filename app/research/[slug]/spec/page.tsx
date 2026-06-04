@@ -15,6 +15,7 @@ import { getCompound } from '@/lib/compounds-server';
 import { evidenceTier, wadaLabel } from '@/lib/compounds';
 import { generateQrDataUrl } from '@/lib/qr';
 import PrintButton from '@/components/research/PrintButton';
+import IframeLink from '@/components/ui/IframeLink';
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
@@ -187,9 +188,9 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
                       const href = /^https?:\/\//i.test(src) ? src : `https://${src}`;
                       return (
                         <li key={i} style={{ wordBreak: 'break-all' }}>
-                          <a href={href} data-inapp="1" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--teal)' }}>
+                          <IframeLink href={href} style={{ color: 'var(--teal)' }}>
                             {src}
-                          </a>
+                          </IframeLink>
                         </li>
                       );
                     })}

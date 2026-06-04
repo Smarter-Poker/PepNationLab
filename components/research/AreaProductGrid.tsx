@@ -40,6 +40,13 @@ export interface CompoundInfo {
   pubmedCitationCount: number | null;
   plainSummary: string | null;
   benefits: string | null;
+  sideEffects: string | null;
+  efficacyScores: Record<string, number>;
+  bestStackedWith: string[];
+  typicalFrequency: string;
+  purityPercentage: number;
+  coaUrl: string;
+  researchAreas: string[];
 }
 
 interface Props {
@@ -108,8 +115,13 @@ export default function AreaProductGrid({
 
   /* ── State ── */
   const [sortBy, setSortBy] = useState<SortKey>('evidence');
+  const [filterWada, setFilterWada] = useState(false);
+  const [filterHalfLife, setFilterHalfLife] = useState(false);
+  const [filterPrice, setFilterPrice] = useState(false);
+  const [filterTrials, setFilterTrials] = useState(false);
   const [compareSet, setCompareSet] = useState<Set<string>>(new Set());
   const [showCompare, setShowCompare] = useState(false);
+  const [stackItems, setStackItems] = useState<Set<string>>(new Set());
   const [cartItems, setCartItems] = useState<Record<string, number>>({});
   const [toast, setToast] = useState<string | null>(null);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -208,6 +220,16 @@ export default function AreaProductGrid({
     });
   }, []);
 
+  /* ── Stack toggle ── */
+  const toggleStack = useCallback((slug: string) => {
+    setStackItems(prev => {
+      const next = new Set(prev);
+      if (next.has(slug)) next.delete(slug);
+      else next.add(slug);
+      return next;
+    });
+  }, []);
+
   /* ── Enrich & sort ── */
   const productsByCompound = useMemo(() => {
     const map = new Map<string, AreaProduct[]>();
@@ -227,9 +249,9 @@ export default function AreaProductGrid({
       return {
         compound: c,
         compoundSlug: c.slug,
-        productName: primary ? primary.name : c.display_name,
+        productName: primary ? primary.productName : c.displayName,
         imageUrl: primary?.imageUrl || '/images/blank_card.png',
-        productId: primary?.masterId || c.slug,
+        productId: primary?.productId || c.slug,
         agentProductId: primary?.agentProductId || '',
         retailPrice: primary?.retailPrice || 0,
         costPrice: primary?.costPrice,
@@ -239,12 +261,33 @@ export default function AreaProductGrid({
         unitMeasure: primary?.unitMeasure || null,
         inventoryCount: primary?.inventoryCount || 0,
         sku: primary?.sku || '',
+        category: primary?.category || c.category || 'Peptides',
+        weightOz: primary?.weightOz || 0,
       };
     });
   }, [productsByCompound, compounds]);
 
   const sorted = useMemo(() => {
-    const arr = [...enriched];
+    let arr = [...enriched];
+
+    // Apply Smart Filters
+    if (filterWada) {
+      arr = arr.filter(a => a.compound?.wadaStatus === 'permitted' || a.compound?.wadaStatus === 'not_listed');
+    }
+    if (filterHalfLife) {
+      arr = arr.filter(a => {
+        if (!a.compound?.halfLife) return false;
+        const hl = a.compound.halfLife.toLowerCase();
+        return hl.includes('day') || hl.includes('week') || (parseInt(hl) > 24);
+      });
+    }
+    if (filterPrice) {
+      arr = arr.filter(a => a.retailPrice > 0 && a.retailPrice < 50);
+    }
+    if (filterTrials) {
+      arr = arr.filter(a => a.compound?.evidenceTier === 'approved_drug' || a.compound?.evidenceTier === 'investigational');
+    }
+
     switch (sortBy) {
       case 'price_low':
         arr.sort((a, b) => a.retailPrice - b.retailPrice);
@@ -278,7 +321,7 @@ export default function AreaProductGrid({
         break;
     }
     return arr;
-  }, [enriched, sortBy]);
+  }, [enriched, sortBy, filterWada, filterHalfLife, filterPrice, filterTrials]);
 
   /* ── Comparison data ── */
   const compareItems = useMemo(() => {
@@ -297,8 +340,8 @@ export default function AreaProductGrid({
       let closestVariant = allVariants[0];
       let minDiff = Infinity;
       for (const v of allVariants) {
-        if (v.unitSize != null) {
-          const diff = Math.abs(v.unitSize - targetMg);
+        if (v.unitSize != null && targetMg != null) {
+          const diff = Math.abs(Number(v.unitSize) - Number(targetMg));
           if (diff < minDiff) {
             minDiff = diff;
             closestVariant = v;
@@ -308,9 +351,9 @@ export default function AreaProductGrid({
 
       return {
         ...base,
-        productName: closestVariant.name,
+        productName: closestVariant.productName,
         imageUrl: closestVariant.imageUrl || base.imageUrl,
-        productId: closestVariant.masterId,
+        productId: closestVariant.productId,
         agentProductId: closestVariant.agentProductId,
         retailPrice: closestVariant.retailPrice,
         costPrice: closestVariant.costPrice,
@@ -320,6 +363,8 @@ export default function AreaProductGrid({
         unitMeasure: closestVariant.unitMeasure,
         inventoryCount: closestVariant.inventoryCount,
         sku: closestVariant.sku,
+        category: closestVariant.category || base.category,
+        weightOz: closestVariant.weightOz || base.weightOz,
       };
     });
   }, [sorted, compareSet, productsByCompound]);
@@ -518,6 +563,21 @@ export default function AreaProductGrid({
           </span>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+          {/* Smart Filters */}
+          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+            <button onClick={() => setFilterWada(!filterWada)} style={{
+              padding: '6px 12px', borderRadius: 20, fontSize: '0.75rem', fontWeight: 600, border: `1px solid ${filterWada ? '#00C4BC' : 'rgba(255,255,255,0.1)'}`, background: filterWada ? 'rgba(0,196,188,0.15)' : 'transparent', color: filterWada ? '#00C4BC' : '#A8B4C0', cursor: 'pointer', transition: 'all 0.15s'
+            }}>WADA Permitted</button>
+            <button onClick={() => setFilterHalfLife(!filterHalfLife)} style={{
+              padding: '6px 12px', borderRadius: 20, fontSize: '0.75rem', fontWeight: 600, border: `1px solid ${filterHalfLife ? '#00C4BC' : 'rgba(255,255,255,0.1)'}`, background: filterHalfLife ? 'rgba(0,196,188,0.15)' : 'transparent', color: filterHalfLife ? '#00C4BC' : '#A8B4C0', cursor: 'pointer', transition: 'all 0.15s'
+            }}>Long Half-Life</button>
+            <button onClick={() => setFilterPrice(!filterPrice)} style={{
+              padding: '6px 12px', borderRadius: 20, fontSize: '0.75rem', fontWeight: 600, border: `1px solid ${filterPrice ? '#00C4BC' : 'rgba(255,255,255,0.1)'}`, background: filterPrice ? 'rgba(0,196,188,0.15)' : 'transparent', color: filterPrice ? '#00C4BC' : '#A8B4C0', cursor: 'pointer', transition: 'all 0.15s'
+            }}>Under $50</button>
+            <button onClick={() => setFilterTrials(!filterTrials)} style={{
+              padding: '6px 12px', borderRadius: 20, fontSize: '0.75rem', fontWeight: 600, border: `1px solid ${filterTrials ? '#00C4BC' : 'rgba(255,255,255,0.1)'}`, background: filterTrials ? 'rgba(0,196,188,0.15)' : 'transparent', color: filterTrials ? '#00C4BC' : '#A8B4C0', cursor: 'pointer', transition: 'all 0.15s'
+            }}>Human Trials</button>
+          </div>
           <select
             value={sortBy}
             onChange={e => setSortBy(e.target.value as SortKey)}
@@ -702,6 +762,27 @@ export default function AreaProductGrid({
                     Sale
                   </span>
                 )}
+
+                {/* Purity badge */}
+                {compound?.purityPercentage != null && (
+                  <span style={{
+                    position: 'absolute',
+                    bottom: 12,
+                    left: 12,
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    padding: '3px 8px',
+                    borderRadius: 20,
+                    fontSize: '0.65rem',
+                    fontWeight: 700,
+                    background: 'rgba(56, 161, 105, 0.15)',
+                    color: '#68D391',
+                    border: '1px solid rgba(56, 161, 105, 0.3)',
+                    backdropFilter: 'blur(6px)',
+                  }}>
+                    🧪 {compound.purityPercentage}% Purity
+                  </span>
+                )}
               </div>
 
               {/* Card body */}
@@ -818,57 +899,93 @@ export default function AreaProductGrid({
 
                 <div style={{ flex: 1 }} />
 
-                {/* Add to cart button */}
-                <button
-                  onClick={() => addToCart(p)}
-                  disabled={outOfStock || !p.agentProductId}
-                  style={{
-                    width: '100%',
-                    height: 44,
-                    background: outOfStock || !p.agentProductId
-                      ? 'rgba(255,255,255,0.06)'
-                      : '#00C4BC',
-                    color: outOfStock || !p.agentProductId
-                      ? '#718096'
-                      : '#000000',
-                    border: 'none',
-                    borderRadius: 10,
-                    fontWeight: 800,
-                    fontSize: '0.88rem',
-                    cursor: outOfStock || !p.agentProductId ? 'not-allowed' : 'pointer',
-                    transition: 'opacity 0.15s, transform 0.1s',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: 6,
-                    marginBottom: 10,
-                  }}
-                  onMouseEnter={e => {
-                    if (!outOfStock && p.agentProductId) {
-                      (e.currentTarget as HTMLButtonElement).style.opacity = '0.88';
-                    }
-                  }}
-                  onMouseLeave={e => {
-                    (e.currentTarget as HTMLButtonElement).style.opacity = '1';
-                  }}
-                >
-                  {outOfStock ? 'Out Of Stock' : !p.agentProductId ? 'Not Carried' : (
-                    <>
-                      Add To Cart
-                      {inCart > 0 && (
-                        <span style={{
-                          background: 'rgba(0,0,0,0.2)',
-                          borderRadius: 8,
-                          padding: '2px 7px',
-                          fontSize: '0.72rem',
-                          fontWeight: 700,
-                        }}>
-                          {inCart}
-                        </span>
-                      )}
-                    </>
+                {/* Actions Row */}
+                <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
+                  <button
+                    onClick={() => addToCart(p)}
+                    disabled={outOfStock || !p.agentProductId}
+                    style={{
+                      flex: 1,
+                      height: 44,
+                      background: outOfStock || !p.agentProductId
+                        ? 'rgba(255,255,255,0.06)'
+                        : '#00C4BC',
+                      color: outOfStock || !p.agentProductId
+                        ? '#718096'
+                        : '#000000',
+                      border: 'none',
+                      borderRadius: 10,
+                      fontWeight: 800,
+                      fontSize: '0.88rem',
+                      cursor: outOfStock || !p.agentProductId ? 'not-allowed' : 'pointer',
+                      transition: 'opacity 0.15s, transform 0.1s',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: 6,
+                    }}
+                    onMouseEnter={e => {
+                      if (!outOfStock && p.agentProductId) {
+                        (e.currentTarget as HTMLButtonElement).style.opacity = '0.88';
+                      }
+                    }}
+                    onMouseLeave={e => {
+                      (e.currentTarget as HTMLButtonElement).style.opacity = '1';
+                    }}
+                  >
+                    {outOfStock ? 'Out Of Stock' : !p.agentProductId ? 'Not Carried' : (
+                      <>
+                        Add To Cart
+                        {inCart > 0 && (
+                          <span style={{
+                            background: 'rgba(0,0,0,0.2)',
+                            borderRadius: 8,
+                            padding: '2px 7px',
+                            fontSize: '0.72rem',
+                            fontWeight: 700,
+                          }}>
+                            {inCart}
+                          </span>
+                        )}
+                      </>
+                    )}
+                  </button>
+
+                  {/* Add to Stack Button */}
+                  {!outOfStock && p.agentProductId && (
+                    <button
+                      onClick={() => toggleStack(p.agentProductId!)}
+                      style={{
+                        width: 44,
+                        height: 44,
+                        background: stackItems.has(p.agentProductId) ? '#00C4BC' : 'rgba(255,255,255,0.06)',
+                        color: stackItems.has(p.agentProductId) ? '#000' : '#00C4BC',
+                        border: stackItems.has(p.agentProductId) ? 'none' : '1px solid rgba(0,196,188,0.3)',
+                        borderRadius: 10,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        cursor: 'pointer',
+                        transition: 'all 0.15s',
+                        flexShrink: 0,
+                      }}
+                      title={stackItems.has(p.agentProductId) ? 'Remove from Stack' : 'Add to Stack'}
+                    >
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        {stackItems.has(p.agentProductId) ? (
+                          <>
+                            <polyline points="20 6 9 17 4 12" />
+                          </>
+                        ) : (
+                          <>
+                            <line x1="12" y1="5" x2="12" y2="19" />
+                            <line x1="5" y1="12" x2="19" y2="12" />
+                          </>
+                        )}
+                      </svg>
+                    </button>
                   )}
-                </button>
+                </div>
 
                 {/* Compare checkbox */}
                 <label
@@ -903,6 +1020,23 @@ export default function AreaProductGrid({
                   }}>
                     Compare
                   </span>
+                  {/* Cross-Over Discovery Tags */}
+                  {compound?.researchAreas && compound.researchAreas.length > 0 && (
+                    <div style={{ marginTop: 8, display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                      {compound.researchAreas.map(ra => (
+                        <span key={ra} style={{
+                          padding: '3px 8px',
+                          borderRadius: 12,
+                          background: 'rgba(255,255,255,0.05)',
+                          color: '#A8B4C0',
+                          fontSize: '0.65rem',
+                          fontWeight: 600
+                        }}>
+                          🧬 {ra.replace(/_/g, ' ')}
+                        </span>
+                      ))}
+                    </div>
+                  )}
                 </label>
               </div>
             </div>
@@ -1159,7 +1293,7 @@ export default function AreaProductGrid({
                     {compareItems.map(p => {
                       const price = isStorefrontOwner && p.costPrice != null
                         ? p.costPrice : p.retailPrice;
-                      const pricePerMg = p.unitSize && p.unitSize > 0 ? price / p.unitSize : null;
+                      const pricePerMg = p.unitSize && Number(p.unitSize) > 0 ? price / Number(p.unitSize) : null;
                       return (
                         <td key={p.productId} style={compareTdStyle}>
                           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
@@ -1363,7 +1497,7 @@ export default function AreaProductGrid({
                     {compareItems.map(p => (
                       <td key={p.productId} style={compareTdStyle}>
                         {p.compound?.pubmedCitationCount != null ? (
-                          <Link href={`/research/${p.compound.slug}/references`} target="_blank" style={{ color: '#00C4BC', fontWeight: 700, textDecoration: 'none' }}>
+                          <Link href={`/research/${p.compound.slug}/references`} style={{ color: '#00C4BC', fontWeight: 700, textDecoration: 'none' }}>
                             {p.compound.pubmedCitationCount.toLocaleString()} Citations ↗
                           </Link>
                         ) : (
@@ -1441,6 +1575,66 @@ export default function AreaProductGrid({
               </Link>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Stack Builder Sticky Banner */}
+      {stackItems.size > 0 && (
+        <div style={{
+          position: 'fixed',
+          bottom: 24,
+          right: 24,
+          background: 'rgba(10,16,24,0.95)',
+          border: '1px solid rgba(0,196,188,0.3)',
+          borderRadius: 16,
+          padding: 20,
+          width: 320,
+          boxShadow: '0 12px 40px rgba(0,0,0,0.5)',
+          backdropFilter: 'blur(12px)',
+          zIndex: 999
+        }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+            <h3 style={{ margin: 0, color: '#FFF', fontSize: '1.1rem', fontWeight: 800 }}>Stack Builder</h3>
+            <button onClick={() => setStackItems(new Set())} style={{ background: 'none', border: 'none', color: '#A8B4C0', cursor: 'pointer', padding: 0, fontSize: '0.8rem', fontWeight: 600 }}>Clear</button>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 16, maxHeight: 200, overflowY: 'auto' }}>
+            {Array.from(stackItems).map(id => {
+              const p = products.find(pr => pr.agentProductId === id);
+              if (!p) return null;
+              return (
+                <div key={id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.85rem' }}>
+                  <span style={{ color: '#D0DAE4', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '70%' }}>{toTitleCase(p.productName)}</span>
+                  <span style={{ color: '#00C4BC', fontWeight: 700 }}>{formatPrice(p.retailPrice)}</span>
+                </div>
+              );
+            })}
+          </div>
+          <button
+            onClick={() => {
+              stackItems.forEach(id => {
+                const p = products.find(pr => pr.agentProductId === id);
+                if (p) addToCart(p);
+              });
+              showToast('Stack Bundle Added To Cart!');
+              setStackItems(new Set());
+            }}
+            style={{
+              width: '100%',
+              padding: '12px',
+              background: '#00C4BC',
+              color: '#000',
+              border: 'none',
+              borderRadius: 8,
+              fontWeight: 800,
+              cursor: 'pointer',
+              fontSize: '0.9rem',
+              transition: 'opacity 0.2s'
+            }}
+            onMouseEnter={e => (e.currentTarget.style.opacity = '0.9')}
+            onMouseLeave={e => (e.currentTarget.style.opacity = '1')}
+          >
+            Add Stack To Cart
+          </button>
         </div>
       )}
     </div>

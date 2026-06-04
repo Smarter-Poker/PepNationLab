@@ -8,7 +8,6 @@ export default function ChangePasswordPage() {
   const [newPassword, setNewPassword] = useState('');
   const [confirm, setConfirm] = useState('');
   const [loading, setLoading] = useState(false);
-  const [skipping, setSkipping] = useState(false);
   const [error, setError] = useState('');
 
   async function handleSave(e: React.FormEvent) {
@@ -37,21 +36,6 @@ export default function ChangePasswordPage() {
       setError('Network Error. Please Try Again.');
     } finally {
       setLoading(false);
-    }
-  }
-
-  async function handleSkip() {
-    setSkipping(true);
-    try {
-      await fetch('/api/auth/change-password', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ skip: true }),
-      });
-      router.push('/dashboard');
-      router.refresh();
-    } catch {
-      router.push('/dashboard');
     }
   }
 
@@ -191,31 +175,6 @@ export default function ChangePasswordPage() {
               {loading ? 'Saving...' : 'Save New Password'}
             </button>
 
-            {/* Skip */}
-            <button
-              type="button"
-              onClick={handleSkip}
-              disabled={skipping}
-              style={{
-                width: '100%', padding: '12px',
-                background: 'transparent',
-                border: '1px solid #2a3045', borderRadius: 8,
-                color: '#5a6a7a', fontSize: '0.88rem',
-                cursor: skipping ? 'not-allowed' : 'pointer',
-                opacity: skipping ? 0.6 : 1,
-                transition: 'color 0.15s, border-color 0.15s',
-              }}
-              onMouseEnter={e => {
-                e.currentTarget.style.color = '#8a9ab0';
-                e.currentTarget.style.borderColor = '#3a4560';
-              }}
-              onMouseLeave={e => {
-                e.currentTarget.style.color = '#5a6a7a';
-                e.currentTarget.style.borderColor = '#2a3045';
-              }}
-            >
-              {skipping ? 'Continuing...' : 'Skip & Keep Temporary Password'}
-            </button>
           </form>
         </div>
       </div>

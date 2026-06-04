@@ -9,6 +9,7 @@ import { notFound } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { getCompound } from '@/lib/compounds-server';
 import { wadaLabel } from '@/lib/compounds';
+import IframeLink from '@/components/ui/IframeLink';
 
 type PageProps = { params: Promise<{ slug: string }> };
 
@@ -57,9 +58,9 @@ function RegCard({ agency, status, detail, url, isPending }: RegCardProps) {
       <span style={{ fontSize: '1.05rem', fontWeight: 800, color: isPending ? 'var(--silver, #A8B4C0)' : 'var(--white, #FFFFFF)' }}>{status}</span>
       {detail && <span style={{ fontSize: '0.82rem', color: 'var(--silver-light, #D0DAE4)' }}>{detail}</span>}
       {url && (
-        <a href={url} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--teal, #00C4BC)', fontSize: '0.78rem', textDecoration: 'none', marginTop: 4 }}>
+        <IframeLink href={url} style={{ color: 'var(--teal, #00C4BC)', fontSize: '0.78rem', textDecoration: 'none', marginTop: 4 }}>
           View Source
-        </a>
+        </IframeLink>
       )}
     </article>
   );
@@ -167,9 +168,9 @@ export default async function CompoundRegulatoryPage({ params }: PageProps) {
                 )}
                 {r.url && (
                   <div style={{ marginTop: 'var(--space-2, 8px)' }}>
-                    <a href={r.url} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--teal, #00C4BC)', fontSize: '0.82rem', textDecoration: 'none' }}>
+                    <IframeLink href={r.url} style={{ color: 'var(--teal, #00C4BC)', fontSize: '0.82rem', textDecoration: 'none' }}>
                       View Original Alert
-                    </a>
+                    </IframeLink>
                   </div>
                 )}
               </article>

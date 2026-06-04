@@ -9,6 +9,7 @@
  */
 
 import { useMemo, useState } from 'react';
+import IframeModal from '../ui/IframeModal';
 
 export interface RefEntry {
   url: string;
@@ -18,6 +19,7 @@ export interface RefEntry {
 
 export default function ReferencesBrowser({ refs }: { refs: RefEntry[] }) {
   const [q, setQ] = useState('');
+  const [modalUrl, setModalUrl] = useState<string | null>(null);
 
   const filtered = useMemo(() => {
     const term = q.trim().toLowerCase();
@@ -60,15 +62,23 @@ export default function ReferencesBrowser({ refs }: { refs: RefEntry[] }) {
             className="glass-panel"
             style={{ borderRadius: 'var(--radius-lg, 12px)', padding: 'var(--space-4, 16px)' }}
           >
-            <a
-              href={r.url}
-              data-inapp="1"
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{ color: 'var(--teal, #00C4BC)', fontWeight: 700, fontSize: '0.95rem', wordBreak: 'break-all', textDecoration: 'none' }}
+            <button
+              onClick={() => setModalUrl(r.url)}
+              style={{
+                color: 'var(--teal, #00C4BC)',
+                fontWeight: 700,
+                fontSize: '0.95rem',
+                wordBreak: 'break-all',
+                textDecoration: 'none',
+                background: 'none',
+                border: 'none',
+                padding: 0,
+                cursor: 'pointer',
+                textAlign: 'left',
+              }}
             >
               {r.url}
-            </a>
+            </button>
             <div style={{ marginTop: '8px', fontSize: '0.78rem', color: 'var(--silver, #A8B4C0)' }}>
               Cited By:{' '}
               {r.citedBy.map((c, i) => (
@@ -86,6 +96,10 @@ export default function ReferencesBrowser({ refs }: { refs: RefEntry[] }) {
 
       {filtered.length === 0 && (
         <p style={{ color: 'var(--silver, #A8B4C0)', fontSize: '0.95rem' }}>No Sources Matched That Search.</p>
+      )}
+
+      {modalUrl && (
+        <IframeModal url={modalUrl} onClose={() => setModalUrl(null)} />
       )}
     </div>
   );

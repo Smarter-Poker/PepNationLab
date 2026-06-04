@@ -63,6 +63,11 @@ export interface Compound {
   active_trial_count?: number | null;
   completed_trial_count?: number | null;
   year_discovered?: number | null;
+  efficacy_scores?: Record<string, number> | null;
+  best_stacked_with?: string[] | null;
+  typical_frequency?: string | null;
+  purity_percentage?: number | null;
+  coa_url?: string | null;
 }
 
 export const EVIDENCE_TIER: Record<string, { label: string; color: string; blurb: string }> = {

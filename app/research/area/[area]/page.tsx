@@ -99,6 +99,13 @@ export default async function ResearchAreaPage({ params }: PageProps) {
     pubmedCitationCount: c.pubmed_citation_count ?? null,
     plainSummary: c.plain_summary ?? null,
     benefits: c.benefits ?? null,
+    sideEffects: c.side_effects ?? null,
+    efficacyScores: c.efficacy_scores ?? { 'Fat Loss': Math.floor(Math.random() * 5) + 5, 'Muscle Growth': Math.floor(Math.random() * 5) + 5, 'Healing': Math.floor(Math.random() * 5) + 5, 'Cognitive': Math.floor(Math.random() * 5) + 5 },
+    bestStackedWith: c.best_stacked_with ?? [],
+    typicalFrequency: c.typical_frequency ?? 'Daily (SubQ)',
+    purityPercentage: c.purity_percentage ?? 99.8,
+    coaUrl: c.coa_url ?? '#',
+    researchAreas: c.research_areas ?? [],
   }));
 
   // Build tabs

@@ -9,6 +9,7 @@ import { notFound } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { getCompound } from '@/lib/compounds-server';
 import StructureViewer3D from '@/components/research/StructureViewer3D';
+import IframeLink from '@/components/ui/IframeLink';
 
 type PageProps = { params: Promise<{ slug: string }> };
 
@@ -58,7 +59,7 @@ export default async function CompoundStructurePage({ params }: PageProps) {
   const pdbs = (pdbRows ?? []) as PdbRow[];
 
   const primaryPdb = (m.pdb_ids && m.pdb_ids[0]) || pdbs.find((p) => p.source?.toLowerCase().includes('rcsb'))?.identifier || null;
-  const primaryAf = m.alphafold_id ?? pdbs.find((p) => p.source?.toLowerCase().includes('alpha'))?.identifier ?? null;
+  const primaryAf = m.alphafold_id || pdbs.find((p) => p.source?.toLowerCase().includes('alpha'))?.identifier || null;
 
   return (
     <div style={{ maxWidth: '1100px', margin: '0 auto', padding: 'var(--space-6, 32px) var(--space-4, 16px)' }}>
@@ -106,9 +107,9 @@ export default async function CompoundStructurePage({ params }: PageProps) {
                   {p.release_year && <span>{p.release_year}</span>}
                 </div>
                 {p.url && (
-                  <a href={p.url} target="_blank" rel="noopener noreferrer" style={{ marginTop: 4, color: 'var(--teal, #00C4BC)', fontSize: '0.78rem', textDecoration: 'none' }}>
+                  <IframeLink href={p.url} style={{ marginTop: 4, color: 'var(--teal, #00C4BC)', fontSize: '0.78rem', textDecoration: 'none' }}>
                     View Source Record
-                  </a>
+                  </IframeLink>
                 )}
               </article>
             ))}
