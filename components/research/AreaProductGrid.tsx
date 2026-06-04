@@ -478,7 +478,7 @@ export default function AreaProductGrid({
 
           {/* Cart badge */}
           {totalCartItems > 0 && agentSlug && (
-            <Link href={`/storefront/${agentSlug}?cart=1`} style={{
+            <Link href={`/${agentSlug}?cart=1`} style={{
               display: 'inline-flex',
               alignItems: 'center',
               gap: 6,

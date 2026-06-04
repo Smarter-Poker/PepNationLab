@@ -2,7 +2,11 @@
  * Research Area hub — deep landing page for one of the 15 research-areas.
  * Server component. Progressive disclosure via AreaContentTabs.
  *
- * Tabs: Overview | Mechanisms | Evidence | Safety | Compounds | References
+ * Tabs: Overview | Compounds | Evidence | Safety | References
+ *
+ * The Compounds tab now renders a full product grid with images, pricing
+ * from the user's agent storefront, add-to-cart, sorting, and a comparison
+ * tool — bridging the research library and the store.
  */
 
 import type { CSSProperties } from 'react';
@@ -14,6 +18,9 @@ import { RESEARCH_AREAS, researchAreaLabel, evidenceTier, wadaLabel } from '@/li
 import { RESEARCH_AREA_CONTENT } from '@/lib/research-area-content';
 import AreaContentTabs from '@/components/research/AreaContentTabs';
 import type { AreaTab } from '@/components/research/AreaContentTabs';
+import AreaProductGrid from '@/components/research/AreaProductGrid';
+import type { CompoundInfo } from '@/components/research/AreaProductGrid';
+import { getAreaProducts } from '@/lib/area-products-server';
 
 type PageProps = { params: Promise<{ area: string }> };
 
@@ -70,6 +77,26 @@ export default async function ResearchAreaPage({ params }: PageProps) {
     bySlug[c.slug] = c;
   }
 
+  // Fetch products from the user's agent storefront, filtered to this area
+  const compoundSlugs = compounds.map((c) => c.slug);
+  const productCtx = await getAreaProducts(compoundSlugs);
+
+  // Build CompoundInfo array for the AreaProductGrid
+  const compoundInfos: CompoundInfo[] = compounds.map((c) => ({
+    slug: c.slug,
+    displayName: c.display_name,
+    aliases: c.aliases ?? [],
+    evidenceTier: c.evidence_tier ?? '',
+    wadaStatus: c.wada_status ?? 'not_listed',
+    category: c.category ?? null,
+    mechanism: c.mechanism ?? null,
+    halfLife: c.half_life ?? null,
+    molecularWeightDa: c.molecular_weight_da ?? null,
+    riskLevel: c.risk_level ?? 'moderate',
+    studiedFor: c.studied_for ?? [],
+    pubmedCitationCount: c.pubmed_citation_count ?? null,
+  }));
+
   // Build tabs
   const tabs: AreaTab[] = [];
 
@@ -103,6 +130,23 @@ export default async function ResearchAreaPage({ params }: PageProps) {
               </ul>
             </section>
           </div>
+
+          {/* Featured Products In This Area */}
+          {productCtx.products.length > 0 && (
+            <section>
+              <h2 style={{ ...sectionHeadStyle, marginBottom: 'var(--space-4, 16px)' }}>
+                Featured Products In This Area ({productCtx.products.length})
+              </h2>
+              <AreaProductGrid
+                products={productCtx.products}
+                compounds={compoundInfos}
+                agentSlug={productCtx.agentSlug}
+                isStorefrontOwner={productCtx.isStorefrontOwner}
+                isAuthenticated={productCtx.isAuthenticated}
+                userRole={productCtx.userRole}
+              />
+            </section>
+          )}
         </div>
       ),
     });
@@ -111,57 +155,46 @@ export default async function ResearchAreaPage({ params }: PageProps) {
       key: 'overview',
       label: 'Overview',
       children: (
-        <section className="glass-panel" style={{ padding: 'var(--space-5, 24px)', borderRadius: 'var(--radius-lg, 12px)' }}>
-          <p style={bodyTextStyle}>{meta.blurb}</p>
-        </section>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-5, 24px)' }}>
+          <section className="glass-panel" style={{ padding: 'var(--space-5, 24px)', borderRadius: 'var(--radius-lg, 12px)' }}>
+            <p style={bodyTextStyle}>{meta.blurb}</p>
+          </section>
+
+          {/* Featured Products In This Area */}
+          {productCtx.products.length > 0 && (
+            <section>
+              <h2 style={{ ...sectionHeadStyle, marginBottom: 'var(--space-4, 16px)' }}>
+                Featured Products In This Area ({productCtx.products.length})
+              </h2>
+              <AreaProductGrid
+                products={productCtx.products}
+                compounds={compoundInfos}
+                agentSlug={productCtx.agentSlug}
+                isStorefrontOwner={productCtx.isStorefrontOwner}
+                isAuthenticated={productCtx.isAuthenticated}
+                userRole={productCtx.userRole}
+              />
+            </section>
+          )}
+        </div>
       ),
     });
   }
 
-  // ── Compounds tab ──
+  // ── Compounds tab — full product grid with images, pricing, cart, compare ──
   tabs.push({
     key: 'compounds',
     label: `Compounds (${compounds.length})`,
-    children:
-      compounds.length === 0 ? (
-        <div className="glass-panel" style={{ padding: 'var(--space-6, 32px)', textAlign: 'center', color: 'var(--silver, #A8B4C0)', borderRadius: 'var(--radius-lg, 12px)' }}>
-          No Compounds Are Currently Listed For This Research Area.
-        </div>
-      ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 'var(--space-4, 16px)' }}>
-          {compounds.map((c) => {
-            const t = evidenceTier(c.evidence_tier);
-            const aliasLine = (c.aliases ?? []).slice(0, 3).join(', ');
-            return (
-              <Link
-                key={c.slug}
-                href={`/research/${c.slug}`}
-                className="glass-panel"
-                style={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: 'var(--space-2, 8px)',
-                  padding: 'var(--space-4, 16px)',
-                  borderRadius: 'var(--radius-lg, 12px)',
-                  textDecoration: 'none',
-                  color: 'var(--white, #FFFFFF)',
-                  height: '100%',
-                }}
-              >
-                <span style={{ display: 'inline-flex', alignSelf: 'flex-start', fontSize: '0.7rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: t.color, border: `1px solid ${t.color}`, borderRadius: '999px', padding: '2px 10px' }}>
-                  {t.label}
-                </span>
-                <span style={{ fontSize: '1.05rem', fontWeight: 700 }}>{c.display_name}</span>
-                {aliasLine && <span style={{ fontSize: '0.8rem', color: 'var(--silver, #A8B4C0)' }}>{aliasLine}</span>}
-                {c.category && <span style={{ fontSize: '0.75rem', color: 'var(--teal, #00C4BC)', marginTop: 'auto' }}>{c.category}</span>}
-                {c.wada_status && c.wada_status !== 'not_listed' && (
-                  <span style={{ fontSize: '0.72rem', color: 'var(--silver, #A8B4C0)' }}>{wadaLabel(c.wada_status)}</span>
-                )}
-              </Link>
-            );
-          })}
-        </div>
-      ),
+    children: (
+      <AreaProductGrid
+        products={productCtx.products}
+        compounds={compoundInfos}
+        agentSlug={productCtx.agentSlug}
+        isStorefrontOwner={productCtx.isStorefrontOwner}
+        isAuthenticated={productCtx.isAuthenticated}
+        userRole={productCtx.userRole}
+      />
+    ),
   });
 
   // ── Evidence tab ──
