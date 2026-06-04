@@ -55,6 +55,12 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
   const [noteCompoundSlug, setNoteCompoundSlug] = useState('');
   const [noteSaving, setNoteSaving] = useState(false);
 
+  // AI Protocol State
+  const [showAiBuilder, setShowAiBuilder] = useState(false);
+  const [aiGoal, setAiGoal] = useState('');
+  const [aiCompounds, setAiCompounds] = useState<string[]>([]);
+  const [isGeneratingAi, setIsGeneratingAi] = useState(false);
+
   // Dose UI State
   const [doseCompound, setDoseCompound] = useState('');
   const [doseAmount, setDoseAmount] = useState('');
@@ -250,20 +256,39 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
       });
       const data = await res.json();
       if (res.ok && data.note) {
-        if (editingNote) {
-          setNotes(prev => prev.map(n => n.id === data.note.id ? data.note : n));
-        } else {
-          setNotes(prev => [data.note, ...prev]);
-        }
+        if (editingNote) setNotes(prev => prev.map(n => n.id === data.note.id ? data.note : n));
+        else setNotes(prev => [data.note, ...prev]);
         setIsCreatingNote(false);
-        toast.success(editingNote ? 'Note updated' : 'Note created');
-      } else {
-        throw new Error(data.error);
-      }
-    } catch (e: any) {
+        toast.success(editingNote ? 'Note updated' : 'Note saved');
+      } else throw new Error(data.error);
+    } catch (e) {
       toast.error('Failed to save note');
     } finally {
       setNoteSaving(false);
+    }
+  };
+
+  const generateAiProtocol = async () => {
+    if (aiCompounds.length === 0 || !aiGoal.trim()) return;
+    setIsGeneratingAi(true);
+    try {
+      const res = await fetch('/api/researcher/ai-protocol', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ compounds: aiCompounds, goal: aiGoal })
+      });
+      const data = await res.json();
+      if (res.ok && data.note) {
+        setNotes(prev => [data.note, ...prev]);
+        setShowAiBuilder(false);
+        setAiGoal('');
+        setAiCompounds([]);
+        toast.success('AI Protocol generated and saved to notes!');
+      } else throw new Error(data.error);
+    } catch (e) {
+      toast.error('Failed to generate protocol');
+    } finally {
+      setIsGeneratingAi(false);
     }
   };
 
@@ -405,6 +430,77 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
               ))}
             </ComposedChart>
           </ResponsiveContainer>
+        </div>
+      </div>
+    );
+  };
+
+  const renderGanttChart = () => {
+    if (pastOrders.length === 0) return null;
+    
+    // Sort orders by purchase date
+    const orders = [...pastOrders].filter(o => o.last_purchased_date).sort((a, b) => new Date(a.last_purchased_date!).getTime() - new Date(b.last_purchased_date!).getTime());
+    if (orders.length === 0) return null;
+
+    const earliestDate = new Date(orders[0].last_purchased_date!).getTime();
+    const latestOrderDate = new Date(orders[orders.length - 1].last_purchased_date!).getTime();
+    // End date is 8 weeks after the latest order
+    const latestDate = latestOrderDate + (8 * 7 * 24 * 60 * 60 * 1000);
+    const totalDuration = latestDate - earliestDate;
+
+    // We don't want to show years of history on a small chart, so clamp to the last 6 months if needed
+    const minTime = Math.max(earliestDate, new Date().getTime() - (180 * 24 * 60 * 60 * 1000));
+    const clampedTotalDuration = latestDate - minTime;
+
+    return (
+      <div className="glass-panel" style={{ padding: 'var(--space-6)', borderRadius: 'var(--radius-lg)', marginBottom: 'var(--space-6)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', marginBottom: 'var(--space-4)' }}>
+          <Layers size={20} color="var(--teal)" />
+          <h3 style={{ margin: 0, color: 'var(--white)' }}>Interactive Cycle Timeline (8-Week Lifecycle)</h3>
+        </div>
+        <div style={{ position: 'relative', padding: '10px 0', minHeight: 100 }}>
+          {/* Today Line */}
+          <div style={{ position: 'absolute', left: `${Math.max(0, ((new Date().getTime() - minTime) / clampedTotalDuration) * 100)}%`, top: 0, bottom: 0, width: 2, background: 'rgba(255,100,100,0.5)', zIndex: 0 }} />
+          
+          {orders.filter(o => new Date(o.last_purchased_date!).getTime() >= minTime).map((order, i) => {
+             const start = new Date(order.last_purchased_date!).getTime();
+             const end = start + (8 * 7 * 24 * 60 * 60 * 1000); // 8 weeks
+             const leftPct = ((start - minTime) / clampedTotalDuration) * 100;
+             const widthPct = ((end - start) / clampedTotalDuration) * 100;
+             
+             const isActive = start <= new Date().getTime() && end >= new Date().getTime();
+
+             return (
+               <div key={order.product_id + i} style={{ marginBottom: 12, position: 'relative', height: 28 }}>
+                 <div style={{ 
+                   position: 'absolute', 
+                   left: `${Math.max(0, leftPct)}%`, 
+                   width: `${Math.min(100 - leftPct, widthPct)}%`, 
+                   height: '100%', 
+                   background: isActive ? 'linear-gradient(90deg, rgba(0, 229, 255, 0.2), rgba(0, 229, 255, 0.8))' : 'rgba(255,255,255,0.1)',
+                   borderRadius: 4,
+                   display: 'flex',
+                   alignItems: 'center',
+                   padding: '0 8px',
+                   border: isActive ? '1px solid var(--teal)' : '1px solid rgba(255,255,255,0.05)',
+                   whiteSpace: 'nowrap',
+                   overflow: 'hidden',
+                   textOverflow: 'ellipsis',
+                   fontSize: '0.75rem',
+                   color: isActive ? 'var(--white)' : 'var(--silver)',
+                   zIndex: 1
+                 }} title={`${order.name}\nPurchased: ${new Date(start).toLocaleDateString()}\nEst. End: ${new Date(end).toLocaleDateString()}`}>
+                    {order.name}
+                 </div>
+               </div>
+             );
+          })}
+          {/* Axis Labels */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: 8, marginTop: 16 }}>
+            <span style={{ fontSize: '0.75rem', color: 'var(--silver)' }}>{new Date(minTime).toLocaleDateString()}</span>
+            <span style={{ fontSize: '0.75rem', color: '#FF6464' }}>Today</span>
+            <span style={{ fontSize: '0.75rem', color: 'var(--silver)' }}>{new Date(latestDate).toLocaleDateString()}</span>
+          </div>
         </div>
       </div>
     );
@@ -751,27 +847,116 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
 
           {currentItems.length === 0 && activeTab !== 'notes' && activeTab !== 'compareHistory' ? renderEmptyState() : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
-              {activeTab === 'pastOrders' && helpfulData && (
-                <div className="glass-panel" style={{ padding: 'var(--space-4)', borderRadius: 'var(--radius-lg)' }}>
-                  <h3 style={{ color: 'var(--teal)', marginBottom: 'var(--space-2)' }}>Personalized Research Insights</h3>
-                  <p style={{ color: 'var(--silver)', marginBottom: 'var(--space-4)' }}>{helpfulData.message}</p>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 'var(--space-3)' }}>
-                    {helpfulData.insights?.map((insight: any, i: number) => (
-                      <div key={i} style={{ background: 'rgba(255,255,255,0.05)', padding: 'var(--space-3)', borderRadius: 'var(--radius-md)' }}>
-                        <div style={{ color: 'var(--white)', fontWeight: 'bold', marginBottom: 'var(--space-1)' }}>{insight.compoundName}</div>
-                        <div style={{ color: 'var(--silver)', fontSize: '0.85rem' }}>{insight.insightText}</div>
+              {activeTab === 'pastOrders' && (
+                <>
+                  {renderGanttChart()}
+                  {helpfulData && (
+                    <div className="glass-panel" style={{ padding: 'var(--space-4)', borderRadius: 'var(--radius-lg)' }}>
+                      <h3 style={{ color: 'var(--teal)', marginBottom: 'var(--space-2)' }}>Personalized Research Insights</h3>
+                      <p style={{ color: 'var(--silver)', marginBottom: 'var(--space-4)' }}>{helpfulData.message}</p>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 'var(--space-3)' }}>
+                        {helpfulData.insights?.map((insight: any, i: number) => (
+                          <div key={i} style={{ background: 'rgba(255,255,255,0.05)', padding: 'var(--space-3)', borderRadius: 'var(--radius-md)' }}>
+                            <div style={{ color: 'var(--white)', fontWeight: 'bold', marginBottom: 'var(--space-1)' }}>{insight.compoundName}</div>
+                            <div style={{ color: 'var(--silver)', fontSize: '0.85rem' }}>{insight.insightText}</div>
+                          </div>
+                        ))}
                       </div>
-                    ))}
-                  </div>
-                </div>
+                    </div>
+                  )}
+                </>
               )}
               {activeTab === 'notes' ? (
                 <div>
-                  <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 'var(--space-4)' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-4)' }}>
+                    <button onClick={() => setShowAiBuilder(!showAiBuilder)} className="btn btn-secondary" style={{ padding: '8px 20px', borderRadius: 20 }}>{showAiBuilder ? 'Hide AI Builder' : 'Use AI Builder'}</button>
                     <button onClick={openNewNote} className="btn btn-primary" style={{ padding: '8px 20px', borderRadius: 20 }}>+ Add New Note</button>
                   </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
-                    {notes.length === 0 ? renderEmptyState() : notes.map(n => (
+                  
+                  {showAiBuilder ? (
+                    <div className="glass-panel stagger-fade-in" style={{ padding: 'var(--space-6)', borderRadius: 'var(--radius-lg)' }}>
+                      <h2 style={{ color: 'var(--teal)', display: 'flex', alignItems: 'center', gap: 8, marginBottom: 'var(--space-2)' }}>
+                        <Zap size={24} /> Generate 12-Week Protocol
+                      </h2>
+                      <p style={{ color: 'var(--silver)', marginBottom: 'var(--space-6)' }}>Our AI will generate a structured week-by-week schedule, safety notes, and milestones.</p>
+                      
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
+                        <div>
+                          <label style={{ display: 'block', color: 'var(--silver)', marginBottom: 8 }}>Primary Goal</label>
+                          <input 
+                            type="text" 
+                            placeholder="e.g. Tendon Repair and Inflammation Reduction" 
+                            value={aiGoal} 
+                            onChange={e => setAiGoal(e.target.value)}
+                            style={{ width: '100%', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', padding: '12px', borderRadius: 8, color: 'var(--white)', fontSize: '1rem' }}
+                          />
+                        </div>
+                        
+                        <div>
+                          <label style={{ display: 'block', color: 'var(--silver)', marginBottom: 8 }}>Select Compounds</label>
+                          <select 
+                            multiple
+                            value={aiCompounds} 
+                            onChange={e => setAiCompounds(Array.from(e.target.selectedOptions, option => option.value))}
+                            style={{ width: '100%', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', padding: '12px', borderRadius: 8, color: 'var(--white)', fontSize: '1rem', height: 120 }}
+                          >
+                            {Array.from(new Set([...favorites, ...pastOrders, ...recentlyViewed].filter(i => (i as any).slug).map(i => (i as any).slug))).map(slug => (
+                              <option key={slug as string} value={slug as string}>{slug}</option>
+                            ))}
+                          </select>
+                          <p style={{ fontSize: '0.8rem', color: 'var(--silver)', marginTop: 4 }}>Hold Cmd/Ctrl to select multiple.</p>
+                        </div>
+
+                        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 'var(--space-3)', marginTop: 'var(--space-4)' }}>
+                          <button onClick={() => setShowAiBuilder(false)} className="btn btn-ghost" style={{ color: 'var(--silver)' }}>Cancel</button>
+                          <button onClick={generateAiProtocol} disabled={aiCompounds.length === 0 || !aiGoal.trim() || isGeneratingAi} className="btn btn-primary" style={{ padding: '8px 24px', background: 'var(--teal)', color: 'var(--black)' }}>
+                            {isGeneratingAi ? 'Generating...' : 'Generate AI Protocol'}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ) : isCreatingNote ? (
+                    <div className="glass-panel stagger-fade-in" style={{ padding: 'var(--space-6)', borderRadius: 'var(--radius-lg)' }}>
+                      <h2 style={{ color: 'var(--white)', marginBottom: 'var(--space-4)' }}>{editingNote ? 'Edit Note' : 'New Lab Note'}</h2>
+                      
+                      <div style={{ display: 'flex', gap: 'var(--space-3)', marginBottom: 'var(--space-3)' }}>
+                        <input 
+                          type="text" 
+                          placeholder="Note Title (Optional)" 
+                          value={noteTitle} 
+                          onChange={e => setNoteTitle(e.target.value)}
+                          style={{ flex: 1, background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', padding: '12px', borderRadius: 8, color: 'var(--white)', fontSize: '1rem' }}
+                        />
+                        <select 
+                          value={noteCompoundSlug} 
+                          onChange={e => setNoteCompoundSlug(e.target.value)}
+                          style={{ background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', padding: '12px', borderRadius: 8, color: 'var(--white)', fontSize: '1rem', width: 200 }}
+                        >
+                          <option value="">No Compound Tag</option>
+                          {Array.from(new Set([...favorites, ...pastOrders, ...recentlyViewed].filter(i => (i as any).slug).map(i => (i as any).slug))).map(slug => (
+                            <option key={slug as string} value={slug as string}>{slug}</option>
+                          ))}
+                        </select>
+                      </div>
+                      
+                      <textarea 
+                        placeholder="Write your research notes, protocol logs, or observations here..." 
+                        value={noteText} 
+                        onChange={e => setNoteText(e.target.value)}
+                        rows={8}
+                        style={{ width: '100%', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', padding: '12px', borderRadius: 8, color: 'var(--white)', marginBottom: 'var(--space-4)', fontSize: '1rem', resize: 'vertical' }}
+                      />
+                      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 'var(--space-3)' }}>
+                        <button onClick={() => setIsCreatingNote(false)} className="btn btn-ghost" style={{ color: 'var(--silver)' }}>Cancel</button>
+                        <button onClick={saveNote} disabled={!noteText.trim() || noteSaving} className="btn btn-primary" style={{ padding: '8px 24px' }}>
+                          {noteSaving ? 'Saving...' : 'Save Note'}
+                        </button>
+                      </div>
+                    </div>
+                  ) : null}
+
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)', marginTop: 'var(--space-4)' }}>
+                    {notes.length === 0 && !isCreatingNote && !showAiBuilder ? renderEmptyState() : notes.map(n => (
                       <div key={n.id} className="glass-panel" style={{ padding: 'var(--space-4)', borderRadius: 'var(--radius-lg)', position: 'relative' }}>
                         <div style={{ position: 'absolute', top: 'var(--space-4)', right: 'var(--space-4)', display: 'flex', gap: 'var(--space-2)' }}>
                           <button onClick={() => editNote(n)} className="btn btn-ghost btn-sm" style={{ padding: 4, color: 'var(--silver)' }}>Edit</button>
@@ -790,48 +975,6 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
                       </div>
                     ))}
                   </div>
-                  
-                  {isCreatingNote && (
-                    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(5px)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 'var(--space-4)' }} onClick={() => setIsCreatingNote(false)}>
-                      <div className="glass-panel" style={{ width: '100%', maxWidth: 600, padding: 'var(--space-6)', borderRadius: 'var(--radius-xl)' }} onClick={e => e.stopPropagation()}>
-                        <h2 style={{ color: 'var(--white)', marginBottom: 'var(--space-4)' }}>{editingNote ? 'Edit Note' : 'New Lab Note'}</h2>
-                        
-                        <div style={{ display: 'flex', gap: 'var(--space-3)', marginBottom: 'var(--space-3)' }}>
-                          <input 
-                            type="text" 
-                            placeholder="Note Title (Optional)" 
-                            value={noteTitle} 
-                            onChange={e => setNoteTitle(e.target.value)}
-                            style={{ flex: 1, background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', padding: '12px', borderRadius: 8, color: 'var(--white)', fontSize: '1rem' }}
-                          />
-                          <select 
-                            value={noteCompoundSlug} 
-                            onChange={e => setNoteCompoundSlug(e.target.value)}
-                            style={{ background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', padding: '12px', borderRadius: 8, color: 'var(--white)', fontSize: '1rem', width: 200 }}
-                          >
-                            <option value="">No Compound Tag</option>
-                            {Array.from(new Set([...favorites, ...pastOrders, ...recentlyViewed].filter(i => (i as any).slug).map(i => (i as any).slug))).map(slug => (
-                              <option key={slug as string} value={slug as string}>{slug}</option>
-                            ))}
-                          </select>
-                        </div>
-                        
-                        <textarea 
-                          placeholder="Write your research notes, protocol logs, or observations here..." 
-                          value={noteText} 
-                          onChange={e => setNoteText(e.target.value)}
-                          rows={8}
-                          style={{ width: '100%', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', padding: '12px', borderRadius: 8, color: 'var(--white)', marginBottom: 'var(--space-4)', fontSize: '1rem', resize: 'vertical' }}
-                        />
-                        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 'var(--space-3)' }}>
-                          <button onClick={() => setIsCreatingNote(false)} className="btn btn-ghost" style={{ color: 'var(--silver)' }}>Cancel</button>
-                          <button onClick={saveNote} disabled={!noteText.trim() || noteSaving} className="btn btn-primary" style={{ padding: '8px 24px' }}>
-                            {noteSaving ? 'Saving...' : 'Save Note'}
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  )}
                 </div>
 
               ) : activeTab === 'doses' ? (
