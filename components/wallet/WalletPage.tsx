@@ -9,6 +9,7 @@ import ReceiptVault from './ReceiptVault';
 import CreditIncreaseForm from './CreditIncreaseForm';
 import WalletSettings from './WalletSettings';
 import WalletSendSheet from './WalletSendSheet';
+import IframeLink from '@/components/ui/IframeLink';
 
 const money = (n: number) =>
   new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 2 }).format(Number(n) || 0);
@@ -415,14 +416,12 @@ export default function WalletPage({
                               }}>{statusLabel(s.status)}</span>
                             </td>
                             <td style={{ padding: '10px 8px', textAlign: 'center' }}>
-                              <a
+                              <IframeLink
                                 href={`/wallet/print?type=${s.target_type}&id=${s.id}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
                                 style={{ color: 'var(--teal)', fontSize: '0.78rem', fontWeight: 700, textDecoration: 'none' }}
                               >
                                 Print
-                              </a>
+                              </IframeLink>
                             </td>
                           </tr>
                         );

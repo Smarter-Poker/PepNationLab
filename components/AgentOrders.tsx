@@ -6,6 +6,7 @@ import AgentManualOrder from './AgentManualOrder';
 import { carrierInfo } from '@/lib/carrier';
 import AgentPaymentProofs from './AgentPaymentProofs';
 import { paymentMethodLabel } from '@/lib/payment-method-labels';
+import IframeLink from '@/components/ui/IframeLink';
 
 interface Order {
   id: string;
@@ -1011,10 +1012,8 @@ export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
                         )}
                       </div>
                       {ci.trackingUrl && (
-                        <a
+                        <IframeLink
                           href={ci.trackingUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
                           style={{
                             display: 'inline-block',
                             marginTop: 10,
@@ -1025,17 +1024,15 @@ export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
                           }}
                         >
                           Track With {ci.carrier}
-                        </a>
+                        </IframeLink>
                       )}
                     </>
                   );
                 })()}
 
                 {detailOrder.label_url && (
-                  <a
+                  <IframeLink
                     href={detailOrder.label_url}
-                    target="_blank"
-                    rel="noopener noreferrer"
                     className="btn btn-secondary"
                     style={{
                       marginTop: 'var(--space-4)',
@@ -1045,8 +1042,8 @@ export default function AgentOrders({ orders, setOrders }: AgentOrdersProps) {
                       fontWeight: 600
                     }}
                   >
-                    Open Shipping Label
-                  </a>
+                    View Shipping Label
+                  </IframeLink>
                 )}
 
                 <div

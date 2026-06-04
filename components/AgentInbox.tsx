@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import IframeLink from '@/components/ui/IframeLink';
 
 interface InternalMessage {
   id: string;
@@ -250,14 +251,12 @@ export default function AgentInbox({ agentId }: { agentId: string }) {
                       {msg.attachment_url && (
                         <>
                           <span>·</span>
-                          <a
+                          <IframeLink
                             href={msg.attachment_url}
-                            target="_blank"
-                            rel="noopener noreferrer"
                             style={{ color: '#00E5FF', textDecoration: 'none', fontWeight: 600 }}
                           >
                             📎 Attachment
-                          </a>
+                          </IframeLink>
                         </>
                       )}
                       {!msg.is_read && (

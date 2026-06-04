@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { FileText, Plus, Upload, Trash2, Edit3, Power, Download } from 'lucide-react';
 import { toast } from 'sonner';
+import IframeLink from '@/components/ui/IframeLink';
 
 interface Lot {
   id: string;
@@ -356,15 +357,13 @@ export default function AdminProductLots({ productId }: Props) {
                 <div style={{ display: 'flex', gap: '6px', justifyContent: 'flex-end', flexWrap: 'wrap', flex: '1 1 200px' }}>
                   {lot.coa_public_url ? (
                     <>
-                      <a
+                      <IframeLink
                         href={lot.coa_public_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
                         className="btn-silver"
                         style={{ padding: '6px 10px', fontSize: '0.75rem', display: 'inline-flex', alignItems: 'center', gap: 4 }}
                       >
-                        <Download size={12} aria-hidden="true" /> Download COA
-                      </a>
+                        <Download size={12} aria-hidden="true" /> View COA
+                      </IframeLink>
                       <button
                         type="button"
                         className="btn-silver"

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
+import IframeLink from '@/components/ui/IframeLink';
 
 export default function ThemeBuilder() {
   const [theme, setTheme] = useState<any>(null);
@@ -136,9 +137,9 @@ export default function ThemeBuilder() {
           )}
         </div>
         {theme?.slug && (
-          <a href={`/${theme.slug}?preview=1`} target="_blank" rel="noreferrer" style={{
+          <IframeLink href={`/${theme.slug}?preview=1`} style={{
             display: 'inline-block', marginTop: 12, color: 'var(--teal)', fontWeight: 700, fontSize: '0.88rem',
-          }}>Open Live Storefront →</a>
+          }}>Open Live Storefront →</IframeLink>
         )}
       </section>
     </div>

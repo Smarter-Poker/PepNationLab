@@ -18,6 +18,7 @@ import { captureCallError, captureCallEvent } from '@/lib/messenger/sentryCall';
 import { createE2EESetup, asRoomOptions, type E2EESetup } from '@/lib/messenger/livekitE2EE';
 import CallGridView from './CallGridView';
 import { Phone, PhoneOff, Video, VideoOff, Mic, MicOff, SwitchCamera, ScreenShare, ScreenShareOff, Pause, Play, Maximize2 } from 'lucide-react';
+import IframeLink from '@/components/ui/IframeLink';
 import { toast } from 'sonner';
 import { Track, DisconnectReason, ConnectionState, ConnectionQuality } from 'livekit-client';
 import type { Participant } from 'livekit-client';
@@ -995,13 +996,12 @@ export default function CallOverlay({ call, selfId, onClose, onAccept }: Props &
           <p style={{ fontSize: '1.2rem', marginBottom: 16 }} aria-live="assertive">{error}</p>
           {/permission|denied/i.test(error) && (
             <p style={{ fontSize: '0.9rem', color: 'rgba(255,255,255,0.6)', marginBottom: 16 }}>
-              <a
+              <IframeLink
                 href="/help/messenger-call-permissions"
-                target="_blank" rel="noopener noreferrer"
                 style={{ color: '#00C4BC', textDecoration: 'underline' }}
               >
                 How To Enable Microphone And Camera
-              </a>
+              </IframeLink>
             </p>
           )}
           <button

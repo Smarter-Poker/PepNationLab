@@ -24,8 +24,9 @@
  */
 
 import { useEffect, useMemo, useState } from 'react';
-import { LifeBuoy, X } from 'lucide-react';
+import { Lightbulb, ExternalLink, LifeBuoy, X } from 'lucide-react';
 import { suggestFaq, faqDeepLink, FAQ_ITEMS, type FaqItem } from '@/lib/help-faq';
+import IframeLink from '@/components/ui/IframeLink';
 
 interface Props {
   draft: string;
@@ -114,33 +115,29 @@ export default function FaqSuggestions({ draft, enabled }: Props) {
         <LifeBuoy size={12} aria-hidden /> Self-Serve Answers:
       </span>
       {matches.map((it) => (
-        <a
+        <IframeLink
           key={it.id}
           href={faqDeepLink(it.id)}
-          target="_blank"
-          rel="noopener noreferrer"
           onClick={() => fireBeacon(it.id)}
           title={it.q}
           style={{
             display: 'inline-flex',
             alignItems: 'center',
-            maxWidth: '100%',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-            whiteSpace: 'nowrap',
-            fontSize: '0.74rem',
-            fontWeight: 600,
-            color: 'var(--teal, #00C4BC)',
-            background: 'rgba(0,196,188,0.10)',
-            border: '1px solid rgba(0,196,188,0.30)',
-            borderRadius: 999,
+            gap: 6,
             padding: '4px 10px',
+            background: 'var(--surface-3, #1D2D3E)',
+            border: '1px solid var(--surface-4, #2B3D52)',
+            borderRadius: 6,
+            fontSize: '0.74rem',
+            color: 'var(--teal, #7AF0EA)',
             textDecoration: 'none',
-            lineHeight: 1.2,
+            whiteSpace: 'nowrap',
+            fontWeight: 600,
           }}
         >
-          {it.q.length > 40 ? `${it.q.slice(0, 38)}...` : it.q}
-        </a>
+          {it.q.length > 32 ? it.q.substring(0, 30) + '…' : it.q}
+          <ExternalLink size={10} style={{ opacity: 0.7 }} />
+        </IframeLink>
       ))}
       <button
         type="button"

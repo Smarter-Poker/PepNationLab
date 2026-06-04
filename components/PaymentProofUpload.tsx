@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
+import IframeLink from '@/components/ui/IframeLink';
 
 interface PaymentProof {
   id: string;
@@ -172,15 +173,13 @@ export default function PaymentProofUpload({ orderId, uploadDisabled = false }: 
                       </div>
                     </div>
                     {p.signed_url && (
-                      <a
+                      <IframeLink
                         href={p.signed_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
                         className="btn btn-secondary btn-sm"
                         style={{ fontSize: '0.78rem' }}
                       >
                         View Proof
-                      </a>
+                      </IframeLink>
                     )}
                   </div>
                 );

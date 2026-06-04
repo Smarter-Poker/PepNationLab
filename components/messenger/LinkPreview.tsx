@@ -1,5 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
+import IframeLink from '@/components/ui/IframeLink';
 
 interface PreviewData {
   url_hash: string;
@@ -41,39 +42,38 @@ export default function LinkPreview({ url }: Props) {
   }
 
   return (
-    <a
+    <IframeLink
       href={data.url}
-      target="_blank"
-      rel="noopener noreferrer"
       style={{
         display: 'flex', gap: 8, padding: 8, marginTop: 4,
         background: 'var(--surface-2, #162230)', border: '1px solid var(--surface-3, #1D2D3E)',
         borderRadius: 8, textDecoration: 'none', color: 'var(--white, #FFFFFF)',
-        maxWidth: 360,
+        overflow: 'hidden', alignItems: 'center'
       }}
-      aria-label={`Open Link ${data.title ?? data.host ?? data.url}`}
     >
       {data.image_url && (
-        <img src={data.image_url} alt="" loading="lazy"
-          style={{ width: 64, height: 64, objectFit: 'cover', borderRadius: 6, flexShrink: 0 }}
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={data.image_url}
+          alt=""
+          style={{ width: 48, height: 48, objectFit: 'cover', borderRadius: 4, flexShrink: 0, background: '#0F1923' }}
         />
       )}
-      <div style={{ minWidth: 0, display: 'flex', flexDirection: 'column', gap: 2 }}>
-        <span style={{ fontSize: '0.74rem', color: 'var(--grey-400, #A8B4C0)' }}>{data.host}</span>
-        {data.title && (
-          <span style={{ fontWeight: 600, fontSize: '0.88rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-            {data.title}
-          </span>
-        )}
+      <div style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden', gap: 2 }}>
+        <div style={{ fontSize: '0.8rem', fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+          {data.title || data.url}
+        </div>
         {data.description && (
-          <span style={{ fontSize: '0.78rem', color: 'var(--grey-400, #A8B4C0)',
-            overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box',
-            WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', whiteSpace: 'normal',
-          }}>
+          <div style={{ fontSize: '0.7rem', color: 'var(--grey-400, #A0ABC0)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
             {data.description}
-          </span>
+          </div>
+        )}
+        {data.host && (
+          <div style={{ fontSize: '0.65rem', color: 'var(--silver, #C0B8A8)', marginTop: 2, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+            {data.host}
+          </div>
         )}
       </div>
-    </a>
+    </IframeLink>
   );
 }

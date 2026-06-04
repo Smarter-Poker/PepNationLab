@@ -3,22 +3,29 @@
 import React, { useState } from 'react';
 import IframeModal from '@/components/ui/IframeModal';
 
+interface IframeLinkProps extends React.AnchorHTMLAttributes<HTMLAnchorElement> {
+  href: string;
+}
+
 export default function IframeLink({ 
   href, 
   children, 
-  style 
-}: { 
-  href: string; 
-  children: React.ReactNode; 
-  style?: React.CSSProperties 
-}) {
+  style,
+  className,
+  onClick,
+  ...props
+}: IframeLinkProps) {
   const [modalUrl, setModalUrl] = useState<string | null>(null);
   
   return (
     <>
       <button 
         type="button"
-        onClick={() => setModalUrl(href)} 
+        onClick={(e) => {
+          if (onClick) onClick(e as any);
+          setModalUrl(href);
+        }} 
+        className={className}
         style={{ 
           background: 'none', 
           border: 'none', 
@@ -29,6 +36,7 @@ export default function IframeLink({
           fontFamily: 'inherit',
           ...style 
         }}
+        {...(props as any)}
       >
         {children}
       </button>

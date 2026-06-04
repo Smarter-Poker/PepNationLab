@@ -7,6 +7,7 @@ import { motion, Variants, AnimatePresence } from 'framer-motion';
 import { Star, X, Heart, FileText, Search, SlidersHorizontal, RotateCcw, Check } from 'lucide-react';
 import RecommendationStrip, { type RecommendationItem } from './RecommendationStrip';
 import ProductMonograph from './research/ProductMonograph';
+import IframeLink from '@/components/ui/IframeLink';
 import DiscoveryHero, { type MatchedProduct } from './storefront/StorefrontDiscovery';
 import ProductModalEnhancements, { ClickableCategoryBadge, type ModalGroupedProductRef } from './storefront/ProductModalEnhancements';
 import StorefrontCompareDrawer from './storefront/StorefrontCompareDrawer';
@@ -1961,10 +1962,8 @@ export default function AgentStorefrontGrid({
                   if (!coaUrl) return null;
                   return (
                     <div style={{ marginBottom: 'var(--space-6)' }}>
-                      <a
+                      <IframeLink
                         href={coaUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
                         style={{
                           display: 'inline-flex',
                           alignItems: 'center',
@@ -1981,7 +1980,7 @@ export default function AgentStorefrontGrid({
                       >
                         <FileText size={14} aria-hidden="true" />
                         View Certificate Of Analysis
-                      </a>
+                      </IframeLink>
                     </div>
                   );
                 })()}

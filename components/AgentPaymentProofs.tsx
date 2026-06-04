@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import IframeLink from '@/components/ui/IframeLink';
 
 /**
  * Read-only payment-proof viewer for non-buyer surfaces (agent dashboard,
@@ -62,14 +63,12 @@ export default function AgentPaymentProofs({ orderId }: { orderId: string }) {
           </span>
           <span style={{ color: 'rgba(255,255,255,0.4)' }}>{(p.size_bytes / 1024).toFixed(1)} KB</span>
           {p.signed_url && (
-            <a
+            <IframeLink
               href={p.signed_url}
-              target="_blank"
-              rel="noopener noreferrer"
               style={{ color: '#00E5FF', textDecoration: 'none', marginLeft: 'auto', fontWeight: 600, border: '1px solid rgba(0,229,255,0.3)', padding: '2px 8px', borderRadius: '4px', background: 'rgba(0,229,255,0.1)' }}
             >
               View Proof
-            </a>
+            </IframeLink>
           )}
         </div>
       ))}

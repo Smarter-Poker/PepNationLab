@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import IframeLink from '@/components/ui/IframeLink';
 
 interface Message {
   id: string;
@@ -480,11 +481,13 @@ export default function Messaging({
                           {m.edited_at && <div style={{ fontSize: '0.6rem', color: mine ? 'rgba(255,255,255,0.5)' : 'rgba(255,255,255,0.2)', marginTop: 2 }}>(edited)</div>}
                           {m.attachment_url && (
                             isImage(m.attachment_url) ? (
-                              <img src={m.attachment_url} alt="attachment" style={{ maxWidth: '100%', maxHeight: 200, borderRadius: 8, marginTop: 6, cursor: 'pointer' }} onClick={() => window.open(m.attachment_url!, '_blank')} />
+                              <IframeLink href={m.attachment_url} style={{ display: 'inline-block' }}>
+                                <img src={m.attachment_url} alt="attachment" style={{ maxWidth: '100%', maxHeight: 200, borderRadius: 8, marginTop: 6, cursor: 'pointer' }} />
+                              </IframeLink>
                             ) : (
-                              <a href={m.attachment_url} target="_blank" rel="noopener noreferrer" style={{ color: mine ? 'rgba(255,255,255,0.8)' : 'var(--teal)', fontSize: '0.73rem', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 4, background: mine ? 'rgba(255,255,255,0.12)' : 'rgba(192,184,168,0.06)', padding: '3px 8px', borderRadius: 6, marginTop: 4 }}>
+                              <IframeLink href={m.attachment_url} style={{ color: mine ? 'rgba(255,255,255,0.8)' : 'var(--teal)', fontSize: '0.73rem', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 4, background: mine ? 'rgba(255,255,255,0.12)' : 'rgba(192,184,168,0.06)', padding: '3px 8px', borderRadius: 6, marginTop: 4 }}>
                                 📎 Attachment
-                              </a>
+                              </IframeLink>
                             )
                           )}
                         </div>

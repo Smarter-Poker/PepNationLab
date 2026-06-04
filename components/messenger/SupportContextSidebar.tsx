@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
+import IframeLink from '@/components/ui/IframeLink';
 import { createClient } from '@/lib/supabase/client';
 import SupportInternalNotes from '@/components/messenger/SupportInternalNotes';
 import {
@@ -571,9 +572,9 @@ export default function SupportContextSidebar({
                 {data.linked_order.tracking_number && (
                   <div style={{ marginTop: 6, fontSize: '0.74rem', color: 'var(--silver, #C0B8A8)' }}>
                     {data.linked_order.tracking_url ? (
-                      <Link href={data.linked_order.tracking_url} target="_blank" rel="noopener noreferrer" style={{ color: '#7AF0EA' }}>
+                      <IframeLink href={data.linked_order.tracking_url} style={{ color: '#7AF0EA' }}>
                         Tracking: {data.linked_order.tracking_number}
-                      </Link>
+                      </IframeLink>
                     ) : (
                       <>Tracking: {data.linked_order.tracking_number}</>
                     )}

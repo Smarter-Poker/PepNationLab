@@ -1,7 +1,6 @@
 import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
-import { formatCurrency } from '@/lib/utils';
 import IframeLink from '@/components/ui/IframeLink';
 import { createClient, createServiceClient } from '@/lib/supabase/server';
 import PageShell from '@/components/PageShell';
@@ -607,7 +606,6 @@ export default async function OrderDetailPage(
                 >
                   View Shipping Label
                 </IframeLink>
-                </a>
               )}
             </div>
           )}
@@ -652,7 +650,7 @@ export default async function OrderDetailPage(
                       style={{ fontSize: '0.78rem' }}
                     >
                       View COA
-                    </a>
+                    </IframeLink>
                   ) : (
                     <span style={{ color: 'var(--grey-500)', fontSize: '0.78rem' }}>COA Pending</span>
                   )}

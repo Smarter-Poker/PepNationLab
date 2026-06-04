@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
+import Link from 'next/link';
 import { pickOne } from '@/lib/relations';
 import SubAgentCommissionEditor from './SubAgentCommissionEditor';
 import AgentAccountDetail from '@/components/AgentAccountDetail';
@@ -502,9 +503,9 @@ export default function AgentSubAgents({ agentId }: { agentId?: string }) {
                     {(() => {
                       const ap = pickOne<{ slug: string | null }>(agent.agent_profiles);
                       return ap?.slug ? (
-                        <a href={`/${ap.slug}`} target="_blank" rel="noopener noreferrer" style={{ color: '#00E5FF', textDecoration: 'none', fontWeight: 600 }}>
+                        <Link href={`/${ap.slug}`} style={{ color: '#00E5FF', textDecoration: 'none', fontWeight: 600 }}>
                           /{ap.slug}
-                        </a>
+                        </Link>
                       ) : (
                         <span style={{ color: 'var(--grey-400)', fontSize: '0.85rem' }}>No Storefront</span>
                       );
