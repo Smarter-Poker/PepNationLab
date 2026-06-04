@@ -4,11 +4,9 @@ import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
 const LEVELS: { level: number; name: string }[] = [
-  { level: 1, name: 'Rookie' },
-  { level: 2, name: 'Established' },
-  { level: 3, name: 'Pro' },
-  { level: 4, name: 'Elite' },
-  { level: 5, name: 'Apex' },
+  { level: 1, name: 'Premium' },
+  { level: 2, name: 'Pro' },
+  { level: 3, name: 'Rookie' },
 ];
 
 /**
@@ -21,7 +19,7 @@ const LEVELS: { level: number; name: string }[] = [
 export default function AdminTierOverrideControl({ agentId }: { agentId: string }) {
   const [loaded, setLoaded] = useState(false);
   const [enabled, setEnabled] = useState(false);
-  const [level, setLevel] = useState(5);
+  const [level, setLevel] = useState(3);
   const [ladderActive, setLadderActive] = useState(false);
   const [saving, setSaving] = useState(false);
 

@@ -16,11 +16,9 @@ CREATE TABLE IF NOT EXISTS public.house_tiers (
 );
 
 INSERT INTO public.house_tiers (level, name, min_volume, max_volume, markup) VALUES
-  (1, 'Rookie',      0,     999,    0.70),
-  (2, 'Established', 1000,  4999,   0.60),
-  (3, 'Pro',         5000,  14999,  0.50),
-  (4, 'Elite',       15000, 39999,  0.40),
-  (5, 'Apex',        40000, NULL,   0.30)
+  (1, 'Premium',     20000, NULL,   0.30),
+  (2, 'Pro',         5000,  19999,  0.50),
+  (3, 'Rookie',      0,     4999,   0.70)
 ON CONFLICT (level) DO NOTHING;
 
 ALTER TABLE public.house_tiers ENABLE ROW LEVEL SECURITY;

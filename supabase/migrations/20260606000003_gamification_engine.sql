@@ -1,10 +1,7 @@
 -- Phase 1 Gamification Engine Migration
 
 -- 1. Extend the Tier ENUMs to support 5 tiers
-ALTER TYPE agent_tier ADD VALUE IF NOT EXISTS 'tier_4';
-ALTER TYPE agent_tier ADD VALUE IF NOT EXISTS 'tier_5';
-ALTER TYPE tier_name ADD VALUE IF NOT EXISTS 'tier_4';
-ALTER TYPE tier_name ADD VALUE IF NOT EXISTS 'tier_5';
+-- (Removed tier_4 and tier_5 as we are back to 3 tiers)
 
 -- 2. Add override to profiles
 ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS gamification_override BOOLEAN DEFAULT false;

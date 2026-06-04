@@ -158,18 +158,18 @@ export default function AgentAccountDetail({
 
       const hasCustomSteps = Array.isArray(d.agent.commission_ladder_config) && d.agent.commission_ladder_config.length > 0;
       if (hasCustomSteps) {
-        const defaultNames = ['Rookie', 'Established', 'Pro', 'Elite', 'Apex'];
+        const defaultNames = ['Premium', 'Pro', 'Rookie'];
         const mappedSteps = d.agent.commission_ladder_config!.map((s, idx) => ({
           level: idx + 1,
           name: defaultNames[idx] || `Level ${idx + 1}`,
           min_volume: Number(s.min_volume) || 0,
           bonus_pct: (Number(s.bonus_pct) || 0) + basePct,
         }));
-        while (mappedSteps.length < 5) {
+        while (mappedSteps.length < 3) {
           const idx = mappedSteps.length;
           mappedSteps.push({ level: idx + 1, name: defaultNames[idx] || `Level ${idx + 1}`, min_volume: 0, bonus_pct: 0 });
         }
-        const finalSteps = mappedSteps.slice(0, 5);
+        const finalSteps = mappedSteps.slice(0, 3);
         setCustomSteps(finalSteps);
         setScaleType(isDefaultLadder(finalSteps) ? 'default' : 'custom');
       } else {
