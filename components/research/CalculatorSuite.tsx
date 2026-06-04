@@ -467,6 +467,20 @@ function StabilitySection() {
         title="Arrhenius Stability Estimator"
         why="Predict shelf-life at one temperature given a known shelf-life at another. Useful for comparing fridge versus room-temp storage windows. Default Ea is 83 kJ/mol, a common literature value for lyophilized peptides."
       />
+      <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
+        <button 
+          onClick={() => { setTFrom('-20'); setTTo('4'); }} 
+          style={{ padding: '6px 12px', borderRadius: 6, border: '1px solid #00E5FF', background: 'transparent', color: '#00E5FF', cursor: 'pointer', fontSize: 13 }}
+        >
+          Preset: Freezer to Fridge
+        </button>
+        <button 
+          onClick={() => { setTFrom('4'); setTTo('25'); }} 
+          style={{ padding: '6px 12px', borderRadius: 6, border: '1px solid #F6AD55', background: 'transparent', color: '#F6AD55', cursor: 'pointer', fontSize: 13 }}
+        >
+          Preset: Fridge to Room Temp
+        </button>
+      </div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 12 }}>
         <label style={{ display: "block" }}>
           <div style={labelStyle}>Known Shelf Days</div>
@@ -503,12 +517,16 @@ function CostSection() {
   const [price, setPrice] = useState('');
   const [mass, setMass] = useState('');
   const [dose, setDose] = useState('');
+  const [frequency, setFrequency] = useState('1'); // doses per week
 
   const out = costPerDose({
     vialPriceUsd: Number(price),
     vialMassMg: Number(mass),
     dosageMcg: Number(dose),
   });
+
+  const dosesPerWeek = Number(frequency);
+  const daysPerVial = (out && dosesPerWeek > 0) ? (out.dosesPerVial / dosesPerWeek) * 7 : null;
 
   return (
     <section id="cost" style={chromeOuterStyle}>
@@ -530,11 +548,25 @@ function CostSection() {
           <div style={labelStyle}>Per-Dose Amount (mcg)</div>
           <StyledInput  type="number" step="any" value={dose} onChange={(e) => setDose(e.target.value)} />
         </label>
+        <label style={{ display: "block" }}>
+          <div style={labelStyle}>Dosing Frequency</div>
+          <StyledSelect value={frequency} onChange={(e) => setFrequency(e.target.value)}>
+            <option value="7">Daily (7x / week)</option>
+            <option value="2">Twice Weekly (2x / week)</option>
+            <option value="1">Weekly (1x / week)</option>
+            <option value="0.5">Bi-Weekly (0.5x / week)</option>
+          </StyledSelect>
+        </label>
       </div>
       <div style={resultStyle}>
         {!out
           ? 'Enter Valid Inputs.'
-          : <>Doses Per Vial: <strong>{out.dosesPerVial.toFixed(1)}</strong>{'  '}|{'  '}Dollars Per Dose: <strong>${out.dollarsPerDose === 0 ? '0.00' : out.dollarsPerDose.toFixed(3)}</strong></>
+          : <>
+              <div>Doses Per Vial: <strong>{out.dosesPerVial.toFixed(1)}</strong>{'  '}|{'  '}Dollars Per Dose: <strong>${out.dollarsPerDose === 0 ? '0.00' : out.dollarsPerDose.toFixed(3)}</strong></div>
+              {daysPerVial !== null && daysPerVial > 0 && (
+                <div style={{ marginTop: 8, color: '#00E5FF' }}>Vial Lasts Approximately: <strong>{daysPerVial.toFixed(1)} Days</strong></div>
+              )}
+            </>
         }
       </div>
       <p style={noteStyle}>{RESEARCH_NOTE}</p>
@@ -547,11 +579,13 @@ function PoolingSection() {
   const [mass, setMass] = useState('');
   const [count, setCount] = useState('');
   const [diluent, setDiluent] = useState('');
+  const [loss, setLoss] = useState('');
 
   const out = vialPooling({
     vialMassMg: Number(mass),
     vialCount: Math.max(1, Math.floor(Number(count) || 1)),
     totalDiluentMl: Number(diluent),
+    transferLossPct: Number(loss) || 0,
   });
 
   return (
@@ -573,6 +607,10 @@ function PoolingSection() {
         <label style={{ display: "block" }}>
           <div style={labelStyle}>Total Diluent (mL)</div>
           <StyledInput  type="number" step="any" value={diluent} onChange={(e) => setDiluent(e.target.value)} />
+        </label>
+        <label style={{ display: "block" }}>
+          <div style={labelStyle}>Transfer Loss Buffer (%)</div>
+          <StyledInput  type="number" step="any" min="0" max="100" value={loss} placeholder="e.g. 5" onChange={(e) => setLoss(e.target.value)} />
         </label>
       </div>
       <div style={resultStyle}>
@@ -622,6 +660,20 @@ function HplcRtSection() {
         title="HPLC Retention Time Predictor"
         why="Roughly estimate where a peptide will elute on a C18 reverse-phase column using Bull-Breese hydrophobicity. Useful for planning a purification gradient before injection. Lab estimate, not a clinical prediction."
       />
+      <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
+        <button 
+          onClick={() => { setStart('5'); setEnd('65'); setGradient('20'); setShowAdvanced(true); }} 
+          style={{ padding: '6px 12px', borderRadius: 6, border: '1px solid #00E5FF', background: 'transparent', color: '#00E5FF', cursor: 'pointer', fontSize: 13 }}
+        >
+          Preset: Standard 20min (5% - 65% B)
+        </button>
+        <button 
+          onClick={() => { setStart('10'); setEnd('90'); setGradient('30'); setShowAdvanced(true); }} 
+          style={{ padding: '6px 12px', borderRadius: 6, border: '1px solid #F6AD55', background: 'transparent', color: '#F6AD55', cursor: 'pointer', fontSize: 13 }}
+        >
+          Preset: Long 30min (10% - 90% B)
+        </button>
+      </div>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 12 }}>
         <label style={{ display: "block" }}>
           <div style={labelStyle}>One-Letter Sequence (Standard 20 AA Codes)</div>
@@ -674,6 +726,7 @@ function MassSpecSection() {
   const [seq, setSeq] = useState('');
   const [mode, setMode] = useState<'positive' | 'negative'>('positive');
   const [maxCharge, setMaxCharge] = useState('');
+  const [adduct, setAdduct] = useState('1.00728'); // Default +H
 
   const cleanSeq = seq.replace(/\s+/g, '').toUpperCase();
   const unknownChars = useMemo(() => {
@@ -688,7 +741,10 @@ function MassSpecSection() {
     sequence: seq,
     mode,
     maxCharge: maxCharge.trim() === '' ? undefined : Number(maxCharge),
+    adductMass: Number(adduct),
   });
+  
+  const basePeakCharge = peaks.length > 0 ? peaks[0].charge : null;
 
   return (
     <section id="mass-spec" style={chromeOuterStyle}>
@@ -721,6 +777,16 @@ function MassSpecSection() {
           <div style={labelStyle}>Max Charge State</div>
           <StyledInput  type="number" step="any" min={1} value={maxCharge} onChange={(e) => setMaxCharge(e.target.value)} />
         </label>
+        {mode === 'positive' && (
+          <label style={{ display: "block" }}>
+            <div style={labelStyle}>Adduct</div>
+            <StyledSelect value={adduct} onChange={(e) => setAdduct(e.target.value)}>
+              <option value="1.00728">+H (Proton, 1.007 Da)</option>
+              <option value="22.98977">+Na (Sodium, 22.990 Da)</option>
+              <option value="38.96371">+K (Potassium, 38.964 Da)</option>
+            </StyledSelect>
+          </label>
+        )}
       </div>}
       <div style={{ ...resultStyle, padding: 0, background: 'transparent', border: 'none' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14, marginTop: 8 }}>
@@ -732,13 +798,19 @@ function MassSpecSection() {
             </tr>
           </thead>
           <tbody>
-            {peaks.map((p) => (
-              <tr key={p.charge}>
-                <td style={{ padding: 8, color: '#FFFFFF' }}>{mode === 'negative' ? `-${p.charge}` : `+${p.charge}`}</td>
-                <td style={{ padding: 8, color: '#A8B2C1', fontWeight: 600 }}>{p.mz.toFixed(4)}</td>
-                <td style={{ padding: 8, color: '#D0DAE4' }}>{p.intensity.toFixed(3)}</td>
-              </tr>
-            ))}
+            {peaks.map((p) => {
+              const isBase = p.charge === basePeakCharge;
+              return (
+                <tr key={p.charge} style={{ background: isBase ? 'rgba(104,211,145,0.1)' : 'transparent' }}>
+                  <td style={{ padding: 8, color: isBase ? '#68D391' : '#FFFFFF', fontWeight: isBase ? 800 : 'normal' }}>
+                    {mode === 'negative' ? `-${p.charge}` : `+${p.charge}`}
+                    {isBase && <span style={{ marginLeft: 8, fontSize: 10, background: '#68D391', color: '#000', padding: '2px 4px', borderRadius: 4 }}>BASE</span>}
+                  </td>
+                  <td style={{ padding: 8, color: isBase ? '#68D391' : '#A8B2C1', fontWeight: 600 }}>{p.mz.toFixed(4)}</td>
+                  <td style={{ padding: 8, color: isBase ? '#68D391' : '#D0DAE4' }}>{p.intensity.toFixed(3)}</td>
+                </tr>
+              );
+            })}
             {peaks.length === 0 && (
               <tr><td colSpan={3} style={{ padding: 8, color: '#A8B4C0' }}>Enter A Valid One-Letter Sequence.</td></tr>
             )}
@@ -757,6 +829,8 @@ function SppsSection() {
   const [scale, setScale] = useState('');
   const [aaCost, setAaCost] = useState('');
   const [resinCost, setResinCost] = useState('');
+  const [synthYield, setSynthYield] = useState('90');
+  const [purYield, setPurYield] = useState('50');
 
   const cleanSppsSeq = seq.replace(/\s+/g, '').toUpperCase();
   const sppsUnknownChars = useMemo(() => {
@@ -773,6 +847,8 @@ function SppsSection() {
     fmocAaCostPerGram: aaCost.trim() === '' ? undefined : Number(aaCost),
     resinCostPerGram: resinCost.trim() === '' ? undefined : Number(resinCost),
     includeReagents: true,
+    synthesisYieldPct: Number(synthYield),
+    purificationYieldPct: Number(purYield),
   });
 
   return (
@@ -807,14 +883,28 @@ function SppsSection() {
           <div style={labelStyle}>Resin Cost ($/g)</div>
           <StyledInput  type="number" step="any" value={resinCost} onChange={(e) => setResinCost(e.target.value)} />
         </label>
+        <label style={{ display: "block" }}>
+          <div style={labelStyle}>Synthesis Yield (%)</div>
+          <StyledInput  type="number" step="any" min="1" max="100" value={synthYield} onChange={(e) => setSynthYield(e.target.value)} />
+        </label>
+        <label style={{ display: "block" }}>
+          <div style={labelStyle}>Purification Yield (%)</div>
+          <StyledInput  type="number" step="any" min="1" max="100" value={purYield} onChange={(e) => setPurYield(e.target.value)} />
+        </label>
       </div>}
       <div style={resultStyle}>
         {!out ? 'Enter A Valid Sequence.' : (
           <>
-            Total Estimated Cost: <strong>${out.totalUsd.toFixed(2)}</strong>
-            <div style={{ marginTop: 10 }}>
+            <div>Total Synthesizer Cost: <strong>${out.totalUsd.toFixed(2)}</strong></div>
+            <div style={{ color: '#00E5FF', marginTop: 6, fontSize: 18 }}>
+              Cost Per Recovered Mg: <strong>${out.costPerRecoveredMg.toFixed(2)}</strong>
+              <span style={{ display: 'block', fontSize: 12, color: '#A8B4C0', marginTop: 4, fontWeight: 'normal' }}>
+                Assuming ~{out.recoveredMg.toFixed(1)} mg final pure peptide recovered.
+              </span>
+            </div>
+            <div style={{ marginTop: 16 }}>
               {out.breakdown.map((b) => (
-                <div key={b.label} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: '#D0DAE4' }}>
+                <div key={b.label} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: '#D0DAE4', marginBottom: 4 }}>
                   <span>{b.label}</span>
                   <span>${b.costUsd.toFixed(2)}</span>
                 </div>
@@ -853,6 +943,26 @@ function SolubilitySection() {
       <div style={{ marginBottom: 10, fontSize: 12, color: '#A8B4C0' }}>
         💡 GRAVY score and isoelectric point (pI) can be calculated from your sequence at{' '}
         <IframeLink href="https://web.expasy.org/protparam/" style={{ color: '#A8B2C1' }}>ExPASy ProtParam</IframeLink>.
+      </div>
+      <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
+        <button 
+          onClick={() => { setPH('7.4'); setShowAdvanced(true); }} 
+          style={{ padding: '6px 12px', borderRadius: 6, border: '1px solid #00E5FF', background: 'transparent', color: '#00E5FF', cursor: 'pointer', fontSize: 13 }}
+        >
+          Preset: PBS (pH 7.4)
+        </button>
+        <button 
+          onClick={() => { setPH('2.5'); setShowAdvanced(true); }} 
+          style={{ padding: '6px 12px', borderRadius: 6, border: '1px solid #F6AD55', background: 'transparent', color: '#F6AD55', cursor: 'pointer', fontSize: 13 }}
+        >
+          Preset: 10% Acetic Acid (pH ~2.5)
+        </button>
+        <button 
+          onClick={() => { setPH('7.0'); setShowAdvanced(true); }} 
+          style={{ padding: '6px 12px', borderRadius: 6, border: '1px solid #D6BCFA', background: 'transparent', color: '#D6BCFA', cursor: 'pointer', fontSize: 13 }}
+        >
+          Preset: Pure Water (pH 7.0)
+        </button>
       </div>
       <button type="button" onClick={() => setShowAdvanced(!showAdvanced)} style={{ background: 'transparent', border: '1px solid rgba(168,178,193,0.3)', color: '#A8B2C1', padding: '6px 12px', borderRadius: 6, fontSize: 12, marginBottom: 12, cursor: 'pointer' }}>{showAdvanced ? 'Hide Advanced Options' : 'Show Advanced Options'}</button>
       {showAdvanced && <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 12 }}>
@@ -893,12 +1003,14 @@ function VialQuantitySection() {
   const [doses, setDoses] = useState('');
   const [mgPerDose, setMgPerDose] = useState('');
   const [mgPerVial, setMgPerVial] = useState('');
+  const [overage, setOverage] = useState('15');
 
   const out = vialQuantityPower({
     n: Math.max(1, Math.floor(Number(n) || 1)),
     dosesPerSubject: Math.max(1, Math.floor(Number(doses) || 1)),
     mgPerDose: Number(mgPerDose),
     mgPerVial: Number(mgPerVial),
+    overagePct: Number(overage) || 0,
   });
 
   return (
@@ -925,6 +1037,10 @@ function VialQuantitySection() {
         <label style={{ display: "block" }}>
           <div style={labelStyle}>Mg Per Vial</div>
           <StyledInput  type="number" step="0.01" value={mgPerVial} onChange={(e) => setMgPerVial(e.target.value)} />
+        </label>
+        <label style={{ display: "block" }}>
+          <div style={labelStyle}>Overage Buffer (%)</div>
+          <StyledInput  type="number" step="any" min="0" max="100" value={overage} onChange={(e) => setOverage(e.target.value)} />
         </label>
       </div>}
       <div style={resultStyle}>
