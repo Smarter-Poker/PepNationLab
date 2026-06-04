@@ -7,7 +7,7 @@
  */
 
 import { useState, ReactNode } from 'react';
-import Link from 'next/link';
+
 
 export interface AreaTab {
   key: string;

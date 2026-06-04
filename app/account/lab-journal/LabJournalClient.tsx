@@ -318,8 +318,18 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
                 ${displayPrice.toFixed(2)}
               </div>
             ) : <div/>}
-            {viewMode === 'list' && storefrontSlug && (
-              <button onClick={(e) => { e.stopPropagation(); handleQuickAdd(item); }} disabled={item.in_stock === false} className="btn btn-primary btn-sm" style={{ padding: '4px 12px' }}>Add</button>
+            {viewMode === 'list' && (
+              <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
+                {storefrontSlug && (
+                  <>
+                    <Link href={`/${storefrontSlug}?product=${encodeURIComponent(item.product_id)}`} className="btn btn-secondary btn-sm" style={{ padding: '4px 12px' }}>View</Link>
+                    <button onClick={(e) => { e.stopPropagation(); handleQuickAdd(item); }} disabled={item.in_stock === false} className="btn btn-primary btn-sm" style={{ padding: '4px 12px' }}>Add</button>
+                  </>
+                )}
+                {activeTab === 'favorites' && (
+                  <button onClick={(e) => { e.stopPropagation(); removeItem(item.product_id); }} disabled={pendingId === item.product_id} className="btn btn-ghost btn-sm" style={{ padding: '4px 8px', color: 'var(--red)' }}><Trash2 size={14}/></button>
+                )}
+              </div>
             )}
           </div>
         </div>
@@ -391,6 +401,22 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
       {/* Main Content */}
       {currentItems.length === 0 ? renderEmptyState() : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
+          {activeTab === 'recentlyViewed' && recentlyViewed.length > 0 && !searchQuery && (
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '-var(--space-4)' }}>
+              <button onClick={clearRecentlyViewed} className="btn btn-ghost btn-sm" style={{ color: 'var(--silver)', fontSize: '0.8rem', padding: '4px 12px' }}>Clear History</button>
+            </div>
+          )}
+          {activeTab === 'pastOrders' && !searchQuery && (
+            <div className="glass-panel" style={{ padding: 'var(--space-3) var(--space-4)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 'var(--space-4)', borderRadius: 'var(--radius-md)', background: 'var(--surface-1)', marginBottom: 'var(--space-4)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
+                <PackageOpen size={18} style={{ color: 'var(--teal)' }} />
+                <span style={{ color: 'var(--silver)', fontSize: '0.9rem' }}>Looking for a specific receipt or tracking number?</span>
+              </div>
+              <Link href="/orders" className="btn btn-ghost btn-sm" style={{ color: 'var(--white)', whiteSpace: 'nowrap' }}>
+                View Full Order History &rarr;
+              </Link>
+            </div>
+          )}
           {Object.entries(groupedItems).map(([category, items]) => (
             <div key={category}>
               {shouldGroup && <h3 style={{ color: 'var(--white)', fontSize: '1.1rem', marginBottom: 'var(--space-3)', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: 'var(--space-2)' }}>{category}</h3>}
@@ -403,6 +429,25 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* Trending Section for Recently Viewed */}
+      {activeTab === 'recentlyViewed' && trending.length > 0 && !searchQuery && (
+        <div className="glass-panel hover-lift stagger-fade-in" style={{ marginTop: 'var(--space-8)', padding: 'var(--space-5) var(--space-5) var(--space-6)', animationDelay: '0.2s' }}>
+          <h2 style={{ color: 'var(--white)', fontSize: '1.05rem', fontFamily: 'var(--font-brand)', marginBottom: 'var(--space-2)' }}>Trending Now</h2>
+          <p style={{ color: 'var(--silver)', fontSize: '0.85rem', marginBottom: 'var(--space-4)' }}>The Top Eight Products Researchers Have Ordered In The Last Sixty Days.</p>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: 'var(--space-3)' }}>
+            {trending.map((t) => (
+              <div key={t.id} style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 'var(--radius-lg)', padding: 'var(--space-3)', display: 'flex', flexDirection: 'column', transition: 'transform 0.2s, background 0.2s' }}>
+                <div style={{ width: '100%', aspectRatio: '1 / 1', background: 'var(--black-2)', borderRadius: 'var(--radius-md)', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 8 }}>
+                  <img src={t.image_url || getProductImage(null, t.category || 'Other', t.name)} alt={t.name} style={{ width: '100%', height: '100%', objectFit: 'contain', padding: 8 }} />
+                </div>
+                <div style={{ color: 'var(--white)', fontWeight: 700, fontSize: '0.82rem', lineHeight: 1.25, marginBottom: 4, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{t.name}</div>
+                {t.category && <div style={{ color: 'var(--grey-500)', fontSize: '0.7rem' }}>{t.category}</div>}
+              </div>
+            ))}
+          </div>
         </div>
       )}
 
@@ -453,15 +498,23 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
                   <div style={{ color: 'var(--teal)', fontSize: '1.5rem', fontWeight: 800, fontFamily: 'var(--font-brand)' }}>
                     ${(quickViewItem.retail_price ?? quickViewItem.base_cost ?? 0).toFixed(2)}
                   </div>
-                  {storefrontSlug && (
-                    <button 
-                      onClick={() => { handleQuickAdd(quickViewItem); setQuickViewItem(null); }} 
-                      disabled={quickViewItem.in_stock === false}
-                      className="btn btn-primary"
-                    >
-                      Add to Cart
-                    </button>
-                  )}
+                  <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
+                    {activeTab === 'favorites' && (
+                      <button onClick={() => { removeItem(quickViewItem.product_id); setQuickViewItem(null); }} className="btn btn-ghost" style={{ color: 'var(--red)' }}><Trash2 size={16}/> Remove</button>
+                    )}
+                    {storefrontSlug && (
+                      <Link href={`/${storefrontSlug}?product=${encodeURIComponent(quickViewItem.product_id)}`} className="btn btn-secondary">View Product</Link>
+                    )}
+                    {storefrontSlug && (
+                      <button 
+                        onClick={() => { handleQuickAdd(quickViewItem); setQuickViewItem(null); }} 
+                        disabled={quickViewItem.in_stock === false}
+                        className="btn btn-primary"
+                      >
+                        Add to Cart
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>

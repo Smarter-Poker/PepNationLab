@@ -43,6 +43,7 @@ export default function UniversalSearch({
   const results = useMemo(() => searchDocs(q, docs, 40), [q, docs]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setActive(0);
   }, [q]);
 

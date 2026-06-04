@@ -35,6 +35,7 @@ export default function CartWarnings({ slugs, productIds }: CartWarningsProps) {
     const uniqueSlugs = slugKey ? Array.from(new Set(slugKey.split(','))).filter(Boolean) : [];
     const uniqueProductIds = productKey ? Array.from(new Set(productKey.split(','))).filter(Boolean) : [];
     if (uniqueSlugs.length === 0 && uniqueProductIds.length === 0) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setWarnings([]);
       return;
     }

@@ -6,7 +6,7 @@
  * row shows display name, blurb, and a small evidence-tier dot for compounds.
  */
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { History, FlaskConical, BookOpen } from 'lucide-react';
 import { evidenceTier, wadaLabel } from '@/lib/compounds';
 
@@ -33,11 +33,11 @@ export default function AutocompleteDropdown({
   const compounds = suggestions.filter((s) => s.kind === 'compound');
   const areasAndGlossary = suggestions.filter((s) => s.kind === 'area' || s.kind === 'glossary');
 
-  const flat: Array<{ type: 'recent' | 'sug'; text?: string; sug?: Suggestion }> = [
+  const flat: Array<{ type: 'recent' | 'sug'; text?: string; sug?: Suggestion }> = useMemo(() => [
     ...recent.map((t) => ({ type: 'recent' as const, text: t })),
     ...compounds.map((s) => ({ type: 'sug' as const, sug: s })),
     ...areasAndGlossary.map((s) => ({ type: 'sug' as const, sug: s })),
-  ];
+  ], [recent, compounds, areasAndGlossary]);
 
   const [focusIdx, setFocusIdx] = useState(-1);
 

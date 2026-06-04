@@ -56,6 +56,7 @@ export default function ShelfLifeTracker({ compounds }: ShelfLifeTrackerProps) {
   }
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     loadLogs();
   }, []);
 

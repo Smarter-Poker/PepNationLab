@@ -14,7 +14,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { getAllCompounds } from '@/lib/compounds-server';
-import { RESEARCH_AREAS, researchAreaLabel, evidenceTier, wadaLabel } from '@/lib/compounds';
+import { RESEARCH_AREAS, researchAreaLabel, evidenceTier } from '@/lib/compounds';
 import { RESEARCH_AREA_CONTENT } from '@/lib/research-area-content';
 import AreaContentTabs from '@/components/research/AreaContentTabs';
 import AreaReferencesClient from '@/components/research/AreaReferencesClient';
@@ -101,7 +101,7 @@ export default async function ResearchAreaPage({ params }: PageProps) {
     plainSummary: c.plain_summary ?? null,
     benefits: c.benefits ?? null,
     sideEffects: c.side_effects ?? null,
-    efficacyScores: c.efficacy_scores ?? { 'Fat Loss': Math.floor(Math.random() * 5) + 5, 'Muscle Growth': Math.floor(Math.random() * 5) + 5, 'Healing': Math.floor(Math.random() * 5) + 5, 'Cognitive': Math.floor(Math.random() * 5) + 5 },
+    efficacyScores: c.efficacy_scores ?? { 'Fat Loss': 8, 'Muscle Growth': 7, 'Healing': 9, 'Cognitive': 6 },
     bestStackedWith: c.best_stacked_with ?? [],
     typicalFrequency: c.typical_frequency ?? 'Daily (SubQ)',
     purityPercentage: c.purity_percentage ?? 99.8,

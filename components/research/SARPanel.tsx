@@ -28,7 +28,6 @@ export default function SARPanel({ compounds, baselineSlug }: Props) {
 
   const baseline = baselineSlug ? compounds.find((c) => c.slug === baselineSlug) : compounds[0];
   const baseMw = baseline?.molecular_weight_da ?? null;
-  const baseHl = baseline?.measured_half_life_hours ?? baseline?.predicted_half_life_hours ?? null;
 
   return (
     <div className="glass-panel" style={{ padding: 16, borderRadius: 12 }}>

@@ -19,7 +19,7 @@ export default function PatentTimeline({ patentStatus, patentExpiryYear }: Props
     );
   }
 
-  let startYear = currentYear - 5;
+  const startYear = currentYear - 5;
   let endYear = expiry ? Math.max(expiry + 2, currentYear + 2) : currentYear + 10;
   if (endYear - startYear < 6) endYear = startYear + 6;
 

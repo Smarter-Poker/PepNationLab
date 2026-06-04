@@ -711,7 +711,7 @@ export default function CompareTool({
                   <th className="print-th" style={{ ...labelCellStyle, textAlign: 'left', width: '20%', background: '#162230', zIndex: 30 }} scope="col">
                     Attribute
                   </th>
-                  {displayedSelected.map((c, idx) => {
+                  {displayedSelected.map((c) => {
                     const originalIndex = selected.findIndex(x => x.slug === c.slug);
                     const color = colors[originalIndex % colors.length];
                     

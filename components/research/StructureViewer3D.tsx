@@ -39,6 +39,7 @@ export default function StructureViewer3D({ pdbId, alphafoldId, sequence, height
 
   useEffect(() => {
     if (!pdbId && !alphafoldId) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setStatus('empty');
       return;
     }

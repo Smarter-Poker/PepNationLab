@@ -3,7 +3,7 @@
 import { useMemo, useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
-import { Sparkles, ChevronRight, ShieldCheck, Printer, Brain, X, Info, Scale, Trash2, ArrowRight, ArrowLeft, Save, Search, Eye } from 'lucide-react';
+import { Sparkles, ChevronRight, ShieldCheck, Printer, X, Info, Scale, Trash2, ArrowRight, ArrowLeft, Save, Search, Eye } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { RESEARCH_AREAS } from '@/lib/compounds';
 import type {
@@ -70,10 +70,6 @@ function wadaText(status: string): string {
   return status;
 }
 
-function riskText(level: string): string {
-  return level.charAt(0).toUpperCase() + level.slice(1) + ' Risk';
-}
-
 function CircularScore({ score }: { score: number }) {
   const radius = 18;
   const circumference = 2 * Math.PI * radius;
@@ -129,7 +125,7 @@ function MatchFormInner() {
 
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState<MatchResult[] | null>(null);
-  const [excludedCompounds, setExcludedCompounds] = useState<any[]>([]);
+  const [excludedCompounds, setExcludedCompounds] = useState<unknown[]>([]);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [showCompare, setShowCompare] = useState(false);
 
@@ -157,7 +153,7 @@ function MatchFormInner() {
     router.replace(`${pathname}?${params.toString()}`, { scroll: false });
   }, [goal, evidenceComfort, wadaConstraint, riskTolerance, excludeInjectables, requireLongHalfLife, preference, budget, excludeSlugs, pathname, router]);
 
-  async function onSubmit(e?: React.FormEvent, overrides?: any) {
+  async function onSubmit(e?: React.FormEvent, overrides?: Record<string, unknown>) {
     if (e) e.preventDefault();
     setLoading(true);
     setErrorMsg(null);
@@ -174,7 +170,7 @@ function MatchFormInner() {
         return;
       }
       setResults(data.results ?? []);
-      setExcludedCompounds((data as any).excluded ?? []);
+      setExcludedCompounds((data as Record<string, unknown>).excluded as unknown[] ?? []);
     } catch {
       setErrorMsg('Network Error. Please Try Again.');
     } finally {
@@ -185,6 +181,7 @@ function MatchFormInner() {
   // Auto-run if deep linked
   useEffect(() => {
     if (searchParams.get('run') === 'true') {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       onSubmit();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -193,6 +190,7 @@ function MatchFormInner() {
   useEffect(() => {
     // Only re-run if we already have results (meaning we are on step 5)
     if (results !== null) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       onSubmit();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -237,7 +235,7 @@ function MatchFormInner() {
           excludeSlugs
         });
       }
-    } catch (err) {
+    } catch {
       setErrorMsg('Network error communicating with AI.');
     } finally {
       setAiLoading(false);
@@ -254,7 +252,7 @@ function MatchFormInner() {
       } else {
         toast.success('Match saved to your dashboard!');
       }
-    } catch (e) {
+    } catch {
       toast.error('Failed to save match.');
     } finally {
       setSaving(false);
@@ -394,7 +392,7 @@ function MatchFormInner() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
               <div>
                 <label className="block text-sm font-bold text-white mb-2">Format Preference</label>
-                <select value={preference} onChange={(e) => setPreference(e.target.value as any)} className="w-full max-w-md p-3 rounded-md border border-[#1D2D3E] bg-[#0F1923] text-white">
+                <select value={preference} onChange={(e) => setPreference(e.target.value as 'single' | 'stack' | 'either')} className="w-full max-w-md p-3 rounded-md border border-[#1D2D3E] bg-[#0F1923] text-white">
                   <option value="either">Any Format</option>
                   <option value="single">Single Compounds Only</option>
                   <option value="stack">Pre-Blended Stacks Only</option>
@@ -403,7 +401,7 @@ function MatchFormInner() {
 
               <div>
                 <label className="block text-sm font-bold text-white mb-2">Budget Sensitivity</label>
-                <select value={budget} onChange={(e) => setBudget(e.target.value as any)} className="w-full max-w-md p-3 rounded-md border border-[#1D2D3E] bg-[#0F1923] text-white">
+                <select value={budget} onChange={(e) => setBudget(e.target.value as 'conservative' | 'standard' | 'unlimited')} className="w-full max-w-md p-3 rounded-md border border-[#1D2D3E] bg-[#0F1923] text-white">
                   <option value="standard">Standard Budget</option>
                   <option value="conservative">Conservative (Cost-Sensitive)</option>
                   <option value="unlimited">Unlimited (Ignore Cost)</option>

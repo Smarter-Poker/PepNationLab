@@ -70,7 +70,9 @@ export default function GlobalSearchBar({
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const w = window as unknown as SpeechRecognitionWindow;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setVoiceSupported(!!(w.SpeechRecognition || w.webkitSpeechRecognition));
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setRecent(loadHistory());
   }, []);
 
@@ -112,6 +114,7 @@ export default function GlobalSearchBar({
     if (debounceRef.current) window.clearTimeout(debounceRef.current);
     const trimmed = q.trim();
     if (trimmed.length < 2) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setSuggestions([]);
       return;
     }
