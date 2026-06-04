@@ -229,6 +229,25 @@ function pickDefaultVariant(variants: ProductItem[]): string {
   return variants[variants.length - 1]?.id ?? variants[0]?.id ?? '';
 }
 
+const getEditDistance = (a: string, b: string) => {
+  if (a.length === 0) return b.length;
+  if (b.length === 0) return a.length;
+  const matrix = Array.from({ length: a.length + 1 }, () => new Array(b.length + 1).fill(0));
+  for (let i = 0; i <= a.length; i++) matrix[i][0] = i;
+  for (let j = 0; j <= b.length; j++) matrix[0][j] = j;
+  for (let i = 1; i <= a.length; i++) {
+    for (let j = 1; j <= b.length; j++) {
+      const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+      matrix[i][j] = Math.min(
+        matrix[i - 1][j] + 1,
+        matrix[i][j - 1] + 1,
+        matrix[i - 1][j - 1] + cost
+      );
+    }
+  }
+  return matrix[a.length][b.length];
+};
+
 export default function AgentStorefrontGrid({
   products,
   inventoryMap,
@@ -744,6 +763,7 @@ export default function AgentStorefrontGrid({
 
       let totalScore = 0;
       let allTokensMatched = true;
+      let primaryReason: string | undefined = undefined;
 
       for (const rawToken of rawTokens) {
         // Generate singular/plural variants for basic stemming
@@ -761,9 +781,19 @@ export default function AgentStorefrontGrid({
         }
 
         let maxTokenScore = 0;
+        let tokenReason: string | undefined = undefined;
 
         for (const token of variants) {
           let currentVariantScore = 0;
+          let currentReason: string | undefined = undefined;
+
+          const recordMatch = (score: number, reasonText: string) => {
+            if (score > currentVariantScore) {
+              currentVariantScore = score;
+              currentReason = reasonText;
+            }
+          };
+
           const rawTokenAlpha = token.replace(/[^a-z0-9]/g, '');
           const matchesRaw = (src: string | null | undefined) => {
             if (!src || !rawTokenAlpha) return false;
@@ -771,39 +801,59 @@ export default function AgentStorefrontGrid({
           };
 
           // Exact or strong matches
-          if (g.name.toLowerCase() === token) currentVariantScore += 500;
-          else if (g.name.toLowerCase().includes(token)) currentVariantScore += 100;
-          else if (matchesRaw(g.name)) currentVariantScore += 50;
+          if (g.name.toLowerCase() === token) recordMatch(500, `Matched Product Name`);
+          else if (g.name.toLowerCase().includes(token)) recordMatch(100, `Matched in Product Name`);
+          else if (matchesRaw(g.name)) recordMatch(50, `Matched in Product Name`);
           
-          if (g.category.toLowerCase().includes(token)) currentVariantScore += 50;
-          if (g.desc.toLowerCase().includes(token)) currentVariantScore += 10;
-          else if (matchesRaw(g.desc)) currentVariantScore += 5;
+          if (g.category.toLowerCase().includes(token)) recordMatch(50, `Category: ${g.category}`);
+          if (g.desc.toLowerCase().includes(token)) recordMatch(10, `Found in Description`);
+          else if (matchesRaw(g.desc)) recordMatch(5, `Found in Description`);
 
           if (compoundsBySlug && g.compoundSlug) {
             const c = compoundsBySlug[g.compoundSlug];
             if (c) {
-              if (c.display_name.toLowerCase() === token) currentVariantScore += 500;
-              else if (c.display_name.toLowerCase().includes(token)) currentVariantScore += 100;
-              else if (matchesRaw(c.display_name)) currentVariantScore += 50;
+              if (c.display_name.toLowerCase() === token) recordMatch(500, `Matched Compound Name`);
+              else if (c.display_name.toLowerCase().includes(token)) recordMatch(100, `Matched Compound Name`);
+              else if (matchesRaw(c.display_name)) recordMatch(50, `Matched Compound Name`);
 
-              if (c.aliases?.some(a => a.toLowerCase() === token)) currentVariantScore += 400;
-              else if (c.aliases?.some(a => a.toLowerCase().includes(token))) currentVariantScore += 80;
-              else if (c.aliases?.some(a => matchesRaw(a))) currentVariantScore += 40;
+              if (c.aliases?.some(a => a.toLowerCase() === token)) recordMatch(400, `Also Known As: ${c.aliases.find(a => a.toLowerCase() === token)}`);
+              else if (c.aliases?.some(a => a.toLowerCase().includes(token))) recordMatch(80, `Matched Alias`);
+              else if (c.aliases?.some(a => matchesRaw(a))) recordMatch(40, `Matched Alias`);
 
-              if (c.studied_for?.some(s => s.toLowerCase().includes(token))) currentVariantScore += 50;
-              if (c.research_areas?.some(r => r.toLowerCase().includes(token))) currentVariantScore += 50;
-              if (c.benefits?.toLowerCase().includes(token)) currentVariantScore += 50;
+              if (c.studied_for?.some(s => s.toLowerCase().includes(token))) recordMatch(50, `Studied For: ${c.studied_for.find(s => s.toLowerCase().includes(token))}`);
+              if (c.research_areas?.some(r => r.toLowerCase().includes(token))) recordMatch(50, `Research Area: ${c.research_areas.find(r => r.toLowerCase().includes(token))}`);
+              if (c.benefits?.toLowerCase().includes(token)) recordMatch(50, `Associated Benefit`);
               
-              if (c.compound_class?.toLowerCase().includes(token)) currentVariantScore += 30;
-              if (c.molecular_target?.toLowerCase().includes(token)) currentVariantScore += 30;
+              if (c.compound_class?.toLowerCase().includes(token)) recordMatch(30, `Compound Class: ${c.compound_class}`);
+              if (c.molecular_target?.toLowerCase().includes(token)) recordMatch(30, `Target: ${c.molecular_target}`);
 
-              if (c.mechanism?.toLowerCase().includes(token)) currentVariantScore += 10;
-              if (c.plain_summary?.toLowerCase().includes(token)) currentVariantScore += 10;
+              if (c.mechanism?.toLowerCase().includes(token)) recordMatch(10, `Matched Mechanism of Action`);
+              if (c.plain_summary?.toLowerCase().includes(token)) recordMatch(10, `Matched Summary`);
             }
           }
           
+          // Levenshtein Fallback for Typo Tolerance
+          if (currentVariantScore === 0 && rawToken.length >= 4) {
+            const checkLev = (str: string, scoreVal: number, reason: string) => {
+               const words = str.toLowerCase().split(/\s+/);
+               for (const w of words) {
+                  if (Math.abs(w.length - rawToken.length) <= 2) {
+                     if (getEditDistance(w, rawToken) <= 1) {
+                        recordMatch(scoreVal, reason);
+                     }
+                  }
+               }
+            };
+            checkLev(g.name, 40, `Did you mean ${g.name}?`);
+            if (compoundsBySlug && g.compoundSlug) {
+               const c = compoundsBySlug[g.compoundSlug];
+               if (c) checkLev(c.display_name, 40, `Did you mean ${c.display_name}?`);
+            }
+          }
+
           if (currentVariantScore > maxTokenScore) {
             maxTokenScore = currentVariantScore;
+            tokenReason = currentReason;
           }
         }
 
@@ -811,18 +861,28 @@ export default function AgentStorefrontGrid({
           allTokensMatched = false;
         } else {
           totalScore += maxTokenScore;
+          if (!primaryReason && tokenReason) {
+             // Only display semantic/alias/typo reasons, otherwise it's just repeating the obvious name
+             if (tokenReason.includes('Did you mean') || tokenReason.includes('Also Known As') || tokenReason.includes('Studied For') || tokenReason.includes('Research Area') || tokenReason.includes('Class') || tokenReason.includes('Target')) {
+                primaryReason = tokenReason;
+             }
+          }
         }
       }
 
       // Add a bonus for exact full query match against name or alias
-      if (g.name.toLowerCase() === q) totalScore += 2000;
+      if (g.name.toLowerCase() === q) { totalScore += 2000; primaryReason = undefined; }
       if (compoundsBySlug && g.compoundSlug) {
         const c = compoundsBySlug[g.compoundSlug];
-        if (c?.display_name.toLowerCase() === q) totalScore += 2000;
-        if (c?.aliases?.some(a => a.toLowerCase() === q)) totalScore += 2000;
+        if (c?.display_name.toLowerCase() === q) { totalScore += 2000; primaryReason = undefined; }
+        if (c?.aliases?.some(a => a.toLowerCase() === q)) {
+           totalScore += 2000; 
+           const matchAlias = c.aliases.find(a => a.toLowerCase() === q);
+           if (matchAlias) primaryReason = `Also Known As: ${matchAlias}`;
+        }
       }
 
-      return { matches: allTokensMatched, score: totalScore };
+      return { matches: allTokensMatched, score: totalScore, reason: primaryReason };
     },
     [deferredSearch, compoundsBySlug]
   );
@@ -918,6 +978,17 @@ export default function AgentStorefrontGrid({
     }
     return result.map(r => r.g);
   }, [grouped, matchesCategory, matchesArea, matchesSearch, matchesPrice, matchesWeight, matchesInStock, matchesBulk, sortBy, deferredSearch]);
+
+  useEffect(() => {
+    if (filteredProducts.length === 0 && deferredSearch.trim().length > 2) {
+       fetch('/api/analytics/missed-search', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ query: deferredSearch.trim() })
+       }).catch(() => {});
+    }
+  }, [filteredProducts.length, deferredSearch]);
+
 
   const categoryCounts = useMemo<Record<string, number>>(() => {
     const base = grouped.filter(g =>
@@ -1567,8 +1638,20 @@ export default function AgentStorefrontGrid({
               <div style={{ padding: 'var(--space-5)', flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
                 {(() => {
                   const { main, subtitle } = splitProductName(toTitleCase(group.name));
+                  const searchReason = (group as any)._search?.reason;
                   return (
                     <div style={{ textAlign: 'center', marginBottom: 'var(--space-2)' }}>
+                      {searchReason && (
+                        <div style={{
+                          display: 'inline-flex', alignItems: 'center', gap: 6,
+                          background: 'rgba(235,178,54,0.1)', border: '1px solid rgba(235,178,54,0.3)',
+                          color: '#EBB236', fontSize: '0.65rem', fontWeight: 700, padding: '3px 8px',
+                          borderRadius: 'var(--radius-full)', textTransform: 'uppercase',
+                          marginBottom: 'var(--space-2)', letterSpacing: '0.03em'
+                        }}>
+                          <Sparkles size={10} /> {searchReason}
+                        </div>
+                      )}
                       <h4 style={{
                         fontFamily: 'var(--font-brand)',
                         fontSize: '1.15rem', color: 'var(--white)', letterSpacing: '0.02em', lineHeight: 1.2,
