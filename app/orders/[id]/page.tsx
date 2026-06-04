@@ -1,6 +1,8 @@
 import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
+import { formatCurrency } from '@/lib/utils';
+import IframeLink from '@/components/ui/IframeLink';
 import { createClient, createServiceClient } from '@/lib/supabase/server';
 import PageShell from '@/components/PageShell';
 import PaymentProofUpload from '@/components/PaymentProofUpload';
@@ -598,14 +600,13 @@ export default async function OrderDetailPage(
                 </div>
               )}
               {order.label_url && (
-                <a
+                <IframeLink
                   href={order.label_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
                   className="btn btn-secondary"
                   style={{ display: 'inline-flex', fontSize: '0.85rem' }}
                 >
                   View Shipping Label
+                </IframeLink>
                 </a>
               )}
             </div>
@@ -645,10 +646,8 @@ export default async function OrderDetailPage(
                     </div>
                   </div>
                   {it.coa_url ? (
-                    <a
+                    <IframeLink
                       href={it.coa_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
                       className="btn btn-secondary btn-sm"
                       style={{ fontSize: '0.78rem' }}
                     >

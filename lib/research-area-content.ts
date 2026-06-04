@@ -210,6 +210,23 @@ export const RESEARCH_AREA_CONTENT: Record<string, AreaContent> = {
         url: 'https://pubmed.ncbi.nlm.nih.gov/25738459/',
       },
     ],
+    diagram: `graph TD;
+    GLP1[Semaglutide / GLP-1] --> Pancreas[Pancreas: ↑ Insulin, ↓ Glucagon];
+    GLP1 --> Brain[Brain: ↓ Appetite / Satiety];
+    GLP1 --> Stomach[Stomach: ↓ Gastric Emptying];
+    GIP[Tirzepatide / GIP+GLP-1] --> GLP1;
+    GIP --> Adipose[Adipose: ↑ Lipid Buffering];
+    MOTS[MOTS-c] --> AMPK[AMPK Activation];
+    AICAR[AICAR] --> AMPK;
+    AMPK --> Mitochondria[↑ Mitochondrial Biogenesis];
+    AMPK --> Muscle[Muscle: ↑ Glucose Uptake];
+    style Pancreas fill:#2D3748,stroke:#00C4BC;
+    style Brain fill:#2D3748,stroke:#00C4BC;
+    style Stomach fill:#2D3748,stroke:#00C4BC;
+    style Adipose fill:#2D3748,stroke:#00C4BC;
+    style Mitochondria fill:#2D3748,stroke:#00C4BC;
+    style Muscle fill:#2D3748,stroke:#00C4BC;
+    `
   },
 
   longevity: {

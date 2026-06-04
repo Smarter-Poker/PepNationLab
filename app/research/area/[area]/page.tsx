@@ -22,6 +22,7 @@ import type { AreaTab } from '@/components/research/AreaContentTabs';
 import AreaProductGrid from '@/components/research/AreaProductGrid';
 import type { CompoundInfo } from '@/components/research/AreaProductGrid';
 import { getAreaProducts } from '@/lib/area-products-server';
+import MermaidDiagram from '@/components/research/MermaidDiagram';
 
 type PageProps = { params: Promise<{ area: string }> };
 
@@ -121,6 +122,12 @@ export default async function ResearchAreaPage({ params }: PageProps) {
           <section className="glass-panel" style={{ padding: 'var(--space-5, 24px)', borderRadius: 'var(--radius-lg, 12px)' }}>
             <h2 style={sectionHeadStyle}>Overview</h2>
             <p style={bodyTextStyle}>{content.overview}</p>
+            {content.diagram && (
+              <div style={{ marginTop: '24px' }}>
+                <h3 style={{ fontSize: '1rem', color: '#A8B4C0', marginBottom: '12px' }}>Biological Pathways</h3>
+                <MermaidDiagram chart={content.diagram} />
+              </div>
+            )}
           </section>
 
           {/* Featured Compounds In This Area */}
