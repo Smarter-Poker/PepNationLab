@@ -206,15 +206,17 @@ export default function AreaProductGrid({
   }, []);
 
   /* ── Enrich & sort ── */
-  const enriched = useMemo(() => {
-    // Map agent products by compound slug
-    const productsByCompound = new Map<string, AreaProduct[]>();
+  const productsByCompound = useMemo(() => {
+    const map = new Map<string, AreaProduct[]>();
     products.forEach(p => {
       if (!p.compoundSlug) return;
-      if (!productsByCompound.has(p.compoundSlug)) productsByCompound.set(p.compoundSlug, []);
-      productsByCompound.get(p.compoundSlug)!.push(p);
+      if (!map.has(p.compoundSlug)) map.set(p.compoundSlug, []);
+      map.get(p.compoundSlug)!.push(p);
     });
+    return map;
+  }, [products]);
 
+  const enriched = useMemo(() => {
     return compounds.map(c => {
       const agentProducts = productsByCompound.get(c.slug) || [];
       const primary = agentProducts[0]; // Just use the first variant if they carry it
@@ -236,7 +238,7 @@ export default function AreaProductGrid({
         sku: primary?.sku || '',
       };
     });
-  }, [products, compounds]);
+  }, [productsByCompound, compounds]);
 
   const sorted = useMemo(() => {
     const arr = [...enriched];
@@ -277,8 +279,47 @@ export default function AreaProductGrid({
 
   /* ── Comparison data ── */
   const compareItems = useMemo(() => {
-    return sorted.filter(p => compareSet.has(p.compoundSlug));
-  }, [sorted, compareSet]);
+    const selectedCompounds = sorted.filter(p => compareSet.has(p.compoundSlug));
+    if (selectedCompounds.length === 0) return [];
+
+    // The first item added to comparison dictates the target mg
+    const referenceSlug = Array.from(compareSet)[0];
+    const referenceItem = selectedCompounds.find(c => c.compoundSlug === referenceSlug);
+    const targetMg = referenceItem?.unitSize || 10;
+
+    return selectedCompounds.map(base => {
+      const allVariants = productsByCompound.get(base.compoundSlug) || [];
+      if (allVariants.length === 0) return base; // not carried
+
+      let closestVariant = allVariants[0];
+      let minDiff = Infinity;
+      for (const v of allVariants) {
+        if (v.unitSize != null) {
+          const diff = Math.abs(v.unitSize - targetMg);
+          if (diff < minDiff) {
+            minDiff = diff;
+            closestVariant = v;
+          }
+        }
+      }
+
+      return {
+        ...base,
+        productName: closestVariant.name,
+        imageUrl: closestVariant.imageUrl || base.imageUrl,
+        productId: closestVariant.masterId,
+        agentProductId: closestVariant.agentProductId,
+        retailPrice: closestVariant.retailPrice,
+        costPrice: closestVariant.costPrice,
+        isOnSale: closestVariant.isOnSale,
+        salePrice: closestVariant.salePrice,
+        unitSize: closestVariant.unitSize,
+        unitMeasure: closestVariant.unitMeasure,
+        inventoryCount: closestVariant.inventoryCount,
+        sku: closestVariant.sku,
+      };
+    });
+  }, [sorted, compareSet, productsByCompound]);
 
   const bestValueSlug = useMemo(() => {
     if (compareItems.length < 2) return null;
@@ -299,12 +340,6 @@ export default function AreaProductGrid({
     return max > 0 ? slug : null;
   }, [compareItems]);
 
-  /* ── Add all comparison items to cart ── */
-  const addAllCompareToCart = useCallback(() => {
-    compareItems.forEach(p => addToCart(p));
-    setShowCompare(false);
-    showToast(`${compareItems.length} Items Added To Cart`);
-  }, [compareItems, addToCart, showToast]);
 
   /* ─── Not authenticated gate ─── */
   if (!isAuthenticated) {
@@ -983,14 +1018,13 @@ export default function AreaProductGrid({
             onClick={e => e.stopPropagation()}
             style={{
               width: '100%',
-              maxWidth: 900,
-              maxHeight: '92dvh',
+              height: '100dvh',
               overflowY: 'auto',
               WebkitOverflowScrolling: 'touch',
               background: 'linear-gradient(180deg, #0F1923 0%, #0A1018 100%)',
-              border: '1px solid rgba(255,255,255,0.1)',
-              borderRadius: '22px 22px 0 0',
-              animation: 'slideUp 0.3s ease',
+              animation: 'fadeIn 0.3s ease',
+              display: 'flex',
+              flexDirection: 'column',
             }}
           >
             {/* Modal header */}
@@ -1008,7 +1042,7 @@ export default function AreaProductGrid({
             }}>
               <h2 style={{
                 color: '#FFFFFF',
-                fontSize: '1.2rem',
+                fontSize: '1.4rem',
                 fontWeight: 800,
                 margin: 0,
               }}>
@@ -1038,7 +1072,7 @@ export default function AreaProductGrid({
             </div>
 
             {/* Comparison table */}
-            <div style={{ padding: '8px 12px 20px', overflowX: 'auto' }}>
+            <div style={{ padding: '24px 12px 40px', overflowX: 'auto', flex: 1 }}>
               <table style={{
                 width: '100%',
                 borderCollapse: 'separate',
@@ -1070,21 +1104,28 @@ export default function AreaProductGrid({
                       return (
                         <th key={p.productId} style={{
                           textAlign: 'center',
-                          padding: '12px 14px',
+                          padding: '16px 14px',
                           color: '#FFFFFF',
                           fontWeight: 700,
-                          fontSize: '0.85rem',
+                          fontSize: '1rem',
                           borderBottom: '1px solid rgba(255,255,255,0.06)',
-                          minWidth: 150,
+                          borderLeft: '1px solid rgba(255,255,255,0.06)',
+                          minWidth: 200,
+                          background: 'rgba(255,255,255,0.01)',
                         }}>
+                          {p.imageUrl && (
+                            <div style={{ marginBottom: 12, display: 'flex', justifyContent: 'center' }}>
+                              <img src={p.imageUrl} alt={p.productName} style={{ width: 80, height: 80, objectFit: 'contain', borderRadius: 8, background: '#fff' }} />
+                            </div>
+                          )}
                           <div>{toTitleCase(p.productName)}</div>
-                          <div style={{ display: 'flex', gap: 4, justifyContent: 'center', marginTop: 6 }}>
+                          <div style={{ display: 'flex', gap: 4, justifyContent: 'center', marginTop: 8 }}>
                             {isBestVal && (
                               <span style={{
                                 display: 'inline-block',
                                 padding: '2px 8px',
                                 borderRadius: 10,
-                                fontSize: '0.62rem',
+                                fontSize: '0.65rem',
                                 fontWeight: 700,
                                 background: 'rgba(0,196,188,0.15)',
                                 color: '#00C4BC',
@@ -1096,7 +1137,7 @@ export default function AreaProductGrid({
                                 display: 'inline-block',
                                 padding: '2px 8px',
                                 borderRadius: 10,
-                                fontSize: '0.62rem',
+                                fontSize: '0.65rem',
                                 fontWeight: 700,
                                 background: 'rgba(214,158,46,0.15)',
                                 color: '#D69E2E',
@@ -1115,16 +1156,26 @@ export default function AreaProductGrid({
                     {compareItems.map(p => {
                       const price = isStorefrontOwner && p.costPrice != null
                         ? p.costPrice : p.retailPrice;
+                      const pricePerMg = p.unitSize && p.unitSize > 0 ? price / p.unitSize : null;
                       return (
                         <td key={p.productId} style={compareTdStyle}>
-                          <span style={{ color: '#00C4BC', fontWeight: 700 }}>
-                            {formatPrice(price)}
-                          </span>
-                          {p.unitSize && (
-                            <span style={{ color: '#718096', fontSize: '0.75rem', marginLeft: 4 }}>
-                              / {p.unitSize}{p.unitMeasure || ''}
-                            </span>
-                          )}
+                          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
+                            <div>
+                              <span style={{ color: '#00C4BC', fontWeight: 800, fontSize: '1.05rem' }}>
+                                {formatPrice(price)}
+                              </span>
+                              {p.unitSize && (
+                                <span style={{ color: '#718096', fontSize: '0.8rem', marginLeft: 4 }}>
+                                  / {p.unitSize}{p.unitMeasure || ''}
+                                </span>
+                              )}
+                            </div>
+                            {pricePerMg != null && (
+                              <span style={{ color: '#A8B4C0', fontSize: '0.75rem', fontWeight: 600 }}>
+                                {formatPrice(pricePerMg)} / mg
+                              </span>
+                            )}
+                          </div>
                         </td>
                       );
                     })}
@@ -1140,7 +1191,7 @@ export default function AreaProductGrid({
                             display: 'inline-block',
                             padding: '3px 9px',
                             borderRadius: 16,
-                            fontSize: '0.72rem',
+                            fontSize: '0.75rem',
                             fontWeight: 700,
                             background: `${ti.color}20`,
                             color: ti.color,
@@ -1163,7 +1214,7 @@ export default function AreaProductGrid({
                         : '#A8B4C0';
                       return (
                         <td key={p.productId} style={compareTdStyle}>
-                          <span style={{ color, fontWeight: 600, textTransform: 'capitalize' }}>
+                          <span style={{ color, fontWeight: 700, textTransform: 'capitalize' }}>
                             {risk}
                           </span>
                         </td>
@@ -1175,7 +1226,7 @@ export default function AreaProductGrid({
                   <CompareRow label="Half-Life">
                     {compareItems.map(p => (
                       <td key={p.productId} style={compareTdStyle}>
-                        <span style={{ color: '#D0DAE4' }}>
+                        <span style={{ color: '#D0DAE4', fontWeight: 600 }}>
                           {p.compound?.halfLife || '—'}
                         </span>
                       </td>
@@ -1198,36 +1249,17 @@ export default function AreaProductGrid({
                   {/* Mechanism */}
                   <CompareRow label="Mechanism">
                     {compareItems.map(p => (
-                      <td key={p.productId} style={{ ...compareTdStyle, maxWidth: 180 }}>
+                      <td key={p.productId} style={{ ...compareTdStyle, maxWidth: 220 }}>
                         <span style={{
                           color: '#D0DAE4',
-                          fontSize: '0.78rem',
-                          lineHeight: 1.4,
+                          fontSize: '0.82rem',
+                          lineHeight: 1.5,
                           display: 'block',
                         }}>
                           {p.compound?.mechanism || '—'}
                         </span>
                       </td>
                     ))}
-                  </CompareRow>
-
-                  {/* WADA Status */}
-                  <CompareRow label="WADA Status">
-                    {compareItems.map(p => {
-                      const wada = p.compound?.wadaStatus ?? '—';
-                      const isProhibited = wada === 'prohibited';
-                      return (
-                        <td key={p.productId} style={compareTdStyle}>
-                          <span style={{
-                            color: isProhibited ? '#FC8181' : '#68D391',
-                            fontWeight: 600,
-                            textTransform: 'capitalize',
-                          }}>
-                            {wada === 'not_prohibited' ? 'Not Prohibited' : wada.replace(/_/g, ' ')}
-                          </span>
-                        </td>
-                      );
-                    })}
                   </CompareRow>
 
                   {/* Key Research Uses */}
@@ -1237,20 +1269,20 @@ export default function AreaProductGrid({
                         <div style={{
                           display: 'flex',
                           flexWrap: 'wrap',
-                          gap: 4,
+                          gap: 6,
                           justifyContent: 'center',
                         }}>
                           {(p.compound?.studiedFor ?? []).length > 0
                             ? p.compound!.studiedFor.slice(0, 4).map((use, i) => (
                               <span key={i} style={{
                                 display: 'inline-block',
-                                padding: '2px 8px',
+                                padding: '3px 10px',
                                 borderRadius: 8,
-                                fontSize: '0.68rem',
+                                fontSize: '0.72rem',
                                 fontWeight: 600,
                                 background: 'rgba(255,255,255,0.05)',
-                                color: '#A8B4C0',
-                                border: '1px solid rgba(255,255,255,0.06)',
+                                color: '#D0DAE4',
+                                border: '1px solid rgba(255,255,255,0.08)',
                               }}>
                                 {use}
                               </span>
@@ -1274,58 +1306,41 @@ export default function AreaProductGrid({
                       </td>
                     ))}
                   </CompareRow>
+
+                  {/* Action row */}
+                  <CompareRow label="">
+                    {compareItems.map(p => {
+                      const outOfStock = !p.agentProductId || p.inventoryCount === 0;
+                      return (
+                        <td key={p.productId} style={{ ...compareTdStyle, borderBottom: 'none', paddingTop: 24 }}>
+                          <button
+                            onClick={() => addToCart(p)}
+                            disabled={outOfStock}
+                            style={{
+                              width: '100%',
+                              maxWidth: 180,
+                              height: 44,
+                              background: outOfStock ? 'rgba(255,255,255,0.05)' : '#00C4BC',
+                              color: outOfStock ? '#718096' : '#000',
+                              border: 'none',
+                              borderRadius: 10,
+                              fontWeight: 800,
+                              fontSize: '0.88rem',
+                              cursor: outOfStock ? 'not-allowed' : 'pointer',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              transition: 'all 0.2s',
+                            }}
+                          >
+                            {outOfStock ? 'Out Of Stock' : !p.agentProductId ? 'Not Carried' : 'Add To Cart'}
+                          </button>
+                        </td>
+                      );
+                    })}
+                  </CompareRow>
                 </tbody>
               </table>
-            </div>
-
-            {/* Modal footer */}
-            <div style={{
-              padding: '16px 24px',
-              paddingBottom: 'calc(20px + env(safe-area-inset-bottom, 0px))',
-              borderTop: '1px solid rgba(255,255,255,0.06)',
-              display: 'flex',
-              gap: 12,
-              position: 'sticky',
-              bottom: 0,
-              background: 'linear-gradient(to top, #0A1018 60%, rgba(10,16,24,0.95))',
-            }}>
-              <button
-                onClick={() => setShowCompare(false)}
-                style={{
-                  height: 48,
-                  padding: '0 20px',
-                  background: 'rgba(255,255,255,0.06)',
-                  border: '1px solid rgba(255,255,255,0.1)',
-                  borderRadius: 12,
-                  color: '#D0DAE4',
-                  fontWeight: 700,
-                  fontSize: '0.88rem',
-                  cursor: 'pointer',
-                  whiteSpace: 'nowrap',
-                }}
-              >
-                Close
-              </button>
-              <button
-                onClick={addAllCompareToCart}
-                style={{
-                  flex: 1,
-                  height: 48,
-                  background: '#00C4BC',
-                  color: '#000',
-                  border: 'none',
-                  borderRadius: 12,
-                  fontWeight: 800,
-                  fontSize: '0.92rem',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: 6,
-                }}
-              >
-                Add All To Cart ({compareItems.length})
-              </button>
             </div>
           </div>
         </div>
@@ -1338,19 +1353,21 @@ export default function AreaProductGrid({
 
 const compareTdStyle: React.CSSProperties = {
   textAlign: 'center',
-  padding: '12px 14px',
+  padding: '16px 14px',
   borderBottom: '1px solid rgba(255,255,255,0.04)',
+  borderLeft: '1px solid rgba(255,255,255,0.03)',
   color: '#D0DAE4',
   verticalAlign: 'middle',
+  background: 'rgba(255,255,255,0.01)',
 };
 
 const compareLabelTdStyle: React.CSSProperties = {
   textAlign: 'left',
-  padding: '12px 14px',
+  padding: '16px 14px',
   borderBottom: '1px solid rgba(255,255,255,0.04)',
   color: '#A8B4C0',
-  fontWeight: 600,
-  fontSize: '0.78rem',
+  fontWeight: 700,
+  fontSize: '0.82rem',
   whiteSpace: 'nowrap',
   position: 'sticky' as const,
   left: 0,

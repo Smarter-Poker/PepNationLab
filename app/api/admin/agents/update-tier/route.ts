@@ -51,9 +51,11 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ error: 'Cannot change tier of an admin account' }, { status: 403 });
   }
 
+  const locked_tier_level = tier ? parseInt(tier.replace('tier_', ''), 10) : null;
+
   const { error } = await supabase
     .from('profiles')
-    .update({ tier: tier as AgentTier })
+    .update({ tier: tier as AgentTier, locked_tier_level })
     .eq('id', agentId);
 
   if (error) {
