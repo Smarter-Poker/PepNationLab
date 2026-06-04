@@ -9,6 +9,8 @@
 import Link from 'next/link';
 import type { Compound } from '@/lib/compounds';
 import { evidenceTier, wadaLabel } from '@/lib/compounds';
+import PinToCompareButton from '@/components/research/PinToCompareButton';
+import ResearchCartButton from '@/components/research/ResearchCartButton';
 
 export default function CompoundKnowledgePanel({
   compound,
@@ -95,6 +97,21 @@ export default function CompoundKnowledgePanel({
           </div>
         </div>
       )}
+
+      <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>
+        <div style={{ flex: 1 }}>
+          <PinToCompareButton
+            compoundSlug={compound.slug}
+            compoundName={compound.display_name}
+            evidenceTierKey={compound.evidence_tier}
+            size="sm"
+          />
+        </div>
+        <ResearchCartButton
+          productName={compound.display_name}
+          size="sm"
+        />
+      </div>
 
       <Link
         href={`/research/${compound.slug}`}

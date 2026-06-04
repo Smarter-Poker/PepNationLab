@@ -3,6 +3,7 @@
 import React, { useEffect } from 'react';
 import Navbar from '@/components/Navbar';
 import { vibrateLight, initHaptics } from '@/lib/messenger/haptics';
+import StorefrontCompareDrawer from '@/components/storefront/StorefrontCompareDrawer';
 
 export default function ResearchLayout({ children }: { children: React.ReactNode }) {
   // Global haptics for all clickables in the Research section
@@ -41,6 +42,7 @@ export default function ResearchLayout({ children }: { children: React.ReactNode
       <div style={{ paddingTop: '60px', minHeight: '100vh', backgroundColor: '#05070a' }}>
         {children}
       </div>
+      <StorefrontCompareDrawer primaryColor="#00C4BC" />
     </>
   );
 }

@@ -25,6 +25,8 @@ import ReceptorAffinityHeatmap from '@/components/research/ReceptorAffinityHeatm
 import SaveToCollectionButton from '@/components/research/SaveToCollectionButton';
 import AddToReadingQueueButton from '@/components/research/AddToReadingQueueButton';
 import SubscribeButton from '@/components/research/SubscribeButton';
+import PinToCompareButton from '@/components/research/PinToCompareButton';
+import ResearchCartButton from '@/components/research/ResearchCartButton';
 
 export const dynamic = 'force-dynamic';
 
@@ -121,6 +123,14 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
         <SaveToCollectionButton compoundSlug={compound.slug} compoundName={compound.display_name} />
         <AddToReadingQueueButton compoundSlug={compound.slug} compoundName={compound.display_name} />
         <SubscribeButton compoundSlug={compound.slug} compoundName={compound.display_name} />
+        <PinToCompareButton
+          compoundSlug={compound.slug}
+          compoundName={compound.display_name}
+          evidenceTierKey={compound.evidence_tier}
+        />
+        <ResearchCartButton
+          productName={compound.display_name}
+        />
       </div>
 
       {/* Visualization rail — each component fails gracefully when its data is missing. */}

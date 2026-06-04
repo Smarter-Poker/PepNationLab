@@ -1657,18 +1657,18 @@ export default function AgentStorefrontGrid({
           marginBottom: '4px',
         }}>
           {([
-            { label: '🔥 Fat Loss',     query: 'fat loss' },
-            { label: '💪 Muscle & GH',  query: 'muscle growth hormone' },
-            { label: '🧠 Brain & Neuro',query: 'cognitive nootropic brain' },
-            { label: '🩹 Healing',      query: 'healing repair recovery' },
-            { label: '🌿 Longevity',    query: 'longevity anti-aging telomere' },
-            { label: '💤 Sleep',        query: 'sleep insomnia circadian' },
-            { label: '🦠 Immune',       query: 'immune immunity antimicrobial' },
-            { label: '🫀 Gut Health',   query: 'gut gastrointestinal leaky gut' },
-            { label: '💉 GLP-1',        query: 'glp-1 semaglutide tirzepatide weight loss' },
-            { label: '🔬 Mitochondria', query: 'mitochondria nad+ energy cellular' },
+            { label: '🔥 Fat Loss',     query: 'fatloss lipolysis visceral' },
+            { label: '💪 Muscle & GH',  query: 'muscle growthhormone hypertrophy anabolic' },
+            { label: '🧠 Brain & Neuro',query: 'cognitive nootropic brain bdnf neuroprotect' },
+            { label: '🩹 Healing',      query: 'healing repair tendon wound' },
+            { label: '🌿 Longevity',    query: 'longevity antiaging telomere senolytic' },
+            { label: '💤 Sleep',        query: 'sleep insomnia circadian rem' },
+            { label: '🦠 Immune',       query: 'immune immunity antimicrobial tcell' },
+            { label: '🫀 Gut Health',   query: 'gut gastrointestinal leakygut guthealth' },
+            { label: '💉 GLP-1',        query: 'glp1 semaglutide tirzepatide weightloss' },
+            { label: '🔬 Mitochondria', query: 'mitochondrial nad+ ampk atp' },
             { label: '❤️ Sexual Health',query: 'sexual libido erectile fertility' },
-            { label: '✨ Skin & Hair',  query: 'skin collagen hair anti-aging' },
+            { label: '✨ Skin & Hair',  query: 'skin collagen hairloss antiaging' },
           ] as { label: string; query: string }[]).map(({ label, query }) => (
             <button
               key={label}
@@ -1705,6 +1705,7 @@ export default function AgentStorefrontGrid({
           ))}
         </div>
       )}
+
 
       {bundles && bundles.length > 0 && (
         <div style={{ marginTop: 0 }}>
@@ -1822,13 +1823,13 @@ export default function AgentStorefrontGrid({
                 </p>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', justifyContent: 'center', marginBottom: '24px' }}>
                   {[
-                    { label: '🔥 Fat Loss', q: 'fat loss lipolysis' },
-                    { label: '💪 Muscle Growth', q: 'muscle anabolic growth hormone' },
-                    { label: '🧠 Brain / Nootropic', q: 'cognitive brain nootropic focus' },
-                    { label: '🩹 Tissue Healing', q: 'healing repair tendon gut' },
-                    { label: '🌿 Anti-Aging', q: 'anti-aging longevity telomere senolytic' },
-                    { label: '💉 GLP-1 / Weight', q: 'semaglutide glp-1 weight loss' },
-                    { label: '🦠 Immune Support', q: 'immune thymosin antimicrobial' },
+                    { label: '🔥 Fat Loss', q: 'fatloss lipolysis visceral' },
+                    { label: '💪 Muscle Growth', q: 'muscle anabolic growthhormone hypertrophy' },
+                    { label: '🧠 Brain / Nootropic', q: 'cognitive nootropic brain neuroprotect' },
+                    { label: '🩹 Tissue Healing', q: 'healing repair tendon wound' },
+                    { label: '🌿 Anti-Aging', q: 'antiaging longevity telomere senolytic' },
+                    { label: '💉 GLP-1 / Weight', q: 'glp1 semaglutide weightloss' },
+                    { label: '🦠 Immune Support', q: 'immune antimicrobial tcell thymosin' },
                     { label: '❤️ Sexual Health', q: 'sexual libido erectile fertility' },
                   ].map(({ label, q }) => (
                     <button
@@ -1859,6 +1860,7 @@ export default function AgentStorefrontGrid({
                     </button>
                   ))}
                 </div>
+
               </>
             ) : (
               <>

@@ -18,6 +18,9 @@ function coerceCompound(row: Record<string, unknown>): Compound {
     sources: (row.sources as string[]) ?? [],
     stack_components: (row.stack_components as string[]) ?? [],
     risk_reasons: (row.risk_reasons as string[]) ?? [],
+    // Phase 2/3 fields: ensure safe defaults if DB returns null
+    best_stacked_with: (row.best_stacked_with as string[] | null) ?? [],
+    efficacy_scores: (row.efficacy_scores as Record<string, number> | null) ?? {},
   };
 }
 
@@ -40,28 +43,39 @@ export const getAllCompounds = unstable_cache(
  * display to embed the full monograph in each product detail without an extra
  * client round-trip. Empty / missing slugs are ignored.
  */
-export const getCompoundsBySlugs = unstable_cache(
-  async (slugs: Array<string | null | undefined>): Promise<Record<string, Compound>> => {
-    const unique = Array.from(
-      new Set(slugs.filter((s): s is string => typeof s === 'string' && s.length > 0))
-    );
-    if (unique.length === 0) return {};
-    const supabase = await createServiceClient();
-    const { data, error } = await supabase
-      .from('compounds')
-      .select('*')
-      .in('slug', unique);
-    if (error || !data) return {};
-    const map: Record<string, Compound> = {};
-    for (const row of data) {
-      const c = coerceCompound(row as Record<string, unknown>);
-      map[c.slug] = c;
-    }
-    return map;
-  },
-  ['research-compounds-by-slugs'],
-  { revalidate: 3600, tags: ['compounds'] }
-);
+export async function getCompoundsBySlugs(
+  slugs: Array<string | null | undefined>
+): Promise<Record<string, Compound>> {
+  const unique = Array.from(
+    new Set(slugs.filter((s): s is string => typeof s === 'string' && s.length > 0))
+  ).sort(); // sort for stable cache key
+  if (unique.length === 0) return {};
+
+  // Build a per-slug-set cache key so different storefronts with different
+  // product lists never share the same cached entry.
+  const cacheKey = `compounds-by-slugs:${unique.join(',')}`;
+
+  const fetcher = unstable_cache(
+    async () => {
+      const supabase = await createServiceClient();
+      const { data, error } = await supabase
+        .from('compounds')
+        .select('*')
+        .in('slug', unique);
+      if (error || !data) return {} as Record<string, Compound>;
+      const map: Record<string, Compound> = {};
+      for (const row of data) {
+        const c = coerceCompound(row as Record<string, unknown>);
+        map[c.slug] = c;
+      }
+      return map;
+    },
+    [cacheKey],
+    { revalidate: 3600, tags: ['compounds'] }
+  );
+
+  return fetcher();
+}
 
 export const getCompound = unstable_cache(
   async (slug: string): Promise<Compound | null> => {

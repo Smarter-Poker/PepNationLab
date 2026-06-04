@@ -52,6 +52,7 @@ interface Researcher {
   note?: string; note_updated_at?: string | null;
   reminders?: { id: string; title: string; remind_at: string }[];
   account_type?: string | null;
+  auto_approve_orders?: boolean;
 }
 
 interface Kpi { value: number; spark: number[]; delta_pct: number; label?: string; }

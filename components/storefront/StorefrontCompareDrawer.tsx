@@ -277,12 +277,13 @@ function generateProsConsPinned(p: PinnedItem, compoundsBySlug: Record<string, C
 }
 
 export default function StorefrontCompareDrawer({ 
-  primaryColor,
-  compoundsBySlug = {}
+  primaryColor = '#00C4BC',
+  compoundsBySlug: initialCompoundsBySlug = {}
 }: { 
-  primaryColor: string;
+  primaryColor?: string;
   compoundsBySlug?: Record<string, Compound>;
 }) {
+  const [compoundsBySlug, setCompoundsBySlug] = useState<Record<string, Compound>>(initialCompoundsBySlug);
   const [pinned, setPinned] = useState<PinnedItem[]>([]);
   const [mounted, setMounted] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
@@ -302,6 +303,29 @@ export default function StorefrontCompareDrawer({
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
+
+  useEffect(() => {
+    if (initialCompoundsBySlug && Object.keys(initialCompoundsBySlug).length > 0) {
+      setCompoundsBySlug(initialCompoundsBySlug);
+    }
+  }, [initialCompoundsBySlug]);
+
+  useEffect(() => {
+    if (Object.keys(compoundsBySlug).length === 0) {
+      fetch('/api/research/compounds-list')
+        .then((res) => res.json())
+        .then((data) => {
+          if (data && Array.isArray(data.compounds)) {
+            const map: Record<string, Compound> = {};
+            for (const c of data.compounds) {
+              map[c.slug] = c;
+            }
+            setCompoundsBySlug(map);
+          }
+        })
+        .catch((err) => console.error('Error fetching compounds for compare drawer:', err));
+    }
+  }, [compoundsBySlug]);
 
 
 

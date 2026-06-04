@@ -24,7 +24,8 @@ import {
 import ReconstitutionCalculator from '@/components/research/ReconstitutionCalculator';
 import GlossaryText from '@/components/research/GlossaryText';
 import SequenceViewer from '@/components/research/SequenceViewer';
-import IframeModal from '@/components/ui/IframeModal';
+import PinToCompareButton from '@/components/research/PinToCompareButton';
+import ResearchCartButton from '@/components/research/ResearchCartButton';
 
 interface Props {
   compound: Compound;
@@ -107,10 +108,12 @@ export default function MonographTabs({ compound, related = [] }: Props) {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
+          flexWrap: 'wrap',
           gap: 'var(--space-3)',
           padding: 'var(--space-3) 0',
           background: 'var(--black)',
           marginBottom: 'var(--space-3)',
+          borderBottom: '1px solid rgba(255,255,255,0.08)',
         }}
       >
         <button
@@ -125,14 +128,26 @@ export default function MonographTabs({ compound, related = [] }: Props) {
           <ArrowLeft size={16} aria-hidden="true" />
           Back
         </button>
-        <Link
-          href={`/research/${compound.slug}/spec`}
-          className="btn-secondary"
-          style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}
-        >
-          <FileText size={16} aria-hidden="true" />
-          Spec Sheet
-        </Link>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <PinToCompareButton
+            compoundSlug={compound.slug}
+            compoundName={compound.display_name}
+            evidenceTierKey={compound.evidence_tier}
+            size="sm"
+          />
+          <ResearchCartButton
+            productName={compound.display_name}
+            size="sm"
+          />
+          <Link
+            href={`/research/${compound.slug}/spec`}
+            className="btn-secondary"
+            style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}
+          >
+            <FileText size={16} aria-hidden="true" />
+            Spec Sheet
+          </Link>
+        </div>
       </div>
 
       {/* Centered header */}
@@ -325,20 +340,17 @@ export default function MonographTabs({ compound, related = [] }: Props) {
                 const href = /^https?:\/\//i.test(src) ? src : `https://${src}`;
                 return (
                   <li key={i} style={{ wordBreak: 'break-all', fontSize: '0.82rem' }}>
-                    <button 
-                      onClick={() => setModalUrl(href)} 
+                    <a
+                      href={href}
+                      target="_blank"
+                      rel="noopener noreferrer"
                       style={{ 
                         color: teal, 
-                        background: 'none', 
-                        border: 'none', 
-                        padding: 0, 
-                        cursor: 'pointer', 
-                        textAlign: 'left',
                         textDecoration: 'underline'
                       }}
                     >
                       {src}
-                    </button>
+                    </a>
                   </li>
                 );
               })}
@@ -356,9 +368,8 @@ export default function MonographTabs({ compound, related = [] }: Props) {
             {related.map((r) => {
               const t = evidenceTier(r.evidence_tier);
               return (
-                <Link
+                <div
                   key={r.slug}
-                  href={`/research/${r.slug}`}
                   className="glass-panel"
                   style={{
                     display: 'flex',
@@ -366,21 +377,56 @@ export default function MonographTabs({ compound, related = [] }: Props) {
                     gap: '6px',
                     padding: 'var(--space-3)',
                     borderRadius: 'var(--radius-lg, 12px)',
-                    textDecoration: 'none',
+                    color: 'var(--white, #FFFFFF)',
+                    height: '100%',
                   }}
                 >
-                  <span style={{ ...cap, fontWeight: 700, color: 'var(--white)', fontSize: '0.92rem' }}>
-                    {r.display_name}
-                  </span>
-                  <span style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', alignItems: 'center' }}>
-                    <span style={{ fontSize: '0.62rem', fontWeight: 800, letterSpacing: '0.04em', textTransform: 'uppercase', padding: '2px 8px', borderRadius: 9999, background: `${t.color}1A`, border: `1px solid ${t.color}55`, color: t.color }}>
-                      {t.label}
+                  <Link
+                    href={`/research/${r.slug}`}
+                    style={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '6px',
+                      textDecoration: 'none',
+                      color: 'var(--white, #FFFFFF)',
+                      flexGrow: 1,
+                    }}
+                  >
+                    <span style={{ ...cap, fontWeight: 700, color: 'var(--white)', fontSize: '0.92rem' }}>
+                      {r.display_name}
                     </span>
-                    {r.category && (
-                      <span style={{ ...cap, fontSize: '0.72rem', color: 'var(--silver)' }}>{r.category}</span>
-                    )}
-                  </span>
-                </Link>
+                    <span style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', alignItems: 'center' }}>
+                      <span style={{ fontSize: '0.62rem', fontWeight: 800, letterSpacing: '0.04em', textTransform: 'uppercase', padding: '2px 8px', borderRadius: 9999, background: `${t.color}1A`, border: `1px solid ${t.color}55`, color: t.color }}>
+                        {t.label}
+                      </span>
+                      {r.category && (
+                        <span style={{ ...cap, fontSize: '0.72rem', color: 'var(--silver)' }}>{r.category}</span>
+                      )}
+                    </span>
+                  </Link>
+                  <div
+                    style={{
+                      display: 'flex',
+                      gap: '6px',
+                      marginTop: '8px',
+                      paddingTop: '8px',
+                      borderTop: '1px solid rgba(255,255,255,0.06)',
+                    }}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                    }}
+                  >
+                    <div style={{ flex: 1 }}>
+                      <PinToCompareButton
+                        compoundSlug={r.slug}
+                        compoundName={r.display_name}
+                        evidenceTierKey={r.evidence_tier}
+                        size="sm"
+                      />
+                    </div>
+                  </div>
+                </div>
               );
             })}
           </div>
@@ -390,10 +436,6 @@ export default function MonographTabs({ compound, related = [] }: Props) {
       <p style={{ fontSize: '0.74rem', color: 'var(--grey-400)', lineHeight: 1.5, margin: 'var(--space-4) 0 0', textAlign: 'center' }}>
         Research Use Only. Not For Human Or Veterinary Use. Information Provided For Laboratory Research Purposes Only.
       </p>
-
-      {modalUrl && (
-        <IframeModal url={modalUrl} onClose={() => setModalUrl(null)} />
-      )}
     </main>
   );
 }

@@ -17,6 +17,8 @@ import {
   WADA_LABEL,
   wadaLabel,
 } from '@/lib/compounds';
+import PinToCompareButton from '@/components/research/PinToCompareButton';
+import ResearchCartButton from '@/components/research/ResearchCartButton';
 
 const ALL = 'all';
 
@@ -194,9 +196,8 @@ export default function ResearchBrowser({ compounds }: { compounds: Compound[] }
             const t = evidenceTier(c.evidence_tier);
             const aliasLine = (c.aliases ?? []).slice(0, 3).join(', ');
             return (
-              <Link
+              <div
                 key={c.slug}
-                href={`/research/${c.slug}`}
                 className="glass-panel"
                 style={{
                   display: 'flex',
@@ -204,50 +205,87 @@ export default function ResearchBrowser({ compounds }: { compounds: Compound[] }
                   gap: 'var(--space-2, 8px)',
                   padding: 'var(--space-4, 16px)',
                   borderRadius: 'var(--radius-lg, 12px)',
-                  textDecoration: 'none',
                   color: 'var(--white, #FFFFFF)',
                   height: '100%',
                 }}
               >
-                <span
+                <Link
+                  href={`/research/${c.slug}`}
                   style={{
-                    display: 'inline-flex',
-                    alignSelf: 'flex-start',
-                    alignItems: 'center',
-                    gap: '6px',
-                    fontSize: '0.7rem',
-                    fontWeight: 700,
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.04em',
-                    color: t.color,
-                    border: `1px solid ${t.color}`,
-                    borderRadius: '999px',
-                    padding: '2px 10px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 'var(--space-2, 8px)',
+                    textDecoration: 'none',
+                    color: 'var(--white, #FFFFFF)',
+                    flexGrow: 1,
                   }}
                 >
-                  {t.label}
-                </span>
-                <span style={{ fontSize: '1.05rem', fontWeight: 700 }}>{c.display_name}</span>
-                {aliasLine && (
-                  <span style={{ fontSize: '0.8rem', color: 'var(--silver, #A8B4C0)' }}>{aliasLine}</span>
-                )}
-                {c.category && (
                   <span
                     style={{
-                      fontSize: '0.75rem',
-                      color: 'var(--teal, #00C4BC)',
-                      marginTop: 'auto',
+                      display: 'inline-flex',
+                      alignSelf: 'flex-start',
+                      alignItems: 'center',
+                      gap: '6px',
+                      fontSize: '0.7rem',
+                      fontWeight: 700,
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.04em',
+                      color: t.color,
+                      border: `1px solid ${t.color}`,
+                      borderRadius: '999px',
+                      padding: '2px 10px',
                     }}
                   >
-                    {c.category}
+                    {t.label}
                   </span>
-                )}
-                {c.wada_status && c.wada_status !== 'not_listed' && (
-                  <span style={{ fontSize: '0.72rem', color: 'var(--silver, #A8B4C0)' }}>
-                    {wadaLabel(c.wada_status)}
-                  </span>
-                )}
-              </Link>
+                  <span style={{ fontSize: '1.05rem', fontWeight: 700 }}>{c.display_name}</span>
+                  {aliasLine && (
+                    <span style={{ fontSize: '0.8rem', color: 'var(--silver, #A8B4C0)' }}>{aliasLine}</span>
+                  )}
+                  {c.category && (
+                    <span
+                      style={{
+                        fontSize: '0.75rem',
+                        color: 'var(--teal, #00C4BC)',
+                        marginTop: 'auto',
+                      }}
+                    >
+                      {c.category}
+                    </span>
+                  )}
+                  {c.wada_status && c.wada_status !== 'not_listed' && (
+                    <span style={{ fontSize: '0.72rem', color: 'var(--silver, #A8B4C0)' }}>
+                      {wadaLabel(c.wada_status)}
+                    </span>
+                  )}
+                </Link>
+                <div
+                  style={{
+                    display: 'flex',
+                    gap: '8px',
+                    marginTop: '12px',
+                    paddingTop: '12px',
+                    borderTop: '1px solid rgba(255,255,255,0.06)',
+                  }}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                  }}
+                >
+                  <div style={{ flex: 1 }}>
+                    <PinToCompareButton
+                      compoundSlug={c.slug}
+                      compoundName={c.display_name}
+                      evidenceTierKey={c.evidence_tier}
+                      size="sm"
+                    />
+                  </div>
+                  <ResearchCartButton
+                    productName={c.display_name}
+                    size="sm"
+                  />
+                </div>
+              </div>
             );
           })}
         </div>
