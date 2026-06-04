@@ -21,6 +21,18 @@ export default function HelpMeChooseWizard({ isOpen, onClose, onComplete }: Prop
   const [form, setForm] = useState('all');
   const [wada, setWada] = useState('all');
 
+  React.useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    if (isOpen) {
+      window.addEventListener('keydown', handleKeyDown);
+    }
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isOpen, onClose]);
+
   if (!isOpen) return null;
 
   const handleNext = () => {
@@ -204,7 +216,7 @@ export default function HelpMeChooseWizard({ isOpen, onClose, onComplete }: Prop
                 onClick={() => setForm('injection')}
                 style={optionCardStyle(form === 'injection')}
               >
-                <div style={optionCardStyle(form === 'injection')}>
+                <div>
                   <div style={{ fontWeight: 700, color: 'var(--white, #FFFFFF)' }}>Injectable</div>
                   <div style={{ fontSize: '0.75rem' }}>Lyophilized Powder Vials For Subcutaneous Preparation</div>
                 </div>
@@ -214,7 +226,7 @@ export default function HelpMeChooseWizard({ isOpen, onClose, onComplete }: Prop
                 onClick={() => setForm('oral')}
                 style={optionCardStyle(form === 'oral')}
               >
-                <div style={optionCardStyle(form === 'oral')}>
+                <div>
                   <div style={{ fontWeight: 700, color: 'var(--white, #FFFFFF)' }}>Oral Capsule</div>
                   <div style={{ fontSize: '0.75rem' }}>Gastric-Stable Capsules Or Oral Liquids</div>
                 </div>
@@ -224,7 +236,7 @@ export default function HelpMeChooseWizard({ isOpen, onClose, onComplete }: Prop
                 onClick={() => setForm('topical')}
                 style={optionCardStyle(form === 'topical')}
               >
-                <div style={optionCardStyle(form === 'topical')}>
+                <div>
                   <div style={{ fontWeight: 700, color: 'var(--white, #FFFFFF)' }}>Topical</div>
                   <div style={{ fontSize: '0.75rem' }}>Creams, Serums, Or Intranasal Sprays</div>
                 </div>
@@ -234,7 +246,7 @@ export default function HelpMeChooseWizard({ isOpen, onClose, onComplete }: Prop
                 onClick={() => setForm('all')}
                 style={optionCardStyle(form === 'all')}
               >
-                <div style={optionCardStyle(form === 'all')}>
+                <div>
                   <div style={{ fontWeight: 700, color: 'var(--white, #FFFFFF)' }}>No Constraint</div>
                   <div style={{ fontSize: '0.75rem' }}>Show All Available Formats</div>
                 </div>
@@ -255,7 +267,7 @@ export default function HelpMeChooseWizard({ isOpen, onClose, onComplete }: Prop
                 onClick={() => setWada('permitted')}
                 style={optionCardStyle(wada === 'permitted')}
               >
-                <div style={optionCardStyle(wada === 'permitted')}>
+                <div>
                   <div style={{ fontWeight: 700, color: 'var(--white, #FFFFFF)' }}>WADA Permitted</div>
                   <div style={{ fontSize: '0.75rem' }}>Show Only Compounds Not Prohibited In Sport</div>
                 </div>
@@ -265,7 +277,7 @@ export default function HelpMeChooseWizard({ isOpen, onClose, onComplete }: Prop
                 onClick={() => setWada('all')}
                 style={optionCardStyle(wada === 'all')}
               >
-                <div style={optionCardStyle(wada === 'all')}>
+                <div>
                   <div style={{ fontWeight: 700, color: 'var(--white, #FFFFFF)' }}>No Constraint</div>
                   <div style={{ fontSize: '0.75rem' }}>Show All Compounds Including Prohibited Classes</div>
                 </div>

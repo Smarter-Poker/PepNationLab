@@ -35,7 +35,7 @@ const selectStyle: React.CSSProperties = {
 
 // Autocorrect / shorthand mapping helper
 function autocorrectSearch(input: string): string {
-  const norm = input.trim().toLowerCase();
+  const words = input.trim().toLowerCase().split(/\s+/);
   const map: Record<string, string> = {
     sema: 'semaglutide',
     tirz: 'tirzepatide',
@@ -45,7 +45,7 @@ function autocorrectSearch(input: string): string {
     tb500: 'tb-500',
     tb: 'tb-500',
   };
-  return map[norm] || input;
+  return words.map((w) => map[w] || w).join(' ');
 }
 
 // Classify compound administration form
@@ -109,19 +109,16 @@ export default function ResearchBrowser({ compounds }: { compounds: Compound[] }
   };
 
   const handleWizardComplete = (wizardFilters: { area: string; form: string; wada: string }) => {
-    if (wizardFilters.area !== 'all') {
-      if (wizardFilters.area === 'healing') {
-        setArea('healing');
-      } else {
-        setArea(wizardFilters.area);
-      }
+    setQuery('');
+    setCategory(ALL);
+    setTier(ALL);
+    if (wizardFilters.area === 'healing') {
+      setArea('healing');
+    } else {
+      setArea(wizardFilters.area);
     }
-    if (wizardFilters.form !== 'all') {
-      setFormFilter(wizardFilters.form);
-    }
-    if (wizardFilters.wada !== 'all') {
-      setWada(wizardFilters.wada);
-    }
+    setFormFilter(wizardFilters.form);
+    setWada(wizardFilters.wada);
   };
 
   // Helper to resolve card border based on WADA compliance
