@@ -247,7 +247,51 @@ export default function AgentStorefrontGrid({
 }: Props) {
   const [mounted, setMounted] = useState(false);
   const [showStoreGrid, setShowStoreGrid] = useState(false);
-  useEffect(() => { setMounted(true); }, []);
+
+  const openGrid = useCallback(() => {
+    if (typeof window !== 'undefined') {
+      if (window.location.hash !== '#store') {
+        window.history.pushState(null, '', window.location.pathname + window.location.search + '#store');
+      }
+      setShowStoreGrid(true);
+      try { window.scrollTo({ top: 0, behavior: 'auto' }); } catch {}
+    }
+  }, []);
+
+  const closeGrid = useCallback(() => {
+    if (typeof window !== 'undefined') {
+      if (window.location.hash === '#store') {
+        window.history.back();
+      } else {
+        setShowStoreGrid(false);
+        setFilterArea('');
+        setFilterCategory('all');
+        setSearchQuery('');
+        try { window.scrollTo({ top: 0, behavior: 'auto' }); } catch {}
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    setMounted(true);
+    if (typeof window !== 'undefined' && window.location.hash === '#store') {
+      setShowStoreGrid(true);
+    }
+    const handlePopState = () => {
+      if (typeof window !== 'undefined') {
+        if (window.location.hash !== '#store') {
+          setShowStoreGrid(false);
+          setFilterArea('');
+          setFilterCategory('all');
+          setSearchQuery('');
+        } else {
+          setShowStoreGrid(true);
+        }
+      }
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
   const [wishlist, setWishlist] = useState<Set<string>>(() => new Set(initialWishlistIds));
   const toggleWishlist = useCallback(async (productId: string) => {
     if (!productId) return;
@@ -1017,25 +1061,16 @@ export default function AgentStorefrontGrid({
           onSelectArea={(area) => {
             setFilterArea(area);
             setFilterCategory('all');
-            setShowStoreGrid(true);
-            if (typeof window !== 'undefined') {
-              try { window.scrollTo({ top: 0, behavior: 'auto' }); } catch {}
-            }
+            openGrid();
           }}
           onSearchStarted={() => {
             setFilterArea('');
             setFilterCategory('all');
             setSearchQuery('');
-            setShowStoreGrid(true);
-            if (typeof window !== 'undefined') {
-              try { window.scrollTo({ top: 0, behavior: 'auto' }); } catch {}
-            }
+            openGrid();
           }}
           onAlreadyKnowClicked={() => {
-            setShowStoreGrid(true);
-            if (typeof window !== 'undefined') {
-              try { window.scrollTo({ top: 0, behavior: 'auto' }); } catch {}
-            }
+            openGrid();
           }}
         onAddToCart={(variantId) => addToCart(variantId)}
         onOpenProduct={(variantId) => {
@@ -1087,13 +1122,7 @@ export default function AgentStorefrontGrid({
           <div style={{ marginBottom: 16 }}>
             <button
               onClick={() => {
-                setShowStoreGrid(false);
-                setFilterArea('');
-                setFilterCategory('all');
-                setSearchQuery('');
-                if (typeof window !== 'undefined') {
-                  try { window.scrollTo({ top: 0, behavior: 'auto' }); } catch {}
-                }
+                closeGrid();
               }}
               style={{
                 background: 'transparent',

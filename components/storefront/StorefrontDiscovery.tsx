@@ -1464,8 +1464,7 @@ export default function DiscoveryHero({
             onKeyDown={(e) => { 
               if (e.key === 'Enter' && query.trim()) {
                 onSelectArea(''); // Clear filter
-                if (onSearchStarted) onSearchStarted();
-                submitTypedGoal();
+                if (onSearchStarted) onSearchStarted(query.trim());
               }
             }}
             placeholder="Ask Us Anything..."
