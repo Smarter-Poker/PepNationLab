@@ -1252,7 +1252,6 @@ export default function DiscoveryHero({
     // default fallback
     setQuery(s.display_name);
     if (onSearchStarted) onSearchStarted(s.display_name);
-    submitTypedGoal(s.display_name);
   }
 
   const runMatch = useCallback(async (input: {
@@ -1415,7 +1414,6 @@ export default function DiscoveryHero({
           onClick={() => {
             onSelectArea(''); // Clear filter
             if (query.trim().length > 0) {
-              if (onSearchStarted) onSearchStarted(query.trim());
               submitTypedGoal();
             } else {
               setWizardOpen(true);
@@ -1448,7 +1446,7 @@ export default function DiscoveryHero({
         <div 
           ref={searchContainerRef}
           style={{
-            position: 'absolute', top: '13.5%', left: '6%', width: '88%', height: '4.5%',
+            position: 'absolute', top: '12.5%', left: '6%', width: '88%', height: '5.5%',
             zIndex: 5,
           }}
         >
@@ -1465,7 +1463,6 @@ export default function DiscoveryHero({
               if (e.key === 'Enter' && query.trim()) {
                 onSelectArea(''); // Clear filter
                 if (onSearchStarted) onSearchStarted(query.trim());
-                submitTypedGoal();
               }
             }}
             placeholder="Ask Us Anything..."
@@ -1474,7 +1471,7 @@ export default function DiscoveryHero({
               background: 'transparent',
               border: 'none', outline: 'none', color: '#FFFFFF',
               fontSize: 'max(16px, 1.86vw)',
-              padding: '0 10px 8px 48px',
+              padding: '0 10px 12px 42px',
               textAlign: 'left',
               fontWeight: 500,
               letterSpacing: '0.02em',
