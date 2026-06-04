@@ -8,9 +8,16 @@ export default function FooterSection() {
     <footer style={{
       background: 'var(--black-2)',
       borderTop: '1px solid rgba(192,184,168,0.1)',
-      paddingTop: 'var(--space-12)',
+      paddingTop: 'var(--space-8)',
       paddingBottom: 'var(--space-8)'
     }}>
+      <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 'var(--space-10)', padding: '0 var(--space-4)' }}>
+        <img 
+          src="/images/badges/research_use_pill_transparent.png" 
+          alt="Research Use Only - Not For Human Use - Laboratory Research Only" 
+          style={{ maxWidth: '100%', height: 'auto', maxHeight: '55px' }} 
+        />
+      </div>
       <div className="container">
         {/* Top row */}
         <div style={{ 

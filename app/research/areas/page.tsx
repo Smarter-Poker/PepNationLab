@@ -225,20 +225,11 @@ export default function TherapeuticAreasPage() {
       </section>
 
       <div style={{ display: 'flex', justifyContent: 'center', paddingBottom: '32px' }}>
-        <div style={{
-          display: 'inline-flex',
-          alignItems: 'center',
-          gap: '12px',
-          background: 'rgba(0,0,0,0.5)',
-          border: '1px solid rgba(187, 163, 113, 0.3)',
-          borderRadius: '999px',
-          padding: '12px 24px',
-        }}>
-          <ShieldCheck size={18} color="#BBA371" />
-          <span style={{ color: '#A8B4C0', fontSize: '0.9rem', letterSpacing: '0.02em' }}>
-            Research Use Only <span style={{ color: '#BBA371', margin: '0 8px' }}>•</span> Not For Human Use <span style={{ color: '#BBA371', margin: '0 8px' }}>•</span> Laboratory Research Only
-          </span>
-        </div>
+        <img 
+          src="/images/badges/research_use_pill_transparent.png" 
+          alt="Research Use Only - Not For Human Use - Laboratory Research Only" 
+          style={{ maxWidth: '90%', height: 'auto', maxHeight: '50px' }} 
+        />
       </div>
     </div>
   );
