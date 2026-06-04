@@ -27,6 +27,9 @@ export default function SmartStackBuilder({ catalog, onAddStackToCart }: Props) 
   const [searchQuery, setSearchQuery] = useState('');
   const [stackName, setStackName] = useState('My Custom Stack');
 
+  const [aiAnalysis, setAiAnalysis] = useState<any>(null);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+
   const filteredCatalog = useMemo(() => {
     if (!searchQuery) return catalog;
     const q = searchQuery.toLowerCase();
@@ -34,21 +37,30 @@ export default function SmartStackBuilder({ catalog, onAddStackToCart }: Props) 
   }, [catalog, searchQuery]);
 
   // Convert to StackComponent format for engine
-  const stackComponents: StackComponent[] = useMemo(() => {
-    return selectedItems.map(item => ({
-      id: item.product_id,
-      name: item.name,
-      category: getCategoryFromName(item.name)
-    }));
-  }, [selectedItems]);
-
-  const analysis: StackAnalysis = useMemo(() => analyzeStack(stackComponents), [stackComponents]);
-
   const handleToggleItem = (item: Item) => {
     if (selectedItems.find(i => i.product_id === item.product_id)) {
       setSelectedItems(prev => prev.filter(i => i.product_id !== item.product_id));
     } else {
       setSelectedItems(prev => [...prev, item]);
+    }
+  };
+
+  const runAiAnalysis = async () => {
+    if (selectedItems.length < 2) return;
+    setIsAnalyzing(true);
+    setAiAnalysis(null);
+    try {
+      const res = await fetch('/api/researcher/ai-stack-analysis', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ slugs: selectedItems.map(item => item.name.toLowerCase().replace(/ /g, '-')) })
+      });
+      const data = await res.json();
+      if (!data.error) setAiAnalysis(data);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsAnalyzing(false);
     }
   };
 
@@ -144,60 +156,81 @@ export default function SmartStackBuilder({ catalog, onAddStackToCart }: Props) 
             {/* Smart Analysis Readout */}
             {selectedItems.length > 0 && (
               <div style={{ background: 'rgba(0,0,0,0.4)', borderRadius: 12, border: '1px solid rgba(255,255,255,0.1)', overflow: 'hidden' }}>
-                <div style={{ padding: '12px 16px', background: analysis.status === 'unsafe' ? 'rgba(245,101,101,0.2)' : analysis.status === 'excellent' ? 'rgba(0,255,157,0.15)' : 'rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div style={{ padding: '12px 16px', background: aiAnalysis ? (aiAnalysis.synergyScore > 80 ? 'rgba(0,255,157,0.15)' : aiAnalysis.synergyScore < 50 ? 'rgba(245,101,101,0.2)' : 'rgba(255,255,255,0.05)') : 'rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    {analysis.status === 'unsafe' ? <ShieldAlert size={18} color="#F56565" /> : analysis.status === 'excellent' ? <Zap size={18} color="#00FF9D" /> : <CheckCircle size={18} color="var(--silver)" />}
+                    <Zap size={18} color="#00FF9D" />
                     <span style={{ color: 'var(--white)', fontWeight: 600, fontSize: '0.95rem' }}>
-                      {analysis.status === 'unsafe' ? 'Compatibility Warning' : analysis.status === 'excellent' ? 'Highly Synergistic' : 'Stack Analysis'}
+                      {aiAnalysis ? aiAnalysis.verdict : 'Stack Analysis'}
                     </span>
                   </div>
-                  <div style={{ fontSize: '0.85rem', color: 'var(--silver)' }}>
-                    Synergy Score: <strong style={{ color: analysis.status === 'unsafe' ? '#F56565' : analysis.status === 'excellent' ? '#00FF9D' : 'var(--white)' }}>{analysis.synergyScore}/100</strong>
-                  </div>
+                  {aiAnalysis && (
+                    <div style={{ fontSize: '0.85rem', color: 'var(--silver)' }}>
+                      Synergy Score: <strong style={{ color: aiAnalysis.synergyScore < 50 ? '#F56565' : aiAnalysis.synergyScore > 80 ? '#00FF9D' : 'var(--white)' }}>{aiAnalysis.synergyScore}/100</strong>
+                    </div>
+                  )}
                 </div>
                 
                 <div style={{ padding: 'var(--space-3)' }}>
-                  {analysis.warnings.length > 0 && (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 12 }}>
-                      {analysis.warnings.map((w, i) => (
-                        <div key={i} style={{ display: 'flex', gap: 8, color: '#F56565', fontSize: '0.85rem', alignItems: 'flex-start' }}>
-                          <AlertTriangle size={14} style={{ flexShrink: 0, marginTop: 2 }} />
-                          <span>{w}</span>
+                  {!aiAnalysis ? (
+                    <button 
+                      onClick={runAiAnalysis}
+                      disabled={isAnalyzing || selectedItems.length < 2}
+                      style={{ 
+                        width: '100%', padding: '8px', background: 'rgba(0,229,255,0.1)', color: '#00E5FF', 
+                        border: '1px solid rgba(0,229,255,0.3)', borderRadius: 6, cursor: (isAnalyzing || selectedItems.length < 2) ? 'not-allowed' : 'pointer',
+                        opacity: (isAnalyzing || selectedItems.length < 2) ? 0.5 : 1
+                      }}
+                    >
+                      {isAnalyzing ? 'Analyzing Synergy...' : selectedItems.length < 2 ? 'Add 2+ items to analyze' : 'Analyze with Gemini AI'}
+                    </button>
+                  ) : (
+                    <>
+                      <p style={{ color: 'var(--silver)', fontSize: '0.9rem', marginBottom: 12, lineHeight: 1.5 }}>
+                        {aiAnalysis.analysis}
+                      </p>
+
+                      {aiAnalysis.warnings && aiAnalysis.warnings.length > 0 && (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 12 }}>
+                          {aiAnalysis.warnings.map((w: string, i: number) => (
+                            <div key={i} style={{ display: 'flex', gap: 8, color: '#F56565', fontSize: '0.85rem', alignItems: 'flex-start' }}>
+                              <AlertTriangle size={14} style={{ flexShrink: 0, marginTop: 2 }} />
+                              <span>{w}</span>
+                            </div>
+                          ))}
                         </div>
-                      ))}
-                    </div>
-                  )}
-                  {analysis.tips.length > 0 && (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                      {analysis.tips.map((t, i) => (
-                        <div key={i} style={{ display: 'flex', gap: 8, color: '#00FF9D', fontSize: '0.85rem', alignItems: 'flex-start' }}>
-                          <Zap size={14} style={{ flexShrink: 0, marginTop: 2 }} />
-                          <span>{t}</span>
-                        </div>
-                      ))}
-                    </div>
+                      )}
+
+                      <button 
+                        onClick={() => setAiAnalysis(null)}
+                        style={{ background: 'transparent', border: 'none', color: 'var(--silver)', fontSize: '0.8rem', cursor: 'pointer', textDecoration: 'underline', padding: 0 }}
+                      >
+                        Reset Analysis
+                      </button>
+                    </>
                   )}
                 </div>
               </div>
             )}
+            
           </div>
-
-          <div style={{ marginTop: 'auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: 'var(--space-4)', background: 'rgba(0,0,0,0.5)', borderRadius: 12, border: '1px solid rgba(255,255,255,0.05)' }}>
+          
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: 'var(--space-4)', marginTop: 'auto' }}>
             <div>
-              <div style={{ fontSize: '0.75rem', color: 'var(--silver)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Estimated Total</div>
-              <div style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--teal)' }}>${totalPrice.toFixed(2)}</div>
+              <div style={{ color: 'var(--silver)', fontSize: '0.85rem' }}>Total Stack Price</div>
+              <div style={{ color: 'var(--white)', fontSize: '1.25rem', fontWeight: 600 }}>${totalPrice.toFixed(2)}</div>
             </div>
             <button 
               className="btn-primary" 
-              disabled={selectedItems.length < 2 || !analysis.isCompatible}
+              disabled={selectedItems.length < 2 || (aiAnalysis && aiAnalysis.synergyScore < 50)}
               onClick={() => {
-                if (selectedItems.length >= 2 && analysis.isCompatible) {
+                if (selectedItems.length >= 2) {
                   onAddStackToCart(selectedItems, stackName);
                   setSelectedItems([]);
                   setStackName('My Custom Stack');
+                  setAiAnalysis(null);
                 }
               }}
-              style={{ padding: '10px 24px', opacity: (selectedItems.length < 2 || !analysis.isCompatible) ? 0.5 : 1 }}
+              style={{ padding: '10px 24px', opacity: (selectedItems.length < 2 || (aiAnalysis && aiAnalysis.synergyScore < 50)) ? 0.5 : 1 }}
             >
               Add Stack To Cart
             </button>
