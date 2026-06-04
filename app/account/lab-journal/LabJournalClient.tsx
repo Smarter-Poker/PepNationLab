@@ -43,6 +43,8 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
   const [helpfulData, setHelpfulData] = useState<any>(null);
   const [notes, setNotes] = useState<any[]>([]);
   const [comparisons, setComparisons] = useState<any[]>([]);
+  const [doses, setDoses] = useState<any[]>([]);
+  const [biometrics, setBiometrics] = useState<any[]>([]);
   
   // Notes UI State
   const [isCreatingNote, setIsCreatingNote] = useState(false);
@@ -51,9 +53,21 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
   const [noteText, setNoteText] = useState('');
   const [noteCompoundSlug, setNoteCompoundSlug] = useState('');
   const [noteSaving, setNoteSaving] = useState(false);
+
+  // Dose UI State
+  const [doseCompound, setDoseCompound] = useState('');
+  const [doseAmount, setDoseAmount] = useState('');
+  const [doseUnit, setDoseUnit] = useState('mcg');
+  const [doseSaving, setDoseSaving] = useState(false);
+
+  // Biometrics UI State
+  const [bioName, setBioName] = useState('');
+  const [bioValue, setBioValue] = useState('');
+  const [bioUnit, setBioUnit] = useState('');
+  const [bioSaving, setBioSaving] = useState(false);
   
   // UX Features State
-  const [activeTab, setActiveTab] = useState<'bundles' | 'favorites' | 'recentlyViewed' | 'pastOrders' | 'compareHistory' | 'notes'>('bundles');
+  const [activeTab, setActiveTab] = useState<'bundles' | 'favorites' | 'recentlyViewed' | 'pastOrders' | 'compareHistory' | 'notes' | 'doses' | 'biometrics'>('bundles');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [searchQuery, setSearchQuery] = useState('');
   const [filterCategory, setFilterCategory] = useState('all');
@@ -98,6 +112,16 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
     fetch('/api/researcher/comparisons')
       .then(res => res.json())
       .then(data => { if (data.comparisons) setComparisons(data.comparisons); })
+      .catch(console.error);
+
+    fetch('/api/researcher/doses')
+      .then(res => res.json())
+      .then(data => { if (data.doses) setDoses(data.doses); })
+      .catch(console.error);
+
+    fetch('/api/researcher/biometrics')
+      .then(res => res.json())
+      .then(data => { if (data.biometrics) setBiometrics(data.biometrics); })
       .catch(console.error);
   }, []);
 
@@ -242,6 +266,81 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
     } catch (e) {
       toast.error('Failed to delete note');
     }
+  };
+
+  const saveDose = async () => {
+    if (!doseCompound || !doseAmount) return;
+    setDoseSaving(true);
+    try {
+      const res = await fetch('/api/researcher/doses', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ compound_slug: doseCompound, dose_amount: parseFloat(doseAmount), unit: doseUnit })
+      });
+      const data = await res.json();
+      if (res.ok && data.dose) {
+        setDoses(prev => [data.dose, ...prev]);
+        setDoseAmount('');
+        toast.success('Dose logged');
+      } else throw new Error(data.error);
+    } catch (e) {
+      toast.error('Failed to log dose');
+    } finally {
+      setDoseSaving(false);
+    }
+  };
+
+  const saveBiometric = async () => {
+    if (!bioName || !bioValue) return;
+    setBioSaving(true);
+    try {
+      const res = await fetch('/api/researcher/biometrics', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ metric_name: bioName, metric_value: parseFloat(bioValue), unit: bioUnit })
+      });
+      const data = await res.json();
+      if (res.ok && data.biometric) {
+        setBiometrics(prev => [...prev, data.biometric]);
+        setBioValue('');
+        toast.success('Biometric logged');
+      } else throw new Error(data.error);
+    } catch (e) {
+      toast.error('Failed to log biometric');
+    } finally {
+      setBioSaving(false);
+    }
+  };
+
+  const renderDoseGraph = () => {
+    const days = Array.from({length: 60}, (_, i) => {
+      const d = new Date();
+      d.setDate(d.getDate() - (59 - i));
+      return d.toISOString().split('T')[0];
+    });
+
+    const dosesMap = new Map();
+    doses.forEach(d => {
+      const day = new Date(d.dosed_at).toISOString().split('T')[0];
+      if (!dosesMap.has(day)) dosesMap.set(day, []);
+      dosesMap.get(day).push(d);
+    });
+
+    return (
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginTop: 'var(--space-4)', padding: 'var(--space-4)', background: 'rgba(0,0,0,0.2)', borderRadius: 'var(--radius-lg)' }}>
+        {days.map(d => {
+          const count = dosesMap.get(d)?.length || 0;
+          let opacity = 0.1;
+          if (count === 1) opacity = 0.4;
+          if (count === 2) opacity = 0.7;
+          if (count > 2) opacity = 1;
+          
+          return (
+            <div key={d} title={`${d}: ${count} doses`} style={{ width: 14, height: 14, borderRadius: 2, background: `rgba(0,196,188,${opacity})`, cursor: 'help' }} />
+          );
+        })}
+      </div>
+    );
   };
 
   function handleQuickAdd(item: Item, qty = 1, silent = false) {
@@ -496,6 +595,8 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
           { id: 'bundles', label: 'Bundles & Stacks', icon: Layers },
           { id: 'favorites', label: 'Saved Compounds', icon: Heart },
           { id: 'pastOrders', label: 'Helpful Data & Orders', icon: PackageOpen },
+          { id: 'doses', label: 'Dose Tracker', icon: Layers }, // Assuming Layers or similar icon
+          { id: 'biometrics', label: 'Biometrics', icon: Layers },
           { id: 'recentlyViewed', label: 'Recently Viewed', icon: History },
           { id: 'compareHistory', label: 'Compare History', icon: Search },
           { id: 'notes', label: 'My Notes', icon: Info }
@@ -664,6 +765,132 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
                       </div>
                     </div>
                   )}
+                </div>
+
+              ) : activeTab === 'doses' ? (
+                <div>
+                  <div className="glass-panel" style={{ padding: 'var(--space-6)', borderRadius: 'var(--radius-lg)', marginBottom: 'var(--space-6)' }}>
+                    <h2 style={{ color: 'var(--white)', marginBottom: 'var(--space-2)' }}>Log a Dose</h2>
+                    <div style={{ display: 'flex', gap: 'var(--space-3)', alignItems: 'center' }}>
+                      <select 
+                        value={doseCompound} 
+                        onChange={e => setDoseCompound(e.target.value)}
+                        style={{ flex: 1, background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', padding: '12px', borderRadius: 8, color: 'var(--white)', fontSize: '1rem' }}
+                      >
+                        <option value="">Select Compound</option>
+                        {Array.from(new Set([...favorites, ...pastOrders, ...recentlyViewed].filter(i => i.slug).map(i => i.slug))).map(slug => (
+                          <option key={slug as string} value={slug as string}>{slug}</option>
+                        ))}
+                      </select>
+                      <input 
+                        type="number" 
+                        placeholder="Amount" 
+                        value={doseAmount} 
+                        onChange={e => setDoseAmount(e.target.value)}
+                        style={{ width: 120, background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', padding: '12px', borderRadius: 8, color: 'var(--white)', fontSize: '1rem' }}
+                      />
+                      <select 
+                        value={doseUnit} 
+                        onChange={e => setDoseUnit(e.target.value)}
+                        style={{ width: 100, background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', padding: '12px', borderRadius: 8, color: 'var(--white)', fontSize: '1rem' }}
+                      >
+                        <option value="mcg">mcg</option>
+                        <option value="mg">mg</option>
+                        <option value="iu">IU</option>
+                        <option value="ml">ml</option>
+                      </select>
+                      <button onClick={saveDose} disabled={!doseCompound || !doseAmount || doseSaving} className="btn btn-primary" style={{ padding: '12px 24px', borderRadius: 8 }}>
+                        {doseSaving ? 'Saving...' : 'Log'}
+                      </button>
+                    </div>
+                    
+                    <h3 style={{ color: 'var(--white)', marginTop: 'var(--space-6)' }}>60-Day Contribution Graph</h3>
+                    {renderDoseGraph()}
+                  </div>
+
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
+                    <h3 style={{ color: 'var(--silver)', marginBottom: 'var(--space-2)' }}>Recent History</h3>
+                    {doses.map(d => (
+                      <div key={d.id} className="glass-panel" style={{ padding: 'var(--space-3)', borderRadius: 'var(--radius-lg)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <div>
+                          <div style={{ color: 'var(--teal)', fontWeight: 'bold' }}>{d.compound_slug}</div>
+                          <div style={{ color: 'var(--white)' }}>{d.dose_amount} {d.unit}</div>
+                        </div>
+                        <div style={{ color: 'var(--silver)', fontSize: '0.85rem' }}>
+                          {new Date(d.dosed_at).toLocaleDateString()} at {new Date(d.dosed_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                        </div>
+                      </div>
+                    ))}
+                    {doses.length === 0 && <div style={{ color: 'var(--silver)' }}>No doses logged yet.</div>}
+                  </div>
+                </div>
+
+              ) : activeTab === 'biometrics' ? (
+                <div>
+                  <div className="glass-panel" style={{ padding: 'var(--space-6)', borderRadius: 'var(--radius-lg)', marginBottom: 'var(--space-6)' }}>
+                    <h2 style={{ color: 'var(--white)', marginBottom: 'var(--space-2)' }}>Log Biometrics</h2>
+                    <div style={{ display: 'flex', gap: 'var(--space-3)', alignItems: 'center' }}>
+                      <select 
+                        value={bioName} 
+                        onChange={e => {
+                          setBioName(e.target.value);
+                          if (e.target.value === 'Weight') setBioUnit('lbs');
+                          else if (e.target.value === 'Sleep Quality' || e.target.value === 'Pain Level') setBioUnit('/10');
+                          else setBioUnit('');
+                        }}
+                        style={{ flex: 1, background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', padding: '12px', borderRadius: 8, color: 'var(--white)', fontSize: '1rem' }}
+                      >
+                        <option value="">Select Metric</option>
+                        <option value="Weight">Weight</option>
+                        <option value="Sleep Quality">Sleep Quality (1-10)</option>
+                        <option value="Pain Level">Pain Level (1-10)</option>
+                        <option value="Blood Pressure">Blood Pressure</option>
+                        <option value="Body Fat %">Body Fat %</option>
+                      </select>
+                      <input 
+                        type="number" 
+                        placeholder="Value" 
+                        value={bioValue} 
+                        onChange={e => setBioValue(e.target.value)}
+                        style={{ width: 120, background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', padding: '12px', borderRadius: 8, color: 'var(--white)', fontSize: '1rem' }}
+                      />
+                      <input 
+                        type="text" 
+                        placeholder="Unit" 
+                        value={bioUnit} 
+                        onChange={e => setBioUnit(e.target.value)}
+                        style={{ width: 100, background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', padding: '12px', borderRadius: 8, color: 'var(--white)', fontSize: '1rem' }}
+                      />
+                      <button onClick={saveBiometric} disabled={!bioName || !bioValue || bioSaving} className="btn btn-primary" style={{ padding: '12px 24px', borderRadius: 8 }}>
+                        {bioSaving ? 'Saving...' : 'Log'}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Simple graph approximation via Flex blocks since recharts isn't guaranteed to be installed */}
+                  <div className="glass-panel" style={{ padding: 'var(--space-6)', borderRadius: 'var(--radius-lg)' }}>
+                    <h3 style={{ color: 'var(--white)', marginBottom: 'var(--space-4)' }}>Recent Biometrics</h3>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
+                      {biometrics.length === 0 ? <div style={{ color: 'var(--silver)' }}>No biometrics logged yet.</div> : null}
+                      {Array.from(new Set(biometrics.map(b => b.metric_name))).map(metric => {
+                        const mData = biometrics.filter(b => b.metric_name === metric);
+                        return (
+                          <div key={metric} style={{ marginBottom: 'var(--space-4)' }}>
+                            <div style={{ color: 'var(--teal)', fontWeight: 'bold', marginBottom: 'var(--space-2)' }}>{metric} Trend</div>
+                            <div style={{ display: 'flex', gap: 4, alignItems: 'flex-end', height: 60, borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+                              {mData.map((b, i) => {
+                                const max = Math.max(...mData.map(d => d.metric_value));
+                                const height = max > 0 ? (b.metric_value / max) * 100 : 0;
+                                return (
+                                  <div key={b.id} title={`${b.metric_value} ${b.unit} on ${new Date(b.measured_at).toLocaleDateString()}`} style={{ flex: 1, background: 'var(--teal)', height: `${height}%`, minHeight: 4, borderRadius: '2px 2px 0 0', opacity: 0.8 }} />
+                                )
+                              })}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
                 </div>
 
               ) : activeTab === 'compareHistory' ? (

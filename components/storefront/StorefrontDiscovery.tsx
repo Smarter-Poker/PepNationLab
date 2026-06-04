@@ -1498,7 +1498,6 @@ export default function DiscoveryHero({
         <button title="Cognitive" onClick={() => onSelectArea('cognitive')} style={{ position: 'absolute', top: '42%', left: '27%', width: '22%', height: '19%', cursor: 'pointer', opacity: 0, zIndex: 10 }} />
         <button title="Pain & Inflammation" onClick={() => onSelectArea('pain')} style={{ position: 'absolute', top: '42%', left: '50%', width: '22%', height: '19%', cursor: 'pointer', opacity: 0, zIndex: 10 }} />
         <button title="More" onClick={() => {
-          onSelectArea(''); // Clear filter
           setShowAllAreas(true);
         }} style={{ position: 'absolute', top: '42%', left: '73%', width: '22%', height: '19%', cursor: 'pointer', opacity: 0, zIndex: 10 }} />
 
