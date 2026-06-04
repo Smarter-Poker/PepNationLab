@@ -14,6 +14,7 @@ interface AgentOverviewProps {
 
 export default function AgentOverview({
   storefrontUrl,
+  agentProfile,
   onNavigate,
 }: AgentOverviewProps) {
   /*

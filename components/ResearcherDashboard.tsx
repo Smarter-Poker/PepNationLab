@@ -556,7 +556,7 @@ export default function ResearcherDashboard({ userId, userName, userEmail, agent
                   { key: 'wallet',      top: '58.0%', height: '11.0%', action: () => setTab('wallet') },
                   { key: 'tools',       top: '69.0%', height: '10.5%', action: () => { window.location.href = '/research/calculators'; } },
                   { key: 'account',     top: '79.5%', height: '10.0%', action: () => setTab('account') },
-                  { key: 'help',        top: '89.5%', height: '9.5%',  action: () => { window.location.href = '/help'; } },
+                  { key: 'help',        top: '89.5%', height: '9.5%',  action: () => { window.location.href = '/account/help'; } },
                 ].map(z => (
                   <div
                     key={z.key}

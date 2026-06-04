@@ -206,6 +206,33 @@ export default async function LabJournalPage() {
     }
   } catch {}
 
+  
+  // --- Catalog for Stack Builder ---
+  let catalog: any[] = [];
+  try {
+    const { data: cData } = await service
+      .from('products')
+      .select('id, name, image_url, category, base_cost, unit_size, unit_measure, in_stock')
+      .neq('category', 'Peptide Stacks')
+      .eq('is_active', true)
+      .eq('is_banned', false)
+      .order('name');
+      
+    if (cData) {
+      catalog = cData.map((p: any) => ({
+        product_id: p.id,
+        name: p.name,
+        image_url: p.image_url,
+        category: p.category,
+        base_cost: p.base_cost,
+        retail_price: null,
+        in_stock: p.in_stock,
+        unit_size: p.unit_size,
+        unit_measure: p.unit_measure,
+      }));
+    }
+  } catch {}
+
   return (
     <div style={{ minHeight: '100dvh', background: 'var(--black)', padding: 'var(--space-6) var(--space-4)' }}>
       <div className="container" style={{ maxWidth: 1080 }}>
@@ -219,29 +246,7 @@ export default async function LabJournalPage() {
           Your Saved Compounds, Browsing History, And Past Orders All In One Place.
         </p>
 
-        <div
-          style={{
-            display: 'flex',
-            flexWrap: 'wrap',
-            gap: 'var(--space-2)',
-            marginBottom: 'var(--space-6)',
-          }}
-        >
-          <Link href="/account/notifications" className="btn btn-ghost btn-sm" style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-            <Bell size={12} aria-hidden="true" />
-            Notifications
-          </Link>
-          <Link href="/account/security" className="btn btn-ghost btn-sm" style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-            <ShieldCheck size={12} aria-hidden="true" />
-            Security
-          </Link>
-          {isResearcher && (
-            <Link href="/account/referrals" className="btn btn-ghost btn-sm" style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-              <Gift size={12} aria-hidden="true" />
-              Referrals
-            </Link>
-          )}
-        </div>
+
 
         <LabJournalClient 
           favorites={favorites} 
@@ -249,6 +254,7 @@ export default async function LabJournalPage() {
           recentlyViewed={recentlyViewed} 
           trending={trending}
           bundles={bundles}
+          catalog={catalog}
           categories={categories}
           storefrontSlug={storefrontSlug} 
         />

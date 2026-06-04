@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useTransition, useEffect } from 'react';
-import { Heart, Trash2, ExternalLink, PackageOpen, History, LayoutGrid, List as ListIcon, Search, X, Check, ShoppingCart, Info, TrendingUp, XCircle, Layers } from 'lucide-react';
+import SmartStackBuilder from '@/components/researcher/SmartStackBuilder';
+import { Heart, Trash2, ExternalLink, PackageOpen, History, LayoutGrid, List as ListIcon, Search, X, Check, ShoppingCart, Info, TrendingUp, XCircle, Layers, FlaskConical } from 'lucide-react';
 import Link from 'next/link';
 import { toast } from 'sonner';
 import { getProductImage } from '@/lib/categoryImage';
@@ -28,12 +29,13 @@ interface Props {
   pastOrders: Item[];
   recentlyViewed: Item[];
   bundles: Item[];
+  catalog: Item[];
   trending: { id: string; name: string; image_url: string | null; category: string | null; }[];
   categories: string[];
   storefrontSlug: string | null;
 }
 
-export default function LabJournalClient({ favorites: initialFavorites, pastOrders, recentlyViewed: initialRecentlyViewed, bundles, trending, categories, storefrontSlug }: Props) {
+export default function LabJournalClient({ favorites: initialFavorites, pastOrders, recentlyViewed: initialRecentlyViewed, bundles, catalog, trending, categories, storefrontSlug }: Props) {
   const [favorites, setFavorites] = useState<Item[]>(initialFavorites);
   const [recentlyViewed, setRecentlyViewed] = useState<Item[]>(initialRecentlyViewed);
   const [, startTransition] = useTransition();
@@ -45,6 +47,7 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
   const [searchQuery, setSearchQuery] = useState('');
   const [filterCategory, setFilterCategory] = useState('all');
   const [sortBy, setSortBy] = useState<'recent' | 'priceAsc' | 'priceDesc' | 'alpha' | 'frequent'>('recent');
+  const [showBuilder, setShowBuilder] = useState(false);
   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
   const [quickViewItem, setQuickViewItem] = useState<Item | null>(null);
   const [localCartIds, setLocalCartIds] = useState<Set<string>>(new Set());
@@ -360,7 +363,7 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
         ].map(t => (
           <button
             key={t.id}
-            onClick={() => { setActiveTab(t.id as any); setSelectedItems(new Set()); }}
+            onClick={() => { setActiveTab(t.id as any); setShowBuilder(false); setSelectedItems(new Set()); }}
             style={{
               background: 'none', border: 'none',
               color: activeTab === t.id ? 'var(--teal)' : 'var(--silver)',
@@ -377,71 +380,101 @@ export default function LabJournalClient({ favorites: initialFavorites, pastOrde
         ))}
       </div>
 
-      {/* Toolbar */}
-      <div className="glass-panel" style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--space-3)', padding: 'var(--space-3)', marginBottom: 'var(--space-6)', alignItems: 'center' }}>
-        <div style={{ position: 'relative', flex: '1 1 200px' }}>
-          <Search size={14} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--silver)' }} />
-          <input 
-            type="text" 
-            placeholder="Search journal..." 
-            value={searchQuery}
-            onChange={e => setSearchQuery(e.target.value)}
-            style={{ width: '100%', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.1)', padding: '8px 12px 8px 34px', borderRadius: 8, color: 'var(--white)', fontSize: '0.9rem' }}
-          />
-          {searchQuery && <X size={14} style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--silver)', cursor: 'pointer' }} onClick={() => setSearchQuery('')} />}
+      {activeTab === 'bundles' && (
+        <div style={{ display: 'flex', gap: 'var(--space-3)', marginBottom: 'var(--space-4)' }}>
+          <button 
+            className={`btn ${!showBuilder ? 'btn-primary' : 'btn-secondary'}`}
+            onClick={() => setShowBuilder(false)}
+            style={{ borderRadius: 20, padding: '8px 24px' }}
+          >
+            Pre-Built Famous Stacks
+          </button>
+          <button 
+            className={`btn ${showBuilder ? 'btn-primary' : 'btn-secondary'}`}
+            onClick={() => setShowBuilder(true)}
+            style={{ borderRadius: 20, padding: '8px 24px', display: 'flex', alignItems: 'center', gap: 6 }}
+          >
+            <FlaskConical size={16} /> Experiment & Build Custom
+          </button>
         </div>
-        
-        <select value={filterCategory} onChange={e => setFilterCategory(e.target.value)} style={{ background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.1)', color: 'var(--white)', padding: '8px 12px', borderRadius: 8, fontSize: '0.85rem' }}>
-          <option value="all">All Categories</option>
-          {categories.map(c => <option key={c} value={c}>{c}</option>)}
-        </select>
-
-        <select value={sortBy} onChange={e => setSortBy(e.target.value as any)} style={{ background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.1)', color: 'var(--white)', padding: '8px 12px', borderRadius: 8, fontSize: '0.85rem' }}>
-          <option value="recent">Recently Added</option>
-          <option value="priceAsc">Price: Low to High</option>
-          <option value="priceDesc">Price: High to Low</option>
-          <option value="alpha">Alphabetical</option>
-          {activeTab === 'pastOrders' && <option value="frequent">Most Frequently Ordered</option>}
-        </select>
-
-        <div style={{ display: 'flex', background: 'rgba(0,0,0,0.2)', borderRadius: 8, overflow: 'hidden', border: '1px solid rgba(255,255,255,0.1)' }}>
-          <button onClick={() => setViewMode('grid')} style={{ padding: '8px 12px', background: viewMode === 'grid' ? 'rgba(255,255,255,0.1)' : 'transparent', border: 'none', color: viewMode === 'grid' ? 'var(--white)' : 'var(--silver)', cursor: 'pointer' }}><LayoutGrid size={16} /></button>
-          <button onClick={() => setViewMode('list')} style={{ padding: '8px 12px', background: viewMode === 'list' ? 'rgba(255,255,255,0.1)' : 'transparent', border: 'none', color: viewMode === 'list' ? 'var(--white)' : 'var(--silver)', cursor: 'pointer' }}><ListIcon size={16} /></button>
-        </div>
-      </div>
+      )}
 
       {/* Main Content */}
-      {currentItems.length === 0 ? renderEmptyState() : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
-          {activeTab === 'recentlyViewed' && recentlyViewed.length > 0 && !searchQuery && (
-            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '-var(--space-4)' }}>
-              <button onClick={clearRecentlyViewed} className="btn btn-ghost btn-sm" style={{ color: 'var(--silver)', fontSize: '0.8rem', padding: '4px 12px' }}>Clear History</button>
+      {activeTab === 'bundles' && showBuilder ? (
+        <SmartStackBuilder 
+          catalog={catalog} 
+          onAddStackToCart={(items, name) => {
+            items.forEach(i => handleQuickAdd(i, 1, true));
+            toast.success(`Custom Stack "${name}" added to cart!`);
+          }} 
+        />
+      ) : (
+        <>
+          <div className="glass-panel" style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--space-3)', padding: 'var(--space-3)', marginBottom: 'var(--space-6)', alignItems: 'center' }}>
+            <div style={{ position: 'relative', flex: '1 1 200px' }}>
+              <Search size={14} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--silver)' }} />
+              <input 
+                type="text" 
+                placeholder="Search journal..." 
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                style={{ width: '100%', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.1)', padding: '8px 12px 8px 34px', borderRadius: 8, color: 'var(--white)', fontSize: '0.9rem' }}
+              />
+              {searchQuery && <X size={14} style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--silver)', cursor: 'pointer' }} onClick={() => setSearchQuery('')} />}
+            </div>
+            
+            <select value={filterCategory} onChange={e => setFilterCategory(e.target.value)} style={{ background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.1)', color: 'var(--white)', padding: '8px 12px', borderRadius: 8, fontSize: '0.85rem' }}>
+              <option value="all">All Categories</option>
+              {categories.map(c => <option key={c} value={c}>{c}</option>)}
+            </select>
+
+            <select value={sortBy} onChange={e => setSortBy(e.target.value as any)} style={{ background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.1)', color: 'var(--white)', padding: '8px 12px', borderRadius: 8, fontSize: '0.85rem' }}>
+              <option value="recent">Recently Added</option>
+              <option value="priceAsc">Price: Low to High</option>
+              <option value="priceDesc">Price: High to Low</option>
+              <option value="alpha">Alphabetical</option>
+              {activeTab === 'pastOrders' && <option value="frequent">Most Frequently Ordered</option>}
+            </select>
+
+            <div style={{ display: 'flex', background: 'rgba(0,0,0,0.2)', borderRadius: 8, overflow: 'hidden', border: '1px solid rgba(255,255,255,0.1)' }}>
+              <button onClick={() => setViewMode('grid')} style={{ padding: '8px 12px', background: viewMode === 'grid' ? 'rgba(255,255,255,0.1)' : 'transparent', border: 'none', color: viewMode === 'grid' ? 'var(--white)' : 'var(--silver)', cursor: 'pointer' }}><LayoutGrid size={16} /></button>
+              <button onClick={() => setViewMode('list')} style={{ padding: '8px 12px', background: viewMode === 'list' ? 'rgba(255,255,255,0.1)' : 'transparent', border: 'none', color: viewMode === 'list' ? 'var(--white)' : 'var(--silver)', cursor: 'pointer' }}><ListIcon size={16} /></button>
+            </div>
+          </div>
+
+          {currentItems.length === 0 ? renderEmptyState() : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
+              {activeTab === 'recentlyViewed' && recentlyViewed.length > 0 && !searchQuery && (
+                <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '-var(--space-4)' }}>
+                  <button onClick={clearRecentlyViewed} className="btn btn-ghost btn-sm" style={{ color: 'var(--silver)', fontSize: '0.8rem', padding: '4px 12px' }}>Clear History</button>
+                </div>
+              )}
+              {activeTab === 'pastOrders' && !searchQuery && (
+                <div className="glass-panel" style={{ padding: 'var(--space-3) var(--space-4)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 'var(--space-4)', borderRadius: 'var(--radius-md)', background: 'var(--surface-1)', marginBottom: 'var(--space-4)' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
+                    <PackageOpen size={18} style={{ color: 'var(--teal)' }} />
+                    <span style={{ color: 'var(--silver)', fontSize: '0.9rem' }}>Looking for a specific receipt or tracking number?</span>
+                  </div>
+                  <Link href="/orders" className="btn btn-ghost btn-sm" style={{ color: 'var(--white)', whiteSpace: 'nowrap' }}>
+                    View Full Order History &rarr;
+                  </Link>
+                </div>
+              )}
+              {Object.entries(groupedItems).map(([category, items]) => (
+                <div key={category}>
+                  {shouldGroup && <h3 style={{ color: 'var(--white)', fontSize: '1.1rem', marginBottom: 'var(--space-3)', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: 'var(--space-2)' }}>{category}</h3>}
+                  <div style={{
+                    display: 'grid',
+                    gridTemplateColumns: viewMode === 'grid' ? 'repeat(auto-fill, minmax(200px, 1fr))' : '1fr',
+                    gap: 'var(--space-3)'
+                  }}>
+                    {items.map((item, idx) => renderItemCard(item, idx))}
+                  </div>
+                </div>
+              ))}
             </div>
           )}
-          {activeTab === 'pastOrders' && !searchQuery && (
-            <div className="glass-panel" style={{ padding: 'var(--space-3) var(--space-4)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 'var(--space-4)', borderRadius: 'var(--radius-md)', background: 'var(--surface-1)', marginBottom: 'var(--space-4)' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
-                <PackageOpen size={18} style={{ color: 'var(--teal)' }} />
-                <span style={{ color: 'var(--silver)', fontSize: '0.9rem' }}>Looking for a specific receipt or tracking number?</span>
-              </div>
-              <Link href="/orders" className="btn btn-ghost btn-sm" style={{ color: 'var(--white)', whiteSpace: 'nowrap' }}>
-                View Full Order History &rarr;
-              </Link>
-            </div>
-          )}
-          {Object.entries(groupedItems).map(([category, items]) => (
-            <div key={category}>
-              {shouldGroup && <h3 style={{ color: 'var(--white)', fontSize: '1.1rem', marginBottom: 'var(--space-3)', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: 'var(--space-2)' }}>{category}</h3>}
-              <div style={{
-                display: 'grid',
-                gridTemplateColumns: viewMode === 'grid' ? 'repeat(auto-fill, minmax(200px, 1fr))' : '1fr',
-                gap: 'var(--space-3)'
-              }}>
-                {items.map((item, idx) => renderItemCard(item, idx))}
-              </div>
-            </div>
-          ))}
-        </div>
+        </>
       )}
 
       {/* Trending Section for Recently Viewed */}
