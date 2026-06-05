@@ -6,9 +6,10 @@ export const revalidate = 0; // Don't cache shared links statically
 export default async function SharedProtocolPage({
   params
 }: {
-  params: { brandId: string; protocolId: string }
+  params: { agentSlug: string; protocolId: string }
 }) {
-  const { brandId, protocolId } = params;
+  const { agentSlug, protocolId } = params;
+  const brandId = agentSlug;
 
   // 1. Fetch the shared protocol payload
   const supabase = await createServiceClient();

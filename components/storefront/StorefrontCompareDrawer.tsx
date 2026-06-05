@@ -14,7 +14,6 @@ import { createPortal } from 'react-dom';
 import { X, Scale, ChevronDown, ChevronRight, GripHorizontal, ChevronLeft, ThumbsUp, ThumbsDown, Trophy, AlertTriangle, Info, Zap, BookOpen, Clock, Thermometer, Sparkles, Check, Shield } from 'lucide-react';
 import { evidenceTier, type Compound, RISK_META, researchAreaLabel, wadaLabel } from '@/lib/compounds';
 import InCellGlossaryTooltip from '../research/InCellGlossaryTooltip';
-import AttributeRadarChart from '../research/AttributeRadarChart';
 import { scoreCompound, type CompoundScore } from '../research/CompareTool';
 
 interface PinnedItem {
@@ -262,65 +261,213 @@ function scoreCompoundFromPinned(p: PinnedItem, compoundsBySlug: Record<string, 
   return scoreCompound(c, allSelected);
 }
 
-function getNumericValuePinned(rowLabel: string, p: PinnedItem, compoundsBySlug: Record<string, Compound>): number | null {
+function getChoiceBadge(idx: number): React.ReactNode {
+  const labels = ['1st Choice', '2nd Choice', '3rd Choice', '4th Choice'];
+  const badgeColors = [
+    { bg: 'rgba(0,196,188,0.15)', text: '#00C4BC', border: 'rgba(0,196,188,0.35)' },
+    { bg: 'rgba(246,173,85,0.15)', text: '#F6AD55', border: 'rgba(246,173,85,0.35)' },
+    { bg: 'rgba(104,211,145,0.15)', text: '#68D391', border: 'rgba(104,211,145,0.35)' },
+    { bg: 'rgba(252,129,129,0.15)', text: '#FC8181', border: 'rgba(252,129,129,0.35)' },
+  ];
+  const color = badgeColors[idx] || badgeColors[badgeColors.length - 1];
+  return (
+    <span style={{
+      fontSize: '0.65rem',
+      fontWeight: 900,
+      padding: '2px 8px',
+      borderRadius: 999,
+      background: color.bg,
+      color: color.text,
+      border: `1px solid ${color.border}`,
+      textTransform: 'uppercase',
+      letterSpacing: '0.04em',
+      display: 'inline-flex',
+      alignItems: 'center',
+      gap: 3,
+      width: 'fit-content'
+    }}>
+      {idx === 0 && <Trophy size={10} />}
+      {labels[idx] || `${idx + 1}th Choice`}
+    </span>
+  );
+}
+
+function getAttributeRawValue(
+  label: string,
+  p: PinnedItem,
+  compoundsBySlug: Record<string, Compound>
+): string {
   const c = p.compoundSlug ? compoundsBySlug[p.compoundSlug] : null;
-  if (!c) {
-    if (rowLabel === 'Price Per Vial') return p.pricePerVialDollars;
-    return null;
-  }
-  switch (rowLabel) {
-    case 'Price Per Vial':
-      return p.pricePerVialDollars;
-    case 'Molecular Weight':
-      return c.molecular_weight_da ?? (c.identity?.molecular_weight ? parseFloat(c.identity.molecular_weight) : null);
-    case 'Purity':
-      return c.purity_percentage ?? null;
-    case 'PubMed Citations':
-      return c.pubmed_citation_count ?? null;
-    case 'Clinical Trials':
-      return (c.active_trial_count ?? 0) + (c.completed_trial_count ?? 0);
-    case 'Reconstituted Shelf Life':
-      return c.reconstitution_shelf_days ?? c.handling?.reconstituted_days ?? null;
+  if (!c) return 'N/A';
+  switch (label) {
+    case 'Evidence':
+      return p.evidenceTierKey ? evidenceTier(p.evidenceTierKey).label : 'Pending';
+    case 'Safety':
+      return c.risk_level ? RISK_META[c.risk_level]?.label || c.risk_level : 'Pending';
+    case 'Citations':
+      return c.pubmed_citation_count ? `${c.pubmed_citation_count.toLocaleString()} cites` : '0 cites';
+    case 'Trials': {
+      const trials = (c.active_trial_count ?? 0) + (c.completed_trial_count ?? 0);
+      return `${trials} trials`;
+    }
     case 'Half-Life':
-      return parseHalfLifeHours(c.half_life);
+      return c.half_life || 'N/A';
+    case 'Coverage':
+      return `${(c.research_areas ?? []).length} areas`;
+    case 'Handling': {
+      const shelf = c.reconstitution_shelf_days ?? c.handling?.reconstituted_days;
+      return shelf ? `${shelf} days stable` : 'N/A';
+    }
     default:
-      return null;
+      return 'N/A';
   }
 }
 
-function renderRelativeDeltaPinned(
-  rowLabel: string,
-  p: PinnedItem,
-  control: PinnedItem,
-  compoundsBySlug: Record<string, Compound>
-): React.ReactNode {
-  if (p.compoundSlug && p.compoundSlug === control.compoundSlug) return null;
-  const currentVal = getNumericValuePinned(rowLabel, p, compoundsBySlug);
-  const controlVal = getNumericValuePinned(rowLabel, control, compoundsBySlug);
-  if (currentVal != null && controlVal != null) {
-    const diff = currentVal - controlVal;
-    if (diff === 0) return null;
-    let color = diff > 0 ? '#68D391' : '#FF6B6B';
-    if (rowLabel === 'Price Per Vial') {
-      color = diff < 0 ? '#68D391' : '#FF6B6B';
-    }
-    let unit = '';
-    if (rowLabel === 'Molecular Weight') unit = ' Da';
-    else if (rowLabel === 'Purity') unit = '%';
-    else if (rowLabel === 'Half-Life') unit = 'h';
-    else if (rowLabel === 'Reconstituted Shelf Life') unit = ' Days';
-    else if (rowLabel === 'Price Per Vial') unit = '';
+interface AttributeBarComparisonProps {
+  data: { label: string; scores: number[] }[];
+  colors: string[];
+  pinned: PinnedItem[];
+  compoundsBySlug: Record<string, Compound>;
+}
 
-    const formattedVal = rowLabel === 'Price Per Vial' ? `$${Math.abs(diff).toFixed(2)}` : Math.abs(diff).toLocaleString();
-    const diffSign = diff > 0 ? 'higher' : 'lower';
+function AttributeBarComparison({
+  data,
+  colors,
+  pinned,
+  compoundsBySlug,
+}: AttributeBarComparisonProps) {
+  const meta: Record<string, { title: string; desc: string; icon: React.ReactNode }> = {
+    Evidence: {
+      title: 'Evidence Strength',
+      desc: 'Regulatory approval and clinical phase standing',
+      icon: <Shield size={14} style={{ color: '#00C4BC' }} />,
+    },
+    Safety: {
+      title: 'Safety & Tolerability',
+      desc: 'Risk profile and warnings frequency in literature',
+      icon: <AlertTriangle size={14} style={{ color: '#FC8181' }} />,
+    },
+    Citations: {
+      title: 'Scientific Citations',
+      desc: 'Volume of indexed PubMed research publications',
+      icon: <BookOpen size={14} style={{ color: '#F6AD55' }} />,
+    },
+    Trials: {
+      title: 'Clinical Trials',
+      desc: 'Completed and active registered human trials',
+      icon: <Trophy size={14} style={{ color: '#68D391' }} />,
+    },
+    'Half-Life': {
+      title: 'Pharmacokinetic Half-Life',
+      desc: 'Active duration of compound in research subjects',
+      icon: <Clock size={14} style={{ color: '#4FD1C5' }} />,
+    },
+    Coverage: {
+      title: 'Research Coverage',
+      desc: 'Breadth of target therapeutic application areas',
+      icon: <Sparkles size={14} style={{ color: '#9F7AEA' }} />,
+    },
+    Handling: {
+      title: 'Reconstituted Stability',
+      desc: 'Shelf life of reconstituted compound under refrigeration',
+      icon: <Thermometer size={14} style={{ color: '#ED64A6' }} />,
+    },
+  };
 
-    return (
-      <div style={{ fontSize: '0.7rem', color, fontWeight: 700, marginTop: 4 }}>
-        {formattedVal}{unit} {diffSign} vs control
-      </div>
-    );
-  }
-  return null;
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+      {data.map((dim) => {
+        const info = meta[dim.label] || { title: dim.label, desc: '', icon: null };
+        return (
+          <div
+            key={dim.label}
+            style={{
+              background: 'rgba(255, 255, 255, 0.02)',
+              border: '1px solid rgba(255, 255, 255, 0.06)',
+              borderRadius: 12,
+              padding: '14px 18px',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 10,
+              transition: 'transform 0.2s, background 0.2s',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              {info.icon}
+              <div style={{ flex: 1 }}>
+                <span style={{ fontWeight: 800, fontSize: '0.86rem', color: '#FFF' }}>
+                  {info.title}
+                </span>
+                <span style={{ fontSize: '0.7rem', color: 'rgba(255, 255, 255, 0.4)', marginLeft: 8 }}>
+                  {info.desc}
+                </span>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {pinned.map((p, idx) => {
+                const score = dim.scores[idx] ?? 0;
+                const color = colors[idx % colors.length];
+                const rawVal = getAttributeRawValue(dim.label, p, compoundsBySlug);
+
+                return (
+                  <div
+                    key={p.productName}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 12,
+                      fontSize: '0.78rem',
+                    }}
+                  >
+                    <div style={{ width: 160, display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+                      {getChoiceBadge(idx)}
+                      <span
+                        style={{
+                          fontWeight: 700,
+                          color: 'rgba(255, 255, 255, 0.85)',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap',
+                        }}
+                        title={p.productName}
+                      >
+                        {p.productName}
+                      </span>
+                    </div>
+
+                    <div style={{ flex: 1, height: 8, background: 'rgba(255, 255, 255, 0.05)', borderRadius: 999, overflow: 'hidden', position: 'relative' }}>
+                      <div
+                        style={{
+                          height: '100%',
+                          width: `${score}%`,
+                          background: `linear-gradient(90deg, ${color}cc, ${color})`,
+                          borderRadius: 999,
+                        }}
+                      />
+                    </div>
+
+                    <div
+                      style={{
+                        width: 110,
+                        textAlign: 'right',
+                        fontWeight: 800,
+                        color: color,
+                        fontFamily: 'monospace',
+                        fontSize: '0.74rem',
+                      }}
+                    >
+                      {rawVal}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
 }
 
 // ── Pros/Cons Generator ──────────────────────────────────────────────────────
@@ -369,7 +516,6 @@ export default function StorefrontCompareDrawer({
   const [collapsed, setCollapsed] = useState(false);
   const [showMatrix, setShowMatrix] = useState(false);
   const [diffMode, setDiffMode] = useState(false);
-  const [controlSlug, setControlSlug] = useState<string | null>(null);
   const [hideIdentical, setHideIdentical] = useState(false);
   
   // Accordion State
@@ -479,25 +625,6 @@ export default function StorefrontCompareDrawer({
     writePinned([]);
   }
 
-  const handleDragStart = (e: React.DragEvent, index: number) => {
-    e.dataTransfer.setData('text/plain', index.toString());
-    e.dataTransfer.effectAllowed = 'move';
-  };
-
-  const handleDrop = (e: React.DragEvent, targetIndex: number) => {
-    e.preventDefault();
-    const sourceIndex = parseInt(e.dataTransfer.getData('text/plain'), 10);
-    if (sourceIndex === targetIndex || isNaN(sourceIndex)) return;
-    
-    setPinned(prev => {
-      const next = [...prev];
-      const [removed] = next.splice(sourceIndex, 1);
-      next.splice(targetIndex, 0, removed);
-      writePinned(next);
-      return next;
-    });
-  };
-
   const toggleGroup = (label: string) => {
     setCollapsedGroups(prev => {
       const n = new Set(prev);
@@ -521,14 +648,6 @@ export default function StorefrontCompareDrawer({
 
   const ROWS: RowDef[] = useMemo(() => {
     return [
-      { kind: 'group', label: 'Commercial' },
-      {
-        kind: 'data', label: 'Price Per Vial',
-        bestLogic: 'min',
-        getRawScore: (p) => p.pricePerVialDollars ?? Infinity,
-        getValue: (p) => p.pricePerVialDollars ?? Infinity,
-        render: (p) => p.pricePerVialDollars != null ? <span style={{ color: primaryColor, fontWeight: 800 }}>${Number(p.pricePerVialDollars).toFixed(2)}</span> : NL
-      },
       { kind: 'group', label: 'Overview' },
       {
         kind: 'data', label: 'Research Summary',
@@ -668,16 +787,30 @@ export default function StorefrontCompareDrawer({
     ];
   }, [compoundsBySlug, primaryColor]);
 
+  // Sort pinned items dynamically by their composite score descending
+  const sortedPinned = useMemo(() => {
+    return [...pinned]
+      .map((item) => {
+        const score = scoreCompoundFromPinned(item, compoundsBySlug, pinned);
+        return { item, score };
+      })
+      .sort((a, b) => b.score.total - a.score.total);
+  }, [pinned, compoundsBySlug]);
+
+  const sortedPinnedItems = useMemo(() => sortedPinned.map(x => x.item), [sortedPinned]);
+  const pinnedScores = useMemo(() => sortedPinned.map(x => x.score), [sortedPinned]);
+  const pinnedProsCons = useMemo(() => sortedPinnedItems.map(p => generateProsConsPinned(p, compoundsBySlug)), [sortedPinnedItems, compoundsBySlug]);
+
   let clampedMobileIndex = mobileViewIndex;
-  if (clampedMobileIndex >= pinned.length && pinned.length > 1) {
-    clampedMobileIndex = pinned.length - 1;
+  if (clampedMobileIndex >= sortedPinnedItems.length && sortedPinnedItems.length > 1) {
+    clampedMobileIndex = sortedPinnedItems.length - 1;
   }
 
   const displayedPinned = useMemo(() => {
-    return isMobile && pinned.length > 1 
-      ? [pinned[0], pinned[clampedMobileIndex]] 
-      : pinned;
-  }, [isMobile, pinned, clampedMobileIndex]);
+    return isMobile && sortedPinnedItems.length > 1 
+      ? [sortedPinnedItems[0], sortedPinnedItems[clampedMobileIndex]] 
+      : sortedPinnedItems;
+  }, [isMobile, sortedPinnedItems, clampedMobileIndex]);
 
   const maxHalfLife = useMemo(() => {
     return Math.max(...displayedPinned.map(p => {
@@ -693,39 +826,31 @@ export default function StorefrontCompareDrawer({
     }), 0);
   }, [displayedPinned, compoundsBySlug]);
 
-  const pinnedScores = useMemo(() => pinned.map(p => scoreCompoundFromPinned(p, compoundsBySlug, pinned)), [pinned, compoundsBySlug]);
-  const pinnedProsCons = useMemo(() => pinned.map(p => generateProsConsPinned(p, compoundsBySlug)), [pinned, compoundsBySlug]);
-
-  const topPickIdx = useMemo(() => {
-    if (pinned.length < 2) return -1;
-    let best = 0;
-    pinnedScores.forEach((s, i) => { if (s.total > pinnedScores[best].total) best = i; });
-    return best;
-  }, [pinned, pinnedScores]);
+  const topPickIdx = sortedPinnedItems.length >= 2 ? 0 : -1;
 
   const [matrixTab, setMatrixTab] = useState<'matrix' | 'proscons' | 'brief' | 'mechanism' | 'protocol' | 'verdict'>('matrix');
 
   const analystBriefLines = useMemo(() => {
-    if (pinned.length < 2) return [];
+    if (sortedPinnedItems.length < 2) return [];
     const lines: string[] = [];
-    const sorted = [...pinned].map((p, i) => ({ p, s: pinnedScores[i] })).sort((a, b) => b.s.total - a.s.total);
+    const sorted = sortedPinnedItems.map((p, i) => ({ p, s: pinnedScores[i] }));
     const leader = sorted[0]; const runner = sorted[1];
     lines.push(`Overall, ${leader.p.productName} scores highest at ${leader.s.total}/100 on PepNation Lab's composite research index (${leader.s.verdict.toLowerCase()}). ${runner.p.productName} follows at ${runner.s.total}/100${sorted.length > 2 ? `, with ${sorted.slice(2).map(x => `${x.p.productName} at ${x.s.total}`).join(', ')}` : ''}.`);
-    const highestEvidence = [...pinned].sort((a, b) => { const r = (e: string | null) => e === 'approved_drug' ? 4 : e === 'investigational' ? 3 : e === 'preclinical' ? 2 : 1; return r(b.evidenceTierKey) - r(a.evidenceTierKey); })[0];
+    const highestEvidence = [...sortedPinnedItems].sort((a, b) => { const r = (e: string | null) => e === 'approved_drug' ? 4 : e === 'investigational' ? 3 : e === 'preclinical' ? 2 : 1; return r(b.evidenceTierKey) - r(a.evidenceTierKey); })[0];
     lines.push(`From an evidence standpoint, ${highestEvidence.productName} carries the strongest regulatory backing as an ${evidenceTier(highestEvidence.evidenceTierKey ?? '').label.toLowerCase()} compound.`);
-    const allHl = pinned.map(p => { const c = p.compoundSlug ? compoundsBySlug[p.compoundSlug] : null; return { p, hl: parseHalfLifeHours(c?.half_life), raw: c?.half_life }; }).filter(x => x.hl > 0).sort((a, b) => b.hl - a.hl);
+    const allHl = sortedPinnedItems.map(p => { const c = p.compoundSlug ? compoundsBySlug[p.compoundSlug] : null; return { p, hl: parseHalfLifeHours(c?.half_life), raw: c?.half_life }; }).filter(x => x.hl > 0).sort((a, b) => b.hl - a.hl);
     if (allHl.length >= 2) { const lg = allHl[0]; const sh = allHl[allHl.length - 1]; if (lg.p.productName !== sh.p.productName) lines.push(`Pharmacokinetically, ${lg.p.productName} provides a ${(lg.hl/sh.hl).toFixed(1)}x longer half-life than ${sh.p.productName} (${lg.raw} vs. ${sh.raw}), offering greater dosing interval flexibility.`); }
     // Safety divergence
-    const safeRanked = [...pinned].map(p => ({ p, c: p.compoundSlug ? compoundsBySlug[p.compoundSlug] : null })).filter(x => x.c).sort((a, b) => { const r = (x: string) => x === 'low' ? 1 : x === 'moderate' ? 2 : x === 'high' ? 3 : 4; return r(a.c!.risk_level) - r(b.c!.risk_level); });
+    const safeRanked = [...sortedPinnedItems].map(p => ({ p, c: p.compoundSlug ? compoundsBySlug[p.compoundSlug] : null })).filter(x => x.c).sort((a, b) => { const r = (x: string) => x === 'low' ? 1 : x === 'moderate' ? 2 : x === 'high' ? 3 : 4; return r(a.c!.risk_level) - r(b.c!.risk_level); });
     if (safeRanked.length >= 2 && safeRanked[0].c?.risk_level !== safeRanked[safeRanked.length-1].c?.risk_level) {
       lines.push(`Safety profiles diverge: ${safeRanked[0].p.productName} has the most favorable risk profile (${safeRanked[0].c?.risk_level}), while ${safeRanked[safeRanked.length-1].p.productName} carries a ${safeRanked[safeRanked.length-1].c?.risk_level} designation.`);
     }
     return lines;
-  }, [pinned, pinnedScores, compoundsBySlug]);
+  }, [sortedPinnedItems, pinnedScores, compoundsBySlug]);
 
   const smartSummary = useMemo(() => {
-    if (pinned.length !== 2) return null;
-    const [a, b] = pinned;
+    if (sortedPinnedItems.length !== 2) return null;
+    const [a, b] = sortedPinnedItems;
     const cA = a.compoundSlug ? compoundsBySlug[a.compoundSlug] : null;
     const cB = b.compoundSlug ? compoundsBySlug[b.compoundSlug] : null;
     if (!cA || !cB) return null;
@@ -737,16 +862,16 @@ export default function StorefrontCompareDrawer({
       else if (bHl > aHl) hlText = `${b.productName} has a ${(bHl/aHl).toFixed(1)}x longer half-life than ${a.productName}.`;
     }
     return hlText;
-  }, [pinned, compoundsBySlug]);
+  }, [sortedPinnedItems, compoundsBySlug]);
 
   const colors = [primaryColor, '#F6AD55', '#68D391', '#FC8181'];
 
   const activeSynergiesModal = useMemo(() => {
     const matched = KNOWN_SYNERGIES.filter(syn =>
-      syn.pairs.every(slug => pinned.some(p => p.compoundSlug === slug))
+      syn.pairs.every(slug => sortedPinnedItems.some(p => p.compoundSlug === slug))
     );
 
-    const pinnedCompounds = pinned.map(p => p.compoundSlug ? compoundsBySlug[p.compoundSlug] : null).filter(Boolean) as Compound[];
+    const pinnedCompounds = sortedPinnedItems.map(p => p.compoundSlug ? compoundsBySlug[p.compoundSlug] : null).filter(Boolean) as Compound[];
     const glp1s = pinnedCompounds.filter(c => c.is_glp1);
     const hasGlp1Conflict = glp1s.length >= 2;
     const proAngio = pinnedCompounds.filter(c => c.is_pro_angiogenic);
@@ -769,33 +894,33 @@ export default function StorefrontCompareDrawer({
       }
       return true;
     });
-  }, [pinned, compoundsBySlug]);
+  }, [sortedPinnedItems, compoundsBySlug]);
 
   // Dynamic GLP-1 / pro-angiogenic warnings
   const dynamicWarnings = useMemo(() => {
     const warnings: { type: 'conflict' | 'caution'; category: string; message: string }[] = [];
-    const pinnedCompounds = pinned.map(p => p.compoundSlug ? compoundsBySlug[p.compoundSlug] : null).filter(Boolean) as Compound[];
+    const pinnedCompounds = sortedPinnedItems.map(p => p.compoundSlug ? compoundsBySlug[p.compoundSlug] : null).filter(Boolean) as Compound[];
     const proAngio = pinnedCompounds.filter(c => c.is_pro_angiogenic);
     if (proAngio.length >= 2) warnings.push({ type: 'caution', category: 'Safety', message: `Multiple pro-angiogenic compounds pinned (${proAngio.map(c => c.display_name).join(', ')}). Stacking compounds that promote new vessel growth warrants additional research scrutiny.` });
     const glp1s = pinnedCompounds.filter(c => c.is_glp1);
     if (glp1s.length >= 2) warnings.push({ type: 'conflict', category: 'Safety', message: `Multiple GLP-1/incretin agents pinned (${glp1s.map(c => c.display_name).join(', ')}). Combining incretin-class agents compounds gastrointestinal adverse effects.` });
     return warnings;
-  }, [pinned, compoundsBySlug]);
+  }, [sortedPinnedItems, compoundsBySlug]);
 
   const maxTrials = useMemo(() => Math.max(...displayedPinned.map(p => { const c = p.compoundSlug ? compoundsBySlug[p.compoundSlug] : null; return (c?.active_trial_count ?? 0) + (c?.completed_trial_count ?? 0); }), 1), [displayedPinned, compoundsBySlug]);
 
   const radarData = useMemo(() => {
-    if (pinned.length < 2) return [];
+    if (sortedPinnedItems.length < 2) return [];
     return [
-      { label: 'Evidence', scores: pinned.map(p => p.evidenceTierKey === 'approved_drug' ? 100 : p.evidenceTierKey === 'investigational' ? 78 : p.evidenceTierKey === 'preclinical' ? 55 : 30) },
-      { label: 'Safety', scores: pinned.map(p => { const c = p.compoundSlug ? compoundsBySlug[p.compoundSlug] : null; return c?.risk_level === 'low' ? 100 : c?.risk_level === 'moderate' ? 70 : c?.risk_level === 'high' ? 35 : 10; }) },
-      { label: 'Citations', scores: pinned.map(p => { if (!maxCitations) return 10; const c = p.compoundSlug ? compoundsBySlug[p.compoundSlug] : null; return Math.min(100, Math.max(5, ((c?.pubmed_citation_count ?? 0) / maxCitations) * 100)); }) },
-      { label: 'Trials', scores: pinned.map(p => { if (!maxTrials) return 5; const c = p.compoundSlug ? compoundsBySlug[p.compoundSlug] : null; const t = (c?.active_trial_count ?? 0) + (c?.completed_trial_count ?? 0); return Math.min(100, Math.max(5, (t / maxTrials) * 100)); }) },
-      { label: 'Half-Life', scores: pinned.map(p => { if (!maxHalfLife) return 20; const c = p.compoundSlug ? compoundsBySlug[p.compoundSlug] : null; return Math.min(100, Math.max(5, (parseHalfLifeHours(c?.half_life) / maxHalfLife) * 100)); }) },
-      { label: 'Coverage', scores: pinned.map(p => { const c = p.compoundSlug ? compoundsBySlug[p.compoundSlug] : null; return Math.min(100, Math.max(5, ((c?.research_areas ?? []).length / 8) * 100)); }) },
-      { label: 'Handling', scores: pinned.map(p => { const c = p.compoundSlug ? compoundsBySlug[p.compoundSlug] : null; const shelf = c?.reconstitution_shelf_days ?? c?.handling?.reconstituted_days ?? 0; return Math.min(100, Math.max(5, (shelf / 60) * 100)); }) },
+      { label: 'Evidence', scores: sortedPinnedItems.map(p => p.evidenceTierKey === 'approved_drug' ? 100 : p.evidenceTierKey === 'investigational' ? 78 : p.evidenceTierKey === 'preclinical' ? 55 : 30) },
+      { label: 'Safety', scores: sortedPinnedItems.map(p => { const c = p.compoundSlug ? compoundsBySlug[p.compoundSlug] : null; return c?.risk_level === 'low' ? 100 : c?.risk_level === 'moderate' ? 70 : c?.risk_level === 'high' ? 35 : 10; }) },
+      { label: 'Citations', scores: sortedPinnedItems.map(p => { if (!maxCitations) return 10; const c = p.compoundSlug ? compoundsBySlug[p.compoundSlug] : null; return Math.min(100, Math.max(5, ((c?.pubmed_citation_count ?? 0) / maxCitations) * 100)); }) },
+      { label: 'Trials', scores: sortedPinnedItems.map(p => { if (!maxTrials) return 5; const c = p.compoundSlug ? compoundsBySlug[p.compoundSlug] : null; const t = (c?.active_trial_count ?? 0) + (c?.completed_trial_count ?? 0); return Math.min(100, Math.max(5, (t / maxTrials) * 100)); }) },
+      { label: 'Half-Life', scores: sortedPinnedItems.map(p => { if (!maxHalfLife) return 20; const c = p.compoundSlug ? compoundsBySlug[p.compoundSlug] : null; return Math.min(100, Math.max(5, (parseHalfLifeHours(c?.half_life) / maxHalfLife) * 100)); }) },
+      { label: 'Coverage', scores: sortedPinnedItems.map(p => { const c = p.compoundSlug ? compoundsBySlug[p.compoundSlug] : null; return Math.min(100, Math.max(5, ((c?.research_areas ?? []).length / 8) * 100)); }) },
+      { label: 'Handling', scores: sortedPinnedItems.map(p => { const c = p.compoundSlug ? compoundsBySlug[p.compoundSlug] : null; const shelf = c?.reconstitution_shelf_days ?? c?.handling?.reconstituted_days ?? 0; return Math.min(100, Math.max(5, (shelf / 60) * 100)); }) },
     ];
-  }, [pinned, compoundsBySlug, maxCitations, maxHalfLife, maxTrials]);
+  }, [sortedPinnedItems, compoundsBySlug, maxCitations, maxHalfLife, maxTrials]);
 
   if (!mounted) return null;
   if (pinned.length === 0) return null;
@@ -1085,86 +1210,39 @@ export default function StorefrontCompareDrawer({
                 </div>
               )}
 
-              {/* Top Pick + Score Cards */}
-              {pinned.length >= 2 && (
-                <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 12, padding: 16, marginBottom: 20 }}>
-                  {topPickIdx >= 0 && (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14, background: 'rgba(0,196,188,0.08)', border: '1px solid rgba(0,196,188,0.2)', borderRadius: 8, padding: '8px 12px' }}>
-                      <Trophy size={16} color={primaryColor} />
-                      <span style={{ fontWeight: 800, fontSize: '0.88rem', color: primaryColor }}>Top Pick: {pinned[topPickIdx]?.productName}</span>
-                      <span style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.4)', marginLeft: 4 }}>· Highest composite score</span>
-                    </div>
-                  )}
-                  <div style={{ display: 'grid', gridTemplateColumns: `repeat(auto-fit, minmax(200px, 1fr))`, gap: 12 }}>
-                    {displayedPinned.map((p) => {
-                      const origIdx = pinned.findIndex(x => x.productName === p.productName);
-                      const score = pinnedScores[origIdx];
-                      const color = colors[origIdx % colors.length];
-                      const pct = score?.total ?? 0;
-                      return (
-                        <div key={p.productName} style={{ padding: 12, borderRadius: 10, background: origIdx === topPickIdx ? 'rgba(0,196,188,0.06)' : 'rgba(255,255,255,0.02)', border: `1px solid ${origIdx === topPickIdx ? 'rgba(0,196,188,0.3)' : 'rgba(255,255,255,0.08)'}` }}>
-                          <div style={{ fontWeight: 800, fontSize: '0.82rem', color: 'var(--white)', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
-                            <div style={{ width: 7, height: 7, borderRadius: '50%', background: color }} />
-                            {p.productName}
-                            {origIdx === topPickIdx && <Trophy size={11} color={primaryColor} />}
-                          </div>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-                            <div style={{ fontSize: '1.3rem', fontWeight: 900, color }}>{pct}</div>
-                            <div style={{ flex: 1 }}>
-                              <div style={{ height: 5, background: 'rgba(255,255,255,0.08)', borderRadius: 999, overflow: 'hidden' }}>
-                                <div style={{ height: '100%', width: `${pct}%`, background: color, borderRadius: 999 }} />
-                              </div>
-                              <div style={{ fontSize: '0.62rem', color: 'rgba(255,255,255,0.4)', marginTop: 2 }}>{score?.verdict}</div>
-                            </div>
-                          </div>
-                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2px 6px' }}>
-                            {score && [['Ev', score.breakdown.evidence, 30], ['Sa', score.breakdown.safety, 25], ['Sc', score.breakdown.science, 15], ['Ha', score.breakdown.handling, 15]].map(([lbl, val, max]) => (
-                              <div key={String(lbl)} style={{ display: 'flex', alignItems: 'center', gap: 3, fontSize: '0.6rem', color: 'rgba(255,255,255,0.4)' }}>
-                                <span style={{ minWidth: 14 }}>{lbl}</span>
-                                <div style={{ flex: 1, height: 2, background: 'rgba(255,255,255,0.06)', borderRadius: 999, overflow: 'hidden' }}>
-                                  <div style={{ height: '100%', width: `${(Number(val)/Number(max))*100}%`, background: color, borderRadius: 999 }} />
-                                </div>
-                                <span>{val}</span>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-
-              {/* Radar Chart */}
-              {radarData.length >= 2 && (
-                <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 12, padding: 16, marginBottom: 16 }}>
-                  <div style={{ textAlign: 'center', fontSize: '0.72rem', color: 'rgba(255,255,255,0.4)', marginBottom: 8, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Research Profile Radar</div>
-                  <AttributeRadarChart data={radarData} colors={colors} size={260} compoundNames={pinned.map(p => p.productName)} />
-                  <div style={{ display: 'flex', justifyContent: 'center', gap: 12, flexWrap: 'wrap', marginTop: 8 }}>
-                    {pinned.map((p, i) => <div key={p.productName} style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: '0.68rem', color: 'rgba(255,255,255,0.5)' }}><div style={{ width: 8, height: 8, borderRadius: 2, background: colors[i % colors.length] }} />{p.productName}</div>)}
-                  </div>
+              {/* Top Pick Banner */}
+              {sortedPinnedItems.length >= 2 && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16, background: 'rgba(0,196,188,0.08)', border: '1px solid rgba(0,196,188,0.2)', borderRadius: 8, padding: '10px 14px' }}>
+                  <Trophy size={16} color={primaryColor} />
+                  <span style={{ fontWeight: 800, fontSize: '0.92rem', color: primaryColor }}>Top Pick: {sortedPinnedItems[0].productName}</span>
+                  <span style={{ fontSize: '0.74rem', color: 'rgba(255,255,255,0.4)', marginLeft: 4 }}>· Leading with a composite score of {pinnedScores[0].total}/100</span>
                 </div>
               )}
 
               {/* Score Ring Summary Panel */}
-              {pinned.length >= 2 && (
-                <div style={{ display: 'grid', gridTemplateColumns: `repeat(auto-fit, minmax(190px, 1fr))`, gap: 10, marginBottom: 16, padding: 14, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 10 }}>
-                  {displayedPinned.map((p) => {
-                    const origIdx = pinned.findIndex(x => x.productName === p.productName);
-                    const score = pinnedScores[origIdx];
-                    const color = colors[origIdx % colors.length];
-                    const isTop = origIdx === topPickIdx;
+              {sortedPinnedItems.length >= 2 && (
+                <div style={{ display: 'grid', gridTemplateColumns: `repeat(auto-fit, minmax(190px, 1fr))`, gap: 12, marginBottom: 16, padding: 14, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 10 }}>
+                  {displayedPinned.map((p, idx) => {
+                    const score = pinnedScores[idx];
+                    const color = colors[idx % colors.length];
                     return (
-                      <div key={p.productName} style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginBottom: 2 }}>
-                          <div style={{ width: 6, height: 6, borderRadius: '50%', background: color }} />
-                          <span style={{ fontWeight: 800, fontSize: '0.78rem', color: 'var(--white)', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.productName}</span>
-                          {isTop && <Trophy size={11} color={primaryColor} />}
+                      <div key={p.productName} style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 2 }}>
+                          {getChoiceBadge(idx)}
+                          <span style={{ fontWeight: 800, fontSize: '0.86rem', color: 'var(--white)', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.productName}</span>
                         </div>
                         <AnimatedScoreRingDrawer score={score} color={color} />
                       </div>
                     );
                   })}
+                </div>
+              )}
+
+              {/* Attribute Progress Bars */}
+              {radarData.length >= 2 && (
+                <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 12, padding: 16, marginBottom: 16 }}>
+                  <div style={{ textAlign: 'center', fontSize: '0.72rem', color: 'rgba(255,255,255,0.4)', marginBottom: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Dimension Comparison</div>
+                  <AttributeBarComparison data={radarData} colors={colors} pinned={sortedPinnedItems} compoundsBySlug={compoundsBySlug} />
                 </div>
               )}
 
@@ -1188,18 +1266,18 @@ export default function StorefrontCompareDrawer({
               {/* Pros & Cons Tab */}
               {matrixTab === 'proscons' && (
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 12, marginBottom: 20 }}>
-                  {displayedPinned.map((p) => {
-                    const origIdx = pinned.findIndex(x => x.productName === p.productName);
-                    const pc = pinnedProsCons[origIdx];
-                    const color = colors[origIdx % colors.length];
+                  {displayedPinned.map((p, idx) => {
+                    const pc = pinnedProsCons[idx];
+                    const color = colors[idx % colors.length];
+                    const score = pinnedScores[idx];
                     return (
                       <div key={p.productName} style={{ padding: 14, borderRadius: 10, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.08)', display: 'flex', flexDirection: 'column', gap: 10 }}>
                         <div style={{ fontWeight: 900, fontSize: '0.88rem', color: 'var(--white)', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 6, paddingBottom: 8, borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-                          <div style={{ width: 7, height: 7, borderRadius: '50%', background: color }} />
-                          {p.productName}
-                          <span style={{ marginLeft: 'auto', fontSize: '0.65rem', color, fontWeight: 800 }}>Score: {pinnedScores[origIdx].total}/100</span>
+                          {getChoiceBadge(idx)}
+                          <span style={{ color: 'var(--white)', fontWeight: 850 }}>{p.productName}</span>
+                          <span style={{ marginLeft: 'auto', fontSize: '0.65rem', color, fontWeight: 800 }}>Score: {score?.total}/100</span>
                         </div>
-                        <AnimatedScoreRingDrawer score={pinnedScores[origIdx]} color={color} />
+                        <AnimatedScoreRingDrawer score={score} color={color} />
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 5, marginTop: 10 }}>
                           {pc?.pros.map((pro, i) => <div key={`pro-${i}`} style={{ display: 'flex', gap: 6, alignItems: 'flex-start' }}><ThumbsUp size={11} color="#68D391" style={{ marginTop: 2, flexShrink: 0 }} /><span style={{ fontSize: '0.76rem', color: 'rgba(255,255,255,0.8)', lineHeight: 1.4 }}>{pro}</span></div>)}
                           {pc?.cons.map((con, i) => <div key={`con-${i}`} style={{ display: 'flex', gap: 6, alignItems: 'flex-start' }}><ThumbsDown size={11} color="#FC8181" style={{ marginTop: 2, flexShrink: 0 }} /><span style={{ fontSize: '0.76rem', color: 'rgba(255,255,255,0.6)', lineHeight: 1.4 }}>{con}</span></div>)}
@@ -1247,15 +1325,14 @@ export default function StorefrontCompareDrawer({
               {/* Mechanism Tab */}
               {matrixTab === 'mechanism' && (
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 12, marginBottom: 20 }}>
-                  {displayedPinned.map((p) => {
-                    const origIdx = pinned.findIndex(x => x.productName === p.productName);
-                    const color = colors[origIdx % colors.length];
+                  {displayedPinned.map((p, idx) => {
+                    const color = colors[idx % colors.length];
                     const c = p.compoundSlug ? compoundsBySlug[p.compoundSlug] : null;
                     return (
                       <div key={p.productName} style={{ padding: 14, borderRadius: 10, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.08)', display: 'flex', flexDirection: 'column', gap: 10 }}>
                         <div style={{ fontWeight: 900, fontSize: '0.88rem', color: 'var(--white)', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6, paddingBottom: 8, borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-                          <div style={{ width: 7, height: 7, borderRadius: '50%', background: color }} />
-                          {p.productName}
+                          {getChoiceBadge(idx)}
+                          <span style={{ color: 'var(--white)', fontWeight: 800 }}>{p.productName}</span>
                         </div>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                           {c?.compound_class && <div><div style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.3)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 2 }}>Compound Class</div><div style={{ fontSize: '0.78rem', color }}>{c.compound_class}</div></div>}
@@ -1291,9 +1368,8 @@ export default function StorefrontCompareDrawer({
               {/* Protocol Tab */}
               {matrixTab === 'protocol' && (
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 12, marginBottom: 20 }}>
-                  {displayedPinned.map((p) => {
-                    const origIdx = pinned.findIndex(x => x.productName === p.productName);
-                    const color = colors[origIdx % colors.length];
+                  {displayedPinned.map((p, idx) => {
+                    const color = colors[idx % colors.length];
                     const c = p.compoundSlug ? compoundsBySlug[p.compoundSlug] : null;
                     const shelf = c?.reconstitution_shelf_days ?? c?.handling?.reconstituted_days;
                     const hlH = parseHalfLifeHours(c?.half_life);
@@ -1301,8 +1377,8 @@ export default function StorefrontCompareDrawer({
                     return (
                       <div key={p.productName} style={{ padding: 14, borderRadius: 10, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.08)', display: 'flex', flexDirection: 'column', gap: 10 }}>
                         <div style={{ fontWeight: 900, fontSize: '0.88rem', color: 'var(--white)', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6, paddingBottom: 8, borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-                          <div style={{ width: 7, height: 7, borderRadius: '50%', background: color }} />
-                          {p.productName}
+                          {getChoiceBadge(idx)}
+                          <span style={{ color: 'var(--white)', fontWeight: 800 }}>{p.productName}</span>
                         </div>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                           <div style={{ background: `${color}08`, borderRadius: 8, padding: '8px 10px' }}>
@@ -1349,8 +1425,8 @@ export default function StorefrontCompareDrawer({
               )}
 
               {/* Verdict Tab */}
-              {matrixTab === 'verdict' && pinned.length >= 2 && (() => {
-                const ranked = [...pinned].map((p, i) => ({ p, s: pinnedScores[i] })).sort((a, b) => b.s.total - a.s.total);
+              {matrixTab === 'verdict' && sortedPinnedItems.length >= 2 && (() => {
+                const ranked = sortedPinnedItems.map((p, i) => ({ p, s: pinnedScores[i] }));
                 const leader = ranked[0];
                 const safest = [...ranked].sort((a, b) => b.s.breakdown.safety - a.s.breakdown.safety)[0];
                 const mostStudied = [...ranked].sort((a, b) => b.s.breakdown.science - a.s.breakdown.science)[0];
@@ -1399,70 +1475,49 @@ export default function StorefrontCompareDrawer({
                   <thead style={{ position: 'sticky', top: 0, zIndex: 20 }}>
                     <tr>
                       <th style={{ ...labelCellStyle, textAlign: 'left', width: '20%', background: '#0F161E', zIndex: 30 }} scope="col">Product</th>
-                      {displayedPinned.map((p) => {
-                        const originalIndex = pinned.findIndex(x => x.productName === p.productName);
-
+                      {displayedPinned.map((p, idx) => {
                         return (
                           <th 
                             key={p.productName} 
                             style={{ ...cellStyle, textAlign: 'left', width: `${80 / displayedPinned.length}%`, background: '#0F161E' }} 
                             scope="col"
-                            draggable={!isMobile}
-                            onDragStart={(e) => handleDragStart(e, originalIndex)}
-                            onDragOver={(e) => e.preventDefault()}
-                            onDrop={(e) => handleDrop(e, originalIndex)}
                           >
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                                {!isMobile && <GripHorizontal size={14} color="rgba(255,255,255,0.2)" style={{ cursor: 'grab' }} />}
-                                
-                                {isMobile && originalIndex !== 0 && pinned.length > 2 && (
+                                {getChoiceBadge(idx)}
+                                {isMobile && idx !== 0 && sortedPinnedItems.length > 2 && (
                                   <button
-                                    onClick={() => setMobileViewIndex(prev => prev > 1 ? prev - 1 : pinned.length - 1)}
+                                    onClick={() => setMobileViewIndex(prev => prev > 1 ? prev - 1 : sortedPinnedItems.length - 1)}
                                     style={{ background: 'none', border: 'none', color: 'var(--silver)', cursor: 'pointer', padding: 0 }}
                                   >
                                     <ChevronLeft size={18} />
                                   </button>
                                 )}
 
-                                {p.imageUrl && (
-                                  // eslint-disable-next-line @next/next/no-img-element
-                                  <img src={p.imageUrl} alt={p.productName} width={48} height={48} style={{ borderRadius: 8, objectFit: 'cover' }} />
-                                )}
-                                <div style={{ fontSize: '1.1rem', fontWeight: 900, color: primaryColor }}>{p.productName}</div>
-                                
-                                {isMobile && originalIndex !== 0 && pinned.length > 2 && (
+                                {isMobile && idx !== 0 && sortedPinnedItems.length > 2 && (
                                   <button
-                                    onClick={() => setMobileViewIndex(prev => prev < pinned.length - 1 ? prev + 1 : 1)}
+                                    onClick={() => setMobileViewIndex(prev => prev < sortedPinnedItems.length - 1 ? prev + 1 : 1)}
                                     style={{ background: 'none', border: 'none', color: 'var(--silver)', cursor: 'pointer', padding: 0 }}
                                   >
                                     <ChevronRight size={18} />
                                   </button>
                                 )}
                               </div>
-                              {pinned.length >= 2 && (
-                                <button
-                                  type="button"
-                                  onClick={() => setControlSlug(p.compoundSlug === controlSlug ? null : p.compoundSlug)}
-                                  style={{
-                                    background: p.compoundSlug === controlSlug ? '#00C4BC' : 'rgba(255,255,255,0.06)',
-                                    border: '1px solid rgba(255,255,255,0.12)',
-                                    color: p.compoundSlug === controlSlug ? '#04221F' : '#A8B4C0',
-                                    borderRadius: 6,
-                                    padding: '4px 10px',
-                                    fontSize: '0.68rem',
-                                    fontWeight: 800,
-                                    cursor: 'pointer',
-                                    marginTop: 4,
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: 4,
-                                    width: 'fit-content'
-                                  }}
-                                >
-                                  {p.compoundSlug === controlSlug ? 'Baseline Control' : 'Set Baseline'}
-                                </button>
-                              )}
+
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 4 }}>
+                                {p.imageUrl && (
+                                  // eslint-disable-next-line @next/next/no-img-element
+                                  <img src={p.imageUrl} alt={p.productName} width={40} height={40} style={{ borderRadius: 8, objectFit: 'cover' }} />
+                                )}
+                                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                  <div style={{ fontSize: '1rem', fontWeight: 900, color: 'var(--white)' }}>{p.productName}</div>
+                                  {p.pricePerVialDollars != null && (
+                                    <div style={{ fontSize: '0.86rem', fontWeight: 800, color: '#68D391', marginTop: 2 }}>
+                                      ${Number(p.pricePerVialDollars).toFixed(2)} <span style={{ fontSize: '0.68rem', color: 'rgba(255,255,255,0.4)', fontWeight: 500 }}>/ vial</span>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
                             </div>
                           </th>
                         );
@@ -1495,8 +1550,6 @@ export default function StorefrontCompareDrawer({
                       if (currentGroupRow && currentGroupHasChildren) {
                         visibleRows.push(currentGroupRow);
                       }
-
-                      const controlPinned = displayedPinned.find(x => x.compoundSlug === controlSlug);
 
                       return visibleRows.map((row) => {
                         const rIdx = ROWS.indexOf(row);
@@ -1582,7 +1635,6 @@ export default function StorefrontCompareDrawer({
                                   )}
                                   <div style={isWinner ? { borderLeft: `2px solid ${primaryColor}`, paddingLeft: 8, marginLeft: -10 } : {}}>
                                     {row.render(p, maxHalfLife)}
-                                    {controlPinned && renderRelativeDeltaPinned(row.label, p, controlPinned, compoundsBySlug)}
                                   </div>
                                 </td>
                               )
